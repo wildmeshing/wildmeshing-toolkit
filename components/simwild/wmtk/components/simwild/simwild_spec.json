@@ -54,6 +54,7 @@
       "log_file",
       "report",
       "history_output",
+      "volume_history_output",
       "DEBUG_output",
       "DEBUG_sanity_checks",
       "allow_surface_swap",
@@ -434,6 +435,12 @@
     "type": "string",
     "default": "",
     "doc": "3D only: a 2D run refuses it. Record every change to the tracked surface -- the interfaces between unlike tags -- from the mesh the input initialises to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The mesh the history starts from is written next to the output as <output>_history_input.msh; on the memory route it is the output mesh history_input. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording."
+  },
+  {
+    "pointer": "/volume_history_output",
+    "type": "string",
+    "default": "",
+    "doc": "3D only, with history_output. Also record the tets around every operation that changes the tracked surface, and save them here (see wmtk/history/VolumeHistory.hpp): with the surface history, the tracking component rebuilds a map of the volume, region by region (a region: the tets with the same tags), from the mesh the surface history starts from (<output>_history_input.msh; on the memory route the output mesh history_input) to the output. On the memory route no file is written: any non-empty value records the volume history, and the bytes of the file it would be are returned in the report as volume_history (bytes in Python; history::write_history or wm.write_history saves them). It takes many times the room of the surface history. Empty: no recording."
   },
   {
     "pointer": "/DEBUG_output",

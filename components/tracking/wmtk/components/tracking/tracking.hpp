@@ -2,6 +2,8 @@
 
 #include "CurveMap.hpp"
 #include "SurfaceMap.hpp"
+#include "VolumeMap.hpp"
+#include "volume_io.hpp"
 
 #include <wmtk/history/History.hpp>
 
@@ -13,6 +15,8 @@
 #include <cstdint>
 #include <limits>
 #include <map>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -230,6 +234,91 @@ private:
 /// A map's warnings as a report holds them: each count by its name, and their total.
 nlohmann::json warnings_report(const MapWarnings& w);
 nlohmann::json warnings_report(const CurveMapWarnings& w);
+/// A volume map's stats as a report holds them: each count by its name, the failures' reasons
+/// with their counts.
+nlohmann::json stats_report(const VolumeMapStats& s);
+
+/// A point of a tet mesh file: one of its tets -- the rows io::read_mesh gives (TetMeshData) --
+/// and barycentric coordinates with respect to its corners in file order.
+struct TetPoint
+{
+    uint64_t tet = kNoId;
+    Eigen::Vector4d bary = Eigen::Vector4d::Constant(0.25);
+};
+
+/**
+ * @brief The map of a tet mesh's volume between the mesh its volume history starts from and the
+ * one it ends at, in the terms of their files: Tracking's counterpart for the volume (simwild,
+ * tetwild with volume_history_output).
+ *
+ * Built from the surface and volume histories the application saved (see VolumeMap for how),
+ * and the two meshes, to name points by: the one the history starts from, which the
+ * application writes as <output>_history_input.msh, and the one it ends at -- simwild's
+ * <output>.msh; for tetwild, the mesh before its filter, <output>_history_output.msh, of which
+ * <output>_final.msh holds the part kept (a point of the part dropped has no tet there). On the
+ * memory route the histories are the bytes of report["history"] and report["volume_history"],
+ * and the meshes the output meshes history_input, and mesh (simwild) or history_output
+ * (tetwild). A point keeps its region: where it lands on a face between two, it is named by a
+ * tet of its own. One with no tet to land in -- outside the mesh given -- comes back with no tet
+ * (kNoId), as does one that is no point: of a tet the mesh does not have, or with coordinates
+ * that are not numbers. Without the meshes, it maps positions (map_positions()).
+ *
+ * Its const methods may be called from several threads at once (VolumeMap's are; the meshes
+ * are not changed). A copy shares the map, its built operations and its stats, and the meshes.
+ */
+class VolumeTracking
+{
+public:
+    /// The map of `volume`, recorded alongside `surface`, between `input_mesh`, where it starts,
+    /// and `output_mesh`, where it ends (tet_mesh_data()): what load() reads from the files, as
+    /// the memory route passes them.
+    VolumeTracking(
+        const history::SurfaceHistory& surface,
+        history::VolumeHistory volume,
+        const MeshData& input_mesh,
+        const MeshData& output_mesh,
+        const VolumeMapOptions& options = {});
+    /// The map of `volume` alone, with no meshes to name points by: map_positions() only.
+    VolumeTracking(
+        const history::SurfaceHistory& surface,
+        history::VolumeHistory volume,
+        const VolumeMapOptions& options = {});
+    /// The files an application wrote: the two histories and the two meshes.
+    static VolumeTracking load(
+        const std::string& surface_history,
+        const std::string& volume_history,
+        const std::string& input_mesh,
+        const std::string& output_mesh,
+        const VolumeMapOptions& options = {});
+
+    /// Whether it has the meshes, which TetPoints are of.
+    bool has_meshes() const { return m_in.has_value(); }
+    /// Points of the input mesh to the output mesh. Throws without the meshes.
+    std::vector<TetPoint> to_output(const std::vector<TetPoint>& points) const;
+    /// Points of the output mesh to the input mesh, the inverse map. Throws without the meshes.
+    std::vector<TetPoint> to_input(const std::vector<TetPoint>& points) const;
+    /// Positions where the volume history starts mapped to where it ends (`forward`), or back,
+    /// each with the region it ends in (an index into map().history().regions, kAnyRegion for
+    /// one no operation took). `regions`, if given, has one per position: the region it is in,
+    /// as a call the other way returned it; else it is the region of the tet an operation first
+    /// finds it in. A position that is not a number comes back as it is.
+    std::vector<VolumePoint> map_positions(
+        const std::vector<Eigen::Vector3d>& positions,
+        bool forward,
+        const std::vector<uint32_t>& regions = {}) const;
+
+    const VolumeMap& map() const { return *m_map; }
+    /// The meshes; they throw without them.
+    const TetMeshData& input_mesh() const;
+    const TetMeshData& output_mesh() const;
+
+private:
+    std::vector<TetPoint> map_points(const std::vector<TetPoint>& points, bool forward) const;
+
+    // Shared, all of it, by a copy: the map and the meshes are not changed by mapping.
+    std::shared_ptr<const VolumeMap> m_map;
+    std::optional<TetLocator> m_in, m_out;
+};
 
 /// The tracking application: maps points, transfers fields and reports on a tracking file
 /// (tracking_spec.json).
@@ -241,8 +330,11 @@ void tracking(nlohmann::json json_params);
  * needs, and returns the output surface as "mesh", the carried fields as triangle attributes;
  * with `tet_mesh`, also a key of `meshes`, that mesh with the fields on its tracked surface as
  * "tet_mesh" (add_surface). features, on a curve history, returns the feature points in the
- * report, as feature_points: pairs of an input and an output vertex, -1 for none. map, whose
- * points are text files, throws: Tracking and CurveTracking map points in memory.
+ * report, as feature_points: pairs of an input and an output vertex, -1 for none. volume takes
+ * `volume_history`, the bytes of a volume history (report["volume_history"]), and `tet_mesh`
+ * and `output_tet_mesh`, keys of `meshes` (the producer's history_input and mesh or
+ * history_output), and returns its report. map and map_volume, whose points are text files,
+ * throw: Tracking, CurveTracking and VolumeTracking map points in memory.
  */
 ComponentResult tracking(nlohmann::json json_params, const MeshMap& meshes);
 

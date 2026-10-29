@@ -210,6 +210,7 @@ py::tuple call_component(MemoryComponent component, nlohmann::json options, cons
           "uv_mesh",
           "envelope",
           "tet_mesh",
+          "output_tet_mesh",
           "features"}) {
         const auto it = options.find(role);
         if (it == options.end() || it->is_null()) continue;
@@ -262,8 +263,9 @@ void bind_mesh_io(py::module_& module)
             return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         },
         "path"_a,
-        "Read a history file (a component's history_output, of a surface or of curves) as the "
-        "bytes a memory call returns in its report's 'history' and takes as 'history'.");
+        "Read a history file (a component's history_output, of a surface or of curves, or its "
+        "volume_history_output) as the bytes a memory call returns in its report's 'history' "
+        "('volume_history') and takes as 'history' ('volume_history').");
     module.def(
         "write_history",
         [](const std::filesystem::path& path, const py::bytes& history) {
@@ -274,7 +276,7 @@ void bind_mesh_io(py::module_& module)
         },
         "path"_a,
         "history"_a,
-        "Save the bytes of a history (a memory call's report['history']) as the file the file "
-        "route writes.");
+        "Save the bytes of a history (a memory call's report['history'], or "
+        "report['volume_history']) as the file the file route writes.");
 }
 } // namespace wmtk::python

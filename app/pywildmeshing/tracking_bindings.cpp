@@ -1,6 +1,7 @@
-// wm.Tracking and wm.CurveTracking: the tracking component's maps between an application's input
-// and its output, built from a history -- the bytes a memory call returns as report["history"],
-// or the file the file route writes -- and mapping NumPy arrays of points either way.
+// wm.Tracking, wm.CurveTracking and wm.VolumeTracking: the tracking component's maps between an
+// application's input and its output, built from a history -- the bytes a memory call returns as
+// report["history"] (and report["volume_history"]), or the file the file route writes -- and
+// mapping NumPy arrays of points either way.
 
 #include "mesh_conversion.hpp"
 
@@ -10,9 +11,11 @@
 
 #include <wmtk/components/tracking/tracking.hpp>
 #include <wmtk/history/History.hpp>
+#include <wmtk/history/VolumeHistory.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <array>
+#include <cstring>
 #include <filesystem>
 #include <limits>
 #include <memory>
@@ -25,6 +28,7 @@ using namespace pybind11::literals;
 namespace wmtk::python {
 namespace {
 
+using components::tracking::CollapsePatch;
 using components::tracking::CurveMapOptions;
 using components::tracking::CurveMapWarnings;
 using components::tracking::CurveTracking;
@@ -37,7 +41,11 @@ using components::tracking::OutputPoint;
 using components::tracking::Scaffold;
 using components::tracking::Smoothing;
 using components::tracking::SurfaceMapOptions;
+using components::tracking::TetPoint;
 using components::tracking::Tracking;
+using components::tracking::VolumeMapOptions;
+using components::tracking::VolumePoint;
+using components::tracking::VolumeTracking;
 
 std::vector<uint8_t> bytes_of(const py::bytes& history)
 {
@@ -52,7 +60,10 @@ Smoothing smoothing_of(const std::string& smoothing)
     throw py::value_error("smoothing is 'flatten' or 'barycentric', not '" + smoothing + "'");
 }
 
-SurfaceMapOptions surface_options(const std::string& smoothing, const std::string& scaffold)
+SurfaceMapOptions surface_options(
+    const std::string& smoothing,
+    const std::string& scaffold,
+    const std::string& collapse_patch)
 {
     SurfaceMapOptions options;
     options.smoothing = smoothing_of(smoothing);
@@ -61,7 +72,19 @@ SurfaceMapOptions surface_options(const std::string& smoothing, const std::strin
     } else if (scaffold != "box") {
         throw py::value_error("scaffold is 'box' or 'ring', not '" + scaffold + "'");
     }
+    if (collapse_patch == "removed_star") {
+        options.collapse_patch = CollapsePatch::removed_star;
+    } else if (collapse_patch != "both_stars") {
+        throw py::value_error(
+            "collapse_patch is 'both_stars' or 'removed_star', not '" + collapse_patch + "'");
+    }
     return options;
+}
+
+/// Whether `bytes` start as a surface's or curves' history does, whatever follows.
+bool is_face_history(const std::vector<uint8_t>& bytes)
+{
+    return bytes.size() >= 8 && std::memcmp(bytes.data(), "WMTKHIST", 8) == 0;
 }
 
 /// A history of faces of `n` corners (history::face_size) is to be mapped by the class for
@@ -72,6 +95,48 @@ void require_kind(const int n, const int corners)
     throw py::value_error(
         n == 2 ? "the history is of curves (triwild's): map it with CurveTracking"
                : "the history is of a surface: map it with Tracking");
+}
+
+/// The bytes of a history are to be mapped by the class for `corners` faces: a volume history is
+/// VolumeTracking's.
+void require_kind(const std::vector<uint8_t>& bytes, const int corners)
+{
+    if (history::is_volume_history(bytes)) {
+        throw py::value_error(
+            "the history is a volume history (volume_history_output): map it with "
+            "VolumeTracking, with the surface history it was recorded with");
+    }
+    require_kind(history::face_size(bytes), corners);
+}
+
+/// A surface history and a volume history, each where it is to be: ValueError for a history of
+/// the other kind; damaged bytes throw when they are loaded, RuntimeError.
+void require_volume_pair(
+    const std::vector<uint8_t>& surface_history,
+    const std::vector<uint8_t>& volume_history)
+{
+    if (history::is_volume_history(surface_history)) {
+        throw py::value_error(
+            "surface_history is a volume history: give the surface history (history_output) "
+            "first, then the volume history (volume_history_output)");
+    }
+    if (history::face_size(surface_history) != 3) {
+        throw py::value_error(
+            "surface_history is of curves (triwild's), not the surface a volume history follows");
+    }
+    if (is_face_history(volume_history)) {
+        throw py::value_error(
+            "volume_history is a surface's or curves' history, not a volume history "
+            "(volume_history_output)");
+    }
+}
+
+VolumeMapOptions volume_options(const int64_t cache_bytes)
+{
+    if (cache_bytes < 0) throw py::value_error("cache_bytes is not negative");
+    VolumeMapOptions options;
+    options.cache_bytes = size_t(cache_bytes);
+    return options;
 }
 
 /**
@@ -355,6 +420,94 @@ curve_to_input(const CurveTracking& t, py::handle ids, py::handle bary, const bo
         components::tracking::warnings_report(w));
 }
 
+/// Tet points either way: tets int64 (n,), -1 for none, and bary float64 (n, 4).
+py::tuple volume_tets(const VolumeTracking& t, py::handle tets, py::handle bary, const bool forward)
+{
+    const DataMatrix<int64_t> I = read_ids(tets, 0, "a tet per point");
+    const DataMatrix<double> B = read_bary(bary, I.rows(), 4);
+    if (!t.has_meshes()) {
+        throw py::value_error(
+            "this VolumeTracking was built without the meshes, which tets are of: build it with "
+            "them, or map positions (map_positions)");
+    }
+    std::vector<TetPoint> pts(size_t(I.rows()));
+    for (Eigen::Index i = 0; i < I.rows(); ++i) {
+        pts[i].tet = id_of(I(i, 0));
+        pts[i].bary = B.row(i).transpose();
+    }
+    std::vector<TetPoint> out;
+    {
+        py::gil_scoped_release release;
+        out = forward ? t.to_output(pts) : t.to_input(pts);
+    }
+    std::vector<std::array<uint64_t, 1>> named(out.size());
+    std::vector<uint8_t> found(out.size());
+    for (size_t i = 0; i < out.size(); ++i) {
+        named[i] = {{out[i].tet}};
+        found[i] = out[i].tet != kNoId;
+    }
+    return py::make_tuple(ids_array(named, true), bary_array(out, found));
+}
+
+/// Positions either way: xyz float64 (n, 3), and optionally each one's region, int64 (n,).
+py::tuple volume_positions(
+    const VolumeTracking& t,
+    py::handle xyz,
+    const std::string& direction,
+    py::handle regions)
+{
+    if (direction != "to_output" && direction != "to_input") {
+        throw py::value_error("direction is 'to_output' or 'to_input', not '" + direction + "'");
+    }
+    if (!py::isinstance<py::array>(xyz)) {
+        throw py::type_error("xyz must be a NumPy array of floats");
+    }
+    const auto a = py::reinterpret_borrow<py::array>(xyz);
+    if (a.dtype().kind() != 'f') {
+        throw py::type_error(
+            "xyz must have a floating dtype, not " + std::string(py::str(a.dtype())));
+    }
+    if (a.ndim() != 2 || a.shape(1) != 3) {
+        throw py::value_error("xyz must be of shape (n, 3), a position per row");
+    }
+    const DataMatrix<double> X = matrix<double>(a);
+    std::vector<Eigen::Vector3d> positions(size_t(X.rows()));
+    for (Eigen::Index i = 0; i < X.rows(); ++i) positions[i] = X.row(i).transpose();
+    std::vector<uint32_t> given;
+    if (!regions.is_none()) {
+        const DataMatrix<int64_t> R =
+            read_ids(regions, 0, "a region per position, as map_positions returns them");
+        if (R.rows() != X.rows()) {
+            throw py::value_error(
+                "regions must be of shape (n,), one per position: here (" +
+                std::to_string(X.rows()) + ",)");
+        }
+        const size_t n_regions = t.map().history().regions.size();
+        for (Eigen::Index i = 0; i < R.rows(); ++i) {
+            if (R(i, 0) >= int64_t(n_regions)) {
+                throw py::value_error(
+                    "regions holds " + std::to_string(R(i, 0)) + ": the history has " +
+                    std::to_string(n_regions) + " regions");
+            }
+            given.push_back(R(i, 0) < 0 ? VolumePoint::kAnyRegion : uint32_t(R(i, 0)));
+        }
+    }
+    std::vector<VolumePoint> out;
+    {
+        py::gil_scoped_release release;
+        out = t.map_positions(positions, direction == "to_output", given);
+    }
+    py::array_t<double> moved(std::vector<py::ssize_t>{py::ssize_t(out.size()), 3});
+    py::array_t<int64_t> region(std::vector<py::ssize_t>{py::ssize_t(out.size())});
+    double* m = moved.mutable_data();
+    int64_t* r = region.mutable_data();
+    for (size_t i = 0; i < out.size(); ++i) {
+        for (int k = 0; k < 3; ++k) m[3 * i + k] = out[i].position[k];
+        r[i] = out[i].region == VolumePoint::kAnyRegion ? -1 : int64_t(out[i].region);
+    }
+    return py::make_tuple(moved, region);
+}
+
 } // namespace
 
 void bind_tracking(py::module_& module)
@@ -372,10 +525,12 @@ void bind_tracking(py::module_& module)
         .def(
             py::init([](const py::bytes& history,
                         const std::string& smoothing,
-                        const std::string& scaffold) {
+                        const std::string& scaffold,
+                        const std::string& collapse_patch) {
                 const std::vector<uint8_t> bytes = bytes_of(history);
-                const SurfaceMapOptions options = surface_options(smoothing, scaffold);
-                require_kind(history::face_size(bytes), 3);
+                const SurfaceMapOptions options =
+                    surface_options(smoothing, scaffold, collapse_patch);
+                require_kind(bytes, 3);
                 return built<Tracking>([&] {
                     return std::make_unique<Tracking>(
                         history::SurfaceHistory::from_bytes(bytes),
@@ -385,15 +540,19 @@ void bind_tracking(py::module_& module)
             "history"_a,
             "smoothing"_a = "flatten",
             "scaffold"_a = "box",
+            "collapse_patch"_a = "both_stars",
             "Build the map from the bytes of a surface history. smoothing ('flatten' or "
-            "'barycentric') and scaffold ('box' or 'ring') as the tracking component's options.")
+            "'barycentric'), scaffold ('box' or 'ring') and collapse_patch ('both_stars' or "
+            "'removed_star') as the tracking component's options.")
         .def_static(
             "load",
             [](const std::filesystem::path& path,
                const std::string& smoothing,
-               const std::string& scaffold) {
-                const SurfaceMapOptions options = surface_options(smoothing, scaffold);
-                require_kind(history::face_size(path.string()), 3);
+               const std::string& scaffold,
+               const std::string& collapse_patch) {
+                const SurfaceMapOptions options =
+                    surface_options(smoothing, scaffold, collapse_patch);
+                require_kind(history::read_history(path), 3);
                 return built<Tracking>([&] {
                     return std::make_unique<Tracking>(
                         history::SurfaceHistory::load(path.string()),
@@ -403,6 +562,7 @@ void bind_tracking(py::module_& module)
             "path"_a,
             "smoothing"_a = "flatten",
             "scaffold"_a = "box",
+            "collapse_patch"_a = "both_stars",
             "Build the map from a history file, as from its bytes (wm.read_history).")
         .def(
             "to_output",
@@ -465,7 +625,7 @@ void bind_tracking(py::module_& module)
                 const std::vector<uint8_t> bytes = bytes_of(history);
                 CurveMapOptions options;
                 options.smoothing = smoothing_of(smoothing);
-                require_kind(history::face_size(bytes), 2);
+                require_kind(bytes, 2);
                 return built<CurveTracking>([&] {
                     return std::make_unique<CurveTracking>(
                         history::CurveHistory::from_bytes(bytes),
@@ -481,7 +641,7 @@ void bind_tracking(py::module_& module)
             [](const std::filesystem::path& path, const std::string& smoothing) {
                 CurveMapOptions options;
                 options.smoothing = smoothing_of(smoothing);
-                require_kind(history::face_size(path.string()), 2);
+                require_kind(history::read_history(path), 2);
                 return built<CurveTracking>([&] {
                     return std::make_unique<CurveTracking>(
                         history::CurveHistory::load(path.string()),
@@ -541,6 +701,150 @@ void bind_tracking(py::module_& module)
                     components::tracking::warnings_report(t.map().build_warnings()));
             },
             "What building the map found where it is not a bijection, by kind.");
+
+    py::class_<VolumeTracking>(
+        module,
+        "VolumeTracking",
+        "The map of a tet mesh's volume, region by region, between the mesh its volume history "
+        "starts from and the one it ends at (tetwild or simwild with volume_history_output), "
+        "both ways: built from the surface history and the volume history the application "
+        "recorded -- the bytes a memory call returns as report['history'] and "
+        "report['volume_history'], or VolumeTracking.load() of the files -- and the two meshes, "
+        "which name points by their tets: the mesh the histories start from (history_input) and "
+        "the one they end at (simwild's mesh, tetwild's history_output, the mesh before its "
+        "filter). A point keeps its region, the tets with the same tags. Without the meshes it "
+        "maps positions only (map_positions). Mapping releases the GIL and changes only the "
+        "operation maps it keeps (cache_bytes), under a lock: threads may share one object.")
+        .def(
+            py::init([](const py::bytes& surface_history,
+                        const py::bytes& volume_history,
+                        py::handle input_mesh,
+                        py::handle output_mesh,
+                        const int64_t cache_bytes) {
+                const std::vector<uint8_t> surface = bytes_of(surface_history);
+                const std::vector<uint8_t> volume = bytes_of(volume_history);
+                require_volume_pair(surface, volume);
+                const VolumeMapOptions options = volume_options(cache_bytes);
+                const MeshData in = mesh_data(dictionary(input_mesh, "input_mesh"));
+                const MeshData out = mesh_data(dictionary(output_mesh, "output_mesh"));
+                return built<VolumeTracking>([&] {
+                    return std::make_unique<VolumeTracking>(
+                        history::SurfaceHistory::from_bytes(surface),
+                        history::VolumeHistory::from_bytes(volume),
+                        in,
+                        out,
+                        options);
+                });
+            }),
+            "surface_history"_a,
+            "volume_history"_a,
+            "input_mesh"_a,
+            "output_mesh"_a,
+            "cache_bytes"_a = int64_t(VolumeMapOptions().cache_bytes),
+            "Build the map from the bytes of both histories and the two meshes, as wm.read_mesh "
+            "and the memory calls return them. cache_bytes: about how many bytes of operation "
+            "maps to keep for later calls, 0 for none.")
+        .def(
+            py::init([](const py::bytes& surface_history,
+                        const py::bytes& volume_history,
+                        const int64_t cache_bytes) {
+                const std::vector<uint8_t> surface = bytes_of(surface_history);
+                const std::vector<uint8_t> volume = bytes_of(volume_history);
+                require_volume_pair(surface, volume);
+                const VolumeMapOptions options = volume_options(cache_bytes);
+                return built<VolumeTracking>([&] {
+                    return std::make_unique<VolumeTracking>(
+                        history::SurfaceHistory::from_bytes(surface),
+                        history::VolumeHistory::from_bytes(volume),
+                        options);
+                });
+            }),
+            "surface_history"_a,
+            "volume_history"_a,
+            "cache_bytes"_a = int64_t(VolumeMapOptions().cache_bytes),
+            "Build the map from the bytes of both histories alone, without the meshes: it maps "
+            "positions (map_positions) only.")
+        .def_static(
+            "load",
+            [](const std::filesystem::path& surface_history,
+               const std::filesystem::path& volume_history,
+               const std::filesystem::path& input_mesh,
+               const std::filesystem::path& output_mesh,
+               const int64_t cache_bytes) {
+                const VolumeMapOptions options = volume_options(cache_bytes);
+                require_volume_pair(
+                    history::read_history(surface_history),
+                    history::read_history(volume_history));
+                return built<VolumeTracking>([&] {
+                    return std::make_unique<VolumeTracking>(VolumeTracking::load(
+                        surface_history.string(),
+                        volume_history.string(),
+                        input_mesh.string(),
+                        output_mesh.string(),
+                        options));
+                });
+            },
+            "surface_history"_a,
+            "volume_history"_a,
+            "input_mesh"_a,
+            "output_mesh"_a,
+            "cache_bytes"_a = int64_t(VolumeMapOptions().cache_bytes),
+            "Build the map from the files the file route writes: the two histories and the two "
+            "meshes (<output>_history_input.msh, and simwild's <output>.msh or tetwild's "
+            "<output>_history_output.msh).")
+        .def(
+            "to_output",
+            [](const VolumeTracking& t, py::handle tets, py::handle bary) {
+                return volume_tets(t, tets, bary, true);
+            },
+            "tets"_a,
+            "bary"_a,
+            "Points of the input mesh to the output mesh. tets: int64 (n,), a row of the input "
+            "mesh's tets per point, -1 for none; bary: float64 (n, 4), barycentric coordinates in "
+            "the order of its corners. Returns (tets, bary) in the output mesh, a tet of the "
+            "point's own region, -1 and NaN for a point with no tet there (outside the mesh, "
+            "or no point: no tet, coordinates that are not numbers).")
+        .def(
+            "to_input",
+            [](const VolumeTracking& t, py::handle tets, py::handle bary) {
+                return volume_tets(t, tets, bary, false);
+            },
+            "tets"_a,
+            "bary"_a,
+            "Points of the output mesh to the input mesh, the inverse map; as to_output.")
+        .def(
+            "map_positions",
+            &volume_positions,
+            "xyz"_a,
+            "direction"_a = "to_output",
+            "regions"_a = py::none(),
+            "Positions where the volume history starts to where it ends (direction 'to_output'), "
+            "or back ('to_input'). xyz: float64 (n, 3). regions: int64 (n,), each position's "
+            "region (an index into regions) as a call the other way returned it, -1 for the "
+            "region of the tet an operation first finds it in -- the default for all. Returns "
+            "(xyz, region): where they end and the region each ends in, -1 for a position no "
+            "operation took. A position that is not a number comes back as it is.")
+        .def_property_readonly(
+            "has_meshes",
+            &VolumeTracking::has_meshes,
+            "Whether it has the meshes, which to_output and to_input name points by.")
+        .def_property_readonly(
+            "regions",
+            [](const VolumeTracking& t) { return t.map().history().regions; },
+            "The regions, each the tags of its tets, sorted: what a region index names.")
+        .def_property_readonly(
+            "tag_names",
+            [](const VolumeTracking& t) { return t.map().history().tag_names; },
+            "The labels the application's mesh files give the tags, by tag (simwild's; none for "
+            "tetwild's one region).")
+        .def_property_readonly(
+            "stats",
+            [](const VolumeTracking& t) {
+                return pyjson::from_json(components::tracking::stats_report(t.map().stats()));
+            },
+            "What building and using the map found so far: the operation maps built, failed "
+            "(with the reasons), kept, and the points that changed region or went through an "
+            "operation with no map.");
 }
 
 } // namespace wmtk::python

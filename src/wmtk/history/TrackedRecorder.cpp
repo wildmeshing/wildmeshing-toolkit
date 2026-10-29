@@ -354,9 +354,10 @@ Edit TrackedRecorder<N>::replacement(
 }
 
 template <int N>
-void TrackedRecorder<N>::commit(Change&& c)
+std::array<size_t, 2> TrackedRecorder<N>::commit(Change&& c)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
+    const size_t first = m_history.edits.size();
     const std::vector<Cell> before = as_set(c.before), after = as_set(c.after);
     const std::vector<Cell> removed = minus(before, after), added = minus(after, before);
     std::sort(c.written.begin(), c.written.end());
@@ -370,7 +371,7 @@ void TrackedRecorder<N>::commit(Change&& c)
         const size_t edits = m_history.edits.size();
         record(Edit{EditKind::move_vertices, {}, {}, {}}, c.written, fresh);
         if (m_history.edits.size() > edits) ++m_stats.move;
-        return;
+        return {{first, m_history.edits.size()}};
     }
     std::optional<Edit> e;
     switch (c.kind) {
@@ -384,6 +385,7 @@ void TrackedRecorder<N>::commit(Change&& c)
         ++m_stats.replaced;
     }
     record(std::move(*e), c.written, fresh);
+    return {{first, m_history.edits.size()}};
 }
 
 template <int N>
@@ -441,6 +443,15 @@ template <int N>
 std::optional<uint64_t> TrackedRecorder<N>::vertex_id(const size_t v) const
 {
     return live(v);
+}
+
+template <int N>
+std::vector<uint64_t> TrackedRecorder<N>::vertex_ids(const std::vector<size_t>& vs) const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    std::vector<uint64_t> ids;
+    for (const size_t v : vs) ids.push_back(live(v).value_or(kNoVertex));
+    return ids;
 }
 
 template class TrackedRecorder<2>;

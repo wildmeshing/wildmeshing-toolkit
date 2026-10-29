@@ -14,7 +14,7 @@ namespace wmtk::io {
 class ComponentIO
 {
     detail::ComponentLoggerScope logging;
-    std::optional<std::vector<uint8_t>> recorded_history;
+    std::optional<std::vector<uint8_t>> recorded_history, recorded_volume_history;
 
 public:
     const MeshMap* inputs = nullptr;
@@ -42,6 +42,25 @@ public:
             h.edits.size(),
             recorded_history->size());
     }
+    // The volume around a tet mesh's tracked surface, recorded with its surface history
+    // (volume_history_output), as the bytes of its file (history::VolumeRecorder::to_bytes). The
+    // file route writes them to `path`; the memory route returns them in the report, as
+    // "volume_history", next to "history".
+    void save_volume_history(std::vector<uint8_t> bytes, const std::string& path)
+    {
+        if (!memory()) {
+            history::write_history(path, bytes);
+            logger().info(
+                "volume history: {:.1f} MB saved to {}",
+                double(bytes.size()) / 1e6,
+                path);
+            return;
+        }
+        logger().info(
+            "volume history: {:.1f} MB, returned in the report",
+            double(bytes.size()) / 1e6);
+        recorded_volume_history = std::move(bytes);
+    }
     // The metadata of a history the component records: its parameters, and the route it ran on,
     // "file" or "memory". On the memory route the inputs the parameters name are meshes of the
     // call, which no file holds.
@@ -51,12 +70,18 @@ public:
         metadata["route"] = memory() ? "memory" : "file";
         return metadata.dump();
     }
-    // What a memory call returns: the result, with the history recorded, if any, in its report.
+    // What a memory call returns: the result, with the histories recorded, if any, in its
+    // report.
     ComponentResult take_result()
     {
         if (recorded_history)
             result.second["history"] = nlohmann::json::binary(std::move(*recorded_history));
+        if (recorded_volume_history) {
+            result.second["volume_history"] =
+                nlohmann::json::binary(std::move(*recorded_volume_history));
+        }
         recorded_history.reset();
+        recorded_volume_history.reset();
         return std::move(result);
     }
     const MeshData& mesh(const std::string& name) const

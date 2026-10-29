@@ -300,6 +300,11 @@ public:
     ////// Attributes related
 
     void output_mesh(std::string file);
+    /// The tets and their vertices as output_mesh() writes them -- consolidated first, a row per
+    /// vertex at m_posf and a row per tet, oriented, in the file's order -- without the fields:
+    /// the memory route's counterpart of the file, for the meshes a volume history starts and
+    /// ends at.
+    MeshData tet_mesh_data();
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 
 public:

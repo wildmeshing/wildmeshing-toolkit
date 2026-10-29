@@ -657,6 +657,20 @@ public:
     /// operations (tags re-derived, say). Returns how many faces it removed and added: 0 when
     /// nothing changed, or when not recording.
     size_t resync_surface_history();
+    /**
+     * @brief Record, alongside the surface history, the tets around every operation that changes
+     * the tracked surface (wmtk/history/VolumeHistory.hpp): what a map of the volume needs. The
+     * surface history must be recording; a volume history is its own choice, since it takes far
+     * more room. `position(v)` is called as start_surface_history()'s is; a tet's region is its
+     * tet_tags().
+     */
+    std::shared_ptr<history::VolumeRecorder> start_volume_history(
+        std::function<Eigen::Vector3d(size_t)> position);
+    /// Stop recording the volume. The recorder keeps what it has.
+    void stop_volume_history();
+    /// The tags of tet `tid`, for a volume history: tets with the same tags form a region,
+    /// which the volume map keeps. None, unless an application says otherwise.
+    virtual std::vector<int64_t> tet_tags(size_t tid) const { return {}; }
     /// Every tracked face, oriented by orient_tracked_face().
     std::vector<std::array<size_t, 3>> tracked_faces() const;
     /// Whether local face `j` of tet `tid` is tracked surface, for a surface history. None is,
@@ -1692,13 +1706,29 @@ private:
     /// The tracked faces around the operation this thread is in, as they were before it.
     wmtk::threading::enumerable_thread_specific<std::vector<std::array<size_t, 3>>>
         m_surface_history_before;
-    /// An operation's tracked faces before it changes the mesh, and at its commit point.
+    /// An operation's tracked faces before it changes the mesh, and at its commit point, which
+    /// returns the range of surface edits it made.
     void surface_history_before(const std::vector<size_t>& vs, bool all);
-    void surface_history_commit(
+    std::array<size_t, 2> surface_history_commit(
         history::EditKind kind,
         std::vector<size_t> v,
         const std::vector<size_t>& vs_after,
         bool all);
+
+    /// The volume history being recorded (TetMesh.cpp): its recorder, the positions it is given,
+    /// and the tets around the operation each thread is in, as they were before it.
+    struct VolumeRecording;
+    std::shared_ptr<VolumeRecording> m_volume_history;
+    /// The tets at the vertices `vs`, with what a volume history keeps of them.
+    history::VolumeCapture volume_capture(const std::vector<size_t>& vs) const;
+    /// An operation's tets before it changes the mesh, and at its commit point, given the
+    /// surface edits it made: recorded if it made any.
+    void volume_history_before(const std::vector<size_t>& vs);
+    void volume_history_commit(
+        history::VolumeOp op,
+        std::array<size_t, 2> surface_edits,
+        const std::vector<size_t>& op_vertices,
+        const std::vector<size_t>& vs_after);
     /// The vertices of the tets `tids`, sorted.
     std::vector<size_t> vertices_of_tets(const std::vector<size_t>& tids) const;
 

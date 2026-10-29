@@ -1,5 +1,6 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/history/History.hpp>
+#include <wmtk/history/VolumeHistory.hpp>
 
 #include <wmtk/utils/TetMeshElementTopology.h>
 #include <wmtk/utils/VectorUtils.h>
@@ -272,6 +273,7 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     if (dry_run()) return op_screened(OpKind::collapse);
     const size_t v_removed = loc0.vid(*this), v_kept = loc0.switch_vertex(*this).vid(*this);
     if (m_surface_history) surface_history_before({v_removed, v_kept}, false);
+    if (m_volume_history) volume_history_before({v_removed, v_kept});
     if (checks_tracked_surface()) tracked_surface_before({v_removed, v_kept}, false);
 
     size_t v1_id;
@@ -312,11 +314,18 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 
     assert(v1_id == v_removed);
     if (m_surface_history) {
-        surface_history_commit(
+        const auto edits = surface_history_commit(
             history::EditKind::collapse_edge,
             {v_removed, v_kept},
             {v_kept},
             false);
+        if (m_volume_history) {
+            volume_history_commit(
+                history::VolumeOp::collapse,
+                edits,
+                {v_removed, v_kept},
+                {v_kept});
+        }
     }
     release_protect_attributes();
 

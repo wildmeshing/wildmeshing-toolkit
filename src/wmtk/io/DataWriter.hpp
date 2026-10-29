@@ -142,8 +142,10 @@ void compact_slot_outputs(const Mesh& mesh, MeshMap& outputs)
 }
 // The result key of each memory export. The exporters keep their legacy file naming,
 // <stem><suffix>.vtu, and the memory calls use the stem "mesh". An empty key drops an export
-// that the caller returns in another form. simwild's <output>_history_input.msh, the mesh its
-// surface history starts from, is the one .msh among them.
+// that the caller returns in another form. The .msh among them are the meshes a history names
+// its points by: <output>_history_input.msh, simwild's and tetwild's, where the surface history
+// (and the volume history) starts, and tetwild's <output>_history_output.msh, the mesh before
+// its filter, where the volume history ends.
 using OutputKeys = std::map<std::string, std::string>;
 inline OutputKeys default_output_keys()
 {
@@ -154,7 +156,8 @@ inline OutputKeys default_output_keys()
         {"mesh_off.vtu", "offset"},
         {"mesh_front.vtu", "offset"},
         {"mesh_offset_faces.vtu", "offset"},
-        {"mesh_history_input.msh", "history_input"}};
+        {"mesh_history_input.msh", "history_input"},
+        {"mesh_history_output.msh", "history_output"}};
 }
 // Rename the exports into public result keys. An export missing from `keys`, or two exports
 // with the same key, is an error rather than a silently dropped output.

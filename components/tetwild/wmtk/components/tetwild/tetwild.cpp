@@ -225,6 +225,23 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     if (!history_output.empty() && !record_history) {
         logger().warn("history_output: not recorded, use_legacy_code rebuilds the mesh");
     }
+    // The volume around it too, its own choice, recorded alongside from the insertion on (see
+    // below). It follows the surface history. And the coarsening pass's local smoothing moves a
+    // whole ball of vertices inside one collapse, of which the volume history, which records
+    // the stars of the edge's ends, sees none: refused, as use_legacy_code is.
+    const std::string volume_history_output = json_params["volume_history_output"];
+    if (!volume_history_output.empty()) {
+        if (!record_history) {
+            log_and_throw_error(
+                "volume_history_output needs history_output (and not "
+                "use_legacy_code): the volume history follows the surface's");
+        }
+        if (params.coarsen_pass && params.coarsen_local_smoothing_passes > 0) {
+            log_and_throw_error(
+                "volume_history_output needs coarsen_local_smoothing_passes 0 with coarsen_pass: "
+                "the volume history does not see the vertices a coarsening collapse smooths");
+        }
+    }
     history::SurfaceHistory input_history; // the files as read, welded, simplified
 
     std::vector<Eigen::Vector3d> verts;
@@ -946,6 +963,19 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // From here on the tracked surface is recorded, starting where the insertion left it.
     if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
+    // The whole volume around it too, if asked: the map of the volume starts at the tet mesh
+    // written here, and ends at the mesh before the filter (<output>_history_output.msh). Both
+    // are files next to the output; on the memory route, which has none, the output meshes
+    // history_input and history_output.
+    MeshMap history_meshes;
+    if (!volume_history_output.empty()) {
+        if (component_io.memory()) {
+            history_meshes["mesh_history_input.msh"] = mesh_new.tet_mesh_data();
+        } else {
+            mesh_new.output_mesh(output_path + "_history_input.msh");
+        }
+        mesh_new.record_volume_history();
+    }
 
     // mesh_new.output_mesh(output_path + "after_insertion.msh");
 
@@ -1072,6 +1102,16 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         }
     }
 
+    // The mesh the volume history ends at: all of it, before the filter drops a part. Both
+    // routes consolidate it here, so they record the same histories.
+    if (!volume_history_output.empty()) {
+        if (component_io.memory()) {
+            history_meshes["mesh_history_output.msh"] = mesh_new.tet_mesh_data();
+        } else {
+            mesh_new.output_mesh(output_path + "_history_output.msh");
+        }
+    }
+
     // ////winding number
     if (filter_option == "input") {
         mesh_new.filter_with_input_surface_winding_number();
@@ -1086,6 +1126,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // A filter removes the tracked faces of the tets it drops, which no operation maps.
     if (const auto h = mesh_new.finish_surface_history(&input_history)) {
         component_io.save_history(*h, history_output);
+    }
+    if (const auto vh = mesh_new.finish_volume_history()) {
+        component_io.save_volume_history(*vh, volume_history_output);
     }
 
     t_finalize = phase_timer.getElapsedTime(); // winding/flood/filter done
@@ -1485,6 +1528,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.save_paraview("mesh", false, &raw);
         io::compact_slot_outputs(mesh_new, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
+        component_io.result.first.merge(io::named_outputs(std::move(history_meshes)));
         if (features_present)
             component_io.result.first["features"] =
                 io::feature_data(hybrid_curve_segs, hybrid_anchor_pts);

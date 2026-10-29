@@ -3,14 +3,18 @@
 // point on the output is named by three vertices of the tet mesh and barycentric coordinates.
 
 #include <wmtk/components/simwild/simwild.hpp>
+#include <wmtk/components/tracking/VolumeMap.hpp>
 #include <wmtk/components/tracking/tracking.hpp>
+#include <wmtk/components/tracking/volume_io.hpp>
 #include <wmtk/history/History.hpp>
+#include <wmtk/history/VolumeHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <random>
@@ -273,6 +277,71 @@ TEST_CASE("tracking-simwild-memory-route", "[simwild][tracking]")
     }
 }
 
+TEST_CASE("tracking-simwild-memory-route-volume", "[simwild][tracking]")
+{
+    // With volume_history_output, the memory route returns the volume history in the report too,
+    // as the bytes of its file, and writes none: with the surface history's bytes and the two
+    // meshes it returns -- history_input, where both histories start, and mesh -- they are a
+    // VolumeTracking, of the tets of those meshes.
+    const MeshMap meshes{
+        {"in", io::read_mesh(fs::path(WMTK_DATA_DIR) / "models" / "double_sphere.msh")}};
+    const auto [outputs, report] = simwild::simwild(
+        {{"operation", "remeshing"},
+         {"input", "in"},
+         {"history_output", "recorded"},
+         {"volume_history_output", "recorded_volume"},
+         {"max_iterations", 1}},
+        meshes);
+    CHECK(!fs::exists("recorded"));
+    CHECK(!fs::exists("recorded_volume"));
+    REQUIRE(report.at("history").is_binary());
+    REQUIRE(report.at("volume_history").is_binary());
+    const auto& bytes = report.at("volume_history").get_binary();
+    REQUIRE(history::is_volume_history(bytes));
+    const auto surface = history::SurfaceHistory::from_bytes(report.at("history").get_binary());
+    auto volume = history::VolumeHistory::from_bytes(bytes);
+    REQUIRE(!volume.edits.empty());
+    CHECK(volume.surface == history::surface_key(surface));
+    const tracking::VolumeTracking tracking(
+        surface,
+        std::move(volume),
+        outputs.at("history_input"),
+        outputs.at("mesh"));
+    const auto& in = tracking.input_mesh();
+    const auto& out = tracking.output_mesh();
+    CHECK(
+        in.tets.size() ==
+        size_t(outputs.at("history_input").cell(CellType::Tetrahedron).connectivity.rows()));
+    CHECK(
+        out.tets.size() ==
+        size_t(outputs.at("mesh").cell(CellType::Tetrahedron).connectivity.rows()));
+    const auto position = [](const tracking::TetMeshData& m, const tracking::TetPoint& p) {
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += p.bary[k] * m.vertices[m.tets[p.tet][k]];
+        return x;
+    };
+    std::mt19937 rng(5);
+    std::uniform_real_distribution<double> u(0.05, 1);
+    std::vector<tracking::TetPoint> pts;
+    for (int i = 0; i < 300; ++i) {
+        tracking::TetPoint p{rng() % in.tets.size()};
+        p.bary = Eigen::Vector4d(u(rng), u(rng), u(rng), u(rng));
+        p.bary /= p.bary.sum();
+        pts.push_back(p);
+    }
+    const auto there = tracking.to_output(pts);
+    const auto back = tracking.to_input(there);
+    CHECK(tracking.map().stats().failed == 0);
+    double round_trip = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(there[i].tet != tracking::kNoId);
+        CHECK(out.group_sets[out.groups[there[i].tet]] == in.group_sets[in.groups[pts[i].tet]]);
+        REQUIRE(back[i].tet != tracking::kNoId);
+        round_trip = std::max(round_trip, (position(in, back[i]) - position(in, pts[i])).norm());
+    }
+    CHECK(round_trip < 1e-6);
+}
+
 TEST_CASE("tracking-simwild-2d-refuses-history", "[simwild][tracking]")
 {
     // A 2D run has no surface: history_output is refused rather than ignored.
@@ -290,4 +359,139 @@ TEST_CASE("tracking-simwild-2d-refuses-history", "[simwild][tracking]")
             {{"square", square}}),
         Catch::Matchers::ContainsSubstring("3D only"));
     CHECK(!fs::exists("recorded"));
+}
+
+namespace {
+
+/// How many of `pts` (at most the first 500 whose tets are not slivers) the map moves, and at
+/// how many of those it keeps orientation: det J > 0, J by finite differences of
+/// map_positions(), each of the four points in the region of the tet it is in (a step can
+/// cross into another). In a sliver -- the insertion leaves some flat ones along the curves
+/// where surfaces meet -- a step leaves the tet at once, and J says nothing of it.
+std::pair<size_t, size_t> orientation_kept(
+    const wmtk::components::tracking::VolumeTracking& tracking,
+    const std::vector<wmtk::components::tracking::TetPoint>& pts)
+{
+    namespace tr = wmtk::components::tracking;
+    const tr::TetMeshData& in = tracking.input_mesh();
+    Eigen::Vector3d lo = in.vertices[0], hi = lo;
+    for (const auto& v : in.vertices) {
+        lo = lo.cwiseMin(v);
+        hi = hi.cwiseMax(v);
+    }
+    const double h = 1e-9 * (hi - lo).norm();
+    std::vector<Eigen::Vector3d> xyz;
+    for (size_t i = 0; i < pts.size() && xyz.size() < 4 * 500; ++i) {
+        const auto& t = in.tets[pts[i].tet];
+        const auto& V = in.vertices;
+        double l2 = 0;
+        for (int a = 0; a < 4; ++a) {
+            for (int b = a + 1; b < 4; ++b) l2 += (V[t[a]] - V[t[b]]).squaredNorm() / 6;
+        }
+        const double volume =
+            std::abs((V[t[1]] - V[t[0]]).dot((V[t[2]] - V[t[0]]).cross(V[t[3]] - V[t[0]])));
+        if (volume < 1e-2 * std::pow(l2, 1.5)) continue; // a sliver
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += pts[i].bary[k] * V[t[k]];
+        for (int k = 0; k < 4; ++k) {
+            xyz.push_back(k == 0 ? x : Eigen::Vector3d(x + h * Eigen::Vector3d::Unit(k - 1)));
+        }
+    }
+    const auto y = tracking.map_positions(xyz, true);
+    size_t moved = 0, kept = 0;
+    for (size_t i = 0; 4 * i < y.size(); ++i) {
+        if (y[4 * i].position == xyz[4 * i]) continue;
+        ++moved;
+        Eigen::Matrix3d J;
+        for (int k = 0; k < 3; ++k) J.col(k) = (y[4 * i + k + 1].position - y[4 * i].position) / h;
+        kept += J.determinant() > 0;
+    }
+    return {moved, kept};
+}
+
+} // namespace
+
+TEST_CASE("tracking-example-simwild-volume", "[simwild][tracking]" + release_only)
+{
+    const fs::path dir = fs::current_path() / "tracking_example_simwild_volume";
+    fs::create_directories(dir);
+    const fs::path sphere = fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj";
+    const fs::path output = dir / "spheres";
+
+    // 1. Run simwild with the surface history (history_output) and the volume history
+    // (volume_history_output). The volume map starts at <output>_history_input.msh, the two
+    // surfaces embedded and tagged, and ends at <output>.msh. The inputs' names are the ones a
+    // region is hardest to find by: the same twice, and "ambient", which the files label
+    // "ambient" and "ambient_" -- and the untagged tets then in no group.
+    simwild::simwild({
+        {"application", "simwild"},
+        {"operation", "remeshing"},
+        {"input", {sphere.string(), sphere.string()}},
+        {"input_names", {"ambient", "ambient"}},
+        {"input_transform",
+         {nlohmann::json::array(), {{1, 0, 0, 0.3}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}}},
+        {"output", output.string()},
+        {"history_output", output.string() + ".wmtkhist"},
+        {"volume_history_output", output.string() + ".wmtkvol"},
+        {"eps_rel", 1e-2},
+        {"stop_energy", 10},
+        {"max_iterations", 3},
+    });
+
+    // 2. Load the map: both histories, and the two meshes, which name the points.
+    const tracking::VolumeTracking tracking = tracking::VolumeTracking::load(
+        output.string() + ".wmtkhist",
+        output.string() + ".wmtkvol",
+        output.string() + "_history_input.msh",
+        output.string() + ".msh");
+    const auto& in = tracking.input_mesh();
+    const auto& out = tracking.output_mesh();
+    // every tet's groups name its region
+    for (const auto* m : {&in, &out}) {
+        for (const auto& g : m->group_sets) CHECK(tracking.map().region_of_groups(g));
+    }
+    CHECK(
+        std::count(in.group_sets.begin(), in.group_sets.end(), std::set<std::string>{"ambient_"}));
+
+    // 3. Points of the input -- a tet of the file and barycentric coordinates -- in the
+    // spheres' boxes, where the operations are: each lands in a tet of the output of its own
+    // region (the tets of the same tags), and comes back.
+    std::mt19937 rng(7);
+    std::uniform_real_distribution<double> u(0, 1);
+    const auto position = [](const tracking::TetMeshData& m, const tracking::TetPoint& p) {
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += p.bary[k] * m.vertices[m.tets[p.tet][k]];
+        return x;
+    };
+    std::vector<tracking::TetPoint> pts;
+    while (pts.size() < 2000) {
+        tracking::TetPoint p{rng() % in.tets.size()};
+        const Eigen::Vector3d c = position(in, p);
+        if (c.norm() > 1.5 && (c - Eigen::Vector3d(0.3, 0, 0)).norm() > 1.5) continue;
+        p.bary = Eigen::Vector4d(u(rng), u(rng), u(rng), u(rng));
+        p.bary /= p.bary.sum();
+        pts.push_back(p);
+    }
+    const auto there = tracking.to_output(pts);
+    const auto back = tracking.to_input(there);
+    CHECK(tracking.map().stats().failed == 0);
+    CHECK(tracking.map().stats().surface_not_kept == 0);
+    CHECK(tracking.map().stats().region_changed == 0);
+    size_t moved = 0;
+    double round_trip = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(there[i].tet != tracking::kNoId);
+        CHECK(out.group_sets[out.groups[there[i].tet]] == in.group_sets[in.groups[pts[i].tet]]);
+        moved += (position(out, there[i]) - position(in, pts[i])).norm() > 0;
+        REQUIRE(back[i].tet != tracking::kNoId);
+        round_trip = std::max(round_trip, (position(in, back[i]) - position(in, pts[i])).norm());
+    }
+    CHECK(moved > pts.size() / 10);
+    // Rounding, through local maps whose rays can graze a face of a sliver: more than the
+    // surface's, far less than any map that is not a bijection would miss by.
+    CHECK(round_trip < 1e-6);
+    // A round trip the identity passes too: the points that move keep their orientation.
+    const auto [moving, kept_orientation] = orientation_kept(tracking, pts);
+    CHECK(moving > 0);
+    CHECK(kept_orientation == moving);
 }

@@ -293,6 +293,16 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         mesh.m_insertion_sources = std::move(input_data.facet_sources);
         mesh.record_surface_history(component_io.history_metadata(json_params));
     }
+    // The volume around the tracked surface: its own choice, as it takes far more room.
+    const std::string volume_history_output = json_params["volume_history_output"];
+    if (!volume_history_output.empty()) {
+        if (history_output.empty()) {
+            log_and_throw_error(
+                "volume_history_output needs history_output: the volume history "
+                "follows the surface's");
+        }
+        mesh.record_volume_history();
+    }
 
     if (params.operation == "remeshing" && params.preserve_topology && !params.skip_simplify) {
         // collapse for getting the right edge length
@@ -354,6 +364,22 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     {
         component_io.result.first = tagged_outputs();
         component_io.result.first.merge(history_input);
+        // The volume history names the tags as the tet meshes' groups do -- the labels
+        // io::collect_tags gives them, not the names, which may repeat or be "ambient" -- so
+        // a tet's groups give its region.
+        if (!volume_history_output.empty()) {
+            const auto& labels = component_io.result.first.at("mesh")
+                                     .cells.at(CellType::Tetrahedron)
+                                     .attributes.at("tags")
+                                     .labels;
+            std::map<int64_t, std::string> tag_labels;
+            for (size_t j = 0; j < mesh.m_tags_count && j < labels.size(); ++j) {
+                tag_labels[int64_t(j)] = labels[j];
+            }
+            if (const auto vh = mesh.finish_volume_history(tag_labels)) {
+                component_io.save_volume_history(*vh, volume_history_output);
+            }
+        }
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);

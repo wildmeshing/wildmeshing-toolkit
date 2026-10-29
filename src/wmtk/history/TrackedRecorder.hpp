@@ -80,7 +80,9 @@ public:
         /// are now, if they moved.
         std::vector<size_t> written;
     };
-    void commit(Change&& c);
+    /// Records `c`; returns the range of edits it added to the history, [first, last): empty
+    /// when the complex did not change.
+    std::array<size_t, 2> commit(Change&& c);
 
     /// The mesh renumbered its vertices: old_to_new[v], size_t(-1) for a vertex gone.
     void renumber(const std::vector<size_t>& old_to_new);
@@ -115,6 +117,9 @@ public:
     std::optional<uint64_t> face_id(const Cell& t) const;
     /// The vertex of the complex a mesh vertex is, if it is on it. Not synchronised.
     std::optional<uint64_t> vertex_id(size_t v) const;
+    /// vertex_id() of each of `vs`, kNoVertex for one off the complex, synchronised with the
+    /// commits: an operation may ask about the vertices it holds while others commit.
+    std::vector<uint64_t> vertex_ids(const std::vector<size_t>& vs) const;
 
 private:
     static constexpr uint64_t kNone = uint64_t(-1);

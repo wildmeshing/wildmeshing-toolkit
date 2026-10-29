@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <numeric>
@@ -841,71 +842,109 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
         }
         case EditKind::collapse_edge: {
             const uint64_t removed = e.v[0], kept = e.v[1];
-            std::vector<uint64_t> before_f;
+            // The faces a collapse maps, read before the replay applies it.
+            struct Faces
+            {
+                std::vector<uint64_t> f;
+                std::vector<Tri> t;
+                Positions P;
+                std::vector<std::vector<size_t>> sides;
+                std::set<std::array<uint64_t, 2>> features;
+            };
+            const auto faces = [&](std::vector<uint64_t> fs) {
+                Faces b{std::move(fs), {}, {}, {}, {}};
+                b.t = corners_of(b.f);
+                b.P = positions_of(b.t);
+                b.sides = sides_of(b.t);
+                b.features = features_in(b.t);
+                return b;
+            };
+            std::vector<uint64_t> union_f;
             std::set_union(
                 r.faces_of(removed).begin(),
                 r.faces_of(removed).end(),
                 r.faces_of(kept).begin(),
                 r.faces_of(kept).end(),
-                std::back_inserter(before_f));
-            const std::vector<Tri> before_t = corners_of(before_f);
-            const Positions P = positions_of(before_t);
+                std::back_inserter(union_f));
+            const Faces both = faces(union_f);
+            const std::optional<Faces> star = options.collapse_patch == CollapsePatch::removed_star
+                                                  ? std::optional<Faces>(faces(r.faces_of(removed)))
+                                                  : std::nullopt;
             size_t n_spanning = 0; // faces with both endpoints, which the collapse removes
-            for (const Tri& t : before_t) {
+            for (const Tri& t : both.t) {
                 if (std::count(t.begin(), t.end(), removed) &&
                     std::count(t.begin(), t.end(), kept)) {
                     ++n_spanning;
                 }
             }
-            const auto sides = sides_of(before_t);
-            const auto before_features = features_in(before_t);
             r.apply(e);
             const std::vector<uint64_t> after_f = r.faces_of(kept);
-            if (after_f.size() + n_spanning < before_f.size()) {
-                m_build_warnings.merged_faces += before_f.size() - n_spanning - after_f.size();
+            if (after_f.size() + n_spanning < both.f.size()) {
+                m_build_warnings.merged_faces += both.f.size() - n_spanning - after_f.size();
             }
-            for (const auto& members : sides) {
-                std::vector<uint64_t> side_before_f;
-                std::vector<Tri> side_before_t;
-                bool has_removed = false;
-                for (const size_t i : members) {
-                    side_before_f.push_back(before_f[i]);
-                    side_before_t.push_back(before_t[i]);
-                    has_removed =
-                        has_removed || std::count(before_t[i].begin(), before_t[i].end(), removed);
-                }
-                if (!has_removed) continue; // nothing on this side changes
-                std::vector<uint64_t> side_after_f;
-                for (const uint64_t f : after_f) {
-                    if (std::find(side_before_f.begin(), side_before_f.end(), f) !=
-                        side_before_f.end()) {
-                        side_after_f.push_back(f);
+            // One cell per side of the curves through `b`; false if a side had to be relabelled.
+            const auto map_sides = [&](const Faces& b, Step& to) {
+                bool all = true;
+                for (const auto& members : b.sides) {
+                    std::vector<uint64_t> side_before_f;
+                    std::vector<Tri> side_before_t;
+                    bool has_removed = false;
+                    for (const size_t i : members) {
+                        side_before_f.push_back(b.f[i]);
+                        side_before_t.push_back(b.t[i]);
+                        has_removed =
+                            has_removed || std::count(b.t[i].begin(), b.t[i].end(), removed);
+                    }
+                    if (!has_removed) continue; // nothing on this side changes
+                    std::vector<uint64_t> side_after_f;
+                    for (const uint64_t f : after_f) {
+                        if (std::find(side_before_f.begin(), side_before_f.end(), f) !=
+                            side_before_f.end()) {
+                            side_after_f.push_back(f);
+                        }
+                    }
+                    // A side the collapse removes whole -- faces on the edge cut off by
+                    // non-manifold or feature edges, faces merged into another side's -- has
+                    // nothing to map onto.
+                    if (side_after_f.empty()) {
+                        relabel(side_before_f, side_after_f, to);
+                        all = false;
+                        continue;
+                    }
+                    Cell cell;
+                    const std::vector<Tri> side_after_t = corners_of(side_after_f);
+                    if (flatten(
+                            side_before_f,
+                            side_before_t,
+                            b.features,
+                            side_after_f,
+                            side_after_t,
+                            removed,
+                            kept,
+                            b.P,
+                            positions_of(side_after_t),
+                            cell)) {
+                        to.cells.push_back(std::move(cell));
+                    } else {
+                        relabel(side_before_f, side_after_f, to);
+                        all = false;
                     }
                 }
-                // A side the collapse removes whole -- faces on the edge cut off by non-manifold
-                // or feature edges, faces merged into another side's -- has nothing to map onto.
-                if (side_after_f.empty()) {
-                    relabel(side_before_f, side_after_f, step);
-                    continue;
+                return all;
+            };
+            if (star) {
+                const MapWarnings warnings = m_build_warnings;
+                const size_t curve_collapses = m_curve_collapses, folded = m_folded_cells;
+                Step tried{e.kind, {}, {}, {}, {}};
+                if (map_sides(*star, tried)) {
+                    step = std::move(tried);
+                    break;
                 }
-                Cell cell;
-                const std::vector<Tri> side_after_t = corners_of(side_after_f);
-                if (flatten(
-                        side_before_f,
-                        side_before_t,
-                        before_features,
-                        side_after_f,
-                        side_after_t,
-                        removed,
-                        kept,
-                        P,
-                        positions_of(side_after_t),
-                        cell)) {
-                    step.cells.push_back(std::move(cell));
-                } else {
-                    relabel(side_before_f, side_after_f, step);
-                }
+                m_build_warnings = warnings;
+                m_curve_collapses = curve_collapses;
+                m_folded_cells = folded;
             }
+            map_sides(both, step);
             break;
         }
         case EditKind::swap_edge: {
@@ -1021,6 +1060,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
                 }
                 ++m_cells_by_kind[size_t(EditKind::move_vertices)];
                 m_steps.push_back({EditKind::move_vertices, std::move(cells), {}, {}, {}});
+                m_steps.back().edit = edit_index;
             }
             break;
         }
@@ -1033,6 +1073,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
         }
         ++m_cells_by_kind[size_t(e.kind) % m_cells_by_kind.size()];
         m_steps.push_back(std::move(step));
+        m_steps.back().edit = edit_index;
     }
 
     m_out_vertices = r.vertices();
@@ -1206,6 +1247,18 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
     }
     if (warnings) *warnings = w;
     return pts;
+}
+
+std::vector<const SurfaceMap::Cell*> SurfaceMap::cells_of(const size_t edit) const
+{
+    std::vector<const Cell*> out;
+    auto it = std::lower_bound(m_steps.begin(), m_steps.end(), edit, [](const Step& s, size_t e) {
+        return s.edit < e;
+    });
+    for (; it != m_steps.end() && it->edit == edit; ++it) {
+        for (const Cell& c : it->cells) out.push_back(&c);
+    }
+    return out;
 }
 
 } // namespace wmtk::components::tracking

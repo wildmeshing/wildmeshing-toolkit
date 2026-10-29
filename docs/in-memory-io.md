@@ -132,7 +132,7 @@ results as well, so that a result can be the next call's input as it is: isotrop
 | `manifold_extraction` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `prismatic_mesh` | `input` | Tet construction mesh with `corr_input_vid` and cell region memberships |
 | `c1_simplification` | `surface_mesh`, `uv_mesh` | Surface triangle `dofs` (Float64, 36 columns), vertex `is_cone` (UInt8, 1 column); UV triangle geometry |
-| `tracking` | none for `info` and `features`; `transfer`: `input`, optional `tet_mesh` | The history as bytes (option `history`, not a mesh). `transfer`: the triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), no vertex attributes; the tet mesh the history ends at |
+| `tracking` | none for `info` and `features`; `transfer`: `input`, optional `tet_mesh`; `volume`: optional `tet_mesh` and `output_tet_mesh` | The history as bytes (option `history`, not a mesh), and for `volume` the volume history as bytes (option `volume_history`). `transfer`: the triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), no vertex attributes; the tet mesh the history ends at. `volume`: the tet meshes the volume history starts and ends at, with their `tags` if they have them |
 
 For tagged inputs, `tags` on the top-dimensional cells names their regions, such as `tag_0`. A
 column labelled `ambient` is the background, as is a cell without a tag; a mesh without a `tags`
@@ -169,7 +169,12 @@ geometry under fixed keys:
   `input_and_shell_offset`; with `prism_dominant`, the report adds that export's
   `input_and_shell_hybrid` report, as in its `_hybrid.json` file.
 - `history_input`: simwild's, with `history_output`, the tagged tet mesh its surface history
-  starts from (the file route's `<output>_history_input.msh`).
+  starts from (the file route's `<output>_history_input.msh`); tetwild's, with
+  `volume_history_output`, the tet mesh its volume history starts from (its
+  `<output>_history_input.msh`).
+- `history_output`: tetwild's, with `volume_history_output`, the tet mesh its volume history
+  ends at, all of it before the filter (its `<output>_history_output.msh`); `mesh` is the part
+  the filter keeps. For simwild the volume history ends at `mesh`.
 
 For tetwild, triwild, simwild, topological_offset and isotropic_remeshing, `surface`, `edges` and
 `offset` share the `mesh` vertex rows: their connectivity indexes the same `V`, with the same
@@ -217,6 +222,15 @@ mesh; `history::SurfaceHistory::from_bytes` and `history::CurveHistory::from_byt
 and `history::face_size(bytes)` says which they hold (3 corners a face, or 2). The history file
 is its own format, not a mesh.
 
+tetwild and simwild in 3D also record the volume around the tracked surface with
+`volume_history_output` (which needs `history_output`). The memory route returns it the same
+way, as `volume_history` in the report, the bytes of its file, and writes no file; with it the
+meshes the volume history names its points by, as output meshes: `history_input`, where it
+starts, and tetwild's `history_output`, the mesh before its filter, where it ends (simwild's
+ends at `mesh`). `read_history` and `write_history` take a volume history by its header as they
+take the others; `history::VolumeHistory::from_bytes` loads it and `history::is_volume_history`
+says that bytes are one.
+
 `tracking` takes the bytes as `history` on the memory route, where a string is refused, as
 every memory call refuses to take a name for a file. `info` returns its report, of a surface or
 of a curve history. `features`, on a curve history, returns its feature points in the report:
@@ -228,10 +242,15 @@ surface as `mesh`, the carried fields as triangle attributes, per face or, for `
 `normal`, three values per corner (`uv`: six columns), with `input_face` (Int64), the input face
 each output face comes from. With `tet_mesh`, the tet mesh the history ends at, it also returns
 that mesh as `tet_mesh` with the fields on the rows of its triangle block: a tracked face already
-there (a face tag) on its row, any other on a row added after them. `map`, whose points are text
-files, is refused on the memory route: points are mapped in memory by `Tracking` and
-`CurveTracking` (`components/tracking/.../tracking.hpp`), in Python `wm.Tracking` and
-`wm.CurveTracking`.
+there (a face tag) on its row, any other on a row added after them. `volume` takes the volume
+history's bytes as `volume_history` -- a string is refused there too -- and, to sample points
+near the tracked surface and check where they land, `tet_mesh` and `output_tet_mesh`, keys of
+the meshes given (a producer's `history_input`, and its `mesh` or `history_output`); its report
+holds what the file route logs (`stats`, `round_trip`, `regions_kept`, ...). `map` and
+`map_volume`, whose points are text files, are refused on the memory route: points are mapped
+in memory by `Tracking`, `CurveTracking` and `VolumeTracking`
+(`components/tracking/.../tracking.hpp`), in Python `wm.Tracking`, `wm.CurveTracking` and
+`wm.VolumeTracking`.
 
 In Python the history is `bytes`: the bindings return a report's binary values as `bytes`, and
 pass `bytes` in the options as binary values (pybind11_json alone would make them base64 text).
@@ -248,12 +267,28 @@ ids, bary = t.to_output(faces, bary)      # int64 (n,), float64 (n, 3): points o
 faces, bary = t.to_input(ids, bary)       # and back; -1 (and NaN) for a point with no image
 ```
 
+A volume history maps the same way, with the surface history it was recorded with and the two
+meshes, as a memory call returns them:
+
+```python
+outputs, report = wm.tetwild(
+    {"input": "surface", "history_output": "x", "volume_history_output": "y"}, {"surface": s})
+v = wm.VolumeTracking(report["history"], report["volume_history"],
+                      outputs["history_input"], outputs["history_output"])
+tets, bary = v.to_output(tets, bary)      # int64 (n,), float64 (n, 4): -1 and NaN for no tet
+xyz, region = v.map_positions(xyz)        # float64 (n, 3); direction="to_input", regions=...
+```
+
+`wm.VolumeTracking(history, volume_history)` maps positions only, and
+`wm.VolumeTracking.load(...)` takes the four files instead.
+
 `wm.CurveTracking` does the same for a curve history: segments of the input curve files `(n,)`
 and coordinates `(n, 2)` to two vertices of the output mesh `(n, 2)`, and back, and
 `feature_points()`. Ids are `(n,)` faces or segments, or `(n, 3)` / `(n, 2)` vertices on a side
 named by a mesh's vertices (`output_by_vertices`, `input_by_vertices`); `warnings=True` adds the
 call's warnings as a third element. Building a map holds the process-wide lock, as its loading
-logs; mapping releases the GIL and changes nothing, so threads may share one object.
+logs; mapping releases the GIL and changes nothing -- a `VolumeTracking` only the operation maps
+it keeps, under a lock of its own -- so threads may share one object.
 `docs/tracking.md` has the details.
 
 ## Shared file utilities

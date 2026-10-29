@@ -1,5 +1,7 @@
 #include "tracking.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 #include <algorithm>
 
 namespace wmtk::components::tracking {
@@ -293,6 +295,156 @@ nlohmann::json warnings_report(const CurveMapWarnings& w)
         {"overlapping", w.overlapping},
         {"unlocated", w.unlocated},
         {"replaced", w.replaced}};
+}
+
+nlohmann::json stats_report(const VolumeMapStats& s)
+{
+    return {
+        {"built", s.built},
+        {"failed", s.failed},
+        {"failures", s.failures},
+        {"real_pairs", s.real_pairs},
+        {"fallback_pairs", s.fallback_pairs},
+        {"decompositions", s.decompositions},
+        {"surface_not_kept", s.surface_not_kept},
+        {"inverted_ops", s.inverted_ops},
+        {"region_changed", s.region_changed},
+        {"through_failed", s.through_failed},
+        {"kept", s.kept},
+        {"kept_bytes", s.kept_bytes}};
+}
+
+VolumeTracking::VolumeTracking(
+    const history::SurfaceHistory& surface,
+    history::VolumeHistory volume,
+    const MeshData& input_mesh,
+    const MeshData& output_mesh,
+    const VolumeMapOptions& options)
+    : VolumeTracking(surface, std::move(volume), options)
+{
+    m_in.emplace(std::make_shared<const TetMeshData>(tet_mesh_data(input_mesh)));
+    m_out.emplace(std::make_shared<const TetMeshData>(tet_mesh_data(output_mesh)));
+}
+
+VolumeTracking::VolumeTracking(
+    const history::SurfaceHistory& surface,
+    history::VolumeHistory volume,
+    const VolumeMapOptions& options)
+    : m_map(std::make_shared<const VolumeMap>(surface, std::move(volume), options))
+{}
+
+VolumeTracking VolumeTracking::load(
+    const std::string& surface_history,
+    const std::string& volume_history,
+    const std::string& input_mesh,
+    const std::string& output_mesh,
+    const VolumeMapOptions& options)
+{
+    return VolumeTracking(
+        history::SurfaceHistory::load(surface_history),
+        history::VolumeHistory::load(volume_history),
+        read_tet_mesh(input_mesh),
+        read_tet_mesh(output_mesh),
+        options);
+}
+
+const TetMeshData& VolumeTracking::input_mesh() const
+{
+    if (!m_in) log_and_throw_error("VolumeTracking: made without meshes, it has no input mesh");
+    return m_in->mesh();
+}
+
+const TetMeshData& VolumeTracking::output_mesh() const
+{
+    if (!m_out) log_and_throw_error("VolumeTracking: made without meshes, it has no output mesh");
+    return m_out->mesh();
+}
+
+std::vector<VolumePoint> VolumeTracking::map_positions(
+    const std::vector<Eigen::Vector3d>& positions,
+    const bool forward,
+    const std::vector<uint32_t>& regions) const
+{
+    if (!regions.empty() && regions.size() != positions.size()) {
+        log_and_throw_error(
+            "VolumeTracking::map_positions: {} regions for {} positions",
+            regions.size(),
+            positions.size());
+    }
+    std::vector<VolumePoint> pts(positions.size());
+    for (size_t i = 0; i < positions.size(); ++i) {
+        pts[i].position = positions[i];
+        if (!regions.empty()) pts[i].region = regions[i];
+    }
+    return forward ? m_map->to_output(std::move(pts)) : m_map->to_input(std::move(pts));
+}
+
+std::vector<TetPoint> VolumeTracking::to_output(const std::vector<TetPoint>& points) const
+{
+    return map_points(points, true);
+}
+
+std::vector<TetPoint> VolumeTracking::to_input(const std::vector<TetPoint>& points) const
+{
+    return map_points(points, false);
+}
+
+std::vector<TetPoint> VolumeTracking::map_points(
+    const std::vector<TetPoint>& points,
+    const bool forward) const
+{
+    if (!has_meshes()) {
+        log_and_throw_error(
+            "VolumeTracking: tet points need the meshes; map_positions() maps "
+            "positions without them");
+    }
+    const TetMeshData& from = forward ? input_mesh() : output_mesh();
+    const TetMeshData& to = forward ? output_mesh() : input_mesh();
+    const TetLocator& locate = forward ? *m_out : *m_in;
+    // A point of no tet, or with coordinates that are not numbers, is left without a position,
+    // which the map passes by, and comes back with no tet.
+    const auto valid = [&](const TetPoint& p) {
+        return p.tet < from.tets.size() && p.bary.allFinite();
+    };
+    std::vector<VolumePoint> pts(points.size());
+    for (size_t i = 0; i < points.size(); ++i) {
+        if (!valid(points[i])) continue;
+        const auto& t = from.tets[points[i].tet];
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += points[i].bary[k] * from.vertices[t[k]];
+        pts[i].position = x;
+        // its region, by the labels of the groups the file lists its tet in; else the region
+        // of the tet the map finds it in
+        const auto r = m_map->region_of_groups(from.group_sets[from.groups[points[i].tet]]);
+        if (r) pts[i].region = *r;
+    }
+    const auto there = forward ? m_map->to_output(pts) : m_map->to_input(pts);
+    // The region of each set of groups the other mesh lists tets in.
+    std::vector<uint32_t> region_of_set;
+    for (const auto& g : to.group_sets) {
+        region_of_set.push_back(m_map->region_of_groups(g).value_or(VolumePoint::kAnyRegion));
+    }
+    std::vector<TetPoint> out(points.size());
+    for (size_t i = 0; i < points.size(); ++i) {
+        if (!valid(points[i])) continue;
+        // a tet of the region the point ended in, else of a set of groups with its tet's names,
+        // else any holding it
+        std::optional<uint32_t> g;
+        if (there[i].region != VolumePoint::kAnyRegion) {
+            const auto it = std::find(region_of_set.begin(), region_of_set.end(), there[i].region);
+            if (it != region_of_set.end()) g = uint32_t(it - region_of_set.begin());
+        }
+        if (!g) {
+            const auto& names = from.group_sets[from.groups[points[i].tet]];
+            const auto it = std::find(to.group_sets.begin(), to.group_sets.end(), names);
+            if (it != to.group_sets.end()) g = uint32_t(it - to.group_sets.begin());
+        }
+        const auto [t, b] =
+            g ? locate.locate(there[i].position, *g) : locate.locate(there[i].position);
+        if (t < 0) continue;
+        out[i] = {uint64_t(t), b};
+    }
+    return out;
 }
 
 } // namespace wmtk::components::tracking
