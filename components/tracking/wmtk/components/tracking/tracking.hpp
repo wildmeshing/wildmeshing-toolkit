@@ -234,6 +234,9 @@ private:
 /// A map's warnings as a report holds them: each count by its name, and their total.
 nlohmann::json warnings_report(const MapWarnings& w);
 nlohmann::json warnings_report(const CurveMapWarnings& w);
+/// A volume map's stats as a report holds them: each count by its name, the failures' reasons
+/// with their counts.
+nlohmann::json stats_report(const VolumeMapStats& s);
 
 /// A point of a tet mesh file: one of its tets -- the rows io::read_mesh gives (TetMeshData) --
 /// and barycentric coordinates with respect to its corners in file order.
@@ -325,9 +328,11 @@ void tracking(nlohmann::json json_params);
  * needs, and returns the output surface as "mesh", the carried fields as triangle attributes;
  * with `tet_mesh`, also a key of `meshes`, that mesh with the fields on its tracked surface as
  * "tet_mesh" (add_surface). features, on a curve history, returns the feature points in the
- * report, as feature_points: pairs of an input and an output vertex, -1 for none. map, whose
- * points are text files, throws: Tracking and CurveTracking map points in memory. So do volume
- * and map_volume, whose volume histories and tet meshes are files.
+ * report, as feature_points: pairs of an input and an output vertex, -1 for none. volume takes
+ * `volume_history`, the bytes of a volume history (report["volume_history"]), and `tet_mesh`
+ * and `output_tet_mesh`, keys of `meshes` (the producer's history_input and mesh or
+ * history_output), and returns its report. map and map_volume, whose points are text files,
+ * throw: Tracking, CurveTracking and VolumeTracking map points in memory.
  */
 ComponentResult tracking(nlohmann::json json_params, const MeshMap& meshes);
 

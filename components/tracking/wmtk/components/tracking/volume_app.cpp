@@ -75,31 +75,40 @@ double percentile(std::vector<double> x, const double p)
 
 } // namespace
 
-void volume_info(
+nlohmann::json volume_info(
     const history::SurfaceHistory& h,
-    const nlohmann::json& json_params,
-    const std::filesystem::path& root)
+    history::VolumeHistory volume,
+    const MeshData* tet_mesh,
+    const MeshData* output_tet_mesh,
+    const size_t n)
 {
-    using wmtk::utils::resolve_path;
     igl::Timer timer;
     timer.start();
-    const VolumeMap map = load_map(h, json_params, root);
+    logger().info(
+        "{} operations around the tracked surface, {} regions",
+        volume.edits.size(),
+        volume.regions.size());
+    nlohmann::json report;
+    report["operations"] = volume.edits.size();
+    report["regions"] = volume.regions;
+    const VolumeMap map(h, std::move(volume));
+    report["build_time_sec"] = timer.getElapsedTimeInSec();
     logger().info(
         "surface map and tracked faces in {:.3}s; memory {} MB",
         timer.getElapsedTimeInSec(),
         getCurrentRSS() >> 20);
-    const std::string tet_mesh = json_params["tet_mesh"];
-    const std::string output_tet_mesh = json_params["output_tet_mesh"];
-    if (tet_mesh.empty()) {
+    if (tet_mesh == nullptr) {
         timer.start();
         map.build_all();
         logger().info("every operation's map built in {:.3}s", timer.getElapsedTimeInSec());
         log_stats(map);
-        return;
+        report["build_all_time_sec"] = timer.getElapsedTimeInSec();
+        report["stats"] = stats_report(map.stats());
+        return report;
     }
     // Points near the tracked surface of the mesh the history starts from: in the tets with a
     // vertex on a face between two regions, by volume, at random barycentric coordinates.
-    const TetMeshData in = read_tet_msh(resolve_path(root, tet_mesh).string());
+    const TetMeshData in = tet_mesh_data(*tet_mesh);
     std::vector<std::pair<std::array<uint64_t, 3>, size_t>> face_tets;
     face_tets.reserve(4 * in.tets.size());
     for (size_t t = 0; t < in.tets.size(); ++t) {
@@ -152,15 +161,13 @@ void volume_info(
         vol.push_back(
             std::abs((P[T[1]] - P[T[0]]).dot((P[T[2]] - P[T[0]]).cross(P[T[3]] - P[T[0]]))));
     }
-    if (at_surface.empty())
-        log_and_throw_error("{} has no tracked surface to sample near", tet_mesh);
+    if (at_surface.empty()) log_and_throw_error("tet_mesh has no tracked surface to sample near");
     Eigen::Vector3d lo = in.vertices[0], hi = lo;
     for (const auto& v : in.vertices) {
         lo = lo.cwiseMin(v);
         hi = hi.cwiseMax(v);
     }
     const double diag = (hi - lo).norm();
-    const size_t n = json_params["samples"];
     std::mt19937 rng(1);
     std::discrete_distribution<size_t> pick(vol.begin(), vol.end());
     std::uniform_real_distribution<double> u(0, 1);
@@ -189,9 +196,8 @@ void volume_info(
     size_t moved = 0, kept = 0, located = 0;
     std::shared_ptr<const TetMeshData> out;
     std::optional<TetLocator> loc;
-    if (!output_tet_mesh.empty()) {
-        out = std::make_shared<const TetMeshData>(
-            read_tet_msh(resolve_path(root, output_tet_mesh).string()));
+    if (output_tet_mesh != nullptr) {
+        out = std::make_shared<const TetMeshData>(tet_mesh_data(*output_tet_mesh));
         loc.emplace(out);
     }
     for (size_t i = 0; i < n; ++i) {
@@ -216,6 +222,8 @@ void volume_info(
         disp.push_back(d);
     }
     log_stats(map);
+    const size_t nonpositive =
+        std::count_if(det.begin(), det.end(), [](double x) { return x <= 0; });
     logger().info(
         "{} points near the tracked surface, {} moved; forward {:.3}s, back {:.3}s",
         n,
@@ -229,7 +237,7 @@ void volume_info(
         percentile(conf, 99),
         percentile(conf, 100),
         percentile(det, 1),
-        std::count_if(det.begin(), det.end(), [](double x) { return x <= 0; }),
+        nonpositive,
         percentile(disp, 99),
         percentile(disp, 100));
     if (loc) logger().info("regions kept: {} of {} ({} located in the output)", kept, n, located);
@@ -237,6 +245,24 @@ void volume_info(
         "round trip / bbox diagonal: p99 {:.2g} max {:.2g}",
         percentile(trip, 99),
         percentile(trip, 100));
+    report["stats"] = stats_report(map.stats());
+    report["samples"] = n;
+    report["moved"] = moved;
+    report["to_output_time_sec"] = t_forward;
+    report["to_input_time_sec"] = t_back;
+    report["conformal"] = {
+        {"p50", percentile(conf, 50)},
+        {"p99", percentile(conf, 99)},
+        {"max", percentile(conf, 100)}};
+    report["det_j"] = {{"p1", percentile(det, 1)}, {"nonpositive", nonpositive}};
+    // in the bounding-box diagonal of tet_mesh
+    report["displacement"] = {{"p99", percentile(disp, 99)}, {"max", percentile(disp, 100)}};
+    report["round_trip"] = {{"p99", percentile(trip, 99)}, {"max", percentile(trip, 100)}};
+    if (loc) {
+        report["regions_kept"] = kept;
+        report["located"] = located;
+    }
+    return report;
 }
 
 void map_volume_points(

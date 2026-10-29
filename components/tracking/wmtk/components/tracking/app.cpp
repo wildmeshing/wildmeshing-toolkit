@@ -574,6 +574,22 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
             "component's report[\"history\"], or history::read_history / wm.read_history of a "
             "file -- not a file name");
     }
+    // And volume_history the bytes of a volume history, a producer's report["volume_history"].
+    std::vector<uint8_t> volume_history_bytes;
+    if (json_params.contains("volume_history") && json_params["volume_history"].is_binary()) {
+        if (!component_io.memory()) {
+            throw std::runtime_error(
+                "tracking: volume_history is a file on the file route; the bytes of one are "
+                "taken on the memory route");
+        }
+        volume_history_bytes = json_params["volume_history"].get_binary();
+        json_params["volume_history"] = "";
+    } else if (component_io.memory() && json_params.contains("volume_history")) {
+        throw std::runtime_error(
+            "tracking: on the memory route volume_history is the bytes of a volume history -- a "
+            "component's report[\"volume_history\"], or history::read_history / "
+            "wm.read_history of a file -- not a file name");
+    }
     {
         const auto spec = jse::embed::wmtk_tracking_spec::tracking_spec::spec();
         jse::JSE spec_engine;
@@ -583,20 +599,21 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         json_params = spec_engine.inject_defaults(json_params, spec);
     }
     if (component_io.memory()) {
-        // map reads and writes text files of points; in memory, points are mapped through
-        // Tracking and CurveTracking (wm.Tracking and wm.CurveTracking in Python). volume and
-        // map_volume read the volume history and the tet meshes that name its points, files.
+        // map and map_volume read and write text files of points; in memory, points are mapped
+        // through Tracking, CurveTracking and VolumeTracking (wm.Tracking, wm.CurveTracking and
+        // wm.VolumeTracking in Python).
         const std::string op = json_params["operation"];
-        if (op == "map" || op == "volume" || op == "map_volume") {
+        if (op == "map" || op == "map_volume") {
             throw std::runtime_error(
                 "tracking: operation " + op +
-                " reads and writes files; on the memory route only info, transfer and features "
-                "run, and points are mapped through Tracking and CurveTracking (wm.Tracking, "
-                "wm.CurveTracking)");
+                " reads and writes files of points; on the memory route only info, transfer, "
+                "features and volume run, and points are mapped through Tracking, CurveTracking "
+                "and VolumeTracking (wm.Tracking, wm.CurveTracking, wm.VolumeTracking)");
         }
-        // The memory route writes no files: the meshes come back in the result.
+        // The memory route writes no files: the meshes come back in the result. volume's
+        // output_tet_mesh is a mesh given, not one written.
         json_params["output_obj"] = "";
-        json_params["output_tet_mesh"] = "";
+        if (op != "volume") json_params["output_tet_mesh"] = "";
     }
     const std::filesystem::path root = json_params["input_dir"];
     {
@@ -647,7 +664,36 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         return;
     }
     if (json_params["operation"] == "volume") {
-        volume_info(h, json_params, root);
+        // The volume history and the meshes: files on the file route, the bytes and meshes of
+        // the call on the memory route.
+        const std::string volume_path = json_params["volume_history"];
+        if (!component_io.memory() && volume_path.empty()) {
+            log_and_throw_error("volume operations need volume_history");
+        }
+        if (component_io.memory() && volume_history_bytes.empty()) {
+            throw std::runtime_error(
+                "tracking: volume needs volume_history, the bytes of the volume history");
+        }
+        history::VolumeHistory volume =
+            component_io.memory()
+                ? history::VolumeHistory::from_bytes(volume_history_bytes)
+                : history::VolumeHistory::load(resolve_path(root, volume_path).string());
+        std::optional<MeshData> read_in, read_out;
+        const MeshData *in = nullptr, *out = nullptr;
+        const std::string tet_mesh = json_params["tet_mesh"];
+        const std::string output_tet_mesh = json_params["output_tet_mesh"];
+        if (!tet_mesh.empty()) {
+            in = component_io.memory()
+                     ? &component_io.mesh(tet_mesh)
+                     : &read_in.emplace(read_tet_mesh(resolve_path(root, tet_mesh).string()));
+        }
+        if (!output_tet_mesh.empty()) {
+            out = component_io.memory() ? &component_io.mesh(output_tet_mesh)
+                                        : &read_out.emplace(read_tet_mesh(
+                                              resolve_path(root, output_tet_mesh).string()));
+        }
+        component_io.result.second =
+            volume_info(h, std::move(volume), in, out, json_params["samples"]);
         return;
     }
     if (json_params["operation"] == "map_volume") {

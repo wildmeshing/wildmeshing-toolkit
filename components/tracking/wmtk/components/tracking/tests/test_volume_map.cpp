@@ -754,6 +754,59 @@ TEST_CASE("volume-map-app", "[volume_map]")
     for (const auto& p : {points, out}) std::filesystem::remove(p);
 }
 
+TEST_CASE("volume-map-app-memory", "[volume_map]")
+{
+    // volume on the memory route: the bytes of both histories and the meshes of the call, where
+    // the file route reads files; its report says what the log does, on both routes.
+    using Catch::Matchers::ContainsSubstring;
+    const history::SurfaceHistory h = square_history();
+    const history::VolumeHistory v = square_volume(h);
+    const MeshMap meshes{{"start", square_mesh(v, false)}, {"end", square_mesh(v, true)}};
+    const nlohmann::json base = {
+        {"history", nlohmann::json::binary(h.to_bytes())},
+        {"volume_history", nlohmann::json::binary(v.to_bytes())},
+        {"operation", "volume"},
+        {"samples", 50}};
+    nlohmann::json j = base;
+    j["tet_mesh"] = "start";
+    j["output_tet_mesh"] = "end";
+    const auto [outputs, report] = components::tracking::tracking(j, meshes);
+    CHECK(outputs.empty());
+    CHECK(report.at("operations") == 1);
+    CHECK(report.at("samples") == 50);
+    CHECK(report.at("stats").at("built") == 1);
+    CHECK(report.at("stats").at("failed") == 0);
+    CHECK(report.at("moved").get<size_t>() > 0);
+    CHECK(report.at("det_j").at("nonpositive") == 0);
+    CHECK(report.at("located") == 50);
+    CHECK(report.at("regions_kept") == 50);
+    CHECK(report.at("round_trip").at("max").get<double>() < 1e-12);
+    // Without the meshes, every operation's map is built.
+    const nlohmann::json built = components::tracking::tracking(base, {}).second;
+    CHECK(built.at("stats").at("built") == 1);
+    CHECK_FALSE(built.contains("samples"));
+
+    // The memory route takes the bytes, not a file name, and meshes it is given; the file route
+    // takes files.
+    j["volume_history"] = "square.wmtkvol";
+    CHECK_THROWS_WITH(
+        components::tracking::tracking(j, meshes),
+        ContainsSubstring("not a file name"));
+    j = base;
+    j["tet_mesh"] = "elsewhere";
+    CHECK_THROWS_WITH(
+        components::tracking::tracking(j, meshes),
+        ContainsSubstring("Unknown input mesh"));
+    const SquareFiles files;
+    CHECK_THROWS_WITH(
+        components::tracking::tracking(
+            {{"application", "tracking"},
+             {"history", files.surface},
+             {"volume_history", base.at("volume_history")},
+             {"operation", "volume"}}),
+        ContainsSubstring("volume_history is a file on the file route"));
+}
+
 TEST_CASE("volume-region-labels", "[volume_map]")
 {
     // A tet's groups are the labels io::collect_tags gives the tags: two named alike become

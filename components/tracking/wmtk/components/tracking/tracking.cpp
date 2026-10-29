@@ -297,6 +297,22 @@ nlohmann::json warnings_report(const CurveMapWarnings& w)
         {"replaced", w.replaced}};
 }
 
+nlohmann::json stats_report(const VolumeMapStats& s)
+{
+    return {
+        {"built", s.built},
+        {"failed", s.failed},
+        {"failures", s.failures},
+        {"real_pairs", s.real_pairs},
+        {"fallback_pairs", s.fallback_pairs},
+        {"decompositions", s.decompositions},
+        {"surface_not_kept", s.surface_not_kept},
+        {"region_changed", s.region_changed},
+        {"through_failed", s.through_failed},
+        {"kept", s.kept},
+        {"kept_bytes", s.kept_bytes}};
+}
+
 VolumeTracking::VolumeTracking(
     const history::SurfaceHistory& surface,
     history::VolumeHistory volume,

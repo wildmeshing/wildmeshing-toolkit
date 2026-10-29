@@ -126,7 +126,7 @@ class Tracking(unittest.TestCase):
         self.assertTrue((pairs[:, 1] >= 0).all())
         self.assertTrue((pairs[:, 1] < len(outputs["mesh"]["V"])).all())
         self.assertEqual([p.name for p in Path.cwd().iterdir()], ["curves.wmtkhist"])
-        with self.assertRaisesRegex(RuntimeError, "only info, transfer and features"):
+        with self.assertRaisesRegex(RuntimeError, "only info, transfer, features and volume"):
             getattr(wm, TRACKING)({"history": history, "operation": "map"}, {})
 
     def test_write_and_read_history(self):
@@ -216,7 +216,7 @@ class Tracking(unittest.TestCase):
             tracking({"history": "h.wmtkhist", "operation": "info"}, {})
         with self.assertRaisesRegex(RuntimeError, "needs input"):
             tracking({"history": history, "operation": "transfer"}, {"in": self.labelled()})
-        with self.assertRaisesRegex(RuntimeError, "only info, transfer and features"):
+        with self.assertRaisesRegex(RuntimeError, "only info, transfer, features and volume"):
             tracking({"history": history, "operation": "map"}, {})
         self.assertEqual([p.name for p in Path.cwd().iterdir()], ["h.wmtkhist"])
 

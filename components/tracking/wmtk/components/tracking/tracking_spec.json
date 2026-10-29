@@ -89,7 +89,7 @@
       "map_volume"
     ],
     "default": "info",
-    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids (segment midpoints, for curves) move when mapped to the input and back. transfer (surfaces): carry every field of `input`'s triangles onto the output surface and write it to `output` (on the memory route: return it as mesh). map: map the points of the file `points` to the output (direction to_output) or back to the input (to_input), and write them to `output_points`; file route only. features (curves): write the input's feature points -- curve ends, junctions, input points -- to `output_points`, one `input_vertex output_vertex` per line: a vertex of the input files (the curve files' vertices, in order, then the point files', from 0) and the output vertex it ended at, -1 for none; on the memory route the report holds them instead, as feature_points, a list of such pairs. volume (tet meshes): build the map of the volume from volume_history, and check it on `samples` points near the tracked surface of tet_mesh (the mesh the history starts from, <output>_history_input.msh): how far they move, the map's conformal distortion and Jacobian there, whether they end in the same region of output_tet_mesh, and how close the inverse brings them back. Without tet_mesh, every operation's map is built. map_volume: map the points of `points` through the volume, to the output (direction to_output) or back (to_input), and write them to output_points: `x y z` per line, written back with the tags of their region; or `tet b0 b1 b2 b3`, a tet of tet_mesh (to_output) or output_tet_mesh (to_input) -- the tets of the file, each once, in the order it first lists them -- and barycentric coordinates in its corners' order, written back as a tet of the other mesh, of the point's own region, -1 for none."
+    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids (segment midpoints, for curves) move when mapped to the input and back. transfer (surfaces): carry every field of `input`'s triangles onto the output surface and write it to `output` (on the memory route: return it as mesh). map: map the points of the file `points` to the output (direction to_output) or back to the input (to_input), and write them to `output_points`; file route only. features (curves): write the input's feature points -- curve ends, junctions, input points -- to `output_points`, one `input_vertex output_vertex` per line: a vertex of the input files (the curve files' vertices, in order, then the point files', from 0) and the output vertex it ended at, -1 for none; on the memory route the report holds them instead, as feature_points, a list of such pairs. volume (tet meshes): build the map of the volume from volume_history, and check it on `samples` points near the tracked surface of tet_mesh (the mesh the volume history starts from: <output>_history_input.msh, the output mesh history_input on the memory route): how far they move, the map's conformal distortion and Jacobian there, whether they end in the same region of output_tet_mesh (the mesh it ends at: simwild's <output>.msh, tetwild's <output>_history_output.msh -- on the memory route the output meshes mesh and history_output), and how close the inverse brings them back; the report holds what it finds. Without tet_mesh, every operation's map is built. map_volume: map the points of `points` through the volume, to the output (direction to_output) or back (to_input), and write them to output_points: `x y z` per line, written back with the tags of their region; or `tet b0 b1 b2 b3`, a tet of tet_mesh (to_output) or output_tet_mesh (to_input) -- a row of the file's tets, as io::read_mesh (wm.read_mesh) gives them -- and barycentric coordinates in its corners' order, written back as a tet of the other mesh, of the point's own region, -1 for none; file route only."
   },
   {
     "pointer": "/log_file",
@@ -101,13 +101,13 @@
     "pointer": "/tet_mesh",
     "type": "string",
     "default": "",
-    "doc": "transfer: the tet mesh (gmsh) the history's application wrote, whose tracked surface is where the history ends. With output_tet_mesh, the fields are written onto it: a copy of it, with the tracked surface as rows of its triangle block, on its own vertices by the ids the history saved, carrying the fields. A tracked face the block has already (a face tag of simwild's) takes the fields on its row; the others are rows added after them. A row that is no tracked face gets 0, and input_face -1. volume: the tet mesh the history starts from, sampled near its tracked surface."
+    "doc": "transfer: the tet mesh (gmsh) the history's application wrote, whose tracked surface is where the history ends. With output_tet_mesh, the fields are written onto it: a copy of it, with the tracked surface as rows of its triangle block, on its own vertices by the ids the history saved, carrying the fields. A tracked face the block has already (a face tag of simwild's) takes the fields on its row; the others are rows added after them. A row that is no tracked face gets 0, and input_face -1. volume: the tet mesh the volume history starts from, sampled near its tracked surface; on the memory route the key of a mesh given."
   },
   {
     "pointer": "/output_tet_mesh",
     "type": "string",
     "default": "",
-    "doc": "transfer: where to write tet_mesh with the fields on its tracked surface. On the memory route tet_mesh is the key of a mesh, and the result is returned as tet_mesh; nothing is written. volume: the output tet mesh, read to check each sampled point ends in its region."
+    "doc": "transfer: where to write tet_mesh with the fields on its tracked surface. On the memory route tet_mesh is the key of a mesh, and the result is returned as tet_mesh; nothing is written. volume: the tet mesh the volume history ends at, which each sampled point is checked to end in its region of; on the memory route the key of a mesh given."
   },
   {
     "pointer": "/points",
@@ -153,7 +153,7 @@
     "pointer": "/volume_history",
     "type": "string",
     "default": "",
-    "doc": "volume, map_volume: the volume history (an application's volume_history_output) recorded with `history`, the surface history."
+    "doc": "volume, map_volume: the volume history (an application's volume_history_output) recorded with `history`, the surface history. On the file route the file it wrote, on the memory route the bytes it returned in its report as volume_history (a JSON binary value, bytes in Python; wm.read_history reads them from a file)."
   },
   {
     "pointer": "/samples",
