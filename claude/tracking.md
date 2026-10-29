@@ -357,8 +357,9 @@ verified, a `replace_faces` otherwise.
 (`m_is_surface_fs`, and the vertices with a feature point id) and adds
 `record_curve_history(metadata, sources)` and `save_curve_history(path, input)`, as
 `TetOptimizerMesh` does for surfaces: `save` resyncs, checks the feature points against the
-mesh's, fills `output_vertex_ids` (the mesh's vertex ids, which `write_msh_groups` writes in
-order), and saves the chain from the input files.
+mesh's, fills `output_vertex_ids` (the mesh's vertex ids: after the last consolidation, the
+vertex rows of the output mesh, which the file route writes with `io::write_mesh` and the memory
+route returns), and saves the chain from the input files.
 
 ## From the input files: the chain
 
