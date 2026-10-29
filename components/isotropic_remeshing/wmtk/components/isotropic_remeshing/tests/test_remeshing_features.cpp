@@ -179,6 +179,26 @@ TEST_CASE("features-ids-through-split-and-collapse", "[test_remeshing][features]
         m.create_mesh(c.V.size(), c.F);
         m.set_feature_edges(c.edges, c.ids);
         m.set_fixed_vertices(c.fixed);
+        // A label each side of the curve, which is their boundary: every face keeps the label of
+        // its side, however the threads split the work.
+        const auto side = [&m](const IsotropicRemeshing::Tuple& f) {
+            const auto vs = m.oriented_tri_vids(f);
+            double y = 0;
+            for (const size_t v : vs) y += m.vertex_attrs.at(v).pos.y() / 3;
+            return y > 4 ? 1. : 0.;
+        };
+        {
+            std::vector<std::vector<double>> labels;
+            for (const auto& f : m.get_faces()) labels.push_back({side(f)});
+            m.set_face_fields(labels);
+        }
+        const auto check_labels = [&]() {
+            size_t wrong = 0;
+            for (const auto& f : m.get_faces()) {
+                wrong += m.face_field_attrs.at(f.fid(m)).values != std::vector<double>{side(f)};
+            }
+            CHECK(wrong == 0);
+        };
         check_curve_on_grid(m);
 
         m.split_remeshing(0.4);
@@ -192,6 +212,7 @@ TEST_CASE("features-ids-through-split-and-collapse", "[test_remeshing][features]
         // Whole iterations, and the consolidation renumbering everything.
         m.uniform_remeshing(1.5, 2);
         check_curve_on_grid(m);
+        check_labels();
     }
 }
 
@@ -284,6 +305,45 @@ TEST_CASE("features-junction-where-ids-change", "[test_remeshing][features]")
         m.feature_edge_id(junction, nbrs[0]),
         m.feature_edge_id(junction, nbrs[1])};
     CHECK(ids == std::set<int64_t>{7, 9});
+}
+
+TEST_CASE("features-tube-keeps-a-bent-curve", "[test_remeshing][features]")
+{
+    // An L-shaped curve in a flat grid, its corner at (4, 4) inside the curve: smoothing slides
+    // the corner towards its neighbours' midpoint, and a collapse along the curve leaves a chord
+    // across it, both within the plane, so the surface envelope holds nothing. Only the tube
+    // keeps the curve where it was.
+    std::vector<Eigen::Vector3d> V;
+    std::vector<std::array<size_t, 3>> F;
+    grid(8, V, F);
+    std::vector<Edge> curve;
+    for (int i = 0; i < 4; ++i) curve.push_back({{size_t(i * 9 + 4), size_t((i + 1) * 9 + 4)}});
+    for (int j = 4; j < 8; ++j) curve.push_back({{size_t(4 * 9 + j), size_t(4 * 9 + j + 1)}});
+    // How far `p` is from the L: (0, 4) to (4, 4) to (4, 8).
+    const auto off = [](const Eigen::Vector3d& p) {
+        const double along_x = std::hypot(p.x() - std::clamp(p.x(), 0., 4.), p.y() - 4);
+        const double along_y = std::hypot(p.x() - 4, p.y() - std::clamp(p.y(), 4., 8.));
+        return std::min(along_x, along_y);
+    };
+    const double eps = 0.01;
+    for (const bool tube : {false, true}) {
+        INFO("tube " << tube);
+        IsotropicRemeshing m(V, 0);
+        m.create_mesh(V.size(), F, {}, true, eps);
+        m.set_feature_edges(curve);
+        if (tube) m.set_feature_envelope(eps);
+        m.uniform_remeshing(1.2, 3);
+        REQUIRE(m.check_mesh_connectivity_validity());
+        double far = 0;
+        for (const auto& e : m.feature_edges()) {
+            far = std::max({far, off(m.vertex_attrs[e[0]].pos), off(m.vertex_attrs[e[1]].pos)});
+        }
+        if (tube) {
+            CHECK(far <= eps);
+        } else {
+            CHECK(far > 0.1);
+        }
+    }
 }
 
 TEST_CASE("features-seam-kept", "[test_remeshing][features]")
