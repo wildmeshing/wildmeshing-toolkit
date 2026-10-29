@@ -96,10 +96,33 @@ std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>band_cancels</b> = false</td></tr>
 <tr class="memdesc:a84fb857e462b0884fc921fcd8f7ef14d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5268efd474e7348e2ee975ea1d1a4504">band_term_cancels()</a> for v1's ring: both sums leave the band term out. <br /></td></tr>
 <tr class="separator:a84fb857e462b0884fc921fcd8f7ef14d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a289c85e18de9bf5c6300cf9960d94567" id="r_a289c85e18de9bf5c6300cf9960d94567"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; Vector3d, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_collapse_volume.html#a289c85e18de9bf5c6300cf9960d94567">swept_faces</a></td></tr>
+<tr class="separator:a289c85e18de9bf5c6300cf9960d94567"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6326853de60d679c3d7bc7ec29ae99e4" id="r_a6326853de60d679c3d7bc7ec29ae99e4"><td class="memItemLeft" align="right" valign="top"><a id="a6326853de60d679c3d7bc7ec29ae99e4" name="a6326853de60d679c3d7bc7ec29ae99e4"></a>
+Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>swept_x1</b> = Vector3d::Zero()</td></tr>
+<tr class="separator:a6326853de60d679c3d7bc7ec29ae99e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1f6de360de6927e33e34fcdcaa9fde1" id="r_ae1f6de360de6927e33e34fcdcaa9fde1"><td class="memItemLeft" align="right" valign="top"><a id="ae1f6de360de6927e33e34fcdcaa9fde1" name="ae1f6de360de6927e33e34fcdcaa9fde1"></a>
+Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>swept_x2</b> = Vector3d::Zero()</td></tr>
+<tr class="separator:ae1f6de360de6927e33e34fcdcaa9fde1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The collapse energy rule's before half (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90b1522f1d7a2516ddd1eeb90d92ecf8">collapse_before_vertex()</a>), compared by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa09e98dd93a496cb75c932a9b0a59e83">collapse_after_connectivity()</a>. The cells a collapse changes are v1's ring (removed, or given v2 in place of v1): <code>before</code> is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af27b53e59185c568a95b4a378ed8ac85" title="The sum of tet_energy() over tids, in their order: what every rule compares.">tet_energy_sum()</a> over it. v2's other cells keep their slots, corners and labels and so their energy, and are left out of both sums (<code>v2_only</code>, their sorted tids), so the two sums differ by the changed cells alone, with no summation noise. </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a289c85e18de9bf5c6300cf9960d94567" name="a289c85e18de9bf5c6300cf9960d94567"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a289c85e18de9bf5c6300cf9960d94567">&#9670;&#160;</a></span>swept_faces</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::array&lt;Vector3d, 2&gt; &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::CollapseVolume::swept_faces</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>"exact_swept": v1's boundary faces of B (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a828e5e3cbc37cae1b30b8177c03643f7">band_swept_faces()</a>) and the two positions, taken on the mesh before; the change is integrated in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa09e98dd93a496cb75c932a9b0a59e83">collapse_after_connectivity()</a>, for the collapses that pass the engine's tests &ndash; MEASURED (on main, mac-mini, the screw piece 15, turn 1, 2026-10-22): integrated here, before the inversion test that refuses most attempts, the collapse pass took 35.0 s against "exact"'s 3.6 s. </p>
+
+</div>
+</div>
 <a id="a49469d417a6b152c6318343ca1384792" name="a49469d417a6b152c6318343ca1384792"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a49469d417a6b152c6318343ca1384792">&#9670;&#160;</a></span>tie</h2>
 

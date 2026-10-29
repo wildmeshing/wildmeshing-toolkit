@@ -38,5 +38,6 @@ var searchData=
   ['surface_5fedges_35',['surface_edges',['../structwmtk_1_1_tri_optimizer_mesh_1_1_collapse_info_cache.html#a154ea7834ca028b24f253d2545df7df1',1,'wmtk::TriOptimizerMesh::CollapseInfoCache']]],
   ['surface_5fedit_5foffset_36',['surface_edit_offset',['../structwmtk_1_1history_1_1_volume_history.html#a7dc5e09081f399134c1923c456c53a9c',1,'wmtk::history::VolumeHistory']]],
   ['surface_5ffaces_37',['surface_faces',['../structwmtk_1_1_tet_optimizer_mesh_1_1_collapse_info_cache.html#a46002114e867b96c5155f8a56c217a90',1,'wmtk::TetOptimizerMesh::CollapseInfoCache']]],
-  ['surface_5fnot_5fkept_38',['surface_not_kept',['../structwmtk_1_1components_1_1tracking_1_1_volume_map_stats.html#ae553a0ad0ea4cd53ed8c235752e9e8fa',1,'wmtk::components::tracking::VolumeMapStats']]]
+  ['surface_5fnot_5fkept_38',['surface_not_kept',['../structwmtk_1_1components_1_1tracking_1_1_volume_map_stats.html#ae553a0ad0ea4cd53ed8c235752e9e8fa',1,'wmtk::components::tracking::VolumeMapStats']]],
+  ['swept_5ffaces_39',['swept_faces',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_collapse_volume.html#a289c85e18de9bf5c6300cf9960d94567',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::CollapseVolume']]]
 ];

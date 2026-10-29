@@ -11,5 +11,6 @@ var searchData=
   ['qualitybreakdown_8',['QualityBreakdown',['../structwmtk_1_1components_1_1simwild_1_1_quality_breakdown.html',1,'wmtk::components::simwild']]],
   ['qualitygroup_9',['QualityGroup',['../structwmtk_1_1components_1_1simwild_1_1_quality_group.html',1,'wmtk::components::simwild']]],
   ['queue_5fkey_10',['queue_key',['../structwmtk_1_1_execute_pass.html#a5b035627a61838c26a69e2bf4536c8e1',1,'wmtk::ExecutePass']]],
-  ['queuedcount_11',['QueuedCount',['../classwmtk_1_1_execute_pass_1_1_queued_count.html',1,'wmtk::ExecutePass']]]
+  ['queuedcount_11',['QueuedCount',['../classwmtk_1_1_execute_pass_1_1_queued_count.html',1,'wmtk::ExecutePass']]],
+  ['quietcurvedbisector_12',['QuietCurvedBisector',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_quiet_curved_bisector.html',1,'wmtk::components::topological_offset::ExactBandIntegral']]]
 ];

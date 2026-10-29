@@ -28,7 +28,7 @@ var searchData=
   ['smoothingprogress_25',['SmoothingProgress',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smoothing_progress.html',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
   ['smoothoffsetpotential_26',['SmoothOffsetPotential',['../classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html',1,'wmtk::components::topological_offset']]],
   ['smoothrejectcounters_27',['SmoothRejectCounters',['../structwmtk_1_1optimization_1_1_smooth_reject_counters.html',1,'wmtk::optimization']]],
-  ['smoothtrace_28',['smoothtrace',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SmoothTrace']]],
+  ['smoothtrace_28',['smoothtrace',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SmoothTrace'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
   ['smoothvertexoptions_29',['SmoothVertexOptions',['../structwmtk_1_1optimization_1_1_smooth_vertex_options.html',1,'wmtk::optimization']]],
   ['sphere_30',['Sphere',['../classwmtk_1_1components_1_1topological__offset_1_1_sphere.html',1,'wmtk::components::topological_offset']]],
   ['spin_5fmutex_31',['spin_mutex',['../classwmtk_1_1threading_1_1spin__mutex.html',1,'wmtk::threading']]],
@@ -55,5 +55,7 @@ var searchData=
   ['swapinfocache_52',['swapinfocache',['../structwmtk_1_1_tet_optimizer_mesh_1_1_swap_info_cache.html',1,'wmtk::TetOptimizerMesh::SwapInfoCache'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_swap_info_cache.html',1,'wmtk::TriOptimizerMesh::SwapInfoCache']]],
   ['swaprecord_53',['SwapRecord',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_record.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
   ['swapsurfacesides_54',['SwapSurfaceSides',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_surface_sides.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['swaptagcache_55',['SwapTagCache',['../structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_tag_cache.html',1,'wmtk::components::simwild::SimWildMesh']]]
+  ['swaptagcache_55',['SwapTagCache',['../structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_tag_cache.html',1,'wmtk::components::simwild::SimWildMesh']]],
+  ['sweptcounters_56',['SweptCounters',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swept_counters.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['sweptderivcounts_57',['SweptDerivCounts',['../structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_swept_deriv_counts.html',1,'wmtk::components::topological_offset::BandVolumeEnergy3D']]]
 ];

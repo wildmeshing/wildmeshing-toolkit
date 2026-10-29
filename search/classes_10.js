@@ -4,5 +4,6 @@ var searchData=
   ['quadrics_1',['Quadrics',['../structwmtk_1_1components_1_1qslim_1_1_quadrics.html',1,'wmtk::components::qslim']]],
   ['qualitybreakdown_2',['QualityBreakdown',['../structwmtk_1_1components_1_1simwild_1_1_quality_breakdown.html',1,'wmtk::components::simwild']]],
   ['qualitygroup_3',['QualityGroup',['../structwmtk_1_1components_1_1simwild_1_1_quality_group.html',1,'wmtk::components::simwild']]],
-  ['queuedcount_4',['QueuedCount',['../classwmtk_1_1_execute_pass_1_1_queued_count.html',1,'wmtk::ExecutePass']]]
+  ['queuedcount_4',['QueuedCount',['../classwmtk_1_1_execute_pass_1_1_queued_count.html',1,'wmtk::ExecutePass']]],
+  ['quietcurvedbisector_5',['QuietCurvedBisector',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_quiet_curved_bisector.html',1,'wmtk::components::topological_offset::ExactBandIntegral']]]
 ];

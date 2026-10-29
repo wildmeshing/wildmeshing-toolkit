@@ -148,6 +148,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_surface_sides.html">SwapSurfaceSides</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swept_counters.html">SweptCounters</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_tet_split_cache.html">TetSplitCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_vtu_frame.html">VtuFrame</a></td></tr>
@@ -362,6 +364,23 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>loop_group</b> (const
 <tr class="separator:a7cf44fe4ab8f1ac651b98ec63b8b961d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5268efd474e7348e2ee975ea1d1a4504" id="r_a5268efd474e7348e2ee975ea1d1a4504"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5268efd474e7348e2ee975ea1d1a4504">band_term_cancels</a> (const std::vector&lt; size_t &gt; &amp;tids) const</td></tr>
 <tr class="separator:a5268efd474e7348e2ee975ea1d1a4504"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a735812e9a4023bbe1bfcca254937c2d2" id="r_a735812e9a4023bbe1bfcca254937c2d2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a735812e9a4023bbe1bfcca254937c2d2">swept_rule</a> () const</td></tr>
+<tr class="memdesc:a735812e9a4023bbe1bfcca254937c2d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">"exact_swept" (EXACT SWEPT CHANGE).  <br /></td></tr>
+<tr class="separator:a735812e9a4023bbe1bfcca254937c2d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac01045a69297027bfc93d8033f8145e4" id="r_ac01045a69297027bfc93d8033f8145e4"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac01045a69297027bfc93d8033f8145e4">band_swept_change</a> (size_t vid, const Vector3d &amp;x0, const Vector3d &amp;x1, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">ExactBandIntegral::Stats</a> *st=nullptr) const</td></tr>
+<tr class="separator:ac01045a69297027bfc93d8033f8145e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a828e5e3cbc37cae1b30b8177c03643f7" id="r_a828e5e3cbc37cae1b30b8177c03643f7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a828e5e3cbc37cae1b30b8177c03643f7">band_swept_faces</a> (size_t vid, const Vector3d &amp;x0, std::vector&lt; std::array&lt; Vector3d, 2 &gt; &gt; &amp;faces) const</td></tr>
+<tr class="separator:a828e5e3cbc37cae1b30b8177c03643f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a405c79cfd46d5a7406215eb5d9291946" id="r_a405c79cfd46d5a7406215eb5d9291946"><td class="memItemLeft" align="right" valign="top"><a id="a405c79cfd46d5a7406215eb5d9291946" name="a405c79cfd46d5a7406215eb5d9291946"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>band_swept_sum</b> (const Vector3d &amp;x0, const Vector3d &amp;x1, const std::vector&lt; std::array&lt; Vector3d, 2 &gt; &gt; &amp;faces, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">ExactBandIntegral::Stats</a> *st=nullptr) const</td></tr>
+<tr class="separator:a405c79cfd46d5a7406215eb5d9291946"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6961f687f73e4540b846e132204fe24" id="r_af6961f687f73e4540b846e132204fe24"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af6961f687f73e4540b846e132204fe24">band_chain_change</a> (const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;old_band, const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;new_band, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">ExactBandIntegral::Stats</a> *st=nullptr) const</td></tr>
+<tr class="separator:af6961f687f73e4540b846e132204fe24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6cfe9a8380937007c60e26648a3f937c" id="r_a6cfe9a8380937007c60e26648a3f937c"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6cfe9a8380937007c60e26648a3f937c">swap_swept_change</a> (const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;new_band, bool flip)</td></tr>
+<tr class="separator:a6cfe9a8380937007c60e26648a3f937c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a105ee0092deaaf9e3dee47c642ddefa4" id="r_a105ee0092deaaf9e3dee47c642ddefa4"><td class="memItemLeft" align="right" valign="top"><a id="a105ee0092deaaf9e3dee47c642ddefa4" name="a105ee0092deaaf9e3dee47c642ddefa4"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>swept_accept</b> (size_t vid, const std::vector&lt; size_t &gt; &amp;ring, const Vector3d &amp;x0, double amips_before, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swept_counters.html">SweptCounters</a> &amp;c)</td></tr>
+<tr class="separator:a105ee0092deaaf9e3dee47c642ddefa4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05c4e57a97d9f1fd4b69d46aa5bc53d6" id="r_a05c4e57a97d9f1fd4b69d46aa5bc53d6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a05c4e57a97d9f1fd4b69d46aa5bc53d6">smoothing_ring_energy</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;ring, const bool stored) const override</td></tr>
 <tr class="memdesc:a05c4e57a97d9f1fd4b69d46aa5bc53d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">What the shared smoother's projected step compares for a vertex held on a surface: the sum of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7cf44fe4ab8f1ac651b98ec63b8b961d" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">tet_energy()</a> over the one-ring, the rule every other move answers to (under TetWild's rules, m_op_rules, the base's max over the ring). The step takes the first projected position where it is strictly below the sum before the move.  <br /></td></tr>
 <tr class="separator:a05c4e57a97d9f1fd4b69d46aa5bc53d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -386,6 +405,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>tet_energy_sum</b> 
 <tr class="separator:af27b53e59185c568a95b4a378ed8ac85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7109ec8cf596ff6b2b0b01bad75cdcf7" id="r_a7109ec8cf596ff6b2b0b01bad75cdcf7"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7109ec8cf596ff6b2b0b01bad75cdcf7">candidate_energy</a> (const std::array&lt; size_t, 4 &gt; &amp;vids)</td></tr>
 <tr class="separator:a7109ec8cf596ff6b2b0b01bad75cdcf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abebdf87ab8e3dc090e19493086bdff09" id="r_abebdf87ab8e3dc090e19493086bdff09"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abebdf87ab8e3dc090e19493086bdff09">candidate_label</a> (const std::array&lt; size_t, 4 &gt; &amp;vids)</td></tr>
+<tr class="separator:abebdf87ab8e3dc090e19493086bdff09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e4e0808cd96d98265cf7f719692d499" id="r_a2e4e0808cd96d98265cf7f719692d499"><td class="memItemLeft" align="right" valign="top"><a id="a2e4e0808cd96d98265cf7f719692d499" name="a2e4e0808cd96d98265cf7f719692d499"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>global_energy</b> () const</td></tr>
 <tr class="memdesc:a2e4e0808cd96d98265cf7f719692d499"><td class="mdescLeft">&#160;</td><td class="mdescRight">E, the sum of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7cf44fe4ab8f1ac651b98ec63b8b961d" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">tet_energy()</a> over every live tet: the [band volume energy] lines'. <br /></td></tr>
@@ -1763,6 +1784,16 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> 
 <tr class="memitem:a71fe48f398c3cf45060625ece3cef789" id="r_a71fe48f398c3cf45060625ece3cef789"><td class="memItemLeft" align="right" valign="top"><a id="a71fe48f398c3cf45060625ece3cef789" name="a71fe48f398c3cf45060625ece3cef789"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">TetAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_tet_attribute</b></td></tr>
 <tr class="separator:a71fe48f398c3cf45060625ece3cef789"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a029fa074e6ae8d50857713150ee68759" id="r_a029fa074e6ae8d50857713150ee68759"><td class="memItemLeft" align="right" valign="top"><a id="a029fa074e6ae8d50857713150ee68759" name="a029fa074e6ae8d50857713150ee68759"></a>
+<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swept_counters.html">SweptCounters</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_swept_front</b></td></tr>
+<tr class="separator:a029fa074e6ae8d50857713150ee68759"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12cb40f1ff49f3d7d67c974e6aece6f6" id="r_a12cb40f1ff49f3d7d67c974e6aece6f6"><td class="memItemLeft" align="right" valign="top"><a id="a12cb40f1ff49f3d7d67c974e6aece6f6" name="a12cb40f1ff49f3d7d67c974e6aece6f6"></a>
+<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swept_counters.html">SweptCounters</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_swept_nonfront</b></td></tr>
+<tr class="separator:a12cb40f1ff49f3d7d67c974e6aece6f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35753dda1c840cb97c4dd449f7bbbeb0" id="r_a35753dda1c840cb97c4dd449f7bbbeb0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_swept_deriv_counts.html">BandVolumeEnergy3D::SweptDerivCounts</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a35753dda1c840cb97c4dd449f7bbbeb0">m_swept_derivs</a></td></tr>
+<tr class="separator:a35753dda1c840cb97c4dd449f7bbbeb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf31cbd9d6e2338b59528161c9943c68" id="r_acf31cbd9d6e2338b59528161c9943c68"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::pair&lt; size_t, Vector3d &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acf31cbd9d6e2338b59528161c9943c68">m_swept_stored</a></td></tr>
+<tr class="separator:acf31cbd9d6e2338b59528161c9943c68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f2f1d42d22eee339fd91fcf1d73f831" id="r_a1f2f1d42d22eee339fd91fcf1d73f831"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1f2f1d42d22eee339fd91fcf1d73f831">m_band_exact</a></td></tr>
 <tr class="separator:a1f2f1d42d22eee339fd91fcf1d73f831"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af445d39e560f91961e639073416e7ecc" id="r_af445d39e560f91961e639073416e7ecc"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af445d39e560f91961e639073416e7ecc">m_volume_reject_collapse</a> {0}</td></tr>
@@ -2244,6 +2275,8 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>kPock
 <tr class="memitem:a92c9452be0c76f59e64c8a543dff86ad" id="r_a92c9452be0c76f59e64c8a543dff86ad"><td class="memItemLeft" align="right" valign="top"><a id="a92c9452be0c76f59e64c8a543dff86ad" name="a92c9452be0c76f59e64c8a543dff86ad"></a>
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>OFFSET_SURFACE_CLASS</b> = 1</td></tr>
 <tr class="separator:a92c9452be0c76f59e64c8a543dff86ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a069784fed5e172b44a608a98774afb67" id="r_a069784fed5e172b44a608a98774afb67"><td class="memItemLeft" align="right" valign="top">static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a069784fed5e172b44a608a98774afb67">kSweptHalvings</a> = 4</td></tr>
+<tr class="separator:a069784fed5e172b44a608a98774afb67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb7c15061fc3f86eafd41b0c3a7fcbf0" id="r_acb7c15061fc3f86eafd41b0c3a7fcbf0"><td class="memItemLeft" align="right" valign="top">static constexpr double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acb7c15061fc3f86eafd41b0c3a7fcbf0">kCos150</a> = -0.86602540378443864676</td></tr>
 <tr class="separator:acb7c15061fc3f86eafd41b0c3a7fcbf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab43fcc06e21178f5ef9fe72913b3b6e7" id="r_ab43fcc06e21178f5ef9fe72913b3b6e7"><td class="memItemLeft" align="right" valign="top">static constexpr double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab43fcc06e21178f5ef9fe72913b3b6e7">kSmoothRelGradNormTol</a> = 1e-6</td></tr>
@@ -2818,6 +2851,41 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="af6961f687f73e4540b846e132204fe24" name="af6961f687f73e4540b846e132204fe24"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6961f687f73e4540b846e132204fe24">&#9670;&#160;</a></span>band_chain_change()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::band_chain_change </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>old_band</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>new_band</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">ExactBandIntegral::Stats</a> *&#160;</td>
+          <td class="paramname"><em>st</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXACT SWEPT CHANGE: dE* / delta for the band cells <code>old_band</code> replaced by <code>new_band</code> over the same region, at the current positions (a swap moves no vertex). </p>
+
+</div>
+</div>
 <a id="aad65dba69fd2a45b26241d1933f605cd" name="aad65dba69fd2a45b26241d1933f605cd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aad65dba69fd2a45b26241d1933f605cd">&#9670;&#160;</a></span>band_side_dihedral()</h2>
 
@@ -2858,6 +2926,82 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </table>
 </div><div class="memdoc">
 <p>The dihedral angle in degrees, in [0, 360), across an offset-surface edge between two faces with unit normals n1, n2 out of the band, measured on the band side: 180 flat, below 180 where the front bends away from the band (convex seen from the offset side), toward 0 or toward 360 as the two faces fold flat onto each other one way or the other. <code>t</code> is the edge's unit direction as the first face runs it, its corners counterclockwise seen from the side n1 points to. </p>
+
+</div>
+</div>
+<a id="ac01045a69297027bfc93d8033f8145e4" name="ac01045a69297027bfc93d8033f8145e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac01045a69297027bfc93d8033f8145e4">&#9670;&#160;</a></span>band_swept_change()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::band_swept_change </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>x0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>x1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">ExactBandIntegral::Stats</a> *&#160;</td>
+          <td class="paramname"><em>st</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXACT SWEPT CHANGE: dE* / delta for vid moving from x0 to x1, the boundary faces of B through vid read from the mesh (labels, connectivity, the other corners' positions). <code>st</code> collects value()'s statistics (rule-(a) pieces) when given. </p>
+
+</div>
+</div>
+<a id="a828e5e3cbc37cae1b30b8177c03643f7" name="a828e5e3cbc37cae1b30b8177c03643f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a828e5e3cbc37cae1b30b8177c03643f7">&#9670;&#160;</a></span>band_swept_faces()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::band_swept_faces </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>x0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::array&lt; Vector3d, 2 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>faces</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac01045a69297027bfc93d8033f8145e4">band_swept_change()</a> in two halves: the boundary faces of B through vid as (a_f, b_f), ordered out of B at x0 (no value() call), and the sum over them for a move x0 -&gt; x1. </p>
 
 </div>
 </div>
@@ -2986,6 +3130,25 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
       </table>
 </div><div class="memdoc">
 <p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae8b3b9558e3f519803500d053b66158b" title="One cell&#39;s energy from its corners, its AMIPS^3 and its band label; see tet_energy().">cell_energy()</a> of a candidate cell of the swap in flight, which does not exist yet, with the label <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151" title="Propagate application data to the cells made by a successful topological swap.">swap_after_cells()</a> will write. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7cf44fe4ab8f1ac651b98ec63b8b961d" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">tet_energy()</a>, CANDIDATE CELLS. </p>
+
+</div>
+</div>
+<a id="abebdf87ab8e3dc090e19493086bdff09" name="abebdf87ab8e3dc090e19493086bdff09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abebdf87ab8e3dc090e19493086bdff09">&#9670;&#160;</a></span>candidate_label()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::topological_offset::TopoOffsetTetMesh::candidate_label </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 4 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The label <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151" title="Propagate application data to the cells made by a successful topological swap.">swap_after_cells()</a> will write on the candidate cell vids (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7109ec8cf596ff6b2b0b01bad75cdcf7">candidate_energy()</a>, and "exact_swept"'s case search). </p>
 
 </div>
 </div>
@@ -7135,6 +7298,68 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
+<a id="a6cfe9a8380937007c60e26648a3f937c" name="a6cfe9a8380937007c60e26648a3f937c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6cfe9a8380937007c60e26648a3f937c">&#9670;&#160;</a></span>swap_swept_change()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::swap_swept_change </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>new_band</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>flip</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>"exact_swept": the swap in flight's dE* / delta, <code>new_band</code> the band cells among its new cells (by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abebdf87ab8e3dc090e19493086bdff09">candidate_label()</a> in the case search, by the labels written in the rule): 0 for an interior swap, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af6961f687f73e4540b846e132204fe24">band_chain_change()</a> from <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_record.html#a8c7473a387bc2cf08d715a999f9fe9ae" title="&quot;exact_swept&quot;, a flip: the band cells it replaces (swap_swept_change()).">SwapRecord::old_band</a> for a flip. </p>
+
+</div>
+</div>
+<a id="a735812e9a4023bbe1bfcca254937c2d2" name="a735812e9a4023bbe1bfcca254937c2d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a735812e9a4023bbe1bfcca254937c2d2">&#9670;&#160;</a></span>swept_rule()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::swept_rule </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>"exact_swept" (EXACT SWEPT CHANGE). </p>
+<p>EXACT SWEPT CHANGE (EXPERIMENTAL_band_volume_rule "exact_swept", 2026-10-22). The energy is "exact"'s &ndash; b(t) = J_t / delta, J_t = <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">ExactBandIntegral::value()</a> &ndash; but an operation's rule does not integrate its cells before and after: it compares the AMIPS terms of the cells it changes (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5268efd474e7348e2ee975ea1d1a4504">band_term_cancels()</a> is true for every one) plus the CHANGE of the band term E* / delta, E* = int_B (d - delta) dV, B the union of the band cells, which lives only where B changes, and is integrated exactly there by value() on small tets:</p>
+<ul>
+<li>a vertex v moving from x0 to x1 (smoothing, the projected step, a collapse's v1 moving onto v2): dE* = sum over the faces f of the boundary of B through v of sign_f value(conv(x0, x1, a_f, b_f)), f = (v, a_f, b_f) ordered so that its normal (a_f - x0) x (b_f - x0) points out of B (away from the band cell's fourth corner), and sign_f = sign((x1 - x0) . that normal) &ndash; +1 where B grows. Why: a band cell t = [v, a, b, p] moved to [x1, a, b, p] differs from [x0, a, b, p] by the 3-chain -[x0, x1, b, p] + [x0, x1, a, p] - [x0, x1, a, b] (the boundary of the 4-simplex [x0, x1, a, b, p] is a 3-cycle, and a 3-cycle in R^3 integrates every function to 0), one oriented tet per face of t through v, each face as it bounds t (outward). Over the band cells the faces between two of them cancel; the boundary faces of B are left, each with the oriented tet [x0, x1, a_f, b_f], whose integral is sign_f times the unsigned one. Exact for mixed signs and for any move that inverts no cell; a collapse's cells through v2 become flat and drop out the same way. A vertex on no boundary face of B: 0.</li>
+<li>a swap replacing the cells O by the cells N over the same region: dE* = int over the 3-chain D = (band cells of N) - (band cells of O). D's boundary is the signed sum of the outward faces of N's band cells less O's (equal faces cancel), and D = cone(p, dD) for any point p (D - cone(p, dD) is a 3-cycle), so dE* = sum over the faces F of dD of m_F sign(det[F - p]) value(conv(p, F)), p the vertex on the most faces of dD (their cones are flat). An interior swap (one label over the ring, no boundary face of B changes): 0 without a call; a surface flip, (a,b,c) + (a,b,d) -&gt; (a,c,d) + (b,c,d): dD = the boundary of the tet (a, b, c, d) and dE* = +/- value(a, b, c, d), one call.</li>
+<li>a split: 0 (the children tile the parents, labels inherited). The decisions read these changes; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7cf44fe4ab8f1ac651b98ec63b8b961d" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">tet_energy()</a>, the settle test and every whole-mesh sum read "exact"'s J_t. Where value() takes rule (a)'s bound on a curved piece, the bound depends on the cell, and the swept change is not the difference of the cells' bounds. MEASURED (mac-mini, 2026-10-22, 3 turns, on main), every accepted operation's swept change against the change of its cells' sum of value(): within 1.2e-18 on the cube outward and inward; on the screw piece 15 within 2.7e-15 on exact pieces, up to 2.1e-3 (front smoothing) where a rule-(a) piece is involved. Under TetWild's rules (m_op_rules) every operation keeps TetWild's own: no sum rule reads any of this. </li>
+</ul>
+
+</div>
+</div>
 <a id="adbc3210b0e58566a290326f813934f98" name="adbc3210b0e58566a290326f813934f98"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adbc3210b0e58566a290326f813934f98">&#9670;&#160;</a></span>take_snapshot()</h2>
 
@@ -7810,6 +8035,29 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 <p>The Newton stopping rule every smoother of this component runs with, set on the thread's shared solver (the engine's m_solver slot) by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b97a2d23bdfbd4c3cc290cf96fccb07">smoothing_solver()</a> at the start of every visit &ndash; front and interior alike, so the settings do not depend on which path first ran on a thread. </p>
 <p>Relative gradient tolerance 1e-6, beside the engine's absolute 1e-10 (which stays). The front objective is in tolerance units, 1e4 times the old front objective, and its gradient's round-off floor sits at 1e-11..1e-9: measured 2026-09-28 on the cube (target 1e-2, tolerance 1e-4), 65% of front solves ran to the 10-iteration cap converged to machine precision (|grad|/|grad_0| at 1e-14..1e-11), unable to meet the absolute 1e-10. With the relative rule: mean 2.8 iterations (exact Hessian) instead of 9.7, 98% stopped on it. Interior solves, which met the absolute rule in 3.8 iterations, stop a little earlier. </p>
+
+</div>
+</div>
+<a id="a069784fed5e172b44a608a98774afb67" name="a069784fed5e172b44a608a98774afb67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a069784fed5e172b44a608a98774afb67">&#9670;&#160;</a></span>kSweptHalvings</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr int wmtk::components::topological_offset::TopoOffsetTetMesh::kSweptHalvings = 4</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>"exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is. The move stands iff the ring's AMIPS change (tet_energy_sum(ring, false) - amips_before) plus <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac01045a69297027bfc93d8033f8145e4">band_swept_change()</a> is &lt;= 0 (a tie passes, a NaN refuses); if not, the step is halved toward x0 and tested again, up to kSweptHalvings times, then refused. The halved positions are on the segment between two valid positions, and the positions at which vid's ring has no inverted cell are an intersection of half-spaces, so they are valid too (tested anyway, exactly). Counts into c. </p>
 
 </div>
 </div>
@@ -8601,6 +8849,52 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
       </table>
 </div><div class="memdoc">
 <p>perform_sanity_checks: swaps whose cells the case search or the face gate scored before they existed (SwapRecord::scored_energy), compared in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151" title="Propagate application data to the cells made by a successful topological swap.">swap_after_cells()</a> against the same cells read on the mesh, and those that read differently (a warning each, the first 8 per turn). Reported and reset once a turn as [swap scoring]. </p>
+
+</div>
+</div>
+<a id="a35753dda1c840cb97c4dd449f7bbbeb0" name="a35753dda1c840cb97c4dd449f7bbbeb0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35753dda1c840cb97c4dd449f7bbbeb0">&#9670;&#160;</a></span>m_swept_derivs</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_swept_deriv_counts.html">BandVolumeEnergy3D::SweptDerivCounts</a> wmtk::components::topological_offset::TopoOffsetTetMesh::m_swept_derivs</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>"exact_swept": the smoother's search model's derivative evaluations, and of them those taken from the ring's band cells (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#afcaf8931611dbe4b0cd2d035ef413cf4" title="EXPERIMENTAL_band_volume_rule &quot;exact_swept&quot;: the smoother&#39;s search model is the function the move is ...">BandVolumeEnergy3D::set_swept()</a>), per pass. </p>
+
+</div>
+</div>
+<a id="acf31cbd9d6e2338b59528161c9943c68" name="acf31cbd9d6e2338b59528161c9943c68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf31cbd9d6e2338b59528161c9943c68">&#9670;&#160;</a></span>m_swept_stored</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt;std::pair&lt;size_t, Vector3d&gt; &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_swept_stored</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>"exact_swept", the projected step: the vertex <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a31c69d6df416cf7fcdb1bc7a48d598d0" title="Every vertex off the front: the shared smoother with TetWild&#39;s options (TetOptimizerMesh::smooth_afte...">smooth_nonfront_vertex()</a> smooths and its position at the <code>stored</code> call of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a05c4e57a97d9f1fd4b69d46aa5bc53d6" title="What the shared smoother&#39;s projected step compares for a vertex held on a surface: the sum of tet_ene...">smoothing_ring_energy()</a>, which every candidate's band change is taken from. </p>
 
 </div>
 </div>
