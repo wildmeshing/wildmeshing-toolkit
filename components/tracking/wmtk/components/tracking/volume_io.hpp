@@ -10,9 +10,10 @@
 
 namespace wmtk::components::tracking {
 
-/// A tet mesh read from a gmsh file: each tet once, with the names of the physical groups that
-/// list it (simwild lists a tet once per tag it has, and the untagged ones as "ambient"), as an
-/// index into the sets of names there are.
+/// A tet mesh read from a gmsh file (io::read_mesh): each tet once, in the order the file first
+/// lists it -- by element tag, which for a file io::write_mesh wrote is the row it was given --
+/// with the names of the physical groups that list it (simwild's: a group per tag the tet has,
+/// "ambient" for the untagged ones), as an index into the sets of names there are.
 struct TetMeshData
 {
     std::vector<Eigen::Vector3d> vertices;

@@ -1,8 +1,8 @@
 #include "volume_io.hpp"
 #include "volume_geometry.hpp"
 
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/io.hpp>
 
 #include <Eigen/Dense>
 
@@ -15,47 +15,48 @@ namespace wmtk::components::tracking {
 
 TetMeshData read_tet_msh(const std::string& path)
 {
-    MshData msh;
+    // Through io::read_mesh, which reads the layout io::write_mesh writes -- every cell once, in
+    // a block per set of physical groups, its element tag its row -- as well as the older one
+    // that lists a tet once per group.
+    MeshData msh;
     try {
-        msh.load(path);
+        msh = io::read_mesh(path);
     } catch (const std::exception& e) {
         log_and_throw_error("Could not read {}: {}", path, e.what());
     }
-    const auto& spec = msh.m_spec;
     TetMeshData m;
-    std::map<size_t, uint64_t> node;
-    for (const auto& block : spec.nodes.entity_blocks) {
-        const size_t stride = 3 + size_t(block.parametric) * size_t(block.entity_dim);
-        for (size_t i = 0; i < block.num_nodes_in_block; ++i) {
-            const double* p = &block.data[stride * i];
-            node[block.tags[i]] = m.vertices.size();
-            m.vertices.emplace_back(p[0], p[1], p[2]);
-        }
+    for (Eigen::Index i = 0; i < msh.V.rows(); ++i) {
+        m.vertices.emplace_back(msh.V.row(i).transpose());
     }
-    std::map<int, std::string> name;
-    for (const auto& g : spec.physical_groups) {
-        if (g.dim == 3) name[g.tag] = g.name;
+    const auto block = msh.cells.find(CellType::Tetrahedron);
+    if (block == msh.cells.end() || block->second.connectivity.rows() == 0) {
+        log_and_throw_error("{} holds no tets", path);
+    }
+    const auto& T = block->second.connectivity;
+    // The physical groups that list each row: the columns of its `tags`.
+    const auto tags = block->second.attributes.find("tags");
+    DataMatrix<int64_t> member;
+    std::vector<std::string> labels;
+    if (tags != block->second.attributes.end()) {
+        member = tags->second.integers();
+        labels = tags->second.labels;
     }
     std::map<std::array<uint64_t, 4>, size_t> index;
     std::vector<std::set<std::string>> groups;
-    for (const auto& block : spec.elements.entity_blocks) {
-        if (block.entity_dim != 3 || block.element_type != 4) continue;
-        const auto it = name.find(block.entity_tag);
-        const std::string group = it == name.end() ? std::to_string(block.entity_tag) : it->second;
-        for (size_t e = 0; e < block.num_elements_in_block; ++e) {
-            std::array<uint64_t, 4> t;
-            for (int k = 0; k < 4; ++k) t[k] = node.at(block.data[5 * e + 1 + size_t(k)]);
-            std::array<uint64_t, 4> key = t;
-            std::sort(key.begin(), key.end());
-            const auto [jt, fresh] = index.emplace(key, m.tets.size());
-            if (fresh) {
-                m.tets.push_back(t);
-                groups.emplace_back();
-            }
-            groups[jt->second].insert(group);
+    for (Eigen::Index r = 0; r < T.rows(); ++r) {
+        std::array<uint64_t, 4> t;
+        for (int k = 0; k < 4; ++k) t[k] = uint64_t(T(r, k));
+        std::array<uint64_t, 4> key = t;
+        std::sort(key.begin(), key.end());
+        const auto [jt, fresh] = index.emplace(key, m.tets.size());
+        if (fresh) {
+            m.tets.push_back(t);
+            groups.emplace_back();
+        }
+        for (size_t j = 0; j < labels.size(); ++j) {
+            if (member(r, Eigen::Index(j)) != 0) groups[jt->second].insert(labels[j]);
         }
     }
-    if (m.tets.empty()) log_and_throw_error("{} holds no tets", path);
     index.clear();
     std::map<std::set<std::string>, uint32_t> set_index;
     for (auto& g : groups) {
