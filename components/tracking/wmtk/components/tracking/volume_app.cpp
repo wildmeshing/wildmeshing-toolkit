@@ -58,6 +58,13 @@ void log_stats(const VolumeMap& map)
             "surface (the boundary of an open sheet, a weld)",
             s.surface_not_kept);
     }
+    if (s.inverted_ops > 0) {
+        logger().warn(
+            "{} operation(s) with a tet flat or inverted at the positions the history holds (an "
+            "application's exact positions rounded): a point mapped there and back may come "
+            "back off",
+            s.inverted_ops);
+    }
     if (s.region_changed + s.through_failed > 0) {
         logger().warn(
             "points that changed region: {}; through an operation with no map: {}",

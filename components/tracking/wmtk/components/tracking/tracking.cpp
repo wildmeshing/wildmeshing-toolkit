@@ -307,6 +307,7 @@ nlohmann::json stats_report(const VolumeMapStats& s)
         {"fallback_pairs", s.fallback_pairs},
         {"decompositions", s.decompositions},
         {"surface_not_kept", s.surface_not_kept},
+        {"inverted_ops", s.inverted_ops},
         {"region_changed", s.region_changed},
         {"through_failed", s.through_failed},
         {"kept", s.kept},

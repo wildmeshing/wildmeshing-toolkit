@@ -1209,6 +1209,7 @@ void add(VolumeMapStats& to, const VolumeMapStats& from)
     to.fallback_pairs += from.fallback_pairs;
     to.decompositions += from.decompositions;
     to.surface_not_kept += from.surface_not_kept;
+    to.inverted_ops += from.inverted_ops;
     to.region_changed += from.region_changed;
     to.through_failed += from.through_failed;
 }
@@ -1334,6 +1335,18 @@ VolumeMap::VolumeMap(
             fs->shrink_to_fit();
         }
         m_faces.push_back(std::move(f));
+        // Its tets, each the way round the others are, at the positions the history holds?
+        const auto overlap = [](const Tets& T, const Positions& P) {
+            size_t pos = 0, neg = 0, flat = 0;
+            for (const Tet& t : T) {
+                const int o = orient(P[t[0]], P[t[1]], P[t[2]], P[t[3]]);
+                (o > 0 ? pos : o < 0 ? neg : flat)++;
+            }
+            return flat > 0 || (pos > 0 && neg > 0);
+        };
+        if (overlap(e.tets, e.positions) || overlap(e.tets_after(), e.positions_after())) {
+            ++m_shared->stats.inverted_ops;
+        }
         Eigen::Vector3d lo = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
         Eigen::Vector3d hi = -lo;
         for (const auto& x : e.positions) {

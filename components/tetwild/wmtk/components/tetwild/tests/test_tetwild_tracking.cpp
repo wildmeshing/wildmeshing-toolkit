@@ -491,12 +491,21 @@ TEST_CASE("tetwild-volume-history-memory-route", "[tetwild][tracking]" + release
     const auto there = memory.to_output(pts);
     const auto from_files = files.to_output(pts);
     const auto back = memory.to_input(there);
+    const auto& in = memory.input_mesh();
+    const auto position = [&in](const tracking::TetPoint& p) {
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += p.bary[k] * in.vertices[in.tets[p.tet][k]];
+        return x;
+    };
     for (size_t i = 0; i < pts.size(); ++i) {
         REQUIRE(there[i].tet != tracking::kNoId);
         CHECK(there[i].tet == from_files[i].tet);
         CHECK(there[i].bary == from_files[i].bary);
-        CHECK(back[i].tet != tracking::kNoId);
+        REQUIRE(back[i].tet != tracking::kNoId);
+        // no tet of an operation is inverted at the positions recorded: back to a rounding
+        CHECK((position(back[i]) - position(pts[i])).norm() < 1e-12);
     }
+    CHECK(memory.map().stats().inverted_ops == 0);
 
     // Without volume_history_output, neither the volume history nor its meshes.
     options.erase("volume_history_output");
@@ -504,4 +513,60 @@ TEST_CASE("tetwild-volume-history-memory-route", "[tetwild][tracking]" + release
     CHECK(!plain_report.contains("volume_history"));
     CHECK(!plain.count("history_input"));
     CHECK(!plain.count("history_output"));
+}
+
+TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_only)
+{
+    // A known limitation, pinned (docs/tracking.md, "Volumes"). On an input this coarse -- the
+    // icosahedron split once, 42 vertices -- the insertion leaves tets that the positions the
+    // volume history holds, the exact ones rounded to doubles, turn flat or inverted
+    // (VolumeMapStats::inverted_ops): the tets there overlap, a position is in two, and a point
+    // mapped there and back can come back off, by up to the size of the tets around. Every
+    // operation maps, and the other points come back to a rounding.
+    nlohmann::json options = small_volume_run();
+    options["input"] = "sphere";
+    options["length_rel"] = 0.3;
+    options["eps_rel"] = 0.02;
+    options["max_iterations"] = 1;
+    options["preserve_topology"] = true;
+    const auto [outputs, report] = tetwild::tetwild(options, {{"sphere", icosphere(1, 1)}});
+    const tracking::VolumeTracking t(
+        history::SurfaceHistory::from_bytes(report.at("history").get_binary()),
+        history::VolumeHistory::from_bytes(report.at("volume_history").get_binary()));
+    const MeshData& start = outputs.at("history_input");
+    const auto& T = start.cell(CellType::Tetrahedron).connectivity;
+    const double diagonal = (start.V.colwise().maxCoeff() - start.V.colwise().minCoeff()).norm();
+    std::mt19937 rng(1);
+    std::uniform_real_distribution<double> u(0.05, 1);
+    std::vector<Eigen::Vector3d> pts;
+    for (int i = 0; i < 3000; ++i) {
+        const Eigen::Index r = Eigen::Index(rng() % uint32_t(T.rows()));
+        Eigen::Vector4d b(u(rng), u(rng), u(rng), u(rng));
+        b /= b.sum();
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += b[k] * start.V.row(T(r, k)).transpose();
+        pts.push_back(x);
+    }
+    const auto there = t.map_positions(pts, true);
+    std::vector<Eigen::Vector3d> xyz;
+    std::vector<uint32_t> regions;
+    for (const auto& p : there) {
+        xyz.push_back(p.position);
+        regions.push_back(p.region);
+    }
+    const auto back = t.map_positions(xyz, false, regions);
+    size_t off = 0;
+    double worst = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        const double d = (back[i].position - pts[i]).norm() / diagonal;
+        off += d > 1e-9;
+        worst = std::max(worst, d);
+    }
+    const auto stats = t.map().stats();
+    CHECK(stats.failed == 0);
+    CHECK(stats.inverted_ops > 0);
+    // 17 of 3000 off, the worst by 1.3% of the diagonal, and 61 such operations, when this was
+    // written; the bounds leave room for another platform's run
+    CHECK(off < pts.size() / 50);
+    CHECK(worst < 0.05);
 }

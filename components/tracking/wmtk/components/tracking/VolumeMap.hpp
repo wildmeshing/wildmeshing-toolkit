@@ -48,6 +48,12 @@ struct VolumeMapStats
     /// where no pair keeping the surface could be built (a weld), and one pair over the whole
     /// operation maps it.
     size_t surface_not_kept = 0;
+    /// Operations a tet of which, before or after, is flat or turned the other way round at
+    /// the positions the history holds -- an application's exact positions rounded to doubles,
+    /// as tetwild's and simwild's vertices not rounded yet after the insertion: the tets there
+    /// overlap, a position in them is in two, and a point mapped there and back may come back
+    /// off, by up to the size of the tets around (docs/tracking.md, "Volumes").
+    size_t inverted_ops = 0;
     /// Points that ended in a tet of another region, which a bijection of each region never
     /// does -- through a map that does not keep the surface, the point is in that region from
     /// then on; points whose op map failed.
