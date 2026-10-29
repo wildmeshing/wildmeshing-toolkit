@@ -20,6 +20,13 @@
 #include <set>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::triwild;
 
@@ -287,7 +294,7 @@ TEST_CASE("input-sets-2d-survive-removing-triangles", "[triwild][input_sets]")
     }
 }
 
-TEST_CASE("triwild-filter-keeps-tracked-edges", "[triwild][input_sets]")
+TEST_CASE("triwild-filter-keeps-tracked-edges", "[triwild][input_sets]" + release_only)
 {
     // A filter removes triangles after the optimization, so the mesh before it is the unfiltered
     // run's. Every edge of a filtered mesh that the unfiltered run tracks is tracked there too:

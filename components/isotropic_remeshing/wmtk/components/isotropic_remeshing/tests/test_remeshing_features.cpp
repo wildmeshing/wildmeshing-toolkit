@@ -21,6 +21,13 @@
 #include <sstream>
 #include <string>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace components::isotropic_remeshing;
 
@@ -307,7 +314,7 @@ TEST_CASE("features-junction-where-ids-change", "[test_remeshing][features]")
     CHECK(ids == std::set<int64_t>{7, 9});
 }
 
-TEST_CASE("features-tube-keeps-a-bent-curve", "[test_remeshing][features]")
+TEST_CASE("features-tube-keeps-a-bent-curve", "[test_remeshing][features]" + release_only)
 {
     // An L-shaped curve in a flat grid, its corner at (4, 4) inside the curve: smoothing slides
     // the corner towards its neighbours' midpoint, and a collapse along the curve leaves a chord
@@ -346,7 +353,7 @@ TEST_CASE("features-tube-keeps-a-bent-curve", "[test_remeshing][features]")
     }
 }
 
-TEST_CASE("features-seam-kept", "[test_remeshing][features]")
+TEST_CASE("features-seam-kept", "[test_remeshing][features]" + release_only)
 {
     // An open tube with a seam down one side: a curve with the same region -- the same label, if
     // there were labels -- on both sides, which no label boundary would find.
@@ -399,7 +406,7 @@ TEST_CASE("features-seam-kept", "[test_remeshing][features]")
     }
 }
 
-TEST_CASE("features-file", "[test_remeshing][features]")
+TEST_CASE("features-file", "[test_remeshing][features]" + release_only)
 {
     // Through the JSON: a strip of two labels, so the label boundary is a curve without an id;
     // a features file with a seam-like curve of id 5 across it, entries of no length, and fixed
@@ -556,7 +563,7 @@ TEST_CASE("features-file", "[test_remeshing][features]")
     }
 }
 
-TEST_CASE("features-follow-merged-vertices", "[test_remeshing][features]")
+TEST_CASE("features-follow-merged-vertices", "[test_remeshing][features]" + release_only)
 {
     // The grid of size 6 in two pieces, x <= 3 and x >= 3, each with its own copy of the column
     // x = 3, as a B-rep mesher writes a mesh face by face. The features list the seam x = 3 on
@@ -657,7 +664,7 @@ TEST_CASE("features-follow-merged-vertices", "[test_remeshing][features]")
     }
 }
 
-TEST_CASE("features-memory-route", "[test_remeshing][features]")
+TEST_CASE("features-memory-route", "[test_remeshing][features]" + release_only)
 {
     // On the memory route the features are a mesh of the input too, on the rows of the input:
     // the curves its edges, with edge_id, the fixed vertices its points, with vertex_id. The
@@ -984,7 +991,7 @@ TEST_CASE("cleanup-needs-the-angle-before-create-mesh", "[test_remeshing][featur
     CHECK_THROWS(m.cleanup_triangles(30));
 }
 
-TEST_CASE("output-format-leaves-the-mesh", "[test_remeshing][features]")
+TEST_CASE("output-format-leaves-the-mesh", "[test_remeshing][features]" + release_only)
 {
     // A slab labelled by the side each triangle faces, through feature_fields, with a vertex of
     // the top pushed past its neighbour: a fold, where the repairs read the input's orientation,
@@ -1037,7 +1044,7 @@ TEST_CASE("output-format-leaves-the-mesh", "[test_remeshing][features]")
     CHECK(differ == 0);
 }
 
-TEST_CASE("cleanup-folds-nothing-on-a-thin-wall", "[test_remeshing][features]")
+TEST_CASE("cleanup-folds-nothing-on-a-thin-wall", "[test_remeshing][features]" + release_only)
 {
     // A slab thinner than a triangle is wide: the input next to a triangle of the top holds the
     // bottom too, whose area vectors cancel the top's, so the input's orientation there is
@@ -1098,7 +1105,9 @@ TEST_CASE("cleanup-collapses-keep-the-length-limit", "[test_remeshing][features]
     }
 }
 
-TEST_CASE("features-history-replays-to-the-output", "[test_remeshing][features][history]")
+TEST_CASE(
+    "features-history-replays-to-the-output",
+    "[test_remeshing][features][history]" + release_only)
 {
     // The passes this adds edit the mesh through the recorded operations only -- the cleanup's
     // collapses, swaps and moves (its trial positions are put back before the move runs), the

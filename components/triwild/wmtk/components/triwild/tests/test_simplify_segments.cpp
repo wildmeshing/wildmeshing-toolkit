@@ -9,6 +9,13 @@
 #include <set>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 
 namespace {
@@ -103,7 +110,7 @@ void check_well_formed(const MatrixXd& V, const MatrixXi& E)
 
 } // namespace
 
-TEST_CASE("simplify-segments-dense-circle", "[triwild_operation][simplify]")
+TEST_CASE("simplify-segments-dense-circle", "[triwild_operation][simplify]" + release_only)
 {
     // A circle sampled far finer than the tolerance collapses hard, and every point of the
     // original stays within eps of what is left.
@@ -126,7 +133,7 @@ TEST_CASE("simplify-segments-dense-circle", "[triwild_operation][simplify]")
     }
 }
 
-TEST_CASE("simplify-segments-keeps-corners", "[triwild_operation][simplify]")
+TEST_CASE("simplify-segments-keeps-corners", "[triwild_operation][simplify]" + release_only)
 {
     // A square sampled densely along its sides: the sides collapse, the four corners must
     // not, because cutting one leaves the envelope.
@@ -261,7 +268,7 @@ TEST_CASE("simplify-segments-keeps-free-points", "[triwild_operation][simplify]"
     CHECK(has_other);
 }
 
-TEST_CASE("simplify-segments-deterministic", "[triwild_operation][simplify]")
+TEST_CASE("simplify-segments-deterministic", "[triwild_operation][simplify]" + release_only)
 {
     // Equal-length segments are everywhere in a uniformly sampled curve, so the queue order
     // has to be a total order. Two runs must agree exactly.

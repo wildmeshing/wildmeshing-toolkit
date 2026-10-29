@@ -5,6 +5,13 @@
 #include <filesystem>
 #include <fstream>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::simwild;
 
@@ -38,7 +45,9 @@ int input_count(const std::filesystem::path& path, const bool split)
 
 } // namespace
 
-TEST_CASE("EmbedSurface can treat each connected component as its own input", "[simwild][embed]")
+TEST_CASE(
+    "EmbedSurface can treat each connected component as its own input",
+    "[simwild][embed]" + release_only)
 {
     const std::filesystem::path path = write_two_tetrahedra();
 

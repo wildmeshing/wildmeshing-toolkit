@@ -12,6 +12,13 @@
 #include <set>
 #include <thread>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 
 namespace {
@@ -88,7 +95,7 @@ Eigen::MatrixXd random_points(int n, double extent, unsigned seed)
 
 } // namespace
 
-TEST_CASE("WindingNumberHierarchy is igl's winding number", "[winding_number]")
+TEST_CASE("WindingNumberHierarchy is igl's winding number", "[winding_number]" + release_only)
 {
     // igl's hierarchy, step for step, but for the apex of the fans closing its nodes, which igl
     // draws with rand(): the values agree to rounding, closed or open, and whatever duplicate
@@ -114,7 +121,9 @@ TEST_CASE("WindingNumberHierarchy is igl's winding number", "[winding_number]")
     }
 }
 
-TEST_CASE("WindingNumberHierarchy is reproducible and owns its vertices", "[winding_number]")
+TEST_CASE(
+    "WindingNumberHierarchy is reproducible and owns its vertices",
+    "[winding_number]" + release_only)
 {
     Eigen::MatrixXd V, V2;
     Eigen::MatrixXi F, F2;
@@ -226,7 +235,9 @@ TEST_CASE("winding_number_2d honours num_threads", "[winding_number]")
     }
 }
 
-TEST_CASE("winding numbers do not depend on the number of threads", "[winding_number]")
+TEST_CASE(
+    "winding numbers do not depend on the number of threads",
+    "[winding_number]" + release_only)
 {
     // The queries are handed out in chunks on demand, so which thread evaluates which query
     // depends on the schedule. Each query is evaluated on its own, so the values must not:

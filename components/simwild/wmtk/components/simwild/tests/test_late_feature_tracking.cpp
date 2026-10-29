@@ -13,6 +13,13 @@
 #include <set>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 // Feature tracking enabled AFTER init().
 //
 // enable_feature_edge_tracking() and enable_feature_point_tracking() may run after init(): the
@@ -183,7 +190,9 @@ size_t vertex_at(const Mesh& m, const size_t f)
 
 } // namespace
 
-TEST_CASE("feature-edge tracking enabled after init (3D)", "[simwild][feature_tracking]")
+TEST_CASE(
+    "feature-edge tracking enabled after init (3D)",
+    "[simwild][feature_tracking]" + release_only)
 {
     wmtk::components::simwild::Parameters params;
     params.init(Vector3d(-2, -2, -2), Vector3d(2, 2, 2));
@@ -230,7 +239,9 @@ TEST_CASE("feature-edge tracking enabled after init (3D)", "[simwild][feature_tr
     CHECK(tagged_positions(mesh) == tagged_before);
 }
 
-TEST_CASE("feature-point tracking enabled after init (3D)", "[simwild][feature_tracking]")
+TEST_CASE(
+    "feature-point tracking enabled after init (3D)",
+    "[simwild][feature_tracking]" + release_only)
 {
     using Mesh = wmtk::components::simwild::SimWildMesh;
     wmtk::components::simwild::Parameters params;
@@ -399,7 +410,7 @@ void check_refused_during_pass(
 
 TEST_CASE(
     "feature tracking cannot be enabled during an operation pass (3D)",
-    "[simwild][feature_tracking]")
+    "[simwild][feature_tracking]" + release_only)
 {
     wmtk::AttributeCollection<int> extra; // outlives the meshes: the group does not own it
     wmtk::components::simwild::Parameters params;

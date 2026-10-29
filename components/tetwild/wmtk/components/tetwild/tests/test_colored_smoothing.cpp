@@ -10,6 +10,13 @@
 #include <string>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::tetwild;
 
@@ -170,7 +177,9 @@ public:
 
 } // namespace
 
-TEST_CASE("colored smoothing does not depend on the number of threads", "[tetwild][smoothing]")
+TEST_CASE(
+    "colored smoothing does not depend on the number of threads",
+    "[tetwild][smoothing]" + release_only)
 {
     // The point of smoothing by color class: no two vertices of a class interact, so which thread
     // smooths which vertex cannot matter, and every thread count must give the same mesh, bit for
@@ -224,7 +233,7 @@ TEST_CASE("colored smoothing does not depend on the number of threads", "[tetwil
 
 TEST_CASE(
     "colored smoothing with a surface does not depend on the number of threads",
-    "[tetwild][smoothing]")
+    "[tetwild][smoothing]" + release_only)
 {
     // The same property where smoothing does the most: a slanted closed surface inserted through
     // the serial pipeline, so its vertices are smoothed against the envelope (projection and

@@ -8,6 +8,13 @@
 #include <cmath>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::triwild;
 
@@ -184,7 +191,9 @@ TEST_CASE("triwild-coarsen-rejected-collapse-leaves-no-trace", "[triwild_operati
     REQUIRE(edge.is_valid(mesh));
 }
 
-TEST_CASE("triwild-coarsen-removes-what-the-mesh-does-not-need", "[triwild_operation][coarsen]")
+TEST_CASE(
+    "triwild-coarsen-removes-what-the-mesh-does-not-need",
+    "[triwild_operation][coarsen]" + release_only)
 {
     // The other side of it: a square grid's right isoceles triangles score above the AMIPS
     // optimum, so there is slack, and the pass is supposed to spend it on removing elements
@@ -203,7 +212,7 @@ TEST_CASE("triwild-coarsen-removes-what-the-mesh-does-not-need", "[triwild_opera
     REQUIRE(mesh.m_coarsen_stats.max_energy_after <= mesh.m_coarsen_stats.max_energy_before);
 }
 
-TEST_CASE("triwild-coarsen-never-raises-max-energy", "[triwild_operation][coarsen]")
+TEST_CASE("triwild-coarsen-never-raises-max-energy", "[triwild_operation][coarsen]" + release_only)
 {
     // The invariant the pass exists to hold, with the local smoothing switched on so the
     // accept/reject decision runs against a re-smoothed neighbourhood.
@@ -255,7 +264,9 @@ TEST_CASE("triwild-coarsen-pass-off-is-a-no-op", "[triwild_operation][coarsen]")
     REQUIRE(mesh.m_coarsen_stats.cells_before == 0); // untouched, so the report reads zero
 }
 
-TEST_CASE("triwild-coarsen-bounded-stops-at-the-target-length", "[triwild_operation][coarsen]")
+TEST_CASE(
+    "triwild-coarsen-bounded-stops-at-the-target-length",
+    "[triwild_operation][coarsen]" + release_only)
 {
     // The gate the coarsen_unbounded option controls. Every edge of the grid is length 1, so
     // driving the collapse threshold below that must stop the pass dead -- and lifting it with

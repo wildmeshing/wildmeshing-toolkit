@@ -12,6 +12,13 @@
 #include <memory>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 namespace {
 
 using wmtk::TriOptimizerMesh;
@@ -547,7 +554,7 @@ TEST_CASE(
 
 TEST_CASE(
     "tag-homogeneous SimWild follows one complete TriWild optimization iteration",
-    "[simwild][triwild][conformance][serial][orchestration]")
+    "[simwild][triwild][conformance][serial][orchestration]" + release_only)
 {
     for (const bool interleaved : {false, true}) {
         CAPTURE(interleaved);

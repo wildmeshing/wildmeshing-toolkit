@@ -22,6 +22,13 @@
 #include <thread>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk::components::topological_offset;
 
 /**
@@ -369,7 +376,7 @@ struct FDSummary
 
 } // namespace
 
-TEST_CASE("exact-band-integral-derivatives", "[offset][exact_band]")
+TEST_CASE("exact-band-integral-derivatives", "[offset][exact_band]" + release_only)
 {
     // Parity with exact_mesh.value_grad_hess (one corner per cell), and finite differences at every
     // corner as test_exact_mesh_derivs.py does. Python's own finite-difference numbers on the
@@ -916,7 +923,7 @@ TEST_CASE("exact-band-integral-geneva", "[offset][exact_band]")
  * was up to 0.78 delta vol above it; the 4 geneva cells that changed moved by at most 2.6e-5
  * delta vol, below the quadrature's own accuracy there (1.2e-4).
  */
-TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
+TEST_CASE("exact-band-integral-side", "[offset][exact_band]" + release_only)
 {
     using namespace exact_band_side_data;
     std::printf("exact-band-integral-side: the offset-side band integral against the Python\n");

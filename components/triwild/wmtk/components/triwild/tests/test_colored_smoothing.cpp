@@ -11,6 +11,13 @@
 #include <string>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::triwild;
 
@@ -125,7 +132,9 @@ public:
 
 } // namespace
 
-TEST_CASE("colored smoothing does not depend on the number of threads (2D)", "[triwild][smoothing]")
+TEST_CASE(
+    "colored smoothing does not depend on the number of threads (2D)",
+    "[triwild][smoothing]" + release_only)
 {
     // The 2D twin of the tetwild test: no two vertices of a color class interact, so every
     // thread count must give the same mesh, bit for bit.
@@ -184,7 +193,7 @@ TEST_CASE("colored smoothing does not depend on the number of threads (2D)", "[t
 
 TEST_CASE(
     "colored smoothing with a curve does not depend on the number of threads (2D)",
-    "[triwild][smoothing]")
+    "[triwild][smoothing]" + release_only)
 {
     // The same property where smoothing does the most: a slanted closed curve, cut by a chord,
     // embedded and refined by one serial optimization round (serial, so identical for every

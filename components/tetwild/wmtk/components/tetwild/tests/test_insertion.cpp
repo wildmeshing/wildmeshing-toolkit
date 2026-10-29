@@ -15,6 +15,13 @@
 #include <igl/read_triangle_mesh.h>
 #include <wmtk/utils/Partitioning.h>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace components::tetwild;
 
@@ -111,7 +118,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     // wmtk::logger().info("end insertion");
 }
 
-TEST_CASE("vertex_order", "[tetwild]")
+TEST_CASE("vertex_order", "[tetwild]" + release_only)
 {
     using Tuple = TetMesh::Tuple;
 
@@ -334,7 +341,7 @@ void require_exact_tiling(
 
 } // namespace
 
-TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]")
+TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]" + release_only)
 {
     // A cube [0,2]^3, with features interior to it, on its surface, and touching a corner.
     MatrixXd V(8, 3);

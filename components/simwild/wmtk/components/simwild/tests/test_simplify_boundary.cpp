@@ -16,6 +16,13 @@
 #include <utility>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::simwild;
 
@@ -87,7 +94,9 @@ double dist_to_square_outline(const Vector3d& p)
 
 } // namespace
 
-TEST_CASE("simwild-simplification-boundary-envelope", "[simwild][simplify][boundary]")
+TEST_CASE(
+    "simwild-simplification-boundary-envelope",
+    "[simwild][simplify][boundary]" + release_only)
 {
     // With topology preservation off the input is simplified before insertion, and its open
     // boundary either frozen or held in a tube of order2_envelope_ratio * eps_simplify around the

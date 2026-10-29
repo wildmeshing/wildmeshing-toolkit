@@ -11,6 +11,13 @@
 #include <limits>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace components::qslim;
 
@@ -100,7 +107,7 @@ const auto outline = [](const Eigen::Vector3d& q) { return dist_to_square(q, 0, 
 
 } // namespace
 
-TEST_CASE("qslim-boundary-envelope-outline-stays-in-tube", "[test_qslim][boundary]")
+TEST_CASE("qslim-boundary-envelope-outline-stays-in-tube", "[test_qslim][boundary]" + release_only)
 {
     // Every boundary edge stays within r of the input outline, which, the outline being a closed
     // loop that can only change by chords the tube admits, also keeps it from retracting: a
@@ -136,7 +143,9 @@ TEST_CASE("qslim-boundary-envelope-outline-stays-in-tube", "[test_qslim][boundar
     CHECK(n_after < size_t(4 * (n - 1)) / 2);
 }
 
-TEST_CASE("qslim-boundary-envelope-curved-outline-coarsens", "[test_qslim][boundary]")
+TEST_CASE(
+    "qslim-boundary-envelope-curved-outline-coarsens",
+    "[test_qslim][boundary]" + release_only)
 {
     // On a curved surface the quadric's free optimum for an edge along the boundary lies off
     // the outline, and the tube refuses it: unless the collapse is placed on the edge, the
@@ -198,7 +207,9 @@ TEST_CASE("qslim-boundary-envelope-curved-outline-coarsens", "[test_qslim][bound
     CHECK(be.size() < rim.size() * 9 / 10);
 }
 
-TEST_CASE("qslim-boundary-envelope-closes-hole-smaller-than-tube", "[test_qslim][boundary]")
+TEST_CASE(
+    "qslim-boundary-envelope-closes-hole-smaller-than-tube",
+    "[test_qslim][boundary]" + release_only)
 {
     // A 0.05-wide hole and a tube wider than it: closing the hole keeps every boundary edge in
     // the tube, so it goes. Only with the link condition off -- the collapse that closes a hole is
@@ -217,7 +228,9 @@ TEST_CASE("qslim-boundary-envelope-closes-hole-smaller-than-tube", "[test_qslim]
     CHECK(inner == 0);
 }
 
-TEST_CASE("qslim-boundary-envelope-keeps-hole-larger-than-tube", "[test_qslim][boundary]")
+TEST_CASE(
+    "qslim-boundary-envelope-keeps-hole-larger-than-tube",
+    "[test_qslim][boundary]" + release_only)
 {
     // The same hole against a tube a fifth of its width, with the same wide surface envelope and
     // the link condition still off: the tube alone keeps it open, and its outline in the tube.
@@ -239,7 +252,7 @@ TEST_CASE("qslim-boundary-envelope-keeps-hole-larger-than-tube", "[test_qslim][b
     CHECK(inner >= 3);
 }
 
-TEST_CASE("qslim-default-boundary-is-unchanged", "[test_qslim][boundary]")
+TEST_CASE("qslim-default-boundary-is-unchanged", "[test_qslim][boundary]" + release_only)
 {
     // Without a tube qslim holds the boundary by nothing but the surface envelope, as it always
     // has: no vertex carries the lineage flag, and the hole the tube kept open above closes

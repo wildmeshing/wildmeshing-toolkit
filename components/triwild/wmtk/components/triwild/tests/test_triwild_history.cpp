@@ -15,6 +15,13 @@
 #include <set>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components;
 
@@ -195,7 +202,7 @@ Mapped check_history(const ComponentResult& r, const size_t n_segments)
 
 } // namespace
 
-TEST_CASE("triwild-history-anchors-junctions", "[triwild][tracking]")
+TEST_CASE("triwild-history-anchors-junctions", "[triwild][tracking]" + release_only)
 {
     // Recording anchors junctions -- allow_junction_cleanup defaults to false -- unless the
     // config gives allow_junction_cleanup, or preserve_feature_points is off: that anchors
@@ -238,7 +245,7 @@ std::pair<ComponentResult, size_t> run_near(const double offset, const double x_
 
 } // namespace
 
-TEST_CASE("triwild-history-default-topology", "[triwild][tracking]")
+TEST_CASE("triwild-history-default-topology", "[triwild][tracking]" + release_only)
 {
     // Without preserve_topology the simplification may weld curves that pass within the
     // envelope: a third curve runs along the wave, closer than eps. The weld and the segments it
@@ -254,7 +261,7 @@ TEST_CASE("triwild-history-default-topology", "[triwild][tracking]")
     CHECK(t.map().build_warnings().topology > 0);
 }
 
-TEST_CASE("triwild-history-contracted-chains", "[triwild][tracking]")
+TEST_CASE("triwild-history-contracted-chains", "[triwild][tracking]" + release_only)
 {
     // The third curve closer and longer: its crossings with the circle lie next to the wave's,
     // and the collapses contract the curves between them. Two junctions collapse into one, the
@@ -271,7 +278,7 @@ TEST_CASE("triwild-history-contracted-chains", "[triwild][tracking]")
     CHECK(t.map().build_warnings().merged_segments > 0);
 }
 
-TEST_CASE("triwild-history-preserve-topology", "[triwild][tracking]")
+TEST_CASE("triwild-history-preserve-topology", "[triwild][tracking]" + release_only)
 {
     // The same curves under preserve_topology: no topology warning, and the map a bijection.
     const ComponentResult r = run({{"preserve_topology", true}});
@@ -281,7 +288,7 @@ TEST_CASE("triwild-history-preserve-topology", "[triwild][tracking]")
     CHECK(tracking::CurveTracking(history_of(r)).map().build_warnings().total() == 0);
 }
 
-TEST_CASE("triwild-history-filters", "[triwild][tracking]")
+TEST_CASE("triwild-history-filters", "[triwild][tracking]" + release_only)
 {
     // A filter removes triangles after the optimization, and the tracked edges with them that no
     // triangle holds any more: the history records that as segments replaced by nothing
@@ -300,7 +307,7 @@ TEST_CASE("triwild-history-filters", "[triwild][tracking]")
     }
 }
 
-TEST_CASE("triwild-history-free-junctions", "[triwild][tracking]")
+TEST_CASE("triwild-history-free-junctions", "[triwild][tracking]" + release_only)
 {
     // With allow_junction_cleanup the junctions may slide: the map follows them, a bijection
     // still under preserve_topology.
@@ -311,7 +318,7 @@ TEST_CASE("triwild-history-free-junctions", "[triwild][tracking]")
     CHECK(m.round_trip < 1e-8);
 }
 
-TEST_CASE("triwild-history-skip-simplify", "[triwild][tracking]")
+TEST_CASE("triwild-history-skip-simplify", "[triwild][tracking]" + release_only)
 {
     // Without the input simplification the history goes from the curves as read to the
     // arrangement directly: a weld, then the embed.
@@ -368,7 +375,7 @@ TEST_CASE("triwild-history-duplicates", "[triwild][tracking]")
     CHECK((at(a) - at(b)).norm() < 1e-9);
 }
 
-TEST_CASE("triwild-history-file-and-memory-routes", "[triwild][tracking]")
+TEST_CASE("triwild-history-file-and-memory-routes", "[triwild][tracking]" + release_only)
 {
     // The same curves through files and in memory record the same history: the same first
     // state, the same edits, the same output ids. Only the parameters differ, the route among
