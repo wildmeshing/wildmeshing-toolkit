@@ -577,11 +577,13 @@ TEST_CASE("features-follow-merged-vertices", "[test_remeshing][features]")
     }
 }
 
-TEST_CASE("features-file-memory-route", "[test_remeshing][features]")
+TEST_CASE("features-memory-route", "[test_remeshing][features]")
 {
-    // The memory route reads the features from a file too, a path relative to the current
-    // directory, and returns what the file route's two .vtu files hold: mesh with vertex_id,
-    // and edges, the feature edges on mesh's vertex rows, with edge_id.
+    // On the memory route the features are a mesh of the input too, on the rows of the input:
+    // the curves its edges, with edge_id, the fixed vertices its points, with vertex_id. The
+    // result is what the file route's two .vtu files hold: mesh with vertex_id, and edges, the
+    // feature edges on mesh's vertex rows, with edge_id -- which make the next call's input and
+    // features.
     const TempDir dir;
     std::vector<Eigen::Vector3d> V;
     std::vector<std::array<size_t, 3>> F;
@@ -601,8 +603,6 @@ TEST_CASE("features-file-memory-route", "[test_remeshing][features]")
     features["vertices"] = {{3, 11}, {6 * 7 + 3, 12}, {1 * 7 + 3, 13}, {4 * 7 + 1, 14}};
     std::ofstream(dir.path / "features.json") << features.dump();
     const nlohmann::json options = {
-        {"features", "features.json"},
-        {"remove_duplicate_eps", -1},
         {"length_abs", 0.7},
         {"eps_rel", 0.01},
         {"max_iterations", 2},
@@ -616,6 +616,7 @@ TEST_CASE("features-file-memory-route", "[test_remeshing][features]")
     file["input_dir"] = dir.path.string();
     file["output"] = (dir.path / "out.vtu").string();
     file["report"] = (dir.path / "report.json").string();
+    file["features"] = "features.json";
     isotropic_remeshing(file);
 
     MeshData surface;
@@ -626,24 +627,34 @@ TEST_CASE("features-file-memory-route", "[test_remeshing][features]")
     for (size_t i = 0; i < F.size(); ++i) {
         for (int k = 0; k < 3; ++k) tris(i, k) = int64_t(F[i][k]);
     }
+    // The same features as a mesh on the rows of surface.
+    MeshData curves;
+    curves.V = surface.V;
+    {
+        auto& edges = curves.cells[CellType::Edge];
+        edges.connectivity.resize(features["edges"].size(), 2);
+        DataMatrix<int64_t> id(features["edges"].size(), 1);
+        for (size_t i = 0; i < features["edges"].size(); ++i) {
+            edges.connectivity(i, 0) = features["edges"][i][0];
+            edges.connectivity(i, 1) = features["edges"][i][1];
+            id(i, 0) = features["edge_ids"][i];
+        }
+        edges.attributes["edge_id"].values = id;
+        auto& points = curves.cells[CellType::Point];
+        points.connectivity.resize(features["vertices"].size(), 1);
+        DataMatrix<int64_t> vertex_id(features["vertices"].size(), 1);
+        for (size_t i = 0; i < features["vertices"].size(); ++i) {
+            points.connectivity(i, 0) = features["vertices"][i][0];
+            vertex_id(i, 0) = features["vertices"][i][1];
+        }
+        points.attributes["vertex_id"].values = vertex_id;
+    }
     nlohmann::json memory = options;
     memory["input"] = "surface";
-    const auto run_memory = [&](const nlohmann::json& j) {
-        const auto cwd = std::filesystem::current_path();
-        std::filesystem::current_path(dir.path);
-        ComponentResult result;
-        try {
-            result = isotropic_remeshing(j, MeshMap{{"surface", surface}});
-        } catch (...) {
-            std::filesystem::current_path(cwd);
-            throw;
-        }
-        std::filesystem::current_path(cwd);
-        return result;
-    };
-    const ComponentResult result = run_memory(memory);
+    memory["features"] = "curves";
+    const auto [meshes, report] =
+        isotropic_remeshing(memory, MeshMap{{"surface", surface}, {"curves", curves}});
 
-    const auto& [meshes, report] = result;
     REQUIRE(meshes.size() == 2);
     const MeshData& mesh = meshes.at("mesh");
     const MeshData& edges = meshes.at("edges");
@@ -676,17 +687,22 @@ TEST_CASE("features-file-memory-route", "[test_remeshing][features]")
         vtu_array<double>(lines, "edge_id"));
     CHECK(column(edges.vertex_attributes.at("vertex_id")) == vtu_array<double>(lines, "vertex_id"));
 
-    std::multiset<double> ids;
-    for (const double v : column(mesh.vertex_attributes.at("vertex_id"))) {
-        if (v >= 0) ids.insert(v);
-    }
-    CHECK(ids == std::multiset<double>{11, 12, 13, 14});
-    const auto edge_id = column(edges.cell(CellType::Edge).attributes.at("edge_id"));
-    const auto n5 = std::count(edge_id.begin(), edge_id.end(), 5.);
-    const auto n6 = std::count(edge_id.begin(), edge_id.end(), 6.);
-    CHECK(n5 >= 3);
-    CHECK(n6 >= 3);
-    CHECK(size_t(n5 + n6) == edge_id.size());
+    // The fixed vertices and the curves' ids, in the result and in what a result makes.
+    const auto check_ids = [&](const MeshMap& result) {
+        std::multiset<double> ids;
+        for (const double v : column(result.at("mesh").vertex_attributes.at("vertex_id"))) {
+            if (v >= 0) ids.insert(v);
+        }
+        CHECK(ids == std::multiset<double>{11, 12, 13, 14});
+        const auto edge_id =
+            column(result.at("edges").cell(CellType::Edge).attributes.at("edge_id"));
+        const auto n5 = std::count(edge_id.begin(), edge_id.end(), 5.);
+        const auto n6 = std::count(edge_id.begin(), edge_id.end(), 6.);
+        CHECK(n5 >= 3);
+        CHECK(n6 >= 3);
+        CHECK(size_t(n5 + n6) == edge_id.size());
+    };
+    check_ids(meshes);
 
     nlohmann::json file_report;
     std::ifstream(dir.path / "report.json") >> file_report;
@@ -695,13 +711,43 @@ TEST_CASE("features-file-memory-route", "[test_remeshing][features]")
     memory_report.erase("time_sec");
     CHECK(memory_report == file_report);
 
+    // A result goes back in as it is: mesh as the input -- its vertex_id is accepted and
+    // ignored -- and edges as the features, the fixed vertices from its vertex_id.
+    nlohmann::json again = options;
+    again["input"] = "mesh";
+    again["features"] = "edges";
+    check_ids(isotropic_remeshing(again, meshes).first);
+
     // Fixed vertices without curves: edges still has an edge block, of none.
-    std::ofstream(dir.path / "vertices.json") << nlohmann::json{{"vertices", {{3, 11}}}}.dump();
-    memory["features"] = "vertices.json";
-    const MeshData none = run_memory(memory).first.at("edges");
+    MeshData points = curves;
+    points.cells.erase(CellType::Edge);
+    const MeshData none =
+        isotropic_remeshing(memory, MeshMap{{"surface", surface}, {"curves", points}})
+            .first.at("edges");
     CHECK(none.cell(CellType::Edge).connectivity.rows() == 0);
     CHECK(none.cell(CellType::Edge).connectivity.cols() == 2);
     CHECK(int64(none.cell(CellType::Edge).attributes.at("edge_id")));
+
+    // What it may not be: on other vertices, with a Float64 id, with triangles.
+    const auto refused = [&](const MeshData& wrong, const std::string& error) {
+        CHECK_THROWS_WITH(
+            isotropic_remeshing(memory, MeshMap{{"surface", surface}, {"curves", wrong}}),
+            Catch::Matchers::ContainsSubstring(error));
+    };
+    MeshData wrong = curves;
+    wrong.V.conservativeResize(wrong.V.rows() + 1, 3);
+    wrong.V.row(wrong.V.rows() - 1).setZero();
+    refused(wrong, "has 50 vertices and the input 49");
+    wrong = curves;
+    wrong.cells[CellType::Edge].attributes["edge_id"].values = DataMatrix<double>(
+        DataMatrix<double>::Constant(wrong.cell(CellType::Edge).connectivity.rows(), 1, 5));
+    refused(wrong, "edge_id that is not one Int64 column");
+    wrong = curves;
+    wrong.cells[CellType::Triangle] = surface.cell(CellType::Triangle);
+    refused(wrong, "has cells other than edges and points");
+    wrong = curves;
+    wrong.cells[CellType::Point].attributes.clear();
+    refused(wrong, "Missing required mesh attribute: vertex_id");
 }
 
 namespace {

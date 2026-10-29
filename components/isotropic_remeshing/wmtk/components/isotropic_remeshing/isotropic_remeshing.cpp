@@ -126,8 +126,8 @@ struct Features
     std::vector<std::pair<size_t, int64_t>> vertices;
 };
 
-/// A features file, as it is: its indices vertices of the input as given, of which there are
-/// `n_vertices`.
+/// The file route's features: a features file, as it is, its indices vertices of the input as
+/// given, of which there are `n_vertices`.
 Features read_features(const std::string& path, const size_t n_vertices)
 {
     nlohmann::json j;
@@ -189,6 +189,75 @@ Features read_features(const std::string& path, const size_t n_vertices)
             log_and_throw_error("features: vertex {} in {} is not [vertex, id]", v.dump(), path);
         }
         out.vertices.emplace_back(vertex(v[0], "vertex"), id(v[1], "vertex id"));
+    }
+    return out;
+}
+
+/// The vertex fields a memory input may carry: those of io::read_mesh, and the vertex_id of a
+/// result, so that a result can be passed back in.
+std::set<std::string> with_vertex_id()
+{
+    std::set<std::string> names = io::ComponentIO::reader_vertex_attributes;
+    names.insert("vertex_id");
+    return names;
+}
+
+/// The memory route's features: the mesh `name`, `data`, on the vertex rows of the input as given
+/// (`n_vertices` of them) as the edges result is on mesh's, so that one call's result can be the
+/// next one's features. Its edges are the curves, with the Int64 cell field edge_id or without;
+/// the fixed vertices are its points, with the Int64 cell field vertex_id, and the vertices whose
+/// Int64 vertex field vertex_id is not -1, as mesh and edges carry them.
+Features read_features(const MeshData& data, const std::string& name, const size_t n_vertices)
+{
+    const auto refuse = [&name](const std::string& what) {
+        log_and_throw_error("features: the mesh {} {}", name, what);
+    };
+    io::ComponentIO::attributes(data.vertex_attributes, with_vertex_id());
+    for (const auto& [type, c] : data.cells) {
+        if (type == CellType::Edge) {
+            io::ComponentIO::attributes(c.attributes, {"edge_id"});
+        } else if (type == CellType::Point) {
+            io::ComponentIO::attributes(c.attributes, {"vertex_id"}, {"vertex_id"});
+        } else {
+            refuse("has cells other than edges and points");
+        }
+    }
+    if (size_t(data.V.rows()) != n_vertices) {
+        refuse(
+            fmt::format(
+                "has {} vertices and the input {}: its indices are rows of the input",
+                data.V.rows(),
+                n_vertices));
+    }
+    // One Int64 column: an id never goes through Float64.
+    const auto ids = [&](const MeshAttributes& a, const std::string& field, Eigen::Index rows) {
+        const auto it = a.find(field);
+        if (it == a.end()) return DataMatrix<int64_t>(DataMatrix<int64_t>::Constant(rows, 1, -1));
+        const auto* values = std::get_if<DataMatrix<int64_t>>(&it->second.values);
+        if (!values || values->cols() != 1)
+            refuse("has a " + field + " that is not one Int64 column");
+        return *values;
+    };
+    Features out;
+    if (const auto e = data.cells.find(CellType::Edge); e != data.cells.end()) {
+        const auto& c = e->second.connectivity;
+        const auto id = ids(e->second.attributes, "edge_id", c.rows());
+        for (Eigen::Index i = 0; i < c.rows(); ++i) {
+            out.edges.push_back({{size_t(c(i, 0)), size_t(c(i, 1))}});
+            out.edge_ids.push_back(id(i, 0));
+        }
+    }
+    if (const auto p = data.cells.find(CellType::Point); p != data.cells.end()) {
+        const auto& c = p->second.connectivity;
+        const auto id = ids(p->second.attributes, "vertex_id", c.rows());
+        for (Eigen::Index i = 0; i < c.rows(); ++i)
+            out.vertices.emplace_back(size_t(c(i, 0)), id(i, 0));
+    }
+    if (data.vertex_attributes.count("vertex_id")) {
+        const auto id = ids(data.vertex_attributes, "vertex_id", data.V.rows());
+        for (Eigen::Index v = 0; v < id.rows(); ++v) {
+            if (id(v, 0) != -1) out.vertices.emplace_back(size_t(v), id(v, 0));
+        }
     }
     return out;
 }
@@ -434,7 +503,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     const std::string history_output = json_params["history_output"];
     const std::vector<std::string> feature_fields = json_params["feature_fields"];
-    const std::string features_file = json_params["features"];
+    // A file on the file route, a mesh of the memory input on the memory route.
+    const std::string features_input = json_params["features"];
     // The fields are read from the .msh file the input names; a memory input carries none.
     if (component_io.memory() && !feature_fields.empty()) {
         throw std::runtime_error(
@@ -443,7 +513,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
     double length_abs = json_params["length_abs"];
     // With feature curves, a .vtu output holds them, the fields and the fixed vertices.
-    const bool vtu_output = (!feature_fields.empty() || !features_file.empty()) &&
+    const bool vtu_output = (!feature_fields.empty() || !features_input.empty()) &&
                             std::filesystem::path(output).extension() == ".vtu";
 
     wmtk::logger().info("remeshing on {}", input_path);
@@ -455,8 +525,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // so that the history starts at the file itself. With features too, which name vertices of
     // the file.
     wmtk::io::ReadProvenance read;
-    const std::string features_path =
-        features_file.empty() ? "" : resolve_path(root, features_file).string();
+    // Where the features come from, for the messages.
+    const std::string features_source = features_input.empty() ? ""
+                                        : component_io.memory()
+                                            ? "the mesh " + features_input
+                                            : resolve_path(root, features_input).string();
     Features features;
     {
         MatrixXd V;
@@ -468,19 +541,24 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             remove_duplicate_eps,
             -1,
             nullptr,
-            history_output.empty() && features_file.empty() ? nullptr : &read);
+            history_output.empty() && features_input.empty() ? nullptr : &read,
+            // Ignored: the fixed vertices come from features.
+            with_vertex_id());
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
     }
-    if (!features_file.empty()) {
+    if (!features_input.empty()) {
         // Merging duplicates and dropping unreferenced vertices renumbers them; the features
         // follow them.
+        const size_t n = read.vertex_map.size();
         features = weld_features(
-            read_features(features_path, read.vertex_map.size()),
+            component_io.memory()
+                ? read_features(component_io.mesh(features_input), features_input, n)
+                : read_features(features_source, n),
             read.vertex_map,
             tris,
-            features_path);
+            features_source);
     }
 
     double diag = (box_minmax.first - box_minmax.second).norm();
@@ -543,7 +621,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     FieldData fields;
     if (!feature_fields.empty()) {
         fields = field_boundaries(input_path, tris, feature_fields);
-        if (features_file.empty()) {
+        if (features_input.empty()) {
             m.set_feature_edges(fields.boundaries);
             logger().info(
                 "{} feature edges: the boundaries of {}",
@@ -551,7 +629,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 nlohmann::json(feature_fields).dump());
         }
     }
-    if (!features_file.empty()) {
+    if (!features_input.empty()) {
         const size_t listed = features.edges.size();
         // The field boundaries join them, without an id.
         for (const auto& e : fields.boundaries) {
@@ -566,7 +644,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             "{} feature edges, {} of them from {}{}; {} fixed vertices",
             m.feature_edges().size(),
             listed,
-            features_path,
+            features_source,
             feature_fields.empty()
                 ? ""
                 : ", with the boundaries of " + nlohmann::json(feature_fields).dump(),
@@ -652,7 +730,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     }
     if (component_io.memory()) {
-        if (features_file.empty()) {
+        if (features_input.empty()) {
             component_io.result.first["mesh"] =
                 io::triangle_data(m, [&](size_t v) { return m.vertex_attrs[v].pos; });
         } else {
