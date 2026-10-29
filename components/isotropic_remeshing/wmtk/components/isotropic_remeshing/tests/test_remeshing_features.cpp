@@ -389,52 +389,59 @@ TEST_CASE("features-file", "[test_remeshing][features]")
 
     SECTION("output")
     {
-        isotropic_remeshing(config);
-        const std::string tri = (dir.path / "out.vtu").string();
-        const std::string lines = (dir.path / "out_edges.vtu").string();
-        REQUIRE(std::filesystem::exists(tri));
-        REQUIRE(std::filesystem::exists(lines));
-        const auto points = vtu_array<double>(tri, "vertex_id"); // a point field
-        const auto patch = vtu_array<double>(tri, "patch_id");
-        const auto conn = vtu_array<int64_t>(tri, "connectivity");
-        const auto edge_id = vtu_array<double>(lines, "edge_id");
-        const auto edge_conn = vtu_array<int64_t>(lines, "connectivity");
-        CHECK(vtu_array<double>(lines, "vertex_id") == points);
-        REQUIRE(conn.size() == 3 * patch.size());
-        REQUIRE(edge_conn.size() == 2 * edge_id.size());
+        // Merging duplicates (remove_duplicate_eps 1e-5, the default) sorts the vertices even
+        // where none coincide; the features follow them.
+        for (const double merge : {-1., 1e-5}) {
+            INFO("remove_duplicate_eps " << merge);
+            config["remove_duplicate_eps"] = merge;
+            isotropic_remeshing(config);
+            const std::string tri = (dir.path / "out.vtu").string();
+            const std::string lines = (dir.path / "out_edges.vtu").string();
+            REQUIRE(std::filesystem::exists(tri));
+            REQUIRE(std::filesystem::exists(lines));
+            const auto points = vtu_array<double>(tri, "vertex_id"); // a point field
+            const auto patch = vtu_array<double>(tri, "patch_id");
+            const auto conn = vtu_array<int64_t>(tri, "connectivity");
+            const auto edge_id = vtu_array<double>(lines, "edge_id");
+            const auto edge_conn = vtu_array<int64_t>(lines, "connectivity");
+            CHECK(vtu_array<double>(lines, "vertex_id") == points);
+            REQUIRE(conn.size() == 3 * patch.size());
+            REQUIRE(edge_conn.size() == 2 * edge_id.size());
 
-        std::multiset<int64_t> fixed;
-        for (const double v : points) {
-            if (v >= 0) fixed.insert(int64_t(v));
-        }
-        CHECK(fixed == std::multiset<int64_t>{11, 12, 13});
-        for (const double p : patch) CHECK((p == 0 || p == 1));
-        // Each line is an edge of the triangles; the curve keeps id 5, the label boundary -1,
-        // and the patch changes exactly across the lines of id -1.
-        std::map<Edge, std::vector<size_t>> faces;
-        for (size_t f = 0; f < patch.size(); ++f) {
-            for (int k = 0; k < 3; ++k) {
-                size_t a = conn[3 * f + k], b = conn[3 * f + (k + 1) % 3];
-                faces[{{std::min(a, b), std::max(a, b)}}].push_back(f);
+            std::multiset<int64_t> fixed;
+            for (const double v : points) {
+                if (v >= 0) fixed.insert(int64_t(v));
             }
+            CHECK(fixed == std::multiset<int64_t>{11, 12, 13});
+            for (const double p : patch) CHECK((p == 0 || p == 1));
+            // Each line is an edge of the triangles; the curve keeps id 5, the label boundary -1,
+            // and the patch changes exactly across the lines of id -1.
+            std::map<Edge, std::vector<size_t>> faces;
+            for (size_t f = 0; f < patch.size(); ++f) {
+                for (int k = 0; k < 3; ++k) {
+                    size_t a = conn[3 * f + k], b = conn[3 * f + (k + 1) % 3];
+                    faces[{{std::min(a, b), std::max(a, b)}}].push_back(f);
+                }
+            }
+            std::map<Edge, int64_t> line_id;
+            for (size_t i = 0; i < edge_id.size(); ++i) {
+                const size_t a = edge_conn[2 * i], b = edge_conn[2 * i + 1];
+                line_id[{{std::min(a, b), std::max(a, b)}}] = int64_t(edge_id[i]);
+                CHECK((edge_id[i] == 5 || edge_id[i] == -1));
+            }
+            size_t curve = 0;
+            for (const auto& [e, fs] : faces) {
+                REQUIRE(fs.size() <= 2);
+                const bool differ = fs.size() == 2 && patch[fs[0]] != patch[fs[1]];
+                const auto it = line_id.find(e);
+                CHECK(differ == (it != line_id.end() && it->second == -1));
+                if (it != line_id.end() && it->second == 5) ++curve;
+            }
+            CHECK(curve == size_t(std::count(edge_id.begin(), edge_id.end(), 5.)));
+            CHECK(curve >= 6);
         }
-        std::map<Edge, int64_t> line_id;
-        for (size_t i = 0; i < edge_id.size(); ++i) {
-            const size_t a = edge_conn[2 * i], b = edge_conn[2 * i + 1];
-            line_id[{{std::min(a, b), std::max(a, b)}}] = int64_t(edge_id[i]);
-            CHECK((edge_id[i] == 5 || edge_id[i] == -1));
-        }
-        size_t curve = 0;
-        for (const auto& [e, fs] : faces) {
-            REQUIRE(fs.size() <= 2);
-            const bool differ = fs.size() == 2 && patch[fs[0]] != patch[fs[1]];
-            const auto it = line_id.find(e);
-            CHECK(differ == (it != line_id.end() && it->second == -1));
-            if (it != line_id.end() && it->second == 5) ++curve;
-        }
-        CHECK(curve == size_t(std::count(edge_id.begin(), edge_id.end(), 5.)));
-        CHECK(curve >= 6);
     }
+
     SECTION("an edge not in the mesh")
     {
         features["edges"].push_back({r(0), r(48)});
@@ -467,11 +474,106 @@ TEST_CASE("features-file", "[test_remeshing][features]")
         refused(j, "vertices in");
         refused(features["edges"], "is not an object");
     }
-    SECTION("vertices renumbered")
+}
+
+TEST_CASE("features-follow-merged-vertices", "[test_remeshing][features]")
+{
+    // The grid of size 6 in two pieces, x <= 3 and x >= 3, each with its own copy of the column
+    // x = 3, as a B-rep mesher writes a mesh face by face. The features list the seam x = 3 on
+    // both copies, its end (3, 0) fixed on both, and an edge between the two copies of (3, 6):
+    // merging the duplicates welds the pieces, the two copies of the seam into one curve, and
+    // takes the edge between the copies away.
+    const TempDir dir;
+    std::vector<Eigen::Vector3d> V;
+    std::vector<std::array<size_t, 3>> F;
+    const auto left = [](int i, int j) { return size_t(i * 7 + j); }; // i in [0, 3]
+    const auto right = [](int i, int j) { return size_t(28 + (i - 3) * 7 + j); }; // i in [3, 6]
+    for (int i = 0; i <= 3; ++i) {
+        for (int j = 0; j <= 6; ++j) V.emplace_back(i, j, 0);
+    }
+    for (int i = 3; i <= 6; ++i) {
+        for (int j = 0; j <= 6; ++j) V.emplace_back(i, j, 0);
+    }
+    for (int i = 0; i < 6; ++i) {
+        const auto id = [&](int a, int b) { return i < 3 ? left(a, b) : right(a, b); };
+        for (int j = 0; j < 6; ++j) {
+            F.push_back({{id(i, j), id(i + 1, j), id(i + 1, j + 1)}});
+            F.push_back({{id(i, j), id(i + 1, j + 1), id(i, j + 1)}});
+        }
+    }
     {
-        // Merging duplicates sorts the vertices: the indices would no longer name them.
-        config["remove_duplicate_eps"] = 1e-5;
-        CHECK_THROWS(isotropic_remeshing(config));
+        MshData msh;
+        msh.add_face_vertices(V.size(), [&](size_t i) { return V[i]; });
+        msh.add_faces(F.size(), [&](size_t i) { return F[i]; });
+        msh.save((dir.path / "in.msh").string());
+    }
+    nlohmann::json features;
+    for (int j = 0; j < 6; ++j) {
+        features["edges"].push_back({left(3, j), left(3, j + 1)});
+        features["edges"].push_back({right(3, j + 1), right(3, j)});
+        features["edge_ids"].push_back(5);
+        features["edge_ids"].push_back(5);
+    }
+    features["edges"].push_back({left(3, 6), right(3, 6)});
+    features["edge_ids"].push_back(7);
+    features["vertices"] = {{left(3, 0), 11}, {right(3, 0), 11}, {left(0, 0), 12}};
+    const auto write = [&](const nlohmann::json& j) {
+        std::ofstream(dir.path / "features.json") << j.dump();
+    };
+    const nlohmann::json config = {
+        {"application", "isotropic_remeshing"},
+        {"input", "in.msh"},
+        {"input_dir", dir.path.string()},
+        {"output", (dir.path / "out.vtu").string()},
+        {"features", "features.json"},
+        {"length_abs", 0.7},
+        {"eps_rel", 0.01},
+        {"max_iterations", 2}};
+
+    SECTION("welded")
+    {
+        write(features);
+        isotropic_remeshing(config);
+        const std::string tri = (dir.path / "out.vtu").string();
+        const std::string lines = (dir.path / "out_edges.vtu").string();
+        std::multiset<int64_t> fixed;
+        for (const double v : vtu_array<double>(tri, "vertex_id")) {
+            if (v >= 0) fixed.insert(int64_t(v));
+        }
+        CHECK(fixed == std::multiset<int64_t>{11, 12});
+        const auto edge_id = vtu_array<double>(lines, "edge_id");
+        CHECK(edge_id.size() >= 6);
+        CHECK(size_t(std::count(edge_id.begin(), edge_id.end(), 5.)) == edge_id.size());
+        // One curve inside the surface: two triangles at each of its edges.
+        const auto conn = vtu_array<int64_t>(tri, "connectivity");
+        const auto edge_conn = vtu_array<int64_t>(lines, "connectivity");
+        std::map<Edge, size_t> faces;
+        for (size_t f = 0; 3 * f < conn.size(); ++f) {
+            for (int k = 0; k < 3; ++k) {
+                const size_t a = conn[3 * f + k], b = conn[3 * f + (k + 1) % 3];
+                ++faces[{{std::min(a, b), std::max(a, b)}}];
+            }
+        }
+        for (size_t i = 0; 2 * i < edge_conn.size(); ++i) {
+            const size_t a = edge_conn[2 * i], b = edge_conn[2 * i + 1];
+            CHECK(faces[{{std::min(a, b), std::max(a, b)}}] == 2);
+        }
+    }
+    SECTION("ids that disagree")
+    {
+        // Two copies of one edge, or of one vertex, with different ids.
+        nlohmann::json j = features;
+        j["edge_ids"][1] = 6;
+        write(j);
+        CHECK_THROWS_WITH(
+            isotropic_remeshing(config),
+            Catch::Matchers::ContainsSubstring("are one edge of the input, with ids 5 and 6"));
+        j = features;
+        j["vertices"][1][1] = 13;
+        write(j);
+        CHECK_THROWS_WITH(
+            isotropic_remeshing(config),
+            Catch::Matchers::ContainsSubstring("are one vertex of the input, with ids 11 and 13"));
     }
 }
 

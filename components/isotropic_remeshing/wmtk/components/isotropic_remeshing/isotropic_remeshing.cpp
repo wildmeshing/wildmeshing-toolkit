@@ -118,18 +118,17 @@ FieldData field_boundaries(
     return out;
 }
 
-/// The contents of a "features" file (see the spec), checked against the input mesh.
-struct FeatureFile
+/// Curves with ids and fixed vertices with theirs (see the spec's features).
+struct Features
 {
     std::vector<std::array<size_t, 2>> edges;
     std::vector<int64_t> edge_ids;
     std::vector<std::pair<size_t, int64_t>> vertices;
 };
 
-FeatureFile read_features(
-    const std::string& path,
-    const size_t n_vertices,
-    const std::vector<std::array<size_t, 3>>& tris)
+/// A features file, as it is: its indices vertices of the input as given, of which there are
+/// `n_vertices`.
+Features read_features(const std::string& path, const size_t n_vertices)
 {
     nlohmann::json j;
     {
@@ -167,14 +166,8 @@ FeatureFile read_features(
         }
         return v.get<size_t>();
     };
-    std::set<std::array<size_t, 2>> mesh_edges;
-    for (const auto& t : tris) {
-        for (int k = 0; k < 3; ++k) {
-            mesh_edges.insert({{std::min(t[k], t[(k + 1) % 3]), std::max(t[k], t[(k + 1) % 3])}});
-        }
-    }
 
-    FeatureFile out;
+    Features out;
     const nlohmann::json edges = list("edges");
     const nlohmann::json ids = list("edge_ids");
     if (!ids.empty() && ids.size() != edges.size()) {
@@ -184,51 +177,97 @@ FeatureFile read_features(
             ids.size(),
             edges.size());
     }
-    std::map<std::array<size_t, 2>, int64_t> seen;
     for (size_t i = 0; i < edges.size(); ++i) {
         if (!edges[i].is_array() || edges[i].size() != 2) {
             log_and_throw_error("features: edge {} in {} is not a pair", edges[i].dump(), path);
         }
-        const size_t a = vertex(edges[i][0], "edge end"), b = vertex(edges[i][1], "edge end");
-        if (a == b) continue; // a B-rep edge of no length: its one vertex, no mesh edge
-        const std::array<size_t, 2> e{{std::min(a, b), std::max(a, b)}};
-        if (!mesh_edges.count(e)) {
-            log_and_throw_error("features: ({}, {}) in {} is not an edge of the input", a, b, path);
-        }
-        const int64_t edge_id = ids.empty() ? -1 : id(ids[i], "edge id");
-        const auto [it, inserted] = seen.emplace(e, edge_id);
-        if (!inserted) {
-            if (it->second != edge_id) {
-                log_and_throw_error(
-                    "features: edge ({}, {}) is listed with ids {} and {} in {}",
-                    a,
-                    b,
-                    it->second,
-                    edge_id,
-                    path);
-            }
-            continue;
-        }
-        out.edges.push_back(e);
-        out.edge_ids.push_back(edge_id);
+        out.edges.push_back({{vertex(edges[i][0], "edge end"), vertex(edges[i][1], "edge end")}});
+        out.edge_ids.push_back(ids.empty() ? -1 : id(ids[i], "edge id"));
     }
-    std::map<size_t, int64_t> fixed;
     for (const nlohmann::json& v : list("vertices")) {
         if (!v.is_array() || v.size() != 2) {
             log_and_throw_error("features: vertex {} in {} is not [vertex, id]", v.dump(), path);
         }
-        const size_t x = vertex(v[0], "vertex");
-        const int64_t vertex_id = id(v[1], "vertex id");
-        const auto [it, inserted] = fixed.emplace(x, vertex_id);
-        if (!inserted && it->second != vertex_id) {
-            log_and_throw_error(
-                "features: vertex {} is listed with ids {} and {} in {}",
-                x,
-                it->second,
-                vertex_id,
-                path);
+        out.vertices.emplace_back(vertex(v[0], "vertex"), id(v[1], "vertex id"));
+    }
+    return out;
+}
+
+/// The features `in`, of the input as given, on the mesh the reader made of it: `vertex_map`
+/// takes each vertex of the input to the one it became, or -1 (see io::ReadProvenance), and
+/// `tris` are the triangles it made. An edge whose two ends became one goes: a B-rep edge of
+/// no length, or one whose ends were duplicates. Entries that became one, of edges or of
+/// vertices, are kept once, and have to agree on the id. Each edge has to be an edge of `tris`,
+/// and each vertex a vertex of them. `source` names the features in the errors.
+Features weld_features(
+    const Features& in,
+    const std::vector<int>& vertex_map,
+    const std::vector<std::array<size_t, 3>>& tris,
+    const std::string& source)
+{
+    std::set<std::array<size_t, 2>> mesh_edges;
+    for (const auto& t : tris) {
+        for (int k = 0; k < 3; ++k) {
+            mesh_edges.insert({{std::min(t[k], t[(k + 1) % 3]), std::max(t[k], t[(k + 1) % 3])}});
         }
-        if (inserted) out.vertices.emplace_back(x, it->second);
+    }
+    Features out;
+    // Each kept entry, with its id and the entry of `in` it came from first.
+    std::map<std::array<size_t, 2>, std::pair<int64_t, std::array<size_t, 2>>> seen;
+    for (size_t i = 0; i < in.edges.size(); ++i) {
+        const auto [a, b] = in.edges[i];
+        const int64_t id = in.edge_ids[i];
+        const int x = vertex_map.at(a), y = vertex_map.at(b);
+        if (x == y && (x >= 0 || a == b)) continue; // no length: its one vertex, no mesh edge
+        const std::array<size_t, 2> e{{size_t(std::min(x, y)), size_t(std::max(x, y))}};
+        if (x < 0 || y < 0 || !mesh_edges.count(e)) {
+            log_and_throw_error(
+                "features: ({}, {}) in {} is not an edge of the input",
+                a,
+                b,
+                source);
+        }
+        const auto [it, inserted] = seen.emplace(e, std::pair{id, in.edges[i]});
+        if (!inserted) {
+            const auto [first_id, first] = it->second;
+            if (first_id != id) {
+                log_and_throw_error(
+                    "features: ({}, {}) and ({}, {}) in {} are one edge of the input, with ids {} "
+                    "and {}",
+                    first[0],
+                    first[1],
+                    a,
+                    b,
+                    source,
+                    first_id,
+                    id);
+            }
+            continue;
+        }
+        out.edges.push_back(e);
+        out.edge_ids.push_back(id);
+    }
+    std::map<size_t, std::pair<int64_t, size_t>> fixed;
+    for (const auto& [v, id] : in.vertices) {
+        const int x = vertex_map.at(v);
+        if (x < 0) {
+            log_and_throw_error(
+                "features: vertex {} in {} is in no triangle of the input",
+                v,
+                source);
+        }
+        const auto [it, inserted] = fixed.emplace(size_t(x), std::pair{id, v});
+        if (!inserted && it->second.first != id) {
+            log_and_throw_error(
+                "features: vertices {} and {} in {} are one vertex of the input, with ids {} and "
+                "{}",
+                it->second.second,
+                v,
+                source,
+                it->second.first,
+                id);
+        }
+        if (inserted) out.vertices.emplace_back(size_t(x), id);
     }
     return out;
 }
@@ -401,8 +440,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
     std::vector<size_t> modified_nonmanifold_v;
     // With a history: the file as read and the vertex of the mesh each of its vertices became,
-    // so that the history starts at the file itself.
+    // so that the history starts at the file itself. With features too, which name vertices of
+    // the file.
     wmtk::io::ReadProvenance read;
+    const std::string features_path =
+        features_file.empty() ? "" : resolve_path(root, features_file).string();
+    Features features;
     {
         MatrixXd V;
         MatrixXi F;
@@ -414,27 +457,18 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             -1,
             nullptr,
             history_output.empty() && features_file.empty() ? nullptr : &read);
-        if (!features_file.empty()) {
-            // The features name vertices of the file; the reader must not renumber them.
-            bool same = read.vertex_map.size() == size_t(V.rows());
-            for (size_t i = 0; same && i < read.vertex_map.size(); ++i) {
-                same = read.vertex_map[i] == int(i);
-            }
-            if (!same) {
-                log_and_throw_error(
-                    "features: reading {} renumbered its vertices ({} in the file, {} after "
-                    "merging duplicates and dropping unreferenced ones), so {} no longer names "
-                    "them. Merging sorts the vertices even where none coincide: set "
-                    "remove_duplicate_eps to -1.",
-                    input_path,
-                    read.vertex_map.size(),
-                    V.rows(),
-                    features_file);
-            }
-        }
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
+    }
+    if (!features_file.empty()) {
+        // Merging duplicates and dropping unreferenced vertices renumbers them; the features
+        // follow them.
+        features = weld_features(
+            read_features(features_path, read.vertex_map.size()),
+            read.vertex_map,
+            tris,
+            features_path);
     }
 
     double diag = (box_minmax.first - box_minmax.second).norm();
@@ -506,8 +540,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     }
     if (!features_file.empty()) {
-        const std::string path = resolve_path(root, features_file).string();
-        FeatureFile features = read_features(path, verts.size(), tris);
         const size_t listed = features.edges.size();
         // The field boundaries join them, without an id.
         for (const auto& e : fields.boundaries) {
@@ -522,7 +554,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             "{} feature edges, {} of them from {}{}; {} fixed vertices",
             m.feature_edges().size(),
             listed,
-            path,
+            features_path,
             feature_fields.empty()
                 ? ""
                 : ", with the boundaries of " + nlohmann::json(feature_fields).dump(),
