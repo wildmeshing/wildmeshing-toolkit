@@ -24,6 +24,6 @@ target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 # The tracking example rebuilds the map with the tracking component. It is added after this
 # component, so its option may not be set yet; unset, it defaults to on.
 if(NOT DEFINED WMTK_ENABLE_COMPONENT_tracking OR WMTK_ENABLE_COMPONENT_tracking)
-    target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE test_triwild_tracking.cpp)
+    target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE test_triwild_tracking.cpp test_triwild_history.cpp)
     target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::tracking)
 endif()

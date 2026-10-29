@@ -601,7 +601,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   precision through the steps that stretch it (round trip 6.76 there). With junctions anchored
   they stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths. So
   `history_output` anchors them (`allow_junction_cleanup` defaults to false then, unless the
-  config gives it). The freeze the option was introduced for in August, a self-intersecting
+  config gives it; without `preserve_feature_points`, which anchors nothing, it is left alone). The freeze the option was introduced for in August, a self-intersecting
   input stuck at MAX_ENERGY by its anchored crossings, no longer happens on its example:
   242427 converges either way at default topology, anchored keeping about 2.5 times the
   vertices (stop_energy 100: max energy 99.5 and 3443 vertices free, 99.2 and 8483 anchored,
