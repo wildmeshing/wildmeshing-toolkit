@@ -4666,3 +4666,34 @@ TEST_CASE("settle-mark-stencil", "[offset][3d]")
         CHECK(def->settle_refinement_turn(1, e_prev, false));
     }
 }
+
+TEST_CASE("memory-output-with-offset-front", "[offset][3d][io]")
+{
+    // The memory export (collect_memory_output(), the route every run's output takes since the
+    // new mesh IO) of a mesh with an offset potential and a front, as a run ends: write_vtu() then
+    // also writes the stencil file (one point per stencil point of every offset face), whose
+    // points are not the mesh's vertex slots. MEASURED 2026-10-29: every run of the sonic
+    // stencil sweep on f9e9b94971 converged and then aborted in the export, "Export references an
+    // inactive vertex" (compact_slot_outputs()). The export must succeed, its keys be the
+    // offsets' own, and the mesh's rows be the live vertices.
+    const GridInput g = grid_input(5);
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        g.V);
+    auto mesh =
+        grid_offset_mesh(g, param, std::filesystem::temp_directory_path() / "wmtk_offset_memout");
+    REQUIRE(mesh->m_offset_potential);
+    REQUIRE(!mesh->offset_surface_faces().empty());
+    io::ComponentIO context;
+    REQUIRE_NOTHROW(collect_memory_output(*mesh, context));
+    const auto& out = context.result.first;
+    CHECK(out.count("mesh") == 1);
+    CHECK(out.count("offset") == 1);
+    for (const auto& [key, data] : out) {
+        INFO("result key " << key);
+        CHECK(
+            (key == "mesh" || key == "surface" || key == "edges" || key == "offset" ||
+             key == "envelope"));
+    }
+    CHECK(size_t(out.at("mesh").V.rows()) == mesh->get_vertices().size());
+}

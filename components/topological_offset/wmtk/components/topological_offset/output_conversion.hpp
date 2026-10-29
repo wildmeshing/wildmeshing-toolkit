@@ -14,6 +14,11 @@ void collect_memory_output(
     if constexpr (!std::is_base_of_v<TetMesh, Mesh>) keys["mesh_surf.vtu"] = "";
     MeshMap raw;
     mesh.write_vtu("mesh", &raw);
+    // The stencil file (3D, a mesh with an offset potential and a front): one point per stencil
+    // point of every offset face, indexed by those points, not by the mesh's vertex slots, so
+    // compact_slot_outputs() cannot remap it ("Export references an inactive vertex": every run
+    // of the 2026-10-29 sonic sweep aborted there). A debug-frame diagnostic, not a result.
+    raw.erase("mesh_stencil.vtu");
     if constexpr (std::is_base_of_v<TetMesh, Mesh>) io::compact_slot_outputs(mesh, raw);
     context.result.first = io::named_outputs(std::move(raw), keys);
     auto& data = context.result.first.at("mesh");
