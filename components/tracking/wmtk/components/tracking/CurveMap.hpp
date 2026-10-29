@@ -73,17 +73,20 @@ class CurveMap
 public:
     explicit CurveMap(const history::CurveHistory& h, const CurveMapOptions& options = {});
 
-    /// Points on the last state, mapped onto the first.
-    std::vector<CurvePoint> to_input(std::vector<CurvePoint> points) const;
-    /// Points on the first state, mapped onto the last.
-    std::vector<CurvePoint> to_output(std::vector<CurvePoint> points) const;
+    /// Points on the last state, mapped onto the first. `warnings`, if given, gets what this call
+    /// found. The map is not changed: any number of threads may map through it at once.
+    std::vector<CurvePoint> to_input(
+        std::vector<CurvePoint> points,
+        CurveMapWarnings* warnings = nullptr) const;
+    /// Points on the first state, mapped onto the last; see to_input.
+    std::vector<CurvePoint> to_output(
+        std::vector<CurvePoint> points,
+        CurveMapWarnings* warnings = nullptr) const;
 
     /// What building the map found.
     const CurveMapWarnings& build_warnings() const { return m_build_warnings; }
     /// The edits (indices into the history) whose local map raised a build warning.
     const std::vector<size_t>& warned_edits() const { return m_warned_edits; }
-    /// What the last to_input() / to_output() found.
-    const CurveMapWarnings& map_warnings() const { return m_map_warnings; }
 
     /// The curves at the start and at the end, every slot, as the history holds them.
     const std::vector<Eigen::Vector3d>& input_vertices() const { return m_in_vertices; }
@@ -156,9 +159,9 @@ private:
     /// One point through one step, or back; false if it has no image.
     static bool forward(const Step& s, CurvePoint& p);
     static bool backward(const Step& s, CurvePoint& p);
-    /// Points through every step, forward or back, counting those left without an image. A
-    /// local step moves only the points on its own segments, which an index finds.
-    void map(std::vector<CurvePoint>& points, bool to_output) const;
+    /// Points through every step, forward or back, counting those left without an image in
+    /// `warnings`. A local step moves only the points on its own segments, which an index finds.
+    void map(std::vector<CurvePoint>& points, bool to_output, CurveMapWarnings& warnings) const;
     /// The point at the same fraction of arc length along `to` as `bary` on segment i of `from`.
     static CurvePoint
     along(const Chain& from, size_t i, const Eigen::Vector2d& bary, const Chain& to);
@@ -166,7 +169,6 @@ private:
     std::vector<Step> m_steps;
     CurveMapWarnings m_build_warnings;
     std::vector<size_t> m_warned_edits;
-    mutable CurveMapWarnings m_map_warnings;
     std::vector<Eigen::Vector3d> m_in_vertices, m_out_vertices;
     std::vector<std::array<uint64_t, 2>> m_in_segments, m_out_segments;
     std::vector<uint8_t> m_in_alive, m_out_alive;

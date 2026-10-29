@@ -192,12 +192,13 @@ std::vector<std::array<uint64_t, 2>> CurveTracking::output_segments() const
 }
 
 std::vector<OutputCurvePoint> CurveTracking::to_output(
-    const std::vector<InputCurvePoint>& points) const
+    const std::vector<InputCurvePoint>& points,
+    CurveMapWarnings* warnings) const
 {
     std::vector<CurvePoint> pts;
     pts.reserve(points.size());
     for (const InputCurvePoint& p : points) pts.push_back({p.segment, p.bary});
-    const std::vector<CurvePoint> mapped = m_map.to_output(std::move(pts));
+    const std::vector<CurvePoint> mapped = m_map.to_output(std::move(pts), warnings);
     const auto& segments = m_map.output_segments();
     const auto& alive = m_map.output_segment_alive();
     std::vector<OutputCurvePoint> out(mapped.size());
@@ -218,7 +219,8 @@ std::vector<OutputCurvePoint> CurveTracking::to_output(
 }
 
 std::vector<InputCurvePoint> CurveTracking::to_input(
-    const std::vector<OutputCurvePoint>& points) const
+    const std::vector<OutputCurvePoint>& points,
+    CurveMapWarnings* warnings) const
 {
     const auto& segments = m_map.output_segments();
     const auto& alive = m_map.output_segment_alive();
@@ -249,7 +251,7 @@ std::vector<InputCurvePoint> CurveTracking::to_input(
         const bool same_order = segments[it->second][0] == i0->second;
         pts[i] = {it->second, same_order ? p.bary : Eigen::Vector2d(p.bary[1], p.bary[0])};
     }
-    const std::vector<CurvePoint> mapped = m_map.to_input(std::move(pts));
+    const std::vector<CurvePoint> mapped = m_map.to_input(std::move(pts), warnings);
     std::vector<InputCurvePoint> out(mapped.size());
     for (size_t i = 0; i < mapped.size(); ++i) {
         if (mapped[i].segment < m_map.input_segments().size()) {

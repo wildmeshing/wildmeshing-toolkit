@@ -249,6 +249,7 @@ void map_curve_points(
     if (!out) log_and_throw_error("Could not write {}", output_points);
     out.precision(17);
     size_t lost = 0, total = 0;
+    CurveMapWarnings warnings;
     timer.start();
     if (forward) {
         std::vector<InputCurvePoint> pts;
@@ -256,7 +257,7 @@ void map_curve_points(
             pts.push_back({id_of(r[0]), Eigen::Vector2d(r[1], r[2])});
         }
         total = pts.size();
-        for (const OutputCurvePoint& p : tracking.to_output(pts)) {
+        for (const OutputCurvePoint& p : tracking.to_output(pts, &warnings)) {
             const bool none =
                 tracking.output_by_vertices() ? p.vertices[0] == kNoId : p.segment == kNoId;
             lost += none;
@@ -281,7 +282,7 @@ void map_curve_points(
             pts.push_back(p);
         }
         total = pts.size();
-        for (const InputCurvePoint& p : tracking.to_input(pts)) {
+        for (const InputCurvePoint& p : tracking.to_input(pts, &warnings)) {
             lost += p.segment == kNoId;
             out << id_text(p.segment) << " " << p.bary[0] << " " << p.bary[1] << "\n";
         }
@@ -293,7 +294,7 @@ void map_curve_points(
         timer.getElapsedTimeInSec(),
         lost,
         output_points);
-    log_warnings("mapping", tracking.map().map_warnings());
+    log_warnings("mapping", warnings);
 }
 
 /// The operations on a curve history (triwild's); `history_path` names it in messages. Returns
@@ -390,12 +391,13 @@ nlohmann::json curves(
         length += (V[S[f][0]] - V[S[f][1]]).norm();
     }
     timer.start();
-    const auto in = map.to_input(midpoints);
-    log_warnings("output midpoints to the input", map.map_warnings());
-    report["to_input_warnings"] = warnings_report(map.map_warnings());
-    const auto back = map.to_output(in);
-    log_warnings("and back to the output", map.map_warnings());
-    report["to_output_warnings"] = warnings_report(map.map_warnings());
+    CurveMapWarnings to_input_warnings, to_output_warnings;
+    const auto in = map.to_input(midpoints, &to_input_warnings);
+    log_warnings("output midpoints to the input", to_input_warnings);
+    report["to_input_warnings"] = warnings_report(to_input_warnings);
+    const auto back = map.to_output(in, &to_output_warnings);
+    log_warnings("and back to the output", to_output_warnings);
+    report["to_output_warnings"] = warnings_report(to_output_warnings);
     double max_err = 0;
     size_t lost = 0;
     std::vector<double> drift;

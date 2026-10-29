@@ -182,7 +182,8 @@ struct FeaturePoint
  * Tracking's counterpart for curves (triwild).
  *
  * Built from the history alone; see CurveMap for how. A point that cannot be mapped comes back
- * with no segment and no vertices (kNoId), and map().map_warnings() counts it.
+ * with no segment and no vertices (kNoId), and the warnings of the call count it. Mapping never
+ * changes the object: several threads may map through one at once.
  */
 class CurveTracking
 {
@@ -195,11 +196,16 @@ public:
     /// segments.
     bool output_by_vertices() const { return !m_output_ids.empty(); }
 
-    /// Input points to the output.
-    std::vector<OutputCurvePoint> to_output(const std::vector<InputCurvePoint>& points) const;
+    /// Input points to the output. `warnings`, if given, gets where this call found the map not
+    /// a bijection (CurveMap::to_output).
+    std::vector<OutputCurvePoint> to_output(
+        const std::vector<InputCurvePoint>& points,
+        CurveMapWarnings* warnings = nullptr) const;
     /// Output points to the input, the inverse map. A point named by vertices may list them in
     /// either order, its barycentric coordinates following them.
-    std::vector<InputCurvePoint> to_input(const std::vector<OutputCurvePoint>& points) const;
+    std::vector<InputCurvePoint> to_input(
+        const std::vector<OutputCurvePoint>& points,
+        CurveMapWarnings* warnings = nullptr) const;
 
     /// The output's tracked curves: for an output by vertices, its tracked edges by the output's
     /// vertex ids, the pairs an OutputCurvePoint may name; otherwise its segments, by index.

@@ -700,9 +700,11 @@ bool CurveMap::backward(const Step& s, CurvePoint& p)
     }
 }
 
-void CurveMap::map(std::vector<CurvePoint>& points, const bool to_output) const
+void CurveMap::map(
+    std::vector<CurvePoint>& points,
+    const bool to_output,
+    CurveMapWarnings& warnings) const
 {
-    m_map_warnings = CurveMapWarnings();
     const auto& alive = to_output ? m_in_alive : m_out_alive;
     // The points on each segment.
     std::unordered_map<uint64_t, std::vector<uint32_t>> on;
@@ -715,7 +717,7 @@ void CurveMap::map(std::vector<CurvePoint>& points, const bool to_output) const
     for (CurvePoint& p : points) {
         if (p.segment >= alive.size() || !alive[p.segment]) {
             p.segment = kNone;
-            ++m_map_warnings.unlocated;
+            ++warnings.unlocated;
         }
     }
     index();
@@ -725,7 +727,7 @@ void CurveMap::map(std::vector<CurvePoint>& points, const bool to_output) const
         const auto move = [&](CurvePoint& p) {
             if (to_output ? forward(s, p) : backward(s, p)) return;
             p.segment = kNone;
-            ++m_map_warnings.unlocated;
+            ++warnings.unlocated;
         };
         if (s.kind == EditKind::consolidate || s.kind == EditKind::relabel ||
             s.kind == EditKind::embed) {
@@ -752,15 +754,23 @@ void CurveMap::map(std::vector<CurvePoint>& points, const bool to_output) const
     }
 }
 
-std::vector<CurvePoint> CurveMap::to_output(std::vector<CurvePoint> points) const
+std::vector<CurvePoint> CurveMap::to_output(
+    std::vector<CurvePoint> points,
+    CurveMapWarnings* warnings) const
 {
-    map(points, true);
+    CurveMapWarnings w;
+    map(points, true, w);
+    if (warnings) *warnings = w;
     return points;
 }
 
-std::vector<CurvePoint> CurveMap::to_input(std::vector<CurvePoint> points) const
+std::vector<CurvePoint> CurveMap::to_input(
+    std::vector<CurvePoint> points,
+    CurveMapWarnings* warnings) const
 {
-    map(points, false);
+    CurveMapWarnings w;
+    map(points, false, w);
+    if (warnings) *warnings = w;
     return points;
 }
 

@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <random>
+#include <thread>
 
 using namespace wmtk;
 using namespace wmtk::components;
@@ -385,4 +386,52 @@ TEST_CASE("curve-map-embed-piece-of-no-length", "[tracking][curves]")
     CHECK(
         (at(q, map.input_vertices(), map.input_segments()) - Eigen::Vector3d(1.5, 0, 0)).norm() <
         1e-8);
+}
+
+TEST_CASE("curve-map-maps-from-several-threads", "[tracking][curves]")
+{
+    // Mapping does not write to the map: threads mapping through one at once each get their own
+    // points and their own warnings, those a call alone gets. Every thread's batch has as many
+    // points on segments the input does not have as its number, each one unlocated.
+    CurveHistory h = polyline({0, 1, 2, 3, 4, 5, 6});
+    h.features = {{{0}}, {{6}}};
+    h.edits.push_back(
+        {EditKind::split_edge, {1, 2, 7}, {1, 6}, {{7, Eigen::Vector3d(1.25, 0, 0)}}});
+    h.edits.push_back({EditKind::collapse_edge, {3, 4}, {}, {{4, Eigen::Vector3d(3.5, 0, 0)}}});
+    h.edits.push_back({EditKind::move_vertices, {}, {}, {{5, Eigen::Vector3d(4.8, 0.2, 0)}}});
+    h.edits.push_back({EditKind::consolidate, {}, {}, {}});
+    const CurveMap map(h);
+    REQUIRE(map.build_warnings().total() == 0);
+    const auto pts = random_points(map, true, 2000);
+    std::vector<std::vector<CurvePoint>> batches(8, pts);
+    for (size_t t = 0; t < batches.size(); ++t) {
+        for (size_t k = 0; k < t; ++k) {
+            batches[t].push_back({map.input_segments().size() + k, Eigen::Vector2d(0.5, 0.5)});
+        }
+    }
+    const auto serial = map.to_output(pts);
+    std::vector<std::vector<CurvePoint>> there(batches.size());
+    std::vector<tracking::CurveMapWarnings> warnings(batches.size());
+    {
+        std::vector<std::thread> threads;
+        for (size_t t = 0; t < batches.size(); ++t) {
+            threads.emplace_back([&, t] {
+                for (int repeat = 0; repeat < 3; ++repeat) {
+                    there[t] = map.to_output(batches[t], &warnings[t]);
+                }
+            });
+        }
+        for (auto& t : threads) t.join();
+    }
+    for (size_t t = 0; t < batches.size(); ++t) {
+        INFO("thread " << t);
+        CHECK(warnings[t].unlocated == t);
+        CHECK(warnings[t].total() == t);
+        REQUIRE(there[t].size() == pts.size() + t);
+        for (size_t i = 0; i < pts.size(); ++i) {
+            CHECK(there[t][i].segment == serial[i].segment);
+            CHECK(there[t][i].bary == serial[i].bary);
+        }
+        for (size_t k = 0; k < t; ++k) CHECK(there[t][pts.size() + k].segment == kNoVertex);
+    }
 }
