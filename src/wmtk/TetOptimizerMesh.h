@@ -603,10 +603,12 @@ public:
     /// the input triangles. Filled at insertion when a surface history is to start from the
     /// input; record_surface_history takes it.
     std::vector<std::pair<PositionKey, std::vector<uint32_t>>> m_insertion_sources;
-    /// The volume being recorded, kept past stop_surface_history() until saved, and the offset
-    /// of the recorded surface edits in the surface history (finish_surface_history).
+    /// The volume being recorded, kept past stop_surface_history() until saved; the offset of
+    /// the recorded surface edits in the surface history finish_surface_history() returned, and
+    /// that history's key, which the volume history keeps.
     std::shared_ptr<history::VolumeRecorder> m_recorded_volume;
     uint64_t m_surface_edit_offset = 0;
+    std::optional<history::SurfaceKey> m_saved_surface;
 
     /// The faces with m_is_surface_fs, for a surface history (TetMesh::start_surface_history).
     bool is_tracked_face(size_t tid, int j) const override;

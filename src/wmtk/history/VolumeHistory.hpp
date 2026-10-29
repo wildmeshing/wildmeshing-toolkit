@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -66,6 +67,19 @@ struct VolumeEdit
     std::vector<Eigen::Vector3d> positions_after() const;
 };
 
+/// What a volume history's edits index into: the surface history recorded alongside, by its
+/// number of edits and a hash of it (surface_key()). A volume map checks it.
+struct SurfaceKey
+{
+    uint64_t edits = 0;
+    uint64_t hash = 0;
+    bool operator==(const SurfaceKey& o) const { return edits == o.edits && hash == o.hash; }
+    bool operator!=(const SurfaceKey& o) const { return !(*this == o); }
+};
+/// The key of a surface history: its number of edits, and a hash of them and of the size of its
+/// snapshot -- the same for a history and the one saved from it and loaded.
+SurfaceKey surface_key(const SurfaceHistory& h);
+
 /**
  * @brief The tets around every operation that changed a tet mesh's tracked surface, which,
  * with the surface history, is what a map of the volume needs: every other operation leaves
@@ -83,6 +97,9 @@ struct VolumeHistory
     /// The surface history file these edits index into, and the offset of the recorder's first
     /// edit in it (the input's own edits come first there).
     uint64_t surface_edit_offset = 0;
+    /// That surface history's key, which a volume map checks the one it is given against; unset
+    /// for a history put together in memory, which is not checked.
+    std::optional<SurfaceKey> surface;
 
     void save(const std::string& path) const;
     static VolumeHistory load(const std::string& path);
@@ -125,10 +142,12 @@ public:
 
     /// What was recorded, decoded, sorted by surface edit.
     VolumeHistory history() const;
-    /// Saves what was recorded, with the given offset of the surface edits and tag names.
+    /// Saves what was recorded, with the offset of its surface edits in the surface history
+    /// saved alongside, that history's key, and the tag names.
     void save(
         const std::string& path,
         uint64_t surface_edit_offset,
+        const SurfaceKey& surface,
         const std::map<int64_t, std::string>& tag_names) const;
     /// The edits recorded, and the bytes they take.
     size_t size() const;

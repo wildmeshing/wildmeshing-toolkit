@@ -1,3 +1,4 @@
+#include <wmtk/components/tracking/VolumeMap.hpp>
 #include <wmtk/components/tracking/volume_geometry.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
 
@@ -92,15 +93,16 @@ struct RawVolumeFile
         std::memcpy(b, &x, 8);
         bytes.insert(bytes.end(), b, b + 8);
     }
-    /// The header: no offset, the regions {} and {1}, no names, n_edits edits.
+    /// The header: no offset, no surface key, the regions {} and {1}, no names, n_edits edits.
     void header(const uint64_t n_edits)
     {
         for (const char c : std::string("WMTKVOLH")) u8(uint8_t(c));
-        const uint32_t version = 1;
+        const uint32_t version = 2;
         uint8_t v[4];
         std::memcpy(v, &version, 4);
         bytes.insert(bytes.end(), v, v + 4);
         varint(0); // surface_edit_offset
+        u8(0); // no surface key
         varint(2); // regions
         varint(0);
         varint(1);
@@ -348,6 +350,95 @@ TEST_CASE("volume-history-save-checks", "[volume_map]")
     h.edits[0].op_vertices = {};
     CHECK_THROWS_AS(h.save(path), std::runtime_error);
     std::filesystem::remove(path);
+}
+
+namespace {
+
+/// A square of two triangles in the plane z = 0, its corners moved one by one in four edits.
+history::SurfaceHistory square_history()
+{
+    history::SurfaceHistory h;
+    h.vertices = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
+    h.vertex_alive.assign(4, 1);
+    h.faces = {{{0, 1, 2}}, {{0, 2, 3}}};
+    h.face_alive.assign(2, 1);
+    for (uint64_t v = 0; v < 4; ++v) {
+        history::Edit e{history::EditKind::move_vertices, {}, {}, {}};
+        e.moves.push_back({v, h.vertices[v]});
+        h.edits.push_back(e);
+    }
+    return h;
+}
+
+/// The move of square_history()'s edit 1 as a volume history saw it: the tets on either side of
+/// the square at corner 1, a cone over it from (0.5, 0.5, +-1).
+history::VolumeHistory square_volume(const history::SurfaceHistory& h)
+{
+    history::VolumeHistory v;
+    v.regions = {{0}, {1}};
+    v.surface = history::surface_key(h);
+    history::VolumeEdit e;
+    e.op = history::VolumeOp::smooth;
+    e.first_edit = 1;
+    e.n_edits = 1;
+    e.positions =
+        {h.vertices[0], h.vertices[1], h.vertices[2], h.vertices[3], {0.5, 0.5, 1}, {0.5, 0.5, -1}};
+    e.surface_before = {0, 1, 2, 3, history::kNoVertex, history::kNoVertex};
+    e.surface_after = e.surface_before;
+    e.tets = {{{0, 1, 2, 4}}, {{0, 2, 3, 4}}, {{0, 2, 1, 5}}, {{0, 3, 2, 5}}};
+    e.regions = {1, 1, 0, 0};
+    e.op_vertices = {1};
+    v.edits.push_back(e);
+    return v;
+}
+
+} // namespace
+
+TEST_CASE("volume-map-pairing", "[volume_map]")
+{
+    const history::SurfaceHistory h = square_history();
+    {
+        const VolumeMap map(h, square_volume(h));
+        CHECK(map.history().edits.size() == 1);
+    }
+    // saved and loaded, the key is the same
+    {
+        const std::string path = temp_path("pairing");
+        h.save(path);
+        const auto g = history::SurfaceHistory::load(path);
+        std::filesystem::remove(path);
+        CHECK(history::surface_key(g) == history::surface_key(h));
+    }
+    // a surface history with another edit, or one more
+    history::SurfaceHistory other = h;
+    other.edits[2].moves[0].pos[2] = 1e-3;
+    CHECK(history::surface_key(other) != history::surface_key(h));
+    CHECK_THROWS_AS(VolumeMap(other, square_volume(h)), std::runtime_error);
+    other = h;
+    other.edits.push_back(other.edits.back());
+    CHECK_THROWS_AS(VolumeMap(other, square_volume(h)), std::runtime_error);
+    // without a key, what the pair can be checked by alone: the surface edits it names are
+    // there, and so are the surface vertices
+    history::VolumeHistory v = square_volume(h);
+    v.surface.reset();
+    v.edits[0].first_edit = 4;
+    CHECK_THROWS_AS(VolumeMap(h, v), std::runtime_error);
+    v = square_volume(h);
+    v.surface.reset();
+    v.surface_edit_offset = 3;
+    CHECK_THROWS_AS(VolumeMap(h, v), std::runtime_error);
+    v = square_volume(h);
+    v.surface.reset();
+    v.edits[0].surface_before[4] = 9;
+    CHECK_THROWS_AS(VolumeMap(h, v), std::runtime_error);
+    // and the key goes through a file
+    v = square_volume(h);
+    const std::string path = temp_path("pairing_volume");
+    v.save(path);
+    const auto w = history::VolumeHistory::load(path);
+    std::filesystem::remove(path);
+    REQUIRE(w.surface);
+    CHECK(*w.surface == history::surface_key(h));
 }
 
 TEST_CASE("volume-chebyshev", "[volume_map]")

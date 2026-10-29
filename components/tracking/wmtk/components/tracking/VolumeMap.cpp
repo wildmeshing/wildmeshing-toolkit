@@ -1179,46 +1179,82 @@ VolumeMap::VolumeMap(const history::SurfaceHistory& surface, history::VolumeHist
     : m_volume(std::move(volume))
     , m_surface(surface, volume_options())
 {
+    // The volume history must be the one recorded with this surface history: its operations'
+    // edits, their surface vertices, are this history's.
+    if (m_volume.surface) {
+        const history::SurfaceKey key = history::surface_key(surface);
+        if (key.edits != m_volume.surface->edits) {
+            log_and_throw_error(
+                "volume map: the volume history was recorded with a surface history of {} "
+                "edits, not with this one, of {}",
+                m_volume.surface->edits,
+                key.edits);
+        }
+        if (key.hash != m_volume.surface->hash) {
+            log_and_throw_error(
+                "volume map: the volume history was recorded with another surface history, of "
+                "as many edits ({})",
+                key.edits);
+        }
+    }
+    const uint64_t n_surface = surface.edits.size();
     history::Replay r(surface);
     size_t applied = 0;
     const auto advance = [&](const size_t to) {
-        while (applied < to && applied < surface.edits.size()) r.apply(surface.edits[applied++]);
+        while (applied < to) r.apply(surface.edits[applied++]);
     };
     using Tracked = Faces::Tracked;
-    const auto lookup =
-        [&r](const Tets& tets, const std::vector<uint64_t>& sid, std::vector<Tracked>& out) {
-            std::map<uint64_t, Vid> local;
-            for (Vid v = 0; v < Vid(sid.size()); ++v) {
-                if (sid[v] != kNone) local[sid[v]] = v;
+    const auto lookup = [&r](
+                            const Tets& tets,
+                            const std::vector<uint64_t>& sid,
+                            std::vector<Tracked>& out,
+                            const uint64_t at) {
+        std::map<uint64_t, Vid> local;
+        for (Vid v = 0; v < Vid(sid.size()); ++v) {
+            if (sid[v] == kNone) continue;
+            if (sid[v] >= r.vertex_alive().size() || !r.vertex_alive()[sid[v]]) {
+                log_and_throw_error(
+                    "volume map: the volume history does not match the surface history: at "
+                    "surface edit {} it names surface vertex {}, which the surface does not have",
+                    at,
+                    sid[v]);
             }
-            std::set<Tri> seen;
-            for (const Tet& t : tets) {
-                for (const Tri& f : faces_of(t)) {
-                    if (!seen.insert(f).second) continue;
-                    if (sid[f[0]] == kNone || sid[f[1]] == kNone || sid[f[2]] == kNone) continue;
-                    const uint64_t a = sid[f[0]];
-                    if (a >= r.vertex_alive().size()) continue;
-                    std::array<uint64_t, 3> want = {{sid[f[0]], sid[f[1]], sid[f[2]]}};
-                    std::sort(want.begin(), want.end());
-                    for (const uint64_t fid : r.faces_of(a)) {
-                        std::array<uint64_t, 3> c = r.faces()[fid];
-                        std::array<uint64_t, 3> cs = c;
-                        std::sort(cs.begin(), cs.end());
-                        if (cs != want) continue;
-                        out.push_back(
-                            {f, fid, Tri{{local.at(c[0]), local.at(c[1]), local.at(c[2])}}});
-                        break;
-                    }
+            local[sid[v]] = v;
+        }
+        std::set<Tri> seen;
+        for (const Tet& t : tets) {
+            for (const Tri& f : faces_of(t)) {
+                if (!seen.insert(f).second) continue;
+                if (sid[f[0]] == kNone || sid[f[1]] == kNone || sid[f[2]] == kNone) continue;
+                std::array<uint64_t, 3> want = {{sid[f[0]], sid[f[1]], sid[f[2]]}};
+                std::sort(want.begin(), want.end());
+                for (const uint64_t fid : r.faces_of(sid[f[0]])) {
+                    std::array<uint64_t, 3> c = r.faces()[fid];
+                    std::array<uint64_t, 3> cs = c;
+                    std::sort(cs.begin(), cs.end());
+                    if (cs != want) continue;
+                    out.push_back({f, fid, Tri{{local.at(c[0]), local.at(c[1]), local.at(c[2])}}});
+                    break;
                 }
             }
-        };
+        }
+    };
     for (const auto& e : m_volume.edits) {
-        const size_t first = e.first_edit + m_volume.surface_edit_offset;
+        const uint64_t offset = m_volume.surface_edit_offset;
+        if (offset > n_surface || e.first_edit > n_surface - offset ||
+            e.n_edits > n_surface - offset - e.first_edit) {
+            log_and_throw_error(
+                "volume map: the volume history names surface edits up to {}, past the end of "
+                "the surface history, at {}",
+                offset + e.first_edit + e.n_edits,
+                n_surface);
+        }
+        const size_t first = e.first_edit + offset;
         auto f = std::make_unique<Faces>();
         advance(first);
-        lookup(e.tets, e.surface_before, f->before);
+        lookup(e.tets, e.surface_before, f->before, first);
         advance(first + e.n_edits);
-        lookup(e.tets_after(), e.surface_after, f->after);
+        lookup(e.tets_after(), e.surface_after, f->after, first + e.n_edits);
         for (auto* fs : {&f->before, &f->after}) {
             std::sort(fs->begin(), fs->end(), [](const Tracked& a, const Tracked& b) {
                 return a.face < b.face;

@@ -921,8 +921,12 @@ void TetOptimizerMesh::save_volume_history(
     const std::map<int64_t, std::string>& tag_names)
 {
     if (!m_recorded_volume) return;
+    if (!m_saved_surface) {
+        log_and_throw_error(
+            "save_volume_history: the surface history it indexes into is not finished yet");
+    }
     stop_volume_history();
-    m_recorded_volume->save(path, m_surface_edit_offset, tag_names);
+    m_recorded_volume->save(path, m_surface_edit_offset, *m_saved_surface, tag_names);
     logger().info(
         "volume history: {} operations that changed the tracked surface, {:.1f} MB -- saved to {}",
         m_recorded_volume->size(),
@@ -973,6 +977,7 @@ std::optional<history::SurfaceHistory> TetOptimizerMesh::finish_surface_history(
         m_surface_edit_offset = 0;
         h = std::move(m_recorded_surface->history());
     }
+    m_saved_surface = history::surface_key(h);
     m_recorded_surface.reset();
     m_recorded_sources.clear();
     return h;

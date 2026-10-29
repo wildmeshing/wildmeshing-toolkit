@@ -13,11 +13,12 @@ namespace wmtk::history {
 
 namespace {
 
-// Layout (version 1). Counts and ids are unsigned LEB128 varints, a position three f64, a tag a
+// Layout (version 2). Counts and ids are unsigned LEB128 varints, a position three f64, a tag a
 // zigzag varint, a surface vertex its id plus one (0: none).
 //
 //   "WMTKVOLH" u32 version
 //   surface_edit_offset
+//   u8 1 if the surface history's key follows, then its edits and u64 hash; else 0
 //   n_regions, then per region: n_tags, its tags
 //   n_tag_names, then per name: the tag, its length, its bytes
 //   n_edits, then per edit, in the order recorded (a reader sorts them by first_edit):
@@ -37,7 +38,7 @@ namespace {
 //       n_added, then per added tet: 4 local ids, region
 // A vertex's surface vertex after an edit is what the next edit takes as its last one.
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'V', 'O', 'L', 'H'};
-constexpr uint32_t kVersion = 1;
+constexpr uint32_t kVersion = 2;
 
 using detail::BufferReader;
 using detail::BufferWriter;
@@ -318,6 +319,7 @@ VolumeEdit decode(BufferReader& r, std::vector<Known>& known, const size_t n_reg
 void write_header(
     detail::Writer& w,
     const uint64_t offset,
+    const std::optional<SurfaceKey>& surface,
     const std::vector<std::vector<int64_t>>& regions,
     const std::map<int64_t, std::string>& tag_names,
     const size_t n_edits)
@@ -325,6 +327,11 @@ void write_header(
     w.bytes(kMagic, sizeof(kMagic));
     w.put(kVersion);
     w.varint(offset);
+    w.put(uint8_t(surface ? 1 : 0));
+    if (surface) {
+        w.varint(surface->edits);
+        w.put(surface->hash);
+    }
     w.varint(regions.size());
     for (const auto& r : regions) {
         w.varint(r.size());
@@ -373,6 +380,39 @@ std::vector<VolumeEdit> decode_all(
 }
 
 } // namespace
+
+SurfaceKey surface_key(const SurfaceHistory& h)
+{
+    // FNV-1a's multiply over 64-bit words, then a finalizer that spreads the last ones
+    uint64_t x = 14695981039346656037ull;
+    const auto mix = [&x](const uint64_t v) {
+        x ^= v;
+        x *= 1099511628211ull;
+    };
+    const auto mix_double = [&mix](const double d) {
+        uint64_t bits;
+        std::memcpy(&bits, &d, sizeof bits);
+        mix(bits);
+    };
+    mix(h.vertices.size());
+    mix(h.faces.size());
+    for (const Edit& e : h.edits) {
+        mix(uint64_t(e.kind));
+        mix(e.v.size());
+        for (const uint64_t v : e.v) mix(v);
+        mix(e.faces.size());
+        for (const uint64_t f : e.faces) mix(f);
+        mix(e.moves.size());
+        for (const VertexMove& m : e.moves) {
+            mix(m.vid);
+            for (int k = 0; k < 3; ++k) mix_double(m.pos[k]);
+        }
+    }
+    x ^= x >> 33;
+    x *= 0xff51afd7ed558ccdull;
+    x ^= x >> 33;
+    return {h.edits.size(), x};
+}
 
 std::vector<std::array<uint32_t, 4>> VolumeEdit::tets_after(
     std::vector<uint32_t>* regions_after) const
@@ -428,7 +468,7 @@ void VolumeHistory::save(const std::string& path) const
         encode(w, e, ids, known);
     }
     detail::Writer out(path);
-    write_header(out, surface_edit_offset, regions, tag_names, edits.size());
+    write_header(out, surface_edit_offset, surface, regions, tag_names, edits.size());
     out.bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
     out.finish();
 }
@@ -450,6 +490,14 @@ VolumeHistory VolumeHistory::load(const std::string& path)
     }
     VolumeHistory h;
     h.surface_edit_offset = r.varint();
+    const uint8_t keyed = r.byte();
+    if (keyed > 1) r.corrupt();
+    if (keyed) {
+        SurfaceKey key;
+        key.edits = r.varint();
+        key.hash = r.get<uint64_t>();
+        h.surface = key;
+    }
     h.regions.resize(r.count());
     for (auto& reg : h.regions) {
         reg.resize(r.count());
@@ -581,11 +629,12 @@ VolumeHistory VolumeRecorder::history() const
 void VolumeRecorder::save(
     const std::string& path,
     const uint64_t surface_edit_offset,
+    const SurfaceKey& surface,
     const std::map<int64_t, std::string>& tag_names) const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     detail::Writer out(path);
-    write_header(out, surface_edit_offset, m_regions, tag_names, m_count);
+    write_header(out, surface_edit_offset, surface, m_regions, tag_names, m_count);
     out.bytes(reinterpret_cast<const char*>(m_bytes.data()), m_bytes.size());
     out.finish();
 }
