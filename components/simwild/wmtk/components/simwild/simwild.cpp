@@ -333,9 +333,11 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     }
 
     // A SimWild surface is exactly the interface between unlike tags, so every face between two
-    // differently tagged tets must be marked as surface. The operations maintain this
-    // incrementally; check it once at the end rather than trusting that they did.
-    if (!mesh.check_interface_faces_tagged(/*verbose=*/true)) {
+    // differently tagged tets must be marked as surface. Remeshing maintains this incrementally;
+    // check it once at the end rather than trusting that it did. The tag operations leave the
+    // flags to the next run (above), so after them the check would only list the faces whose
+    // tags they changed.
+    if (params.operation == "remeshing" && !mesh.check_interface_faces_tagged(/*verbose=*/true)) {
         logger().error("Interface faces are not consistently tagged as surface!");
     }
 

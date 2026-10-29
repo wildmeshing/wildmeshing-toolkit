@@ -179,7 +179,14 @@ struct Parameters : public wmtk::OptimizerParameters
     /// J_t = int_t (d - delta) dV in closed form (ExactBandIntegral); an upper bound only on its
     /// rule-(a) pieces. "front_flux": the operations as "exact", the front smoother's band term in
     /// the front form (flux of a field G with div G = d - delta through the band's boundary faces
-    /// at the vertex, plus the bisector jumps D_t of its flagged cells). See the spec doc.
+    /// at the vertex, plus the bisector jumps D_t of its flagged cells). "exact_swept"
+    /// (2026-10-22): "exact"'s energy, but each operation's rule reads the band integral's exact
+    /// change where the band changes -- value() on the tets a moving vertex's boundary faces of
+    /// the band sweep, or on the cone over a flip's changed faces -- instead of integrating whole
+    /// cells before and after; the smoother searches on that same exact change (its derivatives
+    /// by Reynolds' transport theorem over the band's boundary faces, or the ring cells' where a
+    /// curved bisector crosses one), and its move is accepted on it, halved up to 4 times.
+    /// See the spec doc and TopoOffsetTetMesh, EXACT SWEPT CHANGE.
     std::string band_volume_rule = "corner_bound";
     /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
     /// turn is settled when the offset energy (E without its AMIPS term) fell by less than the bar
@@ -352,10 +359,10 @@ struct Parameters : public wmtk::OptimizerParameters
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
         band_volume_rule = json_params["EXPERIMENTAL_band_volume_rule"];
         if (band_volume_rule != "corner_bound" && band_volume_rule != "exact" &&
-            band_volume_rule != "front_flux") {
+            band_volume_rule != "front_flux" && band_volume_rule != "exact_swept") {
             log_and_throw_error(
-                "EXPERIMENTAL_band_volume_rule is \"corner_bound\", \"exact\" or \"front_flux\", "
-                "not \"{}\"",
+                "EXPERIMENTAL_band_volume_rule is \"corner_bound\", \"exact\", \"front_flux\" or "
+                "\"exact_swept\", not \"{}\"",
                 band_volume_rule);
         }
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];

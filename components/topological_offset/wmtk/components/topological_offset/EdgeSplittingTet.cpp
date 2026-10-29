@@ -265,8 +265,9 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
         // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
         // engine rolls a refused split back. The loop's gate: TetWild's rules (m_op_rules, every
         // TetWild pass) have no split rule.
+        // "exact_swept": the AMIPS terms alone, a split leaving B and its band term unchanged
         if (m_offset_params.split_energy_gate && !tetwild_rules() &&
-            !(tet_energy_sum(get_one_ring_tids_for_vertex(t.vid(*this))) <
+            !(tet_energy_sum(get_one_ring_tids_for_vertex(t.vid(*this)), !swept_rule()) <
               m_split_energy_before.local())) {
             ++m_volume_reject_split;
             return false;
@@ -803,7 +804,7 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
     if (m_offset_params.split_energy_gate) {
         std::vector<size_t> tids;
         for (const Tuple& tt : parents) tids.push_back(tt.tid(*this));
-        m_split_energy_before.local() = tet_energy_sum(tids);
+        m_split_energy_before.local() = tet_energy_sum(tids, !swept_rule());
     }
     return true;
 }
