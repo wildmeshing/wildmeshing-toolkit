@@ -8,7 +8,8 @@ template <typename Mesh>
 void collect_memory_output(
     Mesh& mesh,
     io::ComponentIO& context,
-    io::OutputKeys keys = io::default_output_keys())
+    io::OutputKeys keys = io::default_output_keys(),
+    const MeshAttribute* envelope_tags = nullptr)
 {
     // In 2D, `_surf` is the envelope curve itself, which is returned as `envelope` below.
     if constexpr (!std::is_base_of_v<TetMesh, Mesh>) keys["mesh_surf.vtu"] = "";
@@ -42,10 +43,13 @@ void collect_memory_output(
         data.vertex_attributes["vid"].values = ids;
     }
     if (mesh.m_has_envelope) {
-        context.result.first["envelope"] = io::geometry_data(
-            mesh.m_V_envelope,
-            mesh.m_F_envelope,
-            std::is_base_of_v<TetMesh, Mesh> ? CellType::Triangle : CellType::Edge);
+        const CellType t = std::is_base_of_v<TetMesh, Mesh> ? CellType::Triangle : CellType::Edge;
+        auto env = io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, t);
+        // The envelope's labels as it was handed in: its rows are those rows, unchanged.
+        if (envelope_tags && envelope_tags->rows() == mesh.m_F_envelope.rows()) {
+            env.cells[t].attributes["tags"] = *envelope_tags;
+        }
+        context.result.first["envelope"] = std::move(env);
     }
     data.validate();
 }

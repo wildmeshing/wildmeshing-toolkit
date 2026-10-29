@@ -160,7 +160,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
-            topological_offset::collect_memory_output(mesh, component_io);
+            topological_offset::collect_memory_output(
+                mesh,
+                component_io,
+                io::default_output_keys(),
+                input_data.envelope_tags ? &*input_data.envelope_tags : nullptr);
             if (!component_io.memory())
                 io::write_mesh(
                     output_filename.string() + ".msh",
@@ -356,7 +360,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             }
         }
 
-        topological_offset::collect_memory_output(mesh, component_io);
+        topological_offset::collect_memory_output(
+            mesh,
+            component_io,
+            io::default_output_keys(),
+            input_data.envelope_tags ? &*input_data.envelope_tags : nullptr);
         if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         if (mesh.m_offset_params.save_vtu) { // write .vtu
@@ -397,7 +405,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
-            topological_offset::collect_memory_output(mesh, component_io);
+            topological_offset::collect_memory_output(
+                mesh,
+                component_io,
+                io::default_output_keys(),
+                input_data.envelope_tags ? &*input_data.envelope_tags : nullptr);
             if (!component_io.memory())
                 io::write_mesh(
                     output_filename.string() + ".msh",
@@ -605,7 +617,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // mesh.write_msh(output_filename.string()); // write .msh
-        topological_offset::collect_memory_output(mesh, component_io);
+        topological_offset::collect_memory_output(
+            mesh,
+            component_io,
+            io::default_output_keys(),
+            input_data.envelope_tags ? &*input_data.envelope_tags : nullptr);
         if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         if (mesh.m_offset_params.save_vtu) { // write .vtu

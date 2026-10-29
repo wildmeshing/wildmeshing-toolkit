@@ -383,3 +383,65 @@ def test_manifold_extraction_refuses_tagged_faces():
     with pytest.raises(Exception, match="does not take tagged faces"):
         wm.manifold_extraction({"input": "m", "tag_selection": "red", "fill_tags": []},
                                {"m": tagged_grid()})
+
+
+# ---------------------------------------------------------------- the envelope carries its labels
+# An operation handed the envelope holds every face to the ORIGINAL triangles of its own labels;
+# without them it would have only the surface it is handed to build them around, and each
+# operation could add its eps.
+
+def generate_cube_and_square():
+    ins = {"cube": INPUTS["cube"], "square": square()}
+    return wm.simwild({"input": ["cube", "square"], "input_names": ["red", "yellow"],
+                       "input_type": ["volume", "surface"], "skip_simplify": True,
+                       "eps_rel": EPS_REL}, ins)[0]
+
+
+def envelope_labels(env):
+    t = env["cells"]["triangle"]["attributes"]["tags"]
+    return list(t["labels"]), np.asarray(t["values"])
+
+
+def test_the_envelope_carries_its_labels():
+    """Every envelope triangle is one input's: its face tag or its tet tag, by name."""
+    labels, values = envelope_labels(generate_cube_and_square()["envelope"])
+    assert labels == ["yellow", "red"]
+    assert (values.sum(1) == 1).all()
+    assert values[:, 0].sum() == len(square()["cells"]["triangle"]["connectivity"])
+    assert values[:, 1].sum() == len(BOX_F)
+
+
+def test_a_chain_of_operations_keeps_the_original_reference():
+    """Remeshing twice with the envelope handed on: the envelope keeps its labels, and every
+    yellow face and red border stays within eps of the ORIGINAL square and cube."""
+    out = generate_cube_and_square()
+    m, env = out["mesh"], out["envelope"]
+    for _ in range(2):
+        r = wm.simwild({"operation": "remeshing", "input": ["m"], "envelope": "env",
+                        "eps_rel": EPS_REL}, {"m": m, "env": env})[0]
+        m, env = r["mesh"], r["envelope"]
+        assert envelope_labels(env)[0] == ["yellow", "red"]
+    eps = EPS_REL * np.linalg.norm([2.3, 1, 1])  # the inputs' bbox [0,2.3]x[0,1]x[0,1]
+    assert to_rect(m["V"][rows(m, "triangle", "yellow")].reshape(-1, 3)).max() <= eps
+    B = boundary(rows(m, "tetrahedron", "red"))
+    assert to_box_surface(m["V"][B].reshape(-1, 3), *CUBE).max() <= eps
+
+
+def test_the_offset_hands_the_envelope_labels_on():
+    out = generate_cube_and_square()
+    r = wm.topological_offset({"input": "m", "envelope": "env", "offset_selection": "yellow",
+                               "offset_output_tags": ["shell"], "target_distance": 0.05,
+                               "optimize_offset": False}, {"m": out["mesh"], "env": out["envelope"]})[0]
+    a, b = envelope_labels(out["envelope"]), envelope_labels(r["envelope"])
+    assert a[0] == b[0] and (a[1] == b[1]).all()
+
+
+def test_an_envelope_without_labels_is_held_to_as_a_whole():
+    """An old envelope, without labels: every face is held to all of it, as before."""
+    out = generate_cube_and_square()
+    env = {"V": out["envelope"]["V"],
+           "cells": {"triangle": {"connectivity": out["envelope"]["cells"]["triangle"]["connectivity"]}}}
+    m = wm.simwild({"operation": "remeshing", "input": ["m"], "envelope": "env", "eps_rel": EPS_REL},
+                   {"m": out["mesh"], "env": env})[0]["mesh"]
+    eps = EPS_REL * np.linalg.norm([2.3, 1, 1])
+    assert to_rect(m["V"][rows(m, "triangle", "yellow")].reshape(-1, 3)).max() <= eps

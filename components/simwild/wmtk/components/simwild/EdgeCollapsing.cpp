@@ -53,11 +53,13 @@ void SimWildMesh::simplify()
     // exact one dominating its cost on a large input. Otherwise the simplification keeps the
     // mode use_sample_envelope gave m_envelope. Nothing to restore afterwards: the envelope is
     // rebuilt below, by init_envelope, in that mode.
-    if (m_sim_params.simplify_use_sample_envelope) {
-        m_envelope->use_exact = false;
+    const bool exact =
+        !m_sim_params.use_sample_envelope && !m_sim_params.simplify_use_sample_envelope;
+    if (m_envelope_whole) {
+        m_envelope = std::make_shared<Envelope>(exact);
+        m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
     }
-    m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
-    init_label_envelopes(m_sim_params.eps_simplify, m_envelope->use_exact);
+    init_label_envelopes(m_sim_params.eps_simplify, exact);
 
     /**
      * Not checking the quality here can lead to horrible elements that take forever to fix in the
@@ -87,12 +89,19 @@ void SimWildMesh::simplify()
         F.row(i) = Vector3i(int(surf_faces[i][0]), int(surf_faces[i][1]), int(surf_faces[i][2]));
     }
 
+    // The simplified surface becomes the reference, label by label.
     m_envelope = nullptr;
+    m_envelope_whole = false;
     m_V_envelope.clear();
     m_F_envelope.clear();
     m_F_envelope_labels.clear();
     if (V.size() > 0 && F.size() > 0) {
         init_envelope(V, F);
+        m_F_envelope_labels.resize(surf_faces.size());
+        for (size_t i = 0; i < surf_faces.size(); ++i) {
+            const std::array<size_t, 3> f{{surf_faces[i][0], surf_faces[i][1], surf_faces[i][2]}};
+            m_F_envelope_labels[i] = m_face_attribute[std::get<1>(tuple_from_face(f))].input_set();
+        }
     } else {
         logger().warn("No surface faces left after simplification, skip re-building envelope");
     }

@@ -739,11 +739,40 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         const auto t = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
         for (const auto& [ct, c] : envelope->cells) {
             if (ct != t) throw std::runtime_error("Incompatible envelope topology");
-            io::ComponentIO::attributes(c.attributes, {});
+            io::ComponentIO::attributes(c.attributes, {"tags"});
         }
         out.V_envelope = envelope->V.leftCols(type == CellType::Tetrahedron ? 3 : 2);
         out.F_envelope = io::ComponentIO::indices(envelope->cell(t).connectivity);
         out.envelope_name = "EnvelopeSurface";
+        // The envelope's labels, one column per label name as simwild writes them: each row's
+        // bits as this mesh's faces carry them -- a face tag its column of face_tag_names, a tet
+        // tag F + its column of tag_names. A label this mesh no longer has is left out.
+        const auto& cells = envelope->cell(t);
+        if (const auto tags = cells.attributes.find("tags"); tags != cells.attributes.end()) {
+            out.envelope_tags = tags->second;
+            const DataMatrix<double> v = tags->second.doubles();
+            const auto& names = tags->second.labels;
+            std::vector<int64_t> bit(names.size(), -1);
+            for (size_t j = 0; j < names.size(); ++j) {
+                const auto f =
+                    std::find(out.face_tag_names.begin(), out.face_tag_names.end(), names[j]);
+                const auto g = std::find(out.tag_names.begin(), out.tag_names.end(), names[j]);
+                if (f != out.face_tag_names.end()) {
+                    bit[j] = int64_t(f - out.face_tag_names.begin());
+                } else if (g != out.tag_names.end()) {
+                    bit[j] =
+                        int64_t(out.face_tag_names.size()) + int64_t(g - out.tag_names.begin());
+                }
+                if (bit[j] >= SurfaceTagAttributes::max_inputs) bit[j] = -1;
+            }
+            out.F_envelope_labels.assign(out.F_envelope.rows(), 0);
+            for (Eigen::Index r = 0; r < v.rows(); ++r) {
+                for (size_t j = 0; j < names.size(); ++j) {
+                    if (v(r, j) != 0 && bit[j] >= 0)
+                        out.F_envelope_labels[r] |= InputSet(1) << bit[j];
+                }
+            }
+        }
     }
     if (has_embedded) {
         referenced(lower->second.connectivity, out.V_envelope, out.F_envelope);

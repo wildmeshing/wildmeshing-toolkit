@@ -304,6 +304,7 @@ void SimWildMesh::init_surfaces_and_boundaries()
 
     // tag surface faces and vertices
     std::vector<Eigen::Vector3i> tempF;
+    std::vector<InputSet> tempLabels; // per row of tempF: its face's labels
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
 
@@ -348,47 +349,48 @@ void SimWildMesh::init_surfaces_and_boundaries()
         m_vertex_attribute[v3].m_is_on_surface = true;
 
         tempF.emplace_back(v1, v2, v3);
+        tempLabels.push_back(m_face_attribute[ff.fid()].input_set());
     }
 
-    auto reinit_envelope = [&]() {
+    // What the surface faces are held to: the envelope handed in -- each label's own triangles of
+    // it (m_input_envelopes), or the whole of it when it came without labels (m_envelope_whole)
+    // -- else the surface as it starts, label by label.
+    const bool handed_in = !m_F_envelope.empty();
+    const auto envelope_from_surface = [&]() {
+        m_V_envelope.assign(vert_capacity(), Eigen::Vector3d::Zero());
+        for (size_t i = 0; i < vert_capacity(); i++) {
+            m_V_envelope[i] = m_vertex_attribute[i].m_posf;
+        }
+        m_F_envelope = tempF;
+        m_F_envelope_labels = tempLabels;
+        m_envelope_whole = false;
+        m_envelope = nullptr;
+    };
+    if (!handed_in) {
+        logger().info("Init envelope from tet tags");
+        envelope_from_surface();
+    } else if (m_F_envelope_labels.size() != m_F_envelope.size()) {
+        logger().info("The envelope came without labels: every surface face is held to all of it");
+        m_envelope_whole = true;
         m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
-        logger().info(
-            "Envelope: {} (eps {:.6})",
-            m_envelope->use_exact ? "EXACT" : "sampled",
-            m_envelope_eps);
-    };
+    }
+    init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
 
-    if (!m_envelope) {
-        logger().info("Init envelope from tet tags");
-        // build envelopes
-        std::vector<Eigen::Vector3d> tempV(vert_capacity());
-        for (int i = 0; i < vert_capacity(); i++) {
-            tempV[i] = m_vertex_attribute[i].m_posf;
-        }
-
-        m_V_envelope = tempV;
-        m_F_envelope = tempF;
-        m_F_envelope_labels.clear();
-        reinit_envelope();
-    } else if (m_sim_params.operation == "remeshing") {
+    if (handed_in && m_sim_params.operation == "remeshing") {
         // Deliberately NOT behind check_envelope_at_init, unlike triwild's: the answer is not an
-        // assertion but a decision -- if any surface face starts outside, the envelope is rebuilt
-        // from the tet tags below. Skipping it would change the envelope the run uses, not just
-        // what it reports.
+        // assertion but a decision -- if any surface face starts outside what it is held to, the
+        // surface as it starts becomes the reference. Skipping it would change the envelope the
+        // run uses, not just what it reports.
         logger().info("Envelope sanity check");
         bool is_outside = false;
         for_each_face([&](const Tuple& t) {
-            const size_t fid = t.fid(*this);
-            if (!m_face_attribute.at(fid).m_is_surface_fs) {
+            const auto& attr = m_face_attribute.at(t.fid(*this));
+            if (!attr.m_is_surface_fs) {
                 return;
             }
-            const auto verts = get_face_vids(t);
-            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
-            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
-            const auto& p2 = m_vertex_attribute[verts[2]].m_posf;
-            if (m_envelope->is_outside({{p0, p1, p2}})) {
-                // logger().warn("Face {} is outside!", verts);
+            const auto v = get_face_vids(t);
+            if (surface_triangle_is_outside(v[0], v[1], v[2], attr)) {
                 is_outside = true;
             }
         });
@@ -398,18 +400,10 @@ void SimWildMesh::init_surfaces_and_boundaries()
         } else {
             logger().warn("Some surface faces are outside the envelope. Re-build envelope");
             logger().info("Init envelope from tet tags");
-            std::vector<Eigen::Vector3d> tempV(vert_capacity());
-            for (int i = 0; i < vert_capacity(); i++) {
-                tempV[i] = m_vertex_attribute[i].m_posf;
-            }
-            m_V_envelope = tempV;
-            m_F_envelope = tempF;
-            m_F_envelope_labels.clear();
-            reinit_envelope();
+            envelope_from_surface();
+            init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
         }
     }
-
-    init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
 
     // track bounding box
     for (size_t i = 0; i < faces.size(); i++) {
@@ -491,7 +485,7 @@ void SimWildMesh::find_order_2_edges()
     // reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
     // curves. It was hard-wired to sampled only because the exact envelope could not be built
     // from edges until fast-envelope #6.
-    m_order_2_edge_envelope = std::make_shared<Envelope>(m_envelope && m_envelope->use_exact);
+    m_order_2_edge_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
     // A FRACTION of eps here, deliberately, where the surface envelope uses all of it:
     // widening a boundary-curve envelope buys no unblocking and costs elements. See
     // /order2_envelope_ratio in the spec for the measurement.

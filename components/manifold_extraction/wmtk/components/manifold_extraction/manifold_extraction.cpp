@@ -162,7 +162,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // save output
-        topological_offset::collect_memory_output(mesh, component_io);
+        topological_offset::collect_memory_output(
+            mesh,
+            component_io,
+            io::default_output_keys(),
+            input_data.envelope_tags ? &*input_data.envelope_tags : nullptr);
         if (component_io.memory())
             mesh.write_curve("", &component_io.result.first);
         else
@@ -248,7 +252,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // `_surf` holds the input-complex faces here; `surface` is the extracted boundary.
         auto keys = io::default_output_keys();
         keys["mesh_surf.vtu"] = "input_complex";
-        topological_offset::collect_memory_output(mesh, component_io, keys);
+        topological_offset::collect_memory_output(
+            mesh,
+            component_io,
+            keys,
+            input_data.envelope_tags ? &*input_data.envelope_tags : nullptr);
         if (component_io.memory())
             mesh.write_surface("", &component_io.result.first);
         else

@@ -733,6 +733,17 @@ public:
         return m_envelope;
     }
 
+    /**
+     * @brief Whether surface vertex `v` moved to `p` leaves what its tracked faces are held to: the
+     * collapse's cheap pre-check before the faces themselves are (surface_triangle_is_outside()).
+     * By default against m_envelope, refusing without one -- with no envelope to ask, the move
+     * cannot be certified. An application holding each face to its own envelopes asks those.
+     */
+    virtual bool surface_point_is_outside(const size_t v, const Vector3d& p) const
+    {
+        return !m_envelope || m_envelope->is_outside(p);
+    }
+
     /// Whether the tracked-surface triangle (a,b,c) with attributes `attr` (see
     /// surface_envelope_for_face()) is outside its containment envelope. False when it has none.
     /// Every surface containment check in the operations goes through here.

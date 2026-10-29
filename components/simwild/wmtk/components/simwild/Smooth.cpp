@@ -22,8 +22,20 @@ std::shared_ptr<Envelope> SimWildMesh::smoothing_energy_envelope(const size_t vi
     for (const simplex::Face& f : surf.faces()) {
         set |= FA[std::get<1>(tuple_from_face(f.vertices()))].input_set();
     }
-    if (set == 0) return m_envelope;
+    if (set == 0) return nullptr; // on no tracked face: smoothed as an interior vertex
     return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
+}
+
+bool SimWildMesh::surface_point_is_outside(const size_t v, const Vector3d& p) const
+{
+    if (m_input_envelopes.empty()) return !m_envelope || m_envelope->is_outside(p);
+    const auto& FA = std::as_const(m_face_attribute);
+    const simplex::SimplexCollection surf = get_surface_faces_for_vertex(v);
+    for (const simplex::Face& f : surf.faces()) {
+        const InputSet set = FA[std::get<1>(tuple_from_face(f.vertices()))].input_set();
+        if (set == 0 || m_input_envelopes.containment(set)->is_outside(p)) return true;
+    }
+    return false;
 }
 
 } // namespace wmtk::components::simwild

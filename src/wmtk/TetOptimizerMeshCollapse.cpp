@@ -156,8 +156,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         // condition where faces are held to their own inputs (surface_envelope_for_face()): a
         // point outside the union is outside every face's envelope. It stays a cheap prefilter;
         // the faces the survivor keeps are checked against their own sets after the collapse.
-        if (!VA[v2_id].m_is_on_surface &&
-            (!m_envelope || m_envelope->is_outside(VA[v2_id].m_posf))) {
+        if (!VA[v2_id].m_is_on_surface && surface_point_is_outside(v1_id, VA[v2_id].m_posf)) {
             return collapse_reject(CollapseReject::surface_leaves_envelope);
         }
     }

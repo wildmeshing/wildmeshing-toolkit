@@ -380,9 +380,32 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
                 component_io.save_volume_history(*vh, volume_history_output);
             }
         }
-        if (!mesh.m_V_envelope.empty())
-            component_io.result.first["envelope"] =
-                io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);
+        if (!mesh.m_V_envelope.empty()) {
+            auto env = io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);
+            // Each envelope triangle's labels, by name, so that the next operation holds every
+            // face to the original triangles of its own labels rather than to the surface it is
+            // handed (which would let each operation add its eps).
+            const auto& tets = component_io.result.first.at("mesh").cells.at(CellType::Tetrahedron);
+            if (mesh.m_F_envelope_labels.size() == mesh.m_F_envelope.size() &&
+                tets.attributes.count("tags")) {
+                const auto& tet_labels = tets.attributes.at("tags").labels;
+                std::vector<std::string> names = mesh.m_face_tag_names;
+                for (size_t j = 0; j < mesh.m_tags_count && j < tet_labels.size(); ++j) {
+                    names.push_back(tet_labels[j]);
+                }
+                DataMatrix<uint8_t> values =
+                    DataMatrix<uint8_t>::Zero(mesh.m_F_envelope.size(), names.size());
+                for (size_t r = 0; r < mesh.m_F_envelope.size(); ++r) {
+                    for (size_t b = 0; b < names.size(); ++b) {
+                        values(r, b) = uint8_t((mesh.m_F_envelope_labels[r] >> b) & 1);
+                    }
+                }
+                env.cells[CellType::Triangle].attributes["tags"] = {
+                    std::move(values),
+                    std::move(names)};
+            }
+            component_io.result.first["envelope"] = std::move(env);
+        }
         if (!component_io.memory())
             io::write_mesh(params.output_path + ".msh", component_io.result.first.at("mesh"));
     }

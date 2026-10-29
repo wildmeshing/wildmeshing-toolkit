@@ -480,6 +480,10 @@ size_t SimWildMesh::refine_sizing_around_worst(double)
 
 void SimWildMesh::init_label_envelopes(const double eps, const bool exact)
 {
+    if (m_envelope_whole) {
+        m_input_envelopes.set({}); // every face is held to m_envelope
+        return;
+    }
     constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
     // Each label from one source: the input triangles m_envelope is built around, when their
     // labels are known and the label has any, else the mesh's faces carrying it.
@@ -550,7 +554,7 @@ void SimWildMesh::init_label_envelopes(const double eps, const bool exact)
 
 void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
 {
-    if (m_envelope) {
+    if (!m_F_envelope.empty()) {
         log_and_throw_error("Envelope was already initialized once.");
     }
     if (V.size() == 0 || F.size() == 0) {
@@ -570,13 +574,8 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
     for (size_t i = 0; i < m_F_envelope.size(); ++i) {
         m_F_envelope[i] = F.row(i);
     }
-
-    m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
-    m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
-    logger().info(
-        "Envelope: {} (eps {:.6})",
-        m_envelope->use_exact ? "EXACT" : "sampled",
-        m_envelope_eps);
+    // Only the triangles: init_surfaces_and_boundaries() builds what the faces are held to from
+    // them -- per label, or the envelope as a whole when no labels came with it.
 }
 
 

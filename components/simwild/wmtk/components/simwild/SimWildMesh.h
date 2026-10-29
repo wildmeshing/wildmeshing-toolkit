@@ -107,14 +107,39 @@ public:
     /// the label. The input triangles are far fewer than the faces embedded on them.
     void init_label_envelopes(double eps, bool exact);
 
-    /// A tracked face's containment: its labels' envelopes if it has any, else m_envelope.
+    /**
+     * @brief Whether every face is held to m_envelope as a whole rather than to its labels' own:
+     * when the envelope was handed on without labels (an old file, EnvelopeSurface rows), so
+     * which of its triangles belong to which label is unknown. The original envelope is still the
+     * reference, as it was before per-label envelopes; the mesh's own surface would let every
+     * operation add its eps. Otherwise m_envelope is not built at all.
+     */
+    bool m_envelope_whole = false;
+
+    /// A tracked face's containment: its labels' envelopes (m_input_envelopes), or, with none --
+    /// no labels anywhere, or an envelope handed on without them (m_envelope_whole) -- the
+    /// envelope as a whole, as before per-label envelopes. Where labels exist every surface face
+    /// carries one: a face tag, or the tet tags it separates; one without is an insertion or
+    /// propagation defect.
     std::shared_ptr<Envelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids,
         const FaceAttributes& attr) const override
     {
-        if (m_input_envelopes.empty() || attr.input_set() == 0) return m_envelope;
+        if (m_input_envelopes.empty()) return m_envelope;
+        if (attr.input_set() == 0) {
+            log_and_throw_error(
+                "surface face ({}, {}, {}) carries no label: the insertion or an operation did "
+                "not carry it",
+                vids[0],
+                vids[1],
+                vids[2]);
+        }
         return m_input_envelopes.containment(attr.input_set());
     }
+
+    /// The collapse's pre-check: `p` inside the envelopes of the labels of each tracked face at
+    /// `v` -- each of which the collapse moves -- or inside the envelope as a whole.
+    bool surface_point_is_outside(size_t v, const Vector3d& p) const override;
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// simwild-only fields (tags, quality/sizing fields, the operation name).
