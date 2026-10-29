@@ -1,5 +1,7 @@
 #include "tracking.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 #include <algorithm>
 
 namespace wmtk::components::tracking {
@@ -295,24 +297,69 @@ nlohmann::json warnings_report(const CurveMapWarnings& w)
         {"replaced", w.replaced}};
 }
 
-VolumeTracking::VolumeTracking(VolumeMap map, TetMeshData in, TetMeshData out)
-    : m_map(std::make_shared<const VolumeMap>(std::move(map)))
-    , m_in(std::make_shared<const TetMeshData>(std::move(in)))
-    , m_out(std::make_shared<const TetMeshData>(std::move(out)))
+VolumeTracking::VolumeTracking(
+    const history::SurfaceHistory& surface,
+    history::VolumeHistory volume,
+    const MeshData& input_mesh,
+    const MeshData& output_mesh,
+    const VolumeMapOptions& options)
+    : VolumeTracking(surface, std::move(volume), options)
+{
+    m_in.emplace(std::make_shared<const TetMeshData>(tet_mesh_data(input_mesh)));
+    m_out.emplace(std::make_shared<const TetMeshData>(tet_mesh_data(output_mesh)));
+}
+
+VolumeTracking::VolumeTracking(
+    const history::SurfaceHistory& surface,
+    history::VolumeHistory volume,
+    const VolumeMapOptions& options)
+    : m_map(std::make_shared<const VolumeMap>(surface, std::move(volume), options))
 {}
 
 VolumeTracking VolumeTracking::load(
     const std::string& surface_history,
     const std::string& volume_history,
     const std::string& input_mesh,
-    const std::string& output_mesh)
+    const std::string& output_mesh,
+    const VolumeMapOptions& options)
 {
     return VolumeTracking(
-        VolumeMap(
-            history::SurfaceHistory::load(surface_history),
-            history::VolumeHistory::load(volume_history)),
-        read_tet_msh(input_mesh),
-        read_tet_msh(output_mesh));
+        history::SurfaceHistory::load(surface_history),
+        history::VolumeHistory::load(volume_history),
+        read_tet_mesh(input_mesh),
+        read_tet_mesh(output_mesh),
+        options);
+}
+
+const TetMeshData& VolumeTracking::input_mesh() const
+{
+    if (!m_in) log_and_throw_error("VolumeTracking: made without meshes, it has no input mesh");
+    return m_in->mesh();
+}
+
+const TetMeshData& VolumeTracking::output_mesh() const
+{
+    if (!m_out) log_and_throw_error("VolumeTracking: made without meshes, it has no output mesh");
+    return m_out->mesh();
+}
+
+std::vector<VolumePoint> VolumeTracking::map_positions(
+    const std::vector<Eigen::Vector3d>& positions,
+    const bool forward,
+    const std::vector<uint32_t>& regions) const
+{
+    if (!regions.empty() && regions.size() != positions.size()) {
+        log_and_throw_error(
+            "VolumeTracking::map_positions: {} regions for {} positions",
+            regions.size(),
+            positions.size());
+    }
+    std::vector<VolumePoint> pts(positions.size());
+    for (size_t i = 0; i < positions.size(); ++i) {
+        pts[i].position = positions[i];
+        if (!regions.empty()) pts[i].region = regions[i];
+    }
+    return forward ? m_map->to_output(std::move(pts)) : m_map->to_input(std::move(pts));
 }
 
 std::vector<TetPoint> VolumeTracking::to_output(const std::vector<TetPoint>& points) const
@@ -329,9 +376,14 @@ std::vector<TetPoint> VolumeTracking::map_points(
     const std::vector<TetPoint>& points,
     const bool forward) const
 {
+    if (!has_meshes()) {
+        log_and_throw_error(
+            "VolumeTracking: tet points need the meshes; map_positions() maps "
+            "positions without them");
+    }
     const TetMeshData& from = forward ? input_mesh() : output_mesh();
     const TetMeshData& to = forward ? output_mesh() : input_mesh();
-    const TetLocator& locate = forward ? m_out : m_in;
+    const TetLocator& locate = forward ? *m_out : *m_in;
     // A point of no tet, or with coordinates that are not numbers, is left without a position,
     // which the map passes by, and comes back with no tet.
     const auto valid = [&](const TetPoint& p) {

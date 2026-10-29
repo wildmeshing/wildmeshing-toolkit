@@ -553,6 +553,132 @@ TEST_CASE("volume-tracking-moved", "[volume_map]")
     maps_as_loaded(c);
 }
 
+TEST_CASE("volume-tracking-in-memory", "[volume_map]")
+{
+    // The histories and the meshes as objects map as the files they are saved to.
+    const SquareFiles files;
+    const VolumeTracking loaded = files.load();
+    const history::SurfaceHistory h = square_history();
+    const history::VolumeHistory v = square_volume(h);
+    const VolumeTracking tracking(h, v, square_mesh(v, false), square_mesh(v, true));
+    REQUIRE(tracking.has_meshes());
+    CHECK(tracking.input_mesh().tets == loaded.input_mesh().tets);
+    const std::vector<TetPoint> pts = square_points();
+    const auto there = loaded.to_output(pts);
+    CHECK(same_points(tracking.to_output(pts), there));
+    CHECK(same_points(tracking.to_input(there), loaded.to_input(there)));
+
+    // Positions, with or without the meshes: as the map gives them, regions and all, and back.
+    std::vector<Eigen::Vector3d> xyz;
+    std::vector<VolumePoint> want;
+    for (const TetPoint& p : pts) {
+        if (p.tet >= v.edits[0].tets.size() || !p.bary.allFinite()) continue;
+        VolumePoint q;
+        q.position.setZero();
+        for (int k = 0; k < 4; ++k) {
+            q.position += p.bary[k] * v.edits[0].positions[v.edits[0].tets[p.tet][k]];
+        }
+        xyz.push_back(q.position);
+        want.push_back(q);
+    }
+    xyz.push_back(Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN()));
+    want.push_back({});
+    want = tracking.map().to_output(want);
+    const VolumeTracking positions_only(h, v);
+    CHECK_FALSE(positions_only.has_meshes());
+    CHECK_THROWS_AS(positions_only.to_output(pts), std::runtime_error);
+    CHECK_THROWS_AS(positions_only.input_mesh(), std::runtime_error);
+    for (const VolumeTracking* t : {&tracking, &positions_only}) {
+        const auto out = t->map_positions(xyz, true);
+        REQUIRE(out.size() == xyz.size());
+        std::vector<Eigen::Vector3d> there_xyz;
+        std::vector<uint32_t> regions;
+        for (size_t i = 0; i + 1 < out.size(); ++i) {
+            CHECK(out[i].position == want[i].position);
+            CHECK(out[i].region == want[i].region);
+            CHECK(out[i].region != VolumePoint::kAnyRegion);
+            there_xyz.push_back(out[i].position);
+            regions.push_back(out[i].region);
+        }
+        CHECK(std::isnan(out.back().position[0]));
+        const auto back = t->map_positions(there_xyz, false, regions);
+        for (size_t i = 0; i < back.size(); ++i) {
+            CHECK((back[i].position - xyz[i]).norm() < 1e-12);
+            CHECK(back[i].region == regions[i]);
+        }
+        CHECK_THROWS_AS(t->map_positions(xyz, true, {0}), std::runtime_error);
+    }
+
+    // A mesh without tets is refused.
+    MeshData no_tets = square_mesh(v, false);
+    no_tets.cells.clear();
+    CHECK_THROWS_AS(VolumeTracking(h, v, no_tets, square_mesh(v, true)), std::runtime_error);
+}
+
+TEST_CASE("volume-map-app", "[volume_map]")
+{
+    // The tracking app's map_volume, on tet points and on positions, writes what VolumeTracking
+    // gives; volume reports on the map.
+    const SquareFiles files;
+    const VolumeTracking loaded = files.load();
+    std::vector<TetPoint> pts = square_points();
+    pts.pop_back(); // not a number, which a file of points has no way to say
+    const std::string points = temp_path("points") + ".txt", out = temp_path("mapped") + ".txt";
+    {
+        std::ofstream f(points);
+        f.precision(17);
+        for (const TetPoint& p : pts) {
+            f << (p.tet == 17 ? -1 : int64_t(p.tet));
+            for (int k = 0; k < 4; ++k) f << " " << p.bary[k];
+            f << "\n";
+        }
+    }
+    const nlohmann::json base = {
+        {"application", "tracking"},
+        {"history", files.surface},
+        {"volume_history", files.volume},
+        {"tet_mesh", files.in},
+        {"output_tet_mesh", files.out},
+        {"points", points},
+        {"output_points", out}};
+    nlohmann::json j = base;
+    j["operation"] = "map_volume";
+    components::tracking::tracking(j);
+    const auto there = loaded.to_output(pts);
+    {
+        std::ifstream f(out);
+        for (size_t i = 0; i < pts.size(); ++i) {
+            int64_t t;
+            Eigen::Vector4d b;
+            REQUIRE(f >> t);
+            for (int k = 0; k < 4; ++k) f >> b[k];
+            if (there[i].tet == kNoId) {
+                CHECK(t == -1);
+                continue;
+            }
+            CHECK(uint64_t(t) == there[i].tet);
+            CHECK((b - there[i].bary).norm() < 1e-12);
+        }
+    }
+    {
+        std::ofstream f(points);
+        f << "0.5 0.4 0.3\n0.5 0.4 -0.3 # a comment\n";
+    }
+    j["direction"] = "to_input";
+    components::tracking::tracking(j);
+    {
+        std::ifstream f(out);
+        Eigen::Vector3d x;
+        REQUIRE(f >> x[0] >> x[1] >> x[2]);
+        CHECK(x.allFinite());
+    }
+    j = base;
+    j["operation"] = "volume";
+    j["samples"] = 50;
+    CHECK_NOTHROW(components::tracking::tracking(j));
+    for (const auto& p : {points, out}) std::filesystem::remove(p);
+}
+
 TEST_CASE("volume-map-threads", "[volume_map]")
 {
     // One map, queried from several threads at once: each gets what one thread alone gets, and

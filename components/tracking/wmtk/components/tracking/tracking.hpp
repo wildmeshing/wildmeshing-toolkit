@@ -16,6 +16,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -254,33 +255,63 @@ struct TetPoint
  * kept. A point keeps its region: where it lands on a face between two, it is named by a tet of
  * its own. One with no tet to land in -- outside the mesh given -- comes back with no tet
  * (kNoId), as does one that is no point: of a tet the mesh does not have, or with coordinates
- * that are not numbers.
+ * that are not numbers. Without the meshes, it maps positions (map_positions()).
+ *
+ * Its const methods may be called from several threads at once (VolumeMap's are; the meshes
+ * are not changed). A copy shares the map, its built operations and its stats, and the meshes.
  */
 class VolumeTracking
 {
 public:
+    /// The map of `volume`, recorded alongside `surface`, between `input_mesh`, where it starts,
+    /// and `output_mesh`, where it ends (tet_mesh_data()): what load() reads from the files, as
+    /// the memory route passes them.
+    VolumeTracking(
+        const history::SurfaceHistory& surface,
+        history::VolumeHistory volume,
+        const MeshData& input_mesh,
+        const MeshData& output_mesh,
+        const VolumeMapOptions& options = {});
+    /// The map of `volume` alone, with no meshes to name points by: map_positions() only.
+    VolumeTracking(
+        const history::SurfaceHistory& surface,
+        history::VolumeHistory volume,
+        const VolumeMapOptions& options = {});
+    /// The files an application wrote: the two histories and the two meshes.
     static VolumeTracking load(
         const std::string& surface_history,
         const std::string& volume_history,
         const std::string& input_mesh,
-        const std::string& output_mesh);
+        const std::string& output_mesh,
+        const VolumeMapOptions& options = {});
 
-    /// Points of the input mesh to the output mesh.
+    /// Whether it has the meshes, which TetPoints are of.
+    bool has_meshes() const { return m_in.has_value(); }
+    /// Points of the input mesh to the output mesh. Throws without the meshes.
     std::vector<TetPoint> to_output(const std::vector<TetPoint>& points) const;
-    /// Points of the output mesh to the input mesh, the inverse map.
+    /// Points of the output mesh to the input mesh, the inverse map. Throws without the meshes.
     std::vector<TetPoint> to_input(const std::vector<TetPoint>& points) const;
+    /// Positions where the volume history starts mapped to where it ends (`forward`), or back,
+    /// each with the region it ends in (an index into map().history().regions, kAnyRegion for
+    /// one no operation took). `regions`, if given, has one per position: the region it is in,
+    /// as a call the other way returned it; else it is the region of the tet an operation first
+    /// finds it in. A position that is not a number comes back as it is.
+    std::vector<VolumePoint> map_positions(
+        const std::vector<Eigen::Vector3d>& positions,
+        bool forward,
+        const std::vector<uint32_t>& regions = {}) const;
 
     const VolumeMap& map() const { return *m_map; }
-    const TetMeshData& input_mesh() const { return m_in.mesh(); }
-    const TetMeshData& output_mesh() const { return m_out.mesh(); }
+    /// The meshes; they throw without them.
+    const TetMeshData& input_mesh() const;
+    const TetMeshData& output_mesh() const;
 
 private:
-    VolumeTracking(VolumeMap map, TetMeshData in, TetMeshData out);
     std::vector<TetPoint> map_points(const std::vector<TetPoint>& points, bool forward) const;
 
     // Shared, all of it, by a copy: the map and the meshes are not changed by mapping.
     std::shared_ptr<const VolumeMap> m_map;
-    TetLocator m_in, m_out;
+    std::optional<TetLocator> m_in, m_out;
 };
 
 /// The tracking application: maps points, transfers fields and reports on a tracking file

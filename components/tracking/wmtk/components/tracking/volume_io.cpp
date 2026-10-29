@@ -13,26 +13,37 @@
 
 namespace wmtk::components::tracking {
 
-TetMeshData read_tet_msh(const std::string& path)
+MeshData read_tet_mesh(const std::string& path)
 {
-    // Through io::read_mesh, which reads the layout io::write_mesh writes -- every cell once, in
-    // a block per set of physical groups, its element tag its row -- as well as the older one
-    // that lists a tet once per group.
-    MeshData msh;
+    // io::read_mesh reads the layout io::write_mesh writes -- every cell once, in a block per
+    // set of physical groups, its element tag its row -- as well as the older one that lists a
+    // tet once per group.
     try {
-        msh = io::read_mesh(path);
+        return io::read_mesh(path);
     } catch (const std::exception& e) {
         log_and_throw_error("Could not read {}: {}", path, e.what());
     }
+}
+
+TetMeshData tet_mesh_data(const MeshData& msh)
+{
     TetMeshData m;
     for (Eigen::Index i = 0; i < msh.V.rows(); ++i) {
         m.vertices.emplace_back(msh.V.row(i).transpose());
     }
     const auto block = msh.cells.find(CellType::Tetrahedron);
     if (block == msh.cells.end() || block->second.connectivity.rows() == 0) {
-        log_and_throw_error("{} holds no tets", path);
+        log_and_throw_error("volume tracking: the mesh holds no tets");
     }
     const auto& T = block->second.connectivity;
+    if (T.cols() != 4) log_and_throw_error("volume tracking: the mesh's tets have not 4 corners");
+    for (Eigen::Index r = 0; r < T.rows(); ++r) {
+        for (int k = 0; k < 4; ++k) {
+            if (T(r, k) < 0 || T(r, k) >= msh.V.rows()) {
+                log_and_throw_error("volume tracking: tet {} has a vertex the mesh has not", r);
+            }
+        }
+    }
     // The physical groups that list each row: the columns of its `tags`.
     const auto tags = block->second.attributes.find("tags");
     DataMatrix<int64_t> member;
@@ -40,6 +51,9 @@ TetMeshData read_tet_msh(const std::string& path)
     if (tags != block->second.attributes.end()) {
         member = tags->second.integers();
         labels = tags->second.labels;
+        if (member.rows() != T.rows() || member.cols() != Eigen::Index(labels.size())) {
+            log_and_throw_error("volume tracking: the tets' tags are not one row per tet");
+        }
     }
     std::map<std::array<uint64_t, 4>, size_t> index;
     std::vector<std::set<std::string>> groups;
@@ -65,6 +79,11 @@ TetMeshData read_tet_msh(const std::string& path)
         m.groups.push_back(it->second);
     }
     return m;
+}
+
+TetMeshData read_tet_msh(const std::string& path)
+{
+    return tet_mesh_data(read_tet_mesh(path));
 }
 
 TetLocator::TetLocator(std::shared_ptr<const TetMeshData> mesh)

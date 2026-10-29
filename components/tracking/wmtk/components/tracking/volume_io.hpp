@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/MeshData.hpp>
+
 #include <Eigen/Core>
 
 #include <array>
@@ -11,10 +13,11 @@
 
 namespace wmtk::components::tracking {
 
-/// A tet mesh read from a gmsh file (io::read_mesh): each tet once, in the order the file first
-/// lists it -- by element tag, which for a file io::write_mesh wrote is the row it was given --
-/// with the names of the physical groups that list it (simwild's: a group per tag the tet has,
-/// "ambient" for the untagged ones), as an index into the sets of names there are.
+/// A tet mesh as a MeshData holds it (tet_mesh_data()): each tet once, in the order its rows
+/// list it -- for a file io::write_mesh wrote, by element tag, the row it was given -- with the
+/// names of the physical groups that list it, the columns of its `tags` (simwild's: a group per
+/// tag the tet has, "ambient" for the untagged ones), as an index into the sets of names there
+/// are.
 struct TetMeshData
 {
     std::vector<Eigen::Vector3d> vertices;
@@ -22,6 +25,12 @@ struct TetMeshData
     std::vector<uint32_t> groups;
     std::vector<std::set<std::string>> group_sets;
 };
+/// The tets of `m` (its Tetrahedron block) and their groups (its `tags`), as io::read_mesh
+/// reads a file and the memory route passes a mesh. Throws if it has no tets.
+TetMeshData tet_mesh_data(const MeshData& m);
+/// A gmsh file, by io::read_mesh, its error naming the file.
+MeshData read_tet_mesh(const std::string& path);
+/// tet_mesh_data(read_tet_mesh(path)).
 TetMeshData read_tet_msh(const std::string& path);
 
 /// Point location in a tet mesh, by a grid over the tets' boxes: the tet holding a point, exactly

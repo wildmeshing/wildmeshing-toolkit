@@ -275,11 +275,12 @@ void map_volume_points(
             log_and_throw_error("map_volume: tet points need tet_mesh and output_tet_mesh");
         }
         const std::string vh = json_params["volume_history"];
-        const VolumeTracking tracking = VolumeTracking::load(
-            resolve_path(root, json_params["history"]).string(),
-            resolve_path(root, vh).string(),
-            resolve_path(root, tet_mesh).string(),
-            resolve_path(root, output_tet_mesh).string());
+        if (vh.empty()) log_and_throw_error("volume operations need volume_history");
+        const VolumeTracking tracking(
+            h,
+            history::VolumeHistory::load(resolve_path(root, vh).string()),
+            read_tet_mesh(resolve_path(root, tet_mesh).string()),
+            read_tet_mesh(resolve_path(root, output_tet_mesh).string()));
         std::vector<TetPoint> pts;
         for (const auto& r : rows) {
             if (r.size() != 5) log_and_throw_error("{}: mixed point kinds", points_path);
