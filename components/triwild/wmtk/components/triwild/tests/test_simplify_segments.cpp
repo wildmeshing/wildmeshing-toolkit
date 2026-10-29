@@ -5,6 +5,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <cmath>
+#include <numeric>
 #include <set>
 #include <vector>
 
@@ -293,4 +294,79 @@ TEST_CASE("simplify-segments-already-coarse", "[triwild_operation][simplify]")
     CHECK(removed == 0);
     CHECK(V == V0);
     CHECK(E == E0);
+}
+
+TEST_CASE("simplify-segments-reports-what-survives", "[triwild_operation][simplify]")
+{
+    // surviving_edges and surviving_vertices name, for each row of the compacted output, its row
+    // in the input; the collapses, replayed on the input, give the output.
+    SECTION("nothing removed")
+    {
+        // A triangle and a free point: nothing collapses, and every row survives as itself. The
+        // rows used to come back empty here, which emptied triwild's per-input segment labels.
+        auto [V, E] = closed_loop({Vector2d(0, 0), Vector2d(1, 0), Vector2d(0, 1)});
+        V.conservativeResize(4, 2);
+        V.row(3) = Vector2d(2, 2);
+        const Envelope env = make_envelope(V, E, 1e-3);
+        std::vector<int> edges = {7}, vertices = {7};
+        std::vector<history::Edit> collapses(1);
+        const size_t removed =
+            wmtk::utils::simplify_segments(V, E, env, true, &edges, &collapses, &vertices);
+        CHECK(removed == 0);
+        CHECK(edges == std::vector<int>{0, 1, 2});
+        CHECK(vertices == std::vector<int>{0, 1, 2, 3});
+        CHECK(collapses.empty());
+    }
+    SECTION("a dense circle")
+    {
+        auto [V, E] = closed_loop(sample_circle(400));
+        const MatrixXd V0 = V;
+        const MatrixXi E0 = E;
+        const Envelope env = make_envelope(V, E, 1e-2);
+        std::vector<int> edges, vertices;
+        std::vector<history::Edit> collapses;
+        const size_t removed =
+            wmtk::utils::simplify_segments(V, E, env, true, &edges, &collapses, &vertices);
+        REQUIRE(removed > 300);
+        // Under the link condition every removed vertex is one collapse's.
+        CHECK(collapses.size() == removed);
+        CHECK(size_t(V.rows()) == size_t(V0.rows()) - removed);
+        REQUIRE(vertices.size() == size_t(V.rows()));
+        REQUIRE(edges.size() == size_t(E.rows()));
+        CHECK(std::is_sorted(vertices.begin(), vertices.end()));
+        CHECK(std::is_sorted(edges.begin(), edges.end()));
+
+        // Replay: each collapse renames `drop` to `keep`, which takes the position it gives.
+        std::vector<int> alias(V0.rows());
+        std::iota(alias.begin(), alias.end(), 0);
+        const auto find = [&alias](int v) {
+            while (alias[v] != v) v = alias[v];
+            return v;
+        };
+        MatrixXd pos = V0;
+        for (const history::Edit& c : collapses) {
+            REQUIRE(c.kind == history::EditKind::collapse_edge);
+            REQUIRE(c.v.size() == 2);
+            const int drop = int(c.v[0]), keep = int(c.v[1]);
+            REQUIRE(find(drop) == drop);
+            REQUIRE(find(keep) == keep);
+            alias[drop] = keep;
+            for (const auto& m : c.moves) {
+                REQUIRE(m.vid == uint64_t(keep));
+                pos.row(keep) = Vector2d(m.pos[0], m.pos[1]);
+            }
+        }
+        std::vector<int> row_of(V0.rows(), -1);
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            const int r = vertices[i];
+            CHECK(find(r) == r);
+            CHECK(V.row(Eigen::Index(i)) == pos.row(r));
+            row_of[r] = int(i);
+        }
+        for (size_t j = 0; j < edges.size(); ++j) {
+            const int e = edges[j];
+            CHECK(E(Eigen::Index(j), 0) == row_of[find(E0(e, 0))]);
+            CHECK(E(Eigen::Index(j), 1) == row_of[find(E0(e, 1))]);
+        }
+    }
 }

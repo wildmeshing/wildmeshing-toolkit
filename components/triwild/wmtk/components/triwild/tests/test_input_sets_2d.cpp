@@ -6,6 +6,7 @@
 // arrangement and the optimizer.
 
 #include <wmtk/components/triwild/TriWildMesh.h>
+#include <wmtk/components/triwild/triwild.hpp>
 #include <wmtk/envelope/CompositeEnvelopes.hpp>
 #include <wmtk/utils/EmbedSegments.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -235,4 +236,32 @@ TEST_CASE("input-sets-2d-square-and-crossing-polyline", "[triwild][input_sets]")
     check_all("after insertion");
     mesh.mesh_improvement(3);
     check_all("after optimization");
+}
+
+TEST_CASE("input-sets-2d-two-inputs-nothing-simplified", "[triwild][input_sets]")
+{
+    // Two inputs of one segment each, crossing: the simplification removes nothing. It used to
+    // report no surviving segment then, so the simplified curves lost their inputs: with the
+    // optimization's envelope around them, every input set named an input with no envelope, and
+    // triwild threw.
+    MeshMap meshes;
+    for (const auto& [name, y0] : {std::pair<std::string, double>{"a", -1}, {"b", 1}}) {
+        MeshData m;
+        m.V.resize(2, 3);
+        m.V << -1, y0, 0, 1, -y0, 0;
+        m.cells[CellType::Edge].connectivity.resize(1, 2);
+        m.cells[CellType::Edge].connectivity << 0, 1;
+        meshes.emplace(name, m);
+    }
+    for (const bool around_simplified : {false, true}) {
+        INFO("optimize_envelope_around_simplified " << around_simplified);
+        const ComponentResult r = components::triwild::triwild(
+            {{"input", {"a", "b"}},
+             {"optimize_envelope_around_simplified", around_simplified},
+             {"length_rel", 0.1},
+             {"max_iterations", 3}},
+            meshes);
+        // The crossing cuts both segments in two.
+        CHECK(r.first.at("surface").cell(CellType::Edge).connectivity.rows() >= 4);
+    }
 }
