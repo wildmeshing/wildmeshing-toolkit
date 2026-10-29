@@ -89,8 +89,9 @@ struct VolumeHistory
 {
     /// The regions, each the set of tags of its tets, sorted.
     std::vector<std::vector<int64_t>> regions;
-    /// The application's names of the tags, where it has them: how the tet mesh files it
-    /// writes name their groups (simwild: a physical group per tag, the untagged tets "ambient").
+    /// The application's labels of the tags, where it has them: how the tet mesh files it
+    /// writes name their groups (simwild: a physical group per tag, labelled as
+    /// io::collect_tags labels them, and the untagged tets "ambient" unless a tag is).
     std::map<int64_t, std::string> tag_names;
     /// In the order of the surface edits they made.
     std::vector<VolumeEdit> edits;

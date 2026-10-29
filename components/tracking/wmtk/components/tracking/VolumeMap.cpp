@@ -1372,7 +1372,13 @@ std::optional<uint32_t> VolumeMap::region_of(std::vector<int64_t> tags) const
 
 std::optional<uint32_t> VolumeMap::region_of_groups(const std::set<std::string>& names) const
 {
-    if (names == std::set<std::string>{"ambient"}) return region_of({});
+    // io::collect_tags lists the tets with no tag in a group "ambient", unless a tag has that
+    // label: then they are in none
+    const bool ambient_tag =
+        std::any_of(m_volume.tag_names.begin(), m_volume.tag_names.end(), [](const auto& kv) {
+            return kv.second == "ambient";
+        });
+    if (!ambient_tag && names == std::set<std::string>{"ambient"}) return region_of({});
     std::vector<int64_t> tags;
     for (const std::string& n : names) {
         const auto it = std::find_if(

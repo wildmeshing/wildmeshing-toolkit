@@ -323,7 +323,6 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.has_input_history ? &input_data.input_history : nullptr)) {
         component_io.save_history(*h, history_output);
     }
-    mesh.save_volume_history(volume_history_output, mesh.m_tag_id_to_name);
 
     // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
     // for an un-rounded vertex that double is not the vertex's real position, so the written
@@ -365,6 +364,20 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     {
         component_io.result.first = tagged_outputs();
         component_io.result.first.merge(history_input);
+        // The volume history names the tags as the tet meshes' groups do -- the labels
+        // io::collect_tags gives them, not the names, which may repeat or be "ambient" -- so
+        // a tet's groups give its region.
+        if (!volume_history_output.empty()) {
+            const auto& labels = component_io.result.first.at("mesh")
+                                     .cells.at(CellType::Tetrahedron)
+                                     .attributes.at("tags")
+                                     .labels;
+            std::map<int64_t, std::string> tag_labels;
+            for (size_t j = 0; j < mesh.m_tags_count && j < labels.size(); ++j) {
+                tag_labels[int64_t(j)] = labels[j];
+            }
+            mesh.save_volume_history(volume_history_output, tag_labels);
+        }
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);

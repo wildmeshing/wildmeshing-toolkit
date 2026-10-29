@@ -396,22 +396,34 @@ std::vector<TetPoint> VolumeTracking::map_points(
         Eigen::Vector3d x = Eigen::Vector3d::Zero();
         for (int k = 0; k < 4; ++k) x += points[i].bary[k] * from.vertices[t[k]];
         pts[i].position = x;
-        // its region, by the names of the groups the file lists its tet in; else the region
+        // its region, by the labels of the groups the file lists its tet in; else the region
         // of the tet the map finds it in
         const auto r = m_map->region_of_groups(from.group_sets[from.groups[points[i].tet]]);
         if (r) pts[i].region = *r;
     }
     const auto there = forward ? m_map->to_output(pts) : m_map->to_input(pts);
+    // The region of each set of groups the other mesh lists tets in.
+    std::vector<uint32_t> region_of_set;
+    for (const auto& g : to.group_sets) {
+        region_of_set.push_back(m_map->region_of_groups(g).value_or(VolumePoint::kAnyRegion));
+    }
     std::vector<TetPoint> out(points.size());
     for (size_t i = 0; i < points.size(); ++i) {
         if (!valid(points[i])) continue;
-        // a tet of the point's own region (by the names of its groups), else any holding it
-        const auto& groups = from.group_sets[from.groups[points[i].tet]];
-        const auto g = std::find(to.group_sets.begin(), to.group_sets.end(), groups);
+        // a tet of the region the point ended in, else of a set of groups with its tet's names,
+        // else any holding it
+        std::optional<uint32_t> g;
+        if (there[i].region != VolumePoint::kAnyRegion) {
+            const auto it = std::find(region_of_set.begin(), region_of_set.end(), there[i].region);
+            if (it != region_of_set.end()) g = uint32_t(it - region_of_set.begin());
+        }
+        if (!g) {
+            const auto& names = from.group_sets[from.groups[points[i].tet]];
+            const auto it = std::find(to.group_sets.begin(), to.group_sets.end(), names);
+            if (it != to.group_sets.end()) g = uint32_t(it - to.group_sets.begin());
+        }
         const auto [t, b] =
-            g != to.group_sets.end()
-                ? locate.locate(there[i].position, uint32_t(g - to.group_sets.begin()))
-                : locate.locate(there[i].position);
+            g ? locate.locate(there[i].position, *g) : locate.locate(there[i].position);
         if (t < 0) continue;
         out[i] = {uint64_t(t), b};
     }

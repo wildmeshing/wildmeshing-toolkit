@@ -304,11 +304,14 @@ TEST_CASE("tracking-example-simwild-volume", "[simwild][tracking]" + release_onl
 
     // 1. Run simwild with the surface history (history_output) and the volume history
     // (volume_history_output). The volume map starts at <output>_history_input.msh, the two
-    // surfaces embedded and tagged, and ends at <output>.msh.
+    // surfaces embedded and tagged, and ends at <output>.msh. The inputs' names are the ones a
+    // region is hardest to find by: the same twice, and "ambient", which the files label
+    // "ambient" and "ambient_" -- and the untagged tets then in no group.
     simwild::simwild({
         {"application", "simwild"},
         {"operation", "remeshing"},
         {"input", {sphere.string(), sphere.string()}},
+        {"input_names", {"ambient", "ambient"}},
         {"input_transform",
          {nlohmann::json::array(), {{1, 0, 0, 0.3}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}}},
         {"output", output.string()},
@@ -327,6 +330,12 @@ TEST_CASE("tracking-example-simwild-volume", "[simwild][tracking]" + release_onl
         output.string() + ".msh");
     const auto& in = tracking.input_mesh();
     const auto& out = tracking.output_mesh();
+    // every tet's groups name its region
+    for (const auto* m : {&in, &out}) {
+        for (const auto& g : m->group_sets) CHECK(tracking.map().region_of_groups(g));
+    }
+    CHECK(
+        std::count(in.group_sets.begin(), in.group_sets.end(), std::set<std::string>{"ambient_"}));
 
     // 3. Points of the input -- a tet of the file and barycentric coordinates -- in the
     // spheres' boxes, where the operations are: each lands in a tet of the output of its own

@@ -680,6 +680,56 @@ TEST_CASE("volume-map-app", "[volume_map]")
     for (const auto& p : {points, out}) std::filesystem::remove(p);
 }
 
+TEST_CASE("volume-region-labels", "[volume_map]")
+{
+    // A tet's groups are the labels io::collect_tags gives the tags: two named alike become
+    // "a" and "a_", and the untagged tets are "ambient" -- unless a tag is, and then in none.
+    const history::SurfaceHistory h = square_history();
+    history::VolumeHistory v = square_volume(h);
+    v.regions = {{}, {0}, {1}, {2}};
+    v.tag_names = {{0, "a"}, {1, "a_"}, {2, "tag_2"}};
+    {
+        const VolumeMap map(h, v);
+        CHECK(map.region_of_groups({"a"}) == 1u);
+        CHECK(map.region_of_groups({"a_"}) == 2u);
+        CHECK(map.region_of_groups({"ambient"}) == 0u);
+        CHECK(map.region_of_groups({}) == 0u);
+        CHECK_FALSE(map.region_of_groups({"b"}));
+    }
+    v.tag_names = {{0, "ambient"}, {1, "ambient_"}};
+    {
+        const VolumeMap map(h, v);
+        CHECK(map.region_of_groups({"ambient"}) == 1u);
+        CHECK(map.region_of_groups({"ambient_"}) == 2u);
+        CHECK(map.region_of_groups({}) == 0u);
+    }
+
+    // The tets above the square tagged with the tag labelled "ambient": a point there keeps its
+    // region, follows the corner that moves, and lands in a tet of the tag.
+    v = square_volume(h);
+    v.regions = {{}, {0}};
+    v.tag_names = {{0, "ambient"}};
+    std::array<MeshData, 2> meshes = {square_mesh(v, false), square_mesh(v, true)};
+    for (MeshData& m : meshes) {
+        DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(4, 1);
+        for (int t = 0; t < 4; ++t) tags(t, 0) = v.edits[0].regions[size_t(t)] == 1;
+        m.cells[CellType::Tetrahedron].attributes["tags"] = {tags, {"ambient"}};
+    }
+    const VolumeTracking tracking(h, v, meshes[0], meshes[1]);
+    const TetPoint p{0, Eigen::Vector4d(0.1, 0.6, 0.2, 0.1)}; // near corner 1, above
+    const auto there = tracking.to_output({p});
+    REQUIRE(there[0].tet != kNoId);
+    const auto& out = tracking.output_mesh();
+    CHECK(out.group_sets[out.groups[there[0].tet]] == std::set<std::string>{"ambient"});
+    const auto position = [](const TetMeshData& m, const TetPoint& q) {
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += q.bary[k] * m.vertices[m.tets[q.tet][k]];
+        return x;
+    };
+    CHECK((position(out, there[0]) - position(tracking.input_mesh(), p)).norm() > 1e-3);
+    CHECK(tracking.map().stats().region_changed == 0);
+}
+
 TEST_CASE("volume-map-threads", "[volume_map]")
 {
     // One map, queried from several threads at once: each gets what one thread alone gets, and

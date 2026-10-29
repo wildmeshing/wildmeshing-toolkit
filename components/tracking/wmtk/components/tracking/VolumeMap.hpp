@@ -102,8 +102,9 @@ public:
     const history::VolumeHistory& history() const { return m_volume; }
     /// The region of a tag set, if the history has it.
     std::optional<uint32_t> region_of(std::vector<int64_t> tags) const;
-    /// The region of a tet a mesh file lists in the groups `names` -- the tags' names
-    /// (VolumeHistory::tag_names), "ambient" for a tet with none -- if the history has it.
+    /// The region of a tet a mesh file lists in the groups `names` -- the tags' labels
+    /// (VolumeHistory::tag_names), as io::collect_tags gives them; none, or "ambient" when no tag
+    /// has that label, for a tet with no tag -- if the history has it.
     std::optional<uint32_t> region_of_groups(const std::set<std::string>& names) const;
     const SurfaceMap& surface_map() const { return m_surface; }
     /// What building and using the map found so far.
