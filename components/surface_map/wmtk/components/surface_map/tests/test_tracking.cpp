@@ -257,4 +257,39 @@ TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
     CHECK_THROWS_WITH(
         surface_map::surface_map({{"application", "surface_map"}, {"history", history}}),
         Catch::Matchers::ContainsSubstring("history is a file on the file route"));
+
+    // The history says it was recorded on the memory route, whose input was a mesh, named by its
+    // key: a transfer from the file of the history, given no input, does not take a file of
+    // that name here for it.
+    CHECK(
+        nlohmann::json::parse(wmtk::history::SurfaceHistory::from_bytes(bytes).metadata)
+            .at("route") == "memory");
+    {
+        std::ofstream o(fs::current_path() / "sphere");
+        o << "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n";
+    }
+    CHECK_THROWS_WITH(
+        surface_map::surface_map(
+            {{"application", "surface_map"},
+             {"history", tracking_file.string()},
+             {"operation", "transfer"},
+             {"output", (dir / "transferred.msh").string()}}),
+        Catch::Matchers::ContainsSubstring("recorded on the memory route"));
+    fs::remove(fs::current_path() / "sphere");
+    CHECK(!fs::exists(dir / "transferred.msh"));
+
+    // Points and the mapped points are both relative to input_dir.
+    {
+        std::ofstream o(dir / "points.txt");
+        o << "0 0.2 0.3 0.5\n";
+    }
+    surface_map::surface_map(
+        {{"application", "surface_map"},
+         {"input_dir", dir.string()},
+         {"history", tracking_file.filename().string()},
+         {"operation", "map"},
+         {"points", "points.txt"},
+         {"output_points", "mapped.txt"}});
+    CHECK(fs::exists(dir / "mapped.txt"));
+    CHECK(!fs::exists(fs::current_path() / "mapped.txt"));
 }

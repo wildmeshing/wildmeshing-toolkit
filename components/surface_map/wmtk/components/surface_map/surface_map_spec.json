@@ -42,7 +42,7 @@
     "pointer": "/input",
     "type": "string",
     "default": "",
-    "doc": "transfer: the surface the history starts from -- the same triangles in the same order: a gmsh file, as io::read_mesh (wm.read_mesh) reads it, whose triangle fields are carried onto the output -- per face (labels), or per corner (uv and normal, three values per corner, corner after corner: texture coordinates) -- or a triangle mesh of another format, as read, with none. Empty: the input files of the application that recorded the history, from its parameters. Every output face gets input_face too, the input face its centroid maps to. On the memory route: the key of the mesh the history starts from, which a transfer needs; the output surface is returned as mesh."
+    "doc": "transfer: the surface the history starts from -- the same triangles in the same order: a gmsh file, as io::read_mesh (wm.read_mesh) reads it, whose triangle fields are carried onto the output -- per face (labels), or per corner (uv and normal, three values per corner, corner after corner: texture coordinates) -- or a triangle mesh of another format, as read, with none. Empty: the input files of the application that recorded the history, from its parameters -- refused for a history recorded on the memory route, whose input was a mesh. Every output face gets input_face too, the input face its centroid maps to. On the memory route: the key of the mesh the history starts from, which a transfer needs; the output surface is returned as mesh."
   },
   {
     "pointer": "/output",
@@ -113,7 +113,7 @@
     "pointer": "/output_points",
     "type": "string",
     "default": "",
-    "doc": "map: where to write the mapped points, one line per point of `points`, in the same order, as described for `points` on the side they are mapped to. A point with no image has the id -1."
+    "doc": "map: where to write the mapped points, one line per point of `points`, in the same order, as described for `points` on the side they are mapped to, relative to input_dir as `points` is. A point with no image has the id -1."
   },
   {
     "pointer": "/direction",

@@ -121,6 +121,7 @@ TEST_CASE("surface-io-fields-through-mesh-files", "[surface_map][io]")
         {"max_iterations", 2},
     });
     const auto h = history::SurfaceHistory::load(tracking_file.string());
+    CHECK(nlohmann::json::parse(h.metadata).at("route") == "file");
     const auto expected = boundaries(sphere);
     REQUIRE(!expected.empty());
     CHECK(

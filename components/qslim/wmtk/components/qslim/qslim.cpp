@@ -119,7 +119,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     std::shared_ptr<history::Recorder> history;
     if (!history_output.empty()) {
         history = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
-        history->history().metadata = json_params.dump();
+        history->history().metadata = component_io.history_metadata(json_params);
     }
 
     const double runtime = run_qslim_collapse(input_path, target_abs, output, m);

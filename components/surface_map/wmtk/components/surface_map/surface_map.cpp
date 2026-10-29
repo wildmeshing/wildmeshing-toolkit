@@ -107,8 +107,10 @@ void map_points(
 {
     using wmtk::utils::resolve_path;
     const std::string points_path = resolve_path(root, json_params["points"]).string();
-    const std::string output_points = json_params["output_points"];
-    if (output_points.empty()) log_and_throw_error("map: output_points is required");
+    if (std::string(json_params["output_points"]).empty()) {
+        log_and_throw_error("map: output_points is required");
+    }
+    const std::string output_points = resolve_path(root, json_params["output_points"]).string();
     const bool forward = json_params["direction"] == "to_output";
     igl::Timer timer;
     timer.start();
@@ -311,6 +313,14 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 const auto app = nlohmann::json::parse(h.metadata, nullptr, false);
                 if (app.is_discarded() || !app.contains("input")) {
                     log_and_throw_error("{} names no input; give one", history_path);
+                }
+                // On the memory route the input was a mesh of the call, named by its key: a
+                // file of that name here is some other file.
+                if (app.value("route", "file") == "memory") {
+                    log_and_throw_error(
+                        "{} was recorded on the memory route, where its input was a mesh, not a "
+                        "file; give input",
+                        history_path);
                 }
                 const std::filesystem::path app_root =
                     app.contains("input_dir") ? std::filesystem::path(std::string(app["input_dir"]))

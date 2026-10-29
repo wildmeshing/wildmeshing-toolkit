@@ -267,7 +267,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     std::shared_ptr<history::Recorder> history;
     if (!history_output.empty()) {
         history = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
-        history->history().metadata = json_params.dump();
+        history->history().metadata = component_io.history_metadata(json_params);
         for (const auto& e : m.feature_edges()) {
             history->history().feature_edges.push_back({{e[0], e[1]}});
         }

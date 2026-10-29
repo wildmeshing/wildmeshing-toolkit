@@ -40,6 +40,15 @@ public:
             h.edits.size(),
             recorded_history->size());
     }
+    // The metadata of a history the component records: its parameters, and the route it ran on,
+    // "file" or "memory". On the memory route the inputs the parameters name are meshes of the
+    // call, which no file holds.
+    std::string history_metadata(const nlohmann::json& params) const
+    {
+        nlohmann::json metadata = params;
+        metadata["route"] = memory() ? "memory" : "file";
+        return metadata.dump();
+    }
     // What a memory call returns: the result, with the history recorded, if any, in its report.
     ComponentResult take_result()
     {

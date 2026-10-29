@@ -92,8 +92,10 @@ Remapping attributes:
 - **A snapshot** of a triangle complex: vertex and face *slots*, live or not.
 - **Feature edges:** curves the edits keep. See *Features* below.
 - **The edits,** in commit order.
-- **`metadata`:** free text. The applications store their JSON parameters there, which is how
-  `surface_map` finds an application's input files when it is not given them.
+- **`metadata`:** free text. The applications store their JSON parameters there, with `route`,
+  `file` or `memory` (`ComponentIO::history_metadata`), which is how `surface_map` finds an
+  application's input files when it is not given them -- and knows that a history recorded on
+  the memory route names meshes, not files, and refuses to look for them.
 - **`output_vertex_ids`:** for applications whose output numbers vertices its own way.
 - **`input_vertex_ids`:** the same for the first state, for a history that starts at a tet
   mesh's tracked surface rather than at input files: the mesh's id of each snapshot vertex
@@ -416,7 +418,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
    recorded edits. `qslim.cpp` is the shortest example.
 4. At the end, `consolidate_mesh()`, then `stop_history()`. Write the output by the history's
    last state: consolidated, face ids and corner order as stored.
-5. Save the history with `metadata` set to the JSON parameters, through
+5. Save the history with `metadata` set to `component_io.history_metadata(params)`, through
    `ComponentIO::save_history(h, history_output)`: a file on the file route, the report's
    `history` on the memory route (whose entry point returns `take_result()`).
 6. Add `history_output` to the spec with the same name and meaning as in the other

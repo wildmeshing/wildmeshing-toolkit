@@ -291,7 +291,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             io::write_mesh(params.output_path + "_history_input.msh", start);
         // A surface input: from the files, through the arrangement, to here.
         mesh.m_insertion_sources = std::move(input_data.facet_sources);
-        mesh.record_surface_history(json_params.dump());
+        mesh.record_surface_history(component_io.history_metadata(json_params));
     }
 
     if (params.operation == "remeshing" && params.preserve_topology && !params.skip_simplify) {

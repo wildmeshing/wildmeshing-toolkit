@@ -943,7 +943,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     mesh_new.consolidate_mesh();
 
     // From here on the tracked surface is recorded, starting where the insertion left it.
-    if (record_history) mesh_new.record_surface_history(json_params.dump());
+    if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
 
     // mesh_new.output_mesh(output_path + "after_insertion.msh");
 
