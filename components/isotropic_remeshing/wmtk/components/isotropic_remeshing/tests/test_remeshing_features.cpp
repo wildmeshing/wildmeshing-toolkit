@@ -616,6 +616,117 @@ TEST_CASE("cleanup-repairs-thin-and-folded-triangles", "[test_remeshing][feature
     }
 }
 
+namespace {
+/// A closed slab [0, w] x [0, w] x [0, t], outward oriented: n x n squares on the top and the
+/// bottom, two triangles each, their inner vertices moved in x and y by up to a fifth of a square
+/// (from `seed`), so that the remeshing leaves thin triangles to repair; one row of squares on
+/// each side.
+void slab(
+    const double w,
+    const int n,
+    const double t,
+    const unsigned seed,
+    std::vector<Eigen::Vector3d>& V,
+    std::vector<std::array<size_t, 3>>& F)
+{
+    std::mt19937 rng(seed);
+    // mt19937's numbers are the same everywhere; uniform_real_distribution's are not.
+    const auto jitter = [&rng, w, n]() { return (rng() / 4294967295. * 2 - 1) * 0.2 * w / n; };
+    V.clear();
+    F.clear();
+    const auto sheet = [&](const double z, const bool up) {
+        const size_t base = V.size();
+        for (int i = 0; i <= n; ++i) {
+            for (int j = 0; j <= n; ++j) {
+                Eigen::Vector3d p(w * i / n, w * j / n, z);
+                if (0 < i && i < n && 0 < j && j < n) {
+                    p.x() += jitter();
+                    p.y() += jitter();
+                }
+                V.push_back(p);
+            }
+        }
+        const auto id = [base, n](int i, int j) { return base + size_t(i * (n + 1) + j); };
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                const size_t a = id(i, j), b = id(i + 1, j), c = id(i + 1, j + 1), d = id(i, j + 1);
+                if (up) {
+                    F.push_back({{a, b, c}});
+                    F.push_back({{a, c, d}});
+                } else {
+                    F.push_back({{a, c, b}});
+                    F.push_back({{a, d, c}});
+                }
+            }
+        }
+        return id;
+    };
+    const auto top = sheet(t, true);
+    const auto bottom = sheet(0, false);
+    // Round the outline, counter-clockwise seen from above.
+    std::vector<std::pair<int, int>> loop;
+    for (int i = 0; i < n; ++i) loop.emplace_back(i, 0);
+    for (int j = 0; j < n; ++j) loop.emplace_back(n, j);
+    for (int i = n; i > 0; --i) loop.emplace_back(i, n);
+    for (int j = n; j > 0; --j) loop.emplace_back(0, j);
+    for (size_t k = 0; k < loop.size(); ++k) {
+        const auto [pi, pj] = loop[k];
+        const auto [qi, qj] = loop[(k + 1) % loop.size()];
+        const size_t a = bottom(pi, pj), b = bottom(qi, qj), c = top(qi, qj), d = top(pi, pj);
+        F.push_back({{a, b, c}});
+        F.push_back({{a, c, d}});
+    }
+}
+
+/// The triangles of the slab's top (z = t) that face down, and of its bottom (z = 0) that face
+/// up: turned over.
+size_t slab_flips(const IsotropicRemeshing& m, const double t)
+{
+    size_t n = 0;
+    for (const auto& f : m.get_faces()) {
+        const auto vs = m.oriented_tri_vids(f);
+        const auto& p = m.vertex_attrs;
+        const double z = (p[vs[1]].pos - p[vs[0]].pos).cross(p[vs[2]].pos - p[vs[0]].pos).z();
+        bool top = true, bottom = true;
+        for (const size_t v : vs) {
+            top = top && p[v].pos.z() > 0.99 * t;
+            bottom = bottom && p[v].pos.z() < 0.01 * t;
+        }
+        if ((top && z <= 0) || (bottom && z >= 0)) ++n;
+    }
+    return n;
+}
+} // namespace
+
+TEST_CASE("cleanup-folds-nothing-on-a-thin-wall", "[test_remeshing][features]")
+{
+    // A slab thinner than a triangle is wide: the input next to a triangle of the top holds the
+    // bottom too, whose area vectors cancel the top's, so the input's orientation there is
+    // noise. The remeshing turns nothing over, and the repairs may not either: they took that
+    // orientation for the fold check, and on these slabs let a fold through and left a needle of
+    // under 0.1 degrees. With the fold check kept, the worst angle is no worse than without them.
+    const double t = 0.1;
+    for (const unsigned seed : {1u, 10u}) {
+        INFO("seed " << seed);
+        std::vector<Eigen::Vector3d> V;
+        std::vector<std::array<size_t, 3>> F;
+        slab(4, 8, t, seed, V, F);
+        const double eps = 0.001 * std::sqrt(4 * 4 * 2 + t * t); // eps_rel 0.001
+        std::array<double, 2> angle;
+        for (const bool cleanup : {false, true}) {
+            INFO("cleanup " << cleanup);
+            IsotropicRemeshing m(V, 0);
+            if (cleanup) m.set_cleanup_angle(35);
+            m.create_mesh(V.size(), F, {}, false, eps);
+            m.uniform_remeshing(0.6, 2);
+            REQUIRE(m.check_mesh_connectivity_validity());
+            CHECK(slab_flips(m, t) == 0);
+            angle[cleanup] = smallest_angle(m);
+        }
+        CHECK(angle[1] >= angle[0] - 1e-9);
+    }
+}
+
 TEST_CASE("features-history-replays-to-the-output", "[test_remeshing][features][history]")
 {
     // The passes this adds edit the mesh through the recorded operations only -- the cleanup's

@@ -195,13 +195,17 @@ ReplacedSurface IsotropicRemeshing::replaced(const std::vector<Tuple>& tris) con
     return r;
 }
 
+bool IsotropicRemeshing::more_folds(const std::vector<Tuple>& tris, const ReplacedSurface& before)
+    const
+{
+    return std::max(not_facing(tris, before.normal), not_facing(tris, area_normal(tris))) >
+               before.against ||
+           star_folds(tris) > before.star_folds;
+}
+
 bool IsotropicRemeshing::folds(const std::vector<Tuple>& tris, const ReplacedSurface& before)
 {
-    if (std::max(not_facing(tris, before.normal), not_facing(tris, area_normal(tris))) <=
-            before.against &&
-        star_folds(tris) <= before.star_folds) {
-        return false;
-    }
+    if (!more_folds(tris, before)) return false;
     ++m_refused_inversions;
     return true;
 }
@@ -272,11 +276,14 @@ size_t IsotropicRemeshing::input_folds(const std::vector<Tuple>& tris) const
 
 bool IsotropicRemeshing::cleanup_allows(
     const std::vector<Tuple>& tris,
-    const size_t folds_before,
+    const ReplacedSurface& before,
+    const size_t input_folds_before,
     const double floor) const
 {
-    const size_t folds_after = input_folds(tris);
-    return folds_after < folds_before || (folds_after == folds_before && min_angle(tris) > floor);
+    if (!more_folds(tris, before) && min_angle(tris) > floor) return true;
+    // A fold already there confuses the fold check; the input's orientation may then let a
+    // repair of it through. Only then: on a thin wall it is noise, and would let folds through.
+    return before.folded() && input_folds(tris) < input_folds_before;
 }
 
 bool IsotropicRemeshing::cleanup_move(const size_t v, const double floor)
@@ -663,12 +670,12 @@ bool IsotropicRemeshing::swap_edge_before(const Tuple& t)
             if (is_feature_edge(v, a) && is_feature_edge(v, b)) return false;
         }
     }
-    if (m_check_inversions) {
+    if (m_check_inversions || m_cleaning) {
         auto& cache = position_cache.local();
-        cache.replaced = replaced({t, t.switch_face(*this).value()});
-    }
-    if (m_cleaning) {
-        position_cache.local().input_folds = input_folds({t, t.switch_face(*this).value()});
+        const std::vector<Tuple> tris = {t, t.switch_face(*this).value()};
+        cache.replaced = replaced(tris);
+        // See cleanup_allows: the input's orientation is read only where there is a fold.
+        if (m_cleaning) cache.input_folds = cache.replaced.folded() ? input_folds(tris) : 0;
     }
     return true;
 }
@@ -677,10 +684,13 @@ bool IsotropicRemeshing::swap_edge_before(const Tuple& t)
 bool IsotropicRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
     if (m_cleaning) {
-        // See cleanup_triangles(): the input's orientation in place of the fold check.
+        // See cleanup_triangles(): the fold check, and where there is a fold the input's
+        // orientation.
+        const auto& cache = position_cache.local();
         return cleanup_allows(
             {t, t.switch_face(*this).value()},
-            position_cache.local().input_folds,
+            cache.replaced,
+            cache.input_folds,
             m_cleanup_floor);
     }
     if (!m_check_inversions) return true;
@@ -799,8 +809,9 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
             const auto vs = oriented_tri_vids(f);
             if (!std::count(vs.begin(), vs.end(), cache.v1)) tris.push_back(f);
         }
-        if (m_check_inversions) cache.replaced = replaced(tris);
-        if (m_cleaning) cache.input_folds = input_folds(tris);
+        cache.replaced = replaced(tris);
+        // See cleanup_allows: the input's orientation is read only where there is a fold.
+        if (m_cleaning) cache.input_folds = cache.replaced.folded() ? input_folds(tris) : 0;
     }
     return true;
 }
@@ -844,8 +855,13 @@ bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     vertex_attrs[vid].input_boundary = cache.v1_input_boundary || cache.v2_input_boundary;
 
     if (m_cleaning) {
-        // See cleanup_triangles(): the input's orientation in place of the fold check.
-        return cleanup_allows(get_one_ring_tris_for_vertex(t), cache.input_folds, m_cleanup_floor);
+        // See cleanup_triangles(): the fold check, and where there is a fold the input's
+        // orientation.
+        return cleanup_allows(
+            get_one_ring_tris_for_vertex(t),
+            cache.replaced,
+            cache.input_folds,
+            m_cleanup_floor);
     }
     if (m_check_inversions && folds(get_one_ring_tris_for_vertex(t), cache.replaced)) {
         return false;
@@ -944,12 +960,13 @@ bool IsotropicRemeshing::smooth_after(const TriMesh::Tuple& t)
     Eigen::Vector3d after_smooth = m_smooth_target ? *m_smooth_target : tangential_smooth(t);
     if (after_smooth.hasNaN()) return false;
     if (m_cleaning) {
-        // See cleanup_triangles(): the star's own angle to beat, and the input's orientation in
-        // place of the fold check.
-        const size_t folds_before = input_folds(one_ring_tris);
+        // See cleanup_triangles(): the star's own angle to beat, the fold check, and where there
+        // is a fold the input's orientation.
+        const ReplacedSurface before = replaced(one_ring_tris);
+        const size_t input_folds_before = before.folded() ? input_folds(one_ring_tris) : 0;
         const double floor = min_angle(one_ring_tris);
         vertex_attrs[t.vid(*this)].pos = after_smooth;
-        return cleanup_allows(one_ring_tris, folds_before, floor);
+        return cleanup_allows(one_ring_tris, before, input_folds_before, floor);
     }
     const ReplacedSurface before = m_check_inversions ? replaced(one_ring_tris) : ReplacedSurface();
     vertex_attrs[t.vid(*this)].pos = after_smooth;

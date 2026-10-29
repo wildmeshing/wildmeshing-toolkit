@@ -64,6 +64,8 @@ struct ReplacedSurface
     /// The folds in the stars of their vertices: triangles that do not face along their star's
     /// summed area vector, over those stars.
     size_t star_folds = 0;
+    /// Whether they, or the stars around them, fold the surface over already.
+    bool folded() const { return against > 0 || star_folds > 0; }
 };
 
 class IsotropicRemeshing : public wmtk::TriMesh
@@ -238,14 +240,17 @@ public:
      * a swap of one of its edges, longest first; a move of one of its vertices, or else of one of
      * the triangles around it -- one off the curves within its tangent plane, one inside a curve
      * along it -- to where the smallest angle of its star is largest. Allowed means the curve
-     * rules, the envelopes and the fixed vertices hold, as everywhere, and the operation raises the
-     * smallest angle of the triangles it leaves over that of the triangles around the one repaired
-     * (of its star, for a move). In place of the fold check, which judges against the operation's
-     * own triangles and which a fold already there confuses, it may not leave more triangles facing
-     * against the input next to them -- the input triangles within half their size plus the
-     * envelope, of the same face fields where set_face_fields() gave some -- than there were; one
-     * that leaves fewer is allowed even if no angle improves. Rounds until one repairs nothing, 10
-     * at most. Serial; returns the number of repairs.
+     * rules, the envelopes and the fixed vertices hold, as everywhere; the operation folds nothing
+     * by the rule of the fold check (see set_check_inversions; on or off, the repairs keep it);
+     * and it raises the smallest angle of the triangles it leaves over that of the triangles
+     * around the one repaired (of its star, for a move). Where what it replaces folds already, the
+     * fold check, which judges against those triangles, can count a repair of the fold as one
+     * more: there an operation that leaves fewer triangles facing against the input next to them
+     * -- the input triangles within half their size plus the envelope, of the same face fields
+     * where set_face_fields() gave some -- than there were is allowed too, even if no angle
+     * improves. Only there: where two sheets of the input are closer than that, a thin wall, the
+     * far one cancels the near one, and the input's orientation is noise. Rounds until one repairs
+     * nothing, 10 at most. Serial; returns the number of repairs.
      */
     size_t cleanup_triangles(double degrees);
     /// The operations set_check_inversions() refused, since the mesh was made.
@@ -308,8 +313,8 @@ public:
         ReplacedSurface replaced;
         // A split is under way: its invariants skip the feature envelope.
         bool splitting = false;
-        // Collapse and swap, in cleanup_triangles(): the triangles of what the operation
-        // replaces that face against the input.
+        // Collapse and swap, in cleanup_triangles(): where what the operation replaces folds
+        // already, its triangles that face against the input; 0 elsewhere, where it is not read.
         size_t input_folds = 0;
     };
     wmtk::threading::enumerable_thread_specific<PositionInfoCache> position_cache;
@@ -421,7 +426,9 @@ private:
     /// The triangles an operation is about to replace.
     ReplacedSurface replaced(const std::vector<Tuple>& tris) const;
     /// Whether the triangles an operation left fold the surface over more than the `before` they
-    /// replaced. Counts a refusal.
+    /// replaced.
+    bool more_folds(const std::vector<Tuple>& tris, const ReplacedSurface& before) const;
+    /// The same; counts a refusal.
     bool folds(const std::vector<Tuple>& tris, const ReplacedSurface& before);
 
     /// The smallest angle of the triangles, in degrees.
@@ -430,9 +437,14 @@ private:
     Eigen::Vector3d input_normal(const Tuple& f) const;
     /// How many of the triangles do not face along input_normal().
     size_t input_folds(const std::vector<Tuple>& tris) const;
-    /// Whether the triangles a repair left beat `floor` and face against the input no more often
-    /// than the `folds_before` of what they replaced; or face against it less often.
-    bool cleanup_allows(const std::vector<Tuple>& tris, size_t folds_before, double floor) const;
+    /// Whether the triangles a repair left fold no more than the `before` they replaced and beat
+    /// `floor`; or, where `before` folds already, face against the input less often than its
+    /// `input_folds_before`. See cleanup_triangles().
+    bool cleanup_allows(
+        const std::vector<Tuple>& tris,
+        const ReplacedSurface& before,
+        size_t input_folds_before,
+        double floor) const;
     /// Moves `v` to where the smallest angle of its star is largest, above `floor`.
     bool cleanup_move(size_t v, double floor);
 };
