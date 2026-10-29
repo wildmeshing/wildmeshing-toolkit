@@ -241,20 +241,40 @@ public:
     }
 
     /**
-     * @brief Per-edge feature tag: does this tet edge tile an input feature curve.
+     * @brief Per-edge curve tags: which kinds of input curve this tet edge tiles.
      *
-     * A single union bool: which curve an edge belongs to is not carried through the
-     * optimization, and the edges are held by one tube around all the curves
-     * (m_feature_envelope). Tracked faces are different: each carries its input set
-     * (SurfaceTagAttributes::input_set()) through every operation and is held to its own
-     * inputs' envelopes, because one envelope around every input let a solid's boundary ride a
-     * sheet crossing it -- measured, 12 faces up to 3.61 eps off the solid -- and an audit at the
-     * end can find that but not prevent it. Curves are expected to follow the faces once two of
-     * them close together can be measured drifting the same way.
+     * One bit per KIND of curve, because each kind is held to its own tube (see
+     * tagged_edge_envelope()), and one edge can tile two kinds at once:
+     *  - feature: the input feature curves the application was given, held by
+     *    m_feature_envelope;
+     *  - order2: the input's order-2 edges (open boundaries and non-manifold edges), held by
+     *    m_order2_edge_envelope. Reserved: nothing sets it yet.
+     * An edge with any bit set is TAGGED, and the operations treat every tagged edge alike --
+     * propagated through split, collapse and swap, never removed by a swap, order-2 substructure
+     * for the link condition. Only the tube it is held to, and vertex_has_feature_edge(), read
+     * the kind.
+     *
+     * Within a kind the tag is a union: which curve an edge belongs to is not carried through
+     * the optimization, and the kind's edges are held by one tube around all its curves.
+     * Tracked faces are different: each carries its input set (SurfaceTagAttributes::input_set())
+     * through every operation and is held to its own inputs' envelopes, because one envelope
+     * around every input let a solid's boundary ride a sheet crossing it -- measured, 12 faces up
+     * to 3.61 eps off the solid -- and an audit at the end can find that but not prevent it.
+     * Curves are expected to follow the faces once two of them close together can be measured
+     * drifting the same way.
      */
     struct FeatureEdgeAttributes
     {
-        bool m_is_feature_edge = false;
+        enum Kind : uint8_t {
+            feature = 1 << 0,
+            order2 = 1 << 1,
+        };
+        /// The Kind bits of every curve this edge tiles; 0 = untagged.
+        uint8_t m_kinds = 0;
+
+        bool is_tagged() const { return m_kinds != 0; }
+        bool has(Kind k) const { return (m_kinds & k) != 0; }
+        void add(Kind k) { m_kinds |= k; }
     };
     using EdgeAttCol = AttributeCollection<FeatureEdgeAttributes>;
     /// Sized, protected and rolled back only once enable_feature_edge_tracking() ran.
@@ -270,14 +290,35 @@ public:
     bool m_track_feature_edges = false;
 
     /**
-     * @brief Envelope around the input feature curves: the tube a tagged edge must stay in.
+     * @brief Envelope around the input feature curves: the tube an edge tagged `feature` must
+     * stay in.
      *
      * The collapse guard's veto (see collapse_edge_before). Kept SEPARATE from the surface
      * envelope and the order-2 envelope: merging would let feature curves vouch for open
-     * boundaries (and vice versa) in guard decisions. Null => tagged edges are propagated
+     * boundaries (and vice versa) in guard decisions. Null => feature edges are propagated
      * but not geometrically constrained.
      */
     std::shared_ptr<Envelope> m_feature_envelope;
+    /**
+     * @brief Envelope around the input's order-2 edges: the tube an edge tagged `order2` must
+     * stay in.
+     *
+     * The order2 counterpart of m_feature_envelope, separate from it for the reason given there.
+     * Null => order2 edges are propagated but not geometrically constrained. Nothing sets it yet.
+     */
+    std::shared_ptr<Envelope> m_order2_edge_envelope;
+    /// The tube edges of kind `k` are held to (one of the two above); null if there is none.
+    const Envelope* tagged_edge_envelope(FeatureEdgeAttributes::Kind k) const
+    {
+        return (k == FeatureEdgeAttributes::feature ? m_feature_envelope : m_order2_edge_envelope)
+            .get();
+    }
+    /// The first of `kinds`, in bit order, whose tube the segment (a, b) leaves; 0 when it stays
+    /// inside every one of them. A kind without a tube constrains nothing.
+    uint8_t tagged_edge_leaves_tube(
+        uint8_t kinds,
+        const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b) const;
 
     /**
      * @brief Turn on feature-edge tracking. The collection joins m_edge_attr_group beside
@@ -299,20 +340,24 @@ public:
         m_track_feature_edges = true;
     }
 
-    /// Does any edge incident to `vid` carry the feature tag? Derived from the edge tags
-    /// rather than from a vertex flag, so it cannot go stale.
+    /// Does any edge incident to `vid` carry the `feature` kind? Derived from the edge tags
+    /// rather than from a vertex flag, so it cannot go stale. The feature kind only: tetwild's
+    /// smoothing pull asks it to prefer the user's feature tube over the derived order-2 one.
     bool vertex_has_feature_edge(size_t vid) const;
+    /// Does any edge incident to `vid` carry a tag, of any kind? Derived like the above.
+    bool vertex_has_tagged_edge(size_t vid) const;
 
-    // Substructure widening for the link condition (preserve_topology): a tagged feature
-    // edge is order-2 substructure, a vertex with two incident tagged edges is on a curve
+    // Substructure widening for the link condition (preserve_topology): a tagged edge, of any
+    // kind, is order-2 substructure, a vertex with two incident tagged edges is on a curve
     // (order 2), with one or three-plus it is a curve endpoint or junction (order 3). The
     // meaning of get_order_of_* is untouched.
     size_t substructure_order_of_edge(const std::array<size_t, 2>& vids) const override;
     size_t substructure_order_of_vertex(size_t vid) const override;
     void substructure_feature_neighbors(size_t vid, std::vector<size_t>& out) const override;
-    /// Are all tagged edges at `vid` inside the feature tube, at the CURRENT positions?
-    /// True when tracking or the tube is off. Smoothing calls this with the candidate
-    /// position already written into the vertex attribute.
+    /// Are all tagged edges at `vid` inside their kinds' tubes, at the CURRENT positions? Each
+    /// kind an edge carries is tested in its own tube (tagged_edge_leaves_tube()). True when
+    /// tracking is off or no kind has a tube. Smoothing calls this with the candidate position
+    /// already written into the vertex attribute.
     bool feature_edges_at_vertex_inside(size_t vid) const;
 
     /**
@@ -619,7 +664,7 @@ public:
     std::array<size_t, 3> orient_tracked_face(
         const std::array<size_t, 3>& f,
         const std::vector<size_t>& tets) const override;
-    /// The tagged feature edges (m_feature_edge_attribute) that are edges of tracked faces.
+    /// The edges tagged `feature` (m_feature_edge_attribute) that are edges of tracked faces.
     std::vector<std::array<size_t, 2>> tracked_feature_edges() const override;
 
     /// m_params.check_surface_folds; see there.
@@ -1115,7 +1160,7 @@ protected:
         valence, // wrong incident-tet count for this swap kind
         bbox, // edge on the bounding box
         surface_not_allowed, // has surface faces and allow_surface_swap() is false
-        feature_edge, // the swap would delete a tagged feature edge (it is the operated edge)
+        feature_edge, // the swap would delete a tagged edge, any kind (it is the operated edge)
         prepare_flip, // prepare_surface_flip() refused (see the flip_* reasons)
         interior_hook, // swap_before_interior() refused
         flip_open_boundary, // flipping would change the surface's boundary loops
@@ -1202,7 +1247,8 @@ protected:
         inverted, // a cell the collapse reshapes would invert
         quality, // collapse_quality_allowed() said no
         substructure_link, // preserve_topology, both ends on the surface: substructure link
-        feature_leaves_tube, // a tagged feature edge the collapse moves would leave its tube
+        feature_leaves_tube, // an edge tagged `feature` the collapse moves would leave its tube
+        order2_leaves_tube, // an edge tagged `order2` the collapse moves would leave its tube
         feature_point, // v1 stands for a feature point and v2 is outside its ball
         app_both_surfaces, // application: an end on the input complex and an end on the offset
         app_front_unlimited, // application: an unlimited-length pass may not remove a front vertex
@@ -1311,8 +1357,8 @@ protected:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
-        std::map<std::array<size_t, 2>, bool> changed_edges;
+        /// Edge tag bits of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, uint8_t> changed_edges;
 
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
@@ -1330,11 +1376,12 @@ protected:
         size_t v2_id = 0;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
-        bool is_edge_on_feature = false;
+        /// The split edge's tag bits (FeatureEdgeAttributes::m_kinds); its two halves get them.
+        uint8_t edge_kinds = 0;
         size_t edge_order = 0;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
-        std::map<std::array<size_t, 2>, bool> changed_edges;
+        /// Edge tag bits of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, uint8_t> changed_edges;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -1356,8 +1403,8 @@ protected:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
-        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
-        std::map<std::array<size_t, 2>, bool> changed_edges;
+        /// Edge tag bits of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, uint8_t> changed_edges;
         /// Coarsening pass only: the worst relative quality in the region the composite may
         /// disturb, measured before the collapse. See collapse_edge_after.
         double region_max_rel_before = 0.;
@@ -1383,24 +1430,24 @@ protected:
     //    false if a TAGGED cached edge no longer exists (the caller aborts, mirroring the
     //    face path's try_tuple_from_face bailout).
 
-    /// Cache the feature tag of every edge of every tet in `tids`.
+    /// Cache the tag bits of every edge of every tet in `tids`.
     void feature_edges_cache(
         const std::vector<size_t>& tids,
-        std::map<std::array<size_t, 2>, bool>& cache);
+        std::map<std::array<size_t, 2>, uint8_t>& cache);
     /// Write back tags over every edge of every tet in `tets` (created regions).
     void feature_edges_restore_region(
         const std::vector<Tuple>& tets,
-        const std::map<std::array<size_t, 2>, bool>& cache);
+        const std::map<std::array<size_t, 2>, uint8_t>& cache);
     void feature_edges_restore_region(
         const std::vector<size_t>& tids,
-        const std::map<std::array<size_t, 2>, bool>& cache);
+        const std::map<std::array<size_t, 2>, uint8_t>& cache);
     /// Write back tags for every cached edge, with `v_old` renamed to `v_new` (collapse).
     bool feature_edges_restore_remap(
-        const std::map<std::array<size_t, 2>, bool>& cache,
+        const std::map<std::array<size_t, 2>, uint8_t>& cache,
         size_t v_old,
         size_t v_new);
 
-    /// Hook: the split vertex was created on a feature edge (or not). Runs only when
+    /// Hook: the split vertex was created on an edge tagged `feature` (or not). Runs only when
     /// m_track_feature_edges is set; the counterpart of split_after_vertex for the feature
     /// flag, separate so existing overrides keep their signature.
     virtual void split_after_vertex_feature(size_t, bool) {}

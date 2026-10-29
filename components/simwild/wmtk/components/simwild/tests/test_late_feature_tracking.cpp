@@ -98,7 +98,7 @@ std::set<std::array<size_t, 2>> tagged_edges(const wmtk::components::simwild::Si
 {
     std::set<std::array<size_t, 2>> out;
     for (const auto& e : m.get_edges()) {
-        if (!m.m_feature_edge_attribute[e.eid(m)].m_is_feature_edge) continue;
+        if (!m.m_feature_edge_attribute[e.eid(m)].is_tagged()) continue;
         size_t a = e.vid(m);
         size_t b = e.switch_vertex(m).vid(m);
         if (a > b) std::swap(a, b);
@@ -206,11 +206,12 @@ TEST_CASE(
     REQUIRE(cap0 > 0);
     REQUIRE(mesh.m_feature_edge_attribute.size() == 6 * cap0);
     for (size_t i = 0; i < mesh.m_feature_edge_attribute.size(); ++i) {
-        CHECK(!mesh.m_feature_edge_attribute[i].m_is_feature_edge);
+        CHECK(!mesh.m_feature_edge_attribute[i].is_tagged());
     }
 
     const auto axis = mesh.tuple_from_edge({{0, 1}});
-    mesh.m_feature_edge_attribute[axis.eid(mesh)].m_is_feature_edge = true;
+    mesh.m_feature_edge_attribute[axis.eid(mesh)].add(
+        wmtk::TetOptimizerMesh::FeatureEdgeAttributes::feature);
     REQUIRE(tagged_edges(mesh) == std::set<std::array<size_t, 2>>{{{0, 1}}});
 
     // Refine until the storage has to grow past what init() reserved.

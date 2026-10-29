@@ -1024,7 +1024,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     const bool features_present = !feature_edges.empty() || !feature_points.empty();
     if (features_present) {
         for (const auto& e : mesh_new.get_edges()) {
-            if (!mesh_new.m_feature_edge_attribute[e.eid(mesh_new)].m_is_feature_edge) {
+            if (!mesh_new.m_feature_edge_attribute[e.eid(mesh_new)].has(
+                    TetWildMesh::FeatureEdgeAttributes::feature)) {
                 continue;
             }
             hybrid_curve_segs.push_back(

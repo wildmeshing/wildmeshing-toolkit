@@ -435,7 +435,7 @@ void TetWildMesh::init_from_Volumeremesher(
                         seg[0],
                         seg[1]);
                 }
-                m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge = true;
+                m_feature_edge_attribute[t.eid(*this)].add(FeatureEdgeAttributes::feature);
                 m_vertex_extra[seg[0]].m_is_on_feature_curve = true;
                 m_vertex_extra[seg[1]].m_is_on_feature_curve = true;
                 ++n_tagged;

@@ -460,7 +460,8 @@ TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]" 
         for (const auto& e : features_out.edge_tiling[ie]) {
             const auto t = mesh.tuple_from_edge({{e[0], e[1]}});
             REQUIRE(t.is_valid(mesh));
-            CHECK(mesh.m_feature_edge_attribute[t.eid(mesh)].m_is_feature_edge);
+            CHECK(mesh.m_feature_edge_attribute[t.eid(mesh)].has(
+                TetWildMesh::FeatureEdgeAttributes::feature));
             CHECK(mesh.m_vertex_extra[e[0]].m_is_on_feature_curve);
             CHECK(mesh.m_vertex_extra[e[1]].m_is_on_feature_curve);
         }

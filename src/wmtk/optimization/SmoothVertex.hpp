@@ -404,12 +404,13 @@ bool smooth_vertex_3d(
         VA[vid].m_posf = x;
     };
 
-    // A feature-curve vertex needs pulling and containment even when it is INTERIOR: the
-    // surface flag alone would smooth it as free and let it walk off its curve. Derived from
-    // the edge tags, so it cannot go stale.
-    const bool on_feature_curve = m.m_track_feature_edges && m.vertex_has_feature_edge(vid);
+    // A vertex on a tagged curve (any kind) needs pulling and containment even when it is
+    // INTERIOR: the surface flag alone would smooth it as free and let it walk off its curve.
+    // Derived from the edge tags, so it cannot go stale. Which tube pulls it is
+    // smoothing_energy_envelope()'s choice; containment tests each kind in its own tube.
+    const bool on_tagged_curve = m.m_track_feature_edges && m.vertex_has_tagged_edge(vid);
     const std::shared_ptr<Envelope> pull_env =
-        (VA[vid].m_is_on_surface || on_feature_curve) ? m.smoothing_energy_envelope(vid) : nullptr;
+        (VA[vid].m_is_on_surface || on_tagged_curve) ? m.smoothing_energy_envelope(vid) : nullptr;
 
     if (pull_env && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
         // Smooth as if the vertex were interior, then walk back onto the input. The ring's value
@@ -519,9 +520,10 @@ bool smooth_vertex_3d(
         return false;
     }
 
-    // Feature containment: every tagged edge at this vertex must stay inside the feature
-    // tube, at the candidate position (already written into the vertex attribute here).
-    if (on_feature_curve && !m.feature_edges_at_vertex_inside(vid)) {
+    // Tagged-edge containment: every tagged edge at this vertex must stay inside the tube of
+    // each kind it carries, at the candidate position (already written into the vertex
+    // attribute here).
+    if (on_tagged_curve && !m.feature_edges_at_vertex_inside(vid)) {
         if (counters) ++counters->envelope;
         return false;
     }

@@ -124,7 +124,7 @@ std::vector<std::array<size_t, 2>> tagged_edges(TetWildMesh& m)
 {
     std::vector<std::array<size_t, 2>> out;
     for (const auto& e : m.get_edges()) {
-        if (!m.m_feature_edge_attribute[e.eid(m)].m_is_feature_edge) {
+        if (!m.m_feature_edge_attribute[e.eid(m)].is_tagged()) {
             continue;
         }
         size_t a = e.vid(m);

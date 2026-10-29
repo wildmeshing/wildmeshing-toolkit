@@ -248,15 +248,16 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         feature_edges_cache(n1_locs, cache.changed_edges);
 
         // The geometric guard: every tagged edge, as the collapse would leave it (v1 renamed
-        // to v2, which does not move), must stay inside the feature-curve tube. This is what
-        // lets a curve coarsen -- a collapse ALONG the curve keeps the merged edge in the
-        // tube and passes -- while a collapse that would drag the curve sideways, or weld
+        // to v2, which does not move), must stay inside the tube of each kind it carries. This
+        // is what lets a curve coarsen -- a collapse ALONG the curve keeps the merged edge in
+        // the tube and passes -- while a collapse that would drag the curve sideways, or weld
         // two curves farther apart than the tube width, is refused. The exact counterpart of
         // the surface-split's surface_triangle_is_outside check, and of the open-boundary
-        // collapse guard.
-        if (m_feature_envelope) {
-            for (const auto& [pair, tag] : cache.changed_edges) {
-                if (!tag) {
+        // collapse guard. Each kind refuses under its own reason, so the accounting can tell
+        // the kinds apart.
+        if (m_feature_envelope || m_order2_edge_envelope) {
+            for (const auto& [pair, kinds] : cache.changed_edges) {
+                if (kinds == 0) {
                     continue;
                 }
                 std::array<size_t, 2> p = pair;
@@ -268,10 +269,15 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                 if (p[0] == p[1]) {
                     continue; // the collapsed edge itself; it disappears
                 }
-                if (m_feature_envelope->is_outside(
-                        std::array<Eigen::Vector3d, 2>{
-                            {m_vertex_attribute[p[0]].m_posf, m_vertex_attribute[p[1]].m_posf}})) {
+                const uint8_t left = tagged_edge_leaves_tube(
+                    kinds,
+                    m_vertex_attribute[p[0]].m_posf,
+                    m_vertex_attribute[p[1]].m_posf);
+                if (left == FeatureEdgeAttributes::feature) {
                     return collapse_reject(CollapseReject::feature_leaves_tube);
+                }
+                if (left == FeatureEdgeAttributes::order2) {
+                    return collapse_reject(CollapseReject::order2_leaves_tube);
                 }
             }
         }
@@ -579,6 +585,7 @@ const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
     case CollapseReject::quality: return "quality";
     case CollapseReject::substructure_link: return "substructure_link";
     case CollapseReject::feature_leaves_tube: return "feature_leaves_tube";
+    case CollapseReject::order2_leaves_tube: return "order2_leaves_tube";
     case CollapseReject::feature_point: return "feature_point";
     case CollapseReject::app_both_surfaces: return "app_both_surfaces";
     case CollapseReject::app_front_unlimited: return "app_front_unlimited";
