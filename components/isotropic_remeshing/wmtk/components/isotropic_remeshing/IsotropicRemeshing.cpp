@@ -170,6 +170,32 @@ size_t IsotropicRemeshing::not_facing(const std::vector<Tuple>& tris, const Eige
     return count;
 }
 
+int64_t IsotropicRemeshing::region(const Tuple& f) const
+{
+    return m_has_regions ? face_field_attrs.at(f.fid(*this)).region : -1;
+}
+
+std::vector<std::pair<int64_t, std::vector<IsotropicRemeshing::Tuple>>>
+IsotropicRemeshing::by_region(const std::vector<Tuple>& tris) const
+{
+    std::vector<std::pair<int64_t, std::vector<Tuple>>> out;
+    if (!m_has_regions) {
+        out.emplace_back(-1, tris);
+        return out;
+    }
+    for (const Tuple& f : tris) {
+        const int64_t r = region(f);
+        const auto it =
+            std::find_if(out.begin(), out.end(), [r](const auto& side) { return side.first == r; });
+        if (it == out.end()) {
+            out.emplace_back(r, std::vector<Tuple>{f});
+        } else {
+            it->second.push_back(f);
+        }
+    }
+    return out;
+}
+
 size_t IsotropicRemeshing::star_folds(const std::vector<Tuple>& tris) const
 {
     std::vector<size_t> vs;
@@ -180,26 +206,40 @@ size_t IsotropicRemeshing::star_folds(const std::vector<Tuple>& tris) const
     vs.erase(std::unique(vs.begin(), vs.end()), vs.end());
     size_t count = 0;
     for (const size_t v : vs) {
-        const auto star = get_one_ring_tris_for_vertex(tuple_from_vertex(v));
-        count += not_facing(star, area_normal(star));
+        // A star on a curve, each side against its own normal: see set_check_inversions.
+        for (const auto& [r, side] :
+             by_region(get_one_ring_tris_for_vertex(tuple_from_vertex(v)))) {
+            count += not_facing(side, area_normal(side));
+        }
     }
     return count;
 }
 
 ReplacedSurface IsotropicRemeshing::replaced(const std::vector<Tuple>& tris) const
 {
-    ReplacedSurface r;
-    r.normal = area_normal(tris);
-    r.against = not_facing(tris, r.normal);
-    r.star_folds = star_folds(tris);
-    return r;
+    ReplacedSurface out;
+    for (const auto& [r, side] : by_region(tris)) {
+        const Eigen::Vector3d n = area_normal(side);
+        out.normals.emplace_back(r, n);
+        out.against += not_facing(side, n);
+    }
+    out.star_folds = star_folds(tris);
+    return out;
 }
 
 bool IsotropicRemeshing::more_folds(const std::vector<Tuple>& tris, const ReplacedSurface& before)
     const
 {
-    return std::max(not_facing(tris, before.normal), not_facing(tris, area_normal(tris))) >
-               before.against ||
+    // Each region against the normal of its triangles before, and of its triangles now. No
+    // operation makes a region the triangles it replaced had none of; if one did, its own
+    // normal stands in.
+    size_t against_before = 0, against_now = 0;
+    for (const auto& [r, side] : by_region(tris)) {
+        const Eigen::Vector3d now = area_normal(side);
+        against_before += not_facing(side, before.normal(r).value_or(now));
+        against_now += not_facing(side, now);
+    }
+    return std::max(against_before, against_now) > before.against ||
            star_folds(tris) > before.star_folds;
 }
 
@@ -453,6 +493,34 @@ void IsotropicRemeshing::set_feature_edges(
         if (ids[i] != -1) m_has_edge_ids = true;
     }
     m_has_features = !edges.empty();
+
+    // The regions of the curves: the faces each one reaches without crossing a feature edge.
+    m_has_regions = m_has_features;
+    if (!m_has_regions) return;
+    face_field_attrs.resize(tri_storage_capacity());
+    for (auto& a : face_field_attrs.m_attributes) a.region = -1;
+    int64_t next = 0;
+    for (const Tuple& face : get_faces()) {
+        if (face_field_attrs.m_attributes[face.fid(*this)].region >= 0) continue;
+        face_field_attrs.m_attributes[face.fid(*this)].region = next;
+        std::vector<Tuple> todo = {face};
+        while (!todo.empty()) {
+            const Tuple f = todo.back();
+            todo.pop_back();
+            const auto vs = oriented_tri_vids(f);
+            for (int k = 0; k < 3; ++k) {
+                if (is_feature_edge(vs[k], vs[(k + 1) % 3])) continue;
+                const auto g =
+                    tuple_from_edge(vs[k], vs[(k + 1) % 3], f.fid(*this)).switch_face(*this);
+                if (!g || face_field_attrs.m_attributes[g->fid(*this)].region >= 0) continue;
+                face_field_attrs.m_attributes[g->fid(*this)].region = next;
+                todo.push_back(*g);
+            }
+        }
+        ++next;
+    }
+    // From here on the mesh rolls them back, consolidates them and grows them with its faces.
+    p_face_attrs = &face_field_attrs;
 }
 
 void IsotropicRemeshing::set_fixed_vertices(const std::vector<std::pair<size_t, int64_t>>& vertices)
@@ -926,9 +994,9 @@ bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
             replace_nbr(feature_attrs[cache.v2], cache.v1, vid);
         }
     }
-    if (m_has_face_fields) {
+    if (m_has_face_fields || m_has_regions) {
         // Each face at the edge is now two: the half at v1 is the face itself, the half at v2 a
-        // new one, which takes its values.
+        // new one, which takes its values and its region.
         const auto ring = get_one_ring_tris_for_vertex(t.switch_vertex(*this));
         for (const Tuple& f : ring) {
             const auto vs = oriented_tri_vids(f);

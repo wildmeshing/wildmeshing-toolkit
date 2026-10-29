@@ -48,22 +48,33 @@ struct FeatureAttributes
     int64_t vertex_id = -1;
 };
 
-/// A face's values of the per-face fields (see IsotropicRemeshing::set_face_fields).
+/// A face's values of the per-face fields (see IsotropicRemeshing::set_face_fields), and the
+/// region of the feature curves it lies in (see IsotropicRemeshing::set_feature_edges).
 struct FaceFieldAttributes
 {
     std::vector<double> values;
+    int64_t region = -1;
 };
 
-/// The triangles an operation replaces, as IsotropicRemeshing::set_check_inversions sees them.
+/// The triangles an operation replaces, as IsotropicRemeshing::set_check_inversions sees them:
+/// each region of the feature curves among them on its own (one, without curves).
 struct ReplacedSurface
 {
-    /// Their area vectors, summed.
-    Eigen::Vector3d normal = Eigen::Vector3d::Zero();
-    /// The ones that do not face along `normal`.
+    /// Each region's area vectors, summed.
+    std::vector<std::pair<int64_t, Eigen::Vector3d>> normals;
+    /// The ones that do not face along their region's normal.
     size_t against = 0;
-    /// The folds in the stars of their vertices: triangles that do not face along their star's
-    /// summed area vector, over those stars.
+    /// The folds in the stars of their vertices: triangles that do not face along the summed area
+    /// vector of their region of the star, over those stars.
     size_t star_folds = 0;
+    /// The summed area vectors of `region`; none if the triangles have none there.
+    std::optional<Eigen::Vector3d> normal(int64_t region) const
+    {
+        for (const auto& [r, n] : normals) {
+            if (r == region) return n;
+        }
+        return std::nullopt;
+    }
     /// Whether they, or the stars around them, fold the surface over already.
     bool folded() const { return against > 0 || star_folds > 0; }
 };
@@ -84,7 +95,8 @@ public:
     VertAttCol vertex_attrs;
     /// Read and written only while the mesh has feature edges or fixed vertices.
     wmtk::AttributeCollection<FeatureAttributes> feature_attrs;
-    /// The mesh's face attributes once set_face_fields() is called; untouched before.
+    /// The mesh's face attributes once set_face_fields() or set_feature_edges() is called;
+    /// untouched before.
     wmtk::AttributeCollection<FaceFieldAttributes> face_field_attrs;
 
     /**
@@ -101,6 +113,11 @@ public:
      *
      * These are the rules wmtk::history::Replay carries feature edges by, so a recorded history
      * holds the curves at every step.
+     *
+     * It also gives each face the region of the curves it lies in -- the faces it reaches without
+     * crossing a feature edge -- which every face keeps: a split gives both halves the face's
+     * region, and since no curve is swapped or merged, no swap or collapse joins two regions.
+     * The fold check judges each region on its own (see set_check_inversions).
      */
     void set_feature_edges(const std::vector<std::array<size_t, 2>>& edges);
     /**
@@ -203,6 +220,13 @@ public:
      * normal: what it changes is in its neighbours' stars too. So it makes no fold, and may undo
      * one the input has. A triangle faces along a normal when the exact orient3d says so (see
      * faces_along in the .cpp). A split moves no vertex and is not checked. On by default.
+     *
+     * With feature curves, each region of the curves (see set_feature_edges) is judged on its own:
+     * its triangles against the normal of its own triangles, before and after, and in each star
+     * the triangles of each region against theirs. Across a curve the surface may turn by any
+     * angle -- at a sharp edge of a B-rep, over 90 degrees -- and the normal of triangles on both
+     * sides points between them, so that well-oriented triangles of the smaller side face away
+     * from it. Within a region, and without curves, the check is the one above.
      */
     void set_check_inversions(bool check) { m_check_inversions = check; }
     /**
@@ -421,13 +445,21 @@ private:
     double m_collapse_target = 0;
     std::atomic<size_t> m_refused_inversions = 0;
 
+    /// set_feature_edges() gave the faces their regions.
+    bool m_has_regions = false;
+    /// The region of the curves `f` lies in; -1 without curves.
+    int64_t region(const Tuple& f) const;
+    /// The triangles, by region (see set_feature_edges), in the order the regions first appear.
+    std::vector<std::pair<int64_t, std::vector<Tuple>>> by_region(
+        const std::vector<Tuple>& tris) const;
     /// The area vectors of the triangles, summed (twice over).
     Eigen::Vector3d area_normal(const std::vector<Tuple>& tris) const;
     /// How many of the triangles do not face along n.
     size_t not_facing(const std::vector<Tuple>& tris, const Eigen::Vector3d& n) const;
     /// Over the vertices of the triangles, the triangles of each one's star that do not face along
-    /// that star's area_normal. An operation may read these stars: one that changes a star holds
-    /// its centre, which is in the one-ring of what this operation changes, and so held by it.
+    /// the area_normal of their region of that star. An operation may read these stars: one that
+    /// changes a star holds its centre, which is in the one-ring of what this operation changes,
+    /// and so held by it.
     size_t star_folds(const std::vector<Tuple>& tris) const;
     /// The triangles an operation is about to replace.
     ReplacedSurface replaced(const std::vector<Tuple>& tris) const;
