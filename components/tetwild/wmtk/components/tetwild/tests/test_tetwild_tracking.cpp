@@ -6,7 +6,7 @@
 #include <wmtk/components/surface_map/Tracking.hpp>
 #include <wmtk/components/surface_map/surface_map.hpp>
 #include <wmtk/components/tetwild/tetwild.hpp>
-#include <wmtk/utils/io.hpp>
+#include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
@@ -54,12 +54,11 @@ TEST_CASE("tracking-example-tetwild", "[tetwild][tracking]" + release_only)
     });
     std::vector<Eigen::Vector3d> tet_vertices;
     {
-        MshData msh;
-        msh.load(output.string() + "_final.msh");
-        tet_vertices.resize(msh.get_num_tet_vertices());
-        msh.extract_tet_vertices([&](size_t i, double x, double y, double z) {
-            tet_vertices[i] = Eigen::Vector3d(x, y, z);
-        });
+        // Read as wm.read_mesh reads it: every vertex, in the file's row order.
+        const MeshData msh = io::read_mesh(output.string() + "_final.msh");
+        for (Eigen::Index i = 0; i < msh.V.rows(); ++i) {
+            tet_vertices.push_back(msh.V.row(i).transpose());
+        }
     }
     Eigen::MatrixXd V_in;
     Eigen::MatrixXi F_in;
