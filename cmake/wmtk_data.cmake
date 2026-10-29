@@ -19,8 +19,7 @@ target_compile_definitions(wmtk_data INTERFACE WMTK_DATA_DIR=\"${WMTK_DATA_ROOT}
 # Only tests read the data (WMTK_DATA_DIR appears in test sources alone), so a build without them
 # does not download it -- among them the Python package, which configures with BUILD_TESTING=OFF
 # (pyproject.toml) and would otherwise clone all of data2 into every `pip install`. BUILD_TESTING
-# is CTest's option, and the top-level CMakeLists.txt includes CTest after app/ has included this
-# file: undefined here means a first configure that will take CTest's default, ON.
+# is CTest's option: undefined here means a first configure that will take CTest's default, ON.
 if(DEFINED BUILD_TESTING AND NOT BUILD_TESTING)
     return()
 endif()

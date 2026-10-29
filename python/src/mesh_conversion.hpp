@@ -11,7 +11,7 @@ namespace wmtk::python {
 using MemoryComponent = ComponentResult (*)(nlohmann::json, const MeshMap&);
 
 // NumPy arrays and mesh dictionaries to and from MeshData, for the module and the components'
-// own bindings (app/pywildmeshing/<name>_bindings.cpp). Every array is copied: NumPy owns what
+// own bindings (python/src/<name>_bindings.cpp). Every array is copied: NumPy owns what
 // is returned, and nothing keeps a reference into what is given.
 
 /// `value` as a dictionary; a TypeError naming it otherwise.
