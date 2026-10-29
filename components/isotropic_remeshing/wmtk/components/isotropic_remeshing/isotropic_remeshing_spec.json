@@ -19,9 +19,13 @@
       "report",
       "use_link_condition",
       "check_inversions",
+      "swap_quality",
+      "limit_collapse_length",
+      "cleanup_angle",
       "remove_duplicate_eps",
       "history_output",
-      "feature_fields"
+      "feature_fields",
+      "features"
     ]
   },
   {
@@ -39,7 +43,7 @@
     "pointer": "/output",
     "type": "string",
     "default": "out.obj",
-    "doc": "Output file name."
+    "doc": "Output file name. With feature_fields or features, a .vtu output holds what the remeshing keeps: the triangles, with a cell field per per-face field of feature_fields (its value; per-corner fields are not written) and the point field vertex_id (the id features gives a fixed vertex, -1 elsewhere); and, in <stem>_edge.vtu next to it (named as simwild's edges), the same points with one line cell per feature edge, its cell field edge_id (the id features gives it, -1 for none or for a boundary of feature_fields), and vertex_id again. The ids are Float64 there, as every .vtu field. Any other format holds the triangles only, and the remeshing warns that the rest is not written."
   },
   {
     "pointer": "/input_dir",
@@ -113,6 +117,12 @@
     "doc": "The name of a per-face or per-corner field of the input."
   },
   {
+    "pointer": "/features",
+    "type": "string",
+    "default": "",
+    "doc": "File route: a JSON file, its path resolved like input, of curves and vertices to keep: {\"edges\": [[a, b], ...], \"edge_ids\": [id, ...], \"vertices\": [[v, id], ...]}, every key optional. Indices are vertices of the input file in file order, as written: the features follow them through the reader's merging of duplicates (remove_duplicate_eps), which renumbers them, so an edge whose two ends it merges goes, and entries it merges into one -- the copies of a curve that a mesh written face by face has on either side -- are kept once and have to agree on the id. Each edge has to be an edge of the input, and becomes a feature edge (see IsotropicRemeshing::set_feature_edges), with the boundaries of feature_fields; an entry [a, a] (a B-rep edge of no length, say) is skipped. edge_ids, as long as edges, gives each one an id that the remeshing carries: both halves of a split edge keep it, a collapse along a curve leaves the curve its id, and a boundary of feature_fields has -1. A vertex between two feature edges of different ids stays put, like a junction. The vertices are fixed: never moved and never removed -- a collapse of one of their edges removes the other end, where that may go -- and their ids are carried to the output; one may sit inside a curve, between two regions. With a .vtu output, the ids are written there (see output). On the memory route features names a mesh of the memory input instead, on the vertex rows of input (its V has as many rows), as the edges result is on mesh's: its edges are the curves, with an Int64 cell field edge_id or without; its points, with an Int64 cell field vertex_id, and the vertices whose Int64 vertex field vertex_id is not -1, are the fixed vertices. The result then holds what the .vtu output would, its ids Int64: mesh, with the vertex field vertex_id, and edges, its feature edges on the same vertex rows -- an edge block of none if there are none -- with the cell field edge_id and vertex_id again. So a result goes back in as it is: mesh as input (its vertex_id is accepted there and ignored) and edges as features."
+  },
+  {
     "pointer": "/history_output",
     "type": "string",
     "default": "",
@@ -135,6 +145,24 @@
     "type": "bool",
     "default": true,
     "doc": "Refuse a collapse, swap or smoothing that folds the surface over: one that leaves more triangles facing against, or flat to, the surface it replaces (the triangles it changes or removes, their area vectors summed) or the surface it leaves than there were, or more such triangles in the stars of the vertices it touches, each star against its own normal. Exact (orient3d). A fold the input has can be undone, but none is made. Splits are not checked: they move no vertex. Where the input's triangles are not consistently oriented, every orientation flip counts as a fold, so most operations there are refused."
+  },
+  {
+    "pointer": "/swap_quality",
+    "type": "bool",
+    "default": false,
+    "doc": "Swap an edge where that raises the worse shape quality (4 sqrt(3) area / sum of squared edge lengths) of its two triangles, as the remeshing app of the topology-first B-rep pipeline does, instead of where it brings the valences of its four vertices closer to 6 (4 on the boundary). Valence leaves flat triangles and needles alone when the swap would not change the valences much -- next to feature curves, say, where the curves themselves cannot be swapped. check_inversions still refuses a swap that folds the surface."
+  },
+  {
+    "pointer": "/limit_collapse_length",
+    "type": "bool",
+    "default": false,
+    "doc": "Refuse a collapse that leaves an edge longer than 4/3 of the target length, the length above which an edge is split, as Botsch and Kobbelt's isotropic remeshing does. Without it a collapse is judged by the edge it removes alone, and those of the last iteration leave long edges that no split comes after to cut."
+  },
+  {
+    "pointer": "/cleanup_angle",
+    "type": "float",
+    "default": 0,
+    "doc": "Repair, at the end of every iteration, the triangles whose smallest angle is under this many degrees; 0 repairs none. Worst first, each gets the first of these that is allowed: a collapse of its shortest edge, either way; a swap of one of its edges, longest first; a move of one of its vertices, or else of one of the triangles around it -- off the curves, within the tangent plane; inside a curve, along it -- to where the smallest angle around it is largest. Allowed means that every other rule holds (curves, fixed vertices, envelopes), that it folds nothing by the rule of check_inversions (on or off: the repairs keep it), that a collapse leaves no edge longer than 4/3 of the target length (with limit_collapse_length or without: the repairs are not to coarsen the mesh, and those after the last iteration have no split after them), and that the smallest angle of the triangles it leaves beats that around the triangle repaired. Where what it replaces folds already -- a fold the input brings, which confuses that rule -- one that leaves fewer triangles facing against the input triangles next to them, of the same feature_fields values, than there were is allowed too, even where no angle improves; only there, since next to a wall thinner than a triangle the input's two sides cancel and its orientation says nothing. Up to 10 rounds, serially. Meant for what the passes leave: thin triangles next to curves, where no vertex may leave its curve and no swap or collapse may put two curve edges in one triangle, and the folds of the input that the splits copy."
   },
   {
     "pointer": "/remove_duplicate_eps",

@@ -116,13 +116,15 @@ Unselected dictionary entries are not validated. Missing keys and incompatible i
 `std::runtime_error` before computation. Unknown attributes are rejected; this interface does
 not transfer arbitrary user attributes through topology changes. Geometry-only inputs ("no
 attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry files: vertex
-`vid`, and triangle `uv` and `normal`.
+`vid`, and triangle `uv` and `normal`. A component may accept, and ignore, a field of its own
+results as well, so that a result can be the next call's input as it is: isotropic_remeshing's
+`vertex_id`, whose fixed vertices come from `features` alone.
 
 | Component | Mesh selectors | Required data |
 | --- | --- | --- |
 | `qslim` | `input` | Triangle geometry, no attributes |
 | `shortest_edge_collapse` | `input` | Triangle geometry, no attributes |
-| `isotropic_remeshing` | `input` | Triangle geometry, no attributes |
+| `isotropic_remeshing` | `input`; optional `features` | Triangle geometry, no attributes but its own `vertex_id`, ignored; `features` on the rows of `input`: edges with Int64 `edge_id`, points with Int64 `vertex_id`, or Int64 vertex `vertex_id` (-1 for none) |
 | `tetwild` | `input`; `input_edges`, `input_points` | Triangle surfaces; optional curve/point geometry, no attributes |
 | `triwild` | `input`; `input_points` | Curve geometry, optional free points, no attributes |
 | `simwild` | `input`; optional `envelope` for tagged input | Surface/curve geometry, or tagged triangle/tet mesh |
@@ -158,7 +160,9 @@ geometry under fixed keys:
 
 - `surface`: the boundary (triangles in 3D; in 2D -- triwild, 2D simwild -- the boundary edges).
   Manifold extraction returns its extracted boundary here.
-- `edges`: simwild's 3D feature edges.
+- `edges`: simwild's 3D feature edges; isotropic_remeshing's feature edges, with `features`
+  (its Int64 `edge_id`, and `mesh`'s Int64 `vertex_id`, are what its `.vtu` output holds, an edge
+  block of none where there are none), which can be the next call's `features`.
 - `offset`: the offset surface or front; prismatic's classified offset faces.
 - `envelope`, `features`, `uv`, and manifold extraction's 3D input-complex preview `input_complex`.
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as
@@ -167,9 +171,10 @@ geometry under fixed keys:
 - `history_input`: simwild's, with `history_output`, the tagged tet mesh its surface history
   starts from (the file route's `<output>_history_input.msh`).
 
-For tetwild, triwild, simwild and topological_offset, `surface`, `edges` and `offset` share the
-`mesh` vertex rows: their connectivity indexes the same `V`, with the same vertex fields, so row
-`i` is the same vertex in every one of them, and vertices an output does not reference are kept.
+For tetwild, triwild, simwild, topological_offset and isotropic_remeshing, `surface`, `edges` and
+`offset` share the `mesh` vertex rows: their connectivity indexes the same `V`, with the same
+vertex fields, so row `i` is the same vertex in every one of them, and vertices an output does not
+reference are kept.
 This is deliberate -- it maps a boundary vertex to its volume vertex without a search -- at the
 cost of one vertex array per output. `envelope`, `features`, manifold extraction's `surface` and
 prismatic's offset faces have vertices of their own.

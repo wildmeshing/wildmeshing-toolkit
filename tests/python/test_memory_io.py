@@ -93,6 +93,62 @@ class MemoryIO(unittest.TestCase):
                     options["max_iterations"] = 0
                 self.run_memory(name, options, {"surface": triangle()})
 
+    def test_isotropic_features(self):
+        # A 6 x 6 grid; the curve y = 3 with ids 5 and 6 either side of x = 3, and fixed
+        # vertices, as a mesh on the grid's rows: edges with edge_id, points with vertex_id.
+        V = np.array([[i, j, 0] for i in range(7) for j in range(7)], dtype=np.float64)
+        F = [[i * 7 + j, (i + 1) * 7 + j, (i + 1) * 7 + j + 1] for i in range(6) for j in range(6)]
+        F += [[i * 7 + j, (i + 1) * 7 + j + 1, i * 7 + j + 1] for i in range(6) for j in range(6)]
+        grid = {"V": V, "cells": {"triangle": {"connectivity": np.array(F, dtype=np.int64)}}}
+        curve = np.array([[i * 7 + 3, (i + 1) * 7 + 3] for i in range(6)], dtype=np.int64)
+        points = {"connectivity": np.array([[3], [45], [10], [29]], dtype=np.int64),
+                  "attributes": {"vertex_id": np.array([11, 12, 13, 14], dtype=np.int64)}}
+        features = {"V": V, "cells": {
+            "edge": {"connectivity": curve,
+                     "attributes": {"edge_id": np.array([5, 5, 5, 6, 6, 6], dtype=np.int64)}},
+            "point": points}}
+        options = dict(input="grid", features="features", length_abs=0.7, eps_rel=0.01,
+                       max_iterations=2, num_threads=1)
+
+        def check(outputs):
+            self.assertEqual(set(outputs), {"mesh", "edges"})
+            mesh, edges = outputs["mesh"], outputs["edges"]
+            np.testing.assert_array_equal(edges["V"], mesh["V"])
+            vertex_id = mesh["vertex_attributes"]["vertex_id"]["values"]
+            self.assertEqual(vertex_id.dtype, np.dtype("int64"))
+            np.testing.assert_array_equal(
+                edges["vertex_attributes"]["vertex_id"]["values"], vertex_id)
+            self.assertEqual(sorted(vertex_id[vertex_id >= 0].tolist()), [11, 12, 13, 14])
+            block = edges["cells"]["edge"]
+            edge_id = block["attributes"]["edge_id"]["values"]
+            self.assertEqual(edge_id.dtype, np.dtype("int64"))
+            self.assertEqual(edge_id.shape, (len(block["connectivity"]), 1))
+            self.assertEqual(set(edge_id.ravel().tolist()), {5, 6})
+            # Each feature edge is an edge of the triangles.
+            tris = mesh["cells"]["triangle"]["connectivity"]
+            sides = {tuple(sorted(t[[k, (k + 1) % 3]])) for t in tris for k in range(3)}
+            for e in block["connectivity"]:
+                self.assertIn(tuple(sorted(e)), sides)
+
+        outputs, _ = self.run_memory(
+            "isotropic_remeshing", options, {"grid": grid, "features": features})
+        check(outputs)
+        # The result goes back in as it is: mesh as the input, edges as the features.
+        again, _ = self.run_memory(
+            "isotropic_remeshing", dict(options, input="mesh", features="edges"), outputs)
+        check(again)
+        # Fixed vertices and no curve: an edge block of none.
+        outputs, _ = self.run_memory(
+            "isotropic_remeshing", options,
+            {"grid": grid, "features": {"V": V, "cells": {"point": points}}})
+        block = outputs["edges"]["cells"]["edge"]
+        self.assertEqual(block["connectivity"].shape, (0, 2))
+        self.assertEqual(block["attributes"]["edge_id"]["values"].shape, (0, 1))
+        # Not on the rows of the input.
+        with self.assertRaisesRegex(RuntimeError, "its indices are rows of the input"):
+            wm.isotropic_remeshing(options, {"grid": grid, "features": {
+                "V": V[:-1], "cells": {"point": points}}})
+
     def test_simwild_tagged(self):
         for cell_type, mesh in (("triangle", triangle()), ("tetrahedron", tetrahedron())):
             with self.subTest(cell_type=cell_type):

@@ -209,7 +209,8 @@ py::tuple call_component(MemoryComponent component, nlohmann::json options, cons
           "surface_mesh",
           "uv_mesh",
           "envelope",
-          "tet_mesh"}) {
+          "tet_mesh",
+          "features"}) {
         const auto it = options.find(role);
         if (it == options.end() || it->is_null()) continue;
         if (it->is_array())

@@ -41,6 +41,16 @@ public:
         else
             file.add_cell_field(name, data);
     }
+    void add_integer_cell_field(const std::string& name, const DataMatrix<int64_t>& values)
+    {
+        if (output)
+            fields[name].values = values;
+        else {
+            MeshAttribute field;
+            field.values = values;
+            file.add_cell_field(name, field.doubles());
+        }
+    }
     bool write_mesh(
         const std::string& path,
         const Eigen::MatrixXd& V,
@@ -76,13 +86,17 @@ public:
                 block(block.rows() - 1, j) = c.vertices[j];
             rows[type].push_back(i);
         }
+        // Each block its rows of every cell field, in the field's own type.
         for (const auto& [type, indices] : rows)
-            for (const auto& [name, a] : fields) {
-                auto values = a.doubles();
-                DataMatrix<double> sub(indices.size(), values.cols());
-                for (size_t r = 0; r < indices.size(); ++r) sub.row(r) = values.row(indices[r]);
-                data.cells[type].attributes[name].values = std::move(sub);
-            }
+            for (const auto& [name, a] : fields)
+                data.cells[type].attributes[name].values = std::visit(
+                    [&indices](const auto& values) -> AttributeValues {
+                        std::decay_t<decltype(values)> sub(indices.size(), values.cols());
+                        for (size_t r = 0; r < indices.size(); ++r)
+                            sub.row(r) = values.row(indices[r]);
+                        return sub;
+                    },
+                    a.values);
         data.validate();
         output->insert_or_assign(path, std::move(data));
         // Like VTUWriter::write_mesh, which clears its fields after every write.

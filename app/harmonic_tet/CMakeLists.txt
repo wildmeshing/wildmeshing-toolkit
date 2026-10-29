@@ -25,6 +25,10 @@ target_link_libraries(wmtk_harmonic_tet_bin PUBLIC
 )
 wmtk_copy_dll(wmtk_harmonic_tet_bin)
 
-if(WMTK_APP_UNIT_TESTS)
+# Its tests read models from WMTK_DATA_DIR, which cmake/wmtk_data.cmake downloads only when tests
+# are built, so they are built only then: with BUILD_TESTING, as the toolkit's are. CTest, which
+# defines it, is included after app/, so here it is undefined on a first configure that will take
+# CTest's default, ON.
+if(WMTK_APP_UNIT_TESTS AND NOT (DEFINED BUILD_TESTING AND NOT BUILD_TESTING))
     add_subdirectory(tests)
 endif()
