@@ -277,6 +277,71 @@ TEST_CASE("tracking-simwild-memory-route", "[simwild][tracking]")
     }
 }
 
+TEST_CASE("tracking-simwild-memory-route-volume", "[simwild][tracking]")
+{
+    // With volume_history_output, the memory route returns the volume history in the report too,
+    // as the bytes of its file, and writes none: with the surface history's bytes and the two
+    // meshes it returns -- history_input, where both histories start, and mesh -- they are a
+    // VolumeTracking, of the tets of those meshes.
+    const MeshMap meshes{
+        {"in", io::read_mesh(fs::path(WMTK_DATA_DIR) / "models" / "double_sphere.msh")}};
+    const auto [outputs, report] = simwild::simwild(
+        {{"operation", "remeshing"},
+         {"input", "in"},
+         {"history_output", "recorded"},
+         {"volume_history_output", "recorded_volume"},
+         {"max_iterations", 1}},
+        meshes);
+    CHECK(!fs::exists("recorded"));
+    CHECK(!fs::exists("recorded_volume"));
+    REQUIRE(report.at("history").is_binary());
+    REQUIRE(report.at("volume_history").is_binary());
+    const auto& bytes = report.at("volume_history").get_binary();
+    REQUIRE(history::is_volume_history(bytes));
+    const auto surface = history::SurfaceHistory::from_bytes(report.at("history").get_binary());
+    auto volume = history::VolumeHistory::from_bytes(bytes);
+    REQUIRE(!volume.edits.empty());
+    CHECK(volume.surface == history::surface_key(surface));
+    const tracking::VolumeTracking tracking(
+        surface,
+        std::move(volume),
+        outputs.at("history_input"),
+        outputs.at("mesh"));
+    const auto& in = tracking.input_mesh();
+    const auto& out = tracking.output_mesh();
+    CHECK(
+        in.tets.size() ==
+        size_t(outputs.at("history_input").cell(CellType::Tetrahedron).connectivity.rows()));
+    CHECK(
+        out.tets.size() ==
+        size_t(outputs.at("mesh").cell(CellType::Tetrahedron).connectivity.rows()));
+    const auto position = [](const tracking::TetMeshData& m, const tracking::TetPoint& p) {
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += p.bary[k] * m.vertices[m.tets[p.tet][k]];
+        return x;
+    };
+    std::mt19937 rng(5);
+    std::uniform_real_distribution<double> u(0.05, 1);
+    std::vector<tracking::TetPoint> pts;
+    for (int i = 0; i < 300; ++i) {
+        tracking::TetPoint p{rng() % in.tets.size()};
+        p.bary = Eigen::Vector4d(u(rng), u(rng), u(rng), u(rng));
+        p.bary /= p.bary.sum();
+        pts.push_back(p);
+    }
+    const auto there = tracking.to_output(pts);
+    const auto back = tracking.to_input(there);
+    CHECK(tracking.map().stats().failed == 0);
+    double round_trip = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(there[i].tet != tracking::kNoId);
+        CHECK(out.group_sets[out.groups[there[i].tet]] == in.group_sets[in.groups[pts[i].tet]]);
+        REQUIRE(back[i].tet != tracking::kNoId);
+        round_trip = std::max(round_trip, (position(in, back[i]) - position(in, pts[i])).norm());
+    }
+    CHECK(round_trip < 1e-6);
+}
+
 TEST_CASE("tracking-simwild-2d-refuses-history", "[simwild][tracking]")
 {
     // A 2D run has no surface: history_output is refused rather than ignored.

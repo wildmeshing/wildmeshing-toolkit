@@ -5,6 +5,7 @@
 
 #include <wmtk/components/tetwild/tetwild.hpp>
 #include <wmtk/components/tracking/tracking.hpp>
+#include <wmtk/history/VolumeHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
@@ -13,6 +14,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <random>
 #include <sstream>
 #include <string>
@@ -218,6 +220,70 @@ std::pair<size_t, size_t> orientation_kept(
     return {moved, kept};
 }
 
+/// An icosphere of radius `r`: the icosahedron's faces split in four `level` times, outward.
+MeshData icosphere(const int level, const double r)
+{
+    const double t = (1 + std::sqrt(5.)) / 2;
+    std::vector<Eigen::Vector3d> V = {
+        {-1, t, 0},
+        {1, t, 0},
+        {-1, -t, 0},
+        {1, -t, 0},
+        {0, -1, t},
+        {0, 1, t},
+        {0, -1, -t},
+        {0, 1, -t},
+        {t, 0, -1},
+        {t, 0, 1},
+        {-t, 0, -1},
+        {-t, 0, 1}};
+    std::vector<std::array<int64_t, 3>> F = {
+        {{0, 11, 5}}, {{0, 5, 1}},  {{0, 1, 7}},   {{0, 7, 10}}, {{0, 10, 11}},
+        {{1, 5, 9}},  {{5, 11, 4}}, {{11, 10, 2}}, {{10, 7, 6}}, {{7, 1, 8}},
+        {{3, 9, 4}},  {{3, 4, 2}},  {{3, 2, 6}},   {{3, 6, 8}},  {{3, 8, 9}},
+        {{4, 9, 5}},  {{2, 4, 11}}, {{6, 2, 10}},  {{8, 6, 7}},  {{9, 8, 1}}};
+    for (int l = 0; l < level; ++l) {
+        std::map<std::pair<int64_t, int64_t>, int64_t> mid;
+        const auto midpoint = [&](int64_t a, int64_t b) {
+            const auto key = std::minmax(a, b);
+            const auto [it, fresh] = mid.emplace(key, int64_t(V.size()));
+            if (fresh) V.push_back((V[a] + V[b]) / 2);
+            return it->second;
+        };
+        std::vector<std::array<int64_t, 3>> next;
+        for (const auto& f : F) {
+            const int64_t a = midpoint(f[0], f[1]), b = midpoint(f[1], f[2]),
+                          c = midpoint(f[2], f[0]);
+            next.push_back({{f[0], a, c}});
+            next.push_back({{f[1], b, a}});
+            next.push_back({{f[2], c, b}});
+            next.push_back({{a, b, c}});
+        }
+        F = std::move(next);
+    }
+    MeshData m;
+    m.V.resize(Eigen::Index(V.size()), 3);
+    for (size_t i = 0; i < V.size(); ++i) m.V.row(Eigen::Index(i)) = r * V[i].normalized();
+    auto& T = m.cells[CellType::Triangle].connectivity;
+    T.resize(Eigen::Index(F.size()), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        for (int k = 0; k < 3; ++k) T(Eigen::Index(i), k) = F[i][k];
+    }
+    return m;
+}
+
+/// The small tetwild run whose volume history the tests map: an icosphere of 162 vertices,
+/// three iterations, about a second.
+nlohmann::json small_volume_run()
+{
+    return {
+        {"max_iterations", 3},
+        {"num_threads", 1},
+        {"write_vtu", false},
+        {"history_output", "recorded"},
+        {"volume_history_output", "recorded_volume"}};
+}
+
 } // namespace
 
 TEST_CASE("tracking-example-tetwild-volume", "[tetwild][tracking]" + release_only)
@@ -342,4 +408,29 @@ TEST_CASE("tetwild-volume-history-refusals", "[tetwild][tracking]")
     j["use_legacy_code"] = true;
     CHECK_THROWS_AS(tetwild::tetwild(j), std::runtime_error);
     CHECK_FALSE(fs::exists(output.string() + ".wmtkvol"));
+}
+
+TEST_CASE("tetwild-volume-history-memory-route", "[tetwild][tracking]" + release_only)
+{
+    // On the memory route the volume history comes back in the report, as the bytes of its file,
+    // next to the surface history's, and no file is written.
+    const MeshMap meshes{{"sphere", icosphere(2, 0.7)}};
+    nlohmann::json options = small_volume_run();
+    options["input"] = "sphere";
+    const auto [outputs, report] = tetwild::tetwild(options, meshes);
+    CHECK(!fs::exists("recorded"));
+    CHECK(!fs::exists("recorded_volume"));
+    REQUIRE(report.at("history").is_binary());
+    REQUIRE(report.at("volume_history").is_binary());
+    const auto volume =
+        history::VolumeHistory::from_bytes(report.at("volume_history").get_binary());
+    CHECK(!volume.edits.empty());
+    CHECK(volume.regions.size() == 1);
+    CHECK(
+        volume.surface ==
+        history::surface_key(
+            history::SurfaceHistory::from_bytes(report.at("history").get_binary())));
+    // Without volume_history_output, no volume history.
+    options.erase("volume_history_output");
+    CHECK(!tetwild::tetwild(options, meshes).second.contains("volume_history"));
 }

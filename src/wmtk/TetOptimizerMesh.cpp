@@ -916,25 +916,22 @@ void TetOptimizerMesh::record_volume_history()
         start_volume_history([this](size_t v) { return m_vertex_attribute.at(v).m_posf; });
 }
 
-void TetOptimizerMesh::save_volume_history(
-    const std::string& path,
+std::optional<std::vector<uint8_t>> TetOptimizerMesh::finish_volume_history(
     const std::map<int64_t, std::string>& tag_names)
 {
-    if (!m_recorded_volume) return;
-    if (!m_saved_surface) {
+    if (!m_recorded_volume) return std::nullopt;
+    if (!m_finished_surface) {
         log_and_throw_error(
-            "save_volume_history: the surface history it indexes into is not finished yet");
+            "finish_volume_history: the surface history it indexes into is not finished yet");
     }
     stop_volume_history();
-    history::write_history(
-        path,
-        m_recorded_volume->to_bytes(m_surface_edit_offset, *m_saved_surface, tag_names));
+    std::vector<uint8_t> bytes =
+        m_recorded_volume->to_bytes(m_surface_edit_offset, *m_finished_surface, tag_names);
     logger().info(
-        "volume history: {} operations that changed the tracked surface, {:.1f} MB -- saved to {}",
-        m_recorded_volume->size(),
-        double(m_recorded_volume->bytes()) / 1e6,
-        path);
+        "volume history: {} operations that changed the tracked surface",
+        m_recorded_volume->size());
     m_recorded_volume.reset();
+    return bytes;
 }
 
 std::optional<history::SurfaceHistory> TetOptimizerMesh::finish_surface_history(
@@ -979,7 +976,7 @@ std::optional<history::SurfaceHistory> TetOptimizerMesh::finish_surface_history(
         m_surface_edit_offset = 0;
         h = std::move(m_recorded_surface->history());
     }
-    m_saved_surface = history::surface_key(h);
+    m_finished_surface = history::surface_key(h);
     m_recorded_surface.reset();
     m_recorded_sources.clear();
     return h;

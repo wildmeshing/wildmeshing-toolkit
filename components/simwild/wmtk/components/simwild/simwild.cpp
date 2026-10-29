@@ -376,7 +376,9 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             for (size_t j = 0; j < mesh.m_tags_count && j < labels.size(); ++j) {
                 tag_labels[int64_t(j)] = labels[j];
             }
-            mesh.save_volume_history(volume_history_output, tag_labels);
+            if (const auto vh = mesh.finish_volume_history(tag_labels)) {
+                component_io.save_volume_history(*vh, volume_history_output);
+            }
         }
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =

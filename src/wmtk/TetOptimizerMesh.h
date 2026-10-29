@@ -590,11 +590,11 @@ public:
     /// Start recording the volume around the tracked surface too (TetMesh::start_volume_history),
     /// at m_posf. The surface history must be recording.
     void record_volume_history();
-    /// Stop recording the volume and save it to `path`, its edits indexed as in the surface
-    /// history finish_surface_history() returned, with the names of the tags (tet_tags()) the mesh
-    /// files give them. Nothing if not recording.
-    void save_volume_history(
-        const std::string& path,
+    /// Stop recording the volume, and return it as the bytes of its file
+    /// (history::VolumeRecorder::to_bytes; io::ComponentIO::save_volume_history saves them), its
+    /// edits indexed as in the surface history finish_surface_history() returned, with the names
+    /// of the tags (tet_tags()) the mesh files give them. Nothing if not recording.
+    std::optional<std::vector<uint8_t>> finish_volume_history(
         const std::map<int64_t, std::string>& tag_names = {});
 
     /// A tracked face by its corners' positions, sorted.
@@ -604,12 +604,12 @@ public:
     /// the input triangles. Filled at insertion when a surface history is to start from the
     /// input; record_surface_history takes it.
     std::vector<std::pair<PositionKey, std::vector<uint32_t>>> m_insertion_sources;
-    /// The volume being recorded, kept past stop_surface_history() until saved; the offset of
+    /// The volume being recorded, kept past stop_surface_history() until finished; the offset of
     /// the recorded surface edits in the surface history finish_surface_history() returned, and
     /// that history's key, which the volume history keeps.
     std::shared_ptr<history::VolumeRecorder> m_recorded_volume;
     uint64_t m_surface_edit_offset = 0;
-    std::optional<history::SurfaceKey> m_saved_surface;
+    std::optional<history::SurfaceKey> m_finished_surface;
 
     /// The faces with m_is_surface_fs, for a surface history (TetMesh::start_surface_history).
     bool is_tracked_face(size_t tid, int j) const override;

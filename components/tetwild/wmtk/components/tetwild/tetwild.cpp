@@ -1117,7 +1117,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     if (const auto h = mesh_new.finish_surface_history(&input_history)) {
         component_io.save_history(*h, history_output);
     }
-    mesh_new.save_volume_history(volume_history_output);
+    if (const auto vh = mesh_new.finish_volume_history()) {
+        component_io.save_volume_history(*vh, volume_history_output);
+    }
 
     t_finalize = phase_timer.getElapsedTime(); // winding/flood/filter done
     phase_timer.start(); // output (surface extraction) begins
