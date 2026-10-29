@@ -413,24 +413,95 @@ TEST_CASE("tetwild-volume-history-refusals", "[tetwild][tracking]")
 TEST_CASE("tetwild-volume-history-memory-route", "[tetwild][tracking]" + release_only)
 {
     // On the memory route the volume history comes back in the report, as the bytes of its file,
-    // next to the surface history's, and no file is written.
-    const MeshMap meshes{{"sphere", icosphere(2, 0.7)}};
+    // next to the surface history's, and the meshes it starts and ends at as the output meshes
+    // history_input and history_output: what the file route writes, and no file. From them alone
+    // a VolumeTracking maps as the one the files load.
+    const fs::path dir = fs::current_path() / "tetwild_volume_history_memory_route";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+    const MeshData sphere = icosphere(2, 0.7);
+    {
+        std::ofstream obj(dir / "sphere.obj");
+        obj.precision(17);
+        for (Eigen::Index v = 0; v < sphere.V.rows(); ++v) {
+            obj << "v " << sphere.V(v, 0) << " " << sphere.V(v, 1) << " " << sphere.V(v, 2) << "\n";
+        }
+        const auto& F = sphere.cell(CellType::Triangle).connectivity;
+        for (Eigen::Index f = 0; f < F.rows(); ++f) {
+            obj << "f " << F(f, 0) + 1 << " " << F(f, 1) + 1 << " " << F(f, 2) + 1 << "\n";
+        }
+    }
     nlohmann::json options = small_volume_run();
     options["input"] = "sphere";
-    const auto [outputs, report] = tetwild::tetwild(options, meshes);
+    const auto [outputs, report] = tetwild::tetwild(options, {{"sphere", sphere}});
     CHECK(!fs::exists("recorded"));
     CHECK(!fs::exists("recorded_volume"));
     REQUIRE(report.at("history").is_binary());
     REQUIRE(report.at("volume_history").is_binary());
-    const auto volume =
-        history::VolumeHistory::from_bytes(report.at("volume_history").get_binary());
+    REQUIRE(outputs.count("history_input"));
+    REQUIRE(outputs.count("history_output"));
+    const auto& surface_bytes = report.at("history").get_binary();
+    const auto& volume_bytes = report.at("volume_history").get_binary();
+    const auto volume = history::VolumeHistory::from_bytes(volume_bytes);
     CHECK(!volume.edits.empty());
     CHECK(volume.regions.size() == 1);
     CHECK(
-        volume.surface ==
-        history::surface_key(
-            history::SurfaceHistory::from_bytes(report.at("history").get_binary())));
-    // Without volume_history_output, no volume history.
+        volume.surface == history::surface_key(history::SurfaceHistory::from_bytes(surface_bytes)));
+
+    // The file route: the same volume history, byte for byte, and the same meshes.
+    const fs::path output = dir / "sphere";
+    nlohmann::json file = small_volume_run();
+    file["application"] = "tetwild";
+    file["input"] = {(dir / "sphere.obj").string()};
+    file["output"] = output.string();
+    file["history_output"] = output.string() + ".wmtkhist";
+    file["volume_history_output"] = output.string() + ".wmtkvol";
+    tetwild::tetwild(file);
+    CHECK(history::read_history(output.string() + ".wmtkvol") == volume_bytes);
+    for (const auto& [key, suffix] :
+         {std::pair<std::string, std::string>{"history_input", "_history_input.msh"},
+          {"history_output", "_history_output.msh"}}) {
+        const MeshData written = io::read_mesh(output.string() + suffix);
+        const MeshData& returned = outputs.at(key);
+        CHECK(returned.V == written.V);
+        CHECK(
+            returned.cell(CellType::Tetrahedron).connectivity ==
+            written.cell(CellType::Tetrahedron).connectivity);
+    }
+
+    const tracking::VolumeTracking memory(
+        history::SurfaceHistory::from_bytes(surface_bytes),
+        history::VolumeHistory::from_bytes(volume_bytes),
+        outputs.at("history_input"),
+        outputs.at("history_output"));
+    const tracking::VolumeTracking files = tracking::VolumeTracking::load(
+        output.string() + ".wmtkhist",
+        output.string() + ".wmtkvol",
+        output.string() + "_history_input.msh",
+        output.string() + "_history_output.msh");
+    std::mt19937 rng(11);
+    std::uniform_real_distribution<double> u(0.05, 1);
+    std::vector<tracking::TetPoint> pts;
+    for (int i = 0; i < 500; ++i) {
+        tracking::TetPoint p{rng() % memory.input_mesh().tets.size()};
+        p.bary = Eigen::Vector4d(u(rng), u(rng), u(rng), u(rng));
+        p.bary /= p.bary.sum();
+        pts.push_back(p);
+    }
+    const auto there = memory.to_output(pts);
+    const auto from_files = files.to_output(pts);
+    const auto back = memory.to_input(there);
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(there[i].tet != tracking::kNoId);
+        CHECK(there[i].tet == from_files[i].tet);
+        CHECK(there[i].bary == from_files[i].bary);
+        CHECK(back[i].tet != tracking::kNoId);
+    }
+
+    // Without volume_history_output, neither the volume history nor its meshes.
     options.erase("volume_history_output");
-    CHECK(!tetwild::tetwild(options, meshes).second.contains("volume_history"));
+    const auto [plain, plain_report] = tetwild::tetwild(options, {{"sphere", sphere}});
+    CHECK(!plain_report.contains("volume_history"));
+    CHECK(!plain.count("history_input"));
+    CHECK(!plain.count("history_output"));
 }

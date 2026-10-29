@@ -776,6 +776,24 @@ void TetWildMesh::output_mesh(std::string file)
     msh.save(file, true);
 }
 
+MeshData TetWildMesh::tet_mesh_data()
+{
+    consolidate_mesh();
+    const auto& vtx = get_vertices();
+    const auto& tets = get_tets();
+    MeshData m;
+    m.V.resize(Eigen::Index(vtx.size()), 3);
+    for (size_t k = 0; k < vtx.size(); ++k) {
+        m.V.row(Eigen::Index(k)) = m_vertex_attribute[vtx[k].vid(*this)].m_posf;
+    }
+    auto& T = m.cells[CellType::Tetrahedron].connectivity;
+    T.resize(Eigen::Index(tets.size()), 4);
+    for (size_t k = 0; k < tets.size(); ++k) {
+        const auto vs = oriented_tet_vertices(tets[k]);
+        for (int j = 0; j < 4; ++j) T(Eigen::Index(k), j) = int64_t(vs[j].vid(*this));
+    }
+    return m;
+}
 
 bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
 {

@@ -965,10 +965,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
     // The whole volume around it too, if asked: the map of the volume starts at the tet mesh
     // written here, and ends at the mesh before the filter (<output>_history_output.msh). Both
-    // are files next to the output, so not on the memory route, which has none: there the
-    // volume history is recorded all the same, and maps points by their positions.
+    // are files next to the output; on the memory route, which has none, the output meshes
+    // history_input and history_output.
+    MeshMap history_meshes;
     if (!volume_history_output.empty()) {
-        if (!component_io.memory()) mesh_new.output_mesh(output_path + "_history_input.msh");
+        if (component_io.memory()) {
+            history_meshes["mesh_history_input.msh"] = mesh_new.tet_mesh_data();
+        } else {
+            mesh_new.output_mesh(output_path + "_history_input.msh");
+        }
         mesh_new.record_volume_history();
     }
 
@@ -1097,9 +1102,14 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         }
     }
 
-    // The mesh the volume history ends at: all of it, before the filter drops a part.
-    if (!volume_history_output.empty() && !component_io.memory()) {
-        mesh_new.output_mesh(output_path + "_history_output.msh");
+    // The mesh the volume history ends at: all of it, before the filter drops a part. Both
+    // routes consolidate it here, so they record the same histories.
+    if (!volume_history_output.empty()) {
+        if (component_io.memory()) {
+            history_meshes["mesh_history_output.msh"] = mesh_new.tet_mesh_data();
+        } else {
+            mesh_new.output_mesh(output_path + "_history_output.msh");
+        }
     }
 
     // ////winding number
@@ -1518,6 +1528,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.save_paraview("mesh", false, &raw);
         io::compact_slot_outputs(mesh_new, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
+        component_io.result.first.merge(io::named_outputs(std::move(history_meshes)));
         if (features_present)
             component_io.result.first["features"] =
                 io::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
