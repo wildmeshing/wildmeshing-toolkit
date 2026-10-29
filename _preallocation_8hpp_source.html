@@ -99,12 +99,11 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="keyword">inline</span> <span class="keywordtype">void</span> set_preallocation_factor_from_json(Mesh&amp; mesh, <span class="keyword">const</span> nlohmann::json&amp; j)</div>
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>{</div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>    <span class="keywordflow">if</span> (j.contains(<span class="stringliteral">&quot;preallocation_factor&quot;</span>)) {</div>
-<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>        mesh.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#a262276d320a4261eddfb27c8edd361b5">set_preallocation_factor</a>(j[<span class="stringliteral">&quot;preallocation_factor&quot;</span>].<span class="keyword">template</span> get&lt;double&gt;());</div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>        mesh.set_preallocation_factor(j[<span class="stringliteral">&quot;preallocation_factor&quot;</span>].<span class="keyword">template</span> get&lt;double&gt;());</div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    }</div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>}</div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>} <span class="comment">// namespace wmtk</span></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a262276d320a4261eddfb27c8edd361b5"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a262276d320a4261eddfb27c8edd361b5">wmtk::TetMesh::set_preallocation_factor</a></div><div class="ttdeci">void set_preallocation_factor(double factor)</div><div class="ttdoc">Preallocation factor: init/consolidate reserve capacity = max(floor, ceil(factor * live_count)) so op...</div><div class="ttdef"><b>Definition</b> TetMesh.h:814</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

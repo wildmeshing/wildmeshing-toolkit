@@ -11,6 +11,5 @@ var searchData=
   ['refinable_8',['refinable',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion_1_1_refinable.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::EnergyCriterion::Refinable'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion_1_1_refinable.html',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::EnergyCriterion::Refinable']]],
   ['replacedsurface_9',['ReplacedSurface',['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html',1,'wmtk::components::isotropic_remeshing']]],
   ['restamipsenergy2d_10',['RestAMIPSEnergy2D',['../classwmtk_1_1components_1_1topological__offset_1_1_rest_a_m_i_p_s_energy2_d.html',1,'wmtk::components::topological_offset']]],
-  ['ringlockscratch_11',['ringlockscratch',['../structwmtk_1_1_tet_mesh_1_1_ring_lock_scratch.html',1,'wmtk::TetMesh::RingLockScratch'],['../structwmtk_1_1_tri_mesh_1_1_ring_lock_scratch.html',1,'wmtk::TriMesh::RingLockScratch']]],
-  ['run_12',['Run',['../struct_run.html',1,'']]]
+  ['ringlockscratch_11',['ringlockscratch',['../structwmtk_1_1_tet_mesh_1_1_ring_lock_scratch.html',1,'wmtk::TetMesh::RingLockScratch'],['../structwmtk_1_1_tri_mesh_1_1_ring_lock_scratch.html',1,'wmtk::TriMesh::RingLockScratch']]]
 ];
