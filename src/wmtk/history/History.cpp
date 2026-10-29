@@ -1,5 +1,7 @@
 #include "History.hpp"
+#include "BinaryIO.hpp"
 #include "Replay.hpp"
+#include "VolumeHistory.hpp"
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -11,6 +13,9 @@
 namespace wmtk::history {
 
 namespace {
+
+using detail::Reader;
+using detail::Writer;
 
 // Layout (version 7, the first released; the earlier ones were development formats). Every
 // count and id is an unsigned LEB128 varint; a position is three little-endian f64. N is the
@@ -47,100 +52,6 @@ const char* kind_name()
     return N == 3 ? "a surface" : "a curve network";
 }
 
-/// Appends to the bytes of a history, as a file holds them.
-class Writer
-{
-public:
-    explicit Writer(std::vector<uint8_t>& out)
-        : m_out(out)
-    {}
-    template <typename T>
-    void put(const T& x)
-    {
-        const auto* p = reinterpret_cast<const uint8_t*>(&x);
-        m_out.insert(m_out.end(), p, p + sizeof(T));
-    }
-    void varint(uint64_t n)
-    {
-        do {
-            uint8_t b = n & 0x7F;
-            n >>= 7;
-            if (n) b |= 0x80;
-            put(b);
-        } while (n);
-    }
-    void position(const Eigen::Vector3d& p)
-    {
-        for (int k = 0; k < 3; ++k) put(p[k]);
-    }
-    void bytes(const char* p, size_t n)
-    {
-        m_out.insert(
-            m_out.end(),
-            reinterpret_cast<const uint8_t*>(p),
-            reinterpret_cast<const uint8_t*>(p) + n);
-    }
-
-private:
-    std::vector<uint8_t>& m_out;
-};
-
-/// Reads the bytes of a history; `name` says what they are in messages: a file, or bytes given.
-class Reader
-{
-public:
-    Reader(const std::vector<uint8_t>& in, std::string name)
-        : m_in(in)
-        , m_name(std::move(name))
-    {}
-    /// The bytes not read yet.
-    uint64_t remaining() const { return m_in.size() - m_pos; }
-    /// A count of items of at least `min_bytes` each, which the rest of the file must hold: a
-    /// damaged count cannot make the reader allocate more than the file could fill.
-    uint64_t count(const uint64_t min_bytes = 1)
-    {
-        const uint64_t n = varint();
-        if (n > remaining() / min_bytes) corrupt();
-        return n;
-    }
-    [[noreturn]] void corrupt() const { log_and_throw_error("history: {} is corrupt", m_name); }
-    template <typename T>
-    T get()
-    {
-        T x;
-        bytes(reinterpret_cast<char*>(&x), sizeof(T));
-        return x;
-    }
-    uint64_t varint()
-    {
-        uint64_t n = 0;
-        for (int shift = 0; shift < 64; shift += 7) {
-            const uint8_t b = get<uint8_t>();
-            n |= uint64_t(b & 0x7F) << shift;
-            if (!(b & 0x80)) return n;
-        }
-        log_and_throw_error("history: {} holds a malformed integer", m_name);
-    }
-    Eigen::Vector3d position()
-    {
-        Eigen::Vector3d p;
-        for (int k = 0; k < 3; ++k) p[k] = get<double>();
-        return p;
-    }
-    void bytes(char* p, size_t n)
-    {
-        if (n > remaining()) log_and_throw_error("history: {} is truncated", m_name);
-        std::memcpy(p, m_in.data() + m_pos, n);
-        m_pos += n;
-    }
-    const std::string& name() const { return m_name; }
-
-private:
-    const std::vector<uint8_t>& m_in;
-    std::string m_name;
-    size_t m_pos = 0;
-};
-
 /// The magic and the version, then the number of corners of a face, which it returns: refuses
 /// anything but a history of this version, of a surface or of a curve network.
 int read_header(Reader& r)
@@ -171,6 +82,26 @@ int read_header(Reader& r)
 
 /// What the messages call bytes given in memory.
 const std::string kGiven = "the history given";
+
+/// The header of the bytes of a history file: a surface's or curves' (read_header), or the
+/// volume history's (is_volume_history).
+void check_header(const std::vector<uint8_t>& bytes, const std::string& name)
+{
+    if (is_volume_history(bytes, name)) return;
+    Reader r(bytes, name);
+    read_header(r);
+}
+
+/// Refuses a volume history where a surface's or curves' is wanted: it is no complex of faces.
+void refuse_volume(const std::vector<uint8_t>& bytes, const std::string& name)
+{
+    if (is_volume_history(bytes, name)) {
+        log_and_throw_error(
+            "history: {} is a volume history (volume_history_output), not a surface's or "
+            "curves'",
+            name);
+    }
+}
 
 /// The history `bytes` hold; `name` for the messages.
 template <int N>
@@ -501,17 +432,13 @@ std::vector<uint8_t> read_history(const std::filesystem::path& path)
     in.seekg(0);
     in.read(reinterpret_cast<char*>(bytes.data()), std::streamsize(bytes.size()));
     if (!in) log_and_throw_error("history: reading {} failed", path.string());
-    Reader r(bytes, path.string());
-    read_header(r);
+    check_header(bytes, path.string());
     return bytes;
 }
 
 void write_history(const std::filesystem::path& path, const std::vector<uint8_t>& bytes)
 {
-    {
-        Reader r(bytes, kGiven);
-        read_header(r);
-    }
+    check_header(bytes, kGiven);
     std::ofstream out(path, std::ios::binary);
     if (!out) log_and_throw_error("history: cannot write {}", path.string());
     out.write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
@@ -521,6 +448,7 @@ void write_history(const std::filesystem::path& path, const std::vector<uint8_t>
 
 int face_size(const std::vector<uint8_t>& bytes)
 {
+    refuse_volume(bytes, kGiven);
     Reader r(bytes, kGiven);
     return read_header(r);
 }
@@ -535,6 +463,7 @@ namespace {
 template <int N>
 History<N> parse(const std::vector<uint8_t>& bytes, const std::string& name)
 {
+    refuse_volume(bytes, name);
     Reader r(bytes, name);
     const int corners = read_header(r);
     if (corners != N) {

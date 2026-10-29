@@ -102,9 +102,21 @@ struct VolumeHistory
     /// for a history put together in memory, which is not checked.
     std::optional<SurfaceKey> surface;
 
+    /// To and from a volume history file (read_history, write_history), and its bytes in memory:
+    /// what a memory call returns as report["volume_history"]. Loading checks every edit and
+    /// throws on damaged bytes; to_bytes() refuses an edit a recorder would not make.
     void save(const std::string& path) const;
     static VolumeHistory load(const std::string& path);
+    std::vector<uint8_t> to_bytes() const;
+    static VolumeHistory from_bytes(const std::vector<uint8_t>& bytes);
 };
+
+/// Whether `bytes` are a volume history's, by their header -- what read_history and
+/// write_history take as well as a surface's or curves' history. Throws, `name` in the message,
+/// for a volume history of a version this build does not read.
+bool is_volume_history(
+    const std::vector<uint8_t>& bytes,
+    const std::string& name = "the history given");
 
 /// The tets around an operation, by mesh vertex ids, with their tags; each vertex's position and
 /// surface vertex (kNoVertex: none). What a VolumeRecorder commits.
@@ -145,10 +157,10 @@ public:
 
     /// What was recorded, decoded, sorted by surface edit.
     VolumeHistory history() const;
-    /// Saves what was recorded, with the offset of its surface edits in the surface history
-    /// saved alongside, that history's key, and the tag names.
-    void save(
-        const std::string& path,
+    /// The bytes of what was recorded, as VolumeHistory::to_bytes gives them, with the offset of
+    /// its surface edits in the surface history recorded alongside, that history's key, and the
+    /// tag names.
+    std::vector<uint8_t> to_bytes(
         uint64_t surface_edit_offset,
         const SurfaceKey& surface,
         const std::map<int64_t, std::string>& tag_names) const;

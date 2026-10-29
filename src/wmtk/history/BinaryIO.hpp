@@ -1,7 +1,8 @@
 #pragma once
 
-// The volume history files' binary encoding, the surface history's (History.cpp): unsigned
-// LEB128 varints, little-endian f64s.
+// The binary encoding the history files share -- the surface's and curves' (History.cpp) and the
+// volume's (VolumeHistory.cpp): unsigned LEB128 varints, little-endian f64s, written to bytes in
+// memory and read from them, which a file holds as they are.
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -9,7 +10,6 @@
 
 #include <cstdint>
 #include <cstring>
-#include <fstream>
 #include <string>
 #include <vector>
 
@@ -52,105 +52,19 @@ inline int64_t unzigzag(const uint64_t x)
     return int64_t(x >> 1) ^ -int64_t(x & 1);
 }
 
+/// Appends to the bytes of a history, as a file holds them.
 class Writer
 {
 public:
-    explicit Writer(const std::string& path)
-        : m_out(path, std::ios::binary)
-        , m_path(path)
-    {
-        if (!m_out) log_and_throw_error("history: cannot write {}", path);
-    }
+    explicit Writer(std::vector<uint8_t>& out)
+        : m_out(out)
+    {}
     template <typename T>
     void put(const T& x)
     {
-        m_out.write(reinterpret_cast<const char*>(&x), sizeof(T));
+        const auto* p = reinterpret_cast<const uint8_t*>(&x);
+        m_out.insert(m_out.end(), p, p + sizeof(T));
     }
-    void varint(uint64_t n)
-    {
-        put_varint(n, [this](const uint8_t b) { put(b); });
-    }
-    void position(const Eigen::Vector3d& p)
-    {
-        for (int k = 0; k < 3; ++k) put(p[k]);
-    }
-    void bytes(const char* p, size_t n) { m_out.write(p, std::streamsize(n)); }
-    void finish()
-    {
-        m_out.flush();
-        if (!m_out) log_and_throw_error("history: writing {} failed", m_path);
-    }
-
-private:
-    std::ofstream m_out;
-    std::string m_path;
-};
-
-class Reader
-{
-public:
-    explicit Reader(const std::string& path)
-        : m_in(path, std::ios::binary)
-        , m_path(path)
-    {
-        if (!m_in) log_and_throw_error("history: cannot read {}", path);
-        m_in.seekg(0, std::ios::end);
-        m_size = uint64_t(m_in.tellg());
-        m_in.seekg(0);
-    }
-    /// The bytes not read yet.
-    uint64_t remaining() { return m_size - uint64_t(m_in.tellg()); }
-    /// A count of items of at least `min_bytes` each, which the rest of the file must hold: a
-    /// damaged count cannot make the reader allocate more than the file could fill.
-    uint64_t count(const uint64_t min_bytes = 1)
-    {
-        const uint64_t n = varint();
-        if (n > remaining() / min_bytes) corrupt();
-        return n;
-    }
-    [[noreturn]] void corrupt() const { log_and_throw_error("history: {} is corrupt", m_path); }
-    template <typename T>
-    T get()
-    {
-        T x;
-        m_in.read(reinterpret_cast<char*>(&x), sizeof(T));
-        if (!m_in) log_and_throw_error("history: {} is truncated", m_path);
-        return x;
-    }
-    uint64_t varint()
-    {
-        uint64_t n;
-        if (!get_varint([this]() { return get<uint8_t>(); }, n)) {
-            log_and_throw_error("history: {} holds a malformed integer", m_path);
-        }
-        return n;
-    }
-    Eigen::Vector3d position()
-    {
-        Eigen::Vector3d p;
-        for (int k = 0; k < 3; ++k) p[k] = get<double>();
-        return p;
-    }
-    void bytes(char* p, size_t n)
-    {
-        m_in.read(p, std::streamsize(n));
-        if (!m_in) log_and_throw_error("history: {} is truncated", m_path);
-    }
-
-private:
-    std::ifstream m_in;
-    std::string m_path;
-    uint64_t m_size = 0;
-};
-
-/// Writer's encoding, appended to a byte buffer: for a history that encodes in memory as it
-/// records (VolumeRecorder).
-class BufferWriter
-{
-public:
-    explicit BufferWriter(std::vector<uint8_t>& out)
-        : m_out(out)
-    {}
     void byte(const uint8_t b) { m_out.push_back(b); }
     void varint(const uint64_t n)
     {
@@ -162,52 +76,63 @@ public:
         m_out.resize(at + 3 * sizeof(double));
         std::memcpy(m_out.data() + at, p.data(), 3 * sizeof(double));
     }
+    void bytes(const char* p, const size_t n)
+    {
+        m_out.insert(
+            m_out.end(),
+            reinterpret_cast<const uint8_t*>(p),
+            reinterpret_cast<const uint8_t*>(p) + n);
+    }
 
 private:
     std::vector<uint8_t>& m_out;
 };
 
-/// Reader's decoding, from a byte buffer [p, end): throws "<what>: <name> is corrupt" when a
-/// read runs past the end or a count could not fit in what is left.
-class BufferReader
+/**
+ * @brief Reads the bytes of a history, [p, end). `what` and `name` say what they are in messages,
+ * "<what>: <name> is ...": the kind of history, and a file or the bytes given. A read past the end
+ * throws "is truncated", a count that could not fit in what is left "is corrupt".
+ */
+class Reader
 {
 public:
-    BufferReader(const uint8_t* p, const uint8_t* end, std::string what, std::string name)
+    Reader(const uint8_t* p, const uint8_t* end, std::string what, std::string name)
         : m_p(p)
         , m_end(end)
         , m_what(std::move(what))
         , m_name(std::move(name))
     {}
-    [[noreturn]] void corrupt() const { log_and_throw_error("{}: {} is corrupt", m_what, m_name); }
-    /// The bytes not read yet.
+    /// All of `in`, the bytes of a surface's or curves' history.
+    Reader(const std::vector<uint8_t>& in, std::string name)
+        : Reader(in.data(), in.data() + in.size(), "history", std::move(name))
+    {}
+    /// The bytes not read yet, and where they start.
     uint64_t remaining() const { return uint64_t(m_end - m_p); }
     const uint8_t* at() const { return m_p; }
-    uint8_t byte()
-    {
-        if (m_p >= m_end) corrupt();
-        return *m_p++;
-    }
-    uint64_t varint()
-    {
-        uint64_t n;
-        if (!get_varint([this]() { return byte(); }, n)) corrupt();
-        return n;
-    }
-    /// A count of items of at least `min_bytes` each, which the rest of the buffer must hold.
+    /// A count of items of at least `min_bytes` each, which the rest of the bytes must hold: a
+    /// damaged count cannot make the reader allocate more than the bytes could fill.
     uint64_t count(const uint64_t min_bytes = 1)
     {
         const uint64_t n = varint();
         if (n > remaining() / min_bytes) corrupt();
         return n;
     }
+    [[noreturn]] void corrupt() const { log_and_throw_error("{}: {} is corrupt", m_what, m_name); }
     template <typename T>
     T get()
     {
-        if (remaining() < sizeof(T)) corrupt();
         T x;
-        std::memcpy(&x, m_p, sizeof(T));
-        m_p += sizeof(T);
+        bytes(reinterpret_cast<char*>(&x), sizeof(T));
         return x;
+    }
+    uint8_t byte() { return get<uint8_t>(); }
+    uint64_t varint()
+    {
+        uint64_t n;
+        if (!get_varint([this]() { return byte(); }, n)) {
+            log_and_throw_error("{}: {} holds a malformed integer", m_what, m_name);
+        }
+        return n;
     }
     Eigen::Vector3d position()
     {
@@ -215,13 +140,20 @@ public:
         for (int k = 0; k < 3; ++k) x[k] = get<double>();
         return x;
     }
+    void bytes(char* p, const size_t n)
+    {
+        if (n > remaining()) log_and_throw_error("{}: {} is truncated", m_what, m_name);
+        std::memcpy(p, m_p, n);
+        m_p += n;
+    }
     std::string string(const uint64_t n)
     {
-        if (remaining() < n) corrupt();
+        if (n > remaining()) log_and_throw_error("{}: {} is truncated", m_what, m_name);
         std::string s(reinterpret_cast<const char*>(m_p), size_t(n));
         m_p += n;
         return s;
     }
+    const std::string& name() const { return m_name; }
 
 private:
     const uint8_t* m_p;

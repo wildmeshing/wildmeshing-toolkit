@@ -40,9 +40,9 @@ namespace {
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'V', 'O', 'L', 'H'};
 constexpr uint32_t kVersion = 2;
 
-using detail::BufferReader;
-using detail::BufferWriter;
+using detail::Reader;
 using detail::unzigzag;
+using detail::Writer;
 using detail::zigzag;
 
 uint64_t plus_one(const uint64_t v)
@@ -189,7 +189,7 @@ const char* malformed(const VolumeEdit& e, const size_t n_regions)
 /// Encodes e, its vertices by `ids` (one per vertex), the ids of a file: numbered densely, in
 /// the order they first appear (a reader checks it). `derived`: derivable(e).
 void encode(
-    BufferWriter& w,
+    Writer& w,
     const VolumeEdit& e,
     const std::vector<uint64_t>& ids,
     std::vector<Known>& known,
@@ -243,7 +243,7 @@ void encode(
     }
 }
 
-VolumeEdit decode(BufferReader& r, std::vector<Known>& known, const size_t n_regions)
+VolumeEdit decode(Reader& r, std::vector<Known>& known, const size_t n_regions)
 {
     VolumeEdit e;
     const uint8_t op = r.byte();
@@ -317,7 +317,7 @@ VolumeEdit decode(BufferReader& r, std::vector<Known>& known, const size_t n_reg
 }
 
 void write_header(
-    detail::Writer& w,
+    Writer& w,
     const uint64_t offset,
     const std::optional<SurfaceKey>& surface,
     const std::vector<std::vector<int64_t>>& regions,
@@ -346,22 +346,22 @@ void write_header(
     w.varint(n_edits);
 }
 
-/// The edits of a buffer, decoded, sorted by surface edit.
+/// The edits of a buffer, decoded, sorted by surface edit; `name` for the messages.
 std::vector<VolumeEdit> decode_all(
     const uint8_t* p,
     const uint8_t* end,
     const size_t n,
     const size_t n_regions,
-    const std::string& path)
+    const std::string& name)
 {
-    BufferReader r(p, end, "volume history", path);
+    Reader r(p, end, "volume history", name);
     std::vector<Known> known;
     std::vector<VolumeEdit> edits;
     edits.reserve(n);
     for (size_t k = 0; k < n; ++k) {
         edits.push_back(decode(r, known, n_regions));
         if (const char* why = malformed(edits.back(), n_regions)) {
-            log_and_throw_error("volume history: {} is corrupt: edit {} {}", path, k, why);
+            log_and_throw_error("volume history: {} is corrupt: edit {} {}", name, k, why);
         }
     }
     std::stable_sort(edits.begin(), edits.end(), [](const auto& a, const auto& b) {
@@ -372,14 +372,70 @@ std::vector<VolumeEdit> decode_all(
         if (edits[k].first_edit < edits[k - 1].first_edit + edits[k - 1].n_edits) {
             log_and_throw_error(
                 "volume history: {} is corrupt: two operations made surface edit {}",
-                path,
+                name,
                 edits[k].first_edit);
         }
     }
     return edits;
 }
 
+/// The volume history `bytes` hold; `name` for the messages: a file, or the bytes given.
+VolumeHistory parse(const std::vector<uint8_t>& bytes, const std::string& name)
+{
+    if (!is_volume_history(bytes, name)) {
+        log_and_throw_error("volume history: {} is not a volume history", name);
+    }
+    Reader r(
+        bytes.data() + sizeof(kMagic) + 4,
+        bytes.data() + bytes.size(),
+        "volume history",
+        name);
+    VolumeHistory h;
+    h.surface_edit_offset = r.varint();
+    const uint8_t keyed = r.byte();
+    if (keyed > 1) r.corrupt();
+    if (keyed) {
+        SurfaceKey key;
+        key.edits = r.varint();
+        key.hash = r.get<uint64_t>();
+        h.surface = key;
+    }
+    h.regions.resize(r.count());
+    for (auto& reg : h.regions) {
+        reg.resize(r.count());
+        for (int64_t& t : reg) t = unzigzag(r.varint());
+    }
+    for (uint64_t n = r.count(2); n > 0; --n) {
+        const int64_t t = unzigzag(r.varint());
+        h.tag_names[t] = r.string(r.count());
+    }
+    const uint64_t n = r.count(4);
+    h.edits = decode_all(r.at(), bytes.data() + bytes.size(), n, h.regions.size(), name);
+    return h;
+}
+
+/// What the messages call bytes given in memory.
+const std::string kGiven = "the volume history given";
+
 } // namespace
+
+bool is_volume_history(const std::vector<uint8_t>& bytes, const std::string& name)
+{
+    if (bytes.size() < sizeof(kMagic) || std::memcmp(bytes.data(), kMagic, sizeof(kMagic)) != 0) {
+        return false;
+    }
+    Reader r(bytes.data() + sizeof(kMagic), bytes.data() + bytes.size(), "volume history", name);
+    const uint32_t version = r.get<uint32_t>();
+    if (version != kVersion) {
+        log_and_throw_error(
+            "volume history: {} has version {}; this build reads version {} only, so the "
+            "history has to be recorded again",
+            name,
+            version,
+            kVersion);
+    }
+    return true;
+}
 
 SurfaceKey surface_key(const SurfaceHistory& h)
 {
@@ -440,12 +496,12 @@ std::vector<Eigen::Vector3d> VolumeEdit::positions_after() const
     return p;
 }
 
-void VolumeHistory::save(const std::string& path) const
+std::vector<uint8_t> VolumeHistory::to_bytes() const
 {
-    // The file numbers the vertices densely, in the order they first appear: the edits' own
-    // ids are renumbered so, and an edit without them gets new ones.
-    std::vector<uint8_t> bytes;
-    BufferWriter w(bytes);
+    // The bytes number the vertices densely, in the order they first appear: the edits' own ids
+    // are renumbered so, and an edit without them gets new ones.
+    std::vector<uint8_t> body;
+    Writer w(body);
     std::vector<Known> known;
     std::unordered_map<uint64_t, uint64_t> dense;
     uint64_t next = 0;
@@ -453,7 +509,7 @@ void VolumeHistory::save(const std::string& path) const
     for (size_t k = 0; k < edits.size(); ++k) {
         const VolumeEdit& e = edits[k];
         if (const char* why = malformed(e, regions.size())) {
-            log_and_throw_error("volume history: cannot save {}: edit {} {}", path, k, why);
+            log_and_throw_error("volume history: cannot encode edit {}: it {}", k, why);
         }
         ids.clear();
         for (size_t v = 0; v < e.positions.size(); ++v) {
@@ -467,49 +523,26 @@ void VolumeHistory::save(const std::string& path) const
         }
         encode(w, e, ids, known, derivable(e));
     }
-    detail::Writer out(path);
+    std::vector<uint8_t> bytes;
+    Writer out(bytes);
     write_header(out, surface_edit_offset, surface, regions, tag_names, edits.size());
-    out.bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-    out.finish();
+    out.bytes(reinterpret_cast<const char*>(body.data()), body.size());
+    return bytes;
+}
+
+VolumeHistory VolumeHistory::from_bytes(const std::vector<uint8_t>& bytes)
+{
+    return parse(bytes, kGiven);
+}
+
+void VolumeHistory::save(const std::string& path) const
+{
+    write_history(path, to_bytes());
 }
 
 VolumeHistory VolumeHistory::load(const std::string& path)
 {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) log_and_throw_error("volume history: cannot read {}", path);
-    const std::vector<uint8_t> data(
-        (std::istreambuf_iterator<char>(in)),
-        std::istreambuf_iterator<char>());
-    if (data.size() < sizeof(kMagic) + 4 || std::memcmp(data.data(), kMagic, sizeof(kMagic)) != 0) {
-        log_and_throw_error("volume history: {} is not a volume history", path);
-    }
-    BufferReader r(data.data() + sizeof(kMagic), data.data() + data.size(), "volume history", path);
-    const uint32_t version = r.get<uint32_t>();
-    if (version != kVersion) {
-        log_and_throw_error("volume history: {} has version {}, not {}", path, version, kVersion);
-    }
-    VolumeHistory h;
-    h.surface_edit_offset = r.varint();
-    const uint8_t keyed = r.byte();
-    if (keyed > 1) r.corrupt();
-    if (keyed) {
-        SurfaceKey key;
-        key.edits = r.varint();
-        key.hash = r.get<uint64_t>();
-        h.surface = key;
-    }
-    h.regions.resize(r.count());
-    for (auto& reg : h.regions) {
-        reg.resize(r.count());
-        for (int64_t& t : reg) t = unzigzag(r.varint());
-    }
-    for (uint64_t n = r.count(2); n > 0; --n) {
-        const int64_t t = unzigzag(r.varint());
-        h.tag_names[t] = r.string(r.count());
-    }
-    const uint64_t n = r.count(4);
-    h.edits = decode_all(r.at(), data.data() + data.size(), n, h.regions.size(), path);
-    return h;
+    return parse(read_history(path), path);
 }
 
 struct VolumeRecorder::Encoder
@@ -606,7 +639,7 @@ void VolumeRecorder::commit(
     for (size_t r = 0; r < tag_sets.size(); ++r) region[r] = region_of(tag_sets[r]);
     for (uint32_t& r : e.regions) r = region[r];
     for (uint32_t& r : e.added_regions) r = region[r];
-    BufferWriter w(m_bytes);
+    Writer w(m_bytes);
     encode(w, e, e.vertices, m_encoder->known, derived);
     ++m_count;
 }
@@ -639,17 +672,17 @@ VolumeHistory VolumeRecorder::history() const
     return h;
 }
 
-void VolumeRecorder::save(
-    const std::string& path,
+std::vector<uint8_t> VolumeRecorder::to_bytes(
     const uint64_t surface_edit_offset,
     const SurfaceKey& surface,
     const std::map<int64_t, std::string>& tag_names) const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-    detail::Writer out(path);
+    std::vector<uint8_t> bytes;
+    Writer out(bytes);
     write_header(out, surface_edit_offset, surface, m_regions, tag_names, m_count);
     out.bytes(reinterpret_cast<const char*>(m_bytes.data()), m_bytes.size());
-    out.finish();
+    return bytes;
 }
 
 size_t VolumeRecorder::size() const

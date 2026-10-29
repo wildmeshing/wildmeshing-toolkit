@@ -7,6 +7,7 @@
 #include <wmtk/utils/io.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <atomic>
 #include <thread>
@@ -69,6 +70,79 @@ TEST_CASE("volume-history-save-load", "[volume_map]")
     CHECK(after.size() == 2);
     CHECK(ra == std::vector<uint32_t>{2, 1});
     CHECK(f.positions_after()[1] == Eigen::Vector3d(0.5, 0, 0));
+}
+
+TEST_CASE("volume-history-bytes", "[volume_map]")
+{
+    // A volume history in memory is the bytes of its file, as a surface history is: what the
+    // memory route returns, and what read_history and write_history take along with the others.
+    using Catch::Matchers::ContainsSubstring;
+    history::VolumeHistory h;
+    h.regions = {{}, {1}};
+    h.tag_names = {{1, "inside"}};
+    h.surface = history::SurfaceKey{3, 77};
+    history::VolumeEdit e;
+    e.op = history::VolumeOp::smooth;
+    e.first_edit = 1;
+    e.n_edits = 2;
+    e.positions = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    e.surface_before = {0, history::kNoVertex, 1, 2};
+    e.surface_after = e.surface_before;
+    e.moved = {{0, Eigen::Vector3d(0.1, 0.1, 0.1)}};
+    e.tets = {{{0, 1, 2, 3}}};
+    e.regions = {1};
+    e.op_vertices = {0};
+    h.edits.push_back(e);
+
+    const std::vector<uint8_t> bytes = h.to_bytes();
+    CHECK(std::string(bytes.begin(), bytes.begin() + 8) == "WMTKVOLH");
+    CHECK(history::is_volume_history(bytes));
+    const auto g = history::VolumeHistory::from_bytes(bytes);
+    CHECK(g.regions == h.regions);
+    CHECK(g.tag_names == h.tag_names);
+    CHECK(g.surface == h.surface);
+    REQUIRE(g.edits.size() == 1);
+    CHECK(g.edits[0].moved == e.moved);
+    CHECK(g.to_bytes() == bytes);
+
+    // The file is the bytes, whichever way it is written.
+    const std::string path =
+        (std::filesystem::temp_directory_path() /
+         ("wmtk_volume_bytes_" + std::to_string(std::random_device{}()) + ".wmtkvol"))
+            .string();
+    h.save(path);
+    CHECK(history::read_history(path) == bytes);
+    std::filesystem::remove(path);
+    history::write_history(path, bytes);
+    CHECK(history::VolumeHistory::load(path).to_bytes() == bytes);
+    std::filesystem::remove(path);
+
+    // Each kind where the other is wanted is refused, by name.
+    history::SurfaceHistory s;
+    s.vertices = {Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(0, 1, 0)};
+    s.vertex_alive.assign(3, 1);
+    s.faces = {{{0, 1, 2}}};
+    s.face_alive.assign(1, 1);
+    CHECK_FALSE(history::is_volume_history(s.to_bytes()));
+    CHECK_THROWS_WITH(history::face_size(bytes), ContainsSubstring("is a volume history"));
+    CHECK_THROWS_WITH(
+        history::SurfaceHistory::from_bytes(bytes),
+        ContainsSubstring("is a volume history"));
+    CHECK_THROWS_WITH(
+        history::VolumeHistory::from_bytes(s.to_bytes()),
+        ContainsSubstring("is not a volume history"));
+    // Another version, or bytes cut short, are refused before anything is written.
+    std::vector<uint8_t> other = bytes;
+    other[8] = 9;
+    CHECK_THROWS_WITH(history::is_volume_history(other), ContainsSubstring("version 9"));
+    CHECK_THROWS_WITH(history::write_history(path, other), ContainsSubstring("version 9"));
+    CHECK_THROWS_WITH(
+        history::write_history(path, std::vector<uint8_t>(bytes.begin(), bytes.begin() + 10)),
+        ContainsSubstring("truncated"));
+    CHECK(!std::filesystem::exists(path));
+    CHECK_THROWS_WITH(
+        history::VolumeHistory::from_bytes(std::vector<uint8_t>(bytes.begin(), bytes.end() - 3)),
+        ContainsSubstring("the volume history given"));
 }
 
 namespace {

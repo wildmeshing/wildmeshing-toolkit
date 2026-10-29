@@ -154,17 +154,18 @@ struct History
 };
 
 /**
- * @brief The bytes of a history file, as History::from_bytes takes them: io::read_mesh for a
- * history. Only the header is checked -- that it is a history of a surface or of a curve network
- * this build reads -- not the rest, which loading checks.
+ * @brief The bytes of a history file, as History::from_bytes takes them -- or
+ * VolumeHistory::from_bytes, for a volume history (volume_history_output): io::read_mesh for a
+ * history. Only the header is checked -- that it is a history of a surface, of a curve network or
+ * of a volume, this build reads -- not the rest, which loading checks.
  */
 std::vector<uint8_t> read_history(const std::filesystem::path& path);
-/// Writes the bytes of a history (History::to_bytes) to a file: io::write_mesh for a history.
-/// Refuses bytes whose header is not a history's.
+/// Writes the bytes of a history (History::to_bytes, VolumeHistory::to_bytes) to a file:
+/// io::write_mesh for a history. Refuses bytes whose header is not a history's.
 void write_history(const std::filesystem::path& path, const std::vector<uint8_t>& bytes);
 
 /// The number of corners of a face of the history saved at `path`, or held by `bytes`: 3 for a
-/// surface, 2 for a curve network. Throws if they hold no history.
+/// surface, 2 for a curve network. Throws if they hold no history, or a volume history.
 int face_size(const std::string& path);
 int face_size(const std::vector<uint8_t>& bytes);
 
