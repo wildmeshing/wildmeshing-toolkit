@@ -367,7 +367,9 @@ route returns), and returns the chain from the input files, which triwild saves 
 The tet histories, and isotropic's, start at the input files as read, so that a user's
 triangle id is a triangle of their own file. The stages before the mesh go into one history:
 - **Read and weld.** `io::read_triangle_mesh(paths, ..., ReadProvenance*)` returns the
-  meshes as read, concatenated, and the vertex each became. The snapshot is the raw meshes,
+  meshes as read, concatenated, and the vertex and face each vertex and face became; the
+  cleaning fills it (`clean_triangle_mesh`), so `ComponentIO::triangles` gives the same of the
+  meshes a memory call is given. The snapshot is the raw meshes,
   followed by a `relabel` to the welded mesh. isotropic maps its feature edges onto raw
   vertices, and the relabel carries them over.
 - **Simplify.** The simplifier is a TriMesh. Record it with `start_history` from the welded
@@ -392,8 +394,9 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   then the optional simplification, then the embedding. simwild also writes the tet mesh the
   history starts from as `<output>_history_input.msh`.
 - **triwild's curves** (`history::curves_from_input`, `src/wmtk/history/InputHistory.hpp`):
-  - **Read and weld.** `io::read_edge_mesh(..., EdgeReadProvenance*)` gives each file's vertices
-    and segments as written and where each went, a duplicate segment to the one it duplicates;
+  - **Read and weld.** `io::read_edge_mesh(..., ReadProvenance*)` -- the same struct, its cells
+    segments, filled by `clean_edge_mesh` -- gives each file's vertices and segments as written
+    and where each went, a duplicate segment to the one it duplicates;
     `utils::read_input_curves` concatenates them as it concatenates the network, and triwild
     appends the point files' vertices. The snapshot is the files as read, then a `relabel` with
     an explicit segment map (duplicates onto one).

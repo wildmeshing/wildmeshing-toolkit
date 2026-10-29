@@ -171,9 +171,9 @@ SurfaceData read_surface(const std::vector<std::string>& paths)
     SurfaceData s;
     for (Eigen::Index v = 0; v < read.V.rows(); ++v)
         s.vertices.push_back(read.V.row(v).transpose());
-    for (Eigen::Index f = 0; f < read.F.rows(); ++f) {
+    for (Eigen::Index f = 0; f < read.cells.rows(); ++f) {
         s.faces.push_back(
-            {{uint64_t(read.F(f, 0)), uint64_t(read.F(f, 1)), uint64_t(read.F(f, 2))}});
+            {{uint64_t(read.cells(f, 0)), uint64_t(read.cells(f, 1)), uint64_t(read.cells(f, 2))}});
     }
     return s;
 }

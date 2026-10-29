@@ -1,20 +1,9 @@
 #pragma once
 
 #include <wmtk/Types.hpp>
+#include <wmtk/io/ReadProvenance.hpp>
 
 namespace wmtk::io {
-
-/// What cleaning an edge mesh changed: the vertices and segments as the file holds them (a
-/// polyline's consecutive pairs, in order), the vertex of the result each vertex became, and
-/// the segment each segment became -- the one it duplicates, for a duplicate -- or -1 for one
-/// left with a single vertex.
-struct EdgeReadProvenance
-{
-    MatrixXd V;
-    MatrixXi E;
-    std::vector<int> vertex_map;
-    std::vector<int> edge_map;
-};
 
 /// The cleaning read_edge_mesh does, on a mesh already in memory. `provenance`, if not null,
 /// receives V and E as given and where each vertex and segment went.
@@ -23,7 +12,7 @@ void clean_edge_mesh(
     MatrixXi& E,
     double tol_rel = -1,
     double tol_abs = -1,
-    EdgeReadProvenance* provenance = nullptr);
+    ReadProvenance* provenance = nullptr);
 
 /**
  * @brief Reads an edge mesh from a file.
@@ -49,6 +38,6 @@ void read_edge_mesh(
     MatrixXi& E,
     double tol_rel = -1,
     double tol_abs = -1,
-    EdgeReadProvenance* provenance = nullptr);
+    ReadProvenance* provenance = nullptr);
 
 } // namespace wmtk::io

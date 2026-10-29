@@ -264,7 +264,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // simplification and the arrangement, to the output.
     const std::string history_output = json_params["history_output"];
     const bool record_history = !history_output.empty();
-    io::EdgeReadProvenance read; // the files as read, then where they went
+    io::ReadProvenance read; // the files as read, then where they went
 
     // Read the inputs. Vs/Es keep them per input, as read, so the winding-number pass below
     // does not have to parse every file a second time; V_in/E_in is their union, which is
@@ -317,7 +317,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         for (const std::string& path : point_paths) {
             MatrixXd Vp;
             MatrixXi Ep;
-            io::EdgeReadProvenance read_points;
+            io::ReadProvenance read_points;
             component_io.edges(
                 path,
                 Vp,

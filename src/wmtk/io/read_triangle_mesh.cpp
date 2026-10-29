@@ -44,11 +44,16 @@ void clean_triangle_mesh(
     double tol_rel,
     double tol_abs,
     std::vector<int>* face_tags,
-    std::vector<int>* vertex_map)
+    ReadProvenance* provenance)
 {
-    if (vertex_map) {
-        vertex_map->resize(V.rows());
-        for (int i = 0; i < int(V.rows()); ++i) (*vertex_map)[i] = i;
+    std::vector<int>* vertex_map = provenance ? &provenance->vertex_map : nullptr;
+    if (provenance) {
+        provenance->V = V;
+        provenance->cells = F;
+        provenance->vertex_map.resize(V.rows());
+        for (int i = 0; i < int(V.rows()); ++i) provenance->vertex_map[i] = i;
+        provenance->cell_map.resize(F.rows());
+        for (int i = 0; i < int(F.rows()); ++i) provenance->cell_map[i] = i;
     }
     assert(face_tags == nullptr || face_tags->size() == size_t(F.rows()));
     if (tol_abs >= 0 && tol_rel >= 0) {
@@ -104,6 +109,8 @@ void clean_triangle_mesh(
             valid_tris.reserve(F.rows());
             std::vector<int> valid_tags;
             for (int i = 0; i < F.rows(); i++) {
+                if (provenance)
+                    provenance->cell_map[i] = valid_face[i] ? int(valid_tris.size()) : -1;
                 if (valid_face[i]) {
                     valid_tris.push_back(F.row(i));
                     if (face_tags) valid_tags.push_back((*face_tags)[i]);
@@ -247,17 +254,7 @@ void read_triangle_mesh(
         if (face_input) face_input->resize(F.rows(), int(input));
     }
 
-    if (provenance) {
-        provenance->V = V;
-        provenance->F = F;
-    }
-    clean_triangle_mesh(
-        V,
-        F,
-        tol_rel,
-        tol_abs,
-        face_input,
-        provenance ? &provenance->vertex_map : nullptr);
+    clean_triangle_mesh(V, F, tol_rel, tol_abs, face_input, provenance);
 
     if (F.rows() == 0) {
         std::string joined;

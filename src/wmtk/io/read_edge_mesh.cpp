@@ -33,15 +33,15 @@ namespace {
  * turns every closed loop into an inconsistently oriented one, so the winding-number
  * tagging that decides which faces belong to an input degenerates into noise.
  */
-void merge_duplicate_vertices(MatrixXd& V, MatrixXi& E, double tol, EdgeReadProvenance* prov)
+void merge_duplicate_vertices(MatrixXd& V, MatrixXi& E, double tol, ReadProvenance* prov)
 {
     if (prov != nullptr) {
         prov->V = V;
-        prov->E = E;
+        prov->cells = E;
         prov->vertex_map.resize(V.rows());
         for (int v = 0; v < int(V.rows()); ++v) prov->vertex_map[v] = v;
-        prov->edge_map.resize(E.rows());
-        for (int e = 0; e < int(E.rows()); ++e) prov->edge_map[e] = e;
+        prov->cell_map.resize(E.rows());
+        for (int e = 0; e < int(E.rows()); ++e) prov->cell_map[e] = e;
     }
     if (tol < 0 || V.rows() == 0) {
         return;
@@ -71,7 +71,7 @@ void merge_duplicate_vertices(MatrixXd& V, MatrixXi& E, double tol, EdgeReadProv
             if (fresh) kept.emplace_back(a, b);
             into = it->second;
         }
-        if (prov != nullptr) prov->edge_map[i] = into;
+        if (prov != nullptr) prov->cell_map[i] = into;
     }
 
     const int n_dropped = static_cast<int>(E.rows()) - static_cast<int>(kept.size());
@@ -100,7 +100,7 @@ void read_edge_mesh(
     MatrixXi& E,
     double tol_rel,
     double tol_abs,
-    EdgeReadProvenance* provenance)
+    ReadProvenance* provenance)
 {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -169,7 +169,7 @@ void clean_edge_mesh(
     MatrixXi& E,
     double tol_rel,
     double tol_abs,
-    EdgeReadProvenance* provenance)
+    ReadProvenance* provenance)
 {
     double tol = tol_abs;
     if (tol < 0 && tol_rel >= 0 && V.rows() > 0) {

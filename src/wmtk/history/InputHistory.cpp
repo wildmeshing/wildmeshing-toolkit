@@ -18,9 +18,9 @@ SurfaceHistory from_input(
         chain.vertices.push_back(read.V.row(v).transpose());
     }
     chain.vertex_alive.assign(chain.vertices.size(), 1);
-    for (Eigen::Index f = 0; f < read.F.rows(); ++f) {
+    for (Eigen::Index f = 0; f < read.cells.rows(); ++f) {
         chain.faces.push_back(
-            {{uint64_t(read.F(f, 0)), uint64_t(read.F(f, 1)), uint64_t(read.F(f, 2))}});
+            {{uint64_t(read.cells(f, 0)), uint64_t(read.cells(f, 1)), uint64_t(read.cells(f, 2))}});
     }
     chain.face_alive.assign(chain.faces.size(), 1);
 
@@ -56,7 +56,7 @@ Eigen::Vector3d point_of(const MatrixXd& V, const Eigen::Index v)
 } // namespace
 
 CurveHistory curves_from_input(
-    const io::EdgeReadProvenance& read,
+    const io::ReadProvenance& read,
     const MatrixXd& V_in,
     const MatrixXi& E_in,
     const std::vector<Edit>& collapses,
@@ -67,8 +67,8 @@ CurveHistory curves_from_input(
     CurveHistory h;
     for (Eigen::Index v = 0; v < read.V.rows(); ++v) h.vertices.push_back(point_of(read.V, v));
     h.vertex_alive.assign(h.vertices.size(), 1);
-    for (Eigen::Index e = 0; e < read.E.rows(); ++e) {
-        h.faces.push_back({{uint64_t(read.E(e, 0)), uint64_t(read.E(e, 1))}});
+    for (Eigen::Index e = 0; e < read.cells.rows(); ++e) {
+        h.faces.push_back({{uint64_t(read.cells(e, 0)), uint64_t(read.cells(e, 1))}});
     }
     h.face_alive.assign(h.faces.size(), 1);
 
@@ -93,7 +93,7 @@ CurveHistory curves_from_input(
     // vertex goes, and a duplicate becomes the segment it duplicates.
     Edit weld{EditKind::relabel, {}, {}, {}};
     for (const int w : read.vertex_map) weld.v.push_back(w < 0 ? kNoVertex : uint64_t(w));
-    for (const int e : read.edge_map) weld.faces.push_back(e < 0 ? kNoVertex : uint64_t(e));
+    for (const int e : read.cell_map) weld.faces.push_back(e < 0 ? kNoVertex : uint64_t(e));
     for (Eigen::Index v = 0; v < V_in.rows(); ++v)
         weld.moves.push_back({uint64_t(v), point_of(V_in, v)});
     h.edits.push_back(std::move(weld));

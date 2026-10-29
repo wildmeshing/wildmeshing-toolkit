@@ -50,7 +50,7 @@ SurfaceHistory from_input(
  * @throws if the collapses do not leave E_out's segments
  */
 CurveHistory curves_from_input(
-    const io::EdgeReadProvenance& read,
+    const io::ReadProvenance& read,
     const MatrixXd& V_in,
     const MatrixXi& E_in,
     const std::vector<Edit>& collapses,

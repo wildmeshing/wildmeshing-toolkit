@@ -96,6 +96,6 @@ void read_input_curves(
     std::vector<MatrixXd>& Vs_out,
     std::vector<MatrixXi>& Es_out,
     const io::ComponentIO* component_io = nullptr,
-    io::EdgeReadProvenance* provenance = nullptr);
+    io::ReadProvenance* provenance = nullptr);
 
 } // namespace wmtk::utils

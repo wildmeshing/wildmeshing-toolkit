@@ -137,7 +137,7 @@ void check_tags(
                 MatrixXi F;
                 io::ReadProvenance read;
                 io::read_triangle_mesh({inputs[k]}, V, F, 0, -1, nullptr, &read);
-                file_of_face.resize(file_of_face.size() + read.F.rows(), int64_t(k));
+                file_of_face.resize(file_of_face.size() + read.cells.rows(), int64_t(k));
             }
             CHECK(map.input_faces().size() == file_of_face.size());
         } else {

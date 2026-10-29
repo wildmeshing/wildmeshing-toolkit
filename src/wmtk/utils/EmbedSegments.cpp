@@ -394,19 +394,19 @@ void read_input_curves(
     std::vector<MatrixXd>& Vs_out,
     std::vector<MatrixXi>& Es_out,
     const io::ComponentIO* component_io,
-    io::EdgeReadProvenance* provenance)
+    io::ReadProvenance* provenance)
 {
     Vs_out.clear();
     Es_out.clear();
-    if (provenance != nullptr) *provenance = io::EdgeReadProvenance();
+    if (provenance != nullptr) *provenance = io::ReadProvenance();
 
     // read input edge meshes
     int raw_vertices = 0, welded_vertices = 0, welded_edges = 0;
     for (const std::string& path : input_paths) {
         MatrixXd V;
         MatrixXi E;
-        io::EdgeReadProvenance read;
-        io::EdgeReadProvenance* const as_read = provenance ? &read : nullptr;
+        io::ReadProvenance read;
+        io::ReadProvenance* const as_read = provenance ? &read : nullptr;
         if (component_io)
             component_io->edges(path, V, E, remove_duplicate_eps, -1, as_read);
         else
@@ -415,13 +415,13 @@ void read_input_curves(
             // Concatenated as the network is below: each file's ids after the ones before.
             auto& p = *provenance;
             const auto offset = [](const int i, const int by) { return i < 0 ? -1 : i + by; };
-            const Eigen::Index nv = p.V.rows(), ne = p.E.rows();
+            const Eigen::Index nv = p.V.rows(), ne = p.cells.rows();
             p.V.conservativeResize(nv + read.V.rows(), 2);
             p.V.bottomRows(read.V.rows()) = read.V.leftCols(2);
-            p.E.conservativeResize(ne + read.E.rows(), 2);
-            p.E.bottomRows(read.E.rows()) = read.E.array() + raw_vertices;
+            p.cells.conservativeResize(ne + read.cells.rows(), 2);
+            p.cells.bottomRows(read.cells.rows()) = read.cells.array() + raw_vertices;
             for (const int v : read.vertex_map) p.vertex_map.push_back(offset(v, welded_vertices));
-            for (const int e : read.edge_map) p.edge_map.push_back(offset(e, welded_edges));
+            for (const int e : read.cell_map) p.cell_map.push_back(offset(e, welded_edges));
             raw_vertices += int(read.V.rows());
             welded_vertices += int(V.rows());
             welded_edges += int(E.rows());

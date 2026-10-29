@@ -127,7 +127,8 @@ public:
     }
     // Like read_triangle_mesh(paths): concatenate the raw inputs, then clean them once, so
     // vertex merging sees the same vertices (isolated ones included) in the same order.
-    // `read`, as there: the inputs as given, concatenated, and where their vertices went.
+    // `read`, as there: the inputs as given, concatenated, and where their vertices and faces
+    // went.
     void triangles(
         const std::vector<std::string>& names,
         MatrixXd& V,
@@ -156,22 +157,18 @@ public:
             F.bottomRows(f.rows()) = f;
             if (provenance) provenance->resize(F.rows(), int(i));
         }
-        if (read) {
-            read->V = V;
-            read->F = F;
-        }
-        clean_triangle_mesh(V, F, rel, abs, provenance, read ? &read->vertex_map : nullptr);
+        clean_triangle_mesh(V, F, rel, abs, provenance, read);
         if (!F.rows()) throw std::runtime_error("No faces after cleaning");
     }
     // `read`, as read_edge_mesh's provenance: the input as given, and where its vertices and
-    // segments went.
+    // segments went -- filled by the cleaning, as for triangles.
     void edges(
         const std::string& name,
         MatrixXd& V,
         MatrixXi& E,
         double rel = -1,
         double abs = -1,
-        EdgeReadProvenance* read = nullptr) const
+        ReadProvenance* read = nullptr) const
     {
         if (!memory()) {
             read_edge_mesh(name, V, E, rel, abs, read);
