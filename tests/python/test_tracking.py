@@ -483,6 +483,35 @@ class Classes(unittest.TestCase):
             wm.Tracking(self.surface, smoothing="sharpen")
         with self.assertRaisesRegex(ValueError, "scaffold"):
             wm.Tracking(self.surface, scaffold="sphere")
+        with self.assertRaisesRegex(ValueError, "collapse_patch"):
+            wm.Tracking(self.surface, collapse_patch="one_star")
+
+    def test_collapse_patch(self):
+        # removed_star flattens only the removed vertex's star at each collapse: another map of
+        # the same history, a bijection too -- points go to the output and come back -- and the
+        # one the tracking component's collapse_patch gives.
+        both = wm.Tracking(self.surface)
+        removed = wm.Tracking(self.surface, collapse_patch="removed_star")
+        n = 500
+        ids = self.rng.integers(0, len(both.input_faces), n)
+        bary = random_bary(self.rng, n, 3)
+        out_ids, out_bary = removed.to_output(ids, bary)
+        self.assertTrue((out_ids >= 0).all())
+        back_ids, back_bary = removed.to_input(out_ids, out_bary)
+        np.testing.assert_array_equal(back_ids, ids)
+        np.testing.assert_allclose(back_bary, bary, atol=1e-8)
+        # Another map: some points land elsewhere.
+        both_ids, both_bary = both.to_output(ids, bary)
+        self.assertTrue((both_ids != out_ids).any() or np.abs(both_bary - out_bary).max() > 1e-6)
+        _, info = getattr(wm, TRACKING)(
+            {"history": self.surface, "operation": "info", "collapse_patch": "removed_star"}, {})
+        self.assertEqual(removed.build_warnings, info["build_warnings"])
+        with tempfile.TemporaryDirectory(prefix="wmtk_python_tracking_patch_") as d:
+            path = Path(d) / "surface.wmtkhist"
+            wm.write_history(path, self.surface)
+            for a, b in zip(wm.Tracking.load(path, collapse_patch="removed_star").to_output(
+                    ids, bary), (out_ids, out_bary)):
+                np.testing.assert_array_equal(a, b)
 
     def test_load_and_bytes_interoperate(self):
         # A history file, written by write_history or by the file route, loads as its bytes do,

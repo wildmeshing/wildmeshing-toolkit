@@ -25,6 +25,7 @@ using namespace pybind11::literals;
 namespace wmtk::python {
 namespace {
 
+using components::tracking::CollapsePatch;
 using components::tracking::CurveMapOptions;
 using components::tracking::CurveMapWarnings;
 using components::tracking::CurveTracking;
@@ -52,7 +53,10 @@ Smoothing smoothing_of(const std::string& smoothing)
     throw py::value_error("smoothing is 'flatten' or 'barycentric', not '" + smoothing + "'");
 }
 
-SurfaceMapOptions surface_options(const std::string& smoothing, const std::string& scaffold)
+SurfaceMapOptions surface_options(
+    const std::string& smoothing,
+    const std::string& scaffold,
+    const std::string& collapse_patch)
 {
     SurfaceMapOptions options;
     options.smoothing = smoothing_of(smoothing);
@@ -60,6 +64,12 @@ SurfaceMapOptions surface_options(const std::string& smoothing, const std::strin
         options.scaffold = Scaffold::ring;
     } else if (scaffold != "box") {
         throw py::value_error("scaffold is 'box' or 'ring', not '" + scaffold + "'");
+    }
+    if (collapse_patch == "removed_star") {
+        options.collapse_patch = CollapsePatch::removed_star;
+    } else if (collapse_patch != "both_stars") {
+        throw py::value_error(
+            "collapse_patch is 'both_stars' or 'removed_star', not '" + collapse_patch + "'");
     }
     return options;
 }
@@ -372,9 +382,11 @@ void bind_tracking(py::module_& module)
         .def(
             py::init([](const py::bytes& history,
                         const std::string& smoothing,
-                        const std::string& scaffold) {
+                        const std::string& scaffold,
+                        const std::string& collapse_patch) {
                 const std::vector<uint8_t> bytes = bytes_of(history);
-                const SurfaceMapOptions options = surface_options(smoothing, scaffold);
+                const SurfaceMapOptions options =
+                    surface_options(smoothing, scaffold, collapse_patch);
                 require_kind(history::face_size(bytes), 3);
                 return built<Tracking>([&] {
                     return std::make_unique<Tracking>(
@@ -385,14 +397,18 @@ void bind_tracking(py::module_& module)
             "history"_a,
             "smoothing"_a = "flatten",
             "scaffold"_a = "box",
+            "collapse_patch"_a = "both_stars",
             "Build the map from the bytes of a surface history. smoothing ('flatten' or "
-            "'barycentric') and scaffold ('box' or 'ring') as the tracking component's options.")
+            "'barycentric'), scaffold ('box' or 'ring') and collapse_patch ('both_stars' or "
+            "'removed_star') as the tracking component's options.")
         .def_static(
             "load",
             [](const std::filesystem::path& path,
                const std::string& smoothing,
-               const std::string& scaffold) {
-                const SurfaceMapOptions options = surface_options(smoothing, scaffold);
+               const std::string& scaffold,
+               const std::string& collapse_patch) {
+                const SurfaceMapOptions options =
+                    surface_options(smoothing, scaffold, collapse_patch);
                 require_kind(history::face_size(path.string()), 3);
                 return built<Tracking>([&] {
                     return std::make_unique<Tracking>(
@@ -403,6 +419,7 @@ void bind_tracking(py::module_& module)
             "path"_a,
             "smoothing"_a = "flatten",
             "scaffold"_a = "box",
+            "collapse_patch"_a = "both_stars",
             "Build the map from a history file, as from its bytes (wm.read_history).")
         .def(
             "to_output",
