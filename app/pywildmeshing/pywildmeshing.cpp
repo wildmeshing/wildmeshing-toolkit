@@ -17,6 +17,14 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
+namespace wmtk::python {
+// The components' own bindings, those that have them (add_component):
+// app/pywildmeshing/<name>_bindings.cpp defines bind_<name>.
+#define WMTK_PYTHON_BINDINGS(name) void bind_##name(pybind11::module_& module);
+#include "../components_python.hpp"
+#undef WMTK_PYTHON_BINDINGS
+} // namespace wmtk::python
+
 
 void wmtk_wrapper(const py::dict& obj)
 {
@@ -133,6 +141,9 @@ PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
         "meshes"_a,
         "Dispatch an in-memory component using options['application'].");
     wmtk::python::bind_mesh_io(m);
+#define WMTK_PYTHON_BINDINGS(name) wmtk::python::bind_##name(m);
+#include "../components_python.hpp"
+#undef WMTK_PYTHON_BINDINGS
 
     py::class_<PyExpression>(m, "Expression")
         .def(

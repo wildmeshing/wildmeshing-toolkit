@@ -36,6 +36,15 @@ function(add_component COMPONENT_NAME)
     # add component to python bindings
     if(WMTK_PYBIND)
         target_link_libraries(wildmeshing PUBLIC wmtk::${COMPONENT_NAME})
+        # The component's own Python classes and functions, if it has any:
+        # app/pywildmeshing/<name>_bindings.cpp, defining wmtk::python::bind_<name>(module), which
+        # the module calls (components_python.hpp). Compiled only with the component.
+        set(PYTHON_BINDINGS "${CMAKE_SOURCE_DIR}/app/pywildmeshing/${COMPONENT_NAME}_bindings.cpp")
+        if(EXISTS "${PYTHON_BINDINGS}")
+            target_sources(wildmeshing PRIVATE "${PYTHON_BINDINGS}")
+            file(APPEND "${CMAKE_SOURCE_DIR}/app/components_python.hpp"
+             "WMTK_PYTHON_BINDINGS(${COMPONENT_NAME})\n")
+        endif()
     endif()
     # add component to integration tests
     if(WMTK_BUILD_INTEGRATION_TESTS)
