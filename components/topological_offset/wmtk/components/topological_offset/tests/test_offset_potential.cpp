@@ -20,6 +20,13 @@
 #include <utility>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::topological_offset;
 
@@ -809,7 +816,7 @@ TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential
 }
 
 
-TEST_CASE("offset-potential-3d-vs-euclidean-sphere", "[offset][potential]")
+TEST_CASE("offset-potential-3d-vs-euclidean-sphere", "[offset][potential]" + release_only)
 {
     // A convex closed surface, so the level set is the Euclidean offset of the polyhedron, which
     // is inscribed in the sphere -- measuring against the sphere charges the potential for the
@@ -1462,7 +1469,7 @@ TEST_CASE("band-volume-exact-min", "[offset][potential]")
     }
 }
 
-TEST_CASE("band-volume-exact-min-cached", "[offset][potential]")
+TEST_CASE("band-volume-exact-min-cached", "[offset][potential]" + release_only)
 {
     // BandVolumeEnergy3D keeps the last point's minima and scans each cell's certified
     // candidates (ball_candidates()). Its

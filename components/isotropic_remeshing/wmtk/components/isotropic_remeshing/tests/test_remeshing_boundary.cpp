@@ -12,6 +12,13 @@
 #include <set>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace components::isotropic_remeshing;
 
@@ -109,7 +116,9 @@ const auto outline = [](const Eigen::Vector3d& q) { return dist_to_square(q, 0, 
 
 } // namespace
 
-TEST_CASE("remeshing-boundary-envelope-outline-stays-in-tube", "[test_remeshing][boundary]")
+TEST_CASE(
+    "remeshing-boundary-envelope-outline-stays-in-tube",
+    "[test_remeshing][boundary]" + release_only)
 {
     // Coarsening a 0.05 grid towards L = 0.25: the outline coarsens with the rest, every boundary
     // edge stays within r of the input outline, and the corners -- which smoothing would round
@@ -150,7 +159,9 @@ TEST_CASE("remeshing-boundary-envelope-outline-stays-in-tube", "[test_remeshing]
     CHECK(be.size() < size_t(4 * (n - 1)) / 2);
 }
 
-TEST_CASE("remeshing-boundary-envelope-split-carries-lineage", "[test_remeshing][boundary]")
+TEST_CASE(
+    "remeshing-boundary-envelope-split-carries-lineage",
+    "[test_remeshing][boundary]" + release_only)
 {
     // Refining a 0.2 grid towards L = 0.05 splits every boundary edge several times over. Each
     // new boundary vertex has to inherit input_boundary -- otherwise the halves between it and
@@ -175,7 +186,9 @@ TEST_CASE("remeshing-boundary-envelope-split-carries-lineage", "[test_remeshing]
     CHECK(n_boundary > size_t(4 * (n - 1)) * 2);
 }
 
-TEST_CASE("remeshing-boundary-envelope-closes-hole-smaller-than-tube", "[test_remeshing][boundary]")
+TEST_CASE(
+    "remeshing-boundary-envelope-closes-hole-smaller-than-tube",
+    "[test_remeshing][boundary]" + release_only)
 {
     // A 0.05-wide hole and a tube wider than it: closing the hole keeps every boundary edge in
     // the tube, so it goes -- with the link condition off, which refuses exactly the collapse
@@ -194,7 +207,9 @@ TEST_CASE("remeshing-boundary-envelope-closes-hole-smaller-than-tube", "[test_re
     CHECK(inner == 0);
 }
 
-TEST_CASE("remeshing-boundary-envelope-keeps-hole-larger-than-tube", "[test_remeshing][boundary]")
+TEST_CASE(
+    "remeshing-boundary-envelope-keeps-hole-larger-than-tube",
+    "[test_remeshing][boundary]" + release_only)
 {
     // The same hole against a tube a fifth of its width, with the same wide surface envelope and
     // the link condition still off: the tube alone keeps it open, and its outline in the tube.
@@ -216,7 +231,7 @@ TEST_CASE("remeshing-boundary-envelope-keeps-hole-larger-than-tube", "[test_reme
     CHECK(inner >= 3);
 }
 
-TEST_CASE("remeshing-default-boundary-is-frozen", "[test_remeshing][boundary]")
+TEST_CASE("remeshing-default-boundary-is-frozen", "[test_remeshing][boundary]" + release_only)
 {
     // Without a tube freeze_boundary freezes the input's boundary, as it always has: every
     // outline and hole vertex comes through exactly where it was, and nothing is flagged.

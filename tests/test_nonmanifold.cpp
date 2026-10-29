@@ -10,6 +10,13 @@
 #include <set>
 #include <string>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using Tuple = TriMesh::Tuple;
 
@@ -735,7 +742,7 @@ TEST_CASE("nonmanifold_operations_match_brute_force", "[nonmanifold]")
 }
 #endif
 
-TEST_CASE("nonmanifold_real_meshes", "[nonmanifold]")
+TEST_CASE("nonmanifold_real_meshes", "[nonmanifold]" + release_only)
 {
     // The five Thingi10K meshes, exact-welded to OBJ. Counts are the ones measured when the
     // files were picked, so a mismatch means the file changed, not that the code is wrong.

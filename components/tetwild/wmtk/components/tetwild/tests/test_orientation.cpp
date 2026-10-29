@@ -22,6 +22,13 @@
 #include <map>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::tetwild;
 
@@ -128,7 +135,7 @@ const Region* region_of(const std::vector<Region>& regions, double cx)
 
 } // namespace
 
-TEST_CASE("orientation-configurations", "[tetwild][orientation]")
+TEST_CASE("orientation-configurations", "[tetwild][orientation]" + release_only)
 {
     Soup s;
     // A box and an inside-out box: the second is a negative solid and must stay out.

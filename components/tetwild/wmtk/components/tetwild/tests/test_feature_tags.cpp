@@ -8,6 +8,13 @@
 #include <random>
 #include <set>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace components::tetwild;
 
@@ -227,7 +234,7 @@ void require_full_tiling(FeatureScene& sc)
 
 } // namespace
 
-TEST_CASE("feature-tag-propagation-fuzz", "[tetwild_operation][features]")
+TEST_CASE("feature-tag-propagation-fuzz", "[tetwild_operation][features]" + release_only)
 {
     FeatureScene sc = build_scene();
     TetWildMesh& m = *sc.mesh;

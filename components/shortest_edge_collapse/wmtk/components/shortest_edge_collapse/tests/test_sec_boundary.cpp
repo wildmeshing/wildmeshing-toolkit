@@ -12,6 +12,13 @@
 #include <set>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace components::shortest_edge_collapse;
 
@@ -131,7 +138,7 @@ void collapse_with_tube(
 
 } // namespace
 
-TEST_CASE("sec-open-surface-boundary-is-preserved", "[test_sec][boundary]")
+TEST_CASE("sec-open-surface-boundary-is-preserved", "[test_sec][boundary]" + release_only)
 {
     // A collapse must never move the frozen outline of an open surface. The interior,
     // however, must coarsen all the way down -- including the vertices that merely touch
@@ -154,7 +161,7 @@ TEST_CASE("sec-open-surface-boundary-is-preserved", "[test_sec][boundary]")
     CHECK(n_after == n_boundary);
 }
 
-TEST_CASE("sec-open-strip-boundary-is-preserved", "[test_sec][boundary]")
+TEST_CASE("sec-open-strip-boundary-is-preserved", "[test_sec][boundary]" + release_only)
 {
     // A strip is the adversarial case for the freeze rule: almost every vertex touches the
     // outline, so rejecting any collapse with a frozen endpoint would leave nearly the whole
@@ -173,7 +180,7 @@ TEST_CASE("sec-open-strip-boundary-is-preserved", "[test_sec][boundary]")
     CHECK(n_after == n_boundary);
 }
 
-TEST_CASE("sec-boundary-envelope-outline-stays-in-tube", "[test_sec][boundary]")
+TEST_CASE("sec-boundary-envelope-outline-stays-in-tube", "[test_sec][boundary]" + release_only)
 {
     // With a boundary tube the outline is free to coarsen, but every boundary edge has to stay
     // within r of the input outline -- and since the outline is a closed loop that can only
@@ -234,7 +241,9 @@ TEST_CASE("sec-boundary-envelope-closes-hole-smaller-than-tube", "[test_sec][bou
     CHECK(inner == 0);
 }
 
-TEST_CASE("sec-boundary-envelope-keeps-hole-larger-than-tube", "[test_sec][boundary]")
+TEST_CASE(
+    "sec-boundary-envelope-keeps-hole-larger-than-tube",
+    "[test_sec][boundary]" + release_only)
 {
     // The same hole against a tube a fifth of its width, with the same wide surface envelope:
     // the tube alone keeps it from closing, and its outline stays within the tube.

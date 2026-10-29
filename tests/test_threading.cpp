@@ -20,6 +20,13 @@
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 #if defined(__unix__) || defined(__APPLE__)
 #include <sys/wait.h>
 #include <unistd.h>
@@ -582,7 +589,7 @@ TEST_CASE("enumerable_thread_specific_slots_of_dead_instances", "[threading]")
     CHECK(CountsDestructions::wrong_thread().load() == 0);
 }
 
-TEST_CASE("task_group_concurrent_submitters", "[threading]")
+TEST_CASE("task_group_concurrent_submitters", "[threading]" + release_only)
 {
     // Two threads submit at nearly the same moment, each a task that can only finish once the
     // other thread's task has started, while every existing worker is busy -- so each submission

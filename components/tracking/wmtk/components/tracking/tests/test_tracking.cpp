@@ -18,6 +18,13 @@
 #include <set>
 #include <sstream>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 namespace fs = std::filesystem;
 using namespace wmtk::components;
 using tracking::InputPoint;
@@ -168,7 +175,7 @@ TEST_CASE("tracking-example-isotropic", "[tracking]")
     CHECK(same == pts.size());
 }
 
-TEST_CASE("tracking-memory-route", "[tracking]")
+TEST_CASE("tracking-memory-route", "[tracking]" + release_only)
 {
     // The memory route: an application records its history from the mesh it is given and
     // returns it in its report, as the bytes of the file the file route would write, which it
@@ -404,7 +411,7 @@ TEST_CASE("tracking-info-drift-in-three-units", "[tracking]")
     CHECK(d.at("large").get<bool>());
 }
 
-TEST_CASE("tracking-memory-route-isotropic-features", "[tracking]")
+TEST_CASE("tracking-memory-route-isotropic-features", "[tracking]" + release_only)
 {
     // isotropic_remeshing on the memory route with every option of its B-rep work -- features as a
     // mesh (a curve with ids, fixed vertices), swap_quality, limit_collapse_length, cleanup_angle
