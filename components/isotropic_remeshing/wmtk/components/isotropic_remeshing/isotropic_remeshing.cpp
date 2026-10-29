@@ -274,9 +274,11 @@ Features weld_features(
 
 /// Writes the consolidated mesh to `path` (.vtu): its triangles with a cell field per per-face
 /// field and the point field vertex_id, the id of a fixed vertex and -1 elsewhere; and its
-/// feature edges to <stem>_edges.vtu, on the same points, a line cell each with the cell field
-/// edge_id (-1 for none) and the same vertex_id. With `memory`, the memory route's: the two
-/// meshes go there instead, under the names of the files (see io::DataWriter).
+/// feature edges to <stem>_edge.vtu, as simwild names its own, on the same points, a line cell
+/// each with the cell field edge_id (-1 for none) and the same vertex_id. With `memory`, the
+/// memory route's: the two meshes go there instead, under the names of the files (see
+/// io::DataWriter), the ids Int64 -- the .vtu has Float64, as every field there -- and the edges
+/// with an edge block even where there are none.
 void write_vtu(
     const IsotropicRemeshing& m,
     const std::filesystem::path& path,
@@ -285,12 +287,13 @@ void write_vtu(
 {
     const auto verts = m.get_vertices();
     std::vector<int> index(m.vert_capacity(), -1);
-    Eigen::MatrixXd V(verts.size(), 3), vertex_id(verts.size(), 1);
+    Eigen::MatrixXd V(verts.size(), 3);
+    DataMatrix<int64_t> vertex_id(verts.size(), 1);
     for (size_t i = 0; i < verts.size(); ++i) {
         const size_t v = verts[i].vid(m);
         index[v] = int(i);
         V.row(i) = m.vertex_attrs.at(v).pos;
-        vertex_id(i, 0) = m.is_fixed(v) ? double(m.feature_attrs.at(v).vertex_id) : -1.;
+        vertex_id(i, 0) = m.is_fixed(v) ? m.feature_attrs.at(v).vertex_id : -1;
     }
 
     const auto faces = m.get_faces();
@@ -300,7 +303,7 @@ void write_vtu(
         for (int k = 0; k < 3; ++k) F(i, k) = index[vs[k]];
     }
     io::DataWriter triangles(memory);
-    triangles.add_field("vertex_id", vertex_id);
+    triangles.add_integer_field("vertex_id", vertex_id);
     size_t offset = 0;
     for (const auto& [name, components] : face_fields) {
         Eigen::MatrixXd values(faces.size(), components);
@@ -317,21 +320,30 @@ void write_vtu(
 
     const auto features = m.feature_edges();
     Eigen::MatrixXi E(features.size(), 2);
-    Eigen::MatrixXd edge_id(features.size(), 1);
+    DataMatrix<int64_t> edge_id(features.size(), 1);
     for (size_t i = 0; i < features.size(); ++i) {
         E(i, 0) = index[features[i][0]];
         E(i, 1) = index[features[i][1]];
-        edge_id(i, 0) = double(m.feature_edge_id(features[i][0], features[i][1]));
+        edge_id(i, 0) = m.feature_edge_id(features[i][0], features[i][1]);
     }
     std::filesystem::path edges_path = path;
-    edges_path.replace_filename(path.stem().string() + "_edges.vtu");
+    edges_path.replace_filename(path.stem().string() + "_edge.vtu");
     io::DataWriter lines(memory);
-    lines.add_field("vertex_id", vertex_id);
-    lines.add_cell_field("edge_id", edge_id);
+    lines.add_integer_field("vertex_id", vertex_id);
+    lines.add_integer_cell_field("edge_id", edge_id);
     if (!lines.write_mesh(edges_path.string(), V, E, paraviewo::CellType::Line)) {
         log_and_throw_error("Could not write {}", edges_path.string());
     }
-    if (memory) return;
+    if (memory) {
+        // The exporter makes only the blocks it fills; fixed vertices without curves still have
+        // edges, none of them.
+        CellData& block = memory->at(edges_path.string()).cells[CellType::Edge];
+        if (block.connectivity.cols() != 2) {
+            block.connectivity.resize(0, 2);
+            block.attributes["edge_id"].values = DataMatrix<int64_t>(0, 1);
+        }
+        return;
+    }
     logger().info(
         "wrote {} and {}: {} triangles, {} feature edges",
         path.string(),
@@ -648,9 +660,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             // edges on the same vertex rows, with edge_id.
             MeshMap raw;
             write_vtu(m, "mesh.vtu", fields.face_fields, &raw);
-            component_io.result.first = io::named_outputs(
-                std::move(raw),
-                {{"mesh.vtu", "mesh"}, {"mesh_edges.vtu", "edges"}});
+            component_io.result.first = io::named_outputs(std::move(raw));
         }
     }
 }

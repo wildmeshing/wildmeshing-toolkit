@@ -396,7 +396,7 @@ TEST_CASE("features-file", "[test_remeshing][features]")
             config["remove_duplicate_eps"] = merge;
             isotropic_remeshing(config);
             const std::string tri = (dir.path / "out.vtu").string();
-            const std::string lines = (dir.path / "out_edges.vtu").string();
+            const std::string lines = (dir.path / "out_edge.vtu").string();
             REQUIRE(std::filesystem::exists(tri));
             REQUIRE(std::filesystem::exists(lines));
             const auto points = vtu_array<double>(tri, "vertex_id"); // a point field
@@ -535,7 +535,7 @@ TEST_CASE("features-follow-merged-vertices", "[test_remeshing][features]")
         write(features);
         isotropic_remeshing(config);
         const std::string tri = (dir.path / "out.vtu").string();
-        const std::string lines = (dir.path / "out_edges.vtu").string();
+        const std::string lines = (dir.path / "out_edge.vtu").string();
         std::multiset<int64_t> fixed;
         for (const double v : vtu_array<double>(tri, "vertex_id")) {
             if (v >= 0) fixed.insert(int64_t(v));
@@ -628,25 +628,36 @@ TEST_CASE("features-file-memory-route", "[test_remeshing][features]")
     }
     nlohmann::json memory = options;
     memory["input"] = "surface";
-    const auto cwd = std::filesystem::current_path();
-    std::filesystem::current_path(dir.path);
-    ComponentResult result;
-    try {
-        result = isotropic_remeshing(memory, MeshMap{{"surface", surface}});
-    } catch (...) {
+    const auto run_memory = [&](const nlohmann::json& j) {
+        const auto cwd = std::filesystem::current_path();
+        std::filesystem::current_path(dir.path);
+        ComponentResult result;
+        try {
+            result = isotropic_remeshing(j, MeshMap{{"surface", surface}});
+        } catch (...) {
+            std::filesystem::current_path(cwd);
+            throw;
+        }
         std::filesystem::current_path(cwd);
-        throw;
-    }
-    std::filesystem::current_path(cwd);
+        return result;
+    };
+    const ComponentResult result = run_memory(memory);
 
     const auto& [meshes, report] = result;
     REQUIRE(meshes.size() == 2);
     const MeshData& mesh = meshes.at("mesh");
     const MeshData& edges = meshes.at("edges");
     CHECK(edges.V == mesh.V);
+    // The ids are Int64, never Float64 on the memory route; the .vtu holds the same values.
+    const auto int64 = [](const MeshAttribute& a) {
+        return std::holds_alternative<DataMatrix<int64_t>>(a.values);
+    };
+    CHECK(int64(mesh.vertex_attributes.at("vertex_id")));
+    CHECK(int64(edges.vertex_attributes.at("vertex_id")));
+    CHECK(int64(edges.cell(CellType::Edge).attributes.at("edge_id")));
 
     const std::string tri = (dir.path / "out.vtu").string();
-    const std::string lines = (dir.path / "out_edges.vtu").string();
+    const std::string lines = (dir.path / "out_edge.vtu").string();
     const auto column = [](const MeshAttribute& a) {
         const DataMatrix<double> d = a.doubles();
         return std::vector<double>(d.data(), d.data() + d.size());
@@ -683,6 +694,14 @@ TEST_CASE("features-file-memory-route", "[test_remeshing][features]")
     nlohmann::json memory_report = report;
     memory_report.erase("time_sec");
     CHECK(memory_report == file_report);
+
+    // Fixed vertices without curves: edges still has an edge block, of none.
+    std::ofstream(dir.path / "vertices.json") << nlohmann::json{{"vertices", {{3, 11}}}}.dump();
+    memory["features"] = "vertices.json";
+    const MeshData none = run_memory(memory).first.at("edges");
+    CHECK(none.cell(CellType::Edge).connectivity.rows() == 0);
+    CHECK(none.cell(CellType::Edge).connectivity.cols() == 2);
+    CHECK(int64(none.cell(CellType::Edge).attributes.at("edge_id")));
 }
 
 namespace {
