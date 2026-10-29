@@ -1341,6 +1341,20 @@ VolumeMap::VolumeMap(
         m_boxes.emplace_back(lo, hi);
     }
     m_shared->built.assign(m_volume.edits.size(), 0);
+    if (!m_boxes.empty()) {
+        m_grid_lo = m_boxes[0].first;
+        m_grid_hi = m_boxes[0].second;
+        std::vector<double> extent;
+        for (const auto& [lo, hi] : m_boxes) {
+            m_grid_lo = m_grid_lo.cwiseMin(lo);
+            m_grid_hi = m_grid_hi.cwiseMax(hi);
+            extent.push_back((hi - lo).maxCoeff());
+        }
+        std::nth_element(extent.begin(), extent.begin() + extent.size() / 2, extent.end());
+        // not so small a cell that the grid has more than about 2^20 of them along an axis
+        const double span = (m_grid_hi - m_grid_lo).maxCoeff();
+        m_grid_cell = std::max({extent[extent.size() / 2], span / (1 << 20), 1e-300});
+    }
 }
 
 VolumeMap::~VolumeMap() = default;
@@ -1467,23 +1481,14 @@ std::vector<VolumePoint> VolumeMap::to_input(std::vector<VolumePoint> points) co
 
 std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool forward) const
 {
-    if (pts.empty()) return pts;
-    // a uniform grid over the points, to find those in an operation's tets; a point that is
-    // not a number is in none
-    Eigen::Vector3d lo = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-    Eigen::Vector3d hi = -lo;
-    for (const auto& p : pts) {
-        if (!p.position.allFinite()) continue;
-        lo = lo.cwiseMin(p.position);
-        hi = hi.cwiseMax(p.position);
-    }
-    for (const auto& e : m_volume.edits) {
-        for (const auto& x : e.positions) {
-            lo = lo.cwiseMin(x);
-            hi = hi.cwiseMax(x);
-        }
-    }
-    const double h = std::max((hi - lo).norm() / 256, 1e-300);
+    if (pts.empty() || m_volume.edits.empty()) return pts;
+    // A grid of the points in the operations' boxes, to find those in an operation's tets: a
+    // point outside them all -- far off, or not a number -- is in none.
+    const Eigen::Vector3d& lo = m_grid_lo;
+    const double h = m_grid_cell;
+    const auto inside = [&](const Eigen::Vector3d& x) {
+        return (x.array() >= m_grid_lo.array()).all() && (x.array() <= m_grid_hi.array()).all();
+    };
     struct KeyHash
     {
         size_t operator()(const std::array<int64_t, 3>& k) const
@@ -1499,13 +1504,13 @@ std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool
     };
     std::unordered_map<std::array<int64_t, 3>, std::vector<size_t>, KeyHash> grid;
     for (size_t n = 0; n < pts.size(); ++n) {
-        if (pts[n].position.allFinite()) grid[key(pts[n].position)].push_back(n);
+        if (inside(pts[n].position)) grid[key(pts[n].position)].push_back(n);
     }
     const auto move_point = [&](const size_t n, const Eigen::Vector3d& to) {
         auto& cell = grid[key(pts[n].position)];
         cell.erase(std::find(cell.begin(), cell.end(), n));
         pts[n].position = to;
-        grid[key(to)].push_back(n);
+        if (inside(to)) grid[key(to)].push_back(n);
     };
 
     // this call's points' stats, added to the map's at its end

@@ -131,6 +131,10 @@ private:
     /// before and after it, which a point must be in to be in its tets.
     std::vector<std::unique_ptr<Faces>> m_faces;
     std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> m_boxes;
+    /// The grid a call finds the points in an operation's box with: over the boxes of all the
+    /// operations -- a point outside them is in none -- its cells as wide as the median box.
+    Eigen::Vector3d m_grid_lo = Eigen::Vector3d::Zero(), m_grid_hi = Eigen::Vector3d::Zero();
+    double m_grid_cell = 1;
     /// What the const queries share (VolumeMap.cpp): which operations were built and which
     /// failed, the maps kept, and the stats, with the mutex they are kept under.
     struct Shared;

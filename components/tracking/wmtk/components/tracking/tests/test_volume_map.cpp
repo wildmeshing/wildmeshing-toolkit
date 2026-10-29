@@ -643,6 +643,16 @@ TEST_CASE("volume-map-cache", "[volume_map]")
         CHECK(map.stats().kept == (bytes >= kept.stats().kept_bytes ? 1 : 0));
     }
     CHECK(kept.op_kinds(0) == std::vector<std::string>{"move", "move"});
+
+    // Points far from the operations, however far, are in none, and leave the others' results
+    // as they are.
+    std::vector<VolumePoint> far = pts;
+    far.push_back({Eigen::Vector3d(1e300, 0, 0), 0});
+    far.push_back({Eigen::Vector3d(-1e308, 1e308, 0), 1});
+    far.push_back({Eigen::Vector3d(0.5, 0.5, 1e9), 1});
+    const auto there = kept.to_output(far);
+    for (size_t i = 0; i < pts.size(); ++i) CHECK(there[i].position == want[i].position);
+    for (size_t i = pts.size(); i < far.size(); ++i) CHECK(there[i].position == far[i].position);
 }
 
 TEST_CASE("volume-map-non-finite", "[volume_map]")
