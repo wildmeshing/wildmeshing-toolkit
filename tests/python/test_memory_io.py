@@ -149,6 +149,46 @@ class MemoryIO(unittest.TestCase):
             wm.isotropic_remeshing(options, {"grid": grid, "features": {
                 "V": V[:-1], "cells": {"point": points}}})
 
+    def test_isotropic_feature_fields(self):
+        # feature_fields names triangle attributes of the input: their boundaries are curves,
+        # and mesh returns them, an Int64 label as Int64. Two labels either side of x = 3.
+        V = np.array([[i, j, 0] for i in range(7) for j in range(7)], dtype=np.float64)
+        F = [[i * 7 + j, (i + 1) * 7 + j, (i + 1) * 7 + j + 1] for i in range(6) for j in range(6)]
+        F += [[i * 7 + j, (i + 1) * 7 + j + 1, i * 7 + j + 1] for i in range(6) for j in range(6)]
+        F = np.array(F, dtype=np.int64)
+        label = (V[F].mean(axis=1)[:, 0] > 3).astype(np.int64)
+        grid = {"V": V, "cells": {"triangle": {
+            "connectivity": F, "attributes": {"patch_id": label}}}}
+        options = dict(input="grid", feature_fields=["patch_id"], length_abs=0.7, eps_rel=0.01,
+                       max_iterations=2, num_threads=1)
+        outputs, _ = self.run_memory("isotropic_remeshing", options, {"grid": grid})
+        self.assertEqual(set(outputs), {"mesh", "edges"})
+        mesh = outputs["mesh"]
+        tris = mesh["cells"]["triangle"]["connectivity"]
+        patch = mesh["cells"]["triangle"]["attributes"]["patch_id"]["values"]
+        self.assertEqual(patch.dtype, np.dtype("int64"))
+        self.assertEqual(patch.shape, (len(tris), 1))
+        self.assertEqual(set(patch.ravel().tolist()), {0, 1})
+        # The labels meet along the curve alone, of id -1.
+        block = outputs["edges"]["cells"]["edge"]
+        self.assertTrue((block["attributes"]["edge_id"]["values"] == -1).all())
+        curve = {tuple(sorted(e)) for e in block["connectivity"].tolist()}
+        sides = {}
+        for t, tri in enumerate(tris.tolist()):
+            for k in range(3):
+                sides.setdefault(tuple(sorted((tri[k], tri[(k + 1) % 3]))), set()).add(patch[t, 0])
+        for e, labels in sides.items():
+            self.assertEqual(len(labels) == 2, e in curve)
+        # A Float64 field comes back Float64; a field feature_fields does not name is refused.
+        floats = copy.deepcopy(grid)
+        floats["cells"]["triangle"]["attributes"]["patch_id"] = label.astype(np.float64)
+        outputs, _ = self.run_memory("isotropic_remeshing", options, {"grid": floats})
+        self.assertEqual(
+            outputs["mesh"]["cells"]["triangle"]["attributes"]["patch_id"]["values"].dtype,
+            np.dtype("float64"))
+        with self.assertRaisesRegex(RuntimeError, "Unknown mesh attribute: patch_id"):
+            wm.isotropic_remeshing(dict(options, feature_fields=[]), {"grid": grid})
+
     def test_simwild_tagged(self):
         for cell_type, mesh in (("triangle", triangle()), ("tetrahedron", tetrahedron())):
             with self.subTest(cell_type=cell_type):

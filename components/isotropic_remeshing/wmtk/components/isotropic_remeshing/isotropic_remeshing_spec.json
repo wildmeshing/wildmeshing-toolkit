@@ -110,7 +110,7 @@
     "pointer": "/feature_fields",
     "type": "list",
     "default": [],
-    "doc": "Triangle fields of a .msh input, as io::read_mesh reads it, whose boundaries the remeshing keeps as curves (see IsotropicRemeshing::set_feature_edges): per-face fields (labels), where two faces differ, and per-corner fields (uv and normal, three values per corner, corner after corner), where the two faces at an edge disagree at either end -- a seam. A field carried through the remeshing then holds on every output face: a label exactly, texture coordinates within one chart. File route only: the memory route refuses it."
+    "doc": "Triangle fields of a .msh input, as io::read_mesh reads it, whose boundaries the remeshing keeps as curves (see IsotropicRemeshing::set_feature_edges): per-face fields (labels), where two faces differ, and per-corner fields (uv and normal, three values per corner, corner after corner), where the two faces at an edge disagree at either end -- a seam. A field carried through the remeshing then holds on every output face: a label exactly, texture coordinates within one chart. On the memory route they are triangle attributes of the input mesh, whose triangles may carry no other attributes but uv and normal; the result then holds what the .vtu output would (see features): mesh, with each per-face field of feature_fields as a triangle attribute -- Int64 if it was given as Int64, Float64 otherwise -- and the vertex field vertex_id, and edges, its feature edges on the same vertex rows, with edge_id (-1 for a boundary of feature_fields)."
   },
   {
     "pointer": "/feature_fields/*",

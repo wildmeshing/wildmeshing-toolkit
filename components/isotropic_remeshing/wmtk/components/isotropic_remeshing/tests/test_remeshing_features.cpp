@@ -837,6 +837,143 @@ TEST_CASE("features-memory-route", "[test_remeshing][features]" + release_only)
     refused(wrong, "Missing required mesh attribute: vertex_id");
 }
 
+TEST_CASE("feature-fields-memory-route", "[test_remeshing][features]" + release_only)
+{
+    // feature_fields on the memory route: triangle attributes of the input mesh, kept as labels as
+    // the .msh route keeps the file's, and returned on mesh -- an Int64 one as Int64. A strip of
+    // two labels, with a curve of id 5 across it and two fixed vertices.
+    const TempDir dir;
+    std::vector<Eigen::Vector3d> V;
+    std::vector<std::array<size_t, 3>> F;
+    grid(6, V, F);
+    DataMatrix<int64_t> label(F.size(), 1);
+    for (size_t f = 0; f < F.size(); ++f) {
+        label(f, 0) = (V[F[f][0]] + V[F[f][1]] + V[F[f][2]]).x() / 3 < 3 ? 0 : 1;
+    }
+    {
+        MshData msh;
+        msh.add_face_vertices(V.size(), [&](size_t i) { return V[i]; });
+        msh.add_faces(F.size(), [&](size_t i) { return F[i]; });
+        msh.add_face_attribute<1>("patch_id", [&label](size_t i) { return double(label(i, 0)); });
+        msh.save((dir.path / "in.msh").string());
+    }
+    nlohmann::json features;
+    for (size_t i = 0; i < 6; ++i) {
+        features["edges"].push_back({i * 7 + 3, (i + 1) * 7 + 3});
+        features["edge_ids"].push_back(5);
+    }
+    features["vertices"] = {{3, 11}, {6 * 7 + 3, 12}};
+    std::ofstream(dir.path / "features.json") << features.dump();
+    const nlohmann::json options = {
+        {"feature_fields", {"patch_id"}},
+        {"length_abs", 0.7},
+        {"eps_rel", 0.01},
+        {"max_iterations", 2},
+        {"cleanup_angle", 30}};
+
+    nlohmann::json file = options;
+    file["application"] = "isotropic_remeshing";
+    file["input"] = "in.msh";
+    file["input_dir"] = dir.path.string();
+    file["output"] = (dir.path / "out.vtu").string();
+    file["report"] = (dir.path / "report.json").string();
+    file["features"] = "features.json";
+    isotropic_remeshing(file);
+
+    MeshData surface;
+    surface.V.resize(V.size(), 3);
+    for (size_t i = 0; i < V.size(); ++i) surface.V.row(i) = V[i];
+    auto& tris = surface.cells[CellType::Triangle];
+    tris.connectivity.resize(F.size(), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        for (int k = 0; k < 3; ++k) tris.connectivity(i, k) = int64_t(F[i][k]);
+    }
+    tris.attributes["patch_id"].values = label;
+    MeshData curves;
+    curves.V = surface.V;
+    {
+        auto& edges = curves.cells[CellType::Edge];
+        edges.connectivity.resize(6, 2);
+        for (size_t i = 0; i < 6; ++i) {
+            edges.connectivity(i, 0) = features["edges"][i][0];
+            edges.connectivity(i, 1) = features["edges"][i][1];
+        }
+        edges.attributes["edge_id"].values =
+            DataMatrix<int64_t>(DataMatrix<int64_t>::Constant(6, 1, 5));
+        auto& points = curves.cells[CellType::Point];
+        points.connectivity.resize(2, 1);
+        points.connectivity << 3, 6 * 7 + 3;
+        DataMatrix<int64_t> vertex_id(2, 1);
+        vertex_id << 11, 12;
+        points.attributes["vertex_id"].values = vertex_id;
+    }
+    nlohmann::json memory = options;
+    memory["input"] = "surface";
+    memory["features"] = "curves";
+    const auto [meshes, report] =
+        isotropic_remeshing(memory, MeshMap{{"surface", surface}, {"curves", curves}});
+
+    // The same mesh as the .vtu output, with the labels on the same rows, Int64.
+    const MeshData& mesh = meshes.at("mesh");
+    const auto& patch = mesh.cell(CellType::Triangle).attributes.at("patch_id");
+    REQUIRE(std::holds_alternative<DataMatrix<int64_t>>(patch.values));
+    const std::string tri = (dir.path / "out.vtu").string();
+    const auto& conn = mesh.cell(CellType::Triangle).connectivity;
+    CHECK(
+        std::vector<int64_t>(conn.data(), conn.data() + conn.size()) ==
+        vtu_array<int64_t>(tri, "connectivity"));
+    const DataMatrix<double> values = patch.doubles();
+    CHECK(
+        std::vector<double>(values.data(), values.data() + values.size()) ==
+        vtu_array<double>(tri, "patch_id"));
+    std::set<int64_t> labels(
+        std::get<DataMatrix<int64_t>>(patch.values).data(),
+        std::get<DataMatrix<int64_t>>(patch.values).data() + patch.rows());
+    CHECK(labels == std::set<int64_t>{0, 1});
+    nlohmann::json file_report;
+    std::ifstream(dir.path / "report.json") >> file_report;
+    file_report.erase("time_sec");
+    nlohmann::json memory_report = report;
+    memory_report.erase("time_sec");
+    CHECK(memory_report == file_report);
+
+    // A result goes back in as it is, its labels with it.
+    nlohmann::json again = options;
+    again["input"] = "mesh";
+    again["features"] = "edges";
+    const auto chained = isotropic_remeshing(again, meshes).first;
+    CHECK(
+        chained.at("mesh").cell(CellType::Triangle).attributes.at("patch_id").rows() ==
+        chained.at("mesh").cell(CellType::Triangle).connectivity.rows());
+
+    // Without features: the label boundary is the only curve, of id -1. A Float64 field comes
+    // back Float64.
+    MeshData floats = surface;
+    floats.cells[CellType::Triangle].attributes["patch_id"].values = label.cast<double>().eval();
+    nlohmann::json fields_only = options;
+    fields_only["input"] = "surface";
+    const auto alone = isotropic_remeshing(fields_only, MeshMap{{"surface", floats}}).first;
+    CHECK(
+        std::holds_alternative<DataMatrix<double>>(
+            alone.at("mesh").cell(CellType::Triangle).attributes.at("patch_id").values));
+    const auto& edge_id = std::get<DataMatrix<int64_t>>(
+        alone.at("edges").cell(CellType::Edge).attributes.at("edge_id").values);
+    CHECK(edge_id.rows() >= 6);
+    CHECK((edge_id.array() == -1).all());
+
+    // A field feature_fields does not name is still refused, as one it names but the input lacks.
+    nlohmann::json unnamed = memory;
+    unnamed["feature_fields"] = nlohmann::json::array();
+    CHECK_THROWS_WITH(
+        isotropic_remeshing(unnamed, MeshMap{{"surface", surface}, {"curves", curves}}),
+        Catch::Matchers::ContainsSubstring("Unknown mesh attribute: patch_id"));
+    nlohmann::json missing = memory;
+    missing["feature_fields"] = {"patch_id", "side"};
+    CHECK_THROWS_WITH(
+        isotropic_remeshing(missing, MeshMap{{"surface", surface}, {"curves", curves}}),
+        Catch::Matchers::ContainsSubstring("has no field side"));
+}
+
 namespace {
 double smallest_angle(const IsotropicRemeshing& m)
 {

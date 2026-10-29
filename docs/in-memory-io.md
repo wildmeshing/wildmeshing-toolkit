@@ -118,13 +118,15 @@ not transfer arbitrary user attributes through topology changes. Geometry-only i
 attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry files: vertex
 `vid`, and triangle `uv` and `normal`. A component may accept, and ignore, a field of its own
 results as well, so that a result can be the next call's input as it is: isotropic_remeshing's
-`vertex_id`, whose fixed vertices come from `features` alone.
+`vertex_id`, whose fixed vertices come from `features` alone. isotropic_remeshing also takes the
+triangle fields its `feature_fields` names, which it keeps as labels through the remeshing, as on
+the `.msh` route, and returns on `mesh`.
 
 | Component | Mesh selectors | Required data |
 | --- | --- | --- |
 | `qslim` | `input` | Triangle geometry, no attributes |
 | `shortest_edge_collapse` | `input` | Triangle geometry, no attributes |
-| `isotropic_remeshing` | `input`; optional `features` | Triangle geometry, no attributes but its own `vertex_id`, ignored; `features` on the rows of `input`: edges with Int64 `edge_id`, points with Int64 `vertex_id`, or Int64 vertex `vertex_id` (-1 for none) |
+| `isotropic_remeshing` | `input`; optional `features` | Triangle geometry, no attributes but its own `vertex_id`, ignored, and the triangle fields `feature_fields` names; `features` on the rows of `input`: edges with Int64 `edge_id`, points with Int64 `vertex_id`, or Int64 vertex `vertex_id` (-1 for none) |
 | `tetwild` | `input`; `input_edges`, `input_points` | Triangle surfaces; optional curve/point geometry, no attributes |
 | `triwild` | `input`; `input_points` | Curve geometry, optional free points, no attributes |
 | `simwild` | `input`; optional `envelope` for tagged input | Surface/curve geometry, or tagged triangle/tet mesh |
@@ -160,9 +162,10 @@ geometry under fixed keys:
 
 - `surface`: the boundary (triangles in 3D; in 2D -- triwild, 2D simwild -- the boundary edges).
   Manifold extraction returns its extracted boundary here.
-- `edges`: simwild's 3D feature edges; isotropic_remeshing's feature edges, with `features`
-  (its Int64 `edge_id`, and `mesh`'s Int64 `vertex_id`, are what its `.vtu` output holds, an edge
-  block of none where there are none), which can be the next call's `features`.
+- `edges`: simwild's 3D feature edges; isotropic_remeshing's feature edges, with `features` or
+  `feature_fields` (its Int64 `edge_id`, and `mesh`'s Int64 `vertex_id` and per-face fields --
+  Int64 where they were given as Int64 -- are what its `.vtu` output holds, an edge block of none
+  where there are none), which can be the next call's `features`.
 - `offset`: the offset surface or front; prismatic's classified offset faces.
 - `envelope`, `features`, `uv`, and manifold extraction's 3D input-complex preview `input_complex`.
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as

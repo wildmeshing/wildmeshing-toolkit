@@ -27,32 +27,30 @@ namespace wmtk::components::isotropic_remeshing {
 
 namespace {
 
-/// What field_boundaries reads from a mesh file.
+/// What field_boundaries reads from a mesh.
 struct FieldData
 {
     /// The edges between two faces that differ in any of the fields.
     std::vector<std::array<size_t, 2>> boundaries;
     /// The per-face fields among them, in the order given, with their number of components.
     std::vector<std::pair<std::string, size_t>> face_fields;
+    /// Those of face_fields given as Int64, which the memory route returns as Int64.
+    std::set<std::string> integer_fields;
     /// Each face's values of face_fields, one after the other.
     std::vector<std::vector<double>> face_values;
 };
 
-/// The edges between two faces that differ in any of `fields`, triangle fields of the mesh file
-/// `path` as io::read_mesh reads it, whose triangles are `tris` in row order. A per-corner field
-/// (io::read_mesh's uv and normal: three values per corner, corner after corner) differs across
-/// an edge where the two faces disagree on it at either end: a texture seam, say.
+/// The edges between two faces that differ in any of `fields`, triangle fields of `mesh` -- the
+/// mesh file as io::read_mesh reads it, or the memory input -- whose triangles are `tris` in row
+/// order; `path` names it in the errors. A per-corner field (io::read_mesh's uv and normal: three
+/// values per corner, corner after corner) differs across an edge where the two faces disagree on
+/// it at either end: a texture seam, say.
 FieldData field_boundaries(
+    const MeshData& mesh,
     const std::string& path,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<std::string>& fields)
 {
-    MeshData mesh;
-    try {
-        mesh = io::read_mesh(path);
-    } catch (const std::exception& e) {
-        log_and_throw_error("feature_fields: could not read {}: {}", path, e.what());
-    }
     const auto it = mesh.cells.find(CellType::Triangle);
     const Eigen::Index n_faces = it == mesh.cells.end() ? 0 : it->second.connectivity.rows();
     if (size_t(n_faces) != tris.size()) {
@@ -82,6 +80,10 @@ FieldData field_boundaries(
                 values.cols());
         }
         if (!corner) out.face_fields.emplace_back(name, size_t(values.cols()));
+        // An Int64 field converts to Float64 exactly, or doubles() refuses it, so it comes back.
+        if (!corner && std::holds_alternative<DataMatrix<int64_t>>(a->second.values)) {
+            out.integer_fields.insert(name);
+        }
         const Eigen::Index k = values.cols() / 3;
         for (size_t f = 0; f < tris.size(); ++f) {
             const double* row = values.row(f).data();
@@ -346,12 +348,12 @@ Features weld_features(
 /// feature edges to <stem>_edge.vtu, as simwild names its own, on the same points, a line cell
 /// each with the cell field edge_id (-1 for none) and the same vertex_id. With `memory`, the
 /// memory route's: the two meshes go there instead, under the names of the files (see
-/// io::DataWriter), the ids Int64 -- the .vtu has Float64, as every field there -- and the edges
-/// with an edge block even where there are none.
+/// io::DataWriter), the ids Int64 -- the .vtu has Float64, as every field there -- as the per-face
+/// fields given as Int64, and the edges with an edge block even where there are none.
 void write_vtu(
     const IsotropicRemeshing& m,
     const std::filesystem::path& path,
-    const std::vector<std::pair<std::string, size_t>>& face_fields,
+    const FieldData& fields,
     MeshMap* memory = nullptr)
 {
     const auto verts = m.get_vertices();
@@ -374,13 +376,17 @@ void write_vtu(
     io::DataWriter triangles(memory);
     triangles.add_integer_field("vertex_id", vertex_id);
     size_t offset = 0;
-    for (const auto& [name, components] : face_fields) {
+    for (const auto& [name, components] : fields.face_fields) {
         Eigen::MatrixXd values(faces.size(), components);
         for (size_t i = 0; i < faces.size(); ++i) {
             const auto& f = m.face_field_attrs.at(faces[i].fid(m)).values;
             for (size_t c = 0; c < components; ++c) values(i, c) = f.at(offset + c);
         }
-        triangles.add_cell_field(name, values);
+        if (fields.integer_fields.count(name)) {
+            triangles.add_integer_cell_field(name, values.cast<int64_t>());
+        } else {
+            triangles.add_cell_field(name, values);
+        }
         offset += components;
     }
     if (!triangles.write_mesh(path.string(), V, F, paraviewo::CellType::Triangle)) {
@@ -502,15 +508,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const double cleanup_angle = json_params["cleanup_angle"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     const std::string history_output = json_params["history_output"];
+    // Triangle fields of the input file on the file route, of the input mesh on the memory route.
     const std::vector<std::string> feature_fields = json_params["feature_fields"];
     // A file on the file route, a mesh of the memory input on the memory route.
     const std::string features_input = json_params["features"];
-    // The fields are read from the .msh file the input names; a memory input carries none.
-    if (component_io.memory() && !feature_fields.empty()) {
-        throw std::runtime_error(
-            "isotropic_remeshing: feature_fields reads per-face fields from the input .msh file, "
-            "which the memory route does not have");
-    }
     double length_abs = json_params["length_abs"];
     // With feature curves, a .vtu output holds them, the fields and the fixed vertices.
     const bool vtu_output = (!feature_fields.empty() || !features_input.empty()) &&
@@ -549,7 +550,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             nullptr,
             history_output.empty() && features_input.empty() ? nullptr : &read,
             // Ignored: the fixed vertices come from features.
-            with_vertex_id());
+            with_vertex_id(),
+            // Read below, by field_boundaries.
+            std::set<std::string>(feature_fields.begin(), feature_fields.end()));
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -626,7 +629,21 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     FieldData fields;
     if (!feature_fields.empty()) {
-        fields = field_boundaries(input_path, tris, feature_fields);
+        if (component_io.memory()) {
+            fields = field_boundaries(
+                component_io.mesh(input_path),
+                "the mesh " + input_path,
+                tris,
+                feature_fields);
+        } else {
+            MeshData mesh;
+            try {
+                mesh = io::read_mesh(input_path);
+            } catch (const std::exception& e) {
+                log_and_throw_error("feature_fields: could not read {}: {}", input_path, e.what());
+            }
+            fields = field_boundaries(mesh, input_path, tris, feature_fields);
+        }
         if (features_input.empty()) {
             m.set_feature_edges(fields.boundaries);
             // As for `features`: the surface envelope does not hold the curves; this keeps them
@@ -675,7 +692,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     std::function<void()> write_output;
     if (vtu_output) {
-        write_output = [&]() { write_vtu(m, output, fields.face_fields); };
+        write_output = [&]() { write_vtu(m, output, fields); };
     }
     const double runtime = run_remeshing(input_path, length_abs, output, m, itrs, write_output);
     if (check_inversions) {
@@ -739,14 +756,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     }
     if (component_io.memory()) {
-        if (features_input.empty()) {
+        if (features_input.empty() && feature_fields.empty()) {
             component_io.result.first["mesh"] =
                 io::triangle_data(m, [&](size_t v) { return m.vertex_attrs[v].pos; });
         } else {
-            // What the file route's .vtu output holds: the mesh with vertex_id, and its feature
-            // edges on the same vertex rows, with edge_id.
+            // What the file route's .vtu output holds: the mesh with vertex_id and the per-face
+            // fields, and its feature edges on the same vertex rows, with edge_id.
             MeshMap raw;
-            write_vtu(m, "mesh.vtu", fields.face_fields, &raw);
+            write_vtu(m, "mesh.vtu", fields, &raw);
             component_io.result.first = io::named_outputs(std::move(raw));
         }
     }
