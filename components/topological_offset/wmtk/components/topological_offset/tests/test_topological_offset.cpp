@@ -2521,6 +2521,146 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
 }
 
 namespace {
+/// python/tests/test_face_tags.py's tagged grid: [0, 2]^3 in 8^3 cubes of six tets, the corner
+/// cube [0, 0.25]^3 tagged red, and two open sheets on [0.5, 1.5]^2 as face tags, yellow at z = 1
+/// and blue at z = z_blue, a multiple of the cube size 0.25.
+MeshData two_sheet_grid(const double z_blue)
+{
+    const int n = 8;
+    const double h = 0.25;
+    const auto vid = [&](int i, int j, int k) { return i + (n + 1) * (j + (n + 1) * k); };
+    Eigen::MatrixXd V((n + 1) * (n + 1) * (n + 1), 3);
+    for (int k = 0; k <= n; ++k) {
+        for (int j = 0; j <= n; ++j) {
+            for (int i = 0; i <= n; ++i) V.row(vid(i, j, k)) << i * h, j * h, k * h;
+        }
+    }
+    std::vector<std::array<int, 4>> T;
+    std::vector<uint8_t> red;
+    const std::array<std::array<int, 3>, 6> perms = {
+        {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
+    for (int k = 0; k < n; ++k) {
+        for (int j = 0; j < n; ++j) {
+            for (int i = 0; i < n; ++i) {
+                for (const auto& pm : perms) { // the cube's 6 tets around its main diagonal
+                    std::array<int, 3> c = {{i, j, k}};
+                    std::array<int, 4> t;
+                    t[0] = vid(c[0], c[1], c[2]);
+                    for (int s = 0; s < 3; ++s) {
+                        ++c[size_t(pm[size_t(s)])];
+                        t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
+                    }
+                    T.push_back(positive(V, t));
+                    red.push_back(i == 0 && j == 0 && k == 0);
+                }
+            }
+        }
+    }
+    // The tets' faces on a sheet, once each.
+    const auto on_sheet = [&](const std::array<int, 3>& f, const double z) {
+        for (const int v : f) {
+            if (V(v, 2) != z || V(v, 0) < 0.5 || V(v, 0) > 1.5 || V(v, 1) < 0.5 || V(v, 1) > 1.5)
+                return false;
+        }
+        return true;
+    };
+    std::set<std::array<int, 3>> yellow, blue;
+    for (const auto& t : T) {
+        for (int s = 0; s < 4; ++s) {
+            std::array<int, 3> f;
+            for (int c = 0, m = 0; c < 4; ++c) {
+                if (c != s) f[size_t(m++)] = t[size_t(c)];
+            }
+            std::sort(f.begin(), f.end());
+            if (on_sheet(f, 1.0)) yellow.insert(f);
+            if (on_sheet(f, z_blue)) blue.insert(f);
+        }
+    }
+    Eigen::MatrixXi Tm(int(T.size()), 4);
+    DataMatrix<uint8_t> tags(T.size(), 2);
+    for (size_t i = 0; i < T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = T[i][size_t(j)];
+        tags(i, 0) = red[i];
+        tags(i, 1) = 1 - red[i];
+    }
+    MeshData m = io::geometry_data(V, Tm, CellType::Tetrahedron);
+    m.cells.at(CellType::Tetrahedron).attributes["tags"] = {tags, {"red", "ambient"}};
+    auto& faces = m.cells[CellType::Triangle];
+    faces.connectivity.resize(yellow.size() + blue.size(), 3);
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(faces.connectivity.rows(), 2);
+    Eigen::Index r = 0;
+    for (const auto* sheet : {&yellow, &blue}) {
+        for (const auto& f : *sheet) {
+            for (int c = 0; c < 3; ++c) faces.connectivity(r, c) = f[size_t(c)];
+            member(r++, sheet == &yellow ? 0 : 1) = 1;
+        }
+    }
+    faces.attributes["tags"] = {member, {"yellow", "blue"}};
+    return m;
+}
+
+/// One construction-only offset of the face tag `sheet`, its band tagged `band`, the
+/// correspondence saved: the step a pipeline runs once per sheet before prismatic_mesh.
+MeshData offset_sheet(const MeshData& m, const std::string& sheet, const std::string& band)
+{
+    return components::topological_offset::topological_offset(
+               {{"input", "m"},
+                {"offset_selection", sheet},
+                {"offset_output_tags", {band}},
+                {"target_distance", 0.1},
+                {"optimize_offset", false},
+                {"save_offset_correspondence", true},
+                {"num_threads", 1}},
+               {{"m", m}})
+        .first.at("mesh");
+}
+
+/// Each offset vertex (corr_input_vid >= 0) as its position followed by its input vertex's,
+/// which corr_input_vid names by `vid`.
+std::set<std::array<double, 6>> correspondence_pairs(const MeshData& m)
+{
+    const auto corr = m.vertex_attributes.at("corr_input_vid").integers();
+    const auto vid = m.vertex_attributes.at("vid").integers();
+    std::map<int64_t, Eigen::Index> row_of;
+    for (Eigen::Index r = 0; r < vid.rows(); ++r) row_of[vid(r, 0)] = r;
+    std::set<std::array<double, 6>> pairs;
+    for (Eigen::Index r = 0; r < corr.rows(); ++r) {
+        if (corr(r, 0) < 0) continue;
+        const Eigen::Index u = row_of.at(corr(r, 0));
+        pairs.insert({{m.V(r, 0), m.V(r, 1), m.V(r, 2), m.V(u, 0), m.V(u, 1), m.V(u, 2)}});
+    }
+    return pairs;
+}
+} // namespace
+
+TEST_CASE("offset-carries-an-earlier-correspondence", "[offset][3d][correspondence]")
+{
+    // Two offsets one after another, yellow's band and then blue's. The second run carries the
+    // first's corr_input_vid, so prismatic_mesh sees both bands' correspondence. Construction moves
+    // no vertex, so the pairs compare by position, exactly.
+    SECTION("sheets three cubes apart: every carried value survives")
+    {
+        const auto first = offset_sheet(two_sheet_grid(0.25), "yellow", "band_yellow");
+        const auto second = offset_sheet(first, "blue", "band_blue");
+        const auto carried = correspondence_pairs(first);
+        REQUIRE(!carried.empty());
+        std::set<std::array<double, 6>> to_yellow, to_blue;
+        for (const auto& p : correspondence_pairs(second))
+            (p[5] == 1.0 ? to_yellow : to_blue).insert(p);
+        CHECK(to_yellow == carried);
+        CHECK(!to_blue.empty());
+        for (const auto& p : to_blue) CHECK(p[5] == 0.25);
+    }
+    SECTION("sheets one cube apart: blue's march splits yellow's band, and the run refuses")
+    {
+        const auto first = offset_sheet(two_sheet_grid(0.75), "yellow", "band_yellow");
+        REQUIRE_THROWS_WITH(
+            offset_sheet(first, "blue", "band_blue"),
+            Catch::Matchers::ContainsSubstring("changed star"));
+    }
+}
+
+namespace {
 /// The input of save-offset-correspondence-3d: a 3 x 3 x 3 grid of unit cubes, six tets each,
 /// the center cube tag_0.
 struct GridInput
