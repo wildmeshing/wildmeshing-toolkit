@@ -4193,17 +4193,23 @@ TEST_CASE("surface-energy-sums", "[offset][3d]")
 
 TEST_CASE("final-coarsening-guard", "[offset][3d]")
 {
-    // The final TetWild pass's coarsening (coarsen_mesh(), since 2026-10-28): a coarsening
-    // collapse is kept only if every cell around the survivor stays under stop_energy and every
-    // stencil point of the survivor's offset faces within front_conv, (d - delta)^2 <
-    // front_conv^2. On the 5 x 5 x 5 grid constructed at 0.2 under the defaults, set up as
-    // tetwild_pass() sets it up (the final envelopes, TetWild's rules, no plastic medium), edges
-    // are tried as single coarsening collapses (coarsen_collapse_edge()) under three pairs of
-    // bounds: (a) both wide -- collapses kept, front vertices among them (the bare sweeps' front
-    // refusal does not apply in coarsening), and after each the guard holds at the survivor;
-    // (b) stop_energy 1, under every cell's AMIPS (3 at the least) -- nothing kept, every refusal
-    // the AMIPS half's; (c) front_conv 1e-12 -- no kept collapse leaves an offset face at its
-    // survivor, refusals by the offset half.
+    // The coarsening collapses (coarsen_mesh(), since 2026-10-28) are kept only if neither the
+    // max AMIPS over the cells they change nor the offset face term over the offset faces they
+    // change rises (ties pass). On the 5 x 5 x 5 grid constructed at 0.2, set up as tetwild_pass()
+    // sets it up (the final envelopes, TetWild's rules, no plastic medium), edges are tried as
+    // single coarsening collapses (coarsen_collapse_edge()), any edge first, then with a front
+    // vertex as v1. Before each try the guard's verdict is predicted on its own: the cells the
+    // collapse reshapes are v1's ring without the cells at v2, v1 renamed v2, their AMIPS read off
+    // those corners; the offset faces through v2 after it come from the cells' labels (live when
+    // one side is band and the other neither band nor input complex, or a band face on the domain
+    // boundary); a face listed before and after drops out of both sums. Per try: a kept collapse
+    // was predicted to pass both halves and leaves exactly the predicted faces at v2; a refusal
+    // by the AMIPS half was predicted to raise the max; one by the offset half to keep the max
+    // and raise the sum. Some kept collapses change offset faces (a v1 off the front merged into
+    // a front v2); on this grid every front v1 that reaches the guard is refused, by either half.
+    // Run (a) at the defaults and (b) at stop_energy 1 and front_conv 1e-12, under which the old
+    // threshold guard (every cell under stop_energy, every stencil point within front_conv)
+    // refused every collapse: the same collapses are kept and refused at both.
     const GridInput g = grid_input(5);
     // The mesh holds its Parameters by reference: each lives as long as the test.
     std::vector<std::unique_ptr<Parameters>> params;
@@ -4223,85 +4229,149 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]")
         }
         return mesh;
     };
-    struct Outcome
+    using Face = std::array<size_t, 3>;
+    struct Prediction
     {
-        size_t kept = 0, kept_front = 0, kept_with_offset_face = 0, guard_broken = 0;
+        bool amips_ok = false, offset_ok = false;
+        std::set<Face> after;
     };
-    const auto coarsen = [](TopoOffsetTetMesh& mesh,
-                            const double stop,
-                            const double fc,
-                            const size_t max_kept,
-                            const bool front_only) {
-        mesh.m_params.stop_energy = stop;
-        mesh.m_offset_params.front_conv = fc;
-        mesh.m_coarsen_reject_amips = 0;
-        mesh.m_coarsen_reject_offset = 0;
-        const double delta = mesh.m_offset_params.target_distance;
-        Outcome o;
+    const auto predict = [](const TopoOffsetTetMesh& mesh, const size_t v1, const size_t v2) {
+        Prediction p;
+        double a_before = 0., a_after = 0.;
+        std::vector<std::pair<std::array<size_t, 4>, size_t>> cells; // corners after, slot
+        const std::vector<size_t> ring1 = mesh.get_one_ring_tids_for_vertex(v1);
+        for (const size_t tid : ring1) {
+            a_before = std::max(a_before, mesh.get_quality(mesh.tuple_from_tet(tid)));
+            std::array<size_t, 4> vs = mesh.oriented_tet_vids(tid);
+            if (std::find(vs.begin(), vs.end(), v2) != vs.end()) continue; // dies
+            *std::find(vs.begin(), vs.end(), v1) = v2;
+            a_after = std::max(a_after, mesh.get_quality(vs));
+            cells.push_back({vs, tid});
+        }
+        for (const size_t tid : mesh.get_one_ring_tids_for_vertex(v2)) {
+            if (std::find(ring1.begin(), ring1.end(), tid) == ring1.end()) {
+                cells.push_back({mesh.oriented_tet_vids(tid), tid});
+            }
+        }
+        p.amips_ok = a_after <= a_before;
+        std::map<Face, std::vector<size_t>> sides;
+        for (const auto& [vs, tid] : cells) {
+            for (int skip = 0; skip < 4; ++skip) {
+                if (vs[size_t(skip)] == v2) continue;
+                Face f;
+                int n = 0;
+                for (int k = 0; k < 4; ++k) {
+                    if (k != skip) f[size_t(n++)] = vs[size_t(k)];
+                }
+                std::sort(f.begin(), f.end());
+                sides[f].push_back(tid);
+            }
+        }
+        for (const auto& [f, ts] : sides) {
+            const bool a = mesh.cell_is_offset_band(ts[0]);
+            if (ts.size() == 1) {
+                if (a) p.after.insert(f);
+            } else if (
+                a != mesh.cell_is_offset_band(ts[1]) &&
+                !mesh.cell_is_input_complex(a ? ts[1] : ts[0])) {
+                p.after.insert(f);
+            }
+        }
+        std::vector<Face> f1, f2;
+        mesh.live_offset_faces_at(v1, f1);
+        mesh.live_offset_faces_at(v2, f2);
+        std::set<Face> before(f1.begin(), f1.end());
+        before.insert(f2.begin(), f2.end());
+        double s_before = 0., s_after = 0.;
+        for (const Face& f : before) {
+            if (!p.after.count(f)) s_before += mesh.surface_face_term(f[0], f[1], f[2]);
+        }
+        for (const Face& f : p.after) {
+            if (!before.count(f)) s_after += mesh.surface_face_term(f[0], f[1], f[2]);
+        }
+        p.offset_ok = std::isfinite(s_after) && s_after <= s_before;
+        return p;
+    };
+    struct Tally
+    {
+        size_t kept = 0, kept_faces_changed = 0, refused_amips = 0, refused_offset = 0, wrong = 0,
+               face_mismatch = 0;
+        bool operator==(const Tally& o) const
+        {
+            return kept == o.kept && kept_faces_changed == o.kept_faces_changed &&
+                   refused_amips == o.refused_amips && refused_offset == o.refused_offset;
+        }
+    };
+    const auto sweep = [&](TopoOffsetTetMesh& mesh, const bool front_only, const size_t max_kept) {
+        Tally t;
         bool progress = true;
-        while (progress && o.kept < max_kept) {
+        while (progress && t.kept < max_kept) {
             progress = false;
             for (const auto& e : mesh.get_edges()) {
                 const size_t v1 = e.vid(mesh), v2 = e.switch_vertex(mesh).vid(mesh);
                 const bool front = mesh.m_vertex_extra[v1].m_is_on_offset;
                 if (front_only && !front) continue;
+                const Prediction p = predict(mesh, v1, v2);
+                std::set<Face> faces_before;
+                {
+                    std::vector<Face> f1, f2;
+                    mesh.live_offset_faces_at(v1, f1);
+                    mesh.live_offset_faces_at(v2, f2);
+                    faces_before.insert(f1.begin(), f1.end());
+                    faces_before.insert(f2.begin(), f2.end());
+                }
+                const size_t ra = mesh.m_coarsen_reject_amips.load();
+                const size_t ro = mesh.m_coarsen_reject_offset.load();
                 std::vector<TetMesh::Tuple> nt;
-                if (!mesh.coarsen_collapse_edge(e, nt)) continue;
-                ++o.kept;
-                if (front) ++o.kept_front;
-                for (const size_t tid : mesh.get_one_ring_tids_for_vertex(v2)) {
-                    if (!(std::cbrt(mesh.get_quality(mesh.tuple_from_tet(tid))) < stop)) {
-                        ++o.guard_broken;
-                    }
+                const bool kept = mesh.coarsen_collapse_edge(e, nt);
+                if (mesh.m_coarsen_reject_amips.load() > ra) {
+                    ++t.refused_amips;
+                    if (p.amips_ok) ++t.wrong;
                 }
-                std::vector<std::array<size_t, 3>> faces;
-                mesh.live_offset_faces_at(v2, faces);
-                for (const auto& f : faces) {
-                    for (const auto& w : mesh.face_stencil()) {
-                        const Vector3d q = w[0] * mesh.m_vertex_attribute[f[0]].m_posf +
-                                           w[1] * mesh.m_vertex_attribute[f[1]].m_posf +
-                                           w[2] * mesh.m_vertex_attribute[f[2]].m_posf;
-                        const double r = mesh.m_offset_potential->relative_residual(q);
-                        if (!((delta * r) * (delta * r) < fc * fc)) ++o.guard_broken;
-                    }
+                if (mesh.m_coarsen_reject_offset.load() > ro) {
+                    ++t.refused_offset;
+                    if (!p.amips_ok || p.offset_ok) ++t.wrong;
                 }
-                if (!faces.empty()) ++o.kept_with_offset_face;
+                if (!kept) continue;
+                ++t.kept;
+                if (!(p.amips_ok && p.offset_ok)) ++t.wrong;
+                std::vector<Face> now;
+                mesh.live_offset_faces_at(v2, now);
+                if (std::set<Face>(now.begin(), now.end()) != p.after) ++t.face_mismatch;
+                if (faces_before != p.after) ++t.kept_faces_changed;
                 progress = true;
                 break;
             }
         }
-        return o;
+        return t;
     };
-
-    {
-        auto mesh = build("wmtk_offset_coarsen_wide");
-        const Outcome o = coarsen(*mesh, 1e12, 1e6, 40, false);
-        const Outcome f = coarsen(*mesh, 1e12, 1e6, 20, true); // front vertices as v1
-        INFO("kept " << o.kept << ", then " << f.kept << " with a front v1");
+    const auto run = [&](const char* name, const double stop, const double fc) {
+        auto mesh = build(name);
+        if (stop > 0.) mesh->m_params.stop_energy = stop;
+        if (fc > 0.) mesh->m_offset_params.front_conv = fc;
+        const Tally o = sweep(*mesh, false, 40);
+        const Tally f = sweep(*mesh, true, 20); // front vertices as v1
+        INFO(
+            name << ": kept " << o.kept << " (" << o.kept_faces_changed
+                 << " changing offset faces), refused by AMIPS " << o.refused_amips
+                 << ", by the offset term " << o.refused_offset << " | front v1: kept " << f.kept
+                 << ", refused by AMIPS " << f.refused_amips << ", by the offset term "
+                 << f.refused_offset);
         CHECK(o.kept > 0);
-        CHECK(f.kept > 0);
-        CHECK(f.kept == f.kept_front);
-        CHECK(o.guard_broken == 0);
-        CHECK(f.guard_broken == 0);
+        CHECK(o.kept_faces_changed > 0);
+        CHECK(o.refused_amips > 0);
+        CHECK(o.refused_offset > 0);
+        CHECK(f.refused_amips > 0);
+        CHECK(f.refused_offset > 0);
+        CHECK(o.wrong + f.wrong == 0);
+        CHECK(o.face_mismatch + f.face_mismatch == 0);
         CHECK(mesh->check_mesh_connectivity_validity());
-    }
-    {
-        auto mesh = build("wmtk_offset_coarsen_amips");
-        const size_t n_tets = mesh->get_tets().size();
-        const Outcome o = coarsen(*mesh, 1., 1e6, 40, false);
-        CHECK(o.kept == 0);
-        CHECK(mesh->get_tets().size() == n_tets);
-        CHECK(mesh->m_coarsen_reject_amips.load() > 0);
-        CHECK(mesh->m_coarsen_reject_offset.load() == 0);
-    }
-    {
-        auto mesh = build("wmtk_offset_coarsen_offset");
-        const Outcome o = coarsen(*mesh, 1e12, 1e-12, 20, true);
-        INFO("kept " << o.kept);
-        CHECK(o.kept_with_offset_face == 0);
-        CHECK(o.guard_broken == 0);
-        CHECK(mesh->m_coarsen_reject_offset.load() > 0);
-    }
+        return std::make_pair(o, f);
+    };
+    const auto wide = run("wmtk_offset_coarsen_defaults", 0., 0.);
+    const auto tight = run("wmtk_offset_coarsen_tight", 1., 1e-12);
+    CHECK(wide.first == tight.first);
+    CHECK(wide.second == tight.second);
     // (d) The final coarsening alone (tetwild_pass(what, 0, true): no iterations, the loop's
     // setup put back afterwards), at wide bounds on a mesh as the loop leaves it: collapses are
     // kept, the cell count falls, the pass's state is undone; with coarsen_pass off it does

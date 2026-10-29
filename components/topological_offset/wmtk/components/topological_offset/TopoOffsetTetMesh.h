@@ -363,8 +363,8 @@ public:
     /// re-derived. Returns the max AMIPS after it. The final pass and
     /// optimize_construction_pass() both run it; `what` names it in the log. `coarsen` (the final
     /// pass's): mesh_improvement()'s closing coarsening pass (coarsen_mesh()) runs, if coarsen_pass
-    /// allows it, its collapses kept only where every reshaped cell stays under stop_energy and
-    /// every changed stencil point within front_conv (collapse_after_connectivity()); one
+    /// allows it, its collapses kept only where neither the max AMIPS over the changed cells nor
+    /// the offset face term over the changed faces rises (collapse_after_connectivity()); one
     /// [coarsening] line logs it. max_its 0: no iterations and no bare sweeps, the coarsening
     /// alone -- the "final coarsening" the loop runs when it converges at the final target with
     /// max AMIPS already under stop_energy (no final pass).
@@ -2652,17 +2652,30 @@ public:
 
     /// The engine's coarsening region test (the region's max quality_rel() may not rise) on a
     /// clamped scale: AMIPS over stop_energy, but never below 1, so every cell under stop_energy
-    /// reads the same 1. With collapse_after_connectivity()'s coarsening guard (every reshaped
-    /// cell under stop_energy) the region's max after a kept collapse is 1, never above its max
-    /// before: the threshold is the rule, not "no rise" (Spencer, 2026-10-28). In 3D only the
-    /// coarsening reads quality_rel().
+    /// reads the same 1. collapse_after_connectivity()'s coarsening guard (the max AMIPS over the
+    /// cells a collapse changes may not rise) decides; with no smoothing inside a collapse
+    /// (coarsen_local_smoothing_passes 0, the default) the region's max cannot rise after a
+    /// collapse the guard keeps, so this test never refuses one. In 3D only the coarsening reads
+    /// quality_rel().
     double quality_rel(const size_t tid) const override
     {
         return std::max(1., std::cbrt(cell_quality(tid)) / m_params.stop_energy);
     }
     /// The coarsening guard's refusals in the running TetWild pass (collapse_after_connectivity()):
-    /// a reshaped cell at or over stop_energy, a stencil point at or beyond front_conv.
+    /// the max AMIPS over the changed cells rose, the offset face term over the changed faces rose.
     std::atomic<size_t> m_coarsen_reject_amips{0}, m_coarsen_reject_offset{0};
+    /// The coarsening guard's before-half (collapse_before_vertex(), coarsen_mesh()'s collapses
+    /// only), read back by collapse_after_connectivity(): the largest get_quality() (AMIPS^3) over
+    /// v1's ring, the cells the collapse reshapes or removes; v2's cells outside that ring, which
+    /// it leaves as they are; and the live offset faces through v1 or v2 (sorted vertex triples,
+    /// sorted), every face the collapse can change.
+    struct CoarsenCollapse
+    {
+        double amips3_before = 0.;
+        std::vector<size_t> v2_only;
+        std::vector<std::array<size_t, 3>> faces_before;
+    };
+    mutable wmtk::threading::enumerable_thread_specific<CoarsenCollapse> m_coarsen_collapse;
 
     /**
      * @brief Put the optimization's frames on the run's single debug timeline (see

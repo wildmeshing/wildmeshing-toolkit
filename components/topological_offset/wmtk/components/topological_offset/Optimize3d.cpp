@@ -1348,6 +1348,31 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         }
         std::sort(cv.v2_only.begin(), cv.v2_only.end());
     }
+    // THE COARSENING GUARD's before-half (CoarsenCollapse; the rule in
+    // collapse_after_connectivity()): the max AMIPS over v1's ring and the offset faces through
+    // v1 or v2, as they are now.
+    if (m_coarsen_mode) {
+        CoarsenCollapse& cc = m_coarsen_collapse.local();
+        std::vector<size_t> ring1 = get_one_ring_tids_for_vertex(v1_id);
+        cc.amips3_before = 0.;
+        for (const size_t tid : ring1) {
+            cc.amips3_before = std::max(cc.amips3_before, get_quality(tuple_from_tet(tid)));
+        }
+        std::sort(ring1.begin(), ring1.end());
+        cc.v2_only.clear();
+        for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
+            if (!std::binary_search(ring1.begin(), ring1.end(), tid)) cc.v2_only.push_back(tid);
+        }
+        std::sort(cc.v2_only.begin(), cc.v2_only.end());
+        cc.faces_before.clear();
+        if (m_offset_potential) {
+            std::vector<std::array<size_t, 3>> f2;
+            live_offset_faces_at(v1_id, cc.faces_before);
+            live_offset_faces_at(v2_id, f2);
+            cc.faces_before.insert(cc.faces_before.end(), f2.begin(), f2.end());
+            wmtk::vector_unique(cc.faces_before);
+        }
+    }
     // Diagnostic: the flattest cell this collapse is about to reshape, read back by
     // record_flatness() in collapse_after_vertex().
     {
@@ -1393,9 +1418,9 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     // The front is always length-limited, whatever the pass says: it deliberately has no
     // envelope while it moves, so its sizing field is the only thing bounding its resolution.
     // Except in coarsening (the final TetWild pass, since 2026-10-28): the front is held in its
-    // envelope there, and collapse_after_connectivity() keeps a collapse only if every stencil
-    // point of the survivor's offset faces stays within front_conv. The bare coarsening sweeps
-    // (no length gate, no such guard) still leave the front alone.
+    // envelope there, and collapse_after_connectivity() keeps a collapse only if the offset face
+    // term over the faces it changes does not rise. The bare coarsening sweeps (no length gate,
+    // no such guard) still leave the front alone.
     if (!m_collapse_limit_length && !m_coarsen_mode && VE[v1_id].m_is_on_offset) {
         return collapse_reject(CollapseReject::app_front_unlimited);
     }
@@ -1480,42 +1505,53 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
         }
         if (cv.tie) ++m_plastic_tie_collapse;
     }
-    // THE COARSENING GUARD (the final TetWild pass's coarsen_mesh(); Spencer, 2026-10-28: "the
-    // collapse guard should be that both the max global amips and max offset error (across
-    // stencil points) stay below their thresholds"). Over what the collapse changed -- it moves
-    // no vertex, and coarsen_local_smoothing_passes is 0 by default, so the survivor's ring is
-    // every reshaped cell and its offset faces every changed face -- every cell's AMIPS stays
-    // under stop_energy and every stencil point (face_stencil()) of the offset faces stays within
-    // front_conv, (d - delta)^2 < front_conv^2 on the union field, none unmeasurable. Both strict.
-    // The engine's own coarsening test (the region's max quality_rel() may not rise) then reads
-    // the clamped quality_rel() override and never refuses what this keeps.
+    // THE COARSENING GUARD (coarsen_mesh()'s collapses; Spencer, 2026-10-28: "refuses any
+    // collapse that increases max amips in the before / after sets, or increases the offset error
+    // integral across the before / after faces on the front ... amips should reject if the max
+    // increases, offset error should reject if its sum increases"). A collapse moves no vertex,
+    // and coarsen_local_smoothing_passes is 0 by default, so what it changed is exact:
+    //   AMIPS: the max of get_quality() (AMIPS^3, the same order as AMIPS) over the cells it
+    //     reshaped -- the survivor's ring less v2's untouched cells -- may not exceed the max over
+    //     v1's old ring (the cells it reshaped or removed). A tie passes.
+    //   offset: the face term (surface_face_term(), W A_f sum_k mu_k r_k^2, the stencil's
+    //     integral of (d - delta)^2 up to the constant W) summed over the offset faces through
+    //     the survivor that were not there before may not exceed the sum over the faces through
+    //     v1 or v2 before that are gone now. A face in both lists has the same corners at the
+    //     same places and drops out of both sides. A tie passes; an unmeasurable face after
+    //     (+inf) refuses.
+    // No thresholds: a collapse may leave a cell over stop_energy or a stencil point beyond
+    // front_conv, provided neither quantity rises.
     if (m_coarsen_mode) {
-        const double stop = m_params.stop_energy;
+        const CoarsenCollapse& cc = m_coarsen_collapse.local();
+        double amips3_after = 0.;
         for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
-            const double a3 = get_quality(tuple_from_tet(tid));
-            if (!(a3 < MAX_ENERGY) || !(std::cbrt(a3) < stop)) {
-                ++m_coarsen_reject_amips;
-                return false;
-            }
+            if (std::binary_search(cc.v2_only.begin(), cc.v2_only.end(), tid)) continue;
+            amips3_after = std::max(amips3_after, get_quality(tuple_from_tet(tid)));
+        }
+        if (!(amips3_after <= cc.amips3_before)) {
+            ++m_coarsen_reject_amips;
+            return false;
         }
         if (m_offset_potential) {
-            const auto& stencil = face_stencil();
-            const double delta = m_offset_params.target_distance;
-            const double fc2 = m_offset_params.front_conv * m_offset_params.front_conv;
-            const auto& VA = std::as_const(m_vertex_attribute);
-            const bool over =
-                for_each_live_offset_face_at(v2_id, [&](const std::array<size_t, 3>& f, size_t) {
-                    const Vector3d& p0 = VA[f[0]].m_posf;
-                    const Vector3d& p1 = VA[f[1]].m_posf;
-                    const Vector3d& p2 = VA[f[2]].m_posf;
-                    for (const auto& w : stencil) {
-                        const double r = m_offset_potential->relative_residual(
-                            w[0] * p0 + w[1] * p1 + w[2] * p2);
-                        if (!std::isfinite(r) || !((delta * r) * (delta * r) < fc2)) return true;
-                    }
-                    return false;
-                });
-            if (over) {
+            std::vector<std::array<size_t, 3>> after;
+            live_offset_faces_at(v2_id, after);
+            wmtk::vector_unique(after);
+            const auto& before = cc.faces_before;
+            double s_before = 0., s_after = 0.;
+            size_t i = 0, j = 0;
+            while (i < before.size() || j < after.size()) {
+                if (j == after.size() || (i < before.size() && before[i] < after[j])) {
+                    s_before += surface_face_term(before[i][0], before[i][1], before[i][2]);
+                    ++i;
+                } else if (i == before.size() || after[j] < before[i]) {
+                    s_after += surface_face_term(after[j][0], after[j][1], after[j][2]);
+                    ++j;
+                } else {
+                    ++i;
+                    ++j;
+                }
+            }
+            if (!std::isfinite(s_after) || !(s_after <= s_before)) {
                 ++iter_cnt_collapse_offset_reject;
                 ++m_coarsen_reject_offset;
                 return false;
@@ -6307,6 +6343,7 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, cons
     m_params.coarsen_pass = coarsen && coarsen_was;
     m_coarsen_reject_amips = 0;
     m_coarsen_reject_offset = 0;
+    const double o_star_before = m_params.coarsen_pass ? stencil_max_sq_error() : 0.;
     if (max_its > 0) {
         mesh_improvement(max_its);
     } else {
@@ -6318,18 +6355,21 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, cons
     if (m_params.coarsen_pass) {
         const double o_star = stencil_max_sq_error();
         const double fc = m_offset_params.front_conv;
+        const auto bars = [fc](const double o) { return fc > 0. ? std::sqrt(o) / fc : 0.; };
         logger().info(
-            "\t[coarsening] {}: {} collapses accepted | refused {} for a cell at or over "
-            "stop_energy {}, {} for a stencil point at or beyond front_conv {:.6g} | after: max "
-            "stencil-point |d - delta| {:.4g} ({:.4g} bars)",
+            "\t[coarsening] {}: {} collapses accepted | refused {} for raising the max AMIPS of "
+            "the cells they change, {} for raising the offset face term of the faces they "
+            "change | max stencil-point |d - delta| at the pass's start {:.4g}, after {:.4g} "
+            "({:.4g} -> {:.4g} bars, front_conv {:.6g})",
             what,
             m_coarsen_stats.accepted,
             m_coarsen_reject_amips.load(),
-            m_params.stop_energy,
             m_coarsen_reject_offset.load(),
-            fc,
+            std::sqrt(o_star_before),
             std::sqrt(o_star),
-            fc > 0. ? std::sqrt(o_star) / fc : 0.);
+            bars(o_star_before),
+            bars(o_star),
+            fc);
     }
     m_params.coarsen_pass = coarsen_was;
     logger().info(
