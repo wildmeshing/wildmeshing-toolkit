@@ -1047,6 +1047,137 @@ TEST_CASE("volume-read-tet-msh", "[volume_map]")
     }
 }
 
+namespace {
+
+/// The tets of a collapse of mesh vertex 10 into 11, as TetMesh captures them: the stars of
+/// both before, of 11 after. Vertices 10..15 at the five points and one more; 12 is on the
+/// surface as surface vertex 7. `base` is added to the mesh ids.
+std::pair<history::VolumeCapture, history::VolumeCapture> collapse_captures(const size_t base = 0)
+{
+    const auto id = [base](size_t v) { return v + base; };
+    history::VolumeCapture b, a;
+    b.tets = {
+        {{id(10), id(11), id(12), id(13)}},
+        {{id(10), id(12), id(14), id(13)}},
+        {{id(11), id(12), id(13), id(15)}}};
+    b.tags = {{1}, {1, 3}, {}};
+    b.vertices = {id(10), id(11), id(12), id(13), id(14), id(15)};
+    b.positions = {kFive[0], kFive[1], kFive[2], kFive[3], kFive[4], {2, 2, 2}};
+    b.surface = {
+        history::kNoVertex,
+        history::kNoVertex,
+        7,
+        history::kNoVertex,
+        history::kNoVertex,
+        history::kNoVertex};
+    a.tets = {{{id(11), id(12), id(14), id(13)}}, {{id(11), id(12), id(13), id(15)}}};
+    a.tags = {{3, 1}, {}};
+    a.vertices = {id(11), id(12), id(13), id(14), id(15)};
+    a.positions = {kFive[1], kFive[2], kFive[3], kFive[4], {2, 2, 2}};
+    a.surface = {history::kNoVertex, 8, history::kNoVertex, history::kNoVertex, history::kNoVertex};
+    return {b, a};
+}
+
+} // namespace
+
+TEST_CASE("volume-recorder", "[volume_map]")
+{
+    const auto [before, after] = collapse_captures();
+    SECTION("a commit, its tets after derived")
+    {
+        history::VolumeRecorder r;
+        r.commit(history::VolumeOp::collapse, {{3, 5}}, {10, 11}, before, after);
+        r.commit(history::VolumeOp::collapse, {{6, 6}}, {10, 11}, before, after); // no edit
+        REQUIRE(r.size() == 1);
+        const history::VolumeHistory h = r.history();
+        REQUIRE(h.edits.size() == 1);
+        const history::VolumeEdit& e = h.edits[0];
+        CHECK(e.first_edit == 3);
+        CHECK(e.n_edits == 2);
+        CHECK(e.positions == before.positions);
+        CHECK(e.surface_before == before.surface);
+        CHECK(e.surface_after[2] == 8);
+        CHECK(e.surface_after[0] == history::kNoVertex); // gone
+        CHECK(e.op_vertices == std::vector<uint32_t>{0, 1});
+        // regions by tag set, in the order they come; the tets after: the star of 11
+        CHECK(h.regions == std::vector<std::vector<int64_t>>{{1}, {1, 3}, {}});
+        CHECK(e.regions == std::vector<uint32_t>{0, 1, 2});
+        CHECK(e.removed == std::vector<uint32_t>{0, 1});
+        std::vector<uint32_t> ra;
+        const auto ta = e.tets_after(&ra);
+        REQUIRE(ta.size() == 2);
+        CHECK(ra == std::vector<uint32_t>{2, 1});
+
+        // The same tets as a swap are not derivable: removed and added are written out, and
+        // read back the same.
+        history::VolumeRecorder s;
+        s.commit(history::VolumeOp::swap_32, {{3, 5}}, {}, before, after);
+        CHECK(s.bytes() > r.bytes());
+        std::vector<uint32_t> sa;
+        CHECK(s.history().edits[0].tets_after(&sa) == ta);
+        CHECK(sa == ra);
+    }
+    SECTION("ids that last through a renumbering")
+    {
+        history::VolumeRecorder r;
+        r.commit(history::VolumeOp::collapse, {{0, 1}}, {10, 11}, before, after);
+        const size_t one = r.bytes();
+        // The mesh renumbers: v -> v + 100. The same vertices, where they were: the second edit
+        // has the first's ids, and writes no position again.
+        std::vector<size_t> old_to_new(16, size_t(-1));
+        for (size_t v = 10; v < 16; ++v) old_to_new[v] = v + 100;
+        r.renumber(old_to_new);
+        const auto [b2, a2] = collapse_captures(100);
+        r.commit(history::VolumeOp::collapse, {{1, 2}}, {110, 111}, b2, a2);
+        const auto h = r.history();
+        REQUIRE(h.edits.size() == 2);
+        CHECK(h.edits[1].vertices == h.edits[0].vertices);
+        CHECK(r.bytes() - one <= one - 6 * 24); // six positions of 24 bytes fewer
+        // a vertex the renumbering drops is a new one when it comes back
+        std::vector<size_t> drop(116, size_t(-1));
+        for (size_t v = 111; v < 116; ++v) drop[v] = v - 100;
+        r.renumber(drop);
+        const auto [b3, a3] = collapse_captures();
+        r.commit(history::VolumeOp::collapse, {{2, 3}}, {10, 11}, b3, a3);
+        const auto g = r.history();
+        CHECK(g.edits[2].vertices[0] != g.edits[0].vertices[0]);
+        CHECK(g.edits[2].vertices[1] == g.edits[0].vertices[1]);
+    }
+    SECTION("commits from several threads")
+    {
+        // Each thread its own vertices and surface edits; read back, the edits are in surface
+        // edit order, each as committed.
+        history::VolumeRecorder r;
+        const int n_threads = 8, per_thread = 50;
+        std::vector<std::thread> threads;
+        for (int t = 0; t < n_threads; ++t) {
+            threads.emplace_back([&r, t]() {
+                for (int i = 0; i < per_thread; ++i) {
+                    const size_t first = size_t(i * n_threads + t);
+                    auto [b, a] = collapse_captures(size_t(first) * 16);
+                    for (auto& x : b.positions) x[0] += double(first);
+                    for (auto& x : a.positions) x[0] += double(first);
+                    r.commit(
+                        history::VolumeOp::collapse,
+                        {{first, first + 1}},
+                        {first * 16 + 10, first * 16 + 11},
+                        b,
+                        a);
+                }
+            });
+        }
+        for (auto& t : threads) t.join();
+        const auto h = r.history();
+        REQUIRE(h.edits.size() == size_t(n_threads * per_thread));
+        for (size_t k = 0; k < h.edits.size(); ++k) {
+            CHECK(h.edits[k].first_edit == k);
+            CHECK(h.edits[k].positions[5] == Eigen::Vector3d(2. + double(k), 2, 2));
+            CHECK(h.edits[k].removed.size() == 2);
+        }
+        CHECK(h.regions.size() == 3);
+    }
+}
+
 TEST_CASE("volume-chebyshev", "[volume_map]")
 {
     // The unit cube's faces: the farthest point from all of them is its centre, at 1/2.

@@ -187,12 +187,13 @@ const char* malformed(const VolumeEdit& e, const size_t n_regions)
 }
 
 /// Encodes e, its vertices by `ids` (one per vertex), the ids of a file: numbered densely, in
-/// the order they first appear (a reader checks it).
+/// the order they first appear (a reader checks it). `derived`: derivable(e).
 void encode(
     BufferWriter& w,
     const VolumeEdit& e,
     const std::vector<uint64_t>& ids,
-    std::vector<Known>& known)
+    std::vector<Known>& known,
+    const bool derived)
 {
     w.byte(uint8_t(e.op));
     w.varint(e.first_edit);
@@ -231,7 +232,6 @@ void encode(
     }
     w.varint(e.op_vertices.size());
     for (const uint32_t v : e.op_vertices) w.varint(v);
-    const bool derived = derivable(e);
     w.byte(derived ? 1 : 0);
     if (derived) return;
     w.varint(e.removed.size());
@@ -465,7 +465,7 @@ void VolumeHistory::save(const std::string& path) const
             if (fresh) ++next;
             ids.push_back(it->second);
         }
-        encode(w, e, ids, known);
+        encode(w, e, ids, known, derivable(e));
     }
     detail::Writer out(path);
     write_header(out, surface_edit_offset, surface, regions, tag_names, edits.size());
@@ -523,14 +523,11 @@ VolumeRecorder::VolumeRecorder()
 
 VolumeRecorder::~VolumeRecorder() = default;
 
-uint32_t VolumeRecorder::region_of(const std::vector<int64_t>& tags)
+uint32_t VolumeRecorder::region_of(const std::vector<int64_t>& t)
 {
-    std::vector<int64_t> t = tags;
-    std::sort(t.begin(), t.end());
-    t.erase(std::unique(t.begin(), t.end()), t.end());
     const auto it = std::find(m_regions.begin(), m_regions.end(), t);
     if (it != m_regions.end()) return uint32_t(it - m_regions.begin());
-    m_regions.push_back(std::move(t));
+    m_regions.push_back(t);
     return uint32_t(m_regions.size() - 1);
 }
 
@@ -577,24 +574,40 @@ void VolumeRecorder::commit(
     for (const auto& t : before.tets) keys_before.insert(key_of(t));
     for (const auto& t : after.tets) keys_after.insert(key_of(t));
     for (const size_t v : op_vertices) e.op_vertices.push_back(local.at(v));
+    // The edit's regions, numbered here, the recorder's only under the lock; and whether its
+    // tets after can be derived, which the numbering does not change.
+    std::vector<std::vector<int64_t>> tag_sets;
+    const auto local_region = [&tag_sets](std::vector<int64_t> tags) {
+        std::sort(tags.begin(), tags.end());
+        tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+        const auto it = std::find(tag_sets.begin(), tag_sets.end(), tags);
+        if (it != tag_sets.end()) return uint32_t(it - tag_sets.begin());
+        tag_sets.push_back(std::move(tags));
+        return uint32_t(tag_sets.size() - 1);
+    };
+    for (size_t k = 0; k < before.tets.size(); ++k) {
+        if (!keys_after.count(key_of(before.tets[k]))) e.removed.push_back(uint32_t(k));
+        e.tets.push_back(to_local(before.tets[k]));
+        e.regions.push_back(local_region(before.tags[k]));
+    }
+    for (size_t k = 0; k < after.tets.size(); ++k) {
+        if (keys_before.count(key_of(after.tets[k]))) continue;
+        e.added.push_back(to_local(after.tets[k]));
+        e.added_regions.push_back(local_region(after.tags[k]));
+    }
+    const bool derived = derivable(e);
     std::lock_guard<std::mutex> lock(m_mutex);
     for (const size_t v : mesh_vertex) {
         if (v >= m_id_of.size()) m_id_of.resize(v + 1, kNoVertex);
         if (m_id_of[v] == kNoVertex) m_id_of[v] = m_next_id++;
         e.vertices.push_back(m_id_of[v]);
     }
-    for (size_t k = 0; k < before.tets.size(); ++k) {
-        if (!keys_after.count(key_of(before.tets[k]))) e.removed.push_back(uint32_t(k));
-        e.tets.push_back(to_local(before.tets[k]));
-        e.regions.push_back(region_of(before.tags[k]));
-    }
-    for (size_t k = 0; k < after.tets.size(); ++k) {
-        if (keys_before.count(key_of(after.tets[k]))) continue;
-        e.added.push_back(to_local(after.tets[k]));
-        e.added_regions.push_back(region_of(after.tags[k]));
-    }
+    std::vector<uint32_t> region(tag_sets.size());
+    for (size_t r = 0; r < tag_sets.size(); ++r) region[r] = region_of(tag_sets[r]);
+    for (uint32_t& r : e.regions) r = region[r];
+    for (uint32_t& r : e.added_regions) r = region[r];
     BufferWriter w(m_bytes);
-    encode(w, e, e.vertices, m_encoder->known);
+    encode(w, e, e.vertices, m_encoder->known, derived);
     ++m_count;
 }
 

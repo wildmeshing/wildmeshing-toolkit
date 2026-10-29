@@ -157,6 +157,7 @@ public:
     size_t bytes() const;
 
 private:
+    /// The region of a set of tags, sorted, each once; a new one if it is new. Under the lock.
     uint32_t region_of(const std::vector<int64_t>& tags);
 
     mutable std::mutex m_mutex;
