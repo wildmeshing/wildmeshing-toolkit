@@ -11,7 +11,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <cstdlib>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
@@ -274,9 +274,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 h.vertices.push_back(read.V.row(v).transpose());
             }
             h.vertex_alive.assign(h.vertices.size(), 1);
-            for (Eigen::Index f = 0; f < read.F.rows(); ++f) {
+            for (Eigen::Index f = 0; f < read.cells.rows(); ++f) {
                 h.faces.push_back(
-                    {{uint64_t(read.F(f, 0)), uint64_t(read.F(f, 1)), uint64_t(read.F(f, 2))}});
+                    {{uint64_t(read.cells(f, 0)),
+                      uint64_t(read.cells(f, 1)),
+                      uint64_t(read.cells(f, 2))}});
             }
             h.face_alive.assign(h.faces.size(), 1);
             history::Edit weld{history::EditKind::relabel, {}, {}, {}};

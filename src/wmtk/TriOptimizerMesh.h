@@ -7,6 +7,7 @@
 #include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
@@ -18,6 +19,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -748,6 +750,38 @@ protected:
 
 public:
     bool is_edge_on_surface(const Tuple& loc) const;
+    /// For a curve history (TriMesh::start_curve_history): the tracked curves are the surface
+    /// edges, and their feature points the vertices that carry one (enable_feature_point_tracking).
+    bool is_tracked_edge(const Tuple& e) const override { return is_edge_on_surface(e); }
+    std::vector<size_t> tracked_feature_points() const override;
+
+    /// The input segments a tracked edge lies on, by the edge's vertices (smaller first): what an
+    /// insertion gives, for a curve history to start from the input.
+    using CurveSources = std::map<std::array<size_t, 2>, std::vector<uint64_t>>;
+    /// Start recording the tracked curves (TriMesh::start_curve_history), at m_posf, with
+    /// `metadata` (the application's parameters, say) saved along, and where each tracked edge
+    /// lies on the input.
+    void record_curve_history(const std::string& metadata, const CurveSources& sources = {});
+    /**
+     * @brief Check the recorded curves against the tracked edges, stop recording, log what the
+     * history holds and return it, for the application to save (io::ComponentIO::save_history).
+     * None if not recording.
+     *
+     * With `input`, the history of the input the mesh was made from (read, welded, simplified):
+     * the history returned is that, then the insertion -- each tracked edge on the input segments
+     * it lies on, from record_curve_history's sources -- then the recorded one, so it maps the
+     * input files to the output. The output names a point on the curves by two of its vertices,
+     * numbered as they are now: the mesh must be written as it is here, consolidated -- which
+     * this checks, throwing otherwise.
+     */
+    std::optional<history::CurveHistory> finish_curve_history(
+        const history::CurveHistory* input = nullptr);
+
+private:
+    std::shared_ptr<history::TrackedCurveRecorder> m_recorded_curves;
+    std::vector<std::vector<uint64_t>> m_recorded_curve_sources;
+
+public:
     bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;
     bool is_edge_on_bbox(const Tuple& loc) const;
     bool is_edge_on_bbox(const std::array<size_t, 2>& vids) const;

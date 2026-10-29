@@ -1,7 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/mesh_io.hpp>
+#include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <algorithm>
@@ -228,9 +230,67 @@ TEST_CASE("read_triangle_mesh_reads_what_write_mesh_writes", "[io][read_triangle
     wmtk::io::ReadProvenance read;
     wmtk::io::read_triangle_mesh({path.string()}, V, F, -1, -1, nullptr, &read);
     CHECK(read.V.rows() == 5);
-    REQUIRE(read.F.rows() == 2);
-    CHECK(read.F.row(0) == Eigen::RowVector3i(1, 3, 2));
-    CHECK(read.F.row(1) == Eigen::RowVector3i(0, 1, 2));
+    REQUIRE(read.cells.rows() == 2);
+    CHECK(read.cells.row(0) == Eigen::RowVector3i(1, 3, 2));
+    CHECK(read.cells.row(1) == Eigen::RowVector3i(0, 1, 2));
     CHECK(V.rows() == 4);
+    fs::remove_all(dir);
+}
+
+TEST_CASE("read_provenance_of_triangles_and_segments", "[io][read_triangle_mesh]")
+{
+    // One provenance for both kinds of mesh, filled by the cleaning: the cells as given and what
+    // became of each vertex and cell, the same from a file and from memory.
+    const fs::path dir = fs::temp_directory_path() /
+                         ("wmtk_read_provenance_" + std::to_string(std::random_device{}()));
+    fs::create_directories(dir);
+    const auto same = [](const wmtk::io::ReadProvenance& a, const wmtk::io::ReadProvenance& b) {
+        CHECK(a.V == b.V);
+        CHECK(a.cells == b.cells);
+        CHECK(a.vertex_map == b.vertex_map);
+        CHECK(a.cell_map == b.cell_map);
+    };
+
+    // Triangles: vertex 3 a copy of vertex 1, so face 1 is left with a repeated corner and goes.
+    wmtk::MeshData tri;
+    tri.V.resize(5, 3);
+    tri.V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0;
+    tri.cells[wmtk::CellType::Triangle].connectivity.resize(3, 3);
+    tri.cells[wmtk::CellType::Triangle].connectivity << 0, 1, 2, 1, 3, 2, 1, 4, 2;
+    wmtk::io::write_mesh(dir / "tri.msh", tri);
+    wmtk::io::ReadProvenance file, memory;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    wmtk::io::read_triangle_mesh({(dir / "tri.msh").string()}, V, F, -1, 0, nullptr, &file);
+    CHECK(file.cells.rows() == 3);
+    REQUIRE(file.vertex_map.size() == 5);
+    CHECK(file.vertex_map[3] == file.vertex_map[1]);
+    for (Eigen::Index v = 0; v < 5; ++v) CHECK(V.row(file.vertex_map[v]) == tri.V.row(v));
+    CHECK(file.cell_map == std::vector<int>{0, -1, 1});
+    REQUIRE(F.rows() == 2);
+    const wmtk::MeshMap meshes{{"tri", tri}};
+    wmtk::io::ComponentIO io(&meshes);
+    io.triangles({"tri"}, V, F, -1, 0, nullptr, &memory);
+    same(file, memory);
+
+    // Segments: a polyline back over its own first segment, which becomes that one, and a
+    // vertex 2 that is a copy of vertex 0, so the last segment is left with one vertex.
+    {
+        std::ofstream o(dir / "curve.obj");
+        o << "v 0 0 0\nv 1 0 0\nv 0 0 0\nv 2 0 0\nl 1 2 3\nl 1 4\nl 1 3\n";
+    }
+    wmtk::MatrixXd Ve;
+    wmtk::MatrixXi E;
+    wmtk::io::read_edge_mesh((dir / "curve.obj").string(), Ve, E, -1, 0, &file);
+    CHECK(file.cells.rows() == 4);
+    CHECK(file.vertex_map == std::vector<int>{0, 1, 0, 2});
+    CHECK(file.cell_map == std::vector<int>{0, 0, 1, -1});
+    wmtk::MeshData curve;
+    curve.V = file.V;
+    curve.cells[wmtk::CellType::Edge].connectivity = file.cells.cast<int64_t>();
+    const wmtk::MeshMap curves{{"curve", curve}};
+    wmtk::io::ComponentIO curve_io(&curves);
+    curve_io.edges("curve", Ve, E, -1, 0, &memory);
+    same(file, memory);
     fs::remove_all(dir);
 }

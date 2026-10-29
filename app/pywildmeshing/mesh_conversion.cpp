@@ -4,7 +4,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
 #include <pybind11_json/pybind11_json.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <cstring>
@@ -26,11 +26,6 @@ const std::map<std::string, CellType> cell_types = {
     {"prism", CellType::Prism},
     {"pyramid", CellType::Pyramid}};
 
-py::dict dictionary(py::handle value, const std::string& name)
-{
-    if (!py::isinstance<py::dict>(value)) throw py::type_error(name + " must be a dictionary");
-    return py::reinterpret_borrow<py::dict>(value);
-}
 void check_keys(const py::dict& value, const std::set<std::string>& allowed)
 {
     for (auto item : value) {
@@ -39,37 +34,33 @@ void check_keys(const py::dict& value, const std::set<std::string>& allowed)
         if (!allowed.count(key)) throw py::value_error("Unknown mesh data field: " + key);
     }
 }
+} // namespace
+
+py::dict dictionary(py::handle value, const std::string& name)
+{
+    if (!py::isinstance<py::dict>(value)) throw py::type_error(name + " must be a dictionary");
+    return py::reinterpret_borrow<py::dict>(value);
+}
 py::array array(py::handle value)
 {
     if (!py::isinstance<py::array>(value)) throw py::type_error("Mesh arrays must be NumPy arrays");
     return py::reinterpret_borrow<py::array>(value);
 }
-template <typename T>
-DataMatrix<T> matrix(const py::array& value, bool allow_vector = false)
-{
-    if (value.ndim() != 2 && !(allow_vector && value.ndim() == 1))
-        throw py::value_error("Mesh arrays must have two dimensions (attributes may be vectors)");
-    const auto contiguous =
-        py::array_t<T, py::array::c_style | py::array::forcecast>::ensure(value);
-    if (!contiguous) throw py::type_error("Cannot convert mesh array");
-    DataMatrix<T> result(value.shape(0), value.ndim() == 1 ? 1 : value.shape(1));
-    if (result.size())
-        std::memcpy(result.data(), contiguous.data(), size_t(result.size()) * sizeof(T));
-    return result;
-}
-DataMatrix<int64_t> integers(const py::array& value)
+DataMatrix<int64_t> integers(const py::array& value, const bool allow_vector)
 {
     const auto dtype = value.dtype();
     if ((dtype.kind() != 'i' && dtype.kind() != 'u') || dtype.itemsize() > 8)
         throw py::type_error("Connectivity must have an integer dtype");
     if (dtype.kind() == 'u' && dtype.itemsize() == 8) {
-        const auto values = matrix<uint64_t>(value);
+        const auto values = matrix<uint64_t>(value, allow_vector);
         for (Eigen::Index i = 0; i < values.size(); ++i)
             if (values.data()[i] > uint64_t(std::numeric_limits<int64_t>::max()))
                 throw py::value_error("Integer mesh array exceeds Int64 range");
     }
-    return matrix<int64_t>(value);
+    return matrix<int64_t>(value, allow_vector);
 }
+
+namespace {
 MeshAttributes attributes(const py::dict& input)
 {
     MeshAttributes result;
@@ -99,6 +90,8 @@ MeshAttributes attributes(const py::dict& input)
     }
     return result;
 }
+} // namespace
+
 MeshData mesh_data(const py::dict& input)
 {
     check_keys(input, {"V", "cells", "vertex_attributes"});
@@ -130,14 +123,7 @@ MeshData mesh_data(const py::dict& input)
     }
     return result;
 }
-template <typename T>
-py::array numpy(const DataMatrix<T>& matrix)
-{
-    py::array_t<T> result({matrix.rows(), matrix.cols()});
-    if (matrix.size())
-        std::memcpy(result.mutable_data(), matrix.data(), size_t(matrix.size()) * sizeof(T));
-    return result;
-}
+namespace {
 py::dict attributes(const MeshAttributes& input)
 {
     py::dict result;
@@ -148,6 +134,8 @@ py::dict attributes(const MeshAttributes& input)
             "labels"_a = attribute.labels);
     return result;
 }
+} // namespace
+
 py::dict mesh_data(const MeshData& input)
 {
     py::dict cells;
@@ -163,7 +151,6 @@ py::dict mesh_data(const MeshData& input)
         "vertex_attributes"_a = attributes(input.vertex_attributes),
         "cells"_a = cells);
 }
-} // namespace
 
 nlohmann::json options(const py::handle& value)
 {
@@ -274,8 +261,8 @@ void bind_mesh_io(py::module_& module)
             return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         },
         "path"_a,
-        "Read a surface history file (a component's history_output) as the bytes a memory call "
-        "returns in its report's 'history' and takes as 'history'.");
+        "Read a history file (a component's history_output, of a surface or of curves) as the "
+        "bytes a memory call returns in its report's 'history' and takes as 'history'.");
     module.def(
         "write_history",
         [](const std::filesystem::path& path, const py::bytes& history) {
@@ -286,7 +273,7 @@ void bind_mesh_io(py::module_& module)
         },
         "path"_a,
         "history"_a,
-        "Save the bytes of a surface history (a memory call's report['history']) as the file the "
-        "file route writes.");
+        "Save the bytes of a history (a memory call's report['history']) as the file the file "
+        "route writes.");
 }
 } // namespace wmtk::python

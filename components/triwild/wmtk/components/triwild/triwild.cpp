@@ -12,6 +12,8 @@
 #include <wmtk/utils/SimplifySegments.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <wmtk/history/History.hpp>
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/EmbedSegments.hpp>
 #include <wmtk/utils/EnvelopeBudget.hpp>
@@ -234,10 +236,19 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     component_io.prepare(json_params, "triwild");
     using wmtk::utils::resolve_path;
 
+    // Recording anchors junctions unless allow_junction_cleanup is given: a junction the
+    // operations slide along a curve drags the curve map with it, stretched by large factors.
+    // Without preserve_feature_points nothing is anchored, junctions or not, so nothing changes.
+    const bool junction_cleanup_given = json_params.contains("allow_junction_cleanup");
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
         jse::embed::wmtk_triwild_spec::triwild_spec::spec(),
         false);
+    if (!junction_cleanup_given && json_params["preserve_feature_points"] &&
+        !json_params["history_output"].get<std::string>().empty()) {
+        json_params["allow_junction_cleanup"] = false;
+        logger().info("history_output: junctions anchored (allow_junction_cleanup false)");
+    }
     const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     triwild::Parameters params(json_params);
@@ -248,6 +259,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     int max_its = json_params["max_iterations"];
 
     const std::string filter_option = json_params["filter"];
+
+    // Recording the tracked curves: from the input files as read, through the weld, the
+    // simplification and the arrangement, to the output.
+    const std::string history_output = json_params["history_output"];
+    const bool record_history = !history_output.empty();
+    io::ReadProvenance read; // the files as read, then where they went
 
     // Read the inputs. Vs/Es keep them per input, as read, so the winding-number pass below
     // does not have to parse every file a second time; V_in/E_in is their union, which is
@@ -269,7 +286,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         E_in,
         Vs,
         Es,
-        component_io.memory() ? &component_io : nullptr);
+        component_io.memory() ? &component_io : nullptr,
+        record_history ? &read : nullptr);
     // Which input each segment of the union came from (read_input_curves concatenates them in
     // order), carried through the simplification and the arrangement so each tracked segment
     // is held to its own inputs' envelopes. max_inputs inputs at most: see
@@ -299,7 +317,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         for (const std::string& path : point_paths) {
             MatrixXd Vp;
             MatrixXi Ep;
-            component_io.edges(path, Vp, Ep, remove_duplicate_eps);
+            io::ReadProvenance read_points;
+            component_io.edges(
+                path,
+                Vp,
+                Ep,
+                remove_duplicate_eps,
+                -1,
+                record_history ? &read_points : nullptr);
             if (Ep.rows() > 0) {
                 logger().warn(
                     "input_points file {} has {} edges; only its {} vertices are used",
@@ -311,6 +336,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             const int base = V_in.rows();
             V_in.conservativeResize(base + Vp.rows(), 2);
             V_in.block(base, 0, Vp.rows(), 2) = Vp.block(0, 0, Vp.rows(), 2);
+            if (record_history) {
+                // The points after the curves, as the files hold them; their edges are not input.
+                const Eigen::Index raw = read.V.rows();
+                read.V.conservativeResize(raw + read_points.V.rows(), 2);
+                read.V.bottomRows(read_points.V.rows()) = read_points.V.leftCols(2);
+                for (const int v : read_points.vertex_map) {
+                    read.vertex_map.push_back(v < 0 ? -1 : base + v);
+                }
+            }
         }
     }
 
@@ -399,6 +433,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     MatrixXd V_simp = V_in;
     MatrixXi E_simp = E_in;
     std::vector<int> E_simp_input = E_in_input;
+    std::vector<history::Edit> collapses;
+    std::vector<int> surviving_vertices;
     const bool skip_simplify = json_params["skip_simplify"];
     if (skip_simplify) {
         logger().info("skip simplification");
@@ -411,7 +447,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             E_simp,
             simplify_envelope,
             simplify_use_link_condition,
-            &surviving);
+            &surviving,
+            record_history ? &collapses : nullptr,
+            record_history ? &surviving_vertices : nullptr);
         E_simp_input.resize(surviving.size());
         for (size_t i = 0; i < surviving.size(); ++i) E_simp_input[i] = E_in_input[surviving[i]];
         logger().info(
@@ -452,7 +490,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // The input's direction on each constraint edge, so the tracked curves can be oriented as
     // the input was (filter "tracked"). See SurfaceTagAttributes::m_orientation.
     std::vector<int> E_orientation;
-    std::vector<std::vector<int>> E_sources; // with several inputs only
+    // The simplified segments each of E lies on: for the input sets, with several inputs, and
+    // for the history.
+    std::vector<std::vector<int>> E_sources;
     wmtk::utils::embed_segments(
         V_simp,
         E_simp,
@@ -460,7 +500,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         V_rational,
         F,
         E,
-        per_input ? &E_sources : nullptr,
+        per_input || record_history ? &E_sources : nullptr,
         &E_orientation,
         free_points.empty() ? nullptr : &point_map,
         per_input ? &E_simp_input : nullptr); // the orientation repair keeps to one input
@@ -482,7 +522,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             "input sets: {} constraint edges, {} with several inputs",
             E.rows(),
             n_several);
-        std::vector<std::vector<int>>().swap(E_sources);
+        // Done with, unless the history keys the tracked edges by them (below).
+        if (!record_history) std::vector<std::vector<int>>().swap(E_sources);
     }
 
     // Find each free point's vertex in the arrangement. By POSITION, not by index: the
@@ -609,6 +650,26 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         free_point_vids,
         per_input ? &E_env_input : nullptr,
         per_input ? &E_input_set : nullptr);
+    history::CurveHistory input_history;
+    if (record_history) {
+        input_history = history::curves_from_input(
+            read,
+            V_in,
+            E_in,
+            collapses,
+            V_simp,
+            E_simp,
+            surviving_vertices);
+        // The mesh's vertices are the arrangement's rows, so E names its tracked edges.
+        TriWildMesh::CurveSources sources;
+        for (Eigen::Index i = 0; i < E.rows(); ++i) {
+            const size_t a = size_t(std::min(E(i, 0), E(i, 1)));
+            const size_t b = size_t(std::max(E(i, 0), E(i, 1)));
+            auto& s = sources[{{a, b}}];
+            for (const int e : E_sources[i]) s.push_back(uint64_t(e));
+        }
+        mesh.record_curve_history(component_io.history_metadata(json_params), sources);
+    }
     // The arrangement now lives in `mesh`. These are function locals, so without this they --
     // the exact coordinates above all -- would be held through the optimization, which is where
     // the run peaks.
@@ -618,6 +679,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     std::vector<Vector2r>().swap(V_rational);
     std::vector<int>().swap(E_orientation);
     std::vector<InputSet>().swap(E_input_set);
+    std::vector<std::vector<int>>().swap(E_sources);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.
@@ -1000,6 +1062,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!component_io.memory())
             io::write_mesh(output_path + ".msh", component_io.result.first.at("mesh"));
     }
+    // After the output, whose vertex rows -- the mesh's vertices in order, consolidated -- the
+    // history's output ids are.
+    if (const auto h = mesh.finish_curve_history(&input_history)) {
+        component_io.save_history(*h, history_output);
+    }
     logger().info("======= finish =========");
 }
 
@@ -1012,7 +1079,7 @@ ComponentResult triwild(nlohmann::json json_params, const MeshMap& meshes)
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 
 } // namespace wmtk::components::triwild

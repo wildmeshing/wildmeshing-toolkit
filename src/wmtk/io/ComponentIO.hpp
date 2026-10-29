@@ -3,7 +3,7 @@
 #include <set>
 #include <wmtk/MeshData.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -24,10 +24,12 @@ public:
         , inputs(meshes)
     {}
     bool memory() const { return inputs != nullptr; }
-    // A history the component recorded (wmtk/history; its history_output). The file route saves
-    // it to `path`. The memory route, which writes no file, returns the bytes of that file in
-    // the report, as "history" -- a JSON binary value, bytes in Python (take_result()).
-    void save_history(const history::SurfaceHistory& h, const std::string& path)
+    // A history the component recorded (wmtk/history; its history_output), of a surface or of
+    // curves. The file route saves it to `path`. The memory route, which writes no file, returns
+    // the bytes of that file in the report, as "history" -- a JSON binary value, bytes in Python
+    // (take_result()).
+    template <int N>
+    void save_history(const history::History<N>& h, const std::string& path)
     {
         if (!memory()) {
             h.save(path);
@@ -125,7 +127,8 @@ public:
     }
     // Like read_triangle_mesh(paths): concatenate the raw inputs, then clean them once, so
     // vertex merging sees the same vertices (isolated ones included) in the same order.
-    // `read`, as there: the inputs as given, concatenated, and where their vertices went.
+    // `read`, as there: the inputs as given, concatenated, and where their vertices and faces
+    // went.
     void triangles(
         const std::vector<std::string>& names,
         MatrixXd& V,
@@ -154,18 +157,21 @@ public:
             F.bottomRows(f.rows()) = f;
             if (provenance) provenance->resize(F.rows(), int(i));
         }
-        if (read) {
-            read->V = V;
-            read->F = F;
-        }
-        clean_triangle_mesh(V, F, rel, abs, provenance, read ? &read->vertex_map : nullptr);
+        clean_triangle_mesh(V, F, rel, abs, provenance, read);
         if (!F.rows()) throw std::runtime_error("No faces after cleaning");
     }
-    void edges(const std::string& name, MatrixXd& V, MatrixXi& E, double rel = -1, double abs = -1)
-        const
+    // `read`, as read_edge_mesh's provenance: the input as given, and where its vertices and
+    // segments went -- filled by the cleaning, as for triangles.
+    void edges(
+        const std::string& name,
+        MatrixXd& V,
+        MatrixXi& E,
+        double rel = -1,
+        double abs = -1,
+        ReadProvenance* read = nullptr) const
     {
         if (!memory()) {
-            read_edge_mesh(name, V, E, rel, abs);
+            read_edge_mesh(name, V, E, rel, abs, read);
             return;
         }
         const auto& data = mesh(name);
@@ -179,7 +185,7 @@ public:
         E.resize(0, 2);
         auto it = data.cells.find(CellType::Edge);
         if (it != data.cells.end()) E = indices(it->second.connectivity);
-        clean_edge_mesh(V, E, rel, abs);
+        clean_edge_mesh(V, E, rel, abs, read);
     }
     static MatrixXi indices(const DataMatrix<int64_t>& c)
     {

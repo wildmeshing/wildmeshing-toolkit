@@ -3,9 +3,8 @@
 // point on the output is named by three vertices of the tet mesh and barycentric coordinates.
 
 #include <wmtk/components/simwild/simwild.hpp>
-#include <wmtk/components/surface_map/Tracking.hpp>
-#include <wmtk/components/surface_map/surface_map.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
@@ -21,10 +20,10 @@
 namespace fs = std::filesystem;
 using namespace wmtk;
 using namespace wmtk::components;
-using surface_map::InputPoint;
-using surface_map::kNoId;
-using surface_map::OutputPoint;
-using surface_map::Tracking;
+using tracking::InputPoint;
+using tracking::kNoId;
+using tracking::OutputPoint;
+using tracking::Tracking;
 
 // A whole run, too slow for the Debug CI jobs: Release builds only.
 #ifdef NDEBUG
@@ -179,7 +178,7 @@ TEST_CASE("tracking-example-simwild-tet-input", "[simwild][tracking]")
         }
         pts.push_back(p);
     }
-    surface_map::MapWarnings warnings;
+    tracking::MapWarnings warnings;
     const std::vector<OutputPoint> there = tracking.to_output(pts, &warnings);
     const std::vector<InputPoint> back = tracking.to_input(there, &warnings);
     CHECK(warnings.total() == 0);
@@ -214,8 +213,8 @@ TEST_CASE("tracking-example-simwild-tet-input", "[simwild][tracking]")
         }
     }
     const fs::path mapped = dir / "points_on_output.txt";
-    surface_map::surface_map({
-        {"application", "surface_map"},
+    tracking::tracking({
+        {"application", "tracking"},
         {"history", tracking_file.string()},
         {"operation", "map"},
         {"points", points.string()},

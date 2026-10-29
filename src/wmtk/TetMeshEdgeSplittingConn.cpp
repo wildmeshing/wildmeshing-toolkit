@@ -1,5 +1,5 @@
 #include <wmtk/TetMesh.h>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 
 #include <algorithm>
 #include <wmtk/utils/TupleUtils.hpp>

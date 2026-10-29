@@ -1,5 +1,6 @@
-"""Surface tracking through the bindings: histories as bytes on the memory route, as files on the
-file route, and wm.read_history / wm.write_history between the two.
+"""Tracking through the bindings: histories of surfaces and of curves as bytes on the memory
+route, as files on the file route, and wm.read_history / wm.write_history between the two; and
+the maps they describe, wm.Tracking and wm.CurveTracking, on NumPy arrays of points.
 
 Also runnable with Python's standard-library unittest runner; NumPy only, synthetic meshes."""
 
@@ -7,13 +8,14 @@ import os
 from pathlib import Path
 import struct
 import tempfile
+import threading
 import unittest
 
 import numpy as np
 import wildmeshing as wm
 
 # The component that maps through a history.
-TRACKING = "surface_map"
+TRACKING = "tracking"
 
 
 def sphere(n_lat=8, n_lon=16):
@@ -45,7 +47,22 @@ def write_obj(path, mesh):
             f.write("f {} {} {}\n".format(*(t + 1)))
 
 
+def curves(n=60, m=30):
+    """triwild's curves: a circle and an open wave crossing it twice, as edge meshes."""
+    a = 2 * np.pi * np.arange(n) / n
+    circle = {"V": np.stack([np.cos(a), np.sin(a), np.zeros(n)], axis=1),
+              "cells": {"edge": {"connectivity": np.stack(
+                  [np.arange(n), (np.arange(n) + 1) % n], axis=1).astype(np.int64)}}}
+    x = -1.6 + 3.2 * np.arange(m + 1) / m
+    wave = {"V": np.stack([x, 0.3 * np.sin(6 * x) + 0.1, np.zeros(m + 1)], axis=1),
+            "cells": {"edge": {"connectivity": np.stack(
+                [np.arange(m), np.arange(1, m + 1)], axis=1).astype(np.int64)}}}
+    return {"circle": circle, "wave": wave}
+
+
 REMESH = {"length_rel": 0.2, "max_iterations": 2, "num_threads": 1}
+TRIWILD = {"input": ["circle", "wave"], "preserve_topology": True, "length_rel": 0.05,
+           "max_iterations": 3, "num_threads": 1}
 
 
 class Tracking(unittest.TestCase):
@@ -83,6 +100,34 @@ class Tracking(unittest.TestCase):
         # Without history_output nothing is recorded.
         _, report = wm.qslim({"input": "in", "target_rel": 0.5}, {"in": sphere()})
         self.assertNotIn("history", report)
+
+    def test_triwild_returns_a_curve_history(self):
+        # A curve history: version 7, two corners a face, in the report and in no file.
+        outputs, report = wm.triwild({**TRIWILD, "history_output": "x"}, curves())
+        self.assertIn("mesh", outputs)
+        history = report["history"]
+        self.assertEqual(history[:13], b"WMTKHIST\x07\x00\x00\x00\x02")
+        self.assertEqual(list(Path.cwd().iterdir()), [])
+        wm.write_history("curves.wmtkhist", history)
+        self.assertEqual(wm.read_history("curves.wmtkhist"), history)
+        # tracking reports on it in memory: no warning under preserve_topology, the wave's two
+        # ends at output vertices, the round trip exact.
+        _, info = getattr(wm, TRACKING)({"history": history, "operation": "info"}, {})
+        self.assertEqual(info["build_warnings"]["total"], 0)
+        self.assertEqual(info["feature_points"], 2)
+        self.assertEqual(info["feature_points_at_output_vertex"], 2)
+        self.assertEqual(info["round_trip_lost"], 0)
+        self.assertLess(info["round_trip_max_displacement"], 1e-8)
+        # features: the feature points in the report, an input and an output vertex each, and
+        # no file; map is refused.
+        _, features = getattr(wm, TRACKING)({"history": history, "operation": "features"}, {})
+        pairs = np.array(features["feature_points"], dtype=np.int64)
+        self.assertEqual(pairs.shape, (2, 2))
+        self.assertTrue((pairs[:, 1] >= 0).all())
+        self.assertTrue((pairs[:, 1] < len(outputs["mesh"]["V"])).all())
+        self.assertEqual([p.name for p in Path.cwd().iterdir()], ["curves.wmtkhist"])
+        with self.assertRaisesRegex(RuntimeError, "only info, transfer and features"):
+            getattr(wm, TRACKING)({"history": history, "operation": "map"}, {})
 
     def test_write_and_read_history(self):
         _, report = wm.isotropic_remeshing(
@@ -171,7 +216,7 @@ class Tracking(unittest.TestCase):
             tracking({"history": "h.wmtkhist", "operation": "info"}, {})
         with self.assertRaisesRegex(RuntimeError, "needs input"):
             tracking({"history": history, "operation": "transfer"}, {"in": self.labelled()})
-        with self.assertRaisesRegex(RuntimeError, "only info and transfer"):
+        with self.assertRaisesRegex(RuntimeError, "only info, transfer and features"):
             tracking({"history": history, "operation": "map"}, {})
         self.assertEqual([p.name for p in Path.cwd().iterdir()], ["h.wmtkhist"])
 
@@ -268,6 +313,223 @@ class Tracking(unittest.TestCase):
             wm.qslim({"input": "in", "target_rel": 0.5, "history_output": b"recorded"},
                      {"in": sphere()})
         self.assertEqual(list(Path.cwd().iterdir()), [])
+
+
+def random_bary(rng, n, k):
+    """n points' barycentric coordinates in a k-corner face, inside it."""
+    b = rng.random((n, k)) + 0.05
+    return b / b.sum(axis=1, keepdims=True)
+
+
+class Classes(unittest.TestCase):
+    """wm.Tracking and wm.CurveTracking on histories the memory route returns."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.surface_out, report = wm.isotropic_remeshing(
+            {**REMESH, "input": "in", "history_output": "x"}, {"in": sphere()})
+        cls.surface = report["history"]
+        cls.tets, report = wm.tetwild(
+            {"input": "in", "skip_simplify": True, "max_iterations": 1, "num_threads": 1,
+             "history_output": "x"}, {"in": sphere()})
+        cls.tet = report["history"]
+        cls.curves_out, report = wm.triwild({**TRIWILD, "history_output": "x"}, curves())
+        cls.curves = report["history"]
+
+    def setUp(self):
+        self.rng = np.random.default_rng(3)
+
+    def test_surface_round_trip_and_info(self):
+        t = wm.Tracking(self.surface)
+        self.assertFalse(t.output_by_vertices)
+        self.assertFalse(t.input_by_vertices)
+        np.testing.assert_array_equal(
+            t.input_faces, sphere()["cells"]["triangle"]["connectivity"])
+        out_F = self.surface_out["mesh"]["cells"]["triangle"]["connectivity"]
+        np.testing.assert_array_equal(t.output_triangles, out_F)
+        self.assertEqual(t.input_triangles.shape, t.input_faces.shape)
+        # Input points to the output, faces of the output mesh, and back where they were.
+        n = 500
+        ids = self.rng.integers(0, len(t.input_faces), n)
+        bary = random_bary(self.rng, n, 3)
+        out_ids, out_bary = t.to_output(ids, bary)
+        self.assertEqual(out_ids.shape, (n,))
+        self.assertEqual(out_ids.dtype, np.int64)
+        self.assertEqual(out_bary.shape, (n, 3))
+        self.assertTrue(((out_ids >= 0) & (out_ids < len(out_F))).all())
+        back_ids, back_bary = t.to_input(out_ids, out_bary)
+        np.testing.assert_array_equal(back_ids, ids)
+        np.testing.assert_allclose(back_bary, bary, atol=1e-8)
+        # What info says of the same map: its warnings, and the output centroids' round trip
+        # and drift, here computed through the class.
+        _, info = getattr(wm, TRACKING)({"history": self.surface, "operation": "info"}, {})
+        self.assertEqual(t.build_warnings, info["build_warnings"])
+        k = len(out_F)
+        self.assertEqual(info["centroids"], k)
+        centroids = np.full((k, 3), 1 / 3)
+        in_ids, in_bary = t.to_input(np.arange(k), centroids)
+        self.assertEqual(int((in_ids < 0).sum()), info["round_trip_lost"])
+        V_in, F_in = sphere()["V"], t.input_faces
+        V_out = self.surface_out["mesh"]["V"]
+        at_out = V_out[out_F].mean(axis=1)
+        at_in = np.einsum("nk,nkd->nd", in_bary, V_in[F_in[in_ids]])
+        edges = np.linalg.norm(V_out[out_F] - V_out[np.roll(out_F, -1, axis=1)], axis=2).mean()
+        drift = np.linalg.norm(at_out - at_in, axis=1)
+        self.assertAlmostEqual(info["drift"]["mean_length"], edges, places=12)
+        self.assertAlmostEqual(info["drift"]["lengths"]["mean"], drift.mean() / edges, places=9)
+        self.assertAlmostEqual(info["drift"]["lengths"]["max"], drift.max() / edges, places=9)
+
+    def test_tet_output_by_vertices(self):
+        # tetwild's output names a point on its tracked surface by three of its vertices.
+        t = wm.Tracking(self.tet)
+        self.assertTrue(t.output_by_vertices)
+        n = 300
+        ids = self.rng.integers(0, len(t.input_faces), n)
+        bary = random_bary(self.rng, n, 3)
+        out_ids, out_bary = t.to_output(ids, bary)
+        self.assertEqual(out_ids.shape, (n, 3))
+        self.assertTrue(((out_ids >= 0) & (out_ids < len(self.tets["mesh"]["V"]))).all())
+        tracked = {tuple(sorted(f)) for f in t.output_triangles.tolist()}
+        self.assertTrue(all(tuple(sorted(f)) in tracked for f in out_ids.tolist()))
+        # Back, the vertices in another order, the coordinates following them.
+        order = [2, 0, 1]
+        back_ids, back_bary = t.to_input(out_ids[:, order], out_bary[:, order])
+        np.testing.assert_array_equal(back_ids, ids)
+        np.testing.assert_allclose(back_bary, bary, atol=1e-8)
+        # Faces, not triplets, are refused for this output.
+        with self.assertRaisesRegex(ValueError, r"\(n, 3\)"):
+            t.to_input(out_ids[:, 0], out_bary)
+
+    def test_curve_round_trip_and_info(self):
+        t = wm.CurveTracking(self.curves)
+        self.assertTrue(t.output_by_vertices)
+        self.assertEqual(t.input_segments.shape, (60 + 30, 2))
+        n = 400
+        ids = self.rng.integers(0, len(t.input_segments), n)
+        bary = random_bary(self.rng, n, 2)
+        out_ids, out_bary = t.to_output(ids, bary)
+        self.assertEqual(out_ids.shape, (n, 2))
+        edges = {tuple(sorted(e)) for e in t.output_segments.tolist()}
+        self.assertTrue(all(tuple(sorted(e)) in edges for e in out_ids.tolist()))
+        back_ids, back_bary = t.to_input(out_ids[:, ::-1], out_bary[:, ::-1])
+        np.testing.assert_array_equal(back_ids, ids)
+        np.testing.assert_allclose(back_bary, bary, atol=1e-8)
+        # The feature points are those features reports, and info agrees on the map.
+        tracking = getattr(wm, TRACKING)
+        _, features = tracking({"history": self.curves, "operation": "features"}, {})
+        np.testing.assert_array_equal(t.feature_points(), np.array(features["feature_points"]))
+        self.assertEqual(t.feature_points().shape, (2, 2))
+        _, info = tracking({"history": self.curves, "operation": "info"}, {})
+        self.assertEqual(t.build_warnings, info["build_warnings"])
+        self.assertEqual(info["midpoints"], len(t.output_segments))
+
+    def test_unmappable_points(self):
+        # -1 for no face, either way; an id beyond the input is no face either, and the
+        # warnings of the call count both.
+        t = wm.Tracking(self.surface)
+        ids = np.array([0, -1, len(t.input_faces) + 5, 1])
+        bary = np.full((4, 3), 1 / 3)
+        out_ids, out_bary, warnings = t.to_output(ids, bary, warnings=True)
+        np.testing.assert_array_equal(out_ids < 0, [False, True, True, False])
+        self.assertTrue(np.isnan(out_bary[1]).all() and np.isnan(out_bary[2]).all())
+        self.assertEqual(warnings["unlocated"], 2)
+        self.assertEqual(warnings["total"], 2)
+        self.assertEqual(len(t.to_output(ids, bary)), 2)
+        back_ids, _ = t.to_input(out_ids, np.nan_to_num(out_bary))
+        np.testing.assert_array_equal(back_ids, [0, -1, -1, 1])
+        c = wm.CurveTracking(self.curves)
+        out_ids, out_bary, warnings = c.to_output(np.array([-1, 0]), np.full((2, 2), 0.5),
+                                                  warnings=True)
+        np.testing.assert_array_equal(out_ids[0], [-1, -1])
+        self.assertTrue((out_ids[1] >= 0).all())
+        self.assertEqual(warnings["unlocated"], 1)
+        back_ids, _ = c.to_input(np.array([[-1, -1], [0, 10 ** 6]]), np.full((2, 2), 0.5))
+        np.testing.assert_array_equal(back_ids, [-1, -1])
+
+    def test_wrong_shapes_and_dtypes_raise(self):
+        t = wm.Tracking(self.surface)
+        c = wm.CurveTracking(self.curves)
+        ids, bary = np.array([0, 1]), np.full((2, 3), 1 / 3)
+        with self.assertRaises(TypeError):
+            t.to_output(ids.astype(np.float64), bary)
+        with self.assertRaises(TypeError):
+            t.to_output([0, 1], bary)
+        with self.assertRaises(TypeError):
+            t.to_output(ids, bary.astype(np.int64))
+        with self.assertRaisesRegex(ValueError, r"\(n,\)"):
+            t.to_output(np.zeros((2, 3), dtype=np.int64), bary)
+        with self.assertRaisesRegex(ValueError, r"\(n, 3\)"):
+            t.to_output(ids, np.full((2, 2), 0.5))
+        with self.assertRaisesRegex(ValueError, r"\(n, 3\)"):
+            t.to_output(ids, np.full((3, 3), 1 / 3))
+        with self.assertRaisesRegex(ValueError, "-1 for none"):
+            t.to_output(np.array([0, -2]), bary)
+        with self.assertRaisesRegex(ValueError, r"\(n, 2\)"):
+            c.to_input(np.array([0, 1]), np.full((2, 2), 0.5))
+        with self.assertRaisesRegex(ValueError, r"\(n, 2\)"):
+            c.to_output(np.array([0, 1]), bary)
+        # Histories: not bytes, the other kind, damaged, or options that do not exist.
+        with self.assertRaises(TypeError):
+            wm.Tracking("history.wmtkhist")
+        with self.assertRaisesRegex(ValueError, "CurveTracking"):
+            wm.Tracking(self.curves)
+        with self.assertRaisesRegex(ValueError, "with Tracking"):
+            wm.CurveTracking(self.surface)
+        with self.assertRaisesRegex(RuntimeError, "is corrupt|truncated"):
+            wm.Tracking(self.surface[: len(self.surface) // 2])
+        with self.assertRaisesRegex(RuntimeError, "is not a history"):
+            wm.CurveTracking(b"not a history at all")
+        with self.assertRaisesRegex(ValueError, "smoothing"):
+            wm.Tracking(self.surface, smoothing="sharpen")
+        with self.assertRaisesRegex(ValueError, "scaffold"):
+            wm.Tracking(self.surface, scaffold="sphere")
+
+    def test_load_and_bytes_interoperate(self):
+        # A history file, written by write_history or by the file route, loads as its bytes do,
+        # and read_history gives bytes the constructors take.
+        with tempfile.TemporaryDirectory(prefix="wmtk_python_tracking_classes_") as d:
+            surface, curve = Path(d) / "surface.wmtkhist", Path(d) / "curves.wmtkhist"
+            wm.write_history(surface, self.surface)
+            wm.write_history(curve, self.curves)
+            ids = self.rng.integers(0, 50, 100)
+            bary = random_bary(self.rng, 100, 3)
+            for t in [wm.Tracking.load(surface), wm.Tracking(wm.read_history(surface)),
+                      wm.Tracking.load(str(surface), smoothing="flatten", scaffold="box")]:
+                for a, b in zip(t.to_output(ids, bary),
+                                wm.Tracking(self.surface).to_output(ids, bary)):
+                    np.testing.assert_array_equal(a, b)
+            bary2 = random_bary(self.rng, 100, 2)
+            for a, b in zip(wm.CurveTracking.load(curve).to_output(ids, bary2),
+                            wm.CurveTracking(wm.read_history(curve)).to_output(ids, bary2)):
+                np.testing.assert_array_equal(a, b)
+            with self.assertRaisesRegex(ValueError, "CurveTracking"):
+                wm.Tracking.load(curve)
+            with self.assertRaises(RuntimeError):
+                wm.Tracking.load(Path(d) / "missing.wmtkhist")
+
+    def test_threads_map_through_one_object(self):
+        # Mapping releases the GIL and never writes to the map: two threads mapping through one
+        # object get what one call alone gets.
+        surface, curves = wm.Tracking(self.surface), wm.CurveTracking(self.curves)
+        for t, k, n_ids in [(surface, 3, len(surface.input_faces)),
+                            (curves, 2, len(curves.input_segments))]:
+            batches = [(self.rng.integers(0, n_ids, 3000), random_bary(self.rng, 3000, k))
+                       for _ in range(2)]
+            serial = [t.to_output(ids, bary) for ids, bary in batches]
+            results = [None, None]
+
+            def work(i):
+                for _ in range(5):
+                    results[i] = t.to_output(*batches[i])
+
+            threads = [threading.Thread(target=work, args=(i,)) for i in range(2)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+            for got, expected in zip(results, serial):
+                for a, b in zip(got, expected):
+                    np.testing.assert_array_equal(a, b)
 
 
 if __name__ == "__main__":

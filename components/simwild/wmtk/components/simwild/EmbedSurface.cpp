@@ -358,13 +358,13 @@ EmbedSurface::EmbedSurface(
                 h.vertices.push_back(read.V.row(v).transpose());
             }
             int kept = 0;
-            for (Eigen::Index f = 0; f < read.F.rows(); ++f) {
+            for (Eigen::Index f = 0; f < read.cells.rows(); ++f) {
                 h.faces.push_back(
-                    {{raw_v0 + uint64_t(read.F(f, 0)),
-                      raw_v0 + uint64_t(read.F(f, 1)),
-                      raw_v0 + uint64_t(read.F(f, 2))}});
+                    {{raw_v0 + uint64_t(read.cells(f, 0)),
+                      raw_v0 + uint64_t(read.cells(f, 1)),
+                      raw_v0 + uint64_t(read.cells(f, 2))}});
                 int c[3];
-                for (int k = 0; k < 3; ++k) c[k] = read.vertex_map[read.F(f, k)];
+                for (int k = 0; k < 3; ++k) c[k] = read.vertex_map[read.cells(f, k)];
                 const bool gone = c[0] == c[1] || c[1] == c[2] || c[0] == c[2];
                 clean_face.push_back(gone ? -1 : kept++);
             }

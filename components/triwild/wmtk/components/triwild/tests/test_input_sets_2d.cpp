@@ -6,7 +6,9 @@
 // arrangement and the optimizer.
 
 #include <wmtk/components/triwild/TriWildMesh.h>
+#include <wmtk/components/triwild/triwild.hpp>
 #include <wmtk/envelope/CompositeEnvelopes.hpp>
+#include <wmtk/history/Replay.hpp>
 #include <wmtk/utils/EmbedSegments.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -15,6 +17,7 @@
 #include <array>
 #include <cmath>
 #include <memory>
+#include <set>
 #include <vector>
 
 using namespace wmtk;
@@ -235,4 +238,149 @@ TEST_CASE("input-sets-2d-square-and-crossing-polyline", "[triwild][input_sets]")
     check_all("after insertion");
     mesh.mesh_improvement(3);
     check_all("after optimization");
+}
+
+TEST_CASE("input-sets-2d-two-inputs-nothing-simplified", "[triwild][input_sets]")
+{
+    // Two inputs of one segment each, crossing: the simplification removes nothing. It used to
+    // report no surviving segment then, so the simplified curves lost their inputs: with the
+    // optimization's envelope around them, every input set named an input with no envelope, and
+    // triwild threw.
+    MeshMap meshes;
+    for (const auto& [name, y0] : {std::pair<std::string, double>{"a", -1}, {"b", 1}}) {
+        MeshData m;
+        m.V.resize(2, 3);
+        m.V << -1, y0, 0, 1, -y0, 0;
+        m.cells[CellType::Edge].connectivity.resize(1, 2);
+        m.cells[CellType::Edge].connectivity << 0, 1;
+        meshes.emplace(name, m);
+    }
+    for (const bool around_simplified : {false, true}) {
+        INFO("optimize_envelope_around_simplified " << around_simplified);
+        const ComponentResult r = components::triwild::triwild(
+            {{"input", {"a", "b"}},
+             {"optimize_envelope_around_simplified", around_simplified},
+             {"length_rel", 0.1},
+             {"max_iterations", 3}},
+            meshes);
+        // The crossing cuts both segments in two.
+        CHECK(r.first.at("surface").cell(CellType::Edge).connectivity.rows() >= 4);
+    }
+}
+
+TEST_CASE("input-sets-2d-survive-removing-triangles", "[triwild][input_sets]")
+{
+    // An edge's attributes live with its lowest triangle. Removing that triangle, as a filter
+    // does, moves them to the other's slot: the edge stays tracked, with its set. Both tracked
+    // edges of the fan have triangle 0, (x,v2,v1), as their lowest.
+    Parameters params = make_params();
+    TriWildMesh mesh(params, 1e-2, 0);
+    build_fan(mesh, 0b01, 0b10);
+    REQUIRE(std::get<1>(mesh.tuple_from_edge({{X, V1}})) / 3 == 0);
+    REQUIRE(std::get<1>(mesh.tuple_from_edge({{X, V2}})) / 3 == 0);
+    mesh.remove_tris_by_ids({0});
+    for (const auto& [v, s] : {std::pair<size_t, InputSet>{V1, 0b01}, {V2, 0b10}}) {
+        INFO("edge (x, " << v << ")");
+        const EdgeAttributes& a = edge(mesh, X, v);
+        CHECK(a.m_is_surface_fs);
+        CHECK(a.input_set() == s);
+    }
+}
+
+TEST_CASE("triwild-filter-keeps-tracked-edges", "[triwild][input_sets]")
+{
+    // A filter removes triangles after the optimization, so the mesh before it is the unfiltered
+    // run's. Every edge of a filtered mesh that the unfiltered run tracks is tracked there too:
+    // an edge whose lowest triangle went used to read that slot's last attributes, and on this
+    // input lost about a quarter of the tracked edges (104 of 144 with filter input).
+    const auto curves = []() {
+        const int n = 300, m = 100;
+        MeshData circle, wave;
+        circle.V.resize(n, 3);
+        auto& C = circle.cells[CellType::Edge].connectivity;
+        C.resize(n, 2);
+        for (int i = 0; i < n; ++i) {
+            const double a = 2 * M_PI * i / n;
+            circle.V.row(i) << std::cos(a), std::sin(a), 0;
+            C.row(i) << i, (i + 1) % n;
+        }
+        wave.V.resize(m + 1, 3);
+        auto& W = wave.cells[CellType::Edge].connectivity;
+        W.resize(m, 2);
+        for (int i = 0; i <= m; ++i) {
+            const double x = -1.6 + 3.2 * i / m;
+            wave.V.row(i) << x, 0.3 * std::sin(6 * x) + 0.1, 0;
+            if (i > 0) W.row(i - 1) << i - 1, i;
+        }
+        return MeshMap{{"circle", circle}, {"wave", wave}};
+    }();
+    using Edge = std::array<std::array<double, 2>, 2>;
+    const auto edge_of = [](const MeshData& m, int64_t a, int64_t b) {
+        Edge e{{{{m.V(a, 0), m.V(a, 1)}}, {{m.V(b, 0), m.V(b, 1)}}}};
+        if (e[1] < e[0]) std::swap(e[0], e[1]);
+        return e;
+    };
+    const auto run = [&](const std::string& filter) {
+        return components::triwild::triwild(
+            {{"input", {"circle", "wave"}},
+             {"filter", filter},
+             {"length_rel", 0.02},
+             {"max_iterations", 10},
+             {"num_threads", 1}},
+            curves);
+    };
+    // The edges the unfiltered run tracks, by their ends' positions.
+    std::set<Edge> tracked;
+    {
+        const auto r = run("none");
+        const MeshData& s = r.first.at("surface");
+        const auto& E = s.cell(CellType::Edge).connectivity;
+        for (Eigen::Index i = 0; i < E.rows(); ++i) tracked.insert(edge_of(s, E(i, 0), E(i, 1)));
+    }
+    REQUIRE(!tracked.empty());
+    for (const std::string filter : {"input", "flood"}) {
+        INFO("filter " << filter);
+        const auto r = run(filter);
+        std::set<Edge> expected, got;
+        const MeshData& mesh = r.first.at("mesh");
+        const auto& F = mesh.cell(CellType::Triangle).connectivity;
+        for (Eigen::Index f = 0; f < F.rows(); ++f) {
+            for (int k = 0; k < 3; ++k) {
+                const Edge e = edge_of(mesh, F(f, k), F(f, (k + 1) % 3));
+                if (tracked.count(e)) expected.insert(e);
+            }
+        }
+        const MeshData& s = r.first.at("surface");
+        const auto& E = s.cell(CellType::Edge).connectivity;
+        for (Eigen::Index i = 0; i < E.rows(); ++i) got.insert(edge_of(s, E(i, 0), E(i, 1)));
+        CHECK(!expected.empty());
+        CHECK(expected.size() < tracked.size());
+        CHECK(got == expected);
+    }
+}
+
+TEST_CASE("curve-history-finishes-on-a-consolidated-mesh", "[triwild][tracking]")
+{
+    // A curve history names the output's points by the mesh's vertex ids, the output's rows only
+    // once the mesh is consolidated: finishing it before refuses, after gives the history.
+    Parameters params = make_params();
+    TriWildMesh mesh(params, 1e-2, 0);
+    build_fan(mesh, 0b01, 0b10);
+    mesh.m_input_envelopes.set({loose_fan_envelope(), loose_fan_envelope()});
+    mesh.record_curve_history("{}");
+    REQUIRE(collapse_v1_into_v2(mesh));
+    CHECK_THROWS(mesh.finish_curve_history());
+    mesh.consolidate_mesh();
+    const auto h = mesh.finish_curve_history();
+    REQUIRE(h);
+    // The two tracked edges became one, and its ends are vertex rows of the mesh.
+    history::CurveReplay r(*h);
+    r.apply_all(*h);
+    size_t segments = 0;
+    for (uint64_t f = 0; f < r.faces().size(); ++f) {
+        if (!r.face_alive()[f]) continue;
+        ++segments;
+        for (const uint64_t v : r.faces()[f]) CHECK(h->output_vertex_ids[v] < mesh.vert_capacity());
+    }
+    CHECK(segments == 1);
 }

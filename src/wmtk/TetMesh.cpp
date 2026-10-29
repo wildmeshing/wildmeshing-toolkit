@@ -1,7 +1,7 @@
 #include "TetMesh.h"
 
 #include <wmtk/AttributeCollection.hpp>
-#include <wmtk/history/TrackedSurface.hpp>
+#include <wmtk/history/TrackedRecorder.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>

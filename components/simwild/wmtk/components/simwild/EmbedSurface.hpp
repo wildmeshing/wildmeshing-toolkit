@@ -5,7 +5,7 @@
 #include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/utils/Delaunay.hpp>
 
 namespace wmtk::components::simwild {
