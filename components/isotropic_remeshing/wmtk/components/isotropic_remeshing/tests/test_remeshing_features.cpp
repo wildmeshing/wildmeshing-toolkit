@@ -446,6 +446,114 @@ TEST_CASE("features-file", "[test_remeshing][features]")
     }
 }
 
+TEST_CASE("features-file-memory-route", "[test_remeshing][features]")
+{
+    // The memory route reads the features from a file too, a path relative to the current
+    // directory, and returns what the file route's two .vtu files hold: mesh with vertex_id,
+    // and edges, the feature edges on mesh's vertex rows, with edge_id.
+    const TempDir dir;
+    std::vector<Eigen::Vector3d> V;
+    std::vector<std::array<size_t, 3>> F;
+    grid(6, V, F);
+    {
+        MshData msh;
+        msh.add_face_vertices(V.size(), [&](size_t i) { return V[i]; });
+        msh.add_faces(F.size(), [&](size_t i) { return F[i]; });
+        msh.save((dir.path / "in.msh").string());
+    }
+    // The curve along y = 3, ids 5 and 6 either side of x = 3; fixed vertices on it and off it.
+    nlohmann::json features;
+    for (size_t i = 0; i < 6; ++i) {
+        features["edges"].push_back({i * 7 + 3, (i + 1) * 7 + 3});
+        features["edge_ids"].push_back(i < 3 ? 5 : 6);
+    }
+    features["vertices"] = {{3, 11}, {6 * 7 + 3, 12}, {1 * 7 + 3, 13}, {4 * 7 + 1, 14}};
+    std::ofstream(dir.path / "features.json") << features.dump();
+    const nlohmann::json options = {
+        {"features", "features.json"},
+        {"remove_duplicate_eps", -1},
+        {"length_abs", 0.7},
+        {"eps_rel", 0.01},
+        {"max_iterations", 2},
+        {"swap_quality", true},
+        {"limit_collapse_length", true},
+        {"cleanup_angle", 30}};
+
+    nlohmann::json file = options;
+    file["application"] = "isotropic_remeshing";
+    file["input"] = "in.msh";
+    file["input_dir"] = dir.path.string();
+    file["output"] = (dir.path / "out.vtu").string();
+    file["report"] = (dir.path / "report.json").string();
+    isotropic_remeshing(file);
+
+    MeshData surface;
+    surface.V.resize(V.size(), 3);
+    for (size_t i = 0; i < V.size(); ++i) surface.V.row(i) = V[i];
+    auto& tris = surface.cells[CellType::Triangle].connectivity;
+    tris.resize(F.size(), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        for (int k = 0; k < 3; ++k) tris(i, k) = int64_t(F[i][k]);
+    }
+    nlohmann::json memory = options;
+    memory["input"] = "surface";
+    const auto cwd = std::filesystem::current_path();
+    std::filesystem::current_path(dir.path);
+    ComponentResult result;
+    try {
+        result = isotropic_remeshing(memory, MeshMap{{"surface", surface}});
+    } catch (...) {
+        std::filesystem::current_path(cwd);
+        throw;
+    }
+    std::filesystem::current_path(cwd);
+
+    const auto& [meshes, report] = result;
+    REQUIRE(meshes.size() == 2);
+    const MeshData& mesh = meshes.at("mesh");
+    const MeshData& edges = meshes.at("edges");
+    CHECK(edges.V == mesh.V);
+
+    const std::string tri = (dir.path / "out.vtu").string();
+    const std::string lines = (dir.path / "out_edges.vtu").string();
+    const auto column = [](const MeshAttribute& a) {
+        const DataMatrix<double> d = a.doubles();
+        return std::vector<double>(d.data(), d.data() + d.size());
+    };
+    const auto flat = [](const DataMatrix<int64_t>& c) {
+        return std::vector<int64_t>(c.data(), c.data() + c.size());
+    };
+    CHECK(
+        flat(mesh.cell(CellType::Triangle).connectivity) ==
+        vtu_array<int64_t>(tri, "connectivity"));
+    CHECK(column(mesh.vertex_attributes.at("vertex_id")) == vtu_array<double>(tri, "vertex_id"));
+    CHECK(
+        flat(edges.cell(CellType::Edge).connectivity) == vtu_array<int64_t>(lines, "connectivity"));
+    CHECK(
+        column(edges.cell(CellType::Edge).attributes.at("edge_id")) ==
+        vtu_array<double>(lines, "edge_id"));
+    CHECK(column(edges.vertex_attributes.at("vertex_id")) == vtu_array<double>(lines, "vertex_id"));
+
+    std::multiset<double> ids;
+    for (const double v : column(mesh.vertex_attributes.at("vertex_id"))) {
+        if (v >= 0) ids.insert(v);
+    }
+    CHECK(ids == std::multiset<double>{11, 12, 13, 14});
+    const auto edge_id = column(edges.cell(CellType::Edge).attributes.at("edge_id"));
+    const auto n5 = std::count(edge_id.begin(), edge_id.end(), 5.);
+    const auto n6 = std::count(edge_id.begin(), edge_id.end(), 6.);
+    CHECK(n5 >= 3);
+    CHECK(n6 >= 3);
+    CHECK(size_t(n5 + n6) == edge_id.size());
+
+    nlohmann::json file_report;
+    std::ifstream(dir.path / "report.json") >> file_report;
+    file_report.erase("time_sec");
+    nlohmann::json memory_report = report;
+    memory_report.erase("time_sec");
+    CHECK(memory_report == file_report);
+}
+
 namespace {
 double smallest_angle(const IsotropicRemeshing& m)
 {

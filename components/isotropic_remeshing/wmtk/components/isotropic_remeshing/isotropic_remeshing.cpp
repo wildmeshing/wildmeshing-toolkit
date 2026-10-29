@@ -8,12 +8,11 @@
 #include <wmtk/utils/getRSS.h>
 #include <wmtk/Types.hpp>
 #include <wmtk/history/InputHistory.hpp>
+#include <wmtk/io/DataWriter.hpp>
 #include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/resolve_path.hpp>
-
-#include <paraviewo/VTUWriter.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -221,11 +220,13 @@ FeatureFile read_features(
 /// Writes the consolidated mesh to `path` (.vtu): its triangles with a cell field per per-face
 /// field and the point field vertex_id, the id of a fixed vertex and -1 elsewhere; and its
 /// feature edges to <stem>_edges.vtu, on the same points, a line cell each with the cell field
-/// edge_id (-1 for none) and the same vertex_id.
+/// edge_id (-1 for none) and the same vertex_id. With `memory`, the memory route's: the two
+/// meshes go there instead, under the names of the files (see io::DataWriter).
 void write_vtu(
     const IsotropicRemeshing& m,
     const std::filesystem::path& path,
-    const std::vector<std::pair<std::string, size_t>>& face_fields)
+    const std::vector<std::pair<std::string, size_t>>& face_fields,
+    MeshMap* memory = nullptr)
 {
     const auto verts = m.get_vertices();
     std::vector<int> index(m.vert_capacity(), -1);
@@ -243,7 +244,7 @@ void write_vtu(
         const auto vs = m.oriented_tri_vids(faces[i]);
         for (int k = 0; k < 3; ++k) F(i, k) = index[vs[k]];
     }
-    paraviewo::VTUWriter triangles;
+    io::DataWriter triangles(memory);
     triangles.add_field("vertex_id", vertex_id);
     size_t offset = 0;
     for (const auto& [name, components] : face_fields) {
@@ -269,12 +270,13 @@ void write_vtu(
     }
     std::filesystem::path edges_path = path;
     edges_path.replace_filename(path.stem().string() + "_edges.vtu");
-    paraviewo::VTUWriter lines;
+    io::DataWriter lines(memory);
     lines.add_field("vertex_id", vertex_id);
     lines.add_cell_field("edge_id", edge_id);
     if (!lines.write_mesh(edges_path.string(), V, E, paraviewo::CellType::Line)) {
         log_and_throw_error("Could not write {}", edges_path.string());
     }
+    if (memory) return;
     logger().info(
         "wrote {} and {}: {} triangles, {} feature edges",
         path.string(),
@@ -586,9 +588,20 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             fout << std::setw(4) << report;
         }
     }
-    if (component_io.memory())
-        component_io.result.first["mesh"] =
-            io::triangle_data(m, [&](size_t v) { return m.vertex_attrs[v].pos; });
+    if (component_io.memory()) {
+        if (features_file.empty()) {
+            component_io.result.first["mesh"] =
+                io::triangle_data(m, [&](size_t v) { return m.vertex_attrs[v].pos; });
+        } else {
+            // What the file route's .vtu output holds: the mesh with vertex_id, and its feature
+            // edges on the same vertex rows, with edge_id.
+            MeshMap raw;
+            write_vtu(m, "mesh.vtu", fields.face_fields, &raw);
+            component_io.result.first = io::named_outputs(
+                std::move(raw),
+                {{"mesh.vtu", "mesh"}, {"mesh_edges.vtu", "edges"}});
+        }
+    }
 }
 
 void isotropic_remeshing(nlohmann::json json_params)

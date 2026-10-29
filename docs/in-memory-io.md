@@ -122,7 +122,7 @@ attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry 
 | --- | --- | --- |
 | `qslim` | `input` | Triangle geometry, no attributes |
 | `shortest_edge_collapse` | `input` | Triangle geometry, no attributes |
-| `isotropic_remeshing` | `input` | Triangle geometry, no attributes |
+| `isotropic_remeshing` | `input` | Triangle geometry, no attributes; `features` stays a file path, its indices rows of `input` |
 | `tetwild` | `input`; `input_edges`, `input_points` | Triangle surfaces; optional curve/point geometry, no attributes |
 | `triwild` | `input`; `input_points` | Curve geometry, optional free points, no attributes |
 | `simwild` | `input`; optional `envelope` for tagged input | Surface/curve geometry, or tagged triangle/tet mesh |
@@ -158,7 +158,8 @@ geometry under fixed keys:
 
 - `surface`: the boundary (triangles in 3D; in 2D -- triwild, 2D simwild -- the boundary edges).
   Manifold extraction returns its extracted boundary here.
-- `edges`: simwild's 3D feature edges.
+- `edges`: simwild's 3D feature edges; isotropic_remeshing's feature edges, with `features`
+  (its `edge_id`, and `mesh`'s `vertex_id`, are what its `.vtu` output holds).
 - `offset`: the offset surface or front; prismatic's classified offset faces.
 - `envelope`, `features`, `uv`, and manifold extraction's 3D input-complex preview `input_complex`.
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as
@@ -167,9 +168,10 @@ geometry under fixed keys:
 - `history_input`: simwild's, with `history_output`, the tagged tet mesh its surface history
   starts from (the file route's `<output>_history_input.msh`).
 
-For tetwild, triwild, simwild and topological_offset, `surface`, `edges` and `offset` share the
-`mesh` vertex rows: their connectivity indexes the same `V`, with the same vertex fields, so row
-`i` is the same vertex in every one of them, and vertices an output does not reference are kept.
+For tetwild, triwild, simwild, topological_offset and isotropic_remeshing, `surface`, `edges` and
+`offset` share the `mesh` vertex rows: their connectivity indexes the same `V`, with the same
+vertex fields, so row `i` is the same vertex in every one of them, and vertices an output does not
+reference are kept.
 This is deliberate -- it maps a boundary vertex to its volume vertex without a search -- at the
 cost of one vertex array per output. `envelope`, `features`, manifold extraction's `surface` and
 prismatic's offset faces have vertices of their own.
