@@ -43,7 +43,7 @@
     "pointer": "/output",
     "type": "string",
     "default": "out.obj",
-    "doc": "Output file name. With feature_fields or features, a .vtu output holds what the remeshing keeps: the triangles, with a cell field per per-face field of feature_fields (its value; per-corner fields are not written) and the point field vertex_id (the id features gives a fixed vertex, -1 elsewhere); and, in <stem>_edge.vtu next to it (named as simwild's edges), the same points with one line cell per feature edge, its cell field edge_id (the id features gives it, -1 for none or for a boundary of feature_fields), and vertex_id again. The ids are Float64 there, as every .vtu field."
+    "doc": "Output file name. With feature_fields or features, a .vtu output holds what the remeshing keeps: the triangles, with a cell field per per-face field of feature_fields (its value; per-corner fields are not written) and the point field vertex_id (the id features gives a fixed vertex, -1 elsewhere); and, in <stem>_edge.vtu next to it (named as simwild's edges), the same points with one line cell per feature edge, its cell field edge_id (the id features gives it, -1 for none or for a boundary of feature_fields), and vertex_id again. The ids are Float64 there, as every .vtu field. Any other format holds the triangles only, and the remeshing warns that the rest is not written."
   },
   {
     "pointer": "/input_dir",

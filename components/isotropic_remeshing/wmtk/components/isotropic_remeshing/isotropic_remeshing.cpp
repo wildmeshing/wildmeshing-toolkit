@@ -515,6 +515,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // With feature curves, a .vtu output holds them, the fields and the fixed vertices.
     const bool vtu_output = (!feature_fields.empty() || !features_input.empty()) &&
                             std::filesystem::path(output).extension() == ".vtu";
+    if (!vtu_output && !output.empty() && (!feature_fields.empty() || !features_input.empty())) {
+        logger().warn(
+            "{} holds the triangles only: the feature edges, their ids, the fixed vertices' ids "
+            "and the per-face fields go to a .vtu output alone",
+            output);
+    }
 
     wmtk::logger().info("remeshing on {}", input_path);
     std::vector<Eigen::Vector3d> verts;

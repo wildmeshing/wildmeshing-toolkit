@@ -3,8 +3,10 @@
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/history/Replay.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
 
+#include <spdlog/sinks/ostream_sink.h>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
@@ -442,6 +444,24 @@ TEST_CASE("features-file", "[test_remeshing][features]")
         }
     }
 
+    SECTION("an .obj output")
+    {
+        // It has no place for the ids, and says so.
+        config["output"] = (dir.path / "out.obj").string();
+        std::ostringstream log;
+        const auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(log);
+        logger().sinks().push_back(sink);
+        try {
+            isotropic_remeshing(config);
+        } catch (...) {
+            logger().sinks().pop_back();
+            throw;
+        }
+        logger().sinks().pop_back();
+        CHECK(log.str().find("holds the triangles only") != std::string::npos);
+        CHECK(std::filesystem::exists(dir.path / "out.obj"));
+        CHECK_FALSE(std::filesystem::exists(dir.path / "out_edge.vtu"));
+    }
     SECTION("an edge not in the mesh")
     {
         features["edges"].push_back({r(0), r(48)});
