@@ -3,7 +3,9 @@
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/simwild/simwild.hpp>
 #include <wmtk/components/surface_map/SurfaceMap.hpp>
+#include <wmtk/components/surface_map/surface_map.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <algorithm>
@@ -268,4 +270,67 @@ TEST_CASE("simwild-surface-history-keeps-tags-embedded", "[simwild][history]" + 
         options.update({{"max_iterations", 3}, {"num_threads", threads}});
         check_tags({"sphere.obj", "sphere.obj"}, options, fmt::format("two_spheres_{}", threads));
     }
+}
+
+TEST_CASE("simwild-transfer-onto-face-tags", "[simwild][history]" + release_only)
+{
+    // A surface input kept as faces (input_type surface): simwild writes them as the tagged
+    // triangle block of its output. A transfer onto that tet mesh writes the fields onto those
+    // rows, found by the output's vertex ids the history saved, and adds a row only for a
+    // tracked face the block does not have: no face twice, the face tags as they were.
+    const fs::path dir = fs::current_path() / "simwild_transfer_face_tags";
+    fs::create_directories(dir);
+    const std::string sphere = (fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj").string();
+    const fs::path out = dir / "spheres";
+    const fs::path hist = dir / "spheres.wmtkhist";
+    nlohmann::json json = two_spheres;
+    json.update({
+        {"application", "simwild"},
+        {"operation", "remeshing"},
+        {"input", {sphere, sphere}},
+        {"input_names", {"a", "b"}},
+        {"input_type", {"volume", "surface"}},
+        {"output", out.string()},
+        {"history_output", hist.string()},
+        {"max_iterations", 2},
+    });
+    simwild::simwild(json);
+    const MeshData tet = io::read_mesh(out.string() + ".msh");
+    const CellData& tagged = tet.cell(CellType::Triangle);
+    REQUIRE(tagged.connectivity.rows() > 0);
+
+    const fs::path surface = dir / "transferred.msh", with_fields = dir / "with_fields.msh";
+    surface_map::surface_map({
+        {"application", "surface_map"},
+        {"history", hist.string()},
+        {"operation", "transfer"},
+        {"output", surface.string()},
+        {"tet_mesh", out.string() + ".msh"},
+        {"output_tet_mesh", with_fields.string()},
+    });
+    const auto tracked = io::read_mesh(surface).cell(CellType::Triangle).connectivity.rows();
+    const MeshData result = io::read_mesh(with_fields);
+    const CellData& triangles = result.cell(CellType::Triangle);
+    const auto n = triangles.connectivity.rows(), n0 = tagged.connectivity.rows();
+    // The tagged rows first, as they were, then the tracked faces they do not hold.
+    REQUIRE(n >= n0);
+    CHECK(triangles.connectivity.topRows(n0) == tagged.connectivity);
+    CHECK(
+        triangles.attributes.at("tags").integers().topRows(n0) ==
+        tagged.attributes.at("tags").integers());
+    CHECK((triangles.attributes.at("tags").integers().bottomRows(n - n0).array() == 0).all());
+    std::set<std::array<int64_t, 3>> unique;
+    for (Eigen::Index r = 0; r < n; ++r) {
+        std::array<int64_t, 3> key;
+        for (int k = 0; k < 3; ++k) key[k] = triangles.connectivity(r, k);
+        std::sort(key.begin(), key.end());
+        unique.insert(key);
+    }
+    CHECK(unique.size() == size_t(n));
+    CHECK(n < n0 + tracked); // some tracked faces were tagged rows already
+    CHECK(n >= tracked);
+    // Every tracked face carries where it comes from; a row that is none carries -1.
+    const auto from = triangles.attributes.at("input_face").integers();
+    CHECK((from.array() >= 0).count() > tracked / 2);
+    CHECK((from.array() >= -1).all());
 }

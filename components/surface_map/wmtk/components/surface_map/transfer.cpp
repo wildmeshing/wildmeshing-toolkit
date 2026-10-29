@@ -37,6 +37,30 @@ bool matches_input(const SurfaceMap& map, const SurfaceData& input, std::string&
     return true;
 }
 
+std::vector<uint64_t> transferred_vertices(const SurfaceMap& map)
+{
+    std::vector<uint8_t> used(map.output_vertices().size(), 0);
+    for (uint64_t f = 0; f < map.output_faces().size(); ++f) {
+        if (!map.output_face_alive()[f]) continue;
+        for (const uint64_t v : map.output_faces()[f]) used[v] = 1;
+    }
+    std::vector<uint64_t> out;
+    for (uint64_t v = 0; v < used.size(); ++v) {
+        if (used[v]) out.push_back(v);
+    }
+    return out;
+}
+
+std::vector<int64_t> output_rows(const SurfaceMap& map, const std::vector<uint64_t>& output_ids)
+{
+    std::vector<int64_t> rows;
+    for (const uint64_t v : transferred_vertices(map)) {
+        const bool known = v < output_ids.size() && output_ids[v] != history::kNoVertex;
+        rows.push_back(known ? int64_t(output_ids[v]) : -1);
+    }
+    return rows;
+}
+
 SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input, MapWarnings* warnings)
 {
     // The output's live faces, by rank; for each, its centroid and a point just inside it at
@@ -61,11 +85,7 @@ SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input, Map
     SurfaceData out;
     constexpr uint64_t kNone = std::numeric_limits<uint64_t>::max();
     std::vector<uint64_t> rank(map.output_vertices().size(), kNone);
-    for (const uint64_t f : out_faces) {
-        for (const uint64_t v : map.output_faces()[f]) rank[v] = 0;
-    }
-    for (uint64_t v = 0; v < rank.size(); ++v) {
-        if (rank[v] == kNone) continue;
+    for (const uint64_t v : transferred_vertices(map)) {
         rank[v] = out.vertices.size();
         out.vertices.push_back(map.output_vertices()[v]);
     }

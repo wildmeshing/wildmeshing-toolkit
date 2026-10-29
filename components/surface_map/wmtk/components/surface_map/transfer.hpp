@@ -28,4 +28,15 @@ bool matches_input(const SurfaceMap& map, const SurfaceData& input, std::string&
 SurfaceData
 transfer_fields(const SurfaceMap& map, const SurfaceData& input, MapWarnings* warnings = nullptr);
 
+/// The vertex of the map's output each vertex of transfer_fields' result is: the vertices of its
+/// live faces, by rank.
+std::vector<uint64_t> transferred_vertices(const SurfaceMap& map);
+
+/**
+ * @brief The vertex of the application's output each vertex of transfer_fields' result is, by
+ * the history's output_vertex_ids: for a tet output, its rows in the tet mesh, which
+ * add_surface takes. -1 for one the output does not have.
+ */
+std::vector<int64_t> output_rows(const SurfaceMap& map, const std::vector<uint64_t>& output_ids);
+
 } // namespace wmtk::components::surface_map

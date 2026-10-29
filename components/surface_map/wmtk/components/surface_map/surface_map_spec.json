@@ -95,7 +95,7 @@
     "pointer": "/tet_mesh",
     "type": "string",
     "default": "",
-    "doc": "transfer: the tet mesh (gmsh) the history's application wrote, whose tracked surface is where the history ends. With output_tet_mesh, the fields are written onto it: a copy of it, with the tracked surface as triangles on its own nodes carrying the fields."
+    "doc": "transfer: the tet mesh (gmsh) the history's application wrote, whose tracked surface is where the history ends. With output_tet_mesh, the fields are written onto it: a copy of it, with the tracked surface as rows of its triangle block, on its own vertices by the ids the history saved, carrying the fields. A tracked face the block has already (a face tag of simwild's) takes the fields on its row; the others are rows added after them. A row that is no tracked face gets 0, and input_face -1."
   },
   {
     "pointer": "/output_tet_mesh",

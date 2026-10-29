@@ -309,7 +309,17 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!tet_mesh.empty()) {
             if (output_tet_mesh.empty())
                 log_and_throw_error("tet_mesh given without output_tet_mesh");
-            write_surface_into_msh(resolve_path(root, tet_mesh).string(), output_tet_mesh, out);
+            // The surface's vertices by the tet mesh's own ids, which the history saved.
+            if (h.output_vertex_ids.empty()) {
+                log_and_throw_error(
+                    "tet_mesh: {} ends at a surface output, not at a tet mesh's tracked surface",
+                    history_path);
+            }
+            write_surface_into_msh(
+                resolve_path(root, tet_mesh).string(),
+                output_tet_mesh,
+                out,
+                output_rows(map, h.output_vertex_ids));
             logger().info(
                 "fields written onto the tracked surface of {}: {}",
                 tet_mesh,

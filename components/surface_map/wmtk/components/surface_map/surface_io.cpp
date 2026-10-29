@@ -5,6 +5,7 @@
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -182,65 +183,124 @@ void write_surface_msh(const std::string& path, const SurfaceData& s)
     io::write_mesh(path, mesh_from_surface(s));
 }
 
+void add_surface(
+    MeshData& mesh,
+    const SurfaceData& s,
+    const std::vector<int64_t>& rows,
+    const std::string& what)
+{
+    // The surface must be where its vertices are in the mesh: the mesh the history ends at.
+    if (rows.size() != s.vertices.size()) {
+        log_and_throw_error(
+            "{}: {} vertex rows for a surface of {}",
+            what,
+            rows.size(),
+            s.vertices.size());
+    }
+    size_t missing = 0, misplaced = 0;
+    for (size_t v = 0; v < rows.size(); ++v) {
+        if (rows[v] < 0 || rows[v] >= mesh.V.rows()) {
+            ++missing;
+        } else if (mesh.V.row(rows[v]).transpose() != s.vertices[v]) {
+            ++misplaced;
+        }
+    }
+    if (missing + misplaced > 0) {
+        log_and_throw_error(
+            "{} is not the mesh the history ends at: of the surface's {} vertices, {} are not "
+            "among its vertices and {} are elsewhere",
+            what,
+            s.vertices.size(),
+            missing,
+            misplaced);
+    }
+
+    // Each face onto the row of the triangle block with its corners, or a row after them.
+    CellData& triangles = mesh.cells[CellType::Triangle];
+    if (triangles.connectivity.cols() != 3) triangles.connectivity.resize(0, 3);
+    std::map<std::array<int64_t, 3>, Eigen::Index> row_of;
+    for (Eigen::Index r = 0; r < triangles.connectivity.rows(); ++r) {
+        std::array<int64_t, 3> key;
+        for (int k = 0; k < 3; ++k) key[k] = triangles.connectivity(r, k);
+        std::sort(key.begin(), key.end());
+        row_of.emplace(key, r);
+    }
+    const Eigen::Index n0 = triangles.connectivity.rows();
+    std::vector<Eigen::Index> target(s.faces.size());
+    std::vector<std::array<int64_t, 3>> appended;
+    for (size_t f = 0; f < s.faces.size(); ++f) {
+        std::array<int64_t, 3> t;
+        for (int k = 0; k < 3; ++k) t[k] = rows[s.faces[f][k]];
+        std::array<int64_t, 3> key = t;
+        std::sort(key.begin(), key.end());
+        const auto it = row_of.find(key);
+        if (it != row_of.end()) {
+            target[f] = it->second;
+            continue;
+        }
+        target[f] = n0 + Eigen::Index(appended.size());
+        row_of.emplace(key, target[f]);
+        appended.push_back(t);
+    }
+    const Eigen::Index n = n0 + Eigen::Index(appended.size());
+    triangles.connectivity.conservativeResize(n, 3);
+    for (size_t i = 0; i < appended.size(); ++i) {
+        for (int k = 0; k < 3; ++k) triangles.connectivity(n0 + i, k) = appended[i][k];
+    }
+    // The rows added have no value of the fields the block had: zero, an untagged face.
+    for (auto& [name, a] : triangles.attributes) {
+        a.values = std::visit(
+            [&](const auto& m) -> AttributeValues {
+                using M = std::decay_t<decltype(m)>;
+                M out = M::Zero(n, m.cols());
+                out.topRows(m.rows()) = m;
+                return out;
+            },
+            a.values);
+    }
+
+    // The fields, each face's values on its row, a corner's at that corner of the row; a row no
+    // face is on takes the value transfer_fields gives a face with no source.
+    for (auto& [name, a] : attributes_of(s)) {
+        if (triangles.attributes.count(name)) {
+            log_and_throw_error("{}: its triangles already have a field {}", what, name);
+        }
+        const bool corner = s.corner_fields.count(name) > 0;
+        const double none = name == "input_face" ? -1 : 0;
+        a.values = std::visit(
+            [&](const auto& m) -> AttributeValues {
+                using M = std::decay_t<decltype(m)>;
+                M out = M::Constant(n, m.cols(), typename M::Scalar(none));
+                const Eigen::Index k = m.cols() / 3;
+                for (size_t f = 0; f < s.faces.size(); ++f) {
+                    const Eigen::Index r = target[f];
+                    if (!corner) {
+                        out.row(r) = m.row(f);
+                        continue;
+                    }
+                    for (int c = 0; c < 3; ++c) {
+                        for (int j = 0; j < 3; ++j) {
+                            if (rows[s.faces[f][j]] != triangles.connectivity(r, c)) continue;
+                            out.block(r, c * k, 1, k) = m.block(f, j * k, 1, k);
+                        }
+                    }
+                }
+                return out;
+            },
+            a.values);
+        triangles.attributes[name] = std::move(a);
+    }
+    mesh.validate();
+}
+
 void write_surface_into_msh(
     const std::string& tet_mesh,
     const std::string& path,
-    const SurfaceData& s)
+    const SurfaceData& s,
+    const std::vector<int64_t>& rows)
 {
     MeshData mesh = read(tet_mesh);
-    std::map<std::array<double, 3>, int64_t> row_at;
-    for (Eigen::Index v = 0; v < mesh.V.rows(); ++v) {
-        row_at.emplace(std::array<double, 3>{{mesh.V(v, 0), mesh.V(v, 1), mesh.V(v, 2)}}, v);
-    }
-    std::vector<int64_t> row(s.vertices.size(), -1);
-    size_t missing = 0;
-    for (size_t v = 0; v < s.vertices.size(); ++v) {
-        const auto it = row_at.find({{s.vertices[v][0], s.vertices[v][1], s.vertices[v][2]}});
-        if (it == row_at.end()) {
-            ++missing;
-        } else {
-            row[v] = it->second;
-        }
-    }
-    if (missing > 0) {
-        log_and_throw_error(
-            "{}: {} of the surface's {} vertices are not vertices of the tet mesh",
-            tet_mesh,
-            missing,
-            s.vertices.size());
-    }
-
-    // The triangles, after the rows the tet mesh has: those rows get no value of the fields,
-    // and the new ones none of the fields the tet mesh's triangles had.
-    CellData& triangles = mesh.cells[CellType::Triangle];
-    if (triangles.connectivity.cols() != 3) triangles.connectivity.resize(0, 3);
-    const Eigen::Index n0 = triangles.connectivity.rows(), n = n0 + Eigen::Index(s.faces.size());
-    triangles.connectivity.conservativeResize(n, 3);
-    for (size_t f = 0; f < s.faces.size(); ++f) {
-        for (int k = 0; k < 3; ++k) triangles.connectivity(n0 + f, k) = row[s.faces[f][k]];
-    }
-    // A row without a value takes the one transfer_fields gives a face with no source.
-    const auto padded = [](const AttributeValues& values,
-                           const Eigen::Index rows,
-                           const Eigen::Index first,
-                           const double none) {
-        return std::visit(
-            [&](const auto& m) -> AttributeValues {
-                using M = std::decay_t<decltype(m)>;
-                M out = M::Constant(rows, m.cols(), typename M::Scalar(none));
-                out.middleRows(first, m.rows()) = m;
-                return out;
-            },
-            values);
-    };
-    for (auto& [name, a] : triangles.attributes) a.values = padded(a.values, n, 0, 0);
-    for (auto& [name, a] : attributes_of(s)) {
-        if (triangles.attributes.count(name)) {
-            log_and_throw_error("{}: its triangles already have a field {}", tet_mesh, name);
-        }
-        a.values = padded(a.values, n, n0, name == "input_face" ? -1 : 0);
-        triangles.attributes[name] = std::move(a);
-    }
+    add_surface(mesh, s, rows, tet_mesh);
     io::write_mesh(path, mesh);
 }
 

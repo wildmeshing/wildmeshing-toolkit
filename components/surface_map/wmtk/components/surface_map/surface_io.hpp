@@ -69,15 +69,28 @@ SurfaceData read_surface(const std::vector<std::string>& paths);
 void write_surface_msh(const std::string& path, const SurfaceData& s);
 
 /**
- * @brief `s` added to a copy of the tet mesh in the gmsh file `tet_mesh`, written to `path`: its
- * triangles as rows of the tet mesh's triangle block, on its own vertices, its fields on them.
- * Every vertex of `s` must be a vertex of the tet mesh, at the same position -- as the tracked
- * surface of a tet mesh's history is.
+ * @brief `s` onto the triangles of the tet mesh `mesh`, of which each vertex v of `s` is the
+ * vertex `rows[v]` (output_rows: the history's output_vertex_ids), at the same position -- as
+ * the tracked surface of a tet mesh's history is. `what` names the mesh in messages.
+ *
+ * A face of `s` that is a row of the mesh's triangle block already -- a face tag of simwild's,
+ * say -- takes its fields there, its corners matched to the row's by vertex; any other is a row
+ * added after them, with no value (zero) of the fields the block had. A row no face of `s` is on
+ * takes the value a face with no source has: zero, and -1 for input_face. A field the block has
+ * already is refused.
  */
+void add_surface(
+    MeshData& mesh,
+    const SurfaceData& s,
+    const std::vector<int64_t>& rows,
+    const std::string& what);
+
+/// add_surface onto the tet mesh in the gmsh file `tet_mesh`, written to `path`.
 void write_surface_into_msh(
     const std::string& tet_mesh,
     const std::string& path,
-    const SurfaceData& s);
+    const SurfaceData& s,
+    const std::vector<int64_t>& rows);
 
 /**
  * @brief The surface as a Wavefront OBJ, textured: the first two components of the per-corner

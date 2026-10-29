@@ -377,8 +377,10 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     type and column labels.
   - Faces take their centroid's value; corners are evaluated just inside their face.
   - Every output face also gets `input_face` (Int64), the input face it maps to, -1 for none.
-  - `write_surface_into_msh` writes the result into a copy of a tet mesh file, as rows of
-    its triangle block on its own vertices (`tet_mesh` / `output_tet_mesh`).
+  - `add_surface` / `write_surface_into_msh` write the result onto a copy of a tet mesh
+    (`tet_mesh` / `output_tet_mesh`): its vertices are the tet mesh's by `output_vertex_ids`
+    (`output_rows`), a tracked face already in the triangle block (a simwild face tag) takes
+    the fields on its row, and any other is a row added after them.
 - **The app** (`surface_map.cpp`, spec `surface_map_spec.json`):
   - `info`: what the map holds, its warnings, the output centroids' round trip, and how far
     they lie from their preimages (drift, in output edge lengths);

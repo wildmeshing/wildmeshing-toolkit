@@ -216,7 +216,8 @@ TEST_CASE(
         {"max_iterations", 3},
         {"write_vtu", false},
     });
-    const surface_map::SurfaceMap map(history::SurfaceHistory::load(hist.string()));
+    const auto h = history::SurfaceHistory::load(hist.string());
+    const surface_map::SurfaceMap map(h);
     const auto in = surface_map::read_surface({input.string()});
     std::string why;
     REQUIRE(surface_map::matches_input(map, in, why));
@@ -226,7 +227,8 @@ TEST_CASE(
     surface_map::write_surface_into_msh(
         out.string() + "_final.msh",
         with_labels.string(),
-        transferred);
+        transferred,
+        surface_map::output_rows(map, h.output_vertex_ids));
 
     const MeshData msh = io::read_mesh(with_labels);
     CHECK(msh.cell(CellType::Tetrahedron).connectivity.rows() == exported.T.rows());
