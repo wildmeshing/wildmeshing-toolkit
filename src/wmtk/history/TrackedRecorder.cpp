@@ -261,8 +261,10 @@ std::optional<Edit> TrackedRecorder<N>::as_collapse(
     if (!sr) return std::nullopt;
     // The faces at `removed` are renamed to `kept`, those with both go, duplicates merge.
     std::vector<Cell> predicted;
-    bool spanning = false;
+    bool spanning = false, at_removed = false, at_kept = false;
     for (const Cell& t : before) {
+        at_removed = at_removed || has(t, r);
+        at_kept = at_kept || has(t, k);
         if (has(t, r) && has(t, k)) {
             spanning = true;
             continue;
@@ -275,7 +277,9 @@ std::optional<Edit> TrackedRecorder<N>::as_collapse(
     const auto sk = live(k);
     m_complex_of[r] = kNoComplex;
     if (sk) {
-        if (!spanning) ++m_stats.weld;
+        // Two vertices of faces joined along no face. A feature point off the curves, which no
+        // segment holds, joins nothing when it goes to the survivor, or the survivor to it.
+        if (at_removed && at_kept && !spanning) ++m_stats.weld;
         m_mesh_of[*sr] = kNoMesh;
         return Edit{EditKind::collapse_edge, {*sr, *sk}, {}, {}};
     }

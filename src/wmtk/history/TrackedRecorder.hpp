@@ -94,7 +94,8 @@ public:
     struct Stats
     {
         size_t split = 0, collapse = 0, swap = 0, move = 0;
-        /// A collapse that welded two vertices of the complex with no tracked face on its edge.
+        /// A collapse that welded two vertices of tracked faces with no tracked face on its edge;
+        /// not one of a feature point no face holds.
         size_t weld = 0;
         /// Changes no edit fitted, recorded as they are.
         size_t replaced = 0;
