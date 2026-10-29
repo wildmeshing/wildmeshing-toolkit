@@ -1,6 +1,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/AMIPS.h>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <wmtk/OperationDryRun.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/examples/TetMesh_examples.hpp>
@@ -755,4 +756,27 @@ TEST_CASE("dry runs change nothing and refuse only what the operation refuses", 
         CHECK(m->count(K::swap_32, E::screened) == 1);
         CHECK(m->count(K::swap_32, E::committed) == 0);
     }
+}
+
+TEST_CASE("tet_operations_without_history_hooks_refuse_to_record", "[TetMesh][tuple_operation]")
+{
+    // split_face, split_tet and insert_point report nothing to a surface history: while one is
+    // recording they throw instead of losing the surface, and run as before once it stops.
+    using namespace wmtk::utils::examples::tet;
+    using Tuple = TetMesh::Tuple;
+    TetMeshVT VT = single_tet();
+    TetMesh m;
+    m.init(VT.T);
+    const Tuple t = m.tuple_from_vids(0, 1, 2, 3);
+    std::vector<Tuple> new_tets;
+    m.start_surface_history([](size_t) { return Eigen::Vector3d::Zero().eval(); });
+    CHECK_THROWS_WITH(m.split_face(t, new_tets), Catch::Matchers::ContainsSubstring("split_face"));
+    CHECK_THROWS_WITH(m.split_tet(t, new_tets), Catch::Matchers::ContainsSubstring("split_tet"));
+    CHECK_THROWS_WITH(
+        m.insert_point(t, new_tets),
+        Catch::Matchers::ContainsSubstring("insert_point"));
+    CHECK(m.get_tets().size() == 1);
+    m.stop_surface_history();
+    CHECK(m.split_tet(t, new_tets));
+    CHECK(m.get_tets().size() == 4);
 }

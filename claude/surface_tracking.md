@@ -433,7 +433,8 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 2. Orient tracked faces consistently per sheet. Use the input orientation, the tags (simwild),
    or anything that does not depend on the face's slot.
 3. Start recording once the tracked surface exists, after insertion and the first
-   consolidation.
+   consolidation. Edge splits, collapses, swaps and smoothing report to the history;
+   `split_face`, `split_tet` and `insert_point` have no hooks and throw while it records.
 4. After anything that changes tracked flags outside the operations -- re-deriving them,
    filters, tag edits -- call `resync_surface_history()`. `remove_tets_by_ids` does it itself.
    Each resync is a `replace_faces` and a warning in the map. Avoid them if you can.

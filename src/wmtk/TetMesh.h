@@ -588,6 +588,8 @@ public:
      * @param[out] new_t A vector of Tuples refering to the tets incident to the new vertex.
      * introduced
      * @return true, if split succeed
+     *
+     * It has no surface history hooks, and throws while a surface history is recording.
      */
     bool split_tet(const Tuple& t, std::vector<Tuple>& new_tets);
 
@@ -600,6 +602,8 @@ public:
      * @param[out] new_t A vector of Tuples refering to the tets incident to the new vertex.
      * introduced
      * @return true, if split succeed
+     *
+     * It has no surface history hooks, and throws while a surface history is recording.
      */
     bool split_face(const Tuple& t, std::vector<Tuple>& new_tets);
 
@@ -623,6 +627,7 @@ public:
      * In face position, split two tets.
      * In edge position,
      * In point position, do nothing.
+     * It has no surface history hooks, and throws while a surface history is recording.
      * @return true
      * @return false
      */

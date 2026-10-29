@@ -371,6 +371,12 @@ void run_2D(
     const InputData& input_data,
     io::ComponentIO& component_io)
 {
+    // A 2D mesh's interfaces are curves, which a surface history does not describe.
+    if (!std::string(json_params["history_output"]).empty()) {
+        log_and_throw_error(
+            "history_output: simwild records a surface history in 3D only, and this input is "
+            "2D");
+    }
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());

@@ -10,6 +10,7 @@
 
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -271,4 +272,23 @@ TEST_CASE("tracking-simwild-memory-route", "[simwild][tracking]")
     for (const auto& t : tracking.output_triangles()) {
         for (const uint64_t v : t) REQUIRE(v < uint64_t(end.V.rows()));
     }
+}
+
+TEST_CASE("tracking-simwild-2d-refuses-history", "[simwild][tracking]")
+{
+    // A 2D run has no surface: history_output is refused rather than ignored.
+    MeshData square;
+    square.V.resize(4, 3);
+    square.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0;
+    auto& t = square.cells[CellType::Triangle];
+    t.connectivity.resize(2, 3);
+    t.connectivity << 0, 1, 2, 0, 2, 3;
+    t.attributes["tags"].values = DataMatrix<uint8_t>(DataMatrix<uint8_t>::Ones(2, 1));
+    t.attributes["tags"].labels = {"tag_0"};
+    CHECK_THROWS_WITH(
+        simwild::simwild(
+            {{"input", "square"}, {"history_output", "recorded"}, {"max_iterations", 0}},
+            {{"square", square}}),
+        Catch::Matchers::ContainsSubstring("3D only"));
+    CHECK(!fs::exists("recorded"));
 }
