@@ -584,12 +584,15 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
     if (component_io.memory()) {
         // map reads and writes text files of points; in memory, points are mapped through
-        // Tracking and CurveTracking (wm.Tracking and wm.CurveTracking in Python).
-        if (json_params["operation"] == "map") {
+        // Tracking and CurveTracking (wm.Tracking and wm.CurveTracking in Python). volume and
+        // map_volume read the volume history and the tet meshes that name its points, files.
+        const std::string op = json_params["operation"];
+        if (op == "map" || op == "volume" || op == "map_volume") {
             throw std::runtime_error(
-                "tracking: operation map reads and writes files of points; on the memory route "
-                "only info, transfer and features run, and points are mapped through Tracking "
-                "and CurveTracking (wm.Tracking, wm.CurveTracking)");
+                "tracking: operation " + op +
+                " reads and writes files; on the memory route only info, transfer and features "
+                "run, and points are mapped through Tracking and CurveTracking (wm.Tracking, "
+                "wm.CurveTracking)");
         }
         // The memory route writes no files: the meshes come back in the result.
         json_params["output_obj"] = "";

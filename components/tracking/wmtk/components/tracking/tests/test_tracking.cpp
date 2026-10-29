@@ -253,6 +253,13 @@ TEST_CASE("tracking-memory-route", "[tracking]")
     CHECK_THROWS_WITH(
         tracking::tracking({{"history", history}, {"operation", "map"}}, {}),
         Catch::Matchers::ContainsSubstring("only info, transfer and features"));
+    // So do volume and map_volume: the volume history and the tet meshes are files.
+    CHECK_THROWS_WITH(
+        tracking::tracking({{"history", history}, {"operation", "volume"}}, {}),
+        Catch::Matchers::ContainsSubstring("only info, transfer and features"));
+    CHECK_THROWS_WITH(
+        tracking::tracking({{"history", history}, {"operation", "map_volume"}}, {}),
+        Catch::Matchers::ContainsSubstring("only info, transfer and features"));
     // And the file route refuses bytes for a file.
     CHECK_THROWS_WITH(
         tracking::tracking({{"application", "tracking"}, {"history", history}}),
