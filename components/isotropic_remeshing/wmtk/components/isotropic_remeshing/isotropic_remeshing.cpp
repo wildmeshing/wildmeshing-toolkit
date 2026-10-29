@@ -141,6 +141,21 @@ FeatureFile read_features(
             log_and_throw_error("features: {} is not JSON: {}", path, e.what());
         }
     }
+    if (!j.is_object()) {
+        log_and_throw_error("features: {} is not an object of edges, edge_ids and vertices", path);
+    }
+    const auto list = [&](const char* key) {
+        const nlohmann::json v = j.value(key, nlohmann::json::array());
+        if (!v.is_array()) log_and_throw_error("features: {} in {} is not an array", key, path);
+        return v;
+    };
+    // An integer, not a number that would be truncated to one.
+    const auto id = [&](const nlohmann::json& v, const char* what) -> int64_t {
+        if (!v.is_number_integer()) {
+            log_and_throw_error("features: {} {} in {} is not an integer", what, v.dump(), path);
+        }
+        return v.get<int64_t>();
+    };
     const auto vertex = [&](const nlohmann::json& v, const char* what) -> size_t {
         if (!v.is_number_integer() || v.get<int64_t>() < 0 || v.get<size_t>() >= n_vertices) {
             log_and_throw_error(
@@ -160,8 +175,8 @@ FeatureFile read_features(
     }
 
     FeatureFile out;
-    const nlohmann::json edges = j.value("edges", nlohmann::json::array());
-    const nlohmann::json ids = j.value("edge_ids", nlohmann::json::array());
+    const nlohmann::json edges = list("edges");
+    const nlohmann::json ids = list("edge_ids");
     if (!ids.empty() && ids.size() != edges.size()) {
         log_and_throw_error(
             "features: {} has {} edge_ids for {} edges",
@@ -180,36 +195,37 @@ FeatureFile read_features(
         if (!mesh_edges.count(e)) {
             log_and_throw_error("features: ({}, {}) in {} is not an edge of the input", a, b, path);
         }
-        const int64_t id = ids.empty() ? -1 : ids[i].get<int64_t>();
-        const auto [it, inserted] = seen.emplace(e, id);
+        const int64_t edge_id = ids.empty() ? -1 : id(ids[i], "edge id");
+        const auto [it, inserted] = seen.emplace(e, edge_id);
         if (!inserted) {
-            if (it->second != id) {
+            if (it->second != edge_id) {
                 log_and_throw_error(
                     "features: edge ({}, {}) is listed with ids {} and {} in {}",
                     a,
                     b,
                     it->second,
-                    id,
+                    edge_id,
                     path);
             }
             continue;
         }
         out.edges.push_back(e);
-        out.edge_ids.push_back(id);
+        out.edge_ids.push_back(edge_id);
     }
     std::map<size_t, int64_t> fixed;
-    for (const nlohmann::json& v : j.value("vertices", nlohmann::json::array())) {
-        if (!v.is_array() || v.size() != 2 || !v[1].is_number_integer()) {
+    for (const nlohmann::json& v : list("vertices")) {
+        if (!v.is_array() || v.size() != 2) {
             log_and_throw_error("features: vertex {} in {} is not [vertex, id]", v.dump(), path);
         }
         const size_t x = vertex(v[0], "vertex");
-        const auto [it, inserted] = fixed.emplace(x, v[1].get<int64_t>());
-        if (!inserted && it->second != v[1].get<int64_t>()) {
+        const int64_t vertex_id = id(v[1], "vertex id");
+        const auto [it, inserted] = fixed.emplace(x, vertex_id);
+        if (!inserted && it->second != vertex_id) {
             log_and_throw_error(
                 "features: vertex {} is listed with ids {} and {} in {}",
                 x,
                 it->second,
-                v[1].get<int64_t>(),
+                vertex_id,
                 path);
         }
         if (inserted) out.vertices.emplace_back(x, it->second);

@@ -6,6 +6,7 @@
 #include <wmtk/utils/io.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <algorithm>
 #include <cstring>
@@ -440,6 +441,31 @@ TEST_CASE("features-file", "[test_remeshing][features]")
         features["edge_ids"].push_back(8);
         write(features);
         CHECK_THROWS(isotropic_remeshing(config));
+    }
+    SECTION("not integers")
+    {
+        // Each a clear error, rather than a truncated id or the JSON library's own.
+        const auto refused = [&](const nlohmann::json& j, const std::string& error) {
+            write(j);
+            CHECK_THROWS_WITH(
+                isotropic_remeshing(config),
+                Catch::Matchers::ContainsSubstring(error));
+        };
+        nlohmann::json j = features;
+        j["edge_ids"][0] = 5.7;
+        refused(j, "edge id 5.7 in");
+        j["edge_ids"][0] = "5";
+        refused(j, "edge id \"5\" in");
+        j = features;
+        j["vertices"][0][1] = 1.5;
+        refused(j, "vertex id 1.5 in");
+        j = features;
+        j["edges"][0][1] = 3.0;
+        refused(j, "edge end 3.0 in");
+        j = features;
+        j["vertices"] = 3;
+        refused(j, "vertices in");
+        refused(features["edges"], "is not an object");
     }
     SECTION("vertices renumbered")
     {
