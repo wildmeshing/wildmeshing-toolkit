@@ -121,6 +121,45 @@ void run_and_check(
     REQUIRE(kinds.size() == 5);
 }
 
+/// Writes a history by hand, byte by byte, as the format lays it out: for files no recording
+/// makes.
+struct Bytes
+{
+    std::vector<uint8_t> b;
+    Bytes& raw(const std::string& s)
+    {
+        b.insert(b.end(), s.begin(), s.end());
+        return *this;
+    }
+    Bytes& u8(uint8_t x)
+    {
+        b.push_back(x);
+        return *this;
+    }
+    Bytes& vi(uint64_t n)
+    {
+        do {
+            uint8_t x = n & 0x7F;
+            n >>= 7;
+            if (n) x |= 0x80;
+            b.push_back(x);
+        } while (n);
+        return *this;
+    }
+    Bytes& pos(double x, double y, double z)
+    {
+        for (const double c : {x, y, z}) {
+            const auto* p = reinterpret_cast<const uint8_t*>(&c);
+            b.insert(b.end(), p, p + sizeof(double));
+        }
+        return *this;
+    }
+    /// "WMTKHIST", version 7, three corners.
+    Bytes& header() { return raw("WMTKHIST").u8(7).u8(0).u8(0).u8(0).u8(3); }
+    /// No metadata, no output vertex ids.
+    Bytes& trailer() { return vi(0).vi(0); }
+};
+
 } // namespace
 
 TEST_CASE("history-replay-matches-random-operations", "[history]")
@@ -360,4 +399,54 @@ TEST_CASE("history-load-refuses-damaged-files", "[history]")
     }
     CHECK(refused > 0);
     std::filesystem::remove_all(dir);
+}
+
+TEST_CASE("history-load-refuses-what-a-map-cannot-follow", "[history]")
+{
+    // Files that pass every bound yet name what is not there: once a crash in the replay or the
+    // map built on it, now refused when loading.
+    const auto loads = [](const Bytes& bytes) {
+        const history::SurfaceHistory h = history::SurfaceHistory::from_bytes(bytes.b);
+        history::Replay r(h);
+        r.apply_all(h);
+    };
+    // The snapshot: three vertices and a face on them, vertex 0 alive or not, then a
+    // consolidation, which would index the dead corner's new id, none.
+    const auto snapshot = [](bool alive) {
+        Bytes b;
+        b.header().vi(3).u8(alive);
+        if (alive) b.pos(0, 0, 0);
+        b.u8(1).pos(1, 0, 0).u8(1).pos(0, 1, 0);
+        b.vi(1).u8(1).vi(0).vi(1).vi(2).vi(0);
+        b.vi(1).u8(uint8_t(history::EditKind::consolidate)).vi(0);
+        return b.trailer();
+    };
+    CHECK_NOTHROW(loads(snapshot(true)));
+    CHECK_THROWS_WITH(loads(snapshot(false)), Catch::Matchers::ContainsSubstring("is corrupt"));
+
+    // An embed of one face on corners 5, 6, 7 over face 0, with or without the positions of its
+    // corners, which the map takes the face from.
+    const auto embed = [](bool placed) {
+        Bytes b;
+        b.header().vi(3).u8(1).pos(0, 0, 0).u8(1).pos(1, 0, 0).u8(1).pos(0, 1, 0);
+        b.vi(1).u8(1).vi(0).vi(1).vi(2).vi(0);
+        b.vi(1).u8(uint8_t(history::EditKind::embed)).vi(1).vi(5).vi(6).vi(7).vi(1).vi(0).vi(0);
+        if (placed) {
+            b.vi(3).vi(5 << 1).pos(0, 0, 0).vi(6 << 1).pos(1, 0, 0).vi(7 << 1).pos(0, 1, 0);
+        } else {
+            b.vi(0);
+        }
+        return b.trailer();
+    };
+    CHECK_NOTHROW(loads(embed(true)));
+    CHECK_THROWS_WITH(loads(embed(false)), Catch::Matchers::ContainsSubstring("is corrupt"));
+    // The same with a feature edge to a vertex it places nowhere.
+    Bytes feature;
+    feature.header().vi(3).u8(1).pos(0, 0, 0).u8(1).pos(1, 0, 0).u8(1).pos(0, 1, 0);
+    feature.vi(1).u8(1).vi(0).vi(1).vi(2).vi(0);
+    feature.vi(1).u8(uint8_t(history::EditKind::embed)).vi(1).vi(0).vi(1).vi(2).vi(1).vi(0);
+    feature.vi(1).vi(0).vi(9);
+    feature.vi(3).vi(0 << 1).pos(0, 0, 0).vi(1 << 1).pos(1, 0, 0).vi(2 << 1).pos(0, 1, 0);
+    feature.trailer().vi(0).vi(0).vi(0).vi(0).vi(0).vi(0).vi(0).vi(0).vi(0).vi(0);
+    CHECK_THROWS_WITH(loads(feature), Catch::Matchers::ContainsSubstring("is corrupt"));
 }

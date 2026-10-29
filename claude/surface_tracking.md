@@ -134,12 +134,13 @@ which the memory route of a component returns and takes. `history::read_history(
 Loading checks what it reads before using it, so a damaged file throws "is corrupt" instead of
 crashing:
 - every count is bounded by the bytes left (each item takes at least one);
-- the snapshot's faces and feature edges name existing vertices;
+- the snapshot's faces name live vertices, and its feature edges existing ones;
 - each edit's ids name live vertices and faces of the replayed state (`ids_valid`), and the
-  ids it creates stay within what the rest of the file could still announce.
+  ids it creates stay within what the rest of the file could still announce;
+- an `embed` has a move for every vertex it brings, corners and feature edge ends alike.
 
 A new edit kind needs its case in `ids_valid`. Tests: `history-load-refuses-damaged-files`,
-`surface-map-damaged-history`.
+`history-load-refuses-what-a-map-cannot-follow`, `surface-map-damaged-history`.
 
 ### Features
 

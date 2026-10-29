@@ -253,6 +253,26 @@ bool ids_valid(const Edit& e, const Replay& r, const uint64_t room)
     }
 }
 
+/// Whether every vertex of the complex an embed brings -- each corner of its faces, each end of
+/// its feature edges -- is among its moves, which are all the positions it has: a map takes the
+/// faces' corners from them.
+bool embedded_vertices_placed(const Edit& e)
+{
+    std::vector<uint8_t> placed;
+    for (const VertexMove& m : e.moves) {
+        if (m.vid >= placed.size()) placed.resize(m.vid + 1, 0);
+        placed[m.vid] = 1;
+    }
+    const auto at = [&placed](uint64_t v) { return v < placed.size() && placed[v]; };
+    if (!std::all_of(e.v.begin(), e.v.end(), at)) return false;
+    size_t i = 0;
+    for (size_t f = 0; f < e.v.size() / 3; ++f) i += 1 + e.faces[i];
+    for (++i; i < e.faces.size(); ++i) {
+        if (!at(e.faces[i])) return false;
+    }
+    return true;
+}
+
 /// The position a move of this edit is predicted to have: the midpoint of the edit's edge, as
 /// the replay holds it before the edit. None for the other kinds.
 std::optional<Eigen::Vector3d> predicted(const Edit& e, const Replay& r)
@@ -500,9 +520,10 @@ SurfaceHistory parse(const std::vector<uint8_t>& bytes, const std::string& name)
     for (uint64_t i = 0; i < nf; ++i) {
         h.face_alive[i] = r.get<uint8_t>();
         if (!h.face_alive[i]) continue;
+        // A live face's corners are live: Replay keeps faces only at the vertices it knows.
         for (uint64_t& v : h.faces[i]) {
             v = r.varint();
-            if (v >= nv) r.corrupt();
+            if (v >= nv || !h.vertex_alive[v]) r.corrupt();
         }
     }
     h.feature_edges.resize(r.count(2));
@@ -570,6 +591,7 @@ SurfaceHistory parse(const std::vector<uint8_t>& bytes, const std::string& name)
                 m.pos = r.position();
             }
         }
+        if (e.kind == EditKind::embed && !embedded_vertices_placed(e)) r.corrupt();
         replay.apply(e);
     }
     h.metadata.resize(r.count());
