@@ -181,6 +181,21 @@ smoothing/remeshing reports. Report values are available without a report filena
 
 The existing topological-offset driver currently refuses 2D inputs; the memory overload preserves that restriction.
 
+The file-oriented entry points retain existing configurations, relative-path conventions,
+output filenames, intermediate exports, and report files. The tagged components (simwild, triwild,
+topological_offset, manifold_extraction) build the same result on both routes: the file route
+writes its `mesh` (the envelope stays out of the file) through `io::write_mesh`, and
+reads its `.msh` input through `io::read_mesh`. An explicit per-call output policy
+turns off their file observers for memory calls. Component entry points serialize their use of
+the legacy process-wide loggers, temporarily using console sinks during memory calls and restoring
+the previous logger afterward.
+
+Component calls do not run concurrently. Every call -- file or memory, from C++ or Python -- holds
+one process-wide lock for its whole duration, so calls from several threads run one after
+another; the Python bindings release the GIL, but a second call still waits for the first. Use
+`num_threads` for parallelism within a call. Existing algorithm options, filtering,
+cleaning, and exact-arithmetic decisions are shared between the two routes.
+
 ## Surface histories
 
 `isotropic_remeshing`, `qslim`, `shortest_edge_collapse`, `tetwild` and simwild in 3D record the
@@ -215,21 +230,6 @@ outputs, report = wm.isotropic_remeshing(
 wm.write_history("remeshed.wmtkhist", report["history"])  # the file the file route writes
 history = wm.read_history("remeshed.wmtkhist")            # the same bytes
 ```
-
-The file-oriented entry points retain existing configurations, relative-path conventions,
-output filenames, intermediate exports, and report files. The tagged components (simwild, triwild,
-topological_offset, manifold_extraction) build the same result on both routes: the file route
-writes its `mesh` (the envelope stays out of the file) through `io::write_mesh`, and
-reads its `.msh` input through `io::read_mesh`. An explicit per-call output policy
-turns off their file observers for memory calls. Component entry points serialize their use of
-the legacy process-wide loggers, temporarily using console sinks during memory calls and restoring
-the previous logger afterward.
-
-Component calls do not run concurrently. Every call -- file or memory, from C++ or Python -- holds
-one process-wide lock for its whole duration, so calls from several threads run one after
-another; the Python bindings release the GIL, but a second call still waits for the first. Use
-`num_threads` for parallelism within a call. Existing algorithm options, filtering,
-cleaning, and exact-arithmetic decisions are shared between the two routes.
 
 ## Shared file utilities
 
