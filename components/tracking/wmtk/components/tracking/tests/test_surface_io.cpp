@@ -75,7 +75,7 @@ std::set<std::array<uint64_t, 2>> boundaries(const MeshData& m)
 
 } // namespace
 
-TEST_CASE("surface-io-fields-through-mesh-files", "[surface_map][io]")
+TEST_CASE("surface-io-fields-through-mesh-files", "[tracking][surfaces][io]")
 {
     const fs::path dir = fs::current_path() / "surface_io_fields";
     fs::create_directories(dir);
@@ -161,7 +161,7 @@ TEST_CASE("surface-io-fields-through-mesh-files", "[surface_map][io]")
     fs::remove_all(dir);
 }
 
-TEST_CASE("surface-io-reads-standard-gmsh-element-data", "[surface_map][io]")
+TEST_CASE("surface-io-reads-standard-gmsh-element-data", "[tracking][surfaces][io]")
 {
     // A gmsh file as gmsh writes one: two triangles, a label for each as $ElementData. It is
     // carried as a field of the faces, as io::read_mesh reads it.

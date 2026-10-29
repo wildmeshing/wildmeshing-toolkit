@@ -113,7 +113,7 @@ double round_trip(
 
 } // namespace
 
-TEST_CASE("surface-map-round-trip-remeshing", "[surface_map]")
+TEST_CASE("surface-map-round-trip-remeshing", "[tracking][surfaces]")
 {
     // A closed manifold remeshed with the link condition on: every local map is a bijection, so
     // the map is one, and any point comes back to where it was.
@@ -137,7 +137,7 @@ TEST_CASE("surface-map-round-trip-remeshing", "[surface_map]")
     }
 }
 
-TEST_CASE("surface-map-round-trip-remeshing-bunny", "[surface_map][.]")
+TEST_CASE("surface-map-round-trip-remeshing-bunny", "[tracking][surfaces][.]")
 {
     // The bunny has boundary loops. Its boundary vertices are frozen, but the vertices splits
     // insert on boundary edges are not, and they can collapse along the boundary afterwards: the
@@ -160,7 +160,7 @@ TEST_CASE("surface-map-round-trip-remeshing-bunny", "[surface_map][.]")
     CHECK(err < kRoundTrip);
 }
 
-TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
+TEST_CASE("surface-map-transfer-face-labels", "[tracking][surfaces]")
 {
     // Label the sphere's faces by the side of x = 0 their centroid is on, and by octant; remesh
     // from the labelled gmsh file while recording; carry the labels onto the output. An output
@@ -183,10 +183,9 @@ TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
         side.push_back({c.x() > 0 ? 1. : 0.});
         octant.push_back({double((c.x() > 0) + 2 * (c.y() > 0) + 4 * (c.z() > 0))});
     }
-    const auto path =
-        (std::filesystem::temp_directory_path() /
-         ("wmtk_surface_map_labels_" + std::to_string(std::random_device{}()) + ".msh"))
-            .string();
+    const auto path = (std::filesystem::temp_directory_path() /
+                       ("wmtk_tracking_labels_" + std::to_string(std::random_device{}()) + ".msh"))
+                          .string();
     tracking::write_surface_msh(path, in);
     const tracking::SurfaceData reread = tracking::read_surface_msh(path);
     REQUIRE(reread.faces == in.faces);
@@ -278,7 +277,7 @@ std::vector<std::array<size_t, 2>> label_boundaries(const tracking::SurfaceData&
 
 } // namespace
 
-TEST_CASE("surface-map-conforming-labels", "[surface_map]")
+TEST_CASE("surface-map-conforming-labels", "[tracking][surfaces]")
 {
     // With the label boundaries kept as feature curves, every output face lies inside one label
     // region: points anywhere in it map to input faces of one label, the labels hold exactly,
@@ -400,7 +399,7 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
     }
 }
 
-TEST_CASE("surface-map-small-regions-survive", "[surface_map]")
+TEST_CASE("surface-map-small-regions-survive", "[tracking][surfaces]")
 {
     // Single-triangle label regions -- curves all round, or curves and the open boundary --
     // through a coarsening with the boundary free: the remeshing may not collapse one away (that
@@ -484,7 +483,7 @@ TEST_CASE("surface-map-small-regions-survive", "[surface_map]")
     }
 }
 
-TEST_CASE("surface-map-transfer-uv", "[surface_map]")
+TEST_CASE("surface-map-transfer-uv", "[tracking][surfaces]")
 {
     // The sphere's own texture coordinates, seams kept as curves: carried through the remeshing,
     // they stay continuous away from the seams, no texture triangle turns over away from the
@@ -647,7 +646,7 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
     }
 }
 
-TEST_CASE("surface-map-collapse-removes-a-side", "[surface_map]")
+TEST_CASE("surface-map-collapse-removes-a-side", "[tracking][surfaces]")
 {
     // A sheet A, B, E and a fin F on the edge (0, 1), which is non-manifold, so A+E, B and F
     // are flattened as three sides. Collapsing 1 into 0 removes B and F whole: their points have
@@ -689,7 +688,7 @@ TEST_CASE("surface-map-collapse-removes-a-side", "[surface_map]")
     }
 }
 
-TEST_CASE("surface-map-embed-on-a-sliver", "[surface_map]")
+TEST_CASE("surface-map-embed-on-a-sliver", "[tracking][surfaces]")
 {
     // An input triangle and, embedded on it, three faces, one of them a sliver of aspect 1e5
     // along an edge -- which an insertion leaves behind. Points on the sliver go to the input
@@ -740,7 +739,7 @@ TEST_CASE("surface-map-embed-on-a-sliver", "[surface_map]")
     CHECK(err < 1e-9);
 }
 
-TEST_CASE("surface-map-damaged-history", "[surface_map]")
+TEST_CASE("surface-map-damaged-history", "[tracking][surfaces]")
 {
     // A damaged tracking file that still loads -- a byte changed where the format cannot tell --
     // builds a map that may be wrong, but builds it or throws: no crash. The cheapest map does:
@@ -748,7 +747,7 @@ TEST_CASE("surface-map-damaged-history", "[surface_map]")
     // this suite's time in a Windows Debug build, which tries a quarter as many files.
     const auto h = remesh("sphere.obj", 0, 1.5, 2);
     const auto dir = std::filesystem::temp_directory_path() /
-                     ("wmtk_surface_map_damaged_" + std::to_string(std::random_device{}()));
+                     ("wmtk_tracking_damaged_" + std::to_string(std::random_device{}()));
     std::filesystem::create_directories(dir);
     const auto path = (dir / "history.bin").string();
     h.save(path);
@@ -785,7 +784,7 @@ TEST_CASE("surface-map-damaged-history", "[surface_map]")
     std::filesystem::remove_all(dir);
 }
 
-TEST_CASE("surface-map-points-on-faces-that-are-not-there", "[surface_map]")
+TEST_CASE("surface-map-points-on-faces-that-are-not-there", "[tracking][surfaces]")
 {
     // One triangle, split in two: face 1 exists on the output only. A point given on it, or on
     // any face the input does not have, comes back with no face, not wherever the split's new
@@ -814,7 +813,7 @@ TEST_CASE("surface-map-points-on-faces-that-are-not-there", "[surface_map]")
     CHECK(warnings.unlocated == 1);
 }
 
-TEST_CASE("surface-map-maps-from-several-threads", "[surface_map]")
+TEST_CASE("surface-map-maps-from-several-threads", "[tracking][surfaces]")
 {
     // Mapping does not write to the map: threads mapping through one at once each get their own
     // points and their own warnings, those a call alone gets. Every thread's batch has as many
@@ -854,7 +853,7 @@ TEST_CASE("surface-map-maps-from-several-threads", "[surface_map]")
     }
 }
 
-TEST_CASE("surface-map-smoothing", "[surface_map]")
+TEST_CASE("surface-map-smoothing", "[tracking][surfaces]")
 {
     // A flat hexagonal fan whose centre moves. Smoothing::barycentric, as the paper does: a
     // point keeps its face and barycentric coordinates, and so moves with the centre.
@@ -904,7 +903,7 @@ TEST_CASE("surface-map-smoothing", "[surface_map]")
     }
 }
 
-TEST_CASE("surface-map-box-scaffold", "[surface_map]")
+TEST_CASE("surface-map-box-scaffold", "[tracking][surfaces]")
 {
     // The region between a polygon and a box around it: every triangle positive, the triangles
     // covering exactly the box minus the polygon, and every polygon edge an edge of exactly one
@@ -967,7 +966,7 @@ TEST_CASE("surface-map-box-scaffold", "[surface_map]")
     CHECK_FALSE(tracking::box_scaffold(repeated, lo, hi, corners, tris));
 }
 
-TEST_CASE("surface-map-scaffolds", "[surface_map]")
+TEST_CASE("surface-map-scaffolds", "[tracking][surfaces]")
 {
     // Both scaffolds keep every local map a bijection: the map round-trips exactly.
     const auto h = remesh("sphere.obj", 0, 0.6, 2);
