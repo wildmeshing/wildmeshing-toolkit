@@ -8,7 +8,7 @@ var indexSectionsWithContent =
   5: "cfmopsv",
   6: "ekosv",
   7: "cemrs",
-  8: "abcdefimoprstuvw"
+  8: "acdefimoprstuvw"
 };
 
 var indexSectionNames =

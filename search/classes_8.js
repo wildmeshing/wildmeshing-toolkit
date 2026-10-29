@@ -8,7 +8,6 @@ var searchData=
   ['inputdata_5',['InputData',['../structwmtk_1_1components_1_1simwild_1_1_input_data.html',1,'wmtk::components::simwild']]],
   ['inputenvelopes_6',['InputEnvelopes',['../classwmtk_1_1_input_envelopes.html',1,'wmtk']]],
   ['inputpoint_7',['InputPoint',['../structwmtk_1_1components_1_1tracking_1_1_input_point.html',1,'wmtk::components::tracking']]],
-  ['interiortetopt_8',['InteriorTetOpt',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html',1,'app::interior_tet_opt']]],
-  ['intersectionenvelope_9',['IntersectionEnvelope',['../classwmtk_1_1_intersection_envelope.html',1,'wmtk']]],
-  ['isotropicremeshing_10',['IsotropicRemeshing',['../classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html',1,'wmtk::components::isotropic_remeshing']]]
+  ['intersectionenvelope_8',['IntersectionEnvelope',['../classwmtk_1_1_intersection_envelope.html',1,'wmtk']]],
+  ['isotropicremeshing_9',['IsotropicRemeshing',['../classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html',1,'wmtk::components::isotropic_remeshing']]]
 ];
