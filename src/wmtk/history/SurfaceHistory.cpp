@@ -12,12 +12,13 @@ namespace wmtk::history {
 
 namespace {
 
-// Layout (version 6, the first released; the earlier ones were development formats). Every
-// count and id is an unsigned LEB128 varint; a position is three little-endian f64.
+// Layout (version 7, the first released; the earlier ones were development formats). Every
+// count and id is an unsigned LEB128 varint; a position is three little-endian f64. N is the
+// number of corners of a face: 3, a surface.
 //
-//   "WMTKHIST" u32 version
+//   "WMTKHIST" u32 version, u8 N
 //   n_vertices, then per vertex: u8 alive, and its position if alive
-//   n_faces, then per face: u8 alive, and its three vertex ids if alive
+//   n_faces, then per face: u8 alive, and its N vertex ids if alive
 //   n_feature_edges, then per feature edge its two vertex ids
 //   n_edits, then per edit: u8 kind, the ids the kind implies --
 //       split_edge:    v0 v1 new_v, n_pairs, n_pairs x (f new_f)
@@ -35,7 +36,9 @@ namespace {
 //   metadata length, metadata bytes
 //   n_output_vertex_ids, then each plus one (0: none)
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'H', 'I', 'S', 'T'};
-constexpr uint32_t kVersion = 6;
+constexpr uint32_t kVersion = 7;
+/// The corners of a face of a surface history.
+constexpr uint8_t kCorners = 3;
 
 class Writer
 {
@@ -325,6 +328,7 @@ void SurfaceHistory::save(const std::string& path) const
     Writer w(path);
     w.bytes(kMagic, sizeof(kMagic));
     w.put(kVersion);
+    w.put(kCorners);
 
     w.varint(vertices.size());
     for (size_t i = 0; i < vertices.size(); ++i) {
@@ -413,10 +417,19 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
     const uint32_t version = r.get<uint32_t>();
     if (version != kVersion) {
         log_and_throw_error(
-            "SurfaceHistory: {} has version {}, expected {}",
+            "SurfaceHistory: {} has version {}; this build reads version {} only, so the history "
+            "has to be recorded again",
             path,
             version,
             kVersion);
+    }
+    const uint8_t corners = r.get<uint8_t>();
+    if (corners != kCorners) {
+        log_and_throw_error(
+            "SurfaceHistory: {} holds faces of {} corners, not a surface's {}",
+            path,
+            int(corners),
+            int(kCorners));
     }
 
     SurfaceHistory h;

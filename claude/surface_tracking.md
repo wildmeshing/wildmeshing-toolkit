@@ -120,9 +120,10 @@ Composition (`SurfaceHistory.hpp`):
 
 ### File format
 
-Binary, varints (`SurfaceHistory.cpp`). Version 6 is the first released one; the earlier ones
-were development formats and no longer load. When you add to it, bump `kVersion`, keep loading
-version 6 and up, and note in the comment at the top of the file what each version added.
+Binary, varints (`SurfaceHistory.cpp`). Version 7 is the first released one; the earlier ones
+were development formats and no longer load. After the version comes one byte, the number of
+corners of a face: 3, a surface. When you add to it, bump `kVersion`, keep loading version 7
+and up, and note in the comment at the top of the file what each version added.
 
 Loading checks what it reads before using it, so a damaged file throws "is corrupt" instead of
 crashing:

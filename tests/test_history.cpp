@@ -3,6 +3,7 @@
 #include <wmtk/history/SurfaceHistory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -194,6 +195,46 @@ TEST_CASE("history-save-load-round-trip", "[history]")
             CHECK(h.edits[i].moves[k].pos == g.edits[i].moves[k].pos);
         }
     }
+}
+
+TEST_CASE("history-file-header", "[history]")
+{
+    // "WMTKHIST", the version, then the corners of a face: version 7 and 3 for a surface. A file
+    // of the development version 6, which had no corner count, is refused with what to do.
+    TriMesh m;
+    const auto pos = make_grid(m, 3, 3);
+    const auto rec = m.start_history([&pos](size_t v) { return pos[v]; });
+    const auto path = (std::filesystem::temp_directory_path() /
+                       ("wmtk_history_header_" + std::to_string(std::random_device{}()) + ".bin"))
+                          .string();
+    rec->history().save(path);
+    std::string bytes;
+    {
+        std::ifstream in(path, std::ios::binary);
+        bytes.assign(std::istreambuf_iterator<char>(in), {});
+    }
+    REQUIRE(bytes.size() > 13);
+    CHECK(bytes.substr(0, 8) == "WMTKHIST");
+    CHECK(bytes.substr(8, 5) == std::string("\x07\0\0\0\x03", 5));
+
+    bytes[8] = 6;
+    {
+        std::ofstream o(path, std::ios::binary | std::ios::trunc);
+        o.write(bytes.data(), std::streamsize(bytes.size()));
+    }
+    CHECK_THROWS_WITH(
+        history::SurfaceHistory::load(path),
+        Catch::Matchers::ContainsSubstring("has version 6; this build reads version 7 only"));
+    bytes[8] = 7;
+    bytes[12] = 2;
+    {
+        std::ofstream o(path, std::ios::binary | std::ios::trunc);
+        o.write(bytes.data(), std::streamsize(bytes.size()));
+    }
+    CHECK_THROWS_WITH(
+        history::SurfaceHistory::load(path),
+        Catch::Matchers::ContainsSubstring("holds faces of 2 corners"));
+    std::filesystem::remove(path);
 }
 
 TEST_CASE("history-load-refuses-damaged-files", "[history]")
