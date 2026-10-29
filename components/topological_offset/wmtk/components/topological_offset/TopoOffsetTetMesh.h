@@ -841,6 +841,9 @@ public:
     /// its sums leave it out; see tet_energy(), BAND TERM THAT CANCELS.
     bool band_term_cancels(const std::vector<size_t>& tids) const
     {
+        // "exact_swept": every operation's sums leave the band term out, and its rule adds the
+        // band term's exact change (EXACT SWEPT CHANGE below)
+        if (swept_rule()) return true;
         if (m_offset_params.band_volume_rule != "exact" &&
             m_offset_params.band_volume_rule != "front_flux")
             return false;
@@ -857,6 +860,103 @@ public:
         if (m_band_exact->front_flux_flag(pts.data(), n)) return false;
         return m_band_exact->distance_bound(pts.data(), n) <= m_band_exact->front_flux_reach();
     }
+    /**
+     * EXACT SWEPT CHANGE (EXPERIMENTAL_band_volume_rule "exact_swept", 2026-10-22). The energy is
+     * "exact"'s -- b(t) = J_t / delta, J_t = ExactBandIntegral::value() -- but an operation's rule
+     * does not integrate its cells before and after: it compares the AMIPS terms of the cells it
+     * changes (band_term_cancels() is true for every one) plus the CHANGE of the band term
+     * E* / delta, E* = int_B (d - delta) dV, B the union of the band cells, which lives only
+     * where B changes, and is integrated exactly there by value() on small tets:
+     *
+     *   - a vertex v moving from x0 to x1 (smoothing, the projected step, a collapse's v1 moving
+     *     onto v2): dE* = sum over the faces f of the boundary of B through v of
+     *     sign_f value(conv(x0, x1, a_f, b_f)), f = (v, a_f, b_f) ordered so that its normal
+     *     (a_f - x0) x (b_f - x0) points out of B (away from the band cell's fourth corner), and
+     *     sign_f = sign((x1 - x0) . that normal) -- +1 where B grows. Why: a band cell
+     *     t = [v, a, b, p] moved to [x1, a, b, p] differs from [x0, a, b, p] by the 3-chain
+     *     -[x0, x1, b, p] + [x0, x1, a, p] - [x0, x1, a, b] (the boundary of the 4-simplex
+     *     [x0, x1, a, b, p] is a 3-cycle, and a 3-cycle in R^3 integrates every function to 0),
+     *     one oriented tet per face of t through v, each face as it bounds t (outward). Over the
+     *     band cells the faces between two of them cancel; the boundary faces of B are left, each
+     *     with the oriented tet [x0, x1, a_f, b_f], whose integral is sign_f times the unsigned
+     *     one. Exact for mixed signs and for any move that inverts no cell; a collapse's cells
+     *     through v2 become flat and drop out the same way. A vertex on no boundary face of B: 0.
+     *   - a swap replacing the cells O by the cells N over the same region: dE* = int over the
+     *     3-chain D = (band cells of N) - (band cells of O). D's boundary is the signed sum of the
+     *     outward faces of N's band cells less O's (equal faces cancel), and D = cone(p, dD) for
+     *     any point p (D - cone(p, dD) is a 3-cycle), so dE* = sum over the faces F of dD of
+     *     m_F sign(det[F - p]) value(conv(p, F)), p the vertex on the most faces of dD (their
+     *     cones are flat). An interior swap (one label over the ring, no boundary face of B
+     *     changes): 0 without a call; a surface flip, (a,b,c) + (a,b,d) -> (a,c,d) + (b,c,d):
+     *     dD = the boundary of the tet (a, b, c, d) and dE* = +/- value(a, b, c, d), one call.
+     *   - a split: 0 (the children tile the parents, labels inherited).
+     * The decisions read these changes; tet_energy(), the settle test and every whole-mesh sum
+     * read "exact"'s J_t. Where value() takes rule (a)'s bound on a curved piece, the bound
+     * depends on the cell, and the swept change is not the difference of the cells' bounds.
+     * MEASURED (mac-mini, 2026-10-22, 3 turns, on main), every accepted operation's swept change
+     * against the change of its cells' sum of value(): within 1.2e-18 on the cube outward and
+     * inward; on the screw piece 15 within 2.7e-15 on exact pieces, up to 2.1e-3 (front
+     * smoothing) where a rule-(a) piece is involved. Under TetWild's rules (m_op_rules) every
+     * operation keeps TetWild's own: no sum rule reads any of this.
+     */
+    /// "exact_swept" (EXACT SWEPT CHANGE).
+    bool swept_rule() const { return m_offset_params.band_volume_rule == "exact_swept"; }
+    /// EXACT SWEPT CHANGE: dE* / delta for vid moving from x0 to x1, the boundary faces of B
+    /// through vid read from the mesh (labels, connectivity, the other corners' positions). `st`
+    /// collects value()'s statistics (rule-(a) pieces) when given.
+    double band_swept_change(
+        size_t vid,
+        const Vector3d& x0,
+        const Vector3d& x1,
+        ExactBandIntegral::Stats* st = nullptr) const;
+    /// band_swept_change() in two halves: the boundary faces of B through vid as (a_f, b_f),
+    /// ordered out of B at x0 (no value() call), and the sum over them for a move x0 -> x1.
+    void band_swept_faces(
+        size_t vid,
+        const Vector3d& x0,
+        std::vector<std::array<Vector3d, 2>>& faces) const;
+    double band_swept_sum(
+        const Vector3d& x0,
+        const Vector3d& x1,
+        const std::vector<std::array<Vector3d, 2>>& faces,
+        ExactBandIntegral::Stats* st = nullptr) const;
+    /// EXACT SWEPT CHANGE: dE* / delta for the band cells `old_band` replaced by `new_band` over
+    /// the same region, at the current positions (a swap moves no vertex).
+    double band_chain_change(
+        const std::vector<std::array<size_t, 4>>& old_band,
+        const std::vector<std::array<size_t, 4>>& new_band,
+        ExactBandIntegral::Stats* st = nullptr) const;
+    /// "exact_swept": the swap in flight's dE* / delta, `new_band` the band cells among its new
+    /// cells (by candidate_label() in the case search, by the labels written in the rule): 0 for
+    /// an interior swap, band_chain_change() from SwapRecord::old_band for a flip.
+    double swap_swept_change(const std::vector<std::array<size_t, 4>>& new_band, bool flip);
+    /// "exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is.
+    /// The move stands iff the ring's AMIPS change (tet_energy_sum(ring, false) - amips_before)
+    /// plus band_swept_change() is <= 0 (a tie passes, a NaN refuses); if not, the step is
+    /// halved toward x0 and tested again, up to kSweptHalvings times, then refused. The halved
+    /// positions are on the segment between two valid positions, and the positions at which
+    /// vid's ring has no inverted cell are an intersection of half-spaces, so they are valid
+    /// too (tested anyway, exactly). Counts into c.
+    static constexpr int kSweptHalvings = 4;
+    struct SweptCounters
+    {
+        std::atomic<size_t> solves{0}, refused{0};
+        std::array<std::atomic<size_t>, kSweptHalvings + 1> accepted{};
+    };
+    bool swept_accept(
+        size_t vid,
+        const std::vector<size_t>& ring,
+        const Vector3d& x0,
+        double amips_before,
+        SweptCounters& c);
+    mutable SweptCounters m_swept_front, m_swept_nonfront;
+    /// "exact_swept": the smoother's search model's derivative evaluations, and of them those
+    /// taken from the ring's band cells (BandVolumeEnergy3D::set_swept()), per pass.
+    mutable BandVolumeEnergy3D::SweptDerivCounts m_swept_derivs;
+    /// "exact_swept", the projected step: the vertex smooth_nonfront_vertex() smooths and its
+    /// position at the `stored` call of smoothing_ring_energy(), which every candidate's band
+    /// change is taken from.
+    mutable wmtk::threading::enumerable_thread_specific<std::pair<size_t, Vector3d>> m_swept_stored;
     /**
      * @brief What the shared smoother's projected step compares for a vertex held on a surface:
      * the sum of tet_energy() over the one-ring, the rule every other move answers to (under
@@ -876,6 +976,25 @@ public:
         // TetWild's rules (m_op_rules): the base's max over the ring.
         if (tetwild_rules()) return TetOptimizerMesh::smoothing_ring_energy(ring, stored);
         double s = 0.;
+        if (swept_rule()) {
+            // "exact_swept": the ring's AMIPS terms plus the band term's change from the position
+            // at the `stored` call (EXACT SWEPT CHANGE); the vertex is the one
+            // smooth_nonfront_vertex() is smoothing, the same in both calls
+            for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this), false);
+            auto& st = m_swept_stored.local();
+            const size_t vid = st.first;
+            const auto vs = oriented_tet_vids(ring.front().tid(*this));
+            if (std::find(vs.begin(), vs.end(), vid) == vs.end()) {
+                log_and_throw_error(
+                    "exact_swept: the projected step's ring is not vertex {}'s",
+                    vid);
+            }
+            if (stored) {
+                st.second = m_vertex_attribute[vid].m_posf;
+                return s;
+            }
+            return s + band_swept_change(vid, st.second, m_vertex_attribute[vid].m_posf);
+        }
         for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this));
         return s;
     }
@@ -945,7 +1064,7 @@ public:
                 m_n_regions);
         }
         if (m_offset_params.band_volume_rule == "exact" ||
-            m_offset_params.band_volume_rule == "front_flux") {
+            m_offset_params.band_volume_rule == "front_flux" || swept_rule()) {
             // EXPERIMENTAL_band_volume_rule "exact" (and "front_flux", whose per-cell quantity
             // it is, see above): J_t / delta, J_t = int_t (d - delta) dV in closed form
             // (ExactBandIntegral), in place of the corner bound
@@ -997,6 +1116,9 @@ public:
     /// cell_energy() of a candidate cell of the swap in flight, which does not exist yet, with the
     /// label swap_after_cells() will write. See tet_energy(), CANDIDATE CELLS.
     double candidate_energy(const std::array<size_t, 4>& vids);
+    /// The label swap_after_cells() will write on the candidate cell vids (candidate_energy(),
+    /// and "exact_swept"'s case search).
+    int candidate_label(const std::array<size_t, 4>& vids);
     /// Collapses and swaps refused for raising E over the cells they change, per operation group
     /// ([band volume energy]).
     mutable std::atomic<int> m_volume_reject_collapse{0}, m_volume_reject_swap{0};
@@ -1927,6 +2049,13 @@ public:
         bool tie = false;
         /// band_term_cancels() for v1's ring: both sums leave the band term out.
         bool band_cancels = false;
+        /// "exact_swept": v1's boundary faces of B (band_swept_faces()) and the two positions,
+        /// taken on the mesh before; the change is integrated in collapse_after_connectivity(),
+        /// for the collapses that pass the engine's tests -- MEASURED (on main, mac-mini, the
+        /// screw piece 15, turn 1, 2026-10-22): integrated here, before the inversion test that
+        /// refuses most attempts, the collapse pass took 35.0 s against "exact"'s 3.6 s.
+        std::vector<std::array<Vector3d, 2>> swept_faces;
+        Vector3d swept_x1 = Vector3d::Zero(), swept_x2 = Vector3d::Zero();
     };
     mutable wmtk::threading::enumerable_thread_specific<CollapseVolume> m_collapse_volume;
     /**
@@ -2965,10 +3094,13 @@ private:
         /// The swap's band term cancels (band_term_cancels(), every swap kind): the before-sum,
         /// the candidates and the after-sum leave it out.
         bool band_cancels = false;
+        /// "exact_swept", a flip: the band cells it replaces (swap_swept_change()).
+        std::vector<std::array<size_t, 4>> old_band;
         void clear()
         {
             flip = false;
             band_cancels = false;
+            old_band.clear();
             scored = false;
             scored_energy = std::numeric_limits<double>::max();
         }

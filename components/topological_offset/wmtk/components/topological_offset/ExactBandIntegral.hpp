@@ -404,6 +404,25 @@ public:
         Eigen::Matrix3d& hess,
         FaceParts* keep = nullptr) const;
     /**
+     * @brief While one is alive on a thread, a curved bisector crossing a piece of a face
+     * (front_face(), front_face_derivs()) throws without being logged first; every other error is
+     * logged as before. "exact_swept"'s search model catches that throw and takes the ring cells'
+     * derivatives at that x instead (BandVolumeEnergy3D::set_swept()): there it is an expected
+     * outcome, not an error, and each throw would otherwise log a line with the face in hex
+     * floats.
+     */
+    class QuietCurvedBisector
+    {
+    public:
+        QuietCurvedBisector();
+        ~QuietCurvedBisector();
+        QuietCurvedBisector(const QuietCurvedBisector&) = delete;
+        QuietCurvedBisector& operator=(const QuietCurvedBisector&) = delete;
+
+    private:
+        bool m_prev = false;
+    };
+    /**
      * @brief D_t = int_t (d - delta) dV - oint_dt G.n dA of the cell t (either orientation): 0
      * exactly when one feature labels every part of t on the offset side (one field); otherwise
      * the flux of each labelled part's field through its faces not on dt, outward from the part,
