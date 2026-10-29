@@ -72,7 +72,8 @@ On curves (triwild) the file says it holds curves, and the points are:
 
 `"operation": "features"` writes the input's feature points to `output_points`, one
 `input_vertex output_vertex` per line: a vertex of the input files (the curve files' vertices in
-order, then the point files') and the output vertex it ended at, `-1` for none.
+order, then the point files') and the output vertex it ended at, `-1` for none; on the memory
+route it returns them in the report instead, as `feature_points`.
 
 From C++ (`components/tracking/wmtk/components/tracking/tracking.hpp`, the component's one
 public header):
@@ -105,9 +106,10 @@ command line with a points file.
 
 On the memory route the applications record the same history, from the meshes they are given
 as from their files, and return it as bytes, curves as surfaces. `tracking(options, meshes)`
-takes the history as bytes: it runs `info` on a surface or a curve
-history and returns its report, and `transfer` on a surface; `map` and `features` read and write
-files of points, and throw there. The tests `tracking-memory-route` (isotropic) and
+takes the history as bytes: it runs `info` on a surface or a curve history and returns its
+report, `transfer` on a surface, and `features` on curves, whose report holds the feature points
+(`feature_points`, pairs of an input and an output vertex, `-1` for none); `map`, whose points
+are text files, throws there: `Tracking` and `CurveTracking` map points in memory. The tests `tracking-memory-route` (isotropic) and
 `tracking-memory-route-triwild` (curves) run both.
 
 Remapping attributes:
@@ -551,7 +553,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   Without `input`, `transfer` reads the input files from the history's metadata.
 
   On the memory route (`tracking(options, meshes)`) `history` is the bytes of a history,
-  never a file name; `info` and `transfer` run, `map` is refused. `transfer` needs `input`, a
+  never a file name; `info`, `transfer` and `features` run, `map` is refused. `transfer` needs `input`, a
   key of `meshes`, and returns the output surface as `mesh` (`mesh_from_surface`), and with
   `tet_mesh`, another key, that mesh with the fields as `tet_mesh` (`add_surface`).
 

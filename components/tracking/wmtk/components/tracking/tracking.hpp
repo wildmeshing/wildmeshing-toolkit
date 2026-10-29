@@ -236,7 +236,9 @@ void tracking(nlohmann::json json_params);
  * report. transfer, on a surface history, takes its surface from `meshes` by `input`, which it
  * needs, and returns the output surface as "mesh", the carried fields as triangle attributes;
  * with `tet_mesh`, also a key of `meshes`, that mesh with the fields on its tracked surface as
- * "tet_mesh" (add_surface). map and features, whose points are text files, throw.
+ * "tet_mesh" (add_surface). features, on a curve history, returns the feature points in the
+ * report, as feature_points: pairs of an input and an output vertex, -1 for none. map, whose
+ * points are text files, throws: Tracking and CurveTracking map points in memory.
  */
 ComponentResult tracking(nlohmann::json json_params, const MeshMap& meshes);
 

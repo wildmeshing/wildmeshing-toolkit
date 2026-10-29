@@ -251,7 +251,7 @@ TEST_CASE("tracking-memory-route", "[tracking]")
         Catch::Matchers::ContainsSubstring("needs input"));
     CHECK_THROWS_WITH(
         tracking::tracking({{"history", history}, {"operation", "map"}}, {}),
-        Catch::Matchers::ContainsSubstring("only info and transfer"));
+        Catch::Matchers::ContainsSubstring("only info, transfer and features"));
     // And the file route refuses bytes for a file.
     CHECK_THROWS_WITH(
         tracking::tracking({{"application", "tracking"}, {"history", history}}),

@@ -116,6 +116,16 @@ class Tracking(unittest.TestCase):
         self.assertEqual(info["feature_points_at_output_vertex"], 2)
         self.assertEqual(info["round_trip_lost"], 0)
         self.assertLess(info["round_trip_max_displacement"], 1e-8)
+        # features: the feature points in the report, an input and an output vertex each, and
+        # no file; map is refused.
+        _, features = getattr(wm, TRACKING)({"history": history, "operation": "features"}, {})
+        pairs = np.array(features["feature_points"], dtype=np.int64)
+        self.assertEqual(pairs.shape, (2, 2))
+        self.assertTrue((pairs[:, 1] >= 0).all())
+        self.assertTrue((pairs[:, 1] < len(outputs["mesh"]["V"])).all())
+        self.assertEqual([p.name for p in Path.cwd().iterdir()], ["curves.wmtkhist"])
+        with self.assertRaisesRegex(RuntimeError, "only info, transfer and features"):
+            getattr(wm, TRACKING)({"history": history, "operation": "map"}, {})
 
     def test_write_and_read_history(self):
         _, report = wm.isotropic_remeshing(
@@ -204,7 +214,7 @@ class Tracking(unittest.TestCase):
             tracking({"history": "h.wmtkhist", "operation": "info"}, {})
         with self.assertRaisesRegex(RuntimeError, "needs input"):
             tracking({"history": history, "operation": "transfer"}, {"in": self.labelled()})
-        with self.assertRaisesRegex(RuntimeError, "only info and transfer"):
+        with self.assertRaisesRegex(RuntimeError, "only info, transfer and features"):
             tracking({"history": history, "operation": "map"}, {})
         self.assertEqual([p.name for p in Path.cwd().iterdir()], ["h.wmtkhist"])
 

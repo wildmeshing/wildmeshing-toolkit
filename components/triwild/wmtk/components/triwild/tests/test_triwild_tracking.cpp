@@ -280,10 +280,23 @@ TEST_CASE("tracking-memory-route-triwild", "[triwild][tracking]")
     CHECK(report.at("round_trip_lost") == 0);
     CHECK(report.at("round_trip_max_displacement").get<double>() < 1e-8);
 
-    // map and features read and write files: refused on the memory route.
-    for (const char* operation : {"map", "features"}) {
-        CHECK_THROWS_AS(
-            tracking::tracking({{"history", bytes}, {"operation", operation}}, {}),
-            std::runtime_error);
+    // features: the feature points in the report, each an input vertex and the output vertex
+    // it became, as CurveTracking has them; nothing written.
+    const auto [no_meshes, features] =
+        tracking::tracking({{"history", bytes}, {"operation", "features"}}, {});
+    CHECK(no_meshes.empty());
+    const auto expected = tracking.feature_points();
+    REQUIRE(features.at("feature_points").size() == expected.size());
+    for (size_t i = 0; i < expected.size(); ++i) {
+        CHECK(features["feature_points"][i][0].get<int64_t>() == int64_t(expected[i].input_vertex));
+        CHECK(
+            features["feature_points"][i][1].get<int64_t>() == int64_t(expected[i].output_vertex));
     }
+    CHECK(features.at("feature_points_at_output_vertex") == 4);
+    // The one file in the directory is the history written above.
+    CHECK(std::distance(fs::directory_iterator(dir), fs::directory_iterator()) == 1);
+    // map reads and writes files: refused on the memory route.
+    CHECK_THROWS_AS(
+        tracking::tracking({{"history", bytes}, {"operation", "map"}}, {}),
+        std::runtime_error);
 }

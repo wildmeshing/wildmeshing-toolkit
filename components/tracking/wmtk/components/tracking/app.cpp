@@ -411,12 +411,14 @@ void map_curve_points(
 }
 
 /// The operations on a curve history (triwild's); `history_path` names it in messages. Returns
-/// info's report; map and features write files and return an empty one.
+/// info's report, and on the memory route the feature points of features, which the file route
+/// writes to output_points; map writes its points and returns an empty one.
 nlohmann::json curves(
     const history::CurveHistory& h,
     const std::string& history_path,
     const nlohmann::json& json_params,
-    const std::filesystem::path& root)
+    const std::filesystem::path& root,
+    const bool memory)
 {
     igl::Timer timer;
     const std::string operation = json_params["operation"];
@@ -464,6 +466,17 @@ nlohmann::json curves(
         "output vertex",
         features.size(),
         kept);
+    if (operation == "features" && memory) {
+        // Each feature point as its input vertex and the output vertex it became, -1 for none:
+        // an Int64 array of two columns, as a list of pairs.
+        nlohmann::json pairs = nlohmann::json::array();
+        for (const FeaturePoint& f : features) {
+            pairs.push_back(
+                {f.input_vertex == kNoId ? int64_t(-1) : int64_t(f.input_vertex),
+                 f.output_vertex == kNoId ? int64_t(-1) : int64_t(f.output_vertex)});
+        }
+        return {{"feature_points", std::move(pairs)}, {"feature_points_at_output_vertex", kept}};
+    }
     if (operation == "features") {
         if (std::string(json_params["output_points"]).empty()) {
             log_and_throw_error("features: output_points is required");
@@ -589,13 +602,13 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         json_params = spec_engine.inject_defaults(json_params, spec);
     }
     if (component_io.memory()) {
-        // map and features read and write text files of points; in memory, map points
-        // through Tracking and CurveTracking.
-        if (json_params["operation"] == "map" || json_params["operation"] == "features") {
+        // map reads and writes text files of points; in memory, points are mapped through
+        // Tracking and CurveTracking (wm.Tracking and wm.CurveTracking in Python).
+        if (json_params["operation"] == "map") {
             throw std::runtime_error(
-                "tracking: operation " + json_params["operation"].get<std::string>() +
-                " reads and writes files of points; on the memory route only info and transfer "
-                "are supported");
+                "tracking: operation map reads and writes files of points; on the memory route "
+                "only info, transfer and features run, and points are mapped through Tracking "
+                "and CurveTracking (wm.Tracking, wm.CurveTracking)");
         }
         // The memory route writes no files: the meshes come back in the result.
         json_params["output_obj"] = "";
@@ -626,7 +639,8 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
             h.edits.size(),
             history_path,
             timer.getElapsedTimeInSec());
-        component_io.result.second = curves(h, history_path, json_params, root);
+        component_io.result.second =
+            curves(h, history_path, json_params, root, component_io.memory());
         return;
     }
     if (json_params["operation"] == "features") {
