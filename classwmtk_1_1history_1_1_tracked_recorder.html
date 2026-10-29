@@ -125,9 +125,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6a353218c723ed9f259b38bc3ac227ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b157f03ff7fa77da2de08fd2867967d" id="r_a7b157f03ff7fa77da2de08fd2867967d"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html#a7b157f03ff7fa77da2de08fd2867967d">mesh_vertex_ids</a> () const</td></tr>
 <tr class="separator:a7b157f03ff7fa77da2de08fd2867967d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad751274314cfefb919307d541dadd2b6" id="r_ad751274314cfefb919307d541dadd2b6"><td class="memItemLeft" align="right" valign="top"><a id="ad751274314cfefb919307d541dadd2b6" name="ad751274314cfefb919307d541dadd2b6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>commit</b> (<a class="el" href="structwmtk_1_1history_1_1_tracked_recorder_1_1_change.html">Change</a> &amp;&amp;c)</td></tr>
-<tr class="separator:ad751274314cfefb919307d541dadd2b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa94350038fd262743a60efae1b8f1626" id="r_aa94350038fd262743a60efae1b8f1626"><td class="memItemLeft" align="right" valign="top">std::array&lt; size_t, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html#aa94350038fd262743a60efae1b8f1626">commit</a> (<a class="el" href="structwmtk_1_1history_1_1_tracked_recorder_1_1_change.html">Change</a> &amp;&amp;c)</td></tr>
+<tr class="separator:aa94350038fd262743a60efae1b8f1626"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d11cc445560f64e47019dbee7483b96" id="r_a6d11cc445560f64e47019dbee7483b96"><td class="memItemLeft" align="right" valign="top"><a id="a6d11cc445560f64e47019dbee7483b96" name="a6d11cc445560f64e47019dbee7483b96"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>renumber</b> (const std::vector&lt; size_t &gt; &amp;old_to_new)</td></tr>
 <tr class="memdesc:a6d11cc445560f64e47019dbee7483b96"><td class="mdescLeft">&#160;</td><td class="mdescRight">The mesh renumbered its vertices: old_to_new[v], size_t(-1) for a vertex gone. <br /></td></tr>
@@ -154,6 +153,8 @@ const <a class="el" href="classwmtk_1_1history_1_1_basic_replay.html">BasicRepla
 std::optional&lt; uint64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_id</b> (size_t v) const</td></tr>
 <tr class="memdesc:aeb80f3e5f78f4f9be808d66fa3cbb5b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vertex of the complex a mesh vertex is, if it is on it. Not synchronised. <br /></td></tr>
 <tr class="separator:aeb80f3e5f78f4f9be808d66fa3cbb5b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa07ba38c49391251b095f0721d055963" id="r_aa07ba38c49391251b095f0721d055963"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html#aa07ba38c49391251b095f0721d055963">vertex_ids</a> (const std::vector&lt; size_t &gt; &amp;vs) const</td></tr>
+<tr class="separator:aa07ba38c49391251b095f0721d055963"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -274,6 +275,27 @@ template&lt;int N&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="aa94350038fd262743a60efae1b8f1626" name="aa94350038fd262743a60efae1b8f1626"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa94350038fd262743a60efae1b8f1626">&#9670;&#160;</a></span>commit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int N&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt; size_t, 2 &gt; <a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html">wmtk::history::TrackedRecorder</a>&lt; N &gt;::commit </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1history_1_1_tracked_recorder_1_1_change.html">Change</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>c</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Records <code>c</code>; returns the range of edits it added to the history, [first, last): empty when the complex did not change. </p>
+
+</div>
+</div>
 <a id="a5469e042dfcbb949d718a99a8e12196e" name="a5469e042dfcbb949d718a99a8e12196e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5469e042dfcbb949d718a99a8e12196e">&#9670;&#160;</a></span>face_id()</h2>
 
@@ -353,6 +375,27 @@ template&lt;int N&gt; </div>
       </table>
 </div><div class="memdoc">
 <p>Brings the complex in line with <code>faces</code>, every tracked face of the mesh, after a change outside the operations: one replace_faces edit, if anything differs. Returns how many faces it removed and added. </p>
+
+</div>
+</div>
+<a id="aa07ba38c49391251b095f0721d055963" name="aa07ba38c49391251b095f0721d055963"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa07ba38c49391251b095f0721d055963">&#9670;&#160;</a></span>vertex_ids()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int N&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; uint64_t &gt; <a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html">wmtk::history::TrackedRecorder</a>&lt; N &gt;::vertex_ids </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vs</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html#aeb80f3e5f78f4f9be808d66fa3cbb5b9" title="The vertex of the complex a mesh vertex is, if it is on it. Not synchronised.">vertex_id()</a> of each of <code>vs</code>, kNoVertex for one off the complex, synchronised with the commits: an operation may ask about the vertices it holds while others commit. </p>
 
 </div>
 </div>

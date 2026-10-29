@@ -100,10 +100,23 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1history_1_1_history.html">History</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A complex and the edits it went through, in commit order.  <a href="structwmtk_1_1history_1_1_history.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1history_1_1_surface_key.html">SurfaceKey</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html">TrackedRecorder</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Records a tracked complex: some of the faces of a mesh, or some of its edges, which the mesh gives no ids of their own &ndash; the tracked faces of a tet mesh (N = 3), the tracked edges of a triangle mesh (N = 2).  <a href="classwmtk_1_1history_1_1_tracked_recorder.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1history_1_1_vertex_move.html">VertexMove</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1history_1_1_volume_capture.html">VolumeCapture</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1history_1_1_volume_edit.html">VolumeEdit</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">One operation that changed the tracked surface of a tet mesh, as the tets around it saw it: the tets before and after, their regions, and where their vertices were.  <a href="structwmtk_1_1history_1_1_volume_edit.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1history_1_1_volume_history.html">VolumeHistory</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tets around every operation that changed a tet mesh's tracked surface, which, with the surface history, is what a map of the volume needs: every other operation leaves each region where it is in space.  <a href="structwmtk_1_1history_1_1_volume_history.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1history_1_1_volume_recorder.html">VolumeRecorder</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Records a <a class="el" href="structwmtk_1_1history_1_1_volume_history.html" title="The tets around every operation that changed a tet mesh&#39;s tracked surface, which, with the surface hi...">VolumeHistory</a> alongside a TrackedSurfaceRecorder. An operation captures the tets around it before it changes the mesh and at its commit point (<a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> does both), and commits them here with the range of surface edits its surface commit made; one that made none is not recorded. Commits may come concurrently: they are kept, encoded, in the order they come, and ordered by surface edit when read. The mesh's vertices get ids of their own here, which a consolidation (renumber) does not change, so a vertex's position is written again only when it moved.  <a href="classwmtk_1_1history_1_1_volume_recorder.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
@@ -153,6 +166,18 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:a80245a4e38e1fedcc8865161400746e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">The kinds of edit a complex goes through.  <a href="namespacewmtk_1_1history.html#a80245a4e38e1fedcc8865161400746e4">More...</a><br /></td></tr>
 <tr class="separator:a80245a4e38e1fedcc8865161400746e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af241d6c2c8a7ae1f798081c4e51f77db" id="r_af241d6c2c8a7ae1f798081c4e51f77db"><td class="memItemLeft" align="right" valign="top"><a id="af241d6c2c8a7ae1f798081c4e51f77db" name="af241d6c2c8a7ae1f798081c4e51f77db"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#af241d6c2c8a7ae1f798081c4e51f77db">VolumeOp</a> : uint8_t { <br />
+&#160;&#160;<b>collapse</b> = 0
+, <b>swap_32</b> = 1
+, <b>swap_44</b> = 2
+, <b>swap_56</b> = 3
+, <br />
+&#160;&#160;<b>swap_23</b> = 4
+, <b>smooth</b> = 5
+<br />
+ }</td></tr>
+<tr class="memdesc:af241d6c2c8a7ae1f798081c4e51f77db"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tet operations a volume history records. <br /></td></tr>
+<tr class="separator:af241d6c2c8a7ae1f798081c4e51f77db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -168,7 +193,7 @@ template&lt;int N&gt; </td></tr>
 <tr class="separator:a86fe4690fed17de56d06ceafdfe414fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b27cc9ef989866fcfe75e1132b8b61c" id="r_a6b27cc9ef989866fcfe75e1132b8b61c"><td class="memItemLeft" align="right" valign="top"><a id="a6b27cc9ef989866fcfe75e1132b8b61c" name="a6b27cc9ef989866fcfe75e1132b8b61c"></a>
 std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>read_history</b> (const std::filesystem::path &amp;path)</td></tr>
-<tr class="memdesc:a6b27cc9ef989866fcfe75e1132b8b61c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The bytes of a history file, as History::from_bytes takes them: io::read_mesh for a history. Only the header is checked &ndash; that it is a history of a surface or of a curve network this build reads &ndash; not the rest, which loading checks. <br /></td></tr>
+<tr class="memdesc:a6b27cc9ef989866fcfe75e1132b8b61c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The bytes of a history file, as History::from_bytes takes them &ndash; or VolumeHistory::from_bytes, for a volume history (volume_history_output): io::read_mesh for a history. Only the header is checked &ndash; that it is a history of a surface, of a curve network or of a volume, this build reads &ndash; not the rest, which loading checks. <br /></td></tr>
 <tr class="separator:a6b27cc9ef989866fcfe75e1132b8b61c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7631b850fc462ed9ff9f58b3ab671616" id="r_a7631b850fc462ed9ff9f58b3ab671616"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#a7631b850fc462ed9ff9f58b3ab671616">write_history</a> (const std::filesystem::path &amp;path, const std::vector&lt; uint8_t &gt; &amp;bytes)</td></tr>
 <tr class="separator:a7631b850fc462ed9ff9f58b3ab671616"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -195,6 +220,10 @@ template void&#160;</td><td class="memItemRight" valign="bottom"><b>append_embed
 <tr class="memitem:ad927e6aa31173d80d8a62ab2ec289df5" id="r_ad927e6aa31173d80d8a62ab2ec289df5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk_1_1history.html#a4ad095464f54e79777e1b2f2e48c0c0f">CurveHistory</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#ad927e6aa31173d80d8a62ab2ec289df5">curves_from_input</a> (const <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">io::ReadProvenance</a> &amp;read, const MatrixXd &amp;V_in, const MatrixXi &amp;E_in, const std::vector&lt; <a class="el" href="structwmtk_1_1history_1_1_edit.html">Edit</a> &gt; &amp;collapses, const MatrixXd &amp;V_out, const MatrixXi &amp;E_out, const std::vector&lt; int &gt; &amp;surviving_vertices)</td></tr>
 <tr class="memdesc:ad927e6aa31173d80d8a62ab2ec289df5"><td class="mdescLeft">&#160;</td><td class="mdescRight">A curve application's history from its input files as read, to the network it inserts.  <br /></td></tr>
 <tr class="separator:ad927e6aa31173d80d8a62ab2ec289df5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b65de869f46421f6e985a1634eb8115" id="r_a0b65de869f46421f6e985a1634eb8115"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#a0b65de869f46421f6e985a1634eb8115">is_volume_history</a> (const std::vector&lt; uint8_t &gt; &amp;bytes, const std::string &amp;name)</td></tr>
+<tr class="separator:a0b65de869f46421f6e985a1634eb8115"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ffba17b270c455bf9a8ccccb373030d" id="r_a4ffba17b270c455bf9a8ccccb373030d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1history_1_1_surface_key.html">SurfaceKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#a4ffba17b270c455bf9a8ccccb373030d">surface_key</a> (const <a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744d9f1660ae">SurfaceHistory</a> &amp;h)</td></tr>
+<tr class="separator:a4ffba17b270c455bf9a8ccccb373030d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -344,7 +373,7 @@ constexpr uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>kNoVert
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The number of corners of a face of the history saved at <code>path</code>, or held by <code>bytes</code>: 3 for a surface, 2 for a curve network. Throws if they hold no history. </p>
+<p>The number of corners of a face of the history saved at <code>path</code>, or held by <code>bytes</code>: 3 for a surface, 2 for a curve network. Throws if they hold no history, or a volume history. </p>
 
 </div>
 </div>
@@ -399,6 +428,54 @@ constexpr uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>kNoVert
 
 </div>
 </div>
+<a id="a0b65de869f46421f6e985a1634eb8115" name="a0b65de869f46421f6e985a1634eb8115"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b65de869f46421f6e985a1634eb8115">&#9670;&#160;</a></span>is_volume_history()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::history::is_volume_history </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; uint8_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>bytes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em> = <code>&quot;the&#160;history&#160;given&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether <code>bytes</code> are a volume history's, by their header &ndash; what read_history and write_history take as well as a surface's or curves' history. Throws, <code>name</code> in the message, for a volume history of a version this build does not read. </p>
+
+</div>
+</div>
+<a id="a4ffba17b270c455bf9a8ccccb373030d" name="a4ffba17b270c455bf9a8ccccb373030d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ffba17b270c455bf9a8ccccb373030d">&#9670;&#160;</a></span>surface_key()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structwmtk_1_1history_1_1_surface_key.html">SurfaceKey</a> wmtk::history::surface_key </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744d9f1660ae">SurfaceHistory</a> &amp;&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The key of a surface history: its number of edits, and a hash of them and of the size of its snapshot &ndash; the same for a history and the one saved from it and loaded. </p>
+
+</div>
+</div>
 <a id="a7631b850fc462ed9ff9f58b3ab671616" name="a7631b850fc462ed9ff9f58b3ab671616"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7631b850fc462ed9ff9f58b3ab671616">&#9670;&#160;</a></span>write_history()</h2>
 
@@ -424,7 +501,7 @@ constexpr uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>kNoVert
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Writes the bytes of a history (<a class="el" href="structwmtk_1_1history_1_1_history.html#af1a728c9f6309a8067416013fb659484" title="The bytes of a history file, in memory: what a component&#39;s memory route returns.">History::to_bytes</a>) to a file: io::write_mesh for a history. Refuses bytes whose header is not a history's. </p>
+<p>Writes the bytes of a history (<a class="el" href="structwmtk_1_1history_1_1_history.html#af1a728c9f6309a8067416013fb659484" title="The bytes of a history file, in memory: what a component&#39;s memory route returns.">History::to_bytes</a>, VolumeHistory::to_bytes) to a file: io::write_mesh for a history. Refuses bytes whose header is not a history's. </p>
 
 </div>
 </div>

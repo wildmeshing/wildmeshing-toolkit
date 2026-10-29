@@ -119,6 +119,8 @@ const <a class="el" href="structwmtk_1_1components_1_1tracking_1_1_map_warnings.
 const std::vector&lt; size_t &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>warned_edits</b> () const</td></tr>
 <tr class="memdesc:aab80c3b42dd4ef9692827d33e3e47905"><td class="mdescLeft">&#160;</td><td class="mdescRight">The edits (indices into the history) whose local map raised a build warning. <br /></td></tr>
 <tr class="separator:aab80c3b42dd4ef9692827d33e3e47905"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa64b432c0076b636c0d1c830992c157e" id="r_aa64b432c0076b636c0d1c830992c157e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; const <a class="el" href="structwmtk_1_1components_1_1tracking_1_1_surface_map_1_1_cell.html">Cell</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tracking_1_1_surface_map.html#aa64b432c0076b636c0d1c830992c157e">cells_of</a> (size_t edit) const</td></tr>
+<tr class="separator:aa64b432c0076b636c0d1c830992c157e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7399f1c484e0e3e9bdfe608572fe8f1c" id="r_a7399f1c484e0e3e9bdfe608572fe8f1c"><td class="memItemLeft" align="right" valign="top"><a id="a7399f1c484e0e3e9bdfe608572fe8f1c" name="a7399f1c484e0e3e9bdfe608572fe8f1c"></a>
 const std::vector&lt; Eigen::Vector3d &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>input_vertices</b> () const</td></tr>
 <tr class="memdesc:a7399f1c484e0e3e9bdfe608572fe8f1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The complex at the start and at the end, every slot, as the history holds them. <br /></td></tr>
@@ -208,6 +210,25 @@ std::set&lt; std::array&lt; uint64_t, 2 &gt; &gt;&#160;</td><td class="memItemRi
 <div class="textblock"><p>The map between the first and the last state of a SurfaceHistory. </p>
 <p>Built from the history alone, one local map per operation (BijectiveRemesh). A split maps its new faces affinely onto the face they subdivide, with the new vertex where the history put it; a collapse and a swap map through a joint embedding of the faces they touch, before and after, on a shared outline, Tutte's lowered in distortion by SLIM within a scaffold (see Scaffold); a vertex move follows the options' smoothing (see Smoothing). A consolidation renumbers faces. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="aa64b432c0076b636c0d1c830992c157e" name="aa64b432c0076b636c0d1c830992c157e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa64b432c0076b636c0d1c830992c157e">&#9670;&#160;</a></span>cells_of()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; const <a class="el" href="structwmtk_1_1components_1_1tracking_1_1_surface_map_1_1_cell.html">SurfaceMap::Cell</a> * &gt; wmtk::components::tracking::SurfaceMap::cells_of </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>edit</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The local maps of history edit <code>edit</code>, one cell per patch flattened (a collapse or a move has one per side of the curves through it); none for an edit that needed none. A cell maps a point of a face before to the same point of the domain, on a face after. </p>
+
+</div>
+</div>
 <a id="adc5d5bd55982827f89370e717907b651" name="adc5d5bd55982827f89370e717907b651"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adc5d5bd55982827f89370e717907b651">&#9670;&#160;</a></span>curve_collapses()</h2>
 

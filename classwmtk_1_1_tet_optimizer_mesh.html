@@ -296,6 +296,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>update_attributes_and
 <tr class="memitem:a744a05776628775a577b24c200ecc3ff" id="r_a744a05776628775a577b24c200ecc3ff"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744d9f1660ae">history::SurfaceHistory</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a744a05776628775a577b24c200ecc3ff">finish_surface_history</a> (const <a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744d9f1660ae">history::SurfaceHistory</a> *input=nullptr)</td></tr>
 <tr class="memdesc:a744a05776628775a577b24c200ecc3ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bring the recorded surface up to date with the tracked faces, stop recording, log what the history holds and return it, for the application to save (ComponentIO:: save_history). None if not recording.  <br /></td></tr>
 <tr class="separator:a744a05776628775a577b24c200ecc3ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ccce5666612e82ab34b1313f47ac111" id="r_a5ccce5666612e82ab34b1313f47ac111"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5ccce5666612e82ab34b1313f47ac111">record_volume_history</a> ()</td></tr>
+<tr class="separator:a5ccce5666612e82ab34b1313f47ac111"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae32ffc1ae6d83c0c1b318edec6bb695c" id="r_ae32ffc1ae6d83c0c1b318edec6bb695c"><td class="memItemLeft" align="right" valign="top">std::optional&lt; std::vector&lt; uint8_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ae32ffc1ae6d83c0c1b318edec6bb695c">finish_volume_history</a> (const std::map&lt; int64_t, std::string &gt; &amp;tag_names={})</td></tr>
+<tr class="separator:ae32ffc1ae6d83c0c1b318edec6bb695c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7dfa49bd1d02c9a3a4c8b235d6a55aea" id="r_a7dfa49bd1d02c9a3a4c8b235d6a55aea"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a7dfa49bd1d02c9a3a4c8b235d6a55aea">is_tracked_face</a> (size_t tid, int j) const override</td></tr>
 <tr class="memdesc:a7dfa49bd1d02c9a3a4c8b235d6a55aea"><td class="mdescLeft">&#160;</td><td class="mdescRight">The faces with m_is_surface_fs, for a surface history (<a class="el" href="classwmtk_1_1_tet_mesh.html#a73f685d1885ed401be6bb1722538ba9d" title="Record every change to the tracked surface from now on (see wmtk/history/TrackedRecorder....">TetMesh::start_surface_history</a>).  <br /></td></tr>
 <tr class="separator:a7dfa49bd1d02c9a3a4c8b235d6a55aea"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -576,6 +580,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>stop_surface_history<
 <tr class="separator:a97115b045e1bde0743de96bf2dd7c656 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4014acdfd9536e278e14f6d0d2b59566 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a4014acdfd9536e278e14f6d0d2b59566"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a4014acdfd9536e278e14f6d0d2b59566">resync_surface_history</a> ()</td></tr>
 <tr class="separator:a4014acdfd9536e278e14f6d0d2b59566 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1eb7219f44bc9de899a648d92f92acb inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ae1eb7219f44bc9de899a648d92f92acb"><td class="memItemLeft" align="right" valign="top">
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_volume_recorder.html">history::VolumeRecorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>start_volume_history</b> (std::function&lt; Eigen::Vector3d(size_t)&gt; position)</td></tr>
+<tr class="memdesc:ae1eb7219f44bc9de899a648d92f92acb inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Record, alongside the surface history, the tets around every operation that changes the tracked surface (<a class="el" href="_volume_history_8hpp_source.html">wmtk/history/VolumeHistory.hpp</a>): what a map of the volume needs. The surface history must be recording; a volume history is its own choice, since it takes far more room. <code>position(v)</code> is called as <a class="el" href="classwmtk_1_1_tet_mesh.html#a73f685d1885ed401be6bb1722538ba9d" title="Record every change to the tracked surface from now on (see wmtk/history/TrackedRecorder....">start_surface_history()</a>'s is; a tet's region is its <a class="el" href="classwmtk_1_1_tet_mesh.html#ac0ea83c491ba7d0e421afb84b023cc52">tet_tags()</a>. <br /></td></tr>
+<tr class="separator:ae1eb7219f44bc9de899a648d92f92acb inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac93ae7c85af2dc2d5ba6a01f30ca4719 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ac93ae7c85af2dc2d5ba6a01f30ca4719"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>stop_volume_history</b> ()</td></tr>
+<tr class="memdesc:ac93ae7c85af2dc2d5ba6a01f30ca4719 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop recording the volume. The recorder keeps what it has. <br /></td></tr>
+<tr class="separator:ac93ae7c85af2dc2d5ba6a01f30ca4719 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0ea83c491ba7d0e421afb84b023cc52 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ac0ea83c491ba7d0e421afb84b023cc52"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ac0ea83c491ba7d0e421afb84b023cc52">tet_tags</a> (size_t tid) const</td></tr>
+<tr class="separator:ac0ea83c491ba7d0e421afb84b023cc52 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32c0fe766ea7913648365be18030d590 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a32c0fe766ea7913648365be18030d590"><td class="memItemLeft" align="right" valign="top">
 std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tracked_faces</b> () const</td></tr>
 <tr class="memdesc:a32c0fe766ea7913648365be18030d590 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Every tracked face, oriented by <a class="el" href="classwmtk_1_1_tet_mesh.html#ac20dad1b6a0bd61649a381711b40d21d">orient_tracked_face()</a>. <br /></td></tr>
@@ -987,6 +1001,14 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_order_wait_
 <tr class="separator:a5f8953645ed37ab2aaebeefa854872f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a783e31d704fd488f468bfc6a84aee480" id="r_a783e31d704fd488f468bfc6a84aee480"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#abf2b7b5ea7f365c5be01f4e5b762f47d">PositionKey</a>, std::vector&lt; uint32_t &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a783e31d704fd488f468bfc6a84aee480">m_insertion_sources</a></td></tr>
 <tr class="separator:a783e31d704fd488f468bfc6a84aee480"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17d50bff09217ebbd9eca8bd8f76cf73" id="r_a17d50bff09217ebbd9eca8bd8f76cf73"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_volume_recorder.html">history::VolumeRecorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a17d50bff09217ebbd9eca8bd8f76cf73">m_recorded_volume</a></td></tr>
+<tr class="separator:a17d50bff09217ebbd9eca8bd8f76cf73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad32a87ec04d1e5dff00311f4386e984e" id="r_ad32a87ec04d1e5dff00311f4386e984e"><td class="memItemLeft" align="right" valign="top"><a id="ad32a87ec04d1e5dff00311f4386e984e" name="ad32a87ec04d1e5dff00311f4386e984e"></a>
+uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_surface_edit_offset</b> = 0</td></tr>
+<tr class="separator:ad32a87ec04d1e5dff00311f4386e984e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17b5a0426e3d515fc7b8ef58f46486f4" id="r_a17b5a0426e3d515fc7b8ef58f46486f4"><td class="memItemLeft" align="right" valign="top"><a id="a17b5a0426e3d515fc7b8ef58f46486f4" name="a17b5a0426e3d515fc7b8ef58f46486f4"></a>
+std::optional&lt; <a class="el" href="structwmtk_1_1history_1_1_surface_key.html">history::SurfaceKey</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_finished_surface</b></td></tr>
+<tr class="separator:a17b5a0426e3d515fc7b8ef58f46486f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbf7baa8d7cc79dbfc0a0ee8b4e8bf40" id="r_afbf7baa8d7cc79dbfc0a0ee8b4e8bf40"><td class="memItemLeft" align="right" valign="top"><a id="afbf7baa8d7cc79dbfc0a0ee8b4e8bf40" name="afbf7baa8d7cc79dbfc0a0ee8b4e8bf40"></a>
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_surface_fold_refusals</b> = 0</td></tr>
 <tr class="memdesc:afbf7baa8d7cc79dbfc0a0ee8b4e8bf40"><td class="mdescLeft">&#160;</td><td class="mdescRight">The operations check_surface_folds refused. <br /></td></tr>
@@ -2364,6 +2386,25 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
 
 </div>
 </div>
+<a id="ae32ffc1ae6d83c0c1b318edec6bb695c" name="ae32ffc1ae6d83c0c1b318edec6bb695c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae32ffc1ae6d83c0c1b318edec6bb695c">&#9670;&#160;</a></span>finish_volume_history()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::optional&lt; std::vector&lt; uint8_t &gt; &gt; wmtk::TetOptimizerMesh::finish_volume_history </td>
+          <td>(</td>
+          <td class="paramtype">const std::map&lt; int64_t, std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tag_names</em> = <code>{}</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Stop recording the volume, and return it as the bytes of its file (<a class="el" href="classwmtk_1_1history_1_1_volume_recorder.html#a8d1ce83c25daaadb2ddfb4e365f99238">history::VolumeRecorder::to_bytes</a>; io::ComponentIO::save_volume_history saves them), its edits indexed as in the surface history <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a744a05776628775a577b24c200ecc3ff" title="Bring the recorded surface up to date with the tracked faces, stop recording, log what the history ho...">finish_surface_history()</a> returned, with the names of the tags (<a class="el" href="classwmtk_1_1_tet_mesh.html#ac0ea83c491ba7d0e421afb84b023cc52">tet_tags()</a>) the mesh files give them. Nothing if not recording. </p>
+
+</div>
+</div>
 <a id="a6672653dda293576dfaf6f59c6b1e7c3" name="a6672653dda293576dfaf6f59c6b1e7c3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6672653dda293576dfaf6f59c6b1e7c3">&#9670;&#160;</a></span>get_order_of_vertex()</h2>
 
@@ -2906,6 +2947,24 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
       </table>
 </div><div class="memdoc">
 <p>Start recording the tracked surface (<a class="el" href="classwmtk_1_1_tet_mesh.html#a73f685d1885ed401be6bb1722538ba9d" title="Record every change to the tracked surface from now on (see wmtk/history/TrackedRecorder....">TetMesh::start_surface_history</a>), at m_posf, with <code>metadata</code> (the application's parameters, say) saved along. Takes m_insertion_sources. </p>
+
+</div>
+</div>
+<a id="a5ccce5666612e82ab34b1313f47ac111" name="a5ccce5666612e82ab34b1313f47ac111"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ccce5666612e82ab34b1313f47ac111">&#9670;&#160;</a></span>record_volume_history()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetOptimizerMesh::record_volume_history </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Start recording the volume around the tracked surface too (<a class="el" href="classwmtk_1_1_tet_mesh.html#ae1eb7219f44bc9de899a648d92f92acb" title="Record, alongside the surface history, the tets around every operation that changes the tracked surfa...">TetMesh::start_volume_history</a>), at m_posf. The surface history must be recording. </p>
 
 </div>
 </div>
@@ -5039,6 +5098,21 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
       </table>
 </div><div class="memdoc">
 <p>Only the fields shared by all three applications; each derived class keeps a typed reference to its own Parameters for the rest. </p>
+
+</div>
+</div>
+<a id="a17d50bff09217ebbd9eca8bd8f76cf73" name="a17d50bff09217ebbd9eca8bd8f76cf73"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17d50bff09217ebbd9eca8bd8f76cf73">&#9670;&#160;</a></span>m_recorded_volume</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classwmtk_1_1history_1_1_volume_recorder.html">history::VolumeRecorder</a>&gt; wmtk::TetOptimizerMesh::m_recorded_volume</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The volume being recorded, kept past <a class="el" href="classwmtk_1_1_tet_mesh.html#a97115b045e1bde0743de96bf2dd7c656" title="Stop recording. The recorder keeps what it has.">stop_surface_history()</a> until finished; the offset of the recorded surface edits in the surface history <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a744a05776628775a577b24c200ecc3ff" title="Bring the recorded surface up to date with the tracked faces, stop recording, log what the history ho...">finish_surface_history()</a> returned, and that history's key, which the volume history keeps. </p>
 
 </div>
 </div>

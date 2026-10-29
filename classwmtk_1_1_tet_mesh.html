@@ -125,6 +125,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_mesh_1_1_vertex_face.html">VertexFace</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A face at a vertex: its corners sorted, its face id (<a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#ad3376e7f1748f776a15d3e9de6ea019d">Tuple::fid</a>) and its tets, sorted.  <a href="structwmtk_1_1_tet_mesh_1_1_vertex_face.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_mesh_1_1_volume_recording.html">VolumeRecording</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -252,6 +254,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>stop_surface_history<
 <tr class="separator:a97115b045e1bde0743de96bf2dd7c656"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4014acdfd9536e278e14f6d0d2b59566" id="r_a4014acdfd9536e278e14f6d0d2b59566"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a4014acdfd9536e278e14f6d0d2b59566">resync_surface_history</a> ()</td></tr>
 <tr class="separator:a4014acdfd9536e278e14f6d0d2b59566"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1eb7219f44bc9de899a648d92f92acb" id="r_ae1eb7219f44bc9de899a648d92f92acb"><td class="memItemLeft" align="right" valign="top"><a id="ae1eb7219f44bc9de899a648d92f92acb" name="ae1eb7219f44bc9de899a648d92f92acb"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_volume_recorder.html">history::VolumeRecorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>start_volume_history</b> (std::function&lt; Eigen::Vector3d(size_t)&gt; position)</td></tr>
+<tr class="memdesc:ae1eb7219f44bc9de899a648d92f92acb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Record, alongside the surface history, the tets around every operation that changes the tracked surface (<a class="el" href="_volume_history_8hpp_source.html">wmtk/history/VolumeHistory.hpp</a>): what a map of the volume needs. The surface history must be recording; a volume history is its own choice, since it takes far more room. <code>position(v)</code> is called as <a class="el" href="classwmtk_1_1_tet_mesh.html#a73f685d1885ed401be6bb1722538ba9d" title="Record every change to the tracked surface from now on (see wmtk/history/TrackedRecorder....">start_surface_history()</a>'s is; a tet's region is its <a class="el" href="classwmtk_1_1_tet_mesh.html#ac0ea83c491ba7d0e421afb84b023cc52">tet_tags()</a>. <br /></td></tr>
+<tr class="separator:ae1eb7219f44bc9de899a648d92f92acb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac93ae7c85af2dc2d5ba6a01f30ca4719" id="r_ac93ae7c85af2dc2d5ba6a01f30ca4719"><td class="memItemLeft" align="right" valign="top"><a id="ac93ae7c85af2dc2d5ba6a01f30ca4719" name="ac93ae7c85af2dc2d5ba6a01f30ca4719"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>stop_volume_history</b> ()</td></tr>
+<tr class="memdesc:ac93ae7c85af2dc2d5ba6a01f30ca4719"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop recording the volume. The recorder keeps what it has. <br /></td></tr>
+<tr class="separator:ac93ae7c85af2dc2d5ba6a01f30ca4719"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0ea83c491ba7d0e421afb84b023cc52" id="r_ac0ea83c491ba7d0e421afb84b023cc52"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ac0ea83c491ba7d0e421afb84b023cc52">tet_tags</a> (size_t tid) const</td></tr>
+<tr class="separator:ac0ea83c491ba7d0e421afb84b023cc52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32c0fe766ea7913648365be18030d590" id="r_a32c0fe766ea7913648365be18030d590"><td class="memItemLeft" align="right" valign="top"><a id="a32c0fe766ea7913648365be18030d590" name="a32c0fe766ea7913648365be18030d590"></a>
 std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tracked_faces</b> () const</td></tr>
 <tr class="memdesc:a32c0fe766ea7913648365be18030d590"><td class="mdescLeft">&#160;</td><td class="mdescRight">Every tracked face, oriented by <a class="el" href="classwmtk_1_1_tet_mesh.html#ac20dad1b6a0bd61649a381711b40d21d">orient_tracked_face()</a>. <br /></td></tr>
@@ -763,13 +775,20 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>unlock_vertex_mutex</
 <tr class="memitem:aed20b39e14544bad43b868fda24464a0" id="r_aed20b39e14544bad43b868fda24464a0"><td class="memItemLeft" align="right" valign="top"><a id="aed20b39e14544bad43b868fda24464a0" name="aed20b39e14544bad43b868fda24464a0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>unlock_vertex_mutex</b> (size_t vid)</td></tr>
 <tr class="separator:aed20b39e14544bad43b868fda24464a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd33a9eed526cddd8c07fc1962e40b5e" id="r_afd33a9eed526cddd8c07fc1962e40b5e"><td class="memItemLeft" align="right" valign="top"><a id="afd33a9eed526cddd8c07fc1962e40b5e" name="afd33a9eed526cddd8c07fc1962e40b5e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>surface_history_before</b> (const std::vector&lt; size_t &gt; &amp;vs, bool all)</td></tr>
-<tr class="memdesc:afd33a9eed526cddd8c07fc1962e40b5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">An operation's tracked faces before it changes the mesh, and at its commit point. <br /></td></tr>
+<tr class="memitem:afd33a9eed526cddd8c07fc1962e40b5e" id="r_afd33a9eed526cddd8c07fc1962e40b5e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#afd33a9eed526cddd8c07fc1962e40b5e">surface_history_before</a> (const std::vector&lt; size_t &gt; &amp;vs, bool all)</td></tr>
 <tr class="separator:afd33a9eed526cddd8c07fc1962e40b5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77f53eb0936ca627d2b5d52b9bd9d3be" id="r_a77f53eb0936ca627d2b5d52b9bd9d3be"><td class="memItemLeft" align="right" valign="top"><a id="a77f53eb0936ca627d2b5d52b9bd9d3be" name="a77f53eb0936ca627d2b5d52b9bd9d3be"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>surface_history_commit</b> (<a class="el" href="namespacewmtk_1_1history.html#a80245a4e38e1fedcc8865161400746e4">history::EditKind</a> kind, std::vector&lt; size_t &gt; v, const std::vector&lt; size_t &gt; &amp;vs_after, bool all)</td></tr>
-<tr class="separator:a77f53eb0936ca627d2b5d52b9bd9d3be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a8ff45ab29d4f0a6aba0e1e86a21cdf" id="r_a3a8ff45ab29d4f0a6aba0e1e86a21cdf"><td class="memItemLeft" align="right" valign="top"><a id="a3a8ff45ab29d4f0a6aba0e1e86a21cdf" name="a3a8ff45ab29d4f0a6aba0e1e86a21cdf"></a>
+std::array&lt; size_t, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>surface_history_commit</b> (<a class="el" href="namespacewmtk_1_1history.html#a80245a4e38e1fedcc8865161400746e4">history::EditKind</a> kind, std::vector&lt; size_t &gt; v, const std::vector&lt; size_t &gt; &amp;vs_after, bool all)</td></tr>
+<tr class="separator:a3a8ff45ab29d4f0a6aba0e1e86a21cdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b75ced24918728fa5007b8dc2ac1d91" id="r_a6b75ced24918728fa5007b8dc2ac1d91"><td class="memItemLeft" align="right" valign="top"><a id="a6b75ced24918728fa5007b8dc2ac1d91" name="a6b75ced24918728fa5007b8dc2ac1d91"></a>
+<a class="el" href="structwmtk_1_1history_1_1_volume_capture.html">history::VolumeCapture</a>&#160;</td><td class="memItemRight" valign="bottom"><b>volume_capture</b> (const std::vector&lt; size_t &gt; &amp;vs) const</td></tr>
+<tr class="memdesc:a6b75ced24918728fa5007b8dc2ac1d91"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tets at the vertices <code>vs</code>, with what a volume history keeps of them. <br /></td></tr>
+<tr class="separator:a6b75ced24918728fa5007b8dc2ac1d91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94ae2138746463398056908b9a442af6" id="r_a94ae2138746463398056908b9a442af6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a94ae2138746463398056908b9a442af6">volume_history_before</a> (const std::vector&lt; size_t &gt; &amp;vs)</td></tr>
+<tr class="separator:a94ae2138746463398056908b9a442af6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5641e57b180fa6d48003f7f78264a40" id="r_ae5641e57b180fa6d48003f7f78264a40"><td class="memItemLeft" align="right" valign="top"><a id="ae5641e57b180fa6d48003f7f78264a40" name="ae5641e57b180fa6d48003f7f78264a40"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>volume_history_commit</b> (<a class="el" href="namespacewmtk_1_1history.html#af241d6c2c8a7ae1f798081c4e51f77db">history::VolumeOp</a> op, std::array&lt; size_t, 2 &gt; surface_edits, const std::vector&lt; size_t &gt; &amp;op_vertices, const std::vector&lt; size_t &gt; &amp;vs_after)</td></tr>
+<tr class="separator:ae5641e57b180fa6d48003f7f78264a40"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1f6f691f3505241342abc354a3ec799" id="r_ae1f6f691f3505241342abc354a3ec799"><td class="memItemLeft" align="right" valign="top"><a id="ae1f6f691f3505241342abc354a3ec799" name="ae1f6f691f3505241342abc354a3ec799"></a>
 std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>vertices_of_tets</b> (const std::vector&lt; size_t &gt; &amp;tids) const</td></tr>
 <tr class="memdesc:ae1f6f691f3505241342abc354a3ec799"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vertices of the tets <code>tids</code>, sorted. <br /></td></tr>
@@ -819,6 +838,9 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_tracked_recorde
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_surface_history_before</b></td></tr>
 <tr class="memdesc:ade43d095306d44437b045b80f27f34d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tracked faces around the operation this thread is in, as they were before it. <br /></td></tr>
 <tr class="separator:ade43d095306d44437b045b80f27f34d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51fca34de2063b93c51b8c5e6a5f15bd" id="r_a51fca34de2063b93c51b8c5e6a5f15bd"><td class="memItemLeft" align="right" valign="top"><a id="a51fca34de2063b93c51b8c5e6a5f15bd" name="a51fca34de2063b93c51b8c5e6a5f15bd"></a>
+std::shared_ptr&lt; <a class="el" href="structwmtk_1_1_tet_mesh_1_1_volume_recording.html">VolumeRecording</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_volume_history</b></td></tr>
+<tr class="separator:a51fca34de2063b93c51b8c5e6a5f15bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
 Static Private Attributes</h2></td></tr>
@@ -3025,6 +3047,43 @@ false </dd></dl>
 
 </div>
 </div>
+<a id="afd33a9eed526cddd8c07fc1962e40b5e" name="afd33a9eed526cddd8c07fc1962e40b5e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd33a9eed526cddd8c07fc1962e40b5e">&#9670;&#160;</a></span>surface_history_before()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetMesh::surface_history_before </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>all</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>An operation's tracked faces before it changes the mesh, and at its commit point, which returns the range of surface edits it made. </p>
+
+</div>
+</div>
 <a id="aaec351b718e8ddcbd63e0f8e275e8e2a" name="aaec351b718e8ddcbd63e0f8e275e8e2a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaec351b718e8ddcbd63e0f8e275e8e2a">&#9670;&#160;</a></span>swap_edge()</h2>
 
@@ -3702,6 +3761,35 @@ false </dd></dl>
 
 </div>
 </div>
+<a id="ac0ea83c491ba7d0e421afb84b023cc52" name="ac0ea83c491ba7d0e421afb84b023cc52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0ea83c491ba7d0e421afb84b023cc52">&#9670;&#160;</a></span>tet_tags()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::vector&lt; int64_t &gt; wmtk::TetMesh::tet_tags </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>tid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The tags of tet <code>tid</code>, for a volume history: tets with the same tags form a region, which the volume map keeps. None, unless an application says otherwise. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab0052d454035b08b049874418c708bf8">wmtk::components::simwild::SimWildMesh</a>.</p>
+
+</div>
+</div>
 <a id="abbbefe3cffb77bba3453620e8c148119" name="abbbefe3cffb77bba3453620e8c148119"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abbbefe3cffb77bba3453620e8c148119">&#9670;&#160;</a></span>tracked_faces_around()</h2>
 
@@ -4180,6 +4268,33 @@ false </dd></dl>
 
 <p>Number of tets incident to a vertex, in O(1). </p>
 <p>Around 20-30 on a well-shaped mesh. Worth checking before anything that walks the one ring, since a degenerate mesh can push it into the thousands. </p>
+
+</div>
+</div>
+<a id="a94ae2138746463398056908b9a442af6" name="a94ae2138746463398056908b9a442af6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94ae2138746463398056908b9a442af6">&#9670;&#160;</a></span>volume_history_before()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetMesh::volume_history_before </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vs</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>An operation's tets before it changes the mesh, and at its commit point, given the surface edits it made: recorded if it made any. </p>
 
 </div>
 </div>

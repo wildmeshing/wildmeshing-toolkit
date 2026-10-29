@@ -584,7 +584,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span>                <span class="keywordflow">if</span> (verdict[i] == kSurvives) {</div>
 <div class="line"><a id="l00689" name="l00689"></a><span class="lineno">  689</span>                    <span class="keywordflow">if</span> (n != i) {</div>
 <div class="line"><a id="l00690" name="l00690"></a><span class="lineno">  690</span>                        candidates[n] = std::move(candidates[i]);</div>
-<div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>                        <span class="keywordflow">if</span> (keyed) keys[n] = keys[i];</div>
+<div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>                        <span class="keywordflow">if</span> (keyed) <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a>[n] = <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a>[i];</div>
 <div class="line"><a id="l00692" name="l00692"></a><span class="lineno">  692</span>                    }</div>
 <div class="line"><a id="l00693" name="l00693"></a><span class="lineno">  693</span>                    ++n;</div>
 <div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span>                    <span class="keywordflow">continue</span>;</div>
@@ -600,8 +600,8 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00704" name="l00704"></a><span class="lineno">  704</span>            candidates.resize(n);</div>
 <div class="line"><a id="l00705" name="l00705"></a><span class="lineno">  705</span>            candidates.shrink_to_fit();</div>
 <div class="line"><a id="l00706" name="l00706"></a><span class="lineno">  706</span>            <span class="keywordflow">if</span> (keyed) {</div>
-<div class="line"><a id="l00707" name="l00707"></a><span class="lineno">  707</span>                keys.resize(n);</div>
-<div class="line"><a id="l00708" name="l00708"></a><span class="lineno">  708</span>                keys.shrink_to_fit();</div>
+<div class="line"><a id="l00707" name="l00707"></a><span class="lineno">  707</span>                <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a>.resize(n);</div>
+<div class="line"><a id="l00708" name="l00708"></a><span class="lineno">  708</span>                <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a>.shrink_to_fit();</div>
 <div class="line"><a id="l00709" name="l00709"></a><span class="lineno">  709</span>            }</div>
 <div class="line"><a id="l00710" name="l00710"></a><span class="lineno">  710</span> </div>
 <div class="line"><a id="l00711" name="l00711"></a><span class="lineno">  711</span>            <span class="comment">// 3. Commit the survivors for real, through the usual queues and ring locks.</span></div>
@@ -669,7 +669,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00773" name="l00773"></a><span class="lineno">  773</span>                    }</div>
 <div class="line"><a id="l00774" name="l00774"></a><span class="lineno">  774</span>                }</div>
 <div class="line"><a id="l00775" name="l00775"></a><span class="lineno">  775</span>                candidates.clear();</div>
-<div class="line"><a id="l00776" name="l00776"></a><span class="lineno">  776</span>                keys.clear();</div>
+<div class="line"><a id="l00776" name="l00776"></a><span class="lineno">  776</span>                <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a>.clear();</div>
 <div class="line"><a id="l00777" name="l00777"></a><span class="lineno">  777</span>                m_stats.serial_tail_seconds +=</div>
 <div class="line"><a id="l00778" name="l00778"></a><span class="lineno">  778</span>                    std::chrono::duration&lt;double&gt;(Clock::now() - inline_start).count();</div>
 <div class="line"><a id="l00779" name="l00779"></a><span class="lineno">  779</span>            }</div>
@@ -697,7 +697,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00801" name="l00801"></a><span class="lineno">  801</span>            <span class="comment">// the queue would.</span></div>
 <div class="line"><a id="l00802" name="l00802"></a><span class="lineno">  802</span>            <a class="code hl_function" href="structwmtk_1_1_execute_pass.html#a421f2bc3fb565bdf6d9e7443be28b986">take_unique_renewed</a>(m, ops, next);</div>
 <div class="line"><a id="l00803" name="l00803"></a><span class="lineno">  803</span>            candidates = std::move(next.ops);</div>
-<div class="line"><a id="l00804" name="l00804"></a><span class="lineno">  804</span>            keys = std::move(next.keys);</div>
+<div class="line"><a id="l00804" name="l00804"></a><span class="lineno">  804</span>            <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a> = std::move(next.keys);</div>
 <div class="line"><a id="l00805" name="l00805"></a><span class="lineno">  805</span>            next.ops = {};</div>
 <div class="line"><a id="l00806" name="l00806"></a><span class="lineno">  806</span>            next.keys = {};</div>
 <div class="line"><a id="l00807" name="l00807"></a><span class="lineno">  807</span>        }</div>
@@ -1507,6 +1507,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="aclasswmtk_1_1threading_1_1serial__priority__queue_html"><div class="ttname"><a href="classwmtk_1_1threading_1_1serial__priority__queue.html">wmtk::threading::serial_priority_queue</a></div><div class="ttdef"><b>Definition</b> serial_priority_queue.hpp:24</div></div>
 <div class="ttc" id="aclasswmtk_1_1threading_1_1spin__mutex_html"><div class="ttname"><a href="classwmtk_1_1threading_1_1spin__mutex.html">wmtk::threading::spin_mutex</a></div><div class="ttdef"><b>Definition</b> spin_mutex.hpp:13</div></div>
 <div class="ttc" id="aclasswmtk_1_1threading_1_1task__group_html"><div class="ttname"><a href="classwmtk_1_1threading_1_1task__group.html">wmtk::threading::task_group</a></div><div class="ttdef"><b>Definition</b> task_group.hpp:210</div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1tracking_1_1volume_html_a27e48ad098df7c336f0a7888168f3b9d"><div class="ttname"><a href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">wmtk::components::tracking::volume::keys</a></div><div class="ttdeci">std::set&lt; Tet &gt; keys(const Tets &amp;T)</div><div class="ttdoc">The tets as a set of sorted tets.</div><div class="ttdef"><b>Definition</b> volume_complex.cpp:41</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_op_table_html"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_op_table.html">wmtk::ExecutePass::OpTable</a></div><div class="ttdoc">The registered operations by rank. edit_operation_maps is a std::map, so iterating it yields the name...</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:530</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">wmtk::ExecutePass::PassStats</a></div><div class="ttdoc">What the last pass cost in contention, as opposed to in work.</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:1495</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_a37f12c78e3d4a681ad47ccdca538812e"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">wmtk::ExecutePass::PassStats::final_queue_size</a></div><div class="ttdeci">size_t final_queue_size</div><div class="ttdoc">Size of that queue once every task had finished.</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:1502</div></div>

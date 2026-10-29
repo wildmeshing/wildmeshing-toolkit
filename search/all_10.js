@@ -26,10 +26,11 @@ var searchData=
   ['node_23',['node',['../structwmtk_1_1utils_1_1_winding_number_hierarchy_1_1_node.html',1,'wmtk::utils::WindingNumberHierarchy::Node'],['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_node.html',1,'wmtk::components::topological_offset::ExactBandIntegral::Node']]],
   ['node_5fwinding_5fnumber_24',['node_winding_number',['../classwmtk_1_1utils_1_1_winding_number_hierarchy.html#a73c9645d7417274a1ec5eaebe7f7c522',1,'wmtk::utils::WindingNumberHierarchy']]],
   ['normal_25',['normal',['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html#ac68c716d93da1f9a83a5e3bf261f4f4e',1,'wmtk::components::isotropic_remeshing::ReplacedSurface']]],
-  ['not_5fa_5fdisk_26',['not_a_disk',['../structwmtk_1_1components_1_1tracking_1_1_map_warnings.html#a072b0e5b1312f59699322360e07f9a16',1,'wmtk::components::tracking::MapWarnings']]],
-  ['not_5ffacing_27',['not_facing',['../classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad7584e5026fb6ac95d326e53aba6c657',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing']]],
-  ['notexpr_28',['NotExpr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_not_expr.html',1,'wmtk::components::simwild::expression_parser']]],
-  ['num_5fsmoothing_5fpasses_29',['num_smoothing_passes',['../structwmtk_1_1_optimizer_parameters.html#af94f54e1f48f13d77c5ff0afba9f05a2',1,'wmtk::OptimizerParameters']]],
-  ['num_5fthreads_30',['num_threads',['../structwmtk_1_1utils_1_1_embed_triangles_options.html#a0c7b87023ce71690fb274bca2a3b8154',1,'wmtk::utils::EmbedTrianglesOptions']]],
-  ['numbers_31',['Reading the two Hausdorff numbers',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md45',1,'']]]
+  ['normals_26',['normals',['../classwmtk_1_1components_1_1tracking_1_1volume_1_1_star_patch.html#a2f3e335b626da4f99f97ca68e8ec372c',1,'wmtk::components::tracking::volume::StarPatch']]],
+  ['not_5fa_5fdisk_27',['not_a_disk',['../structwmtk_1_1components_1_1tracking_1_1_map_warnings.html#a072b0e5b1312f59699322360e07f9a16',1,'wmtk::components::tracking::MapWarnings']]],
+  ['not_5ffacing_28',['not_facing',['../classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad7584e5026fb6ac95d326e53aba6c657',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing']]],
+  ['notexpr_29',['NotExpr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_not_expr.html',1,'wmtk::components::simwild::expression_parser']]],
+  ['num_5fsmoothing_5fpasses_30',['num_smoothing_passes',['../structwmtk_1_1_optimizer_parameters.html#af94f54e1f48f13d77c5ff0afba9f05a2',1,'wmtk::OptimizerParameters']]],
+  ['num_5fthreads_31',['num_threads',['../structwmtk_1_1utils_1_1_embed_triangles_options.html#a0c7b87023ce71690fb274bca2a3b8154',1,'wmtk::utils::EmbedTrianglesOptions']]],
+  ['numbers_32',['Reading the two Hausdorff numbers',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md45',1,'']]]
 ];

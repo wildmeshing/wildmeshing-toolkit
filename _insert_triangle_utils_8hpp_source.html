@@ -157,8 +157,8 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    }</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 3; j++) {</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        <span class="keyword">auto</span> loc = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#a6b2b524bc5a43e2429a4dbfe234788fb">tuple_from_vertex</a>(face_v[j]);</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        <span class="keyword">auto</span> conn_tets = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#ae7d0d7f9da45fda456290a85dc37f9bc">get_one_ring_tets_for_vertex</a>(loc);</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        <span class="keyword">auto</span> loc = m.tuple_from_vertex(face_v[j]);</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        <span class="keyword">auto</span> conn_tets = m.get_one_ring_tets_for_vertex(loc);</div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t : conn_tets) {</div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>            <span class="keywordflow">if</span> (visited.find(t.tid(m)) != visited.end()) <span class="keywordflow">continue</span>;</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>            tet_queue.push(t);</div>
@@ -199,7 +199,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        std::map&lt;size_t, int&gt; vertex_sides;</div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        std::vector&lt;int&gt; coplanar_f_lvids;</div>
 <div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        <span class="comment">//</span></div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <span class="keyword">auto</span> vs = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#a3bd670ddb854a278d5760bdde3e9cda3">oriented_tet_vertices</a>(tet);</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <span class="keyword">auto</span> vs = m.oriented_tet_vertices(tet);</div>
 <div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span> </div>
 <div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <span class="keyword">auto</span> retry_flag = !try_acquire_tetra(std::vector&lt;Tuple&gt;{{tet}});</div>
 <div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        <span class="keywordflow">if</span> (retry_flag) {</div>
@@ -234,7 +234,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            <span class="keywordtype">bool</span> is_inside = wmtk::is_point_inside_triangle(p, tri2);</div>
 <div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>            <span class="comment">//</span></div>
 <div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>            <span class="keywordflow">if</span> (is_inside) {</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                <span class="keyword">auto</span> conn_tets = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#ae7d0d7f9da45fda456290a85dc37f9bc">get_one_ring_tets_for_vertex</a>(vs[lvid]);</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                <span class="keyword">auto</span> conn_tets = m.get_one_ring_tets_for_vertex(vs[lvid]);</div>
 <div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; t : conn_tets) {</div>
 <div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>                    <span class="keywordflow">if</span> (visited.find(t.tid(m)) != visited.end()) <span class="keywordflow">continue</span>;</div>
 <div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>                    visited.insert(t.tid(m));</div>
@@ -258,7 +258,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>                is_tet_face_intersected[map_leid2lfids[leid][1]] = <span class="keyword">true</span>;</div>
 <div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>                <span class="comment">//</span></div>
 <div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>                <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 2; j++) {</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>                    <span class="keyword">auto</span> conn_tets = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#ae7d0d7f9da45fda456290a85dc37f9bc">get_one_ring_tets_for_vertex</a>(vs[coplanar_f_lvids[j]]);</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>                    <span class="keyword">auto</span> conn_tets = m.get_one_ring_tets_for_vertex(vs[coplanar_f_lvids[j]]);</div>
 <div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; t : conn_tets) {</div>
 <div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>                        <span class="keywordflow">if</span> (visited.find(t.tid(m)) != visited.end()) <span class="keywordflow">continue</span>;</div>
 <div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>                        visited.insert(t.tid(m));</div>
@@ -292,7 +292,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>                <span class="comment">// tet_face_tags[f].push_back(face_id);</span></div>
 <div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>                <span class="comment">//</span></div>
 <div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>                <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 3; j++) {</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>                    <span class="keyword">auto</span> conn_tets = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#ae7d0d7f9da45fda456290a85dc37f9bc">get_one_ring_tets_for_vertex</a>(vs[coplanar_f_lvids[j]]);</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>                    <span class="keyword">auto</span> conn_tets = m.get_one_ring_tets_for_vertex(vs[coplanar_f_lvids[j]]);</div>
 <div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>                    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; t : conn_tets) {</div>
 <div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>                        <span class="keywordflow">if</span> (visited.find(t.tid(m)) != visited.end()) <span class="keywordflow">continue</span>;</div>
 <div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>                        visited.insert(t.tid(m));</div>
@@ -307,13 +307,13 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>            <span class="keywordflow">continue</span>;</div>
 <div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>        }</div>
 <div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span> </div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>        std::array&lt;Tuple, 6&gt; edges = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#a1ee6a0754114ac59ab11703808d83bac">tet_edges</a>(tet);</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>        std::array&lt;Tuple, 6&gt; edges = m.tet_edges(tet);</div>
 <div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>        <span class="comment">//</span></div>
 <div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>        std::vector&lt;std::array&lt;size_t, 2&gt;&gt; edge_vids;</div>
 <div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; loc : edges) {</div>
 <div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            <span class="keywordtype">size_t</span> v1_id = loc.vid(m);</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            <span class="keyword">auto</span> tmp = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#aa36c93721edee518e9ae101f1e52200b">switch_vertex</a>(loc);</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>            <span class="keywordtype">size_t</span> v2_id = tmp.<a class="code hl_function" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#acbb74bf154ffde866b0e83015e2fdd80">vid</a>(m);</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            <span class="keyword">auto</span> tmp = m.switch_vertex(loc);</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>            <span class="keywordtype">size_t</span> v2_id = tmp.vid(m);</div>
 <div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            std::array&lt;size_t, 2&gt; e = {{v1_id, v2_id}};</div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>            <span class="keywordflow">if</span> (e[0] &gt; e[1]) std::swap(e[0], e[1]);</div>
 <div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>            edge_vids.push_back(e);</div>
@@ -356,7 +356,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span> </div>
 <div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>            <span class="comment">// add new tets</span></div>
 <div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>            <span class="keywordflow">if</span> (need_subdivision) {</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>                <span class="keyword">auto</span> incident_tets = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#a568cc7f3b8ddfa380325877237d1cb9c">get_incident_tets_for_edge</a>(edges[l_eid]);</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>                <span class="keyword">auto</span> incident_tets = m.get_incident_tets_for_edge(edges[l_eid]);</div>
 <div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>                <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t : incident_tets) {</div>
 <div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>                    <span class="keywordtype">size_t</span> tid = t.tid(m);</div>
 <div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>                    <span class="keywordflow">if</span> (visited.find(tid) != visited.end()) {</div>
@@ -428,7 +428,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>            map_face2intersected[f] = is_intersected;</div>
 <div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span> </div>
 <div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>            <span class="keywordflow">if</span> (is_intersected) {</div>
-<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>                <span class="keyword">auto</span> res = m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#a760331e3fefcb92f7b0f50d97c12d283">switch_tetrahedron</a>(m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#ada6483b027f3a4f102dbf22de86cb4b1">tuple_from_face</a>(tet.tid(m), j));</div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>                <span class="keyword">auto</span> res = m.switch_tetrahedron(m.tuple_from_face(tet.tid(m), j));</div>
 <div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>                <span class="keywordflow">if</span> (res.has_value()) {</div>
 <div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>                    <span class="keyword">auto</span> n_tet = res.value();</div>
 <div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>                    <span class="keywordtype">size_t</span> tid = n_tet.tid(m);</div>
@@ -466,24 +466,14 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span>    std::vector&lt;Vector3r&gt; intersected_pos;</div>
 <div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; info : map_edge2point) {</div>
 <div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>        <span class="keyword">auto</span>&amp; [_, p, tid, l_eid] = info.second;</div>
-<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>        intersected_edges.push_back(m.<a class="code hl_function" href="classwmtk_1_1_tet_mesh.html#a994201bc6b9c05cca284e544228bffc3">tuple_from_edge</a>(tid, l_eid));</div>
+<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>        intersected_edges.push_back(m.tuple_from_edge(tid, l_eid));</div>
 <div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>        intersected_pos.push_back(p);</div>
 <div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>    }</div>
 <div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>    <span class="keywordflow">return</span> std::tuple(success_flag, intersected_tets, intersected_edges, intersected_pos);</div>
 <div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>}</div>
 <div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh_1_1_tuple.html">wmtk::TetMesh::Tuple</a></div><div class="ttdoc">a Tuple refers to a global vid and a global tet id, and a local edge id and local face id</div><div class="ttdef"><b>Definition</b> TetMesh.h:60</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_1_1_tuple_html_acbb74bf154ffde866b0e83015e2fdd80"><div class="ttname"><a href="classwmtk_1_1_tet_mesh_1_1_tuple.html#acbb74bf154ffde866b0e83015e2fdd80">wmtk::TetMesh::Tuple::vid</a></div><div class="ttdeci">size_t vid(const TetMesh &amp;m) const</div><div class="ttdef"><b>Definition</b> TetMeshTuple.cpp:106</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition</b> TetMesh.h:32</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a1ee6a0754114ac59ab11703808d83bac"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a1ee6a0754114ac59ab11703808d83bac">wmtk::TetMesh::tet_edges</a></div><div class="ttdeci">std::array&lt; Tuple, 6 &gt; tet_edges(const Tuple &amp;t) const</div><div class="ttdoc">get the 6 edges of a tet represented by Tuples</div><div class="ttdef"><b>Definition</b> TetMesh.cpp:810</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a3bd670ddb854a278d5760bdde3e9cda3"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a3bd670ddb854a278d5760bdde3e9cda3">wmtk::TetMesh::oriented_tet_vertices</a></div><div class="ttdeci">std::array&lt; Tuple, 4 &gt; oriented_tet_vertices(const Tuple &amp;t) const</div><div class="ttdef"><b>Definition</b> TetMesh.cpp:770</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a568cc7f3b8ddfa380325877237d1cb9c"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a568cc7f3b8ddfa380325877237d1cb9c">wmtk::TetMesh::get_incident_tets_for_edge</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; get_incident_tets_for_edge(const Tuple &amp;t) const</div><div class="ttdoc">Get the incident tets for edge.</div><div class="ttdef"><b>Definition</b> TetMesh.cpp:919</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a6b2b524bc5a43e2429a4dbfe234788fb"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a6b2b524bc5a43e2429a4dbfe234788fb">wmtk::TetMesh::tuple_from_vertex</a></div><div class="ttdeci">Tuple tuple_from_vertex(size_t vid) const</div><div class="ttdoc">get a Tuple from global vertex index</div><div class="ttdef"><b>Definition</b> TetMesh.cpp:687</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a760331e3fefcb92f7b0f50d97c12d283"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a760331e3fefcb92f7b0f50d97c12d283">wmtk::TetMesh::switch_tetrahedron</a></div><div class="ttdeci">std::optional&lt; Tuple &gt; switch_tetrahedron(const Tuple &amp;t) const</div><div class="ttdoc">wrapper function from Tuple::switch_tetrahedron</div><div class="ttdef"><b>Definition</b> TetMesh.h:1341</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a994201bc6b9c05cca284e544228bffc3"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a994201bc6b9c05cca284e544228bffc3">wmtk::TetMesh::tuple_from_edge</a></div><div class="ttdeci">Tuple tuple_from_edge(size_t tid, int local_eid) const</div><div class="ttdoc">get a Tuple from global tetra index and local edge index (from 0-5).</div><div class="ttdef"><b>Definition</b> TetMesh.cpp:437</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_aa36c93721edee518e9ae101f1e52200b"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#aa36c93721edee518e9ae101f1e52200b">wmtk::TetMesh::switch_vertex</a></div><div class="ttdeci">Tuple switch_vertex(const Tuple &amp;t) const</div><div class="ttdoc">wrapper function from Tuple::switch_vertex</div><div class="ttdef"><b>Definition</b> TetMesh.h:1314</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_ada6483b027f3a4f102dbf22de86cb4b1"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#ada6483b027f3a4f102dbf22de86cb4b1">wmtk::TetMesh::tuple_from_face</a></div><div class="ttdeci">Tuple tuple_from_face(size_t tid, int local_fid) const</div><div class="ttdoc">get a Tuple from global tetra index and local face index (from 0-3).</div><div class="ttdef"><b>Definition</b> TetMesh.cpp:447</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_ae7d0d7f9da45fda456290a85dc37f9bc"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#ae7d0d7f9da45fda456290a85dc37f9bc">wmtk::TetMesh::get_one_ring_tets_for_vertex</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; get_one_ring_tets_for_vertex(const Tuple &amp;t) const</div><div class="ttdoc">Get the one ring tets for a vertex.</div><div class="ttdef"><b>Definition</b> TetMesh.cpp:836</div></div>
 <div class="ttc" id="aclasswmtk_1_1threading_1_1concurrent__map_html"><div class="ttname"><a href="classwmtk_1_1threading_1_1concurrent__map.html">wmtk::threading::concurrent_map</a></div><div class="ttdef"><b>Definition</b> concurrent_map.hpp:66</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
