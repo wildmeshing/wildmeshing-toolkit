@@ -213,15 +213,17 @@ TEST_CASE("triwild-history-anchors-junctions", "[triwild][tracking]")
     CHECK(a.cell(CellType::Triangle).connectivity == b.cell(CellType::Triangle).connectivity);
 }
 
-TEST_CASE("triwild-history-default-topology", "[triwild][tracking]")
+namespace {
+
+/// triwild at default topology on the example and a third curve, `offset` above the wave where
+/// x < `x_max`: closer than eps, so that the simplification may weld it to the wave. Also
+/// returns the number of segments of the three.
+std::pair<ComponentResult, size_t> run_near(const double offset, const double x_max)
 {
-    // Without preserve_topology the simplification may weld curves that pass within the
-    // envelope: a third curve runs along the wave, closer than eps. The weld and the segments it
-    // merges are warnings of the map, which still ends at the mesh and maps every point.
     MeshMap meshes = example();
     std::vector<Eigen::Vector3d> near;
     for (const Eigen::Vector3d& p : wave(100)) {
-        if (p.x() < -0.8) near.push_back(p + Eigen::Vector3d(0, 2e-4, 0));
+        if (p.x() < x_max) near.push_back(p + Eigen::Vector3d(0, offset, 0));
     }
     meshes.emplace("near", polyline(near, false));
     const ComponentResult r = triwild::triwild(
@@ -231,7 +233,18 @@ TEST_CASE("triwild-history-default-topology", "[triwild][tracking]")
          {"max_iterations", 10},
          {"num_threads", 1}},
         meshes);
-    const Mapped m = check_history(r, 300 + 100 + near.size() - 1);
+    return {r, 300 + 100 + near.size() - 1};
+}
+
+} // namespace
+
+TEST_CASE("triwild-history-default-topology", "[triwild][tracking]")
+{
+    // Without preserve_topology the simplification may weld curves that pass within the
+    // envelope: a third curve runs along the wave, closer than eps. The weld and the segments it
+    // merges are warnings of the map, which still ends at the mesh and maps every point.
+    const auto [r, n] = run_near(2e-4, -0.8);
+    const Mapped m = check_history(r, n);
     // Two curves welded into one: their points map onto it, and back onto one of the two.
     CHECK(m.lost == 0);
     INFO(m.exact << " of " << m.points << " exact, worst " << m.round_trip);
@@ -239,6 +252,23 @@ TEST_CASE("triwild-history-default-topology", "[triwild][tracking]")
     CHECK(m.exact < m.points);
     const tracking::CurveTracking t(history_of(r));
     CHECK(t.map().build_warnings().topology > 0);
+}
+
+TEST_CASE("triwild-history-contracted-chains", "[triwild][tracking]")
+{
+    // The third curve closer and longer: its crossings with the circle lie next to the wave's,
+    // and the collapses contract the curves between them. Two junctions collapse into one, the
+    // segment between them shrinking to a point; loops of three segments close, two of them
+    // merging into the third. Neither leaves a chain to pair with: each maps onto what it
+    // became, the point or the third segment, and every point still has an image -- the
+    // collapsed segments' points had none before, about one in a hundred here.
+    const auto [r, n] = run_near(1e-4, -1);
+    const Mapped m = check_history(r, n);
+    CHECK(m.lost == 0);
+    CHECK(m.exact < m.points);
+    const tracking::CurveTracking t(history_of(r));
+    CHECK(t.map().build_warnings().topology > 0);
+    CHECK(t.map().build_warnings().merged_segments > 0);
 }
 
 TEST_CASE("triwild-history-preserve-topology", "[triwild][tracking]")

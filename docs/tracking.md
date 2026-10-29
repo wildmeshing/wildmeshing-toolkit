@@ -539,6 +539,14 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     runs on through it. A junction sliding along a branch, and a curve's end eroding onto its
     neighbour, map as the shortening they are, without a warning; a collapse of two junctions,
     or one along no segment (a weld), is a topology change.
+  - **A chain a collapse contracted** has no partner either, and holds the collapsed segment,
+    whose corners are one now, the survivor: two anchors collapsed into one shrink the segment
+    between them to the survivor, and a loop of three segments closed merges the other two into
+    the third. By relabelling the collapsed segment had no image (in triwild's tests at default
+    topology, with a curve within the envelope of another, up to one input point in a hundred),
+    so the chain maps by arc length onto what it became: the third segment, or the survivor -- a
+    chain of no length on a segment there, where every point goes. Forward only: what it became
+    maps back as it did.
   - **Segments of no length.** The arrangement can set two vertices apart by less than their
     rounding; in the history's doubles their segment has no length, until an operation moves
     one (11502: two such segments grew to 0.09 when a junction collapsed there). By arc length

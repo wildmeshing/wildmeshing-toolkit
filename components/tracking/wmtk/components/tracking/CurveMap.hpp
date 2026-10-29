@@ -26,7 +26,7 @@ struct CurveMapWarnings
 {
     /// Operations that changed the curves' topology -- welded two curves, merged or opened a
     /// junction, closed a loop -- whose segments are mapped by relabelling alone, where they
-    /// still exist.
+    /// still exist; a chain a collapse contracted, by arc length onto what it became.
     size_t topology = 0;
     /// Segments that became one with another -- duplicates a weld or a collapse leaves: both map
     /// onto it, and it maps back onto the first.
@@ -65,7 +65,10 @@ struct CurveMapOptions
  * normalised arc length: a bijection by construction, with constant stretch along the chain. A
  * split, a collapse and a smoothing step are all mapped so. An operation that changes the
  * topology leaves chains with no counterpart; their segments are mapped by relabelling where
- * they still exist, and counted (CurveMapWarnings::topology). A relabel and a consolidation
+ * they still exist, and counted (CurveMapWarnings::topology). A chain a collapse contracted --
+ * two anchors collapsed into one, or a loop of three closed into a doubled segment -- holds the
+ * collapsed segment, which no longer exists: it maps by arc length onto what the chain became,
+ * the segments it merged into or the survivor alone. A relabel and a consolidation
  * renumber segments; an embed maps each point to the same place on the segment it lies on.
  */
 class CurveMap
@@ -136,7 +139,8 @@ private:
     {
         history::EditKind kind;
         /// Local maps: chains before and after, paired, and where each segment is on them,
-        /// sorted by segment.
+        /// sorted by segment. A chain a collapse contracted is paired with what it became, which
+        /// maps back as it does, so after_at does not hold it.
         std::vector<std::pair<Chain, Chain>> chains;
         std::vector<std::pair<uint64_t, Place>> before_at, after_at;
         /// Local maps: segments mapped by relabelling, or to nothing, sorted by segment. Any

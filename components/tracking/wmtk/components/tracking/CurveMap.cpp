@@ -390,7 +390,12 @@ void CurveMap::build_local(CurveReplay& r, const Edit& e, Step& step, const bool
     for (size_t k = 0; k < cb.size(); ++k) {
         if (pair_of[k] >= 0) continue;
         unpaired = true;
-        for (const uint64_t f : cb[k].chain.segments) {
+        Chain& b = cb[k].chain;
+        std::vector<Image> images;
+        // The collapsed segment, whose corners are now one: the survivor.
+        size_t collapsed = b.segments.size();
+        for (size_t x = 0; x < b.segments.size(); ++x) {
+            const uint64_t f = b.segments[x];
             const Segment c = {
                 {renamed(before.at(f).corners[0]), renamed(before.at(f).corners[1])}};
             Image im{kNone, false};
@@ -405,8 +410,49 @@ void CurveMap::build_local(CurveReplay& r, const Edit& e, Step& step, const bool
                     break;
                 }
             }
-            step.forward.push_back({f, im});
+            if (c[0] == c[1]) collapsed = x;
+            images.push_back(im);
         }
+        // The collapsed segment has no image by its corners: they are one now, the survivor. On a
+        // chain with a partner it maps by arc length as the rest does. A chain without one that
+        // holds it is one the collapse contracted -- two anchors collapsed into one, the segment
+        // between them shrunk to the survivor; or a loop of three closed, the rest of the chain
+        // merged into the loop's third segment -- and it maps by arc length onto what it became:
+        // its other segments' images, end to end, or a chain of no length on a segment at the
+        // survivor, where every point goes. A survivor left with no segment has nowhere to put
+        // them.
+        Chain a;
+        bool contracted = collapsed < b.segments.size();
+        for (size_t x = 0; x < b.segments.size() && contracted; ++x) {
+            if (x == collapsed) continue;
+            contracted = images[x].segment != kNone;
+            if (!contracted) break;
+            const Geometry& g = after.at(images[x].segment);
+            a.segments.push_back(images[x].segment);
+            a.forward.push_back(bool(b.forward[x]) != images[x].flipped);
+            a.length.push_back((g.p[1] - g.p[0]).norm());
+        }
+        if (contracted && !a.segments.empty()) measure(a);
+        if (contracted && a.segments.empty()) {
+            for (const auto& [g, geom] : after) {
+                if (geom.corners[0] != kept && geom.corners[1] != kept) continue;
+                a.segments = {g};
+                a.forward = {geom.corners[0] == kept};
+                a.start = {0};
+                a.length = {0};
+                break;
+            }
+        }
+        if (!contracted || a.segments.empty()) {
+            for (size_t x = 0; x < b.segments.size(); ++x)
+                step.forward.push_back({b.segments[x], images[x]});
+            continue;
+        }
+        // Mapped forward only: what it became maps back as it did, onto its own preimage.
+        const uint32_t c = uint32_t(step.chains.size());
+        for (size_t x = 0; x < b.segments.size(); ++x)
+            step.before_at.push_back({b.segments[x], {c, uint32_t(x)}});
+        step.chains.push_back({std::move(b), std::move(a)});
     }
     for (size_t j = 0; j < ca.size(); ++j) {
         if (taken[j]) continue;

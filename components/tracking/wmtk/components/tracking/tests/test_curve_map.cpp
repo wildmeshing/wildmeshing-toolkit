@@ -4,6 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <cmath>
 #include <filesystem>
 #include <random>
 #include <thread>
@@ -201,6 +202,89 @@ TEST_CASE("curve-map-topology-change", "[tracking][curves]")
     const auto q = map.to_output({{1, Eigen::Vector2d(0.25, 0.75)}})[0];
     CHECK(q.segment == 1);
     CHECK((q.bary - Eigen::Vector2d(0.25, 0.75)).norm() < 1e-12);
+}
+
+TEST_CASE("curve-map-collapse-contracts-a-chain", "[tracking][curves]")
+{
+    // Two collapses that leave a chain before with no chain after to pair with, as welds do, and
+    // whose collapsed segment has no segment with its corners: they are one vertex now. The chain
+    // maps by arc length onto what it became, so every point on it still has an image.
+    SECTION("a loop of three closes")
+    {
+        // Junctions 0 and 1, joined directly by segment 0 and through vertex 2 by segments 1 and
+        // 2. Collapsing 2 into 0 removes segment 1 and makes segment 2 a duplicate of segment 0,
+        // which it merges into: the chain 0-2-1 becomes segment 0.
+        CurveHistory h;
+        h.vertices = {
+            Eigen::Vector3d(0, 0, 0),
+            Eigen::Vector3d(1, 0, 0),
+            Eigen::Vector3d(0, 0.5, 0),
+            Eigen::Vector3d(-1, 0, 0),
+            Eigen::Vector3d(2, 0, 0)};
+        h.vertex_alive.assign(5, 1);
+        h.faces = {{{0, 1}}, {{0, 2}}, {{2, 1}}, {{3, 0}}, {{1, 4}}};
+        h.face_alive.assign(5, 1);
+        h.features = {{{3}}, {{4}}};
+        h.edits.push_back({EditKind::collapse_edge, {2, 0}, {}, {}});
+
+        const CurveMap map(h);
+        CHECK(map.build_warnings().topology == 1);
+        CHECK(map.build_warnings().merged_segments == 1);
+        CHECK(map.output_segment_alive() == std::vector<uint8_t>{1, 0, 0, 1, 1});
+        const auto x_of = [&map](const CurvePoint& p) {
+            const Eigen::Vector3d x = at(p, map.output_vertices(), map.output_segments());
+            CHECK(x.y() == 0);
+            return x.x();
+        };
+        // A point at a fraction of the arc length along 0-2-1 lands at that fraction of segment
+        // 0, from 0 to 1.
+        const double l1 = 0.5, l2 = std::sqrt(1.25);
+        for (const double t : {0., 0.3, 1.}) {
+            const auto a = map.to_output({{1, Eigen::Vector2d(1 - t, t)}})[0];
+            REQUIRE(a.segment == 0);
+            CHECK(std::abs(x_of(a) - t * l1 / (l1 + l2)) < 1e-12);
+            const auto b = map.to_output({{2, Eigen::Vector2d(1 - t, t)}})[0];
+            REQUIRE(b.segment == 0);
+            CHECK(std::abs(x_of(b) - (l1 + t * l2) / (l1 + l2)) < 1e-12);
+        }
+        // Segment 0 maps onto itself, and back onto itself: the first of the two.
+        const auto c = map.to_output({{0, Eigen::Vector2d(0.4, 0.6)}})[0];
+        CHECK(c.segment == 0);
+        CHECK((c.bary - Eigen::Vector2d(0.4, 0.6)).norm() < 1e-12);
+        const auto back = map.to_input({{0, Eigen::Vector2d(0.4, 0.6)}})[0];
+        CHECK(back.segment == 0);
+        CHECK((back.bary - Eigen::Vector2d(0.4, 0.6)).norm() < 1e-12);
+    }
+    SECTION("two junctions collapse")
+    {
+        // Junctions 0 and 1, two branches each, joined by segment 0. Collapsing 1 into 0, which
+        // moves half way, shrinks segment 0 to the survivor: its points go there.
+        CurveHistory h;
+        h.vertices = {
+            Eigen::Vector3d(0, 0, 0),
+            Eigen::Vector3d(0.1, 0, 0),
+            Eigen::Vector3d(-1, 1, 0),
+            Eigen::Vector3d(-1, -1, 0),
+            Eigen::Vector3d(1.1, 1, 0),
+            Eigen::Vector3d(1.1, -1, 0)};
+        h.vertex_alive.assign(6, 1);
+        h.faces = {{{1, 0}}, {{0, 2}}, {{0, 3}}, {{1, 4}}, {{1, 5}}};
+        h.face_alive.assign(5, 1);
+        h.features = {{{2}}, {{3}}, {{4}}, {{5}}};
+        h.edits.push_back(
+            {EditKind::collapse_edge, {1, 0}, {}, {{0, Eigen::Vector3d(0.05, 0, 0)}}});
+
+        const CurveMap map(h);
+        CHECK(map.build_warnings().topology == 1);
+        CHECK(map.build_warnings().merged_segments == 0);
+        for (const double t : {0., 0.3, 1.}) {
+            const auto a = map.to_output({{0, Eigen::Vector2d(1 - t, t)}})[0];
+            REQUIRE(a.segment != kNoVertex);
+            const Eigen::Vector3d x = at(a, map.output_vertices(), map.output_segments());
+            CHECK((x - Eigen::Vector3d(0.05, 0, 0)).norm() < 1e-12);
+            CHECK(map.to_input({a})[0].segment != kNoVertex);
+        }
+    }
 }
 
 TEST_CASE("curve-map-weld-and-embed", "[tracking][curves]")
