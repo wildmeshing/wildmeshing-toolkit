@@ -16,6 +16,13 @@
 #include <stdexcept>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 
 namespace {
@@ -288,7 +295,9 @@ TEST_CASE(
     CHECK(passed_5 > 0);
 }
 
-TEST_CASE("a screened split pass splits everything, in order, and keeps its books", "[screening]")
+TEST_CASE(
+    "a screened split pass splits everything, in order, and keeps its books",
+    "[screening]" + release_only)
 {
     // 40 x 40: the first rounds commit through the parallel queues, the tail of the pass round by
     // round inline. 6 x 6: inline only (at most 64 survivors per round).
@@ -354,7 +363,9 @@ TEST_CASE("a screened pass ends when its operations can only wait", "[screening]
     CHECK(ex->wait_defects() == due);
 }
 
-TEST_CASE("a pass over more partitions than threads splits everything", "[screening]")
+TEST_CASE(
+    "a pass over more partitions than threads splits everything",
+    "[screening]" + release_only)
 {
     // Tasks take partitions one after another, and carry the operations a lost lock race set
     // aside into the next one they take. Partitions by vid modulo their count interleave

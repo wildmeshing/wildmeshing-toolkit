@@ -36,6 +36,13 @@
 #include <random>
 #include <thread>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 
 namespace {
@@ -316,7 +323,9 @@ TEST_CASE("envelope_budget", "[envelope]")
     }
 }
 
-TEST_CASE("a large sampled triangle query answers the same on several threads", "[envelope]")
+TEST_CASE(
+    "a large sampled triangle query answers the same on several threads",
+    "[envelope]" + release_only)
 {
     // Every sample is decided exactly -- within eps2 of some input facet or not -- so however
     // the samples are split among threads, the triangle is outside exactly when one sample is.

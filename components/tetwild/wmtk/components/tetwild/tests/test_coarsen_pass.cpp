@@ -10,6 +10,13 @@
 #include <cmath>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::tetwild;
 
@@ -180,7 +187,7 @@ TEST_CASE("tetwild-coarsen-rejected-collapse-leaves-no-trace", "[tetwild_operati
     REQUIRE(rejected > 0);
 }
 
-TEST_CASE("tetwild-coarsen-never-raises-max-energy", "[tetwild_operation][coarsen]")
+TEST_CASE("tetwild-coarsen-never-raises-max-energy", "[tetwild_operation][coarsen]" + release_only)
 {
     // The invariant the pass exists to hold, with the local smoothing switched on so the
     // accept/reject decision runs against a re-smoothed neighbourhood.
@@ -235,7 +242,9 @@ TEST_CASE("tetwild-coarsen-pass-off-is-a-no-op", "[tetwild_operation][coarsen]")
     REQUIRE(mesh.m_coarsen_stats.cells_before == 0); // untouched, so the report reads zero
 }
 
-TEST_CASE("tetwild-coarsen-bounded-stops-at-the-target-length", "[tetwild_operation][coarsen]")
+TEST_CASE(
+    "tetwild-coarsen-bounded-stops-at-the-target-length",
+    "[tetwild_operation][coarsen]" + release_only)
 {
     // The gate the coarsen_unbounded option controls. The grid's shortest edges are length 1,
     // so driving the collapse threshold below that must stop the pass dead -- and lifting it

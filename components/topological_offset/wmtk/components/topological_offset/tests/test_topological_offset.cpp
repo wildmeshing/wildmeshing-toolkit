@@ -28,6 +28,13 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/io.hpp>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace components::topological_offset;
 using namespace components::simwild::expression_parser;
@@ -2711,7 +2718,7 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
     CHECK(fs.tag_names == ft.tag_names);
 }
 
-TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]")
+TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]" + release_only)
 {
     // take_snapshot() / restore_snapshot(): after a restore the mesh is the one the snapshot left,
     // bit for bit in every frame array, and the same operations from it give the same result
@@ -2908,7 +2915,7 @@ TEST_CASE("damping-factor-key", "[offset][3d]")
     CHECK_THROWS(Parameters{zero});
 }
 
-TEST_CASE("growth-mode-keys", "[offset][3d]")
+TEST_CASE("growth-mode-keys", "[offset][3d]" + release_only)
 {
     // growth_mode, linear_growth_steps, smart_growth_attempts and smart_growth_max_fails through
     // the spec, as the app reads them: the defaults (none, 4, 2, 10), values read through, and the

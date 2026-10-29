@@ -40,6 +40,13 @@
 #ifdef WMTK_TEST_c1_simplification
 #include <wmtk/components/c1_simplification/c1_simplification.hpp>
 #endif
+
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
 using namespace wmtk;
 using namespace wmtk::components;
 namespace {
@@ -294,7 +301,7 @@ TEST_CASE("TriWild embeds named curves in memory", "[component_io]")
 }
 #endif
 #ifdef WMTK_TEST_tetwild
-TEST_CASE("TetWild embeds a named surface in memory", "[component_io]")
+TEST_CASE("TetWild embeds a named surface in memory", "[component_io]" + release_only)
 {
     WorkingDirectory cwd;
     auto data = tet();
@@ -508,7 +515,7 @@ TEST_CASE("Memory inputs with degenerate cells are cleaned like files", "[compon
     defined(WMTK_TEST_prismatic_mesh)
 TEST_CASE(
     "Tagged meshing offset and prismatic processing compose in memory",
-    "[component_io][memory_pipeline]")
+    "[component_io][memory_pipeline]" + release_only)
 {
     WorkingDirectory cwd;
     auto surface = tet();
@@ -610,7 +617,7 @@ template <typename Component>
 #ifdef WMTK_TEST_tetwild
 TEST_CASE(
     "TetWild gives the same result from memory and from a file",
-    "[component_io][equivalence]")
+    "[component_io][equivalence]" + release_only)
 {
     WorkingDirectory cwd;
     const auto path = data_file("sphere.obj");
@@ -627,7 +634,7 @@ TEST_CASE(
 #ifdef WMTK_TEST_triwild
 TEST_CASE(
     "TriWild gives the same result from memory and from a file",
-    "[component_io][equivalence]")
+    "[component_io][equivalence]" + release_only)
 {
     WorkingDirectory cwd;
     const auto path = data_file("triwild_polylines.obj");
@@ -643,7 +650,7 @@ TEST_CASE(
 #ifdef WMTK_TEST_simwild
 TEST_CASE(
     "SimWild gives the same result from memory and from a file",
-    "[component_io][equivalence]")
+    "[component_io][equivalence]" + release_only)
 {
     WorkingDirectory cwd;
     // Tagged .msh inputs: physical-group order, the embedded EnvelopeSurface and the ambient group
@@ -663,7 +670,7 @@ TEST_CASE(
 #ifdef WMTK_TEST_manifold_extraction
 TEST_CASE(
     "Manifold extraction gives the same result from memory and from a file",
-    "[component_io][equivalence]")
+    "[component_io][equivalence]" + release_only)
 {
     WorkingDirectory cwd;
     const auto path = data_file("double_sphere_hole.msh");
@@ -679,7 +686,7 @@ TEST_CASE(
 #ifdef WMTK_TEST_topological_offset
 TEST_CASE(
     "Topological offset gives the same result from memory and from a file",
-    "[component_io][equivalence]")
+    "[component_io][equivalence]" + release_only)
 {
     WorkingDirectory cwd;
     const auto path = data_file("double_sphere_hole.msh");

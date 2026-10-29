@@ -122,7 +122,7 @@ TEST_CASE("tracking-example-simwild", "[simwild][tracking]" + release_only)
     CHECK(lost == 0);
 }
 
-TEST_CASE("tracking-example-simwild-tet-input", "[simwild][tracking]")
+TEST_CASE("tracking-example-simwild-tet-input", "[simwild][tracking]" + release_only)
 {
     // A tet mesh as input: the history starts at its tracked surface, the interfaces between its
     // tags, which no input file holds as triangles. A point on it is named as one on the output
@@ -239,7 +239,7 @@ TEST_CASE("tracking-example-simwild-tet-input", "[simwild][tracking]")
     CHECK(same == pts.size());
 }
 
-TEST_CASE("tracking-simwild-memory-route", "[simwild][tracking]")
+TEST_CASE("tracking-simwild-memory-route", "[simwild][tracking]" + release_only)
 {
     // The memory route writes no file: the history comes back in the report, as the bytes of
     // the file, and the mesh it starts from -- <output>_history_input.msh on the file route --
@@ -277,7 +277,7 @@ TEST_CASE("tracking-simwild-memory-route", "[simwild][tracking]")
     }
 }
 
-TEST_CASE("tracking-simwild-memory-route-volume", "[simwild][tracking]")
+TEST_CASE("tracking-simwild-memory-route-volume", "[simwild][tracking]" + release_only)
 {
     // With volume_history_output, the memory route returns the volume history in the report too,
     // as the bytes of its file, and writes none: with the surface history's bytes and the two

@@ -55,7 +55,10 @@ function(add_component_test COMPONENT_NAME)
     # --allow-running-no-tests because c1_simplification's two cases are currently commented
     # out, so its executable holds nothing and Catch2 exits non-zero on an empty run. Without
     # the flag that component alone would fail the moment these are registered.
-    add_test(NAME ${COMPONENT_TEST_NAME} COMMAND ${COMPONENT_TEST_NAME} --allow-running-no-tests)
+    # --durations yes prints each case's time, which one entry per component would otherwise
+    # hide: it is how a case too slow for the Debug jobs (Windows Debug above all) is found, and
+    # tagged release_only in its file.
+    add_test(NAME ${COMPONENT_TEST_NAME} COMMAND ${COMPONENT_TEST_NAME} --allow-running-no-tests --durations yes)
     wmtk_copy_dll(${COMPONENT_TEST_NAME})
 
 endfunction()

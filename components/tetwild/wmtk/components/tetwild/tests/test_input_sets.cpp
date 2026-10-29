@@ -17,6 +17,13 @@
 #include <string>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::tetwild;
 
@@ -312,7 +319,7 @@ TEST_CASE("input-set-surface-flip-unites", "[tetwild][input_sets]")
     }
 }
 
-TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]")
+TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]" + release_only)
 {
     // Input 0: the unit cube. Input 1: a tilted open sheet z = 0.45 + 0.1 x over [-0.5, 1.5]^2,
     // which cuts the cube's side walls. After the insertion and a few optimization rounds, every
@@ -451,7 +458,7 @@ TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]")
     check_all("after optimization");
 }
 
-TEST_CASE("input-sets-touching-boxes", "[tetwild][input_sets]")
+TEST_CASE("input-sets-touching-boxes", "[tetwild][input_sets]" + release_only)
 {
     // Input 0: the box [0,1]^3. Input 1: the box [1,2]x[0,1]^2, touching it at x = 1. Their tops,
     // bottoms, fronts and backs are exactly coplanar and edge-adjacent, so each pair is one

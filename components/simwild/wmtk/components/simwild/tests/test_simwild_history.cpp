@@ -217,7 +217,7 @@ void check_tags(
 
 } // namespace
 
-TEST_CASE("simwild-surface-history-keeps-tags", "[simwild][history]")
+TEST_CASE("simwild-surface-history-keeps-tags", "[simwild][history]" + release_only)
 {
     for (const int threads : {0, 4}) {
         INFO("threads " << threads);

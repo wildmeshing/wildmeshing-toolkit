@@ -22,6 +22,13 @@
 #include <string>
 #include <thread>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components;
 using tracking::SurfaceMap;
@@ -113,7 +120,7 @@ double round_trip(
 
 } // namespace
 
-TEST_CASE("surface-map-round-trip-remeshing", "[tracking][surfaces]")
+TEST_CASE("surface-map-round-trip-remeshing", "[tracking][surfaces]" + release_only)
 {
     // A closed manifold remeshed with the link condition on: every local map is a bijection, so
     // the map is one, and any point comes back to where it was.
@@ -160,7 +167,7 @@ TEST_CASE("surface-map-round-trip-remeshing-bunny", "[tracking][surfaces][.]")
     CHECK(err < kRoundTrip);
 }
 
-TEST_CASE("surface-map-transfer-face-labels", "[tracking][surfaces]")
+TEST_CASE("surface-map-transfer-face-labels", "[tracking][surfaces]" + release_only)
 {
     // Label the sphere's faces by the side of x = 0 their centroid is on, and by octant; remesh
     // from the labelled gmsh file while recording; carry the labels onto the output. An output
@@ -277,7 +284,7 @@ std::vector<std::array<size_t, 2>> label_boundaries(const tracking::SurfaceData&
 
 } // namespace
 
-TEST_CASE("surface-map-conforming-labels", "[tracking][surfaces]")
+TEST_CASE("surface-map-conforming-labels", "[tracking][surfaces]" + release_only)
 {
     // With the label boundaries kept as feature curves, every output face lies inside one label
     // region: points anywhere in it map to input faces of one label, the labels hold exactly,
@@ -483,7 +490,7 @@ TEST_CASE("surface-map-small-regions-survive", "[tracking][surfaces]")
     }
 }
 
-TEST_CASE("surface-map-transfer-uv", "[tracking][surfaces]")
+TEST_CASE("surface-map-transfer-uv", "[tracking][surfaces]" + release_only)
 {
     // The sphere's own texture coordinates, seams kept as curves: carried through the remeshing,
     // they stay continuous away from the seams, no texture triangle turns over away from the
@@ -739,7 +746,7 @@ TEST_CASE("surface-map-embed-on-a-sliver", "[tracking][surfaces]")
     CHECK(err < 1e-9);
 }
 
-TEST_CASE("surface-map-damaged-history", "[tracking][surfaces]")
+TEST_CASE("surface-map-damaged-history", "[tracking][surfaces]" + release_only)
 {
     // A damaged tracking file that still loads -- a byte changed where the format cannot tell --
     // builds a map that may be wrong, but builds it or throws: no crash. The cheapest map does:
@@ -813,7 +820,7 @@ TEST_CASE("surface-map-points-on-faces-that-are-not-there", "[tracking][surfaces
     CHECK(warnings.unlocated == 1);
 }
 
-TEST_CASE("surface-map-maps-from-several-threads", "[tracking][surfaces]")
+TEST_CASE("surface-map-maps-from-several-threads", "[tracking][surfaces]" + release_only)
 {
     // Mapping does not write to the map: threads mapping through one at once each get their own
     // points and their own warnings, those a call alone gets. Every thread's batch has as many
@@ -966,7 +973,7 @@ TEST_CASE("surface-map-box-scaffold", "[tracking][surfaces]")
     CHECK_FALSE(tracking::box_scaffold(repeated, lo, hi, corners, tris));
 }
 
-TEST_CASE("surface-map-scaffolds", "[tracking][surfaces]")
+TEST_CASE("surface-map-scaffolds", "[tracking][surfaces]" + release_only)
 {
     // Both scaffolds keep every local map a bijection: the map round-trips exactly.
     const auto h = remesh("sphere.obj", 0, 0.6, 2);
@@ -982,7 +989,7 @@ TEST_CASE("surface-map-scaffolds", "[tracking][surfaces]")
     }
 }
 
-TEST_CASE("surface-map-collapse-patch", "[surface_map]")
+TEST_CASE("surface-map-collapse-patch", "[surface_map]" + release_only)
 {
     // An octahedron, vertex 4 (the top) collapsed into 2. CollapsePatch::removed_star maps only
     // the faces the collapse changes, the top's four: points on the faces only 2 had -- below the

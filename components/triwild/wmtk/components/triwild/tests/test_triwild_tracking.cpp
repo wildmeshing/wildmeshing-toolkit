@@ -18,6 +18,13 @@
 #include <set>
 #include <sstream>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 namespace fs = std::filesystem;
 using namespace wmtk;
 using namespace wmtk::components;
@@ -27,7 +34,7 @@ using tracking::InputCurvePoint;
 using tracking::kNoId;
 using tracking::OutputCurvePoint;
 
-TEST_CASE("tracking-example-triwild", "[triwild][tracking]")
+TEST_CASE("tracking-example-triwild", "[triwild][tracking]" + release_only)
 {
     const fs::path dir = fs::current_path() / "tracking_example_triwild";
     fs::create_directories(dir);
@@ -197,7 +204,7 @@ TEST_CASE("tracking-example-triwild", "[triwild][tracking]")
     CHECK(same == pts.size());
 }
 
-TEST_CASE("tracking-memory-route-triwild", "[triwild][tracking]")
+TEST_CASE("tracking-memory-route-triwild", "[triwild][tracking]" + release_only)
 {
     // The memory route: triwild records its history from the curves it is given and returns it
     // in its report, as bytes, writing no file, and the tracking application's info reports on

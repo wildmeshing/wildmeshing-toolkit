@@ -25,6 +25,13 @@
 #include <string>
 #include <vector>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace wmtk::components::tracking;
 
@@ -784,7 +791,7 @@ void check_all_points(const Scene& sc, const VolumeMap& map, const size_t n)
 
 } // namespace
 
-TEST_CASE("volume-ops", "[volume_map]")
+TEST_CASE("volume-ops", "[volume_map]" + release_only)
 {
     // Runs of random operations on a grid of 4^3 cubes split by the plane z = 2, the tracked
     // surface between two regions, all of whose operations map and keep the surface. Together
@@ -875,7 +882,7 @@ TEST_CASE("volume-ops-exact-shapes", "[volume_map]")
     CHECK_FALSE(Scene::worse(flat.shape(a), flat.shape(a)));
 }
 
-TEST_CASE("volume-ops-volume-only", "[volume_map]")
+TEST_CASE("volume-ops-volume-only", "[volume_map]" + release_only)
 {
     // Surface vertices collapsed far, onto the box where the sheet's boundary is, which no pair
     // keeping the surface maps: each such operation is mapped as a bijection of the volume

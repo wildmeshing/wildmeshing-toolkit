@@ -10,6 +10,13 @@
 #include <random>
 #include <string>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk;
 using namespace components::isotropic_remeshing;
 
@@ -79,7 +86,7 @@ void check_replay(
 
 } // namespace
 
-TEST_CASE("remeshing-history-replays-to-the-output", "[test_remeshing][history]")
+TEST_CASE("remeshing-history-replays-to-the-output", "[test_remeshing][history]" + release_only)
 {
     // In parallel the passes screen every operation with a dry run first and commit
     // concurrently; the replay only matches if no dry run recorded anything and the commit
