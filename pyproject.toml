@@ -30,7 +30,7 @@ skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*"]
 # need no external test data. The full data-driven integration suite is run separately
 # in the `test_wheels` CI job (see .github/workflows/wheels.yml).
 test-requires = "pytest"
-test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py"
+test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py {project}/tests/python/test_tracking.py"
 
 [tool.cibuildwheel.linux]
 before-all = "yum install -y gmp-devel"

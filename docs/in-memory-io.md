@@ -83,8 +83,8 @@ into subsequent memory calls. Connectivity is never truncated from floating poin
 attributes never pass through Float64. Computation releases the Python GIL. Component attribute
 contracts and the shared readers' and writers' supported formats are the same as in C++.
 
-Run the Python memory tests with `python -m unittest discover -s tests/python -p test_memory_io.py`;
-they are also included in the wheel tests.
+Run the Python memory tests with `python -m unittest discover -s tests/python -p test_memory_io.py`,
+and those of surface tracking with `-p test_tracking.py`; they are also included in the wheel tests.
 
 ## MeshData
 
@@ -192,6 +192,17 @@ C++. On the memory route the history starts at the meshes given and ends at the 
 `history::read_history(path)` reads them back, as `io::write_mesh` and `io::read_mesh` do for a
 mesh; `history::SurfaceHistory::from_bytes` loads them. The history file is its own format, not a
 mesh.
+
+In Python the history is `bytes`: the bindings return a report's binary values as `bytes`, and
+pass `bytes` in the options as binary values (pybind11_json alone would make them base64 text).
+`wm.write_history(path, history)` and `wm.read_history(path)` are the two file functions:
+
+```python
+outputs, report = wm.isotropic_remeshing(
+    {"input": "surface", "history_output": "record"}, {"surface": surface})
+wm.write_history("remeshed.wmtkhist", report["history"])  # the file the file route writes
+history = wm.read_history("remeshed.wmtkhist")            # the same bytes
+```
 
 The file-oriented entry points retain existing configurations, relative-path conventions,
 output filenames, intermediate exports, and report files. The tagged components (simwild, triwild,

@@ -4,6 +4,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
 #include <pybind11_json/pybind11_json.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <cstring>
@@ -164,6 +165,45 @@ py::dict mesh_data(const MeshData& input)
 }
 } // namespace
 
+nlohmann::json options(const py::handle& value)
+{
+    if (py::isinstance<py::bytes>(value)) {
+        const auto data = py::cast<std::string>(value);
+        return nlohmann::json::binary(std::vector<uint8_t>(data.begin(), data.end()));
+    }
+    if (py::isinstance<py::dict>(value)) {
+        nlohmann::json j = nlohmann::json::object();
+        for (auto item : py::reinterpret_borrow<py::dict>(value)) {
+            if (!py::isinstance<py::str>(item.first)) throw py::type_error("Keys must be strings");
+            j[py::cast<std::string>(item.first)] = options(item.second);
+        }
+        return j;
+    }
+    if (py::isinstance<py::list>(value) || py::isinstance<py::tuple>(value)) {
+        nlohmann::json j = nlohmann::json::array();
+        for (auto item : value) j.push_back(options(item));
+        return j;
+    }
+    return pyjson::to_json(value);
+}
+py::object report(const nlohmann::json& j)
+{
+    if (j.is_binary()) {
+        const auto& data = j.get_binary();
+        return py::bytes(reinterpret_cast<const char*>(data.data()), data.size());
+    }
+    if (j.is_object()) {
+        py::dict d;
+        for (auto it = j.begin(); it != j.end(); ++it) d[py::str(it.key())] = report(it.value());
+        return d;
+    }
+    if (j.is_array()) {
+        py::list l;
+        for (const auto& v : j) l.append(report(v));
+        return l;
+    }
+    return pyjson::from_json(j);
+}
 py::tuple call_component(MemoryComponent component, nlohmann::json options, const py::dict& meshes)
 {
     MeshMap inputs;
@@ -191,7 +231,7 @@ py::tuple call_component(MemoryComponent component, nlohmann::json options, cons
     }
     py::dict outputs;
     for (const auto& [name, data] : result.first) outputs[py::str(name)] = mesh_data(data);
-    return py::make_tuple(outputs, py::cast(result.second));
+    return py::make_tuple(outputs, report(result.second));
 }
 void bind_mesh_io(py::module_& module)
 {
@@ -217,5 +257,30 @@ void bind_mesh_io(py::module_& module)
         "path"_a,
         "mesh"_a,
         "Save MeshData through the shared MSH or existing VTU writer.");
+    module.def(
+        "read_history",
+        [](const std::filesystem::path& path) {
+            std::vector<uint8_t> bytes;
+            {
+                py::gil_scoped_release release;
+                bytes = history::read_history(path);
+            }
+            return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        },
+        "path"_a,
+        "Read a surface history file (a component's history_output) as the bytes a memory call "
+        "returns in its report's 'history' and takes as 'history'.");
+    module.def(
+        "write_history",
+        [](const std::filesystem::path& path, const py::bytes& history) {
+            const auto data = py::cast<std::string>(history);
+            const std::vector<uint8_t> bytes(data.begin(), data.end());
+            py::gil_scoped_release release;
+            history::write_history(path, bytes);
+        },
+        "path"_a,
+        "history"_a,
+        "Save the bytes of a surface history (a memory call's report['history']) as the file the "
+        "file route writes.");
 }
 } // namespace wmtk::python
