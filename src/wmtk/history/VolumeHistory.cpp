@@ -38,15 +38,10 @@ namespace {
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'V', 'O', 'L', 'H'};
 constexpr uint32_t kVersion = 1;
 
-uint64_t zigzag(const int64_t x)
-{
-    return (uint64_t(x) << 1) ^ uint64_t(x >> 63);
-}
-
-int64_t unzigzag(const uint64_t x)
-{
-    return int64_t(x >> 1) ^ -int64_t(x & 1);
-}
+using detail::BufferReader;
+using detail::BufferWriter;
+using detail::unzigzag;
+using detail::zigzag;
 
 uint64_t plus_one(const uint64_t v)
 {
@@ -64,69 +59,6 @@ std::array<size_t, 4> key_of(std::array<size_t, 4> t)
     std::sort(t.begin(), t.end());
     return t;
 }
-
-/// Appends to a byte buffer.
-struct Bytes
-{
-    std::vector<uint8_t>& out;
-    void byte(const uint8_t b) { out.push_back(b); }
-    void varint(uint64_t n)
-    {
-        do {
-            uint8_t b = n & 0x7F;
-            n >>= 7;
-            if (n) b |= 0x80;
-            out.push_back(b);
-        } while (n);
-    }
-    void position(const Eigen::Vector3d& p)
-    {
-        const size_t at = out.size();
-        out.resize(at + 24);
-        std::memcpy(out.data() + at, p.data(), 24);
-    }
-};
-
-/// Reads a byte buffer, throwing on overrun.
-struct Cursor
-{
-    const uint8_t* p;
-    const uint8_t* end;
-    const std::string& path;
-    [[noreturn]] void corrupt() const
-    {
-        log_and_throw_error("volume history: {} is corrupt", path);
-    }
-    uint8_t byte()
-    {
-        if (p >= end) corrupt();
-        return *p++;
-    }
-    uint64_t varint()
-    {
-        uint64_t n = 0;
-        for (int shift = 0; shift < 64; shift += 7) {
-            const uint8_t b = byte();
-            n |= uint64_t(b & 0x7F) << shift;
-            if (!(b & 0x80)) return n;
-        }
-        corrupt();
-    }
-    uint64_t count(const uint64_t min_bytes = 1)
-    {
-        const uint64_t n = varint();
-        if (n > uint64_t(end - p) / min_bytes) corrupt();
-        return n;
-    }
-    Eigen::Vector3d position()
-    {
-        if (end - p < 24) corrupt();
-        Eigen::Vector3d x;
-        std::memcpy(x.data(), p, 24);
-        p += 24;
-        return x;
-    }
-};
 
 /// What a vertex was last written as.
 struct Known
@@ -175,7 +107,7 @@ bool derivable(const VolumeEdit& e)
     return want == got;
 }
 
-void encode(Bytes& w, const VolumeEdit& e, std::vector<Known>& known)
+void encode(BufferWriter& w, const VolumeEdit& e, std::vector<Known>& known)
 {
     w.byte(uint8_t(e.op));
     w.varint(e.first_edit);
@@ -226,7 +158,7 @@ void encode(Bytes& w, const VolumeEdit& e, std::vector<Known>& known)
     }
 }
 
-VolumeEdit decode(Cursor& r, std::vector<Known>& known, const size_t n_regions)
+VolumeEdit decode(BufferReader& r, std::vector<Known>& known, const size_t n_regions)
 {
     VolumeEdit e;
     const uint8_t op = r.byte();
@@ -330,7 +262,7 @@ std::vector<VolumeEdit> decode_all(
     const size_t n_regions,
     const std::string& path)
 {
-    Cursor r{p, end, path};
+    BufferReader r(p, end, "volume history", path);
     std::vector<Known> known;
     std::vector<VolumeEdit> edits;
     edits.reserve(n);
@@ -373,7 +305,7 @@ void VolumeHistory::save(const std::string& path) const
 {
     // Vertices with no ids of their own are numbered apart, edit by edit.
     std::vector<uint8_t> bytes;
-    Bytes w{bytes};
+    BufferWriter w(bytes);
     std::vector<Known> known;
     uint64_t next = 0;
     for (const VolumeEdit& e : edits) {
@@ -404,14 +336,11 @@ VolumeHistory VolumeHistory::load(const std::string& path)
     const std::vector<uint8_t> data(
         (std::istreambuf_iterator<char>(in)),
         std::istreambuf_iterator<char>());
-    Cursor r{data.data(), data.data() + data.size(), path};
     if (data.size() < sizeof(kMagic) + 4 || std::memcmp(data.data(), kMagic, sizeof(kMagic)) != 0) {
         log_and_throw_error("volume history: {} is not a volume history", path);
     }
-    r.p += sizeof(kMagic);
-    uint32_t version;
-    std::memcpy(&version, r.p, 4);
-    r.p += 4;
+    BufferReader r(data.data() + sizeof(kMagic), data.data() + data.size(), "volume history", path);
+    const uint32_t version = r.get<uint32_t>();
     if (version != kVersion) {
         log_and_throw_error("volume history: {} has version {}, not {}", path, version, kVersion);
     }
@@ -424,12 +353,10 @@ VolumeHistory VolumeHistory::load(const std::string& path)
     }
     for (uint64_t n = r.count(2); n > 0; --n) {
         const int64_t t = unzigzag(r.varint());
-        const uint64_t len = r.count();
-        h.tag_names[t] = std::string(reinterpret_cast<const char*>(r.p), len);
-        r.p += len;
+        h.tag_names[t] = r.string(r.count());
     }
     const uint64_t n = r.count(4);
-    h.edits = decode_all(r.p, r.end, n, h.regions.size(), path);
+    h.edits = decode_all(r.at(), data.data() + data.size(), n, h.regions.size(), path);
     return h;
 }
 
@@ -514,7 +441,7 @@ void VolumeRecorder::commit(
         e.added.push_back(to_local(after.tets[k]));
         e.added_regions.push_back(region_of(after.tags[k]));
     }
-    Bytes w{m_bytes};
+    BufferWriter w(m_bytes);
     encode(w, e, m_encoder->known);
     ++m_count;
 }
