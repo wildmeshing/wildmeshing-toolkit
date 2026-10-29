@@ -21,7 +21,8 @@ bool matches_input(const SurfaceMap& map, const SurfaceData& input, std::string&
  * corner maps to: inside, so that it lands in the chart of the face when the corner is on a
  * seam, which the remeshing keeps as a curve. `input` must match the map's input surface
  * (matches_input). The output's live vertices and faces are numbered by rank. Every output
- * face also gets `input_face`: the input face its centroid maps to, -1 for none. `warnings`, if
+ * face also gets `input_face` (Int64): the input face its centroid maps to, -1 for none. A face
+ * field keeps its type and column names; a value with no source is 0. `warnings`, if
  * given, gets what mapping the output's points to the input found.
  */
 SurfaceData

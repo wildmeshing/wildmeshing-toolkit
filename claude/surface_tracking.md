@@ -369,10 +369,16 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 - **`Tracking`.** The user-facing wrapper: input points by file triangles or by
   `input_vertex_ids` triplets; output points by triangles or by `output_vertex_ids` triplets.
 - **`transfer_fields` / `surface_io`.** Fields of a gmsh input carried onto the output.
+  - The files are read and written through `io::read_mesh` / `io::write_mesh`, so they are
+    what `wm.read_mesh` reads and `wm.write_mesh` writes, and a plain gmsh `$ElementData`
+    field is carried too. A field is a triangle attribute of the `MeshData`: per face, or,
+    for `uv` and `normal` (`is_corner_field`, the fields `io::read_mesh` reads per corner),
+    three values per corner, corner after corner (`uv`: six columns). A face field keeps its
+    type and column labels.
   - Faces take their centroid's value; corners are evaluated just inside their face.
-  - Every output face also gets `input_face`, the input face it maps to.
-  - `write_surface_into_msh` writes the result into a copy of a tet mesh file, on its own
-    nodes (`tet_mesh` / `output_tet_mesh`).
+  - Every output face also gets `input_face` (Int64), the input face it maps to, -1 for none.
+  - `write_surface_into_msh` writes the result into a copy of a tet mesh file, as rows of
+    its triangle block on its own vertices (`tet_mesh` / `output_tet_mesh`).
 - **The app** (`surface_map.cpp`, spec `surface_map_spec.json`):
   - `info`: what the map holds, its warnings, the output centroids' round trip, and how far
     they lie from their preimages (drift, in output edge lengths);

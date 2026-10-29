@@ -42,13 +42,13 @@
     "pointer": "/input",
     "type": "string",
     "default": "",
-    "doc": "transfer: the surface the history starts from -- the same triangles in the same order: a gmsh file, with per-face and per-corner fields (labels, texture coordinates) to carry onto the output, or a triangle mesh of another format, as read, with none. Empty: the input files of the application that recorded the history, from its parameters. Every output face gets input_face too, the input face its centroid maps to."
+    "doc": "transfer: the surface the history starts from -- the same triangles in the same order: a gmsh file, as io::read_mesh (wm.read_mesh) reads it, whose triangle fields are carried onto the output -- per face (labels), or per corner (uv and normal, three values per corner, corner after corner: texture coordinates) -- or a triangle mesh of another format, as read, with none. Empty: the input files of the application that recorded the history, from its parameters. Every output face gets input_face too, the input face its centroid maps to."
   },
   {
     "pointer": "/output",
     "type": "string",
     "default": "out.msh",
-    "doc": "transfer: the output surface, written as a gmsh file with the carried per-face fields."
+    "doc": "transfer: the output surface, written as a gmsh file through io::write_mesh, the carried fields as attributes of its triangles: what wm.read_mesh reads."
   },
   {
     "pointer": "/output_obj",
@@ -60,7 +60,7 @@
     "pointer": "/uv_field",
     "type": "string",
     "default": "uv",
-    "doc": "transfer: the per-corner field output_obj takes its texture coordinates from (its first two components)."
+    "doc": "transfer: the per-corner field output_obj takes its texture coordinates from (the first two values of each corner)."
   },
   {
     "pointer": "/texture",

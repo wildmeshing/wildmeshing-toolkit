@@ -5,7 +5,7 @@
 #include <wmtk/components/surface_map/transfer.hpp>
 #include <wmtk/components/tetwild/tetwild.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
-#include <wmtk/utils/io.hpp>
+#include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
 
@@ -228,41 +228,25 @@ TEST_CASE(
         with_labels.string(),
         transferred);
 
-    MshData msh;
-    msh.load(with_labels.string());
-    CHECK(msh.get_num_tets() == size_t(exported.T.rows()));
-    const mshio::ElementBlock* triangles = nullptr;
-    for (const auto& b : msh.m_spec.elements.entity_blocks) {
-        if (b.entity_dim == 2) triangles = &b;
-    }
-    REQUIRE(triangles != nullptr);
-    REQUIRE(triangles->num_elements_in_block == transferred.faces.size());
-    // Its nodes are the tet mesh's, where the surface has its vertices.
-    std::map<size_t, Eigen::Vector3d> node;
-    for (const auto& b : msh.m_spec.nodes.entity_blocks) {
-        for (size_t i = 0; i < b.num_nodes_in_block; ++i) {
-            node[b.tags[i]] = Eigen::Vector3d(b.data[3 * i], b.data[3 * i + 1], b.data[3 * i + 2]);
-        }
-    }
+    const MeshData msh = io::read_mesh(with_labels);
+    CHECK(msh.cell(CellType::Tetrahedron).connectivity.rows() == exported.T.rows());
+    const CellData& triangles = msh.cell(CellType::Triangle);
+    REQUIRE(size_t(triangles.connectivity.rows()) == transferred.faces.size());
+    // Its vertices are the tet mesh's, where the surface has its vertices.
     size_t misplaced = 0, mislabelled = 0;
-    std::map<size_t, size_t> face_of_tag;
     for (size_t i = 0; i < transferred.faces.size(); ++i) {
-        face_of_tag[triangles->data[4 * i]] = i;
         for (int k = 0; k < 3; ++k) {
-            misplaced += node.at(triangles->data[4 * i + 1 + k]) !=
+            misplaced += msh.V.row(triangles.connectivity(i, k)).transpose() !=
                          transferred.vertices[transferred.faces[i][k]];
         }
     }
-    bool found = false;
-    for (const auto& data : msh.m_spec.element_data) {
-        if (data.header.string_tags.front() != "label") continue;
-        found = true;
-        CHECK(data.entries.size() == transferred.faces.size());
-        for (const auto& entry : data.entries) {
-            const size_t i = face_of_tag.at(entry.tag);
-            const double source = transferred.face_fields.at("input_face")[i][0];
-            REQUIRE(source >= 0);
-            mislabelled += entry.data[0] != label[size_t(source)][0];
+    const bool found = triangles.attributes.count("label") > 0;
+    if (found) {
+        const auto labels = triangles.attributes.at("label").doubles();
+        const auto sources = triangles.attributes.at("input_face").integers();
+        for (size_t i = 0; i < transferred.faces.size(); ++i) {
+            REQUIRE(sources(i, 0) >= 0);
+            mislabelled += labels(i, 0) != label[size_t(sources(i, 0))][0];
         }
     }
     CHECK(found);

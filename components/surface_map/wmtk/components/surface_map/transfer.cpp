@@ -75,6 +75,10 @@ SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input, Map
         out.faces.push_back(t);
     }
 
+    // Face fields keep their types and column names; corner fields are interpolated, Float64.
+    for (const auto& [name, type] : input.field_types) {
+        if (input.face_fields.count(name)) out.field_types[name] = type;
+    }
     size_t lost = 0;
     for (const auto& [name, field] : input.face_fields) {
         auto& o = out.face_fields[name];
@@ -111,6 +115,7 @@ SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input, Map
     }
     // Where each output face comes from: the input face its centroid maps to, -1 for none.
     auto& from = out.face_fields["input_face"];
+    out.field_types["input_face"] = {1, {}};
     from.resize(out_faces.size());
     for (size_t i = 0; i < out_faces.size(); ++i) {
         const uint64_t g = src[4 * i].face;

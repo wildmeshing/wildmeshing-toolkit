@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <algorithm>
@@ -184,8 +185,8 @@ TEST_CASE("read_triangle_mesh_reports_the_input_of_each_face", "[io][read_triang
 
 TEST_CASE("read_triangle_mesh_reads_every_entity_of_a_gmsh_file", "[io][read_triangle_mesh]")
 {
-    // A gmsh 2.2 file with two surface entities, one triangle each. mshio puts them in two
-    // blocks, of which MshData reads the first; such a file goes to libigl, which reads both.
+    // A gmsh 2.2 file with two surface entities, one triangle each, which mshio puts in two
+    // blocks: io::read_mesh reads both.
     const fs::path dir = fs::temp_directory_path() /
                          ("wmtk_read_triangle_mesh_gmsh_" + std::to_string(std::random_device{}()));
     fs::create_directories(dir);
@@ -201,5 +202,35 @@ TEST_CASE("read_triangle_mesh_reads_every_entity_of_a_gmsh_file", "[io][read_tri
     wmtk::io::read_triangle_mesh(path.string(), V, F);
     CHECK(V.rows() == 4);
     CHECK(F.rows() == 2);
+    fs::remove_all(dir);
+}
+
+TEST_CASE("read_triangle_mesh_reads_what_write_mesh_writes", "[io][read_triangle_mesh]")
+{
+    // A gmsh file as io::write_mesh (and wm.write_mesh) writes one, fields and all: its triangles
+    // in row order, and its isolated vertex kept until cleaning.
+    const fs::path dir = fs::temp_directory_path() / ("wmtk_read_triangle_mesh_mesh_io_" +
+                                                      std::to_string(std::random_device{}()));
+    fs::create_directories(dir);
+    const fs::path path = dir / "written.msh";
+    wmtk::MeshData m;
+    m.V.resize(5, 3);
+    m.V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 5, 5, 5;
+    auto& t = m.cells[wmtk::CellType::Triangle];
+    t.connectivity.resize(2, 3);
+    t.connectivity << 1, 3, 2, 0, 1, 2;
+    t.attributes["label"].values =
+        wmtk::DataMatrix<double>(wmtk::DataMatrix<double>::Constant(2, 1, 3.));
+    wmtk::io::write_mesh(path, m);
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    wmtk::io::ReadProvenance read;
+    wmtk::io::read_triangle_mesh({path.string()}, V, F, -1, -1, nullptr, &read);
+    CHECK(read.V.rows() == 5);
+    REQUIRE(read.F.rows() == 2);
+    CHECK(read.F.row(0) == Eigen::RowVector3i(1, 3, 2));
+    CHECK(read.F.row(1) == Eigen::RowVector3i(0, 1, 2));
+    CHECK(V.rows() == 4);
     fs::remove_all(dir);
 }

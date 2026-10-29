@@ -199,18 +199,6 @@ public:
 
     inline size_t get_num_faces() const { return get_num_simplex_elements(2); }
 
-    /// Whether the file is one block of surface nodes and one of triangles, as MshData writes a
-    /// surface. Its faces, and the data on them, are then in file order. A gmsh file with
-    /// several entities has more blocks, which the extract_ functions do not combine: they read
-    /// the first block of each dimension.
-    inline bool is_single_surface_block() const
-    {
-        const auto& nodes = m_spec.nodes.entity_blocks;
-        const auto& elements = m_spec.elements.entity_blocks;
-        return nodes.size() == 1 && nodes.front().entity_dim == 2 && elements.size() == 1 &&
-               elements.front().entity_dim == 2 && elements.front().element_type == 2;
-    }
-
     inline size_t get_num_tets() const { return get_num_simplex_elements(3); }
 
     template <typename Fn>

@@ -8,6 +8,7 @@
 #include <wmtk/utils/getRSS.h>
 #include <wmtk/Types.hpp>
 #include <wmtk/history/InputHistory.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/resolve_path.hpp>
@@ -21,60 +22,58 @@ namespace wmtk::components::isotropic_remeshing {
 
 namespace {
 
-/// The edges between two faces that differ in any of `fields`, per-face or per-corner fields of
-/// the gmsh file `path`, whose triangles are `tris` in file order. A per-corner field differs
-/// across an edge where the two faces disagree on it at either end: a texture seam, say.
+/// The edges between two faces that differ in any of `fields`, triangle fields of the mesh file
+/// `path` as io::read_mesh reads it, whose triangles are `tris` in row order. A per-corner field
+/// (io::read_mesh's uv and normal: three values per corner, corner after corner) differs across
+/// an edge where the two faces disagree on it at either end: a texture seam, say.
 std::vector<std::array<size_t, 2>> field_boundaries(
     const std::string& path,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<std::string>& fields)
 {
-    MshData msh;
-    msh.load(path);
-    if (!msh.is_single_surface_block()) {
-        log_and_throw_error(
-            "feature_fields: {} is not a single-block surface file, as wmtk writes one; its "
-            "fields cannot be matched to its triangles",
-            path);
+    MeshData mesh;
+    try {
+        mesh = io::read_mesh(path);
+    } catch (const std::exception& e) {
+        log_and_throw_error("feature_fields: could not read {}: {}", path, e.what());
     }
-    if (msh.get_num_faces() != tris.size()) {
+    const auto it = mesh.cells.find(CellType::Triangle);
+    const Eigen::Index n_faces = it == mesh.cells.end() ? 0 : it->second.connectivity.rows();
+    if (size_t(n_faces) != tris.size()) {
         log_and_throw_error(
             "feature_fields: reading {} dropped faces ({} of {} left), so its fields no longer "
             "line up with the triangles",
             path,
             tris.size(),
-            msh.get_num_faces());
+            n_faces);
     }
-    const mshio::ElementBlock* triangles = &msh.m_spec.elements.entity_blocks.front();
     std::vector<std::vector<double>> value(tris.size());
     std::vector<std::array<std::vector<double>, 3>> corner_value(tris.size());
-    const auto names = msh.get_face_attribute_names();
     for (const std::string& name : fields) {
-        if (std::find(names.begin(), names.end(), name) != names.end()) {
-            msh.extract_face_attribute(name, [&value](size_t i, const std::vector<double>& data) {
-                if (i < value.size()) value[i].insert(value[i].end(), data.begin(), data.end());
-            });
-            continue;
+        const auto a = it->second.attributes.find(name);
+        if (a == it->second.attributes.end()) {
+            log_and_throw_error("feature_fields: {} has no field {}", path, name);
         }
-        bool found = false;
-        for (const mshio::Data& data : msh.m_spec.element_node_data) {
-            if (data.header.string_tags.empty() || data.header.string_tags.front() != name)
+        const DataMatrix<double> values = a->second.doubles();
+        const bool corner = io::ComponentIO::reader_corner_attributes.count(name) > 0;
+        if (corner && values.cols() % 3 != 0) {
+            log_and_throw_error(
+                "feature_fields: {} in {} holds a value per corner, but has {} columns",
+                name,
+                path,
+                values.cols());
+        }
+        const Eigen::Index k = values.cols() / 3;
+        for (size_t f = 0; f < tris.size(); ++f) {
+            const double* row = values.row(f).data();
+            if (!corner) {
+                value[f].insert(value[f].end(), row, row + values.cols());
                 continue;
-            found = true;
-            for (const mshio::DataEntry& entry : data.entries) {
-                const size_t f = entry.tag - triangles->data.front();
-                const size_t k = entry.data.size() / 3;
-                if (f >= tris.size()) continue;
-                for (int c = 0; c < 3; ++c) {
-                    auto& cv = corner_value[f][c];
-                    cv.insert(
-                        cv.end(),
-                        entry.data.begin() + c * k,
-                        entry.data.begin() + (c + 1) * k);
-                }
+            }
+            for (int c = 0; c < 3; ++c) {
+                corner_value[f][c].insert(corner_value[f][c].end(), row + c * k, row + (c + 1) * k);
             }
         }
-        if (!found) log_and_throw_error("feature_fields: {} has no field {}", path, name);
     }
     const auto at = [&](size_t f, size_t v) -> const std::vector<double>& {
         for (int c = 0; c < 3; ++c) {
