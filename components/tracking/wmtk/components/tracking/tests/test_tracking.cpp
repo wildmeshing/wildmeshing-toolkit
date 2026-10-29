@@ -343,3 +343,50 @@ TEST_CASE("tracking-info-counts-a-lost-point-once", "[tracking]")
         check(report);
     }
 }
+
+TEST_CASE("tracking-info-drift-in-three-units", "[tracking]")
+{
+    // info says how far the map moves the output's midpoints from their preimages: in mean
+    // output lengths, in the input's bounding-box diagonal, and in the envelope's eps when the
+    // recording's parameters give it. A fold the operations cut away is squeezed onto what is
+    // left of it, so a point there lies as far from its preimage as the fold was long: flagged.
+    using wmtk::history::EditKind;
+    // A curve from (0,0) out to (10,0) and back to (0,0.001), then on to (1,0.001).
+    wmtk::history::CurveHistory h;
+    h.vertices = {
+        Eigen::Vector3d(0, 0, 0),
+        Eigen::Vector3d(10, 0, 0),
+        Eigen::Vector3d(0, 0.001, 0),
+        Eigen::Vector3d(1, 0.001, 0)};
+    h.vertex_alive.assign(4, 1);
+    h.faces = {{{0, 1}}, {{1, 2}}, {{2, 3}}};
+    h.face_alive.assign(3, 1);
+    h.features = {{{0}}, {{3}}};
+    h.metadata = R"({"application": "triwild", "eps_rel": 0.001})";
+    const auto drift = [](const wmtk::history::CurveHistory& c) {
+        return tracking::tracking(
+                   {{"history", nlohmann::json::binary(c.to_bytes())}, {"operation", "info"}},
+                   {})
+            .second.at("drift");
+    };
+    const double diagonal = std::sqrt(100 + 1e-6);
+    {
+        // Untouched, every point is its own preimage.
+        const nlohmann::json d = drift(h);
+        CHECK(d.at("lengths").at("max").get<double>() < 1e-12);
+        CHECK(d.at("diagonal").get<double>() == diagonal);
+        CHECK(std::abs(d.at("envelope_eps").get<double>() - 1e-3 * diagonal) < 1e-15);
+        CHECK_FALSE(d.at("large").get<bool>());
+    }
+    // The tip collapses onto the end of the way back: the fold, 20 long, becomes 0.001.
+    h.edits.push_back({EditKind::collapse_edge, {1, 2}, {}, {}});
+    const nlohmann::json d = drift(h);
+    // The midpoint of what is left, (0,0.0005), maps half way along the fold: to its tip.
+    const double max = Eigen::Vector2d(10, 0.0005).norm(), length = (0.001 + 1) / 2;
+    const auto near = [](const double x, const double y) { return std::abs(x / y - 1) < 1e-6; };
+    CHECK(near(d.at("mean_length").get<double>(), length));
+    CHECK(near(d.at("lengths").at("max").get<double>(), max / length));
+    CHECK(near(d.at("diagonals").at("max").get<double>(), max / diagonal));
+    CHECK(near(d.at("eps").at("max").get<double>(), max / (1e-3 * diagonal)));
+    CHECK(d.at("large").get<bool>());
+}

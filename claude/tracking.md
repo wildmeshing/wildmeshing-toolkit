@@ -532,9 +532,16 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     (`output_rows`), a tracked face already in the triangle block (a simwild face tag) takes
     the fields on its row, and any other is a row added after them.
 - **The app** (`app.cpp`, spec `tracking_spec.json`; `tracking.hpp` declares it):
-  - `info`: what the map holds, its warnings, the output centroids' round trip, and how far
-    they lie from their preimages (drift, in output edge lengths); for curves, the output
-    segments' midpoints, in output segment lengths;
+  - `info`: what the map holds, its warnings, the output centroids' round trip -- for curves,
+    the output segments' midpoints' -- and how far they lie from their preimages (`drift`):
+    the mean, the 99th percentile and the largest, in mean output edge (segment) lengths
+    (`lengths`, `mean_length`), in the input's bounding-box diagonal (`diagonals`, `diagonal`)
+    and in the recording's envelope (`eps`, `envelope_eps`: `eps`, or `eps_rel` of the
+    diagonal, from the parameters the history saved). `large` -- warned about -- when the
+    largest is over 10 output lengths and 1% of the diagonal: a local map slides a point within
+    the patch it replaced, well under 10 lengths, and a coarse output is not held to its own few
+    edges. eps alone is no yardstick: on 219409, whose segments are 60 eps long, points slide
+    112 eps and under 2 segment lengths;
   - `transfer` (surfaces): fields onto the output;
   - `map`: user points;
   - `features` (curves): the input's feature points and the output vertices they became.
@@ -611,11 +618,22 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   17.5 s and 22.3 s with recording; stop_energy 10: 5476 and 14257 vertices). With
   `preserve_topology` it is still at 1e50 either way when stopped after 10 minutes (2.3M
   edges).
-- **Not a warning either: hairpins removed.** A curve that folds back on itself narrower than
-  the envelope can lose the whole fold to one collapse: on 226193 a 776-unit hairpin went to
-  1.08. The map squeezes the fold onto what is left, so a point near its tip drifts as far as
-  the fold was long (1,648 units there). The 99th percentile stays below a segment length;
-  these are a handful of points.
+- **Not a topology warning, but a drift warning: hairpins removed.** A curve that folds back on
+  itself narrower than the envelope can lose the whole fold to one collapse: on 226193 a
+  776-unit hairpin went to 1.08. The envelope is one-sided -- the output must stay near the
+  input, not the input near the output -- so the input simplification and the collapses may
+  cut long strokes that double back. The map squeezes the fold onto what is left by arc
+  length, so a point near its tip drifts as far as the fold was long (1,648 units there). On
+  segment soups the folds are many: challenging_triwild_189017 (eps_rel 1e-3, 20 iterations,
+  4 threads), with `preserve_topology` and junctions anchored, maps with a round trip of
+  2.8e-6 and no topology warning, yet its midpoints drift a mean of 1.45 segment lengths, a
+  99th percentile of 32.9 (89 eps) and at most 144 (388 eps, 39% of the diagonal); already after
+  the embed, the input simplification having cut the folds, it is of that order (a 99th
+  percentile of 82 units, at most 220). At
+  default topology the largest is 29 segment lengths (32% of the diagonal). `info` warns on
+  both (`drift.large`). A map of such a collapse by projection, each point of the fold onto
+  the nearest point of what is left, would keep the drift within eps but is not a monotone
+  map of the chain; not done.
 
 Measured 2026-10-22 on 24 networks of the 2D dataset (22 KB to 2.6 MB, 4 threads), `info`
 on each history:

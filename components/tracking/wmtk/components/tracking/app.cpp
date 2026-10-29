@@ -15,8 +15,11 @@
 
 #include <tracking_spec.hpp>
 
+#include <Eigen/Geometry>
+
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 namespace wmtk::components::tracking {
 
@@ -48,6 +51,116 @@ void log_warnings(const char* what, const MapWarnings& w)
         w.unlocated,
         w.replaced);
     if (w.total() > 0) logger().warn("{}: the map is not a bijection everywhere", what);
+}
+
+/// The diagonal of the bounding box of the corners of the live faces.
+template <size_t K>
+double diagonal(
+    const std::vector<Eigen::Vector3d>& V,
+    const std::vector<std::array<uint64_t, K>>& faces,
+    const std::vector<uint8_t>& alive)
+{
+    Eigen::AlignedBox3d box;
+    for (size_t f = 0; f < faces.size(); ++f) {
+        if (!alive[f]) continue;
+        for (const uint64_t v : faces[f]) box.extend(V[v]);
+    }
+    return box.isEmpty() ? 0 : box.diagonal().norm();
+}
+
+/// The envelope the recording application held its output to, from the parameters it saved:
+/// `eps` where it gives one (simwild), otherwise eps_rel of the input's bounding-box diagonal,
+/// which every application with history_output has. None if the parameters say neither.
+std::optional<double> envelope_eps(const std::string& metadata, const double diagonal)
+{
+    const auto params = nlohmann::json::parse(metadata, nullptr, false);
+    if (!params.is_object()) return std::nullopt;
+    if (params.contains("eps") && params["eps"].is_number() && params["eps"].get<double>() > 0) {
+        return params["eps"].get<double>();
+    }
+    if (params.contains("eps_rel") && params["eps_rel"].is_number() &&
+        params["eps_rel"].get<double>() > 0 && diagonal > 0) {
+        return params["eps_rel"].get<double>() * diagonal;
+    }
+    return std::nullopt;
+}
+
+/// A drift above both is reported as large: farther than this many mean output lengths, which
+/// a local map that slides a point within the patch it replaced stays well below, and than this
+/// fraction of the input's bounding-box diagonal, so that a coarse output is not held to its own
+/// few edges.
+constexpr double kLargeDriftLengths = 10;
+constexpr double kLargeDriftDiagonal = 0.01;
+
+/**
+ * @brief How far the map moves points: `drift`, each output point's distance from its preimage
+ * on the input. Reported -- the mean, the 99th percentile and the largest -- in three units:
+ * mean output lengths `length` (an edge's, or a segment's on curves), fractions of the input's
+ * bounding-box diagonal, and the recording's envelope `eps`, where its parameters give one.
+ * Large drift is warned about: the map stretches far there (on curves, a fold the operations
+ * cut away, or a junction that slid).
+ */
+nlohmann::json drift_report(
+    std::vector<double> drift,
+    const double length,
+    const double diagonal,
+    const std::optional<double>& eps,
+    const char* what,
+    const char* unit)
+{
+    std::sort(drift.begin(), drift.end());
+    double mean = 0;
+    for (const double d : drift) mean += d;
+    mean /= double(drift.size());
+    const double p99 = drift[drift.size() * 99 / 100], max = drift.back();
+    const auto in = [&](const double u) {
+        return nlohmann::json{{"mean", mean / u}, {"p99", p99 / u}, {"max", max / u}};
+    };
+    nlohmann::json report = {{"lengths", in(length)}, {"mean_length", length}};
+    logger().info(
+        "{} lie from their preimages: mean {:.3g}, 99th percentile {:.3g}, max {:.3g} output {} "
+        "lengths (mean {:.3g})",
+        what,
+        mean / length,
+        p99 / length,
+        max / length,
+        unit,
+        length);
+    if (diagonal > 0) {
+        report["diagonals"] = in(diagonal);
+        report["diagonal"] = diagonal;
+        logger().info(
+            "  in the input's bounding-box diagonal ({:.3g}): mean {:.3g}, 99th percentile {:.3g}, "
+            "max {:.3g}",
+            diagonal,
+            mean / diagonal,
+            p99 / diagonal,
+            max / diagonal);
+    }
+    if (eps) {
+        report["eps"] = in(*eps);
+        report["envelope_eps"] = *eps;
+        logger().info(
+            "  in the envelope's eps ({:.3g}): mean {:.3g}, 99th percentile {:.3g}, max {:.3g}",
+            *eps,
+            mean / *eps,
+            p99 / *eps,
+            max / *eps);
+    }
+    const bool large =
+        max > kLargeDriftLengths * length && diagonal > 0 && max > kLargeDriftDiagonal * diagonal;
+    report["large"] = large;
+    if (large) {
+        logger().warn(
+            "{}: some lie far from their preimages -- {:.3g} output {} lengths, {:.3g} of the "
+            "input's diagonal: the map stretches there, a bijection still (see the notes on "
+            "drift in docs/tracking.md)",
+            what,
+            max / length,
+            unit,
+            max / diagonal);
+    }
+    return report;
 }
 
 /// The 3D position of a point on a complex.
@@ -380,7 +493,7 @@ nlohmann::json curves(
     report["feature_points_at_output_vertex"] = kept;
 
     // info: the output's segment midpoints to the input and back, and how far they lie from
-    // their preimages, against the output's mean segment length.
+    // their preimages (drift_report).
     const auto& V = map.output_vertices();
     const auto& S = map.output_segments();
     std::vector<CurvePoint> midpoints;
@@ -433,23 +546,15 @@ nlohmann::json curves(
     report["round_trip_max_displacement"] = max_err;
     report["round_trip_lost"] = lost;
     if (!drift.empty() && length > 0) {
-        std::sort(drift.begin(), drift.end());
-        const double mean_length = length / double(midpoints.size());
-        double mean = 0;
-        for (const double d : drift) mean += d;
-        mean /= double(drift.size());
-        logger().info(
-            "output midpoints lie from their preimages: mean {:.3g}, 99th percentile {:.3g}, max "
-            "{:.3g} output segment lengths (mean segment {:.3g})",
-            mean / mean_length,
-            drift[drift.size() * 99 / 100] / mean_length,
-            drift.back() / mean_length,
-            mean_length);
-        report["drift"] = {
-            {"mean", mean / mean_length},
-            {"p99", drift[drift.size() * 99 / 100] / mean_length},
-            {"max", drift.back() / mean_length},
-            {"mean_segment", mean_length}};
+        const double d =
+            diagonal(map.input_vertices(), map.input_segments(), map.input_segment_alive());
+        report["drift"] = drift_report(
+            std::move(drift),
+            length / double(midpoints.size()),
+            d,
+            envelope_eps(h.metadata, d),
+            "output midpoints",
+            "segment");
     }
     return report;
 }
@@ -813,8 +918,8 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
     report["round_trip_max_displacement"] = max_err;
     report["round_trip_lost"] = lost;
 
-    // How far the map moves points: each output centroid from its preimage on the input, in 3D,
-    // against the output's mean edge length.
+    // How far the map moves points: each output centroid from its preimage on the input, in 3D
+    // (drift_report).
     double edges = 0;
     size_t n_edges = 0;
     std::vector<double> drift;
@@ -830,23 +935,14 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
                             .norm());
     }
     if (!drift.empty() && n_edges > 0) {
-        std::sort(drift.begin(), drift.end());
-        const double mean_edge = edges / double(n_edges);
-        double mean = 0;
-        for (const double d : drift) mean += d;
-        mean /= double(drift.size());
-        logger().info(
-            "output centroids lie from their preimages: mean {:.3g}, 99th percentile {:.3g}, max "
-            "{:.3g} output edge lengths (mean edge {:.3g})",
-            mean / mean_edge,
-            drift[drift.size() * 99 / 100] / mean_edge,
-            drift.back() / mean_edge,
-            mean_edge);
-        report["drift"] = {
-            {"mean", mean / mean_edge},
-            {"p99", drift[drift.size() * 99 / 100] / mean_edge},
-            {"max", drift.back() / mean_edge},
-            {"mean_edge", mean_edge}};
+        const double d = diagonal(map.input_vertices(), map.input_faces(), map.input_face_alive());
+        report["drift"] = drift_report(
+            std::move(drift),
+            edges / double(n_edges),
+            d,
+            envelope_eps(h.metadata, d),
+            "output centroids",
+            "edge");
     }
     component_io.result.second = std::move(report);
 }
