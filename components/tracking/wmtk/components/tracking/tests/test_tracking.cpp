@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <fstream>
 #include <random>
+#include <set>
 #include <sstream>
 
 namespace fs = std::filesystem;
@@ -389,4 +390,94 @@ TEST_CASE("tracking-info-drift-in-three-units", "[tracking]")
     CHECK(near(d.at("diagonals").at("max").get<double>(), max / diagonal));
     CHECK(near(d.at("eps").at("max").get<double>(), max / (1e-3 * diagonal)));
     CHECK(d.at("large").get<bool>());
+}
+
+TEST_CASE("tracking-memory-route-isotropic-features", "[tracking]")
+{
+    // isotropic_remeshing on the memory route with every option of its B-rep work -- features as a
+    // mesh (a curve with ids, fixed vertices), swap_quality, limit_collapse_length, cleanup_angle
+    // -- returns its history as bytes in its report, and tracking's info on them is clean: the
+    // curves' collapses replay, nothing is lost on the way to the input and back, and the
+    // history's feature edges at the end are the edges the remeshing returns.
+    const fs::path dir = fs::current_path() / "tracking_memory_route_features";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+    const fs::path tracking_file = dir / "grid.wmtkhist";
+    // An 8 x 8 grid, a vertex pushed past its neighbour (a fold for the repairs), and a curve
+    // along y = 4 with ids 7 and 9 either side of x = 4, its ends and a vertex off it fixed.
+    wmtk::MeshData grid;
+    grid.V.resize(81, 3);
+    for (int i = 0; i <= 8; ++i) {
+        for (int j = 0; j <= 8; ++j) grid.V.row(i * 9 + j) << i, j, 0;
+    }
+    grid.V.row(6 * 9 + 6) << 7.3, 6.2, 0;
+    auto& tris = grid.cells[wmtk::CellType::Triangle].connectivity;
+    tris.resize(128, 3);
+    for (int i = 0, f = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            tris.row(f++) << i * 9 + j, (i + 1) * 9 + j, (i + 1) * 9 + j + 1;
+            tris.row(f++) << i * 9 + j, (i + 1) * 9 + j + 1, i * 9 + j + 1;
+        }
+    }
+    wmtk::MeshData curve;
+    curve.V = grid.V;
+    auto& edges = curve.cells[wmtk::CellType::Edge];
+    edges.connectivity.resize(8, 2);
+    wmtk::DataMatrix<int64_t> edge_id(8, 1);
+    for (int i = 0; i < 8; ++i) {
+        edges.connectivity.row(i) << i * 9 + 4, (i + 1) * 9 + 4;
+        edge_id(i, 0) = i < 4 ? 7 : 9;
+    }
+    edges.attributes["edge_id"].values = edge_id;
+    auto& points = curve.cells[wmtk::CellType::Point];
+    points.connectivity.resize(3, 1);
+    points.connectivity << 4, 8 * 9 + 4, 6 * 9 + 2;
+    wmtk::DataMatrix<int64_t> vertex_id(3, 1);
+    vertex_id << 100, 101, 102;
+    points.attributes["vertex_id"].values = vertex_id;
+
+    const wmtk::ComponentResult remeshed = isotropic_remeshing::isotropic_remeshing(
+        {{"input", "grid"},
+         {"features", "curve"},
+         {"history_output", tracking_file.string()},
+         {"length_abs", 0.6},
+         {"eps_rel", 0.01},
+         {"max_iterations", 2},
+         {"swap_quality", true},
+         {"limit_collapse_length", true},
+         {"cleanup_angle", 30}},
+        {{"grid", grid}, {"curve", curve}});
+    CHECK(!fs::exists(tracking_file));
+    REQUIRE(remeshed.second.at("history").is_binary());
+    const std::vector<uint8_t>& bytes = remeshed.second.at("history").get_binary();
+
+    const Tracking tracking(wmtk::history::SurfaceHistory::from_bytes(bytes));
+    const auto& F_out = remeshed.first.at("mesh").cell(wmtk::CellType::Triangle).connectivity;
+    const auto triangles = tracking.output_triangles();
+    REQUIRE(triangles.size() == size_t(F_out.rows()));
+    for (Eigen::Index f = 0; f < F_out.rows(); ++f) {
+        for (int k = 0; k < 3; ++k) CHECK(triangles[f][k] == uint64_t(F_out(f, k)));
+    }
+    std::set<std::array<uint64_t, 2>> returned;
+    const auto& E_out = remeshed.first.at("edges").cell(wmtk::CellType::Edge).connectivity;
+    for (Eigen::Index e = 0; e < E_out.rows(); ++e) {
+        returned.insert(
+            {{uint64_t(std::min(E_out(e, 0), E_out(e, 1))),
+              uint64_t(std::max(E_out(e, 0), E_out(e, 1)))}});
+    }
+    CHECK(returned.size() > 8);
+    CHECK(tracking.map().output_feature_edges() == returned);
+
+    const auto [none, report] =
+        tracking::tracking({{"history", nlohmann::json::binary(bytes)}, {"operation", "info"}}, {});
+    CHECK(none.empty());
+    CHECK(report.at("collapses").get<size_t>() > 0);
+    CHECK(report.at("curve_collapses").get<size_t>() > 0);
+    CHECK(report.at("swaps").get<size_t>() > 0);
+    CHECK(report.at("build_warnings").at("total") == 0);
+    CHECK(report.at("to_input_warnings").at("total") == 0);
+    CHECK(report.at("to_output_warnings").at("total") == 0);
+    CHECK(report.at("round_trip_lost") == 0);
+    CHECK(report.at("round_trip_max_displacement").get<double>() < 1e-8);
+    CHECK(report.at("output_faces").at("one_feature_edge").at("faces").get<size_t>() > 0);
 }
