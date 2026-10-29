@@ -28,6 +28,8 @@ app/components_python.hpp
 *.egg-info
 CMakePresets.json
 CMakeCache.txt
+# ctest's logs, when it is run from the repository root
+/Testing/
 /mydata
 /experiments
 

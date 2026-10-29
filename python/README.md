@@ -7,6 +7,9 @@ One package, `wildmeshing`:
 - `wildmeshing.save` / `wildmeshing.load`: checkpoints of memory results.
 - `wildmeshing.polyfem_ops`: the PolyFEM-backed operations.
 
+The bindings are the compiled module `wildmeshing._core`, built from `python/src`; the
+pure-Python part of the package is `python/wildmeshing`.
+
 The mesh dictionaries and the two calling routes are specified in
 [docs/in-memory-io.md](../docs/in-memory-io.md).
 

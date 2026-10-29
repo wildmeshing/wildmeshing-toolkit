@@ -1186,7 +1186,8 @@ void TopoOffsetTetMesh::init_offset_potential()
         // for the debug frames' band_gap_bars (gather_vtu_frame()), without the value table;
         // nothing else reads it unless one of the other conditions holds.
         const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
-                                m_offset_params.band_volume_rule == "front_flux";
+                                m_offset_params.band_volume_rule == "front_flux" ||
+                                m_offset_params.band_volume_rule == "exact_swept";
         // EXPERIMENTAL_band_volume_rule "surface" with EXPERIMENTAL_label_cleanup: the clean-up
         // reads d through the integral's searches (distance(), distance_bound()), nothing else.
         const bool surface_cleanup =
@@ -2867,8 +2868,8 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     //                         O*, the "surface" rule's settle metric (stencil_max_sq_error()).
     //   face                  the point's face, its index in offset_surface_faces().
     //   point                 its index in the face's stencil.
-    // Not written without an offset potential or with no offset face.
-    if (m_offset_potential) {
+    // Written only under DEBUG_stencil; not without an offset potential or with no offset face.
+    if (m_offset_params.debug_stencil && m_offset_potential) {
         const std::vector<std::array<size_t, 3>> sfaces = offset_surface_faces();
         const auto& stencil = face_stencil();
         const int ns = int(stencil.size());

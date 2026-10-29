@@ -31,6 +31,12 @@ struct InputData
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;
 
+    /// The topological offset's correspondence handed on from an earlier offset (memory route,
+    /// vertex field corr_input_vid): per row of V_input, the V_input row of the input-complex
+    /// vertex it was split off from, -1 for none. Empty when the mesh has no such field. Only the
+    /// offset reads it, and only with save_offset_correspondence (see its spec).
+    std::vector<int64_t> corr_input_vid;
+
     /// A surface input with a history to record (history_output): the files as read and what
     /// became of them before the arrangement, and the input triangles each surface facet of the
     /// embedding lies on, by its corners' positions sorted. Empty otherwise.

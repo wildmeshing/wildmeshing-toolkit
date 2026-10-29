@@ -445,7 +445,7 @@ public:
      * collapses (collapse_before_vertex() / collapse_after_connectivity()), swaps
      * (swap_after_cells(); the 4-4 / 5-6 case search, swap_edge_44_energy(), and the face swap's
      * gate, swap_face_before(), on candidate_energy()), the smoothing veto and the projected step
-     * (smoothing_ring_energy()); splits have no energy rule. The engine's
+     * (smoothing_ring_energy()), the split gate (EXPERIMENTAL_split_energy_gate). The engine's
      * AMIPS^3 rules admit everything (collapse_quality_allowed(), swap_quality_allowed()), and the
      * smoother minimises the vertex's part of E (smoothing_extra_energy()) with this component's
      * solver criterion (smoothing_solver()).
@@ -800,8 +800,8 @@ public:
      *     (swap_after_cells()). Strict, so a swap pass terminates.
      *   - Smoothing (smooth_front_vertex(), smooth_nonfront_vertex(), smooth_repulsion_vertex()):
      *     the sum over the vertex's ring after the move may not exceed the sum before.
-     *   - Split: no rule (since 2026-10-28 none at all: EXPERIMENTAL_split_energy_gate and the
-     *     "surface" rule's gate are gone; only the length against the sizing field proposes one).
+     *   - Split: no rule, unless EXPERIMENTAL_split_energy_gate (the children's sum strictly below
+     *     the parents').
      * The engine's own AMIPS^3 rules for collapses and swaps are off: collapse_quality_allowed()
      * and swap_quality_allowed() admit everything, and this energy decides in their place.
      *
@@ -855,6 +855,9 @@ public:
     /// its sums leave it out; see tet_energy(), BAND TERM THAT CANCELS.
     bool band_term_cancels(const std::vector<size_t>& tids) const
     {
+        // "exact_swept": every operation's sums leave the band term out, and its rule adds the
+        // band term's exact change (EXACT SWEPT CHANGE below)
+        if (swept_rule()) return true;
         if (m_offset_params.band_volume_rule != "exact" &&
             m_offset_params.band_volume_rule != "front_flux")
             return false;
@@ -871,6 +874,103 @@ public:
         if (m_band_exact->front_flux_flag(pts.data(), n)) return false;
         return m_band_exact->distance_bound(pts.data(), n) <= m_band_exact->front_flux_reach();
     }
+    /**
+     * EXACT SWEPT CHANGE (EXPERIMENTAL_band_volume_rule "exact_swept", 2026-10-22). The energy is
+     * "exact"'s -- b(t) = J_t / delta, J_t = ExactBandIntegral::value() -- but an operation's rule
+     * does not integrate its cells before and after: it compares the AMIPS terms of the cells it
+     * changes (band_term_cancels() is true for every one) plus the CHANGE of the band term
+     * E* / delta, E* = int_B (d - delta) dV, B the union of the band cells, which lives only
+     * where B changes, and is integrated exactly there by value() on small tets:
+     *
+     *   - a vertex v moving from x0 to x1 (smoothing, the projected step, a collapse's v1 moving
+     *     onto v2): dE* = sum over the faces f of the boundary of B through v of
+     *     sign_f value(conv(x0, x1, a_f, b_f)), f = (v, a_f, b_f) ordered so that its normal
+     *     (a_f - x0) x (b_f - x0) points out of B (away from the band cell's fourth corner), and
+     *     sign_f = sign((x1 - x0) . that normal) -- +1 where B grows. Why: a band cell
+     *     t = [v, a, b, p] moved to [x1, a, b, p] differs from [x0, a, b, p] by the 3-chain
+     *     -[x0, x1, b, p] + [x0, x1, a, p] - [x0, x1, a, b] (the boundary of the 4-simplex
+     *     [x0, x1, a, b, p] is a 3-cycle, and a 3-cycle in R^3 integrates every function to 0),
+     *     one oriented tet per face of t through v, each face as it bounds t (outward). Over the
+     *     band cells the faces between two of them cancel; the boundary faces of B are left, each
+     *     with the oriented tet [x0, x1, a_f, b_f], whose integral is sign_f times the unsigned
+     *     one. Exact for mixed signs and for any move that inverts no cell; a collapse's cells
+     *     through v2 become flat and drop out the same way. A vertex on no boundary face of B: 0.
+     *   - a swap replacing the cells O by the cells N over the same region: dE* = int over the
+     *     3-chain D = (band cells of N) - (band cells of O). D's boundary is the signed sum of the
+     *     outward faces of N's band cells less O's (equal faces cancel), and D = cone(p, dD) for
+     *     any point p (D - cone(p, dD) is a 3-cycle), so dE* = sum over the faces F of dD of
+     *     m_F sign(det[F - p]) value(conv(p, F)), p the vertex on the most faces of dD (their
+     *     cones are flat). An interior swap (one label over the ring, no boundary face of B
+     *     changes): 0 without a call; a surface flip, (a,b,c) + (a,b,d) -> (a,c,d) + (b,c,d):
+     *     dD = the boundary of the tet (a, b, c, d) and dE* = +/- value(a, b, c, d), one call.
+     *   - a split: 0 (the children tile the parents, labels inherited).
+     * The decisions read these changes; tet_energy(), the settle test and every whole-mesh sum
+     * read "exact"'s J_t. Where value() takes rule (a)'s bound on a curved piece, the bound
+     * depends on the cell, and the swept change is not the difference of the cells' bounds.
+     * MEASURED (mac-mini, 2026-10-22, 3 turns, on main), every accepted operation's swept change
+     * against the change of its cells' sum of value(): within 1.2e-18 on the cube outward and
+     * inward; on the screw piece 15 within 2.7e-15 on exact pieces, up to 2.1e-3 (front
+     * smoothing) where a rule-(a) piece is involved. Under TetWild's rules (m_op_rules) every
+     * operation keeps TetWild's own: no sum rule reads any of this.
+     */
+    /// "exact_swept" (EXACT SWEPT CHANGE).
+    bool swept_rule() const { return m_offset_params.band_volume_rule == "exact_swept"; }
+    /// EXACT SWEPT CHANGE: dE* / delta for vid moving from x0 to x1, the boundary faces of B
+    /// through vid read from the mesh (labels, connectivity, the other corners' positions). `st`
+    /// collects value()'s statistics (rule-(a) pieces) when given.
+    double band_swept_change(
+        size_t vid,
+        const Vector3d& x0,
+        const Vector3d& x1,
+        ExactBandIntegral::Stats* st = nullptr) const;
+    /// band_swept_change() in two halves: the boundary faces of B through vid as (a_f, b_f),
+    /// ordered out of B at x0 (no value() call), and the sum over them for a move x0 -> x1.
+    void band_swept_faces(
+        size_t vid,
+        const Vector3d& x0,
+        std::vector<std::array<Vector3d, 2>>& faces) const;
+    double band_swept_sum(
+        const Vector3d& x0,
+        const Vector3d& x1,
+        const std::vector<std::array<Vector3d, 2>>& faces,
+        ExactBandIntegral::Stats* st = nullptr) const;
+    /// EXACT SWEPT CHANGE: dE* / delta for the band cells `old_band` replaced by `new_band` over
+    /// the same region, at the current positions (a swap moves no vertex).
+    double band_chain_change(
+        const std::vector<std::array<size_t, 4>>& old_band,
+        const std::vector<std::array<size_t, 4>>& new_band,
+        ExactBandIntegral::Stats* st = nullptr) const;
+    /// "exact_swept": the swap in flight's dE* / delta, `new_band` the band cells among its new
+    /// cells (by candidate_label() in the case search, by the labels written in the rule): 0 for
+    /// an interior swap, band_chain_change() from SwapRecord::old_band for a flip.
+    double swap_swept_change(const std::vector<std::array<size_t, 4>>& new_band, bool flip);
+    /// "exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is.
+    /// The move stands iff the ring's AMIPS change (tet_energy_sum(ring, false) - amips_before)
+    /// plus band_swept_change() is <= 0 (a tie passes, a NaN refuses); if not, the step is
+    /// halved toward x0 and tested again, up to kSweptHalvings times, then refused. The halved
+    /// positions are on the segment between two valid positions, and the positions at which
+    /// vid's ring has no inverted cell are an intersection of half-spaces, so they are valid
+    /// too (tested anyway, exactly). Counts into c.
+    static constexpr int kSweptHalvings = 4;
+    struct SweptCounters
+    {
+        std::atomic<size_t> solves{0}, refused{0};
+        std::array<std::atomic<size_t>, kSweptHalvings + 1> accepted{};
+    };
+    bool swept_accept(
+        size_t vid,
+        const std::vector<size_t>& ring,
+        const Vector3d& x0,
+        double amips_before,
+        SweptCounters& c);
+    mutable SweptCounters m_swept_front, m_swept_nonfront;
+    /// "exact_swept": the smoother's search model's derivative evaluations, and of them those
+    /// taken from the ring's band cells (BandVolumeEnergy3D::set_swept()), per pass.
+    mutable BandVolumeEnergy3D::SweptDerivCounts m_swept_derivs;
+    /// "exact_swept", the projected step: the vertex smooth_nonfront_vertex() smooths and its
+    /// position at the `stored` call of smoothing_ring_energy(), which every candidate's band
+    /// change is taken from.
+    mutable wmtk::threading::enumerable_thread_specific<std::pair<size_t, Vector3d>> m_swept_stored;
     /**
      * @brief What the shared smoother's projected step compares for a vertex held on a surface:
      * the sum of tet_energy() over the one-ring, the rule every other move answers to (under
@@ -890,6 +990,25 @@ public:
         // TetWild's rules (m_op_rules): the base's max over the ring.
         if (tetwild_rules()) return TetOptimizerMesh::smoothing_ring_energy(ring, stored);
         double s = 0.;
+        if (swept_rule()) {
+            // "exact_swept": the ring's AMIPS terms plus the band term's change from the position
+            // at the `stored` call (EXACT SWEPT CHANGE); the vertex is the one
+            // smooth_nonfront_vertex() is smoothing, the same in both calls
+            for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this), false);
+            auto& st = m_swept_stored.local();
+            const size_t vid = st.first;
+            const auto vs = oriented_tet_vids(ring.front().tid(*this));
+            if (std::find(vs.begin(), vs.end(), vid) == vs.end()) {
+                log_and_throw_error(
+                    "exact_swept: the projected step's ring is not vertex {}'s",
+                    vid);
+            }
+            if (stored) {
+                st.second = m_vertex_attribute[vid].m_posf;
+                return s;
+            }
+            return s + band_swept_change(vid, st.second, m_vertex_attribute[vid].m_posf);
+        }
         for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this));
         // EXPERIMENTAL_band_volume_rule "surface": the offset faces through the vertex move with
         // it (smooth_nonfront_vertex() names it).
@@ -965,7 +1084,7 @@ public:
                 m_n_regions);
         }
         if (m_offset_params.band_volume_rule == "exact" ||
-            m_offset_params.band_volume_rule == "front_flux") {
+            m_offset_params.band_volume_rule == "front_flux" || swept_rule()) {
             // EXPERIMENTAL_band_volume_rule "exact" (and "front_flux", whose per-cell quantity
             // it is, see above): J_t / delta, J_t = int_t (d - delta) dV in closed form
             // (ExactBandIntegral), in place of the corner bound
@@ -1019,9 +1138,16 @@ public:
     /// cell_energy() of a candidate cell of the swap in flight, which does not exist yet, with the
     /// label swap_after_cells() will write. See tet_energy(), CANDIDATE CELLS.
     double candidate_energy(const std::array<size_t, 4>& vids);
+    /// The label swap_after_cells() will write on the candidate cell vids (candidate_energy(),
+    /// and "exact_swept"'s case search).
+    int candidate_label(const std::array<size_t, 4>& vids);
     /// Collapses and swaps refused for raising E over the cells they change, per operation group
     /// ([band volume energy]).
     mutable std::atomic<int> m_volume_reject_collapse{0}, m_volume_reject_swap{0};
+    /// EXPERIMENTAL_split_energy_gate: the split in flight's parents' sum of tet_energy() (taken in
+    /// split_before_cells()), and the splits refused for not lowering it, per operation group.
+    mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
+    mutable std::atomic<int> m_volume_reject_split{0};
 
     /// E, the sum of tet_energy() over every live tet: the [band volume energy] lines'. Under
     /// EXPERIMENTAL_band_volume_rule "surface" plus surface_term_total().
@@ -2006,6 +2132,13 @@ public:
         /// EXPERIMENTAL_band_volume_rule "surface": the offset faces through v1 or v2 before
         /// (surface_face_term()), against the survivor's after.
         double surface_before = 0.;
+        /// "exact_swept": v1's boundary faces of B (band_swept_faces()) and the two positions,
+        /// taken on the mesh before; the change is integrated in collapse_after_connectivity(),
+        /// for the collapses that pass the engine's tests -- MEASURED (on main, mac-mini, the
+        /// screw piece 15, turn 1, 2026-10-22): integrated here, before the inversion test that
+        /// refuses most attempts, the collapse pass took 35.0 s against "exact"'s 3.6 s.
+        std::vector<std::array<Vector3d, 2>> swept_faces;
+        Vector3d swept_x1 = Vector3d::Zero(), swept_x2 = Vector3d::Zero();
     };
     mutable wmtk::threading::enumerable_thread_specific<CollapseVolume> m_collapse_volume;
     /**
@@ -2297,32 +2430,42 @@ public:
     /// Samples per offset face; see offset_face_samples().
     int stencil_order() const { return m_offset_params.stencil_order; }
     /// THE face stencil at the configured stencil_order, as EXPERIMENTAL_stencil_type picks:
-    /// interior_face_stencil() under "interior", fem_face_stencil() under "fem" (the default since
-    /// 2026-10-28).
-    /// Every 3D reader of the face stencil goes through it.
+    /// subdivision_face_stencil() under "subdivision" (the default), interior_face_stencil() under
+    /// "interior", fem_face_stencil() under "fem". Every 3D reader of the face stencil goes
+    /// through it.
     const std::vector<std::array<double, 3>>& face_stencil() const
     {
-        return m_offset_params.stencil_type == "fem"
-                   ? fem_face_stencil(m_offset_params.stencil_order)
-                   : interior_face_stencil(m_offset_params.stencil_order);
+        const std::string& type = m_offset_params.stencil_type;
+        const int k = m_offset_params.stencil_order;
+        return type == "fem"        ? fem_face_stencil(k)
+               : type == "interior" ? interior_face_stencil(k)
+                                    : subdivision_face_stencil(k);
     }
     /// The points' area weights beside face_stencil(), in its order, as fractions of the face's
     /// area: fem_face_stencil_weights() (lumped, the composite trapezoid rule) under "fem"; null
-    /// under "interior", whose readers take the plain mean (the arithmetic they always had).
+    /// under "subdivision" and "interior", whose readers take the plain mean (the arithmetic they
+    /// always had).
     const std::vector<double>* face_stencil_weights() const
     {
         return m_offset_params.stencil_type == "fem"
                    ? &fem_face_stencil_weights(m_offset_params.stencil_order)
                    : nullptr;
     }
-    /// How many points for_each_face_sample() visits at the configured order: k (k + 1) / 2 under
-    /// "interior", the interior lattice of interior_face_stencil() (1, 3, 6, 10, 15 for k =
-    /// 1..5); (k + 1) (k + 2) / 2 under "fem" (3, 6, 10, 15, 21); 0 below order 1. Kept in step
-    /// with for_each_face_sample() by the unit tests `stencil-order-point-counts` and
-    /// `fem-face-stencil`.
+    /// How many points for_each_face_sample() visits at the configured order k: under
+    /// "subdivision" 3 at order 0, else (n + 1) (n + 2) / 2 + n^2 with n = 2^(k-1) (4, 10, 31, 109
+    /// for k = 1..4); k (k + 1) / 2 under "interior", the interior lattice of
+    /// interior_face_stencil() (1, 3, 6, 10, 15 for k = 1..5); (k + 1) (k + 2) / 2 under "fem" (3,
+    /// 6, 10, 15, 21); 0 below order 1 under those two. Kept in step with for_each_face_sample()
+    /// by the unit tests `stencil-order-point-counts` and `fem-face-stencil`.
     int stencil_points_per_face() const
     {
         const int k = m_offset_params.stencil_order;
+        if (m_offset_params.stencil_type == "subdivision") {
+            if (k < 0) return 0;
+            if (k == 0) return 3;
+            const int n = 1 << (k - 1);
+            return (n + 1) * (n + 2) / 2 + n * n;
+        }
         if (k < 1) return 0;
         if (m_offset_params.stencil_type == "fem") return (k + 1) * (k + 2) / 2;
         return k * (k + 1) / 2;
@@ -2371,17 +2514,14 @@ public:
 
     /**
      * @brief The stencil_order stencil a triangle is sampled on, handed to `visit` one point at
-     * a time as (point, wa, wb, wc) with the barycentric weights that built it: since 2026-10-27
-     * (Spencer: the surface integral's stencil, "all stencil points must be internal to each
-     * face") the interior lattice of interior_face_stencil(), (i, j, l) / (k + 2) with i, j, l >=
-     * 1, k (k + 1) / 2 points -- 1 (the centroid), 3, 6, 10, 15 for k = 1..5. No point on an edge
-     * or a corner, so no point is shared between faces. Nothing below order 1. Under
-     * EXPERIMENTAL_stencil_type "fem" (2026-10-28) the degree-k Lagrange nodes instead
-     * (fem_face_stencil(), through face_stencil()): corners and edge points included, so shared.
-     *
-     * Before it the stencil held the corners (order 0 the corners alone, order k the vertices of
-     * the face subdivided k-1 times plus the sub-triangles' centroids), so the face measure
-     * (face_offset_term()) read each corner's own placement error; it no longer does.
+     * a time as (point, wa, wb, wc) with the barycentric weights that built it: face_stencil(),
+     * as EXPERIMENTAL_stencil_type picks. "subdivision" (the default): order 0 the corners alone,
+     * order k the vertices of the face subdivided k-1 times plus the sub-triangles' centroids, so
+     * the face measure (face_offset_term()) reads each corner's own placement error. "interior"
+     * (2026-10-27, Spencer: the surface integral's stencil, "all stencil points must be internal
+     * to each face"): the interior lattice (i, j, l) / (k + 2), i, j, l >= 1, no point on an edge
+     * or a corner. "fem" (2026-10-28): the degree-k Lagrange nodes, corners and edge points
+     * included.
      *
      * Takes positions rather than a Tuple, so a face can be read at any positions. The 2D twin is
      * for_each_offset_edge_sample(), which keeps its own lattice.
@@ -2671,15 +2811,32 @@ public:
     /// demolished the band, and the sizing field cannot refuse a collapse.
     bool optimization_bare_coarsen_passes() const override { return tetwild_rules(); }
 
-    /// The engine's coarsening region test (the region's max quality_rel() may not rise) on a
-    /// clamped scale: AMIPS over stop_energy, but never below 1, so every cell under stop_energy
-    /// reads the same 1. collapse_after_connectivity()'s coarsening guard (the max AMIPS over the
-    /// cells a collapse changes may not rise) decides; with no smoothing inside a collapse
-    /// (coarsen_local_smoothing_passes 0, the default) the region's max cannot rise after a
-    /// collapse the guard keeps, so this test never refuses one. In 3D only the coarsening reads
-    /// quality_rel().
+    /// EXPERIMENTAL_coarsen_guard "no_rise" (2026-10-28): coarsening judged by
+    /// collapse_after_connectivity()'s no-rise guard, and run only for the final target (see the
+    /// spec). "bar" (the default): face_criterion_rel() <= 1 on the survivor's offset faces.
+    bool coarsen_no_rise() const { return m_offset_params.coarsen_guard == "no_rise"; }
+
+    /// Max of the two normalized criteria on this face: AMIPS over stop_energy for the cells it
+    /// separates, and on a live offset face the root of face_offset_term() (the face's RMS
+    /// relative error over its stencil in units of the bar; +inf if unmeasurable). > 1 means it
+    /// fails at least one. The coarsen-mode collapse accept reads it (EXPERIMENTAL_coarsen_guard
+    /// "bar").
+    double face_criterion_rel(const Tuple& f) const;
+    /// AMIPS of a cell over stop_energy -- the 3D twin of TriOptimizerMesh::quality_rel().
+    double cell_quality_rel(const size_t tid) const;
+    /// ... and the worst of the (up to two) cells a face separates.
+    double amips_rel_at_face(const Tuple& f) const;
+
+    /// The engine's coarsening region test (the region's max quality_rel() may not rise).
+    /// EXPERIMENTAL_coarsen_guard "no_rise": on a clamped scale, AMIPS over stop_energy but never
+    /// below 1, so every cell under stop_energy reads the same 1. collapse_after_connectivity()'s
+    /// coarsening guard (the max AMIPS over the cells a collapse changes may not rise) decides;
+    /// with no smoothing inside a collapse (coarsen_local_smoothing_passes 0, the default) the
+    /// region's max cannot rise after a collapse the guard keeps, so this test never refuses one.
+    /// "bar": the engine's own. In 3D only the coarsening reads quality_rel().
     double quality_rel(const size_t tid) const override
     {
+        if (!coarsen_no_rise()) return TetOptimizerMesh::quality_rel(tid);
         return std::max(1., std::cbrt(cell_quality(tid)) / m_params.stop_energy);
     }
     /// The coarsening guard's refusals in the running TetWild pass (collapse_after_connectivity()):
@@ -3053,10 +3210,13 @@ private:
         /// The swap's band term cancels (band_term_cancels(), every swap kind): the before-sum,
         /// the candidates and the after-sum leave it out.
         bool band_cancels = false;
+        /// "exact_swept", a flip: the band cells it replaces (swap_swept_change()).
+        std::vector<std::array<size_t, 4>> old_band;
         void clear()
         {
             flip = false;
             band_cancels = false;
+            old_band.clear();
             scored = false;
             scored_energy = std::numeric_limits<double>::max();
         }

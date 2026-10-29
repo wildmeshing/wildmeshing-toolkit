@@ -261,14 +261,17 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         if (!TetOptimizerMesh::split_edge_after(t)) return false;
-        // No energy rule for a split (Spencer, 2026-10-28: "There should be no split gates besides
-        // length"): what proposes a split is the length against the sizing field, and nothing
-        // refuses it for the energy. The gate that was here (EXPERIMENTAL_split_energy_gate, and
-        // the "surface" rule's) is gone: a midpoint split moves no geometry, and the gate refused
-        // the very refinement the sizing field asked for -- on 37093 ~1,100 splits a turn, the
-        // long edges of coarse front faces among them (their children's denser stencil found error
-        // the parent's had missed), which held every shorter edge of their cells in the
-        // longest-edge wait (split_edge_before()).
+        // EXPERIMENTAL_split_energy_gate: the children's tet_energy() -- every cell at the new
+        // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
+        // engine rolls a refused split back. The loop's gate: TetWild's rules (m_op_rules, every
+        // TetWild pass) have no split rule.
+        // "exact_swept": the AMIPS terms alone, a split leaving B and its band term unchanged
+        if (m_offset_params.split_energy_gate && !tetwild_rules() &&
+            !(tet_energy_sum(get_one_ring_tids_for_vertex(t.vid(*this)), !swept_rule()) <
+              m_split_energy_before.local())) {
+            ++m_volume_reject_split;
+            return false;
+        }
         ++iter_cnt_split;
         // Read from the result, not from a cached flag: the new vertex is on the offset iff
         // split_after_cells() derived it so from the endpoints.
@@ -795,6 +798,13 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
         for (const Tuple& tt : parents) tids.push_back(tt.tid(*this));
         face_extra_capture(tids, m_face_extra_split.local());
         edge_label_capture(tids, m_edge_label_split.local());
+    }
+    // EXPERIMENTAL_split_energy_gate: the parents' sum of tet_energy(), which split_edge_after()
+    // compares the children's against.
+    if (m_offset_params.split_energy_gate) {
+        std::vector<size_t> tids;
+        for (const Tuple& tt : parents) tids.push_back(tt.tid(*this));
+        m_split_energy_before.local() = tet_energy_sum(tids, !swept_rule());
     }
     return true;
 }

@@ -653,6 +653,30 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         return remap;
     };
     const auto remap = referenced(block.connectivity, out.V_input, out.T_input);
+    // An earlier offset's correspondence names the `vid` of each offset vertex's input vertex (a
+    // mesh row when there is no `vid`, as prismatic_mesh reads it); translated to V_input rows.
+    if (const auto c = mesh.vertex_attributes.find("corr_input_vid");
+        c != mesh.vertex_attributes.end()) {
+        const auto corr = c->second.integers();
+        const auto v = mesh.vertex_attributes.find("vid");
+        const bool has_vid = v != mesh.vertex_attributes.end();
+        const auto vid = has_vid ? v->second.integers() : DataMatrix<int64_t>();
+        if (corr.cols() != 1 || (has_vid && vid.cols() != 1))
+            throw std::runtime_error("corr_input_vid and vid must be scalar");
+        std::map<int64_t, Eigen::Index> row_of;
+        for (Eigen::Index r = 0; r < mesh.V.rows(); ++r)
+            if (!row_of.emplace(has_vid ? vid(r, 0) : r, r).second)
+                throw std::runtime_error("vid must be unique");
+        out.corr_input_vid.assign(out.V_input.rows(), -1);
+        for (Eigen::Index r = 0; r < mesh.V.rows(); ++r) {
+            if (remap[r] < 0 || corr(r, 0) < 0) continue;
+            const auto it = row_of.find(corr(r, 0));
+            if (it == row_of.end() || remap[it->second] < 0)
+                throw std::runtime_error(
+                    fmt::format("corr_input_vid {} names no vertex of the tets", corr(r, 0)));
+            out.corr_input_vid[remap[r]] = remap[it->second];
+        }
+    }
     // A 2D input may come clockwise; it is turned around, as the .msh route always did for
     // images. A counter-clockwise input is unchanged.
     if (dim == 2) positive_orientation_2D(out.V_input, out.T_input);

@@ -1105,15 +1105,79 @@ TEST_CASE("sphere_refine", "[dist_growth][2d]")
 
 TEST_CASE("stencil-order-point-counts", "[offset]")
 {
-    // The stencil the whole 3D criterion and the "surface" energy sample, checked against the
-    // counts the design states (since 2026-10-27): the interior lattice (i, j, l) / (k + 2), i, j,
+    // The stencil the whole 3D criterion and energy sample, checked against the counts the
+    // design states: 3 at order 0 (the corners alone), then the vertices of the triangle
+    // subdivided k-1 times plus one centroid per sub-triangle -- 4, 10, 31, 109, 409.
+    //
+    // This also pins stencil_points_per_face() to for_each_face_sample(), which are two separate
+    // pieces of arithmetic that have to agree: the accessor is used in the logs and in the
+    // criterion's own reporting, the loop is what actually visits the points.
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+
+    const Vector3d p0(0., 0., 0.), p1(1., 0., 0.), p2(0., 1., 0.);
+    const std::array<int, 6> expected = {{3, 4, 10, 31, 109, 409}};
+
+    for (int k = 0; k < int(expected.size()); ++k) {
+        mesh.m_offset_params.stencil_order = k;
+
+        std::vector<std::array<double, 3>> w;
+        mesh.for_each_face_sample(
+            p0,
+            p1,
+            p2,
+            [&](const Vector3d& q, const double wa, const double wb, const double wc) {
+                // The visited point must be the barycentric combination it reports.
+                const Vector3d want = wa * p0 + wb * p1 + wc * p2;
+                CHECK((q - want).norm() <= 1e-15);
+                w.push_back({{wa, wb, wc}});
+            });
+
+        INFO("stencil_order " << k);
+        CHECK(int(w.size()) == expected[size_t(k)]);
+        CHECK(mesh.stencil_points_per_face() == expected[size_t(k)]);
+
+        for (const auto& b : w) {
+            CHECK(std::abs(b[0] + b[1] + b[2] - 1.) <= 1e-14);
+            CHECK(b[0] >= -1e-15);
+            CHECK(b[1] >= -1e-15);
+            CHECK(b[2] >= -1e-15);
+        }
+
+        // No duplicated sample: a repeated point would silently weight part of the face twice.
+        // Quantised into a set rather than compared pairwise, so the check stays one assertion
+        // instead of ~83000 at order 5.
+        std::set<std::array<long long, 3>> seen;
+        for (const auto& b : w) {
+            seen.insert({{llround(b[0] * 1e9), llround(b[1] * 1e9), llround(b[2] * 1e9)}});
+        }
+        CHECK(seen.size() == w.size());
+    }
+
+    // Order 0 is exactly the three corners, which is what lets one stencil carry the vertex
+    // placement test as well as the face resolution test.
+    mesh.m_offset_params.stencil_order = 0;
+    std::vector<Vector3d> pts;
+    mesh.for_each_face_sample(p0, p1, p2, [&](const Vector3d& q, double, double, double) {
+        pts.push_back(q);
+    });
+    REQUIRE(pts.size() == 3);
+    CHECK((pts[0] - p0).norm() <= 1e-15);
+    CHECK((pts[1] - p1).norm() <= 1e-15);
+    CHECK((pts[2] - p2).norm() <= 1e-15);
+}
+
+TEST_CASE("interior-stencil-point-counts", "[offset]")
+{
+    // EXPERIMENTAL_stencil_type "interior" (2026-10-27), checked against the counts the design
+    // states: the interior lattice (i, j, l) / (k + 2), i, j,
     // l >= 1, k (k + 1) / 2 points -- 1, 3, 6, 10, 15, 21 for k = 1..6 -- and nothing at order 0.
     //
     // This also pins stencil_points_per_face() to for_each_face_sample(), which are two separate
     // pieces of arithmetic that have to agree: the accessor is used in the logs and in the
     // criterion's own reporting, the loop is what actually visits the points.
     Parameters param;
-    param.stencil_type = "interior"; // the interior lattice ("fem" is the default since 2026-10-28)
+    param.stencil_type = "interior";
     TopoOffsetTetMesh mesh(param, 0);
 
     const Vector3d p0(0., 0., 0.), p1(1., 0., 0.), p2(0., 1., 0.);
@@ -1191,7 +1255,7 @@ TEST_CASE("fem-face-stencil", "[offset][3d]")
     // k, i + j + l = k -- (k + 1) (k + 2) / 2 points: order 1 the corners, order 2 the corners and
     // the edge midpoints, order 3 the corners, two points per edge (1/3, 2/3) and the centroid --
     // and the mesh's face stencil, for_each_face_sample() and stencil_points_per_face() following
-    // the key ("fem" the default since 2026-10-28).
+    // the key ("subdivision" the default).
     using W3 = std::array<long long, 3>;
     const auto key = [](const std::array<double, 3>& w, const int k) {
         return W3{{llround(w[0] * k), llround(w[1] * k), llround(w[2] * k)}};
@@ -1284,10 +1348,15 @@ TEST_CASE("fem-face-stencil", "[offset][3d]")
     }
 
     // The mesh follows the key: the same points through face_stencil() and for_each_face_sample(),
-    // the count through stencil_points_per_face(); "fem" by default, "interior" with no weights.
+    // the count through stencil_points_per_face(); "subdivision" by default and "interior" with no
+    // weights.
     Parameters param;
     TopoOffsetTetMesh mesh(param, 0);
-    CHECK(mesh.m_offset_params.stencil_type == "fem"); // the default since 2026-10-28
+    CHECK(mesh.m_offset_params.stencil_type == "subdivision"); // the default
+    CHECK(mesh.m_offset_params.stencil_order == 1);
+    CHECK(&mesh.face_stencil() == &subdivision_face_stencil(1));
+    CHECK(mesh.face_stencil_weights() == nullptr);
+    CHECK(mesh.stencil_points_per_face() == 4);
     mesh.m_offset_params.stencil_type = "interior";
     mesh.m_offset_params.stencil_order = 3;
     CHECK(&mesh.face_stencil() == &interior_face_stencil(3));
@@ -1481,9 +1550,9 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
 {
     // face_offset_term(), the face measure the exit, the refinement and the frames read, is its
     // definition computed by hand from the stencil for_each_face_sample() visits, at stencil
-    // orders 1 (the centroid), 2 and 5, on three faces placed above and below the level set.
+    // orders 0 (corners only), 1 and 2, on three faces placed above and below the level set; then
+    // under EXPERIMENTAL_stencil_type "interior" at orders 1 (the centroid), 2 and 5, and "fem".
     Parameters param;
-    param.stencil_type = "interior"; // first the interior stencil, then "fem" (the default) below
     param.target_distance = kEnergyDelta;
     param.front_conv = kEnergyConv;
     TopoOffsetTetMesh mesh(param, 0);
@@ -1496,16 +1565,20 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
         {{0.4, 0.1, 0.61}, {0.2, 0.35, 0.44}},
         {{0.2, 0.35, 0.44}, {-0.25, 0.2, 0.58}},
         {{-0.25, 0.2, 0.58}, {-0.1, -0.4, 0.37}}};
-    for (const int k : {1, 2, 5}) {
-        mesh.m_offset_params.stencil_order = k;
-        double by_hand = 0., by_term = 0.;
-        for (const auto& [q1, q2] : others) {
-            by_hand += face_term_by_hand(mesh, *pot, x, q1, q2);
-            by_term += mesh.face_offset_term(*pot, x, q1, q2);
+    for (const char* type : {"subdivision", "interior"}) {
+        mesh.m_offset_params.stencil_type = type;
+        for (const int k : std::string(type) == "subdivision" ? std::vector<int>{0, 1, 2}
+                                                              : std::vector<int>{1, 2, 5}) {
+            mesh.m_offset_params.stencil_order = k;
+            double by_hand = 0., by_term = 0.;
+            for (const auto& [q1, q2] : others) {
+                by_hand += face_term_by_hand(mesh, *pot, x, q1, q2);
+                by_term += mesh.face_offset_term(*pot, x, q1, q2);
+            }
+            INFO(type << " stencil_order " << k);
+            CHECK(by_hand > 10.); // the fixture really is off the level set
+            CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
         }
-        INFO("stencil_order " << k);
-        CHECK(by_hand > 10.); // the fixture really is off the level set
-        CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
     }
     // EXPERIMENTAL_stencil_type "fem": the same measure, the mean weighted by the points' lumped
     // area weights (fem_face_stencil_weights()), by hand.
@@ -1532,24 +1605,6 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
     }
 }
 
-namespace {
-/// Parameters with the energy and loop keys as their defaults were before 2026-10-28 (since then
-/// the pocket / spanned splits and exit_no_folds are on, and the rule, the weight and the label
-/// clean-up have moved): for the tests of the volume rules' band term ("corner_bound"), their swap
-/// and collapse rules and the split keys switched off.
-Parameters volume_rule_params()
-{
-    Parameters p;
-    p.band_volume_rule = "corner_bound";
-    p.offset_amips_weight = 1.;
-    p.label_cleanup = "off";
-    p.front_pocket_split = false;
-    p.front_spanned_split = false;
-    p.exit_no_folds = false;
-    return p;
-}
-} // namespace
-
 TEST_CASE("per-tet-energy", "[offset][3d]")
 {
     // tet_energy() against its definition computed by hand: (w / s^3) vol AMIPS^3 for every
@@ -1571,7 +1626,7 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
              {1., 3.},
              {1., 100.},
              {Parameters().offset_amips_weight, 100.}}) {
-        Parameters param = volume_rule_params();
+        Parameters param;
         param.offset_amips_weight = w;
         param.stop_energy = s;
         const auto pot = plane_field();
@@ -1665,7 +1720,7 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                  {1., 3., true},
                  {Parameters().offset_amips_weight, 100., true}}) {
             if (plastic && fi != 0) continue; // fixture 1 is all band: nothing plastic
-            Parameters param = volume_rule_params();
+            Parameters param;
             param.offset_amips_weight = w;
             param.stop_energy = s;
             const auto pot = plane_field();
@@ -2102,7 +2157,7 @@ TEST_CASE("swap-candidate-record", "[offset][3d]")
             const std::vector<int>& labB,
             const int search,
             const std::function<void(TopoOffsetTetMesh&, const std::vector<size_t>&)>& before) {
-            Parameters pa = volume_rule_params(), pb = volume_rule_params();
+            Parameters pa, pb;
             auto A = energy_mesh(pa, V, TA, labA, pot);
             auto B = energy_mesh(pb, V, TB, labB, pot);
             std::vector<size_t> tids(TA.size());
@@ -2274,7 +2329,7 @@ TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
 
     for (const int x : {2, 0}) {
         INFO("label " << x);
-        Parameters pa = volume_rule_params(), pb = volume_rule_params();
+        Parameters pa, pb;
         pa.perform_sanity_checks = true;
         auto A = energy_mesh(pa, V, TA, {x, x}, pot);
         auto B = energy_mesh(pb, V, TB, {x, x, x}, pot);
@@ -2348,8 +2403,7 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
     for (const int x : {2, 0}) {
         INFO("label " << x);
         const std::vector<int> lab(4, x);
-        Parameters pa = volume_rule_params(), p02 = volume_rule_params(),
-                   p13 = volume_rule_params();
+        Parameters pa, p02, p13;
         pa.perform_sanity_checks = true;
         auto A = energy_mesh(pa, V, TA, lab, pot);
         auto B02 = energy_mesh(p02, V, T02, lab, pot);
@@ -2478,13 +2532,6 @@ Parameters construction_params(nlohmann::json j, const Eigen::MatrixXd& V)
 {
     j["application"] = "topological_offset";
     j["input"] = "unused.msh";
-    // A rule asked for without a label clean-up: "off" (the tests of a rule's terms and operation
-    // rules do not want the default clean-up "one_sided_at_target", which corner_bound refuses).
-    if (j.contains("EXPERIMENTAL_band_volume_rule") &&
-        j["EXPERIMENTAL_band_volume_rule"] != "surface" &&
-        !j.contains("EXPERIMENTAL_label_cleanup")) {
-        j["EXPERIMENTAL_label_cleanup"] = "off";
-    }
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     jse::JSE spec_engine;
     spec_engine.strict = true;
@@ -2723,6 +2770,146 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
 }
 
 namespace {
+/// python/tests/test_face_tags.py's tagged grid: [0, 2]^3 in 8^3 cubes of six tets, the corner
+/// cube [0, 0.25]^3 tagged red, and two open sheets on [0.5, 1.5]^2 as face tags, yellow at z = 1
+/// and blue at z = z_blue, a multiple of the cube size 0.25.
+MeshData two_sheet_grid(const double z_blue)
+{
+    const int n = 8;
+    const double h = 0.25;
+    const auto vid = [&](int i, int j, int k) { return i + (n + 1) * (j + (n + 1) * k); };
+    Eigen::MatrixXd V((n + 1) * (n + 1) * (n + 1), 3);
+    for (int k = 0; k <= n; ++k) {
+        for (int j = 0; j <= n; ++j) {
+            for (int i = 0; i <= n; ++i) V.row(vid(i, j, k)) << i * h, j * h, k * h;
+        }
+    }
+    std::vector<std::array<int, 4>> T;
+    std::vector<uint8_t> red;
+    const std::array<std::array<int, 3>, 6> perms = {
+        {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
+    for (int k = 0; k < n; ++k) {
+        for (int j = 0; j < n; ++j) {
+            for (int i = 0; i < n; ++i) {
+                for (const auto& pm : perms) { // the cube's 6 tets around its main diagonal
+                    std::array<int, 3> c = {{i, j, k}};
+                    std::array<int, 4> t;
+                    t[0] = vid(c[0], c[1], c[2]);
+                    for (int s = 0; s < 3; ++s) {
+                        ++c[size_t(pm[size_t(s)])];
+                        t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
+                    }
+                    T.push_back(positive(V, t));
+                    red.push_back(i == 0 && j == 0 && k == 0);
+                }
+            }
+        }
+    }
+    // The tets' faces on a sheet, once each.
+    const auto on_sheet = [&](const std::array<int, 3>& f, const double z) {
+        for (const int v : f) {
+            if (V(v, 2) != z || V(v, 0) < 0.5 || V(v, 0) > 1.5 || V(v, 1) < 0.5 || V(v, 1) > 1.5)
+                return false;
+        }
+        return true;
+    };
+    std::set<std::array<int, 3>> yellow, blue;
+    for (const auto& t : T) {
+        for (int s = 0; s < 4; ++s) {
+            std::array<int, 3> f;
+            for (int c = 0, m = 0; c < 4; ++c) {
+                if (c != s) f[size_t(m++)] = t[size_t(c)];
+            }
+            std::sort(f.begin(), f.end());
+            if (on_sheet(f, 1.0)) yellow.insert(f);
+            if (on_sheet(f, z_blue)) blue.insert(f);
+        }
+    }
+    Eigen::MatrixXi Tm(int(T.size()), 4);
+    DataMatrix<uint8_t> tags(T.size(), 2);
+    for (size_t i = 0; i < T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = T[i][size_t(j)];
+        tags(i, 0) = red[i];
+        tags(i, 1) = 1 - red[i];
+    }
+    MeshData m = io::geometry_data(V, Tm, CellType::Tetrahedron);
+    m.cells.at(CellType::Tetrahedron).attributes["tags"] = {tags, {"red", "ambient"}};
+    auto& faces = m.cells[CellType::Triangle];
+    faces.connectivity.resize(yellow.size() + blue.size(), 3);
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(faces.connectivity.rows(), 2);
+    Eigen::Index r = 0;
+    for (const auto* sheet : {&yellow, &blue}) {
+        for (const auto& f : *sheet) {
+            for (int c = 0; c < 3; ++c) faces.connectivity(r, c) = f[size_t(c)];
+            member(r++, sheet == &yellow ? 0 : 1) = 1;
+        }
+    }
+    faces.attributes["tags"] = {member, {"yellow", "blue"}};
+    return m;
+}
+
+/// One construction-only offset of the face tag `sheet`, its band tagged `band`, the
+/// correspondence saved: the step a pipeline runs once per sheet before prismatic_mesh.
+MeshData offset_sheet(const MeshData& m, const std::string& sheet, const std::string& band)
+{
+    return components::topological_offset::topological_offset(
+               {{"input", "m"},
+                {"offset_selection", sheet},
+                {"offset_output_tags", {band}},
+                {"target_distance", 0.1},
+                {"optimize_offset", false},
+                {"save_offset_correspondence", true},
+                {"num_threads", 1}},
+               {{"m", m}})
+        .first.at("mesh");
+}
+
+/// Each offset vertex (corr_input_vid >= 0) as its position followed by its input vertex's,
+/// which corr_input_vid names by `vid`.
+std::set<std::array<double, 6>> correspondence_pairs(const MeshData& m)
+{
+    const auto corr = m.vertex_attributes.at("corr_input_vid").integers();
+    const auto vid = m.vertex_attributes.at("vid").integers();
+    std::map<int64_t, Eigen::Index> row_of;
+    for (Eigen::Index r = 0; r < vid.rows(); ++r) row_of[vid(r, 0)] = r;
+    std::set<std::array<double, 6>> pairs;
+    for (Eigen::Index r = 0; r < corr.rows(); ++r) {
+        if (corr(r, 0) < 0) continue;
+        const Eigen::Index u = row_of.at(corr(r, 0));
+        pairs.insert({{m.V(r, 0), m.V(r, 1), m.V(r, 2), m.V(u, 0), m.V(u, 1), m.V(u, 2)}});
+    }
+    return pairs;
+}
+} // namespace
+
+TEST_CASE("offset-carries-an-earlier-correspondence", "[offset][3d][correspondence]")
+{
+    // Two offsets one after another, yellow's band and then blue's. The second run carries the
+    // first's corr_input_vid, so prismatic_mesh sees both bands' correspondence. Construction moves
+    // no vertex, so the pairs compare by position, exactly.
+    SECTION("sheets three cubes apart: every carried value survives")
+    {
+        const auto first = offset_sheet(two_sheet_grid(0.25), "yellow", "band_yellow");
+        const auto second = offset_sheet(first, "blue", "band_blue");
+        const auto carried = correspondence_pairs(first);
+        REQUIRE(!carried.empty());
+        std::set<std::array<double, 6>> to_yellow, to_blue;
+        for (const auto& p : correspondence_pairs(second))
+            (p[5] == 1.0 ? to_yellow : to_blue).insert(p);
+        CHECK(to_yellow == carried);
+        CHECK(!to_blue.empty());
+        for (const auto& p : to_blue) CHECK(p[5] == 0.25);
+    }
+    SECTION("sheets one cube apart: blue's march splits yellow's band, and the run refuses")
+    {
+        const auto first = offset_sheet(two_sheet_grid(0.75), "yellow", "band_yellow");
+        REQUIRE_THROWS_WITH(
+            offset_sheet(first, "blue", "band_blue"),
+            Catch::Matchers::ContainsSubstring("changed star"));
+    }
+}
+
+namespace {
 /// The input of save-offset-correspondence-3d: a 3 x 3 x 3 grid of unit cubes, six tets each,
 /// the center cube tag_0.
 struct GridInput
@@ -2855,6 +3042,7 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
          {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "exact"}},
         g.V);
+    param.debug_stencil = true; // the _stencil file's arrays too (DEBUG_stencil)
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_frame_threads";
     const auto make_mesh = [&](const int threads) {
@@ -3824,12 +4012,10 @@ TEST_CASE("pocket-split-six-edge-cell", "[offset][3d][pocket_split]")
 
 TEST_CASE("pocket-split-key-off", "[offset][3d][pocket_split]")
 {
-    // With EXPERIMENTAL_front_pocket_split false (the default until 2026-10-28) the slot is a
-    // no-op, and so it is in a TetWild pass with the key on: the first fixture's pinned cell stays
-    // and the mesh is unchanged.
+    // With EXPERIMENTAL_front_pocket_split false (the default) the slot is a no-op, and so it is
+    // in a TetWild pass with the key on: the first fixture's pinned cell stays and the mesh is
+    // unchanged.
     Parameters param;
-    param.front_pocket_split = false;
-    param.front_spanned_split = false;
     auto mesh = pocket_mesh(param, {2, 0});
     REQUIRE_FALSE(mesh->m_offset_params.front_pocket_split);
     REQUIRE(count_pinned(*mesh) == 1);
@@ -3860,7 +4046,6 @@ TEST_CASE("spanned-split-edge", "[offset][3d][pocket_split]")
     // (o, x, z, c) and (x, y, z, c), have c off the front. The pinned-cell split alone leaves it;
     // with the key, the slot splits (x, z), and the offset surface is the same set of faces.
     Parameters param;
-    param.front_spanned_split = false; // the key starts off (its default is true since 2026-10-28)
     auto mesh = pocket_mesh(param, {2, 0}, true);
     mesh->m_offset_params.front_pocket_split = true;
     REQUIRE(count_pinned(*mesh) == 0);
@@ -3957,12 +4142,15 @@ TEST_CASE("surface-offset-error-3d", "[offset][3d]")
 
 TEST_CASE("surface-energy-keys", "[offset][3d]" + release_only)
 {
-    // EXPERIMENTAL_band_volume_rule "surface" through the spec, as the app reads it: the defaults
-    // of 2026-10-29 (the "exact" rule, offset_amips_weight 1, label_cleanup "one_sided_at_target",
-    // the pocket and spanned splits and exit_no_folds on, interleaved_smoothing off), a weight
-    // read through, the refusals (a negative weight, the spec's min; settle_stall_eps away from
-    // its default under another rule; "energy_decrease" under another rule; a "one_sided" clean-up
-    // under "corner_bound"), stencil_order's default 5 and its min 1.
+    // This branch's keys through the spec, as the app reads it: main's defaults (every one of
+    // them off: "corner_bound", offset_amips_weight 1, label_cleanup "off", the pocket and spanned
+    // splits and exit_no_folds off, interleaved_smoothing on, coarsen_pass off, stencil_order 1
+    // with EXPERIMENTAL_stencil_type "subdivision", EXPERIMENTAL_coarsen_guard "bar",
+    // DEBUG_stencil off, EXPERIMENTAL_split_energy_gate off), each opt-in read through, and the
+    // refusals (a negative weight, the spec's min; settle_stall_eps away from its default under
+    // another rule; "energy_decrease" under another rule; a "one_sided" clean-up under
+    // "corner_bound"; "interior" / "fem" at order 0; "no_rise" without coarsen_pass;
+    // DEBUG_stencil without DEBUG_output; the split gate under "surface").
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     const auto with_app = [](nlohmann::json j) {
         j["application"] = "topological_offset";
@@ -3976,13 +4164,21 @@ TEST_CASE("surface-energy-keys", "[offset][3d]" + release_only)
         return spec_engine.inject_defaults(with_app(j), spec);
     };
     const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK(by_default.band_volume_rule == "exact");
+    CHECK(by_default.band_volume_rule == "corner_bound");
     CHECK(by_default.offset_amips_weight == 1.);
-    CHECK(by_default.label_cleanup == "one_sided_at_target");
-    CHECK(by_default.front_pocket_split);
-    CHECK(by_default.front_spanned_split);
-    CHECK(by_default.exit_no_folds);
-    CHECK_FALSE(by_default.interleaved_smoothing);
+    CHECK(by_default.label_cleanup == "off");
+    CHECK_FALSE(by_default.front_pocket_split);
+    CHECK_FALSE(by_default.front_spanned_split);
+    CHECK_FALSE(by_default.exit_no_folds);
+    CHECK(by_default.interleaved_smoothing);
+    CHECK_FALSE(by_default.coarsen_pass);
+    CHECK(by_default.coarsen_guard == "bar");
+    CHECK_FALSE(by_default.debug_stencil);
+    CHECK_FALSE(by_default.split_energy_gate);
+    CHECK(by_default.stencil_order == 1);
+    CHECK(by_default.stencil_type == "subdivision");
+    CHECK(by_default.settle_stall_eps == 0.1);
+    CHECK(by_default.settle_test == "stall");
     // the in-class defaults (a Parameters built without JSON) are the spec's
     const Parameters in_class{};
     CHECK(in_class.band_volume_rule == by_default.band_volume_rule);
@@ -3992,60 +4188,87 @@ TEST_CASE("surface-energy-keys", "[offset][3d]" + release_only)
     CHECK(in_class.front_spanned_split == by_default.front_spanned_split);
     CHECK(in_class.exit_no_folds == by_default.exit_no_folds);
     CHECK(in_class.stencil_order == by_default.stencil_order);
-    CHECK(by_default.stencil_order == 5);
-    CHECK(by_default.settle_stall_eps == 0.1);
+    CHECK(in_class.stencil_type == by_default.stencil_type);
+    CHECK(in_class.coarsen_guard == by_default.coarsen_guard);
+    CHECK(in_class.debug_stencil == by_default.debug_stencil);
+    CHECK(in_class.split_energy_gate == by_default.split_energy_gate);
     const Parameters surface(injected({{"EXPERIMENTAL_band_volume_rule", "surface"}}));
     CHECK(surface.band_volume_rule == "surface");
     CHECK(surface.offset_amips_weight == 1.);
-    CHECK(surface.label_cleanup == "one_sided_at_target");
+    CHECK(surface.label_cleanup == "off");
     const Parameters weighted(injected(
         {{"EXPERIMENTAL_band_volume_rule", "surface"},
          {"offset_amips_weight", 0.25},
          {"settle_stall_eps", 0.05}}));
     CHECK(weighted.offset_amips_weight == 0.25);
     CHECK(weighted.settle_stall_eps == 0.05);
-    // "corner_bound": refused with the default clean-up (no exact integral to read d through),
-    // read with the clean-up off
-    CHECK_THROWS(Parameters{injected({{"EXPERIMENTAL_band_volume_rule", "corner_bound"}})});
-    const Parameters corner(injected(
-        {{"EXPERIMENTAL_band_volume_rule", "corner_bound"},
-         {"EXPERIMENTAL_label_cleanup", "off"}}));
-    CHECK(corner.band_volume_rule == "corner_bound");
-    CHECK(corner.offset_amips_weight == 1.);
-    const Parameters heavy(
-        injected({{"EXPERIMENTAL_band_volume_rule", "surface"}, {"offset_amips_weight", 10.}}));
-    CHECK(heavy.offset_amips_weight == 10.);
+    // the configs of the converged "surface" runs on piece08 (2026-10-28), written out
+    const Parameters screw(injected(
+        {{"EXPERIMENTAL_band_volume_rule", "surface"},
+         {"offset_amips_weight", 100.},
+         {"EXPERIMENTAL_stencil_type", "fem"},
+         {"stencil_order", 5},
+         {"EXPERIMENTAL_front_pocket_split", true},
+         {"EXPERIMENTAL_front_spanned_split", true},
+         {"EXPERIMENTAL_exit_no_folds", true},
+         {"EXPERIMENTAL_label_cleanup", "energy_decrease"},
+         {"interleaved_smoothing", false},
+         {"num_smoothing_passes", 2},
+         {"coarsen_pass", true},
+         {"EXPERIMENTAL_coarsen_guard", "no_rise"}}));
+    CHECK(screw.stencil_type == "fem");
+    CHECK(screw.stencil_order == 5);
+    CHECK(screw.coarsen_pass);
+    CHECK(screw.coarsen_guard == "no_rise");
+    CHECK(screw.label_cleanup == "energy_decrease");
+    // "corner_bound": refused with a "one_sided" clean-up (no exact integral to read d through)
+    CHECK_THROWS(
+        Parameters{injected(
+            {{"EXPERIMENTAL_front_pocket_split", true},
+             {"EXPERIMENTAL_label_cleanup", "one_sided_at_target"}})});
+    const Parameters exact(injected(
+        {{"EXPERIMENTAL_band_volume_rule", "exact"},
+         {"EXPERIMENTAL_front_pocket_split", true},
+         {"EXPERIMENTAL_label_cleanup", "one_sided_at_target"}}));
+    CHECK(exact.label_cleanup == "one_sided_at_target");
     jse::JSE negative;
     negative.strict = true;
     CHECK_FALSE(negative.verify_json(with_app({{"offset_amips_weight", -0.5}}), spec));
+    CHECK_THROWS(Parameters{injected({{"settle_stall_eps", 0.2}})});
+    // stencil_order 0: the corners under "subdivision", refused under "interior" and "fem"
+    const Parameters corners(injected({{"stencil_order", 0}}));
+    CHECK(corners.stencil_order == 0);
     CHECK_THROWS(
-        Parameters{injected(
-            {{"EXPERIMENTAL_band_volume_rule", "exact"},
-             {"EXPERIMENTAL_label_cleanup", "off"},
-             {"settle_stall_eps", 0.2}})});
+        Parameters{injected({{"stencil_order", 0}, {"EXPERIMENTAL_stencil_type", "interior"}})});
+    CHECK_THROWS(
+        Parameters{injected({{"stencil_order", 0}, {"EXPERIMENTAL_stencil_type", "fem"}})});
     jse::JSE strict;
     strict.strict = true;
-    CHECK_FALSE(strict.verify_json(with_app({{"stencil_order", 0}}), spec));
-    // EXPERIMENTAL_split_energy_gate is gone (2026-10-28: splits have no energy rule): refused.
-    CHECK_FALSE(strict.verify_json(with_app({{"EXPERIMENTAL_split_energy_gate", true}}), spec));
-    // EXPERIMENTAL_stencil_type: "fem" by default (since 2026-10-28), "interior" read through,
-    // anything else refused by the spec's options.
-    CHECK(by_default.stencil_type == "fem");
-    CHECK(Parameters{}.stencil_type == by_default.stencil_type);
+    CHECK_FALSE(strict.verify_json(with_app({{"stencil_order", -1}}), spec));
+    CHECK_FALSE(strict.verify_json(with_app({{"EXPERIMENTAL_stencil_type", "lagrange"}}), spec));
     const Parameters interior(injected({{"EXPERIMENTAL_stencil_type", "interior"}}));
     CHECK(interior.stencil_type == "interior");
-    CHECK_FALSE(strict.verify_json(with_app({{"EXPERIMENTAL_stencil_type", "lagrange"}}), spec));
-    // EXPERIMENTAL_settle_test: "stall" by default, "bar" read through under "surface", refused
-    // under another rule, and settle_stall_eps refused beside "bar".
-    CHECK(by_default.settle_test == "stall");
+    // EXPERIMENTAL_split_energy_gate: read through, refused under "surface"
+    CHECK(Parameters{injected({{"EXPERIMENTAL_split_energy_gate", true}})}.split_energy_gate);
+    CHECK_THROWS(
+        Parameters{injected(
+            {{"EXPERIMENTAL_split_energy_gate", true},
+             {"EXPERIMENTAL_band_volume_rule", "surface"}})});
+    // EXPERIMENTAL_coarsen_guard: "no_rise" needs coarsen_pass; anything else refused
+    CHECK_THROWS(Parameters{injected({{"EXPERIMENTAL_coarsen_guard", "no_rise"}})});
+    CHECK_FALSE(strict.verify_json(with_app({{"EXPERIMENTAL_coarsen_guard", "max"}}), spec));
+    // DEBUG_stencil needs DEBUG_output (or DEBUG_remote_output, which sets it)
+    CHECK_THROWS(Parameters{injected({{"DEBUG_stencil", true}})});
+    CHECK(Parameters{injected({{"DEBUG_stencil", true}, {"DEBUG_output", true}})}.debug_stencil);
+    CHECK(
+        Parameters{injected({{"DEBUG_stencil", true}, {"DEBUG_remote_output", true}})}
+            .debug_stencil);
+    // EXPERIMENTAL_settle_test: "bar" read through under "surface", refused under another rule,
+    // and settle_stall_eps refused beside "bar".
     const Parameters bar(injected(
         {{"EXPERIMENTAL_band_volume_rule", "surface"}, {"EXPERIMENTAL_settle_test", "bar"}}));
     CHECK(bar.settle_test == "bar");
-    CHECK_THROWS(
-        Parameters{injected(
-            {{"EXPERIMENTAL_band_volume_rule", "exact"},
-             {"EXPERIMENTAL_label_cleanup", "off"},
-             {"EXPERIMENTAL_settle_test", "bar"}})});
+    CHECK_THROWS(Parameters{injected({{"EXPERIMENTAL_settle_test", "bar"}})});
     // EXPERIMENTAL_label_cleanup "energy_decrease": read through under "surface" (with the pocket
     // split every clean-up mode needs), refused under another rule.
     const Parameters ed(injected(
@@ -4079,9 +4302,10 @@ TEST_CASE("surface-energy-sums", "[offset][3d]" + release_only)
         {{"offset_selection", "tag_0"},
          {"num_threads", 0},
          {"target_distance", 0.2},
-         {"EXPERIMENTAL_band_volume_rule", "surface"}},
+         {"EXPERIMENTAL_band_volume_rule", "surface"},
+         {"stencil_order", 5}},
         g.V);
-    REQUIRE(param.offset_amips_weight == 1.); // the default since 2026-10-29
+    REQUIRE(param.offset_amips_weight == 1.); // the default
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_surface_sums";
     const auto mesh = grid_offset_mesh(g, param, out);
@@ -4116,7 +4340,7 @@ TEST_CASE("surface-energy-sums", "[offset][3d]" + release_only)
         // (d - delta)^2, by hand from the same stencil and the field's distance.
         double o_star = 0.;
         const auto& st = mesh->face_stencil();
-        REQUIRE(st.size() == (type == "fem" ? 21u : 15u)); // the default order 5
+        REQUIRE(st.size() == (type == "fem" ? 21u : 15u)); // order 5
         REQUIRE(int(st.size()) == mesh->stencil_points_per_face());
         for (const auto& fc : faces) {
             for (const auto& w : st) {
@@ -4159,6 +4383,7 @@ TEST_CASE("surface-energy-sums", "[offset][3d]" + release_only)
         // face, in offset_surface_faces() order; its sq_error's max is O* bit for bit, and its
         // other fields are the same r read three ways.
         {
+            mesh->m_offset_params.debug_stencil = true; // DEBUG_stencil: the file is written
             const auto fr = mesh->gather_vtu_frame((out / "stencil_frame").string());
             REQUIRE(fr.S.rows() == Eigen::Index(faces.size() * st.size()));
             double mx = 0.;
@@ -4214,9 +4439,11 @@ TEST_CASE("surface-energy-sums", "[offset][3d]" + release_only)
 
 TEST_CASE("final-coarsening-guard", "[offset][3d]" + release_only)
 {
-    // The coarsening collapses (coarsen_mesh(), since 2026-10-28) are kept only if neither the
-    // max AMIPS over the cells they change nor the offset face term over the offset faces they
-    // change rises (ties pass). On the 5 x 5 x 5 grid constructed at 0.2, set up as tetwild_pass()
+    // The coarsening collapses (coarsen_mesh(), since 2026-10-28) under EXPERIMENTAL_coarsen_guard
+    // "no_rise" (with coarsen_pass, the "fem" stencil at order 5 and the "exact" rule, the values
+    // the test was written at) are kept only if neither the max AMIPS over the cells they change
+    // nor the offset face term over the offset faces they change rises (ties pass). On the 5 x 5 x
+    // 5 grid constructed at 0.2, set up as tetwild_pass()
     // sets it up (the final envelopes, TetWild's rules, no plastic medium), edges are tried as
     // single coarsening collapses (coarsen_collapse_edge()), any edge first, then with a front
     // vertex as v1. Before each try the guard's verdict is predicted on its own: the cells the
@@ -4247,7 +4474,12 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]" + release_only)
                 {{"offset_selection", "tag_0"},
                  {"num_threads", 0},
                  {"target_distance", 0.2},
-                 {"EXPERIMENTAL_settle_mark", mark}},
+                 {"EXPERIMENTAL_settle_mark", mark},
+                 {"EXPERIMENTAL_band_volume_rule", "exact"},
+                 {"EXPERIMENTAL_stencil_type", "fem"},
+                 {"stencil_order", 5},
+                 {"coarsen_pass", true},
+                 {"EXPERIMENTAL_coarsen_guard", "no_rise"}},
                 g.V)));
         auto mesh =
             grid_offset_mesh(g, *params.back(), std::filesystem::temp_directory_path() / name);
@@ -4440,7 +4672,14 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]" + release_only)
     {
         params.push_back(
             std::make_unique<Parameters>(construction_params(
-                {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+                {{"offset_selection", "tag_0"},
+                 {"num_threads", 0},
+                 {"target_distance", 0.2},
+                 {"EXPERIMENTAL_band_volume_rule", "exact"},
+                 {"EXPERIMENTAL_stencil_type", "fem"},
+                 {"stencil_order", 5},
+                 {"coarsen_pass", true},
+                 {"EXPERIMENTAL_coarsen_guard", "no_rise"}},
                 g.V)));
         params.back()->stop_energy = 1e12;
         params.back()->front_conv = 1e6;
@@ -4451,7 +4690,8 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]" + release_only)
         for (const auto& t : mesh->get_tets()) {
             mesh->m_tet_attribute[t.tid(*mesh)].m_quality = mesh->get_quality(t);
         }
-        REQUIRE(mesh->m_params.coarsen_pass); // the spec's default
+        REQUIRE(mesh->m_params.coarsen_pass);
+        REQUIRE(mesh->coarsen_no_rise());
         const size_t n0 = mesh->get_tets().size();
         mesh->m_params.coarsen_pass = false;
         mesh->tetwild_pass("test coarsening", 0, true);
@@ -4541,7 +4781,8 @@ TEST_CASE("settle-mark-stencil", "[offset][3d]" + release_only)
     // EXPERIMENTAL_settle_mark "stencil" (2026-10-28): on a settled turn a front face with a point
     // of its offset stencil at or beyond front_conv, (d - delta)^2 >= front_conv^2, has its corners
     // halved and holds the exit, so the loop exits only with every stencil point within front_conv.
-    // On the 5 x 5 x 5 grid constructed at 0.2 (the default FEM stencil, order 5), the per-face max
+    // On the 5 x 5 x 5 grid constructed at 0.2 (the FEM stencil at order 5 and the "exact" rule,
+    // the values the test was written at), the per-face max
     // of (d - delta)^2 is computed here point by point from the potential; O* is its max. One turn
     // of the settle test (e_prev = O*, so the turn settles) is run with front_conv set (a) just
     // above sqrt(O*): exit, nothing halved; (b) just below: no exit, the corners of exactly the
@@ -4573,7 +4814,10 @@ TEST_CASE("settle-mark-stencil", "[offset][3d]" + release_only)
                 {{"offset_selection", "tag_0"},
                  {"num_threads", 0},
                  {"target_distance", 0.2},
-                 {"EXPERIMENTAL_settle_mark", mark}},
+                 {"EXPERIMENTAL_settle_mark", mark},
+                 {"EXPERIMENTAL_band_volume_rule", "exact"},
+                 {"EXPERIMENTAL_stencil_type", "fem"},
+                 {"stencil_order", 5}},
                 g.V)));
         return grid_offset_mesh(g, *params.back(), std::filesystem::temp_directory_path() / name);
     };
@@ -4680,16 +4924,17 @@ TEST_CASE("settle-mark-stencil", "[offset][3d]" + release_only)
 TEST_CASE("memory-output-with-offset-front", "[offset][3d][io]")
 {
     // The memory export (collect_memory_output(), the route every run's output takes since the
-    // new mesh IO) of a mesh with an offset potential and a front, as a run ends: write_vtu() then
-    // also writes the stencil file (one point per stencil point of every offset face), whose
-    // points are not the mesh's vertex slots. MEASURED 2026-10-29: every run of the sonic
-    // stencil sweep on f9e9b94971 converged and then aborted in the export, "Export references an
-    // inactive vertex" (compact_slot_outputs()). The export must succeed, its keys be the
-    // offsets' own, and the mesh's rows be the live vertices.
+    // new mesh IO) of a mesh with an offset potential and a front, as a run ends: under
+    // DEBUG_stencil write_vtu() then also writes the stencil file (one point per stencil point of
+    // every offset face), whose points are not the mesh's vertex slots. MEASURED 2026-10-29: every
+    // run of the sonic stencil sweep on f9e9b94971 converged and then aborted in the export,
+    // "Export references an inactive vertex" (compact_slot_outputs()). The export must succeed, its
+    // keys be the offsets' own, and the mesh's rows be the live vertices.
     const GridInput g = grid_input(5);
     Parameters param = construction_params(
         {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
         g.V);
+    param.debug_stencil = true;
     auto mesh =
         grid_offset_mesh(g, param, std::filesystem::temp_directory_path() / "wmtk_offset_memout");
     REQUIRE(mesh->m_offset_potential);
