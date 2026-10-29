@@ -67,9 +67,10 @@ TetMeshData read_tet_msh(const std::string& path)
     return m;
 }
 
-TetLocator::TetLocator(const TetMeshData& m)
-    : m_mesh(m)
+TetLocator::TetLocator(std::shared_ptr<const TetMeshData> mesh)
+    : m_mesh(std::move(mesh))
 {
+    const TetMeshData& m = *m_mesh;
     if (m.tets.empty()) return;
     m_lo = m.vertices[m.tets[0][0]];
     Eigen::Vector3d hi = m_lo;
@@ -145,10 +146,10 @@ std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
     }
     // Exact containment, as the volume map locates its points (volume::locate_in): the tets
     // holding p, else those it is out of by a rounding; of the group first, if given.
-    const auto& V = m_mesh.vertices;
+    const auto& V = m_mesh->vertices;
     std::vector<uint32_t> holding, within_rounding;
     for (const uint32_t t : candidates) {
-        const auto& T = m_mesh.tets[t];
+        const auto& T = m_mesh->tets[t];
         Eigen::Vector3d lo = V[T[0]], hi = lo;
         for (int k = 1; k < 4; ++k) {
             lo = lo.cwiseMin(V[T[k]]);
@@ -164,7 +165,7 @@ std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
         }
     }
     const auto coordinates = [&](const uint32_t t, const bool exact) {
-        const auto& T = m_mesh.tets[t];
+        const auto& T = m_mesh->tets[t];
         Eigen::Vector4d b = exact ? volume::exact_barycentric(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]])
                                   : volume::barycentric(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]]);
         if (!exact && !(b.minCoeff() >= -1e-9 && b.maxCoeff() <= 1 + 1e-9)) {
@@ -178,13 +179,13 @@ std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
     };
     for (const bool own : {true, false}) {
         for (const uint32_t t : holding) {
-            if (own && m_mesh.groups[t] != group) continue;
+            if (own && m_mesh->groups[t] != group) continue;
             return {int64_t(t), clamped(coordinates(t, false))};
         }
         std::pair<int64_t, Eigen::Vector4d> best{-1, Eigen::Vector4d::Zero()};
         double best_min = -std::numeric_limits<double>::infinity();
         for (const uint32_t t : within_rounding) {
-            if (own && m_mesh.groups[t] != group) continue;
+            if (own && m_mesh->groups[t] != group) continue;
             const Eigen::Vector4d b = coordinates(t, true);
             if (b.minCoeff() > best_min) {
                 best_min = b.minCoeff();
@@ -199,7 +200,7 @@ std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
 bool TetLocator::in_group(const Eigen::Vector3d& p, const uint32_t group) const
 {
     const auto [t, b] = locate(p, group);
-    return t >= 0 && m_mesh.groups[size_t(t)] == group;
+    return t >= 0 && m_mesh->groups[size_t(t)] == group;
 }
 
 } // namespace wmtk::components::tracking

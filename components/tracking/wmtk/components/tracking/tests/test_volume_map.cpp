@@ -1,7 +1,9 @@
 #include <wmtk/components/tracking/VolumeMap.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
 #include <wmtk/components/tracking/volume_geometry.hpp>
 #include <wmtk/components/tracking/volume_io.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
+#include <wmtk/io/mesh_io.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -355,7 +357,11 @@ TEST_CASE("volume-history-save-checks", "[volume_map]")
 
 namespace {
 
-/// A square of two triangles in the plane z = 0, its corners moved one by one in four edits.
+/// Where square_history() moves corner 1 to.
+const Eigen::Vector3d kMovedCorner(0.9, 0.2, 0);
+
+/// A square of two triangles in the plane z = 0, its corners moved one by one in four edits:
+/// corner 1 to kMovedCorner, the others where they are.
 history::SurfaceHistory square_history()
 {
     history::SurfaceHistory h;
@@ -365,14 +371,14 @@ history::SurfaceHistory square_history()
     h.face_alive.assign(2, 1);
     for (uint64_t v = 0; v < 4; ++v) {
         history::Edit e{history::EditKind::move_vertices, {}, {}, {}};
-        e.moves.push_back({v, h.vertices[v]});
+        e.moves.push_back({v, v == 1 ? kMovedCorner : h.vertices[v]});
         h.edits.push_back(e);
     }
     return h;
 }
 
 /// The move of square_history()'s edit 1 as a volume history saw it: the tets on either side of
-/// the square at corner 1, a cone over it from (0.5, 0.5, +-1).
+/// the square, a cone over it from (0.5, 0.5, +-1).
 history::VolumeHistory square_volume(const history::SurfaceHistory& h)
 {
     history::VolumeHistory v;
@@ -386,6 +392,7 @@ history::VolumeHistory square_volume(const history::SurfaceHistory& h)
         {h.vertices[0], h.vertices[1], h.vertices[2], h.vertices[3], {0.5, 0.5, 1}, {0.5, 0.5, -1}};
     e.surface_before = {0, 1, 2, 3, history::kNoVertex, history::kNoVertex};
     e.surface_after = e.surface_before;
+    e.moved = {{1, kMovedCorner}};
     e.tets = {{{0, 1, 2, 4}}, {{0, 2, 3, 4}}, {{0, 2, 1, 5}}, {{0, 3, 2, 5}}};
     e.regions = {1, 1, 0, 0};
     e.op_vertices = {1};
@@ -442,6 +449,107 @@ TEST_CASE("volume-map-pairing", "[volume_map]")
     CHECK(*w.surface == history::surface_key(h));
 }
 
+namespace {
+
+/// square_volume()'s tets, in the positions before its edit or after, as a mesh file holds them.
+MeshData square_mesh(const history::VolumeHistory& v, const bool after)
+{
+    const history::VolumeEdit& e = v.edits[0];
+    const auto P = after ? e.positions_after() : e.positions;
+    MeshData m;
+    m.V.resize(Eigen::Index(P.size()), 3);
+    for (size_t i = 0; i < P.size(); ++i) m.V.row(Eigen::Index(i)) = P[i].transpose();
+    auto& T = m.cells[CellType::Tetrahedron].connectivity;
+    T.resize(Eigen::Index(e.tets.size()), 4);
+    for (size_t t = 0; t < e.tets.size(); ++t) {
+        for (int k = 0; k < 4; ++k) T(Eigen::Index(t), k) = e.tets[t][k];
+    }
+    return m;
+}
+
+/// The files of square_history() and square_volume(), and the meshes before and after.
+struct SquareFiles
+{
+    std::string surface = temp_path("square_surface"), volume = temp_path("square_volume");
+    std::string in = temp_path("square_in") + ".msh", out = temp_path("square_out") + ".msh";
+    SquareFiles()
+    {
+        const history::SurfaceHistory h = square_history();
+        const history::VolumeHistory v = square_volume(h);
+        h.save(surface);
+        v.save(volume);
+        io::write_mesh(in, square_mesh(v, false));
+        io::write_mesh(out, square_mesh(v, true));
+    }
+    ~SquareFiles()
+    {
+        for (const auto& p : {surface, volume, in, out}) std::filesystem::remove(p);
+    }
+    VolumeTracking load() const { return VolumeTracking::load(surface, volume, in, out); }
+};
+
+/// Points in each of square_volume()'s tets, one of a tet it does not have, one not a number.
+std::vector<TetPoint> square_points()
+{
+    std::vector<TetPoint> pts;
+    for (uint64_t t = 0; t < 4; ++t) {
+        for (const Eigen::Vector4d& b :
+             {Eigen::Vector4d(0.25, 0.25, 0.25, 0.25), Eigen::Vector4d(0.1, 0.6, 0.2, 0.1)}) {
+            pts.push_back({t, b});
+        }
+    }
+    pts.push_back({17, Eigen::Vector4d::Constant(0.25)});
+    pts.push_back({0, Eigen::Vector4d(std::numeric_limits<double>::quiet_NaN(), 0, 0, 1)});
+    return pts;
+}
+
+bool same_points(const std::vector<TetPoint>& a, const std::vector<TetPoint>& b)
+{
+    if (a.size() != b.size()) return false;
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (a[i].tet != b[i].tet) return false;
+        if (a[i].tet != kNoId && (a[i].bary - b[i].bary).norm() > 1e-12) return false;
+    }
+    return true;
+}
+
+} // namespace
+
+TEST_CASE("volume-tracking-moved", "[volume_map]")
+{
+    // A VolumeTracking moved, copied, or kept in a vector that grows maps as the one loaded:
+    // its locators share the meshes, which a move does not leave behind.
+    const SquareFiles files;
+    VolumeTracking a = files.load();
+    const std::vector<TetPoint> pts = square_points();
+    const auto there = a.to_output(pts);
+    const auto back = a.to_input(there);
+    REQUIRE(there.size() == pts.size());
+    for (size_t i = 0; i + 2 < pts.size(); ++i) {
+        REQUIRE(there[i].tet != kNoId);
+        CHECK(back[i].tet != kNoId);
+    }
+    CHECK(there[pts.size() - 2].tet == kNoId);
+    CHECK(there[pts.size() - 1].tet == kNoId);
+    const auto maps_as_loaded = [&](const VolumeTracking& t) {
+        CHECK(same_points(t.to_output(pts), there));
+        CHECK(same_points(t.to_input(there), back));
+    };
+    VolumeTracking b = std::move(a);
+    maps_as_loaded(b);
+    VolumeTracking c = b;
+    maps_as_loaded(c);
+    maps_as_loaded(b);
+    std::vector<VolumeTracking> v;
+    for (int k = 0; k < 9; ++k) v.push_back(k % 3 == 0 ? files.load() : c);
+    v.push_back(std::move(b));
+    for (const VolumeTracking& t : v) maps_as_loaded(t);
+    a = std::move(v.back());
+    v.clear();
+    maps_as_loaded(a);
+    maps_as_loaded(c);
+}
+
 TEST_CASE("volume-map-non-finite", "[volume_map]")
 {
     // A point that is not a number is passed by, whatever else is mapped with it: a rational of a
@@ -481,7 +589,7 @@ TEST_CASE("volume-map-non-finite", "[volume_map]")
     m.tets = {{{0, 1, 2, 3}}};
     m.groups = {0};
     m.group_sets = {{}};
-    const TetLocator locator(m);
+    const TetLocator locator(std::make_shared<const TetMeshData>(m));
     CHECK(locator.locate(Eigen::Vector3d(0.1, 0.1, 0.1)).first == 0);
     CHECK(locator.locate(Eigen::Vector3d(nan, 0.1, 0.1)).first == -1);
     CHECK(locator.locate(Eigen::Vector3d(0.1, inf, 0.1)).first == -1);
@@ -534,7 +642,7 @@ TetMeshData kuhn_cube(const int n, const bool split = false)
 TEST_CASE("volume-tet-locator", "[volume_map]")
 {
     const TetMeshData m = kuhn_cube(5, true);
-    const TetLocator locator(m);
+    const TetLocator locator(std::make_shared<const TetMeshData>(m));
     std::mt19937 rng(11);
     const auto u = [&rng]() { return double(rng() % 100000) / 100000; };
     // On the box's faces, and a rounding out of them: every one has a tet, its coordinates
@@ -573,8 +681,9 @@ TEST_CASE("volume-tet-locator", "[volume_map]")
     }
     CHECK_FALSE(locator.in_group(Eigen::Vector3d(0.1, 0.5, 0.5), 1));
     // A mesh with no tets has none to find.
-    const TetMeshData empty;
-    CHECK(TetLocator(empty).locate(Eigen::Vector3d::Zero()).first == -1);
+    CHECK(
+        TetLocator(std::make_shared<const TetMeshData>()).locate(Eigen::Vector3d::Zero()).first ==
+        -1);
 }
 
 TEST_CASE("volume-chebyshev", "[volume_map]")

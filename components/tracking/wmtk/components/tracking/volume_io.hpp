@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -29,7 +30,9 @@ TetMeshData read_tet_msh(const std::string& path);
 class TetLocator
 {
 public:
-    explicit TetLocator(const TetMeshData& m);
+    /// Shares the mesh, so a locator copied or moved keeps finding in it.
+    explicit TetLocator(std::shared_ptr<const TetMeshData> m);
+    const TetMeshData& mesh() const { return *m_mesh; }
     /// The tet and the point's barycentric coordinates in it; tet -1 if no tet is near, or p is
     /// not a number.
     std::pair<int64_t, Eigen::Vector4d> locate(const Eigen::Vector3d& p) const;
@@ -41,7 +44,7 @@ public:
     bool in_group(const Eigen::Vector3d& p, uint32_t group) const;
 
 private:
-    const TetMeshData& m_mesh;
+    std::shared_ptr<const TetMeshData> m_mesh;
     Eigen::Vector3d m_lo = Eigen::Vector3d::Zero();
     double m_h = 1;
     /// A rounding of the largest tet: the farthest a point is from a tet it is a rounding off.

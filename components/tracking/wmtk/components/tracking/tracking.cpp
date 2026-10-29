@@ -296,13 +296,10 @@ nlohmann::json warnings_report(const CurveMapWarnings& w)
 }
 
 VolumeTracking::VolumeTracking(VolumeMap map, TetMeshData in, TetMeshData out)
-    : m_map(std::move(map))
-    , m_in(std::move(in))
-    , m_out(std::move(out))
-{
-    m_in_locator = std::make_unique<TetLocator>(m_in);
-    m_out_locator = std::make_unique<TetLocator>(m_out);
-}
+    : m_map(std::make_shared<const VolumeMap>(std::move(map)))
+    , m_in(std::make_shared<const TetMeshData>(std::move(in)))
+    , m_out(std::make_shared<const TetMeshData>(std::move(out)))
+{}
 
 VolumeTracking VolumeTracking::load(
     const std::string& surface_history,
@@ -332,9 +329,9 @@ std::vector<TetPoint> VolumeTracking::map_points(
     const std::vector<TetPoint>& points,
     const bool forward) const
 {
-    const TetMeshData& from = forward ? m_in : m_out;
-    const TetMeshData& to = forward ? m_out : m_in;
-    const TetLocator& locate = forward ? *m_out_locator : *m_in_locator;
+    const TetMeshData& from = forward ? input_mesh() : output_mesh();
+    const TetMeshData& to = forward ? output_mesh() : input_mesh();
+    const TetLocator& locate = forward ? m_out : m_in;
     // A point of no tet, or with coordinates that are not numbers, is left without a position,
     // which the map passes by, and comes back with no tet.
     const auto valid = [&](const TetPoint& p) {
@@ -349,10 +346,10 @@ std::vector<TetPoint> VolumeTracking::map_points(
         pts[i].position = x;
         // its region, by the names of the groups the file lists its tet in; else the region
         // of the tet the map finds it in
-        const auto r = m_map.region_of_groups(from.group_sets[from.groups[points[i].tet]]);
+        const auto r = m_map->region_of_groups(from.group_sets[from.groups[points[i].tet]]);
         if (r) pts[i].region = *r;
     }
-    const auto there = forward ? m_map.to_output(pts) : m_map.to_input(pts);
+    const auto there = forward ? m_map->to_output(pts) : m_map->to_input(pts);
     std::vector<TetPoint> out(points.size());
     for (size_t i = 0; i < points.size(); ++i) {
         if (!valid(points[i])) continue;

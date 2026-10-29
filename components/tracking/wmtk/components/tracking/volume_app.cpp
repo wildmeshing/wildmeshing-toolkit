@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <fstream>
 #include <map>
+#include <optional>
 #include <random>
 #include <set>
 #include <sstream>
@@ -185,12 +186,12 @@ void volume_info(
     logger().info("mapped there and back; memory {} MB", getCurrentRSS() >> 20);
     std::vector<double> conf, det, disp, trip;
     size_t moved = 0, kept = 0, located = 0;
-    std::unique_ptr<TetMeshData> out;
-    std::unique_ptr<TetLocator> loc;
+    std::shared_ptr<const TetMeshData> out;
+    std::optional<TetLocator> loc;
     if (!output_tet_mesh.empty()) {
-        out = std::make_unique<TetMeshData>(
+        out = std::make_shared<const TetMeshData>(
             read_tet_msh(resolve_path(root, output_tet_mesh).string()));
-        loc = std::make_unique<TetLocator>(*out);
+        loc.emplace(out);
     }
     for (size_t i = 0; i < n; ++i) {
         const Eigen::Vector3d y = there[i].position;

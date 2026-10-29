@@ -270,17 +270,17 @@ public:
     /// Points of the output mesh to the input mesh, the inverse map.
     std::vector<TetPoint> to_input(const std::vector<TetPoint>& points) const;
 
-    const VolumeMap& map() const { return m_map; }
-    const TetMeshData& input_mesh() const { return m_in; }
-    const TetMeshData& output_mesh() const { return m_out; }
+    const VolumeMap& map() const { return *m_map; }
+    const TetMeshData& input_mesh() const { return m_in.mesh(); }
+    const TetMeshData& output_mesh() const { return m_out.mesh(); }
 
 private:
     VolumeTracking(VolumeMap map, TetMeshData in, TetMeshData out);
     std::vector<TetPoint> map_points(const std::vector<TetPoint>& points, bool forward) const;
 
-    VolumeMap m_map;
-    TetMeshData m_in, m_out;
-    std::unique_ptr<TetLocator> m_in_locator, m_out_locator;
+    // Shared, all of it, by a copy: the map and the meshes are not changed by mapping.
+    std::shared_ptr<const VolumeMap> m_map;
+    TetLocator m_in, m_out;
 };
 
 /// The tracking application: maps points, transfers fields and reports on a tracking file
