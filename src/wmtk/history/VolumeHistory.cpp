@@ -7,6 +7,7 @@
 #include <limits>
 #include <map>
 #include <set>
+#include <unordered_map>
 
 namespace wmtk::history {
 
@@ -107,7 +108,90 @@ bool derivable(const VolumeEdit& e)
     return want == got;
 }
 
-void encode(BufferWriter& w, const VolumeEdit& e, std::vector<Known>& known)
+/// What makes e unlike an edit a recorder makes, if anything: nothing a volume map could not
+/// take -- local ids in range and a vertex id each, positions that are numbers, tets of four
+/// vertices in the regions there are, a collapse of two vertices that removes tets, a swap that
+/// removes and adds some, a move of one vertex that changes no tet.
+const char* malformed(const VolumeEdit& e, const size_t n_regions)
+{
+    const size_t nv = e.positions.size();
+    if (e.n_edits == 0) return "makes no surface edit";
+    if (e.n_edits > std::numeric_limits<uint64_t>::max() - e.first_edit) {
+        return "names surface edits past the last there can be";
+    }
+    if (e.surface_before.size() != nv || e.surface_after.size() != nv) {
+        return "has not one surface vertex before and after per vertex";
+    }
+    if (!e.vertices.empty()) {
+        if (e.vertices.size() != nv) return "has not one id per vertex";
+        std::vector<uint64_t> ids = e.vertices;
+        std::sort(ids.begin(), ids.end());
+        if (std::adjacent_find(ids.begin(), ids.end()) != ids.end()) return "repeats a vertex";
+    }
+    for (const auto& x : e.positions) {
+        if (!x.allFinite()) return "has a position that is not a number";
+    }
+    for (const auto& [v, x] : e.moved) {
+        if (v >= nv) return "moves a vertex it does not have";
+        if (!x.allFinite()) return "moves a vertex to a position that is not a number";
+    }
+    const auto bad_tet = [nv](const std::array<uint32_t, 4>& t) {
+        for (int a = 0; a < 4; ++a) {
+            if (t[a] >= nv) return true;
+            for (int b = 0; b < a; ++b) {
+                if (t[a] == t[b]) return true;
+            }
+        }
+        return false;
+    };
+    if (e.regions.size() != e.tets.size()) return "has not one region per tet";
+    if (e.added_regions.size() != e.added.size()) return "has not one region per tet added";
+    for (const auto& t : e.tets) {
+        if (bad_tet(t)) return "has a tet that is not four of its vertices";
+    }
+    for (const auto& t : e.added) {
+        if (bad_tet(t)) return "adds a tet that is not four of its vertices";
+    }
+    for (const uint32_t r : e.regions) {
+        if (r >= n_regions) return "has a tet in a region there is not";
+    }
+    for (const uint32_t r : e.added_regions) {
+        if (r >= n_regions) return "adds a tet in a region there is not";
+    }
+    std::vector<char> gone(e.tets.size(), 0);
+    for (const uint32_t r : e.removed) {
+        if (r >= e.tets.size()) return "removes a tet it does not have";
+        if (gone[r]) return "removes a tet twice";
+        gone[r] = 1;
+    }
+    for (const uint32_t v : e.op_vertices) {
+        if (v >= nv) return "names an operation vertex it does not have";
+    }
+    switch (e.op) {
+    case VolumeOp::collapse:
+        if (e.op_vertices.size() != 2 || e.op_vertices[0] == e.op_vertices[1]) {
+            return "is a collapse not of two vertices";
+        }
+        if (e.removed.empty()) return "is a collapse that removes no tet";
+        break;
+    case VolumeOp::smooth:
+        if (e.op_vertices.size() != 1) return "is a move not of one vertex";
+        if (!e.removed.empty() || !e.added.empty()) return "is a move that changes tets";
+        break;
+    default:
+        if (e.removed.empty() || e.added.empty()) return "is a swap that removes or adds no tet";
+        break;
+    }
+    return nullptr;
+}
+
+/// Encodes e, its vertices by `ids` (one per vertex), the ids of a file: numbered densely, in
+/// the order they first appear (a reader checks it).
+void encode(
+    BufferWriter& w,
+    const VolumeEdit& e,
+    const std::vector<uint64_t>& ids,
+    std::vector<Known>& known)
 {
     w.byte(uint8_t(e.op));
     w.varint(e.first_edit);
@@ -115,7 +199,7 @@ void encode(BufferWriter& w, const VolumeEdit& e, std::vector<Known>& known)
     w.varint(e.positions.size());
     uint64_t previous = 0;
     for (size_t v = 0; v < e.positions.size(); ++v) {
-        const uint64_t id = e.vertices[v];
+        const uint64_t id = ids[v];
         if (id >= known.size()) known.resize(id + 1);
         Known& k = known[id];
         uint8_t flags = 0;
@@ -137,7 +221,7 @@ void encode(BufferWriter& w, const VolumeEdit& e, std::vector<Known>& known)
     for (const auto& [v, x] : e.moved) {
         w.varint(v);
         w.position(x);
-        known[e.vertices[v]].position = x;
+        known[ids[v]].position = x;
     }
     w.varint(e.tets.size());
     for (size_t k = 0; k < e.tets.size(); ++k) {
@@ -169,8 +253,9 @@ VolumeEdit decode(BufferReader& r, std::vector<Known>& known, const size_t n_reg
     const uint64_t nv = r.count(2);
     int64_t previous = 0;
     for (uint64_t v = 0; v < nv; ++v) {
+        // ids are dense, in the order they first appear: one not seen yet is the next
         const int64_t signed_id = previous + unzigzag(r.varint());
-        if (signed_id < 0 || signed_id > (int64_t(1) << 40)) r.corrupt();
+        if (signed_id < 0 || uint64_t(signed_id) > known.size()) r.corrupt();
         const uint64_t id = uint64_t(signed_id);
         previous = signed_id;
         if (id >= known.size()) known.resize(id + 1);
@@ -266,10 +351,24 @@ std::vector<VolumeEdit> decode_all(
     std::vector<Known> known;
     std::vector<VolumeEdit> edits;
     edits.reserve(n);
-    for (size_t k = 0; k < n; ++k) edits.push_back(decode(r, known, n_regions));
+    for (size_t k = 0; k < n; ++k) {
+        edits.push_back(decode(r, known, n_regions));
+        if (const char* why = malformed(edits.back(), n_regions)) {
+            log_and_throw_error("volume history: {} is corrupt: edit {} {}", path, k, why);
+        }
+    }
     std::stable_sort(edits.begin(), edits.end(), [](const auto& a, const auto& b) {
         return a.first_edit < b.first_edit;
     });
+    // each operation made surface edits of its own
+    for (size_t k = 1; k < edits.size(); ++k) {
+        if (edits[k].first_edit < edits[k - 1].first_edit + edits[k - 1].n_edits) {
+            log_and_throw_error(
+                "volume history: {} is corrupt: two operations made surface edit {}",
+                path,
+                edits[k].first_edit);
+        }
+    }
     return edits;
 }
 
@@ -303,25 +402,30 @@ std::vector<Eigen::Vector3d> VolumeEdit::positions_after() const
 
 void VolumeHistory::save(const std::string& path) const
 {
-    // Vertices with no ids of their own are numbered apart, edit by edit.
+    // The file numbers the vertices densely, in the order they first appear: the edits' own
+    // ids are renumbered so, and an edit without them gets new ones.
     std::vector<uint8_t> bytes;
     BufferWriter w(bytes);
     std::vector<Known> known;
+    std::unordered_map<uint64_t, uint64_t> dense;
     uint64_t next = 0;
-    for (const VolumeEdit& e : edits) {
-        uint64_t top = next;
-        for (const uint64_t id : e.vertices) top = std::max(top, id + 1);
-        next = top;
-    }
-    for (const VolumeEdit& e : edits) {
-        if (e.vertices.size() == e.positions.size()) {
-            encode(w, e, known);
-            continue;
+    std::vector<uint64_t> ids;
+    for (size_t k = 0; k < edits.size(); ++k) {
+        const VolumeEdit& e = edits[k];
+        if (const char* why = malformed(e, regions.size())) {
+            log_and_throw_error("volume history: cannot save {}: edit {} {}", path, k, why);
         }
-        VolumeEdit f = e;
-        f.vertices.clear();
-        for (size_t v = 0; v < f.positions.size(); ++v) f.vertices.push_back(next++);
-        encode(w, f, known);
+        ids.clear();
+        for (size_t v = 0; v < e.positions.size(); ++v) {
+            if (e.vertices.empty()) {
+                ids.push_back(next++);
+                continue;
+            }
+            const auto [it, fresh] = dense.emplace(e.vertices[v], next);
+            if (fresh) ++next;
+            ids.push_back(it->second);
+        }
+        encode(w, e, ids, known);
     }
     detail::Writer out(path);
     write_header(out, surface_edit_offset, regions, tag_names, edits.size());
@@ -442,7 +546,7 @@ void VolumeRecorder::commit(
         e.added_regions.push_back(region_of(after.tags[k]));
     }
     BufferWriter w(m_bytes);
-    encode(w, e, m_encoder->known);
+    encode(w, e, e.vertices, m_encoder->known);
     ++m_count;
 }
 

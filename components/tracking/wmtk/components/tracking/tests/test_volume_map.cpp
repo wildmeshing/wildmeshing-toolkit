@@ -4,7 +4,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <cmath>
+#include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <limits>
 #include <random>
 #include <string>
 
@@ -58,6 +61,293 @@ TEST_CASE("volume-history-save-load", "[volume_map]")
     CHECK(after.size() == 2);
     CHECK(ra == std::vector<uint32_t>{2, 1});
     CHECK(f.positions_after()[1] == Eigen::Vector3d(0.5, 0, 0));
+}
+
+namespace {
+
+std::string temp_path(const std::string& name)
+{
+    return (std::filesystem::temp_directory_path() /
+            ("wmtk_" + name + "_" + std::to_string(std::random_device{}()) + ".vol"))
+        .string();
+}
+
+/// A volume history file written byte by byte (VolumeHistory.cpp has the layout), to damage.
+struct RawVolumeFile
+{
+    std::vector<uint8_t> bytes;
+    void u8(const uint8_t b) { bytes.push_back(b); }
+    void varint(uint64_t n)
+    {
+        do {
+            uint8_t b = n & 0x7F;
+            n >>= 7;
+            if (n) b |= 0x80;
+            bytes.push_back(b);
+        } while (n);
+    }
+    void f64(const double x)
+    {
+        uint8_t b[8];
+        std::memcpy(b, &x, 8);
+        bytes.insert(bytes.end(), b, b + 8);
+    }
+    /// The header: no offset, the regions {} and {1}, no names, n_edits edits.
+    void header(const uint64_t n_edits)
+    {
+        for (const char c : std::string("WMTKVOLH")) u8(uint8_t(c));
+        const uint32_t version = 1;
+        uint8_t v[4];
+        std::memcpy(v, &version, 4);
+        bytes.insert(bytes.end(), v, v + 4);
+        varint(0); // surface_edit_offset
+        varint(2); // regions
+        varint(0);
+        varint(1);
+        varint(2); // the tag 1, zigzagged
+        varint(0); // tag names
+        varint(n_edits);
+    }
+    /// The vertices of an edit: ids from `first` up, each with its position, on no surface.
+    void vertices(const std::vector<Eigen::Vector3d>& P, const uint64_t first = 0)
+    {
+        varint(P.size());
+        for (size_t v = 0; v < P.size(); ++v) {
+            varint(v == 0 ? 2 * first : 2); // zigzag of the difference from the previous id
+            u8(1);
+            for (int k = 0; k < 3; ++k) f64(P[v][k]);
+        }
+    }
+    void tet(const std::array<uint32_t, 4>& t, const uint32_t region)
+    {
+        for (const uint32_t v : t) varint(v);
+        varint(region);
+    }
+    std::string save(const std::string& name) const
+    {
+        const std::string path = temp_path(name);
+        std::ofstream out(path, std::ios::binary);
+        out.write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
+        return path;
+    }
+};
+
+const std::vector<Eigen::Vector3d> kFive = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 1}};
+
+/// A 2-3 swap of the five points: (0,1,2,3) and (1,2,3,4) become three tets around (0, 4).
+RawVolumeFile swap_file()
+{
+    RawVolumeFile f;
+    f.header(1);
+    f.u8(uint8_t(history::VolumeOp::swap_23));
+    f.varint(3); // first_edit
+    f.varint(1); // n_edits
+    f.vertices(kFive);
+    f.varint(0); // moved
+    f.varint(2);
+    f.tet({{0, 1, 2, 3}}, 0);
+    f.tet({{1, 2, 3, 4}}, 1);
+    f.varint(0); // op vertices
+    f.u8(0); // not derived
+    f.varint(2); // removed
+    f.varint(0);
+    f.varint(1);
+    f.varint(3); // added
+    f.tet({{0, 1, 2, 4}}, 0);
+    f.tet({{0, 2, 3, 4}}, 0);
+    f.tet({{0, 3, 1, 4}}, 1);
+    return f;
+}
+
+/// Loads a damaged file: it must throw, not crash.
+void check_corrupt(const RawVolumeFile& f, const std::string& name)
+{
+    const std::string path = f.save(name);
+    CHECK_THROWS_AS(history::VolumeHistory::load(path), std::runtime_error);
+    std::filesystem::remove(path);
+}
+
+} // namespace
+
+TEST_CASE("volume-history-damaged", "[volume_map]")
+{
+    {
+        // the file the damaged ones are made from loads
+        const std::string path = swap_file().save("swap");
+        const auto h = history::VolumeHistory::load(path);
+        std::filesystem::remove(path);
+        REQUIRE(h.edits.size() == 1);
+        CHECK(h.edits[0].removed == std::vector<uint32_t>{0, 1});
+        CHECK(h.edits[0].added.size() == 3);
+    }
+    SECTION("a swap that removes no tet")
+    {
+        RawVolumeFile f;
+        f.header(1);
+        f.u8(uint8_t(history::VolumeOp::swap_32));
+        f.varint(3);
+        f.varint(1);
+        f.vertices(kFive);
+        f.varint(0);
+        f.varint(1);
+        f.tet({{0, 1, 2, 3}}, 0);
+        f.varint(0);
+        f.u8(0);
+        f.varint(0); // removed: none
+        f.varint(1);
+        f.tet({{1, 2, 3, 4}}, 0);
+        check_corrupt(f, "swap_none");
+    }
+    SECTION("a collapse of a vertex into itself")
+    {
+        RawVolumeFile f;
+        f.header(1);
+        f.u8(uint8_t(history::VolumeOp::collapse));
+        f.varint(3);
+        f.varint(1);
+        f.vertices(kFive);
+        f.varint(0);
+        f.varint(2);
+        f.tet({{0, 1, 2, 3}}, 0);
+        f.tet({{1, 2, 3, 4}}, 0);
+        f.varint(2); // op vertices: 1, 1
+        f.varint(1);
+        f.varint(1);
+        f.u8(1); // derived
+        check_corrupt(f, "collapse_same");
+    }
+    SECTION("a tet with a repeated vertex")
+    {
+        RawVolumeFile f;
+        f.header(1);
+        f.u8(uint8_t(history::VolumeOp::smooth));
+        f.varint(3);
+        f.varint(1);
+        f.vertices(kFive);
+        f.varint(0);
+        f.varint(1);
+        f.tet({{0, 1, 1, 3}}, 0);
+        f.varint(1);
+        f.varint(0);
+        f.u8(0);
+        f.varint(0);
+        f.varint(0);
+        check_corrupt(f, "repeated");
+    }
+    SECTION("a vertex id far past those read so far")
+    {
+        // 2^30 in a file of a few hundred bytes: refused before anything is sized by it
+        RawVolumeFile f;
+        f.header(1);
+        f.u8(uint8_t(history::VolumeOp::smooth));
+        f.varint(3);
+        f.varint(1);
+        f.vertices(kFive, uint64_t(1) << 30);
+        f.varint(0);
+        f.varint(1);
+        f.tet({{0, 1, 2, 3}}, 0);
+        f.varint(1);
+        f.varint(0);
+        f.u8(0);
+        f.varint(0);
+        f.varint(0);
+        check_corrupt(f, "big_id");
+    }
+    SECTION("a position that is not a number")
+    {
+        std::vector<Eigen::Vector3d> P = kFive;
+        P[2][1] = std::numeric_limits<double>::quiet_NaN();
+        RawVolumeFile f;
+        f.header(1);
+        f.u8(uint8_t(history::VolumeOp::smooth));
+        f.varint(3);
+        f.varint(1);
+        f.vertices(P);
+        f.varint(0);
+        f.varint(1);
+        f.tet({{0, 1, 2, 3}}, 0);
+        f.varint(1);
+        f.varint(0);
+        f.u8(0);
+        f.varint(0);
+        f.varint(0);
+        check_corrupt(f, "nan");
+    }
+    SECTION("two operations that made the same surface edit")
+    {
+        RawVolumeFile one = swap_file();
+        RawVolumeFile f;
+        f.header(2);
+        const size_t header = f.bytes.size();
+        const std::vector<uint8_t> edit(one.bytes.begin() + header, one.bytes.end());
+        f.bytes.insert(f.bytes.end(), edit.begin(), edit.end());
+        // the second's vertices are the first's: ids 0..4 again
+        f.bytes.insert(f.bytes.end(), edit.begin(), edit.end());
+        check_corrupt(f, "same_edit");
+    }
+    SECTION("every truncation and every bit flipped")
+    {
+        // Each one loads or throws; none crashes or runs out of memory.
+        const RawVolumeFile f = swap_file();
+        size_t loaded = 0;
+        for (size_t n = 0; n < f.bytes.size(); ++n) {
+            RawVolumeFile g;
+            g.bytes.assign(f.bytes.begin(), f.bytes.begin() + n);
+            const std::string path = g.save("truncated");
+            CHECK_THROWS(history::VolumeHistory::load(path));
+            std::filesystem::remove(path);
+        }
+        for (size_t n = 12; n < f.bytes.size(); ++n) {
+            for (int bit = 0; bit < 8; ++bit) {
+                RawVolumeFile g = f;
+                g.bytes[n] ^= uint8_t(1 << bit);
+                const std::string path = g.save("flipped");
+                try {
+                    history::VolumeHistory::load(path);
+                    ++loaded;
+                } catch (const std::runtime_error&) {
+                }
+                std::filesystem::remove(path);
+            }
+        }
+        CHECK(loaded > 0); // flips in positions, say
+    }
+}
+
+TEST_CASE("volume-history-save-checks", "[volume_map]")
+{
+    // An edit put together by hand is checked as a file's is, and saved with its ids renumbered
+    // densely: ids of its own far apart load as 0, 1, ...
+    history::VolumeHistory h;
+    h.regions = {{}};
+    history::VolumeEdit e;
+    e.op = history::VolumeOp::smooth;
+    e.first_edit = 0;
+    e.n_edits = 1;
+    e.positions = {kFive[0], kFive[1], kFive[2], kFive[3]};
+    e.vertices = {1000, 7, uint64_t(1) << 40, 3};
+    e.surface_before = e.surface_after = {0, 1, 2, history::kNoVertex};
+    e.moved = {{0, Eigen::Vector3d(0.1, 0.1, 0.1)}};
+    e.tets = {{{0, 1, 2, 3}}};
+    e.regions = {0};
+    e.op_vertices = {0};
+    h.edits.push_back(e);
+    const std::string path = temp_path("save_checks");
+    h.save(path);
+    const auto g = history::VolumeHistory::load(path);
+    REQUIRE(g.edits.size() == 1);
+    CHECK(g.edits[0].vertices == std::vector<uint64_t>{0, 1, 2, 3});
+    CHECK(g.edits[0].positions_after()[0] == Eigen::Vector3d(0.1, 0.1, 0.1));
+
+    h.edits[0].surface_after.pop_back();
+    CHECK_THROWS_AS(h.save(path), std::runtime_error);
+    h.edits[0] = e;
+    h.edits[0].regions = {1};
+    CHECK_THROWS_AS(h.save(path), std::runtime_error);
+    h.edits[0] = e;
+    h.edits[0].op_vertices = {};
+    CHECK_THROWS_AS(h.save(path), std::runtime_error);
+    std::filesystem::remove(path);
 }
 
 TEST_CASE("volume-chebyshev", "[volume_map]")
