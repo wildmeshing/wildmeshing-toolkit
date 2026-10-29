@@ -117,6 +117,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ab10f456b1fe164af78a35ea6280d4203" id="r_ab10f456b1fe164af78a35ea6280d4203"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ab10f456b1fe164af78a35ea6280d4203">set_feature_edges</a> (const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;edges)</td></tr>
 <tr class="memdesc:ab10f456b1fe164af78a35ea6280d4203"><td class="mdescLeft">&#160;</td><td class="mdescRight">Curves the remeshing keeps: label boundaries, say.  <br /></td></tr>
 <tr class="separator:ab10f456b1fe164af78a35ea6280d4203"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae53241e88694b543b88e463caf3990c2" id="r_ae53241e88694b543b88e463caf3990c2"><td class="memItemLeft" align="right" valign="top"><a id="ae53241e88694b543b88e463caf3990c2" name="ae53241e88694b543b88e463caf3990c2"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_feature_edges</b> (const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;edges, const std::vector&lt; int64_t &gt; &amp;ids)</td></tr>
+<tr class="memdesc:ae53241e88694b543b88e463caf3990c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The same, with an id for each edge (-1 for none), which the remeshing carries: the halves of a split keep it, and a collapse along a curve leaves the curve its id. A vertex on two feature edges of different ids ends one curve and starts the next, so it stays put like a junction (see stays_put). <code>ids</code> has one entry per edge. <br /></td></tr>
+<tr class="separator:ae53241e88694b543b88e463caf3990c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab910bca99c63f203a69a73ed563d61e6" id="r_ab910bca99c63f203a69a73ed563d61e6"><td class="memItemLeft" align="right" valign="top"><a id="ab910bca99c63f203a69a73ed563d61e6" name="ab910bca99c63f203a69a73ed563d61e6"></a>
 std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges</b> () const</td></tr>
 <tr class="memdesc:ab910bca99c63f203a69a73ed563d61e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The feature edges, smaller vertex id first. <br /></td></tr>
@@ -124,9 +128,35 @@ std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemR
 <tr class="memitem:a84bfcfe7533ba0a00f82ebb9b7b563d9" id="r_a84bfcfe7533ba0a00f82ebb9b7b563d9"><td class="memItemLeft" align="right" valign="top"><a id="a84bfcfe7533ba0a00f82ebb9b7b563d9" name="a84bfcfe7533ba0a00f82ebb9b7b563d9"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_feature_edge</b> (size_t a, size_t b) const</td></tr>
 <tr class="separator:a84bfcfe7533ba0a00f82ebb9b7b563d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3bbeda96df6f912861a1102edc991710" id="r_a3bbeda96df6f912861a1102edc991710"><td class="memItemLeft" align="right" valign="top"><a id="a3bbeda96df6f912861a1102edc991710" name="a3bbeda96df6f912861a1102edc991710"></a>
+int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edge_id</b> (size_t a, size_t b) const</td></tr>
+<tr class="memdesc:a3bbeda96df6f912861a1102edc991710"><td class="mdescLeft">&#160;</td><td class="mdescRight">The id set_feature_edges gave the feature edge (a, b): -1 for none, or for no feature edge. <br /></td></tr>
+<tr class="separator:a3bbeda96df6f912861a1102edc991710"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6127721f4d4bb590e9657817f4c8fb42" id="r_a6127721f4d4bb590e9657817f4c8fb42"><td class="memItemLeft" align="right" valign="top"><a id="a6127721f4d4bb590e9657817f4c8fb42" name="a6127721f4d4bb590e9657817f4c8fb42"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>feature_degree</b> (size_t v) const</td></tr>
 <tr class="separator:a6127721f4d4bb590e9657817f4c8fb42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9abed21b98c465809f75c4c9a56d1a98" id="r_a9abed21b98c465809f75c4c9a56d1a98"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a9abed21b98c465809f75c4c9a56d1a98">set_fixed_vertices</a> (const std::vector&lt; std::pair&lt; size_t, int64_t &gt; &gt; &amp;vertices)</td></tr>
+<tr class="memdesc:a9abed21b98c465809f75c4c9a56d1a98"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vertices the remeshing keeps exactly: B-rep corners, say, which may sit inside a curve between two regions as well as where curves meet.  <br /></td></tr>
+<tr class="separator:a9abed21b98c465809f75c4c9a56d1a98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a651c823e616573c60c2fc6c4a9b9bbe4" id="r_a651c823e616573c60c2fc6c4a9b9bbe4"><td class="memItemLeft" align="right" valign="top"><a id="a651c823e616573c60c2fc6c4a9b9bbe4" name="a651c823e616573c60c2fc6c4a9b9bbe4"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_fixed</b> (size_t v) const</td></tr>
+<tr class="separator:a651c823e616573c60c2fc6c4a9b9bbe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f8aa8856040faae0c62d069ee33fdfe" id="r_a3f8aa8856040faae0c62d069ee33fdfe"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3f8aa8856040faae0c62d069ee33fdfe">stays_put</a> (size_t v) const</td></tr>
+<tr class="memdesc:a3f8aa8856040faae0c62d069ee33fdfe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether <code>v</code> is never moved and never removed: a curve's end, a junction of curves, a vertex between feature edges of different ids, or a fixed vertex.  <br /></td></tr>
+<tr class="separator:a3f8aa8856040faae0c62d069ee33fdfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3b77f44302e5ac8e30f5ec9de85f5b9" id="r_aa3b77f44302e5ac8e30f5ec9de85f5b9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#aa3b77f44302e5ac8e30f5ec9de85f5b9">may_collapse_away</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="memdesc:aa3b77f44302e5ac8e30f5ec9de85f5b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the curve rules let a collapse of <code>t</code> remove t.vid(): it does not stay put, and if it is on a curve, <code>t</code> runs along it. The rest of collapse_edge_before still applies.  <br /></td></tr>
+<tr class="separator:aa3b77f44302e5ac8e30f5ec9de85f5b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bd0df60c59f4a86dae4f3956d0527bf" id="r_a8bd0df60c59f4a86dae4f3956d0527bf"><td class="memItemLeft" align="right" valign="top"><a id="a8bd0df60c59f4a86dae4f3956d0527bf" name="a8bd0df60c59f4a86dae4f3956d0527bf"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_face_fields</b> (const std::vector&lt; std::vector&lt; double &gt; &gt; &amp;values)</td></tr>
+<tr class="memdesc:a8bd0df60c59f4a86dae4f3956d0527bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-face values the remeshing carries: per-face labels, say, whose boundaries are feature edges. A split gives both halves of a face its values; a collapse or swap keeps the values of the faces it changes, which is right where no swapped or collapsed edge separates faces of different values &ndash; where the boundaries are feature edges, as set_feature_edges keeps them. <code>values</code> has one entry per face of the mesh given to <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>, in that order; call after <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>. <br /></td></tr>
+<tr class="separator:a8bd0df60c59f4a86dae4f3956d0527bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52998fa1c6a6d13da3c6f4b5e4a1e3be" id="r_a52998fa1c6a6d13da3c6f4b5e4a1e3be"><td class="memItemLeft" align="right" valign="top"><a id="a52998fa1c6a6d13da3c6f4b5e4a1e3be" name="a52998fa1c6a6d13da3c6f4b5e4a1e3be"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>has_face_fields</b> () const</td></tr>
+<tr class="separator:a52998fa1c6a6d13da3c6f4b5e4a1e3be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3080b613226942a28298c3ebb81373fc" id="r_a3080b613226942a28298c3ebb81373fc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3080b613226942a28298c3ebb81373fc">set_feature_envelope</a> (double eps)</td></tr>
+<tr class="memdesc:a3080b613226942a28298c3ebb81373fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Keep the curves near the feature edges as they are now &ndash; the input's, called before remeshing: every feature edge an operation leaves must lie within <code>eps</code> of them.  <br /></td></tr>
+<tr class="separator:a3080b613226942a28298c3ebb81373fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adccc05cd224fa81064cf1d6de2b55986" id="r_adccc05cd224fa81064cf1d6de2b55986"><td class="memItemLeft" align="right" valign="top"><a id="adccc05cd224fa81064cf1d6de2b55986" name="adccc05cd224fa81064cf1d6de2b55986"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>consolidate_mesh</b> ()</td></tr>
 <tr class="memdesc:adccc05cd224fa81064cf1d6de2b55986"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392" title="removing the elements that are removed">TriMesh::consolidate_mesh</a>, plus the renumbering of the feature edges. <br /></td></tr>
@@ -141,6 +171,19 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_feature_ear_tip</b
 <tr class="memitem:ad52457941592612d709a12c62436f5cd" id="r_ad52457941592612d709a12c62436f5cd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad52457941592612d709a12c62436f5cd">set_check_inversions</a> (bool check)</td></tr>
 <tr class="memdesc:ad52457941592612d709a12c62436f5cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Refuse a collapse, swap or smoothing that folds the surface over.  <br /></td></tr>
 <tr class="separator:ad52457941592612d709a12c62436f5cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad998b3c2533bea05097742468a02c9db" id="r_ad998b3c2533bea05097742468a02c9db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad998b3c2533bea05097742468a02c9db">set_swap_quality</a> (bool quality)</td></tr>
+<tr class="memdesc:ad998b3c2533bea05097742468a02c9db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Swap an edge to raise the worse shape quality of its two triangles (see compute_swap_quality), instead of to bring the valences of its four vertices to 6 (4 on the boundary). Off by default.  <br /></td></tr>
+<tr class="separator:ad998b3c2533bea05097742468a02c9db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afac55e5188879b32fdfc96531af0cd84" id="r_afac55e5188879b32fdfc96531af0cd84"><td class="memItemLeft" align="right" valign="top"><a id="afac55e5188879b32fdfc96531af0cd84" name="afac55e5188879b32fdfc96531af0cd84"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_limit_collapse_length</b> (bool limit)</td></tr>
+<tr class="memdesc:afac55e5188879b32fdfc96531af0cd84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Refuse a collapse that leaves an edge longer than 4/3 of the target length &ndash; the split threshold &ndash; as Botsch and Kobbelt's remeshing does. Off by default: a collapse is then judged by the edge it removes alone, and those of the last iteration leave edges that no split comes after to cut. <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ac77c3f01eccbef22ec3de1d78a2f10ae" title="Repairs the triangles whose smallest angle is under degrees, worst first.">cleanup_triangles()</a> holds its collapses to the same bound, on or off (see there). <br /></td></tr>
+<tr class="separator:afac55e5188879b32fdfc96531af0cd84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11ccee3efc6cc7d6b32d79ce807a0d43" id="r_a11ccee3efc6cc7d6b32d79ce807a0d43"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a11ccee3efc6cc7d6b32d79ce807a0d43">set_cleanup_angle</a> (double degrees)</td></tr>
+<tr class="memdesc:a11ccee3efc6cc7d6b32d79ce807a0d43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Repair, at the end of every iteration, the triangles whose smallest angle is under <code>degrees</code>; 0, the default, repairs none. Call before <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>, which then keeps the input's area vectors for the fold test below.  <br /></td></tr>
+<tr class="separator:a11ccee3efc6cc7d6b32d79ce807a0d43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac77c3f01eccbef22ec3de1d78a2f10ae" id="r_ac77c3f01eccbef22ec3de1d78a2f10ae"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ac77c3f01eccbef22ec3de1d78a2f10ae">cleanup_triangles</a> (double degrees)</td></tr>
+<tr class="memdesc:ac77c3f01eccbef22ec3de1d78a2f10ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Repairs the triangles whose smallest angle is under <code>degrees</code>, worst first.  <br /></td></tr>
+<tr class="separator:ac77c3f01eccbef22ec3de1d78a2f10ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab521ae6d09ffd462e7fe7b563c3435b8" id="r_ab521ae6d09ffd462e7fe7b563c3435b8"><td class="memItemLeft" align="right" valign="top"><a id="ab521ae6d09ffd462e7fe7b563c3435b8" name="ab521ae6d09ffd462e7fe7b563c3435b8"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>refused_inversions</b> () const</td></tr>
 <tr class="memdesc:ab521ae6d09ffd462e7fe7b563c3435b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">The operations <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad52457941592612d709a12c62436f5cd" title="Refuse a collapse, swap or smoothing that folds the surface over.">set_check_inversions()</a> refused, since the mesh was made. <br /></td></tr>
@@ -219,6 +262,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>compute_edge_cost_s
 <tr class="memitem:adf02b9205e6903f421bfbcc3efa6b8f5" id="r_adf02b9205e6903f421bfbcc3efa6b8f5"><td class="memItemLeft" align="right" valign="top"><a id="adf02b9205e6903f421bfbcc3efa6b8f5" name="adf02b9205e6903f421bfbcc3efa6b8f5"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>compute_vertex_valence</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;t) const</td></tr>
 <tr class="separator:adf02b9205e6903f421bfbcc3efa6b8f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeeb5c5f8a0f92a76706eb17e4754b3ab" id="r_aeeb5c5f8a0f92a76706eb17e4754b3ab"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#aeeb5c5f8a0f92a76706eb17e4754b3ab">compute_swap_quality</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:aeeb5c5f8a0f92a76706eb17e4754b3ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49554a18c57c680b1a2827c58e15c1af" id="r_a49554a18c57c680b1a2827c58e15c1af"><td class="memItemLeft" align="right" valign="top">std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a49554a18c57c680b1a2827c58e15c1af">average_len_valen</a> ()</td></tr>
 <tr class="memdesc:a49554a18c57c680b1a2827c58e15c1af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Report statistics.  <br /></td></tr>
 <tr class="separator:a49554a18c57c680b1a2827c58e15c1af"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -576,13 +621,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_envelope</b> = 
 <tr class="separator:a30e3d0471c64374ce7cd9d2dec264e7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91b0a3e3d65a00a9b5dbf1db05d7f34d" id="r_a91b0a3e3d65a00a9b5dbf1db05d7f34d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_boundary_envelope.html">wmtk::BoundaryEnvelope</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a91b0a3e3d65a00a9b5dbf1db05d7f34d">m_boundary_envelope</a></td></tr>
 <tr class="separator:a91b0a3e3d65a00a9b5dbf1db05d7f34d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabe388a81d5c1d530d4838e21cb704a3" id="r_aabe388a81d5c1d530d4838e21cb704a3"><td class="memItemLeft" align="right" valign="top"><a id="aabe388a81d5c1d530d4838e21cb704a3" name="aabe388a81d5c1d530d4838e21cb704a3"></a>
+<a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_envelope</b></td></tr>
+<tr class="memdesc:aabe388a81d5c1d530d4838e21cb704a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Around the feature edges <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3080b613226942a28298c3ebb81373fc" title="Keep the curves near the feature edges as they are now – the input&#39;s, called before remeshing: every ...">set_feature_envelope()</a> saw; initialized() is false without one. <br /></td></tr>
+<tr class="separator:aabe388a81d5c1d530d4838e21cb704a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a137738ce3b5115f4d10357f42390af" id="r_a7a137738ce3b5115f4d10357f42390af"><td class="memItemLeft" align="right" valign="top"><a id="a7a137738ce3b5115f4d10357f42390af" name="a7a137738ce3b5115f4d10357f42390af"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_attrs</b></td></tr>
 <tr class="separator:a7a137738ce3b5115f4d10357f42390af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb122cc6c91f9c0f7352a2f27418dbe8" id="r_afb122cc6c91f9c0f7352a2f27418dbe8"><td class="memItemLeft" align="right" valign="top"><a id="afb122cc6c91f9c0f7352a2f27418dbe8" name="afb122cc6c91f9c0f7352a2f27418dbe8"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_feature_attributes.html">FeatureAttributes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>feature_attrs</b></td></tr>
-<tr class="memdesc:afb122cc6c91f9c0f7352a2f27418dbe8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read and written only while the mesh has feature edges. <br /></td></tr>
+<tr class="memdesc:afb122cc6c91f9c0f7352a2f27418dbe8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read and written only while the mesh has feature edges or fixed vertices. <br /></td></tr>
 <tr class="separator:afb122cc6c91f9c0f7352a2f27418dbe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1dd8638f1eea7e28ba30069f4df5af61" id="r_a1dd8638f1eea7e28ba30069f4df5af61"><td class="memItemLeft" align="right" valign="top"><a id="a1dd8638f1eea7e28ba30069f4df5af61" name="a1dd8638f1eea7e28ba30069f4df5af61"></a>
+<a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_face_field_attributes.html">FaceFieldAttributes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>face_field_attrs</b></td></tr>
+<tr class="memdesc:a1dd8638f1eea7e28ba30069f4df5af61"><td class="mdescLeft">&#160;</td><td class="mdescRight">The mesh's face attributes once <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a8bd0df60c59f4a86dae4f3956d0527bf" title="Per-face values the remeshing carries: per-face labels, say, whose boundaries are feature edges....">set_face_fields()</a> is called; untouched before. <br /></td></tr>
+<tr class="separator:a1dd8638f1eea7e28ba30069f4df5af61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a106d559136ac49fa21ecc754b549a089" id="r_a106d559136ac49fa21ecc754b549a089"><td class="memItemLeft" align="right" valign="top"><a id="a106d559136ac49fa21ecc754b549a089" name="a106d559136ac49fa21ecc754b549a089"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>retry_limit</b> = 10</td></tr>
 <tr class="separator:a106d559136ac49fa21ecc754b549a089"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -625,8 +678,30 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>not_facing</b> (con
 <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a>&#160;</td><td class="memItemRight" valign="bottom"><b>replaced</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris) const</td></tr>
 <tr class="memdesc:a36bc794e6885735b4d4d794a3427b05d"><td class="mdescLeft">&#160;</td><td class="mdescRight">The triangles an operation is about to replace. <br /></td></tr>
 <tr class="separator:a36bc794e6885735b4d4d794a3427b05d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b996eefd539d3e0ab36f1e160828f30" id="r_a4b996eefd539d3e0ab36f1e160828f30"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a4b996eefd539d3e0ab36f1e160828f30">folds</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris, const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a> &amp;before)</td></tr>
+<tr class="memitem:a824c9721dce439e9daaead06f26bce99" id="r_a824c9721dce439e9daaead06f26bce99"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a824c9721dce439e9daaead06f26bce99">more_folds</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris, const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a> &amp;before) const</td></tr>
+<tr class="separator:a824c9721dce439e9daaead06f26bce99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b996eefd539d3e0ab36f1e160828f30" id="r_a4b996eefd539d3e0ab36f1e160828f30"><td class="memItemLeft" align="right" valign="top"><a id="a4b996eefd539d3e0ab36f1e160828f30" name="a4b996eefd539d3e0ab36f1e160828f30"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>folds</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris, const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a> &amp;before)</td></tr>
+<tr class="memdesc:a4b996eefd539d3e0ab36f1e160828f30"><td class="mdescLeft">&#160;</td><td class="mdescRight">The same; counts a refusal. <br /></td></tr>
 <tr class="separator:a4b996eefd539d3e0ab36f1e160828f30"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af079fa8072e7c058d79e5c29e1e85998" id="r_af079fa8072e7c058d79e5c29e1e85998"><td class="memItemLeft" align="right" valign="top"><a id="af079fa8072e7c058d79e5c29e1e85998" name="af079fa8072e7c058d79e5c29e1e85998"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>min_angle</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris) const</td></tr>
+<tr class="memdesc:af079fa8072e7c058d79e5c29e1e85998"><td class="mdescLeft">&#160;</td><td class="mdescRight">The smallest angle of the triangles, in degrees. <br /></td></tr>
+<tr class="separator:af079fa8072e7c058d79e5c29e1e85998"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a06980f94c654e6da45aa7f824c1c0c" id="r_a4a06980f94c654e6da45aa7f824c1c0c"><td class="memItemLeft" align="right" valign="top"><a id="a4a06980f94c654e6da45aa7f824c1c0c" name="a4a06980f94c654e6da45aa7f824c1c0c"></a>
+Eigen::Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>input_normal</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
+<tr class="memdesc:a4a06980f94c654e6da45aa7f824c1c0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The area vectors of the input triangles next to <code>f</code>, summed: see <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ac77c3f01eccbef22ec3de1d78a2f10ae" title="Repairs the triangles whose smallest angle is under degrees, worst first.">cleanup_triangles()</a>. <br /></td></tr>
+<tr class="separator:a4a06980f94c654e6da45aa7f824c1c0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add0cc1f5a2b533d2784b6fc69b7afc29" id="r_add0cc1f5a2b533d2784b6fc69b7afc29"><td class="memItemLeft" align="right" valign="top"><a id="add0cc1f5a2b533d2784b6fc69b7afc29" name="add0cc1f5a2b533d2784b6fc69b7afc29"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>input_folds</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris) const</td></tr>
+<tr class="memdesc:add0cc1f5a2b533d2784b6fc69b7afc29"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of the triangles do not face along <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a4a06980f94c654e6da45aa7f824c1c0c" title="The area vectors of the input triangles next to f, summed: see cleanup_triangles().">input_normal()</a>. <br /></td></tr>
+<tr class="separator:add0cc1f5a2b533d2784b6fc69b7afc29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfd61c22318d6f69e96afce73240ec5f" id="r_acfd61c22318d6f69e96afce73240ec5f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#acfd61c22318d6f69e96afce73240ec5f">cleanup_allows</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris, const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a> &amp;before, size_t input_folds_before, double floor) const</td></tr>
+<tr class="separator:acfd61c22318d6f69e96afce73240ec5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42c81706bbead4c862679f9f5a362eb4" id="r_a42c81706bbead4c862679f9f5a362eb4"><td class="memItemLeft" align="right" valign="top"><a id="a42c81706bbead4c862679f9f5a362eb4" name="a42c81706bbead4c862679f9f5a362eb4"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>cleanup_move</b> (size_t v, double floor)</td></tr>
+<tr class="memdesc:a42c81706bbead4c862679f9f5a362eb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Moves <code>v</code> to where the smallest angle of its star is largest, above <code>floor</code>. <br /></td></tr>
+<tr class="separator:a42c81706bbead4c862679f9f5a362eb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -636,6 +711,19 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:aa63691574457e022e8bd826babd9696e" id="r_aa63691574457e022e8bd826babd9696e"><td class="memItemLeft" align="right" valign="top"><a id="aa63691574457e022e8bd826babd9696e" name="aa63691574457e022e8bd826babd9696e"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_features</b> = false</td></tr>
 <tr class="separator:aa63691574457e022e8bd826babd9696e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5401a2190edd5b631ee583e36d121921" id="r_a5401a2190edd5b631ee583e36d121921"><td class="memItemLeft" align="right" valign="top"><a id="a5401a2190edd5b631ee583e36d121921" name="a5401a2190edd5b631ee583e36d121921"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_fixed</b> = false</td></tr>
+<tr class="separator:a5401a2190edd5b631ee583e36d121921"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1785d940c34cb2f853ac7f032b574cc7" id="r_a1785d940c34cb2f853ac7f032b574cc7"><td class="memItemLeft" align="right" valign="top"><a id="a1785d940c34cb2f853ac7f032b574cc7" name="a1785d940c34cb2f853ac7f032b574cc7"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_edge_ids</b> = false</td></tr>
+<tr class="memdesc:a1785d940c34cb2f853ac7f032b574cc7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Some feature edge has an id other than -1. <br /></td></tr>
+<tr class="separator:a1785d940c34cb2f853ac7f032b574cc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42f2ff3a866ccf4676eb037a9cb001c3" id="r_a42f2ff3a866ccf4676eb037a9cb001c3"><td class="memItemLeft" align="right" valign="top"><a id="a42f2ff3a866ccf4676eb037a9cb001c3" name="a42f2ff3a866ccf4676eb037a9cb001c3"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_face_fields</b> = false</td></tr>
+<tr class="separator:a42f2ff3a866ccf4676eb037a9cb001c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afaf4a59e01fcf742786b9da1550c6dcf" id="r_afaf4a59e01fcf742786b9da1550c6dcf"><td class="memItemLeft" align="right" valign="top"><a id="afaf4a59e01fcf742786b9da1550c6dcf" name="afaf4a59e01fcf742786b9da1550c6dcf"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_feature_envelope</b> = false</td></tr>
+<tr class="separator:afaf4a59e01fcf742786b9da1550c6dcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1b5ecfbe0c01e01e45bde6aded4112b" id="r_af1b5ecfbe0c01e01e45bde6aded4112b"><td class="memItemLeft" align="right" valign="top"><a id="af1b5ecfbe0c01e01e45bde6aded4112b" name="af1b5ecfbe0c01e01e45bde6aded4112b"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_removing_ears</b> = false</td></tr>
 <tr class="memdesc:af1b5ecfbe0c01e01e45bde6aded4112b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set while <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ab224f8a6cc3c4afa84b7695572afae28" title="Removes the triangles that hold two feature edges – &quot;ears&quot;.">remove_feature_ears()</a> runs (serially): its collapses may make an ear. <br /></td></tr>
@@ -643,6 +731,38 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_removing_ears</b> =
 <tr class="memitem:a47a4d867a02a62425b2047abfa983b1c" id="r_a47a4d867a02a62425b2047abfa983b1c"><td class="memItemLeft" align="right" valign="top"><a id="a47a4d867a02a62425b2047abfa983b1c" name="a47a4d867a02a62425b2047abfa983b1c"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_check_inversions</b> = true</td></tr>
 <tr class="separator:a47a4d867a02a62425b2047abfa983b1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4cb8de29b6d1a9ab33a9254f0a48c55d" id="r_a4cb8de29b6d1a9ab33a9254f0a48c55d"><td class="memItemLeft" align="right" valign="top"><a id="a4cb8de29b6d1a9ab33a9254f0a48c55d" name="a4cb8de29b6d1a9ab33a9254f0a48c55d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_swap_quality</b> = false</td></tr>
+<tr class="separator:a4cb8de29b6d1a9ab33a9254f0a48c55d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4f959bfbcbc5bea6e6b9d3d4ca8847b" id="r_ae4f959bfbcbc5bea6e6b9d3d4ca8847b"><td class="memItemLeft" align="right" valign="top"><a id="ae4f959bfbcbc5bea6e6b9d3d4ca8847b" name="ae4f959bfbcbc5bea6e6b9d3d4ca8847b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_limit_collapse_length</b> = false</td></tr>
+<tr class="separator:ae4f959bfbcbc5bea6e6b9d3d4ca8847b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54f074acb876a085f6900bfe3487d414" id="r_a54f074acb876a085f6900bfe3487d414"><td class="memItemLeft" align="right" valign="top"><a id="a54f074acb876a085f6900bfe3487d414" name="a54f074acb876a085f6900bfe3487d414"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_cleanup_angle</b> = 0</td></tr>
+<tr class="separator:a54f074acb876a085f6900bfe3487d414"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acdad89702c9db568b517a4fe62206ba7" id="r_acdad89702c9db568b517a4fe62206ba7"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#acdad89702c9db568b517a4fe62206ba7">m_cleanup_floor</a> = 0</td></tr>
+<tr class="separator:acdad89702c9db568b517a4fe62206ba7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add25f65d682d8057371f737bdcf9843b" id="r_add25f65d682d8057371f737bdcf9843b"><td class="memItemLeft" align="right" valign="top"><a id="add25f65d682d8057371f737bdcf9843b" name="add25f65d682d8057371f737bdcf9843b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_cleaning</b> = false</td></tr>
+<tr class="separator:add25f65d682d8057371f737bdcf9843b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af79bd0fd7e3e7271de7fc0ca4ebb7fc4" id="r_af79bd0fd7e3e7271de7fc0ca4ebb7fc4"><td class="memItemLeft" align="right" valign="top"><a id="af79bd0fd7e3e7271de7fc0ca4ebb7fc4" name="af79bd0fd7e3e7271de7fc0ca4ebb7fc4"></a>
+std::optional&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_smooth_target</b></td></tr>
+<tr class="memdesc:af79bd0fd7e3e7271de7fc0ca4ebb7fc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Where <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ac77c3f01eccbef22ec3de1d78a2f10ae" title="Repairs the triangles whose smallest angle is under degrees, worst first.">cleanup_triangles()</a> moves a vertex, in place of the smoothing's position. <br /></td></tr>
+<tr class="separator:af79bd0fd7e3e7271de7fc0ca4ebb7fc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98e0baab067ff5452beaa7dc43bc260d" id="r_a98e0baab067ff5452beaa7dc43bc260d"><td class="memItemLeft" align="right" valign="top"><a id="a98e0baab067ff5452beaa7dc43bc260d" name="a98e0baab067ff5452beaa7dc43bc260d"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> = 0</td></tr>
+<tr class="memdesc:a98e0baab067ff5452beaa7dc43bc260d"><td class="mdescLeft">&#160;</td><td class="mdescRight">With a cleanup angle: the envelope's eps, and the input's area vectors and face fields. <br /></td></tr>
+<tr class="separator:a98e0baab067ff5452beaa7dc43bc260d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2356a3bc032a1443b5ebd795a8502b4" id="r_af2356a3bc032a1443b5ebd795a8502b4"><td class="memItemLeft" align="right" valign="top"><a id="af2356a3bc032a1443b5ebd795a8502b4" name="af2356a3bc032a1443b5ebd795a8502b4"></a>
+std::vector&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_input_area</b></td></tr>
+<tr class="separator:af2356a3bc032a1443b5ebd795a8502b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f4ed40f338920793c25f881c1f8b7cd" id="r_a8f4ed40f338920793c25f881c1f8b7cd"><td class="memItemLeft" align="right" valign="top"><a id="a8f4ed40f338920793c25f881c1f8b7cd" name="a8f4ed40f338920793c25f881c1f8b7cd"></a>
+std::vector&lt; std::vector&lt; double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_input_values</b></td></tr>
+<tr class="separator:a8f4ed40f338920793c25f881c1f8b7cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4cfceed82a37cc309df5e5b02236078c" id="r_a4cfceed82a37cc309df5e5b02236078c"><td class="memItemLeft" align="right" valign="top"><a id="a4cfceed82a37cc309df5e5b02236078c" name="a4cfceed82a37cc309df5e5b02236078c"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_target</b> = 0</td></tr>
+<tr class="memdesc:a4cfceed82a37cc309df5e5b02236078c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The target length of the last collapse_remeshing(), for the limit above. <br /></td></tr>
+<tr class="separator:a4cfceed82a37cc309df5e5b02236078c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab50d4296586b0c8cb7c43e2b9596a2ef" id="r_ab50d4296586b0c8cb7c43e2b9596a2ef"><td class="memItemLeft" align="right" valign="top"><a id="ab50d4296586b0c8cb7c43e2b9596a2ef" name="ab50d4296586b0c8cb7c43e2b9596a2ef"></a>
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_refused_inversions</b> = 0</td></tr>
 <tr class="separator:ab50d4296586b0c8cb7c43e2b9596a2ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -688,6 +808,76 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 <p>Report statistics. </p>
 <p>Returns a vector with: average_length max length min length average valence max valence min valence </p>
+
+</div>
+</div>
+<a id="acfd61c22318d6f69e96afce73240ec5f" name="acfd61c22318d6f69e96afce73240ec5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acfd61c22318d6f69e96afce73240ec5f">&#9670;&#160;</a></span>cleanup_allows()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::isotropic_remeshing::IsotropicRemeshing::cleanup_allows </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tris</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a> &amp;&#160;</td>
+          <td class="paramname"><em>before</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>input_folds_before</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>floor</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the triangles a repair left fold no more than the <code>before</code> they replaced and beat <code>floor</code>; or, where <code>before</code> folds already, face against the input less often than its <code>input_folds_before</code>. See <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ac77c3f01eccbef22ec3de1d78a2f10ae" title="Repairs the triangles whose smallest angle is under degrees, worst first.">cleanup_triangles()</a>. </p>
+
+</div>
+</div>
+<a id="ac77c3f01eccbef22ec3de1d78a2f10ae" name="ac77c3f01eccbef22ec3de1d78a2f10ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac77c3f01eccbef22ec3de1d78a2f10ae">&#9670;&#160;</a></span>cleanup_triangles()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::isotropic_remeshing::IsotropicRemeshing::cleanup_triangles </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>degrees</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Repairs the triangles whose smallest angle is under <code>degrees</code>, worst first. </p>
+<p>Each gets the first of these that is allowed: a collapse of its shortest edge, either way; a swap of one of its edges, longest first; a move of one of its vertices, or else of one of the triangles around it &ndash; one off the curves within its tangent plane, one inside a curve along it &ndash; to where the smallest angle of its star is largest. Allowed means the curve rules, the envelopes and the fixed vertices hold, as everywhere; the operation folds nothing by the rule of the fold check (see set_check_inversions; on or off, the repairs keep it); a collapse leaves no edge longer than 4/3 of the target of the last collapse_remeshing(), with <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#afac55e5188879b32fdfc96531af0cd84" title="Refuse a collapse that leaves an edge longer than 4/3 of the target length – the split threshold – as...">set_limit_collapse_length()</a> or without &ndash; the repairs mend angles and are not to coarsen the mesh, and those after the last iteration have no split after them; and it raises the smallest angle of the triangles it leaves over that of the triangles around the one repaired (of its star, for a move). Where what it replaces folds already, the fold check, which judges against those triangles, can count a repair of the fold as one more: there an operation that leaves fewer triangles facing against the input next to them &ndash; the input triangles within half their size plus the envelope, of the same face fields where <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a8bd0df60c59f4a86dae4f3956d0527bf" title="Per-face values the remeshing carries: per-face labels, say, whose boundaries are feature edges....">set_face_fields()</a> gave some &ndash; than there were is allowed too, even if no angle improves. Only there: where two sheets of the input are closer than that, a thin wall, the far one cancels the near one, and the input's orientation is noise. Rounds until one repairs nothing, 10 at most. Serial; returns the number of repairs. Throws unless <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a11ccee3efc6cc7d6b32d79ce807a0d43" title="Repair, at the end of every iteration, the triangles whose smallest angle is under degrees; 0,...">set_cleanup_angle()</a> came before <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>. </p>
 
 </div>
 </div>
@@ -765,6 +955,25 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
+<a id="aeeb5c5f8a0f92a76706eb17e4754b3ab" name="aeeb5c5f8a0f92a76706eb17e4754b3ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeeb5c5f8a0f92a76706eb17e4754b3ab">&#9670;&#160;</a></span>compute_swap_quality()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::isotropic_remeshing::IsotropicRemeshing::compute_swap_quality </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>1 / the worse shape quality (4 sqrt(3) area / sum of squared edge lengths) of the two triangles at <code>t</code>, less the same after swapping it: positive where the swap helps the worse one. -1 where <code>t</code> has not two faces. </p>
+
+</div>
+</div>
 <a id="a3a21b7cd885a6830feaa1e6e0ef2073c" name="a3a21b7cd885a6830feaa1e6e0ef2073c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3a21b7cd885a6830feaa1e6e0ef2073c">&#9670;&#160;</a></span>create_mesh()</h2>
 
@@ -828,43 +1037,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
-<a id="a4b996eefd539d3e0ab36f1e160828f30" name="a4b996eefd539d3e0ab36f1e160828f30"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4b996eefd539d3e0ab36f1e160828f30">&#9670;&#160;</a></span>folds()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::isotropic_remeshing::IsotropicRemeshing::folds </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>tris</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a> &amp;&#160;</td>
-          <td class="paramname"><em>before</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Whether the triangles an operation left fold the surface over more than the <code>before</code> they replaced. Counts a refusal. </p>
-
-</div>
-</div>
 <a id="a0414ebb2435b7e1b9a1bff1d16ba332e" name="a0414ebb2435b7e1b9a1bff1d16ba332e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0414ebb2435b7e1b9a1bff1d16ba332e">&#9670;&#160;</a></span>invariants()</h2>
 
@@ -899,6 +1071,64 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 <dl class="section return"><dt>Returns</dt><dd>true if the invairnats are not violated </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe">wmtk::TriMesh</a>.</p>
+
+</div>
+</div>
+<a id="aa3b77f44302e5ac8e30f5ec9de85f5b9" name="aa3b77f44302e5ac8e30f5ec9de85f5b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa3b77f44302e5ac8e30f5ec9de85f5b9">&#9670;&#160;</a></span>may_collapse_away()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::isotropic_remeshing::IsotropicRemeshing::may_collapse_away </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Whether the curve rules let a collapse of <code>t</code> remove t.vid(): it does not stay put, and if it is on a curve, <code>t</code> runs along it. The rest of collapse_edge_before still applies. </p>
+<p>With fixed vertices or edge ids, collapse_remeshing turns a collapse around when its tuple's vertex may not go and the other end may: the queue holds an edge in one direction only, and a fixed vertex is mostly the end that has to stay. </p>
+
+</div>
+</div>
+<a id="a824c9721dce439e9daaead06f26bce99" name="a824c9721dce439e9daaead06f26bce99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a824c9721dce439e9daaead06f26bce99">&#9670;&#160;</a></span>more_folds()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::isotropic_remeshing::IsotropicRemeshing::more_folds </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tris</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a> &amp;&#160;</td>
+          <td class="paramname"><em>before</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the triangles an operation left fold the surface over more than the <code>before</code> they replaced. </p>
 
 </div>
 </div>
@@ -951,6 +1181,35 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
+<a id="a11ccee3efc6cc7d6b32d79ce807a0d43" name="a11ccee3efc6cc7d6b32d79ce807a0d43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a11ccee3efc6cc7d6b32d79ce807a0d43">&#9670;&#160;</a></span>set_cleanup_angle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::isotropic_remeshing::IsotropicRemeshing::set_cleanup_angle </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>degrees</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Repair, at the end of every iteration, the triangles whose smallest angle is under <code>degrees</code>; 0, the default, repairs none. Call before <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>, which then keeps the input's area vectors for the fold test below. </p>
+<p>See <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ac77c3f01eccbef22ec3de1d78a2f10ae" title="Repairs the triangles whose smallest angle is under degrees, worst first.">cleanup_triangles()</a>. The passes leave such triangles where their criteria do not see them: next to a curve, where a vertex may not leave it and no swap or collapse may make an ear, a triangle between a curve vertex and one off the curves can stay thin; and in a fold the input brings, which the splits copy into the remeshing and the fold check then holds, every operation on it can count as folding. </p>
+
+</div>
+</div>
 <a id="ab10f456b1fe164af78a35ea6280d4203" name="ab10f456b1fe164af78a35ea6280d4203"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab10f456b1fe164af78a35ea6280d4203">&#9670;&#160;</a></span>set_feature_edges()</h2>
 
@@ -968,8 +1227,79 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 </div><div class="memdoc">
 
 <p>Curves the remeshing keeps: label boundaries, say. </p>
-<p>A vertex on two feature edges is on a curve; one with one, or with three or more, ends a curve or joins several, and stays where it is. A split of a feature edge leaves two feature halves. A curve vertex collapses only along its curve, onto the survivor's position; a vertex off every curve collapses as before, onto the survivor's position if that one is on a curve. A feature edge is never swapped, and a curve vertex is smoothed along its curve only. No swap or collapse makes a triangle holding two curve edges, and <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ab224f8a6cc3c4afa84b7695572afae28" title="Removes the triangles that hold two feature edges – &quot;ears&quot;.">remove_feature_ears()</a> removes the ones the input has.</p>
+<p>A vertex on two feature edges is on a curve; one with one, or with three or more, ends a curve or joins several, and stays where it is. A split of a feature edge leaves two feature halves. A curve vertex collapses only along its curve, onto the survivor's position &ndash; with <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3080b613226942a28298c3ebb81373fc" title="Keep the curves near the feature edges as they are now – the input&#39;s, called before remeshing: every ...">set_feature_envelope()</a>, onto the midpoint unless the survivor stays put; a vertex off every curve collapses as before, onto the survivor's position if that one is on a curve. A feature edge is never swapped, and a curve vertex is smoothed along its curve only. No swap or collapse makes a triangle holding two curve edges, and <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ab224f8a6cc3c4afa84b7695572afae28" title="Removes the triangles that hold two feature edges – &quot;ears&quot;.">remove_feature_ears()</a> removes the ones the input has.</p>
 <p>These are the rules wmtk::history::Replay carries feature edges by, so a recorded history holds the curves at every step. </p>
+
+</div>
+</div>
+<a id="a3080b613226942a28298c3ebb81373fc" name="a3080b613226942a28298c3ebb81373fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3080b613226942a28298c3ebb81373fc">&#9670;&#160;</a></span>set_feature_envelope()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::isotropic_remeshing::IsotropicRemeshing::set_feature_envelope </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Keep the curves near the feature edges as they are now &ndash; the input's, called before remeshing: every feature edge an operation leaves must lie within <code>eps</code> of them. </p>
+<p>The surface envelope does not hold a curve. Where its two sides meet at an angle, a curve vertex smoothed across a bend of the curve, or a chord a collapse leaves across one, cuts the corner along one of the sides and stays inside the surface envelope; where they meet smoothly, a curve can wander across the surface. This tube judges the curves as <a class="el" href="classwmtk_1_1_boundary_envelope.html" title="A tube around the open boundary of a triangle mesh, for operations allowed to move it.">BoundaryEnvelope</a> judges the boundary, with the surface envelope's predicate (exact or sampled, as <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a> was given); a split, which moves nothing, is not judged. With the tube, a collapse along a curve puts the survivor at the midpoint, as any other collapse, unless it stays put (see stays_put): the tube refuses it where that leaves the curve. Off until called; eps &lt;= 0 turns it off. </p>
+
+</div>
+</div>
+<a id="a9abed21b98c465809f75c4c9a56d1a98" name="a9abed21b98c465809f75c4c9a56d1a98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9abed21b98c465809f75c4c9a56d1a98">&#9670;&#160;</a></span>set_fixed_vertices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::isotropic_remeshing::IsotropicRemeshing::set_fixed_vertices </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; std::pair&lt; size_t, int64_t &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vertices</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Vertices the remeshing keeps exactly: B-rep corners, say, which may sit inside a curve between two regions as well as where curves meet. </p>
+<p>A fixed vertex stays put (see stays_put), and carries its id to the output. Call after <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>. </p>
+
+</div>
+</div>
+<a id="ad998b3c2533bea05097742468a02c9db" name="ad998b3c2533bea05097742468a02c9db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad998b3c2533bea05097742468a02c9db">&#9670;&#160;</a></span>set_swap_quality()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::isotropic_remeshing::IsotropicRemeshing::set_swap_quality </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>quality</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Swap an edge to raise the worse shape quality of its two triangles (see compute_swap_quality), instead of to bring the valences of its four vertices to 6 (4 on the boundary). Off by default. </p>
+<p>Valence leaves a triangle as it is when the swap would not change the valences much: a flat one between two long edges, or a needle a curve leaves, which only the quality notices. The remeshing app of the topology-first B-rep pipeline swaps by quality. </p>
 
 </div>
 </div>
@@ -1148,6 +1478,27 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
+<a id="a3f8aa8856040faae0c62d069ee33fdfe" name="a3f8aa8856040faae0c62d069ee33fdfe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f8aa8856040faae0c62d069ee33fdfe">&#9670;&#160;</a></span>stays_put()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::isotropic_remeshing::IsotropicRemeshing::stays_put </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Whether <code>v</code> is never moved and never removed: a curve's end, a junction of curves, a vertex between feature edges of different ids, or a fixed vertex. </p>
+<p>A collapse removes the vertex of its tuple and keeps the other; one that would remove such a vertex is refused (see may_collapse_away). </p>
+
+</div>
+</div>
 <a id="ad1f983ddbbf1ca4ce61d898b0011b56b" name="ad1f983ddbbf1ca4ce61d898b0011b56b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad1f983ddbbf1ca4ce61d898b0011b56b">&#9670;&#160;</a></span>swap_edge_after()</h2>
 
@@ -1235,6 +1586,29 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
       </table>
 </div><div class="memdoc">
 <p>Tube around the boundary edges of the mesh given to <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>, used instead of freezing the boundary when that gets a positive boundary_eps. See there. initialized() is false otherwise, and for a closed input. </p>
+
+</div>
+</div>
+<a id="acdad89702c9db568b517a4fe62206ba7" name="acdad89702c9db568b517a4fe62206ba7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acdad89702c9db568b517a4fe62206ba7">&#9670;&#160;</a></span>m_cleanup_floor</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::isotropic_remeshing::IsotropicRemeshing::m_cleanup_floor = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>While <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ac77c3f01eccbef22ec3de1d78a2f10ae" title="Repairs the triangles whose smallest angle is under degrees, worst first.">cleanup_triangles()</a> runs: the smallest angle around the triangle it repairs, which a collapse or swap has to beat. 0 otherwise. </p>
 
 </div>
 </div>
