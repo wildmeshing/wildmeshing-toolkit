@@ -186,6 +186,17 @@ void map_points(
     log_warnings("mapping", warnings);
 }
 
+nlohmann::json warnings_report(const CurveMapWarnings& w)
+{
+    return {
+        {"total", w.total()},
+        {"topology", w.topology},
+        {"merged_segments", w.merged_segments},
+        {"overlapping", w.overlapping},
+        {"unlocated", w.unlocated},
+        {"replaced", w.replaced}};
+}
+
 void log_warnings(const char* what, const CurveMapWarnings& w)
 {
     logger().info(
@@ -285,8 +296,9 @@ void map_curve_points(
     log_warnings("mapping", tracking.map().map_warnings());
 }
 
-/// The operations on a curve history (triwild's); `history_path` names it in messages.
-void curves(
+/// The operations on a curve history (triwild's); `history_path` names it in messages. Returns
+/// info's report; map and features write files and return an empty one.
+nlohmann::json curves(
     const history::CurveHistory& h,
     const std::string& history_path,
     const nlohmann::json& json_params,
@@ -296,7 +308,7 @@ void curves(
     const std::string operation = json_params["operation"];
     if (operation == "map") {
         map_curve_points(h, json_params, root);
-        return;
+        return nlohmann::json::object();
     }
     if (operation == "transfer") {
         log_and_throw_error("transfer carries a surface's fields; {} holds curves", history_path);
@@ -304,6 +316,7 @@ void curves(
 
     timer.start();
     const CurveTracking tracking(h, curve_options_of(json_params));
+    const double build_time = timer.getElapsedTimeInSec();
     const CurveMap& map = tracking.map();
     const auto& steps = map.steps_by_kind();
     logger().info(
@@ -349,8 +362,21 @@ void curves(
             out << id_text(f.input_vertex) << " " << id_text(f.output_vertex) << "\n";
         }
         logger().info("feature points written to {}", output_points);
-        return;
+        return nlohmann::json::object();
     }
+
+    nlohmann::json report;
+    report["edits"] = h.edits.size();
+    report["build_time_sec"] = build_time;
+    report["splits"] = steps[size_t(history::EditKind::split_edge)];
+    report["collapses"] = steps[size_t(history::EditKind::collapse_edge)];
+    report["vertex_moves"] = steps[size_t(history::EditKind::move_vertices)];
+    report["relabels"] = steps[size_t(history::EditKind::relabel)];
+    report["embeds"] = steps[size_t(history::EditKind::embed)];
+    report["consolidations"] = steps[size_t(history::EditKind::consolidate)];
+    report["build_warnings"] = warnings_report(map.build_warnings());
+    report["feature_points"] = features.size();
+    report["feature_points_at_output_vertex"] = kept;
 
     // info: the output's segment midpoints to the input and back, and how far they lie from
     // their preimages, against the output's mean segment length.
@@ -366,8 +392,10 @@ void curves(
     timer.start();
     const auto in = map.to_input(midpoints);
     log_warnings("output midpoints to the input", map.map_warnings());
+    report["to_input_warnings"] = warnings_report(map.map_warnings());
     const auto back = map.to_output(in);
     log_warnings("and back to the output", map.map_warnings());
+    report["to_output_warnings"] = warnings_report(map.map_warnings());
     double max_err = 0;
     size_t lost = 0;
     std::vector<double> drift;
@@ -389,6 +417,9 @@ void curves(
         timer.getElapsedTimeInSec(),
         max_err,
         lost);
+    report["midpoints"] = midpoints.size();
+    report["round_trip_max_displacement"] = max_err;
+    report["round_trip_lost"] = lost;
     if (!drift.empty() && length > 0) {
         std::sort(drift.begin(), drift.end());
         const double mean_length = length / double(midpoints.size());
@@ -402,7 +433,13 @@ void curves(
             drift[drift.size() * 99 / 100] / mean_length,
             drift.back() / mean_length,
             mean_length);
+        report["drift"] = {
+            {"mean", mean / mean_length},
+            {"p99", drift[drift.size() * 99 / 100] / mean_length},
+            {"max", drift.back() / mean_length},
+            {"mean_segment", mean_length}};
     }
+    return report;
 }
 
 void run(nlohmann::json json_params, io::ComponentIO& component_io)
@@ -472,7 +509,7 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
             h.edits.size(),
             history_path,
             timer.getElapsedTimeInSec());
-        curves(h, history_path, json_params, root);
+        component_io.result.second = curves(h, history_path, json_params, root);
         return;
     }
     if (json_params["operation"] == "features") {

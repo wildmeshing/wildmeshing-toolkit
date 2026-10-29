@@ -196,3 +196,84 @@ TEST_CASE("tracking-example-triwild", "[triwild][tracking]")
     CHECK(i == pts.size());
     CHECK(same == pts.size());
 }
+
+TEST_CASE("tracking-memory-route-triwild", "[triwild][tracking]")
+{
+    // The memory route: triwild records its history from the curves it is given, to a file
+    // still, and the tracking application's info reports on it, the report returned rather than
+    // logged only. The input is the example's above, as meshes.
+    const fs::path dir = fs::current_path() / "tracking_memory_route_triwild";
+    fs::create_directories(dir);
+    const fs::path tracking_file = dir / "curves.wmtkhist";
+    const int n = 300, m = 100;
+    MeshData circle, open, points;
+    circle.V.resize(n, 3);
+    auto& C = circle.cells[CellType::Edge].connectivity;
+    C.resize(n, 2);
+    for (int i = 0; i < n; ++i) {
+        const double a = 2 * M_PI * i / n;
+        circle.V.row(i) << std::cos(a), std::sin(a), 0;
+        C.row(i) << i, (i + 1) % n;
+    }
+    open.V.resize(m + 1, 3);
+    auto& O = open.cells[CellType::Edge].connectivity;
+    O.resize(m, 2);
+    for (int i = 0; i <= m; ++i) {
+        const double x = -1.6 + 3.2 * i / m;
+        open.V.row(i) << x, 0.3 * std::sin(6 * x) + 0.1, 0;
+        if (i > 0) O.row(i - 1) << i - 1, i;
+    }
+    points.V.resize(2, 3);
+    points.V << 0.25, -0.5, 0, -0.7, 0.9, 0;
+    points.cells[CellType::Point].connectivity.resize(2, 1);
+    points.cells[CellType::Point].connectivity << 0, 1;
+    const MeshMap meshes{{"circle", circle}, {"open", open}, {"points", points}};
+    const ComponentResult result = triwild::triwild(
+        {{"input", {"circle", "open"}},
+         {"input_points", {"points"}},
+         {"history_output", tracking_file.string()},
+         {"preserve_topology", true},
+         {"length_rel", 0.02},
+         {"max_iterations", 10}},
+        meshes);
+
+    // The history starts at the curves given, segment for segment, and its tracked edges are edges
+    // of the mesh returned, by its vertex rows.
+    const CurveTracking tracking = CurveTracking::load(tracking_file.string());
+    REQUIRE(tracking.output_by_vertices());
+    CHECK(tracking.input_segments().size() == size_t(n + m));
+    const MeshData& mesh = result.first.at("mesh");
+    std::set<std::array<uint64_t, 2>> mesh_edges;
+    const auto& F = mesh.cell(CellType::Triangle).connectivity;
+    for (Eigen::Index f = 0; f < F.rows(); ++f) {
+        for (int k = 0; k < 3; ++k) {
+            const uint64_t x = uint64_t(F(f, k)), y = uint64_t(F(f, (k + 1) % 3));
+            mesh_edges.insert({{std::min(x, y), std::max(x, y)}});
+        }
+    }
+    REQUIRE(!tracking.output_segments().empty());
+    for (const auto& e : tracking.output_segments()) {
+        CHECK(mesh_edges.count({{std::min(e[0], e[1]), std::max(e[0], e[1])}}) == 1);
+    }
+    // The open curve's two ends and the two free points.
+    CHECK(tracking.feature_points().size() == 4);
+
+    // tracking takes the history as bytes on the memory route.
+    const auto bytes = nlohmann::json::binary(history::read_history(tracking_file));
+    const auto [none, report] = tracking::tracking({{"history", bytes}, {"operation", "info"}}, {});
+    CHECK(none.empty());
+    CHECK(report.at("edits").get<size_t>() > 0);
+    CHECK(report.at("build_warnings").at("total") == 0);
+    CHECK(report.at("feature_points") == 4);
+    CHECK(report.at("feature_points_at_output_vertex") == 4);
+    CHECK(report.at("midpoints") == tracking.output_segments().size());
+    CHECK(report.at("round_trip_lost") == 0);
+    CHECK(report.at("round_trip_max_displacement").get<double>() < 1e-8);
+
+    // map and features read and write files: refused on the memory route.
+    for (const char* operation : {"map", "features"}) {
+        CHECK_THROWS_AS(
+            tracking::tracking({{"history", bytes}, {"operation", operation}}, {}),
+            std::runtime_error);
+    }
+}

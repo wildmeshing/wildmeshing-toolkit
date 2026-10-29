@@ -103,6 +103,13 @@ Each one runs the application with tracking on, maps random input points to the 
 back, remaps a per-vertex attribute onto the output's vertices, and does the same from the
 command line with a points file.
 
+On the memory route the applications record the same history, from the meshes they are given
+as from their files; triwild still saves its curve history to the file `history_output` names.
+`tracking(options, meshes)` takes the history as bytes: it runs `info` on a surface or a curve
+history and returns its report, and `transfer` on a surface; `map` and `features` read and write
+files of points, and throw there. The tests `tracking-memory-route` (isotropic) and
+`tracking-memory-route-triwild` (curves) run both.
+
 Remapping attributes:
 - **Per face.** Map each output face's centroid `to_input` and take the input face's value.
   The `transfer` operation does this.
