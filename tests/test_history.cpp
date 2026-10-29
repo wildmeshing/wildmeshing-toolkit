@@ -197,6 +197,66 @@ TEST_CASE("history-save-load-round-trip", "[history]")
     }
 }
 
+TEST_CASE("history-bytes-are-the-file", "[history]")
+{
+    // A history in memory is the bytes of its file: save writes to_bytes, read_history reads them
+    // back as they are, and from_bytes loads them as load loads the file.
+    TriMesh m;
+    const auto pos = make_grid(m, 4, 4);
+    const auto rec = m.start_history([&pos](size_t v) { return pos[v]; });
+    std::vector<TriMesh::Tuple> out;
+    m.split_edge(m.get_edges()[2], out);
+    m.collapse_edge(m.get_edges()[5], out);
+    m.consolidate_mesh();
+    rec->history().metadata = R"({"application": "test"})";
+    rec->history().output_vertex_ids = {3, history::kNoVertex, 1};
+
+    const auto dir = std::filesystem::temp_directory_path() /
+                     ("wmtk_history_bytes_" + std::to_string(std::random_device{}()));
+    std::filesystem::create_directories(dir);
+    const auto path = dir / "history.wmtkhist";
+    rec->history().save(path.string());
+    const std::vector<uint8_t> bytes = rec->history().to_bytes();
+    std::vector<uint8_t> file;
+    {
+        std::ifstream in(path, std::ios::binary);
+        file.assign(std::istreambuf_iterator<char>(in), {});
+    }
+    CHECK(file == bytes);
+    CHECK(history::read_history(path) == bytes);
+
+    const auto copy = dir / "copy.wmtkhist";
+    history::write_history(copy, bytes);
+    CHECK(history::read_history(copy) == bytes);
+    const history::SurfaceHistory h = history::SurfaceHistory::from_bytes(bytes);
+    const history::SurfaceHistory g = history::SurfaceHistory::load(copy.string());
+    CHECK(h.to_bytes() == bytes);
+    CHECK(g.to_bytes() == bytes);
+    CHECK(h.metadata == rec->history().metadata);
+    CHECK(h.output_vertex_ids == rec->history().output_vertex_ids);
+    REQUIRE(h.edits.size() == rec->history().edits.size());
+
+    // Anything that is not a history is refused, by what it is.
+    std::vector<uint8_t> other(bytes.begin(), bytes.end());
+    other[0] = 'X';
+    CHECK_THROWS_WITH(
+        history::write_history(dir / "other.wmtkhist", other),
+        Catch::Matchers::ContainsSubstring("the history given is not a surface history"));
+    CHECK(!std::filesystem::exists(dir / "other.wmtkhist"));
+    CHECK_THROWS_WITH(
+        history::SurfaceHistory::from_bytes({bytes.begin(), bytes.begin() + 20}),
+        Catch::Matchers::ContainsSubstring("the history given is"));
+    {
+        std::ofstream o(dir / "mesh.obj");
+        o << "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n";
+    }
+    CHECK_THROWS_WITH(
+        history::read_history(dir / "mesh.obj"),
+        Catch::Matchers::ContainsSubstring("is not a surface history"));
+    CHECK_THROWS(history::read_history(dir / "missing.wmtkhist"));
+    std::filesystem::remove_all(dir);
+}
+
 TEST_CASE("history-file-header", "[history]")
 {
     // "WMTKHIST", the version, then the corners of a face: version 7 and 3 for a surface. A file

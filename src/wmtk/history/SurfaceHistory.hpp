@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <filesystem>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -113,9 +114,23 @@ struct SurfaceHistory
      */
     std::vector<uint64_t> output_vertex_ids;
 
+    /// To and from a history file (read_history, write_history).
     void save(const std::string& path) const;
     static SurfaceHistory load(const std::string& path);
+    /// The bytes of a history file, in memory: what a component's memory route returns.
+    std::vector<uint8_t> to_bytes() const;
+    static SurfaceHistory from_bytes(const std::vector<uint8_t>& bytes);
 };
+
+/**
+ * @brief The bytes of a history file, as SurfaceHistory::from_bytes takes them: io::read_mesh for
+ * a history. Only the header is checked -- that it is a surface history this build reads -- not
+ * the rest, which loading checks.
+ */
+std::vector<uint8_t> read_history(const std::filesystem::path& path);
+/// Writes the bytes of a history (SurfaceHistory::to_bytes) to a file: io::write_mesh for a
+/// history. Refuses bytes whose header is not a surface history's.
+void write_history(const std::filesystem::path& path, const std::vector<uint8_t>& bytes);
 
 /**
  * @brief The history of a pipeline: `h`, then `next`, which starts where `h` ends -- the same

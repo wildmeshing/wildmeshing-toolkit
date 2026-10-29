@@ -40,19 +40,18 @@ constexpr uint32_t kVersion = 7;
 /// The corners of a face of a surface history.
 constexpr uint8_t kCorners = 3;
 
+/// Appends to the bytes of a history, as a file holds them.
 class Writer
 {
 public:
-    explicit Writer(const std::string& path)
-        : m_out(path, std::ios::binary)
-        , m_path(path)
-    {
-        if (!m_out) log_and_throw_error("SurfaceHistory: cannot write {}", path);
-    }
+    explicit Writer(std::vector<uint8_t>& out)
+        : m_out(out)
+    {}
     template <typename T>
     void put(const T& x)
     {
-        m_out.write(reinterpret_cast<const char*>(&x), sizeof(T));
+        const auto* p = reinterpret_cast<const uint8_t*>(&x);
+        m_out.insert(m_out.end(), p, p + sizeof(T));
     }
     void varint(uint64_t n)
     {
@@ -67,32 +66,28 @@ public:
     {
         for (int k = 0; k < 3; ++k) put(p[k]);
     }
-    void bytes(const char* p, size_t n) { m_out.write(p, std::streamsize(n)); }
-    void finish()
+    void bytes(const char* p, size_t n)
     {
-        m_out.flush();
-        if (!m_out) log_and_throw_error("SurfaceHistory: writing {} failed", m_path);
+        m_out.insert(
+            m_out.end(),
+            reinterpret_cast<const uint8_t*>(p),
+            reinterpret_cast<const uint8_t*>(p) + n);
     }
 
 private:
-    std::ofstream m_out;
-    std::string m_path;
+    std::vector<uint8_t>& m_out;
 };
 
+/// Reads the bytes of a history; `name` says what they are in messages: a file, or bytes given.
 class Reader
 {
 public:
-    explicit Reader(const std::string& path)
-        : m_in(path, std::ios::binary)
-        , m_path(path)
-    {
-        if (!m_in) log_and_throw_error("SurfaceHistory: cannot read {}", path);
-        m_in.seekg(0, std::ios::end);
-        m_size = uint64_t(m_in.tellg());
-        m_in.seekg(0);
-    }
+    Reader(const std::vector<uint8_t>& in, std::string name)
+        : m_in(in)
+        , m_name(std::move(name))
+    {}
     /// The bytes not read yet.
-    uint64_t remaining() { return m_size - uint64_t(m_in.tellg()); }
+    uint64_t remaining() const { return m_in.size() - m_pos; }
     /// A count of items of at least `min_bytes` each, which the rest of the file must hold: a
     /// damaged count cannot make the reader allocate more than the file could fill.
     uint64_t count(const uint64_t min_bytes = 1)
@@ -103,14 +98,13 @@ public:
     }
     [[noreturn]] void corrupt() const
     {
-        log_and_throw_error("SurfaceHistory: {} is corrupt", m_path);
+        log_and_throw_error("SurfaceHistory: {} is corrupt", m_name);
     }
     template <typename T>
     T get()
     {
         T x;
-        m_in.read(reinterpret_cast<char*>(&x), sizeof(T));
-        if (!m_in) log_and_throw_error("SurfaceHistory: {} is truncated", m_path);
+        bytes(reinterpret_cast<char*>(&x), sizeof(T));
         return x;
     }
     uint64_t varint()
@@ -121,7 +115,7 @@ public:
             n |= uint64_t(b & 0x7F) << shift;
             if (!(b & 0x80)) return n;
         }
-        log_and_throw_error("SurfaceHistory: {} holds a malformed integer", m_path);
+        log_and_throw_error("SurfaceHistory: {} holds a malformed integer", m_name);
     }
     Eigen::Vector3d position()
     {
@@ -131,15 +125,51 @@ public:
     }
     void bytes(char* p, size_t n)
     {
-        m_in.read(p, std::streamsize(n));
-        if (!m_in) log_and_throw_error("SurfaceHistory: {} is truncated", m_path);
+        if (n > remaining()) log_and_throw_error("SurfaceHistory: {} is truncated", m_name);
+        std::memcpy(p, m_in.data() + m_pos, n);
+        m_pos += n;
     }
+    const std::string& name() const { return m_name; }
 
 private:
-    std::ifstream m_in;
-    std::string m_path;
-    uint64_t m_size = 0;
+    const std::vector<uint8_t>& m_in;
+    std::string m_name;
+    size_t m_pos = 0;
 };
+
+/// The magic, the version and the corners of a face: refuses anything but a surface history of
+/// this version.
+void read_header(Reader& r)
+{
+    char magic[sizeof(kMagic)];
+    r.bytes(magic, sizeof(magic));
+    if (std::memcmp(magic, kMagic, sizeof(kMagic)) != 0) {
+        log_and_throw_error("SurfaceHistory: {} is not a surface history", r.name());
+    }
+    const uint32_t version = r.get<uint32_t>();
+    if (version != kVersion) {
+        log_and_throw_error(
+            "SurfaceHistory: {} has version {}; this build reads version {} only, so the history "
+            "has to be recorded again",
+            r.name(),
+            version,
+            kVersion);
+    }
+    const uint8_t corners = r.get<uint8_t>();
+    if (corners != kCorners) {
+        log_and_throw_error(
+            "SurfaceHistory: {} holds faces of {} corners, not a surface's {}",
+            r.name(),
+            int(corners),
+            int(kCorners));
+    }
+}
+
+/// What the messages call bytes given in memory.
+const std::string kGiven = "the history given";
+
+/// The history `bytes` hold; `name` for the messages.
+SurfaceHistory parse(const std::vector<uint8_t>& bytes, const std::string& name);
 
 /// How many vertex and face ids each kind carries; split_edge's faces come in counted pairs.
 size_t vertex_ids(const EditKind k)
@@ -325,7 +355,23 @@ void append_embedded(
 
 void SurfaceHistory::save(const std::string& path) const
 {
-    Writer w(path);
+    write_history(path, to_bytes());
+}
+
+SurfaceHistory SurfaceHistory::load(const std::string& path)
+{
+    return parse(read_history(path), path);
+}
+
+SurfaceHistory SurfaceHistory::from_bytes(const std::vector<uint8_t>& bytes)
+{
+    return parse(bytes, kGiven);
+}
+
+std::vector<uint8_t> SurfaceHistory::to_bytes() const
+{
+    std::vector<uint8_t> bytes;
+    Writer w(bytes);
     w.bytes(kMagic, sizeof(kMagic));
     w.put(kVersion);
     w.put(kCorners);
@@ -403,34 +449,42 @@ void SurfaceHistory::save(const std::string& path) const
     w.bytes(metadata.data(), metadata.size());
     w.varint(output_vertex_ids.size());
     for (const uint64_t v : output_vertex_ids) w.varint(v == kNoVertex ? 0 : v + 1);
-    w.finish();
+    return bytes;
 }
 
-SurfaceHistory SurfaceHistory::load(const std::string& path)
+std::vector<uint8_t> read_history(const std::filesystem::path& path)
 {
-    Reader r(path);
-    char magic[sizeof(kMagic)];
-    r.bytes(magic, sizeof(magic));
-    if (std::memcmp(magic, kMagic, sizeof(kMagic)) != 0) {
-        log_and_throw_error("SurfaceHistory: {} is not a surface history", path);
+    std::ifstream in(path, std::ios::binary | std::ios::ate);
+    const std::streamoff size = in ? std::streamoff(in.tellg()) : -1;
+    if (size < 0) log_and_throw_error("SurfaceHistory: cannot read {}", path.string());
+    std::vector<uint8_t> bytes(static_cast<size_t>(size));
+    in.seekg(0);
+    in.read(reinterpret_cast<char*>(bytes.data()), std::streamsize(bytes.size()));
+    if (!in) log_and_throw_error("SurfaceHistory: reading {} failed", path.string());
+    Reader r(bytes, path.string());
+    read_header(r);
+    return bytes;
+}
+
+void write_history(const std::filesystem::path& path, const std::vector<uint8_t>& bytes)
+{
+    {
+        Reader r(bytes, kGiven);
+        read_header(r);
     }
-    const uint32_t version = r.get<uint32_t>();
-    if (version != kVersion) {
-        log_and_throw_error(
-            "SurfaceHistory: {} has version {}; this build reads version {} only, so the history "
-            "has to be recorded again",
-            path,
-            version,
-            kVersion);
-    }
-    const uint8_t corners = r.get<uint8_t>();
-    if (corners != kCorners) {
-        log_and_throw_error(
-            "SurfaceHistory: {} holds faces of {} corners, not a surface's {}",
-            path,
-            int(corners),
-            int(kCorners));
-    }
+    std::ofstream out(path, std::ios::binary);
+    if (!out) log_and_throw_error("SurfaceHistory: cannot write {}", path.string());
+    out.write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
+    out.flush();
+    if (!out) log_and_throw_error("SurfaceHistory: writing {} failed", path.string());
+}
+
+namespace {
+
+SurfaceHistory parse(const std::vector<uint8_t>& bytes, const std::string& name)
+{
+    Reader r(bytes, name);
+    read_header(r);
 
     SurfaceHistory h;
     const uint64_t nv = r.count();
@@ -510,7 +564,7 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
             m.vid = tagged >> 1;
             if (m.vid >= move_limit) r.corrupt();
             if (tagged & 1) {
-                if (!mid) log_and_throw_error("SurfaceHistory: {} is corrupt", path);
+                if (!mid) r.corrupt();
                 m.pos = *mid;
             } else {
                 m.pos = r.position();
@@ -527,5 +581,7 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
     }
     return h;
 }
+
+} // namespace
 
 } // namespace wmtk::history

@@ -125,6 +125,12 @@ were development formats and no longer load. After the version comes one byte, t
 corners of a face: 3, a surface. When you add to it, bump `kVersion`, keep loading version 7
 and up, and note in the comment at the top of the file what each version added.
 
+In memory a history is the bytes of its file: `to_bytes()` and `SurfaceHistory::from_bytes`,
+which the memory route of a component returns and takes. `history::read_history(path)` and
+`history::write_history(path, bytes)` move those bytes to and from a file unchanged, as
+`io::read_mesh` and `io::write_mesh` do for a mesh; they check only the header. `save` and
+`load` are the two together.
+
 Loading checks what it reads before using it, so a damaged file throws "is corrupt" instead of
 crashing:
 - every count is bounded by the bytes left (each item takes at least one);
