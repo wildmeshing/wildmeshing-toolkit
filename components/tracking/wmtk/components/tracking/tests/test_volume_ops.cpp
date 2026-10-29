@@ -8,6 +8,7 @@
 #include <wmtk/components/tracking/volume_geometry.hpp>
 #include <wmtk/history/TrackedRecorder.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -18,6 +19,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <random>
 #include <set>
 #include <string>
@@ -208,17 +210,16 @@ public:
             return false;
         }
         std::set<MTet> others;
-        double worst_before = 1;
         for (const size_t t : tets_at({j})) {
             if (!has(s.T[t], i)) others.insert(sorted4(s.T[t]));
         }
-        for (const size_t t : tets_at({i, j})) worst_before = std::min(worst_before, shape(s.T[t]));
+        const Shape worst_before = worst(tets_at({i, j}));
         for (const size_t t : Si) {
             if (has(s.T[t], j)) continue;
             MTet a = s.T[t];
             std::replace(a.begin(), a.end(), i, j);
             if (orient(a) <= 0 || others.count(sorted4(a))) return false;
-            if (shape(a) < std::min(worst_before, kShape)) return false;
+            if (worse(shape(a), worst_before)) return false;
         }
         if (!link_condition(i, j)) return false;
         std::set<MFace> after;
@@ -365,12 +366,11 @@ public:
         if (on_box(v)) return false;
         if (on_surface(v) && !in_envelope(x)) return false;
         const history::VolumeCapture before = capture({v});
-        double worst_before = 1;
-        for (const size_t t : tets_at({v})) worst_before = std::min(worst_before, shape(s.T[t]));
+        const Shape worst_before = worst(tets_at({v}));
         const Eigen::Vector3d old = s.P[v];
         s.P[v] = x;
         for (const size_t t : tets_at({v})) {
-            if (orient(s.T[t]) <= 0 || shape(s.T[t]) < std::min(worst_before, kShape)) {
+            if (orient(s.T[t]) <= 0 || worse(shape(s.T[t]), worst_before)) {
                 s.P[v] = old;
                 return false;
             }
@@ -390,15 +390,93 @@ public:
         return volume::orient(s.P[t[0]], s.P[t[1]], s.P[t[2]], s.P[t[3]]);
     }
 
-    /// A tet's volume over that of the regular tet with its mean squared edge length: 1 at
-    /// best, 0 when flat.
-    double shape(const MTet& t) const
+    /**
+     * A tet's shape -- its volume over that of the regular tet with its mean squared edge
+     * length, sqrt(2) d / (l / 6)^1.5: 1 at best, 0 when flat -- by d, six times its signed
+     * volume, and l, the sum of its squared edge lengths. The operations compare shapes exactly
+     * (worse()), so that no rounding -- of pow and sqrt, which differ between libraries, or of
+     * products a compiler fuses -- decides one: a run is the same on every platform. Doubles
+     * decide where they are far enough apart for their rounding, which d_rel bounds for d (l's,
+     * of positive terms only, is below 1e-15); else the corners, kept, give them exactly.
+     */
+    struct Shape
     {
-        double l2 = 0;
+        std::array<Eigen::Vector3d, 4> p;
+        double d = 0, l = 0, d_rel = 0;
+    };
+    Shape shape(const MTet& t) const
+    {
+        Shape x;
+        for (int k = 0; k < 4; ++k) x.p[k] = s.P[t[k]];
         for (int a = 0; a < 4; ++a) {
-            for (int b = a + 1; b < 4; ++b) l2 += (s.P[t[a]] - s.P[t[b]]).squaredNorm() / 6;
+            for (int b = a + 1; b < 4; ++b) x.l += (x.p[a] - x.p[b]).squaredNorm();
         }
-        return signed_volume(t) / (std::pow(l2, 1.5) / (6 * std::sqrt(2.)));
+        const Eigen::Vector3d u = x.p[1] - x.p[0], v = x.p[2] - x.p[0], w = x.p[3] - x.p[0];
+        x.d = u.dot(v.cross(w));
+        // a bound on its rounding: a few units in the last place of the sum of its terms' sizes
+        const Eigen::Vector3d U = u.cwiseAbs(), V = v.cwiseAbs(), W = w.cwiseAbs();
+        const double terms = U[0] * (V[1] * W[2] + V[2] * W[1]) +
+                             U[1] * (V[0] * W[2] + V[2] * W[0]) +
+                             U[2] * (V[0] * W[1] + V[1] * W[0]);
+        x.d_rel = 1e-14 * terms / std::abs(x.d);
+        return x;
+    }
+    /// d and l of a shape, exactly.
+    static std::pair<Rational, Rational> exact(const Shape& x)
+    {
+        std::array<std::array<Rational, 3>, 4> q;
+        for (int k = 0; k < 4; ++k) {
+            for (int c = 0; c < 3; ++c) q[k][c] = Rational(x.p[k][c]);
+        }
+        Rational l;
+        for (int a = 0; a < 4; ++a) {
+            for (int b = a + 1; b < 4; ++b) {
+                for (int c = 0; c < 3; ++c) l = l + (q[a][c] - q[b][c]) * (q[a][c] - q[b][c]);
+            }
+        }
+        std::array<std::array<Rational, 3>, 3> e;
+        for (int k = 0; k < 3; ++k) {
+            for (int c = 0; c < 3; ++c) e[k][c] = q[k + 1][c] - q[0][c];
+        }
+        const Rational d = e[0][0] * (e[1][1] * e[2][2] - e[1][2] * e[2][1]) -
+                           e[0][1] * (e[1][0] * e[2][2] - e[1][2] * e[2][0]) +
+                           e[0][2] * (e[1][0] * e[2][1] - e[1][1] * e[2][0]);
+        return {d, l};
+    }
+    /// Whether shape a is below shape b, both positively oriented: d_a^2 / l_a^3 < d_b^2 / l_b^3.
+    static bool below(const Shape& a, const Shape& b)
+    {
+        const double lhs = a.d * a.d * b.l * b.l * b.l, rhs = b.d * b.d * a.l * a.l * a.l;
+        const double rounding = 2 * (a.d_rel + b.d_rel) + 1e-13;
+        if (std::abs(lhs - rhs) > rounding * std::max(lhs, rhs)) return lhs < rhs;
+        const auto [da, la] = exact(a);
+        const auto [db, lb] = exact(b);
+        return da * da * lb * lb * lb < db * db * la * la * la;
+    }
+    /// Whether a tet an operation makes, of shape a, is worse than it may be: below 2/100 --
+    /// 432 d^2 < (2/100)^2 l^3, so 1080000 d^2 < l^3 -- and below the worst it replaces.
+    static bool worse(const Shape& a, const Shape& worst_before)
+    {
+        const double lhs = 1080000 * a.d * a.d, rhs = a.l * a.l * a.l;
+        bool low;
+        if (std::abs(lhs - rhs) > (2 * a.d_rel + 1e-13) * std::max(lhs, rhs)) {
+            low = lhs < rhs;
+        } else {
+            const auto [d, l] = exact(a);
+            low = Rational(1080000) * d * d < l * l * l;
+        }
+        return low && below(a, worst_before);
+    }
+    /// The worst shape of the tets `ts` (all positively oriented).
+    Shape worst(const std::vector<size_t>& ts) const
+    {
+        std::optional<Shape> w;
+        for (const size_t t : ts) {
+            const Shape x = shape(s.T[t]);
+            if (!w || below(x, *w)) w = x;
+        }
+        REQUIRE(w);
+        return *w;
     }
 
     /// Whether v is a corner of a tracked face.
@@ -427,9 +505,6 @@ public:
     }
 
 private:
-    /// The shape no tet an operation makes may be below, unless the worst it replaces is.
-    static constexpr double kShape = 0.02;
-
     double signed_volume(const MTet& t) const
     {
         const auto& P = s.P;
@@ -712,26 +787,25 @@ void check_all_points(const Scene& sc, const VolumeMap& map, const size_t n)
 TEST_CASE("volume-ops", "[volume_map]")
 {
     // Runs of random operations on a grid of 4^3 cubes split by the plane z = 2, the tracked
-    // surface between two regions, each run chosen for the kinds of local map it needs
-    // (VolumeMap::op_kinds), all of whose operations map and keep the surface: direct collapses
-    // ("small", a side alone, "single", both ends' stars), vertex moves ("move"), 4-4 swaps on
-    // the surface ("swap side"), a surface vertex collapsed into one off the surface, mapped the
-    // other way round ("interior j->i", "move i"), a side whose tets all hold the survivor
-    // ("vanishing side"), and a side with a chord, through the decomposition ("split",
-    // "refined-a", "unsplit"), which with one region all round, as in tetwild, takes the whole
-    // collapse through it.
+    // surface between two regions, all of whose operations map and keep the surface. Together
+    // they take every kind of local map (VolumeMap::op_kinds): direct collapses ("small", a side
+    // alone, "single", both ends' stars), vertex moves ("move"), 4-4 swaps on the surface ("swap
+    // side"), a surface vertex collapsed into one off the surface, mapped the other way round
+    // ("interior j->i", "move i"), a side whose tets all hold the survivor ("vanishing side"),
+    // and a side with a chord, through the decomposition ("split", "refined-a", "unsplit"),
+    // which with one region all round, as in tetwild, takes the whole collapse through it. The
+    // rarer kinds come in one run in a hundred: the seeds are those runs. A scene decides on
+    // exact shapes (Scene::Shape), so a seed's run is the same on every platform; the kinds are
+    // checked over the runs together all the same, which a rounding in the map's own choices
+    // could only move from one run to another.
     struct Run
     {
         uint32_t seed;
         bool one_region;
-        std::vector<std::string> kinds;
     };
-    const std::vector<Run> runs = {
-        {3, false, {"move", "single", "small", "swap side", "interior j->i", "move i"}},
-        {24, false, {"vanishing side"}},
-        {105, false, {"split", "refined-a", "unsplit"}},
-        {105, true, {"split", "refined-a", "unsplit"}},
-    };
+    const std::vector<Run> runs = {{3, false}, {24, false}, {105, false}, {105, true}};
+    // the kinds the runs take, of two regions and of one
+    std::array<std::multiset<std::string>, 2> got;
     for (const Run& run : runs) {
         const bool one_region = run.one_region;
         CAPTURE(one_region, run.seed);
@@ -746,14 +820,59 @@ TEST_CASE("volume-ops", "[volume_map]")
         map.build_all();
         CHECK(map.stats().failed == 0);
         CHECK(map.stats().surface_not_kept == 0);
-        const std::multiset<std::string> got = kinds(map);
-        for (const std::string& k : run.kinds) {
-            CAPTURE(k);
-            CHECK(got.count(k) > 0);
-        }
+        const std::multiset<std::string> k = kinds(map);
+        got[one_region].insert(k.begin(), k.end());
         check_all_points(sc, map, 500);
         CHECK(map.stats().region_changed == 0);
     }
+    const std::array<std::vector<std::string>, 2> want = {
+        {{"move",
+          "single",
+          "small",
+          "swap side",
+          "interior j->i",
+          "move i",
+          "vanishing side",
+          "split",
+          "refined-a",
+          "unsplit"},
+         {"split", "refined-a", "unsplit"}}};
+    for (const bool one_region : {false, true}) {
+        for (const std::string& k : want[one_region]) {
+            CAPTURE(one_region, k);
+            CHECK(got[one_region].count(k) > 0);
+        }
+    }
+}
+
+TEST_CASE("volume-ops-exact-shapes", "[volume_map]")
+{
+    // A scene's operations compare tet shapes exactly: where doubles cannot tell two apart --
+    // congruent tets, at another vertex order -- the exact comparison decides, as it would on
+    // any platform; where they can, they agree with it.
+    Scene sc = Scene::grid(1, 0);
+    const MTet a = sc.s.T[0];
+    const MTet b = {{a[1], a[2], a[3], a[0]}};
+    const MTet c = {{a[0], a[1], a[3], a[2]}};
+    REQUIRE(sc.orient(a) > 0);
+    // b is a turned the other way round twice: the same tet, the same shape, never below
+    const int ob = sc.orient(b);
+    const MTet b_pos = ob > 0 ? b : MTet{{b[0], b[1], b[3], b[2]}};
+    CHECK_FALSE(Scene::below(sc.shape(a), sc.shape(b_pos)));
+    CHECK_FALSE(Scene::below(sc.shape(b_pos), sc.shape(a)));
+    CHECK(sc.orient(c) < 0);
+    // A Kuhn tet of the unit cube: d = 1, l = 1 + 1 + 1 + 2 + 2 + 3 = 10 -- 1080000 > 1000, so
+    // not below 2/100 -- and a flatter one is below it, and below the first.
+    const Scene::Shape s = sc.shape(a);
+    CHECK(s.d == 1);
+    CHECK(s.l == 10);
+    CHECK_FALSE(Scene::worse(s, s));
+    Scene flat = Scene::grid(1, 0);
+    flat.s.P[a[3]] = flat.s.P[a[3]] * 0.001 + flat.s.P[a[2]] * 0.999;
+    REQUIRE(flat.orient(a) > 0);
+    CHECK(Scene::below(flat.shape(a), s));
+    CHECK(Scene::worse(flat.shape(a), s));
+    CHECK_FALSE(Scene::worse(flat.shape(a), flat.shape(a)));
 }
 
 TEST_CASE("volume-ops-volume-only", "[volume_map]")
