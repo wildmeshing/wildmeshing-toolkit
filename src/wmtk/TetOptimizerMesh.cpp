@@ -910,11 +910,10 @@ void TetOptimizerMesh::record_surface_history(const std::string& metadata)
     m_insertion_sources.shrink_to_fit();
 }
 
-void TetOptimizerMesh::save_surface_history(
-    const std::string& path,
+std::optional<history::SurfaceHistory> TetOptimizerMesh::finish_surface_history(
     const history::SurfaceHistory* input)
 {
-    if (!m_recorded_surface) return;
+    if (!m_recorded_surface) return std::nullopt;
     if (const size_t drift = resync_surface_history()) {
         logger().warn("surface history: {} tracked faces changed outside the operations", drift);
     }
@@ -931,29 +930,29 @@ void TetOptimizerMesh::save_surface_history(
     const auto st = m_recorded_surface->stats();
     logger().info(
         "surface history: {} edits -- {} splits, {} collapses ({} welding two surface vertices), "
-        "{} swaps, {} moves; {} changes recorded as they are -- saved to {}",
+        "{} swaps, {} moves; {} changes recorded as they are",
         m_recorded_surface->history().edits.size(),
         st.split,
         st.collapse,
         st.weld,
         st.swap,
         st.move,
-        st.replaced,
-        path);
+        st.replaced);
     if (st.unknown > 0) {
         logger().error("surface history: lost track of {} faces", st.unknown);
     }
+    history::SurfaceHistory h;
     if (input != nullptr) {
-        history::SurfaceHistory chain = *input;
-        history::append_embedded(chain, m_recorded_surface->history(), m_recorded_sources);
-        chain.metadata = m_recorded_surface->history().metadata;
-        chain.output_vertex_ids = m_recorded_surface->history().output_vertex_ids;
-        chain.save(path);
+        h = *input;
+        history::append_embedded(h, m_recorded_surface->history(), m_recorded_sources);
+        h.metadata = m_recorded_surface->history().metadata;
+        h.output_vertex_ids = m_recorded_surface->history().output_vertex_ids;
     } else {
-        m_recorded_surface->history().save(path);
+        h = std::move(m_recorded_surface->history());
     }
     m_recorded_surface.reset();
     m_recorded_sources.clear();
+    return h;
 }
 
 void TetOptimizerMesh::update_attributes_and_history()

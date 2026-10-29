@@ -26,6 +26,12 @@ Turn tracking on with `history_output` -- the same option in every application t
 {"application": "tetwild", "input": ["model.obj"], "output": "out", "history_output": "out.wmtkhist"}
 ```
 
+On the memory route (`name(options, meshes)`, see `docs/in-memory-io.md`) no file is written:
+any non-empty `history_output` records the history, and the report returns it as `history`, the
+bytes of the file the file route writes (bytes in Python). `history::write_history` /
+`wm.write_history` save them as that file. simwild also returns the mesh its history starts from
+as the output mesh `history_input`.
+
 Map points with the `surface_map` application of the same `wmtk_app` binary:
 
 ```json
@@ -251,11 +257,12 @@ fills these in:
 - **`tracked_feature_edges`:** tagged feature edges (`m_feature_edge_attribute`) that are edges
   of tracked faces. tetwild's operations keep them by the history's rules: a split halves one,
   a collapse remaps, swaps refuse them.
-- **`record_surface_history(metadata)` / `save_surface_history(path, input)`.**
-  - `save` resyncs, warning if anything drifted.
+- **`record_surface_history(metadata)` / `finish_surface_history(input)`.**
+  - `finish` resyncs, warning if anything drifted.
   - It checks that the history's feature edges equal the mesh's, warning if not.
-  - It fills `output_vertex_ids`, logs the counts, and saves.
-  - With `input`, it saves the chain from the input files; see the next section.
+  - It fills `output_vertex_ids`, logs the counts, and returns the history, which the
+    application saves with `ComponentIO::save_history`.
+  - With `input`, it returns the chain from the input files; see the next section.
 - **`update_attributes_and_history()`:** `update_attributes()` followed by a resync, so a
   surface re-derived between passes is recorded.
 
@@ -286,7 +293,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     corners' positions, sorted (`TetOptimizerMesh::PositionKey`). The tet mesh's `m_posf` is
     the rounding of the same rationals, bit for bit, so `record_surface_history` finds every
     snapshot face's sources there (`m_insertion_sources`), and warns about any it does not.
-  - **The saved chain.** `save_surface_history(path, &input_history)` appends an `embed` onto
+  - **The saved chain.** `finish_surface_history(&input_history)` appends an `embed` onto
     the tet history's first state, then the tet edits.
 - **simwild's surface route.** `EmbedSurface` records per-file read and weld, the transform,
   the split into components and the concatenation as one `relabel` with an explicit face map,
@@ -404,14 +411,16 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
    recorded edits. `qslim.cpp` is the shortest example.
 4. At the end, `consolidate_mesh()`, then `stop_history()`. Write the output by the history's
    last state: consolidated, face ids and corner order as stored.
-5. Save the history with `metadata` set to the JSON parameters.
+5. Save the history with `metadata` set to the JSON parameters, through
+   `ComponentIO::save_history(h, history_output)`: a file on the file route, the report's
+   `history` on the memory route (whose entry point returns `take_result()`).
 6. Add `history_output` to the spec with the same name and meaning as in the other
    applications.
 
 ### On a TetMesh
 
 1. Derive from `TetOptimizerMesh` if you can: the hooks, `record_surface_history` and
-   `save_surface_history` come with it. Otherwise override `is_tracked_face`,
+   `finish_surface_history` come with it. Otherwise override `is_tracked_face`,
    `orient_tracked_face` and `tracked_feature_edges` on your `TetMesh`, and call
    `start_surface_history(position)` yourself.
 2. Orient tracked faces consistently per sheet. Use the input orientation, the tags (simwild),
@@ -424,8 +433,8 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 5. Save after the last change to the tet mesh, then write the tet mesh numbered as it is then:
    `output_vertex_ids` are the mesh vertex ids at save time.
 6. For an insertion stage: collect per-facet sources keyed by position
-   (`m_insertion_sources`), and save with the input history
-   (`save_surface_history(path, &input)`).
+   (`m_insertion_sources`), and finish with the input history
+   (`finish_surface_history(&input)`).
 
 ### What breaks bijectivity
 

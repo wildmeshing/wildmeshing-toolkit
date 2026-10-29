@@ -1,9 +1,12 @@
 #pragma once
+#include <optional>
 #include <set>
 #include <wmtk/MeshData.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
 namespace wmtk::io {
@@ -11,6 +14,7 @@ namespace wmtk::io {
 class ComponentIO
 {
     detail::ComponentLoggerScope logging;
+    std::optional<std::vector<uint8_t>> recorded_history;
 
 public:
     const MeshMap* inputs = nullptr;
@@ -20,6 +24,30 @@ public:
         , inputs(meshes)
     {}
     bool memory() const { return inputs != nullptr; }
+    // A history the component recorded (wmtk/history; its history_output). The file route saves
+    // it to `path`. The memory route, which writes no file, returns the bytes of that file in
+    // the report, as "history" -- a JSON binary value, bytes in Python (take_result()).
+    void save_history(const history::SurfaceHistory& h, const std::string& path)
+    {
+        if (!memory()) {
+            h.save(path);
+            logger().info("history: {} edits saved to {}", h.edits.size(), path);
+            return;
+        }
+        recorded_history = h.to_bytes();
+        logger().info(
+            "history: {} edits, {} bytes, returned in the report",
+            h.edits.size(),
+            recorded_history->size());
+    }
+    // What a memory call returns: the result, with the history recorded, if any, in its report.
+    ComponentResult take_result()
+    {
+        if (recorded_history)
+            result.second["history"] = nlohmann::json::binary(std::move(*recorded_history));
+        recorded_history.reset();
+        return std::move(result);
+    }
     const MeshData& mesh(const std::string& name) const
     {
         const auto it = inputs->find(name);

@@ -279,12 +279,16 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
 
     // From here on the tracked surface -- the interfaces of the tags the input gave -- is recorded.
     const std::string history_output = json_params["history_output"];
+    MeshMap history_input;
     if (!history_output.empty()) {
         // The tet mesh the history starts from, tags and all: for a surface input that is the
-        // embedding, which no file holds otherwise. Next to the output, so not on the memory
-        // route, which has none.
-        if (!component_io.memory())
-            io::write_mesh(params.output_path + "_history_input.msh", tagged_outputs().at("mesh"));
+        // embedding, which no file holds otherwise. Next to the output on the file route; on the
+        // memory route, the output mesh history_input.
+        MeshData start = tagged_outputs().at("mesh");
+        if (component_io.memory())
+            history_input = io::named_outputs({{"mesh_history_input.msh", std::move(start)}});
+        else
+            io::write_mesh(params.output_path + "_history_input.msh", start);
         // A surface input: from the files, through the arrangement, to here.
         mesh.m_insertion_sources = std::move(input_data.facet_sources);
         mesh.record_surface_history(json_params.dump());
@@ -305,9 +309,10 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
 
     // The tag operations change tags only, and leave the surface flags to the next run: the
     // history ends where the flags are.
-    mesh.save_surface_history(
-        history_output,
-        input_data.has_input_history ? &input_data.input_history : nullptr);
+    if (const auto h = mesh.finish_surface_history(
+            input_data.has_input_history ? &input_data.input_history : nullptr)) {
+        component_io.save_history(*h, history_output);
+    }
 
     // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
     // for an un-rounded vertex that double is not the vertex's real position, so the written
@@ -348,6 +353,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     // One result for both routes: returned from memory calls, written as the .msh otherwise.
     {
         component_io.result.first = tagged_outputs();
+        component_io.result.first.merge(history_input);
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);
@@ -555,7 +561,7 @@ ComponentResult simwild(nlohmann::json json_params, const MeshMap& meshes)
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 
 } // namespace wmtk::components::simwild

@@ -162,6 +162,8 @@ geometry under fixed keys:
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as
   `input_and_shell_offset`; with `prism_dominant`, the report adds that export's
   `input_and_shell_hybrid` report, as in its `_hybrid.json` file.
+- `history_input`: simwild's, with `history_output`, the tagged tet mesh its surface history
+  starts from (the file route's `<output>_history_input.msh`).
 
 For tetwild, triwild, simwild and topological_offset, `surface`, `edges` and `offset` share the
 `mesh` vertex rows: their connectivity indexes the same `V`, with the same vertex fields, so row
@@ -177,6 +179,19 @@ algorithm counts, quality measures, and timings; prismatic reports also contain 
 smoothing/remeshing reports. Report values are available without a report filename.
 
 The existing topological-offset driver currently refuses 2D inputs; the memory overload preserves that restriction.
+
+## Surface histories
+
+`isotropic_remeshing`, `qslim`, `shortest_edge_collapse`, `tetwild` and simwild in 3D record the
+history of their surface with `history_output`, from which `surface_map` rebuilds the map
+between input and output. The file route saves it to that file. The memory route writes no file:
+any non-empty `history_output` turns the recording on, and the report returns the history as
+`history`, the bytes of the file the file route would write -- a `nlohmann::json` binary value in
+C++. On the memory route the history starts at the meshes given and ends at the meshes returned.
+`history::write_history(path, bytes)` saves the bytes as that file, unchanged, and
+`history::read_history(path)` reads them back, as `io::write_mesh` and `io::read_mesh` do for a
+mesh; `history::SurfaceHistory::from_bytes` loads them. The history file is its own format, not a
+mesh.
 
 The file-oriented entry points retain existing configurations, relative-path conventions,
 output filenames, intermediate exports, and report files. The tagged components (simwild, triwild,

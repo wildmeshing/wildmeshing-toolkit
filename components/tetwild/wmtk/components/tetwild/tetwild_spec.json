@@ -385,7 +385,7 @@
     "pointer": "/history_output",
     "type": "string",
     "default": "",
-    "doc": "Record every change to the tracked surface, from the input as inserted to the output, and save the history here (see wmtk/history): the surface_map component rebuilds the map between the two from it. A filter's removal of tracked faces is recorded too, as faces no map can follow. Not with use_legacy_code. Empty: no recording."
+    "doc": "Record every change to the tracked surface, from the input as inserted to the output, and save the history here (see wmtk/history): the surface_map component rebuilds the map between the two from it. A filter's removal of tracked faces is recorded too, as faces no map can follow. Not with use_legacy_code. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording."
   },
   {
     "pointer": "/DEBUG_output",

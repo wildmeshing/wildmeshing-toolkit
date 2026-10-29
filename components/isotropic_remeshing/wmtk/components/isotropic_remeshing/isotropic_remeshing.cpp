@@ -282,9 +282,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         m.stop_history();
         // The file as read, the weld to the mesh remeshed, then the remeshing: the history maps
         // the input file to the output file.
-        const history::SurfaceHistory chain = history::from_input(read, verts, history->history());
-        chain.save(history_output);
-        logger().info("history: {} edits saved to {}", chain.edits.size(), history_output);
+        component_io.save_history(
+            history::from_input(read, verts, history->history()),
+            history_output);
     }
 
     if (!m.check_mesh_connectivity_validity()) {
@@ -345,7 +345,7 @@ ComponentResult isotropic_remeshing(nlohmann::json json_params, const MeshMap& m
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 
 } // namespace wmtk::components::isotropic_remeshing

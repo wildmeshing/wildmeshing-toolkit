@@ -130,9 +130,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // The file as read, the weld, then the simplification: the input file to the output file,
         // which is written in the history's last numbering.
         m.stop_history();
-        const history::SurfaceHistory chain = history::from_input(read, verts, history->history());
-        chain.save(history_output);
-        logger().info("history: {} edits saved to {}", chain.edits.size(), history_output);
+        component_io.save_history(
+            history::from_input(read, verts, history->history()),
+            history_output);
     }
     logger().info("After #V = {}, #F = {}", m.vert_capacity(), m.tri_capacity());
 
@@ -170,7 +170,7 @@ ComponentResult qslim(nlohmann::json json_params, const MeshMap& meshes)
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 
 } // namespace wmtk::components::qslim

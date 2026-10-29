@@ -5,6 +5,7 @@
 #include <wmtk/components/simwild/simwild.hpp>
 #include <wmtk/components/surface_map/Tracking.hpp>
 #include <wmtk/components/surface_map/surface_map.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
@@ -232,4 +233,42 @@ TEST_CASE("tracking-example-simwild-tet-input", "[simwild][tracking]")
     }
     CHECK(i == pts.size());
     CHECK(same == pts.size());
+}
+
+TEST_CASE("tracking-simwild-memory-route", "[simwild][tracking]")
+{
+    // The memory route writes no file: the history comes back in the report, as the bytes of
+    // the file, and the mesh it starts from -- <output>_history_input.msh on the file route --
+    // as the output mesh history_input, whose vertices name the points on the input.
+    const MeshMap meshes{
+        {"in", io::read_mesh(fs::path(WMTK_DATA_DIR) / "models" / "double_sphere.msh")}};
+    const auto [outputs, report] = simwild::simwild(
+        {{"operation", "remeshing"},
+         {"input", "in"},
+         {"history_output", "recorded"},
+         {"max_iterations", 1}},
+        meshes);
+    CHECK(!fs::exists("recorded"));
+    REQUIRE(report.at("history").is_binary());
+    REQUIRE(outputs.count("history_input"));
+    REQUIRE(outputs.count("mesh"));
+    const Tracking tracking(history::SurfaceHistory::from_bytes(report.at("history").get_binary()));
+    REQUIRE(tracking.input_by_vertices());
+    REQUIRE(tracking.output_by_vertices());
+    const MeshData& start = outputs.at("history_input");
+    const MeshData& end = outputs.at("mesh");
+    CHECK(start.cell(CellType::Tetrahedron).attributes.count("tags"));
+    const auto& faces = tracking.input_faces();
+    const auto triangles = tracking.input_triangles();
+    for (size_t f = 0; f < triangles.size(); ++f) {
+        for (int k = 0; k < 3; ++k) {
+            REQUIRE(triangles[f][k] < uint64_t(start.V.rows()));
+            REQUIRE(
+                start.V.row(triangles[f][k]).transpose() ==
+                tracking.map().input_vertices()[faces[f][k]]);
+        }
+    }
+    for (const auto& t : tracking.output_triangles()) {
+        for (const uint64_t v : t) REQUIRE(v < uint64_t(end.V.rows()));
+    }
 }

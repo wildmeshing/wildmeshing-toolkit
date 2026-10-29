@@ -7,6 +7,7 @@
 #include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -22,6 +23,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -573,15 +575,15 @@ public:
     void record_surface_history(const std::string& metadata);
     /**
      * @brief Bring the recorded surface up to date with the tracked faces, stop recording, log
-     * what the history holds and save it to `path`. Nothing if not recording.
+     * what the history holds and return it, for the application to save (ComponentIO::
+     * save_history). None if not recording.
      *
      * With `input`, the history of the input the mesh was made from (read, welded, simplified):
-     * the saved history is that, then the insertion -- each tracked face on the input faces it
-     * lies on, from m_insertion_sources -- then the recorded one, so it maps the input files to
-     * the output.
+     * the history returned is that, then the insertion -- each tracked face on the input faces
+     * it lies on, from m_insertion_sources -- then the recorded one, so it maps the input files
+     * to the output.
      */
-    void save_surface_history(
-        const std::string& path,
+    std::optional<history::SurfaceHistory> finish_surface_history(
         const history::SurfaceHistory* input = nullptr);
 
     /// A tracked face by its corners' positions, sorted.

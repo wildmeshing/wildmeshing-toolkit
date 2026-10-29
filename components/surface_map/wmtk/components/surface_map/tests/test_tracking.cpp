@@ -6,6 +6,7 @@
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/components/surface_map/Tracking.hpp>
 #include <wmtk/components/surface_map/surface_map.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
@@ -168,9 +169,12 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
 
 TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
 {
-    // The memory route: an application records its history from the mesh it is given, to a file
-    // still, and surface_map's info reports on it, the report returned rather than logged only.
+    // The memory route: an application records its history from the mesh it is given and
+    // returns it in its report, as the bytes of the file the file route would write, which it
+    // does not write; surface_map's info reports on it, the report returned rather than logged
+    // only.
     const fs::path dir = fs::current_path() / "tracking_memory_route";
+    fs::remove_all(dir);
     fs::create_directories(dir);
     const fs::path tracking_file = dir / "sphere.wmtkhist";
     const wmtk::MeshMap meshes{
@@ -182,9 +186,13 @@ TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
          {"length_rel", 0.08},
          {"max_iterations", 3}},
         meshes);
+    CHECK(!fs::exists(tracking_file));
+    REQUIRE(remeshed.second.at("history").is_binary());
+    const std::vector<uint8_t>& bytes = remeshed.second.at("history").get_binary();
+    wmtk::history::write_history(tracking_file, bytes);
 
     // The history starts at the mesh given, as the meshes hold it, and ends at the mesh returned.
-    const Tracking tracking = Tracking::load(tracking_file.string());
+    const Tracking tracking(wmtk::history::SurfaceHistory::from_bytes(bytes));
     CHECK(
         tracking.input_faces().size() ==
         size_t(meshes.at("sphere").cell(wmtk::CellType::Triangle).connectivity.rows()));

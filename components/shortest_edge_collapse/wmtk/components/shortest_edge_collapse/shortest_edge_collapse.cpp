@@ -152,9 +152,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // The file as read, the weld, then the simplification: the input file to the output file,
         // which is written in the history's last numbering.
         m.stop_history();
-        const history::SurfaceHistory chain = history::from_input(read, v, history->history());
-        chain.save(history_output);
-        logger().info("history: {} edits saved to {}", chain.edits.size(), history_output);
+        component_io.save_history(history::from_input(read, v, history->history()), history_output);
     }
 
     if (!m.check_mesh_connectivity_validity()) {
@@ -200,7 +198,7 @@ ComponentResult shortest_edge_collapse(nlohmann::json json_params, const MeshMap
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 
 } // namespace wmtk::components::shortest_edge_collapse

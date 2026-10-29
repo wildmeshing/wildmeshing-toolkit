@@ -1082,7 +1082,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     }
     mesh_new.consolidate_mesh();
     // A filter removes the tracked faces of the tets it drops, which no operation maps.
-    mesh_new.save_surface_history(history_output, &input_history);
+    if (const auto h = mesh_new.finish_surface_history(&input_history)) {
+        component_io.save_history(*h, history_output);
+    }
 
     t_finalize = phase_timer.getElapsedTime(); // winding/flood/filter done
     phase_timer.start(); // output (surface extraction) begins
@@ -1508,6 +1510,6 @@ ComponentResult tetwild(nlohmann::json json_params, const MeshMap& meshes)
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 } // namespace wmtk::components::tetwild
