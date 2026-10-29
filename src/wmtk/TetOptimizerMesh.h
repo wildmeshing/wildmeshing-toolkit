@@ -248,7 +248,7 @@ public:
      *  - feature: the input feature curves the application was given, held by
      *    m_feature_envelope;
      *  - order2: the input's order-2 edges (open boundaries and non-manifold edges), held by
-     *    m_order2_edge_envelope. Reserved: nothing sets it yet.
+     *    m_order2_edge_envelope; set by tag_order2_edges().
      * An edge with any bit set is TAGGED, and the operations treat every tagged edge alike --
      * propagated through split, collapse and swap, never removed by a swap, order-2 substructure
      * for the link condition. Only the tube it is held to, and vertex_has_feature_edge(), read
@@ -304,7 +304,8 @@ public:
      * stay in.
      *
      * The order2 counterpart of m_feature_envelope, separate from it for the reason given there.
-     * Null => order2 edges are propagated but not geometrically constrained. Nothing sets it yet.
+     * Null => order2 edges are propagated but not geometrically constrained. Built by
+     * tag_order2_edges().
      */
     std::shared_ptr<Envelope> m_order2_edge_envelope;
     /// The tube edges of kind `k` are held to (one of the two above); null if there is none.
