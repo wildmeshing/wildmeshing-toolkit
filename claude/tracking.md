@@ -92,6 +92,37 @@ auto on_curves = c.to_output(on_input);   // OutputCurvePoint: .vertices, two me
 auto features = c.feature_points();       // {input_vertex, output_vertex} per feature point
 ```
 
+From Python, the same classes on NumPy arrays (`app/pywildmeshing/tracking_bindings.cpp`),
+built from the history's bytes -- a memory call's `report["history"]`, or `wm.read_history` --
+or from its file:
+
+```python
+outputs, report = wm.isotropic_remeshing({"input": "in", "history_output": "x"}, {"in": mesh})
+t = wm.Tracking(report["history"])          # smoothing="flatten", scaffold="box"; or .load(path)
+ids, bary = t.to_output(faces, bary)        # int64 (n,), float64 (n, 3) -> the output's
+faces, bary = t.to_input(ids, bary)         # and back
+ids, bary, warnings = t.to_output(faces, bary, warnings=True)  # what this call found
+
+c = wm.CurveTracking(triwild_report["history"])   # or .load(path)
+pairs, bary = c.to_output(segments, bary)   # int64 (n,), float64 (n, 2) -> (n, 2) vertex pairs
+c.feature_points()                          # int64 (p, 2): input vertex, output vertex
+```
+
+- **Ids.** A face (segment) per point, `(n,)`, or a mesh's vertices, `(n, 3)` -- `(n, 2)` on
+  curves -- on a side named by vertices (`output_by_vertices`, `input_by_vertices`): tetwild's
+  and simwild's output, simwild's input from a tet mesh, triwild's output. `-1` is no face, both
+  ways; a point with no image comes back with `-1` and NaN coordinates. Shapes and dtypes are
+  checked: `TypeError` for a dtype that is not an integer (ids) or a float (bary), `ValueError`
+  for a shape that is not the side's.
+- **Warnings.** `warnings=True` returns a third element, the dictionary of what that call found
+  (the keys of `info`'s `to_input_warnings`); `build_warnings` is the map's.
+- **Properties.** `input_faces`, `input_triangles`, `output_triangles` (surfaces),
+  `input_segments`, `output_segments` (curves): owning int64 arrays, in the ids points use.
+- **Threads.** Building the map releases the GIL and holds the lock component calls hold, as it
+  logs through their logger; mapping releases the GIL and writes nothing, so several threads
+  may map through one object. A damaged history raises `RuntimeError`; a curve history given to
+  `Tracking` (or the reverse) raises `ValueError`, naming the other class.
+
 Worked examples, one per application, are unit tests:
 - `components/tracking/wmtk/components/tracking/tests/test_tracking.cpp` (isotropic)
 - `components/tetwild/wmtk/components/tetwild/tests/test_tetwild_tracking.cpp`

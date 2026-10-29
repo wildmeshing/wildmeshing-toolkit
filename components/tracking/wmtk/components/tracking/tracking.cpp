@@ -272,4 +272,27 @@ std::vector<FeaturePoint> CurveTracking::feature_points() const
     return out;
 }
 
+nlohmann::json warnings_report(const MapWarnings& w)
+{
+    return {
+        {"total", w.total()},
+        {"not_a_disk", w.not_a_disk},
+        {"flat_triangle", w.flat_triangle},
+        {"inverted", w.inverted},
+        {"merged_faces", w.merged_faces},
+        {"unlocated", w.unlocated},
+        {"replaced", w.replaced}};
+}
+
+nlohmann::json warnings_report(const CurveMapWarnings& w)
+{
+    return {
+        {"total", w.total()},
+        {"topology", w.topology},
+        {"merged_segments", w.merged_segments},
+        {"overlapping", w.overlapping},
+        {"unlocated", w.unlocated},
+        {"replaced", w.replaced}};
+}
+
 } // namespace wmtk::components::tracking

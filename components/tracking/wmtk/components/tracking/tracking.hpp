@@ -227,6 +227,10 @@ private:
     std::map<uint64_t, uint64_t> m_history_vertex;
 };
 
+/// A map's warnings as a report holds them: each count by its name, and their total.
+nlohmann::json warnings_report(const MapWarnings& w);
+nlohmann::json warnings_report(const CurveMapWarnings& w);
+
 /// The tracking application: maps points, transfers fields and reports on a tracking file
 /// (tracking_spec.json).
 void tracking(nlohmann::json json_params);
