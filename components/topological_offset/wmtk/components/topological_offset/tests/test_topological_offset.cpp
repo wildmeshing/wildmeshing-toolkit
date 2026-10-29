@@ -3955,7 +3955,7 @@ TEST_CASE("surface-offset-error-3d", "[offset][3d]")
         }
 }
 
-TEST_CASE("surface-energy-keys", "[offset][3d]")
+TEST_CASE("surface-energy-keys", "[offset][3d]" + release_only)
 {
     // EXPERIMENTAL_band_volume_rule "surface" through the spec, as the app reads it: the defaults
     // of 2026-10-29 (the "exact" rule, offset_amips_weight 1, label_cleanup "one_sided_at_target",
@@ -4065,7 +4065,7 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
              {"settle_stall_eps", 0.2}})});
 }
 
-TEST_CASE("surface-energy-sums", "[offset][3d]")
+TEST_CASE("surface-energy-sums", "[offset][3d]" + release_only)
 {
     // EXPERIMENTAL_band_volume_rule "surface" on the grid constructed at 0.2: no cell carries a
     // band term (tet_energy() is the AMIPS term of every cell), the face term is read the same in
@@ -4212,7 +4212,7 @@ TEST_CASE("surface-energy-sums", "[offset][3d]")
     }
 }
 
-TEST_CASE("final-coarsening-guard", "[offset][3d]")
+TEST_CASE("final-coarsening-guard", "[offset][3d]" + release_only)
 {
     // The coarsening collapses (coarsen_mesh(), since 2026-10-28) are kept only if neither the
     // max AMIPS over the cells they change nor the offset face term over the offset faces they
@@ -4467,7 +4467,7 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]")
     }
 }
 
-TEST_CASE("label-cleanup-energy-decrease", "[offset][3d]")
+TEST_CASE("label-cleanup-energy-decrease", "[offset][3d]" + release_only)
 {
     // EXPERIMENTAL_label_cleanup "energy_decrease" on a 5 x 5 x 5 grid constructed at 0.2 under
     // the "surface" rule, every other front vertex pushed out: label_flip_surface_change(), the
@@ -4536,7 +4536,7 @@ TEST_CASE("label-cleanup-energy-decrease", "[offset][3d]")
     CHECK(std::memcmp(&e1, &e2, sizeof(double)) == 0);
 }
 
-TEST_CASE("settle-mark-stencil", "[offset][3d]")
+TEST_CASE("settle-mark-stencil", "[offset][3d]" + release_only)
 {
     // EXPERIMENTAL_settle_mark "stencil" (2026-10-28): on a settled turn a front face with a point
     // of its offset stencil at or beyond front_conv, (d - delta)^2 >= front_conv^2, has its corners
