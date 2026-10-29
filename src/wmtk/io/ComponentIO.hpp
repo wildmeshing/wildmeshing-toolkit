@@ -24,10 +24,12 @@ public:
         , inputs(meshes)
     {}
     bool memory() const { return inputs != nullptr; }
-    // A history the component recorded (wmtk/history; its history_output). The file route saves
-    // it to `path`. The memory route, which writes no file, returns the bytes of that file in
-    // the report, as "history" -- a JSON binary value, bytes in Python (take_result()).
-    void save_history(const history::SurfaceHistory& h, const std::string& path)
+    // A history the component recorded (wmtk/history; its history_output), of a surface or of
+    // curves. The file route saves it to `path`. The memory route, which writes no file, returns
+    // the bytes of that file in the report, as "history" -- a JSON binary value, bytes in Python
+    // (take_result()).
+    template <int N>
+    void save_history(const history::History<N>& h, const std::string& path)
     {
         if (!memory()) {
             h.save(path);

@@ -323,7 +323,7 @@
     "pointer": "/history_output",
     "type": "string",
     "default": "",
-    "doc": "Record every change to the tracked curves, from the input files as read to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The output names a point on its curves by two vertices of the output mesh. A filter's removal of tracked edges is recorded too, as segments no map can follow. Anchors junctions unless allow_junction_cleanup is given, so the output differs from a run without recording; give allow_junction_cleanup to get the same output with and without. Empty: no recording."
+    "doc": "Record every change to the tracked curves, from the input files as read to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The output names a point on its curves by two vertices of the output mesh. A filter's removal of tracked edges is recorded too, as segments no map can follow. Anchors junctions unless allow_junction_cleanup is given, so the output differs from a run without recording; give allow_junction_cleanup to get the same output with and without. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording."
   },
   {
     "pointer": "/report",

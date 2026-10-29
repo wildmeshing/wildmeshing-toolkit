@@ -274,8 +274,8 @@ void bind_mesh_io(py::module_& module)
             return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         },
         "path"_a,
-        "Read a surface history file (a component's history_output) as the bytes a memory call "
-        "returns in its report's 'history' and takes as 'history'.");
+        "Read a history file (a component's history_output, of a surface or of curves) as the "
+        "bytes a memory call returns in its report's 'history' and takes as 'history'.");
     module.def(
         "write_history",
         [](const std::filesystem::path& path, const py::bytes& history) {
@@ -286,7 +286,7 @@ void bind_mesh_io(py::module_& module)
         },
         "path"_a,
         "history"_a,
-        "Save the bytes of a surface history (a memory call's report['history']) as the file the "
-        "file route writes.");
+        "Save the bytes of a history (a memory call's report['history']) as the file the file "
+        "route writes.");
 }
 } // namespace wmtk::python

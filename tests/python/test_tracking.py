@@ -1,5 +1,5 @@
-"""Surface tracking through the bindings: histories as bytes on the memory route, as files on the
-file route, and wm.read_history / wm.write_history between the two.
+"""Tracking through the bindings: histories of surfaces and of curves as bytes on the memory
+route, as files on the file route, and wm.read_history / wm.write_history between the two.
 
 Also runnable with Python's standard-library unittest runner; NumPy only, synthetic meshes."""
 
@@ -45,7 +45,22 @@ def write_obj(path, mesh):
             f.write("f {} {} {}\n".format(*(t + 1)))
 
 
+def curves(n=60, m=30):
+    """triwild's curves: a circle and an open wave crossing it twice, as edge meshes."""
+    a = 2 * np.pi * np.arange(n) / n
+    circle = {"V": np.stack([np.cos(a), np.sin(a), np.zeros(n)], axis=1),
+              "cells": {"edge": {"connectivity": np.stack(
+                  [np.arange(n), (np.arange(n) + 1) % n], axis=1).astype(np.int64)}}}
+    x = -1.6 + 3.2 * np.arange(m + 1) / m
+    wave = {"V": np.stack([x, 0.3 * np.sin(6 * x) + 0.1, np.zeros(m + 1)], axis=1),
+            "cells": {"edge": {"connectivity": np.stack(
+                [np.arange(m), np.arange(1, m + 1)], axis=1).astype(np.int64)}}}
+    return {"circle": circle, "wave": wave}
+
+
 REMESH = {"length_rel": 0.2, "max_iterations": 2, "num_threads": 1}
+TRIWILD = {"input": ["circle", "wave"], "preserve_topology": True, "length_rel": 0.05,
+           "max_iterations": 3, "num_threads": 1}
 
 
 class Tracking(unittest.TestCase):
@@ -83,6 +98,24 @@ class Tracking(unittest.TestCase):
         # Without history_output nothing is recorded.
         _, report = wm.qslim({"input": "in", "target_rel": 0.5}, {"in": sphere()})
         self.assertNotIn("history", report)
+
+    def test_triwild_returns_a_curve_history(self):
+        # A curve history: version 7, two corners a face, in the report and in no file.
+        outputs, report = wm.triwild({**TRIWILD, "history_output": "x"}, curves())
+        self.assertIn("mesh", outputs)
+        history = report["history"]
+        self.assertEqual(history[:13], b"WMTKHIST\x07\x00\x00\x00\x02")
+        self.assertEqual(list(Path.cwd().iterdir()), [])
+        wm.write_history("curves.wmtkhist", history)
+        self.assertEqual(wm.read_history("curves.wmtkhist"), history)
+        # tracking reports on it in memory: no warning under preserve_topology, the wave's two
+        # ends at output vertices, the round trip exact.
+        _, info = getattr(wm, TRACKING)({"history": history, "operation": "info"}, {})
+        self.assertEqual(info["build_warnings"]["total"], 0)
+        self.assertEqual(info["feature_points"], 2)
+        self.assertEqual(info["feature_points_at_output_vertex"], 2)
+        self.assertEqual(info["round_trip_lost"], 0)
+        self.assertLess(info["round_trip_max_displacement"], 1e-8)
 
     def test_write_and_read_history(self):
         _, report = wm.isotropic_remeshing(

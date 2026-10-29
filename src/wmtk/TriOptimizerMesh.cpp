@@ -676,11 +676,10 @@ void TriOptimizerMesh::record_curve_history(
     }
 }
 
-void TriOptimizerMesh::save_curve_history(
-    const std::string& path,
+std::optional<history::CurveHistory> TriOptimizerMesh::finish_curve_history(
     const history::CurveHistory* input)
 {
-    if (!m_recorded_curves) return;
+    if (!m_recorded_curves) return std::nullopt;
     if (const size_t drift = resync_curve_history(tracked_edges())) {
         logger().warn("curve history: {} tracked edges changed outside the operations", drift);
     }
@@ -697,26 +696,26 @@ void TriOptimizerMesh::save_curve_history(
     const auto st = m_recorded_curves->stats();
     logger().info(
         "curve history: {} edits -- {} splits, {} collapses ({} welding two curve vertices), {} "
-        "moves; {} changes recorded as they are -- saved to {}",
+        "moves; {} changes recorded as they are",
         m_recorded_curves->history().edits.size(),
         st.split,
         st.collapse,
         st.weld,
         st.move,
-        st.replaced,
-        path);
+        st.replaced);
     if (st.unknown > 0) logger().error("curve history: lost track of {} segments", st.unknown);
+    history::CurveHistory h;
     if (input != nullptr) {
-        history::CurveHistory chain = *input;
-        history::append_embedded(chain, m_recorded_curves->history(), m_recorded_curve_sources);
-        chain.metadata = m_recorded_curves->history().metadata;
-        chain.output_vertex_ids = m_recorded_curves->history().output_vertex_ids;
-        chain.save(path);
+        h = *input;
+        history::append_embedded(h, m_recorded_curves->history(), m_recorded_curve_sources);
+        h.metadata = m_recorded_curves->history().metadata;
+        h.output_vertex_ids = m_recorded_curves->history().output_vertex_ids;
     } else {
-        m_recorded_curves->history().save(path);
+        h = std::move(m_recorded_curves->history());
     }
     m_recorded_curves.reset();
     m_recorded_curve_sources.clear();
+    return h;
 }
 
 std::vector<size_t> TriOptimizerMesh::tracked_feature_points() const

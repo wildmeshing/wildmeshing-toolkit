@@ -104,8 +104,8 @@ back, remaps a per-vertex attribute onto the output's vertices, and does the sam
 command line with a points file.
 
 On the memory route the applications record the same history, from the meshes they are given
-as from their files; triwild still saves its curve history to the file `history_output` names.
-`tracking(options, meshes)` takes the history as bytes: it runs `info` on a surface or a curve
+as from their files, and return it as bytes, curves as surfaces. `tracking(options, meshes)`
+takes the history as bytes: it runs `info` on a surface or a curve
 history and returns its report, and `transfer` on a surface; `map` and `features` read and write
 files of points, and throw there. The tests `tracking-memory-route` (isotropic) and
 `tracking-memory-route-triwild` (curves) run both.
@@ -355,11 +355,12 @@ verified, a `replace_faces` otherwise.
 
 `TriOptimizerMesh` (`src/wmtk/TriOptimizerMesh.{h,cpp}`), the base of triwild, fills them in
 (`m_is_surface_fs`, and the vertices with a feature point id) and adds
-`record_curve_history(metadata, sources)` and `save_curve_history(path, input)`, as
-`TetOptimizerMesh` does for surfaces: `save` resyncs, checks the feature points against the
+`record_curve_history(metadata, sources)` and `finish_curve_history(input)`, as
+`TetOptimizerMesh` does for surfaces: `finish` resyncs, checks the feature points against the
 mesh's, fills `output_vertex_ids` (the mesh's vertex ids: after the last consolidation, the
 vertex rows of the output mesh, which the file route writes with `io::write_mesh` and the memory
-route returns), and saves the chain from the input files.
+route returns), and returns the chain from the input files, which triwild saves with
+`ComponentIO::save_history`: a file on the file route, `report["history"]` on the memory route.
 
 ## From the input files: the chain
 
@@ -403,7 +404,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     segments by their vertices.
   - **Insert.** `utils::embed_segments` already gives each arrangement edge the input segments
     it tiles (`E_out_sources`). The mesh's vertices are the arrangement's rows, so triwild keys
-    them by vertex pair (`TriOptimizerMesh::CurveSources`); `save_curve_history` appends the
+    them by vertex pair (`TriOptimizerMesh::CurveSources`); `finish_curve_history` appends the
     `embed`, then the mesh's edits.
 
 | application | history starts at | ends at | output point |
@@ -667,7 +668,7 @@ What is left under `preserve_topology` (101168: 298 warnings, no welds):
 - **A new operation:** add it to `app.cpp` and to `operation`'s options in the spec,
   with every new option documented there.
 - **Another curve application.** On a `TriOptimizerMesh`, `record_curve_history` and
-  `save_curve_history` come with it. Otherwise override `is_tracked_edge` and
+  `finish_curve_history` come with it. Otherwise override `is_tracked_edge` and
   `tracked_feature_points` on your `TriMesh` and call `start_curve_history(position)`. Keep the
   feature points by the rules (a collapse renames a removed one to the survivor), and start from
   the input with `history::curves_from_input` if the input is curve files.
@@ -716,7 +717,7 @@ The checks used so far, from cheapest to strongest:
    triangles, and the conformal distortion of each triangle's 3D-to-UV map.
 8. **Curves.** The same checks: the history's last segments, by `output_vertex_ids`, are edges
    of the output mesh at the same positions; the recorder's `replaced` and `unknown` are 0 and
-   `save_curve_history` warns about nothing; the map builds without warnings under
+   `finish_curve_history` warns about nothing; the map builds without warnings under
    `preserve_topology`; round trips are at rounding (1e-16 on the examples, arc length being
    exact); input feature points end at output vertices within eps of themselves; a point at a
    curve's end maps onto the end's output vertex. Tests: `test_curve_map.cpp` (exact maps on

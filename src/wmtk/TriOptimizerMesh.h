@@ -7,6 +7,7 @@
 #include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
@@ -18,6 +19,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -762,15 +764,17 @@ public:
     void record_curve_history(const std::string& metadata, const CurveSources& sources = {});
     /**
      * @brief Check the recorded curves against the tracked edges, stop recording, log what the
-     * history holds and save it to `path`. Nothing if not recording.
+     * history holds and return it, for the application to save (io::ComponentIO::save_history).
+     * None if not recording.
      *
      * With `input`, the history of the input the mesh was made from (read, welded, simplified):
-     * the saved history is that, then the insertion -- each tracked edge on the input segments it
-     * lies on, from record_curve_history's sources -- then the recorded one, so it maps the
+     * the history returned is that, then the insertion -- each tracked edge on the input segments
+     * it lies on, from record_curve_history's sources -- then the recorded one, so it maps the
      * input files to the output. The output names a point on the curves by two of its vertices,
      * numbered as they are now: the mesh must be written as it is here.
      */
-    void save_curve_history(const std::string& path, const history::CurveHistory* input = nullptr);
+    std::optional<history::CurveHistory> finish_curve_history(
+        const history::CurveHistory* input = nullptr);
 
 private:
     std::shared_ptr<history::TrackedCurveRecorder> m_recorded_curves;

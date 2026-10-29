@@ -199,10 +199,12 @@ TEST_CASE("tracking-example-triwild", "[triwild][tracking]")
 
 TEST_CASE("tracking-memory-route-triwild", "[triwild][tracking]")
 {
-    // The memory route: triwild records its history from the curves it is given, to a file
-    // still, and the tracking application's info reports on it, the report returned rather than
-    // logged only. The input is the example's above, as meshes.
+    // The memory route: triwild records its history from the curves it is given and returns it
+    // in its report, as bytes, writing no file, and the tracking application's info reports on
+    // it, the report returned rather than logged only. The input is the example's above, as
+    // meshes.
     const fs::path dir = fs::current_path() / "tracking_memory_route_triwild";
+    fs::remove_all(dir);
     fs::create_directories(dir);
     const fs::path tracking_file = dir / "curves.wmtkhist";
     const int n = 300, m = 100;
@@ -236,9 +238,18 @@ TEST_CASE("tracking-memory-route-triwild", "[triwild][tracking]")
          {"length_rel", 0.02},
          {"max_iterations", 10}},
         meshes);
+    CHECK(fs::is_empty(dir));
+    REQUIRE(result.second.contains("history"));
+    const nlohmann::json bytes = result.second.at("history");
+    REQUIRE(bytes.is_binary());
+    CHECK(history::face_size(bytes.get_binary()) == 2);
+    CHECK(
+        nlohmann::json::parse(history::CurveHistory::from_bytes(bytes.get_binary()).metadata)
+            .at("route") == "memory");
 
     // The history starts at the curves given, segment for segment, and its tracked edges are edges
-    // of the mesh returned, by its vertex rows.
+    // of the mesh returned, by its vertex rows. The bytes are the file the file route writes.
+    history::write_history(tracking_file, bytes.get_binary());
     const CurveTracking tracking = CurveTracking::load(tracking_file.string());
     REQUIRE(tracking.output_by_vertices());
     CHECK(tracking.input_segments().size() == size_t(n + m));
@@ -259,7 +270,6 @@ TEST_CASE("tracking-memory-route-triwild", "[triwild][tracking]")
     CHECK(tracking.feature_points().size() == 4);
 
     // tracking takes the history as bytes on the memory route.
-    const auto bytes = nlohmann::json::binary(history::read_history(tracking_file));
     const auto [none, report] = tracking::tracking({{"history", bytes}, {"operation", "info"}}, {});
     CHECK(none.empty());
     CHECK(report.at("edits").get<size_t>() > 0);

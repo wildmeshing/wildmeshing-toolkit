@@ -666,7 +666,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             auto& s = sources[{{a, b}}];
             for (const int e : E_sources[i]) s.push_back(uint64_t(e));
         }
-        mesh.record_curve_history(json_params.dump(), sources);
+        mesh.record_curve_history(component_io.history_metadata(json_params), sources);
     }
     // The arrangement now lives in `mesh`. These are function locals, so without this they --
     // the exact coordinates above all -- would be held through the optimization, which is where
@@ -1062,7 +1062,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
     // After the output, whose vertex rows -- the mesh's vertices in order, consolidated -- the
     // history's output ids are.
-    mesh.save_curve_history(history_output, record_history ? &input_history : nullptr);
+    if (const auto h = mesh.finish_curve_history(&input_history)) {
+        component_io.save_history(*h, history_output);
+    }
     logger().info("======= finish =========");
 }
 
@@ -1075,7 +1077,7 @@ ComponentResult triwild(nlohmann::json json_params, const MeshMap& meshes)
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 
 } // namespace wmtk::components::triwild
