@@ -1,6 +1,7 @@
 [
     {
         "pointer": "/",
+        "doc": "Work in progress. From a topological_offset construction (a .vtu, or a .msh with corr_input_vid), thins the offset band around the solid to a target thickness and, with prism_dominant, rebuilds it as prisms, pyramids and tets.",
         "type": "object",
         "required": [
             "application",
@@ -30,6 +31,7 @@
     },
     {
         "pointer": "/application",
+        "doc": "Application name must be prismatic_mesh.",
         "type": "string",
         "options": [
             "prismatic_mesh"

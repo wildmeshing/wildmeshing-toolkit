@@ -8,6 +8,8 @@ function(add_component COMPONENT_NAME)
     ENDIF()
 
     message(STATUS "Add component wmtk::${COMPONENT_NAME}.")
+    # Every enabled component, for what links them all (docs/examples).
+    set_property(GLOBAL APPEND PROPERTY WMTK_COMPONENTS ${COMPONENT_NAME})
 
     add_library(${COMPONENT_TARGET_NAME})
     add_library(wmtk::${COMPONENT_NAME} ALIAS ${COMPONENT_TARGET_NAME})
@@ -30,12 +32,19 @@ function(add_component COMPONENT_NAME)
      "components_map[\"${COMPONENT_NAME}\"] = static_cast<void (*)(nlohmann::json)>(&wmtk::components::${COMPONENT_NAME}::${COMPONENT_NAME});\n")
     file(APPEND "${CMAKE_SOURCE_DIR}/app/components_memory_map.hpp"
      "memory_components[\"${COMPONENT_NAME}\"] = static_cast<wmtk::ComponentResult (*)(nlohmann::json, const wmtk::MeshMap&)>(&wmtk::components::${COMPONENT_NAME}::${COMPONENT_NAME});\n")
+    # The spec, for wmtk_app --list / --options and the Python docstrings (app/component_specs.hpp).
+    file(APPEND "${CMAKE_SOURCE_DIR}/app/components_spec_include.hpp"
+     "#include <${COMPONENT_NAME}_spec.hpp>\n")
+    file(APPEND "${CMAKE_SOURCE_DIR}/app/components_spec_map.hpp"
+     "components_spec_map[\"${COMPONENT_NAME}\"] = &jse::embed::wmtk_${COMPONENT_NAME}_spec::${COMPONENT_NAME}_spec::spec;\n")
 
     # add component to wmtk app
     target_link_libraries(wmtk_app PUBLIC wmtk::${COMPONENT_NAME})
+    target_link_libraries(wmtk_app PRIVATE ${COMPONENT_TARGET_NAME}_spec)
     # add component to python bindings
     if(WMTK_PYBIND)
         target_link_libraries(wildmeshing PUBLIC wmtk::${COMPONENT_NAME})
+        target_link_libraries(wildmeshing PRIVATE ${COMPONENT_TARGET_NAME}_spec)
         # The component's own Python classes and functions, if it has any:
         # python/src/<name>_bindings.cpp, defining wmtk::python::bind_<name>(module), which
         # the module calls (components_python.hpp). Compiled only with the component.

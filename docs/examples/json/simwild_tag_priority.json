@@ -1,0 +1,7 @@
+{
+  "application": "simwild",
+  "operation": "tag_priority",
+  "input": ["double_sphere.msh"],
+  "output": "double_sphere_priority",
+  "tag_priority": ["tag_1", "tag_0"]
+}

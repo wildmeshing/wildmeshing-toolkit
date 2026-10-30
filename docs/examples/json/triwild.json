@@ -1,0 +1,16 @@
+{
+  "application": "triwild",
+  "input": [
+    "triwild_blob1.obj",
+    "triwild_blob2.obj",
+    "triwild_circle.obj",
+    "triwild_ellipse.obj",
+    "triwild_rectangle.obj"
+  ],
+  "input_names": ["blob1", "blob2", "circle", "ellipse", "rectangle"],
+  "output": "shapes",
+  "filter": "input",
+  "stop_energy": 10,
+  "num_threads": 4,
+  "report": "shapes_report.json"
+}

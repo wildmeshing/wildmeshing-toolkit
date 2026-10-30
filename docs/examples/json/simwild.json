@@ -1,0 +1,14 @@
+{
+  "application": "simwild",
+  "input": ["sphere.obj", "sphere.obj"],
+  "input_names": ["a", "b"],
+  "input_transform": [
+    [],
+    [[1, 0, 0, 0.3], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  ],
+  "output": "two_spheres",
+  "eps_rel": 0.01,
+  "length_rel": 0.05,
+  "num_threads": 4,
+  "report": "two_spheres_report.json"
+}
