@@ -2487,17 +2487,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#skip_simplify" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4479,17 +4468,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#skip_simplify" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5071,7 +5049,7 @@
 <h2 id="key-options">Key options<a class="headerlink" href="#key-options" title="Permanent link">&para;</a></h2>
 <h3 id="input_names"><code>input_names</code><a class="headerlink" href="#input_names" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>[]</code></p>
-<p>List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.</p>
+<p>Names for the inputs, used for each input's winding-number field: wn_&lt;name&gt; in the VTU output and on the memory route. The .msh output numbers them, wn_0, wn_1, ..., and so does everything without names.</p>
 <p>Each entry: Name for one input mesh.</p>
 <h3 id="output"><code>output</code><a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"out"</code></p>
@@ -5121,15 +5099,12 @@
 <h3 id="write_vtu"><code>write_vtu</code><a class="headerlink" href="#write_vtu" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
 <p>Write the VTU output next to the MSH.</p>
-<h3 id="preallocation_factor"><code>preallocation_factor</code><a class="headerlink" href="#preallocation_factor" title="Permanent link">&para;</a></h3>
-<p><strong>float</strong> · default <code>6.0</code> · min <code>1.0</code></p>
-<p>Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.</p>
 <h3 id="skip_simplify"><code>skip_simplify</code><a class="headerlink" href="#skip_simplify" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>If true, input simplification will be skipped.</p>
 <h3 id="simplify_use_sample_envelope"><code>simplify_use_sample_envelope</code><a class="headerlink" href="#simplify_use_sample_envelope" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
-<p>Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly.</p>
+<p>Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. On thin lattice geometry it has been observed to over-collapse badly.</p>
 <h3 id="simplify_envelope_ratio"><code>simplify_envelope_ratio</code><a class="headerlink" href="#simplify_envelope_ratio" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>0.5</code></p>
 <p>Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope.</p>

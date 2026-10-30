@@ -183,7 +183,7 @@
     },
     "interleaved_smoothing": {
       "type": "boolean",
-      "description": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in triwild: per iteration it reaches a given energy sooner than the batched schedule (on 122839, 102 vs 535 at iteration 5 and 25 vs 69 at iteration 13), at the cost of roughly 3x the work per iteration since each topology pass gets its own smoothing. tetwild still defaults to off, pending the same measurement there.",
+      "description": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in triwild: per iteration it reaches a given energy sooner than the batched schedule (on 122839, 102 vs 535 at iteration 5 and 25 vs 69 at iteration 13), at the cost of roughly 3x the work per iteration since each topology pass gets its own smoothing. tetwild defaults to on too.",
       "default": true
     },
     "interleaved_smoothing_passes": {
@@ -245,12 +245,6 @@
       "type": "boolean",
       "description": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging.",
       "default": false
-    },
-    "preallocation_factor": {
-      "type": "number",
-      "description": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.",
-      "default": 6.0,
-      "minimum": 1.0
     },
     "max_expected_iterations": {
       "type": "integer",

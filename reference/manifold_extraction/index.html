@@ -2630,17 +2630,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#envelope" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3808,17 +3797,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#envelope" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3946,9 +3924,6 @@
 <h3 id="save_vtu"><code>save_vtu</code><a class="headerlink" href="#save_vtu" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Save .vtu of output mesh</p>
-<h3 id="preallocation_factor"><code>preallocation_factor</code><a class="headerlink" href="#preallocation_factor" title="Permanent link">&para;</a></h3>
-<p><strong>float</strong> · default <code>6.0</code> · min <code>1.0</code></p>
-<p>Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.</p>
 <h3 id="envelope"><code>envelope</code><a class="headerlink" href="#envelope" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>
 <p>Memory route only: the name of the input mesh that holds the envelope surface of a tagged mesh input -- the <code>envelope</code> mesh simwild returns with its result. On the file route, the .msh input's own EnvelopeSurface group plays this role, and this option is ignored.</p>

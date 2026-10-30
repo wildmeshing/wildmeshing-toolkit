@@ -4045,8 +4045,8 @@ and fixed vertices stay where they are. They come in two forms:</p>
   of a split edge keep theirs. With an envelope, a tube of the same thickness holds the curves.</li>
 <li><a href="../../reference/isotropic_remeshing/#feature_fields"><code>feature_fields</code></a> names per-face fields of
   a <code>.msh</code> input, labels, whose boundaries become curves; every output triangle has the value of
-  the input triangle it comes from. These curves have no tube of their own unless <code>features</code> is
-  given too. It reads the file, so it works on the command line and on files only.</li>
+  the input triangle it comes from. With an envelope, a tube of the same thickness holds these
+  curves too. It reads the file, so it works on the command line and on files only.</li>
 </ul>
 <p>The box again, without an envelope, its 12 sharp edges found by the angle between their two
 triangles, each with an id, and its 8 corners fixed:</p>

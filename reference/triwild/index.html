@@ -2669,17 +2669,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#max_expected_iterations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4523,17 +4512,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#max_expected_iterations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4926,7 +4904,7 @@
 <p>Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy. Was 10; lowered to 2 once surface vertices stopped being skipped by skip_good_regions, which made each pass do real work -- on Thingi10K 240280 a pass costs 41-51s and moves fewer vertices each time (accepted 18606 -&gt; 17077 over five passes, envelope rejections 11316 -&gt; 12237), so the later passes in a run of 10 buy very little for their cost.</p>
 <h3 id="interleaved_smoothing"><code>interleaved_smoothing</code><a class="headerlink" href="#interleaved_smoothing" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
-<p>Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in triwild: per iteration it reaches a given energy sooner than the batched schedule (on 122839, 102 vs 535 at iteration 5 and 25 vs 69 at iteration 13), at the cost of roughly 3x the work per iteration since each topology pass gets its own smoothing. tetwild still defaults to off, pending the same measurement there.</p>
+<p>Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in triwild: per iteration it reaches a given energy sooner than the batched schedule (on 122839, 102 vs 535 at iteration 5 and 25 vs 69 at iteration 13), at the cost of roughly 3x the work per iteration since each topology pass gets its own smoothing. tetwild defaults to on too.</p>
 <h3 id="interleaved_smoothing_passes"><code>interleaved_smoothing_passes</code><a class="headerlink" href="#interleaved_smoothing_passes" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>1</code></p>
 <p>Smoothing passes to run after each topology pass when interleaved_smoothing is set. One is enough with interleaving on, since there are three of them per iteration.</p>
@@ -4942,9 +4920,6 @@
 <h3 id="write_vtu"><code>write_vtu</code><a class="headerlink" href="#write_vtu" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
 <p>Write not just MSH but also VTU output.</p>
-<h3 id="preallocation_factor"><code>preallocation_factor</code><a class="headerlink" href="#preallocation_factor" title="Permanent link">&para;</a></h3>
-<p><strong>float</strong> · default <code>6.0</code> · min <code>1.0</code></p>
-<p>Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.</p>
 <h3 id="max_expected_iterations"><code>max_expected_iterations</code><a class="headerlink" href="#max_expected_iterations" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>0</code></p>
 <p>Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy. 0 disables the check. This is a regression guard rather than a quality target: an input that normally converges in a handful of iterations and suddenly needs the whole budget means the sizing-refinement trigger stopped firing when it should, which is a silent slowdown that no energy or envelope assertion catches.</p>

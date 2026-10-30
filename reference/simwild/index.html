@@ -2893,17 +2893,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#verbose_quality_stats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3128,17 +3117,6 @@
     <span class="md-ellipsis">
       
         tag_priority
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tags_selection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        tags_selection
       
     </span>
   </a>
@@ -4908,17 +4886,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#verbose_quality_stats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5143,17 +5110,6 @@
     <span class="md-ellipsis">
       
         tag_priority
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tags_selection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        tags_selection
       
     </span>
   </a>
@@ -5497,9 +5453,6 @@
 <h3 id="check_surface_topology"><code>check_surface_topology</code><a class="headerlink" href="#check_surface_topology" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging.</p>
-<h3 id="preallocation_factor"><code>preallocation_factor</code><a class="headerlink" href="#preallocation_factor" title="Permanent link">&para;</a></h3>
-<p><strong>float</strong> · default <code>6.0</code> · min <code>1.0</code></p>
-<p>Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom; a pass that exhausts it abandons the affected operations and consolidates at the pass boundary, which reclaims the slots removed elements still hold and re-derives the capacity from the real element count. Lower it for pure-decimation runs, raise it for aggressive refinement.</p>
 <h3 id="verbose_quality_stats"><code>verbose_quality_stats</code><a class="headerlink" href="#verbose_quality_stats" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
 <p>Log the per-tag quality breakdown after every optimization iteration: for each entry of /quality_field, and for the cells no entry matches, the number of cells, their max and average absolute quality, the target applied to them, and the max quality relative to that target. Groups are listed worst-relative-first, so the top line names the region holding the optimization back. Off by default: it adds one log line per quality-field entry per iteration, which is noise unless a particular tagged region is failing to converge. The figures are collected in the sweep that computes the mesh-wide max/avg anyway, so enabling this costs logging, not computation.</p>
@@ -5570,9 +5523,6 @@
 <p><strong>list of string</strong> · default <code>[]</code></p>
 <p>List of tags for the tag_priority operation. Tags earlier in the list have higher priority.</p>
 <p>Each entry: A tag value.</p>
-<h3 id="tags_selection"><code>tags_selection</code><a class="headerlink" href="#tags_selection" title="Permanent link">&para;</a></h3>
-<p><strong>string</strong> · default <code>"_ | !_"</code></p>
-<p>A boolean expression that defines the input selection for intent operations. <code>_</code> represents empty tags.</p>
 <h3 id="coarsen_pass"><code>coarsen_pass</code><a class="headerlink" href="#coarsen_pass" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Run a final coarsening pass after the optimization has converged. The ordinary collapse judges a candidate on the raw post-collapse geometry -- the worst moment in the operation's life, before smoothing has absorbed any of the damage -- so a collapse that would be fine once its neighbourhood relaxes is never taken, and the converged mesh keeps vertices it does not need. This pass takes the collapse optimistically, re-smooths coarsen_smooth_ring around the merged vertex, and keeps it only if the worst element in the region it touched is no worse than before; every element outside that region is untouched, so 'no worse locally' is exactly 'no worse globally'. Alternates with ordinary smoothing passes, as the main optimization does.</p>

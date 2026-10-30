@@ -4188,10 +4188,10 @@ back, the sequential run took about 2.3 times as long as one with 4 threads.</p>
 <h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
 <p>On files, <code>output</code> names:</p>
 <ul>
-<li><code>snowman_final.msh</code>: the tet mesh. Each tet has its energy (<code>t energy</code>), <code>winding_number_input</code>
+<li><code>snowman_final.msh</code>: the tet mesh. Each tet has its energy (<code>energy</code>), <code>winding_number_input</code>
   (the winding number of all inputs together at its centroid), one <code>wn_&lt;i&gt;</code> per input, and, when
   they were computed, <code>winding_number_tracked</code> and the flood-fill region <code>part</code>. The vertex field
-  <code>tv index</code> holds the sizing scalar of the optimization.</li>
+  <code>sizing</code> holds the sizing scalar of the optimization.</li>
 <li><code>snowman.vtu</code>: the same tets for ParaView, with <code>t_energy</code>, the winding numbers (<code>wn_&lt;name&gt;</code>
   with <code>input_names</code>) and the vertex fields <code>sizing_field</code>, <code>is_rounded</code>, <code>on_surface</code>,
   <code>on_open_boundary</code> and <code>order</code>.</li>

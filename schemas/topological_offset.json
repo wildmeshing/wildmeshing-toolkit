@@ -330,12 +330,6 @@
       "description": "A JSON file that stores information about the result and the method execution, e.g., runtime.",
       "default": ""
     },
-    "preallocation_factor": {
-      "type": "number",
-      "description": "Mesh storage (connectivity and attributes) is preallocated to this factor times the live element count at init and at consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs and raise it for aggressive refinement; the offset refines aggressively, so a run whose log carries [slots] warnings is dropping the very splits the criterion asked for.",
-      "default": 6.0,
-      "minimum": 1.0
-    },
     "num_threads": {
       "type": "integer",
       "description": "Number of threads used for parallel execution (smoothing, edge collapse). 0 means single-threaded.",

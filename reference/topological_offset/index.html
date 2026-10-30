@@ -2932,17 +2932,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#num_smoothing_passes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4919,17 +4908,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#preallocation_factor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        preallocation_factor
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#num_smoothing_passes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5600,9 +5578,6 @@
 <h3 id="phi_grid_resolution"><code>phi_grid_resolution</code><a class="headerlink" href="#phi_grid_resolution" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>0</code></p>
 <p>Samples per side of the grid the smooth offset potential is written on, as &lt;output&gt;_phi.vtu, for the viewer. 0 disables it. The grid is the plane through the box centre normal to the box's shortest extent (the whole domain when the domain is planar). Carries phi, phi_residual_length and euclidean_distance per vertex; warp by phi to see the field as a height surface. Written only when the optimization runs (optimize_offset true): the potential is built for it alone.</p>
-<h3 id="preallocation_factor"><code>preallocation_factor</code><a class="headerlink" href="#preallocation_factor" title="Permanent link">&para;</a></h3>
-<p><strong>float</strong> · default <code>6.0</code> · min <code>1.0</code></p>
-<p>Mesh storage (connectivity and attributes) is preallocated to this factor times the live element count at init and at consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs and raise it for aggressive refinement; the offset refines aggressively, so a run whose log carries [slots] warnings is dropping the very splits the criterion asked for.</p>
 <h3 id="num_smoothing_passes"><code>num_smoothing_passes</code><a class="headerlink" href="#num_smoothing_passes" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>2</code></p>
 <p>Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is ON since 2026-09-28) -- in the loop (3D since 2026-09-25, 2D since 2026-10-05), and in the shared optimization loop, which in this component runs only in the TetWild passes, 2D and 3D alike. The default turn is therefore split, collapse, swap, then 2 smoothing passes. Not read when interleaving is on: the count is then interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default.</p>

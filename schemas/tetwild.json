@@ -63,7 +63,7 @@
     },
     "input_names": {
       "type": "array",
-      "description": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+      "description": "Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route. The .msh output numbers them, wn_0, wn_1, ..., and so does everything without names.",
       "default": [],
       "items": {
         "type": "string",
@@ -80,12 +80,6 @@
       "description": "Write the VTU output next to the MSH.",
       "default": true
     },
-    "preallocation_factor": {
-      "type": "number",
-      "description": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.",
-      "default": 6.0,
-      "minimum": 1.0
-    },
     "skip_simplify": {
       "type": "boolean",
       "description": "If true, input simplification will be skipped.",
@@ -93,7 +87,7 @@
     },
     "simplify_use_sample_envelope": {
       "type": "boolean",
-      "description": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly.",
+      "description": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. On thin lattice geometry it has been observed to over-collapse badly.",
       "default": false
     },
     "simplify_envelope_ratio": {

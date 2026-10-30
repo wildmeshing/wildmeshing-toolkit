@@ -72,12 +72,6 @@
       "description": "A JSON file that stores information about the result and the method execution, e.g., runtime.",
       "default": ""
     },
-    "preallocation_factor": {
-      "type": "number",
-      "description": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.",
-      "default": 6.0,
-      "minimum": 1.0
-    },
     "envelope": {
       "type": "string",
       "description": "Memory route only: the name of the input mesh that holds the envelope surface of a tagged mesh input -- the `envelope` mesh simwild returns with its result. On the file route, the .msh input's own EnvelopeSurface group plays this role, and this option is ignored.",

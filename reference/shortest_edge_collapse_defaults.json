@@ -8,7 +8,7 @@
   "use_sample_envelope": false,
   "throw_on_fail": false,
   "use_link_condition": true,
-  "remove_duplicate_eps": -1,
+  "remove_duplicate_eps": 1e-05,
   "history_output": "",
   "preallocation_factor": 6.0
 }

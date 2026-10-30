@@ -3705,8 +3705,9 @@ are not on exactly two of its triangles.</p>
 </ul>
 <h2 id="pitfalls">Pitfalls<a class="headerlink" href="#pitfalls" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Check that there is something to repair.</strong> In 3D, manifold extraction crashes on a selection
-  whose boundary is already manifold; count first, as the Python example does.</li>
+<li><strong>Check that there is something to repair.</strong> Manifold extraction returns a selection whose
+  boundary is already manifold unchanged; count first, as the Python example does, to know
+  whether the step did anything.</li>
 <li><strong>The selection decides.</strong> Each sphere alone is manifold; only the union is not. Select the
   regions whose common boundary has to be manifold.</li>
 </ul>

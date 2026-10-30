@@ -344,12 +344,6 @@
       "description": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging.",
       "default": false
     },
-    "preallocation_factor": {
-      "type": "number",
-      "description": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom; a pass that exhausts it abandons the affected operations and consolidates at the pass boundary, which reclaims the slots removed elements still hold and re-derives the capacity from the real element count. Lower it for pure-decimation runs, raise it for aggressive refinement.",
-      "default": 6.0,
-      "minimum": 1.0
-    },
     "verbose_quality_stats": {
       "type": "boolean",
       "description": "Log the per-tag quality breakdown after every optimization iteration: for each entry of /quality_field, and for the cells no entry matches, the number of cells, their max and average absolute quality, the target applied to them, and the max quality relative to that target. Groups are listed worst-relative-first, so the top line names the region holding the optimization back. Off by default: it adds one log line per quality-field entry per iteration, which is noise unless a particular tagged region is failing to converge. The figures are collected in the sweep that computes the mesh-wide max/avg anyway, so enabling this costs logging, not computation.",
@@ -496,11 +490,6 @@
         "type": "string",
         "description": "A tag value."
       }
-    },
-    "tags_selection": {
-      "type": "string",
-      "description": "A boolean expression that defines the input selection for intent operations. `_` represents empty tags.",
-      "default": "_ | !_"
     },
     "coarsen_pass": {
       "type": "boolean",
