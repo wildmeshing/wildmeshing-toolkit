@@ -63,7 +63,17 @@ lists the components and what each does; `--options <name>` lists a component's 
 
 ## The Python package
 
-From the repository root:
+From PyPI, with wheels for macOS arm64, Linux x86_64 and arm64, and Windows x86_64:
+
+```bash
+python -m pip install wildmeshing
+```
+
+Versions before 2.0.0 on PyPI are the older
+[wildmeshing-python](https://github.com/wildmeshing/wildmeshing-python) bindings of TetWild and
+TriWild, with a different interface.
+
+From source, from the repository root:
 
 ```bash
 python -m pip install .
@@ -84,12 +94,6 @@ import wildmeshing as wm
 print(wm.components())
 help(wm.qslim)
 ```
-
-!!! note "PyPI"
-    The package will be published on PyPI as `wildmeshing`. The `wildmeshing` package on PyPI
-    today (0.4) is the older [wildmeshing-python](https://github.com/wildmeshing/wildmeshing-python)
-    bindings of TetWild and TriWild, with a different interface: install from source until the
-    new release is out.
 
 ### Faster rebuilds with uv
 

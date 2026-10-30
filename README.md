@@ -56,15 +56,16 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ```
 
-The Python package, from the repository root:
+The Python package, from PyPI (wheels for macOS arm64, Linux x86_64 and arm64, and Windows
+x86_64):
 
 ```bash
-python -m pip install .
+python -m pip install wildmeshing
 ```
 
-The `wildmeshing` package on PyPI today (0.4) is the older
-[wildmeshing-python](https://github.com/wildmeshing/wildmeshing-python); install from source until
-this one is released there. See [Installation](https://wildmeshing.github.io/wildmeshing-toolkit/getting-started/installation/)
+or built from the repository root with `python -m pip install .`. Versions before 2.0.0 on PyPI
+are the older [wildmeshing-python](https://github.com/wildmeshing/wildmeshing-python) bindings.
+See [Installation](https://wildmeshing.github.io/wildmeshing-toolkit/getting-started/installation/)
 for the options.
 
 ## Usage
