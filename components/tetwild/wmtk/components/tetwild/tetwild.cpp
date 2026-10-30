@@ -489,7 +489,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // envelope and scaled the same way: order2_envelope_ratio of the surface eps, and of that
     // simplify_envelope_ratio, for the same headroom reason as above. The optimizer's tube is
     // built around the boundary it is handed, so a boundary drifts at most
-    // (simplify_envelope_ratio + 1) * order2_envelope_ratio * eps in all -- 0.75 eps at the
+    // (simplify_envelope_ratio + 1) * order2_envelope_ratio * eps in all -- 1.5 eps at the
     // defaults.
     //
     // Not under preserve_topology: a hole narrower than the tube closes.

@@ -34,10 +34,10 @@ struct Parameters : public wmtk::OptimizerParameters
 
 
     double epsr_simplify = 2e-4; // relative error bound (wrt diagonal) for simplification
-    /// Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the
-    /// surface envelope's. Deliberately below 1 where the surface envelope uses the full eps;
-    /// see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5.
-    double order2_envelope_ratio = 0.5;
+    /// Order-2 (open boundary / non-manifold edge) tube thickness, as a fraction of the surface
+    /// envelope's eps. 1: every held set stays within the one eps; see /order2_envelope_ratio in
+    /// the spec for the sweep behind the default.
+    double order2_envelope_ratio = 1.0;
     double eps_simplify = -1.; // absolute error bound for simplification
     VectorXd box_min;
     VectorXd box_max;

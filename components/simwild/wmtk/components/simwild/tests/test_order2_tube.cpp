@@ -68,9 +68,9 @@ TEST_CASE("simwild-holds-an-open-boundary-in-its-tube", "[simwild][order2]" + re
 {
     // An open square next to a cube, the square kept as faces. Its rim is an open boundary, so
     // its edges are the order-2 edges tag_order2_edges() tags and holds in a tube of half-width
-    // order2_envelope_ratio x eps (0.5 eps). Before, only collapses checked that tube: smoothing
-    // walked 3 of the 4 corners along the rim, cutting the same 0.038 at every eps_rel -- 14.8
-    // tube radii at 1e-3, 7.4 at 2e-3, 1.5 at 1e-2. The whole range, not the default alone.
+    // order2_envelope_ratio x eps (eps at the default). Before, only collapses checked that tube:
+    // smoothing walked 3 of the 4 corners along the rim, cutting the same 0.038 at every eps_rel
+    // -- 14.8 tube radii at 1e-3, 7.4 at 2e-3, 1.5 at 1e-2. The whole range, not the default alone.
     for (const double eps_rel : {1e-3, 2e-3, 1e-2}) {
         CAPTURE(eps_rel);
         const auto result = components::simwild::simwild(
@@ -101,7 +101,7 @@ TEST_CASE("simwild-holds-an-open-boundary-in-its-tube", "[simwild][order2]" + re
             }
         }
 
-        const double r = 0.5 * eps_rel * std::sqrt(27.0); // the inputs' bbox is [0,5]x[0,1]^2
+        const double r = eps_rel * std::sqrt(27.0); // the inputs' bbox is [0,5]x[0,1]^2
         double worst = 0;
         size_t n_rim = 0;
         for (const auto& [e, n] : n_faces) {

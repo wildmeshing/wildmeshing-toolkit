@@ -454,9 +454,8 @@ void SimWildMesh::init_surfaces_and_boundaries()
     //
     // The tube follows the surface envelope's predicate: same input, same epsilon, so there is
     // no reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
-    // curves. A FRACTION of eps, deliberately, where the surface envelope uses all of it:
-    // widening a boundary-curve envelope buys no unblocking and costs elements. See
-    // /order2_envelope_ratio in the spec for the measurement.
+    // curves. Its radius is order2_envelope_ratio x eps, 1 by default, so every held set stays
+    // within the one eps; see /order2_envelope_ratio in the spec for the sweep.
     const size_t n_order2 = tag_order2_edges(
         m_params.epsr * m_params.diag_l * m_sim_params.order2_envelope_ratio,
         m_envelope && m_envelope->use_exact);
