@@ -170,11 +170,11 @@ runs sequentially and gives identical results.
   it does not know; `wmtk_app` and the Python bindings log a warning
   (`shortest_edge_collapse has no option ...`). Editors catch it beforehand with the
   [JSON Schemas](../json-schemas.md).
-- **Nothing collapses on an STL file.** Unlike QSlim and isotropic remeshing, this component does
-  not merge duplicate vertices unless asked
-  ([`remove_duplicate_eps`](../reference/shortest_edge_collapse.md#remove_duplicate_eps) is -1). A
-  mesh written triangle by triangle, as STL is, then arrives as separate triangles, every vertex
-  on a boundary and frozen. Set `remove_duplicate_eps` to 1e-5.
+- **Duplicate vertices.** The input is welded first: vertices closer than
+  [`remove_duplicate_eps`](../reference/shortest_edge_collapse.md#remove_duplicate_eps) (1e-5 of
+  the diagonal) merge, so a mesh written triangle by triangle, as STL is, simplifies as one
+  surface. A negative value keeps every vertex; then the triangles of an STL file stay apart,
+  every vertex on a boundary and frozen, and nothing collapses.
 - **The target is not reached.** The envelope refuses the remaining collapses: thicken it, accept
   the larger mesh, or use QSlim, which gets further inside the same envelope.
 - **The target is passed without the link condition.** The run stops after a number of collapses,

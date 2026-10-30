@@ -11,7 +11,6 @@
       "input_names",
       "input_dir",
       "write_vtu",
-      "preallocation_factor",
       "skip_simplify",
       "simplify_use_sample_envelope",
       "simplify_envelope_ratio",
@@ -149,7 +148,7 @@
   {
     "pointer": "/input_names",
     "type": "list",
-    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "doc": "Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route. The .msh output numbers them, wn_0, wn_1, ..., and so does everything without names.",
     "default": []
   },
   {
@@ -170,13 +169,6 @@
     "doc": "Write the VTU output next to the MSH."
   },
   {
-    "pointer": "/preallocation_factor",
-    "type": "float",
-    "default": 6.0,
-    "min": 1.0,
-    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
-  },
-  {
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
@@ -186,7 +178,7 @@
     "pointer": "/simplify_use_sample_envelope",
     "type": "bool",
     "default": false,
-    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly."
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. On thin lattice geometry it has been observed to over-collapse badly."
   },
   {
     "pointer": "/simplify_envelope_ratio",

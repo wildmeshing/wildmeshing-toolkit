@@ -14,7 +14,9 @@
 
 using namespace wmtk;
 
-int main(int argc, char** argv)
+namespace {
+
+int run(int argc, char** argv)
 {
     CLI::App app{argv[0]};
     std::filesystem::path json_input_file;
@@ -107,4 +109,18 @@ int main(int argc, char** argv)
 
     // execute
     components_map[app_str](j);
+    return 0;
+}
+
+} // namespace
+
+int main(int argc, char** argv)
+{
+    // An error ends the run with a message and exit code 1, not with std::terminate (abort).
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& e) {
+        logger().error("wmtk_app stopped: {}", e.what());
+        return 1;
+    }
 }

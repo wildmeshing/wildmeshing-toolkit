@@ -176,7 +176,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (json_params["throw_on_fail"]) {
         const size_t nv = m.get_vertices().size();
         if (nv > target_verts) {
-            log_and_throw_error("Target not reached: #V = {}, target was {}", target_verts, nv);
+            log_and_throw_error("Target not reached: #V = {}, target was {}", nv, target_verts);
         }
     }
 

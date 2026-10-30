@@ -87,7 +87,7 @@
   {
     "pointer": "/remove_duplicate_eps",
     "type": "float",
-    "default": -1,
+    "default": 1e-05,
     "doc": "Merge input vertices closer than this fraction of the bounding box diagonal. 0 merges only exactly coincident vertices; a negative value merges nothing. Needed for formats that carry no connectivity, such as STL, which otherwise arrive as a disconnected triangle soup."
   },
   {

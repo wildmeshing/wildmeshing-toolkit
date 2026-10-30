@@ -27,8 +27,8 @@ skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*"]
 
 # Smoke-test every built wheel on its target platform/Python: install it into an
 # isolated environment and check dispatch and the NumPy memory interface. These
-# need no external test data. The full data-driven integration suite is run separately
-# in the `test_wheels` CI job (see .github/workflows/wheels.yml).
+# need no external test data. The data-driven Python tests run in the Build workflow
+# (.github/workflows/continuous.yml), through ctest.
 test-requires = "pytest"
 test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py {project}/tests/python/test_tracking.py"
 

@@ -16,7 +16,6 @@
       "save_vtu",
       "log_file",
       "report",
-      "preallocation_factor",
       "envelope"
     ]
   },
@@ -101,13 +100,6 @@
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
-  },
-  {
-    "pointer": "/preallocation_factor",
-    "type": "float",
-    "default": 6.0,
-    "min": 1.0,
-    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
   },
   {
     "pointer": "/envelope",

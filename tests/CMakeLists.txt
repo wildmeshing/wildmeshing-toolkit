@@ -81,6 +81,14 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
     catch_discover_tests(wmtk_integration_tests PROPERTIES TIMEOUT 7200)
 
 endif()
+# wmtk_app ends a failed run with its error and exit code 1, not with an abort: an unknown
+# application is the simplest failure.
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/unknown_application.json" "{\"application\": \"none\"}")
+add_test(NAME wmtk_app_reports_errors
+    COMMAND wmtk_app -j "${CMAKE_CURRENT_BINARY_DIR}/unknown_application.json")
+set_tests_properties(wmtk_app_reports_errors PROPERTIES
+    PASS_REGULAR_EXPRESSION "wmtk_app stopped: Application none unknown")
+
 # The NumPy tests of the Python module -- the memory interface, and surface tracking through
 # it -- registered when the interpreter the module was built for has NumPy (the Linux CI jobs
 # install it). The wheel builds run the same files through cibuildwheel.

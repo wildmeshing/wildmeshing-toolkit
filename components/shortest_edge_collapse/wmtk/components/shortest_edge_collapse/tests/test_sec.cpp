@@ -15,8 +15,8 @@ using namespace components::shortest_edge_collapse;
 
 // Quarantined below: three cases that predate freeze_boundary().
 //
-// create_mesh() now ends with freeze_boundary(), and collapse_edge_before() refuses any
-// collapse with a frozen endpoint. The meshes these three build are small open patches in
+// create_mesh() now ends with freeze_boundary(), and collapse_edge_before() refuses a collapse
+// whose two endpoints are both frozen. The meshes these three build are small open patches in
 // which every vertex lies on a boundary edge, so every vertex is frozen and no collapse can
 // succeed -- the logs show "success / fail: 0 / N". Their expectations (collapse down to 3
 // vertices / 1 face) are unreachable, and separate-manifold-patch additionally asserts

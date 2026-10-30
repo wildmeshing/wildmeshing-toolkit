@@ -257,10 +257,10 @@ back, the sequential run took about 2.3 times as long as one with 4 threads.
 
 On files, `output` names:
 
-- `snowman_final.msh`: the tet mesh. Each tet has its energy (`t energy`), `winding_number_input`
+- `snowman_final.msh`: the tet mesh. Each tet has its energy (`energy`), `winding_number_input`
   (the winding number of all inputs together at its centroid), one `wn_<i>` per input, and, when
   they were computed, `winding_number_tracked` and the flood-fill region `part`. The vertex field
-  `tv index` holds the sizing scalar of the optimization.
+  `sizing` holds the sizing scalar of the optimization.
 - `snowman.vtu`: the same tets for ParaView, with `t_energy`, the winding numbers (`wn_<name>`
   with `input_names`) and the vertex fields `sizing_field`, `is_rounded`, `on_surface`,
   `on_open_boundary` and `order`.

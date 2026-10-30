@@ -646,7 +646,8 @@ void embed_triangles_in_tets(
         vr_tri_group,
         vr_edge_provenance,
         vr_point_provenance,
-        true);
+        // VolumeRemesher prints its progress to stdout; only when the log asks for debug output.
+        logger().should_log(spdlog::level::debug));
 
     // Step 4a: copy the arrangement vertices to exact rational Vector3r. No
     // compaction yet -- unused vertices are pruned near the end.
