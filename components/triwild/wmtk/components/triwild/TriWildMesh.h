@@ -46,31 +46,10 @@ public:
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
 
-    /**
-     * @brief One envelope per input curve file, when there are several: a tracked segment is
-     * held to those of its input set (EdgeAttributes::input_set()), m_envelope stays their
-     * union. The 2D twin of TetWildMesh::m_input_envelopes.
-     *
-     * Empty with one input, and then every segment is held to m_envelope as it always was.
-     * Built by init_mesh around the same curves as m_envelope, at the same eps and predicate.
-     */
-    wmtk::InputEnvelopes m_input_envelopes;
-
-    /// A tracked segment's containment: the envelopes of its input set. A segment that is not
-    /// tracked covers no input -- the collapse's chord pre-check asks about one -- and is held
-    /// to the union, as before: a necessary condition for the segments around it.
-    std::shared_ptr<Envelope> surface_envelope_for_edge(
-        const std::array<size_t, 2>& vids,
-        const EdgeAttributes& attr) const override
-    {
-        if (m_input_envelopes.empty() || !attr.m_is_surface_fs) return m_envelope;
-        return m_input_envelopes.containment(attr.input_set());
-    }
-
-    /// The pull toward the inputs of the vertex's own segments, one real envelope at a time:
-    /// the member of their union of input sets the vertex is farthest from. See
-    /// TetWildMesh::smoothing_energy_envelope.
-    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
+    // One envelope per input curve file, when there are several: the base's m_input_envelopes,
+    // built by init_mesh around the same curves as m_envelope, at the same eps and predicate,
+    // one input per file. Empty with one input, and then every segment is held to m_envelope
+    // as it always was. The containment and the pull are the base's defaults.
 
     // The curve network's 0-dimensional features are anchored by the base
     // (TriOptimizerMesh::anchor_feature_points()), called by init_mesh once the tracked

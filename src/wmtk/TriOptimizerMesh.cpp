@@ -917,4 +917,107 @@ std::pair<size_t, size_t> TriOptimizerMesh::feature_retention(double* worst_rati
     return {kept, m_feature_points.size()};
 }
 
+std::shared_ptr<Envelope> TriOptimizerMesh::smoothing_energy_envelope(const size_t vid) const
+{
+    if (!m_vertex_attribute.at(vid).m_is_on_surface) return nullptr;
+    if (m_input_envelopes.empty()) return m_envelope;
+    // A vertex flagged on the surface with no tracked segment left (a stale flag) has no
+    // inputs, and keeps the union's pull.
+    InputSet set = 0;
+    const auto& EA = std::as_const(m_edge_attribute);
+    // Named, not iterated as a temporary: edges() returns a reference into the collection, which
+    // a range-for over get_surface_edges_for_vertex(vid).edges() destroys before the first
+    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
+    const simplex::SimplexCollection surf = get_surface_edges_for_vertex(vid);
+    for (const simplex::Edge& e : surf.edges()) {
+        set |= EA[std::get<1>(tuple_from_edge(e.vertices()))].input_set();
+    }
+    if (set == 0) return m_envelope;
+    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
+}
+
+void TriOptimizerMesh::init_input_envelopes(
+    const std::vector<Vector2d>& V,
+    const std::vector<Vector2i>& E,
+    const std::vector<InputSet>& E_sets,
+    const double eps,
+    const bool exact)
+{
+    // Each input from one source: its rows of (V, E) when E_sets says which and it has any,
+    // else the tracked segments carrying it.
+    InputSet from_rows = 0;
+    if (E_sets.size() == E.size()) {
+        for (const InputSet s : E_sets) from_rows |= s;
+    }
+    // The tracked segments carrying an input no row carries. Visited in place, each edge once
+    // at its own slot, as init does, rather than through a list of every edge.
+    std::vector<Vector2i> E_mesh;
+    std::vector<InputSet> E_mesh_sets;
+    for (size_t fid = 0; fid < tri_capacity(); ++fid) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
+        for (size_t j = 0; j < 3; ++j) {
+            const Tuple e = tuple_from_edge(fid, j);
+            if (e.eid(*this) != 3 * fid + j) continue;
+            const EdgeAttributes& attr = m_edge_attribute[3 * fid + j];
+            const InputSet set = attr.input_set() & ~from_rows;
+            if (!attr.m_is_surface_fs || set == 0) continue;
+            const auto vids = get_edge_vids(e);
+            E_mesh.emplace_back(int(vids[0]), int(vids[1]));
+            E_mesh_sets.push_back(set);
+        }
+    }
+    InputSet from_mesh = 0;
+    for (const InputSet s : E_mesh_sets) from_mesh |= s;
+    size_t n = 0;
+    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
+        if ((from_rows | from_mesh) & (InputSet(1) << b)) n = b + 1;
+    }
+
+    // One input's segments over its own vertices only: an envelope keeps a copy of the
+    // vertices it is given.
+    const auto build = [&](const InputSet bit,
+                           const std::vector<Vector2i>& edges,
+                           const std::vector<InputSet>& sets,
+                           const auto& position,
+                           const size_t n_vertices) {
+        std::vector<int> local(n_vertices, -1);
+        std::vector<Vector2d> V_b;
+        std::vector<Vector2i> E_b;
+        for (size_t i = 0; i < edges.size(); ++i) {
+            if (!(sets[i] & bit)) continue;
+            Vector2i e;
+            for (int j = 0; j < 2; ++j) {
+                int& l = local[edges[i][j]];
+                if (l < 0) {
+                    l = int(V_b.size());
+                    V_b.push_back(position(edges[i][j]));
+                }
+                e[j] = l;
+            }
+            E_b.push_back(e);
+        }
+        auto env = std::make_shared<Envelope>(exact);
+        env->init(V_b, E_b, eps);
+        return env;
+    };
+    std::vector<std::shared_ptr<Envelope>> members;
+    for (size_t b = 0; b < n; ++b) {
+        const InputSet bit = InputSet(1) << b;
+        if (from_rows & bit) {
+            members.push_back(
+                build(bit, E, E_sets, [&](int v) -> const Vector2d& { return V[v]; }, V.size()));
+        } else if (from_mesh & bit) {
+            members.push_back(build(
+                bit,
+                E_mesh,
+                E_mesh_sets,
+                [&](int v) -> const Vector2d& { return m_vertex_attribute[v].m_posf; },
+                vert_capacity()));
+        } else {
+            members.push_back(nullptr); // no segment, so no tracked segment to hold
+        }
+    }
+    m_input_envelopes.set(std::move(members));
+}
+
 } // namespace wmtk

@@ -240,36 +240,19 @@ void TriWildMesh::init_mesh(
     // member would BE m_envelope, so none is built.
     if (E_env_input != nullptr) {
         assert(E_env_input->size() == m_E_envelope.size());
-        const int n_inputs = 1 + *std::max_element(E_env_input->begin(), E_env_input->end());
-        std::vector<std::shared_ptr<Envelope>> members;
-        for (int k = 0; k < n_inputs; ++k) {
-            // This input's segments over its own vertices only: an envelope keeps a copy of
-            // the vertices it is given.
-            std::vector<int> local(m_V_envelope.size(), -1);
-            std::vector<Vector2d> V_k;
-            std::vector<Vector2i> E_k;
-            for (size_t i = 0; i < m_E_envelope.size(); ++i) {
-                if ((*E_env_input)[i] != k) continue;
-                Vector2i e;
-                for (int j = 0; j < 2; ++j) {
-                    int& l = local[m_E_envelope[i][j]];
-                    if (l < 0) {
-                        l = int(V_k.size());
-                        V_k.push_back(m_V_envelope[m_E_envelope[i][j]]);
-                    }
-                    e[j] = l;
-                }
-                E_k.push_back(e);
-            }
-            if (E_k.empty()) {
-                members.push_back(nullptr); // no segment, so no tracked segment to hold
-                continue;
-            }
-            auto env = std::make_shared<Envelope>(!m_tri_params.use_sample_envelope);
-            env->init(V_k, E_k, m_envelope_eps);
-            members.push_back(std::move(env));
+        // Input k is bit k. Every input with a tracked segment has rows here -- the tracked
+        // segments' inputs come from the same curves -- so the base's fallback to the tracked
+        // segments never builds one.
+        std::vector<InputSet> E_env_sets(E_env_input->size());
+        for (size_t i = 0; i < E_env_sets.size(); ++i) {
+            E_env_sets[i] = InputSet(1) << (*E_env_input)[i];
         }
-        m_input_envelopes.set(std::move(members));
+        init_input_envelopes(
+            m_V_envelope,
+            m_E_envelope,
+            E_env_sets,
+            m_envelope_eps,
+            !m_tri_params.use_sample_envelope);
         logger().info(
             "per-input envelopes: {} inputs, each tracked segment held to the envelopes of its "
             "own",
@@ -684,25 +667,6 @@ int TriWildMesh::flood_fill()
     return current_id;
 }
 
-
-std::shared_ptr<Envelope> TriWildMesh::smoothing_energy_envelope(const size_t vid) const
-{
-    if (!m_vertex_attribute.at(vid).m_is_on_surface) return nullptr;
-    if (m_input_envelopes.empty()) return m_envelope;
-    // A vertex flagged on the surface with no tracked segment left (a stale flag) has no
-    // inputs, and keeps the union's pull.
-    InputSet set = 0;
-    const auto& EA = std::as_const(m_edge_attribute);
-    // Named, not iterated as a temporary: edges() returns a reference into the collection, which
-    // a range-for over get_surface_edges_for_vertex(vid).edges() destroys before the first
-    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
-    const simplex::SimplexCollection surf = get_surface_edges_for_vertex(vid);
-    for (const simplex::Edge& e : surf.edges()) {
-        set |= EA[std::get<1>(tuple_from_edge(e.vertices()))].input_set();
-    }
-    if (set == 0) return m_envelope;
-    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
-}
 
 void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
 {

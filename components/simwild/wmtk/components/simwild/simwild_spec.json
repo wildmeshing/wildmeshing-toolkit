@@ -125,14 +125,14 @@
   {
     "pointer": "/input_type",
     "type": "list",
-    "doc": "One entry per input, saying what its tag marks. 'volume': the input encloses a volume, and the tets inside it get its name as a tag. 'surface': the input stays a surface, and the embedded faces on it get its name as a face tag. Empty (the default): every input is a volume. 3D surface inputs only.",
+    "doc": "One entry per input, saying what its tag marks. 'volume': the input encloses a volume (in 2D, a region), and the tets (in 2D, the triangles) inside it get its name as a tag. 'surface' (3D only): the input stays a surface, and the embedded faces on it get its name as a face tag. 'curve' (2D only): the input stays a curve, open or closed, and the arrangement's edges on it get its name as an edge tag, written as the edge block of the output mesh. 'surface' and 'curve' need tag_from_winding_number, and 'surface' needs split_connected_components off. Empty (the default): every input is a volume. Applies to surface and curve inputs, not to a tagged mesh input.",
     "default": []
   },
   {
     "pointer": "/input_type/*",
     "type": "string",
-    "options": ["volume", "surface"],
-    "doc": "What that input's tag marks: the tets it encloses, or the faces on it."
+    "options": ["volume", "surface", "curve"],
+    "doc": "What that input's tag marks: the tets (2D: triangles) it encloses, the faces on it (3D only), or the edges on it (2D only)."
   },
   {
     "pointer": "/operation",

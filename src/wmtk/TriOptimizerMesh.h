@@ -6,6 +6,7 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/envelope/CompositeEnvelopes.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
@@ -176,6 +177,37 @@ public:
 
     std::shared_ptr<Envelope> m_envelope;
     double m_envelope_eps = -1;
+
+    /**
+     * @brief One envelope per input, and each tracked segment held to those of its input set
+     * (EdgeAttributes::input_set()); m_envelope stays their union. The 2D twin of the per-input
+     * envelopes of tetwild and simwild 3D.
+     *
+     * What an input is, is the application's: triwild's are its input curve files, simwild's its
+     * labels (an input kept as a curve, and the region of each triangle tag). Built by
+     * init_input_envelopes(). Empty by default, and then every segment is held to m_envelope, as
+     * it was before triwild moved these here.
+     */
+    wmtk::InputEnvelopes m_input_envelopes;
+
+    /**
+     * @brief (Re)build m_input_envelopes, at `eps` and with predicate `exact`: member i around
+     * the rows of the curves (V, E) whose E_sets entry has bit i, else -- for an input no row
+     * carries, or for every input when E_sets is not one entry per row of E -- around the
+     * tracked segments carrying bit i. Null for an input neither has.
+     *
+     * Each member keeps only its own vertices, numbered in first use along the rows: an
+     * envelope keeps a copy of the vertices it is given. That is triwild's builder, moved here
+     * unchanged; the fallback to the tracked segments is simwild 3D's (SimWildMesh's label
+     * envelopes), for a label whose input curves are not known, as when the envelope was
+     * given or rebuilt from the mesh.
+     */
+    void init_input_envelopes(
+        const std::vector<Vector2d>& V,
+        const std::vector<Vector2i>& E,
+        const std::vector<InputSet>& E_sets,
+        double eps,
+        bool exact);
 
     /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
     /// distance) on a comparable footing.
@@ -534,8 +566,9 @@ public:
      * @brief Run TriWild's vertex-smoothing pass.
      *
      * TriWild is the behavioral source of truth. SimWild shares the pass verbatim, including
-     * the single m_envelope used for both smoothing energy and containment, the surface
-     * quality veto, and skip_good_regions selection.
+     * the envelopes used for smoothing energy and containment (m_envelope, or the per-input
+     * envelopes; see smoothing_energy_envelope()), the surface quality veto, and
+     * skip_good_regions selection.
      */
     void smooth_all_vertices(size_t n_iters = 1);
     /// Whether this pass smooths by color class (see OptimizerParameters::colored_smoothing).
@@ -576,7 +609,8 @@ public:
      * (plus whatever smoothing_extra_energy() adds) with no pull and no containment check.
      *
      * The default of both is what TriWild and SimWild do -- one envelope, applied to every
-     * vertex on the tracked surface -- so overriding nothing leaves their behaviour untouched.
+     * vertex on the tracked surface, or with m_input_envelopes built, the envelopes of each
+     * segment's input set (surface_envelope_for_edge()) and the pull below.
      * An application tracking more than one surface overrides them: topological_offset returns
      * null for a vertex that is ONLY on the offset boundary, because that is the surface the
      * optimization exists to move, and a tube around its initial position caps how far it can
@@ -589,10 +623,12 @@ public:
      * junction simplex in the INTERSECTION of its tags' tubes). Answering both from one hook
      * would statically bind a composite's null BVH the moment a junction vertex was pulled.
      */
-    virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const
-    {
-        return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
-    }
+    ///
+    /// With m_input_envelopes built, the pull is toward the inputs of the vertex's own segments,
+    /// one real envelope at a time: the member of their union of input sets the vertex is
+    /// farthest from (InputEnvelopes::pull()). The containment check then holds every segment
+    /// to its own set. A vertex whose segments carry no input keeps m_envelope's pull.
+    virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const;
     /**
      * The containment is asked per tracked segment `edge` (attributes `attr`) at the moved
      * vertex: by default the segment's own, surface_envelope_for_edge() -- what every
@@ -841,9 +877,15 @@ public:
      *
      * The 2D counterpart of wmtk::TetOptimizerMesh::surface_envelope_for_face. Null means this
      * segment carries no containment requirement, and every containment check on it is skipped.
-     * The default answers with the one envelope; triwild answers with the envelopes of the
-     * segment's input set (SurfaceTagAttributes::input_set()), and an application tracking more
-     * than one surface (see SurfaceTagAttributes::m_surface_class) answers per class.
+     * The default answers with the one envelope, or with m_input_envelopes built, a tracked
+     * segment with the envelopes of its input set (SurfaceTagAttributes::input_set()); an
+     * application tracking more than one surface (see SurfaceTagAttributes::m_surface_class)
+     * answers per class.
+     *
+     * A segment that is not tracked covers no input -- the collapse's chord pre-check asks
+     * about one -- and is held to the union, m_envelope: a necessary condition for the segments
+     * around it. A tracked segment with an empty input set throws (InputEnvelopes): it is an
+     * insertion or propagation defect.
      *
      * Keyed on the vertex ids rather than the eid because every caller is a topological
      * operation asking about segments it is ABOUT to create or has just created; the attributes
@@ -853,7 +895,8 @@ public:
         const std::array<size_t, 2>& vids,
         const EdgeAttributes& attr) const
     {
-        return m_envelope;
+        if (m_input_envelopes.empty() || !attr.m_is_surface_fs) return m_envelope;
+        return m_input_envelopes.containment(attr.input_set());
     }
 
     /// Whether the tracked-surface segment (a,b) with attributes `attr` (see

@@ -176,7 +176,7 @@ def test_generation_refuses_input_type_of_the_wrong_length():
 
 
 def test_generation_refuses_an_unknown_input_type():
-    """Only volume and surface exist; curve is not built yet."""
+    """In 3D only volume and surface exist; curve is 2D only."""
     with pytest.raises(Exception, match="input_type"):
         wm.simwild({**GEN, "input_type": ["volume", "curve", "surface"]}, INPUTS)
 
@@ -231,6 +231,101 @@ def test_generation_refuses_surface_inputs_in_2d(tmp_path):
     with pytest.raises(Exception, match="3D only"):
         wm.simwild({"input": ["c"], "input_type": ["surface"], "dimension": "2"},
                    {"c": wm.read_mesh(str(path))})
+
+
+# ---------------------------------------------------------------- 2D: curve inputs, label envelopes
+# The 2D twins of the above: input_type curve keeps an input as tagged edges (the edge block of
+# `mesh`), and each border edge is held to its own labels' envelopes.
+
+EPS_2D = EPS_REL * np.sqrt(2)  # inputs' bbox [0,1]^2
+
+
+def write_obj(path, polylines):
+    """OBJ 'v'/'l' records, one 'l' per polyline of (x, y) points."""
+    lines, n = [], 0
+    for pts in polylines:
+        lines += [f"v {x} {y} 0" for x, y in pts]
+        lines.append("l " + " ".join(str(n + 1 + i) for i in range(len(pts))))
+        n += len(pts)
+    path.write_text("\n".join(lines) + "\n")
+    return wm.read_mesh(str(path))
+
+
+def to_polyline(P, pts):
+    """Distance from the points P (..., >= 2) to the polyline pts, in the plane."""
+    P = np.asarray(P)[..., :2]
+    pts = np.asarray(pts, float)
+    d = np.full(P.shape[:-1], np.inf)
+    for a, b in zip(pts[:-1], pts[1:]):
+        t = np.clip(((P - a) @ (b - a)) / ((b - a) @ (b - a)), 0, 1)
+        d = np.minimum(d, np.linalg.norm(P - (a + t[..., None] * (b - a)), axis=-1))
+    return d
+
+
+def to_segments(p, V, E):
+    """Distance from the point p to the segments V[E], in the plane."""
+    a, b = V[E[:, 0], :2], V[E[:, 1], :2]
+    t = np.clip(np.einsum("ij,ij->i", p - a, b - a) / np.einsum("ij,ij->i", b - a, b - a), 0, 1)
+    return np.linalg.norm(p - (a + t[:, None] * (b - a)), axis=1).min()
+
+
+def polyline_samples(pts, n=20):
+    pts = np.asarray(pts, float)
+    return [a + s * (b - a) for a, b in zip(pts[:-1], pts[1:]) for s in np.linspace(0, 1, n)]
+
+
+SQUARE_2D = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]
+PATH_2D = [(0.2, 0.5), (0.5, 0.55), (0.8, 0.45)]
+
+
+@pytest.mark.parametrize("iterations", [0, 80])
+def test_generation_keeps_curve_inputs_as_tagged_edges_2d(tmp_path, iterations):
+    """red is a region; path, an open polyline inside it, is kept as edges tagged path, within
+    eps of the polyline both ways. No triangle carries path's tag, and no edge red's."""
+    inputs = {"sq": write_obj(tmp_path / "sq.obj", [SQUARE_2D]),
+              "path": write_obj(tmp_path / "path.obj", [PATH_2D])}
+    m = wm.simwild({"input": ["sq", "path"], "input_names": ["red", "path"],
+                    "input_type": ["volume", "curve"], "dimension": "2", "skip_simplify": True,
+                    "eps_rel": EPS_REL, "max_iterations": iterations}, inputs)[0]["mesh"]
+    E = rows(m, "edge", "path")
+    assert len(E), "no edge tagged path"
+    V = np.asarray(m["V"])
+    assert to_polyline(V[E], PATH_2D).max() <= EPS_2D
+    assert max(to_segments(p, V, E) for p in polyline_samples(PATH_2D)) <= EPS_2D
+    assert "path" not in m["cells"]["triangle"]["attributes"]["tags"]["labels"]
+    assert len(rows(m, "edge", "red")) == 0
+    assert len(rows(m, "triangle", "red"))
+
+
+def test_generation_refuses_curve_inputs_without_winding_numbers_2d(tmp_path):
+    inputs = {"sq": write_obj(tmp_path / "sq.obj", [SQUARE_2D]),
+              "path": write_obj(tmp_path / "path.obj", [PATH_2D])}
+    with pytest.raises(Exception, match="need tag_from_winding_number"):
+        wm.simwild({"input": ["sq", "path"], "input_type": ["volume", "curve"], "dimension": "2",
+                    "tag_from_winding_number": False}, inputs)
+
+
+def boundary_2d(F):
+    """The edges of the triangles F that only one of them has."""
+    E = np.vstack([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]])
+    key, count = np.unique(np.sort(E, 1), axis=0, return_counts=True)
+    return key[count == 1]
+
+
+@pytest.mark.parametrize("gap", [0.0, 0.5])
+def test_close_regions_keep_their_own_borders_2d(tmp_path, gap):
+    """Two squares sharing a side (gap 0) or half an eps apart: each region's boundary stays
+    within eps of its own square."""
+    eps = EPS_REL * np.linalg.norm([2, 1])  # inputs' bbox about [0,2]x[0,1]
+    x = 1 + gap * eps
+    A = [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]
+    B = [(x, 0), (2, 0), (2, 1), (x, 1), (x, 0)]
+    inputs = {"a": write_obj(tmp_path / "a.obj", [A]), "b": write_obj(tmp_path / "b.obj", [B])}
+    m = wm.simwild({"input": ["a", "b"], "input_names": ["A", "B"], "dimension": "2",
+                    "skip_simplify": True, "eps_rel": EPS_REL}, inputs)[0]["mesh"]
+    for label, square in [("A", A), ("B", B)]:
+        E = boundary_2d(rows(m, "triangle", label))
+        assert len(E) and to_polyline(np.asarray(m["V"])[E].reshape(-1, 3), square).max() <= eps
 
 
 def normals(V, F):

@@ -141,8 +141,9 @@ void EmbedCurves::simplify_curves(
         eps);
 }
 
-bool EmbedCurves::embed_curves(const bool tag_from_winding_number)
+bool EmbedCurves::embed_curves(const bool tag_from_winding_number, const bool collect_provenance)
 {
+    const bool provenance = !tag_from_winding_number || collect_provenance;
     std::vector<Vector2r> V_rational;
     std::vector<std::vector<int>> E_sources;
     utils::embed_segments(
@@ -152,9 +153,9 @@ bool EmbedCurves::embed_curves(const bool tag_from_winding_number)
         V_rational,
         m_F_emb,
         m_E_constrained,
-        tag_from_winding_number ? nullptr : &E_sources);
+        provenance ? &E_sources : nullptr);
 
-    if (!tag_from_winding_number) {
+    if (provenance) {
         if (m_E_input.empty()) {
             log_and_throw_error(
                 "Provenance tagging asked for, but the input segments could not be traced "
