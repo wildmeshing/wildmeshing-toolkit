@@ -5,6 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <cmath>
 #include <random>
 #include <set>
 
@@ -298,4 +299,82 @@ TEST_CASE("feature-tag-propagation-fuzz", "[tetwild_operation][features]" + rele
         require_tags_in_tube(sc);
     }
     REQUIRE(collapsed >= 10);
+}
+
+TEST_CASE("open-boundary-tags-drop-when-glued", "[tetwild_operation][order2]" + release_only)
+{
+    // Two open rectangles in z = 0, [0, 0.5 - w/2] x [0, 1] and [0.5 + w/2, 1] x [0, 1], with a
+    // slit of width w = r / 4 between them, r the open-boundary tube's half-width. Without
+    // preserve_topology the collapses may glue the slit shut, and the edges along the seam then
+    // have two faces: they are open boundaries no longer, so they lose their order2 tag
+    // (drop_stale_order2_tags()). Every edge still tagged at the end has exactly one face.
+    for (const double epsr : {1e-3, 2e-3, 1e-2}) {
+        CAPTURE(epsr);
+        Parameters params;
+        params.epsr = epsr;
+        const double r = params.order2_envelope_ratio * epsr * std::sqrt(2.0); // bbox [0,1]^2
+        const double a = 0.5 - r / 8, b = 0.5 + r / 8;
+        const std::vector<Vector3d> v = {
+            {0, 0, 0},
+            {a, 0, 0},
+            {a, 1, 0},
+            {0, 1, 0},
+            {b, 0, 0},
+            {1, 0, 0},
+            {1, 1, 0},
+            {b, 1, 0}};
+        const std::vector<std::array<size_t, 3>> f = {
+            {{0, 1, 2}},
+            {{0, 2, 3}},
+            {{4, 5, 6}},
+            {{4, 6, 7}}};
+        params.init(v, f);
+        std::vector<Eigen::Vector3i> F;
+        for (const auto& t : f) F.emplace_back(int(t[0]), int(t[1]), int(t[2]));
+        auto env = std::make_shared<Envelope>();
+        env->init(v, F, params.eps);
+
+        std::vector<Vector3r> v_rational;
+        std::vector<std::array<size_t, 3>> facets;
+        std::vector<bool> is_v_on_input;
+        std::vector<std::array<size_t, 4>> tets;
+        std::vector<bool> tet_face_on_input_surface;
+        std::vector<int8_t> tet_face_orientation;
+        {
+            TetWildMesh mesh_insertion(params, env, 0);
+            mesh_insertion.insertion_by_volumeremesher(
+                v,
+                f,
+                v_rational,
+                facets,
+                is_v_on_input,
+                tets,
+                tet_face_on_input_surface,
+                &tet_face_orientation);
+        }
+        TetWildMesh mesh(params, env, 0);
+        mesh.init_from_Volumeremesher(
+            v_rational,
+            facets,
+            is_v_on_input,
+            tets,
+            tet_face_on_input_surface,
+            &tet_face_orientation);
+        REQUIRE(mesh.m_track_feature_edges);
+        mesh.mesh_improvement(3);
+
+        size_t n_tagged = 0, n_stale = 0;
+        for (const auto& e : mesh.get_edges()) {
+            if (!mesh.m_feature_edge_attribute[e.eid(mesh)].has(
+                    TetWildMesh::FeatureEdgeAttributes::order2)) {
+                continue;
+            }
+            ++n_tagged;
+            const size_t v0 = e.vid(mesh), v1 = e.switch_vertex(mesh).vid(mesh);
+            n_stale += mesh.get_num_surface_faces_for_edge({{v0, v1}}) != 1;
+        }
+        CAPTURE(n_tagged);
+        CHECK(n_tagged > 0);
+        CHECK(n_stale == 0);
+    }
 }

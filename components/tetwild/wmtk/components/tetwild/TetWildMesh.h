@@ -95,9 +95,12 @@ public:
     /// tetwild-only fields.
     Parameters& m_tet_params;
 
-    /// Envelope for order-2 vertices, i.e. those on a surface boundary or a non-manifold
-    /// edge. Named for the order rather than for "open boundary" because that is what
-    /// TetMesh::compute_vertex_order actually reports, and it is the broader set.
+    /// The tube around the input's OPEN-BOUNDARY edges (one tracked face), built by
+    /// find_open_boundary() at order2_envelope_ratio x eps: the same tube as the base's
+    /// m_order2_edge_envelope (tag_order2_edges(), open boundaries only), which holds the edges.
+    /// This one serves the open-boundary flags' users -- is_open_boundary_edge() (the
+    /// surface-flip refusal, the split cache, the sanity check), collapse_before_vertex() -- and
+    /// the smoothing pull of order-2 vertices.
     std::shared_ptr<Envelope> m_order2_envelope;
 
     /**
@@ -171,29 +174,17 @@ public:
     {
         m_vertex_extra[vid].m_is_on_open_boundary = is_open_boundary;
     }
-    bool boundary_edges_at_vertex_inside(size_t vid) const override
-    {
-        if (!m_vertex_extra[vid].m_is_on_open_boundary || !m_order2_envelope) {
-            return true;
-        }
-        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-            if (!m_vertex_extra[u].m_is_on_open_boundary) {
-                continue;
-            }
-            // Exact membership: an open boundary edge has exactly one incident tracked
-            // face. Flags alone would also catch interior chords between two boundary
-            // vertices (e.g. across a corner), which must not be tube-tested.
-            if (get_num_surface_faces_for_edge({{vid, u}}) != 1) {
-                continue;
-            }
-            if (m_order2_envelope->is_outside(
-                    std::array<Eigen::Vector3d, 2>{
-                        {m_vertex_attribute[vid].m_posf, m_vertex_attribute[u].m_posf}})) {
-                return false;
-            }
-        }
-        return true;
-    }
+    /// The open boundaries only. tetwild's non-manifold edges are ones the input's own
+    /// triangles need not have: Thingi10K 111388 is a closed STL whose triangles all meet in
+    /// pairs, and after simplification and insertion 278 of its 329 order-2 edges are
+    /// non-manifold. Holding them in the tube made that run stop at the 40-iteration cap with
+    /// max energy 5.78 (stop 5), against 12 iterations and 4.85 without.
+    bool holds_order2_edge(const size_t n_faces) const override { return n_faces == 1; }
+    // The open boundaries are held by the base: tagged at init (tag_order2_edges()), every
+    // tagged edge a collapse keeps, or a smoothing move touches, must stay in
+    // m_order2_edge_envelope. The overrides that did this here, collapse_is_order_2_edge() for
+    // the collapse's chord check and boundary_edges_at_vertex_inside() for smoothing, found the
+    // edges from the open-boundary flags and the face counts instead of from tags.
     bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override
     {
         if (edge_length <= 0 || !m_vertex_extra[v1].m_is_on_open_boundary) return true;
@@ -201,10 +192,6 @@ public:
                !m_order2_envelope->is_outside(m_vertex_attribute[v2].m_posf);
     }
 
-    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override
-    {
-        return is_open_boundary_edge(e);
-    }
     bool collapse_after_connectivity(
         size_t v1,
         size_t v2,
@@ -468,7 +455,6 @@ public:
     /// tetwild's surface is the input mesh, which may be non-watertight, so the base's
     /// "no open boundary" default does not hold here. See TetOptimizerMesh.
     bool is_open_boundary_edge(const Tuple& e) override;
-    bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
 public:
     // substructure functions

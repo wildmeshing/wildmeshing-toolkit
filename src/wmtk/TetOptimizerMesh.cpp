@@ -1182,7 +1182,7 @@ size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
             const Tuple e = tuple_from_edge(t, j);
             const size_t eid = e.eid(*this);
             if (eid != 6 * t + j) continue; // a lower tet owns this edge
-            if (n_faces[eid] == 0 || n_faces[eid] == 2) continue;
+            if (!holds_order2_edge(n_faces[eid])) continue;
             eids.push_back(eid);
             edges.emplace_back(e.vid(*this), e.switch_vertex(*this).vid(*this));
         }
@@ -1197,6 +1197,28 @@ size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
     m_order2_edge_envelope = std::make_shared<Envelope>(exact);
     m_order2_edge_envelope->init(v_posf, edges, eps);
     return eids.size();
+}
+
+void TetOptimizerMesh::drop_stale_order2_tags(
+    const std::map<std::array<size_t, 2>, uint8_t>& cache,
+    const size_t v_old,
+    const size_t v_new)
+{
+    for (const auto& [pair, kinds] : cache) {
+        if ((kinds & FeatureEdgeAttributes::order2) == 0) continue;
+        std::array<size_t, 2> p = pair;
+        for (size_t& v : p) {
+            if (v == v_old) v = v_new;
+        }
+        if (p[0] == p[1]) continue; // the collapsed edge itself
+        const Tuple e = tuple_from_edge(p);
+        if (!e.is_valid(*this)) continue;
+        auto& attr = m_feature_edge_attribute[e.eid(*this)];
+        if (attr.has(FeatureEdgeAttributes::order2) &&
+            !holds_order2_edge(get_num_surface_faces_for_edge(p))) {
+            attr.remove(FeatureEdgeAttributes::order2);
+        }
+    }
 }
 
 size_t TetOptimizerMesh::tagged_edges_outside(const FeatureEdgeAttributes::Kind k) const

@@ -525,6 +525,8 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         if (!feature_edges_restore_remap(cache.changed_edges, v1_id, v2_id)) {
             return collapse_reject(CollapseReject::after_feature_edge);
         }
+        // With the face tags written back above, the face counts are the post-collapse truth.
+        drop_stale_order2_tags(cache.changed_edges, v1_id, v2_id);
         // After the restore, not in collapse_after_vertex: what the survivor's feature state
         // is depends on the edge tags around it, and those are the post-collapse truth only
         // from here on.

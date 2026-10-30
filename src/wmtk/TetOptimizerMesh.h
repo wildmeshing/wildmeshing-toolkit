@@ -247,8 +247,8 @@ public:
      * tagged_edge_envelope()), and one edge can tile two kinds at once:
      *  - feature: the input feature curves the application was given, held by
      *    m_feature_envelope;
-     *  - order2: the input's order-2 edges (open boundaries and non-manifold edges), held by
-     *    m_order2_edge_envelope; set by tag_order2_edges().
+     *  - order2: the input's order-2 edges the application holds (holds_order2_edge()), held
+     *    by m_order2_edge_envelope; set by tag_order2_edges().
      * An edge with any bit set is TAGGED, and the operations treat every tagged edge alike --
      * propagated through split, collapse and swap, never removed by a swap, order-2 substructure
      * for the link condition. Only the tube it is held to, and vertex_has_feature_edge(), read
@@ -275,6 +275,7 @@ public:
         bool is_tagged() const { return m_kinds != 0; }
         bool has(Kind k) const { return (m_kinds & k) != 0; }
         void add(Kind k) { m_kinds |= k; }
+        void remove(Kind k) { m_kinds &= uint8_t(~k); }
     };
     using EdgeAttCol = AttributeCollection<FeatureEdgeAttributes>;
     /// Sized, protected and rolled back only once enable_feature_edge_tracking() ran.
@@ -351,8 +352,24 @@ public:
     bool vertex_has_edge_of_kind(size_t vid, FeatureEdgeAttributes::Kind k) const;
 
     /**
-     * @brief Tag the input's order-2 edges with the order2 kind and build their tube,
-     * m_order2_edge_envelope, of half-width `eps`. Returns the number of edges tagged.
+     * @brief Does the application hold an order-2 edge with `n_faces` tracked faces?
+     *
+     * The application's rule, asked at both ends of the tag's life: tag_order2_edges() tags the
+     * edges it holds, and drop_stale_order2_tags() drops the tag of an edge a collapse leaves
+     * with a count it does not hold. The default holds every order-2 edge, the open boundaries
+     * (1 face) and the non-manifold edges (3 and more); simwild keeps it, its non-manifold edges
+     * being where the pieces it was given meet. tetwild holds its open boundaries only, and its
+     * override says why.
+     */
+    virtual bool holds_order2_edge(const size_t n_faces) const
+    {
+        return n_faces == 1 || n_faces >= 3;
+    }
+
+    /**
+     * @brief Tag the input's order-2 edges the application holds (holds_order2_edge()) with the
+     * order2 kind and build their tube, m_order2_edge_envelope, of half-width `eps`. Returns the
+     * number of edges tagged.
      *
      * An order-2 edge has 1 tracked face (an open boundary) or 3 and more (a non-manifold
      * edge): it is where a sheet ends. The one-sided surface envelope cannot see a sheet
@@ -365,11 +382,34 @@ public:
      * collapse guard, the smoothing containment, the swap refusal, the link condition's orders.
      *
      * Call once after init, with the tracked faces final. Membership is decided here, from the
-     * tracked-face counts, and only carried afterwards: an edge the operations make order-2 is
-     * not the input's and is not held. Turns edge tracking on only when there is such an edge,
-     * since tracking costs every operation its cache (see enable_feature_edge_tracking()).
+     * tracked-face counts, and then carried: an edge the operations make order-2 is not the
+     * input's and is not held, and one they make ordinary loses its tag (see
+     * drop_stale_order2_tags()). Turns edge tracking on only when there is such an edge, since
+     * tracking costs every operation its cache (see enable_feature_edge_tracking()).
      */
     size_t tag_order2_edges(double eps, bool exact);
+    /**
+     * @brief After a collapse: drop the order2 kind from each edge of `cache` (v_old renamed to
+     * v_new) whose tracked-face count holds_order2_edge() no longer holds.
+     *
+     * The tag holds an edge while it is still order-2. Without preserve_topology a collapse may
+     * close a slit, glue a sheet's rim onto another sheet or remove a lone triangle, and the
+     * edge there is then an ordinary one; holding it in the tube only pins the surface. Measured
+     * on 111388 (tetwild, no preserve_topology) with every order-2 edge tagged: after 4
+     * iterations 49 of the 141 tagged edges had 2 faces again. With the open boundaries alone
+     * tagged and no drop, it reached the stop energy in 22 iterations (4.997, stop 5), 16 with
+     * it; test open-boundary-tags-drop-when-glued keeps 14 or 15 of 72 tags stale without it,
+     * at every eps. Only a collapse changes a surviving edge's count: a split's halves have the
+     * parent's faces, a face swap never removes a tracked face, and a surface flip replaces an
+     * untagged two-face edge and keeps the four rim edges' counts. tetwild cleared its
+     * open-boundary vertex flags the same way, after each collapse. The cache's edges have both
+     * endpoints in the locked one-ring of the collapse, and every tet around such an edge contains
+     * them, so no other thread can change the faces counted here.
+     */
+    void drop_stale_order2_tags(
+        const std::map<std::array<size_t, 2>, uint8_t>& cache,
+        size_t v_old,
+        size_t v_new);
     /// The audit of that guarantee: how many edges carrying kind `k` lie outside its tube now.
     /// Zero after every run unless an operation lets a tagged edge out; 0 when tracking is off
     /// or the kind has no tube.

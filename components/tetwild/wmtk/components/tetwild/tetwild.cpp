@@ -990,6 +990,16 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.mesh_improvement_legacy(max_its);
     } else {
         mesh_new.mesh_improvement(max_its);
+        // The open-boundary guarantee, audited: every edge still carrying the order2 tag lies in
+        // its tube (tag_order2_edges()). Edges the operations made open carry no tag and are not
+        // counted. Not after the legacy optimizer, which rebuilds the mesh without the tags.
+        const size_t n_out =
+            mesh_new.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::order2);
+        if (n_out > 0) {
+            logger().warn("{} order-2 edges outside their tube", n_out);
+        } else {
+            logger().info("order-2 edges outside their tube: 0");
+        }
     }
     log_orientation_check("after optimization");
     t_optimize = phase_timer.getElapsedTime(); // optimization done

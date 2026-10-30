@@ -564,6 +564,17 @@ void TetWildMesh::init_from_Volumeremesher(
         logger().info("{} vertices with order counts (0,1,2,3): {}", vs.size(), vo);
     }
 
+    // The open boundaries are tagged and held by the base's tube (see tag_order2_edges()):
+    // every tagged edge a collapse keeps, or a smoothing move touches, stays in it, no swap
+    // removes one, and a collapse that leaves one with other than one face drops its tag. The
+    // checks that did this here were keyed on the open-boundary flags (see TetWildMesh.h). The
+    // non-manifold edges are not held, as before: the reason is at holds_order2_edge(). Same
+    // edges, radius and predicate as m_order2_envelope above.
+    const size_t n_order2 = tag_order2_edges(
+        m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio,
+        m_envelope && m_envelope->use_exact);
+    logger().info("order-2 edges tagged: {}", n_order2);
+
     // Round the indirect vertices in parallel. Rounding snaps m_pos to its double
     // and may not invert any incident tet, so it is not independent across adjacent
     // vertices and the old code did it serially (round() per vertex, an exact-
@@ -744,7 +755,8 @@ void TetWildMesh::find_open_boundary()
         return;
     }
 
-    // init the order-2 envelope (surface boundaries and non-manifold edges)
+    // init the open-boundary envelope, for the open-boundary flags' users and the smoothing
+    // pull (see m_order2_envelope); the edges themselves are held by tag_order2_edges()'s tube.
     //
     // It follows the surface envelope's choice of predicate rather than being hard-wired to
     // the sampled one. Both are containment tests against the same input at the same epsilon,
@@ -769,18 +781,6 @@ bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
 {
     size_t v1 = e.vid(*this);
     size_t v2 = e.switch_vertex(*this).vid(*this);
-    if (!m_vertex_extra[v1].m_is_on_open_boundary || !m_vertex_extra[v2].m_is_on_open_boundary)
-        return false;
-
-    return !m_order2_envelope->is_outside(
-        std::array<Eigen::Vector3d, 2>{
-            {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
-}
-
-bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
-{
-    size_t v1 = e[0];
-    size_t v2 = e[1];
     if (!m_vertex_extra[v1].m_is_on_open_boundary || !m_vertex_extra[v2].m_is_on_open_boundary)
         return false;
 
