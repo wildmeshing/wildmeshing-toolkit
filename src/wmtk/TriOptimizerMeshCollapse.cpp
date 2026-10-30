@@ -172,15 +172,11 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
             return false; // do not collapse away from surface
         }
 
-        if (VA[v1_id].m_is_rounded && get_order_of_vertex(v1_id) > 1 &&
-            get_order_of_vertex(v2_id) <= 1) {
-            /**
-             * In general, we don't want to collapse away from feature vertices. It is always fine
-             * to collapse into a feature vertex, though. However, we allow to feature vertices to
-             * be collapsed.
-             */
-            return false;
-        }
+        // No order rule for the order-2 vertices (a curve's end, where three or more curves
+        // meet): one may collapse into a vertex of a curve, as an order-2 vertex may into a sheet
+        // in 3D. The anchor ball holds the ends (and simwild's junctions), and every segment the
+        // collapse makes is checked against its envelope below. Until 2026-10 a rounded order-2
+        // vertex could collapse only onto order >= 2.
 
         // if both vertices are on the surface, the collapsing edge should be inside the envelope
         //

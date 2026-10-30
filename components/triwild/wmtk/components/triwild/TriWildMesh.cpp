@@ -200,8 +200,8 @@ void TriWildMesh::init_mesh(
     //
     // Without these, the collapse pass deletes open polylines outright. A polyline erodes by
     // legal collapses of its interior into its tip until one segment is left, and that
-    // segment has a feature at BOTH ends -- which the existing order test permits, because it
-    // only refuses collapsing a feature into a non-feature. Measured on the 2D dataset:
+    // segment has a feature at BOTH ends -- which the order test of the time permitted, because
+    // it only refused collapsing a feature into a non-feature. Measured on the 2D dataset:
     // 215292 went from 28 open components after the arrangement to 0 in the output, and
     // 134005 from 18 to 15, entirely in the collapse passes.
     anchor_feature_points(
