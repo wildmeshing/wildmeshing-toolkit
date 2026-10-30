@@ -1627,6 +1627,8 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
              {1., 100.},
              {Parameters().offset_amips_weight, 100.}}) {
         Parameters param;
+        // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
+        param.band_volume_rule = "corner_bound";
         param.offset_amips_weight = w;
         param.stop_energy = s;
         const auto pot = plane_field();
@@ -1721,6 +1723,8 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                  {Parameters().offset_amips_weight, 100., true}}) {
             if (plastic && fi != 0) continue; // fixture 1 is all band: nothing plastic
             Parameters param;
+            // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
+            param.band_volume_rule = "corner_bound";
             param.offset_amips_weight = w;
             param.stop_energy = s;
             const auto pot = plane_field();
@@ -2158,6 +2162,8 @@ TEST_CASE("swap-candidate-record", "[offset][3d]")
             const int search,
             const std::function<void(TopoOffsetTetMesh&, const std::vector<size_t>&)>& before) {
             Parameters pa, pb;
+            // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
+            pa.band_volume_rule = pb.band_volume_rule = "corner_bound";
             auto A = energy_mesh(pa, V, TA, labA, pot);
             auto B = energy_mesh(pb, V, TB, labB, pot);
             std::vector<size_t> tids(TA.size());
@@ -2330,6 +2336,8 @@ TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
     for (const int x : {2, 0}) {
         INFO("label " << x);
         Parameters pa, pb;
+        // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
+        pa.band_volume_rule = pb.band_volume_rule = "corner_bound";
         pa.perform_sanity_checks = true;
         auto A = energy_mesh(pa, V, TA, {x, x}, pot);
         auto B = energy_mesh(pb, V, TB, {x, x, x}, pot);
@@ -2404,6 +2412,8 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
         INFO("label " << x);
         const std::vector<int> lab(4, x);
         Parameters pa, p02, p13;
+        // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
+        pa.band_volume_rule = p02.band_volume_rule = p13.band_volume_rule = "corner_bound";
         pa.perform_sanity_checks = true;
         auto A = energy_mesh(pa, V, TA, lab, pot);
         auto B02 = energy_mesh(p02, V, T02, lab, pot);
@@ -4046,6 +4056,7 @@ TEST_CASE("spanned-split-edge", "[offset][3d][pocket_split]")
     // (o, x, z, c) and (x, y, z, c), have c off the front. The pinned-cell split alone leaves it;
     // with the key, the slot splits (x, z), and the offset surface is the same set of faces.
     Parameters param;
+    param.front_spanned_split = false;
     auto mesh = pocket_mesh(param, {2, 0}, true);
     mesh->m_offset_params.front_pocket_split = true;
     REQUIRE(count_pinned(*mesh) == 0);
