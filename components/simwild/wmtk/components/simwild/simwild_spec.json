@@ -79,6 +79,7 @@
       "tight_seal_geom_distance",
       "tight_seal_geom_growth",
       "tight_seal_geom_trace_rel_tol",
+      "tight_seal_geom_selection",
       "keep_lcc_tags",
       "keep_lcc_num",
       "resolve_overlaps_tags",
@@ -591,7 +592,7 @@
     "pointer": "/tight_seal_geom_tags",
     "type": "list",
     "default": [],
-    "doc": "For tight_seal_geom (2D and 3D): the tags to seal, at least two. Each entry is a single tag; its region is the cells (faces in 2D, tets in 3D) tagged with it and nothing else."
+    "doc": "For tight_seal_geom (2D and 3D): the tags to seal, at least two. Each entry is a single tag other than ambient; its region is the cells (faces in 2D, tets in 3D) tagged with it and nothing else. Ignored, with a warning, if tight_seal_geom_selection is \"detected\"."
   },
   {
     "pointer": "/tight_seal_geom_tags/*",
@@ -615,6 +616,13 @@
     "type": "float",
     "default": 0.01,
     "doc": "For tight_seal_geom with tight_seal_geom_growth, in (0, 1): the sphere trace stops where the distance to the disk's reachable centres is within this x d/2 of d/2. As topological_offset's sphere_trace_target_rel_tol."
+  },
+  {
+    "pointer": "/tight_seal_geom_selection",
+    "type": "string",
+    "default": "explicit",
+    "options": ["explicit", "detected"],
+    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders two regions or more (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags."
   },
   {
     "pointer": "/keep_lcc_tags",

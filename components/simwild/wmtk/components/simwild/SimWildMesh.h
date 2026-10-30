@@ -476,12 +476,18 @@ public:
      * are cut along their level sets by sphere tracing on the edges (to within trace_rel_tol x
      * distance/2): the centres are cut without splitting, a part by splitting the edges that
      * leave it.
+     *
+     * `selection` "explicit": the regions are `tags`, which may not hold ambient (the tag named
+     * "ambient"). "detected": `tags` is ignored (with a warning if it is not empty), the regions
+     * are every tag but ambient that some tet has alone, and each part that borders two of them
+     * or more is filled with those it borders.
      */
     void tight_seal_geom(
         const std::vector<int64_t>& tags,
         double distance,
         bool growth = true,
-        double trace_rel_tol = 0.01);
+        double trace_rel_tol = 0.01,
+        const std::string& selection = "explicit");
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 

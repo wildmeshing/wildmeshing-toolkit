@@ -573,18 +573,53 @@ void SimWildMesh::tight_seal_topo(
 }
 
 void SimWildMesh::tight_seal_geom(
-    const std::vector<int64_t>& tags,
+    const std::vector<int64_t>& listed_tags,
     const double distance,
     const bool growth,
-    const double trace_rel_tol)
+    const double trace_rel_tol,
+    const std::string& selection)
 {
+    const bool detected = selection == "detected";
+    if (!detected && selection != "explicit") {
+        log_and_throw_error(
+            "tight_seal_geom: selection must be \"explicit\" or \"detected\". Input was {}",
+            selection);
+    }
+    const auto is_ambient = [&](const int64_t tag) {
+        const auto it = m_tag_id_to_name.find(tag);
+        return it != m_tag_id_to_name.end() && it->second == "ambient";
+    };
+    // the tags of the regions: the listed ones, or every tag but ambient that some tet has alone
+    std::vector<int64_t> tags;
+    if (detected) {
+        if (!listed_tags.empty()) {
+            logger().warn(
+                "tight_seal_geom: selection \"detected\" ignores the listed tags {}",
+                listed_tags);
+        }
+        CellTag found;
+        for (const Tuple& t : get_tets()) {
+            const CellTag& tag = m_tet_attribute[t.tid(*this)].tags;
+            if (tag.size() == 1 && !is_ambient(*tag.begin())) {
+                found.insert(*tag.begin());
+            }
+        }
+        tags.assign(found.begin(), found.end());
+    } else {
+        tags = listed_tags;
+        if (tags.size() < 2) {
+            log_and_throw_error("tight_seal_geom needs at least two tags. Input was {}", tags);
+        }
+        if (CellTag(tags.begin(), tags.end()).size() != tags.size()) {
+            log_and_throw_error("tight_seal_geom needs distinct tags. Input was {}", tags);
+        }
+        for (const int64_t tag : tags) {
+            if (is_ambient(tag)) {
+                log_and_throw_error("tight_seal_geom cannot seal ambient. Input was {}", tags);
+            }
+        }
+    }
     const size_t n = tags.size();
-    if (n < 2) {
-        log_and_throw_error("tight_seal_geom needs at least two tags. Input was {}", tags);
-    }
-    if (CellTag(tags.begin(), tags.end()).size() != n) {
-        log_and_throw_error("tight_seal_geom needs distinct tags. Input was {}", tags);
-    }
     if (!(distance > 0)) {
         log_and_throw_error("tight_seal_geom needs a positive distance. Input was {}", distance);
     }
@@ -739,7 +774,14 @@ void SimWildMesh::tight_seal_geom(
 
     std::vector<SimpleBVH::BVH> region_bvhs(n);
     std::vector<ConnectedComponent> components_seal;
-    if (std::find(region_found.begin(), region_found.end(), false) != region_found.end()) {
+    // the regions each sealed component is filled with, in increasing order
+    std::vector<std::vector<size_t>> components_regions;
+    if (n < 2) {
+        logger().warn(
+            "tight_seal_geom: only {} tags other than ambient are some tet's only tag, nothing to "
+            "seal",
+            n);
+    } else if (std::find(region_found.begin(), region_found.end(), false) != region_found.end()) {
         logger().warn(
             "tight_seal_geom: a tag in {} has no tet tagged with it alone, nothing to seal",
             tags);
@@ -927,7 +969,8 @@ void SimWildMesh::tight_seal_geom(
             in_J_mesh[tid] = region[tid] < 0 && (growth ? n_in_J > 0 : n_in_J == 4);
         }
 
-        // Connected components of J_mesh; keep the ones that share a face with every R_i. Tets
+        // Connected components of J_mesh; keep the ones that share a face with every R_i (with
+        // detected tags: with two R_i or more, which the component is then filled with). Tets
         // connect through a face with a vertex in J, which with growth keeps a part on the J
         // side; without growth every face of J_mesh has.
         std::vector<int> comp_id(tet_capacity(), -1);
@@ -967,17 +1010,45 @@ void SimWildMesh::tight_seal_geom(
                 }
             }
             ++n_components;
-            if (std::find(borders.begin(), borders.end(), false) == borders.end()) {
+            std::vector<size_t> comp_regions;
+            for (size_t i = 0; i < n; ++i) {
+                if (borders[i]) {
+                    comp_regions.push_back(i);
+                }
+            }
+            if (detected ? comp_regions.size() >= 2 : comp_regions.size() == n) {
+                if (detected) {
+                    std::vector<int64_t> comp_tags;
+                    for (const size_t i : comp_regions) {
+                        comp_tags.push_back(tags[i]);
+                    }
+                    logger().info(
+                        "tight_seal_geom: component {} ({} tets) borders tags {}",
+                        components_seal.size(),
+                        comp.cells.size(),
+                        comp_tags);
+                }
                 components_seal.push_back(std::move(comp));
+                components_regions.push_back(std::move(comp_regions));
             }
         }
 
-        logger().info(
-            "tight_seal_geom: {} of {} unreachable components border all tags {}, distance {}",
-            components_seal.size(),
-            n_components,
-            tags,
-            distance);
+        if (detected) {
+            logger().info(
+                "tight_seal_geom: {} of {} unreachable components border two or more of the "
+                "detected tags {}, distance {}",
+                components_seal.size(),
+                n_components,
+                tags,
+                distance);
+        } else {
+            logger().info(
+                "tight_seal_geom: {} of {} unreachable components border all tags {}, distance {}",
+                components_seal.size(),
+                n_components,
+                tags,
+                distance);
+        }
 
         // Growth. Each edge of a sealed component from a vertex in J to one outside is split
         // where it leaves J: where the distance f to U_mesh falls to d/2, found by sphere tracing
@@ -1065,12 +1136,13 @@ void SimWildMesh::tight_seal_geom(
         }
     }
 
-    // Voronoi fill. A point's region is the R_i nearest to it. An edge whose endpoints are in
-    // regions a and b is split where d_a = d_b, by split_adjust_position's bisection.
-    const auto nearest_region = [&](const Vector3d& p) {
+    // Voronoi fill, of each component with its regions. A point's region is the one of them
+    // nearest to it. An edge whose endpoints are in regions a and b is split where d_a = d_b, by
+    // split_adjust_position's bisection.
+    const auto nearest_region = [&](const Vector3d& p, const std::vector<size_t>& regions) {
         size_t best = 0;
         double best_d = std::numeric_limits<double>::infinity();
-        for (size_t i = 0; i < n; ++i) {
+        for (const size_t i : regions) {
             const double d = bvh_distance(region_bvhs[i], p);
             if (d < best_d) {
                 best = i;
@@ -1085,17 +1157,19 @@ void SimWildMesh::tight_seal_geom(
         return bvh_distance(region_bvhs[split_a], p) - bvh_distance(region_bvhs[split_b], p);
     };
 
-    // replace the tet's tags from `tags` with tags[i]; other tags stay
-    const auto set_region = [&](const size_t tid, const size_t i) {
-        CellTag& tag = m_tet_attribute[tid].tags;
-        for (const int64_t tt : tags) {
-            tag.erase(tt);
-        }
-        tag.insert(tags[i]);
-    };
-
     size_t n_splits = 0;
-    for (const ConnectedComponent& comp : components_seal) {
+    for (size_t c = 0; c < components_seal.size(); ++c) {
+        const ConnectedComponent& comp = components_seal[c];
+        const std::vector<size_t>& regions = components_regions[c];
+        // replace the tet's tags of the component's regions with tags[i]; other tags stay
+        const auto set_region = [&](const size_t tid, const size_t i) {
+            CellTag& tag = m_tet_attribute[tid].tags;
+            for (const size_t j : regions) {
+                tag.erase(tags[j]);
+            }
+            tag.insert(tags[i]);
+        };
+
         // the component's tets, kept up to date as its edges are split
         std::unordered_set<size_t> comp_cells(comp.cells.begin(), comp.cells.end());
         std::unordered_map<size_t, size_t> vertex_region;
@@ -1103,10 +1177,10 @@ void SimWildMesh::tight_seal_geom(
             const auto vs = oriented_tet_vids(tid);
             set_region(
                 tid,
-                nearest_region((pos(vs[0]) + pos(vs[1]) + pos(vs[2]) + pos(vs[3])) / 4));
+                nearest_region((pos(vs[0]) + pos(vs[1]) + pos(vs[2]) + pos(vs[3])) / 4, regions));
             for (const size_t v : vs) {
                 if (vertex_region.count(v) == 0) {
-                    vertex_region[v] = nearest_region(pos(v));
+                    vertex_region[v] = nearest_region(pos(v), regions);
                 }
             }
         }
