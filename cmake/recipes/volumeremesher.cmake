@@ -156,11 +156,34 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # 15 tetwild configs (the 12 registered + Thingi10K 101954, 103197, 1017012), 13 are
 # byte-identical; thingi_100827 and features change (each gains exactly that one virtual
 # constraint) and still pass their checks.
+#
+# Then #37-#41 (0258037). embed.h, embed.cpp and the 2D pipeline are untouched, and NFG,
+# Indirect_Predicates and Delaunay3D keep their pins; what moves is the work inside
+# embed_tri_in_poly_mesh, which is now mostly parallel:
+#
+#   - #38 and #40: the BSP complex is built from the background tets, and makeTetrahedra emits
+#     its tets and tracks face provenance, on parallel_blocks, at offsets that keep the serial
+#     order.
+#   - #37: parallel_blocks takes its thread count from vol_rem::set_num_threads, else
+#     VOLUMEREMESHER_NUM_THREADS, else the affinity mask (Linux) or every CPU. Nothing here calls
+#     set_num_threads, so as before the remesher ignores tetwild's num_threads.
+#   - #39: face_provenance and round_vertices options, read only by the mesh_generator drivers.
+#   - #41: the inside/outside cell classifier is a winding number, and the graph cut (GCO is
+#     research-only, maxflow GPL) is compiled only with VOLUMEREMESHER_WITH_GRAPHCUT, which stays
+#     OFF here, so that code is no longer in the toolkit's binaries. The embedding classifies no
+#     cells (remakePolyhedralMesh with no_class), so the classifier change does not reach us.
+#
+# No output changes. Run serially, 48 of the 50 registered configs and Thingi10K 101168 and
+# 1017012 are byte-identical; tetwild_octocat and tetwild_crown run on 10 threads and already
+# differ at the input simplification, before the remesher. The insertion is 15% faster over the
+# registered tetwild configs (5.7 s -> 4.9 s) and 32% over the 15 challenging tetwild models at
+# 8 threads (29.4 s -> 20.1 s, every model faster). Peak memory, on the byte-identical runs,
+# moves between -47 MB (1017012, 502 -> 455 MB) and +9 MB (tetwild_double_sphere, 66 -> 75 MB).
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 7af2cc6296370cc1b02093f6019b95e02247454b
+    GIT_TAG 0258037c05a4339ec7104f0736e44cc828f924ba
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
