@@ -59,13 +59,6 @@ public:
     bool m_collapse_check_topology = false; // sanity check
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
 
-    /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
-    /// the envelope. See TriOptimizerMesh's feature-point anchors for the case that is.
-    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override
-    {
-        return true;
-    }
-
     SimWildMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : wmtk::TriOptimizerMesh(_m_params)
         , m_sim_params(_m_params)
