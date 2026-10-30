@@ -1,0 +1,7 @@
+{
+  "application": "simwild",
+  "operation": "tight_seal_topo",
+  "input": ["double_sphere_hole.msh"],
+  "output": "double_sphere_sealed",
+  "tight_seal_tag_sets": [["tag_0", "tag_1"]]
+}

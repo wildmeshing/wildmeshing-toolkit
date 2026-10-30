@@ -1,0 +1,8 @@
+{
+  "application": "simwild",
+  "input": ["spheres_repaired.msh"],
+  "operation": "remeshing",
+  "output": "spheres_remeshed",
+  "report": "spheres_remeshed.json",
+  "num_threads": 4
+}

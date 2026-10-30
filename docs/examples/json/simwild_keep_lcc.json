@@ -1,0 +1,8 @@
+{
+  "application": "simwild",
+  "operation": "keep_lcc",
+  "input": ["topo_annots_groups.msh"],
+  "output": "groups_lcc",
+  "keep_lcc_tags": ["tag_0"],
+  "keep_lcc_num": 1
+}
