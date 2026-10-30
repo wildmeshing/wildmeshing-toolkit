@@ -100,6 +100,18 @@ if(TARGET wildmeshing AND Python_EXECUTABLE)
             COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>/.."
                     "${Python_EXECUTABLE}" -m unittest discover
                     -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_tracking.py")
+        # The tracking tutorial's pipeline on the dense bunny, a whole remeshing and tetwild run:
+        # Release builds only, as the slow cases of the component tests.
+        if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+            include(wmtk_data)
+            add_test(
+                NAME python_tracking_correspondences
+                COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>/.."
+                        "WMTK_DATA=${WMTK_DATA_ROOT}/models"
+                        "${Python_EXECUTABLE}" -m unittest discover
+                        -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_tracking_correspondences.py")
+            set_tests_properties(python_tracking_correspondences PROPERTIES TIMEOUT 1800)
+        endif()
     else()
         message(STATUS "NumPy not found for ${Python_EXECUTABLE}: python_memory_io and python_tracking are not registered")
     endif()

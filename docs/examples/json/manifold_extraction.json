@@ -1,0 +1,9 @@
+{
+  "application": "manifold_extraction",
+  "input": "double_sphere_hole.msh",
+  "output": "double_sphere_manifold",
+  "tag_selection": "tag_0 | tag_1",
+  "fill_tags": [],
+  "write_surface": true,
+  "report": "double_sphere_manifold.json"
+}

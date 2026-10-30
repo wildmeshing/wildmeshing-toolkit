@@ -1,0 +1,240 @@
+# The gallery: each example runs on meshes of data/models, in memory, and shows its input and its
+# output in the viewer (docs/viewer). docs/tools/build_gallery.py writes the assets to
+# docs/gallery/assets/<id>/ (not committed; CI generates them), and a page shows one with
+# <wmtk-viewer example="<id>"></wmtk-viewer>. The gallery page lists them all, by group.
+#
+#   id          the directory of the assets, and how pages refer to the example
+#   title       the gallery's heading for it
+#   group       tutorials, workflows or robustness: the gallery page's sections
+#   tutorial    the page that explains it, relative to docs/
+#   one of:
+#     json      a JSON example of the tutorials (docs/examples/json/<json>.json), run in memory
+#     component, inputs (name -> mesh file), options: a component on meshes of data/models
+#     scene     a function of docs/gallery/scenes.py, for pipelines
+#   views       `input` and `output` (one or both): mesh, the mesh to show (input/* -- every
+#               input, moved by input_transform -- input/<name> or output/<name>; scenes give
+#               theirs), and keep: regions, to hide the background cells. The viewer always
+#               puts the input on the left and the output on the right.
+#   labels      the views' titles (default "Input|Output")
+#   color       quality, region or plain: how the viewer colors cells at first
+#   cut         x, y, z or off: the tet meshes' cut at first
+#   camera      the direction the camera looks from, [x, y, z] (default [1, 0.6, 1.6])
+#   zoom        how much closer than the default the camera starts (default 1)
+#   cut-position  where the cut starts, from 0 to 1 along its axis (default 0.5)
+#   max_cells   the views' budget: the build fails when a view has more cells
+
+examples:
+  # The tutorials' first runs.
+  - id: shortest_edge_collapse
+    title: Shortest edge collapse on the Octocat
+    group: tutorials
+    tutorial: tutorials/shortest_edge_collapse.md
+    json: shortest_edge_collapse
+    labels: Input|Shortest edge collapse
+    color: plain
+
+  - id: qslim
+    title: QSlim on the Octocat
+    group: tutorials
+    tutorial: tutorials/qslim.md
+    json: qslim
+    labels: Input|QSlim
+    color: plain
+
+  - id: isotropic_remeshing
+    title: Isotropic remeshing of the bunny
+    group: tutorials
+    tutorial: tutorials/isotropic_remeshing.md
+    json: isotropic_remeshing
+    labels: Input|Isotropic remeshing
+    color: plain
+
+  - id: tetwild
+    title: TetWild on a Thingi10K snowman
+    group: tutorials
+    tutorial: tutorials/tetwild.md
+    json: tetwild
+    labels: Input|TetWild
+    color: quality
+    cut: x
+
+  - id: triwild
+    title: TriWild on five overlapping curves
+    group: tutorials
+    tutorial: tutorials/triwild.md
+    json: triwild
+    labels: Input curves|TriWild
+    color: region
+
+  - id: simwild
+    title: SimWild on two overlapping spheres
+    group: tutorials
+    tutorial: tutorials/simwild.md
+    json: simwild
+    views:
+      input: {}
+      output: {keep: regions}
+    labels: Input|SimWild regions
+    color: region
+    cut: x
+
+  - id: simwild_curves
+    title: SimWild on five curves in 2D
+    group: tutorials
+    tutorial: tutorials/simwild.md
+    json: simwild_curves
+    labels: Input curves|SimWild regions
+    color: region
+
+  - id: topological_offset
+    title: A topological offset around a bar
+    group: tutorials
+    tutorial: tutorials/topological_offset.md
+    json: topological_offset
+    views:
+      input: {keep: regions}
+      output: {keep: regions}
+    labels: Input|With the offset band
+    color: region
+    cut: y
+    camera: [0.35, 1, 0.5]
+    zoom: 2.2
+
+  - id: manifold_extraction
+    title: Manifold extraction of two touching spheres
+    group: tutorials
+    tutorial: tutorials/manifold_extraction.md
+    json: manifold_extraction
+    views:
+      input: {keep: regions}
+      output: {keep: regions}
+    labels: Input|Manifold
+    color: region
+    cut: y
+
+  - id: tracking
+    title: A pattern carried from the dense bunny to its tet mesh
+    group: tutorials
+    tutorial: tutorials/tracking.md
+    scene: tracking
+    labels: Dense input|Tet mesh surface, through both maps
+    color: region
+    cut: "off"
+
+  # The workflows.
+  - id: workflow_regions
+    title: Two spheres, their overlap renamed, a gap offset around one
+    group: workflows
+    tutorial: tutorials/workflows/regions.md
+    scene: workflow_regions
+    views:
+      output: {keep: regions}
+    labels: Input surfaces|Regions after the pipeline
+    color: region
+    cut: x
+
+  - id: workflow_tetwild_features
+    title: TetWild keeping feature curves and points
+    group: workflows
+    tutorial: tutorials/workflows/tetwild-features.md
+    scene: workflow_tetwild_features
+    labels: Feature curves|TetWild, feature edges in blue
+    color: plain
+    cut: z
+
+  - id: workflow_repair
+    title: Repair, then remesh
+    group: workflows
+    tutorial: tutorials/workflows/repair-before-meshing.md
+    scene: workflow_repair
+    views:
+      input: {keep: regions}
+      output: {keep: regions}
+    labels: Input|Manifold and remeshed
+    color: region
+    cut: y
+
+  # More inputs.
+  - id: tetwild_octocat
+    title: TetWild on the Octocat
+    group: robustness
+    tutorial: tutorials/tetwild.md
+    component: tetwild
+    inputs:
+      octocat: Octocat.obj
+    options:
+      input: [octocat]
+      filter: input
+      num_threads: 8
+    labels: Input|TetWild
+    cut: x
+
+  - id: thingi_1017012
+    title: TetWild on Thingi10K 1017012 (10,524 triangles)
+    group: robustness
+    tutorial: tutorials/tetwild.md
+    component: tetwild
+    inputs:
+      thingi_1017012: challenging_tetwild_1017012.stl
+    options:
+      input: [thingi_1017012]
+      filter: input
+      num_threads: 8
+    labels: Input|TetWild
+    cut: x
+
+  - id: thingi_104188
+    title: TetWild on Thingi10K 104188 (20,220 triangles)
+    group: robustness
+    tutorial: tutorials/tetwild.md
+    component: tetwild
+    inputs:
+      thingi_104188: challenging_tetwild_104188.stl
+    options:
+      input: [thingi_104188]
+      filter: input
+      num_threads: 8
+    labels: Input|TetWild
+    cut: x
+
+  - id: thingi_101168
+    title: TetWild on Thingi10K 101168 (22,824 triangles)
+    group: robustness
+    tutorial: tutorials/tetwild.md
+    component: tetwild
+    inputs:
+      thingi_101168: challenging_tetwild_101168.stl
+    options:
+      input: [thingi_101168]
+      filter: input
+      num_threads: 8
+    labels: Input|TetWild
+    cut: x
+
+  - id: thingi_108010
+    title: TetWild on Thingi10K 108010 (8,382 triangles)
+    group: robustness
+    tutorial: tutorials/tetwild.md
+    component: tetwild
+    inputs:
+      thingi_108010: challenging_tetwild_108010.stl
+    options:
+      input: [thingi_108010]
+      filter: input
+      num_threads: 8
+    labels: Input|TetWild
+    cut: x
+
+  - id: thingi_1047980
+    title: TetWild on Thingi10K 1047980 (7,592 triangles)
+    group: robustness
+    tutorial: tutorials/tetwild.md
+    component: tetwild
+    inputs:
+      thingi_1047980: challenging_tetwild_1047980.stl
+    options:
+      input: [thingi_1047980]
+      filter: input
+      num_threads: 8
+    labels: Input|TetWild
+    cut: x

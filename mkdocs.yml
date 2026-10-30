@@ -1,0 +1,172 @@
+# The documentation site, https://wildmeshing.github.io/wildmeshing-toolkit/ (.github/workflows/docs.yml
+# builds and deploys it). Locally, from the repository root:
+#
+#   pip install -r docs/requirements.txt
+#   mkdocs serve            # http://127.0.0.1:8000, rebuilt on every change
+#   mkdocs build --strict   # as CI does: broken links and anchors fail
+#
+# The component reference (reference/) and the JSON Schemas (schemas/) are generated on every
+# build from the components' *_spec.json files by docs/tools/gen_reference.py.
+
+site_name: Wildmeshing Toolkit
+site_url: https://wildmeshing.github.io/wildmeshing-toolkit/
+site_description: Robust, parallel triangle and tetrahedral mesh generation and editing
+repo_name: wildmeshing/wildmeshing-toolkit
+repo_url: https://github.com/wildmeshing/wildmeshing-toolkit
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+exclude_docs: |
+  /Doxyfile.in
+  /doxygen-mainpage.md
+  /components.yml
+  /requirements.txt
+  /tools/
+  /viewer/
+  /examples/CMakeLists.txt
+  /gallery/examples.yaml
+  /gallery/scenes.py
+
+theme:
+  name: material
+  icon:
+    logo: material/vector-triangle
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: cyan
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+    - content.action.edit
+
+extra_css:
+  - assets/extra.css
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - docs/tools/gen_reference.py
+        - docs/tools/gen_gallery.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+      dedent_subsections: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_javascript:
+  - assets/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  # The mesh viewer, <wmtk-viewer> (docs/viewer).
+  - path: assets/viewer/wmtk-viewer.min.js
+    type: module
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - getting-started/index.md
+      - getting-started/installation.md
+      - getting-started/first-run.md
+      - getting-started/calling-components.md
+      - getting-started/troubleshooting.md
+  - Concepts:
+      - concepts/index.md
+      - concepts/local-operations.md
+      - concepts/scheduling.md
+      - concepts/robust-geometry.md
+      - concepts/quality.md
+      - concepts/embedding.md
+      - concepts/regions.md
+      - concepts/histories.md
+  - Tutorials:
+      - tutorials/index.md
+      - Surface remeshing:
+          - tutorials/shortest_edge_collapse.md
+          - tutorials/qslim.md
+          - tutorials/isotropic_remeshing.md
+      - Meshing:
+          - tutorials/tetwild.md
+          - tutorials/triwild.md
+      - Multi-region meshes:
+          - tutorials/simwild.md
+      - Offsets and repair:
+          - tutorials/topological_offset.md
+          - tutorials/manifold_extraction.md
+      - Mapping:
+          - tutorials/tracking.md
+      - Workflows:
+          - tutorials/workflows/index.md
+          - tutorials/workflows/regions.md
+          - tutorials/workflows/tetwild-features.md
+          - tutorials/workflows/repair-before-meshing.md
+  - Gallery: gallery/index.md
+  - Reference:
+      - Components: reference/
+      - Python API: python-api.md
+      - JSON Schemas: json-schemas.md
+      - C++ API: https://wildmeshing.github.io/wildmeshing-toolkit/api/
+  - Developer guide:
+      - developer/index.md
+      - developer/component-call.md
+      - developer/wild-driver.md
+      - developer/writing-an-operation.md
+      - developer/writing-a-component.md
+      - developer/testing.md
+      - developer/documentation.md
+      - developer/contributing.md
+      - Design notes:
+          - in-memory-io.md
+          - tracking.md
+          - simwild-adopted-behaviours.md
+  - About:
+      - about/citing.md
+      - about/changelog.md
+      - about/license.md

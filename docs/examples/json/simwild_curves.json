@@ -1,0 +1,15 @@
+{
+  "application": "simwild",
+  "input": [
+    "triwild_blob1.obj",
+    "triwild_blob2.obj",
+    "triwild_circle.obj",
+    "triwild_ellipse.obj",
+    "triwild_rectangle.obj"
+  ],
+  "input_names": ["blob1", "blob2", "circle", "ellipse", "rectangle"],
+  "output": "five_shapes",
+  "length_rel": 0.02,
+  "num_threads": 4,
+  "report": "five_shapes_report.json"
+}

@@ -1,0 +1,7 @@
+{
+  "application": "simwild",
+  "operation": "fill_holes_topo",
+  "input": ["topo_annots_groups.msh"],
+  "output": "groups_filled",
+  "fill_holes_tags": ["tag_1"]
+}

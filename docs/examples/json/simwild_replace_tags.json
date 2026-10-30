@@ -1,0 +1,8 @@
+{
+  "application": "simwild",
+  "operation": "replace_tags",
+  "input": ["double_sphere.msh"],
+  "output": "double_sphere_replaced",
+  "replace_tags_in": ["tag_0 & tag_1"],
+  "replace_tags_out": ["overlap"]
+}

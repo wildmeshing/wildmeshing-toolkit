@@ -16,6 +16,8 @@ file(WRITE "${CMAKE_SOURCE_DIR}/app/components_include.hpp" ${WMTK_AUTOGEN_COMME
 file(WRITE "${CMAKE_SOURCE_DIR}/app/components_map.hpp" ${WMTK_AUTOGEN_COMMENT})
 file(WRITE "${CMAKE_SOURCE_DIR}/app/components_memory_map.hpp" ${WMTK_AUTOGEN_COMMENT})
 file(WRITE "${CMAKE_SOURCE_DIR}/app/components_python.hpp" ${WMTK_AUTOGEN_COMMENT})
+file(WRITE "${CMAKE_SOURCE_DIR}/app/components_spec_include.hpp" ${WMTK_AUTOGEN_COMMENT})
+file(WRITE "${CMAKE_SOURCE_DIR}/app/components_spec_map.hpp" ${WMTK_AUTOGEN_COMMENT})
 if(WMTK_BUILD_INTEGRATION_TESTS)
     target_include_directories(wmtk_integration_tests PUBLIC  "${CMAKE_SOURCE_DIR}/app")
 endif()

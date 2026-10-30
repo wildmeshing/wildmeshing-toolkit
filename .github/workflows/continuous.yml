@@ -94,6 +94,7 @@ jobs:
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -DWMTK_BUILD_DOC_EXAMPLES=${{ matrix.config == 'Release' && 'ON' || 'OFF' }} \
             ${{ matrix.integration_tests_flag }}
 
       - name: Build
@@ -185,6 +186,7 @@ jobs:
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -DWMTK_BUILD_DOC_EXAMPLES=${{ matrix.config == 'Release' && 'ON' || 'OFF' }} \
             ${{ matrix.integration_tests_flag }}
 
       - name: Build
@@ -290,6 +292,7 @@ jobs:
             -DCMAKE_POLICY_DEFAULT_CMP0141=NEW ^
             -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
+            -DWMTK_BUILD_DOC_EXAMPLES=${{ matrix.config == 'Release' && 'ON' || 'OFF' }} ^
             ${{ matrix.integration_tests_flag }} ^
             -B build ^
             -S .
