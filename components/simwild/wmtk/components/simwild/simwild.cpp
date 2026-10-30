@@ -120,7 +120,8 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
             json_params["tight_seal_geom_growth"],
             json_params["tight_seal_geom_trace_rel_tol"],
             selection,
-            json_params["tight_seal_geom_min_regions"]);
+            json_params["tight_seal_geom_min_regions"],
+            json_params["tight_seal_geom_sanity"]);
     } else if (operation == "keep_lcc") {
         const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
         std::vector<CellTag> lcc_tags;

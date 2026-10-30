@@ -578,7 +578,8 @@ void SimWildMesh::tight_seal_geom(
     const bool growth,
     const double trace_rel_tol,
     const std::string& selection,
-    const int64_t min_regions)
+    const int64_t min_regions,
+    const bool sanity)
 {
     const bool detected = selection == "detected";
     if (!detected && selection != "explicit") {
@@ -732,6 +733,11 @@ void SimWildMesh::tight_seal_geom(
         ~ClearVoronoiSplit() { fn = nullptr; }
     } clear_voronoi_split{m_voronoi_split_fn};
 
+    // filled[tid]: the Voronoi fill set the tet's region. A split's children inherit it from
+    // their parent, so it stays right whichever component's split cuts the tet. For the sanity
+    // check.
+    std::vector<char> filled(tet_capacity(), 0);
+
     // Split edge e, keeping `cells` up to date: the children of a tet in it replace it. Calls
     // on_child(tid, end_vid) for each child in it, end_vid being the endpoint of e the child
     // keeps. Returns the new vertex, or -1 if the split was refused.
@@ -742,11 +748,13 @@ void SimWildMesh::tight_seal_geom(
         const Tuple t = tuple_from_edge(e.vertices());
 
         // Each tet on the edge gives two children, which keep the tet's edge opposite the split
-        // edge. Record by that edge whether the tet is in the set.
+        // edge. Record by that edge whether the tet is in the set, and whether it was filled.
         const std::vector<size_t> parents = get_incident_tids_for_edge(t);
-        std::map<simplex::Edge, bool> parent_in_set;
+        std::map<simplex::Edge, std::pair<bool, char>> parent_state;
         for (const size_t tid : parents) {
-            parent_in_set[simplex_from_tet(tid).opposite_edge(e)] = cells.count(tid) > 0;
+            parent_state[simplex_from_tet(tid).opposite_edge(e)] = {
+                cells.count(tid) > 0,
+                filled[tid]};
         }
 
         std::vector<Tuple> new_edges;
@@ -759,6 +767,7 @@ void SimWildMesh::tight_seal_geom(
         for (const size_t tid : parents) {
             cells.erase(tid);
         }
+        filled.resize(tet_capacity(), 0);
         const std::vector<size_t> children = get_one_ring_tids_for_vertex(v_new);
         for (const size_t tid : children) {
             size_t end_vid = -1;
@@ -773,11 +782,13 @@ void SimWildMesh::tight_seal_geom(
             if (end_vid == size_t(-1) || opp.size() != 2) {
                 log_and_throw_error("Could not find the parent of a tet after a split.");
             }
-            const auto it = parent_in_set.find(simplex::Edge(opp[0], opp[1]));
-            if (it == parent_in_set.end()) {
+            const auto it = parent_state.find(simplex::Edge(opp[0], opp[1]));
+            if (it == parent_state.end()) {
                 log_and_throw_error("Could not find the parent of a tet after a split.");
             }
-            if (!it->second) {
+            const auto [in_set, parent_filled] = it->second;
+            filled[tid] = parent_filled;
+            if (!in_set) {
                 continue; // outside the set, keeps its tags
             }
             cells.insert(tid);
@@ -1149,6 +1160,82 @@ void SimWildMesh::tight_seal_geom(
                 "trace started on the level set, left the edge, or the split was refused)",
                 n_traced,
                 n_not_split);
+
+            // Trimmed to its tets with no vertex outside J, a component can fall apart where
+            // the trace found a vertex already on the level set, and a part can border fewer
+            // regions than the whole did: one bordering a single region is a concave feature of
+            // that body. So each part, connected through faces, becomes a component of its
+            // own, kept by the rule above and filled with the regions it borders.
+            std::map<int64_t, size_t> region_of_tag;
+            for (size_t i = 0; i < n; ++i) {
+                region_of_tag[tags[i]] = i;
+            }
+            std::vector<char> state(tet_capacity(), 0); // 1: in the component, 2: in a part
+            std::vector<ConnectedComponent> parts;
+            std::vector<std::vector<size_t>> parts_regions;
+            size_t n_parts = 0;
+            for (const ConnectedComponent& comp : components_seal) {
+                for (const size_t tid : comp.cells) {
+                    state[tid] = 1;
+                }
+                for (const size_t start : comp.cells) {
+                    if (state[start] != 1) {
+                        continue;
+                    }
+                    state[start] = 2;
+                    ConnectedComponent part;
+                    part.cells.push_back(start);
+                    std::vector<bool> borders(n, false);
+                    for (size_t i = 0; i < part.cells.size(); ++i) { // BFS loop with part growing
+                        const size_t cur = part.cells[i];
+                        part.volume += tet_volume(cur);
+                        for (int j = 0; j < 4; ++j) {
+                            const auto t_opp = tuple_from_face(cur, j).switch_tetrahedron(*this);
+                            if (!t_opp) {
+                                part.touches_boundary = true;
+                                continue;
+                            }
+                            const size_t nbr = t_opp->tid(*this);
+                            if (state[nbr] == 1) {
+                                state[nbr] = 2;
+                                part.cells.push_back(nbr);
+                                continue;
+                            }
+                            const CellTag& tag = m_tet_attribute[nbr].tags;
+                            if (state[nbr] == 0 && tag.size() == 1) {
+                                const auto it = region_of_tag.find(*tag.begin());
+                                if (it != region_of_tag.end()) {
+                                    borders[it->second] = true;
+                                }
+                            }
+                        }
+                    }
+                    ++n_parts;
+                    std::vector<size_t> part_regions;
+                    for (size_t i = 0; i < n; ++i) {
+                        if (borders[i]) {
+                            part_regions.push_back(i);
+                        }
+                    }
+                    if (part_regions.size() >= needed) {
+                        std::sort(part.cells.begin(), part.cells.end());
+                        parts.push_back(std::move(part));
+                        parts_regions.push_back(std::move(part_regions));
+                    }
+                }
+                for (const size_t tid : comp.cells) {
+                    state[tid] = 0;
+                }
+            }
+            logger().info(
+                "tight_seal_geom: after growth the {} components are {} parts, {} of them "
+                "bordering {} regions or more, which are sealed",
+                components_seal.size(),
+                n_parts,
+                parts.size(),
+                needed);
+            components_seal = std::move(parts);
+            components_regions = std::move(parts_regions);
         }
     }
 
@@ -1184,6 +1271,7 @@ void SimWildMesh::tight_seal_geom(
                 tag.erase(tags[j]);
             }
             tag.insert(tags[i]);
+            filled[tid] = 1;
         };
 
         // the component's tets, kept up to date as its edges are split
@@ -1240,6 +1328,79 @@ void SimWildMesh::tight_seal_geom(
             "tight_seal_geom: sealed {} components, {} edges split",
             components_seal.size(),
             n_splits);
+    }
+
+    // Sanity checks, on the output alone rather than on the components above: no tet is
+    // inverted; each filled tet carries exactly one of the regions' tags; and each part of the
+    // filled tets, connected through faces, borders two regions or more. A part bordering a
+    // single region would be a concave feature of that body, filled.
+    if (sanity) {
+        const CellTag region_tags(tags.begin(), tags.end());
+        std::vector<size_t> filled_ids;
+        for (const Tuple& t : get_tets()) {
+            const size_t tid = t.tid(*this);
+            if (is_inverted(t)) {
+                log_and_throw_error("tight_seal_geom sanity check: tet {} is inverted", tid);
+            }
+            if (!filled[tid]) {
+                continue;
+            }
+            filled_ids.push_back(tid);
+            const CellTag& tag = m_tet_attribute[tid].tags;
+            if (std::count_if(tag.begin(), tag.end(), [&](const int64_t x) {
+                    return region_tags.count(x) > 0;
+                }) != 1) {
+                log_and_throw_error(
+                    "tight_seal_geom sanity check: filled tet {} has tags {}, not exactly one "
+                    "of {}",
+                    tid,
+                    std::vector<int64_t>(tag.begin(), tag.end()),
+                    tags);
+            }
+        }
+        std::vector<char> visited(filled.size(), 0);
+        size_t n_parts = 0;
+        for (const size_t start : filled_ids) {
+            if (visited[start]) {
+                continue;
+            }
+            visited[start] = 1;
+            std::vector<size_t> part{start};
+            CellTag borders;
+            for (size_t i = 0; i < part.size(); ++i) { // BFS loop with part growing
+                for (int j = 0; j < 4; ++j) {
+                    const auto t_opp = tuple_from_face(part[i], j).switch_tetrahedron(*this);
+                    if (!t_opp) {
+                        continue;
+                    }
+                    const size_t nbr = t_opp->tid(*this);
+                    if (filled[nbr]) {
+                        if (!visited[nbr]) {
+                            visited[nbr] = 1;
+                            part.push_back(nbr);
+                        }
+                        continue;
+                    }
+                    const CellTag& tag = m_tet_attribute[nbr].tags;
+                    if (tag.size() == 1 && region_tags.count(*tag.begin()) > 0) {
+                        borders.insert(*tag.begin());
+                    }
+                }
+            }
+            ++n_parts;
+            if (borders.size() < 2) {
+                log_and_throw_error(
+                    "tight_seal_geom sanity check: a filled part of {} tets borders only the "
+                    "regions {}, so a concave feature of one body was filled",
+                    part.size(),
+                    std::vector<int64_t>(borders.begin(), borders.end()));
+            }
+        }
+        logger().info(
+            "tight_seal_geom sanity check passed: no tet inverted; {} filled tets in {} "
+            "parts, each bordering two regions or more",
+            filled_ids.size(),
+            n_parts);
     }
 
     m_F_envelope.clear();

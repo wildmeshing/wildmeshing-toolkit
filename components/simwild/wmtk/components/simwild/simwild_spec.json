@@ -81,6 +81,7 @@
       "tight_seal_geom_trace_rel_tol",
       "tight_seal_geom_selection",
       "tight_seal_geom_min_regions",
+      "tight_seal_geom_sanity",
       "keep_lcc_tags",
       "keep_lcc_num",
       "resolve_overlaps_tags",
@@ -631,6 +632,12 @@
     "default": 2,
     "min": 2,
     "doc": "For tight_seal_geom with tight_seal_geom_selection \"detected\": a part is filled only if it borders at least this many regions; parts bordering fewer are left alone. At least 2. Ignored, with a warning if not 2, with \"explicit\", which fills the parts that border every listed region."
+  },
+  {
+    "pointer": "/tight_seal_geom_sanity",
+    "type": "bool",
+    "default": false,
+    "doc": "For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell carries other than one region's tag, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two regions, which would be a concave feature of one body, filled. For tests; the integration tests set it."
   },
   {
     "pointer": "/keep_lcc_tags",

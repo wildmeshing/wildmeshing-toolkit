@@ -275,6 +275,10 @@ public:
      * are every tag but ambient that some face has alone, and each part that borders
      * `min_regions` of them or more (at least 2; ignored, with a warning if not 2, for "explicit")
      * is filled with those it borders.
+     *
+     * `sanity`: afterwards, throw if a face is inverted, a filled face carries other than one
+     * region's tag, or a part of the filled faces borders fewer than two regions (a concave
+     * feature of one body, filled).
      */
     void tight_seal_geom(
         const std::vector<int64_t>& tags,
@@ -282,7 +286,8 @@ public:
         bool growth = true,
         double trace_rel_tol = 0.01,
         const std::string& selection = "explicit",
-        int64_t min_regions = 2);
+        int64_t min_regions = 2,
+        bool sanity = false);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 
