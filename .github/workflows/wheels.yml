@@ -83,6 +83,9 @@ jobs:
     env:
       SETUPTOOLS_SCM_PRETEND_VERSION: ${{ needs.version.outputs.version }}
       CIBW_ENVIRONMENT_PASS_LINUX: SETUPTOOLS_SCM_PRETEND_VERSION
+      # Windows builds with the Visual Studio generator, which builds one project at a time
+      # unless told otherwise (an hour for the first wheel); Ninja, on the others, is parallel.
+      CMAKE_BUILD_PARALLEL_LEVEL: 4
 
     steps:
       - name: Checkout repository
