@@ -1,44 +1,153 @@
 name: Docs
 
+# The documentation site, https://wildmeshing.github.io/wildmeshing-toolkit/ (mkdocs.yml):
+#
+# - check, on every pull request and push: the specs are documented and match docs/components.yml
+#   (gen_reference.py --check), and the site builds with --strict (no broken link or anchor). The
+#   built site is uploaded as an artifact, a preview of the pull request's docs.
+# - gallery, on main: the gallery's examples run through the Python bindings, and their viewer
+#   assets and posters are cached by what they depend on (build_gallery.py --cache-key), so the
+#   bindings are built only when the code or the examples changed.
+# - deploy, on main: the site, with the gallery and the Doxygen C++ reference under /api/, to the
+#   gh-pages branch.
+
 on:
   push:
     branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Install Dependencies
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install MkDocs
+        run: pip install -r docs/requirements.txt
+
+      - name: Check the specs
+        run: python docs/tools/gen_reference.py --check
+
+      - name: Build the site
+        env:
+          DISABLE_MKDOCS_2_WARNING: "true"
+          NO_MKDOCS_2_WARNING: "1"
+        run: mkdocs build --strict --site-dir site
+
+      - name: Upload the preview
+        uses: actions/upload-artifact@v7
+        with:
+          name: docs-preview
+          path: site/
+          retention-days: 7
+
+  gallery:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Cache key
+        id: key
         run: |
-          wget "https://github.com/doxygen/doxygen/releases/download/Release_1_9_8/doxygen-1.9.8.linux.bin.tar.gz"
+          pip install pyyaml numpy
+          echo "key=gallery-$(python docs/tools/build_gallery.py --cache-key)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the gallery
+        id: cache
+        uses: actions/cache@v5
+        with:
+          path: docs/gallery/assets
+          key: ${{ steps.key.outputs.key }}
+
+      - name: Build the Python bindings
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get -o Acquire::Retries=3 install libgmp-dev
+          pip install .
+
+      - name: Fetch the example meshes
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          # The data repository at the commit cmake/wmtk_data.cmake pins.
+          tag=$(sed -n 's/^ *GIT_TAG \([0-9a-f]\{40\}\).*/\1/p' cmake/wmtk_data.cmake)
+          git clone --filter=blob:none https://github.com/wildmeshing/data2.git data
+          git -C data checkout "$tag"
+
+      - name: Run the examples
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          WMTK_DATA: data/models
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+          python docs/tools/build_gallery.py --posters
+
+      - name: Upload the gallery
+        uses: actions/upload-artifact@v7
+        with:
+          name: gallery
+          path: docs/gallery/assets/
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [check, gallery]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Download the gallery
+        uses: actions/download-artifact@v8
+        with:
+          name: gallery
+          path: docs/gallery/assets/
+
+      - name: Install Doxygen
+        run: |
+          wget -q "https://github.com/doxygen/doxygen/releases/download/Release_1_9_8/doxygen-1.9.8.linux.bin.tar.gz"
           tar -xzf "doxygen-1.9.8.linux.bin.tar.gz"
-          cd "doxygen-1.9.8"
-          sudo make install
-          sudo apt-get install graphviz
+          (cd "doxygen-1.9.8" && sudo make install)
+          sudo apt-get install -y graphviz
 
-      - name: Config
+      - name: Build the C++ reference
         run: |
+          # The Doxyfile CMake configures with WMTK_BUILD_DOCS, without configuring the project.
           mkdir -p build
-          cd build
-          cmake -DWMTK_BUILD_DOCS=ON ..
-          make wmtk_doc_doxygen
-          touch docs_doxygen/html/.nojekyll
+          sed -e "s|@CMAKE_CURRENT_SOURCE_DIR@|$PWD|g" -e "s|@CMAKE_CURRENT_BINARY_DIR@|$PWD/build|g" \
+            docs/Doxyfile.in > build/Doxyfile
+          doxygen build/Doxyfile
 
-      - name: Deploy 🚀
+      - name: Build the site
+        env:
+          DISABLE_MKDOCS_2_WARNING: "true"
+          NO_MKDOCS_2_WARNING: "1"
+        run: |
+          pip install -r docs/requirements.txt
+          mkdocs build --strict --site-dir site
+          cp -r build/docs_doxygen/html site/api
+          touch site/.nojekyll
+
+      - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4.8.0
         with:
-          branch: gh-pages # The branch the action should deploy to.
-          folder: build/docs_doxygen/html/ # The folder the action should deploy.
-
-      - name: Launch JSON Spec Documentation Runner
-        uses: actions/github-script@v9
-        with:
-          github-token: ${{ secrets.WMTK_DOCS_PAT }} # personal access token with actions and workflow write permissions
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: 'wildmeshing',
-              repo: 'wildmeshing.github.io',
-              workflow_id: 'build.yml',
-              ref: 'doc'
-            })
+          branch: gh-pages
+          folder: site/
+          clean: true

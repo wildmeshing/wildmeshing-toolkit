@@ -1,0 +1,29 @@
+# The gallery: each example runs one component on example meshes from data/models, in memory, and
+# shows meshes of its input and output in the viewer (docs/viewer). docs/tools/build_gallery.py
+# writes each view to docs/gallery/assets/<id>/<view>.wmv.gz (not committed; CI generates them).
+#
+#   id          the directory of the assets, and how pages refer to the example
+#   component   a function of the wildmeshing module
+#   inputs      name -> mesh file in data/models; the options name the inputs
+#   options     the component's options, as in Python
+#   views       `input` and `output` (one or both) -> the mesh to show: input/<name>, a mesh of
+#               the inputs, or output/<name>, a mesh of the result. The viewer always puts the
+#               input on the left and the output on the right.
+#   labels      the views' titles, "Input|TetWild" (default "Input|Output")
+#   max_cells   the view's budget: the build fails when a view has more cells
+
+examples:
+  - id: tetwild_octocat
+    title: TetWild on the Octocat
+    component: tetwild
+    inputs:
+      octocat: Octocat.obj
+    options:
+      input: [octocat]
+      filter: input
+      num_threads: 8
+    views:
+      input: {mesh: input/octocat}
+      output: {mesh: output/mesh}
+    labels: Input|TetWild
+    max_cells: 200000
