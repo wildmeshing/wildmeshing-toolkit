@@ -193,9 +193,10 @@ void TriWildMesh::init_mesh(
     }
     if (E_orientation != nullptr) m_tracks_orientation = true;
 
-    // Feature points: the 0-dimensional features of the curve network, taken from the
-    // constrained edges E. Valence 1 is an open polyline's endpoint, valence >= 3 a junction;
-    // valence 2 is the interior of a curve and valence 0 is not on it at all.
+    // Feature points: the 0-dimensional features of the curve network, read off the tracked
+    // segments by the base -- the open polylines' endpoints (holds_order2_vertex()) -- and the
+    // input free points, which no segment marks: their valence is 0, the same as every
+    // background-grid vertex.
     //
     // Without these, the collapse pass deletes open polylines outright. A polyline erodes by
     // legal collapses of its interior into its tip until one segment is left, and that
@@ -203,70 +204,10 @@ void TriWildMesh::init_mesh(
     // only refuses collapsing a feature into a non-feature. Measured on the 2D dataset:
     // 215292 went from 28 open components after the arrangement to 0 in the output, and
     // 134005 from 18 to 15, entirely in the collapse passes.
-    {
-        std::vector<int> surf_valence(vert_capacity(), 0);
-        for (int i = 0; i < E.rows(); ++i) {
-            ++surf_valence[E(i, 0)];
-            ++surf_valence[E(i, 1)];
-        }
-        size_t n_endpoints = 0, n_junctions = 0;
-        for (size_t v = 0; v < vert_capacity(); ++v) {
-            const int val = surf_valence[v];
-            if (val == 0 || val == 2) {
-                continue;
-            }
-            if (val == 1) {
-                ++n_endpoints;
-            } else {
-                ++n_junctions;
-                // The erosion above is an ENDPOINT property. A junction cannot erode a curve
-                // away -- every curve through it stays constrained and inside the envelope --
-                // while anchoring it can freeze the whole mesh, because on a self-intersecting
-                // input almost every arrangement vertex is a crossing. See
-                // Parameters::allow_junction_cleanup.
-                if (m_tri_params.allow_junction_cleanup) {
-                    continue;
-                }
-            }
-            m_feature_point_attribute[v].m_feature_point_id = m_feature_points.size();
-            m_feature_points.push_back(m_vertex_attribute[v].m_posf);
-        }
-        if (n_endpoints + n_junctions > 0) {
-            logger().info(
-                "feature points: {} polyline endpoints, {} junctions; anchoring {} of them "
-                "within {:.6} of their input positions",
-                n_endpoints,
-                n_junctions,
-                m_feature_points.size(),
-                m_envelope_eps);
-        }
-
-        // Input free points: anchored unconditionally, junctions' cleanup exemption
-        // included. A junction is anchored (or not) by policy, because it is DERIVED from
-        // the curve network; a free point IS the input, so there is no policy question. A
-        // vertex that already carries a feature id (a free point coinciding with a polyline
-        // endpoint, merged by the arrangement's dedup) keeps the id it has -- one anchor at
-        // that position is enough, the retention audit is geometric.
-        size_t n_free = 0;
-        for (const size_t v : free_point_vids) {
-            if (v >= vert_capacity()) {
-                log_and_throw_error("Free-point vertex id {} out of range", v);
-            }
-            if (m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT) {
-                continue;
-            }
-            m_feature_point_attribute[v].m_feature_point_id = m_feature_points.size();
-            m_feature_points.push_back(m_vertex_attribute[v].m_posf);
-            ++n_free;
-        }
-        if (n_free > 0) {
-            logger().info(
-                "feature points: {} input free points anchored within {:.6} of their input "
-                "positions",
-                n_free,
-                m_envelope_eps);
-        }
-    }
+    anchor_feature_points(
+        free_point_vids,
+        m_envelope_eps * m_tri_params.order2_envelope_ratio,
+        m_envelope_eps * m_tri_params.feature_envelope_ratio);
 
     // init envelope
     if (m_envelope) {

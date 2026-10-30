@@ -100,9 +100,8 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
             if (const size_t n = m_feature_rejects.load(); n > 0) {
                 logger().info(
                     "[feature] {} collapses refused to keep a feature point (polyline endpoint, "
-                    "junction, or input free point) within {:.6} of its input position",
-                    n,
-                    m_feature_eps);
+                    "junction, or input free point) within its radius of its input position",
+                    n);
             }
             collapse_pass_end(total_success);
             accepted = total_success;

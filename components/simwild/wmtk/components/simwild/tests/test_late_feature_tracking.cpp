@@ -297,7 +297,7 @@ TEST_CASE("feature-point tracking enabled after init (2D)", "[simwild][feature_t
     init_quad(mesh);
     REQUIRE(mesh.m_feature_point_attribute.size() == 0);
 
-    mesh.enable_feature_point_tracking(/*preserve=*/true);
+    mesh.enable_feature_point_tracking();
     const size_t cap0 = mesh.vert_storage_capacity();
     REQUIRE(cap0 > 0);
     REQUIRE(mesh.m_feature_point_attribute.size() == cap0);
@@ -305,9 +305,7 @@ TEST_CASE("feature-point tracking enabled after init (2D)", "[simwild][feature_t
         CHECK(mesh.m_feature_point_attribute[i].m_feature_point_id == Mesh::NO_FEATURE_POINT);
     }
 
-    mesh.m_feature_eps = 1e-9;
-    mesh.m_feature_points = {mesh.m_vertex_attribute[2].m_posf};
-    mesh.m_feature_point_attribute[2].m_feature_point_id = 0;
+    REQUIRE(mesh.anchor_feature_point(2, 1e-9));
 
     for (size_t vid = 0; vid < 4; ++vid) mesh.m_vertex_attribute[vid].m_sizing_scalar = 0.25;
     mesh.split_all_edges();
@@ -318,8 +316,7 @@ TEST_CASE("feature-point tracking enabled after init (2D)", "[simwild][feature_t
 
     size_t newest = 0;
     for (const auto& v : mesh.get_vertices()) newest = std::max(newest, v.vid(mesh));
-    mesh.m_feature_points.push_back(mesh.m_vertex_attribute[newest].m_posf);
-    mesh.m_feature_point_attribute[newest].m_feature_point_id = 1;
+    REQUIRE(mesh.anchor_feature_point(newest, 1e-9));
     for (const auto& v : mesh.get_vertices()) {
         mesh.m_vertex_attribute[v.vid(mesh)].m_sizing_scalar = 4.;
     }
@@ -450,7 +447,7 @@ TEST_CASE(
 
     {
         HookedTriMesh mesh(params, params.eps, 0);
-        mesh.enable_feature_point_tracking(true);
+        mesh.enable_feature_point_tracking();
         init_quad(mesh);
         CHECK(mesh.m_feature_point_attribute.size() == mesh.vert_storage_capacity());
         for (size_t i = 0; i < mesh.m_feature_point_attribute.size(); ++i) {
@@ -463,7 +460,7 @@ TEST_CASE(
         for (size_t vid = 0; vid < 4; ++vid) m.m_vertex_attribute[vid].m_sizing_scalar = 0.25;
     };
     const std::function<void(HookedTriMesh&)> call = [](HookedTriMesh& m) {
-        m.enable_feature_point_tracking(true);
+        m.enable_feature_point_tracking();
     };
     for (const bool colored : {false, true}) {
         check_refused_during_pass<HookedTriMesh>(call, colored, params, init);

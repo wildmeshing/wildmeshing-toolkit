@@ -772,9 +772,64 @@ bool TriOptimizerMesh::is_edge_on_bbox(const std::array<size_t, 2>& vids) const
     return m_edge_attribute[eid].m_is_bbox_fs >= 0;
 }
 
+bool TriOptimizerMesh::anchor_feature_point(const size_t vid, const double radius)
+{
+    assert(m_track_feature_points);
+    size_t& f = m_feature_point_attribute[vid].m_feature_point_id;
+    if (f != NO_FEATURE_POINT) {
+        m_feature_point_radius[f] = std::min(m_feature_point_radius[f], radius);
+        return false;
+    }
+    f = m_feature_points.size();
+    m_feature_points.push_back(m_vertex_attribute[vid].m_posf);
+    m_feature_point_radius.push_back(radius);
+    return true;
+}
+
+size_t TriOptimizerMesh::anchor_feature_points(
+    const std::vector<size_t>& input_point_vids,
+    const double order2_radius,
+    const double feature_radius)
+{
+    // {vertex, radius}: the order-2 vertices first, then the input points.
+    std::vector<std::pair<size_t, double>> anchors;
+    size_t n_ends = 0, n_junctions = 0;
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        size_t n_segments = 0;
+        for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+            n_segments += is_edge_on_surface(e);
+        }
+        if (n_segments == 0 || n_segments == 2) continue;
+        ++(n_segments == 1 ? n_ends : n_junctions);
+        if (!holds_order2_vertex(n_segments)) continue;
+        anchors.emplace_back(vid, order2_radius);
+    }
+    for (const size_t vid : input_point_vids) {
+        if (vid >= vert_capacity()) {
+            log_and_throw_error("Input point vertex id {} out of range", vid);
+        }
+        anchors.emplace_back(vid, feature_radius);
+    }
+    if (anchors.empty()) return 0;
+
+    enable_feature_point_tracking();
+    size_t n_anchored = 0;
+    for (const auto& [vid, r] : anchors) {
+        n_anchored += anchor_feature_point(vid, r);
+    }
+    logger().info(
+        "feature points: {} curve ends, {} junctions, {} input points; {} anchored",
+        n_ends,
+        n_junctions,
+        input_point_vids.size(),
+        n_anchored);
+    return n_anchored;
+}
+
 bool TriOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
 {
-    if (!m_preserve_feature_points) {
+    if (!m_track_feature_points) {
         return false;
     }
     // v1 disappears into v2, and v2 does not move. So the question is only whether the
@@ -791,24 +846,25 @@ bool TriOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const s
     // remove, and the max energy sat at 1e50 -- MAX_ENERGY -- for all 82 iterations instead
     // of converging to 4.99 in 3.
     //
-    // Two anchors further apart than eps are still protected, because then v2 -- sitting on
-    // one of them -- is more than eps from the other and fails this same test.
-    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
-           m_feature_eps * m_feature_eps;
+    // Two anchors further apart than the radius are still protected, because then v2 --
+    // sitting on one of them -- is more than the radius from the other and fails this test.
+    const double r = m_feature_point_radius[f1];
+    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() > r * r;
 }
 
 bool TriOptimizerMesh::feature_point_ball_contains(const size_t vid, const Vector2d& p) const
 {
-    if (!m_preserve_feature_points) {
+    if (!m_track_feature_points) {
         return true;
     }
     const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
     if (f == NO_FEATURE_POINT) {
         return true;
     }
-    // A ball, not a pin. The vertex may move anywhere within eps of the feature it stands
-    // for, which is exactly the guarantee the envelope gives everywhere else.
-    return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
+    // A ball, not a pin. The vertex may move anywhere within the radius of the feature it
+    // stands for, which is exactly the guarantee the envelope gives everywhere else.
+    const double r = m_feature_point_radius[f];
+    return (p - m_feature_points[f]).squaredNorm() <= r * r;
 }
 
 std::pair<size_t, size_t> TriOptimizerMesh::feature_retention(double* worst_ratio) const
@@ -840,20 +896,22 @@ std::pair<size_t, size_t> TriOptimizerMesh::feature_retention(double* worst_rati
     const KNN knn(pts);
 
     size_t kept = 0;
-    for (const Vector2d& anchor : m_feature_points) {
+    for (size_t f = 0; f < m_feature_points.size(); ++f) {
+        const Vector2d& anchor = m_feature_points[f];
+        const double r = m_feature_point_radius[f];
         uint32_t idx = 0;
         double sq = 0;
         knn.nearest_neighbor(Vector3d(anchor[0], anchor[1], 0), idx, sq);
         // Retention is geometric on purpose: the invariant is "some vertex is still within
-        // eps of this anchor", true whether or not that vertex carries the id. Ids drive the
+        // the radius of this anchor", true whether or not that vertex carries the id. Ids drive the
         // per-collapse policy because they are local and cheap; counting them here would
         // under-report the legitimate merge the policy allows.
-        if (sq <= m_feature_eps * m_feature_eps) {
+        if (sq <= r * r) {
             ++kept;
         } else if (worst_ratio) {
-            // How far the nearest vertex actually is, in units of eps -- what separates an
-            // anchor that drifted just past the ball from a curve that was deleted.
-            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
+            // How far the nearest vertex actually is, in units of the radius -- what separates
+            // an anchor that drifted just past the ball from a curve that was deleted.
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / r);
         }
     }
     return {kept, m_feature_points.size()};

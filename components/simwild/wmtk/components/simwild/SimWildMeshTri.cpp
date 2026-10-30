@@ -278,6 +278,13 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         }
     }
 
+    // Where a region border ends or three or more meet, the vertex is anchored in a ball of
+    // order2_envelope_ratio x eps (anchor_feature_points()); the 2D twin of the 3D order-2
+    // curves' ends and junctions, held always. simwild has no input points, so the feature
+    // radius is never used.
+    const double order2_eps = m_envelope_eps * m_sim_params.order2_envelope_ratio;
+    anchor_feature_points({}, order2_eps, order2_eps);
+
     // track bounding box
     for (size_t i = 0; i < edges.size(); i++) {
         const auto vids = get_edge_vids(edges[i]);

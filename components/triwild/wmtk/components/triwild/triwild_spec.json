@@ -40,8 +40,8 @@
       "coarsen_max_rounds",
       "coarsen_max_inner_passes",
       "preserve_topology",
-      "preserve_feature_points",
-      "allow_junction_cleanup",
+      "order2_envelope_ratio",
+      "feature_envelope_ratio",
       "remove_duplicate_eps",
       "throw_on_fail",
       "log_file",
@@ -290,16 +290,16 @@
     "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way."
   },
   {
-    "pointer": "/preserve_feature_points",
-    "type": "bool",
-    "default": true,
-    "doc": "Keep the curve network's 0-dimensional features -- the endpoints of open polylines, and junctions -- within eps of where the arrangement placed them. Each such vertex is bound to a specific feature point, so a collapse is refused when it would leave that point unrepresented or move it further than eps, and smoothing may move the vertex anywhere inside that ball but no further. Without this the collapse pass deletes open polylines outright: a polyline erodes into its own tip until a single segment is left, and that segment carries a feature at BOTH ends, which the surface order test does not refuse (it only forbids collapsing a feature into a non-feature). Measured on the 2D dataset, model 215292 went from 28 open components after the arrangement to 0 in the output. Turn off only to reproduce the old behaviour."
+    "pointer": "/order2_envelope_ratio",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Radius of the anchors of the polyline endpoints, as a fraction of eps. The default 1 holds them to the same eps as the curves, as tetwild and simwild hold their order-2 curves. The anchors keep the curve network's 0-dimensional features -- the endpoints of open polylines, and the input free points -- within their anchor's radius of where the arrangement placed them (order2_envelope_ratio x eps for endpoints, feature_envelope_ratio x eps for free points). Each such vertex is bound to a specific feature point, so a collapse is refused when it would leave that point unrepresented or move it further than the radius, and smoothing may move the vertex anywhere inside that ball but no further. Junctions (3 or more polylines meeting) are not anchored: the erosion below is a property of ENDPOINTS, every curve through a junction remains a constrained edge held by the envelope, and on a self-intersecting input nearly every arrangement vertex is a junction -- on model 242427, 79615 of 87610 -- so anchoring them kept 2.6 times the vertices (5476 output vertices in 14 s free, 14257 in 19 s anchored, stop_energy 10, 8 threads, October 2026). Without them the collapse pass deletes open polylines outright: a polyline erodes into its own tip until a single segment is left, and that segment carries a feature at BOTH ends, which the surface order test does not refuse (it only forbids collapsing a feature into a non-feature). Measured on the 2D dataset, model 215292 went from 28 open components after the arrangement to 0 in the output. Always on, as the envelope is."
   },
   {
-    "pointer": "/allow_junction_cleanup",
-    "type": "bool",
-    "default": true,
-    "doc": "Let the operations clean up junctions, anchoring only the endpoints of open polylines. The erosion the endpoint guard exists for is a property of ENDPOINTS -- a polyline eats its own tip -- and does not apply to a junction (valence >= 3 in the constrained edges), because every curve through a junction remains a constrained edge and the envelope still holds it within eps. Anchoring junctions costs most on a self-intersecting input, where nearly every arrangement vertex is a crossing: on model 242427, 79615 of 87610 vertices are junctions, so almost every edge joins two of them and collapse is refused there. When this option was added (August 2026) that model never left MAX_ENERGY with junctions anchored. It now converges either way, but anchored it keeps 2.6 times the vertices: at stop_energy 10, max energy 9.98 with 5476 output vertices in 14 s with junctions free, and 14257 in 19 s anchored (8 threads, October 2026). The two models the endpoint guard was introduced for (215292, 134005) were bit-identical either way in August. Ignored when preserve_feature_points is off. Defaults to false when history_output is set and preserve_feature_points is on: a junction the operations slide along a curve drags the curve map with it, stretched by large factors (on model 190246 a junction slid 14 units in one smoothing step, and points there came back 6.76 away from where they started)."
+    "pointer": "/feature_envelope_ratio",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Radius of the anchors of the input free points (see order2_envelope_ratio), as a fraction of eps. 1, as order2_envelope_ratio. A free point that is also a polyline endpoint takes the smaller of the two radii."
   },
   {
     "pointer": "/preserve_topology",
@@ -323,7 +323,7 @@
     "pointer": "/history_output",
     "type": "string",
     "default": "",
-    "doc": "Record every change to the tracked curves, from the input files as read to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The output names a point on its curves by two vertices of the output mesh. A filter's removal of tracked edges is recorded too, as segments no map can follow. Anchors junctions unless allow_junction_cleanup is given or preserve_feature_points is off, so the output differs from a run without recording; give allow_junction_cleanup to get the same output with and without. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording."
+    "doc": "Record every change to the tracked curves, from the input files as read to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The output names a point on its curves by two vertices of the output mesh. A filter's removal of tracked edges is recorded too, as segments no map can follow. Recording does not change the output. Junctions are free (see order2_envelope_ratio), and the map follows one the operations slide along a curve: on model 190246 a junction slid 14 units in one smoothing step, and points there came back 6.76 away from where they started. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording."
   },
   {
     "pointer": "/report",
