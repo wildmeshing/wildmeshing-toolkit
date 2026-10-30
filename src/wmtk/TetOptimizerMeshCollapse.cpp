@@ -439,24 +439,6 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
             if (surface_triangle_is_outside(vids[0], vids[1], vids[2], attr)) {
                 return collapse_reject(CollapseReject::after_envelope);
             }
-
-            // // open boundary envelope
-            // // by checking each edge on cached surface
-            // if (VA[vids[0]].m_is_on_open_boundary && VA[vids[1]].m_is_on_open_boundary) {
-            //     if (m_order2_envelope->is_outside(
-            //             {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[0]].m_posf}}))
-            //         return false;
-            // }
-            // if (VA[vids[1]].m_is_on_open_boundary && VA[vids[2]].m_is_on_open_boundary) {
-            //     if (m_order2_envelope->is_outside(
-            //             {{VA[vids[1]].m_posf, VA[vids[2]].m_posf, VA[vids[1]].m_posf}}))
-            //         return false;
-            // }
-            // if (VA[vids[2]].m_is_on_open_boundary && VA[vids[0]].m_is_on_open_boundary) {
-            //     if (m_order2_envelope->is_outside(
-            //             {{VA[vids[2]].m_posf, VA[vids[0]].m_posf, VA[vids[2]].m_posf}}))
-            //         return false;
-            // }
         }
         // The order-2 chord gate: every cached order-2 edge (v1,x), remapped to (v2,x) at
         // caching time, must still BE order-2 substructure -- flags and containment in the
@@ -477,12 +459,12 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         }
     }
 
-    // (collapse_after_vertex runs below, after the attribute write-back: tetwild's override
-    // asks is_vertex_on_boundary(v2), which counts the surface faces around v2's edges, and
-    // the write-back is what gives the faces that came from v1 their tags. Asked before it,
-    // the test read a half-updated state and cleared open-boundary flags on genuine sheet
-    // corners -- measured on feature_demo4: three corners lost their flags, every boundary
-    // guard went blind to them, and the coarsening pass collapsed them away, 0.5 deep.)
+    // (Whatever counts the surface faces around v2's edges -- drop_stale_order2_tags(),
+    // collapse_after_vertex -- runs below, after the attribute write-back, which is what gives
+    // the faces that came from v1 their tags. Asked before it, the count reads a half-updated
+    // state: tetwild's open-boundary flags, cleared here once, came off genuine sheet corners
+    // -- measured on feature_demo4: three corners lost their flags, every boundary guard went
+    // blind to them, and the coarsening pass collapsed them away, 0.5 deep.)
 
     //// update attrs
     // tet attr

@@ -171,7 +171,7 @@ TEST_CASE("surface-flip-correctness", "[tetwild_operation][surface_swap]")
 
     // A 3->2 flip neither adds nor removes a surface vertex: {a,b,c,d} are on
     // the surface before and after, e stays interior. So vertex surface tags
-    // (m_is_on_surface / m_order / m_is_on_open_boundary) must be invariant.
+    // (m_is_on_surface / m_order / the order2 tags) must be invariant.
     CHECK(mesh.m_vertex_attribute[A].m_is_on_surface);
     CHECK(mesh.m_vertex_attribute[B].m_is_on_surface);
     CHECK(mesh.m_vertex_attribute[C].m_is_on_surface);
@@ -179,7 +179,9 @@ TEST_CASE("surface-flip-correctness", "[tetwild_operation][surface_swap]")
     CHECK_FALSE(mesh.m_vertex_attribute[E].m_is_on_surface);
     for (size_t v : {A, B, C, D}) CHECK(mesh.m_vertex_attribute[v].m_order == 1);
     CHECK(mesh.m_vertex_attribute[E].m_order == 0);
-    for (size_t v : {A, B, C, D, E}) CHECK_FALSE(mesh.m_vertex_extra[v].m_is_on_open_boundary);
+    for (size_t v : {A, B, C, D, E}) {
+        CHECK_FALSE(mesh.vertex_has_edge_of_kind(v, TetWildMesh::FeatureEdgeAttributes::order2));
+    }
 
     // The flip actually ran (counter incremented).
     CHECK(mesh.cnt_surface_swap.load() == 1);

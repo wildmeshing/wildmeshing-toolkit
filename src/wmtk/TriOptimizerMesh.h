@@ -206,7 +206,7 @@ public:
      * A feature point is a 0-dimensional feature of the tracked curves: an open polyline's
      * endpoint, a junction, or an input free point, as the application decides. Each anchor
      * vertex names WHICH feature it stands for, not merely that it stands for one -- the
-     * deliberate difference from tetwild's m_is_on_open_boundary.
+     * deliberate difference from tetwild's open-boundary vertex flag (now its order2 edge tags).
      *
      * That difference is the whole point. tetwild asks "is the survivor inside the envelope of
      * the boundary?", a containment question, and in 3D a boundary is a curve with many edges

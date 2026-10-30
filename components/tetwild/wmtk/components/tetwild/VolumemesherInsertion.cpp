@@ -548,9 +548,6 @@ void TetWildMesh::init_from_Volumeremesher(
 
     for_each_vertex([&](const Tuple& v) { vector_unique(VA[v.vid(*this)].on_bbox_faces); });
 
-    // track open boundaries
-    find_open_boundary();
-
     init_vertex_order();
     {
         std::array<size_t, 4> vo{{0, 0, 0, 0}};
@@ -566,10 +563,9 @@ void TetWildMesh::init_from_Volumeremesher(
 
     // The open boundaries are tagged and held by the base's tube (see tag_order2_edges()):
     // every tagged edge a collapse keeps, or a smoothing move touches, stays in it, no swap
-    // removes one, and a collapse that leaves one with other than one face drops its tag. The
-    // checks that did this here were keyed on the open-boundary flags (see TetWildMesh.h). The
-    // non-manifold edges are not held, as before: the reason is at holds_order2_edge(). Same
-    // edges, radius and predicate as m_order2_envelope above.
+    // removes one, and a collapse that leaves one with other than one face drops its tag.
+    // tetwild's own open-boundary flags and their tube are gone (see TetWildMesh.h). The
+    // non-manifold edges are not held, as before: the reason is at holds_order2_edge().
     const size_t n_order2 = tag_order2_edges(
         m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio,
         m_envelope && m_envelope->use_exact);
@@ -666,127 +662,6 @@ void TetWildMesh::init_from_Volumeremesher(
     // init qualities
     for_each_tetra(
         [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
-}
-
-void TetWildMesh::find_open_boundary()
-{
-    // Runs right after insertion, when the mesh is at its largest, so it lists nothing it does
-    // not keep: faces are visited in place at their canonical tet, and of the edges only the
-    // open-boundary ones -- a tiny fraction -- are collected. Materialising get_faces() and
-    // get_edges() here was the peak of the whole run on the larger tetwild inputs.
-    std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
-
-    // for open boundary envelope
-    std::vector<Eigen::Vector3d> v_posf(vert_capacity());
-    std::vector<Eigen::Vector2i> open_boundaries;
-
-    for (size_t i = 0; i < vert_capacity(); i++) {
-        v_posf[i] = m_vertex_attribute[i].m_posf;
-    }
-
-    // count incident surface faces per edge (parallel; atomic_ref increments the shared array)
-    threading::parallel_for(
-        threading::range(0, tet_capacity()),
-        [&](const threading::range& r) {
-            for (size_t t = r.begin(); t < r.end(); t++) {
-                if (!tuple_from_tet(t).is_valid(*this)) continue;
-                for (int j = 0; j < 4; j++) {
-                    const Tuple f = tuple_from_face(t, j);
-                    if (f.fid(*this) != 4 * t + j) continue; // a lower tet owns this face
-                    if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
-                    const size_t eid1 = f.eid(*this);
-                    const size_t eid2 = f.switch_edge(*this).eid(*this);
-                    const size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
-                    std::atomic_ref<int>(edge_on_open_boundary[eid1])
-                        .fetch_add(1, std::memory_order_relaxed);
-                    std::atomic_ref<int>(edge_on_open_boundary[eid2])
-                        .fetch_add(1, std::memory_order_relaxed);
-                    std::atomic_ref<int>(edge_on_open_boundary[eid3])
-                        .fetch_add(1, std::memory_order_relaxed);
-                }
-            }
-        },
-        NUM_THREADS);
-
-    // collect open-boundary edges (exactly one incident surface face), then put them in
-    // get_edges() order -- by (min vid, max vid) -- so the boundary envelope is built from the
-    // same sequence as before.
-    {
-        using KeyedEdge = std::pair<std::pair<size_t, size_t>, Tuple>;
-        std::vector<KeyedEdge> ob_edges;
-        std::mutex ob_mutex;
-        threading::parallel_for(
-            threading::range(0, tet_capacity()),
-            [&](const threading::range& r) {
-                std::vector<KeyedEdge> local;
-                for (size_t t = r.begin(); t < r.end(); t++) {
-                    if (!tuple_from_tet(t).is_valid(*this)) continue;
-                    for (int j = 0; j < 6; j++) {
-                        const Tuple e = tuple_from_edge(t, j);
-                        if (e.eid(*this) != 6 * t + j) continue; // a lower tet owns this edge
-                        if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
-                        size_t v0 = e.vid(*this);
-                        size_t v1 = e.switch_vertex(*this).vid(*this);
-                        if (v0 > v1) std::swap(v0, v1);
-                        local.emplace_back(std::make_pair(v0, v1), e);
-                    }
-                }
-                if (local.empty()) return;
-                std::lock_guard<std::mutex> lk(ob_mutex);
-                ob_edges.insert(ob_edges.end(), local.begin(), local.end());
-            },
-            NUM_THREADS);
-        std::sort(ob_edges.begin(), ob_edges.end(), [](const auto& a, const auto& b) {
-            return a.first < b.first;
-        });
-        open_boundaries.reserve(ob_edges.size());
-        for (const auto& [key, e] : ob_edges) {
-            const size_t v1 = e.vid(*this);
-            const size_t v2 = e.switch_vertex(*this).vid(*this);
-            m_vertex_extra[v1].m_is_on_open_boundary = true;
-            m_vertex_extra[v2].m_is_on_open_boundary = true;
-            open_boundaries.emplace_back(v1, v2);
-        }
-    }
-
-    wmtk::logger().info("open boundary num: {}", open_boundaries.size());
-
-    if (open_boundaries.size() == 0) {
-        return;
-    }
-
-    // init the open-boundary envelope, for the open-boundary flags' users and the smoothing
-    // pull (see m_order2_envelope); the edges themselves are held by tag_order2_edges()'s tube.
-    //
-    // It follows the surface envelope's choice of predicate rather than being hard-wired to
-    // the sampled one. Both are containment tests against the same input at the same epsilon,
-    // so having `use_sample_envelope: false` hold for the surface but not for its boundary
-    // curves was an accident of the exact envelope not supporting edges until now.
-    if (!m_order2_envelope) {
-        m_order2_envelope = std::make_shared<Envelope>(m_envelope && m_envelope->use_exact);
-    }
-    // A FRACTION of eps here, deliberately, where the surface envelope in tetwild.cpp uses
-    // all of it. The two are not symmetric: on the surface, widening the envelope REMOVES a
-    // constraint that was blocking collapses, which is the whole point of that change; on an
-    // open-boundary curve there is no such blockage to relieve, so the extra room is only
-    // freedom for the boundary to wander within eps -- more geometry to resolve at the same
-    // final quality. See /order2_envelope_ratio in the spec for the measurement.
-    m_order2_envelope->init(
-        v_posf,
-        open_boundaries,
-        m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio);
-}
-
-bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
-{
-    size_t v1 = e.vid(*this);
-    size_t v2 = e.switch_vertex(*this).vid(*this);
-    if (!m_vertex_extra[v1].m_is_on_open_boundary || !m_vertex_extra[v2].m_is_on_open_boundary)
-        return false;
-
-    return !m_order2_envelope->is_outside(
-        std::array<Eigen::Vector3d, 2>{
-            {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
 }
 
 // After having called the following:

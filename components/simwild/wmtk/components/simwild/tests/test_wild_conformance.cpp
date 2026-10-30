@@ -842,7 +842,7 @@ TEST_CASE(
     sim.m_vertex_attribute.resize(1);
     tet.m_vertex_attribute[0].m_order = 3;
     sim.m_vertex_attribute[0].m_order = 3;
-    tet.m_order2_envelope = feature;
+    tet.m_order2_edge_envelope = feature;
     sim.m_envelope = surface;
     sim.m_order2_edge_envelope = feature;
 

@@ -807,8 +807,9 @@ public:
      * between differently tagged tets, and around an interior edge the tags change an even
      * number of times going around the tet ring, so an interface can never terminate there. It
      * can only end where it meets the bbox -- and is_edge_on_bbox() has already rejected those
-     * edges by the time this is asked. tetwild overrides it because its surface is the input
-     * mesh, which may be non-watertight anywhere.
+     * edges by the time this is asked. An open boundary of an input surface -- tetwild's, or a
+     * simwild surface input's -- carries the order2 tag, and a tagged edge is never swapped
+     * (swap_edge_before()), so it needs no answer here. topological_offset overrides it.
      */
     virtual bool is_open_boundary_edge(const Tuple& e) { return false; }
     /**
@@ -1006,12 +1007,6 @@ public:
      * feature envelope here.
      */
     virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const = 0;
-
-    /// Are all OPEN-BOUNDARY edges at `vid` inside the order-2 tube, at the current positions?
-    /// Default true; tetwild overrides with its open-boundary flags and envelope. Membership is
-    /// decided by flags + the topological face count, NOT by the tube itself -- a tube-based
-    /// membership test self-disables the moment geometry leaves the tube.
-    virtual bool boundary_edges_at_vertex_inside(size_t) const { return true; }
 
     /**
      * @brief An extra term the application adds to this vertex's smoothing objective, or null.

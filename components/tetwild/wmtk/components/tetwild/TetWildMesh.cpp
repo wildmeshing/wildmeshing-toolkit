@@ -43,25 +43,20 @@ namespace wmtk::components::tetwild {
 
 void TetWildMesh::optimization_sanity_checks_extra()
 {
-    // Boundary edges may temporarily leave the envelope during collapse to remove thin
-    // ribbons. Preserve TetWild's diagnostic for every other open surface edge.
-    std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
-    for (const Tuple& f : get_faces()) {
-        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
-        ++edge_on_open_boundary[f.eid(*this)];
-        ++edge_on_open_boundary[f.switch_edge(*this).eid(*this)];
-        ++edge_on_open_boundary[f.switch_vertex(*this).switch_edge(*this).eid(*this)];
-    }
-
+    // TetWild's open-boundary diagnostic, read from the tags: every edge still carrying the
+    // order2 tag must lie in its tube (tag_order2_edges()). Edges the operations made open
+    // carry no tag and are not checked.
+    if (!m_track_feature_edges || !m_order2_edge_envelope) return;
     for (const Tuple& e : get_edges()) {
-        if (edge_on_open_boundary[e.eid(*this)] != 1 || is_open_boundary_edge(e)) continue;
+        if (!m_feature_edge_attribute[e.eid(*this)].has(FeatureEdgeAttributes::order2)) continue;
         const size_t v1 = e.vid(*this);
         const size_t v2 = e.switch_vertex(*this).vid(*this);
-        if (!m_vertex_extra[v1].m_is_on_open_boundary ||
-            !m_vertex_extra[v2].m_is_on_open_boundary) {
-            continue;
+        if (tagged_edge_leaves_tube(
+                FeatureEdgeAttributes::order2,
+                m_vertex_attribute[v1].m_posf,
+                m_vertex_attribute[v2].m_posf) != 0) {
+            logger().warn("Open-boundary edge ({},{}) is outside its tube.", v1, v2);
         }
-        logger().warn("Boundary edge ({},{}) is outside the envelope.", v1, v2);
     }
 }
 
@@ -74,10 +69,12 @@ std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vi
     if (m_track_feature_edges && m_feature_envelope && vertex_has_feature_edge(vid)) {
         return m_feature_envelope;
     }
-    // Order 2 means the vertex is on a surface boundary or a non-manifold edge. This is
-    // broader than the old m_is_on_open_boundary flag, which covered only open boundaries.
-    if (get_order_of_vertex(vid) >= 2 && m_order2_envelope && m_order2_envelope->initialized()) {
-        return m_order2_envelope;
+    // Order 2 means the vertex is on a surface boundary or a non-manifold edge, toward the
+    // base's order-2 tube, which in tetwild holds the open boundaries only: a non-manifold
+    // vertex is pulled toward them too.
+    if (get_order_of_vertex(vid) >= 2 && m_order2_edge_envelope &&
+        m_order2_edge_envelope->initialized()) {
+        return m_order2_edge_envelope;
     }
     if (m_input_envelopes.empty()) return m_envelope;
     // Several inputs: toward the inputs of the vertex's own faces, one real envelope at a time
@@ -124,7 +121,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         state.is_mesh_closed = true;
         for (const Tuple& v : get_vertices()) {
             const size_t vid = v.vid(*this);
-            if (m_vertex_extra[vid].m_is_on_open_boundary) {
+            if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
                 state.is_mesh_closed = false;
                 break;
             }
@@ -205,7 +202,6 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         legacy_tetwild.tet_vertices.resize(vert_capacity());
         for (size_t i = 0; i < vert_capacity(); ++i) {
             const auto& VA = m_vertex_attribute[i];
-            const auto& VX = m_vertex_extra[i];
             orig::TetVertex& v = legacy_tetwild.tet_vertices[i];
             v.pos = VA.pos();
             v.posf = VA.m_posf;
@@ -232,7 +228,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
                     log_and_throw_error("Vertex should not be on more than 3 bbox faces");
                 }
             }
-            v.is_on_boundary = VX.m_is_on_open_boundary;
+            v.is_on_boundary = vertex_has_edge_of_kind(i, FeatureEdgeAttributes::order2);
             v.is_on_surface = VA.m_is_on_surface;
             v.is_rounded = VA.m_is_rounded;
             for (const size_t tid : get_one_ring_tids_for_vertex(i)) {
@@ -275,7 +271,6 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         assert(verts.size() >= vert_capacity());
         for (size_t i = 0; i < vert_capacity(); ++i) {
             auto& VA = m_vertex_attribute[i];
-            auto& VX = m_vertex_extra[i];
             const orig::TetVertex& v = verts[i];
             VA.m_is_rounded = v.is_rounded;
             if (v.is_rounded) {
@@ -287,7 +282,6 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             }
             VA.m_sizing_scalar = v.adaptive_scale;
             VA.m_is_on_surface = v.is_on_surface;
-            VX.m_is_on_open_boundary = v.is_on_boundary;
             // logger().info("DEBUG on_bbox");
             if (v.is_on_bbox) {
                 VA.on_bbox_faces.clear();
@@ -795,61 +789,6 @@ MeshData TetWildMesh::tet_mesh_data()
     return m;
 }
 
-bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
-{
-    if (!m_vertex_extra.at(e0).m_is_on_open_boundary) {
-        return false;
-    }
-
-    const auto neigh_vids = get_one_ring_vids_for_vertex(e0);
-    const auto e0_tids = get_one_ring_tids_for_vertex(e0);
-
-    for (const size_t e1 : neigh_vids) {
-        if (!m_vertex_extra.at(e1).m_is_on_open_boundary) {
-            continue;
-        }
-        int cnt = 0;
-        for (size_t t_id : e0_tids) {
-            const auto vs = oriented_tet_vids(t_id);
-            std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
-            int ii = 0;
-            for (int j = 0; j < 4; j++) {
-                if (vs[j] == e0 || vs[j] == e1) {
-                    continue;
-                }
-                opp_js[ii++] = j;
-            }
-            // DZ: if the tet contains e1 and e2, then ii == 2
-            if (ii != 2) {
-                continue;
-            }
-            // DZ: opp_js vertices form a tet together with v1,v2
-            if (m_vertex_attribute.at(vs[opp_js[0]]).m_is_on_surface) {
-                const auto [f0_tup, f0_id] = tuple_from_face({{e0, e1, vs[opp_js[0]]}});
-                if (m_face_attribute.at(f0_id).m_is_surface_fs) {
-                    cnt++;
-                }
-            }
-            if (m_vertex_attribute.at(vs[opp_js[1]]).m_is_on_surface) {
-                const auto [f1_tup, f1_id] = tuple_from_face({{e0, e1, vs[opp_js[1]]}});
-                if (m_face_attribute.at(f1_id).m_is_surface_fs) {
-                    cnt++;
-                }
-            }
-            if (cnt > 2) {
-                break;
-            }
-        }
-        // all faces are visited twice, so cnt == 2 means there is one boundary face
-        if (cnt == 2) {
-            // this is a boundary edge
-            return true;
-        }
-    }
-
-    return false;
-}
-
 
 void TetWildMesh::init_vertex_order()
 {
@@ -1049,7 +988,8 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5, Me
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
         v_is_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1 : 0;
         v_is_on_surface[vid] = m_vertex_attribute[vid].m_is_on_surface ? 1 : 0;
-        v_is_on_open_boundary[vid] = m_vertex_extra[vid].m_is_on_open_boundary ? 1 : 0;
+        v_is_on_open_boundary[vid] =
+            vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2) ? 1 : 0;
         v_order[vid] = m_vertex_attribute[vid].m_order;
     }
 

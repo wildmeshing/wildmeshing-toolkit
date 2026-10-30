@@ -522,18 +522,12 @@ bool smooth_vertex_3d(
 
     // Tagged-edge containment: every tagged edge at this vertex must stay inside the tube of
     // each kind it carries, at the candidate position (already written into the vertex
-    // attribute here).
+    // attribute here). The derived order-2 curves need it as much as the feature curves:
+    // without it smoothing walks open-boundary vertices along the boundary -- each step legal
+    // for the vertex, no check on the edges -- and the coarsening composite's mass smoothing
+    // contracts an open sheet boundary far past its tube (measured: a corner walked 0.5, 14% of
+    // the sheet gone).
     if (on_tagged_curve && !m.feature_edges_at_vertex_inside(vid)) {
-        if (counters) ++counters->envelope;
-        return false;
-    }
-
-    // Open-boundary containment, the same test for the DERIVED order-2 curves: every open
-    // boundary edge at this vertex must stay inside the order-2 tube. Without it smoothing
-    // walks boundary vertices along the boundary -- each step legal for the vertex, no check
-    // on the edges -- and the coarsening composite's mass smoothing contracts an open sheet
-    // boundary far past its tube (measured: a corner walked 0.5, 14% of the sheet gone).
-    if (!m.boundary_edges_at_vertex_inside(vid)) {
         if (counters) ++counters->envelope;
         return false;
     }
