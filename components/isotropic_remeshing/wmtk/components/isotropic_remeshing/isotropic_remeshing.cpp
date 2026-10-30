@@ -629,6 +629,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         fields = field_boundaries(input_path, tris, feature_fields);
         if (features_input.empty()) {
             m.set_feature_edges(fields.boundaries);
+            // As for `features`: the surface envelope does not hold the curves; this keeps them
+            // within its eps.
+            m.set_feature_envelope(envelope_size);
             logger().info(
                 "{} feature edges: the boundaries of {}",
                 m.feature_edges().size(),

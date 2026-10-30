@@ -6,6 +6,7 @@
 
 
 #include <memory>
+#include <set>
 #include <vector>
 
 #include <jse/jse.h>
@@ -15,7 +16,6 @@
 #include <wmtk/utils/resolve_path.hpp>
 
 #include <wmtk/utils/EnvelopeBudget.hpp>
-#include <wmtk/utils/Preallocation.hpp>
 #include "Parameters.h"
 #include "SimWildMesh.h"
 #include "SimWildMeshTri.hpp"
@@ -222,7 +222,6 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         params,
         optimization_envelope_eps(params, /*is_3d=*/true),
         params.NUM_THREADS);
-    wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
@@ -416,7 +415,6 @@ void run_2D(
         params,
         optimization_envelope_eps(params, /*is_3d=*/false),
         params.NUM_THREADS);
-    wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
@@ -525,13 +523,18 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // std::filesystem::path output_filename = resolve_path(root, json_params["output"]);
     std::filesystem::path output_filename = json_params["output"];
 
-    if (output_filename.has_extension() && output_filename.extension() != ".msh") {
-        output_filename.replace_extension(".msh");
-        logger().warn(
-            "Extension of provided output filename is ignored. Output will be {}",
-            output_filename.string());
+    // A mesh extension is dropped (the outputs add their own); any other dot is part of the
+    // name, so "v3r0.005_rem" stays whole instead of becoming "v3r0".
+    const std::string output_extension = output_filename.extension().string();
+    const std::set<std::string> mesh_extensions = {".msh", ".vtu", ".obj", ".stl", ".off", ".ply"};
+    if (mesh_extensions.count(output_extension)) {
+        output_filename.replace_extension(""); // extension is added back later
+        if (output_extension != ".msh") {
+            logger().warn(
+                "Extension of provided output filename is ignored. Output will be {}.msh",
+                output_filename.string());
+        }
     }
-    output_filename.replace_extension(""); // extension is added back later
     json_params["output"] = output_filename.string(); // propagate resolved path to run_2D/run_3D
 
     auto get_unique_vtu_name = [&output_filename]() -> std::string {
@@ -557,8 +560,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         log_and_throw_error("`envelope` applies to tagged mesh inputs only");
     }
     if (component_io.memory() && dimension == 0) {
+        // Label images become regions here as on the file route (read_image_msh).
+        MeshData input = component_io.mesh(input_paths.at(0));
+        tags_from_label_images(input, input_paths.at(0));
         input_data = read_mesh_data(
-            component_io.mesh(input_paths.at(0)),
+            input,
             !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr);
     } else if (!component_io.memory() && extension == ".msh") {
         input_data = read_image_msh(input_paths[0]);

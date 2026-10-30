@@ -5716,7 +5716,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     // What mesh_improvement() adds and is left out here on purpose is its stall response, which
     // refines around the worst elements: a moving front stretches cells by design.
     // interleaved_smoothing true is TetWild's shape of a turn: three groups, each one operation
-    // pass followed by k smoothing passes. With it false, this component's default, a turn is ONE
+    // pass followed by k smoothing passes. With it false (the default is true), a turn is ONE
     // group -- split, collapse and swap back to back -- followed by one smoothing block of
     // num_smoothing_passes. Why the switch reaches the loop: measured on the
     // deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, of the six smoothing

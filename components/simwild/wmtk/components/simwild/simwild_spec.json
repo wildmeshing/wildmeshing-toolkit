@@ -60,7 +60,6 @@
       "allow_surface_swap",
       "check_surface_topology",
       "verbose_quality_stats",
-      "preallocation_factor",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -81,7 +80,6 @@
       "replace_tags_in",
       "replace_tags_out",
       "tag_priority",
-      "tags_selection",
       "envelope"
     ]
   },
@@ -470,13 +468,6 @@
     "doc": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging."
   },
   {
-    "pointer": "/preallocation_factor",
-    "type": "float",
-    "default": 6.0,
-    "min": 1.0,
-    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom; a pass that exhausts it abandons the affected operations and consolidates at the pass boundary, which reclaims the slots removed elements still hold and re-derives the capacity from the real element count. Lower it for pure-decimation runs, raise it for aggressive refinement."
-  },
-  {
     "pointer": "/verbose_quality_stats",
     "type": "bool",
     "default": true,
@@ -652,12 +643,6 @@
     "pointer": "/tag_priority/*",
     "type": "string",
     "doc": "A tag value."
-  },
-  {
-    "pointer": "/tags_selection",
-    "type": "string",
-    "default": "_ | !_",
-    "doc": "A boolean expression that defines the input selection for intent operations. `_` represents empty tags."
   },
   {
     "pointer": "/coarsen_pass",
