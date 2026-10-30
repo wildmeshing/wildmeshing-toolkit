@@ -375,6 +375,8 @@ def simwild(options: dict, meshes: dict) -> tuple:
       output (string, default "out"): Output file name (without extension).
       input_transform (list, default []): Transformation matrices for the inputs.
       input_dir (string, default ""): Directory where the input files are located.
+      input_edges (list, default []): List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint.
+      input_points (list, default []): List of input feature POINT files, 3D surface inputs and 2D curve inputs (a .msh input and a tagged mesh refuse them): every vertex of each file is forced into the mesh as a vertex, exactly -- a tet vertex in 3D, a vertex of the curve arrangement in 2D, where only x and y are used (edges in these files are ignored, with a warning).
       skip_simplify (bool, default false): If true, input simplification will be skipped.
       tag_from_winding_number (bool, default true): How the cells of the arrangement are tagged.
       split_connected_components (bool, default false): Treat each connected component of an input file as an input in its own right, rather than the file as a whole.
@@ -389,7 +391,8 @@ def simwild(options: dict, meshes: dict) -> tuple:
       eps_simplify (float, default -1): Absolute envelope thickness for the initial simplification.
       simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses).
       remove_duplicate_eps (float, default 0): Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal.
-      order2_envelope_ratio (float, default 0.5): Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface.
+      order2_envelope_ratio (float, default 1.0): Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface and its non-manifold edges -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet.
+      feature_envelope_ratio (float, default 1.0): Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge (/input_edges) must stay inside -- and the radius of the feature anchors (the /input_points, and the vertices where feature curves end or three or more meet), as a fraction of the surface envelope's eps.
       length (float, default -1): Absolute target edge length.
       length_rel (float, default 0.05): Target edge length relative to the bounding box diagonal.
       sizing_field (list, default []): Prescribe a length for a specific region defined by tags.
@@ -466,10 +469,8 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       input (list, required): List of triangular input meshes.
       input_edges (list, default []): List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint.
       input_points (list, default []): List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning).
-      preserve_feature_points (bool, default true): Keep the 0-dimensional features -- every /input_points point, and the endpoints of open feature curves (junctions too, when allow_junction_cleanup is off) -- within the feature tube radius of where the input put them.
-      allow_junction_cleanup (bool, default true): Anchor only the endpoints of open feature curves, letting junctions (valence >= 3 in the feature network) merge and move within the tube.
       DEBUG_feature_retention (bool, default false): Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius.
-      feature_envelope_ratio (float, default 0.5): Envelope thickness for the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- as a fraction of the surface envelope's eps.
+      feature_envelope_ratio (float, default 1.0): Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- and the radius of the feature-point anchors, as a fraction of the surface envelope's eps.
       output (string, default "out"): Output file name (without extension).
       input_names (list, default []): Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route.
       input_dir (string, default ""): Directory where the input files are located.
@@ -479,7 +480,7 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       simplify_envelope_ratio (float, default 0.5): Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation.
       simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges.
       optimize_envelope_around_simplified (bool, default false): EXPERIMENT.
-      order2_envelope_ratio (float, default 0.5): Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface.
+      order2_envelope_ratio (float, default 1.0): Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet (see feature_envelope_ratio).
       use_sample_envelope (bool, default false): Use sample envelope instead of exact one.
       use_legacy_code (bool, default false): Use the original TetWild code for the mesh improvement.
       num_threads (int, default 0): Number of threads.
@@ -565,7 +566,7 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       offset_field (string, default "euclidean"): Which field defines the offset, and so what the front is placed on, what the criterion measures and what the sizing field refines by.
       offset_dhat_factor (float, default 2.0): Support radius of the smooth offset potential, as a multiple of target_distance.
       front_conv (float, default -1.0): THE convergence epsilon, as an ABSOLUTE length in model units; <= 0 (the default -1): derived from front_conv_rel.
-      front_conv_rel (float, default 0.025): THE convergence epsilon as a fraction of target_distance, used when front_conv is <= 0; ignored if front_conv > 0.
+      front_conv_rel (float, default 0.1): THE convergence epsilon as a fraction of target_distance, used when front_conv is <= 0; ignored if front_conv > 0.
       stencil_order (int, default 1): 3D: the lattice below is EXPERIMENTAL_stencil_type "subdivision", the default; "interior" and "fem" (2026-10-27 / 28) have their own lattices for the same order k and need k >= 1 (see there).
       EXPERIMENTAL_stencil_type (string, default "subdivision"): 3D (2026-10-28, Spencer: "standard fem triangle points").
       front_measure (string, default "vertex_ring"): Which measure the loop exits on and refines by, in 3D and in 2D.
@@ -577,7 +578,7 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       repulsion_smoothing_passes (int, default 0): 2D and 3D.
       repulsion_rounds (int, default 0): 2D and 3D.
       EXPERIMENTAL_split_energy_gate (bool, default false): EXPERIMENTAL (2026-10-09), 3D.
-      EXPERIMENTAL_band_volume_rule (string, default "corner_bound"): EXPERIMENTAL (2026-10-12), 3D.
+      EXPERIMENTAL_band_volume_rule (string, default "exact"): EXPERIMENTAL (2026-10-12), 3D.
       settle_stall_eps (float, default 0.1): 3D, EXPERIMENTAL_band_volume_rule "surface" only (a non-default value under another rule is refused), with EXPERIMENTAL_settle_refinement.
       EXPERIMENTAL_settle_test (string, default "stall"): EXPERIMENTAL (2026-10-27), 3D, EXPERIMENTAL_band_volume_rule "surface" only ("bar" under another rule is refused), with EXPERIMENTAL_settle_refinement: which test decides that a turn has settled.
       EXPERIMENTAL_settle_mark (string, default "vertex_edge"): EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: which test marks a front face on a settled turn (the settle, the halving and the exit are unchanged).
@@ -601,12 +602,12 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       log_file (string, default ""): Logs are not just printed on the terminal but also saved in this file.
       report (string, default ""): A JSON file that stores information about the result and the method execution, e.g., runtime.
       num_threads (int, default 0): Number of threads used for parallel execution (smoothing, edge collapse).
-      num_smoothing_passes (int, default 2): Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is ON since 2026-09-28) -- in the loop (3D since 2026-09-25, 2D since 2026-10-05), and in the shared optimization loop, which in this component runs only in the TetWild passes, 2D and 3D alike.
+      num_smoothing_passes (int, default 1): Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is OFF since 2026-10-29, ON from 2026-09-28) -- in the loop (3D since 2026-09-25, 2D since 2026-10-05), and in the shared optimization loop, which in this component runs only in the TetWild passes, 2D and 3D alike.
       length_rel (float, default 0.05): Target edge length relative to the bounding box diagonal.
       length (float, default -1.0): Target edge length (absolute).
       stop_energy (float, default 100.0): Target AMIPS quality for the elements.
       max_iterations (int, default 80): Cap on the shared TriWild/TetWild loop, which runs only in the TetWild passes: the final pass, and in 3D the construction pass (optimize_construction).
-      interleaved_smoothing (bool, default true): Run split, collapse and swap as three separate rounds with `interleaved_smoothing_passes` smoothing passes after each, instead of one combined round followed by `num_smoothing_passes`.
+      interleaved_smoothing (bool, default false): Run split, collapse and swap as three separate rounds with `interleaved_smoothing_passes` smoothing passes after each, instead of one combined round followed by `num_smoothing_passes`.
       interleaved_smoothing_passes (int, default 2): Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the TetWild passes) and in the loop.
       colored_smoothing (bool, default false): Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks.
       pre_smooth (bool, default false): The loop only, not the final pass.
@@ -626,10 +627,10 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       stuck_refine_gradation (float, default 2.0): Neighbouring sizing scalars may differ by at most this factor.
       stuck_refine_force_split (bool, default true): On a stall, also split each seeded face's longest edge once, bypassing the length gate and without touching the sizing field.
       sizing_collapse_min (bool, default true): What the surviving vertex of a collapse keeps as its sizing scalar.
-      max_rounds (int, default 40): The outer loop's budget, in turns, one turn being split, collapse and swap with smoothing after each, followed by the front test.
+      max_rounds (int, default 30): The outer loop's budget, in turns, one turn being split, collapse and swap with smoothing after each, followed by the front test.
       min_edge_length (float, default -1.0): l_min: the shortest edge the sizing field may ask for, in absolute units.
-      min_edge_length_rel (float, default -1.0): l_min as a multiple of target_distance, used when min_edge_length is negative.
-      min_sizing_scalar (float, default 0.01): Lower bound for the per-vertex sizing field (see max_sizing_scalar).
+      min_edge_length_rel (float, default 0.1): l_min as a multiple of target_distance, used when min_edge_length is negative.
+      min_sizing_scalar (float, default 0.001): Lower bound for the per-vertex sizing field (see max_sizing_scalar).
       max_sizing_scalar (float, default 1.0): Upper bound for the per-vertex sizing field, as a multiplier on the target edge length (splitting_l2/collapsing_l2).
       sizing_gradation (float, default 2.0): Gradation cap for the sizing field: neighbouring vertices' sizing scalars may differ by at most this factor.
       sizing_gradation_mode (string, default "ring"): How a lowered sizing scalar spreads to the vertices around it, at every place the offset lowers the field (the sag rule, the stuck refine).
@@ -637,10 +638,10 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       project_line_search_steps (int, default 12): Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken.
       project_line_search_nested_steps (int, default 0): After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element.
       offset_amips_weight (float, default 1.0): Under EXPERIMENTAL_band_volume_rule "surface" w multiplies the AMIPS term only (the offset term is unweighted, 2026-10-28): w is the ratio of the two terms.
-      EXPERIMENTAL_front_pocket_split (bool, default false): EXPERIMENTAL (2026-10-22), 3D.
-      EXPERIMENTAL_front_spanned_split (bool, default false): EXPERIMENTAL (2026-10-24), 3D, needs EXPERIMENTAL_front_pocket_split.
-      EXPERIMENTAL_exit_no_folds (bool, default false): EXPERIMENTAL (2026-10-26; foldover faces only since 2026-10-27), 3D.
-      EXPERIMENTAL_label_cleanup (string, default "off"): EXPERIMENTAL (2026-10-26), 3D, with EXPERIMENTAL_front_pocket_split true (refused otherwise).
+      EXPERIMENTAL_front_pocket_split (bool, default true): EXPERIMENTAL (2026-10-22), 3D.
+      EXPERIMENTAL_front_spanned_split (bool, default true): EXPERIMENTAL (2026-10-24), 3D, needs EXPERIMENTAL_front_pocket_split.
+      EXPERIMENTAL_exit_no_folds (bool, default true): EXPERIMENTAL (2026-10-26; foldover faces only since 2026-10-27), 3D.
+      EXPERIMENTAL_label_cleanup (string, default "one_sided_at_target"): EXPERIMENTAL (2026-10-26), 3D, with EXPERIMENTAL_front_pocket_split true (refused otherwise).
       DEBUG_crossings (bool, default false): Log-only: after every operation pass and every smoothing pass, count the front vertices whose ring measure crossed the bar (from <= 1 to > 1, and back), plus new vertices already over it; inside the front smoother, classify each accepted move whose ring-measure crossing it caused as the moved vertex's own or a front neighbour's.
       smoothing_mode (string, default "projected"): How smoothing places a surface vertex.
       w_amips (float, default 0.0001): Relative weight of the AMIPS quality term against the envelope term during smoothing of envelope-held vertices (the engine's input-surface envelope term); the envelope weight is 1 - w_amips.
@@ -729,8 +730,8 @@ def triwild(options: dict, meshes: dict) -> tuple:
       interleaved_smoothing (bool, default true): Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes.
       interleaved_smoothing_passes (int, default 1): Smoothing passes to run after each topology pass when interleaved_smoothing is set.
       colored_smoothing (bool, default true): Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks.
-      preserve_feature_points (bool, default true): Keep the curve network's 0-dimensional features -- the endpoints of open polylines, and junctions -- within eps of where the arrangement placed them.
-      allow_junction_cleanup (bool, default true): Let the operations clean up junctions, anchoring only the endpoints of open polylines.
+      order2_envelope_ratio (float, default 1.0): Radius of the anchors of the polyline endpoints, as a fraction of eps.
+      feature_envelope_ratio (float, default 1.0): Radius of the anchors of the input free points (see order2_envelope_ratio), as a fraction of eps.
       preserve_topology (bool, default false): Preserve the topology of the input curve network.
       throw_on_fail (bool, default false): Throw exception if the output does not fulfil the desired criteria.
       log_file (string, default ""): Logs are not just printed on the terminal but also saved in this file.
