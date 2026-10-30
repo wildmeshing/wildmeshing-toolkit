@@ -272,15 +272,17 @@ public:
      *
      * `selection` "explicit": the regions are `tags`, which may not hold ambient (the tag named
      * "ambient"). "detected": `tags` is ignored (with a warning if it is not empty), the regions
-     * are every tag but ambient that some face has alone, and each part that borders two of them
-     * or more is filled with those it borders.
+     * are every tag but ambient that some face has alone, and each part that borders
+     * `min_regions` of them or more (at least 2; ignored, with a warning if not 2, for "explicit")
+     * is filled with those it borders.
      */
     void tight_seal_geom(
         const std::vector<int64_t>& tags,
         double distance,
         bool growth = true,
         double trace_rel_tol = 0.01,
-        const std::string& selection = "explicit");
+        const std::string& selection = "explicit",
+        int64_t min_regions = 2);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 

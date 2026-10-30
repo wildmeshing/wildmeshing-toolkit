@@ -80,6 +80,7 @@
       "tight_seal_geom_growth",
       "tight_seal_geom_trace_rel_tol",
       "tight_seal_geom_selection",
+      "tight_seal_geom_min_regions",
       "keep_lcc_tags",
       "keep_lcc_num",
       "resolve_overlaps_tags",
@@ -622,7 +623,14 @@
     "type": "string",
     "default": "explicit",
     "options": ["explicit", "detected"],
-    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders two regions or more (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags."
+    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders tight_seal_geom_min_regions regions or more (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags."
+  },
+  {
+    "pointer": "/tight_seal_geom_min_regions",
+    "type": "int",
+    "default": 2,
+    "min": 2,
+    "doc": "For tight_seal_geom with tight_seal_geom_selection \"detected\": a part is filled only if it borders at least this many regions; parts bordering fewer are left alone. At least 2. Ignored, with a warning if not 2, with \"explicit\", which fills the parts that border every listed region."
   },
   {
     "pointer": "/keep_lcc_tags",

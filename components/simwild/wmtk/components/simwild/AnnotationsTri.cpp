@@ -580,13 +580,25 @@ void SimWildMeshTri::tight_seal_geom(
     const double distance,
     const bool growth,
     const double trace_rel_tol,
-    const std::string& selection)
+    const std::string& selection,
+    const int64_t min_regions)
 {
     const bool detected = selection == "detected";
     if (!detected && selection != "explicit") {
         log_and_throw_error(
             "tight_seal_geom: selection must be \"explicit\" or \"detected\". Input was {}",
             selection);
+    }
+    if (detected && min_regions < 2) {
+        log_and_throw_error(
+            "tight_seal_geom: min_regions must be at least 2. Input was {}",
+            min_regions);
+    }
+    if (!detected && min_regions != 2) {
+        logger().warn(
+            "tight_seal_geom: min_regions {} is ignored with selection \"explicit\", which fills "
+            "the parts that border every listed tag",
+            min_regions);
     }
     const auto is_ambient = [&](const int64_t tag) {
         const auto it = m_tag_id_to_name.find(tag);
@@ -623,6 +635,8 @@ void SimWildMeshTri::tight_seal_geom(
         }
     }
     const size_t n = tags.size();
+    // the number of regions a component must border to be filled: min_regions, or all n listed
+    const size_t needed = detected ? size_t(min_regions) : n;
     if (!(distance > 0)) {
         log_and_throw_error("tight_seal_geom needs a positive distance. Input was {}", distance);
     }
@@ -764,11 +778,12 @@ void SimWildMeshTri::tight_seal_geom(
     std::vector<ConnectedComponent> components_seal;
     // the regions each sealed component is filled with, in increasing order
     std::vector<std::vector<size_t>> components_regions;
-    if (n < 2) {
+    if (n < needed) {
         logger().warn(
-            "tight_seal_geom: only {} tags other than ambient are some face's only tag, nothing "
-            "to seal",
-            n);
+            "tight_seal_geom: only {} tags other than ambient are some face's only tag, fewer "
+            "than min_regions {}, nothing to seal",
+            n,
+            needed);
     } else if (std::find(region_found.begin(), region_found.end(), false) != region_found.end()) {
         logger().warn(
             "tight_seal_geom: a tag in {} has no face tagged with it alone, nothing to seal",
@@ -918,8 +933,8 @@ void SimWildMeshTri::tight_seal_geom(
         }
 
         // Connected components of J_mesh; keep the ones that share an edge with every R_i (with
-        // detected tags: with two R_i or more, which the component is then filled with). Faces
-        // connect through an edge with a vertex in J, which with growth keeps a part on the J
+        // detected tags: with min_regions R_i or more, which the component is then filled with).
+        // Faces connect through an edge with a vertex in J, which with growth keeps a part on the J
         // side; without growth every edge of J_mesh has.
         std::vector<int> comp_id(tri_capacity(), -1);
         size_t n_components = 0;
@@ -963,7 +978,7 @@ void SimWildMeshTri::tight_seal_geom(
                     comp_regions.push_back(i);
                 }
             }
-            if (detected ? comp_regions.size() >= 2 : comp_regions.size() == n) {
+            if (comp_regions.size() >= needed) {
                 if (detected) {
                     std::vector<int64_t> comp_tags;
                     for (const size_t i : comp_regions) {
@@ -982,10 +997,11 @@ void SimWildMeshTri::tight_seal_geom(
 
         if (detected) {
             logger().info(
-                "tight_seal_geom: {} of {} unreachable components border two or more of the "
+                "tight_seal_geom: {} of {} unreachable components border {} or more of the "
                 "detected tags {}, distance {}",
                 components_seal.size(),
                 n_components,
+                needed,
                 tags,
                 distance);
         } else {
