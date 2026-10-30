@@ -566,7 +566,8 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       offset_dhat_factor (float, default 2.0): Support radius of the smooth offset potential, as a multiple of target_distance.
       front_conv (float, default -1.0): THE convergence epsilon, as an ABSOLUTE length in model units; <= 0 (the default -1): derived from front_conv_rel.
       front_conv_rel (float, default 0.025): THE convergence epsilon as a fraction of target_distance, used when front_conv is <= 0; ignored if front_conv > 0.
-      stencil_order (int, default 1): Order of the sampling stencil on an offset-surface face (3D) or front chord (2D).
+      stencil_order (int, default 1): 3D: the lattice below is EXPERIMENTAL_stencil_type "subdivision", the default; "interior" and "fem" (2026-10-27 / 28) have their own lattices for the same order k and need k >= 1 (see there).
+      EXPERIMENTAL_stencil_type (string, default "subdivision"): 3D (2026-10-28, Spencer: "standard fem triangle points").
       front_measure (string, default "vertex_ring"): Which measure the loop exits on and refines by, in 3D and in 2D.
       sorted_marching (bool, default false): Execute the marching in decreasing order of edge length.
       save_offset_correspondence (bool, default false): 2D and 3D, and only with optimize_offset false (the run refuses the combination with true).
@@ -575,7 +576,10 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       init_optimize (bool, default false): Default false, as the band-volume runs ran it.
       repulsion_smoothing_passes (int, default 0): 2D and 3D.
       repulsion_rounds (int, default 0): 2D and 3D.
+      EXPERIMENTAL_split_energy_gate (bool, default false): EXPERIMENTAL (2026-10-09), 3D.
       EXPERIMENTAL_band_volume_rule (string, default "corner_bound"): EXPERIMENTAL (2026-10-12), 3D.
+      settle_stall_eps (float, default 0.1): 3D, EXPERIMENTAL_band_volume_rule "surface" only (a non-default value under another rule is refused), with EXPERIMENTAL_settle_refinement.
+      EXPERIMENTAL_settle_test (string, default "stall"): EXPERIMENTAL (2026-10-27), 3D, EXPERIMENTAL_band_volume_rule "surface" only ("bar" under another rule is refused), with EXPERIMENTAL_settle_refinement: which test decides that a turn has settled.
       EXPERIMENTAL_settle_mark (string, default "vertex_edge"): EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: which test marks a front face on a settled turn (the settle, the halving and the exit are unchanged).
       EXPERIMENTAL_gap_refinement (bool, default false): EXPERIMENTAL (2026-10-10), 3D, needs EXPERIMENTAL_settle_refinement.
       EXPERIMENTAL_damping (bool, default false): EXPERIMENTAL (2026-10-15), 3D.
@@ -586,9 +590,9 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       smart_growth_attempts (int, default 2): 3D, growth_mode "smart" (since 2026-10-21): the turns each attempt toward a larger target gets to converge (level 0, the loop at d_0, has max_rounds).
       smart_growth_max_fails (int, default 10): 3D, growth_mode "smart" (since 2026-10-21): how many attempts from one converged distance d_b may fail -- each failure halves the step toward target_distance -- before the run stops with an error.
       foldover_angle (float, default 30.0): 3D.
+      DEBUG_stencil (bool, default false): DEBUG (2026-10-29), 3D, with DEBUG_output (or DEBUG_remote_output; refused otherwise).
       TESTING_allow_mult_comp (bool, default false): TESTING (2026-10-16), 3D.
       EXPERIMENTAL_settle_refinement (bool, default true): EXPERIMENTAL (2026-10-09), 3D.
-      EXPERIMENTAL_split_energy_gate (bool, default false): EXPERIMENTAL (2026-10-09), 3D.
       check_manifoldness (bool, default true): After performing offset, check if offset region is manifold
       save_vtu (bool, default false): Save .vtu of output mesh
       phi_grid_resolution (int, default 0): Samples per side of the grid the smooth offset potential is written on, as <output>_phi.vtu, for the viewer.
@@ -612,6 +616,7 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       coarsen_global_smoothing_passes (int, default 1): Ordinary whole-mesh smoothing passes run between coarsening rounds.
       coarsen_smooth_ring (int, default 1): How far the local smoothing after each coarsening collapse reaches, in rings; the pass locks one ring wider than this.
       coarsen_local_smoothing_passes (int, default 0): Smoothing sweeps over the ring inside each candidate coarsening collapse, before its max energy is measured, so the collapse is judged on a relaxed neighbourhood rather than on the configuration it lands in.
+      EXPERIMENTAL_coarsen_guard (string, default "bar"): EXPERIMENTAL (2026-10-28), 3D, read only with coarsen_pass true (refused otherwise).
       stuck_refine_stall_eps (float, default 0.1): Fire the sizing refinement when an iteration's improvement is small next to the distance the metric still has to cover: (prev - cur) <= stall_eps * (cur - target).
       stuck_refine_cooldown (int, default 1): Iterations to skip after a sizing refinement before another may fire.
       stuck_refine_num_worst (int, default 0): How many worst faces seed the refinement.
@@ -631,7 +636,7 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       split_high_valence_threshold (int, default 0): Incident-cell count above which a vertex in a split edge's link accepts only one valence-increasing split per pass, or 0 to disable.
       project_line_search_steps (int, default 12): Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken.
       project_line_search_nested_steps (int, default 0): After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element.
-      offset_amips_weight (float, default 1.0): The weight w of AMIPS in the per-cell energy.
+      offset_amips_weight (float, default 1.0): Under EXPERIMENTAL_band_volume_rule "surface" w multiplies the AMIPS term only (the offset term is unweighted, 2026-10-28): w is the ratio of the two terms.
       EXPERIMENTAL_front_pocket_split (bool, default false): EXPERIMENTAL (2026-10-22), 3D.
       EXPERIMENTAL_front_spanned_split (bool, default false): EXPERIMENTAL (2026-10-24), 3D, needs EXPERIMENTAL_front_pocket_split.
       EXPERIMENTAL_exit_no_folds (bool, default false): EXPERIMENTAL (2026-10-26; foldover faces only since 2026-10-27), 3D.
