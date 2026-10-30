@@ -59,16 +59,8 @@ def check(mesh, features):
     return worst_anchor, containment, coverage
 
 
-tube = 0.5 * report["eps"]  # feature_envelope_ratio (0.5) times eps
+tube = report["eps"]  # feature_envelope_ratio (1) times eps
 worst_anchor, containment, coverage = check(mesh, features)
 print(f"anchors: the worst is {worst_anchor:.2g} from a vertex (tube radius {tube:.2g})")
 print(f"curve: tagged edges within {containment:.2g} of it, covering it to {coverage:.2g}")
 # --8<-- [end:check]
-
-# --8<-- [start:erosion]
-# Without the anchors, the curve's free end and the points may move away.
-outputs, report = wm.tetwild({**options, "preserve_feature_points": False}, inputs)
-worst_anchor, containment, coverage = check(outputs["mesh"], outputs["features"])
-print(f"preserve_feature_points false: the worst anchor is {worst_anchor:.2g} from a vertex, "
-      f"the curve is covered to {coverage:.2g}")
-# --8<-- [end:erosion]
