@@ -103,3 +103,30 @@ check the new pin out in `data/`.
 
 Keep models small: every CI job of every pull request clones the whole repository, and every
 Release job runs the listed configs.
+
+## Releases
+
+A release is a version tag. Pushing one builds the Python package and publishes it
+([`.github/workflows/wheels.yml`](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/.github/workflows/wheels.yml)):
+
+```bash
+git tag v2.0.1 && git push origin v2.0.1
+```
+
+- The version is the tag's: `v2.0.0` builds `wildmeshing` 2.0.0, through setuptools-scm
+  (`pyproject.toml`). There is no version number to edit. A build from a commit after a tag is
+  `2.0.1.devN+g<hash>`.
+- Wheels are built for macOS arm64, Linux x86_64 and arm64, and Windows x86_64, for every CPython
+  cibuildwheel supports from 3.9 on, plus the source distribution. Each wheel is installed and
+  smoke-tested on its platform before anything is published.
+- The files go to [PyPI](https://pypi.org/project/wildmeshing/), and a GitHub Release is created
+  with the same files and notes generated from the pull requests merged since the previous
+  version tag. The Docker image is also pushed as `wmtk:<tag>`. A tag that is not a version
+  (`v2.0.1rc1`, `v2-beta`) stops the workflow before anything is built.
+- Nothing is built on other pushes or on pull requests. A manual run of the workflow (Actions →
+  wheels → Run workflow) builds everything without publishing; the files are the run's artifacts:
+  run one before tagging when the build has changed.
+
+Publishing uses PyPI's trusted publishing, with no token in the repository: the `wildmeshing`
+project on PyPI must list this repository, workflow `wheels.yml` and environment `pypi` as a
+trusted publisher (set once by a project owner, under *Manage project → Publishing*).

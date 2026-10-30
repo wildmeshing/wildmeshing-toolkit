@@ -12,9 +12,7 @@ multi-region meshing, topological offsets and more, each callable from the comma
 and C++ with the same JSON options.
 
 ```bash
-git clone https://github.com/wildmeshing/wildmeshing-toolkit.git
-cd wildmeshing-toolkit
-python -m pip install .
+python -m pip install wildmeshing
 ```
 
 ```python

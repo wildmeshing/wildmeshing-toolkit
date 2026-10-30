@@ -1,10 +1,12 @@
 [build-system]
-requires = ["scikit-build-core>=0.10", "pybind11>=2.11"]
+requires = ["scikit-build-core>=1.1", "pybind11>=2.11", "setuptools-scm>=8"]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "wildmeshing"
-version = "v2.0.0"
+# The version is the git tag's: v2.0.0 builds 2.0.0, and a commit after it 2.0.1.devN+g<hash>
+# ([tool.setuptools_scm] below). Releases are made by pushing a tag (.github/workflows/wheels.yml).
+dynamic = ["version"]
 description = "Python bindings for WildMeshingToolkit"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -21,9 +23,10 @@ polyfem = ["gmsh", "scipy", "h5py"]
 # # Build CPython wheels.
 build = ["cp*-*"]
 
-# Skip 32-bit builds, Windows ARM, PyPy, and musllinux (the Linux `before-all`
-# below uses `yum`, which only exists on the manylinux images).
-skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*"]
+# Skip 32-bit builds, Windows ARM, PyPy, musllinux (the Linux `before-all` below uses `yum`,
+# which only exists on the manylinux images), and the free-threaded CPython builds (cp314t, ...),
+# which a later release can add once the module is checked without the GIL.
+skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*", "cp3??t-*"]
 
 # Smoke-test every built wheel on its target platform/Python: install it into an
 # isolated environment and check dispatch and the NumPy memory interface. These
@@ -87,3 +90,12 @@ wheel.packages = ["python/wildmeshing"]
 # installed, and wmtk_offset_field does not link with GCC 15 (Ubuntu 26.04), which failed the
 # whole `pip install`.
 build.targets = ["wildmeshing"]
+
+# The version from git (see [project]). Only v<version> tags are versions: the repository's other
+# tags (1.0, the paper's; backup/...) are not.
+[tool.setuptools_scm]
+tag_regex = "^v(?P<version>[0-9]+(?:\\.[0-9]+)*)$"
+git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "v[0-9]*"]
+
+[[tool.dynamic-metadata]]
+provider = "scikit_build_core.metadata.setuptools_scm"

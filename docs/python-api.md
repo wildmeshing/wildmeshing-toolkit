@@ -95,5 +95,5 @@ Built from the history an application recorded; see the [tracking tutorial](tuto
 ## PolyFEM operations
 
 `wildmeshing.polyfem_ops` runs PolyFEM-based operations on `.msh` files (install with
-`pip install ".[polyfem]"`, and set `POLYFEM_BIN`): see
+`pip install "wildmeshing[polyfem]"`, and set `POLYFEM_BIN`): see
 [python/README.md](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/python/README.md#polyfem-operations).

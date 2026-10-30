@@ -1,57 +1,98 @@
 name: wheels
 
-# Build the wildmeshing wheels for the three target platforms (macOS arm64,
-# Windows x86_64, Linux x86_64), build the source distribution, and (on a
-# GitHub Release) publish everything to PyPI.
+# The wildmeshing Python package: wheels for macOS arm64, Linux x86_64 and arm64 and Windows
+# x86_64, and the source distribution, built by cibuildwheel.
 #
-# The Python test suite runs in the Build workflow (.github/workflows/continuous.yml),
-# through ctest, not here. cibuildwheel still runs a quick per-wheel smoke test
-# (see [tool.cibuildwheel] test-command in pyproject.toml).
+#   a version tag (v2.0.0)      publishes them on PyPI, and a GitHub Release with the files attached
+#   a manual run                builds them, publishes nothing (the files are the run's artifacts)
 #
-# NOTE: every wheel compiles the whole C++ toolkit from scratch, so this runs on
-# every push and is expensive. Once it is stable you may want to restrict it
-# (e.g. to `push: { tags: ['v*'] }` + `workflow_dispatch`) to save CI minutes.
+# The version is the tag's: v2.0.0 builds 2.0.0 (a manual run's is setuptools-scm's, see
+# pyproject.toml). Nothing is built on other pushes or on pull requests: every wheel compiles the
+# whole toolkit.
+#
+# Publishing uses PyPI's trusted publishing, no token: the wildmeshing project on PyPI lists this
+# repository, workflow wheels.yml, environment pypi, as a trusted publisher. The Python tests run in the Build workflow (continuous.yml), through ctest;
+# cibuildwheel runs a quick smoke test on every wheel ([tool.cibuildwheel] in pyproject.toml).
 on:
-  # pull_request: # only for testing
+  push:
+    tags: ["v*"]
   workflow_dispatch:
-  release:
-    types: [published]
 
-# Cancel superseded runs on the same ref so rapid commits don't pile up builds.
 concurrency:
   group: wheels-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   # -------------------------------------------------------------------------
-  # 1. Build the wheels (one job per target platform)
+  # The version, and whether the ref is a release.
+  # Computed once here and passed to every build (SETUPTOOLS_SCM_PRETEND_VERSION), so all the
+  # files carry the same version and the Linux builds, in a manylinux container, need no git.
+  # -------------------------------------------------------------------------
+  version:
+    name: version
+    runs-on: ubuntu-latest
+    outputs:
+      kind: ${{ steps.version.outputs.kind }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          # Every tag and commit: a manual run's version is computed from them.
+          fetch-depth: 0
+
+      - id: version
+        run: |
+          ref="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF_TYPE}" != tag ]]; then
+            kind=none
+            python -m pip install --quiet "setuptools-scm>=8"
+            version=$(python -m setuptools_scm -c pyproject.toml | tail -n 1)
+          elif [[ "$ref" =~ ^v[0-9]+(\.[0-9]+)*$ ]]; then
+            kind=release
+            version="${ref#v}"
+          else
+            echo "::error::$ref is not a version tag (v2.0.0, v2.1.0, ...)"
+            exit 1
+          fi
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "wildmeshing $version ($kind)" >> "$GITHUB_STEP_SUMMARY"
+
+  # -------------------------------------------------------------------------
+  # The wheels, one job per platform
   # -------------------------------------------------------------------------
   build_wheels:
     name: wheel · ${{ matrix.label }}
+    needs: version
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest # Apple Silicon -> macosx_arm64
+          - os: macos-latest
             label: macOS arm64
-          - os: windows-2022 # Intel/AMD64   -> win_amd64
-            label: Windows x86_64
-          - os: ubuntu-latest # Intel/AMD64   -> manylinux x86_64
+          - os: ubuntu-latest
             label: Linux x86_64
+          - os: ubuntu-24.04-arm
+            label: Linux arm64
+          # The Build workflow's Windows image (continuous.yml), where the bindings are tested.
+          - os: windows-2025-vs2026
+            label: Windows x86_64
+
+    env:
+      SETUPTOOLS_SCM_PRETEND_VERSION: ${{ needs.version.outputs.version }}
+      CIBW_ENVIRONMENT_PASS_LINUX: SETUPTOOLS_SCM_PRETEND_VERSION
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 10
 
-      # Builds wheels + runs the per-wheel smoke test from [tool.cibuildwheel]
-      # in pyproject.toml. cibuildwheel auto-repairs the wheels (delocate on
-      # macOS, auditwheel on Linux; the GMP DLL is installed into the wheel on
-      # Windows by python/src/CMakeLists.txt).
+      # Builds the wheels and runs the smoke test from [tool.cibuildwheel] in pyproject.toml.
+      # cibuildwheel repairs them (delocate on macOS, auditwheel on Linux; on Windows
+      # python/src/CMakeLists.txt installs the GMP DLL into the wheel).
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.21.3 # bump as needed
+        uses: pypa/cibuildwheel@v4.3.5
 
       - name: Upload wheels
         uses: actions/upload-artifact@v7
@@ -60,21 +101,22 @@ jobs:
           path: ./wheelhouse/*.whl
 
   # -------------------------------------------------------------------------
-  # 2. Build the source distribution (sdist)
+  # The source distribution
   # -------------------------------------------------------------------------
   make_sdist:
     name: sdist
+    needs: version
     runs-on: ubuntu-latest
+    env:
+      SETUPTOOLS_SCM_PRETEND_VERSION: ${{ needs.version.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 10
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Build sdist
         run: |
@@ -88,18 +130,18 @@ jobs:
           path: ./dist/*.tar.gz
 
   # -------------------------------------------------------------------------
-  # 3. Publish to PyPI (only when a GitHub Release is published)
+  # A version tag: PyPI, and a GitHub Release
   # -------------------------------------------------------------------------
-  publish:
+  publish_pypi:
     name: publish to PyPI
-    needs: [build_wheels, make_sdist]
+    needs: [version, build_wheels, make_sdist]
+    if: needs.version.outputs.kind == 'release'
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
     environment:
       name: pypi
       url: https://pypi.org/project/wildmeshing/
     permissions:
-      id-token: write # required for PyPI trusted publishing (OIDC)
+      id-token: write # PyPI trusted publishing (OIDC)
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v8
@@ -108,30 +150,37 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Publish distribution to PyPI
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
-  # # -------------------------------------------------------------------------
-  # # 4. (Optional) Test publishing to TestPyPI
-  # # -------------------------------------------------------------------------
-  # publish_testpypi:
-  #   name: publish to TestPyPI
-  #   needs: [build_wheels, make_sdist]
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: testpypi
-  #     url: https://test.pypi.org/project/wildmeshing/
-  #   permissions:
-  #     id-token: write # required for PyPI trusted publishing (OIDC)
-  #   steps:
-  #     - name: Download all artifacts
-  #       uses: actions/download-artifact@v8
-  #       with:
-  #         pattern: cibw-*
-  #         path: dist
-  #         merge-multiple: true
+  github_release:
+    name: GitHub Release
+    needs: [version, publish_pypi]
+    if: needs.version.outputs.kind == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
 
-  #     - name: Publish distribution to PyPI
-  #       uses: pypa/gh-action-pypi-publish@release/v1
-  #       with:
-  #         repository-url: https://test.pypi.org/legacy/
+      # Notes generated from the pull requests merged since the previous version tag. The first
+      # release has none to start from, and would list every pull request ever merged.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prev=$(gh api "repos/${GITHUB_REPOSITORY}/releases" --jq '[.[] | select(.draft | not) | .tag_name | select(test("^v[0-9]"))][0] // ""')
+          if [[ -n "$prev" ]]; then
+            notes=(--generate-notes --notes-start-tag "$prev")
+          else
+            notes=(--notes "The first release of the wildmeshing Python package from the toolkit: \`pip install wildmeshing\`. Documentation: https://wildmeshing.github.io/wildmeshing-toolkit/")
+          fi
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            "${notes[@]}"
