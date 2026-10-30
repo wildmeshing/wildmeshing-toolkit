@@ -3691,39 +3691,38 @@ when <code>BUILD_TESTING</code> is on (the default).</p>
 </code></pre></div>
 <p>lists the components and what each does; <code>--options &lt;name&gt;</code> lists a component's options.</p>
 <h2 id="the-python-package">The Python package<a class="headerlink" href="#the-python-package" title="Permanent link">&para;</a></h2>
-<p>From the repository root:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>.
+<p>From PyPI, with wheels for macOS arm64, Linux x86_64 and arm64, and Windows x86_64:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>wildmeshing
+</code></pre></div>
+<p>Versions before 2.0.0 on PyPI are the older
+<a href="https://github.com/wildmeshing/wildmeshing-python">wildmeshing-python</a> bindings of TetWild and
+TriWild, with a different interface.</p>
+<p>From source, from the repository root:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>.
 </code></pre></div>
 <p>This builds the bindings in Release (in <code>build/Release</code>, a few minutes the first time) and
 installs the <code>wildmeshing</code> package; it does not build the tests or download the example data.
 With the PolyFEM-based operations' dependencies:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">".[polyfem]"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">".[polyfem]"</span>
 </code></pre></div>
 <p>Check it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">wildmeshing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">wm</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">wm</span><span class="o">.</span><span class="n">components</span><span class="p">())</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">help</span><span class="p">(</span><span class="n">wm</span><span class="o">.</span><span class="n">qslim</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">wildmeshing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">wm</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">wm</span><span class="o">.</span><span class="n">components</span><span class="p">())</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">help</span><span class="p">(</span><span class="n">wm</span><span class="o">.</span><span class="n">qslim</span><span class="p">)</span>
 </code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">PyPI</p>
-<p>The package will be published on PyPI as <code>wildmeshing</code>. The <code>wildmeshing</code> package on PyPI
-today (0.4) is the older <a href="https://github.com/wildmeshing/wildmeshing-python">wildmeshing-python</a>
-bindings of TetWild and TriWild, with a different interface: install from source until the
-new release is out.</p>
-</div>
 <h3 id="faster-rebuilds-with-uv">Faster rebuilds with uv<a class="headerlink" href="#faster-rebuilds-with-uv" title="Permanent link">&para;</a></h3>
 <p>When you change the toolkit and rebuild the package often:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>venv<span class="w"> </span>--python<span class="w"> </span><span class="m">3</span>.14<span class="w"> </span>.venv
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--python<span class="w"> </span>.venv/bin/python<span class="w"> </span>numpy<span class="w"> </span>scikit-build-core<span class="w"> </span>pybind11
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nv">CMAKE_BUILD_PARALLEL_LEVEL</span><span class="o">=</span><span class="m">8</span><span class="w"> </span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--python<span class="w"> </span>.venv/bin/python<span class="w"> </span>--no-build-isolation<span class="w"> </span>.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>venv<span class="w"> </span>--python<span class="w"> </span><span class="m">3</span>.14<span class="w"> </span>.venv
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--python<span class="w"> </span>.venv/bin/python<span class="w"> </span>numpy<span class="w"> </span>scikit-build-core<span class="w"> </span>pybind11
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nv">CMAKE_BUILD_PARALLEL_LEVEL</span><span class="o">=</span><span class="m">8</span><span class="w"> </span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--python<span class="w"> </span>.venv/bin/python<span class="w"> </span>--no-build-isolation<span class="w"> </span>.
 </code></pre></div>
 <p>Without build isolation, the second install rebuilds only what changed. To reuse the sources
 CMake already downloaded for another build of the toolkit, add
 <code>-C cmake.define.CPM_SOURCE_CACHE=&lt;that build&gt;/CPM</code>.</p>
 <h3 id="from-a-cmake-build">From a CMake build<a class="headerlink" href="#from-a-cmake-build" title="Permanent link">&para;</a></h3>
 <p>The CMake build above also builds the module, into <code>build/bin/wildmeshing</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PWD</span>/build/bin
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import wildmeshing"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PWD</span>/build/bin
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import wildmeshing"</span>
 </code></pre></div>
 <p>The module is built for the Python CMake finds; use the same interpreter to import it.</p>
 <h2 id="using-the-library-from-your-own-cmake-project">Using the library from your own CMake project<a class="headerlink" href="#using-the-library-from-your-own-cmake-project" title="Permanent link">&para;</a></h2>
