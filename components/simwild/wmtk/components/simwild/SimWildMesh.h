@@ -462,6 +462,27 @@ public:
         const std::vector<std::vector<CellTag>>& tight_seal_tag_sets,
         double threshold = std::numeric_limits<double>::infinity());
 
+    /**
+     * @brief Geometric tight seal between the regions R_i, the tets tagged with `tags[i]` and
+     * nothing else. The 3D counterpart of SimWildMeshTri::tight_seal_geom.
+     *
+     * A ball of radius distance/2 moves through E, everything outside the R_i, without entering
+     * them. Each connected part of E it cannot reach that borders every R_i is filled with the
+     * Voronoi diagram of the R_i: edges whose endpoints have different nearest regions are split
+     * on the bisector, and each tet gets the tag of its region.
+     *
+     * Without `growth`, the ball's centres are the tets whose four vertices are far enough from
+     * the R_i, and a part is the tets whose four vertices the ball cannot reach. With it, both
+     * are cut along their level sets by sphere tracing on the edges (to within trace_rel_tol x
+     * distance/2): the centres are cut without splitting, a part by splitting the edges that
+     * leave it.
+     */
+    void tight_seal_geom(
+        const std::vector<int64_t>& tags,
+        double distance,
+        bool growth = true,
+        double trace_rel_tol = 0.01);
+
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 
     void replace_tags(const std::vector<CellTag>& tags_in, const std::vector<CellTag>& tags_out);
