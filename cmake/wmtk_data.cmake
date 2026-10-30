@@ -88,8 +88,16 @@ ExternalProject_Add(
     # default in tetwild, triwild and simwild, and on crown (171k faces) the exact simplification
     # alone takes 54 minutes at 16 threads, against 8 s sampled; this case opts back into the
     # sampled one.
+    # At c11305f (2026-10-30, data2 main) four simwild tight_seal_geom cases join the list --
+    # explicit and detected, 2D and 3D, the detected 3D one on the new
+    # models/tight_seal_geom_bars_3d.msh -- each with tight_seal_geom_sanity on, so the op throws
+    # if it fills a concave feature of one body. cad_remeshing_rings becomes
+    # isotropic_remeshing_rings: the cad_remeshing component never reached the toolkit (#1090,
+    # superseded by #1123), and the case keeps the model's curves and corners through
+    # isotropic_remeshing's features (models/rings_iso_features.json). The pin also takes in what
+    # data2 main gained since 89911f5: c91a67a's dropped options and the 3D cube offset cases.
     #
-    GIT_TAG 89911f53375f21eb6e8463caaca5bf07ce9c22c7
+    GIT_TAG c11305fe6a8fe37b8d8920a0e98fcb558926084e
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
