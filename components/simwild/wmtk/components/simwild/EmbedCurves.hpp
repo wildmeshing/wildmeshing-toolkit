@@ -65,11 +65,17 @@ public:
      * across the arrangement's own segment provenance. See tag_from_provenance.
      * @param collect_provenance Collect E_constrained_inputs() with the winding-number
      * tagging too: the curve inputs' edges are read off it.
+     * @param points input points (input_points), each inserted as a vertex of the arrangement,
+     * exactly; point_vids() says which. They carry no winding number.
      * @return true when every arrangement vertex has an exact double representation.
      */
     bool embed_curves(
         const bool tag_from_winding_number = true,
-        const bool collect_provenance = false);
+        const bool collect_provenance = false,
+        const std::vector<Vector2d>& points = {});
+
+    /// Per input point given to embed_curves(): its row of V_emb(), kept through consolidate().
+    const std::vector<size_t>& point_vids() const { return m_point_vids; }
 
     /**
      * @brief Remove vertices not referenced by any output face.
@@ -141,6 +147,7 @@ private:
     /// Per row of m_E_constrained: which inputs tile it. Filled for tag_from_provenance, or on
     /// request (embed_curves()).
     std::vector<std::vector<size_t>> m_E_constrained_inputs;
+    std::vector<size_t> m_point_vids;
 
     MatrixXd m_V_emb;
     MatrixXr m_V_emb_r;

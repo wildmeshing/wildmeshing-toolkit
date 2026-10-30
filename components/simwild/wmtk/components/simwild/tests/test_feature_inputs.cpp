@@ -97,6 +97,6 @@ TEST_CASE("simwild-refuses-features-without-insertion", "[simwild][features]")
         what = e.what();
     }
     CHECK(
-        what.find("input_edges and input_points apply to 3D surface inputs only") !=
+        what.find("input_edges and input_points apply to inserted inputs only") !=
         std::string::npos);
 }

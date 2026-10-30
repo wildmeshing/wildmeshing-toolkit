@@ -395,7 +395,8 @@ InputData read_curves(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io)
+    const io::ComponentIO* component_io,
+    const utils::FeatureInputs* features)
 {
     // Which inputs enclose a region (triangle tags) and which stay curves (edge tags).
     const std::vector<std::string> input_type = json_params["input_type"];
@@ -501,8 +502,14 @@ InputData read_curves(
     }
 
     // A curve input's edges are read off the arrangement's segment provenance.
-    const bool all_rounded = curves.embed_curves(tag_from_winding_number, has_curve);
+    // The input points in the plane: x and y, as the curves are read.
+    std::vector<Vector2d> points;
+    if (features) {
+        for (const Vector3d& p : features->points) points.emplace_back(p[0], p[1]);
+    }
+    const bool all_rounded = curves.embed_curves(tag_from_winding_number, has_curve, points);
     curves.consolidate();
+    input_data.input_point_vids = curves.point_vids();
 
     input_data.V_input = curves.V_emb();
     if (!all_rounded) {

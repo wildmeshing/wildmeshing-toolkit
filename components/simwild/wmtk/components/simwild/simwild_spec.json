@@ -198,7 +198,7 @@
     "pointer": "/input_points",
     "type": "list",
     "default": [],
-    "doc": "List of input feature POINT files, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning). input_transform does not apply to them, and they grow the background box as /input_edges do. The optimization keeps a vertex within feature_envelope_ratio x eps of each, the smaller order2_envelope_ratio x eps where the point is on an order-2 edge. Read and held by the same code as tetwild's input_points."
+    "doc": "List of input feature POINT files, 3D surface inputs and 2D curve inputs (a .msh input and a tagged mesh refuse them): every vertex of each file is forced into the mesh as a vertex, exactly -- a tet vertex in 3D, a vertex of the curve arrangement in 2D, where only x and y are used (edges in these files are ignored, with a warning). input_transform does not apply to them, and they grow the background box as /input_edges do (in 2D the arrangement's box covers them). The optimization keeps a vertex within feature_envelope_ratio x eps of each, the smaller order2_envelope_ratio x eps where the point is on an order-2 edge (in 2D, at a vertex where a tracked curve ends or three or more meet). Read by the same code as tetwild's input_points, and held by the same anchors as tetwild's (3D) and triwild's (2D)."
   },
   {
     "pointer": "/input_points/*",

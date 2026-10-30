@@ -438,6 +438,7 @@ void run_2D(
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
         mesh.m_E_envelope_labels = input_data.F_envelope_labels;
     }
+    mesh.m_input_point_vids = input_data.input_point_vids;
     if (input_data.V_input_r.size() == 0) {
         mesh.init_from_image(
             input_data.V_input,
@@ -584,15 +585,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (dimension != 0 && !envelope_selector.is_null()) {
         log_and_throw_error("`envelope` applies to tagged mesh inputs only");
     }
-    // The feature curves and points (input_edges, input_points) are forced into the
-    // tetrahedralization by the 3D surface insertion, so only that route takes them; the others
-    // refuse them rather than drop them.
+    // The feature curves and points (input_edges, input_points) are forced into the mesh by the
+    // insertion: curves and points by the 3D surface insertion, points by the 2D curve
+    // arrangement. The other routes refuse them rather than drop them.
     const bool has_features =
         !json_params["input_edges"].empty() || !json_params["input_points"].empty();
     const auto no_features = [&](const char* route) {
         if (has_features) {
             log_and_throw_error(
-                "input_edges and input_points apply to 3D surface inputs only, not to {}",
+                "input_edges and input_points apply to inserted inputs only (input_edges to 3D "
+                "surface inputs, input_points to 3D surface and 2D curve inputs), not to {}",
                 route);
         }
     };
@@ -605,12 +607,21 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         no_features("a .msh input");
         input_data = read_image_msh(input_paths[0]);
     } else if (dimension == 2) {
-        no_features("a 2D input");
+        if (!json_params["input_edges"].empty()) {
+            log_and_throw_error("input_edges apply to 3D surface inputs only, not to a 2D input");
+        }
+        // Read by the code the 3D route reads them with; only their x and y are used.
+        const utils::FeatureInputs features = utils::read_feature_inputs(
+            component_io,
+            root,
+            nlohmann::json::array(),
+            json_params["input_points"]);
         input_data = read_curves(
             input_paths,
             output_filename.string(),
             json_params,
-            component_io.memory() ? &component_io : nullptr);
+            component_io.memory() ? &component_io : nullptr,
+            &features);
     } else {
         // Read by the code tetwild reads them with.
         const utils::FeatureInputs features = utils::read_feature_inputs(

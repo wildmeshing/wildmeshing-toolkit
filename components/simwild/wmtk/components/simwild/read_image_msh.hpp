@@ -52,6 +52,9 @@ struct InputData
     /// and where the insertion put them, in V_input's numbering. Empty otherwise.
     utils::FeatureInputs features;
     utils::EmbedFeaturesResult features_placed;
+    /// A 2D curve input with input points (input_points): the row of V_input each became, in
+    /// input order. Empty otherwise.
+    std::vector<size_t> input_point_vids;
 };
 
 /**
@@ -83,7 +86,8 @@ InputData read_curves(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io = nullptr);
+    const io::ComponentIO* component_io = nullptr,
+    const utils::FeatureInputs* features = nullptr);
 
 /**
  * @brief Decide whether an input is 2D or 3D.

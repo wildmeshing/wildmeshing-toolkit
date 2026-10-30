@@ -54,6 +54,9 @@ public:
     /// Per row of m_E_envelope: its label bits, when m_E_envelope is the input curves
     /// (InputData::F_envelope_labels); empty once m_E_envelope is rebuilt from the mesh.
     std::vector<InputSet> m_E_envelope_labels;
+    /// The vertices of the input points (input_points), set before init: anchored there, in a
+    /// ball of feature_envelope_ratio x eps (TriOptimizerMesh::anchor_feature_points()).
+    std::vector<size_t> m_input_point_vids;
 
     /// Names of the edge tags: bit i of an edge's input set is m_edge_tag_names[i].
     std::vector<std::string> m_edge_tag_names;
