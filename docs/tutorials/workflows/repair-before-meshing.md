@@ -11,6 +11,12 @@ The example is `double_sphere_hole.msh`: two spheres, `tag_0` and `tag_1`, whose
 removed, so that they touch along a circle. The boundary of `tag_0 | tag_1` has 970 triangles and
 28 non-manifold edges.
 
+<div>
+<wmtk-viewer example="workflow_repair"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom; on the tet mesh, move the cut with the slider. Every example is in the [gallery](../../gallery/index.md).
+
 ## The chain
 
 === "Command line"

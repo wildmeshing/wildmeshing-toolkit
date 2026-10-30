@@ -108,6 +108,12 @@ Two triangles of `tag_0` share one vertex and no edge (`vertex_adj_tris.msh`, 50
 The log reports one non-manifold vertex. The mesh goes from 50 to 62 triangles; `tag_0` is four
 triangles in two pieces, which no longer touch, with a manifold boundary of 8 edges.
 
+<div>
+<wmtk-viewer example="manifold_extraction"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom; on the tet mesh, move the cut with the slider. Every example is in the [gallery](../gallery/index.md).
+
 ## Key settings
 
 ### The selection: `tag_selection`

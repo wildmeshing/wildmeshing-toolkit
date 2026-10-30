@@ -52,6 +52,12 @@ bounding box diagonal:
 It prints `18944 -> 1891 vertices`, give or take a few: see
 [threads](#threads-and-reproducibility).
 
+<div>
+<wmtk-viewer example="qslim"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom. Every example is in the [gallery](../gallery/index.md).
+
 ## Key settings
 
 ### The target: `target_rel`, `target_abs`

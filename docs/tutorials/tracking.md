@@ -151,6 +151,12 @@ Most distances are below the envelope (2e-2 of the diagonal), but the map is not
 projection: it follows each operation, so a point can also slide along the surface, and some
 images are farther than the envelope. Mapping a point there and back returns it, to within rounding.
 
+<div>
+<wmtk-viewer example="tracking"></wmtk-viewer>
+</div>
+
+The dense input painted with a checkerboard on the left; on the right the tet mesh's surface, each triangle painted with the color found at its centroid's preimage through both maps: drag to rotate, scroll to zoom. Every example is in the [gallery](../gallery/index.md).
+
 ## How coarse
 
 Face count goes roughly with 1 / `length_rel`², until the envelope stops the collapses. On the

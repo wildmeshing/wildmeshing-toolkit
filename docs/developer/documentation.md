@@ -102,6 +102,36 @@ cmake --build build --target wmtk_doc_example_qslim wmtk_app wildmeshing
 ctest --test-dir build -R 'doc_example' --output-on-failure
 ```
 
+## Renderings
+
+Pages show meshes in an interactive viewer, `<wmtk-viewer>` (`docs/viewer`, three.js, loaded on
+every page): the input on the left, the output on the right, one camera; tet meshes with a cut
+plane; cells colored by quality or by region. A page shows a gallery example by its id:
+
+```html
+<div>
+<wmtk-viewer example="qslim"></wmtk-viewer>
+</div>
+```
+
+The examples are listed in `docs/gallery/examples.yaml`. Each runs a tutorial's JSON example
+(`json: qslim`), a component on meshes of `data/models` (`component`, `inputs`, `options`), or a
+pipeline, a function of `docs/gallery/scenes.py` that runs a workflow's script and returns the
+meshes to show. `docs/tools/build_gallery.py` runs them through the Python bindings and writes
+their assets to `docs/gallery/assets/<id>/` (not committed: CI builds them, cached by the code
+they depend on); `--posters` also takes a still of each, used before the viewer starts and in the
+README. The gallery page is generated from the same list. To preview locally:
+
+```bash
+PYTHONPATH=build/bin python docs/tools/build_gallery.py qslim --posters
+mkdocs serve
+```
+
+`build_gallery.py --check` (in CI) fails when a page names an example the list does not have.
+The viewer's source is `docs/viewer/src/wmtk-viewer.js`; after changing it, rebuild the bundle
+(`npm install && npm run build` in `docs/viewer`) and commit `docs/assets/viewer/wmtk-viewer.min.js`.
+Keep the input on the left and the output on the right in every figure.
+
 ## A tutorial page
 
 One page per component, `docs/tutorials/<name>.md`, in this order:

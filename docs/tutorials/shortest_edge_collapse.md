@@ -52,6 +52,12 @@ bounding box diagonal, the same run as the [QSlim tutorial](qslim.md#a-first-run
 
 It prints `18944 -> 1894 vertices`, or 1893: see [threads](#threads-and-reproducibility).
 
+<div>
+<wmtk-viewer example="shortest_edge_collapse"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom. Every example is in the [gallery](../gallery/index.md).
+
 ## Key settings
 
 ### The target: `target_rel`

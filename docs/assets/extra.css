@@ -1,4 +1,4 @@
 /* Option headings in the component reference read as code, without the heading's weight. */
 .md-typeset h3 code { font-weight: 600; }
 /* Viewer elements (gallery and tutorials) */
-wmtk-viewer { display: block; width: 100%; aspect-ratio: 4 / 3; margin: 1em 0; }
+wmtk-viewer { display: block; width: 100%; aspect-ratio: 16 / 10; margin: 1em 0; }

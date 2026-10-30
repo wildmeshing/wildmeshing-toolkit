@@ -4,6 +4,10 @@
 //                output="assets/tetwild_octocat/output.wmv.gz"
 //                labels="Input|TetWild" color="quality" cut="x"></wmtk-viewer>
 //
+//   <wmtk-viewer example="qslim"></wmtk-viewer>
+//
+// example names a gallery example (docs/gallery/examples.yaml): its views, labels, coloring and
+// poster come from the gallery's assets, found next to this script. Otherwise,
 // input and output are .wmv files, gzipped, written by docs/tools/build_gallery.py. With both,
 // the input is always on the left and the output on the right, with one camera; with one of them
 // (or src), a single view. A triangle mesh is drawn with its edges; a tet mesh with a cut: the
@@ -107,12 +111,15 @@ function qualityColors(asset) {
     return colors;
 }
 
-function regionColors(asset) {
+// A region keeps its color across the panels: colors go by name, in order of first appearance.
+function regionColors(asset, palette) {
     const r = asset.arrays.cell_region;
     if (!r) return null;
+    const names = asset.header.regions || [];
+    const byIndex = names.map((name) => REGIONS[palette.indexOf(name) % REGIONS.length]);
     const colors = new Float32Array(r.length * 3);
     for (let i = 0; i < r.length; ++i) {
-        const c = r[i] === 255 ? BOUNDARY : REGIONS[r[i] % REGIONS.length];
+        const c = r[i] === 255 || !byIndex[r[i]] ? BOUNDARY : byIndex[r[i]];
         colors.set([c.r, c.g, c.b], 3 * i);
     }
     return colors;
@@ -214,22 +221,30 @@ class Panel {
             for (let i = 0; i < L.length; ++i) pos.set(P.subarray(3 * L[i], 3 * L[i] + 3), 3 * i);
             const g = new BufferGeometry();
             g.setAttribute("position", new BufferAttribute(pos, 3));
-            this.scene.add(new LineSegments(g, new LineBasicMaterial({ color: "#c0392b" })));
+            // Curves on their own (2D inputs) in the edge color; over a mesh (feature curves), blue.
+            const overlay = a.triangles || a.tets;
+            // Drawn over a mesh, they stay visible through it (no depth test).
+            const lines = new LineSegments(g, new LineBasicMaterial({
+                color: overlay ? "#1f5fbf" : "#24527a", depthTest: !overlay }));
+            lines.renderOrder = 1;
+            this.scene.add(lines);
         }
     }
 
     // "6,968 tets", "37,884 triangles": what the asset holds.
     count() {
         const a = this.asset.arrays;
-        const [n, what] = a.tets ? [a.tets.length / 4, "tets"] : [a.triangles.length / 3, "triangles"];
+        const [n, what] = a.tets ? [a.tets.length / 4, "tets"]
+            : a.triangles ? [a.triangles.length / 3, "triangles"] : [a.lines.length / 2, "segments"];
         return `${n.toLocaleString("en-US")} ${what}`;
     }
 
     // color: "quality", "region" or "plain"; cut: null or { axis, t } with t in [0, 1].
-    update(color, cut) {
+    update(color, cut, palette) {
         const a = this.asset.arrays, P = this.asset.positions;
+        if (!a.tets && !a.triangles) return; // curves only: the lines are all there is
         const cellColors = color === "quality" ? qualityColors(this.asset)
-            : color === "region" ? regionColors(this.asset) : null;
+            : color === "region" ? regionColors(this.asset, palette) : null;
         let tris, faceColors;
         if (this.isTet) {
             const T = a.tets, N = a.tet_neighbors, m = T.length / 4;
@@ -290,6 +305,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .controls label { display: inline-flex; gap: 4px; align-items: center; }
 .controls input[type=range] { width: 120px; }
 .legend { display: inline-flex; gap: 4px; align-items: center; }
+.legend[hidden] { display: none; }
+.legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-left: 6px; }
 .legend .bar { width: 90px; height: 10px; border-radius: 2px;
                background: linear-gradient(to right, #ffffcc, #fed976, #fd8d3c, #e31a1c, #800026); }
 .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -299,8 +316,11 @@ class WmtkViewer extends HTMLElement {
     connectedCallback() {
         if (this.shadowRoot) return;
         const root = this.attachShadow({ mode: "open" });
+        const id = this.getAttribute("example");
+        const poster = this.getAttribute("poster")
+            || (id ? new URL(`../../gallery/assets/${id}/poster.png`, import.meta.url).href : "");
         root.innerHTML = `<style>${STYLE}</style><div class="frame">
-            ${this.getAttribute("poster") ? `<img class="poster" alt="${this.getAttribute("alt") || ""}" src="${this.getAttribute("poster")}">` : ""}
+            ${poster ? `<img class="poster" alt="${this.getAttribute("alt") || ""}" src="${poster}" onerror="this.remove()">` : ""}
             <div class="message">Loading…</div></div>`;
         this.frame = root.querySelector(".frame");
         this.message = root.querySelector(".message");
@@ -315,22 +335,40 @@ class WmtkViewer extends HTMLElement {
         this.stop();
     }
 
+    // The gallery example this viewer shows (example="<id>"): its manifest, and where its assets are.
+    async example() {
+        const id = this.getAttribute("example");
+        if (!id) return null;
+        if (!this.manifest) {
+            const base = new URL(`../../gallery/assets/${id}/`, import.meta.url);
+            const response = await fetch(new URL("viewer.json", base));
+            if (!response.ok) throw new Error(`gallery example ${id}: ${response.status}`);
+            this.manifest = { ...(await response.json()), base: base.href };
+        }
+        return this.manifest;
+    }
+
     async start() {
         if (this.renderer) return;
         try {
             if (!this.panels) {
+                const example = await this.example();
+                const attr = (name) => this.getAttribute(name) ?? example?.[name];
                 // Input on the left, output on the right.
-                const views = this.hasAttribute("src") ? [["src", ""]]
-                    : [["input", "Input"], ["output", "Output"]].filter(([a]) => this.hasAttribute(a));
-                if (!views.length) throw new Error("no input, output or src attribute");
-                const labels = (this.getAttribute("labels") || "").split("|");
-                const assets = await Promise.all(views.map(([a]) =>
-                    fetchAsset(new URL(this.getAttribute(a), document.baseURI).href)));
-                this.panels = assets.map((a, i) => new Panel(a, labels[i] || views[i][1]));
+                const views = example ? ["input", "output"].filter((v) => example.views[v])
+                    .map((v) => [new URL(example.views[v], example.base).href, v])
+                    : (this.hasAttribute("src") ? ["src"] : ["input", "output"].filter((a) => this.hasAttribute(a)))
+                        .map((a) => [new URL(this.getAttribute(a), document.baseURI).href, a]);
+                if (!views.length) throw new Error("no example, input, output or src attribute");
+                const labels = (attr("labels") || "").split("|");
+                const assets = await Promise.all(views.map(([url]) => fetchAsset(url)));
+                const fallback = { input: "Input", output: "Output", src: "" };
+                this.panels = assets.map((a, i) => new Panel(a, labels[i] || fallback[views[i][1]]));
+                this.palette = [...new Set(assets.flatMap((a) => a.header.regions || []))];
                 this.state = {
-                    color: this.getAttribute("color") || "quality",
-                    cut: this.getAttribute("cut") || (this.panels.some((p) => p.isTet) ? "x" : "off"),
-                    t: parseFloat(this.getAttribute("cut-position") || "0.5"),
+                    color: attr("color") || "quality",
+                    cut: attr("cut") || (this.panels.some((p) => p.isTet) ? "x" : "off"),
+                    t: parseFloat(attr("cut-position") ?? "0.5"),
                     wire: true,
                 };
                 this.update();
@@ -356,15 +394,17 @@ class WmtkViewer extends HTMLElement {
     update() {
         const cut = this.state.cut === "off" ? null : { axis: "xyz".indexOf(this.state.cut), t: this.state.t };
         for (const p of this.panels) {
-            p.update(this.state.color, cut);
+            p.update(this.state.color, cut, this.palette);
             p.material.uniforms.wire.value = this.state.wire ? 1 : 0;
         }
         this.render();
     }
 
     createRenderer() {
+        // The camera frames every panel: the box around all their boxes.
         const header = this.panels[0].asset.header;
-        const [lo, hi] = header.bbox;
+        const lo = [0, 1, 2].map((k) => Math.min(...this.panels.map((p) => p.asset.header.bbox[0][k])));
+        const hi = [0, 1, 2].map((k) => Math.max(...this.panels.map((p) => p.asset.header.bbox[1][k])));
         const center = new Vector3().fromArray(lo).add(new Vector3().fromArray(hi)).multiplyScalar(0.5);
         const diagonal = new Vector3().fromArray(hi).sub(new Vector3().fromArray(lo)).length();
         this.is2d = header.dim === 2;
@@ -384,8 +424,10 @@ class WmtkViewer extends HTMLElement {
                 this.halfHeight = 0.6 * diagonal;
             } else {
                 this.camera = new PerspectiveCamera(30, 1, diagonal * 0.01, diagonal * 20);
-                const view = header.camera ? new Vector3().fromArray(header.camera) : new Vector3(1, 0.6, 1.6);
-                this.camera.position.copy(center).add(view.normalize().multiplyScalar(diagonal * 1.6));
+                const camera = this.manifest?.camera || header.camera;
+                this.view = (camera ? new Vector3().fromArray(camera) : new Vector3(1, 0.6, 1.6)).normalize();
+                this.zoom = parseFloat(this.manifest?.zoom ?? "1");
+                this.diagonal = diagonal;
             }
             this.target = center;
         }
@@ -393,6 +435,8 @@ class WmtkViewer extends HTMLElement {
         this.controls.target.copy(this.target);
         this.controls.enableRotate = !this.is2d;
         this.controls.addEventListener("change", () => this.render());
+        // Until the reader moves the camera, it keeps framing the meshes as the viewer resizes.
+        this.controls.addEventListener("start", () => { this.moved = true; });
         this.controls.update();
 
         this.buildUi();
@@ -417,15 +461,24 @@ class WmtkViewer extends HTMLElement {
             ${hasTet ? `<label>Cut <select name="cut">${["off", "x", "y", "z"].map((a) =>
                 `<option ${this.state.cut === a ? "selected" : ""}>${a}</option>`).join("")}</select></label>
                 <input type="range" name="t" min="0" max="1" step="0.005" value="${this.state.t}">` : ""}
-            ${hasQuality ? `<span class="legend" title="Element quality (AMIPS energy, log scale)">good
-                <span class="bar"></span> bad</span>` : ""}`;
+            ${hasQuality ? `<span class="legend quality" title="Element quality (AMIPS energy, log scale)">good
+                <span class="bar"></span> bad</span>` : ""}
+            ${hasRegions ? `<span class="legend regions">${this.palette.map((name, i) =>
+                `<span class="swatch" style="background:#${REGIONS[i % REGIONS.length].getHexString()}"></span>${name}`)
+                .join(" ")}</span>` : ""}`;
+        const legends = () => {
+            ui.querySelector(".legend.quality")?.toggleAttribute("hidden", this.state.color !== "quality");
+            ui.querySelector(".legend.regions")?.toggleAttribute("hidden", this.state.color !== "region");
+        };
         ui.addEventListener("input", (e) => {
             const { name, value, checked } = e.target;
             if (name === "wire") this.state.wire = checked;
             else if (name === "t") this.state.t = parseFloat(value);
             else this.state[name] = value;
+            legends();
             this.update();
         });
+        legends();
         this.frame.append(ui);
         if (this.panels.some((p) => p.label)) {
             const labels = document.createElement("div");
@@ -447,9 +500,19 @@ class WmtkViewer extends HTMLElement {
             this.camera.right = this.halfHeight * aspect;
         } else {
             this.camera.aspect = aspect;
+            if (!this.moved) this.fit(aspect);
         }
         this.camera.updateProjectionMatrix();
         this.render();
+    }
+
+    // Back the camera off along its view direction until the meshes fit the panel both ways.
+    fit(aspect) {
+        const half = (Math.PI / 180) * 15; // half the vertical field of view
+        const narrow = Math.min(Math.tan(half), Math.tan(half) * aspect);
+        const distance = (0.42 * this.diagonal) / narrow / this.zoom;
+        this.camera.position.copy(this.target).add(this.view.clone().multiplyScalar(distance));
+        this.controls?.update();
     }
 
     render() {

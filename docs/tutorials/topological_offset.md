@@ -92,6 +92,12 @@ front onto the target and restoring the quality is the job of the
 
 The band's topology is the one the march gives it, and every later operation keeps it.
 
+<div>
+<wmtk-viewer example="topological_offset"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom; on the tet mesh, move the cut with the slider. Every example is in the [gallery](../gallery/index.md).
+
 ## Key settings
 
 ### Which side: `offset_selection`, `offset_in`, `offset_out`

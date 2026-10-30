@@ -11,6 +11,12 @@ stay within the tube's radius of where they were.
 
 This page runs it on a small test case and checks what was kept.
 
+<div>
+<wmtk-viewer example="workflow_tetwild_features"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom; on the tet mesh, move the cut with the slider. Every example is in the [gallery](../../gallery/index.md).
+
 ## The data
 
 Three files from the example data:

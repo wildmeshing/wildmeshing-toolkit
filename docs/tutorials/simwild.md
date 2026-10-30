@@ -79,6 +79,12 @@ the largest energy between 6.0 and 8.6, and a run takes a few seconds. The regio
 the order of the operations depends on the schedule; `num_threads` 0 runs sequentially and repeats
 exactly.
 
+<div>
+<wmtk-viewer example="simwild"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom; on the tet mesh, move the cut with the slider. Every example is in the [gallery](../gallery/index.md).
+
 ### Curves in 2D
 
 The same in the plane, from five closed curves, the inputs of the [TriWild tutorial](triwild.md):
@@ -113,6 +119,12 @@ own ([`dimension`](../reference/simwild.md#dimension) forces it). Over ten runs 
 ```
 
 The ellipse has no cell of its own: every cell inside it is inside the rectangle too.
+
+<div>
+<wmtk-viewer example="simwild_curves"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom. Every example is in the [gallery](../gallery/index.md).
 
 ## Regions and tag expressions
 

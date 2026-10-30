@@ -24,6 +24,8 @@ exclude_docs: |
   /tools/
   /viewer/
   /examples/CMakeLists.txt
+  /gallery/examples.yaml
+  /gallery/scenes.py
 
 theme:
   name: material
@@ -66,6 +68,7 @@ plugins:
   - gen-files:
       scripts:
         - docs/tools/gen_reference.py
+        - docs/tools/gen_gallery.py
   - literate-nav:
       nav_file: SUMMARY.md
 
@@ -96,6 +99,9 @@ markdown_extensions:
 extra_javascript:
   - assets/mathjax.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  # The mesh viewer, <wmtk-viewer> (docs/viewer).
+  - path: assets/viewer/wmtk-viewer.min.js
+    type: module
 
 validation:
   omitted_files: warn

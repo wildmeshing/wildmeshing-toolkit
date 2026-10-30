@@ -16,6 +16,12 @@ This page runs such a pipeline in memory, from Python and from C++, on two overl
 
 Each step saves a checkpoint with `wm.save`, so a later step can be rerun from it.
 
+<div>
+<wmtk-viewer example="workflow_regions"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom; on the tet mesh, move the cut with the slider. Every example is in the [gallery](../../gallery/index.md).
+
 ## The pipeline
 
 The whole script is `docs/examples/python/workflow_regions.py`; it runs in well under a minute,

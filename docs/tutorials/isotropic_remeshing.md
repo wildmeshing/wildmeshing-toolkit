@@ -52,6 +52,12 @@ bounding box diagonal:
 
 It prints `35947 -> 7929 vertices`. The run is sequential, so the result is the same every time.
 
+<div>
+<wmtk-viewer example="isotropic_remeshing"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom. Every example is in the [gallery](../gallery/index.md).
+
 ## Key settings
 
 ### The target length: `length_rel`, `length_abs`

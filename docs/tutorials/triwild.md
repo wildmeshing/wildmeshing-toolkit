@@ -66,6 +66,12 @@ rectangle: 110 triangles
 The counts add up to more than the total: where the curves overlap, a triangle lies inside
 several of them.
 
+<div>
+<wmtk-viewer example="triwild"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom. Every example is in the [gallery](../gallery/index.md).
+
 ## Key settings
 
 The numbers below come from the `sweep` section of the example, which changes one option at a

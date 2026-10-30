@@ -60,6 +60,12 @@ Of the result, the filter keeps the inside: over twelve runs, 8,000 to 9,500 tet
 2,230 vertices, the largest energy between 9.5 and 10, the average 3.65 to 3.69 (see
 [threads](#threads-and-reproducibility)). A run takes seconds.
 
+<div>
+<wmtk-viewer example="tetwild"></wmtk-viewer>
+</div>
+
+The input on the left, the result on the right: drag to rotate, scroll to zoom; on the tet mesh, move the cut with the slider. Every example is in the [gallery](../gallery/index.md).
+
 ## Key settings
 
 The numbers below come from the `sweep` section of the example, which changes one option at a

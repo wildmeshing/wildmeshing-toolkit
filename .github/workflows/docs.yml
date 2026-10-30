@@ -3,7 +3,9 @@ name: Docs
 # The documentation site, https://wildmeshing.github.io/wildmeshing-toolkit/ (mkdocs.yml):
 #
 # - check, on every pull request and push: the specs are documented and match docs/components.yml
-#   (gen_reference.py --check), and the site builds with --strict (no broken link or anchor). The
+#   (gen_reference.py --check), every viewer on a page shows an example of
+#   docs/gallery/examples.yaml (build_gallery.py --check), and the site builds with --strict (no
+#   broken link or anchor). The
 #   built site is uploaded as an artifact, a preview of the pull request's docs.
 # - gallery, on main: the gallery's examples run through the Python bindings, and their viewer
 #   assets and posters are cached by what they depend on (build_gallery.py --cache-key), so the
@@ -32,10 +34,13 @@ jobs:
           python-version: "3.12"
 
       - name: Install MkDocs
-        run: pip install -r docs/requirements.txt
+        run: pip install -r docs/requirements.txt numpy
 
       - name: Check the specs
         run: python docs/tools/gen_reference.py --check
+
+      - name: Check the gallery's examples
+        run: python docs/tools/build_gallery.py --check
 
       - name: Build the site
         env:
