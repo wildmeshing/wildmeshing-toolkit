@@ -45,9 +45,13 @@ before-all = "yum install -y gmp-devel"
 CXXFLAGS = "-D_GLIBCXX_USE_TBB_PAR_BACKEND=0"
 
 [tool.cibuildwheel.windows]
-# delvewheel vendors the DLLs the module needs, except gmp-10.dll: python/src/CMakeLists.txt
-# installs it into the wheel already, where delvewheel cannot find it to vendor it again.
-repair-wheel-command = "delvewheel repair --ignore-in-wheel -w {dest_dir} -v {wheel}"
+# delvewheel vendors the DLLs the module needs (msvcp140.dll), except gmp-10.dll:
+# python/src/CMakeLists.txt installs it into the wheel already, where delvewheel cannot find it to
+# vendor it again. It takes each DLL from the first directory on PATH that has it, and the
+# runner's PATH has older copies of msvcp140.dll (a JDK's) ahead of System32, where Visual
+# Studio installs the one that matches its compiler: --add-path puts System32 first (the wheels
+# workflow checks that copy is at least the compiler's version).
+repair-wheel-command = "delvewheel repair --ignore-in-wheel --add-path C:/Windows/System32 -w {dest_dir} -v {wheel}"
 
 [tool.cibuildwheel.macos]
 # Install GMP from source since the Homebrew version causes issues.

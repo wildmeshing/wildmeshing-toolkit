@@ -91,6 +91,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      # The Windows wheels carry System32's msvcp140.dll (repair-wheel-command in pyproject.toml):
+      # a C++ runtime older than the compiler that built the module is not guaranteed to work.
+      - name: Check the C++ runtime the Windows wheels carry
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $tools = [version](Get-Content "$vs\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt").Trim()
+          $i = (Get-Item "$env:SystemRoot\System32\msvcp140.dll").VersionInfo
+          $runtime = [version]::new($i.FileMajorPart, $i.FileMinorPart, $i.FileBuildPart)
+          Write-Output "MSVC tools $tools, System32 msvcp140.dll $runtime"
+          where.exe msvcp140.dll | ForEach-Object { Write-Output "  on PATH: $_ $((Get-Item $_).VersionInfo.FileVersion)" }
+          if ([version]::new($runtime.Major, $runtime.Minor) -lt [version]::new($tools.Major, $tools.Minor)) {
+            throw "System32's msvcp140.dll ($runtime) is older than the MSVC tools ($tools)"
+          }
+
       # Builds the wheels and runs the smoke test from [tool.cibuildwheel] in pyproject.toml.
       # cibuildwheel repairs them (delocate on macOS, auditwheel on Linux; on Windows
       # python/src/CMakeLists.txt installs the GMP DLL into the wheel).
