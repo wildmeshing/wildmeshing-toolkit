@@ -856,6 +856,27 @@ TEST_CASE(
     CHECK(sim.smoothing_energy_envelope(0) == order2);
     CHECK(tet.smoothing_energy_envelope(2) == surface);
     CHECK(sim.smoothing_energy_envelope(2) == surface);
+
+    // A feature edge (1, 3): the feature tube is the pull of its vertices, first, in both --
+    // vertex 1 is on the order2 edge too, and vertex 3 is on no surface. simwild used to pull
+    // such a vertex toward the surface envelope.
+    auto feature = std::make_shared<wmtk::Envelope>();
+    feature->init(
+        std::vector<Vector3d>{{1, 0, 0}, {0, 0, 1}},
+        std::vector<Eigen::Vector2i>{{0, 1}},
+        0.1);
+    for (wmtk::TetOptimizerMesh* m :
+         {static_cast<wmtk::TetOptimizerMesh*>(&tet), static_cast<wmtk::TetOptimizerMesh*>(&sim)}) {
+        m->m_feature_edge_attribute[m->tuple_from_edge({{1, 3}}).eid(*m)].add(
+            wmtk::TetOptimizerMesh::FeatureEdgeAttributes::feature);
+        m->m_feature_envelope = feature;
+    }
+    CHECK(tet.smoothing_energy_envelope(1) == feature);
+    CHECK(sim.smoothing_energy_envelope(1) == feature);
+    CHECK(tet.smoothing_energy_envelope(3) == feature);
+    CHECK(sim.smoothing_energy_envelope(3) == feature);
+    CHECK(tet.smoothing_energy_envelope(0) == order2);
+    CHECK(sim.smoothing_energy_envelope(0) == order2);
 }
 
 TEST_CASE(

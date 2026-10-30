@@ -5,6 +5,7 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EmbedTriangles.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 #include "TetWildMesh.h"
@@ -138,67 +139,17 @@ void TetWildMesh::insertion_by_volumeremesher(
     opts.num_threads = NUM_THREADS;
     opts.triangle_input = face_input; // the orientation repair keeps to one input
 
-    // Marshal the feature inputs into the remesher's flat arrays, and check the domain: the
-    // features AND their forcing-triangle apexes -- which stick out by up to 0.1x the edge
-    // length along an axis -- must lie inside the background box, or the remesher's
-    // non-Delaunay insertion cannot locate them. The caller grows the input bbox over the
-    // features, so a violation here means only one thing: a feature edge so long that a
-    // tenth of it exceeds the box padding (diag/15). Throw with that diagnosis rather than
-    // letting the remesher assert.
+    // Marshal the feature inputs into the remesher's flat arrays, and check them and their
+    // forcing-triangle apexes against the background box (utils::embed_features_input()).
     const bool has_features = !feature_edges.empty() || !feature_points.empty();
     utils::EmbedFeaturesInput vr_features;
     if (has_features) {
-        const auto& lo = m_tet_params.box_min;
-        const auto& hi = m_tet_params.box_max;
-        const auto in_box = [&](const Vector3d& p, double margin) {
-            for (int d = 0; d < 3; ++d) {
-                if (p[d] - margin < lo[d] || p[d] + margin > hi[d]) {
-                    return false;
-                }
-            }
-            return true;
-        };
-        vr_features.edge_vrt_coord.reserve(3 * feature_edge_vertices.size());
-        for (const Vector3d& p : feature_edge_vertices) {
-            vr_features.edge_vrt_coord.insert(
-                vr_features.edge_vrt_coord.end(),
-                p.data(),
-                p.data() + 3);
-        }
-        vr_features.edge_indices.reserve(2 * feature_edges.size());
-        for (const auto& e : feature_edges) {
-            const Vector3d& a = feature_edge_vertices.at(e[0]);
-            const Vector3d& b = feature_edge_vertices.at(e[1]);
-            const double apex_margin = 0.1 * (a - b).norm();
-            if (!in_box(a, apex_margin) || !in_box(b, apex_margin)) {
-                log_and_throw_error(
-                    "Feature edge ({}, {}) or its forcing-triangle apexes (offset 0.1 x its "
-                    "length {}) leave the background box [{}, {}]; the edge is too long "
-                    "relative to the box padding",
-                    a.transpose(),
-                    b.transpose(),
-                    (a - b).norm(),
-                    lo.transpose(),
-                    hi.transpose());
-            }
-            vr_features.edge_indices.push_back(uint32_t(e[0]));
-            vr_features.edge_indices.push_back(uint32_t(e[1]));
-        }
-        // Point apexes are offset by 0.1x the estimated point spacing, itself bounded by the
-        // point set's own bbox diagonal -- small against the box padding; checked with the
-        // conservative margin of the padding itself would over-reject, so points are checked
-        // with no margin and the remesher's own debug assert stays as the backstop.
-        vr_features.point_coord.reserve(3 * feature_points.size());
-        for (const Vector3d& p : feature_points) {
-            if (!in_box(p, 0)) {
-                log_and_throw_error(
-                    "Feature point ({}) lies outside the background box [{}, {}]",
-                    p.transpose(),
-                    lo.transpose(),
-                    hi.transpose());
-            }
-            vr_features.point_coord.insert(vr_features.point_coord.end(), p.data(), p.data() + 3);
-        }
+        vr_features = utils::embed_features_input(
+            feature_edge_vertices,
+            feature_edges,
+            feature_points,
+            m_tet_params.box_min,
+            m_tet_params.box_max);
     }
 
     const bool want_inputs = face_input != nullptr && facet_input_set != nullptr;
@@ -420,30 +371,10 @@ void TetWildMesh::init_from_Volumeremesher(
         NUM_THREADS);
     logger().info("#faces = {}", n_faces.load());
 
-    // Feature tags: mark each tiling edge with its input file id and flag its vertices.
-    // The tiling pairs come out of the same arrangement as the connectivity, so a missing
-    // edge is a contract violation, not an input problem -- throw, don't warn.
+    // Feature tags: each tet edge tiling an input feature edge carries the feature kind
+    // (tag_feature_edges()); the tags are the only feature-curve state.
     if (features != nullptr) {
-        size_t n_tagged = 0;
-        for (size_t e = 0; e < features->edge_tiling.size(); ++e) {
-            for (const auto& seg : features->edge_tiling[e]) {
-                const Tuple t = tuple_from_edge({{seg[0], seg[1]}});
-                if (!t.is_valid(*this)) {
-                    log_and_throw_error(
-                        "Feature tiling edge ({}, {}) is not an edge of the initial mesh",
-                        seg[0],
-                        seg[1]);
-                }
-                m_feature_edge_attribute[t.eid(*this)].add(FeatureEdgeAttributes::feature);
-                m_vertex_extra[seg[0]].m_is_on_feature_curve = true;
-                m_vertex_extra[seg[1]].m_is_on_feature_curve = true;
-                ++n_tagged;
-            }
-        }
-        logger().info(
-            "feature tags: {} tet edges tagged across {} input edges",
-            n_tagged,
-            features->edge_tiling.size());
+        tag_feature_edges(*features);
     }
 
     // track bounding box (parallel). The per-face exact-rational corner test is the
@@ -531,15 +462,8 @@ void TetWildMesh::init_from_Volumeremesher(
     // computed from the input curves' valence, the open boundaries' ends were not anchored, and
     // feature-curve junctions only with allow_junction_cleanup off (default on).
     {
-        std::vector<size_t> input_points;
-        if (features != nullptr) {
-            for (const int64_t v : features->point_vertex) {
-                if (v < 0) {
-                    log_and_throw_error("An input point is not a vertex of the initial mesh");
-                }
-                input_points.push_back(size_t(v));
-            }
-        }
+        const std::vector<size_t> input_points =
+            features != nullptr ? utils::placed_point_vertices(*features) : std::vector<size_t>{};
         const double eps = m_params.epsr * m_params.diag_l;
         anchor_feature_points(
             input_points,

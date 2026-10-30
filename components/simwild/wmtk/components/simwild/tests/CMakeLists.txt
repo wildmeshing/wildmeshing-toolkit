@@ -16,6 +16,7 @@ set(SRC_FILES
     test_simplify_boundary.cpp
     test_late_feature_tracking.cpp
     test_order2_tube.cpp
+    test_feature_inputs.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

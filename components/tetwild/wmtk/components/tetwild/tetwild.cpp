@@ -36,6 +36,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 #include <wmtk/utils/EnvelopeBudget.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -308,70 +309,16 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // points to force in as tet vertices. Both join the bounding box BEFORE eps and the
     // background box derive from it -- they are input geometry, and a feature outside the
     // surface's box must still land inside the triangulated domain.
-    std::vector<Vector3d> feature_edge_vertices;
-    std::vector<std::array<size_t, 2>> feature_edges;
-    std::vector<Vector3d> feature_points;
-    {
-        std::vector<std::string> edge_paths = json_params["input_edges"];
-        std::vector<std::string> point_paths = json_params["input_points"];
-        for (std::string& p : edge_paths) {
-            p = component_io.path(root, p);
-        }
-        for (std::string& p : point_paths) {
-            p = component_io.path(root, p);
-        }
-        for (size_t file = 0; file < edge_paths.size(); ++file) {
-            const std::string& path = edge_paths[file];
-            MatrixXd Ve;
-            MatrixXi Ee;
-            component_io.edges(path, Ve, Ee);
-            logger()
-                .info("Read feature edge mesh {}: #V = {}, #E = {}", path, Ve.rows(), Ee.rows());
-            const size_t base = feature_edge_vertices.size();
-            for (int i = 0; i < Ve.rows(); ++i) {
-                feature_edge_vertices.emplace_back(Ve.row(i));
-            }
-            for (int i = 0; i < Ee.rows(); ++i) {
-                feature_edges.push_back({{base + size_t(Ee(i, 0)), base + size_t(Ee(i, 1))}});
-            }
-            // A vertex of an edge file with no incident edge is a free point, same rule as
-            // triwild's 2D inputs.
-            std::vector<int> valence(Ve.rows(), 0);
-            for (int i = 0; i < Ee.rows(); ++i) {
-                ++valence[Ee(i, 0)];
-                ++valence[Ee(i, 1)];
-            }
-            for (int v = 0; v < Ve.rows(); ++v) {
-                if (valence[v] == 0) {
-                    feature_points.emplace_back(Ve.row(v));
-                }
-            }
-        }
-        for (const std::string& path : point_paths) {
-            MatrixXd Vp;
-            MatrixXi Ep;
-            component_io.edges(path, Vp, Ep);
-            if (Ep.rows() > 0) {
-                logger().warn(
-                    "input_points file {} has {} edges; only its {} vertices are used",
-                    path,
-                    Ep.rows(),
-                    Vp.rows());
-            }
-            logger().info("Read feature point file {}: #P = {}", path, Vp.rows());
-            for (int i = 0; i < Vp.rows(); ++i) {
-                feature_points.emplace_back(Vp.row(i));
-            }
-        }
-        for (const Vector3d& p : feature_edge_vertices) {
-            box_minmax.first = box_minmax.first.cwiseMin(p);
-            box_minmax.second = box_minmax.second.cwiseMax(p);
-        }
-        for (const Vector3d& p : feature_points) {
-            box_minmax.first = box_minmax.first.cwiseMin(p);
-            box_minmax.second = box_minmax.second.cwiseMax(p);
-        }
-    }
+    // Read and grown over by the shared code simwild uses too (utils::read_feature_inputs()).
+    const utils::FeatureInputs features = utils::read_feature_inputs(
+        component_io,
+        root,
+        json_params["input_edges"],
+        json_params["input_points"]);
+    features.extend_bbox(box_minmax.first, box_minmax.second);
+    const std::vector<Vector3d>& feature_edge_vertices = features.edge_vertices;
+    const std::vector<std::array<size_t, 2>>& feature_edges = features.edges;
+    const std::vector<Vector3d>& feature_points = features.points;
 
     t_load = phase_timer.getElapsedTime();
     phase_timer.start(); // surface simplification begins
@@ -833,17 +780,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // The feature-curve tube: what the collapse guard checks tagged edges against, and what
     // curve-vertex smoothing will be pulled toward. Around the ORIGINAL input feature edges,
     // like every other envelope. Follows the surface envelope's choice of predicate.
-    if (!feature_edges.empty()) {
-        std::vector<Eigen::Vector2i> fe_env(feature_edges.size());
-        for (size_t i = 0; i < feature_edges.size(); ++i) {
-            fe_env[i] = Eigen::Vector2i(int(feature_edges[i][0]), int(feature_edges[i][1]));
-        }
-        mesh_new.m_feature_envelope = std::make_shared<Envelope>(!use_sample_envelope);
-        mesh_new.m_feature_envelope->init(
-            feature_edge_vertices,
-            fe_env,
-            params.epsr * params.diag_l * params.feature_envelope_ratio);
-    }
+    mesh_new.init_feature_envelope(
+        feature_edge_vertices,
+        feature_edges,
+        params.epsr * params.diag_l * params.feature_envelope_ratio,
+        !use_sample_envelope);
     mesh_new.init_from_Volumeremesher(
         v_rational,
         facets,

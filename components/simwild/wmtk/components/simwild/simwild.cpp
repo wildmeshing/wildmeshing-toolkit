@@ -249,7 +249,9 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.tag_names,
             input_data.F_tagged,
             input_data.F_tags,
-            input_data.face_tag_names);
+            input_data.face_tag_names,
+            input_data.features.empty() ? nullptr : &input_data.features,
+            &input_data.features_placed);
     } else {
         logger().warn("Use RATIONAL input for TetWild");
         mesh.init_from_image(
@@ -259,7 +261,9 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.tag_names,
             input_data.F_tagged,
             input_data.F_tags,
-            input_data.face_tag_names);
+            input_data.face_tag_names,
+            input_data.features.empty() ? nullptr : &input_data.features,
+            &input_data.features_placed);
     }
 
     auto write_unique_vtu = [&params, &mesh]() {
@@ -568,24 +572,46 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (dimension != 0 && !envelope_selector.is_null()) {
         log_and_throw_error("`envelope` applies to tagged mesh inputs only");
     }
+    // The feature curves and points (input_edges, input_points) are forced into the
+    // tetrahedralization by the 3D surface insertion, so only that route takes them; the others
+    // refuse them rather than drop them.
+    const bool has_features =
+        !json_params["input_edges"].empty() || !json_params["input_points"].empty();
+    const auto no_features = [&](const char* route) {
+        if (has_features) {
+            log_and_throw_error(
+                "input_edges and input_points apply to 3D surface inputs only, not to {}",
+                route);
+        }
+    };
     if (component_io.memory() && dimension == 0) {
+        no_features("a tagged mesh");
         input_data = read_mesh_data(
             component_io.mesh(input_paths.at(0)),
             !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr);
     } else if (!component_io.memory() && extension == ".msh") {
+        no_features("a .msh input");
         input_data = read_image_msh(input_paths[0]);
     } else if (dimension == 2) {
+        no_features("a 2D input");
         input_data = read_curves(
             input_paths,
             output_filename.string(),
             json_params,
             component_io.memory() ? &component_io : nullptr);
     } else {
+        // Read by the code tetwild reads them with.
+        const utils::FeatureInputs features = utils::read_feature_inputs(
+            component_io,
+            root,
+            json_params["input_edges"],
+            json_params["input_points"]);
         input_data = read_mesh(
             input_paths,
             output_filename.string(),
             json_params,
-            component_io.memory() ? &component_io : nullptr);
+            component_io.memory() ? &component_io : nullptr,
+            &features);
     }
 
     if (input_data.T_input.cols() == 4) {

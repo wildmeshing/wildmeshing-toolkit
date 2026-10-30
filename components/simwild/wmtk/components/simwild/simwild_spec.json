@@ -12,6 +12,8 @@
       "input_type",
       "input_transform",
       "input_dir",
+      "input_edges",
+      "input_points",
       "skip_simplify",
       "tag_from_winding_number",
       "split_connected_components",
@@ -27,6 +29,7 @@
       "simplify_boundary_envelope",
       "remove_duplicate_eps",
       "order2_envelope_ratio",
+      "feature_envelope_ratio",
       "length",
       "length_rel",
       "sizing_field",
@@ -181,6 +184,28 @@
     "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
+    "pointer": "/input_edges",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). input_transform does not apply to them. The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the box is grown over them automatically, and with it the bounding box eps and the lengths are relative to. The optimization preserves them: the tet edges tiling them stay inside a tube of feature_envelope_ratio x eps around the input edges, and every vertex where they end or three or more meet is anchored within that radius. Read and held by the same code as tetwild's input_edges."
+  },
+  {
+    "pointer": "/input_edges/*",
+    "type": "string",
+    "doc": "One input feature edge mesh."
+  },
+  {
+    "pointer": "/input_points",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature POINT files, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning). input_transform does not apply to them, and they grow the background box as /input_edges do. The optimization keeps a vertex within feature_envelope_ratio x eps of each, the smaller order2_envelope_ratio x eps where the point is on an order-2 edge. Read and held by the same code as tetwild's input_points."
+  },
+  {
+    "pointer": "/input_points/*",
+    "type": "string",
+    "doc": "One input feature point file (only the vertices are used)."
+  },
+  {
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
@@ -269,6 +294,12 @@
     "type": "float",
     "default": 1.0,
     "doc": "Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface and its non-manifold edges -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet. In 2D, the radius of the anchors where the region borders end or three or more meet. The default 1 holds them to the same eps as the surface. A 2026-10 sweep (13 tetwild integration configs with open boundaries; ratio 0.25, 0.5, 0.75 and 1.0, each at eps x0.99, x1 and x1.01) found no advantage below 1: 7 configs give identical output at every ratio, Thingi10K 111388 gives the fewest tets at 1.0 (27-28k, against 30-31k at 0.5) and the most at 0.25 (28-44k), and the others differ by less than the 1% eps perturbation does. The earlier case for 0.5 (Thingi10K 36075, 14 against 24 iterations) does not reproduce: that model now gives identical output at every ratio."
+  },
+  {
+    "pointer": "/feature_envelope_ratio",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge (/input_edges) must stay inside -- and the radius of the feature anchors (the /input_points, and the vertices where feature curves end or three or more meet), as a fraction of the surface envelope's eps. Where an anchor is also on an order-2 edge the smaller order2_envelope_ratio radius holds it. The default 1 holds them to the same eps as the surface, as order2_envelope_ratio does for the order-2 edges. Unused without /input_edges and /input_points."
   },
   {
     "pointer": "/length",

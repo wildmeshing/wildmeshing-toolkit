@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/MeshData.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 #include <igl/Timer.h>
 #include <wmtk/SurfaceTagAttributes.h>
@@ -321,7 +322,9 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
     void init_from_image(
         const MatrixXd& V,
         const MatrixXi& T,
@@ -329,9 +332,15 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
 
-    void init_surfaces_and_boundaries();
+    /// `features`, optional: the input feature curves and points, and where the insertion put
+    /// them (`features_placed`, in the vertex numbering of the mesh), tagged and anchored here.
+    void init_surfaces_and_boundaries(
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
     /// Tracks the faces F_tagged (rows of T's vertices, as read_mesh_data gives them) as surface,
     /// with input set bit j where F_tags has a 1 in column j. Throws on a row that is no face.
     void init_face_tags(

@@ -38,6 +38,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// envelope's eps. 1: every held set stays within the one eps; see /order2_envelope_ratio in
     /// the spec for the sweep behind the default.
     double order2_envelope_ratio = 1.0;
+    /// Feature-curve tube thickness, and the radius of the input points' anchors, as a fraction
+    /// of eps. 1, as order2_envelope_ratio; tetwild's parameter of the same name.
+    double feature_envelope_ratio = 1.0;
     double eps_simplify = -1.; // absolute error bound for simplification
     VectorXd box_min;
     VectorXd box_max;
@@ -81,6 +84,7 @@ struct Parameters : public wmtk::OptimizerParameters
 
         epsr_simplify = json_params["eps_simplify_rel"];
         order2_envelope_ratio = json_params["order2_envelope_ratio"];
+        feature_envelope_ratio = json_params["feature_envelope_ratio"];
         eps_simplify = json_params["eps_simplify"];
 
         w_amips = json_params["w_amips"];

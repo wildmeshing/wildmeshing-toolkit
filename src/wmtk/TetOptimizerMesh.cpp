@@ -7,6 +7,7 @@
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/utils/EmbedTriangles.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
@@ -1156,6 +1157,54 @@ bool TetOptimizerMesh::vertex_has_edge_of_kind(
         }
     }
     return false;
+}
+
+std::shared_ptr<Envelope> TetOptimizerMesh::feature_pull_envelope(const size_t vid) const
+{
+    if (m_track_feature_edges && m_feature_envelope && vertex_has_feature_edge(vid)) {
+        return m_feature_envelope;
+    }
+    return nullptr;
+}
+
+void TetOptimizerMesh::init_feature_envelope(
+    const std::vector<Vector3d>& V,
+    const std::vector<std::array<size_t, 2>>& E,
+    const double eps,
+    const bool exact)
+{
+    if (E.empty()) return;
+    std::vector<Eigen::Vector2i> fe_env(E.size());
+    for (size_t i = 0; i < E.size(); ++i) {
+        fe_env[i] = Eigen::Vector2i(int(E[i][0]), int(E[i][1]));
+    }
+    m_feature_envelope = std::make_shared<Envelope>(exact);
+    m_feature_envelope->init(V, fe_env, eps);
+}
+
+size_t TetOptimizerMesh::tag_feature_edges(const utils::EmbedFeaturesResult& placed)
+{
+    if (placed.edge_tiling.empty()) return 0;
+    enable_feature_edge_tracking();
+    size_t n_tagged = 0;
+    for (size_t e = 0; e < placed.edge_tiling.size(); ++e) {
+        for (const auto& seg : placed.edge_tiling[e]) {
+            const Tuple t = tuple_from_edge({{seg[0], seg[1]}});
+            if (!t.is_valid(*this)) {
+                log_and_throw_error(
+                    "Feature tiling edge ({}, {}) is not an edge of the initial mesh",
+                    seg[0],
+                    seg[1]);
+            }
+            m_feature_edge_attribute[t.eid(*this)].add(FeatureEdgeAttributes::feature);
+            ++n_tagged;
+        }
+    }
+    logger().info(
+        "feature tags: {} tet edges tagged across {} input edges",
+        n_tagged,
+        placed.edge_tiling.size());
+    return n_tagged;
 }
 
 size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)

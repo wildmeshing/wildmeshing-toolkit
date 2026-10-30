@@ -172,8 +172,8 @@ void require_tags_on_curve(FeatureScene& sc)
             }
         }
         REQUIRE(on_some_segment);
-        REQUIRE(sc.mesh->m_vertex_extra[e[0]].m_is_on_feature_curve);
-        REQUIRE(sc.mesh->m_vertex_extra[e[1]].m_is_on_feature_curve);
+        REQUIRE(sc.mesh->vertex_has_feature_edge(e[0]));
+        REQUIRE(sc.mesh->vertex_has_feature_edge(e[1]));
     }
 }
 
@@ -188,8 +188,8 @@ void require_tags_in_tube(FeatureScene& sc)
         REQUIRE(!sc.mesh->m_feature_envelope->is_outside(
             std::array<Eigen::Vector3d, 2>{
                 {m.m_vertex_attribute[e[0]].m_posf, m.m_vertex_attribute[e[1]].m_posf}}));
-        REQUIRE(m.m_vertex_extra[e[0]].m_is_on_feature_curve);
-        REQUIRE(m.m_vertex_extra[e[1]].m_is_on_feature_curve);
+        REQUIRE(m.vertex_has_feature_edge(e[0]));
+        REQUIRE(m.vertex_has_feature_edge(e[1]));
     }
     const auto [kept, total] = m.feature_retention();
     REQUIRE(total == 2);

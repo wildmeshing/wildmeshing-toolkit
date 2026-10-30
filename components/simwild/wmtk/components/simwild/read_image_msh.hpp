@@ -6,6 +6,7 @@
 #include <string>
 #include <wmtk/Types.hpp>
 #include <wmtk/history/History.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 namespace wmtk::components::simwild {
 
@@ -44,6 +45,11 @@ struct InputData
     history::SurfaceHistory input_history;
     std::vector<std::pair<std::array<std::array<double, 3>, 3>, std::vector<uint32_t>>>
         facet_sources;
+
+    /// A surface input with feature curves or points (input_edges, input_points): them as read,
+    /// and where the insertion put them, in V_input's numbering. Empty otherwise.
+    utils::FeatureInputs features;
+    utils::EmbedFeaturesResult features_placed;
 };
 
 /**
@@ -55,13 +61,15 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope = nullpt
 /**
  * @brief Read one or multiple meshes and convert them into a tet mesh.
  *
- * Winding number is used to tag inside/outside.
+ * Winding number is used to tag inside/outside. `features`, optional: feature curves and points
+ * forced into the embedding with the surface (see InputData::features).
  */
 InputData read_mesh(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io = nullptr);
+    const io::ComponentIO* component_io = nullptr,
+    const utils::FeatureInputs* features = nullptr);
 
 /**
  * @brief Read one or multiple 2D curve networks and convert them into a tagged triangle mesh.

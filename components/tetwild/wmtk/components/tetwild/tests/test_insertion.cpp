@@ -445,7 +445,7 @@ TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]" 
     }
 
     // Init the mesh with the features and check the tags landed: every tiling edge's slot
-    // is tagged and its endpoints are flagged.
+    // is tagged, so its endpoints have a feature edge.
     TetWildMesh mesh(params, env, 0);
     mesh.init_from_Volumeremesher(
         v_rational,
@@ -462,12 +462,12 @@ TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]" 
             REQUIRE(t.is_valid(mesh));
             CHECK(mesh.m_feature_edge_attribute[t.eid(mesh)].has(
                 TetWildMesh::FeatureEdgeAttributes::feature));
-            CHECK(mesh.m_vertex_extra[e[0]].m_is_on_feature_curve);
-            CHECK(mesh.m_vertex_extra[e[1]].m_is_on_feature_curve);
+            CHECK(mesh.vertex_has_feature_edge(e[0]));
+            CHECK(mesh.vertex_has_feature_edge(e[1]));
         }
     }
-    // A vertex NOT on any feature curve is not flagged: count flagged vertices and compare
-    // with the union of tiling vertices.
+    // A vertex NOT on any feature curve has no feature edge: count those that have one and
+    // compare with the union of tiling vertices.
     std::set<size_t> tiling_verts;
     for (const auto& tiling : features_out.edge_tiling) {
         for (const auto& e : tiling) {
@@ -477,7 +477,9 @@ TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]" 
     }
     size_t flagged = 0;
     for (size_t v = 0; v < mesh.vert_capacity(); ++v) {
-        flagged += mesh.m_vertex_extra[v].m_is_on_feature_curve ? 1 : 0;
+        const bool on_curve =
+            mesh.tuple_from_vertex(v).is_valid(mesh) && mesh.vertex_has_feature_edge(v);
+        flagged += on_curve ? 1 : 0;
     }
     CHECK(flagged == tiling_verts.size());
 }

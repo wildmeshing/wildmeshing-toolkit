@@ -65,9 +65,10 @@ std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vi
     // A vertex on an input feature curve is pulled toward the feature tube. Checked FIRST:
     // the feature is user-supplied where order 2 is derived, so where a vertex is both, the
     // explicit constraint wins. Both are soft pulls; the hard vetoes (the collapse guard and
-    // the tagged-edge containment in smoothing) are unaffected by this order.
-    if (m_track_feature_edges && m_feature_envelope && vertex_has_feature_edge(vid)) {
-        return m_feature_envelope;
+    // the tagged-edge containment in smoothing) are unaffected by this order. Shared with
+    // simwild (feature_pull_envelope()).
+    if (auto feature = feature_pull_envelope(vid)) {
+        return feature;
     }
     // A vertex on a held order-2 curve (an edge tagged order2) is pulled toward their tube.
     // One on an order-2 edge tetwild does not hold -- a non-manifold edge, a rim glued shut --

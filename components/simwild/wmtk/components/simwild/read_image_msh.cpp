@@ -173,7 +173,8 @@ InputData read_mesh(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io)
+    const io::ComponentIO* component_io,
+    const utils::FeatureInputs* features)
 {
     InputData input_data;
 
@@ -281,8 +282,12 @@ InputData read_mesh(
     input_data.F_envelope = image_mesh.F_surface();
 
     const bool all_rounded =
-        image_mesh.embed_surface(preserve_topology, tag_from_winding_number, has_surface);
+        image_mesh.embed_surface(preserve_topology, tag_from_winding_number, has_surface, features);
     image_mesh.consolidate();
+    if (features != nullptr && !features->empty()) {
+        input_data.features = *features;
+        input_data.features_placed = image_mesh.features_placed();
+    }
 
     if (debug_output) {
         image_mesh.write_emb_surf_off(output_filename + "_input_emb.off");

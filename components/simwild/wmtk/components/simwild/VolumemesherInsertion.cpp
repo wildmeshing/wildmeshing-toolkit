@@ -14,7 +14,9 @@ void SimWildMesh::init_from_image(
     const std::vector<std::string>& tag_names,
     const MatrixXi& F_tagged,
     const MatrixSi& F_tags,
-    const std::vector<std::string>& face_tag_names)
+    const std::vector<std::string>& face_tag_names,
+    const utils::FeatureInputs* features,
+    const utils::EmbedFeaturesResult* features_placed)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -62,7 +64,7 @@ void SimWildMesh::init_from_image(
     }
 
     init_face_tags(F_tagged, F_tags, face_tag_names);
-    init_surfaces_and_boundaries();
+    init_surfaces_and_boundaries(features, features_placed);
 
     if (m_params.preserve_topology) {
         init_vertex_order();
@@ -209,7 +211,9 @@ void SimWildMesh::init_from_image(
     const std::vector<std::string>& tag_names,
     const MatrixXi& F_tagged,
     const MatrixSi& F_tags,
-    const std::vector<std::string>& face_tag_names)
+    const std::vector<std::string>& face_tag_names,
+    const utils::FeatureInputs* features,
+    const utils::EmbedFeaturesResult* features_placed)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -266,7 +270,7 @@ void SimWildMesh::init_from_image(
     }
 
     init_face_tags(F_tagged, F_tags, face_tag_names);
-    init_surfaces_and_boundaries();
+    init_surfaces_and_boundaries(features, features_placed);
 
     if (m_params.preserve_topology) {
         init_vertex_order();
@@ -297,7 +301,9 @@ void SimWildMesh::init_face_tags(
     }
 }
 
-void SimWildMesh::init_surfaces_and_boundaries()
+void SimWildMesh::init_surfaces_and_boundaries(
+    const utils::FeatureInputs* features,
+    const utils::EmbedFeaturesResult* features_placed)
 {
     const auto faces = get_faces();
     logger().info("F = {}", faces.size());
@@ -460,10 +466,28 @@ void SimWildMesh::init_surfaces_and_boundaries()
     const size_t n_order2 = tag_order2_edges(order2_eps, m_envelope && m_envelope->use_exact);
     logger().info("order-2 edges tagged: {}", n_order2);
 
-    // Where an order-2 curve ends or three or more meet, the vertex is anchored in a ball of
-    // the tube's radius (anchor_feature_points()), held like the curves: always. simwild has no
-    // feature curves and no input points, so the feature radius is never used.
-    anchor_feature_points({}, order2_eps, order2_eps);
+    // The input feature curves (input_edges), held as tetwild holds them, by the same code: the
+    // tet edges tiling them are tagged (tag_feature_edges()) and kept in a tube of
+    // feature_envelope_ratio x eps around the input curves (init_feature_envelope()), with the
+    // surface envelope's predicate, as the order-2 tube.
+    const double feature_eps =
+        m_params.epsr * m_params.diag_l * m_sim_params.feature_envelope_ratio;
+    std::vector<size_t> input_points;
+    if (features != nullptr) {
+        assert(features_placed != nullptr);
+        init_feature_envelope(
+            features->edge_vertices,
+            features->edges,
+            feature_eps,
+            m_envelope && m_envelope->use_exact);
+        tag_feature_edges(*features_placed);
+        input_points = utils::placed_point_vertices(*features_placed);
+    }
+
+    // Where a tagged curve ends or three or more meet, and at every input point (input_points),
+    // the vertex is anchored (anchor_feature_points()), held like the curves: always. The radius
+    // is the tube's of the kinds it is on, the smallest where it is on several.
+    anchor_feature_points(input_points, order2_eps, feature_eps);
 }
 
 bool SimWildMesh::is_order_2_edge(const Tuple& e) const

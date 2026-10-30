@@ -66,19 +66,10 @@ public:
 class TetWildMesh : public wmtk::TetOptimizerMesh
 {
 public:
-    /**
-     * @brief tetwild's per-vertex additions to the shared VertexAttributes.
-     *
-     * Registered with the base's m_vertex_attr_group, so it is resized, protected and rolled
-     * back exactly like the shared collection -- which matters, because collapse_edge_after and
-     * split_edge_after both write it.
-     */
-    struct VertexExtras
-    {
-        /// Whether the vertex lies on an input feature curve (see EdgeAttributes).
-        bool m_is_on_feature_curve = false;
-    };
-    wmtk::AttributeCollection<VertexExtras> m_vertex_extra;
+    // The feature curves are held by the base: tagged at init (tag_feature_edges()), in their
+    // tube (init_feature_envelope()). The tags are the only state; a vertex is on a curve when
+    // it has a feature edge (vertex_has_feature_edge()). tetwild's per-vertex flag, which only
+    // tests read, is gone with the hooks that maintained it.
 
     // The 0-dimensional features -- the input points, and every vertex where a tagged curve
     // ends or three or more meet -- are anchored by the base (TetOptimizerMesh's feature-point
@@ -170,30 +161,6 @@ public:
     // tube, implied by the base's segment test whenever the vertex has a tagged edge) and
     // is_open_boundary_edge(), which classified edges by the flags and the tube.
 
-    bool collapse_after_connectivity(
-        size_t v1,
-        size_t v2,
-        const std::vector<std::array<size_t, 2>>&) override
-    {
-        m_vertex_extra[v2].m_is_on_feature_curve =
-            m_vertex_extra[v1].m_is_on_feature_curve || m_vertex_extra[v2].m_is_on_feature_curve;
-        return true;
-    }
-    void collapse_after_features(size_t, size_t v2) override
-    {
-        // The feature flag: v1's flag was OR-ed in (see
-        // collapse_after_connectivity), but if the survivor has no incident tagged edge the
-        // curve rerouted around it and the flag is stale.
-        if (m_vertex_extra[v2].m_is_on_feature_curve && !vertex_has_feature_edge(v2)) {
-            m_vertex_extra[v2].m_is_on_feature_curve = false;
-        }
-    }
-
-    void split_after_vertex_feature(size_t vid, bool on_feature) override
-    {
-        m_vertex_extra[vid].m_is_on_feature_curve = on_feature;
-    }
-
 
     /// Envelope a vertex is pulled toward while smoothing.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
@@ -201,7 +168,6 @@ public:
         : wmtk::TetOptimizerMesh(_m_params, std::move(_m_envelope))
         , m_tet_params(_m_params)
     {
-        m_vertex_attr_group.add(&m_vertex_extra);
         // Registered unconditionally, as the ids always were: the driver exports and audits
         // the anchors.
         enable_feature_point_tracking();
@@ -225,9 +191,6 @@ public:
     {
         const size_t n_tet = _tet_attribute.size();
         m_vertex_attribute.resize(_vertex_attribute.size());
-        // The extras carry no data a caller supplies -- every field defaults -- so they only
-        // have to be sized alongside the shared collection.
-        m_vertex_extra.resize(_vertex_attribute.size());
         m_feature_point_attribute.resize(_vertex_attribute.size());
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);

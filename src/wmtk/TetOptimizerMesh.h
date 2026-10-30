@@ -29,6 +29,9 @@
 #include <vector>
 
 namespace wmtk {
+namespace utils {
+struct EmbedFeaturesResult;
+}
 
 /**
  * @brief What tetwild and simwild's 3D mesh share.
@@ -348,6 +351,17 @@ public:
     bool vertex_has_feature_edge(size_t vid) const;
     /// Does any edge incident to `vid` carry a tag, of any kind? Derived like the above.
     bool vertex_has_tagged_edge(size_t vid) const;
+    /**
+     * @brief The tube a vertex with a `feature` edge is pulled toward while smoothing,
+     * m_feature_envelope; null for any other vertex or without the tube.
+     *
+     * Asked first by every application's smoothing_energy_envelope(): the feature curves are
+     * user-supplied where order 2 is derived, so where a vertex is on both the explicit
+     * constraint wins. A soft pull; the hard vetoes (the collapse guard, the tagged-edge
+     * containment in smoothing) do not read it. Without it simwild pulled a feature vertex off
+     * the surface toward the surface envelope, whose containment it is never held to.
+     */
+    std::shared_ptr<Envelope> feature_pull_envelope(size_t vid) const;
     /// Does any edge incident to `vid` carry kind `k`? False while edge tracking is off.
     bool vertex_has_edge_of_kind(size_t vid, FeatureEdgeAttributes::Kind k) const;
 
@@ -388,6 +402,31 @@ public:
      * tracking costs every operation its cache (see enable_feature_edge_tracking()).
      */
     size_t tag_order2_edges(double eps, bool exact);
+    /**
+     * @brief Build the feature-curve tube, m_feature_envelope, of half-width `eps` around the
+     * input feature edges `E` over `V`, with the exact predicate when `exact`. Nothing without
+     * edges.
+     *
+     * Around the ORIGINAL input curves, like every other envelope, not around the tet edges
+     * tiling them (tag_feature_edges()): the tiling is exact, so the two are the same set at
+     * init, and the input is what the guarantee is stated against.
+     */
+    void init_feature_envelope(
+        const std::vector<Vector3d>& V,
+        const std::vector<std::array<size_t, 2>>& E,
+        double eps,
+        bool exact);
+    /**
+     * @brief Tag every tet edge tiling an input feature edge (`placed`, from the insertion)
+     * with the feature kind. Returns the number of tet edges tagged.
+     *
+     * The tiling pairs come out of the same arrangement as the connectivity, so a missing edge
+     * is a contract violation, not an input problem: it throws. Call once after init, before
+     * anything renumbers the vertices. Turns edge tracking on only when there is a feature
+     * edge, as tag_order2_edges() does. The tiling is per input edge, so what an edge carries
+     * beyond the kind can be looked up by its input edge.
+     */
+    size_t tag_feature_edges(const utils::EmbedFeaturesResult& placed);
     /**
      * @brief After a collapse: drop the order2 kind from each edge of `cache` (v_old renamed to
      * v_new) whose tracked-face count holds_order2_edge() no longer holds.
