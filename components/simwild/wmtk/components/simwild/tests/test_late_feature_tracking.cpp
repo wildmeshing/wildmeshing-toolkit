@@ -251,7 +251,7 @@ TEST_CASE(
     init_tet_ring(mesh);
     REQUIRE(mesh.m_feature_point_attribute.size() == 0);
 
-    mesh.enable_feature_point_tracking(/*preserve=*/true);
+    mesh.enable_feature_point_tracking();
     const size_t cap0 = mesh.vert_storage_capacity();
     REQUIRE(cap0 > 0);
     REQUIRE(mesh.m_feature_point_attribute.size() == cap0);
@@ -259,9 +259,7 @@ TEST_CASE(
         CHECK(mesh.m_feature_point_attribute[i].m_feature_point_id == Mesh::NO_FEATURE_POINT);
     }
 
-    mesh.m_feature_eps = 1e-9;
-    mesh.m_feature_points = {mesh.m_vertex_attribute[2].m_posf};
-    mesh.m_feature_point_attribute[2].m_feature_point_id = 0;
+    REQUIRE(mesh.anchor_feature_point(2, 1e-9));
 
     for (size_t vid = 0; vid < 6; ++vid) mesh.m_vertex_attribute[vid].m_sizing_scalar = 0.3;
     mesh.split_all_edges();
@@ -274,8 +272,7 @@ TEST_CASE(
     // so consolidation has to move its id with it.
     size_t newest = 0;
     for (const auto& v : mesh.get_vertices()) newest = std::max(newest, v.vid(mesh));
-    mesh.m_feature_points.push_back(mesh.m_vertex_attribute[newest].m_posf);
-    mesh.m_feature_point_attribute[newest].m_feature_point_id = 1;
+    REQUIRE(mesh.anchor_feature_point(newest, 1e-9));
     for (const auto& v : mesh.get_vertices()) {
         mesh.m_vertex_attribute[v.vid(mesh)].m_sizing_scalar = 4.;
     }
@@ -421,7 +418,7 @@ TEST_CASE(
         // Before init() the calls run as they always did, and init() sizes the collections.
         HookedTetMesh mesh(params, params.eps, 0);
         mesh.enable_feature_edge_tracking();
-        mesh.enable_feature_point_tracking(true);
+        mesh.enable_feature_point_tracking();
         init_tet_ring(mesh);
         CHECK(mesh.m_feature_edge_attribute.size() == 6 * mesh.tet_storage_capacity());
         CHECK(mesh.m_feature_point_attribute.size() == mesh.vert_storage_capacity());
@@ -434,7 +431,7 @@ TEST_CASE(
     const std::vector<std::function<void(HookedTetMesh&)>> calls = {
         [&](HookedTetMesh& m) { m.add_edge_attributes(&extra); },
         [](HookedTetMesh& m) { m.enable_feature_edge_tracking(); },
-        [](HookedTetMesh& m) { m.enable_feature_point_tracking(true); }};
+        [](HookedTetMesh& m) { m.enable_feature_point_tracking(); }};
     for (size_t c = 0; c < calls.size(); ++c) {
         CAPTURE(c);
         for (const bool colored : {false, true}) {

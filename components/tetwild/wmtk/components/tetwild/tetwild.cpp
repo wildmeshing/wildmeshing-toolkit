@@ -164,8 +164,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.lr = json_params["length_rel"];
     params.order2_envelope_ratio = json_params["order2_envelope_ratio"];
     params.feature_envelope_ratio = json_params["feature_envelope_ratio"];
-    params.preserve_feature_points = json_params["preserve_feature_points"];
-    params.allow_junction_cleanup = json_params["allow_junction_cleanup"];
     params.stop_energy = json_params["stop_energy"];
     params.split_high_valence_threshold = json_params["split_high_valence_threshold"];
     params.num_smoothing_passes = json_params["num_smoothing_passes"];
@@ -372,46 +370,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         for (const Vector3d& p : feature_points) {
             box_minmax.first = box_minmax.first.cwiseMin(p);
             box_minmax.second = box_minmax.second.cwiseMax(p);
-        }
-    }
-
-    // The 0-dimensional features to anchor: every input point, and the feature network's
-    // endpoints (valence 1) -- junctions (valence >= 3) too when allow_junction_cleanup is
-    // off. Valence 2 is a curve interior: never anchored, the tube handles it.
-    // Anchors are REGISTERED unconditionally; preserve_feature_points gates only the
-    // collapse and smoothing policy. Same split as triwild, and it keeps the retention
-    // audit honest when the guard is off -- it reports 0/N instead of nothing to check.
-    std::vector<Vector3d> feature_anchors;
-    {
-        feature_anchors = feature_points;
-        std::vector<int> valence(feature_edge_vertices.size(), 0);
-        for (const auto& e : feature_edges) {
-            ++valence[e[0]];
-            ++valence[e[1]];
-        }
-        size_t n_endpoints = 0, n_junctions = 0;
-        for (size_t v = 0; v < feature_edge_vertices.size(); ++v) {
-            if (valence[v] == 0 || valence[v] == 2) {
-                continue;
-            }
-            if (valence[v] == 1) {
-                ++n_endpoints;
-            } else {
-                ++n_junctions;
-                if (params.allow_junction_cleanup) {
-                    continue;
-                }
-            }
-            feature_anchors.push_back(feature_edge_vertices[v]);
-        }
-        if (n_endpoints + n_junctions > 0) {
-            logger().info(
-                "feature anchors: {} curve endpoints, {} junctions; anchoring {} points in "
-                "total (junction cleanup {})",
-                n_endpoints,
-                n_junctions,
-                feature_anchors.size(),
-                params.allow_junction_cleanup ? "on" : "off");
         }
     }
 
@@ -886,8 +844,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             fe_env,
             params.epsr * params.diag_l * params.feature_envelope_ratio);
     }
-    // The anchor ball has the tube's radius; input_points-only runs need it too.
-    mesh_new.m_feature_eps = params.epsr * params.diag_l * params.feature_envelope_ratio;
     mesh_new.init_from_Volumeremesher(
         v_rational,
         facets,
@@ -896,7 +852,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         tet_face_on_input_surface,
         &tet_face_orientation,
         has_features ? &features_out : nullptr,
-        has_features && !feature_anchors.empty() ? &feature_anchors : nullptr,
         input_envelopes.empty() ? nullptr : &facet_input_set);
     mesh_new.m_input_envelopes.set(std::move(input_envelopes));
 

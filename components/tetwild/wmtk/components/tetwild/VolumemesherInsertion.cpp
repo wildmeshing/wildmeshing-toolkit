@@ -290,7 +290,6 @@ void TetWildMesh::init_from_Volumeremesher(
     const std::vector<bool>& tet_face_on_input_surface,
     const std::vector<int8_t>* tet_face_orientation,
     const utils::EmbedFeaturesResult* features,
-    const std::vector<Vector3d>* feature_anchors,
     const std::vector<InputSet>* facet_input_set)
 {
     // Turn on feature tracking BEFORE init so the connectivity init sizes the edge
@@ -445,51 +444,6 @@ void TetWildMesh::init_from_Volumeremesher(
             "feature tags: {} tet edges tagged across {} input edges",
             n_tagged,
             features->edge_tiling.size());
-
-        // Anchor the 0-dimensional features. Anchor positions are input coordinates, and
-        // every one of them exists in the output exactly -- input points via the point
-        // provenance, curve endpoints as tiling vertices -- and input coordinates are
-        // explicit points, so their rationals ARE doubles and an exact double lookup finds
-        // them. A vertex already carrying an id keeps it: one anchor per position is
-        // enough, the retention audit is geometric.
-        if (feature_anchors != nullptr && !feature_anchors->empty()) {
-            std::map<std::array<double, 3>, size_t> vid_of;
-            const auto key = [](const Vector3d& p) {
-                return std::array<double, 3>{{p[0], p[1], p[2]}};
-            };
-            for (const int64_t v : features->point_vertex) {
-                if (v >= 0) {
-                    vid_of.emplace(key(m_vertex_attribute[size_t(v)].m_posf), size_t(v));
-                }
-            }
-            for (const auto& tiling : features->edge_tiling) {
-                for (const auto& seg : tiling) {
-                    for (const size_t v : {seg[0], seg[1]}) {
-                        vid_of.emplace(key(m_vertex_attribute[v].m_posf), v);
-                    }
-                }
-            }
-            size_t n_anchored = 0;
-            for (const Vector3d& p : *feature_anchors) {
-                const auto it = vid_of.find(key(p));
-                if (it == vid_of.end()) {
-                    log_and_throw_error(
-                        "Feature anchor ({}) is not a vertex of the initial mesh",
-                        p.transpose());
-                }
-                auto& anchor = m_feature_point_attribute[it->second];
-                if (anchor.m_feature_point_id != NO_FEATURE_POINT) {
-                    continue;
-                }
-                anchor.m_feature_point_id = m_feature_points.size();
-                m_feature_points.push_back(p);
-                ++n_anchored;
-            }
-            logger().info(
-                "feature anchors: {} points anchored within {:.6} of their input positions",
-                n_anchored,
-                m_feature_eps);
-        }
     }
 
     // track bounding box (parallel). The per-face exact-rational corner test is the
@@ -570,6 +524,28 @@ void TetWildMesh::init_from_Volumeremesher(
         m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio,
         m_envelope && m_envelope->use_exact);
     logger().info("order-2 edges tagged: {}", n_order2);
+
+    // The 0-dimensional features, anchored once both kinds of tag are final: every vertex where
+    // a tagged curve ends or three or more meet, and the input points (anchor_feature_points()).
+    // Each input point is the output vertex exactly equal to it. Until 2026-10 the anchors were
+    // computed from the input curves' valence, the open boundaries' ends were not anchored, and
+    // feature-curve junctions only with allow_junction_cleanup off (default on).
+    {
+        std::vector<size_t> input_points;
+        if (features != nullptr) {
+            for (const int64_t v : features->point_vertex) {
+                if (v < 0) {
+                    log_and_throw_error("An input point is not a vertex of the initial mesh");
+                }
+                input_points.push_back(size_t(v));
+            }
+        }
+        const double eps = m_params.epsr * m_params.diag_l;
+        anchor_feature_points(
+            input_points,
+            eps * m_tet_params.order2_envelope_ratio,
+            eps * m_tet_params.feature_envelope_ratio);
+    }
 
     // Round the indirect vertices in parallel. Rounding snaps m_pos to its double
     // and may not invert any incident tet, so it is not independent across adjacent

@@ -456,10 +456,14 @@ void SimWildMesh::init_surfaces_and_boundaries()
     // no reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
     // curves. Its radius is order2_envelope_ratio x eps, 1 by default, so every held set stays
     // within the one eps; see /order2_envelope_ratio in the spec for the sweep.
-    const size_t n_order2 = tag_order2_edges(
-        m_params.epsr * m_params.diag_l * m_sim_params.order2_envelope_ratio,
-        m_envelope && m_envelope->use_exact);
+    const double order2_eps = m_params.epsr * m_params.diag_l * m_sim_params.order2_envelope_ratio;
+    const size_t n_order2 = tag_order2_edges(order2_eps, m_envelope && m_envelope->use_exact);
     logger().info("order-2 edges tagged: {}", n_order2);
+
+    // Where an order-2 curve ends or three or more meet, the vertex is anchored in a ball of
+    // the tube's radius (anchor_feature_points()), held like the curves: always. simwild has no
+    // feature curves and no input points, so the feature radius is never used.
+    anchor_feature_points({}, order2_eps, order2_eps);
 }
 
 bool SimWildMesh::is_order_2_edge(const Tuple& e) const

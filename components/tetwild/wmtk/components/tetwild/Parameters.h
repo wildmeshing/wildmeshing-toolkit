@@ -13,13 +13,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Feature-curve tube thickness, and the feature-point anchors' radius, as a fraction of
     /// eps. 1, as order2_envelope_ratio.
     double feature_envelope_ratio = 1.0;
-    /// Keep the 0-dimensional features -- input points, and feature-curve endpoints (and
-    /// junctions, see allow_junction_cleanup) -- within m_feature_eps of where the input
-    /// put them. Mirrors triwild's parameter of the same name.
-    bool preserve_feature_points = true;
-    /// Anchor only the endpoints of open feature curves, letting junctions merge. Mirrors
-    /// triwild: the erosion the anchor exists for is an ENDPOINT property.
-    bool allow_junction_cleanup = true;
     Vector3d min = Vector3d::Zero();
     Vector3d max = Vector3d::Ones();
     Vector3d box_min = Vector3d::Zero();

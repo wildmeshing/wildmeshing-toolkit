@@ -80,11 +80,9 @@ public:
     };
     wmtk::AttributeCollection<VertexExtras> m_vertex_extra;
 
-    // The 0-dimensional features -- the input feature points, and the feature-curve
-    // endpoints (junctions too, when allow_junction_cleanup is off) -- are anchored by the
-    // base (TetOptimizerMesh's feature-point anchors), turned on in the constructor. The
-    // driver sets m_feature_eps alongside m_feature_envelope; init_from_Volumeremesher fills
-    // the anchors.
+    // The 0-dimensional features -- the input points, and every vertex where a tagged curve
+    // ends or three or more meet -- are anchored by the base (TetOptimizerMesh's feature-point
+    // anchors, anchor_feature_points()), at the end of init_from_Volumeremesher.
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// tetwild-only fields.
@@ -205,8 +203,8 @@ public:
     {
         m_vertex_attr_group.add(&m_vertex_extra);
         // Registered unconditionally, as the ids always were: the driver exports and audits
-        // the anchors whether or not preserve_feature_points turns the policy on.
-        enable_feature_point_tracking(m_tet_params.preserve_feature_points);
+        // the anchors.
+        enable_feature_point_tracking();
         NUM_THREADS = _num_threads;
         m_tet_attr_group.add(&m_tet_attribute);
         p_tet_attrs = &m_tet_attr_group;
@@ -396,7 +394,6 @@ public:
         const std::vector<bool>& tet_face_on_input_surface,
         const std::vector<int8_t>* tet_face_orientation = nullptr,
         const utils::EmbedFeaturesResult* features = nullptr,
-        const std::vector<Vector3d>* feature_anchors = nullptr,
         const std::vector<InputSet>* facet_input_set = nullptr);
 
     void init_from_file(std::string input_dir);

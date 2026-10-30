@@ -1320,25 +1320,92 @@ bool TetOptimizerMesh::feature_edges_at_vertex_inside(const size_t vid) const
     return true;
 }
 
+bool TetOptimizerMesh::anchor_feature_point(const size_t vid, const double radius)
+{
+    assert(m_track_feature_points);
+    size_t& f = m_feature_point_attribute[vid].m_feature_point_id;
+    if (f != NO_FEATURE_POINT) {
+        m_feature_point_radius[f] = std::min(m_feature_point_radius[f], radius);
+        return false;
+    }
+    f = m_feature_points.size();
+    m_feature_points.push_back(m_vertex_attribute[vid].m_posf);
+    m_feature_point_radius.push_back(radius);
+    return true;
+}
+
+size_t TetOptimizerMesh::anchor_feature_points(
+    const std::vector<size_t>& input_point_vids,
+    const double order2_radius,
+    const double feature_radius)
+{
+    // {vertex, radius}: the curve endpoints and junctions first, then the input points.
+    std::vector<std::pair<size_t, double>> anchors;
+    size_t n_ends = 0, n_junctions = 0;
+    if (m_track_feature_edges) {
+        for (const Tuple& t : get_vertices()) {
+            const size_t vid = t.vid(*this);
+            size_t n_tagged = 0;
+            uint8_t kinds = 0;
+            for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+                const Tuple e = tuple_from_edge({{vid, u}});
+                if (!e.is_valid(*this)) continue;
+                const FeatureEdgeAttributes& a = m_feature_edge_attribute[e.eid(*this)];
+                if (!a.is_tagged()) continue;
+                ++n_tagged;
+                kinds |= a.m_kinds;
+            }
+            if (n_tagged != 1 && n_tagged < 3) continue;
+            ++(n_tagged == 1 ? n_ends : n_junctions);
+            double r = std::numeric_limits<double>::infinity();
+            if (kinds & FeatureEdgeAttributes::order2) r = std::min(r, order2_radius);
+            if (kinds & FeatureEdgeAttributes::feature) r = std::min(r, feature_radius);
+            anchors.emplace_back(vid, r);
+        }
+    }
+    for (const size_t vid : input_point_vids) {
+        double r = feature_radius;
+        if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
+            r = std::min(r, order2_radius);
+        }
+        anchors.emplace_back(vid, r);
+    }
+    if (anchors.empty()) return 0;
+
+    enable_feature_point_tracking();
+    size_t n_anchored = 0;
+    for (const auto& [vid, r] : anchors) {
+        n_anchored += anchor_feature_point(vid, r);
+    }
+    logger().info(
+        "feature anchors: {} curve endpoints, {} junctions, {} input points; {} anchored",
+        n_ends,
+        n_junctions,
+        input_point_vids.size(),
+        n_anchored);
+    return n_anchored;
+}
+
 bool TetOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
 {
-    if (!m_preserve_feature_points) return false;
+    if (!m_track_feature_points) return false;
     // v1 disappears into v2, and v2 does not move: the only question is whether v2 still
     // covers the feature v1 stood for. See the 2D twin for why distance is the whole test.
     const size_t f1 = m_feature_point_attribute[v1_id].m_feature_point_id;
     if (f1 == NO_FEATURE_POINT) return false;
-    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
-           m_feature_eps * m_feature_eps;
+    const double r = m_feature_point_radius[f1];
+    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() > r * r;
 }
 
 bool TetOptimizerMesh::feature_point_ball_contains(const size_t vid, const Vector3d& p) const
 {
-    if (!m_preserve_feature_points) return true;
+    if (!m_track_feature_points) return true;
     const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
     if (f == NO_FEATURE_POINT) return true;
-    // A ball, not a pin -- the vertex may move anywhere within m_feature_eps of its
-    // anchor, exactly the freedom the envelope gives everywhere else.
-    return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
+    // A ball, not a pin -- the vertex may move anywhere within the anchor's radius of it,
+    // exactly the freedom the envelope gives everywhere else.
+    const double r = m_feature_point_radius[f];
+    return (p - m_feature_points[f]).squaredNorm() <= r * r;
 }
 
 std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_ratio) const
@@ -1363,14 +1430,15 @@ std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_rati
     const KNN knn(pts);
 
     size_t kept = 0;
-    for (const Vector3d& anchor : m_feature_points) {
+    for (size_t f = 0; f < m_feature_points.size(); ++f) {
         uint32_t idx = 0;
         double sq = 0;
-        knn.nearest_neighbor(anchor, idx, sq);
-        if (sq <= m_feature_eps * m_feature_eps) {
+        knn.nearest_neighbor(m_feature_points[f], idx, sq);
+        const double r = m_feature_point_radius[f];
+        if (sq <= r * r) {
             ++kept;
         } else if (worst_ratio) {
-            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / r);
         }
     }
     return {kept, m_feature_points.size()};

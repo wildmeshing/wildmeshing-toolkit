@@ -104,10 +104,10 @@ FeatureScene build_scene()
         }
         sc.mesh->m_feature_envelope = std::make_shared<Envelope>();
         sc.mesh->m_feature_envelope->init(sc.fe_verts, fe_env, 0.05);
-        sc.mesh->m_feature_eps = 0.05;
     }
-    // Anchor the chain's endpoints, as the driver would (valence-1 vertices).
-    const std::vector<Vector3d> anchors = {sc.fe_verts[0], sc.fe_verts[2]};
+    // The init anchors the chain's endpoints, its tagged edges' ends, in a ball of the tube's
+    // radius.
+    sc.params.feature_envelope_ratio = 0.05 / (sc.params.epsr * sc.params.diag_l);
     sc.mesh->init_from_Volumeremesher(
         v_rational,
         facets,
@@ -115,8 +115,7 @@ FeatureScene build_scene()
         tets,
         tet_face_on_input_surface,
         /*tet_face_orientation=*/nullptr,
-        &features_out,
-        &anchors);
+        &features_out);
     return sc;
 }
 

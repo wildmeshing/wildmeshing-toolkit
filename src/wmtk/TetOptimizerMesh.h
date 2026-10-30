@@ -432,23 +432,22 @@ public:
      * @name Feature-point anchors
      *
      * The 3D twin of TriOptimizerMesh's block of the same name, which states the reasoning:
-     * preserving a 0-dimensional feature -- an input point, or a feature curve's endpoint (a
-     * junction too, when the application anchors those) -- is a COVERAGE property, so each
-     * anchor vertex names WHICH feature it stands for. Lifted from tetwild, itself a port of
-     * triwild, with the same semantics and the same distance test.
+     * preserving a 0-dimensional feature -- an input point, or where a tagged curve ends or
+     * three or more meet -- is a COVERAGE property, so each anchor vertex names WHICH feature
+     * it stands for. Lifted from tetwild, itself a port of triwild, with the same semantics and
+     * the same distance test.
      *
-     * Opt-in, in two levels. enable_feature_point_tracking() registers the per-vertex ids
-     * and has the shared operations maintain them: a split vertex stands for no feature, and
-     * a collapse survivor that stands for none takes over the collapsed vertex's. Its
-     * `preserve` argument additionally turns on the policy: a collapse that would leave a
-     * feature further than m_feature_eps from every vertex is refused
+     * Opt-in: enable_feature_point_tracking() registers the per-vertex ids and has the shared
+     * operations maintain and enforce them. A split vertex stands for no feature, and a collapse
+     * survivor that stands for none takes over the collapsed vertex's; a collapse that would
+     * leave a feature further than its radius from every vertex is refused
      * (CollapseReject::feature_point), and smoothing may move an anchor vertex only inside its
-     * ball (the default smoothing_position_is_allowed()). The ids are maintained with the
-     * policy off too, so an application can still export and audit its anchors.
+     * ball (the default smoothing_position_is_allowed()). No switch turns the holding off, as
+     * none does for the curves and the surfaces; until 2026-10 tetwild and triwild had one,
+     * preserve_feature_points, kept to reproduce the behaviour before the anchors.
      *
-     * The application supplies the data, because which vertices stand for which features
-     * depends on its input: it fills m_feature_points and the ids after init(), and sets
-     * m_feature_eps.
+     * Which vertices are anchored is read off the tags, by anchor_feature_points(); the
+     * application adds only its input points, which no tag marks.
      * @{
      */
     /// A vertex that stands for no feature point. See FeaturePointAttributes.
@@ -462,19 +461,18 @@ public:
     /// Registered with m_vertex_attr_group only once enable_feature_point_tracking() ran.
     FeaturePointAttCol m_feature_point_attribute;
     /// Anchor positions, indexed by FeaturePointAttributes::m_feature_point_id. A vertex
-    /// carrying feature f may never end up further than m_feature_eps from
+    /// carrying feature f may never end up further than m_feature_point_radius[f] from
     /// m_feature_points[f]; the anchor never moves, so the id is a direct lookup.
     std::vector<Vector3d> m_feature_points;
-    /// Radius of the anchor ball. A separate name from the tube eps for the same reason
-    /// triwild keeps it separate from its envelope eps; tetwild gives both the same value.
-    double m_feature_eps = -1;
-    /// Whether the shared operations maintain the ids (enable_feature_point_tracking()).
+    /// Radius of each anchor's ball, beside m_feature_points. Per anchor, because each kind of
+    /// feature has its own radius (see anchor_feature_points()).
+    std::vector<double> m_feature_point_radius;
+    /// Whether the shared operations maintain and enforce the anchors
+    /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
-    /// Whether the collapse and smoothing policy is on (its `preserve` argument).
-    bool m_preserve_feature_points = false;
 
     /**
-     * @brief Turn on feature-point tracking, and the policy when `preserve`.
+     * @brief Turn on feature-point tracking.
      *
      * Valid before or after init(), not during an operation pass (it throws then; see
      * throw_if_in_operation_pass()). Before init() the storage is empty and the resize is a no-op;
@@ -483,10 +481,9 @@ public:
      * vert_storage_capacity(), with every vertex NO_FEATURE_POINT; the application then anchors
      * what it needs. Late enabling is supported because an application may learn only from the
      * built mesh whether its input has feature points, and enabling it for every input would make
-     * every operation cache and restore anchors it does not have. A second call changes only the
-     * policy.
+     * every operation cache and restore anchors it does not have. Idempotent.
      */
-    void enable_feature_point_tracking(const bool preserve)
+    void enable_feature_point_tracking()
     {
         throw_if_in_operation_pass("enable_feature_point_tracking");
         if (!m_track_feature_points) {
@@ -494,23 +491,46 @@ public:
             m_feature_point_attribute.resize(vert_storage_capacity());
         }
         m_track_feature_points = true;
-        m_preserve_feature_points = preserve;
     }
 
     /**
+     * @brief Anchor vertex `vid` at its current position, in a ball of `radius`. A vertex
+     * already anchored keeps its anchor, whose radius becomes the smaller of the two. Returns
+     * whether a new anchor was made. Feature-point tracking must be on.
+     */
+    bool anchor_feature_point(size_t vid, double radius);
+
+    /**
+     * @brief Anchor the 0-dimensional features, after the edge tags are final: every vertex
+     * with 1 or 3+ tagged edges (where a tagged curve ends, or three or more meet -- the vertices
+     * the link condition counts as order 3), and every vertex of `input_point_vids`. Turns
+     * feature-point tracking on when there is something to anchor, so a run without any pays no
+     * per-operation cost. Returns the number of anchors made.
+     *
+     * Each anchor's radius is the smallest of the radii of the kinds it is on: `order2_radius`
+     * if it has an order2 edge, `feature_radius` if it has a feature edge or is an input point.
+     * The smallest, because ball(r) around a point of a curve held in a tube of r lies in that
+     * tube, and a point is then held as tightly as every curve through it.
+     */
+    size_t anchor_feature_points(
+        const std::vector<size_t>& input_point_vids,
+        double order2_radius,
+        double feature_radius);
+
+    /**
      * True iff collapsing v1 into v2 would drop or displace a feature-point anchor. False
-     * when the policy is off. Distance test included, as in 2D: two anchors within
-     * m_feature_eps of each other are allowed to merge -- the survivor covers both -- and
-     * forbidding that deadlocks the mesh (measured in 2D, see TriOptimizerMesh).
+     * when tracking is off. Distance test included, as in 2D: two anchors within each
+     * other's radius are allowed to merge -- the survivor covers both -- and forbidding that
+     * deadlocks the mesh (measured in 2D, see TriOptimizerMesh).
      */
     bool collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const;
 
-    /// May vertex `vid` sit at `p` as far as its anchor goes? True unless the policy is on,
-    /// the vertex stands for a feature, and `p` is outside that feature's ball.
+    /// May vertex `vid` sit at `p` as far as its anchor goes? True unless the vertex stands
+    /// for a feature and `p` is outside that feature's ball.
     bool feature_point_ball_contains(const size_t vid, const Vector3d& p) const;
 
-    /// {anchors still represented within m_feature_eps, total}. Geometric, as in 2D: "some
-    /// vertex is within eps of this anchor", whether or not it carries the id.
+    /// {anchors still represented within their radius, total}. Geometric, as in 2D: "some
+    /// vertex is within the radius of this anchor", whether or not it carries the id.
     std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
     /** @} */
 
