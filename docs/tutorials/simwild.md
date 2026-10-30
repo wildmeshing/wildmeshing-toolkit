@@ -561,9 +561,9 @@ no cell changes.
   face tags.` The config turns `preserve_topology` off; with it on, the drawing's tiny features
   cost 4,758 and 7,867 triangles in two runs, against 336 and 364 with it off. Close the curves,
   or use `input_type` `surface` in 3D.
-- **A tagged mesh in memory has a `tags` attribute.** A `.msh` that stores a label image instead
-  (`tag_0` holding region numbers, as `bunny2d.msh` does) is converted on the file route; in memory
-  it fails with `Unknown mesh attribute: tag_0`.
+- **A 2D `.msh` may store a label image instead of regions.** Integer cell fields `tag_<k>` (as
+  in `bunny2d.msh`) become regions `tag_0`, `tag_1`, ... on both routes; a 3D label image is
+  refused.
 - **Region edits leave poor elements and no envelope.** Run a `remeshing` after `tight_seal_topo` or
   `resolve_overlaps`, and do not hand it an envelope from before the edit.
 - **Unreachable targets.** A `stop_energy` or `quality_field` target below what the cells can reach

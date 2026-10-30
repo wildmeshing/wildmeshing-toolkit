@@ -171,8 +171,8 @@ and fixed vertices stay where they are. They come in two forms:
   of a split edge keep theirs. With an envelope, a tube of the same thickness holds the curves.
 - [`feature_fields`](../reference/isotropic_remeshing.md#feature_fields) names per-face fields of
   a `.msh` input, labels, whose boundaries become curves; every output triangle has the value of
-  the input triangle it comes from. These curves have no tube of their own unless `features` is
-  given too. It reads the file, so it works on the command line and on files only.
+  the input triangle it comes from. With an envelope, a tube of the same thickness holds these
+  curves too. It reads the file, so it works on the command line and on files only.
 
 The box again, without an envelope, its 12 sharp edges found by the angle between their two
 triangles, each with an id, and its 8 corners fixed:

@@ -64,13 +64,6 @@ struct AttributeCollection : public AbstractAttributeContainer
     }
     void clear() override { m_attributes.clear(); }
 
-    bool assign(size_t to, T&& val) // always use this in OP_after
-    {
-        m_attributes[to] = val;
-        if (recording.local()) m_rollback_list.local()[to] = val;
-        // TODO: are locks necessary? not now.
-        return true;
-    }
     /**
      * @brief retrieve the protected attribute data on operation-fail
      *

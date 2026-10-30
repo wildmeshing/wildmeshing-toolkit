@@ -251,7 +251,6 @@ def manifold_extraction(options: dict, meshes: dict) -> tuple:
       write_surface (bool, default false): Write the output surface (OBJ) after manifold extraction.
       log_file (string, default ""): Logs are not just printed on the terminal but also saved in this file.
       report (string, default ""): A JSON file that stores information about the result and the method execution, e.g., runtime.
-      preallocation_factor (float, default 6.0): Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation.
       envelope (string, default ""): Memory route only: the name of the input mesh that holds the envelope surface of a tagged mesh input -- the `envelope` mesh simwild returns with its result.
     
     With meshes: run on named NumPy mesh dictionaries and return (meshes, report) without file I/O. Component calls run one at a time per process.
@@ -350,7 +349,7 @@ def shortest_edge_collapse(options: dict, meshes: dict) -> tuple:
       use_sample_envelope (bool, default false): Use sample envelope instead of exact one.
       throw_on_fail (bool, default false): Throw exception if the output does not fulfil the desired criteria.
       use_link_condition (bool, default true): Require the link condition before collapsing an edge.
-      remove_duplicate_eps (float, default -1): Merge input vertices closer than this fraction of the bounding box diagonal.
+      remove_duplicate_eps (float, default 1e-05): Merge input vertices closer than this fraction of the bounding box diagonal.
       history_output (string, default ""): Record every committed operation and save the history here (see wmtk/history): the input surface and its edits, from which the map between input and output is rebuilt (the tracking application).
       preallocation_factor (float, default 6.0): Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation.
     
@@ -416,7 +415,6 @@ def simwild(options: dict, meshes: dict) -> tuple:
       DEBUG_sanity_checks (bool, default false): Perform sanity checks after every operation.
       allow_surface_swap (bool, default true): Allow surface edge swapping.
       check_surface_topology (bool, default false): Check if the surface topology is preserved after each operation.
-      preallocation_factor (float, default 6.0): Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation.
       verbose_quality_stats (bool, default true): Log the per-tag quality breakdown after every optimization iteration: for each entry of /quality_field, and for the cells no entry matches, the number of cells, their max and average absolute quality, the target applied to them, and the max quality relative to that target.
       stuck_refine_stall_eps (float, default 0.1): Refine when the last iteration's improvement was at most this fraction of the distance the max energy still has to cover: (prev_max - max) <= eps * (max - stop_energy).
       stuck_refine_cooldown (int, default 1): After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field).
@@ -438,7 +436,6 @@ def simwild(options: dict, meshes: dict) -> tuple:
       replace_tags_in (list, default []): Replace the tags by the output tags.
       replace_tags_out (list, default []): The output tags (written as intersection) that should replace the input tags.
       tag_priority (list, default []): List of tags for the tag_priority operation.
-      tags_selection (string, default "_ | !_"): A boolean expression that defines the input selection for intent operations.
       coarsen_pass (bool, default false): Run a final coarsening pass after the optimization has converged.
       coarsen_local_smoothing_passes (int, default 0): Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
       coarsen_smooth_ring (int, default 1): Radius smoothed inside the collapse, and the radius the accept test measures over.
@@ -474,10 +471,9 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       DEBUG_feature_retention (bool, default false): Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius.
       feature_envelope_ratio (float, default 0.5): Envelope thickness for the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- as a fraction of the surface envelope's eps.
       output (string, default "out"): Output file name (without extension).
-      input_names (list, default []): List of names for the input meshes.
+      input_names (list, default []): Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route.
       input_dir (string, default ""): Directory where the input files are located.
       write_vtu (bool, default true): Write the VTU output next to the MSH.
-      preallocation_factor (float, default 6.0): Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation.
       skip_simplify (bool, default false): If true, input simplification will be skipped.
       simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects.
       simplify_envelope_ratio (float, default 0.5): Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation.
@@ -604,7 +600,6 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       DEBUG_remote_output (bool, default false): DEBUG (2026-10-20), 3D.
       log_file (string, default ""): Logs are not just printed on the terminal but also saved in this file.
       report (string, default ""): A JSON file that stores information about the result and the method execution, e.g., runtime.
-      preallocation_factor (float, default 6.0): Mesh storage (connectivity and attributes) is preallocated to this factor times the live element count at init and at consolidation.
       num_threads (int, default 0): Number of threads used for parallel execution (smoothing, edge collapse).
       num_smoothing_passes (int, default 2): Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is ON since 2026-09-28) -- in the loop (3D since 2026-09-25, 2D since 2026-10-05), and in the shared optimization loop, which in this component runs only in the TetWild passes, 2D and 3D alike.
       length_rel (float, default 0.05): Target edge length relative to the bounding box diagonal.
@@ -744,7 +739,6 @@ def triwild(options: dict, meshes: dict) -> tuple:
       write_vtu (bool, default true): Write not just MSH but also VTU output.
       DEBUG_output (bool, default false): Write the mesh as debug_{}.vtu after every operation.
       DEBUG_sanity_checks (bool, default false): Perform sanity checks after every operation.
-      preallocation_factor (float, default 6.0): Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation.
       max_expected_iterations (int, default 0): Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy.
       stuck_refine_stall_eps (float, default 0.1): Refine when the last iteration's improvement was at most this fraction of the distance the max energy still has to cover: (prev_max - max) <= eps * (max - stop_energy).
       stuck_refine_cooldown (int, default 1): After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field).

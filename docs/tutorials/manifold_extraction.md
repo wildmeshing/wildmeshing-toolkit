@@ -196,10 +196,9 @@ passed.` (in 2D, `Curve manifoldness check passed.`), or a warning.
 
 ## Pitfalls
 
-- **A selection that is already manifold, in 3D, crashes.** When no edge or vertex is
-  non-manifold, the 3D run stops with a segmentation fault instead of returning the mesh (on the
-  two spheres, `tag_0` alone, or `tag_0 & tag_1`, which selects nothing). The 2D run returns the
-  mesh unchanged. Check the selection first, as in the example above.
+- **A selection that is already manifold is left as it is.** When no edge or vertex is
+  non-manifold (on the two spheres, `tag_0` alone, or `tag_0 & tag_1`, which selects nothing),
+  there is nothing to offset: the run logs it and returns the mesh unchanged.
 - **The quality drops.** The cut is not optimized: on the two spheres the max AMIPS goes from
   7.26 to 42.06 (avg 3.69 to 4.29). Run [simwild remeshing](simwild.md) on the result; it keeps
   the regions' topology and so their manifold boundary

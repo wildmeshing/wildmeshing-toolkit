@@ -51,7 +51,7 @@ std::filesystem::path resolve_path_if_not_empty(
         return path;
     }
 
-    return resolve_path(path, root);
+    return resolve_path(root, path);
 }
 
 } // namespace wmtk::utils

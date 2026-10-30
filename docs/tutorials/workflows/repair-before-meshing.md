@@ -90,8 +90,9 @@ Remeshing alone, the last row, gives better cells and the same 28 non-manifold e
 
 ## Pitfalls
 
-- **Check that there is something to repair.** In 3D, manifold extraction crashes on a selection
-  whose boundary is already manifold; count first, as the Python example does.
+- **Check that there is something to repair.** Manifold extraction returns a selection whose
+  boundary is already manifold unchanged; count first, as the Python example does, to know
+  whether the step did anything.
 - **The selection decides.** Each sphere alone is manifold; only the union is not. Select the
   regions whose common boundary has to be manifold.
 
