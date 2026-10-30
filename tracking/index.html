@@ -1,0 +1,5249 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Robust, parallel triangle and tetrahedral mesh generation and editing">
+      
+      
+      
+        <link rel="canonical" href="https://wildmeshing.github.io/wildmeshing-toolkit/tracking/">
+      
+      
+        <link rel="prev" href="../in-memory-io/">
+      
+      
+        <link rel="next" href="../simwild-adopted-behaviours/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Tracking: recording, mapping, extending - Wildmeshing Toolkit</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="cyan" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tracking-recording-mapping-extending" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Wildmeshing Toolkit" class="md-header__button md-logo" aria-label="Wildmeshing Toolkit" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 3v6h.73l-3.94 7H2v6h6v-2h8v2h6v-6h-3.79l-3.94-7H15V3m-4 2h2v2h-2m1 2.04 4 7.11V18H8v-1.85M4 18h2v2H4m14-2h2v2h-2"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Wildmeshing Toolkit
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tracking: recording, mapping, extending
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="cyan" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/wildmeshing/wildmeshing-toolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    wildmeshing/wildmeshing-toolkit
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tutorials/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../gallery/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Gallery
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../reference/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../developer/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Developer guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../about/citing/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Wildmeshing Toolkit" class="md-nav__button md-logo" aria-label="Wildmeshing Toolkit" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 3v6h.73l-3.94 7H2v6h6v-2h8v2h6v-6h-3.79l-3.94-7H15V3m-4 2h2v2h-2m1 2.04 4 7.11V18H8v-1.85M4 18h2v2H4m14-2h2v2h-2"/></svg>
+
+    </a>
+    Wildmeshing Toolkit
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/wildmeshing/wildmeshing-toolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    wildmeshing/wildmeshing-toolkit
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../getting-started/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/first-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A first run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/calling-components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calling components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../concepts/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/local-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/robust-geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Robust geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/embedding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Embedding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/regions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Regions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/histories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Histories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tutorials/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Surface remeshing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Surface remeshing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/shortest_edge_collapse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shortest edge collapse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/qslim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QSlim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/isotropic_remeshing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isotropic remeshing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Meshing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/tetwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TetWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/triwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TriWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-region meshes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Multi-region meshes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/simwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SimWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offsets and repair
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Offsets and repair
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/topological_offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Topological offset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/manifold_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Manifold extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mapping
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mapping
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tracking: correspondences between input and output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tutorials/workflows/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/workflows/regions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-region pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/workflows/tetwild-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/workflows/repair-before-meshing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repair before meshing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6_1" id="__nav_6_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Components
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_2" id="__nav_6_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Surface remeshing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Surface remeshing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/shortest_edge_collapse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shortest edge collapse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/qslim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QSlim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/isotropic_remeshing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isotropic remeshing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_3" id="__nav_6_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tetrahedral and triangle meshing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tetrahedral and triangle meshing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/tetwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TetWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/triwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TriWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_4" id="__nav_6_1_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-region meshes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Multi-region meshes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/simwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SimWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_5" id="__nav_6_1_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offsets and repair
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Offsets and repair
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/topological_offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Topological offset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/manifold_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Manifold extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_6" id="__nav_6_1_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mapping
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mapping
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_7" id="__nav_6_1_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Work in progress
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Work in progress
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/prismatic_mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prismatic mesh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/c1_simplification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C1 simplification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../python-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../json-schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://wildmeshing.github.io/wildmeshing-toolkit/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C++ API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../developer/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer guide
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/component-call/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The life of a component call
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/wild-driver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Wild driver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/writing-an-operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing an operation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/writing-a-component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7_9" id="__nav_7_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../in-memory-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Component I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tracking: recording, mapping, extending
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tracking: recording, mapping, extending
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-is-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it is for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The history
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The history">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#edit-kinds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edit kinds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recording-a-trimesh-surface-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording a TriMesh (surface only)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recording-a-tracked-surface-on-a-tetmesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording a tracked surface on a TetMesh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recording-tracked-curves-on-a-trimesh-triwild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording tracked curves on a TriMesh (triwild)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from-the-input-files-the-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From the input files: the chain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-map-the-tracking-component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The map: the tracking component
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#volumes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Volumes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extending-tracking-to-another-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extending tracking to another application
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extending tracking to another application">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-a-trimesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On a TriMesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on-a-tetmesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On a TetMesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-breaks-bijectivity-on-curves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What breaks bijectivity on curves
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-breaks-bijectivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What breaks bijectivity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extending-the-mapping-component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extending the mapping component
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evaluating-correctness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluating correctness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#folds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Folds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Costs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-things-are" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where things are
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simwild-adopted-behaviours/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    simwild: behaviours adopted from tetwild / triwild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/citing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Citing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-is-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it is for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The history
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The history">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#edit-kinds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edit kinds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recording-a-trimesh-surface-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording a TriMesh (surface only)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recording-a-tracked-surface-on-a-tetmesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording a tracked surface on a TetMesh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recording-tracked-curves-on-a-trimesh-triwild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording tracked curves on a TriMesh (triwild)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from-the-input-files-the-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From the input files: the chain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-map-the-tracking-component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The map: the tracking component
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#volumes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Volumes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extending-tracking-to-another-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extending tracking to another application
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extending tracking to another application">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-a-trimesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On a TriMesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on-a-tetmesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On a TetMesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-breaks-bijectivity-on-curves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What breaks bijectivity on curves
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-breaks-bijectivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What breaks bijectivity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extending-the-mapping-component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extending the mapping component
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evaluating-correctness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluating correctness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#folds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Folds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Costs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-things-are" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where things are
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/wildmeshing/wildmeshing-toolkit/edit/main/docs/tracking.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="tracking-recording-mapping-extending">Tracking: recording, mapping, extending<a class="headerlink" href="#tracking-recording-mapping-extending" title="Permanent link">&para;</a></h1>
+<p>Notes on the tracking framework added for BijectiveRemesh (arXiv 2605.30744): how it works, how
+to use it, how to bring it to another application, and how to check that it is right, for
+surfaces and for curves (triwild). File paths are relative to the repository root; the memory
+interface is in <code>docs/in-memory-io.md</code>.</p>
+<h2 id="what-it-is-for">What it is for<a class="headerlink" href="#what-it-is-for" title="Permanent link">&para;</a></h2>
+<p>An application that remeshes a surface -- or a tet mesh whose tracked faces are a surface --
+can record every change it makes to that surface. From the record (a <em>history</em>, saved as a
+<em>tracking file</em>) the <code>tracking</code> component rebuilds a map between the input surface and the
+output surface, both ways. Users map their own points, and through them their own attributes:
+labels, texture coordinates, any per-vertex or per-face data.</p>
+<p>The map is built as BijectiveRemesh builds it: one local map per operation, between the
+patch the operation replaced and the patch it left, composed in order. Where every local map
+is a bijection, so is the whole map.</p>
+<p>The same holds one dimension down. triwild tracks curves -- the input's segments, inserted as
+edges of its triangle mesh -- and records every change to them; the map then takes the input
+curves onto the output's tracked edges, and the input's feature points (curve ends, junctions,
+input points) onto the output vertices they became. See <em>Curves</em> below.</p>
+<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<p>Turn tracking on with <code>history_output</code> -- the same option in every application that has it:
+<code>isotropic_remeshing</code>, <code>qslim</code>, <code>shortest_edge_collapse</code>, <code>tetwild</code>, <code>simwild</code> (surfaces) and
+<code>triwild</code> (curves).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span><span class="nt">"application"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tetwild"</span><span class="p">,</span><span class="w"> </span><span class="nt">"input"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"model.obj"</span><span class="p">],</span><span class="w"> </span><span class="nt">"output"</span><span class="p">:</span><span class="w"> </span><span class="s2">"out"</span><span class="p">,</span><span class="w"> </span><span class="nt">"history_output"</span><span class="p">:</span><span class="w"> </span><span class="s2">"out.wmtkhist"</span><span class="p">}</span>
+</code></pre></div>
+<p>On the memory route (<code>name(options, meshes)</code>, see <code>docs/in-memory-io.md</code>) no file is written:
+any non-empty <code>history_output</code> records the history, and the report returns it as <code>history</code>, the
+bytes of the file the file route writes (bytes in Python). <code>history::write_history</code> /
+<code>wm.write_history</code> save them as that file. simwild also returns the mesh its history starts from
+as the output mesh <code>history_input</code>. tetwild and simwild can track the volume around the surface
+too, with <code>volume_history_output</code>: see <em>Volumes</em>.</p>
+<p>Map points with the <code>tracking</code> application of the same <code>wmtk_app</code> binary:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span><span class="nt">"application"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tracking"</span><span class="p">,</span><span class="w"> </span><span class="nt">"history"</span><span class="p">:</span><span class="w"> </span><span class="s2">"out.wmtkhist"</span><span class="p">,</span><span class="w"> </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"map"</span><span class="p">,</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w"> </span><span class="nt">"points"</span><span class="p">:</span><span class="w"> </span><span class="s2">"points.txt"</span><span class="p">,</span><span class="w"> </span><span class="nt">"output_points"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mapped.txt"</span><span class="p">,</span><span class="w"> </span><span class="nt">"direction"</span><span class="p">:</span><span class="w"> </span><span class="s2">"to_output"</span><span class="p">}</span>
+</code></pre></div>
+<p><code>points.txt</code> holds one point per line; numbers separated by blanks; <code>#</code> starts a comment.
+- On the input: <code>face b0 b1 b2</code>. <code>face</code> is a triangle of the input files, counting from 0 over
+  all of them in order, as the files hold them. <code>b</code> are barycentric coordinates with respect to
+  that triangle's corners, in file order.
+- On the input of a history that starts at a tet mesh's tracked surface (<code>simwild</code> on a
+  <code>.msh</code>): <code>v0 v1 v2 b0 b1 b2</code>, as on a tet output, with the <code>v</code> vertices of the tet mesh the
+  history starts from (<code>&lt;output&gt;_history_input.msh</code>).
+- On the output of a surface application (<code>isotropic_remeshing</code>): <code>face b0 b1 b2</code>, with <code>face</code>
+  a triangle of the output file.
+- On the output of a tet application (<code>tetwild</code>, <code>simwild</code>): <code>v0 v1 v2 b0 b1 b2</code>. The <code>v</code> are
+  three vertices of the output tet mesh, at the corners of a tracked face. The tracked surface
+  is no element of the tet mesh file, so the vertices name the face. They may come in any order;
+  the coordinates follow them.</p>
+<p><code>direction</code> is <code>to_output</code> or <code>to_input</code> (the inverse map). A point with no image comes back
+with id <code>-1</code>.</p>
+<p>On curves (triwild) the file says it holds curves, and the points are:
+- on the input: <code>segment b0 b1</code>. <code>segment</code> is a segment of the input curve files, counting from
+  0 over all of them in order -- a polyline <code>l</code> line gives its consecutive vertex pairs -- and
+  <code>b</code> are barycentric coordinates with respect to its ends in file order;
+- on the output: <code>v0 v1 b0 b1</code>, two vertices of the output mesh at the ends of a tracked edge,
+  in either order, the coordinates following them.</p>
+<p><code>"operation": "features"</code> writes the input's feature points to <code>output_points</code>, one
+<code>input_vertex output_vertex</code> per line: a vertex of the input files (the curve files' vertices in
+order, then the point files') and the output vertex it ended at, <code>-1</code> for none; on the memory
+route it returns them in the report instead, as <code>feature_points</code>.</p>
+<p>From C++ (<code>components/tracking/wmtk/components/tracking/tracking.hpp</code>, the component's one
+public header):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tracking</span><span class="o">::</span><span class="n">Tracking</span><span class="o">::</span><span class="n">load</span><span class="p">(</span><span class="s">"out.wmtkhist"</span><span class="p">);</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">tracking</span><span class="o">::</span><span class="n">InputPoint</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="n">face</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">b0</span><span class="p">,</span><span class="w"> </span><span class="n">b1</span><span class="p">,</span><span class="w"> </span><span class="n">b2</span><span class="p">}}};</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">auto</span><span class="w"> </span><span class="n">on_output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">to_output</span><span class="p">(</span><span class="n">pts</span><span class="p">);</span><span class="w">    </span><span class="c1">// OutputPoint: .face, or .vertices for a tet output</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">auto</span><span class="w"> </span><span class="n">back</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">to_input</span><span class="p">(</span><span class="n">on_output</span><span class="p">);</span><span class="w">    </span><span class="c1">// InputPoint: .face, or .vertices (input_by_vertices)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">auto</span><span class="w"> </span><span class="n">triangles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">output_triangles</span><span class="p">();</span><span class="w"> </span><span class="c1">// the output's tracked faces, in its own ids</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1">// Curves: the same, one dimension down.</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tracking</span><span class="o">::</span><span class="n">CurveTracking</span><span class="o">::</span><span class="n">load</span><span class="p">(</span><span class="s">"curves.wmtkhist"</span><span class="p">);</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">tracking</span><span class="o">::</span><span class="n">InputCurvePoint</span><span class="o">&gt;</span><span class="w"> </span><span class="n">on_input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="n">segment</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">b0</span><span class="p">,</span><span class="w"> </span><span class="n">b1</span><span class="p">}}};</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="k">auto</span><span class="w"> </span><span class="n">on_curves</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">to_output</span><span class="p">(</span><span class="n">on_input</span><span class="p">);</span><span class="w">   </span><span class="c1">// OutputCurvePoint: .vertices, two mesh vertices</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="k">auto</span><span class="w"> </span><span class="n">features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">feature_points</span><span class="p">();</span><span class="w">       </span><span class="c1">// {input_vertex, output_vertex} per feature point</span>
+</code></pre></div>
+<p>From Python, the same classes on NumPy arrays (<code>python/src/tracking_bindings.cpp</code>),
+built from the history's bytes -- a memory call's <code>report["history"]</code>, or <code>wm.read_history</code> --
+or from its file:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">outputs</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">isotropic_remeshing</span><span class="p">({</span><span class="s2">"input"</span><span class="p">:</span> <span class="s2">"in"</span><span class="p">,</span> <span class="s2">"history_output"</span><span class="p">:</span> <span class="s2">"x"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"in"</span><span class="p">:</span> <span class="n">mesh</span><span class="p">})</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">t</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">Tracking</span><span class="p">(</span><span class="n">report</span><span class="p">[</span><span class="s2">"history"</span><span class="p">])</span>          <span class="c1"># smoothing="flatten", scaffold="box",</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>                                            <span class="c1"># collapse_patch="both_stars"; or .load(path)</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">ids</span><span class="p">,</span> <span class="n">bary</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">to_output</span><span class="p">(</span><span class="n">faces</span><span class="p">,</span> <span class="n">bary</span><span class="p">)</span>        <span class="c1"># int64 (n,), float64 (n, 3) -&gt; the output's</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">faces</span><span class="p">,</span> <span class="n">bary</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">to_input</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">bary</span><span class="p">)</span>         <span class="c1"># and back</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">ids</span><span class="p">,</span> <span class="n">bary</span><span class="p">,</span> <span class="n">warnings</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">to_output</span><span class="p">(</span><span class="n">faces</span><span class="p">,</span> <span class="n">bary</span><span class="p">,</span> <span class="n">warnings</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># what this call found</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">c</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">CurveTracking</span><span class="p">(</span><span class="n">triwild_report</span><span class="p">[</span><span class="s2">"history"</span><span class="p">])</span>   <span class="c1"># or .load(path)</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">pairs</span><span class="p">,</span> <span class="n">bary</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to_output</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="n">bary</span><span class="p">)</span>   <span class="c1"># int64 (n,), float64 (n, 2) -&gt; (n, 2) vertex pairs</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">c</span><span class="o">.</span><span class="n">feature_points</span><span class="p">()</span>                          <span class="c1"># int64 (p, 2): input vertex, output vertex</span>
+</code></pre></div>
+<ul>
+<li><strong>Ids.</strong> A face (segment) per point, <code>(n,)</code>, or a mesh's vertices, <code>(n, 3)</code> -- <code>(n, 2)</code> on
+  curves -- on a side named by vertices (<code>output_by_vertices</code>, <code>input_by_vertices</code>): tetwild's
+  and simwild's output, simwild's input from a tet mesh, triwild's output. <code>-1</code> is no face, both
+  ways; a point with no image comes back with <code>-1</code> and NaN coordinates. Shapes and dtypes are
+  checked: <code>TypeError</code> for a dtype that is not an integer (ids) or a float (bary), <code>ValueError</code>
+  for a shape that is not the side's.</li>
+<li><strong>Warnings.</strong> <code>warnings=True</code> returns a third element, the dictionary of what that call found
+  (the keys of <code>info</code>'s <code>to_input_warnings</code>); <code>build_warnings</code> is the map's.</li>
+<li><strong>Properties.</strong> <code>input_faces</code>, <code>input_triangles</code>, <code>output_triangles</code> (surfaces),
+  <code>input_segments</code>, <code>output_segments</code> (curves): owning int64 arrays, in the ids points use.</li>
+<li><strong>Threads.</strong> Building the map releases the GIL and holds the lock component calls hold, as it
+  logs through their logger; mapping releases the GIL and writes nothing, so several threads
+  may map through one object. A damaged history raises <code>RuntimeError</code>; a curve history given to
+  <code>Tracking</code> (or the reverse), or a volume history to either, raises <code>ValueError</code>, naming the
+  other class.</li>
+</ul>
+<p>Worked examples, one per application, are unit tests:
+- <code>components/tracking/wmtk/components/tracking/tests/test_tracking.cpp</code> (isotropic)
+- <code>components/tetwild/wmtk/components/tetwild/tests/test_tetwild_tracking.cpp</code>
+- <code>components/simwild/wmtk/components/simwild/tests/test_simwild_tracking.cpp</code>
+- <code>components/qslim/wmtk/components/qslim/tests/test_qslim_tracking.cpp</code>
+- <code>components/shortest_edge_collapse/wmtk/components/shortest_edge_collapse/tests/test_sec_tracking.cpp</code>
+- <code>components/triwild/wmtk/components/triwild/tests/test_triwild_tracking.cpp</code> (curves)</p>
+<p>Each one runs the application with tracking on, maps random input points to the output and
+back, remaps a per-vertex attribute onto the output's vertices, and does the same from the
+command line with a points file.</p>
+<p>On the memory route the applications record the same history, from the meshes they are given
+as from their files, and return it as bytes, curves as surfaces. <code>tracking(options, meshes)</code>
+takes the history as bytes: it runs <code>info</code> on a surface or a curve history and returns its
+report, <code>transfer</code> on a surface, and <code>features</code> on curves, whose report holds the feature points
+(<code>feature_points</code>, pairs of an input and an output vertex, <code>-1</code> for none), and <code>volume</code> on a
+volume history's bytes (see <em>Volumes</em>); <code>map</code> and <code>map_volume</code>, whose points are text files,
+throw there: <code>Tracking</code>, <code>CurveTracking</code> and <code>VolumeTracking</code> map points in memory. The tests
+<code>tracking-memory-route</code> (isotropic) and <code>tracking-memory-route-triwild</code> (curves) run both.</p>
+<p>Remapping attributes:
+- <strong>Per face.</strong> Map each output face's centroid <code>to_input</code> and take the input face's value.
+  The <code>transfer</code> operation does this.
+- <strong>Per vertex.</strong> Map each output vertex <code>to_input</code> as a corner of one of its faces
+  (barycentric <code>(1,0,0)</code> and its permutations) and interpolate there.
+- <strong>Per corner, with discontinuities</strong> (texture coordinates and their seams). The <code>transfer</code>
+  operation evaluates each corner just inside its face, so that a corner on a seam lands in
+  its own chart. This needs the output to conform to the seams (see <em>Features</em> below).</p>
+<h2 id="the-history">The history<a class="headerlink" href="#the-history" title="Permanent link">&para;</a></h2>
+<p><code>src/wmtk/history/History.hpp</code>. <code>History&lt;N&gt;</code> records a complex whose faces have N corners:
+<code>SurfaceHistory</code> (N = 3, triangles) or <code>CurveHistory</code> (N = 2, segments; the faces of a curve
+history <em>are</em> its segments). <code>history/Fwd.hpp</code> names them all: <code>Replay</code>/<code>CurveReplay</code>,
+<code>Recorder</code>/<code>CurveRecorder</code>, <code>TrackedSurfaceRecorder</code>/<code>TrackedCurveRecorder</code> are aliases of
+<code>BasicReplay&lt;N&gt;</code>, <code>BasicRecorder&lt;N&gt;</code>, <code>TrackedRecorder&lt;N&gt;</code>. A history holds:
+- <strong>A snapshot</strong> of the complex: vertex and face <em>slots</em>, live or not.
+- <strong>Features:</strong> cells one dimension down that the edits keep -- feature edges of a surface,
+  feature points of curves. See <em>Features</em> below.
+- <strong>The edits,</strong> in commit order.
+- <strong><code>metadata</code>:</strong> free text. The applications store their JSON parameters there, with <code>route</code>,
+  <code>file</code> or <code>memory</code> (<code>ComponentIO::history_metadata</code>), which is how <code>tracking</code> finds an
+  application's input files when it is not given them -- and knows that a history recorded on
+  the memory route names meshes, not files, and refuses to look for them.
+- <strong><code>output_vertex_ids</code>:</strong> for applications whose output numbers vertices its own way.
+- <strong><code>input_vertex_ids</code>:</strong> the same for the first state, for a history that starts at a tet
+  mesh's tracked surface rather than at input files: the mesh's id of each snapshot vertex
+  (<code>TrackedSurfaceRecorder</code> fills it). Empty for a history from files.</p>
+<p>Edits are described on the complex alone -- vertex and face ids, positions -- never on the
+mesh class that did them. A TriMesh and the tracked surface of a TetMesh record in the same
+terms.</p>
+<h3 id="edit-kinds">Edit kinds<a class="headerlink" href="#edit-kinds" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>kind</th>
+<th>ids</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>split_edge</code></td>
+<td><code>v = {v0, v1, new}</code>; faces in pairs <code>(f, new_f)</code></td>
+<td>each face on the edge keeps its <code>v0</code> half (<code>v1</code> renamed <code>new</code> in place); <code>new_f</code> is <code>f</code> with <code>v0</code> renamed <code>new</code></td>
+</tr>
+<tr>
+<td><code>split_face</code></td>
+<td><code>v = {v0, v1, v2, new}</code>; faces <code>{f, f1, f2}</code></td>
+<td>surfaces only. <code>f</code>, <code>f1</code> and <code>f2</code> are the three faces at the new vertex, each the old face with one corner renamed</td>
+</tr>
+<tr>
+<td><code>collapse_edge</code></td>
+<td><code>v = {removed, kept}</code></td>
+<td>faces with both go; <code>removed</code> is renamed <code>kept</code> elsewhere; duplicate faces merge into the smallest id; a vertex left without faces is retired</td>
+</tr>
+<tr>
+<td><code>swap_edge</code></td>
+<td><code>v = {v0, v1, a, b}</code>; faces <code>{fa, fb}</code></td>
+<td>surfaces only. Edge <code>(v0,v1)</code> becomes <code>(a,b)</code>: in <code>fa</code> (apex <code>b</code>) <code>v1</code> becomes <code>a</code>, in <code>fb</code> (apex <code>a</code>) <code>v0</code> becomes <code>b</code></td>
+</tr>
+<tr>
+<td><code>move_vertices</code></td>
+<td>none</td>
+<td>only positions change</td>
+</tr>
+<tr>
+<td><code>consolidate</code></td>
+<td>none</td>
+<td>live vertices and faces renumbered by rank</td>
+</tr>
+<tr>
+<td><code>replace_faces</code></td>
+<td><code>v</code> = corners of added faces; faces = removed, then added</td>
+<td>a change no other kind describes; no correspondence; the map cannot follow it</td>
+</tr>
+<tr>
+<td><code>relabel</code></td>
+<td><code>v</code> = new id per vertex slot; faces = new id per face slot, or empty for rank order</td>
+<td>vertices renamed in place (several may become one); faces with a repeated corner go; several faces given one id become one, with the first's corners. The weld, a coordinate change, a reordering. A point keeps its barycentric coordinates</td>
+</tr>
+<tr>
+<td><code>embed</code></td>
+<td><code>v</code> = corners of the new complex; faces = per new face, its sources (count, then ids), then the features</td>
+<td>the complex is replaced by one lying on it (an insertion, an arrangement). A point keeps its place in space</td>
+</tr>
+</tbody>
+</table>
+<p>On curves the rules read the same with segments for faces: a split's face on the edge is the
+segment itself, a collapse removes the segment it collapses and merges duplicates.</p>
+<p>Every edit carries <code>moves</code>: the position, after the edit, of every live vertex it wrote.
+Positions that did not change are dropped.</p>
+<p><code>Replay</code> (<code>src/wmtk/history/Replay.hpp</code>) applies edits with exactly these semantics. After the
+k-th edit it holds the recording mesh's surface after its k-th committed operation: the same
+ids, corner order and positions. Everything downstream relies on that.</p>
+<p>Composition (<code>History.hpp</code>):
+- <strong><code>history::append(h, next)</code>.</strong> <code>next</code> starts exactly where <code>h</code> ends. It checks live
+  vertices and faces, then appends <code>next</code>'s edits.
+- <strong><code>history::append_embedded(h, next, sources)</code>.</strong> <code>next</code> starts on a complex lying on <code>h</code>'s
+  last state. It appends an <code>embed</code> edit, then <code>next</code>'s edits.</p>
+<h3 id="file-format">File format<a class="headerlink" href="#file-format" title="Permanent link">&para;</a></h3>
+<p>Binary, varints (<code>History.cpp</code>). Version 7 is the first released one; the earlier ones were
+development formats and no longer load. A byte after the version gives N, the corners of a
+face: 3 for a surface, 2 for curves. Faces carry N ids and features N - 1.
+<code>history::face_size(path)</code> (or <code>face_size(bytes)</code>) reads it, and loading a history as the other
+kind throws. When you add to the format, bump <code>kVersion</code>, keep loading version 7 and up, and
+note in the comment at the top of the file what each version added.</p>
+<p>In memory a history is the bytes of its file: <code>to_bytes()</code> and <code>History&lt;N&gt;::from_bytes</code>, which
+the memory route of a component returns and takes. <code>history::read_history(path)</code> and
+<code>history::write_history(path, bytes)</code> move those bytes to and from a file unchanged, as
+<code>io::read_mesh</code> and <code>io::write_mesh</code> do for a mesh; they check only the header, of either kind.
+<code>save</code> and <code>load</code> are the two together.</p>
+<p>Loading checks what it reads before using it, so a damaged file throws "is corrupt" instead of
+crashing:
+- every count is bounded by the bytes left (each item takes at least one);
+- the snapshot's faces name live vertices, and its feature edges existing ones;
+- each edit's ids name live vertices and faces of the replayed state (<code>ids_valid</code>), and the
+  ids it creates stay within what the rest of the file could still announce;
+- an <code>embed</code> has a move for every vertex it brings, corners and feature edge ends alike.</p>
+<p>A new edit kind needs its case in <code>ids_valid</code>. Tests: <code>history-load-refuses-damaged-files</code>,
+<code>history-load-refuses-what-a-map-cannot-follow</code>, <code>surface-map-damaged-history</code>.</p>
+<h3 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
+<p>A surface's <code>features</code> are its feature edges, curves the map must take onto themselves: label boundaries, UV seams,
+tetwild feature curves. They are listed only in the snapshot (or in an <code>embed</code>). The edits
+carry them by fixed rules, which the recording mesh must follow:
+- <strong>Split:</strong> a split feature edge leaves two feature halves.
+- <strong>Collapse:</strong> the removed vertex's feature edges go to the survivor; the collapsed edge dies.
+- <strong>Swap:</strong> never takes a feature edge.</p>
+<p>The map flattens each side of a feature curve separately (<code>sides_of</code> in <code>SurfaceMap.cpp</code>). A
+non-manifold edge -- three or more faces -- separates sides without being declared.</p>
+<p>On curves the features are points: the ends and junctions of the input's curves and its input
+points (<code>input_points</code> files, and isolated vertices of the curve files), and, from the
+insertion on, the points the mesh anchors (<code>TriOptimizerMesh</code>'s feature point ids). Their rules:
+- <strong>Split:</strong> makes none.
+- <strong>Collapse:</strong> a removed feature point goes to the survivor.
+- <strong>A feature point keeps its vertex alive</strong> with no segment: an input point may lie off every
+  curve. A filter that removes its mesh vertex leaves it in the history with no output id.</p>
+<p>The map ends its arc-length chains at them (and at every vertex of valence other than two), so
+they map onto themselves.</p>
+<h2 id="recording-a-trimesh-surface-only">Recording a TriMesh (surface only)<a class="headerlink" href="#recording-a-trimesh-surface-only" title="Permanent link">&para;</a></h2>
+<p><code>src/wmtk/TriMesh.{h,cpp}</code>. <code>start_history(position)</code> snapshots the mesh and returns a
+<code>history::Recorder</code>. From then on every operation commits an edit at its commit point:
+- <code>split_edge</code>, <code>split_face</code>, <code>collapse_edge</code>, <code>swap_edge</code>, <code>smooth_vertex</code>, and
+  <code>consolidate_mesh</code>.
+- The commit point is just before <code>release_protect_attributes()</code>, while the operation still
+  holds its locks. Concurrent commits therefore append in a valid serial order (the recorder
+  has a mutex).
+- The vertices written come from the attribute journal (<code>append_recorded</code>); their positions
+  come from <code>position(v)</code>. It is called inside operations, so it must read through const
+  access.</p>
+<p>Rules for an application on a TriMesh:
+- <strong>Change the surface only through these operations.</strong> Anything else that changes
+  connectivity or positions escapes the history.
+- <strong>Feature curves:</strong> follow the rules above, and put them in the snapshot's <code>features</code>.
+  <code>isotropic_remeshing</code> does this from <code>feature_fields</code>.
+- <strong>Number the output file by the history's last state.</strong> Consolidate, then write faces in id
+  order with their stored corner order. Then output face ids <em>are</em> the history's.</p>
+<p>Users: <code>isotropic_remeshing</code> (<code>history_output</code>, <code>feature_fields</code>), <code>qslim</code> and
+<code>shortest_edge_collapse</code> (<code>history_output</code>), and the input simplification of tetwild and simwild
+(<code>ShortestEdgeCollapse</code>).</p>
+<h2 id="recording-a-tracked-surface-on-a-tetmesh">Recording a tracked surface on a TetMesh<a class="headerlink" href="#recording-a-tracked-surface-on-a-tetmesh" title="Permanent link">&para;</a></h2>
+<p>A tet mesh's tracked surface is a subset of its faces, and faces have no stable ids: a face's
+attribute slot is <code>4 * lowest incident tet + local index</code>, which moves whenever its tets
+change. So the tracked surface gets ids of its own, in
+<code>history::TrackedSurfaceRecorder</code>, <code>TrackedRecorder&lt;3&gt;</code> (<code>src/wmtk/history/TrackedRecorder.{hpp,cpp}</code>).</p>
+<ul>
+<li><strong>Its own ids.</strong> The recorder keeps a surface vertex id per mesh vertex on the surface, and
+  surface face ids through its own <code>Replay</code>. A mesh renumbering (<code>consolidate_mesh</code>) only
+  renumbers that table, with no edit.</li>
+<li><strong>Commits as diffs.</strong> At each commit the mesh reports the tracked faces around the
+  operation, before and after, as sorted vertex triples. The recorder takes the difference and
+  finds the edit that explains it:</li>
+<li><strong>Split:</strong> every face on the edge goes, and its two halves come.</li>
+<li><strong>Collapse:</strong> the faces at <code>removed</code> are renamed <code>kept</code>, faces with both go, and duplicates
+    merge. If <code>kept</code> was not on the surface, it takes the removed vertex's surface id and the
+    edit is a move. If both ends were on the surface and no tracked face held the edge, it is a
+    <em>weld</em>, which is counted.</li>
+<li><strong>Swap:</strong> two faces <code>(a,b,c)</code> and <code>(a,b,d)</code> become <code>(a,c,d)</code> and <code>(b,c,d)</code>.</li>
+<li><strong>Nothing changed:</strong> a move, if a surface vertex moved.</li>
+<li><strong>Verified before recorded.</strong> The predicted result must equal the actual faces after.
+  Otherwise the change is recorded as it is (<code>replace_faces</code>) and counted in <code>stats().replaced</code>.
+  <code>stats().unknown</code> counts faces the recorder had lost track of; it should always be 0.</li>
+<li><strong>Orientation.</strong> A face keeps the corner order the edits give it. A face only a
+  <code>replace_faces</code> makes takes <code>orient_tracked_face</code>.</li>
+<li><strong><code>resync(faces)</code>.</strong> Brings the surface in line with the mesh's tracked faces, after a change
+  outside the operations, as one <code>replace_faces</code>.</li>
+</ul>
+<p><code>TetMesh</code> (<code>src/wmtk/TetMesh.{h,cpp}</code>) calls the recorder:
+- <strong>Start and stop:</strong> <code>start_surface_history(position)</code> and <code>stop_surface_history()</code>.
+- <strong>Capture.</strong> Each operation captures the tracked faces around it once its before-hook and
+  screening have passed (<code>surface_history_before</code>):
+  - split: faces touching <code>{v1, v2}</code>;
+  - collapse: faces touching <code>{removed, kept}</code>;
+  - swaps: faces with all three corners among the ring vertices.
+- <strong>Commit.</strong> It reports at its commit point (<code>surface_history_commit</code>). Hooked:
+  <code>split_edge</code>, <code>collapse_edge</code>, the 3-2 <code>swap_edge</code>, the 2-3 <code>swap_face</code>, <code>swap_edge_44</code>,
+  <code>swap_edge_56</code>, and <code>smooth_vertex</code>.
+- <strong>Renumbering and resyncing.</strong> <code>consolidate_mesh</code> renumbers the recorder.
+  <code>remove_tets_by_ids</code> (tetwild's filters) resyncs it.
+- <strong>Virtuals for the application:</strong>
+  - <code>is_tracked_face(tid, j)</code>: which faces are tracked;
+  - <code>orient_tracked_face(f, tets)</code>: their corner order, given the face's tets. The
+    one-argument form looks the tets up; callers that hold only one corner pass them from
+    <code>faces_at_vertex</code> (see <em>Locking</em>);
+  - <code>tracked_feature_edges()</code>: the curves on the surface.
+- <strong>Locking.</strong> An operation holds its seed's one-ring (<code>{v1, v2} ∪ N(v1) ∪ N(v2)</code> for an
+  edge), and only part of the two-ring: see the note above <code>try_set_vertex_mutex_two_ring</code>.
+  - Reading the star of a held vertex u is race-free: anything that changes a tet at u must
+    hold u.
+  - The corners across u's star are two rings out and may not be held. Another thread can be
+    rewriting <em>their</em> tet lists. So find the star's faces from u's tets alone
+    (<code>TetMesh::faces_at_vertex</code>: face ids and tets included). Do not use <code>tuple_from_face</code>,
+    <code>Tuple::fid</code> or <code>tets_of_face</code>, which read all three corners' lists. The fold check first
+    did, and segfaulted now and then at 8 threads.
+  - Their positions are safe to read: moving a neighbour of u needs u.
+  - Dry runs (screening) return before any hook.</p>
+<p><code>TetOptimizerMesh</code> (<code>src/wmtk/TetOptimizerMesh.{h,cpp}</code>), the base of tetwild and simwild,
+fills these in:
+- <strong><code>is_tracked_face</code>:</strong> <code>m_is_surface_fs</code>.
+- <strong><code>orient_tracked_face</code>:</strong> the input orientation <code>m_orientation</code> on the face (its id from
+  its lowest tet), ascending vertex order where it is 0.
+- <strong><code>tracked_feature_edges</code>:</strong> tagged feature edges (<code>m_feature_edge_attribute</code>) that are edges
+  of tracked faces. tetwild's operations keep them by the history's rules: a split halves one,
+  a collapse remaps, swaps refuse them.
+- <strong><code>record_surface_history(metadata)</code> / <code>finish_surface_history(input)</code>.</strong>
+  - <code>finish</code> resyncs, warning if anything drifted.
+  - It checks that the history's feature edges equal the mesh's, warning if not.
+  - It fills <code>output_vertex_ids</code>, logs the counts, and returns the history, which the
+    application saves with <code>ComponentIO::save_history</code>.
+  - With <code>input</code>, it returns the chain from the input files; see the next section.
+- <strong><code>update_attributes_and_history()</code>:</strong> <code>update_attributes()</code> followed by a resync, so a
+  surface re-derived between passes is recorded.</p>
+<p><code>SimWildMesh</code> overrides <code>orient_tracked_face</code>. Each face points out of the tet whose tag set
+comes first, so a sheet between two tag sets is oriented the same way everywhere, from the
+tags alone.</p>
+<h2 id="recording-tracked-curves-on-a-trimesh-triwild">Recording tracked curves on a TriMesh (triwild)<a class="headerlink" href="#recording-tracked-curves-on-a-trimesh-triwild" title="Permanent link">&para;</a></h2>
+<p>The curve twin of the tet case. A triangle mesh's tracked curves are some of its edges, and
+edges have no stable ids either (<code>3 * lowest incident triangle + local index</code>), so they get ids
+of their own in <code>history::TrackedCurveRecorder</code>, <code>TrackedRecorder&lt;2&gt;</code>
+(<code>src/wmtk/history/TrackedRecorder.{hpp,cpp}</code>) -- the same recorder as the tet one: commits as
+diffs of the tracked segments around an operation, the edit that explains them found and
+verified, a <code>replace_faces</code> otherwise.</p>
+<p><code>TriMesh</code> (<code>src/wmtk/TriMesh.{h,cpp}</code>) calls it, next to its own <code>commit_history</code>:
+- <strong>Start and stop:</strong> <code>start_curve_history(position)</code>, <code>stop_curve_history()</code>.
+- <strong>Capture and commit:</strong> <code>curve_history_before(vs)</code> once an operation's before-hook and dry run
+  have passed, <code>curve_history_commit(kind, v, vs_after)</code> at its commit point. The tracked edges
+  at a vertex are read from that vertex's own triangles (<code>tracked_edges_around</code>), which the
+  operation holds. Hooked: <code>split_edge</code> (<code>{v1, v2}</code>, then with the new vertex), <code>collapse_edge</code>
+  (<code>{removed, kept}</code>, then <code>{kept}</code>), <code>swap_edge</code> (its four vertices; a swap never takes a
+  tracked edge), <code>split_face</code>, <code>smooth_vertex</code>.
+- <strong>Renumbering and resyncing.</strong> <code>consolidate_mesh</code> renumbers the recorder;
+  <code>remove_tris_by_ids</code> (the filters) resyncs it. <code>remove_tris_by_ids</code> now moves an edge's
+  attributes to the surviving triangle's slot when it removes the edge's lowest triangle, as
+  <code>remove_tets_by_ids</code> does in 3D; before, a tracked edge on the filtered region's boundary read
+  whatever that slot last held (<code>DEBUG_hausdorff</code> and <code>write_vtu</code> read them after the filter).
+- <strong>A lone feature point.</strong> A collapse that removes a feature point no segment holds changes no
+  segment; the recorder records it all the same, as the collapse or, if the survivor is not on
+  the curves, as a move.
+- <strong>Virtuals for the application:</strong> <code>is_tracked_edge(e)</code> and <code>tracked_feature_points()</code>.</p>
+<p><code>TriOptimizerMesh</code> (<code>src/wmtk/TriOptimizerMesh.{h,cpp}</code>), the base of triwild, fills them in
+(<code>m_is_surface_fs</code>, and the vertices with a feature point id) and adds
+<code>record_curve_history(metadata, sources)</code> and <code>finish_curve_history(input)</code>, as
+<code>TetOptimizerMesh</code> does for surfaces: <code>finish</code> resyncs, checks the feature points against the
+mesh's, fills <code>output_vertex_ids</code> (the mesh's vertex ids: after the last consolidation, the
+vertex rows of the output mesh, which the file route writes with <code>io::write_mesh</code> and the memory
+route returns), and returns the chain from the input files, which triwild saves with
+<code>ComponentIO::save_history</code>: a file on the file route, <code>report["history"]</code> on the memory route.</p>
+<h2 id="from-the-input-files-the-chain">From the input files: the chain<a class="headerlink" href="#from-the-input-files-the-chain" title="Permanent link">&para;</a></h2>
+<p>The tet histories, and isotropic's, start at the input files as read, so that a user's
+triangle id is a triangle of their own file. The stages before the mesh go into one history:
+- <strong>Read and weld.</strong> <code>io::read_triangle_mesh(paths, ..., ReadProvenance*)</code> returns the
+  meshes as read, concatenated, and the vertex and face each vertex and face became; the
+  cleaning fills it (<code>clean_triangle_mesh</code>), so <code>ComponentIO::triangles</code> gives the same of the
+  meshes a memory call is given. The snapshot is the raw meshes,
+  followed by a <code>relabel</code> to the welded mesh. isotropic maps its feature edges onto raw
+  vertices, and the relabel carries them over.
+- <strong>Simplify.</strong> The simplifier is a TriMesh. Record it with <code>start_history</code> from the welded
+  mesh, then <code>history::append</code> (tetwild, simwild's <code>EmbedSurface::simplify_surface</code>). Its
+  consolidation makes the ids the arrangement's triangle ids.
+- <strong>Insert.</strong> <code>utils::embed_triangles_in_tets</code> can return, per facet, the input triangles it
+  lies on (<code>EmbedTrianglesProvenance::want_face_triangles</code>).
+  - <strong>Exact sources.</strong> A facet's sources are the triangles of its coplanar group that it
+    overlaps with positive area: a separating-axis test in the group's plane, in doubles where
+    a margin decides, in rationals otherwise.
+  - <strong>Pitfall: coplanar groups are not cut along their internal edges.</strong> A UV sphere's quads
+    are two coplanar triangles, and a facet can lie across both. The centroid test alone
+    missed this.
+  - <strong>Matching facets to tracked faces.</strong> The applications key each facet's sources by its
+    corners' positions, sorted (<code>TetOptimizerMesh::PositionKey</code>). The tet mesh's <code>m_posf</code> is
+    the rounding of the same rationals, bit for bit, so <code>record_surface_history</code> finds every
+    snapshot face's sources there (<code>m_insertion_sources</code>), and warns about any it does not.
+  - <strong>The saved chain.</strong> <code>finish_surface_history(&amp;input_history)</code> appends an <code>embed</code> onto
+    the tet history's first state, then the tet edits.
+- <strong>simwild's surface route.</strong> <code>EmbedSurface</code> records per-file read and weld, the transform,
+  the split into components and the concatenation as one <code>relabel</code> with an explicit face map,
+  then the optional simplification, then the embedding. simwild also writes the tet mesh the
+  history starts from as <code>&lt;output&gt;_history_input.msh</code>.
+- <strong>triwild's curves</strong> (<code>history::curves_from_input</code>, <code>src/wmtk/history/InputHistory.hpp</code>):
+  - <strong>Read and weld.</strong> <code>io::read_edge_mesh(..., ReadProvenance*)</code> -- the same struct, its cells
+    segments, filled by <code>clean_edge_mesh</code> -- gives each file's vertices and segments as written
+    and where each went, a duplicate segment to the one it duplicates;
+    <code>utils::read_input_curves</code> concatenates them as it concatenates the network, and triwild
+    appends the point files' vertices. The snapshot is the files as read, then a <code>relabel</code> with
+    an explicit segment map (duplicates onto one).
+  - <strong>Simplify.</strong> <code>utils::simplify_segments</code> reports its collapses as history edits on the
+    welded network's rows, and which vertices survive its compaction. The collapse rule keeps
+    the smaller of two duplicate segments where the simplification keeps the one it did not
+    move -- the same set, other ids -- so a last <code>relabel</code> onto the compacted rows matches
+    segments by their vertices.
+  - <strong>Insert.</strong> <code>utils::embed_segments</code> already gives each arrangement edge the input segments
+    it tiles (<code>E_out_sources</code>). The mesh's vertices are the arrangement's rows, so triwild keys
+    them by vertex pair (<code>TriOptimizerMesh::CurveSources</code>); <code>finish_curve_history</code> appends the
+    <code>embed</code>, then the mesh's edits.</p>
+<table>
+<thead>
+<tr>
+<th>application</th>
+<th>history starts at</th>
+<th>ends at</th>
+<th>output point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>isotropic_remeshing</code>, <code>qslim</code>, <code>shortest_edge_collapse</code></td>
+<td>the input file as read</td>
+<td>the output file</td>
+<td>output triangle + barycentrics</td>
+</tr>
+<tr>
+<td><code>tetwild</code></td>
+<td>the input files as read</td>
+<td>the tracked faces of <code>&lt;output&gt;_final.msh</code> (after any filter)</td>
+<td>three tet vertex ids + barycentrics</td>
+</tr>
+<tr>
+<td><code>simwild</code>, <code>.msh</code> input</td>
+<td>the tag interfaces of <code>&lt;output&gt;_history_input.msh</code> (input points: three of its vertex ids + barycentrics)</td>
+<td>the tag interfaces of <code>&lt;output&gt;.msh</code></td>
+<td>three tet vertex ids + barycentrics</td>
+</tr>
+<tr>
+<td><code>simwild</code>, surface input</td>
+<td>the input files as read</td>
+<td>the tag interfaces of <code>&lt;output&gt;.msh</code></td>
+<td>three tet vertex ids + barycentrics</td>
+</tr>
+<tr>
+<td><code>triwild</code></td>
+<td>the input curve files (and point files) as read</td>
+<td>the tracked edges of <code>&lt;output&gt;.msh</code> (after any filter)</td>
+<td>two mesh vertex ids + barycentrics</td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-map-the-tracking-component">The map: the <code>tracking</code> component<a class="headerlink" href="#the-map-the-tracking-component" title="Permanent link">&para;</a></h2>
+<p><code>components/tracking/wmtk/components/tracking/</code>:
+- <strong><code>SurfaceMap</code>.</strong> Built from a history alone. It replays the edits and keeps a <em>step</em> per
+  edit:
+  - <strong>Splits:</strong> exact affine maps of the new faces onto the old.
+  - <strong>Collapses and swaps:</strong> a joint flattening of the patch before and after on a shared
+    outline (Liu et al. 2021).
+    - Tutte embeddings on the unit circle start it, the outline spaced by 3D length.
+    - SLIM (<code>slim2d.cpp</code>, Rabinovich et al. 2017) lowers the distortion of both patches at
+      once. They share the outline's vertices as unknowns, so the boundaries match by
+      construction. Its line search keeps every triangle positive by exact <code>orient2d</code>.
+    - A scaffold (Jiang et al. 2017) keeps the outline a simple polygon (<code>Scaffold</code>):
+      - <code>box</code>, the default, as in the paper. The region between the outline and a box three
+        times the patch, triangulated anew before every SLIM iteration, each triangle resting
+        in its current shape. <code>box_scaffold</code> (<code>scaffold2d.cpp</code>) is a constrained Delaunay
+        triangulation from VolumeRemesher's 2D arrangement (<code>vr2d::build_arrangement</code>: Delaunay,
+        then the outline's edges forced in by flips). Nothing crosses, so it adds only corners;
+        the outside is a flood fill from them that never crosses the outline.
+      - <code>ring</code>: one band of triangles out to a fixed copy of the outline, resting in its first
+        shape. It pulls the outline back and caps how far it stretches; renders of local maps
+        made that plain (a long thin patch: distortion 44 with the ring, 4.0 with the box).
+      - Measured 2026-10-22, box against ring:
+        - the map takes about 2.4 times as long to build (101168: 21.6 against 9.0 s);
+        - local maps with energy above 8 (twice an isometry's) drop by more than half;
+        - mean drift is 25% lower on 101168;
+        - texture symmetric Dirichlet is 8–22% lower.
+      - Do not use <code>utils::embed_segments</code> for this. It meshes a background grid and computes
+        rational coordinates, and was 100 times slower.
+    - Feature curves split a patch into sides, each flattened on its own.
+    - Curves that end inside a patch are cut into wedges.
+    - Where a vertex is removed on the outline, the after face is split virtually, so both
+      sides keep their area.
+  - <strong>Vertex moves</strong> (smoothing), by <code>Smoothing</code>:
+    - <code>flatten</code>, the default: the vertex's star before and after, flattened jointly per side,
+      so points stay where they were on the surface. A curve vertex slides along the curve by
+      arc length.
+    - <code>barycentric</code>: points keep their face and barycentric coordinates and ride along with
+      the vertex. The paper does this.</p>
+<div class="highlight"><pre><span></span><code>Measured 2026-10-22, flatten against barycentric:
+- Barycentric builds the map 1.3–3× faster (101168: 9.0 against 3.4 s; the bunny through
+  isotropic remeshing: 5.7 against 2.8 s).
+- Points drift about 3× further: 0.26 against 0.09 edge lengths on the bunny.
+- Transferred textures suffer most. On the remeshed bunny, symmetric Dirichlet 232 against
+  10.6 (the input's 4.1) and 266 flipped triangles against 83; through tetwild, 68 against
+  5.2.
+- The time saved is at most a few percent of a tetwild run. So flatten stays the default.
+- A tangent-plane projection with a flatten fallback kept flatten's quality at half its
+  cost, but saved only 1–8% of a whole tetwild run, and was not worth its complexity.
+</code></pre></div>
+<ul>
+<li><strong><code>relabel</code>:</strong> a renumbering.</li>
+<li><strong><code>embed</code>:</strong> location in space among the sources.</li>
+<li><strong><code>replace_faces</code>:</strong> faces with nowhere to go.</li>
+<li><strong>Warnings.</strong> <code>build_warnings()</code>, and the <code>MapWarnings</code> a <code>to_input</code> / <code>to_output</code> call fills
+  when given one, say where the map is not a bijection. A call's warnings are its own: mapping
+  never writes to the map, so several threads may map through one at once:</li>
+<li><code>not_a_disk</code>: a patch that cannot be flattened, mapped by relabelling -- or a side a
+    collapse removes whole, whose points then have no image;</li>
+<li><code>flat_triangle</code>;</li>
+<li><code>inverted</code>: a local map with a non-positive triangle;</li>
+<li><code>merged_faces</code>: two faces became one;</li>
+<li><code>unlocated</code>: a point outside every face of its patch;</li>
+<li><code>replaced</code>: faces of a <code>replace_faces</code>.</li>
+</ul>
+<p><code>folded_cells()</code> counts local maps between patches folded over in 3D. They are still
+  bijections, but stretched.
+- <strong><code>Tracking</code>.</strong> The user-facing wrapper: input points by file triangles or by
+  <code>input_vertex_ids</code> triplets; output points by triangles or by <code>output_vertex_ids</code> triplets.
+- <strong><code>CurveMap</code> and <code>CurveTracking</code></strong> (<code>CurveMap.{hpp,cpp}</code>, <code>tracking.hpp</code>): the same for
+  curves, where a joint flattening is exact. Each operation's segments before and after are
+  split into chains between <em>anchors</em> -- vertices it leaves where they were, junctions, ends,
+  feature points -- and each chain before is paired with the chain after between the same two
+  anchors (the removed vertex named as the survivor). The local map takes one onto the other
+  by normalised arc length: monotone, so a bijection, with constant stretch along the chain.
+  Splits, collapses and smoothing (<code>Smoothing::flatten</code>; <code>barycentric</code> keeps coordinates) are
+  all mapped so. Chains with no partner -- the topology changed -- map by relabelling where the
+  segment still exists. An <code>embed</code> maps each segment before onto the segments after lying on
+  it, end to end, as a chain by the same arc length -- on collinear pieces, exactly where a
+  point is in space -- and by projection where those pieces do not form a path; a <code>relabel</code>
+  by renumbering, flipping coordinates for a duplicate given reversed. Warnings
+  (<code>CurveMapWarnings</code>): <code>topology</code> (also a collapse along no segment, a weld), <code>merged_segments</code>,
+  <code>overlapping</code> (input segments that overlap), <code>unlocated</code>, <code>replaced</code>. <code>feature_points()</code>
+  follows each input feature point's vertex through collapses, relabels and (by position)
+  embeds to the output vertex it became.
+  - <strong>A junction, an end or a feature point collapsed onto a plain curve vertex</strong> moves there:
+    the survivor ends no chain before the collapse, so the chain the collapsed segment was on
+    runs on through it. A junction sliding along a branch, and a curve's end eroding onto its
+    neighbour, map as the shortening they are, without a warning; a collapse of two junctions,
+    or one along no segment (a weld), is a topology change.
+  - <strong>A chain a collapse contracted</strong> has no partner either, and holds the collapsed segment,
+    whose corners are one now, the survivor: two anchors collapsed into one shrink the segment
+    between them to the survivor, and a loop of three segments closed merges the other two into
+    the third. By relabelling the collapsed segment had no image (in triwild's tests at default
+    topology, with a curve within the envelope of another, up to one input point in a hundred),
+    so the chain maps by arc length onto what it became: the third segment, or the survivor -- a
+    chain of no length on a segment there, where every point goes. Forward only: what it became
+    maps back as it did.
+  - <strong>Segments of no length.</strong> The arrangement can set two vertices apart by less than their
+    rounding; in the history's doubles their segment has no length, until an operation moves
+    one (11502: two such segments grew to 0.09 when a junction collapsed there). By arc length
+    such a segment has no room, and all its points map to one end. So <code>measure()</code> counts each
+    segment for at least a billionth of its chain's mean segment (all alike if the chain has
+    no length): chains without one keep their arc length exactly, and the others stay one to
+    one at the cost of a billionth of their length. The chain-based embed does the same for
+    pieces of no length.
+  - <strong>Mapping points</strong> moves, per step, only the points on that step's segments (an index from
+    segment to points), so it costs little more than the steps that touch them: 0.37 s for
+    19,804 points through 520k edits.
+- <strong><code>transfer_fields</code> / <code>surface_io</code>.</strong> Fields of a gmsh input carried onto the output.
+  - The files are read and written through <code>io::read_mesh</code> / <code>io::write_mesh</code>, so they are
+    what <code>wm.read_mesh</code> reads and <code>wm.write_mesh</code> writes, and a plain gmsh <code>$ElementData</code>
+    field is carried too. A field is a triangle attribute of the <code>MeshData</code>: per face, or,
+    for <code>uv</code> and <code>normal</code> (<code>is_corner_field</code>, the fields <code>io::read_mesh</code> reads per corner),
+    three values per corner, corner after corner (<code>uv</code>: six columns). A face field keeps its
+    type and column labels.
+  - Faces take their centroid's value; corners are evaluated just inside their face.
+  - Every output face also gets <code>input_face</code> (Int64), the input face it maps to, -1 for none.
+  - <code>add_surface</code> / <code>write_surface_into_msh</code> write the result onto a copy of a tet mesh
+    (<code>tet_mesh</code> / <code>output_tet_mesh</code>): its vertices are the tet mesh's by <code>output_vertex_ids</code>
+    (<code>output_rows</code>), a tracked face already in the triangle block (a simwild face tag) takes
+    the fields on its row, and any other is a row added after them.
+- <strong>The app</strong> (<code>app.cpp</code>, spec <code>tracking_spec.json</code>; <code>tracking.hpp</code> declares it):
+  - <code>info</code>: what the map holds, its warnings, the output centroids' round trip -- for curves,
+    the output segments' midpoints' -- and how far they lie from their preimages (<code>drift</code>):
+    the mean, the 99th percentile and the largest, in mean output edge (segment) lengths
+    (<code>lengths</code>, <code>mean_length</code>), in the input's bounding-box diagonal (<code>diagonals</code>, <code>diagonal</code>)
+    and in the recording's envelope (<code>eps</code>, <code>envelope_eps</code>: <code>eps</code>, or <code>eps_rel</code> of the
+    diagonal, from the parameters the history saved). <code>large</code> -- warned about -- when the
+    largest is over 10 output lengths and 1% of the diagonal: a local map slides a point within
+    the patch it replaced, well under 10 lengths, and a coarse output is not held to its own few
+    edges. eps alone is no yardstick: on 219409, whose segments are 60 eps long, points slide
+    112 eps and under 2 segment lengths;
+  - <code>transfer</code> (surfaces): fields onto the output;
+  - <code>map</code>: user points;
+  - <code>features</code> (curves): the input's feature points and the output vertices they became.</p>
+<p>The file says whether it holds a surface or curves (<code>history::face_size</code>); the app picks.</p>
+<p>Without <code>input</code>, <code>transfer</code> reads the input files from the history's metadata.</p>
+<p>On the memory route (<code>tracking(options, meshes)</code>) <code>history</code> is the bytes of a history,
+  never a file name; <code>info</code>, <code>transfer</code>, <code>features</code> and <code>volume</code> run, <code>map</code> and <code>map_volume</code>
+  are refused. <code>transfer</code> needs <code>input</code>, a key of <code>meshes</code>, and returns the output surface as
+  <code>mesh</code> (<code>mesh_from_surface</code>), and with <code>tet_mesh</code>, another key, that mesh with the fields as
+  <code>tet_mesh</code> (<code>add_surface</code>).</p>
+<h2 id="volumes">Volumes<a class="headerlink" href="#volumes" title="Permanent link">&para;</a></h2>
+<p>A tet mesh's tracked surface splits its volume into regions, and the surface history maps only
+the surface. With <code>volume_history_output</code> (and <code>history_output</code>, which it follows), tetwild and
+simwild in 3D also record the volume around it, and the <code>tracking</code> component maps each region
+onto itself -- a point inside stays inside -- between the tet mesh the history starts from and
+the one it ends at.</p>
+<ul>
+<li><strong>Where it starts and ends.</strong></li>
+<li>simwild: regions are the tets with the same tags. From <code>&lt;output&gt;_history_input.msh</code> to
+    <code>&lt;output&gt;.msh</code>; on the memory route the output meshes <code>history_input</code> and <code>mesh</code>.</li>
+<li>tetwild: one region, the tracked surface kept on itself. From <code>&lt;output&gt;_history_input.msh</code>
+    to <code>&lt;output&gt;_history_output.msh</code>, the whole mesh before the filter; on the memory route the
+    output meshes <code>history_input</code> and <code>history_output</code>. <code>&lt;output&gt;_final.msh</code> (<code>mesh</code>) is the
+    part the filter keeps: a point of the part dropped has no tet there.</li>
+<li>Refused: without <code>history_output</code>; with tetwild's <code>use_legacy_code</code>, which rebuilds the
+    mesh; with <code>coarsen_pass</code> and <code>coarsen_local_smoothing_passes</code> above 0, whose collapses
+    smooth a ball of vertices the history does not see; simwild in 2D.</li>
+<li><strong>The history</strong> (<code>history::VolumeHistory</code>, <code>src/wmtk/history/VolumeHistory.{hpp,cpp}</code>). One
+  edit per operation that changed the tracked surface -- collapse, the four swaps, smoothing --
+  with the tets around it before and after, their regions (sets of tags), their vertices'
+  positions and surface vertices, and the range of surface edits it made. Every other operation
+  leaves each region where it is in space, and needs no record.</li>
+<li><strong>Recording.</strong> <code>TetMesh::start_volume_history(position)</code> (<code>TetOptimizerMesh</code>'s
+    <code>record_volume_history</code>) starts a <code>history::VolumeRecorder</code> next to the surface's. Each
+    operation captures the tets at its vertices before it changes the mesh and at its commit
+    point, and commits them with the surface edits its surface commit returned; one that made
+    none is dropped. Commits may come from several threads. Vertices get ids of their own,
+    which a consolidation does not change, so a position is written again only when it moved,
+    and a collapse's tets after are derived from its tets before.</li>
+<li><strong>Finishing.</strong> <code>finish_volume_history(tag_names)</code> returns the bytes of the file, which
+    <code>ComponentIO::save_volume_history</code> writes on the file route and returns as
+    <code>report["volume_history"]</code> on the memory route. simwild names the tags as its mesh files
+    label them (<code>io::collect_tags</code>), so a tet's groups give its region.</li>
+<li><strong>The file.</strong> <code>"WMTKVOLH"</code>, version 2, in the varints and doubles of <code>BinaryIO.hpp</code> (the
+    layout is in <code>VolumeHistory.cpp</code>), with the key of its surface history: its number of edits
+    and a hash of them (<code>surface_key</code>), which the map checks. <code>read_history</code> and
+    <code>write_history</code> take it as they take a surface's (<code>is_volume_history</code>); <code>to_bytes()</code> /
+    <code>from_bytes()</code>, <code>save()</code> / <code>load()</code>. A damaged file throws: every edit is checked as read.</li>
+<li><strong>The map</strong> (<code>VolumeMap</code>, <code>VolumeMap.{hpp,cpp}</code>, with <code>volume_complex</code> and
+  <code>volume_geometry</code>). Per operation and region, pairs of patches, before and after, each
+  embedded star-shaped -- its real geometry when it is, else a fallback (<code>spherical</code>, then a
+  convex <code>bowl</code> or <code>convex</code> realization) -- and a point carried along the ray from one centre
+  to the boundary, across by the boundary map (the identity on the faces the operation keeps,
+  the surface map's local map, <code>CollapsePatch::removed_star</code>, on the tracked faces it changes)
+  and back in from the other centre, as far in as it was. Both sides of the surface use the
+  same surface map, so they agree on it. The kinds of pair (<code>op_kinds</code>):</li>
+<li>collapses: <code>small</code> (a side alone), <code>single</code> (both ends' stars), <code>vanishing side</code> (a side
+    whose tets all hold the survivor), <code>interior j-&gt;i</code> and <code>move i</code> (a surface vertex collapsed
+    into one off the surface, mapped the other way round), and through a decomposition where a
+    side has a chord (<code>split</code>, <code>refined-a</code>, <code>unsplit</code>: the chord split at a virtual vertex, the
+    collapse, the virtual vertex collapsed back) -- with one region all round, the whole
+    collapse goes through it;</li>
+<li>swaps: <code>swap side</code>, and <code>swap split</code> (a 3-2 flip on the surface as an exact split and a
+    collapse);</li>
+<li>moves: <code>move</code>, one embedding for both sides;</li>
+<li><code>volume only</code>: where no pair keeps the surface -- the boundary of an open sheet, a weld --
+    one pair over the whole operation keeps the volume a bijection, and the surface is not kept
+    there (<code>surface_not_kept</code>); a point may then change region, and is in its new one from then
+    on.</li>
+<li><strong>Lazily, and kept.</strong> An operation's map is built when points first go through it, and
+    kept for later calls up to <code>VolumeMapOptions::cache_bytes</code> (256 MB; 0 keeps none). The
+    points are found in an operation's tets through a grid over the operations' boxes. On
+    tetwild's 1047980 (about 12,000 operations), 20,000 points take 3.0 s in one call, 4.0 s in
+    20 calls of 1,000, and 0.55 s in 200 calls of one.</li>
+<li><strong>Stats</strong> (<code>VolumeMapStats</code>, <code>stats_report()</code>): maps built and failed, with the reasons,
+    pairs on real geometry and on fallbacks, decompositions, <code>surface_not_kept</code>,
+    <code>inverted_ops</code> (see below), points that changed region or went through a failed map, and
+    the maps kept.</li>
+<li><strong>Threads.</strong> The const queries may run on several threads at once: the operations built
+    and kept, and the stats, are kept under a mutex, and the maps built outside it.</li>
+<li><strong>No point.</strong> A position that is not a number is passed by, as it is.</li>
+<li><strong>Size.</strong> The volume history takes several times the room of the surface history: on
+    tetwild's 1017020 33.5 MB, on 101954 3.0 MB.</li>
+<li><strong><code>VolumeTracking</code></strong> (<code>tracking.hpp</code>), the user-facing wrapper:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tracking</span><span class="o">::</span><span class="n">VolumeTracking</span><span class="o">::</span><span class="n">load</span><span class="p">(</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="s">"out.wmtkhist"</span><span class="p">,</span><span class="w"> </span><span class="s">"out.wmtkvol"</span><span class="p">,</span><span class="w"> </span><span class="s">"out_history_input.msh"</span><span class="p">,</span><span class="w"> </span><span class="s">"out_history_output.msh"</span><span class="p">);</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">tracking</span><span class="o">::</span><span class="n">TetPoint</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="n">tet</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">b0</span><span class="p">,</span><span class="w"> </span><span class="n">b1</span><span class="p">,</span><span class="w"> </span><span class="n">b2</span><span class="p">,</span><span class="w"> </span><span class="n">b3</span><span class="p">}}};</span><span class="w">  </span><span class="c1">// a row of the mesh's tets</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">auto</span><span class="w"> </span><span class="n">there</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">to_output</span><span class="p">(</span><span class="n">pts</span><span class="p">);</span><span class="w">   </span><span class="c1">// a tet of the output mesh of the point's own region; kNoId none</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">auto</span><span class="w"> </span><span class="n">xyz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">map_positions</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w">   </span><span class="c1">// VolumePoint: position, region</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1">// in memory: VolumeTracking(surface, volume, input_mesh, output_mesh), or (surface, volume)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1">// alone, which maps positions only</span>
+</code></pre></div>
+<p>A tet point is a row of the mesh's tets, as <code>io::read_mesh</code> (<code>wm.read_mesh</code>) and the memory
+  route give them, and barycentric coordinates in its corners' order. A point keeps its region:
+  where it lands on a face between two, it is named by a tet of its own. Copies and moves share
+  the map and the meshes.
+- <strong>Python</strong> (<code>wm.VolumeTracking</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">v</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">VolumeTracking</span><span class="p">(</span><span class="n">report</span><span class="p">[</span><span class="s2">"history"</span><span class="p">],</span> <span class="n">report</span><span class="p">[</span><span class="s2">"volume_history"</span><span class="p">],</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>                      <span class="n">outputs</span><span class="p">[</span><span class="s2">"history_input"</span><span class="p">],</span> <span class="n">outputs</span><span class="p">[</span><span class="s2">"history_output"</span><span class="p">])</span>  <span class="c1"># cache_bytes=...</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">tets</span><span class="p">,</span> <span class="n">bary</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">to_output</span><span class="p">(</span><span class="n">tets</span><span class="p">,</span> <span class="n">bary</span><span class="p">)</span>  <span class="c1"># int64 (n,), float64 (n, 4); -1 and NaN for no tet</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">tets</span><span class="p">,</span> <span class="n">bary</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">to_input</span><span class="p">(</span><span class="n">tets</span><span class="p">,</span> <span class="n">bary</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">xyz</span><span class="p">,</span> <span class="n">region</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">map_positions</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s2">"to_output"</span><span class="p">,</span> <span class="n">regions</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>  <span class="c1"># -1: no operation took it</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">v</span><span class="o">.</span><span class="n">has_meshes</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">regions</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">tag_names</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">stats</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">p</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">VolumeTracking</span><span class="p">(</span><span class="n">report</span><span class="p">[</span><span class="s2">"history"</span><span class="p">],</span> <span class="n">report</span><span class="p">[</span><span class="s2">"volume_history"</span><span class="p">])</span>   <span class="c1"># positions only</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">f</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">VolumeTracking</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">surface_path</span><span class="p">,</span> <span class="n">volume_path</span><span class="p">,</span> <span class="n">input_mesh_path</span><span class="p">,</span> <span class="n">output_mesh_path</span><span class="p">)</span>
+</code></pre></div>
+<p>The conventions are <code>wm.Tracking</code>'s: <code>TypeError</code> and <code>ValueError</code> for dtypes and shapes,
+  <code>ValueError</code> for a history of the other kind in either place, <code>RuntimeError</code> for damaged
+  bytes or a volume history recorded with another surface history; arrays converted under the
+  GIL, which building and mapping release; one object may be shared by threads.
+- <strong>The app.</strong> <code>volume</code> builds the map from <code>volume_history</code> and checks it on <code>samples</code> points
+  near the tracked surface of <code>tet_mesh</code>: how far they move, the conformal distortion and
+  det J of the map there, whether they end in their region of <code>output_tet_mesh</code>, and the round
+  trip; the report holds it, on both routes (on the memory route the volume history is bytes
+  and the meshes are keys of the call's). Without <code>tet_mesh</code> it builds every operation's map.
+  <code>map_volume</code> (file route only) maps a file of points, <code>x y z</code> or <code>tet b0 b1 b2 b3</code>.
+- <strong>Known limitations.</strong>
+  - <strong>Round trips on coarse inputs.</strong> The history holds positions in doubles, the exact ones
+    rounded -- tetwild's and simwild's vertices not rounded yet after the insertion. At those
+    positions some tets of an operation can be flat or turned the other way round, though they
+    are not in the exact positions; the tets there overlap, a position is in two, and a point
+    mapped there and back can come back off by up to the size of the tets around.
+    <code>inverted_ops</code> counts such operations, and <code>volume</code> warns. On an icosahedron split once
+    (42 vertices) 61 of about 2,200 operations have one, and 17 of 3,000 points come back off,
+    the worst by 1.3% of the diagonal; on a unit cube, 176 and 1.7%; on an icosphere of 162
+    vertices none, and every point comes back to 1e-16. <code>tetwild-volume-coarse-round-trip</code>
+    pins it. Mapping by exact positions would need them in the history. Rarer: a fallback
+    embedding's centre next to a boundary apex (<code>apex_centre</code>) can be within 1e-17 of the
+    patch from a face plane, and that pair's radial map then loses points too; taking another
+    embedding there made <code>tracking-example-simwild-volume</code>'s round trip worse, so it is not
+    done.
+  - <strong>Operations with no map.</strong> Over 200 runs of <code>volume-ops</code>'s random operations (25,000 to
+    31,000 operations in all), 6 to 14 operations have no map, in 1.5 to 3.5% of the runs,
+    with the envelope at one cube or two, the sheet's boundary held or not: a 4-4 surface swap no split and collapse makes (about
+    half), a collapse whose surface map flattens both stars where no pair over both stars
+    embeds and the removed star collapsed is no ball, so no volume-only pair either, and a
+    decomposition step with a changed boundary face that is not tracked. Their points keep
+    their place (<code>failed</code>, <code>through_failed</code>). A looser envelope does not change the rate. The
+    applications' runs in the tests have none.
+  - <strong>det J along intersection curves.</strong> simwild's insertion leaves slivers along the curves
+    where surfaces meet, some of them flat or inverted at the recorded positions. A Jacobian
+    by finite differences there leaves the sliver at once, and is not positive at a few in a
+    thousand to 2% of the points that move (4 of 1,185 on two crossing icospheres, all in
+    slivers); the tests check orientation away from slivers.
+- <strong>Tests.</strong> <code>test_volume_map.cpp</code> (the file and its damage, bytes, pairing, the locator, the
+  cache, threads, the memory route's <code>volume</code>), <code>test_volume_ops.cpp</code> (each kind of pair on a
+  jittered grid recorded by hand, deciding on exact shapes so a seed's run is the same on every
+  platform), the whole runs in <code>test_tetwild_tracking.cpp</code> and <code>test_simwild_tracking.cpp</code>
+  (Release only), and the <code>Volume</code> tests of <code>tests/python/test_tracking.py</code>.</p>
+<h2 id="extending-tracking-to-another-application">Extending tracking to another application<a class="headerlink" href="#extending-tracking-to-another-application" title="Permanent link">&para;</a></h2>
+<h3 id="on-a-trimesh">On a TriMesh<a class="headerlink" href="#on-a-trimesh" title="Permanent link">&para;</a></h3>
+<ol>
+<li>After the mesh is created, <code>auto rec = mesh.start_history([&amp;](size_t v) { return pos(v); });</code>
+   The position read must be const.</li>
+<li>Make the application change the surface only through <code>split_edge</code>, <code>split_face</code>,
+   <code>collapse_edge</code>, <code>swap_edge</code> and <code>smooth_vertex</code>. If it has feature curves, enforce the
+   feature rules and add them to <code>rec-&gt;history().features</code>.</li>
+<li>Start from the input file. Read with <code>io::read_triangle_mesh(paths, ..., &amp;provenance)</code>, then
+   save <code>history::from_input(provenance, welded_positions, rec-&gt;history())</code>
+   (<code>src/wmtk/history/InputHistory.hpp</code>): the file as read, a <code>relabel</code> to the mesh, then the
+   recorded edits. <code>qslim.cpp</code> is the shortest example.</li>
+<li>At the end, <code>consolidate_mesh()</code>, then <code>stop_history()</code>. Write the output by the history's
+   last state: consolidated, face ids and corner order as stored.</li>
+<li>Save the history with <code>metadata</code> set to <code>component_io.history_metadata(params)</code>, through
+   <code>ComponentIO::save_history(h, history_output)</code>: a file on the file route, the report's
+   <code>history</code> on the memory route (whose entry point returns <code>take_result()</code>).</li>
+<li>Add <code>history_output</code> to the spec with the same name and meaning as in the other
+   applications.</li>
+</ol>
+<h3 id="on-a-tetmesh">On a TetMesh<a class="headerlink" href="#on-a-tetmesh" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Derive from <code>TetOptimizerMesh</code> if you can: the hooks, <code>record_surface_history</code> and
+   <code>finish_surface_history</code> come with it. Otherwise override <code>is_tracked_face</code>,
+   <code>orient_tracked_face</code> and <code>tracked_feature_edges</code> on your <code>TetMesh</code>, and call
+   <code>start_surface_history(position)</code> yourself.</li>
+<li>Orient tracked faces consistently per sheet. Use the input orientation, the tags (simwild),
+   or anything that does not depend on the face's slot.</li>
+<li>Start recording once the tracked surface exists, after insertion and the first
+   consolidation. Edge splits, collapses, swaps and smoothing report to the history;
+   <code>split_face</code>, <code>split_tet</code> and <code>insert_point</code> have no hooks and throw while it records.</li>
+<li>After anything that changes tracked flags outside the operations -- re-deriving them,
+   filters, tag edits -- call <code>resync_surface_history()</code>. <code>remove_tets_by_ids</code> does it itself.
+   Each resync is a <code>replace_faces</code> and a warning in the map. Avoid them if you can.</li>
+<li>Save after the last change to the tet mesh, then write the tet mesh numbered as it is then:
+   <code>output_vertex_ids</code> are the mesh vertex ids at save time.</li>
+<li>For an insertion stage: collect per-facet sources keyed by position
+   (<code>m_insertion_sources</code>), and finish with the input history
+   (<code>finish_surface_history(&amp;input)</code>).</li>
+</ol>
+<h3 id="what-breaks-bijectivity-on-curves">What breaks bijectivity on curves<a class="headerlink" href="#what-breaks-bijectivity-on-curves" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Welds (a collapse joining two curves along no segment), junctions merged, loops closed, and
+  the input simplification without the link condition: all of them <code>topology</code> warnings. With
+  <code>preserve_topology</code> there are none of these left.</li>
+<li>Duplicate segments in the input files (<code>merged_segments</code>), which the weld makes one.</li>
+<li><strong>Not a warning, but a distortion: junctions that slide.</strong> Without tracking, triwild anchors
+  only curve ends (<code>allow_junction_cleanup</code> defaults to true); a junction is free to move, and
+  does: on 190246 one slid 14 units in a single smoothing step, zipping two curves that run
+  side by side inside the envelope. The map still takes the junction to the junction, so one
+  branch stretches 12 times and the others shrink as much. Points then drift far along the
+  curves (mean 0.97, max 174 segment lengths), and a point that rides the junction loses
+  precision through the steps that stretch it (round trip 6.76 there). With junctions anchored
+  they stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths. So
+  <code>history_output</code> anchors them (<code>allow_junction_cleanup</code> defaults to false then, unless the
+  config gives it; without <code>preserve_feature_points</code>, which anchors nothing, it is left alone). The freeze the option was introduced for in August, a self-intersecting
+  input stuck at MAX_ENERGY by its anchored crossings, no longer happens on its example:
+  242427 converges either way at default topology, anchored keeping about 2.5 times the
+  vertices (stop_energy 100: max energy 99.5 and 3443 vertices free, 99.2 and 8483 anchored,
+  17.5 s and 22.3 s with recording; stop_energy 10: 5476 and 14257 vertices). With
+  <code>preserve_topology</code> it is still at 1e50 either way when stopped after 10 minutes (2.3M
+  edges).</li>
+<li><strong>Not a topology warning, but a drift warning: hairpins removed.</strong> A curve that folds back on
+  itself narrower than the envelope can lose the whole fold to one collapse: on 226193 a
+  776-unit hairpin went to 1.08. The envelope is one-sided -- the output must stay near the
+  input, not the input near the output -- so the input simplification and the collapses may
+  cut long strokes that double back. The map squeezes the fold onto what is left by arc
+  length, so a point near its tip drifts as far as the fold was long (1,648 units there). On
+  segment soups the folds are many: challenging_triwild_189017 (eps_rel 1e-3, 20 iterations,
+  4 threads), with <code>preserve_topology</code> and junctions anchored, maps with a round trip of
+  2.8e-6 and no topology warning, yet its midpoints drift a mean of 1.45 segment lengths, a
+  99th percentile of 32.9 (89 eps) and at most 144 (388 eps, 39% of the diagonal); already after
+  the embed, the input simplification having cut the folds, it is of that order (a 99th
+  percentile of 82 units, at most 220). At
+  default topology the largest is 29 segment lengths (32% of the diagonal). <code>info</code> warns on
+  both (<code>drift.large</code>). A map of such a collapse by projection, each point of the fold onto
+  the nearest point of what is left, would keep the drift within eps but is not a monotone
+  map of the chain; not done.</li>
+</ul>
+<p>Measured 2026-10-22 on 24 networks of the 2D dataset (22 KB to 2.6 MB, 4 threads), <code>info</code>
+on each history:</p>
+<table>
+<thead>
+<tr>
+<th>triwild settings</th>
+<th>junctions</th>
+<th>topology warnings</th>
+<th>worst round trip</th>
+<th>below 1e-8</th>
+<th>drift, median of means</th>
+<th>edits</th>
+<th>map build</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>default</td>
+<td>anchored (the default with <code>history_output</code>)</td>
+<td>on 22 of 24 (welds)</td>
+<td>2.4e-9</td>
+<td>24 of 24</td>
+<td>0.043 segment lengths</td>
+<td>0.5k–51k</td>
+<td>at most 0.20 s</td>
+</tr>
+<tr>
+<td>default</td>
+<td>free (<code>allow_junction_cleanup: true</code>)</td>
+<td>on 22 of 24 (welds)</td>
+<td>2.8e-10</td>
+<td>24 of 24</td>
+<td>0.044</td>
+<td>0.5k–49k</td>
+<td>at most 0.16 s</td>
+</tr>
+<tr>
+<td><code>preserve_topology</code></td>
+<td>anchored (the default with <code>history_output</code>)</td>
+<td>0</td>
+<td>3.3e-6</td>
+<td>18 of 24</td>
+<td>0.045</td>
+<td>up to 2.0M</td>
+<td>up to 9.3 s</td>
+</tr>
+<tr>
+<td><code>preserve_topology</code></td>
+<td>free (<code>allow_junction_cleanup: true</code>)</td>
+<td>0</td>
+<td>6.76 (190246; next 1.5e-4)</td>
+<td>14 of 24</td>
+<td>0.099</td>
+<td>up to 1.9M</td>
+<td>up to 8.7 s</td>
+</tr>
+</tbody>
+</table>
+<p>The other warnings are the input's: duplicate segments (<code>merged_segments</code>, up to 4,144 on
+202361) and overlapping ones (<code>overlapping</code>). No point is lost anywhere; every input feature
+point reaches an output vertex but 9 of 584 on 226193 at default topology with junctions free,
+where the input simplification without the link condition retires their vertices. Recording
+costs 2.6–4.0% instructions at default settings with junctions free (12 models, serial), with
+the output <code>.msh</code> byte-identical with recording off and on and to the parent commit's. Since
+<code>history_output</code> anchors the junctions, recording changes the output unless the config gives
+<code>allow_junction_cleanup</code>.</p>
+<h3 id="what-breaks-bijectivity">What breaks bijectivity<a class="headerlink" href="#what-breaks-bijectivity" title="Permanent link">&para;</a></h3>
+<p>Each of these shows up as warnings, never as a refusal to run:
+- topology changes: welds of two surface vertices along a non-surface edge, sheets merging,
+  collapses without the link condition;
+- surface changes outside the operations;
+- patches that are not disks.</p>
+<p>For a bijective map, run tetwild with <code>preserve_topology: true</code>. It holds both the input
+simplification and the tet operations to the link condition. (<code>simplify_use_link_condition</code>
+is gone; tetwild and triwild warn if a config still sets it.)</p>
+<p>What is left under <code>preserve_topology</code> (101168: 298 warnings, no welds):
+- collapses near a non-manifold vertex the input has and keeps, whose star is not a disk;
+- collapses where 4 to 12 feature curves meet. The curves cut the patch into one-face sides
+  the joint flattening refuses, and each such face is mapped onto itself by barycentric
+  coordinates. That is a bijection on the face, though possibly not consistent with its
+  neighbours along the curves; not looked into.</p>
+<h2 id="extending-the-mapping-component">Extending the mapping component<a class="headerlink" href="#extending-the-mapping-component" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>A new edit kind:</strong></li>
+<li>Add it to <code>EditKind</code> with its semantics.</li>
+<li>Implement it in <code>Replay::apply</code>.</li>
+<li>Write and read it in <code>History.cpp</code>, bumping the version.</li>
+<li>Give <code>SurfaceMap</code>'s constructor a case that builds a <code>Step</code>, and teach <code>map()</code>'s <code>visit</code> to
+     move points through it, both directions.</li>
+<li>Add the warnings it can raise to <code>MapWarnings</code>.</li>
+<li><strong>A new way of naming output points:</strong> if the application's output numbers vertices its own
+  way, set <code>output_vertex_ids</code>. <code>Tracking</code> then speaks in vertex triplets. Anything else --
+  tet ids and local faces, say -- belongs in <code>Tracking</code>, converting to and from history face
+  ids.</li>
+<li><strong>A new operation:</strong> add it to <code>app.cpp</code> and to <code>operation</code>'s options in the spec,
+  with every new option documented there.</li>
+<li><strong>Another curve application.</strong> On a <code>TriOptimizerMesh</code>, <code>record_curve_history</code> and
+  <code>finish_curve_history</code> come with it. Otherwise override <code>is_tracked_edge</code> and
+  <code>tracked_feature_points</code> on your <code>TriMesh</code> and call <code>start_curve_history(position)</code>. Keep the
+  feature points by the rules (a collapse renames a removed one to the survivor), and start from
+  the input with <code>history::curves_from_input</code> if the input is curve files.</li>
+<li><strong>A curve edit kind</strong> goes through the same steps as above, in <code>CurveMap</code> instead of
+  <code>SurfaceMap</code>. <code>split_face</code> and <code>swap_edge</code> have no curve meaning, and loading a curve history
+  that holds one fails.</li>
+</ul>
+<h2 id="evaluating-correctness">Evaluating correctness<a class="headerlink" href="#evaluating-correctness" title="Permanent link">&para;</a></h2>
+<p>The checks used so far, from cheapest to strongest:
+1. <strong>The replay reaches the output.</strong> Replay the history and compare its last state with the
+   application's output surface, by sorted corner positions.
+   - <code>test_tetwild_history.cpp</code>: the exported tracked faces.
+   - <code>test_simwild_history.cpp</code>: the output's tag interfaces.
+   - <code>test_remeshing_history.cpp</code>: isotropic.
+2. <strong>The recorder recognised everything.</strong> <code>TrackedSurfaceRecorder::stats()</code>:
+   - <code>replaced</code> = 0 and <code>unknown</code> = 0;
+   - welds = 0 under <code>preserve_topology</code>.</p>
+<p>Also: no "feature edges ... are not the mesh's" warning at save.
+3. <strong>The map builds without warnings.</strong> <code>build_warnings().total() == 0</code>; the <code>tracking</code>
+   <code>info</code> operation prints them, and the first offending edits.
+4. <strong>Round trips.</strong> <code>to_input(to_output(p)) == p</code>, and the reverse, below 1e-8 in barycentric
+   coordinates. A map that is not a bijection misses by far more. So does one that stretches
+   a lot. To tell which, trace one point both ways, step by step, and replay the history
+   next to the traces, comparing the two in 3D after each edit. Compare in 3D, not by face
+   and barycentrics: a point on an edge has two names.
+   - The discrepancy should start at rounding (1e-14).
+   - A step that multiplies it by the same factor for every point stretches: that is the map.
+   - A step that multiplies it by about the square of a triangle's aspect ratio computes
+     badly. 101168 under <code>preserve_topology</code> had the embed doing that: barycentric
+     coordinates solved through the normal equations, on a sliver of aspect 3.5e4.
+   - The scaffolding for this was a temporary <code>trace()</code> on <code>SurfaceMap</code>. It is not in the
+     repository; it records <code>pts[0]</code> after each step in <code>map()</code>.
+5. <strong>A check the map does not see:</strong>
+   - simwild's tags: an output interface face maps to an input face between the same two tag
+     sets;
+   - for surface inputs: onto a file whose tag the interface separates;
+   - tetwild: two disjoint spheres from two files, each output face mapping onto the file of
+     its sphere.
+6. <strong>Geometry.</strong> The image of a point lies near it: within about two input edge lengths in the
+   examples, or the envelope for tet applications. A linear attribute remapped through the
+   inverse map comes back close to itself.
+7. <strong>Quality of the map.</strong> <code>folded_cells()</code> counts local maps that must stretch. For UVs,
+   compare the distortion of the transferred texture with the input's: flipped texture
+   triangles, and the conformal distortion of each triangle's 3D-to-UV map.
+8. <strong>Curves.</strong> The same checks: the history's last segments, by <code>output_vertex_ids</code>, are edges
+   of the output mesh at the same positions; the recorder's <code>replaced</code> and <code>unknown</code> are 0 and
+   <code>finish_curve_history</code> warns about nothing; the map builds without warnings under
+   <code>preserve_topology</code>; round trips are at rounding (1e-16 on the examples, arc length being
+   exact); input feature points end at output vertices within eps of themselves; a point at a
+   curve's end maps onto the end's output vertex. Tests: <code>test_curve_map.cpp</code> (exact maps on
+   hand-built histories: a straight line is the identity, arc length on a bend, junctions and
+   loops, a weld, duplicates and an embed, the file format) and <code>test_triwild_tracking.cpp</code>.
+9. <strong>Recording changes nothing.</strong> With deterministic (serial) runs, an application with
+   recording on, with it off, and current <code>main</code> must write byte-identical meshes.
+   - Compare instruction counts (<code>/usr/bin/time -l</code>) for the cost, not wall time.
+   - At 16 threads, runs differ in their iteration counts, which swamps the overhead in wall
+     time.</p>
+<h2 id="folds">Folds<a class="headerlink" href="#folds" title="Permanent link">&para;</a></h2>
+<p>Remeshers that do not check normals fold the surface over locally. The map stays bijective
+there, but stretches. Two exact checks, both counting folds the same way:
+- <strong><code>isotropic_remeshing</code>'s <code>check_inversions</code></strong>, on by default.
+- <strong><code>TetOptimizerMesh</code>'s <code>check_surface_folds</code></strong> (tetwild, simwild), off by default.</p>
+<p>Both refuse a collapse, swap or smoothing if either of these grows:
+- the number of faces not facing the replaced patch's normal, or the new patch's own normal;
+- the folds in the stars of the vertices it touches.</p>
+<p>Facing is exact: <code>orient3d</code> of the triangle and a point below it along the normal
+(<code>utils::predicates::faces_along</code>).</p>
+<p>The tet check (<code>TetOptimizerMesh::tracked_surface_before/after</code>, called by <code>TetMesh</code>'s
+operations through <code>checks_tracked_surface()</code>):
+- <strong>Before:</strong> the tracked faces around the operation. A collapse takes those at either end;
+  a swap, those inside its ring; a smoothing, those at the vertex. It records the patch's
+  summed area vector, how many faces do not face along it, and the star folds over the
+  patch's vertices. It skips operations with no surface vertex.
+- <strong>After</strong>, once the after-hook and invariants have passed: the same counts on the faces
+  there. More of either refuses the operation, like a failed after-hook, with a rollback.
+- <strong>Splits</strong> are not checked: they halve faces and move nothing.
+- <strong>Colored smoothing is off</strong> while the check is on. Colored smoothing moves vertices of a
+  class concurrently without locks, and the check reads the stars of a vertex's neighbours,
+  which two vertices of one class can share.
+- <strong>Stars come from the vertex's own tets;</strong> see <em>Locking</em>.</p>
+<p>What it does, from <code>test_surface_folds.cpp</code> (8 threads, 10 iterations, three runs each).
+These are folded star faces after insertion and at the end; insertion already leaves many,
+creases sharper than their star's average included:</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>check off, at the end</th>
+<th>check on, at the end</th>
+<th>after insertion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bunny</td>
+<td>9–12</td>
+<td>0–1</td>
+<td>122–143</td>
+</tr>
+<tr>
+<td>crown</td>
+<td>35–77</td>
+<td>13–31</td>
+<td>1556–1801</td>
+</tr>
+<tr>
+<td>thingi_100036</td>
+<td>87–117</td>
+<td>15–25</td>
+<td>195</td>
+</tr>
+<tr>
+<td>37989_sf</td>
+<td>1851–1902</td>
+<td>1681–1697</td>
+<td>~3500</td>
+</tr>
+<tr>
+<td>Octocat</td>
+<td>108–117</td>
+<td>65–73</td>
+<td>158–199</td>
+</tr>
+</tbody>
+</table>
+<p>On the octocat without simplification, folded local maps went from 3,456 to 112, for +5%
+final max energy. Keep it off by default (the user's decision, 2026-10-21).</p>
+<p>Tests:
+- <code>tetwild-surface-folds-refused</code>: a vertex moved past its star's outline is refused.
+- <code>tetwild-surface-folds-none-made</code>: a parallel bunny run ends with no more folds than the
+  insertion left.
+- <code>[.folds-compare]</code> (hidden): the table above.</p>
+<h2 id="costs">Costs<a class="headerlink" href="#costs" title="Permanent link">&para;</a></h2>
+<p>Measured on the 15 challenging tetwild models (default parameters, so <code>preserve_topology</code>
+off), serially, comparing recording on, recording off, and <code>main</code> (43d74ecfe0). Scripts:
+<code>exp_challenging/run_eval.py</code> and <code>reinfo.py</code> in the session scratchpad, not in the repository.
+- <strong>Recording off costs nothing.</strong> Output meshes are byte-identical to <code>main</code>'s on all 15
+  models, with the same iteration counts. Instructions retired: -0.07% to +0.06% per model,
+  -0.04% in total. The hooks are one pointer test per operation.
+- <strong>Recording on:</strong> +0.7% to +8.2% instructions per model, +4.4% in total. Wall time
+  +6% in total. Peak memory +1% to +39%; the most is on 46024, whose 320k-face input the
+  history keeps as read.
+- <strong>History size:</strong> 0.5 to 38 MB; 35 to 80 bytes per edit, plus the input as read.
+  - 25.6 MB (750k edits) for the longest run, 1017020;
+  - 38 MB for 46024, mostly its input (190 bytes per edit).
+- <strong>Building the map:</strong> 0.4 to 31 s, about a second per 25,000 edits.
+- <strong>Map quality with <code>preserve_topology</code> off:</strong>
+  - there are always some not-a-disk and merged-face warnings (welds, sheets merging);
+  - 13 of the 15 models round-trip below 1e-3;
+  - 1017012 and 1017020 (3,000 and 4,450 welds) lose 5 and 9 output centroids and round-trip
+    up to the model's scale.</p>
+<p>Check memory by peak footprint (<code>/usr/bin/time -l</code>). At 16 threads, wall times vary with the
+iteration counts, and other load moves them too. Compare instruction counts.</p>
+<h2 id="where-things-are">Where things are<a class="headerlink" href="#where-things-are" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>what</th>
+<th>where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>history, edit kinds, file format, composition</td>
+<td><code>src/wmtk/history/History.{hpp,cpp}</code>, <code>Fwd.hpp</code></td>
+</tr>
+<tr>
+<td>replay</td>
+<td><code>src/wmtk/history/Replay.{hpp,cpp}</code></td>
+</tr>
+<tr>
+<td>tracked-surface and tracked-curve recorder</td>
+<td><code>src/wmtk/history/TrackedRecorder.{hpp,cpp}</code></td>
+</tr>
+<tr>
+<td>input chains</td>
+<td><code>src/wmtk/history/InputHistory.{hpp,cpp}</code> (<code>from_input</code>, <code>curves_from_input</code>)</td>
+</tr>
+<tr>
+<td>TriMesh hooks</td>
+<td><code>src/wmtk/TriMesh.{h,cpp}</code> (<code>start_history</code>, <code>commit_history</code>; <code>start_curve_history</code>, <code>curve_history_commit</code>)</td>
+</tr>
+<tr>
+<td>TriOptimizerMesh side (curves)</td>
+<td><code>src/wmtk/TriOptimizerMesh.{h,cpp}</code></td>
+</tr>
+<tr>
+<td>curve read provenance, simplification, insertion sources</td>
+<td><code>src/wmtk/io/read_edge_mesh.{hpp,cpp}</code>, <code>src/wmtk/utils/SimplifySegments.{hpp,cpp}</code>, <code>src/wmtk/utils/EmbedSegments.{hpp,cpp}</code></td>
+</tr>
+<tr>
+<td>TetMesh hooks</td>
+<td><code>src/wmtk/TetMesh.{h,cpp}</code>, <code>TetMeshEdgeSplittingConn.cpp</code>, <code>TetMeshEdgeCollapsingConn.cpp</code>, <code>TetMeshSwapMeshConnectivity.cpp</code></td>
+</tr>
+<tr>
+<td>TetOptimizerMesh side, fold check</td>
+<td><code>src/wmtk/TetOptimizerMesh.{h,cpp}</code>, <code>OptimizerParameters.h</code></td>
+</tr>
+<tr>
+<td>read provenance</td>
+<td><code>src/wmtk/io/read_triangle_mesh.{hpp,cpp}</code></td>
+</tr>
+<tr>
+<td>insertion sources</td>
+<td><code>src/wmtk/utils/EmbedTriangles.{hpp,cpp}</code> (<code>facet_triangles</code>)</td>
+</tr>
+<tr>
+<td>map, transfer, tracking, app</td>
+<td><code>components/tracking/wmtk/components/tracking/</code></td>
+</tr>
+<tr>
+<td>isotropic recording</td>
+<td><code>components/isotropic_remeshing/.../isotropic_remeshing.cpp</code></td>
+</tr>
+<tr>
+<td>tetwild recording</td>
+<td><code>components/tetwild/.../tetwild.cpp</code>, <code>VolumemesherInsertion.cpp</code></td>
+</tr>
+<tr>
+<td>simwild recording</td>
+<td><code>components/simwild/.../simwild.cpp</code>, <code>EmbedSurface.cpp</code>, <code>read_image_msh.cpp</code>, <code>SimWildMesh.cpp</code></td>
+</tr>
+<tr>
+<td>triwild recording</td>
+<td><code>components/triwild/.../triwild.cpp</code></td>
+</tr>
+<tr>
+<td>volume history, recorder, shared binary encoding</td>
+<td><code>src/wmtk/history/VolumeHistory.{hpp,cpp}</code>, <code>BinaryIO.hpp</code>; TetMesh's <code>start_volume_history</code> and captures in <code>TetMesh.cpp</code></td>
+</tr>
+<tr>
+<td>volume map, its patches and geometry, VolumeTracking</td>
+<td><code>components/tracking/.../VolumeMap.{hpp,cpp}</code>, <code>volume_complex.{hpp,cpp}</code>, <code>volume_geometry.{hpp,cpp}</code>, <code>volume_io.{hpp,cpp}</code>, <code>tracking.hpp</code>; the app's <code>volume_app.cpp</code></td>
+</tr>
+<tr>
+<td>Python classes</td>
+<td><code>python/src/tracking_bindings.cpp</code>; tests in <code>tests/python/test_tracking.py</code></td>
+</tr>
+<tr>
+<td>tests</td>
+<td><code>tests/test_history.cpp</code>; <code>test_surface_map.cpp</code>, <code>test_curve_map.cpp</code>, <code>test_tracking.cpp</code>, <code>test_volume_map.cpp</code>, <code>test_volume_ops.cpp</code>; <code>test_remeshing_history.cpp</code>; <code>test_tetwild_history.cpp</code>, <code>test_tetwild_tracking.cpp</code>; <code>test_simwild_history.cpp</code>, <code>test_simwild_tracking.cpp</code>; <code>test_triwild_tracking.cpp</code></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../in-memory-io/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Component I/O">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Component I/O
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../simwild-adopted-behaviours/" class="md-footer__link md-footer__link--next" aria-label="Next: simwild: behaviours adopted from tetwild / triwild">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                simwild: behaviours adopted from tetwild / triwild
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "content.action.edit"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../assets/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+        <script src="../assets/viewer/wmtk-viewer.min.js" type="module"></script>
+      
+    
+  </body>
+</html>

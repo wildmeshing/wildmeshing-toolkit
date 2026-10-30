@@ -1,0 +1,32 @@
+{
+  "views": {
+    "input": {
+      "cells": 69451,
+      "bytes": 598271
+    },
+    "output": {
+      "cells": 15634,
+      "bytes": 136313
+    }
+  },
+  "report": {
+    "#f": 15634,
+    "#v": 7929,
+    "avg_length": 0.002878033757940962,
+    "avg_valence": 5.944255265481146,
+    "check_inversions": true,
+    "cleanup_angle": 0.0,
+    "limit_collapse_length": false,
+    "max_length": 0.004987107818043706,
+    "max_valence": 9.0,
+    "min_length": 0.00027228294107416786,
+    "min_valence": 2.0,
+    "nonmanifold_edges": 0,
+    "nonmanifold_vertices": 0,
+    "refused_inversions": 135,
+    "swap_quality": false,
+    "target_length": 0.0025024663121209047,
+    "time_sec": 2.1815059999999997,
+    "use_link_condition": true
+  }
+}

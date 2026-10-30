@@ -1,0 +1,20 @@
+{
+  "input_dir": "",
+  "thicknessratio": 0.1,
+  "iterations": 5,
+  "keep_background_mesh": false,
+  "prism_dominant": false,
+  "export_input_and_shell": false,
+  "min_tet_volume": 0,
+  "smoothing_max_backtracks": 40,
+  "jacobian_smoothing_iterations": 0,
+  "jacobian_target": 0.01,
+  "jacobian_position_weight": 0.001,
+  "jacobian_max_step_ratio": 0.25,
+  "jacobian_max_displacement_ratio": 0.5,
+  "background_remeshing": false,
+  "background_remeshing_passes": 2,
+  "background_quality_threshold": 0.1,
+  "background_remeshing_max_operations": 500,
+  "background_remeshing_max_attempts": 20000
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildmeshing.github.io/wildmeshing-toolkit/schemas/wmtk_app.json",
+  "title": "wmtk_app",
+  "description": "A wmtk_app input file: its \"application\" names the component.",
+  "type": "object",
+  "required": [
+    "application"
+  ],
+  "oneOf": [
+    {
+      "$ref": "shortest_edge_collapse.json"
+    },
+    {
+      "$ref": "qslim.json"
+    },
+    {
+      "$ref": "isotropic_remeshing.json"
+    },
+    {
+      "$ref": "tetwild.json"
+    },
+    {
+      "$ref": "triwild.json"
+    },
+    {
+      "$ref": "simwild.json"
+    },
+    {
+      "$ref": "topological_offset.json"
+    },
+    {
+      "$ref": "manifold_extraction.json"
+    },
+    {
+      "$ref": "tracking.json"
+    },
+    {
+      "$ref": "prismatic_mesh.json"
+    },
+    {
+      "$ref": "c1_simplification.json"
+    }
+  ]
+}

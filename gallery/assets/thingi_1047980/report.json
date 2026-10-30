@@ -1,0 +1,31 @@
+{
+  "views": {
+    "input": {
+      "cells": 7592,
+      "bytes": 82865
+    },
+    "output": {
+      "cells": 4572,
+      "bytes": 79532
+    }
+  },
+  "report": {
+    "#iterations": 1,
+    "#t": 4572,
+    "#v": 1697,
+    "all_rounded": true,
+    "avg_energy": 4.823820420189313,
+    "coarsen_accepted": 0,
+    "coarsen_max_energy_after": 0.0,
+    "coarsen_max_energy_before": 0.0,
+    "coarsen_t_after": 0,
+    "coarsen_t_before": 0,
+    "coverage": -1.0,
+    "eps": 0.11337556787797988,
+    "hausdorff": -1.0,
+    "insertion_and_preprocessing": 1.16537,
+    "max_energy": 40.149645589442876,
+    "threads": 8,
+    "time": 6.217944
+  }
+}

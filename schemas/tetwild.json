@@ -1,0 +1,408 @@
+{
+  "type": "object",
+  "description": "Tetrahedralizes triangle surfaces as they come -- open, self-intersecting, non-manifold -- following TetWild: the input is simplified within the envelope, embedded exactly into a Delaunay tet mesh of its bounding box, and the tet mesh is then optimized for quality while the embedded surface stays inside an envelope around the input. filter removes the tets outside. The output keeps the embedded surface as tracked faces, and the inputs' winding numbers on the tets.",
+  "properties": {
+    "application": {
+      "type": "string",
+      "description": "Application name must be tetwild.",
+      "enum": [
+        "tetwild"
+      ]
+    },
+    "input": {
+      "type": "array",
+      "description": "List of triangular input meshes.",
+      "minimum": 1,
+      "items": {
+        "type": "string",
+        "description": "Triangular input mesh."
+      }
+    },
+    "input_edges": {
+      "type": "array",
+      "description": "List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the input bounding box is grown over them automatically. The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in) and preserve_feature_points (the anchors).",
+      "default": [],
+      "items": {
+        "type": "string",
+        "description": "One input feature edge mesh."
+      }
+    },
+    "input_points": {
+      "type": "array",
+      "description": "List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning). The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in) and preserve_feature_points (the anchors).",
+      "default": [],
+      "items": {
+        "type": "string",
+        "description": "One input feature point file (only the vertices are used)."
+      }
+    },
+    "preserve_feature_points": {
+      "type": "boolean",
+      "description": "Keep the 0-dimensional features -- every /input_points point, and the endpoints of open feature curves (junctions too, when allow_junction_cleanup is off) -- within the feature tube radius of where the input put them. Some output vertex stays within that ball of each anchor, collapses that would break this are refused, and smoothing may move an anchor-carrying vertex only inside its ball. Without this an open feature curve erodes from its own tips: every eroding collapse keeps the surviving chain inside the tube, so no containment test can see it. Mirrors triwild's parameter of the same name.",
+      "default": true
+    },
+    "allow_junction_cleanup": {
+      "type": "boolean",
+      "description": "Anchor only the endpoints of open feature curves, letting junctions (valence >= 3 in the feature network) merge and move within the tube. The erosion the anchor exists for is an ENDPOINT property -- a curve eats its own tip -- and does not apply to a junction, where every curve through it stays constrained. Mirrors triwild.",
+      "default": true
+    },
+    "DEBUG_feature_retention": {
+      "type": "boolean",
+      "description": "Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius. The invariant preserve_feature_points maintains, measured rather than assumed.",
+      "default": false
+    },
+    "feature_envelope_ratio": {
+      "type": "number",
+      "description": "Envelope thickness for the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- as a fraction of the surface envelope's eps. Kept below 1 for the same measured reason as order2_envelope_ratio: on a curve a wider envelope relieves no blockage, it is only freedom for the curve to wander, i.e. more geometry to resolve at the same final quality.",
+      "default": 0.5
+    },
+    "output": {
+      "type": "string",
+      "description": "Output file name (without extension).",
+      "default": "out"
+    },
+    "input_names": {
+      "type": "array",
+      "description": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+      "default": [],
+      "items": {
+        "type": "string",
+        "description": "Name for one input mesh."
+      }
+    },
+    "input_dir": {
+      "type": "string",
+      "description": "Directory where the input files are located. This is injected by the application and should not be set by the user.",
+      "default": ""
+    },
+    "write_vtu": {
+      "type": "boolean",
+      "description": "Write the VTU output next to the MSH.",
+      "default": true
+    },
+    "preallocation_factor": {
+      "type": "number",
+      "description": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.",
+      "default": 6.0,
+      "minimum": 1.0
+    },
+    "skip_simplify": {
+      "type": "boolean",
+      "description": "If true, input simplification will be skipped.",
+      "default": false
+    },
+    "simplify_use_sample_envelope": {
+      "type": "boolean",
+      "description": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly.",
+      "default": false
+    },
+    "simplify_envelope_ratio": {
+      "type": "number",
+      "description": "Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope.",
+      "default": 0.5
+    },
+    "simplify_boundary_envelope": {
+      "type": "boolean",
+      "description": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges. When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex: on Thingi10K 55928 a 0.02-wide knot holding all 130 boundary edges of the model survives the simplification as a non-manifold tangle and ends up as a cluster of tets three orders of magnitude below the target size. With the envelope, holes and slits narrower than the tube close (when the surface envelope admits the triangles that cover them). Boundary that the simplification opens away from the input's is not judged by the tube, as before. Ignored under preserve_topology, which keeps the boundary frozen.",
+      "default": true
+    },
+    "optimize_envelope_around_simplified": {
+      "type": "boolean",
+      "description": "EXPERIMENT. Build the optimizer's envelope around the SIMPLIFIED surface at the remaining tolerance (eps - simplify_eps) instead of around the original input at the full eps. The deviation budget is identical by the triangle inequality -- the simplification is already within simplify_eps of the input -- but the geometry now starts at the CENTRE of the envelope it is judged against rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a surface handed over close to the boundary has most of its moves refused; starving that headroom deliberately (simplify_envelope_ratio 0.95) was enough to turn a converging run into a diverging one on Thingi10K 1368052. Also narrows params.eps to match, so l_min and the smoothing energy scale agree with the veto; that makes DEBUG_hausdorff stricter than the input contract, so verify containment against the INPUT separately.",
+      "default": false
+    },
+    "order2_envelope_ratio": {
+      "type": "number",
+      "description": "Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface. Kept below 1 deliberately, unlike the surface envelope which uses the full eps. The two are not symmetric: on the surface a wider envelope REMOVES a constraint that was blocking collapses, whereas a boundary curve has no such blockage to relieve, so the extra room is only freedom for the boundary to wander within eps -- more geometry to resolve at the same final quality. Measured on Thingi10K 36075 at stop_energy 5: 14 iterations and 31125 tets at 0.5, against 24 iterations and 41463 tets at 1.0, both converging to a max energy of about 4.95. 1.0 gives the boundary curves the full eps.",
+      "default": 0.5
+    },
+    "use_sample_envelope": {
+      "type": "boolean",
+      "description": "Use sample envelope instead of exact one.",
+      "default": false
+    },
+    "use_legacy_code": {
+      "type": "boolean",
+      "description": "Use the original TetWild code for the mesh improvement. This only works with 'use_sample_envelope'!",
+      "default": false
+    },
+    "num_threads": {
+      "type": "integer",
+      "description": "Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run.",
+      "default": 0
+    },
+    "max_iterations": {
+      "type": "integer",
+      "description": "Maximum iterations before stopping.",
+      "default": 80
+    },
+    "filter": {
+      "type": "string",
+      "description": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed.",
+      "default": "none",
+      "enum": [
+        "flood",
+        "input",
+        "tracked",
+        "none"
+      ]
+    },
+    "skip_winding_number": {
+      "type": "boolean",
+      "description": "Skip the finalize-phase winding numbers of the input: the whole input's (winding_number_input) and each input's (wn_<i>). They are needed to filter the outside region (filter != 'none') and are otherwise written only as output annotation fields, which are then left out. Ignored (with a warning) when filter != 'none', which requires them.",
+      "default": false
+    },
+    "compute_tracked_winding_number": {
+      "type": "boolean",
+      "description": "Compute the winding number with respect to the tracked surface and write it (winding_number_tracked) even when filter is not 'tracked', which computes it anyway. Left out of the output otherwise.",
+      "default": false
+    },
+    "compute_flood_fill": {
+      "type": "boolean",
+      "description": "Compute the flood-fill parts -- the regions the tracked surface separates -- and write them (part) even when filter is not 'flood', which computes them anyway. A serial pass over every tet; left out of the output otherwise.",
+      "default": false
+    },
+    "eps_rel": {
+      "type": "number",
+      "description": "Envelope thickness relative to the bounding box diagonal.",
+      "default": 0.001
+    },
+    "length_rel": {
+      "type": "number",
+      "description": "Target edge length relative to the bounding box diagonal.",
+      "default": 0.05
+    },
+    "stop_energy": {
+      "type": "number",
+      "description": "Target energy. If all tets have an energy below this, tetwild will stop.",
+      "default": 100
+    },
+    "split_high_valence_threshold": {
+      "type": "integer",
+      "description": "Incident-tet count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped tet mesh has valence around 20-30; a split cascade can drive one vertex into the thousands, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex in the edge's link, so the gate applies to the link.",
+      "default": 0
+    },
+    "project_line_search_steps": {
+      "type": "integer",
+      "description": "Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken.",
+      "default": 12
+    },
+    "project_line_search_nested_steps": {
+      "type": "integer",
+      "description": "After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element. Lets a vertex whose one-ring cannot tolerate a full projection still travel toward the input, instead of being refused every pass from the same place. 0 disables the pass.",
+      "default": 0
+    },
+    "smoothing_mode": {
+      "type": "string",
+      "description": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input.",
+      "default": "projected",
+      "enum": [
+        "projected",
+        "exact"
+      ]
+    },
+    "w_amips": {
+      "type": "number",
+      "description": "Relative weight of the AMIPS quality term against the envelope term during smoothing; the envelope weight is 1 - w_amips. The small default makes smoothing primarily about staying on the surface, with quality as a secondary preference.",
+      "default": 0.0001
+    },
+    "num_smoothing_passes": {
+      "type": "integer",
+      "description": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy. Was 10; lowered to 2 once surface vertices stopped being skipped by skip_good_regions, which made each pass do real work -- on Thingi10K 240280 a pass costs 41-51s and moves fewer vertices each time (accepted 18606 -> 17077 over five passes, envelope rejections 11316 -> 12237), so the later passes in a run of 10 buy very little for their cost.",
+      "default": 2
+    },
+    "interleaved_smoothing": {
+      "type": "boolean",
+      "description": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in both applications: each topology pass then sees a relaxed mesh rather than the raw output of the previous one. Measured in 2D on 122839, where per iteration it reached a given energy sooner than the batched schedule (102 vs 535 at iteration 5, 25 vs 69 at iteration 13), at roughly 3x the work per iteration since each topology pass gets its own smoothing.",
+      "default": true
+    },
+    "interleaved_smoothing_passes": {
+      "type": "integer",
+      "description": "Smoothing passes to run after each topology pass when interleaved_smoothing is set. One is enough with interleaving on, since there are three of them per iteration.",
+      "default": 1
+    },
+    "check_surface_folds": {
+      "type": "boolean",
+      "description": "Refuse a collapse, swap or smoothing that folds the tracked surface over: one that leaves more tracked faces facing against, or flat to, the surface it replaces (the tracked faces around it, their area vectors summed) or the surface it leaves than there were, or more such faces in the stars of the surface vertices it touches. Exact (orient3d). A fold the input has can be undone, but none is made. Splits are not checked: they move no vertex. Turns colored_smoothing off.",
+      "default": false
+    },
+    "colored_smoothing": {
+      "type": "boolean",
+      "description": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way.",
+      "default": true
+    },
+    "preserve_topology": {
+      "type": "boolean",
+      "description": "Preserve the topology of the input surface. This forces remove_duplicate_eps to merge only exactly coincident vertices, keeps the link condition enabled during the input simplification, enables the substructure link condition during optimization, and makes the run fail if the output Euler characteristic differs from the input. When unset, all four are relaxed and the topology may change.",
+      "default": false
+    },
+    "remove_duplicate_eps": {
+      "type": "number",
+      "description": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. This is applied to each input mesh separately. 0 merges only exactly coincident vertices, which is still needed to build the surface connectivity; negative skips the pass entirely. Ignored when preserve_topology is set: merging vertices that are merely close welds sheets of the surface together and so removes handles, therefore only exactly coincident vertices are merged in that case.",
+      "default": 0
+    },
+    "allow_surface_swap": {
+      "type": "boolean",
+      "description": "Allow the edge swaps (3-2, 4-4, 5-6) to operate on surface edges, as a topology-preserving surface diagonal flip. When false, every surface edge is left alone.",
+      "default": true
+    },
+    "check_surface_topology": {
+      "type": "boolean",
+      "description": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging.",
+      "default": false
+    },
+    "throw_on_fail": {
+      "type": "boolean",
+      "description": "Throw exception if the output does not fulfil the desired criteria. No output will be generated.",
+      "default": false
+    },
+    "log_file": {
+      "type": "string",
+      "description": "Logs are not just printed on the terminal but also saved in this file.",
+      "default": ""
+    },
+    "report": {
+      "type": "string",
+      "description": "A JSON file that stores information about the result and the method execution, e.g., runtime.",
+      "default": ""
+    },
+    "history_output": {
+      "type": "string",
+      "description": "Record every change to the tracked surface, from the input as inserted to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. A filter's removal of tracked faces is recorded too, as faces no map can follow. Not with use_legacy_code. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording.",
+      "default": ""
+    },
+    "volume_history_output": {
+      "type": "string",
+      "description": "With history_output. Also record the tets around every operation that changes the tracked surface, and save them here (see wmtk/history/VolumeHistory.hpp): with the surface history, the tracking component rebuilds a map of the whole volume -- one region, the tracked surface kept on itself -- from the tet mesh the optimization starts from, written as <output>_history_input.msh, to the mesh before the filter, written as <output>_history_output.msh. On the memory route no file is written: any non-empty value records the volume history, the bytes of the file it would be are returned in the report as volume_history (bytes in Python; history::write_history or wm.write_history saves them), and the two meshes as the output meshes history_input and history_output, the rows of the files. It takes several times the room of the surface history. Not with use_legacy_code, nor with coarsen_pass and coarsen_local_smoothing_passes above 0: the coarsening composite smooths a ball of vertices inside one collapse, which the volume history does not see. Empty: no recording.",
+      "default": ""
+    },
+    "DEBUG_output": {
+      "type": "boolean",
+      "description": "Write the mesh as debug_{}.vtu after every operation.",
+      "default": false
+    },
+    "DEBUG_sanity_checks": {
+      "type": "boolean",
+      "description": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging.",
+      "default": false
+    },
+    "DEBUG_hausdorff": {
+      "type": "boolean",
+      "description": "Sanity Check: Compute and report the Hausdorff distance of the output to the input. Should be always smaller than eps.",
+      "default": false
+    },
+    "DEBUG_euler": {
+      "type": "boolean",
+      "description": "Sanity Check: Compute and report the Euler characteristic of the input and output surfaces and warn if they differ. Off by default because on meshes with many components it can take tens of seconds. It is computed regardless when preserve_topology is set (the topology check needs it).",
+      "default": false
+    },
+    "DEBUG_disable_envelope": {
+      "type": "boolean",
+      "description": "Diagnostic only. Disables every envelope containment check during the tetrahedralisation, after the input simplification has run. The envelope is the only thing that rejects an operation for geometric rather than combinatorial reasons, so this answers whether a stalled optimization is blocked by the envelope or by the mesh. The output has no containment guarantee and must not be used.",
+      "default": false
+    },
+    "max_expected_iterations": {
+      "type": "integer",
+      "description": "Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy. 0 disables the check. This is a regression guard rather than a quality target: an input that normally converges in a handful of iterations and suddenly needs the whole budget means the sizing-refinement trigger stopped firing when it should, which is a silent slowdown that no energy or envelope assertion catches.",
+      "default": 0
+    },
+    "stuck_refine_stall_eps": {
+      "type": "number",
+      "description": "Refine when the last iteration's improvement was at most this fraction of the distance the max energy still has to cover: (prev_max - max) <= eps * (max - stop_energy). Equivalently, refine unless the mesh is on course to reach the target within about 1/eps more iterations. 0 => only when it does not improve at all.",
+      "default": 0.1
+    },
+    "stuck_refine_cooldown": {
+      "type": "integer",
+      "description": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field). 1 by default: refining every iteration can outrun the operations entirely -- on triwild20k 189017 at eps_rel 1e-4 the mesh runs away to 5.8M faces and never converges at 0, and converges at 9.9994 in 35 iterations at 1. Costs ~5% iterations across the challenging models at no wall-time cost.",
+      "default": 1
+    },
+    "stuck_refine_num_worst": {
+      "type": "integer",
+      "description": "Number of worst tets whose neighborhoods are refined when stuck. 0 => refine all tets with energy above the filter_energy.",
+      "default": 0,
+      "minimum": 0
+    },
+    "stuck_refine_rings": {
+      "type": "integer",
+      "description": "Graph rings around each worst tet included in the stuck refinement. 0 => only the worst tet itself, 1 => its neighbors, 2 => neighbors of neighbors, etc.",
+      "default": 0,
+      "minimum": 0
+    },
+    "stuck_refine_factor": {
+      "type": "number",
+      "description": "Multiplicative reduction of the sizing scalar per stuck refinement (0.5 => halve).",
+      "default": 0.5
+    },
+    "stuck_refine_min_scalar": {
+      "type": "number",
+      "description": "Lower bound on the sizing scalar during stuck refinement.",
+      "default": 0.001
+    },
+    "stuck_refine_gradation": {
+      "type": "number",
+      "description": "Gradation cap for the monotone sizing smoothing: adjacent sizings may differ by at most this factor (smoothing only lowers values).",
+      "default": 2.0
+    },
+    "stuck_refine_force_split": {
+      "type": "boolean",
+      "description": "When the max energy stalls, split each worst tet's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst tet per stall.",
+      "default": true
+    },
+    "skip_good_regions": {
+      "type": "boolean",
+      "description": "Only smooth vertices incident to a tet whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions. OFF by default: smoothing is the only phase that improves quality without changing connectivity, and the premise that a vertex surrounded by good elements has nothing to gain is not reliable -- for surface vertices the move is driven by the envelope term rather than by element quality, which is why active_vertices() has to append every surface vertex unconditionally to keep the filter from freezing them outright. With the filter off that special case stops carrying the correctness of the pass. Measured in 2D on 122839 at stop_energy 20, filtering also cost more than it saved: 60 iterations ending at max energy 21.03 with it on, against convergence to 19.9998 in 54 iterations and less wall time (875s vs 947s) with it off. Note the threshold scales with stop_energy, so the filter skips far more at 100 than at 20.",
+      "default": false
+    },
+    "skip_good_regions_margin": {
+      "type": "number",
+      "description": "A tet is 'active' (worth smoothing around) when its energy is at least this fraction of stop_energy.",
+      "default": 0.9
+    },
+    "coarsen_pass": {
+      "type": "boolean",
+      "description": "Run a final coarsening pass after the optimization has converged. The ordinary collapse judges a candidate on the raw post-collapse geometry -- the worst moment in the operation's life, before smoothing has absorbed any of the damage -- so a collapse that would be fine once its neighbourhood relaxes is never taken, and the converged mesh keeps vertices it does not need. This pass takes the collapse optimistically, re-smooths coarsen_smooth_ring around the merged vertex, and keeps it only if the worst element in the region it touched is no worse than before; every element outside that region is untouched, so 'no worse locally' is exactly 'no worse globally'. Alternates with ordinary smoothing passes, as the main optimization does.",
+      "default": false
+    },
+    "coarsen_local_smoothing_passes": {
+      "type": "integer",
+      "description": "Smoothing sweeps over the ring, inside each candidate collapse, before judging it. 0 by default, which means the pass judges the collapse on its raw post-collapse geometry and never smooths inside the operation. At the level of a single candidate that matters -- the composite's reject rate rises from 25% to 39% without it -- but it does not cost coarsening, because the pass runs to a fixed point: a candidate the smoothing would have rescued is replaced by another the pass finds instead, and the relaxation the mesh actually needs comes from the global smoothing between rounds. What it costs is time. The smoothed ball averaged 98 vertices on tetwild's octocat, so at the old default of 2 sweeps one candidate ran ~200 nonlinear smoothing solves and the pass ran 1.4 million of them to accept 5173 collapses. Over seven tetwild models, dropping this to 0 (with coarsen_max_inner_passes 1) made the pass 9.7x to 31.9x faster for about 1 percentage point of cell reduction.",
+      "default": 0
+    },
+    "coarsen_smooth_ring": {
+      "type": "integer",
+      "description": "Radius smoothed inside the collapse, and the radius the accept test measures over. The lock claims one more ring than this. With coarsen_local_smoothing_passes at 0 nothing is smoothed, so this only sets how wide a region the accept test compares; a wider region is a more permissive test (it admits untouched cells to both the before and after maxima, which is still sound) so ring 2 coarsens slightly more, but it also makes the pass lock 3 rings per operation where the ordinary collapse locks 2, which is the worst thing for its parallel scaling. 1 by default: on octocat that is 2.3x faster than ring 2 for 1.5 percentage points of cell reduction, and it puts the lock footprint back in line with every other pass.",
+      "default": 1
+    },
+    "coarsen_global_smoothing_passes": {
+      "type": "integer",
+      "description": "Ordinary whole-mesh smoothing passes run between coarsening rounds. This is what makes a second round worth running at all -- see coarsen_max_rounds -- so setting it to 0 collapses the rounds to one.",
+      "default": 1
+    },
+    "coarsen_max_rounds": {
+      "type": "integer",
+      "description": "Cap on the coarsen/smooth alternation; the pass also stops as soon as a round accepts no collapse. A round does NOT exist to finish what the previous one started: within a round the collapse pass already runs to a fixed point, so repeating the collapse alone finds nothing. What a round adds is the global smoothing in between, which moves that fixed point -- the dirty-epoch retry only re-offers failures next to a SUCCESSFUL collapse, so a whole-mesh smoothing pass is invisible to it, and a rejected composite is rolled back in full so rejections never accumulate progress within a round. Returns decay fast: measured over the 16 challenging triwild models at five rounds, accepted collapses by round were 68.8% / 21.7% / 7.2% / 1.8% / 0.5%. Every round costs a full pre-check sweep over all edges plus a smoothing pass, so the default is two -- they carry 90.5% of the coarsening, and the three that would follow are worth 9.5% for 60% of the pass's budget.",
+      "default": 2
+    },
+    "coarsen_max_inner_passes": {
+      "type": "integer",
+      "description": "Cap on the collapse pass's own dirty-epoch retry loop within one coarsening round; 0 is uncapped. Distinct from coarsen_max_rounds, which counts collapse+global-smoothing alternations. This counts the passes the retry loop makes inside a single collapse pass, re-offering failures whose neighbourhood a successful collapse disturbed. That filter asks only whether the neighbourhood MOVED, not whether it moved helpfully, so a productive first pass re-offers most of the mesh. 1 by default, i.e. one pass per round and no retry within it: on octocat the first pass found 5110 collapses in 135.8s and the three that followed found 27 in 38.4s. Rounds still repeat the pass, and those do pay off, because the global smoothing between them moves the fixed point in a way this filter cannot see.",
+      "default": 1
+    },
+    "coarsen_unbounded": {
+      "type": "boolean",
+      "description": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary.",
+      "default": true
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "application",
+    "input"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildmeshing.github.io/wildmeshing-toolkit/schemas/tetwild.json",
+  "title": "tetwild",
+  "additionalProperties": false
+}

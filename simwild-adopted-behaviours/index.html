@@ -1,0 +1,5351 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Robust, parallel triangle and tetrahedral mesh generation and editing">
+      
+      
+      
+        <link rel="canonical" href="https://wildmeshing.github.io/wildmeshing-toolkit/simwild-adopted-behaviours/">
+      
+      
+        <link rel="prev" href="../tracking/">
+      
+      
+        <link rel="next" href="../about/citing/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>simwild: behaviours adopted from tetwild / triwild - Wildmeshing Toolkit</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="cyan" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#simwild-behaviours-adopted-from-tetwild-triwild" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Wildmeshing Toolkit" class="md-header__button md-logo" aria-label="Wildmeshing Toolkit" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 3v6h.73l-3.94 7H2v6h6v-2h8v2h6v-6h-3.79l-3.94-7H15V3m-4 2h2v2h-2m1 2.04 4 7.11V18H8v-1.85M4 18h2v2H4m14-2h2v2h-2"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Wildmeshing Toolkit
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              simwild: behaviours adopted from tetwild / triwild
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="cyan" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/wildmeshing/wildmeshing-toolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    wildmeshing/wildmeshing-toolkit
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tutorials/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../gallery/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Gallery
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../reference/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../developer/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Developer guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../about/citing/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Wildmeshing Toolkit" class="md-nav__button md-logo" aria-label="Wildmeshing Toolkit" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 3v6h.73l-3.94 7H2v6h6v-2h8v2h6v-6h-3.79l-3.94-7H15V3m-4 2h2v2h-2m1 2.04 4 7.11V18H8v-1.85M4 18h2v2H4m14-2h2v2h-2"/></svg>
+
+    </a>
+    Wildmeshing Toolkit
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/wildmeshing/wildmeshing-toolkit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    wildmeshing/wildmeshing-toolkit
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../getting-started/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/first-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A first run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/calling-components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calling components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../concepts/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/local-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/robust-geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Robust geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/embedding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Embedding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/regions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Regions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/histories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Histories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tutorials/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Surface remeshing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Surface remeshing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/shortest_edge_collapse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shortest edge collapse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/qslim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QSlim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/isotropic_remeshing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isotropic remeshing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Meshing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/tetwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TetWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/triwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TriWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-region meshes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Multi-region meshes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/simwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SimWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offsets and repair
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Offsets and repair
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/topological_offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Topological offset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/manifold_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Manifold extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mapping
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mapping
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tracking: correspondences between input and output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tutorials/workflows/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/workflows/regions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-region pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/workflows/tetwild-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/workflows/repair-before-meshing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repair before meshing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6_1" id="__nav_6_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Components
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_2" id="__nav_6_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Surface remeshing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Surface remeshing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/shortest_edge_collapse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shortest edge collapse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/qslim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QSlim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/isotropic_remeshing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Isotropic remeshing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_3" id="__nav_6_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tetrahedral and triangle meshing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tetrahedral and triangle meshing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/tetwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TetWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/triwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TriWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_4" id="__nav_6_1_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-region meshes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Multi-region meshes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/simwild/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SimWild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_5" id="__nav_6_1_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offsets and repair
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Offsets and repair
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/topological_offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Topological offset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/manifold_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Manifold extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_6" id="__nav_6_1_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mapping
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mapping
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1_7" id="__nav_6_1_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Work in progress
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_1_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Work in progress
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/prismatic_mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prismatic mesh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/c1_simplification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C1 simplification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../python-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../json-schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://wildmeshing.github.io/wildmeshing-toolkit/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C++ API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../developer/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer guide
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/component-call/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The life of a component call
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/wild-driver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Wild driver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/writing-an-operation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing an operation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/writing-a-component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7_9" id="__nav_7_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../in-memory-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Component I/O
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tracking: recording, mapping, extending
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    simwild: behaviours adopted from tetwild / triwild
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    simwild: behaviours adopted from tetwild / triwild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#stage-1-divergence-defects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 1 — divergence defects
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stage 1 — divergence defects">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1a-simwildmeshtriswap_all_edges-returns-the-success-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1a. SimWildMeshTri::swap_all_edges returns the success count
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1b-simwildmeshtri-reports-why-smoothing-was-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1b. SimWildMeshTri reports why smoothing was refused
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1c-simwild-3d-skips-the-voronoi-search-for-an-un-rounded-vertex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1c. simwild-3D skips the Voronoi search for an un-rounded vertex
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1d-simwildmeshswap_edge_56_before-stores-the-max-energy-it-computes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1d. SimWildMesh::swap_edge_56_before stores the max energy it computes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1f-simwild-3d-routes-swap-surface-detection-on-the-incident-face-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1f. simwild-3D routes swap surface detection on the incident-face count
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1e-the-collapse-quality-gate-no-change-the-premise-was-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1e. The collapse quality gate — NO CHANGE, the premise was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1g-simwild-2d-uses-the-shared-utilssizingfield-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1g. simwild-2D uses the shared utils::SizingField helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions-taken-not-applied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions taken, not applied
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decisions taken, not applied">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-collapse-quality-gate-see-1e-deferred-decide-with-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The collapse quality gate (see 1e) — deferred, decide with measurement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tetwilds-stale-m_posf-after-the-exact-midpoint-split-separate-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tetwild's stale m_posf after the exact-midpoint split — separate PR
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-1h-parameters-struct-defaults-now-match-their-own-spec-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 1h — Parameters struct defaults now match their own spec defaults
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-2-extractions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 2 — extractions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stage 2 — extractions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reportt-counted-faces-not-tets-in-simwild-3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        report["#t"] counted faces, not tets, in simwild 3D
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-3a-simwild-2d-adopts-wmtktrioptimizermesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 3a — simwild-2D adopts wmtk::TriOptimizerMesh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-3b-simwild-3d-adopts-wmtktetoptimizermesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 3b — simwild-3D adopts wmtk::TetOptimizerMesh
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stage 3b — simwild-3D adopts wmtk::TetOptimizerMesh">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#round-now-marks-the-vertex-rounded-before-the-one-ring-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        round() now marks the vertex rounded before the one-ring check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-adopted-in-this-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not adopted in this commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-3c-simwild-adopts-wmtkrun_pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 3c — simwild adopts wmtk::run_pass
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-3c-simwild-adopts-the-localized-retry-and-the-accumulated-success-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-3c — simwild adopts the localized retry and the accumulated success count
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-3c — simwild adopts the localized retry and the accumulated success count">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measured
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-3c-simwild-adopts-parallel_collect_edge_ops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-3c — simwild adopts parallel_collect_edge_ops
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-3c-swap_all_faces-collects-faces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-3c — swap_all_faces collects faces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-3c-simwild-adopts-tetwilds-swap-family-with-tag-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-3c — simwild adopts tetwild's swap family, with tag propagation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-3c — simwild adopts tetwild&#39;s swap family, with tag propagation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-tags-and-the-surface-are-the-same-question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why tags and the surface are the same question
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-simwild-adopted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What simwild adopted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-tag-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The tag rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#measured_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measured
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tested
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2d-was-already-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2D was already done
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-4-one-swap-engine-with-serial-wildsim-conformance-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 4 — one swap engine, with serial Wild/Sim conformance tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-5-one-2d-smoothing-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 5 — one 2D smoothing pass
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-6-envelope-and-refinement-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 6 — envelope and refinement parity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-7-shared-outer-optimization-drivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 7 — shared outer optimization drivers
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/citing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Citing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#stage-1-divergence-defects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 1 — divergence defects
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stage 1 — divergence defects">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1a-simwildmeshtriswap_all_edges-returns-the-success-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1a. SimWildMeshTri::swap_all_edges returns the success count
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1b-simwildmeshtri-reports-why-smoothing-was-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1b. SimWildMeshTri reports why smoothing was refused
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1c-simwild-3d-skips-the-voronoi-search-for-an-un-rounded-vertex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1c. simwild-3D skips the Voronoi search for an un-rounded vertex
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1d-simwildmeshswap_edge_56_before-stores-the-max-energy-it-computes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1d. SimWildMesh::swap_edge_56_before stores the max energy it computes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1f-simwild-3d-routes-swap-surface-detection-on-the-incident-face-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1f. simwild-3D routes swap surface detection on the incident-face count
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1e-the-collapse-quality-gate-no-change-the-premise-was-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1e. The collapse quality gate — NO CHANGE, the premise was wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1g-simwild-2d-uses-the-shared-utilssizingfield-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1g. simwild-2D uses the shared utils::SizingField helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions-taken-not-applied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions taken, not applied
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decisions taken, not applied">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-collapse-quality-gate-see-1e-deferred-decide-with-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The collapse quality gate (see 1e) — deferred, decide with measurement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tetwilds-stale-m_posf-after-the-exact-midpoint-split-separate-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tetwild's stale m_posf after the exact-midpoint split — separate PR
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-1h-parameters-struct-defaults-now-match-their-own-spec-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 1h — Parameters struct defaults now match their own spec defaults
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-2-extractions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 2 — extractions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stage 2 — extractions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reportt-counted-faces-not-tets-in-simwild-3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        report["#t"] counted faces, not tets, in simwild 3D
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-3a-simwild-2d-adopts-wmtktrioptimizermesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 3a — simwild-2D adopts wmtk::TriOptimizerMesh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-3b-simwild-3d-adopts-wmtktetoptimizermesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 3b — simwild-3D adopts wmtk::TetOptimizerMesh
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stage 3b — simwild-3D adopts wmtk::TetOptimizerMesh">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#round-now-marks-the-vertex-rounded-before-the-one-ring-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        round() now marks the vertex rounded before the one-ring check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-adopted-in-this-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not adopted in this commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-3c-simwild-adopts-wmtkrun_pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 3c — simwild adopts wmtk::run_pass
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-3c-simwild-adopts-the-localized-retry-and-the-accumulated-success-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-3c — simwild adopts the localized retry and the accumulated success count
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-3c — simwild adopts the localized retry and the accumulated success count">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measured
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-3c-simwild-adopts-parallel_collect_edge_ops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-3c — simwild adopts parallel_collect_edge_ops
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-3c-swap_all_faces-collects-faces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-3c — swap_all_faces collects faces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-3c-simwild-adopts-tetwilds-swap-family-with-tag-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-3c — simwild adopts tetwild's swap family, with tag propagation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-3c — simwild adopts tetwild&#39;s swap family, with tag propagation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-tags-and-the-surface-are-the-same-question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why tags and the surface are the same question
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-simwild-adopted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What simwild adopted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-tag-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The tag rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#measured_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measured
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tested
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2d-was-already-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2D was already done
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-4-one-swap-engine-with-serial-wildsim-conformance-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 4 — one swap engine, with serial Wild/Sim conformance tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-5-one-2d-smoothing-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 5 — one 2D smoothing pass
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-6-envelope-and-refinement-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 6 — envelope and refinement parity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-7-shared-outer-optimization-drivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage 7 — shared outer optimization drivers
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/wildmeshing/wildmeshing-toolkit/edit/main/docs/simwild-adopted-behaviours.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="simwild-behaviours-adopted-from-tetwild-triwild">simwild: behaviours adopted from tetwild / triwild<a class="headerlink" href="#simwild-behaviours-adopted-from-tetwild-triwild" title="Permanent link">&para;</a></h1>
+<p>tetwild and triwild are the mature, heavily-measured applications; simwild is a fork of them
+that drifted. When de-duplicating, the rule is: <strong>wherever the copies disagree, the
+tetwild/triwild implementation wins, and tetwild/triwild output must not move.</strong> simwild output
+may move, and every time it does the reason is recorded here so the simwild side can be
+re-checked later.</p>
+<p>Columns: what simwild did, what it does now, which copy won, and what actually moved.</p>
+<hr />
+<h2 id="stage-1-divergence-defects">Stage 1 — divergence defects<a class="headerlink" href="#stage-1-divergence-defects" title="Permanent link">&para;</a></h2>
+<h3 id="1a-simwildmeshtriswap_all_edges-returns-the-success-count">1a. <code>SimWildMeshTri::swap_all_edges</code> returns the success count<a class="headerlink" href="#1a-simwildmeshtriswap_all_edges-returns-the-success-count" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>was</strong></td>
+<td><code>return true;</code> — i.e. always 1, whatever happened</td>
+</tr>
+<tr>
+<td><strong>now</strong></td>
+<td>returns <code>total_success</code> from <code>run_localized_to_convergence</code>, and the pass uses <code>parallel_collect_edge_ops</code> + localized retry</td>
+</tr>
+<tr>
+<td><strong>source</strong></td>
+<td>triwild <code>EdgeSwapping.cpp::swap_all_edges</code>, which carries the fix and the note</td>
+</tr>
+<tr>
+<td><strong>why it matters</strong></td>
+<td><code>local_operations</code> stops the swap loop when a pass changes nothing (<code>if (cnt_success == 0) break;</code>). Returning a constant 1 made that early exit unreachable.</td>
+</tr>
+<tr>
+<td><strong>measured</strong></td>
+<td><strong>No output change</strong> on any of the 8 simwild 2D configs. The loop is bounded by <code>ops[2]</code>, which is 1 in every current config, so there was never a second round for the early exit to skip. The defect is real but latent — like the split fallback in #1000, it needs a config that asks for more than one swap round per iteration.</td>
+</tr>
+<tr>
+<td><strong>also adopted</strong></td>
+<td><code>parallel_collect_edge_ops</code> and <code>run_localized_to_convergence</code>, which simwild-2D used nowhere. Output-neutral here because the pass converges in one round on these inputs.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1b-simwildmeshtri-reports-why-smoothing-was-refused">1b. <code>SimWildMeshTri</code> reports why smoothing was refused<a class="headerlink" href="#1b-simwildmeshtri-reports-why-smoothing-was-refused" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>was</strong></td>
+<td><code>m_smooth_rejects</code> declared and passed to <code>smooth_vertex_2d</code>, but never <code>reset()</code> and never logged</td>
+</tr>
+<tr>
+<td><strong>now</strong></td>
+<td>reset at the top of each smoothing pass, <code>to_string()</code> logged at the end, as triwild does</td>
+</tr>
+<tr>
+<td><strong>source</strong></td>
+<td>triwild <code>Smooth.cpp::smooth_all_vertices</code></td>
+</tr>
+<tr>
+<td><strong>why it matters</strong></td>
+<td>The counters exist precisely to catch silent failure — <code>SmoothVertex.hpp:222-228</code> records tetwild smoothing ZERO vertices for entire runs without anything noticing. Accumulating them across passes and never printing them defeats that.</td>
+</tr>
+<tr>
+<td><strong>measured</strong></td>
+<td>No output change; diagnostics only.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1c-simwild-3d-skips-the-voronoi-search-for-an-un-rounded-vertex">1c. simwild-3D skips the Voronoi search for an un-rounded vertex<a class="headerlink" href="#1c-simwild-3d-skips-the-voronoi-search-for-an-un-rounded-vertex" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>was</strong></td>
+<td><code>if (m_voronoi_split_fn)</code></td>
+</tr>
+<tr>
+<td><strong>now</strong></td>
+<td><code>if (m_voronoi_split_fn &amp;&amp; m_vertex_attribute[v_id].m_is_rounded)</code></td>
+</tr>
+<tr>
+<td><strong>source</strong></td>
+<td>the 2D twin, <code>SimWildMeshTri::split_edge_after</code>, which already carried the guard and the reasoning</td>
+</tr>
+<tr>
+<td><strong>why it matters</strong></td>
+<td>When the rounded midpoint inverts a tet, the split falls back to the exact rational midpoint. The Voronoi bisection then searches only <em>doubles</em> — including the plain double midpoint it reverts to on failure, which is the position that just inverted. Neither tetwild nor triwild has a Voronoi split, so this is simwild-internal: the 2D copy was right and the 3D one had not been updated.</td>
+</tr>
+<tr>
+<td><strong>measured</strong></td>
+<td>No output change: no current config sets <code>m_voronoi_split_fn</code> and reaches the fallback.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1d-simwildmeshswap_edge_56_before-stores-the-max-energy-it-computes">1d. <code>SimWildMesh::swap_edge_56_before</code> stores the max energy it computes<a class="headerlink" href="#1d-simwildmeshswap_edge_56_before-stores-the-max-energy-it-computes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>was</strong></td>
+<td>computed <code>max_energy</code> over the incident tets and dropped it, leaving <code>cache.max_energy</code> holding whatever the previous swap op wrote</td>
+</tr>
+<tr>
+<td><strong>now</strong></td>
+<td><code>swap_cache.local().max_energy = max_energy;</code></td>
+</tr>
+<tr>
+<td><strong>source</strong></td>
+<td>tetwild <code>EdgeSwapping.cpp:756</code></td>
+</tr>
+<tr>
+<td><strong>why it matters</strong></td>
+<td><code>swap_cache</code> is one thread-local shared by the 3-2 / 4-4 / 5-6 ops. Harmless only as long as <code>swap_edge_56_after</code> never reads it — but the sibling <code>swap_edge_44_after</code> and <code>swap_edge_after</code> both do.</td>
+</tr>
+<tr>
+<td><strong>measured</strong></td>
+<td>No output change.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1f-simwild-3d-routes-swap-surface-detection-on-the-incident-face-count">1f. simwild-3D routes swap surface detection on the incident-face count<a class="headerlink" href="#1f-simwild-3d-routes-swap-surface-detection-on-the-incident-face-count" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>was</strong></td>
+<td><code>is_edge_on_surface(t)</code>, which short-circuits on both endpoints' <code>m_is_on_surface</code> flags</td>
+</tr>
+<tr>
+<td><strong>now</strong></td>
+<td><code>edge_incident_surface_face_count(t) &gt; 0</code>, ported from tetwild; applied at all three swap sites (3-2, 4-4, 5-6)</td>
+</tr>
+<tr>
+<td><strong>source</strong></td>
+<td>tetwild <code>EdgeSwapping.cpp:144-151</code> and its comment</td>
+</tr>
+<tr>
+<td><strong>why it matters</strong></td>
+<td>A stale <code>m_is_on_surface</code> flag makes a genuine surface edge look interior, and swapping it tears the surface. The face-count route consults only the face attributes.</td>
+</tr>
+<tr>
+<td><strong>measured</strong></td>
+<td>No output change on the 6 simwild 3D configs — the flags are not stale on these inputs.</td>
+</tr>
+<tr>
+<td><strong>not changed here</strong></td>
+<td>simwild still <em>rejects</em> surface edges in 4-4 and 5-6 where tetwild allows a surface flip via its generalized <code>prepare_surface_flip</code>. That is a larger decision, deferred to the 3D base-class merge.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1e-the-collapse-quality-gate-no-change-the-premise-was-wrong">1e. The collapse quality gate — NO CHANGE, the premise was wrong<a class="headerlink" href="#1e-the-collapse-quality-gate-no-change-the-premise-was-wrong" title="Permanent link">&para;</a></h3>
+<p>The duplication survey reported "four mutually incompatible spellings" of the quality gate in
+<code>collapse_edge_before</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>tetwild     VA[v1_id].m_is_rounded &amp;&amp; q &gt; cache.max_energy
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>simwild-3D  m_collapse_check_quality &amp;&amp; VA[v1_id].m_is_rounded &amp;&amp; q &gt; cache.max_energy
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>triwild     VA[v1_id].m_is_rounded &amp;&amp; q &gt; m_params.stop_energy &amp;&amp; q &gt; cache.max_energy
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>simwild-2D  VA[v1_id].m_is_rounded &amp;&amp; q &gt; target_quality(tid)  &amp;&amp; q &gt; cache.max_energy
+</code></pre></div>
+<p>Checked before changing anything, and they are <strong>two</strong> rules, not four — one per dimension,
+each correctly adapted in simwild:</p>
+<ul>
+<li><code>SimWildMeshTri::target_quality(tid)</code> <strong>defaults to <code>m_params.stop_energy</code></strong> and is only
+  overridden by the per-tag <code>quality_field</code>. So simwild-2D's gate <em>is</em> triwild's, generalized
+  to per-region targets. Replacing it with <code>stop_energy</code> would delete a simwild feature, not
+  fix a divergence.</li>
+<li><code>m_collapse_check_quality</code> is an extra simwild-only toggle (switched off around <code>simplify()</code>),
+  not a changed rule. simwild-3D's gate is otherwise tetwild's exactly.</li>
+</ul>
+<p><strong>The real open question is tetwild vs triwild.</strong> tetwild never permits a collapse that worsens
+the ring's worst element; triwild permits it as long as the result is still below the target.
+They disagree with each other, so "take the tetwild/triwild implementation" cannot resolve it.
+Left alone pending a decision and a measurement. See also 1i, the other tetwild/triwild
+disagreement.</p>
+<h3 id="1g-simwild-2d-uses-the-shared-utilssizingfield-helpers">1g. simwild-2D uses the shared <code>utils::SizingField</code> helpers<a class="headerlink" href="#1g-simwild-2d-uses-the-shared-utilssizingfield-helpers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>was</strong></td>
+<td><code>refine_sizing_around_worst</code> and <code>gradation_smooth_sizing</code> hand-rolled the top-N selection, the BFS region growth, the refinement clamp and the Dijkstra min-relaxation — ~100 lines re-implementing <code>src/wmtk/utils/SizingField.hpp</code>, which the other three meshes call</td>
+</tr>
+<tr>
+<td><strong>now</strong></td>
+<td><code>utils::select_worst_cells</code>, <code>grow_vertex_region</code>, <code>apply_sizing_refinement</code>, <code>gradation_smooth_sizing</code>; 92 lines deleted</td>
+</tr>
+<tr>
+<td><strong>source</strong></td>
+<td>simwild-3D's <code>refine_sizing_around_worst</code>, which already had this shape</td>
+</tr>
+<tr>
+<td><strong>measured</strong></td>
+<td>No output change on any config.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Semantics deliberately preserved, not "corrected" to triwild's.</strong> triwild filters worst cells
+on an absolute <code>filter_energy = min(max(max_energy/100, stop_energy), 100.)</code>; simwild filters on
+<strong>relative</strong> quality against the per-cell <code>target_quality(tid)</code> at a threshold of 1.0. That is
+simwild's model — its whole stop condition is per-cell relative quality — and simwild-3D already
+expresses it that way through the same shared helper. The hand-rolled 2D filter
+(<code>if (q &lt; target_quality(tid)) continue;</code>) is exactly equivalent to it.</p>
+<p><strong>Still missing in simwild-2D, not addressed here</strong> (a feature port, not de-duplication):
+force-split of the worst cells' longest edges (<code>m_force_split_edges</code>), which tetwild, triwild and
+simwild-3D all have. <code>skip_good_regions</code> / <code>active_vertices</code> were adopted with the shared 2D
+smoothing pass in Stage 5 below.</p>
+<hr />
+<h2 id="decisions-taken-not-applied">Decisions taken, not applied<a class="headerlink" href="#decisions-taken-not-applied" title="Permanent link">&para;</a></h2>
+<p>Two divergences turned out to be <strong>tetwild vs triwild</strong>, where "take the tetwild/triwild
+implementation" has no answer because the two reference apps disagree with each other.</p>
+<h3 id="the-collapse-quality-gate-see-1e-deferred-decide-with-measurement">The collapse quality gate (see 1e) — deferred, decide with measurement<a class="headerlink" href="#the-collapse-quality-gate-see-1e-deferred-decide-with-measurement" title="Permanent link">&para;</a></h3>
+<p>tetwild and simwild-3D never permit a collapse that worsens the ring's worst element; triwild
+and simwild-2D permit it while the result stays below the target. Each fork already matches its
+own sibling, so nothing is inconsistent <em>within</em> a pair. Answering which rule is better is an
+optimizer-behaviour question needing a sweep of both variants on the challenging set, not a
+de-duplication question. <strong>Left as is.</strong> The 3D/2D base-class merge should surface it as one
+named virtual (e.g. <code>collapse_allows_worsening_below_target()</code>) so the choice is explicit in one
+place instead of implicit in four.</p>
+<h3 id="tetwilds-stale-m_posf-after-the-exact-midpoint-split-separate-pr">tetwild's stale <code>m_posf</code> after the exact-midpoint split — separate PR<a class="headerlink" href="#tetwilds-stale-m_posf-after-the-exact-midpoint-split-separate-pr" title="Permanent link">&para;</a></h3>
+<p>triwild, simwild-3D and simwild-2D all set <code>p = to_double(m_pos)</code> after falling back to the
+exact rational midpoint; tetwild alone keeps the average of the two endpoint doubles. triwild
+documents why its version is better: when an endpoint is itself un-rounded, rounding the exact
+midpoint once beats averaging two approximations.</p>
+<p>Fixing tetwild necessarily <strong>moves tetwild output</strong>, which is the signal every de-duplication
+stage is validated against. <strong>Deferred to its own PR after the refactor</strong>, where a real output
+change is the expected result rather than a warning sign.</p>
+<hr />
+<h2 id="stage-1h-parameters-struct-defaults-now-match-their-own-spec-defaults">Stage 1h — <code>Parameters</code> struct defaults now match their own spec defaults<a class="headerlink" href="#stage-1h-parameters-struct-defaults-now-match-their-own-spec-defaults" title="Permanent link">&para;</a></h2>
+<p>Fourteen fields had a C++ struct default that disagreed with the JSON spec default for the same
+key, so any code path that builds <code>Parameters</code> <strong>without</strong> going through jse — which is what the
+unit tests do — ran a different configuration than every driver run:</p>
+<table>
+<thead>
+<tr>
+<th>app</th>
+<th>field</th>
+<th>struct was</th>
+<th>spec (now both)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tetwild</td>
+<td><code>eps_rel</code></td>
+<td>2e-3</td>
+<td><strong>1e-3</strong></td>
+</tr>
+<tr>
+<td>tetwild</td>
+<td><code>stop_energy</code></td>
+<td>10</td>
+<td><strong>100</strong></td>
+</tr>
+<tr>
+<td>tetwild</td>
+<td><code>interleaved_smoothing</code></td>
+<td>false</td>
+<td><strong>true</strong></td>
+</tr>
+<tr>
+<td>tetwild</td>
+<td><code>interleaved_smoothing_passes</code></td>
+<td>2</td>
+<td><strong>1</strong></td>
+</tr>
+<tr>
+<td>tetwild</td>
+<td><code>stuck_refine_num_worst</code></td>
+<td>50</td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td>tetwild</td>
+<td><code>stuck_refine_rings</code></td>
+<td>3</td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td>tetwild</td>
+<td><code>skip_good_regions</code></td>
+<td>true</td>
+<td><strong>false</strong></td>
+</tr>
+<tr>
+<td>triwild</td>
+<td><code>stop_energy</code></td>
+<td>20</td>
+<td><strong>100</strong></td>
+</tr>
+<tr>
+<td>simwild</td>
+<td><code>skip_simplify</code></td>
+<td>true</td>
+<td><strong>false</strong></td>
+</tr>
+<tr>
+<td>simwild</td>
+<td><code>eps_simplify_rel</code></td>
+<td>2e-3</td>
+<td><strong>2e-4</strong> (10x)</td>
+</tr>
+<tr>
+<td>simwild</td>
+<td><code>preserve_topology</code></td>
+<td>false</td>
+<td><strong>true</strong></td>
+</tr>
+<tr>
+<td>simwild</td>
+<td><code>stuck_refine_num_worst</code></td>
+<td>50</td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td>simwild</td>
+<td><code>stuck_refine_rings</code></td>
+<td>3</td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td>simwild</td>
+<td><code>skip_good_regions</code></td>
+<td>true</td>
+<td><strong>false</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The spec is authoritative: it is what every driver run injects. <strong>No integration output moved</strong>,
+which is the expected result — the configs all go through jse. ctest 107/107, so the unit tests
+that construct <code>Parameters</code> directly either set these explicitly or are insensitive to them.</p>
+<hr />
+<h2 id="stage-2-extractions">Stage 2 — extractions<a class="headerlink" href="#stage-2-extractions" title="Permanent link">&para;</a></h2>
+<h3 id="reportt-counted-faces-not-tets-in-simwild-3d"><code>report["#t"]</code> counted faces, not tets, in simwild 3D<a class="headerlink" href="#reportt-counted-faces-not-tets-in-simwild-3d" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>was</strong></td>
+<td><code>report["#t"] = mesh.get_faces().size();</code> in <code>run_3D</code> — on a <code>TetMesh</code> that is the number of <strong>faces</strong></td>
+</tr>
+<tr>
+<td><strong>now</strong></td>
+<td><code>mesh.get_tets().size()</code></td>
+</tr>
+<tr>
+<td><strong>source</strong></td>
+<td>tetwild reports <code>tet_size()</code>, triwild reports <code>tri_capacity()</code>; both mean <em>cells</em></td>
+</tr>
+<tr>
+<td><strong>measured</strong></td>
+<td>The 6 simwild 3D configs report <code>#t</code> roughly halved — e.g. <code>simwild_double_sphere_3d</code> 22456 -&gt; 10897, a ratio of 2.06, which is what a closed tet mesh gives since each interior face is shared by two tets. <strong>The mesh is unchanged</strong>; only the reported number was wrong.</td>
+</tr>
+</tbody>
+</table>
+<p><code>run_2D</code> was already correct: on a <code>TriMesh</code> the faces <em>are</em> the cells.</p>
+<p>Note for future baselines: simwild 3D <code>#t</code> values recorded before this change are face counts.</p>
+<hr />
+<h2 id="stage-3a-simwild-2d-adopts-wmtktrioptimizermesh">Stage 3a — simwild-2D adopts <code>wmtk::TriOptimizerMesh</code><a class="headerlink" href="#stage-3a-simwild-2d-adopts-wmtktrioptimizermesh" title="Permanent link">&para;</a></h2>
+<p><code>SimWildMeshTri</code> now derives from the shared 2D base rather than from <code>wmtk::TriMesh</code>, and its
+copies of the three attribute types, the shared members and 13 methods are deleted in favour of
+the base's.</p>
+<p><strong>No simwild output moved, and no behaviour was adopted.</strong> This is the rare case where the policy
+("when the two disagree, tetwild/triwild wins") had nothing to decide, because the two copies did
+not disagree anywhere. Every difference between simwild-2D's implementation and triwild's was
+cosmetic, and each was checked individually before the copy was deleted:</p>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>the only difference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>is_inverted(array)</code></td>
+<td><code>const auto res</code> vs <code>auto res</code>; <code>return !(res &gt; 0)</code> vs an <code>if/else</code>; triwild carries a stale comment about <code>orient3d</code> that simwild had dropped (dropped here too)</td>
+</tr>
+<tr>
+<td><code>is_inverted(Tuple)</code>, <code>is_inverted(size_t)</code></td>
+<td>simwild inlines the <code>oriented_tri_vids</code> temporary</td>
+</tr>
+<tr>
+<td><code>get_quality(Tuple)</code>, <code>get_quality(size_t)</code></td>
+<td>same inlining</td>
+</tr>
+<tr>
+<td><code>get_quality(array)</code></td>
+<td>none — identical</td>
+</tr>
+<tr>
+<td><code>is_inverted_f</code></td>
+<td>simwild has only the <code>size_t</code> overload; the bodies match. It now also inherits the <code>Tuple</code> one</td>
+</tr>
+<tr>
+<td><code>round</code></td>
+<td><code>m_pos &lt;&lt; posf[0], posf[1]</code> vs <code>to_rational(m_posf)</code>, which are the same value; both set <code>m_is_rounded</code> before the one-ring check. simwild's comment explaining why was the better one and was kept</td>
+</tr>
+<tr>
+<td><code>get_length2</code></td>
+<td><code>get_edge_vids</code> vs <code>switch_vertex</code>, same two vertices</td>
+</tr>
+<tr>
+<td><code>partition_mesh</code></td>
+<td><code>auto i</code> vs <code>size_t i</code> as the loop variable (simwild's compares signed to unsigned)</td>
+</tr>
+<tr>
+<td><code>round_all_vertices</code>, <code>get_max_avg_energy</code>, <code>gradation_smooth_sizing</code>, <code>get_edges_by_condition</code>, <code>is_edge_on_surface</code> x2, <code>is_edge_on_bbox</code> x2, <code>vertex_is_on_surface</code>, <code>edge_is_on_surface</code></td>
+<td>none — identical after normalisation</td>
+</tr>
+</tbody>
+</table>
+<p>The attribute types matched too: <code>CellTag</code> is a <code>std::set&lt;int64_t&gt;</code>, so <code>FaceAttributes</code> was already
+character-identical, and <code>VertexAttributes</code> differed only by triwild's <code>m_feature_id</code>, which
+simwild-2D leaves at <code>NO_FEATURE</code>.</p>
+<p><strong>Measured:</strong> all 53 registered configs byte-identical against the run immediately after the move
+commit — every simwild config included — plus ctest 107/107. <code>tetwild_crown</code> and <code>tetwild_octocat</code>
+run 10 threads and are nondeterministic there, so they were compared separately at <code>num_threads: 0</code>
+against a build of the pre-refactor commit: byte-identical.</p>
+<p>One thing to watch later: <code>SimWildMeshTri</code> keeps its own <code>round_and_check_all_rounded</code>,
+<code>m_exact_split_count</code> and <code>triangle_area</code>, none of which triwild has. The first two are the
+subject of Stage 4's <code>RationalPositions</code> mixin.</p>
+<hr />
+<h2 id="stage-3b-simwild-3d-adopts-wmtktetoptimizermesh">Stage 3b — simwild-3D adopts <code>wmtk::TetOptimizerMesh</code><a class="headerlink" href="#stage-3b-simwild-3d-adopts-wmtktetoptimizermesh" title="Permanent link">&para;</a></h2>
+<p><code>SimWildMesh</code> now derives from the shared 3D base, dropping its copies of <code>VertexAttributes</code>,
+<code>FaceAttributes</code>, the vertex and face attribute collections, the envelope/solver/rounding members,
+<code>MAX_ENERGY</code>, and 23 method definitions.</p>
+<p>Of the 21 methods the base owns, <strong>19 were already byte-identical</strong> between the two applications and
+two (<code>get_quality</code>, <code>output_faces</code>) differed only cosmetically -- <code>auto</code> vs <code>bool</code> for a local, and an
+<code>(int)</code> cast on a row assignment into a matrix that is already <code>int</code>. That leaves exactly one
+behavioural adoption:</p>
+<h3 id="round-now-marks-the-vertex-rounded-before-the-one-ring-check"><code>round()</code> now marks the vertex rounded before the one-ring check<a class="headerlink" href="#round-now-marks-the-vertex-rounded-before-the-one-ring-check" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>was</strong></td>
+<td>simwild left <code>m_is_rounded</code> false until every incident tet had been checked, so <code>is_inverted</code> took the <strong>exact rational</strong> branch throughout the check</td>
+</tr>
+<tr>
+<td><strong>now</strong></td>
+<td>tetwild's: <code>m_is_rounded</code> is set before the loop and cleared again on failure, so <code>is_inverted</code> takes the <strong>float</strong> branch</td>
+</tr>
+<tr>
+<td><strong>source</strong></td>
+<td>tetwild, triwild and simwild-2D all already did it this way; simwild-3D was the only one that did not</td>
+</tr>
+</tbody>
+</table>
+<p><strong>This is answer-preserving, not merely close.</strong> The check asks whether the ROUNDED position keeps
+every incident tet valid. Under the old order the vertex's <code>m_pos</code> had already been set to
+<code>to_rational(m_posf)</code> -- exactly the double, as a rational -- so the rational branch evaluated the
+orientation of the same four points that the float branch evaluates with <code>orient3d</code>, which is itself
+exact for the doubles it is handed. Both branches also fall back to rational identically when some
+<em>other</em> incident vertex is un-rounded, since <code>is_inverted</code> tests all four flags. The difference is
+cost, not result: simwild was paying for exact arithmetic to compute an answer the float predicate
+already decides exactly.</p>
+<h3 id="not-adopted-in-this-commit">Not adopted in this commit<a class="headerlink" href="#not-adopted-in-this-commit" title="Permanent link">&para;</a></h3>
+<p>The swap family stays per-application and is untouched here: <code>swap_face_before</code>, <code>swap_face_after</code>,
+<code>swap_edge_after</code> and <code>swap_all_faces</code> all propagate simwild's <code>CellTag</code> through the operation, which
+tetwild has no counterpart for. Sharing them needs a tag-propagation hook. Three differences found
+while measuring them are recorded here so they are not lost:</p>
+<ul>
+<li><strong><code>swap_all_faces</code> collects the wrong simplex.</strong> simwild calls <code>parallel_collect_edge_ops</code> and
+  queues <code>"face_swap"</code> operations on <strong>edge</strong> tuples -- 6 per tet -- where tetwild calls
+  <code>parallel_collect_face_ops</code> and queues them on faces, 4 per tet. The face-swap pass therefore
+  enumerates a different set, with each face reachable from up to three of its edges.</li>
+<li>simwild calls the executor directly where tetwild uses <code>run_localized_to_convergence</code>.</li>
+<li>simwild reads the success count from <code>executor.get_cnt_success()</code> after the lambda has returned;
+  tetwild accumulates it into a captured local.</li>
+</ul>
+<p>At this stage <code>smoothing_energy_envelope</code> stayed per-application. Stage 6 below subsequently
+removed SimWild's redundant surface-envelope alias and adopted TetWild's order-<code>&gt;= 2</code> selection;
+only the application-specific order-2 envelope object remains virtual.</p>
+<p><code>smooth_after</code> stays in <strong>both</strong> applications even though their bodies are byte-identical: the body
+is the shared <code>optimization::smooth_vertex_3d</code> template, which reaches <code>m_tet_attribute</code> and
+<code>smoothing_energy_envelope</code>, both per-application.</p>
+<hr />
+<h2 id="stage-3c-simwild-adopts-wmtkrun_pass">Stage 3c — simwild adopts <code>wmtk::run_pass</code><a class="headerlink" href="#stage-3c-simwild-adopts-wmtkrun_pass" title="Permanent link">&para;</a></h2>
+<p>The <code>if (NUM_THREADS &gt; 0)</code> / build an <code>ExecutePass</code> / install a lock / log the time shell around
+every driver is now <code>wmtk::run_pass</code>, shared by all four meshes. <strong>No simwild behaviour changed</strong>:
+the shell was already identical to tetwild's and triwild's in all eleven simwild drivers, and what
+each driver does <em>inside</em> the executor is passed in as a callback, so the differences below survive
+the fold untouched rather than being silently adopted.</p>
+<p>They are listed here because folding the shell is what makes them visible, and because each one is
+now a one-line change instead of a rewrite:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>simwild</th>
+<th>tetwild / triwild</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>how the pass runs</td>
+<td><code>executor(mesh, ops)</code> once, in 3D split, all four 3D swaps and 2D split/smooth</td>
+<td><code>run_localized_to_convergence(mesh, executor, ops)</code> — retries a failure only where the mesh actually changed that round</td>
+</tr>
+<tr>
+<td>2D collapse</td>
+<td>a hand-rolled <code>do { ... } while (executor.get_cnt_success() &gt; 0)</code> that rebuilds the whole op list from <code>get_edges()</code> every round</td>
+<td>the same localized retry as everything else</td>
+</tr>
+<tr>
+<td>success count</td>
+<td><code>executor.get_cnt_success()</code>, i.e. the last round's count</td>
+<td>the total accumulated across rounds by the retry driver</td>
+</tr>
+</tbody>
+</table>
+<p>The success-count row matters where the caller uses the return value to decide whether to keep
+going: <code>local_operations</code> stops its swap loop once a pass changes nothing, and a per-round count and
+a total disagree about when that is. simwild-2D's swap already takes the shared form (Stage 1a); the
+3D swaps do not.</p>
+<p>Adopting the localized form is a real behaviour change for simwild -- it changes which failed
+operations are re-tested and in what order -- so it wants its own commit and its own before/after,
+not a line in a refactor.</p>
+<hr />
+<h2 id="post-3c-simwild-adopts-the-localized-retry-and-the-accumulated-success-count">Post-3c — simwild adopts the localized retry and the accumulated success count<a class="headerlink" href="#post-3c-simwild-adopts-the-localized-retry-and-the-accumulated-success-count" title="Permanent link">&para;</a></h2>
+<p>Closes the three differences Stage 3c recorded but deliberately left alone. Every driver now runs
+its pass the way its sibling does.</p>
+<table>
+<thead>
+<tr>
+<th>driver</th>
+<th>was</th>
+<th>now</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3D split, all five 3D swaps, 2D split</td>
+<td><code>executor(mesh, ops)</code> — <strong>a single pass</strong>, so an operation rejected early was dropped even when a later success next to it made it viable</td>
+<td><code>run_localized_to_convergence</code>, which re-runs until a pass yields nothing, re-queueing only failures adjacent to a vertex that moved that round</td>
+</tr>
+<tr>
+<td>2D collapse</td>
+<td><code>do { all_ops.clear(); for (e : get_edges()) …; executor(…); } while (get_cnt_success() &gt; 0)</code> — converged, but by re-enumerating every edge and re-running the full geometric pre-check on each one, every round</td>
+<td>the same shared retry driver, off an op list built once</td>
+</tr>
+<tr>
+<td>the five 3D swaps' return value</td>
+<td><code>executor.get_cnt_success()</code>, the <strong>last</strong> round's count</td>
+<td>the total accumulated across rounds</td>
+</tr>
+</tbody>
+</table>
+<p>The return value is not bookkeeping: <code>local_operations</code> stops its swap loop when a pass reports
+zero, and a pass that has converged ends on a zero round by construction, so the old form made the
+loop stop after one round of swaps regardless of how much work remained.</p>
+<p>The 2D collapse needed a <code>renew_neighbor_tuples</code> — its rebuild-everything loop never had one, and
+the retry driver takes the modified region from exactly that callback. It is triwild's.</p>
+<p><strong>Not adopted here, still open:</strong> simwild builds its op lists with a serial
+<code>for (const Tuple&amp; e : get_edges())</code> where tetwild and triwild use <code>parallel_collect_edge_ops</code>. That
+changes the queue's insertion order, which breaks ties in the priority queue, so it is its own
+behaviour change and would have blurred this one's before/after.</p>
+<h3 id="measured">Measured<a class="headerlink" href="#measured" title="Permanent link">&para;</a></h3>
+<p>Four configs moved; every triwild and deterministic tetwild config is byte-identical, and the branch
+touches no file outside <code>components/simwild/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>config</th>
+<th>before</th>
+<th>after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simwild_curves_2d</code></td>
+<td>572 tris, avg 2.385, max 8.294</td>
+<td>384 tris, avg 2.499, max 8.494</td>
+</tr>
+<tr>
+<td><code>simwild_curves_two_inputs_2d</code></td>
+<td>465 tris, avg 3.343, max 18.862</td>
+<td>871 tris, avg <strong>2.815</strong>, max 18.844</td>
+</tr>
+<tr>
+<td><code>simwild_remeshing_2d</code></td>
+<td>211 tris, avg 2.299, max 4.330</td>
+<td>246 tris, avg 2.324, max <strong>4.188</strong></td>
+</tr>
+<tr>
+<td><code>simwild_double_sphere_notop_3d</code></td>
+<td>21454 tets, avg 3.6171</td>
+<td>21459 tets, avg 3.6170</td>
+</tr>
+</tbody>
+</table>
+<p>The direction is mixed, and the mechanism is visible in <code>simwild_curves_2d</code>'s log. The split pass
+now converges instead of running once, so the mesh refines far harder mid-run -- 1955 edges at
+iteration 5 where it used to reach 695 -- and the collapse pass then pulls it back further than
+before, to 378. The optimizer takes a different trajectory rather than a uniformly finer or coarser
+one. Collapse itself is unchanged in aggregate: the first call's rounds used to sum to ~316
+successes and the shared driver now reports 313.</p>
+<hr />
+<h2 id="post-3c-simwild-adopts-parallel_collect_edge_ops">Post-3c — simwild adopts <code>parallel_collect_edge_ops</code><a class="headerlink" href="#post-3c-simwild-adopts-parallel_collect_edge_ops" title="Permanent link">&para;</a></h2>
+<p>The last collection-side difference. simwild built three op lists with a serial
+<code>for (const Tuple&amp; e : get_edges())</code> -- 3D split, 2D split, 2D collapse -- where tetwild and triwild
+use the shared parallel builder. Held back from the localized-retry change because it alters the
+queue's <em>insertion</em> order, which is what breaks ties between equal-priority operations, and mixing
+the two would have made neither before/after attributable.</p>
+<p><strong>Measured: nothing moved.</strong> All 53 registered configs are byte-identical, simwild's four included
+-- the same four that moved for the retry adoption. The tie-breaking concern is real in principle
+and did not materialize on any config in the suite.</p>
+<p>That leaves simwild's op collection identical to its sibling's everywhere except <code>swap_all_faces</code>,
+which is still <code>parallel_collect_edge_ops</code> where tetwild uses <code>parallel_collect_face_ops</code> -- that
+one is a defect rather than a style difference (6 edge tuples per tet instead of 4 faces) and is
+recorded above with the rest of the swap family.</p>
+<hr />
+<h2 id="post-3c-swap_all_faces-collects-faces">Post-3c — <code>swap_all_faces</code> collects faces<a class="headerlink" href="#post-3c-swap_all_faces-collects-faces" title="Permanent link">&para;</a></h2>
+<p>The defect recorded with the swap family, fixed on its own because it is a behaviour change rather
+than a sharing question.</p>
+<p><code>SimWildMesh::swap_all_faces</code> called <code>parallel_collect_edge_ops</code> and queued <code>"face_swap"</code> operations
+on <strong>edge</strong> tuples -- 6 per tet, with each face reachable from up to three of its edges -- where
+tetwild calls <code>parallel_collect_face_ops</code> and queues them on faces, 4 per tet. The pass therefore
+enumerated a different set of simplices from the one it is named for, seeding the priority queue
+with duplicates of some faces and a different traversal for the rest.</p>
+<p>Two configs move, both of them the 3D ones that actually run face swaps:</p>
+<table>
+<thead>
+<tr>
+<th>config</th>
+<th>before</th>
+<th>after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simwild_double_sphere_3d</code></td>
+<td>—</td>
+<td>same <code>#t</code>/<code>#v</code>, different connectivity</td>
+</tr>
+<tr>
+<td><code>simwild_double_sphere_notop_3d</code></td>
+<td>21459 tets, avg 3.616959</td>
+<td>21528 tets, avg 3.617020</td>
+</tr>
+</tbody>
+</table>
+<p>Everything else in the suite is byte-identical, and the branch touches no file outside
+<code>components/simwild/</code>.</p>
+<p>Both remaining swap differences are settled below.</p>
+<hr />
+<h2 id="post-3c-simwild-adopts-tetwilds-swap-family-with-tag-propagation">Post-3c — simwild adopts tetwild's swap family, with tag propagation<a class="headerlink" href="#post-3c-simwild-adopts-tetwilds-swap-family-with-tag-propagation" title="Permanent link">&para;</a></h2>
+<p>The last item in the de-duplication programme, and the largest single behaviour change in it.
+<code>components/simwild/.../EdgeSwapping.cpp</code> is now tetwild's file: after renaming the mesh class and
+the parameters struct, the only lines that differ are the tag handling described below and one
+<code>swap_all_faces</code> comment. Every remaining divergence has been resolved in tetwild's favour.</p>
+<h3 id="why-tags-and-the-surface-are-the-same-question">Why tags and the surface are the same question<a class="headerlink" href="#why-tags-and-the-surface-are-the-same-question" title="Permanent link">&para;</a></h3>
+<p>simwild's surface is not an input mesh — <code>init_surfaces_and_boundaries</code> tags a face
+<code>m_is_surface_fs</code> <strong>exactly when its two tets carry different tags</strong>. So a surface diagonal flip in
+simwild <em>is</em> a flip of the tag interface, and the volume it sweeps (the tet <code>(a,b,c,d)</code> between the
+old and new diagonal) moves from one tag to the other. That is the same thing tetwild's flip does
+across its inside/outside surface, and it is gated the same way, by the Hausdorff envelope check on
+the two new faces.</p>
+<p>Two consequences fall out and are used throughout:</p>
+<ul>
+<li>An edge with <strong>no</strong> incident surface face has all its incident tets identically tagged, so an
+  interior swap has nothing to decide.</li>
+<li>The two surface faces <code>(a,b,c)</code>, <code>(a,b,d)</code> cut the ring of incident tets into two arcs, one tag
+  each — and every tet a flip creates contains at least one ring vertex other than <code>c</code>,<code>d</code>, which
+  says which arc, hence which tag, it belongs to.</li>
+</ul>
+<h3 id="what-simwild-adopted">What simwild adopted<a class="headerlink" href="#what-simwild-adopted" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>before</th>
+<th>after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prepare_surface_flip</code></td>
+<td><code>prepare_surface_flip_32</code>: exactly-3 ring only, <code>log_and_throw_error</code> on anything unexpected, <code>assert</code>s that <code>(c,d)</code> already exists</td>
+<td>tetwild's, generalized to any ring size; rejects rather than throws; handles <code>(c,d)</code> not existing yet, which is the normal case for 4-4 and 5-6</td>
+</tr>
+<tr>
+<td>4-4 and 5-6 on a surface edge</td>
+<td>rejected outright (<code>edge_incident_surface_face_count &gt; 0</code> → <code>false</code>)</td>
+<td>steered to the case that realizes the flip, by <code>swap_edge_44_accept_case</code> / <code>swap_edge_56_accept_case</code>, then envelope-checked and re-tagged like the 3→2 case</td>
+</tr>
+<tr>
+<td>the <code>(c,d)</code> non-manifold guard</td>
+<td><code>assert</code> + <code>get_surface_faces_for_edge</code></td>
+<td>tetwild's direct enumeration, which does not depend on the possibly-stale <code>m_is_on_surface</code> vertex flags</td>
+</tr>
+<tr>
+<td>the "would-be new faces already surface" guard</td>
+<td>absent</td>
+<td>tetwild's, gated on <code>lowest_common_tet</code> so a Debug build does not abort on every 4-4 flip</td>
+</tr>
+<tr>
+<td><code>swap_edge_56_after</code></td>
+<td>re-checked <code>is_inverted</code></td>
+<td>tetwild's: <code>swap_edge_56_energy</code> returns <code>double::max()</code> for any inverted candidate and the case is only taken when strictly below the old energy, so the check could never fire</td>
+</tr>
+<tr>
+<td><code>swap_all_edges_44</code> / <code>_56</code></td>
+<td>no <code>check_surface_topology</code> guard</td>
+<td>tetwild's guard, now that these can change the surface</td>
+</tr>
+<tr>
+<td><code>swap_all_edges_all</code></td>
+<td>logged its topology warning as <code>"swap_all_edges_32"</code></td>
+<td>its own name</td>
+</tr>
+<tr>
+<td>counters</td>
+<td><code>cnt_surface_swap</code> only</td>
+<td>plus tetwild's <code>cnt_surface_swap_32/44/56</code> breakdown, and the same log line</td>
+</tr>
+<tr>
+<td>open-boundary edges</td>
+<td>not considered</td>
+<td><code>wmtk::TetOptimizerMesh::is_open_boundary_edge</code>, a new virtual that defaults to <code>false</code> and that tetwild overrides — see below</td>
+</tr>
+</tbody>
+</table>
+<p><code>is_open_boundary_edge</code> defaulting to false is exact for simwild, not a stub: around an interior
+edge the tags change an even number of times going around the tet ring, so the interface can never
+terminate there; it can only end where it meets the bbox, and <code>is_edge_on_bbox</code> has already
+rejected those edges by the time the question is asked. Making it a virtual is what leaves the two
+<code>prepare_surface_flip</code> bodies byte-identical.</p>
+<h3 id="the-tag-rule">The tag rule<a class="headerlink" href="#the-tag-rule" title="Permanent link">&para;</a></h3>
+<p>Three simwild-only additions, and nothing else:</p>
+<ul>
+<li><code>cache_interior_swap_tag</code> — no incident surface face, so record the one tag the incident tets
+  share. If they <em>disagree</em> the swap is refused: that can only happen if the tag/surface invariant
+  is already broken elsewhere, and re-tagging would move tagged volume with no envelope check to
+  gate it. This replaces the old 3→2 rule (majority vote over at most two tags) and the old 4-4 /
+  5-6 rule (take <code>incident_tets[0]</code>, with a commented-out check that they all agree).</li>
+<li><code>prepare_surface_flip</code> additionally records <code>ring_tags</code>: for each ring vertex other than <code>c</code>,<code>d</code>,
+  the tag of its side.</li>
+<li><code>propagate_swap_tags</code> — interior swap: give every new tet the cached tag. Surface flip: give each
+  new tet the tag of the arc its ring vertices identify, and refuse if a tet straddles both arcs or
+  touches neither.</li>
+</ul>
+<p>On a well-formed mesh this leaves the 3→2 result unchanged: an interior edge has one tag, so the
+majority vote agreed with it, and on a surface edge the majority is by construction the arc holding
+two of the three tets, which is the arc both new tets land in.</p>
+<p><code>SwapInfoCache::sf_e</code> is gone — the third apex of the 3→2 ring, which nothing read.</p>
+<h3 id="measured_1">Measured<a class="headerlink" href="#measured_1" title="Permanent link">&para;</a></h3>
+<p><strong>tetwild and triwild are byte-identical</strong>, on all 53 registered configs — with <code>tetwild_crown</code> and
+<code>tetwild_octocat</code> re-run at <code>num_threads: 0</code>, since at their configured 10 they are nondeterministic
+by construction — and on all 30 hidden <code>[challenging]</code> models (14 tetwild Thingi10K, 16
+triwild20k), compared against two independent baselines: the run for #1011 and the run for #1009,
+which also agree with each other. The comparison is every <code>report.json</code> field except the timing
+keys, plus the md5 of every emitted mesh — <code>out_final.msh</code>, <code>out_simplified_input.obj</code>,
+<code>out_surface.obj</code> for tetwild and <code>out.msh</code>, <code>out.vtu</code>, <code>out_surf.vtu</code> for triwild.</p>
+<p>Two simwild configs move, the only two that run 3D swaps:</p>
+<table>
+<thead>
+<tr>
+<th>config</th>
+<th>before</th>
+<th>after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simwild_double_sphere_3d</code></td>
+<td>10897 tets, 2198 verts, avg 3.80078</td>
+<td>10888 tets, 2197 verts, avg 3.79623</td>
+</tr>
+<tr>
+<td><code>simwild_double_sphere_notop_3d</code></td>
+<td>21528 tets, 4257 verts, avg 3.61702, max 8.5319</td>
+<td>21311 tets, 4215 verts, avg 3.59206, max 8.7158</td>
+</tr>
+</tbody>
+</table>
+<p>Both get slightly smaller at slightly better average energy, and the counters say exactly why:</p>
+<table>
+<thead>
+<tr>
+<th>config</th>
+<th>surface flips before</th>
+<th>surface flips after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simwild_double_sphere_3d</code></td>
+<td>4</td>
+<td>85 = <strong>4</strong> (3→2) + 69 (4-4) + 12 (5-6)</td>
+</tr>
+<tr>
+<td><code>simwild_double_sphere_notop_3d</code></td>
+<td>0</td>
+<td>89 = 1 (3→2) + 70 (4-4) + 18 (5-6)</td>
+</tr>
+</tbody>
+</table>
+<p>The 3→2 count on the first config is <em>unchanged</em>, which is the claim above about the tag rule
+being behaviour-preserving there, measured rather than argued. All of the movement is the 4-4 and
+5-6 flips that simwild used to refuse outright — the ones that let the optimizer relieve a bad
+configuration on the interface instead of routing around it. (<code>notop</code>'s 3→2 going 0 → 1 is
+downstream: the mesh reaches configurations it never used to.)</p>
+<p>Re-running both with <code>check_surface_topology: true</code> — which takes a full topological signature of
+the tracked surface (V, E, F, Euler, components, boundary loops) before each swap pass and reports
+any change afterwards — gives <strong>zero complaints across all 174 flips</strong>. A diagonal flip is supposed
+to leave surface topology alone, and on real data it does.</p>
+<h3 id="tested">Tested<a class="headerlink" href="#tested" title="Permanent link">&para;</a></h3>
+<p><code>test_simwild_swap_tags.cpp</code> builds an N-tet ring whose two arcs carry different tags, derives the
+surface from the tags the way <code>init_surfaces_and_boundaries</code> does, runs the flip, and checks that
+every face is surface <strong>iff</strong> its two tets still disagree — for the 3→2, 4-4 and 5-6 flips, plus an
+interior swap that must preserve its single tag. The 4-4 and 5-6 cases assert the resulting tets by
+vid, so a wrong side would fail rather than merely a wrong count. Release and Debug.</p>
+<p>Writing it turned up an unrelated latent defect in simwild's test-only <code>create_mesh_attributes</code>,
+fixed here: it assigned <code>m_tet_attribute.m_attributes</code> a vector sized to the <em>live</em> tet count,
+shrinking the collection below the connectivity capacity that <code>init()</code> had reserved. An
+<code>AttributeCollection</code> deliberately never grows during an operation, so a 5→6 swap indexed one past
+the end. tetwild carried the same bug and had already fixed it (ASan found it there); this is the
+same fix, and simwild's version segfaults outright rather than corrupting quietly because the field
+being written is a <code>std::set</code> and not a <code>double</code>.</p>
+<h3 id="2d-was-already-done">2D was already done<a class="headerlink" href="#2d-was-already-done" title="Permanent link">&para;</a></h3>
+<p>For completeness, since "adopt all the swaps" covers both dimensions: the 2D swap family
+(<code>swap_all_edges</code>, <code>swap_weight</code>, <code>swap_edge_before</code>, <code>swap_edge_after</code>) is <strong>already identical</strong>
+between triwild and simwild-2D — after renaming the mesh class, the only differences are two
+comments. Stage 3a's shared <code>TriOptimizerMesh::FaceAttributes</code> carries <code>tags</code> for both, so even the
+tag lines are common code, and <code>SwapInfoCache::face_tags</code> is triwild's too. (triwild has carried an
+unused <code>std::set&lt;int64_t&gt; tags</code> per triangle since well before this programme — see
+<code>git show origin/main:.../TriWildMesh.h</code> — so that is pre-existing, not something the move added.)</p>
+<p>The tag propagation is correct there for a simpler reason than in 3D: the 2D swap opens with
+<code>if (is_edge_on_surface(t)) return false;</code>, and in 2D too the surface is the tag interface
+(<code>SimWildMeshTri::init_surfaces_and_boundaries</code>), so a 2D swap only ever runs on an edge whose two
+faces already agree. <code>cache.face_tags = FA[incident_faces[0]].tags</code> is then exact. There is no 2D
+counterpart to the 4-4 / 5-6 question because a 2-2 flip is the only edge swap a triangle mesh has.</p>
+<hr />
+<h2 id="stage-4-one-swap-engine-with-serial-wildsim-conformance-tests">Stage 4 — one swap engine, with serial Wild/Sim conformance tests<a class="headerlink" href="#stage-4-one-swap-engine-with-serial-wildsim-conformance-tests" title="Permanent link">&para;</a></h2>
+<p>The identical implementations described above are no longer merely kept in sync:</p>
+<ul>
+<li>TriWild's complete 2D swap pass now lives on <code>TriOptimizerMesh</code>. Both <code>TriWildMesh</code> and
+  <code>SimWildMeshTri</code> inherit the same collector, priority calculation, retry/termination logic,
+  before/after callbacks, quality gate, attribute tracker and face-tag propagation.</li>
+<li>TetWild's complete 3D swap family now lives on <code>TetOptimizerMesh</code>: 3→2, 4→4, 5→6, 2→3 face
+  swaps, the combined pass, surface-diagonal handling and topology diagnostics. SimWild's old
+  858-line copy is a small adapter implementing only three tag hooks: cache one homogeneous
+  interior tag, cache the two surface-ring arcs, and propagate those tags to new cells.</li>
+<li>TetWild's 3D smoothing pass and acceptance callback also live on <code>TetOptimizerMesh</code>. The only
+  application policy left virtual is which envelope supplies the surface energy/containment
+  check. Quality reads and writes go through the common cell-quality accessors, so TetWild's
+  pass ordering and rejection rules are used unchanged with SimWild's tagged cell attributes.</li>
+</ul>
+<p><code>test_wild_conformance.cpp</code> enforces the intended oracle relationship directly. It constructs two
+identical meshes, runs the Wild implementation first and tag-homogeneous SimWild second with
+<code>NUM_THREADS == 0</code>, then compares operation counts, canonical connectivity, per-cell quality and
+vertex positions; the SimWild side must additionally preserve its homogeneous tag. There is one
+fixture for TriWild/SimWild 2D and one for TetWild/SimWild 3→2. These are deliberately serial: a
+parallel A/B test can turn shared global state or nondeterministic scheduling into noise and does
+not establish that SimWild followed the Wild path. A third fixture runs the shared TetWild/SimWild
+3D smoothing pass serially and compares the same geometry, exact positions and qualities while
+checking that SimWild's cell tags are untouched.</p>
+<p>Two audit fixes were made alongside the extraction:</p>
+<ul>
+<li><code>stop_at_float</code> now applies to SimWild 2D as well as 3D.</li>
+<li>the public 3D <code>replace_tags</code> rejects mismatched input/output vector lengths, matching its 2D
+  counterpart instead of indexing past <code>found_tags</code>.</li>
+</ul>
+<hr />
+<h2 id="stage-5-one-2d-smoothing-pass">Stage 5 — one 2D smoothing pass<a class="headerlink" href="#stage-5-one-2d-smoothing-pass" title="Permanent link">&para;</a></h2>
+<p>TriWild's complete smoothing pass now lives on <code>TriOptimizerMesh</code>, matching the already-shared 3D
+pass on <code>TetOptimizerMesh</code>. Both <code>TriWildMesh</code> and <code>SimWildMeshTri</code> inherit the same vertex
+collection/order, rounding and bbox gate, two-stage solve, inversion/envelope/quality rejection,
+quality updates, rejection counters, and <code>skip_good_regions</code> selection. The shared base also owns
+the identical floating/exact position reads and writes.</p>
+<p>Both applications use the base's single <code>m_envelope</code> for the pull energy and containment. Its
+geometry is application-specific -- TriWild builds it around its input curves, while SimWild can
+build it around the interface between different cell tags -- but there is only one envelope per
+2D mesh. The only smoothing acceptance policy left virtual is the positional constraint: TriWild
+uses it to preserve feature points and SimWild, which has no separate 0-dimensional features,
+always accepts it.</p>
+<p>Two SimWild behaviors deliberately move to TriWild's ground truth:</p>
+<ul>
+<li>SimWild no longer sets <code>quality_veto_on_surface = false</code>; a surface move that worsens the worst
+  incident triangle is rejected in both applications.</li>
+<li>SimWild now honors <code>skip_good_regions</code>; a vertex incident only to triangles below
+  <code>skip_good_regions_margin * stop_energy</code> is not scheduled for smoothing.</li>
+<li>SimWild's unused 2D <code>m_envelope_orig</code> alias is deleted. Energy and containment both use
+  <code>m_envelope</code>, exactly as in TriWild. This does not change the standard remeshing path because
+  the two pointers aliased the same object there.</li>
+</ul>
+<p>The serial conformance fixture runs TriWild first and tag-homogeneous SimWild second from identical
+2D meshes, then compares connectivity, floating and exact positions, per-face qualities, and tags.
+It separately enables <code>skip_good_regions</code>, makes every face good, and verifies both applications
+schedule zero vertices. Full TriWild and SimWild test suites pass.</p>
+<hr />
+<h2 id="stage-6-envelope-and-refinement-parity">Stage 6 — envelope and refinement parity<a class="headerlink" href="#stage-6-envelope-and-refinement-parity" title="Permanent link">&para;</a></h2>
+<p>SimWild 3D now has the same envelope model as TetWild: one surface <code>m_envelope</code>, plus the separate
+order-2 feature envelope. The old <code>m_envelope_orig</code> pointer was always assigned from <code>m_envelope</code>
+and is deleted. Feature pulling now uses TetWild's exact condition, order <code>&gt;= 2</code>, including
+order-3 junction vertices, and falls back to the surface envelope when no initialized feature
+envelope exists.</p>
+<p>The remaining refinement gaps are also closed:</p>
+<ul>
+<li>SimWild 2D records the longest edge of each selected worst triangle in <code>m_force_split_edges</code>,
+  matching TriWild.</li>
+<li>SimWild 3D applies TetWild's oversized-only force-split guard, including the JSON option.</li>
+<li><code>active_vertices()</code> is virtual at the optimizer bases. Wild keeps its absolute global threshold;
+  SimWild overrides it by normalizing every cell against its tag-dependent <code>target_quality()</code>.</li>
+</ul>
+<p>The serial conformance suite now also covers 3D 4→4, 5→6, 2→3, and combined swaps; order-3
+feature-envelope selection; 2D/3D force-split refinement; per-tag active-region filtering; and
+heterogeneous-tag split/collapse invariants in both dimensions.</p>
+<hr />
+<h2 id="stage-7-shared-outer-optimization-drivers">Stage 7 — shared outer optimization drivers<a class="headerlink" href="#stage-7-shared-outer-optimization-drivers" title="Permanent link">&para;</a></h2>
+<p>The outer schedules now live on the dimensional optimizer bases:</p>
+<ul>
+<li><code>TetOptimizerMesh</code> owns the complete TetWild/SimWild 3D driver and its <code>local_operations</code> pass.</li>
+<li><code>TriOptimizerMesh</code> owns the complete TriWild/SimWild-2D driver and its <code>local_operations</code> pass.</li>
+<li>the smoothing placement parameters (<code>num_smoothing_passes</code>, <code>interleaved_smoothing</code>, and
+  <code>interleaved_smoothing_passes</code>) live in <code>OptimizerParameters</code>, so all three components configure
+  the same schedule.</li>
+</ul>
+<p>TetWild and TriWild remain the behavioral sources of truth: pre- and post-collapse, interleaved or
+batched split/collapse/swap/smooth ordering, per-phase convergence checks, rounding, consolidation,
+stuck refinement, swap termination, debug output, and sanity checks are executed by their shared
+base. The application classes no longer contain copies of either driver.</p>
+<p>Only explicit policy hooks differ. Wild uses absolute AMIPS and <code>stop_energy</code>; SimWild reports
+quality normalized by each cell's tag-dependent target and stops at relative quality 1. SimWild
+also supplies its existing optional <code>stop_at_float</code> policy and tag-aware refinement, while TetWild
+retains its extra open-boundary sanity diagnostic.</p>
+<p>The conformance suite now runs one complete iteration under both the batched and interleaved
+schedules, serially from identical meshes in each dimension: TriWild then homogeneous SimWild-2D,
+and TetWild then homogeneous SimWild-3D. It compares iteration counts, canonical connectivity,
+per-cell qualities, floating and exact positions, and checks that SimWild kept its homogeneous tags
+and derived interface invariant.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../tracking/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Tracking: recording, mapping, extending">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Tracking: recording, mapping, extending
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../about/citing/" class="md-footer__link md-footer__link--next" aria-label="Next: Citing">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Citing
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "content.action.edit"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../assets/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+        <script src="../assets/viewer/wmtk-viewer.min.js" type="module"></script>
+      
+    
+  </body>
+</html>

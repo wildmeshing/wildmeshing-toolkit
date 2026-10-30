@@ -1,0 +1,94 @@
+{
+  "type": "object",
+  "description": "Simplifies a triangle mesh by collapsing the edges of least quadric error first (Garland and Heckbert 1997), each to the quadric's optimum, until the vertex count reaches the target. With a positive eps_rel, every collapse keeps the surface inside an envelope around the input.",
+  "properties": {
+    "application": {
+      "type": "string",
+      "description": "Application name must be qslim.",
+      "enum": [
+        "qslim"
+      ]
+    },
+    "input": {
+      "type": "string",
+      "description": "Triangular input mesh."
+    },
+    "output": {
+      "type": "string",
+      "description": "Output file name.",
+      "default": "out.obj"
+    },
+    "input_dir": {
+      "type": "string",
+      "description": "Directory where the input files are located. This is injected by the application and should not be set by the user.",
+      "default": ""
+    },
+    "use_sample_envelope": {
+      "type": "boolean",
+      "description": "Use sample envelope instead of exact one. The sampled envelope is the opt-in for pathological inputs, where one triangle covers millions of tiny ones (Thingi10K has such inputs): there it is much faster for surface simplification.",
+      "default": false
+    },
+    "num_threads": {
+      "type": "integer",
+      "description": "Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run.",
+      "default": 0
+    },
+    "eps_rel": {
+      "type": "number",
+      "description": "Envelope thickness relative to the bounding box diagonal. Negative (the default): no envelope.",
+      "default": -1
+    },
+    "boundary_eps_rel": {
+      "type": "number",
+      "description": "Thickness of a tube around the open boundary of the input, relative to the bounding box diagonal. When positive, every collapse has to leave each boundary edge that descends from the input's boundary within this distance of the input's boundary edges, and collapses at the boundary are placed on the outline instead of at the quadric's optimum: a collapse along the boundary at the optimum on the edge, one between a boundary vertex and an interior one onto the boundary vertex. Boundary that a collapse opens away from the input's is not judged. Negative (the default): the boundary is held only by the surface envelope (eps_rel), a containment test that does not stop the outline from retracting along the surface -- measured at 20 to 100 times eps on synthetic open surfaces.",
+      "default": -1
+    },
+    "target_rel": {
+      "type": "number",
+      "description": "Target number of vertices relative to the number of input vertices.",
+      "default": 0.1
+    },
+    "target_abs": {
+      "type": "number",
+      "description": "Absolute target number of vertices.",
+      "default": -1
+    },
+    "log_file": {
+      "type": "string",
+      "description": "Logs are not just printed on the terminal but also saved in this file.",
+      "default": ""
+    },
+    "report": {
+      "type": "string",
+      "description": "A JSON file that stores information about the result and the method execution, e.g., runtime.",
+      "default": ""
+    },
+    "throw_on_fail": {
+      "type": "boolean",
+      "description": "Throw exception if the output does not fulfil the desired criteria. No output will be generated.",
+      "default": false
+    },
+    "history_output": {
+      "type": "string",
+      "description": "Record every committed operation and save the history here (see wmtk/history): the input surface and its edits, from which the map between input and output is rebuilt (the tracking application). On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording.",
+      "default": ""
+    },
+    "preallocation_factor": {
+      "type": "number",
+      "description": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.",
+      "default": 6.0,
+      "minimum": 1.0
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "application",
+    "input"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildmeshing.github.io/wildmeshing-toolkit/schemas/qslim.json",
+  "title": "qslim",
+  "additionalProperties": false
+}

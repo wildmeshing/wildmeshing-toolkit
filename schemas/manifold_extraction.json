@@ -1,0 +1,98 @@
+{
+  "type": "object",
+  "description": "Makes the boundary of a tagged selection of a triangle (2D) or tet (3D) mesh manifold: around each of its non-manifold vertices and edges it carves an offset of the given radius and fills it with fill_tags (ambient by default).",
+  "properties": {
+    "application": {
+      "type": "string",
+      "description": "Application name must be manifold_extraction.",
+      "enum": [
+        "manifold_extraction"
+      ]
+    },
+    "input": {
+      "type": "string",
+      "description": "Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh."
+    },
+    "output": {
+      "type": "string",
+      "description": "Output file name (without extension).",
+      "default": "out"
+    },
+    "input_dir": {
+      "type": "string",
+      "description": "Directory where the input files are located. This is injected by the application and should not be set by the user.",
+      "default": ""
+    },
+    "tag_selection": {
+      "type": "string",
+      "description": "Tag selection, the boundary of which is taken to be the input surface to make manifold. An expression of tags: names, &, |, ! and parentheses.",
+      "default": "tag_0"
+    },
+    "fill_tags": {
+      "type": "array",
+      "description": "Tag set to fill non-manifold offsets with. [] for ambient.",
+      "default": [],
+      "items": {
+        "type": "string",
+        "description": "A tag."
+      }
+    },
+    "radius_rel": {
+      "type": "number",
+      "description": "Radius to offset around non manifold components, relative to bounding box diagonal.",
+      "default": 0.01
+    },
+    "radius": {
+      "type": "number",
+      "description": "Radius to offset around non manifold components. If < 0, this is set by radius_rel",
+      "default": -1.0
+    },
+    "DEBUG_output": {
+      "type": "boolean",
+      "description": "Write the tet mesh as out_{}.vtu after every operation.",
+      "default": false
+    },
+    "save_vtu": {
+      "type": "boolean",
+      "description": "Save .vtu of output mesh",
+      "default": false
+    },
+    "write_surface": {
+      "type": "boolean",
+      "description": "Write the output surface (OBJ) after manifold extraction.",
+      "default": false
+    },
+    "log_file": {
+      "type": "string",
+      "description": "Logs are not just printed on the terminal but also saved in this file.",
+      "default": ""
+    },
+    "report": {
+      "type": "string",
+      "description": "A JSON file that stores information about the result and the method execution, e.g., runtime.",
+      "default": ""
+    },
+    "preallocation_factor": {
+      "type": "number",
+      "description": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.",
+      "default": 6.0,
+      "minimum": 1.0
+    },
+    "envelope": {
+      "type": "string",
+      "description": "Memory route only: the name of the input mesh that holds the envelope surface of a tagged mesh input -- the `envelope` mesh simwild returns with its result. On the file route, the .msh input's own EnvelopeSurface group plays this role, and this option is ignored.",
+      "default": ""
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "application",
+    "input"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildmeshing.github.io/wildmeshing-toolkit/schemas/manifold_extraction.json",
+  "title": "manifold_extraction",
+  "additionalProperties": false
+}

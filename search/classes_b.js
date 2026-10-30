@@ -1,8 +1,0 @@
-var searchData=
-[
-  ['layoutpartinfo_0',['LayoutPartInfo',['../structwmtk_1_1components_1_1c1__simplification_1_1_m_m_surface_mesh_1_1_layout_part_info.html',1,'wmtk::components::c1_simplification::MMSurfaceMesh']]],
-  ['local_1',['Local',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_local.html',1,'wmtk::components::topological_offset::ExactBandIntegral']]],
-  ['localoperations_2',['LocalOperations',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_local_operations.html',1,'wmtk::components::tetwild::orig']]],
-  ['located_3',['Located',['../structwmtk_1_1components_1_1tracking_1_1volume_1_1_star_patch_1_1_located.html',1,'wmtk::components::tracking::volume::StarPatch']]],
-  ['location_4',['Location',['../structwmtk_1_1components_1_1tracking_1_1volume_1_1_location.html',1,'wmtk::components::tracking::volume']]]
-];

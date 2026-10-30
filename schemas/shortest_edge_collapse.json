@@ -1,0 +1,89 @@
+{
+  "type": "object",
+  "description": "Simplifies a triangle mesh by collapsing its shortest edges first (Hoppe 1996, Progressive Meshes), until the vertex count reaches the target. With a positive eps_rel, every collapse keeps the surface inside an envelope around the input.",
+  "properties": {
+    "application": {
+      "type": "string",
+      "description": "Application name must be shortest_edge_collapse.",
+      "enum": [
+        "shortest_edge_collapse"
+      ]
+    },
+    "input": {
+      "type": "string",
+      "description": "Triangular input mesh."
+    },
+    "output": {
+      "type": "string",
+      "description": "Output file name (with extension).",
+      "default": "out.obj"
+    },
+    "input_dir": {
+      "type": "string",
+      "description": "Directory where the input files are located. This is injected by the application and should not be set by the user.",
+      "default": ""
+    },
+    "num_threads": {
+      "type": "integer",
+      "description": "Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run.",
+      "default": 0
+    },
+    "target_rel": {
+      "type": "number",
+      "description": "Target number of vertices relative to input number.",
+      "default": 0.1
+    },
+    "eps_rel": {
+      "type": "number",
+      "description": "Envelope thickness relative to the bounding box diagonal. Negative (the default): no envelope.",
+      "default": -1
+    },
+    "boundary_eps_rel": {
+      "type": "number",
+      "description": "Thickness of a tube around the open boundary of the input, relative to the bounding box diagonal. When positive, the boundary is not frozen: collapses may move it, as long as every boundary edge that descends from the input's boundary stays within this distance of the input's boundary edges, and a collapse between a boundary vertex and an interior one keeps the boundary vertex where it is. Holes and slits narrower than the tube can close when use_link_condition is false. Boundary that a collapse opens away from the input's is not judged. Negative (the default): every vertex of the open boundary is frozen.",
+      "default": -1
+    },
+    "use_sample_envelope": {
+      "type": "boolean",
+      "description": "Use sample envelope instead of exact one.",
+      "default": false
+    },
+    "throw_on_fail": {
+      "type": "boolean",
+      "description": "Throw exception if the output does not fulfil the desired criteria. No output will be generated.",
+      "default": false
+    },
+    "use_link_condition": {
+      "type": "boolean",
+      "description": "Require the link condition before collapsing an edge. When true a collapse cannot change the topology, which also means it cannot create non-manifold edges or vertices. When false those collapses are allowed -- TriMesh represents the result, and any duplicate triangles the collapse produces are merged -- so the mesh can usually be simplified further.",
+      "default": true
+    },
+    "remove_duplicate_eps": {
+      "type": "number",
+      "description": "Merge input vertices closer than this fraction of the bounding box diagonal. 0 merges only exactly coincident vertices; a negative value merges nothing. Needed for formats that carry no connectivity, such as STL, which otherwise arrive as a disconnected triangle soup.",
+      "default": -1
+    },
+    "history_output": {
+      "type": "string",
+      "description": "Record every committed operation and save the history here (see wmtk/history): the input surface and its edits, from which the map between input and output is rebuilt (the tracking application). On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording.",
+      "default": ""
+    },
+    "preallocation_factor": {
+      "type": "number",
+      "description": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement.",
+      "default": 6.0,
+      "minimum": 1.0
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "application",
+    "input"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildmeshing.github.io/wildmeshing-toolkit/schemas/shortest_edge_collapse.json",
+  "title": "shortest_edge_collapse",
+  "additionalProperties": false
+}

@@ -1,0 +1,63 @@
+{
+  "type": "object",
+  "description": "Work in progress. Simplifies a surface together with its tet mesh and UV layout, within a deviation threshold, for C1 (Clough-Tocher) surface constructions.",
+  "properties": {
+    "application": {
+      "type": "string",
+      "description": "Application name must be c1_simplification.",
+      "enum": [
+        "c1_simplification"
+      ]
+    },
+    "surface_mesh": {
+      "type": "string",
+      "description": "surface mesh file name"
+    },
+    "tet_mesh": {
+      "type": "string",
+      "description": "tet mesh file name"
+    },
+    "uv_mesh": {
+      "type": "string",
+      "description": "uv mesh file name"
+    },
+    "dofs": {
+      "type": "string",
+      "description": "dofs file name"
+    },
+    "cones": {
+      "type": "string",
+      "description": "cone vids file name"
+    },
+    "output": {
+      "type": "string",
+      "description": "Output file name (without extension).",
+      "default": "out"
+    },
+    "log_level": {
+      "type": "integer",
+      "description": "wmtk logger level.",
+      "default": 2
+    },
+    "threshold": {
+      "type": "number",
+      "description": "threshold of deviation",
+      "default": 0.1
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "application",
+    "surface_mesh",
+    "tet_mesh",
+    "uv_mesh",
+    "dofs",
+    "cones"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildmeshing.github.io/wildmeshing-toolkit/schemas/c1_simplification.json",
+  "title": "c1_simplification",
+  "additionalProperties": false
+}
