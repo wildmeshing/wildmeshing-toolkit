@@ -1124,6 +1124,81 @@ double TopoOffsetTetMesh::input_complex_distance(const Vector3d& p) const
     return std::sqrt(m_input_complex_envelope->squared_distance(p));
 }
 
+void TopoOffsetTetMesh::init_band_exact()
+{
+    // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's structure,
+    // beside the offset field. It also gives the settle loop's max test its exact max of d over a
+    // front face (ExactBandIntegral::max_distance()). DEBUG_output builds it too, for the debug
+    // frames' band_gap_bars (gather_vtu_frame()), without the value table; nothing else reads it
+    // unless one of the other conditions holds.
+    const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
+                            m_offset_params.band_volume_rule == "front_flux" ||
+                            m_offset_params.band_volume_rule == "exact_swept";
+    // EXPERIMENTAL_band_volume_rule "surface" with EXPERIMENTAL_label_cleanup: the clean-up
+    // reads d through the integral's searches (distance(), distance_bound()), nothing else.
+    const bool surface_cleanup =
+        m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";
+    if (exact_rule || surface_cleanup ||
+        (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
+        m_offset_params.debug_output) {
+        // The band is on the offset side of the input only (ExactBandIntegral's class
+        // doc), and that side is outside the label-1 cells whichever way the offset goes:
+        // they are the selection for offset_out and everything outside the selection for
+        // offset_in (label_input_complex()), and the band grows away from them. A face's
+        // side is its orient3d against the label-1 cell it bounds (m_phi_F_inner,
+        // positive: the row's normal points away from the cell), so sigma is +1 for both
+        // directions; both or neither: no side. The oriented volume of the boundary must
+        // come out positive; it is logged, and a warning if not.
+        // MEASURED (Geneva base, offset_in, 2026-10-13): sigma was -1 for offset_in, the
+        // inside of cells that are the outside of the selection, so the clip kept the far
+        // side: the band term at construction was 0 against -7.5046 unclipped (41988 band
+        // cells, volume 8.55). The volume logged, 6470.85, is the domain's 6814.66 minus
+        // tag_0's 343.81: the label-1 cells, not the selection.
+        const int sigma = m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
+        double vol6 = 0.;
+        for (int f = 0; f < m_phi_F.rows(); ++f) {
+            const Vector3d a = m_phi_V.row(m_phi_F(f, 0)).head<3>().transpose();
+            const Vector3d b = m_phi_V.row(m_phi_F(f, 1)).head<3>().transpose();
+            const Vector3d c = m_phi_V.row(m_phi_F(f, 2)).head<3>().transpose();
+            vol6 += double(m_phi_F_inner[size_t(f)]) * a.dot(b.cross(c));
+        }
+        logger().log(
+            vol6 > 0. ? spdlog::level::info : spdlog::level::warn,
+            "\tExact band integral: offset side {} (sigma {}), the label-1 cells' boundary "
+            "oriented by them encloses volume {}",
+            sigma > 0 ? "outside the label-1 cells" : "none",
+            sigma,
+            vol6 / 6.);
+        // The value table (ExactBandIntegral::value()) for the band term only, which
+        // reads cells again; twice the constructed mesh's tets, so that its live band
+        // cells seldom share a slot. Its box queries are m_input_complex_envelope's, built
+        // from the same rows of m_phi_F.
+        const size_t value_slots = exact_rule ? 2 * tet_capacity() : 0;
+        auto eb = std::make_shared<ExactBandIntegral>(
+            m_phi_V,
+            m_phi_F,
+            m_phi_F_inner,
+            sigma,
+            value_slots,
+            m_input_complex_envelope);
+        // "front_flux" and "exact": where bisectors within reach of the input can be, from
+        // the input alone (ExactBandIntegral::prepare_front_flux()). The front form reads
+        // it, and both rules' band term that cancels (tet_energy()).
+        if (exact_rule) {
+            const auto t0 = std::chrono::steady_clock::now();
+            eb->prepare_front_flux(m_offset_params.target_distance);
+            logger().info(
+                "\t{}: {} region overlaps within reach {} of the input can hold "
+                "bisectors ({:.3g} s)",
+                m_offset_params.band_volume_rule,
+                eb->front_flux_polytopes(),
+                eb->front_flux_reach(),
+                std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+        }
+        m_band_exact = std::move(eb);
+    }
+}
+
 void TopoOffsetTetMesh::init_offset_potential()
 {
     if (m_phi_V.rows() == 0 || !m_input_complex_envelope) {
@@ -1180,73 +1255,7 @@ void TopoOffsetTetMesh::init_offset_potential()
                 "energy's band term reads the distance to all of them at once",
                 m_n_regions);
         }
-        // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's
-        // structure, beside them. It also gives the settle loop's max test its exact max of d
-        // over a front face (ExactBandIntegral::max_distance()). DEBUG_output builds it too,
-        // for the debug frames' band_gap_bars (gather_vtu_frame()), without the value table;
-        // nothing else reads it unless one of the other conditions holds.
-        const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
-                                m_offset_params.band_volume_rule == "front_flux" ||
-                                m_offset_params.band_volume_rule == "exact_swept";
-        if (exact_rule ||
-            (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
-            m_offset_params.debug_output) {
-            // The band is on the offset side of the input only (ExactBandIntegral's class
-            // doc), and that side is outside the label-1 cells whichever way the offset goes:
-            // they are the selection for offset_out and everything outside the selection for
-            // offset_in (label_input_complex()), and the band grows away from them. A face's
-            // side is its orient3d against the label-1 cell it bounds (m_phi_F_inner,
-            // positive: the row's normal points away from the cell), so sigma is +1 for both
-            // directions; both or neither: no side. The oriented volume of the boundary must
-            // come out positive; it is logged, and a warning if not.
-            // MEASURED (Geneva base, offset_in, 2026-10-13): sigma was -1 for offset_in, the
-            // inside of cells that are the outside of the selection, so the clip kept the far
-            // side: the band term at construction was 0 against -7.5046 unclipped (41988 band
-            // cells, volume 8.55). The volume logged, 6470.85, is the domain's 6814.66 minus
-            // tag_0's 343.81: the label-1 cells, not the selection.
-            const int sigma = m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
-            double vol6 = 0.;
-            for (int f = 0; f < m_phi_F.rows(); ++f) {
-                const Vector3d a = m_phi_V.row(m_phi_F(f, 0)).head<3>().transpose();
-                const Vector3d b = m_phi_V.row(m_phi_F(f, 1)).head<3>().transpose();
-                const Vector3d c = m_phi_V.row(m_phi_F(f, 2)).head<3>().transpose();
-                vol6 += double(m_phi_F_inner[size_t(f)]) * a.dot(b.cross(c));
-            }
-            logger().log(
-                vol6 > 0. ? spdlog::level::info : spdlog::level::warn,
-                "\tExact band integral: offset side {} (sigma {}), the label-1 cells' boundary "
-                "oriented by them encloses volume {}",
-                sigma > 0 ? "outside the label-1 cells" : "none",
-                sigma,
-                vol6 / 6.);
-            // The value table (ExactBandIntegral::value()) for the band term only, which
-            // reads cells again; twice the constructed mesh's tets, so that its live band
-            // cells seldom share a slot. Its box queries are m_input_complex_envelope's, built
-            // from the same rows of m_phi_F.
-            const size_t value_slots = exact_rule ? 2 * tet_capacity() : 0;
-            auto eb = std::make_shared<ExactBandIntegral>(
-                m_phi_V,
-                m_phi_F,
-                m_phi_F_inner,
-                sigma,
-                value_slots,
-                m_input_complex_envelope);
-            // "front_flux" and "exact": where bisectors within reach of the input can be, from
-            // the input alone (ExactBandIntegral::prepare_front_flux()). The front form reads
-            // it, and both rules' band term that cancels (tet_energy()).
-            if (exact_rule) {
-                const auto t0 = std::chrono::steady_clock::now();
-                eb->prepare_front_flux(m_offset_params.target_distance);
-                logger().info(
-                    "\t{}: {} region overlaps within reach {} of the input can hold "
-                    "bisectors ({:.3g} s)",
-                    m_offset_params.band_volume_rule,
-                    eb->front_flux_polytopes(),
-                    eb->front_flux_reach(),
-                    std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
-            }
-            m_band_exact = std::move(eb);
-        }
+        init_band_exact();
         return;
     }
 
@@ -2456,7 +2465,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     fr.vid = VectorXd::Zero(vert_capacity());
     // The sizing field, as point data: it drives every split and collapse gate.
     fr.sizing = VectorXd::Zero(vert_capacity());
-    // Per vertex, the front's placement and what pushes it. NaN where a field does not apply.
+    // Per vertex, the front's placement. NaN where a field does not apply.
     //   input_distance    d: the exact distance to the input's triangles (band_env below),
     //                     every vertex; NaN before the field exists (the construction frames).
     //   distance_over_target  d / target_distance, the running loop's (a growth stage's own),
@@ -2467,19 +2476,10 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     //                     bars, so |.| > 1 is what the settle loop's vertex test marks
     //                     (EXPERIMENTAL_settle_mark "vertex") and the sign says beyond (+) or
     //                     inside (-) the level set.
-    //   band_force_n      at a front vertex that carries the offset term
-    //                     (vertex_carries_offset_term()), minus the gradient of its band term
-    //                     (front_energy(), what the smoother descends) along the unit gradient of
-    //                     d: > 0 pushes the vertex away from the input, < 0 toward it.
-    //   amips_force_n     the same for the AMIPS term over its ring (amips3_energy()). The two
-    //                     sum to the smoother's whole force along the normal; at a stationary
-    //                     vertex they cancel.
     const double nan = std::numeric_limits<double>::quiet_NaN();
     fr.in_dist = VectorXd::Constant(vert_capacity(), nan);
     fr.dist_ratio = VectorXd::Constant(vert_capacity(), nan);
     fr.front_err = VectorXd::Constant(vert_capacity(), nan);
-    fr.band_force = VectorXd::Constant(vert_capacity(), nan);
-    fr.amips_force = VectorXd::Constant(vert_capacity(), nan);
 
     //   front_last_change    VertexExtra::m_front_change when recorded in the latest operation
     //                        group, else -1.
@@ -2518,7 +2518,9 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
             if (!(e < MAX_ENERGY)) continue;
             fr.tet_e[k] = e;
             fr.amips_term[k] = e;
-            if (!cell_is_offset_band(t_id)) continue;
+            // EXPERIMENTAL_band_volume_rule "surface": no cell carries a band term (the fields
+            // band_term and band_gap_bars stay NaN).
+            if (surface_energy() || !cell_is_offset_band(t_id)) continue;
             const std::array<size_t, 4> vids = oriented_tet_vids(t_id);
             const double b = band_cell_term(vids);
             fr.band_term[k] = b;
@@ -2610,34 +2612,16 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         saved_vertex_region = m_vertex_region;
         assign_band_regions(/*log=*/false);
     }
-    // The front fields (see above). The forces are the smoother's own energies at the vertex's
-    // current position, so they need what they read: the input's triangles and one region. Per
-    // vertex, on the mesh's threads, after the region map above (they read it).
+    // front_error_bars (see above), per vertex, on the mesh's threads.
     diagnostic_parallel_for(vs.size(), kDiagnosticChunk, [&](const size_t ib, const size_t ie) {
         for (size_t i = ib; i < ie; ++i) {
             const size_t vid = vs[i].vid(*this);
             if (!band_env || !VX[vid].m_is_on_offset || !VA[vid].m_is_rounded) continue;
             const Vector3d& x = VA[vid].m_posf;
-            Vector3d g_d;
             const double d = band_env->primitive_distance(
                 nearest_primitive(*band_env, m_input_complex_pad, x),
-                x,
-                &g_d);
+                x);
             fr.front_err[vid] = (d - delta) / front_conv;
-            if (!energy_fields || !vertex_carries_offset_term(vid)) continue;
-            const double gn = g_d.norm();
-            if (!(gn > 0.)) continue;
-            const Vector3d n = g_d / gn;
-            const VectorXd xv = x;
-            VectorXd g;
-            if (const auto band = band_volume_energy_at(vid)) {
-                band->gradient(xv, g);
-                fr.band_force[vid] = -g.dot(n);
-            }
-            if (const auto am = amips3_energy(vid)) {
-                am->gradient(xv, g);
-                fr.amips_force[vid] = -g.dot(n);
-            }
         }
     });
 
@@ -2872,6 +2856,75 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         logger().info("Write {}", path + "_off.vtu");
     }
 
+    // stencil points (ported 2026-10-28 from spenbert/offsets-surface-error b185ec9ca5, Spencer:
+    // "port the stencil file"): the _stencil file, a point cloud of one vertex cell per stencil
+    // point of every offset face (offset_surface_faces() order, face_stencil() at stencil_order:
+    // the points the "surface" rule's face term, its O* settle test and every face measure read;
+    // under EXPERIMENTAL_stencil_type "interior" no point is shared between faces, under "fem" a
+    // corner or edge point appears once per face holding it). Point data, NaN where the field
+    // cannot measure:
+    //   stencil_error         r^2, r = relative_residual() = (d - target_distance) /
+    //                         target_distance on the union field.
+    //   error_over_bound      (d - target_distance)^2 / front_conv^2; at or above 1 the point is
+    //                         out of the tolerance.
+    //   signed_error          r: negative inside the level set, positive beyond it.
+    //   distance_over_target  1 + r = d / target_distance.
+    //   sq_error              (d - target_distance)^2, a squared length: its max over the file is
+    //                         O*, the "surface" rule's settle metric (stencil_max_sq_error()).
+    //   face                  the point's face, its index in offset_surface_faces().
+    //   point                 its index in the face's stencil.
+    // Written only under DEBUG_stencil; not without an offset potential or with no offset face.
+    if (m_offset_params.debug_stencil && m_offset_potential) {
+        const std::vector<std::array<size_t, 3>> sfaces = offset_surface_faces();
+        const auto& stencil = face_stencil();
+        const int ns = int(stencil.size());
+        const int n = int(sfaces.size()) * ns;
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double target = m_offset_params.target_distance;
+        const double conv2 = m_offset_params.front_conv * m_offset_params.front_conv;
+        fr.S = MatrixXd::Zero(n, 3);
+        fr.S_cells = MatrixXi::Zero(n, 1);
+        for (VectorXd* x :
+             {&fr.s_err,
+              &fr.s_over,
+              &fr.s_signed,
+              &fr.s_dist_ratio,
+              &fr.s_sq,
+              &fr.s_face,
+              &fr.s_point}) {
+            *x = VectorXd::Constant(n, nan);
+        }
+        diagnostic_parallel_for(
+            sfaces.size(),
+            kDiagnosticChunk,
+            [&](const size_t b, const size_t e) {
+                for (size_t f = b; f < e; ++f) {
+                    const Vector3d& p0 = VA[sfaces[f][0]].m_posf;
+                    const Vector3d& p1 = VA[sfaces[f][1]].m_posf;
+                    const Vector3d& p2 = VA[sfaces[f][2]].m_posf;
+                    for (int k = 0; k < ns; ++k) {
+                        const auto& w = stencil[size_t(k)];
+                        const int i = int(f) * ns + k;
+                        const Vector3d q = w[0] * p0 + w[1] * p1 + w[2] * p2;
+                        fr.S.row(i) = q;
+                        fr.S_cells(i, 0) = i;
+                        fr.s_face[i] = double(f);
+                        fr.s_point[i] = double(k);
+                        // stencil_max_sq_error()'s own expression, so sq_error's max is O* exactly
+                        const double r = m_offset_potential->relative_residual(q);
+                        if (!std::isfinite(r)) continue;
+                        const double sq = (target * r) * (target * r);
+                        fr.s_signed[i] = r;
+                        fr.s_err[i] = r * r;
+                        fr.s_sq[i] = sq;
+                        fr.s_over[i] = sq / conv2;
+                        fr.s_dist_ratio[i] = 1. + r;
+                    }
+                }
+            });
+        if (n > 0) logger().info("Write {}", path + "_stencil.vtu");
+    }
+
     // The band-region map back exactly as the run left it (see the frame diagnostics above).
     if (region_map_refreshed) {
         m_cell_region.swap(saved_cell_region);
@@ -2904,8 +2957,6 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
         writer.add_field("input_distance", fr.in_dist);
         writer.add_field("distance_over_target", fr.dist_ratio);
         writer.add_field("front_error_bars", fr.front_err);
-        writer.add_field("band_force_n", fr.band_force);
-        writer.add_field("amips_force_n", fr.amips_force);
         writer.add_field("front_last_change", fr.front_change);
         writer.write_mesh(path + ".vtu", fr.V, fr.T, paraviewo::CellType::Tetrahedron);
     }
@@ -2937,8 +2988,6 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
         off_writer.add_field("distance_over_target", fr.dist_ratio);
         off_writer.add_field("front_error_bars", fr.front_err);
         off_writer.add_field("front_ring_ratio", fr.ring);
-        off_writer.add_field("band_force_n", fr.band_force);
-        off_writer.add_field("amips_force_n", fr.amips_force);
         off_writer.add_field("front_last_change", fr.front_change);
         off_writer.write_mesh(path + "_off.vtu", fr.V, fr.F_off, paraviewo::CellType::Triangle);
     }
@@ -2950,6 +2999,20 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
         edge_writer.add_field("vid", fr.vid);
         edge_writer.add_field("sizing_scalar", fr.sizing);
         edge_writer.write_mesh(path + "_edge.vtu", fr.V, fr.E, paraviewo::CellType::Line);
+    }
+
+    // stencil points
+    if (fr.S.rows() > 0) {
+        io::DataWriter stencil_writer(output);
+        stencil_writer.add_field("stencil_error", fr.s_err);
+        stencil_writer.add_field("error_over_bound", fr.s_over);
+        stencil_writer.add_field("signed_error", fr.s_signed);
+        stencil_writer.add_field("distance_over_target", fr.s_dist_ratio);
+        stencil_writer.add_field("sq_error", fr.s_sq);
+        stencil_writer.add_field("face", fr.s_face);
+        stencil_writer.add_field("point", fr.s_point);
+        stencil_writer
+            .write_mesh(path + "_stencil.vtu", fr.S, fr.S_cells, paraviewo::CellType::Vertex);
     }
 }
 

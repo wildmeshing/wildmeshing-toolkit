@@ -733,10 +733,10 @@ void TetWildMesh::output_mesh(std::string file)
         return data;
     });
 
-    msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) {
+    msh.add_tet_vertex_attribute<1>("sizing", [&](size_t i) {
         return m_vertex_attribute[i].m_sizing_scalar;
     });
-    msh.add_tet_attribute<1>("t energy", [&](size_t i) {
+    msh.add_tet_attribute<1>("energy", [&](size_t i) {
         return std::cbrt(m_tet_attribute[i].m_quality);
     });
     // No cube root on any of these: only m_quality stores AMIPS^3, and the cbrt above is what

@@ -714,10 +714,11 @@ protected:
     /**
      * @brief Whether the loop opens and closes with BARE collapse passes.
      *
-     * mesh_improvement() brackets the loop with local_operations({{0,1,0,0}}) -- collapse alone,
-     * not interleaved with splits or smoothing, and the opening one with collapse_limit_length
-     * FALSE so no length gate applies at all. For TriWild and SimWild that is right: it strips
-     * the redundancy left by insertion, and their tracked surface is held by an envelope.
+     * mesh_improvement() brackets the loop with local_operations({{0,1,1,0}}) -- collapse, then
+     * swap, not interleaved with splits or smoothing, and the opening one with
+     * collapse_limit_length FALSE so no length gate applies at all. For TriWild and SimWild that is
+     * right: it strips the redundancy left by insertion, and their tracked surface is held by an
+     * envelope.
      *
      * It is wrong for an application whose tracked surface is what the optimization exists to
      * PLACE, and which therefore has no envelope holding it. See the 3D twin,

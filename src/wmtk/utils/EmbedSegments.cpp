@@ -215,9 +215,9 @@ void embed_segments(
     append_background_grid(V, E, seg_vrt_coords);
 
     // Exact arrangement of the segment soup, as a triangulation covering the input
-    // bounding box grown by 10%. Segments may cross, overlap or be duplicated; the
-    // remesher resolves all of that and reports, per input segment, the output
-    // triangle edges that tile it.
+    // bounding box grown by a fifteenth of its diagonal on each side. Segments may cross, overlap
+    // or be duplicated; the remesher resolves all of that and reports, per input segment, the
+    // output triangle edges that tile it.
     std::vector<NFG::bigrational> vertices;
     std::vector<std::array<uint32_t, 3>> tris;
     std::vector<std::vector<std::array<uint32_t, 3>>> segment_provenance;

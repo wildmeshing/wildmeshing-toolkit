@@ -1,6 +1,6 @@
 [
   {
-    "doc": "[README](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/simwild/README.md)",
+    "doc": "Builds and edits multi-region meshes. With surfaces (3D) or curve networks (2D) as input, it meshes them all into one tet or triangle mesh with a region per input, overlaps included, and optimizes it like tetwild and triwild. With a tagged .msh as input, operation selects an edit: remeshing improves the mesh; fill_holes_topo, tight_seal_topo, keep_lcc, resolve_overlaps, replace_tags and tag_priority edit its regions.",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
@@ -63,7 +63,6 @@
       "allow_surface_swap",
       "check_surface_topology",
       "verbose_quality_stats",
-      "preallocation_factor",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -84,7 +83,7 @@
       "replace_tags_in",
       "replace_tags_out",
       "tag_priority",
-      "tags_selection"
+      "envelope"
     ]
   },
   {
@@ -147,7 +146,7 @@
       "replace_tags",
       "tag_priority"
     ],
-    "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
+    "doc": "What to do. 'remeshing' meshes the inputs, or improves the quality of a tagged .msh; the others edit the regions of a tagged .msh, each with its own options below. Depending on the operation, more parameters might be required."
   },
   {
     "pointer": "/output",
@@ -169,12 +168,14 @@
   },
   {
     "pointer": "/input_transform/*/*",
+    "doc": "One row of the matrix.",
     "type": "list",
     "min": 3,
     "max": 4
   },
   {
     "pointer": "/input_transform/*/*/*",
+    "doc": "One entry of the row.",
     "type": "float"
   },
   {
@@ -239,7 +240,7 @@
     "pointer": "/num_threads",
     "type": "int",
     "default": 0,
-    "doc": "Number of threads used by the application"
+    "doc": "Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run."
   },
   {
     "pointer": "/max_iterations",
@@ -251,7 +252,7 @@
     "pointer": "/eps_rel",
     "type": "float",
     "default": 0.002,
-    "doc": "Envelope thickness relative to the bounding box"
+    "doc": "Envelope thickness relative to the bounding box diagonal."
   },
   {
     "pointer": "/eps",
@@ -311,13 +312,13 @@
     "pointer": "/length_rel",
     "type": "float",
     "default": 0.05,
-    "doc": "Target edge length relative to the bounding box"
+    "doc": "Target edge length relative to the bounding box diagonal."
   },
   {
     "pointer": "/sizing_field",
     "type": "list",
     "default": [],
-    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescibed length will be used for each vertex. Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]"
+    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescribed length will be used for each vertex. Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]"
   },
   {
     "pointer": "/sizing_field/*",
@@ -347,7 +348,7 @@
     "pointer": "/quality_field",
     "type": "list",
     "default": [],
-    "doc": "Prescribe a target quality for a specific region defined by tags. The last prescibed quality will be used for each element. Example: [{\"tags\": \"tag_0 & tag_1\", \"quality\": 100}, {\"tags\": \"tag_2\", \"quality\": 50}]"
+    "doc": "Prescribe a target quality for a specific region defined by tags. The last prescribed quality will be used for each element. Example: [{\"tags\": \"tag_0 & tag_1\", \"quality\": 100}, {\"tags\": \"tag_2\", \"quality\": 50}]"
   },
   {
     "pointer": "/quality_field/*",
@@ -370,7 +371,7 @@
     "pointer": "/stop_energy",
     "type": "float",
     "default": 10,
-    "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+    "doc": "Target energy. If every cell (tet in 3D, triangle in 2D) has an energy below this, the optimization stops."
   },
   {
     "pointer": "/stop_at_float",
@@ -409,7 +410,7 @@
     "default": 0.0001,
     "min": 0,
     "max": 1,
-    "doc": "AMIPS energy"
+    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing; the envelope weight is 1 - w_amips. The small default makes smoothing primarily about staying on the surface, with quality as a secondary preference."
   },
   {
     "pointer": "/num_smoothing_passes",
@@ -498,13 +499,6 @@
     "doc": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging."
   },
   {
-    "pointer": "/preallocation_factor",
-    "type": "float",
-    "default": 6.0,
-    "min": 1.0,
-    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom; a pass that exhausts it abandons the affected operations and consolidates at the pass boundary, which reclaims the slots removed elements still hold and re-derives the capacity from the real element count. Lower it for pure-decimation runs, raise it for aggressive refinement."
-  },
-  {
     "pointer": "/verbose_quality_stats",
     "type": "bool",
     "default": true,
@@ -587,13 +581,13 @@
     "pointer": "/fill_holes_threshold",
     "type": "float",
     "default": -1,
-    "doc": "For fill_holes_topo: only fill a connected component if its area is less than this threshold. Negative value means no threshold (fill all enclosed components)."
+    "doc": "For fill_holes_topo: only fill a connected component if its size (area in 2D, volume in 3D, in model units) is less than this threshold. Negative value means no threshold (fill all enclosed components)."
   },
   {
     "pointer": "/tight_seal_tag_sets",
     "type": "list",
     "default": [],
-    "doc": "For tight_seal_topo: list of tag sets. Each inner list defines a group of tags whose enclosed holes are filled, e.g. [[1,2],[3]]."
+    "doc": "For tight_seal_topo: list of tag sets. Each inner list defines a group of tags whose enclosed holes are filled; each set is exactly two tag names, e.g. [[\"tag_0\", \"tag_1\"]]."
   },
   {
     "pointer": "/tight_seal_tag_sets/*",
@@ -611,7 +605,7 @@
     "pointer": "/tight_seal_threshold",
     "type": "float",
     "default": -1,
-    "doc": "For tight_seal_topo: only fill a hole cluster if its total area is less than this threshold. Negative value means no threshold."
+    "doc": "For tight_seal_topo: only fill a hole cluster if its total size (area in 2D, volume in 3D, in model units) is less than this threshold. Negative value means no threshold."
   },
   {
     "pointer": "/keep_lcc_tags",
@@ -682,12 +676,6 @@
     "doc": "A tag value."
   },
   {
-    "pointer": "/tags_selection",
-    "type": "string",
-    "default": "_ | !_",
-    "doc": "A boolean expression that defines the input selection for intent operations. `_` represents empty tags."
-  },
-  {
     "pointer": "/coarsen_pass",
     "type": "bool",
     "default": false,
@@ -728,5 +716,11 @@
     "type": "bool",
     "default": true,
     "doc": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary."
+  },
+  {
+    "pointer": "/envelope",
+    "type": "string",
+    "default": "",
+    "doc": "Memory route only: the name of the input mesh that holds the envelope surface of a tagged mesh input -- the `envelope` mesh simwild returns with its result. On the file route, the .msh input's own EnvelopeSurface group plays this role, and this option is ignored."
   }
 ]

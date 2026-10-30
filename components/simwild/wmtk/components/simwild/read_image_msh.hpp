@@ -60,6 +60,10 @@ struct InputData
 /**
  * @brief Read a .msh file that contains tags.
  */
+/// A 2D mesh's label images -- integer cell fields tag_<k>, as img_to_msh_2d.py writes them --
+/// as its region field, tags, when it has none: in place, both routes. `what` names the input in
+/// errors.
+void tags_from_label_images(MeshData& mesh, const std::string& what);
 InputData read_image_msh(const std::string& path);
 InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope = nullptr);
 

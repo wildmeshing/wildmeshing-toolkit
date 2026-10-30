@@ -146,6 +146,17 @@ region expressions; a bare string is a region's whole boundary.
 - `polyfem_sim`: a PolyFEM simulation on an extracted simulation mesh, materials and boundary
   conditions selected by region name; see `polyfem_sim.msh_boundary_extractor`.
 
+## Type stubs
+
+`python/wildmeshing/_core.pyi` describes the compiled module for editors and type checkers, with
+the docstrings the components' specs give (`help(wm.qslim)`). Regenerate it after changing the
+bindings or a spec, from the repository root:
+
+```bash
+pip install pybind11-stubgen
+PYTHONPATH=build/bin python -m pybind11_stubgen wildmeshing._core -o python
+```
+
 ## Tests
 
 From the repository root:

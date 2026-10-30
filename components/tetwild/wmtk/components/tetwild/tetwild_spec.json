@@ -1,6 +1,6 @@
 [
   {
-    "doc": "",
+    "doc": "Tetrahedralizes triangle surfaces as they come -- open, self-intersecting, non-manifold -- following TetWild: the input is simplified within the envelope, embedded exactly into a Delaunay tet mesh of its bounding box, and the tet mesh is then optimized for quality while the embedded surface stays inside an envelope around the input. filter removes the tets outside. The output keeps the embedded surface as tracked faces, and the inputs' winding numbers on the tets.",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
@@ -11,7 +11,6 @@
       "input_names",
       "input_dir",
       "write_vtu",
-      "preallocation_factor",
       "skip_simplify",
       "simplify_use_sample_envelope",
       "simplify_envelope_ratio",
@@ -135,7 +134,7 @@
   {
     "pointer": "/input_names",
     "type": "list",
-    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "doc": "Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route. The .msh output numbers them, wn_0, wn_1, ..., and so does everything without names.",
     "default": []
   },
   {
@@ -156,13 +155,6 @@
     "doc": "Write the VTU output next to the MSH."
   },
   {
-    "pointer": "/preallocation_factor",
-    "type": "float",
-    "default": 6.0,
-    "min": 1.0,
-    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
-  },
-  {
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
@@ -172,7 +164,7 @@
     "pointer": "/simplify_use_sample_envelope",
     "type": "bool",
     "default": false,
-    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly."
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. On thin lattice geometry it has been observed to over-collapse badly."
   },
   {
     "pointer": "/simplify_envelope_ratio",
@@ -214,7 +206,7 @@
     "pointer": "/num_threads",
     "type": "int",
     "default": 0,
-    "doc": "Number of threads used by the application"
+    "doc": "Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run."
   },
   {
     "pointer": "/max_iterations",
@@ -251,13 +243,13 @@
     "pointer": "/eps_rel",
     "type": "float",
     "default": 1e-3,
-    "doc": "Envelope thickness relative to the bounding box"
+    "doc": "Envelope thickness relative to the bounding box diagonal."
   },
   {
     "pointer": "/length_rel",
     "type": "float",
     "default": 5e-2,
-    "doc": "Target edge length relative to the bounding box"
+    "doc": "Target edge length relative to the bounding box diagonal."
   },
   {
     "pointer": "/stop_energy",

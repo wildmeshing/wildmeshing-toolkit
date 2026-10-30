@@ -1,6 +1,6 @@
 [
   {
-    "doc": "",
+    "doc": "Triangulates the plane around curve networks as they come -- polylines that cross, overlap or leave gaps -- following TriWild: the curves are simplified within the envelope, embedded exactly into a triangle mesh around them, and the mesh is then optimized for quality while the embedded curves stay inside an envelope around the input. filter removes the triangles outside.",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
@@ -48,7 +48,6 @@
       "report",
       "history_output",
       "write_vtu",
-      "preallocation_factor",
       "DEBUG_output",
       "DEBUG_sanity_checks",
       "DEBUG_hausdorff",
@@ -77,13 +76,13 @@
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of triangular input meshes.",
+    "doc": "List of input curve networks: OBJ files of polylines ('v' and 'l' lines).",
     "min": 1
   },
   {
     "pointer": "/input/*",
     "type": "string",
-    "doc": "Triangular input mesh."
+    "doc": "One curve network: an OBJ file of polylines ('v' and 'l' lines)."
   },
   {
     "pointer": "/input_points",
@@ -123,7 +122,7 @@
     "pointer": "/num_threads",
     "type": "int",
     "default": 0,
-    "doc": "Number of threads used by the application"
+    "doc": "Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run."
   },
   {
     "pointer": "/max_iterations",
@@ -184,7 +183,7 @@
     "pointer": "/eps_rel",
     "type": "float",
     "default": 1e-3,
-    "doc": "Envelope thickness relative to the bounding box"
+    "doc": "Envelope thickness relative to the bounding box diagonal."
   },
   {
     "pointer": "/remove_duplicate_eps",
@@ -226,7 +225,7 @@
     "pointer": "/length_rel",
     "type": "float",
     "default": 5e-2,
-    "doc": "Target edge length relative to the bounding box"
+    "doc": "Target edge length relative to the bounding box diagonal."
   },
   {
     "pointer": "/stop_energy",
@@ -275,7 +274,7 @@
     "pointer": "/interleaved_smoothing",
     "type": "bool",
     "default": true,
-    "doc": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in triwild: per iteration it reaches a given energy sooner than the batched schedule (on 122839, 102 vs 535 at iteration 5 and 25 vs 69 at iteration 13), at the cost of roughly 3x the work per iteration since each topology pass gets its own smoothing. tetwild still defaults to off, pending the same measurement there."
+    "doc": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in triwild: per iteration it reaches a given energy sooner than the batched schedule (on 122839, 102 vs 535 at iteration 5 and 25 vs 69 at iteration 13), at the cost of roughly 3x the work per iteration since each topology pass gets its own smoothing. tetwild defaults to on too."
   },
   {
     "pointer": "/interleaved_smoothing_passes",
@@ -348,13 +347,6 @@
     "type": "bool",
     "default": false,
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
-  },
-  {
-    "pointer": "/preallocation_factor",
-    "type": "float",
-    "default": 6.0,
-    "min": 1.0,
-    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
   },
   {
     "pointer": "/max_expected_iterations",

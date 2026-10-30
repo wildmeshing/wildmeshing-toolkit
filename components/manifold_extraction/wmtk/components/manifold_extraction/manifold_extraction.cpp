@@ -10,7 +10,6 @@
 #include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/Preallocation.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 #include "ManExtractTetMesh.h"
 #include "ManExtractTriMesh.h"
@@ -97,7 +96,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
         // initialize mesh
         ManExtractTriMesh mesh(man_params, offset_params, NUM_THREADS);
-        wmtk::set_preallocation_factor_from_json(mesh, json_params);
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
@@ -125,12 +123,18 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
-        // initialize BVH
-        mesh.init_input_complex_bvh();
-        mesh.consolidate_mesh();
+        // A boundary that is already manifold leaves an empty input complex: nothing to offset,
+        // and the output is the input.
+        if (num_nmv == 0) {
+            logger().info("\tThe selection's boundary is manifold: the mesh is left as it is");
+        } else {
+            // initialize BVH
+            mesh.init_input_complex_bvh();
+            mesh.consolidate_mesh();
 
-        // create offset
-        mesh.construct_offset(output_filename);
+            // create offset
+            mesh.construct_offset(output_filename);
+        }
 
         // stop timer
         double time = timer.getElapsedTime();
@@ -176,7 +180,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
         // initialize mesh
         ManExtractTetMesh mesh(man_params, offset_params, NUM_THREADS);
-        wmtk::set_preallocation_factor_from_json(mesh, json_params);
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
@@ -206,12 +209,18 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
-        // initialize BVH
-        mesh.init_input_complex_bvh();
-        mesh.consolidate_mesh();
+        // A boundary that is already manifold leaves an empty input complex: nothing to offset
+        // (the offset construction crashed on it), and the output is the input.
+        if (num_nme == 0 && num_nmv == 0) {
+            logger().info("\tThe selection's boundary is manifold: the mesh is left as it is");
+        } else {
+            // initialize BVH
+            mesh.init_input_complex_bvh();
+            mesh.consolidate_mesh();
 
-        // create offset
-        mesh.construct_offset(output_filename);
+            // create offset
+            mesh.construct_offset(output_filename);
+        }
 
         // stop timer
         double time = timer.getElapsedTime();

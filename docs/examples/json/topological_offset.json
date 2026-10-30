@@ -1,0 +1,10 @@
+{
+  "application": "topological_offset",
+  "input": "127891.msh",
+  "output": "127891_offset",
+  "offset_selection": "127891",
+  "offset_output_tags": ["offset"],
+  "target_distance": 0.4,
+  "optimize_offset": false,
+  "report": "127891_offset.json"
+}

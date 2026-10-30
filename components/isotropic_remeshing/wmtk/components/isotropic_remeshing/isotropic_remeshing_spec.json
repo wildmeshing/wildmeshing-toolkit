@@ -1,6 +1,6 @@
 [
   {
-    "doc": "",
+    "doc": "Remeshes a triangle mesh towards a uniform target edge length with splits, collapses, swaps and tangential smoothing (Botsch and Kobbelt 2004). With a positive eps_rel, the surface stays inside an envelope around the input; features and feature_fields name curves and vertices the remeshing keeps.",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
@@ -25,7 +25,8 @@
       "remove_duplicate_eps",
       "history_output",
       "feature_fields",
-      "features"
+      "features",
+      "preallocation_factor"
     ]
   },
   {
@@ -61,19 +62,19 @@
     "pointer": "/num_threads",
     "type": "int",
     "default": 0,
-    "doc": "Number of threads used by the application"
+    "doc": "Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run."
   },
   {
     "pointer": "/max_iterations",
     "type": "int",
     "default": 3,
-    "doc": "Maximum iterations before stopping."
+    "doc": "Number of iterations, each a pass of splits, collapses, swaps and smoothing. All of them run: there is no convergence test."
   },
   {
     "pointer": "/eps_rel",
     "type": "float",
     "default": -1,
-    "doc": "Envelope thickness relative to the bounding box"
+    "doc": "Envelope thickness relative to the bounding box diagonal. Negative (the default): no envelope."
   },
   {
     "pointer": "/boundary_eps_rel",
@@ -169,5 +170,12 @@
     "type": "float",
     "default": 1e-5,
     "doc": "Merge input vertices closer than this fraction of the bounding box diagonal. 0 merges only exactly coincident vertices; a negative value merges nothing."
+  },
+  {
+    "pointer": "/preallocation_factor",
+    "type": "float",
+    "default": 6.0,
+    "min": 1.0,
+    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
   }
 ]

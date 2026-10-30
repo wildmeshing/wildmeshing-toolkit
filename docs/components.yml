@@ -1,0 +1,96 @@
+# The components as the documentation presents them. docs/tools/gen_reference.py reads this file
+# with every components/<name>/wmtk/components/<name>/<name>_spec.json: the spec says what the
+# options are, this file how to group and introduce them. `gen_reference.py --check` fails when a
+# spec has no entry here, or an entry names an option its spec does not have.
+#
+#   title         the name a page uses in prose
+#   group         the section of the reference and the tutorials (one of `groups`)
+#   tutorial      the tutorial page, relative to docs/ (omitted: none yet)
+#   key_options   the options a tutorial explains, in that order; the reference lists them first
+#   papers        what to cite
+
+groups:
+  surface: Surface remeshing
+  meshing: Tetrahedral and triangle meshing
+  regions: Multi-region meshes
+  offsets: Offsets and repair
+  mapping: Mapping
+  wip: Work in progress
+
+components:
+  shortest_edge_collapse:
+    title: Shortest edge collapse
+    group: surface
+    tutorial: tutorials/shortest_edge_collapse.md
+    key_options: [input, output, target_rel, eps_rel, boundary_eps_rel, use_link_condition, use_sample_envelope, remove_duplicate_eps]
+    papers:
+      - "[Hoppe 1996, Progressive Meshes](https://hhoppe.com/pm.pdf)"
+
+  qslim:
+    title: QSlim
+    group: surface
+    tutorial: tutorials/qslim.md
+    key_options: [input, output, target_rel, target_abs, eps_rel, boundary_eps_rel, use_sample_envelope]
+    papers:
+      - "[Garland and Heckbert 1997, Surface Simplification Using Quadric Error Metrics](https://dl.acm.org/doi/10.1145/258734.258849)"
+
+  isotropic_remeshing:
+    title: Isotropic remeshing
+    group: surface
+    tutorial: tutorials/isotropic_remeshing.md
+    key_options: [input, output, length_rel, length_abs, max_iterations, eps_rel, boundary_eps_rel, freeze_boundary, features, feature_fields, swap_quality, use_link_condition, use_sample_envelope]
+    papers:
+      - "[Botsch and Kobbelt 2004, A Remeshing Approach to Multiresolution Modeling](https://ls7-gv.cs.tu-dortmund.de/downloads/publications/2004/sgp04.pdf)"
+
+  tetwild:
+    title: TetWild
+    group: meshing
+    tutorial: tutorials/tetwild.md
+    key_options: [input, input_names, output, eps_rel, length_rel, stop_energy, filter, max_iterations, input_edges, input_points, preserve_topology, coarsen_pass, history_output]
+    papers:
+      - "[Hu et al. 2018, Tetrahedral Meshing in the Wild](https://cims.nyu.edu/gcl/papers/2018-TetWild.pdf)"
+      - "[Hu et al. 2020, Fast Tetrahedral Meshing in the Wild](https://arxiv.org/abs/1908.03581)"
+
+  triwild:
+    title: TriWild
+    group: meshing
+    tutorial: tutorials/triwild.md
+    key_options: [input, input_names, output, eps_rel, length_rel, stop_energy, filter, input_points, preserve_feature_points, preserve_topology]
+    papers:
+      - "[Hu et al. 2019, TriWild: Robust Triangulation with Curve Constraints](https://cims.nyu.edu/gcl/papers/2019-TriWild.pdf)"
+
+  simwild:
+    title: SimWild
+    group: regions
+    tutorial: tutorials/simwild.md
+    key_options: [input, input_names, input_type, operation, dimension, output, input_transform, eps_rel, length_rel, sizing_field, quality_field, stop_energy, preserve_topology, skip_simplify, num_threads]
+
+  topological_offset:
+    title: Topological offset
+    group: offsets
+    tutorial: tutorials/topological_offset.md
+    key_options: [input, output, offset_selection, offset_output_tags, protected_tags, offset_in, offset_out, target_distance_rel, target_distance, front_conv_rel, optimize_offset, max_rounds, num_threads, check_manifoldness]
+    papers:
+      - "[Topological Offsets, ACM TOG 2025](https://dl.acm.org/doi/10.1145/3731157)"
+
+  manifold_extraction:
+    title: Manifold extraction
+    group: offsets
+    tutorial: tutorials/manifold_extraction.md
+    key_options: [input, output, tag_selection, fill_tags, radius_rel, radius, write_surface]
+
+  tracking:
+    title: Tracking
+    group: mapping
+    tutorial: tutorials/tracking.md
+    key_options: [history, operation, input, output, points, output_points, direction, tet_mesh, uv_field, output_obj]
+
+  prismatic_mesh:
+    title: Prismatic mesh
+    group: wip
+    key_options: [input, output, thicknessratio, iterations, prism_dominant, keep_background_mesh]
+
+  c1_simplification:
+    title: C1 simplification
+    group: wip
+    key_options: [surface_mesh, tet_mesh, uv_mesh, dofs, cones, threshold]

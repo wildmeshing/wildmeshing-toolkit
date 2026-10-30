@@ -81,6 +81,14 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
     catch_discover_tests(wmtk_integration_tests PROPERTIES TIMEOUT 7200)
 
 endif()
+# wmtk_app ends a failed run with its error and exit code 1, not with an abort: an unknown
+# application is the simplest failure.
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/unknown_application.json" "{\"application\": \"none\"}")
+add_test(NAME wmtk_app_reports_errors
+    COMMAND wmtk_app -j "${CMAKE_CURRENT_BINARY_DIR}/unknown_application.json")
+set_tests_properties(wmtk_app_reports_errors PROPERTIES
+    PASS_REGULAR_EXPRESSION "wmtk_app stopped: Application none unknown")
+
 # The NumPy tests of the Python module -- the memory interface, and surface tracking through
 # it -- registered when the interpreter the module was built for has NumPy (the Linux CI jobs
 # install it). The wheel builds run the same files through cibuildwheel.
@@ -100,6 +108,18 @@ if(TARGET wildmeshing AND Python_EXECUTABLE)
             COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>/.."
                     "${Python_EXECUTABLE}" -m unittest discover
                     -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_tracking.py")
+        # The tracking tutorial's pipeline on the dense bunny, a whole remeshing and tetwild run:
+        # Release builds only, as the slow cases of the component tests.
+        if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+            include(wmtk_data)
+            add_test(
+                NAME python_tracking_correspondences
+                COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>/.."
+                        "WMTK_DATA=${WMTK_DATA_ROOT}/models"
+                        "${Python_EXECUTABLE}" -m unittest discover
+                        -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_tracking_correspondences.py")
+            set_tests_properties(python_tracking_correspondences PROPERTIES TIMEOUT 1800)
+        endif()
     else()
         message(STATUS "NumPy not found for ${Python_EXECUTABLE}: python_memory_io and python_tracking are not registered")
     endif()

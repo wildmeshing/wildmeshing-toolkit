@@ -1,16 +1,16 @@
 name: Build and Push Docker Images
 
+# The image is built and pushed on main, and on a version tag (tagged with the version too), not
+# on pull requests: building it takes about 25 minutes and a pull request's image is never used.
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - "v*"
 
 jobs:
   build-and-push-standard:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +28,6 @@ jobs:
           swap-storage: false
 
       - name: Log in to DockerHub
-        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -46,21 +45,15 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          # Push only on push to main, not PRs
-          push: ${{ github.event_name == 'push' }}
-          # Load into Docker engine for PRs so tests can run
-          load: ${{ github.event_name == 'pull_request' }}
+          push: true
+          # latest follows main; a version tag is also pushed as wmtk:<tag>.
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/wmtk:latest
             ${{ secrets.DOCKER_USERNAME }}/wmtk:${{ github.sha }}
+            ${{ github.ref_type == 'tag' && format('{0}/wmtk:{1}', secrets.DOCKER_USERNAME, github.ref_name) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           platforms: linux/amd64
 
-      - name: Test Standard Docker Image (PR local)
-        if: github.event_name == 'pull_request'
-        run: docker run --rm ${{ secrets.DOCKER_USERNAME }}/wmtk:latest --help
-
-      - name: Test Standard Docker Image (pushed)
-        if: github.event_name == 'push'
+      - name: Test Standard Docker Image
         run: docker run --rm ${{ secrets.DOCKER_USERNAME }}/wmtk:latest --help

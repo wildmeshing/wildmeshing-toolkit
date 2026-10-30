@@ -94,6 +94,7 @@ jobs:
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -DWMTK_BUILD_DOC_EXAMPLES=${{ matrix.config == 'Release' && 'ON' || 'OFF' }} \
             ${{ matrix.integration_tests_flag }}
 
       - name: Build
@@ -115,7 +116,8 @@ jobs:
         run: |
           sudo apt-get -o Acquire::Retries=3 install -y gdb || true
           cd build
-          failed=$(ctest -N --show-only=human 2>/dev/null | awk '/Test *#/{print $3}')
+          # The tests that failed, as ctest recorded them ("<number>:<name>" per line).
+          failed=$(sed 's/^[0-9]*://' Testing/Temporary/LastTestsFailed.log 2>/dev/null)
           for t in $failed; do
             bin=$(find . -type f -perm -u+x -name "$t" 2>/dev/null | head -1)
             [ -x "$bin" ] || continue
@@ -185,6 +187,7 @@ jobs:
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -DWMTK_BUILD_DOC_EXAMPLES=${{ matrix.config == 'Release' && 'ON' || 'OFF' }} \
             ${{ matrix.integration_tests_flag }}
 
       - name: Build
@@ -206,7 +209,8 @@ jobs:
         run: |
           # lldb ships with the Xcode command line tools; nothing to install.
           cd build
-          failed=$(ctest -N --show-only=human 2>/dev/null | awk '/Test *#/{print $3}')
+          # The tests that failed, as ctest recorded them ("<number>:<name>" per line).
+          failed=$(sed 's/^[0-9]*://' Testing/Temporary/LastTestsFailed.log 2>/dev/null)
           for t in $failed; do
             bin=$(find . -type f -perm -u+x -name "$t" 2>/dev/null | head -1)
             [ -x "$bin" ] || continue
@@ -290,6 +294,7 @@ jobs:
             -DCMAKE_POLICY_DEFAULT_CMP0141=NEW ^
             -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
+            -DWMTK_BUILD_DOC_EXAMPLES=${{ matrix.config == 'Release' && 'ON' || 'OFF' }} ^
             ${{ matrix.integration_tests_flag }} ^
             -B build ^
             -S .

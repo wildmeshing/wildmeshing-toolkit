@@ -87,8 +87,12 @@ ExternalProject_Add(
     # default in tetwild, triwild and simwild, and on crown (171k faces) the exact simplification
     # alone takes 54 minutes at 16 threads, against 8 s sampled; this case opts back into the
     # sampled one.
+    # At c91a67a (2026-10-30, data2 #12, branch danielepanozzo/stale-options off 89911f5) ten
+    # configs drop options the specs no longer have: front_conv_criterion from the nine 2D
+    # topological_offset cases (topological_offset_models.json, not run in CI) and w_smooth from
+    # simwild_energies_2d, which simwild ignored. No registered case changes.
     #
-    GIT_TAG 89911f53375f21eb6e8463caaca5bf07ce9c22c7
+    GIT_TAG c91a67a4b99082af3737c58f47b8abb5b43df6b5
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
