@@ -25,6 +25,8 @@ app/components_include.hpp
 app/components_map.hpp
 app/components_memory_map.hpp
 app/components_python.hpp
+app/components_spec_include.hpp
+app/components_spec_map.hpp
 *.egg-info
 CMakePresets.json
 CMakeCache.txt
@@ -39,3 +41,8 @@ CMakeCache.txt
 # Viewer state written into the repo root by polyscope / imgui at runtime
 .polyscope.ini
 imgui.ini
+docs/gallery/assets/
+docs/viewer/node_modules/
+
+# The documentation site, as mkdocs build writes it
+/site/
