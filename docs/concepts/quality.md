@@ -182,8 +182,8 @@ The pass trades run time for elements: it is off by default. With
 
 ## See also
 
-- The [tetwild](../tutorials/tetwild.md), [triwild](../tutorials/triwild.md) and
-  [simwild](../tutorials/simwild.md) tutorials, for the settings on real inputs.
+- The [tetwild](../tutorials/tetwild.md) and [triwild](../tutorials/triwild.md) tutorials, for
+  the settings on real inputs.
 - [`OptimizerParameters.h`](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/src/wmtk/OptimizerParameters.h),
   where every parameter of the loop is documented with the measurements behind its default.
 - Hu et al. 2018, [Tetrahedral Meshing in the Wild](https://cims.nyu.edu/gcl/papers/2018-TetWild.pdf),

@@ -13,6 +13,10 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 examples = yaml.safe_load((ROOT / "docs" / "gallery" / "examples.yaml").read_text())["examples"]
+# An example explained by a page that is not published (mkdocs.yml's draft_docs) is left out with
+# it; its assets are still built.
+drafts = mkdocs_gen_files.config.draft_docs
+examples = [e for e in examples if not (drafts and e.get("tutorial") and drafts.match_file(e["tutorial"]))]
 
 GROUPS = {
     "tutorials": ("The tutorials", "The first run of each tutorial."),

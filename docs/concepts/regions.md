@@ -84,7 +84,8 @@ whose two cells do not belong to the same regions. It is held in the
 
 ## See also
 
-- The [simwild tutorial](../tutorials/simwild.md) and the [regions workflow](../tutorials/workflows/regions.md).
+- [Reference: every option of `simwild`](../reference/simwild.md), the component that meshes
+  and edits regions.
 - The [topological offset](../tutorials/topological_offset.md) and
   [manifold extraction](../tutorials/manifold_extraction.md) tutorials.
 - [In-memory I/O](../in-memory-io.md) for the full description of mesh dictionaries and `tags`.

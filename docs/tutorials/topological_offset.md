@@ -8,7 +8,7 @@ front, lies at the target distance. The band's topology is fixed when it is buil
 throughout ([Topological Offsets, ACM TOG 2025](https://dl.acm.org/doi/10.1145/3731157)).
 
 Use it to make a coating, a gap, or a contact layer of a given thickness around regions that
-already exist in a tagged mesh, such as one from [simwild](simwild.md). To separate or join
+already exist in a tagged mesh, such as one from [simwild](../reference/simwild.md). To separate or join
 regions that touch only along an edge or at a vertex, use
 [manifold extraction](manifold_extraction.md), which carves the same kind of band without the
 optimization.
@@ -293,5 +293,5 @@ counted before and after the construction, and a change stops the run
 - [Reference: every option of `topological_offset`](../reference/topological_offset.md)
 - [Manifold extraction](manifold_extraction.md): the same construction around non-manifold edges
   and vertices
-- [SimWild](simwild.md): tagged meshes, and the tag expressions
+- [Regions](../concepts/regions.md): tagged meshes, and the tag expressions
 - [Topological Offsets, ACM TOG 2025](https://dl.acm.org/doi/10.1145/3731157)

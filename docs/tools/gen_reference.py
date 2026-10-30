@@ -357,9 +357,13 @@ def check(specs, meta, groups):
     return errors
 
 
-def generate(write, base_url):
+def generate(write, base_url, published=lambda page: True):
     meta_file = yaml.safe_load((ROOT / "docs" / "components.yml").read_text())
     groups, meta = meta_file["groups"], meta_file["components"]
+    # A tutorial that is not published (mkdocs.yml's draft_docs) is not linked.
+    for m in meta.values():
+        if m.get("tutorial") and not published(m["tutorial"]):
+            del m["tutorial"]
     found = find_specs()
     # In components.yml's order, then any spec it does not list (--check reports those).
     order = [n for n in meta if n in found] + [n for n in found if n not in meta]
@@ -409,4 +413,8 @@ else:
             f.write(text)
 
     _config = mkdocs_gen_files.config
-    generate(_write, _config.site_url or "")
+
+    def _published(page):
+        return not (_config.draft_docs and _config.draft_docs.match_file(page))
+
+    generate(_write, _config.site_url or "", _published)

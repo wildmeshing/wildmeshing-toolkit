@@ -28,7 +28,7 @@ One function per component, with two calls:
 | `wm.isotropic_remeshing` | [tutorial](tutorials/isotropic_remeshing.md) | [options](reference/isotropic_remeshing.md) |
 | `wm.tetwild` | [tutorial](tutorials/tetwild.md) | [options](reference/tetwild.md) |
 | `wm.triwild` | [tutorial](tutorials/triwild.md) | [options](reference/triwild.md) |
-| `wm.simwild` | [tutorial](tutorials/simwild.md) | [options](reference/simwild.md) |
+| `wm.simwild` | — | [options](reference/simwild.md) |
 | `wm.topological_offset` | [tutorial](tutorials/topological_offset.md) | [options](reference/topological_offset.md) |
 | `wm.manifold_extraction` | [tutorial](tutorials/manifold_extraction.md) | [options](reference/manifold_extraction.md) |
 | `wm.tracking` | [tutorial](tutorials/tracking.md) | [options](reference/tracking.md) |
