@@ -255,6 +255,35 @@ public:
         const std::vector<std::vector<CellTag>>& tight_seal_tag_sets,
         double threshold = std::numeric_limits<double>::infinity());
 
+    /**
+     * @brief Geometric tight seal between the regions R_i, the faces tagged with `tags[i]` and
+     * nothing else.
+     *
+     * A disk of radius distance/2 moves through E, everything outside the R_i, without entering
+     * them. Each connected part of E it cannot reach that borders every R_i is filled with the
+     * Voronoi diagram of the R_i: edges whose endpoints have different nearest regions are split
+     * on the bisector, and each face gets the tag of its region.
+     *
+     * Without `growth`, the disk's centres are the faces whose three vertices are far enough from
+     * the R_i, and a part is the faces whose three vertices the disk cannot reach. With it, both
+     * are cut along their level sets by sphere tracing on the edges (to within trace_rel_tol x
+     * distance/2): the centres are cut without splitting, a part by splitting the edges that
+     * leave it.
+     *
+     * `selection` "explicit": the regions are `tags`, which may not hold ambient (the tag named
+     * "ambient"). "detected": `tags` is ignored (with a warning if it is not empty), the regions
+     * are every tag but ambient that some face has alone, and each part that borders
+     * `min_regions` of them or more (at least 2; ignored, with a warning if not 2, for "explicit")
+     * is filled with those it borders.
+     */
+    void tight_seal_geom(
+        const std::vector<int64_t>& tags,
+        double distance,
+        bool growth = true,
+        double trace_rel_tol = 0.01,
+        const std::string& selection = "explicit",
+        int64_t min_regions = 2);
+
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 
     void replace_tags(const std::vector<CellTag>& tags_in, const std::vector<CellTag>& tags_out);

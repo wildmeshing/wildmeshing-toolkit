@@ -85,6 +85,42 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
         const double threshold =
             raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
         mesh.tight_seal_topo(tag_sets, threshold);
+    } else if (operation == "tight_seal_geom") {
+        const std::string selection = json_params["tight_seal_geom_selection"];
+        const std::vector<std::string> tag_names = json_params["tight_seal_geom_tags"];
+        std::vector<int64_t> tags;
+        if (selection == "detected") {
+            if (!tag_names.empty()) {
+                logger().warn(
+                    "tight_seal_geom_selection is \"detected\", so tight_seal_geom_tags {} is "
+                    "ignored",
+                    tag_names);
+            }
+        } else {
+            for (const auto& tag_name : tag_names) {
+                const auto expr = expression_parser::parse(tag_name, mesh.m_tag_name_to_id);
+                // the reader drops ambient (the untagged cells), so it is no tag to parse into
+                if (expr->tag_names_involved().count("ambient") > 0) {
+                    log_and_throw_error(
+                        "tight_seal_geom_tags cannot hold ambient. Got {}",
+                        tag_names);
+                }
+                const CellTag tag = expr->tags_involved();
+                if (!expr->contains_only_and() || tag.size() != 1) {
+                    log_and_throw_error(
+                        "Each tight_seal_geom_tags entry must be a single tag. Got {}",
+                        tag_name);
+                }
+                tags.push_back(*tag.begin());
+            }
+        }
+        mesh.tight_seal_geom(
+            tags,
+            json_params["tight_seal_geom_distance"],
+            json_params["tight_seal_geom_growth"],
+            json_params["tight_seal_geom_trace_rel_tol"],
+            selection,
+            json_params["tight_seal_geom_min_regions"]);
     } else if (operation == "keep_lcc") {
         const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
         std::vector<CellTag> lcc_tags;
