@@ -96,6 +96,8 @@ std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>band_cancels</b> = false</td></tr>
 <tr class="memdesc:a84fb857e462b0884fc921fcd8f7ef14d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5268efd474e7348e2ee975ea1d1a4504">band_term_cancels()</a> for v1's ring: both sums leave the band term out. <br /></td></tr>
 <tr class="separator:a84fb857e462b0884fc921fcd8f7ef14d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c84c0a2f5efad08afa8d8cdf50c36c0" id="r_a0c84c0a2f5efad08afa8d8cdf50c36c0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_collapse_volume.html#a0c84c0a2f5efad08afa8d8cdf50c36c0">surface_before</a> = 0.</td></tr>
+<tr class="separator:a0c84c0a2f5efad08afa8d8cdf50c36c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a289c85e18de9bf5c6300cf9960d94567" id="r_a289c85e18de9bf5c6300cf9960d94567"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; Vector3d, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_collapse_volume.html#a289c85e18de9bf5c6300cf9960d94567">swept_faces</a></td></tr>
 <tr class="separator:a289c85e18de9bf5c6300cf9960d94567"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6326853de60d679c3d7bc7ec29ae99e4" id="r_a6326853de60d679c3d7bc7ec29ae99e4"><td class="memItemLeft" align="right" valign="top"><a id="a6326853de60d679c3d7bc7ec29ae99e4" name="a6326853de60d679c3d7bc7ec29ae99e4"></a>
@@ -108,6 +110,21 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>swept_x2</b> = Ve
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The collapse energy rule's before half (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90b1522f1d7a2516ddd1eeb90d92ecf8">collapse_before_vertex()</a>), compared by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa09e98dd93a496cb75c932a9b0a59e83">collapse_after_connectivity()</a>. The cells a collapse changes are v1's ring (removed, or given v2 in place of v1): <code>before</code> is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af27b53e59185c568a95b4a378ed8ac85" title="The sum of tet_energy() over tids, in their order: what every rule compares.">tet_energy_sum()</a> over it. v2's other cells keep their slots, corners and labels and so their energy, and are left out of both sums (<code>v2_only</code>, their sorted tids), so the two sums differ by the changed cells alone, with no summation noise. </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a0c84c0a2f5efad08afa8d8cdf50c36c0" name="a0c84c0a2f5efad08afa8d8cdf50c36c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c84c0a2f5efad08afa8d8cdf50c36c0">&#9670;&#160;</a></span>surface_before</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::CollapseVolume::surface_before = 0.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL_band_volume_rule "surface": the offset faces through v1 or v2 before (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa2799f5803bbeedf3107b24b0404cdde">surface_face_term()</a>), against the survivor's after. </p>
+
+</div>
+</div>
 <a id="a289c85e18de9bf5c6300cf9960d94567" name="a289c85e18de9bf5c6300cf9960d94567"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a289c85e18de9bf5c6300cf9960d94567">&#9670;&#160;</a></span>swept_faces</h2>
 

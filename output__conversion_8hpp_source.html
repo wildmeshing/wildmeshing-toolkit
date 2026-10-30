@@ -97,42 +97,48 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (!std::is_base_of_v&lt;TetMesh, Mesh&gt;) keys[<span class="stringliteral">&quot;mesh_surf.vtu&quot;</span>] = <span class="stringliteral">&quot;&quot;</span>;</div>
 <div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>    MeshMap raw;</div>
 <div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>    mesh.write_vtu(<span class="stringliteral">&quot;mesh&quot;</span>, &amp;raw);</div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_base_of_v&lt;TetMesh, Mesh&gt;) io::compact_slot_outputs(mesh, raw);</div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>    context.result.first = io::named_outputs(std::move(raw), keys);</div>
-<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>    <span class="keyword">auto</span>&amp; data = context.result.first.at(<span class="stringliteral">&quot;mesh&quot;</span>);</div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_base_of_v&lt;TetMesh, Mesh&gt;) {</div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>        io::collect_tags(</div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>            mesh,</div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>            context.result.first,</div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>            CellType::Tetrahedron,</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>            mesh.get_tets(),</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>            [&amp;](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t) -&gt; <span class="keyword">const</span> <span class="keyword">auto</span>&amp; { return mesh.m_tet_attribute[t.tid(mesh)].tag; });</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>        io::collect_face_tags(mesh, context.result.first, mesh.m_face_tag_names);</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>        io::collect_tags(</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>            mesh,</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>            context.result.first,</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>            CellType::Triangle,</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>            mesh.get_faces(),</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>            [&amp;](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t) -&gt; <span class="keyword">const</span> <span class="keyword">auto</span>&amp; { return mesh.m_face_attribute[t.fid(mesh)].tags; });</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    }</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="keywordflow">if</span> (mesh.m_offset_params.save_offset_correspondence) {</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        <span class="keyword">const</span> <span class="keyword">auto</span> ids = data.vertex_attributes.at(<span class="stringliteral">&quot;vid&quot;</span>).integers();</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        DataMatrix&lt;int64_t&gt; correspondence(data.V.rows(), 1);</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        <span class="keywordflow">for</span> (Eigen::Index i = 0; i &lt; ids.rows(); ++i)</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>            correspondence(i, 0) = mesh.m_vertex_extra[ids(i, 0)].m_corr_input_vid;</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        data.vertex_attributes[<span class="stringliteral">&quot;corr_input_vid&quot;</span>].values = std::move(correspondence);</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        data.vertex_attributes[<span class="stringliteral">&quot;vid&quot;</span>].values = ids;</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    }</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <span class="keywordflow">if</span> (mesh.m_has_envelope) {</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        context.result.first[<span class="stringliteral">&quot;envelope&quot;</span>] = io::geometry_data(</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            mesh.m_V_envelope,</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>            mesh.m_F_envelope,</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>            std::is_base_of_v&lt;TetMesh, Mesh&gt; ? CellType::Triangle : CellType::Edge);</div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>    <span class="comment">// The stencil file (3D, DEBUG_stencil, a mesh with an offset potential and a front): one point</span></div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>    <span class="comment">// per stencil point of every offset face, indexed by those points, not by the mesh&#39;s vertex</span></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>    <span class="comment">// slots, so compact_slot_outputs() cannot remap it (&quot;Export references an inactive vertex&quot;:</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    <span class="comment">// every run of the 2026-10-29 sonic sweep aborted there). A debug-frame diagnostic, not a</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>    <span class="comment">// result.</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>    raw.erase(<span class="stringliteral">&quot;mesh_stencil.vtu&quot;</span>);</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_base_of_v&lt;TetMesh, Mesh&gt;) io::compact_slot_outputs(mesh, raw);</div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    context.result.first = io::named_outputs(std::move(raw), keys);</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    <span class="keyword">auto</span>&amp; data = context.result.first.at(<span class="stringliteral">&quot;mesh&quot;</span>);</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (std::is_base_of_v&lt;TetMesh, Mesh&gt;) {</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>        io::collect_tags(</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>            mesh,</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>            context.result.first,</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>            CellType::Tetrahedron,</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>            mesh.get_tets(),</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>            [&amp;](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t) -&gt; <span class="keyword">const</span> <span class="keyword">auto</span>&amp; { return mesh.m_tet_attribute[t.tid(mesh)].tag; });</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        io::collect_face_tags(mesh, context.result.first, mesh.m_face_tag_names);</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        io::collect_tags(</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>            mesh,</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>            context.result.first,</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>            CellType::Triangle,</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>            mesh.get_faces(),</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>            [&amp;](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t) -&gt; <span class="keyword">const</span> <span class="keyword">auto</span>&amp; { return mesh.m_face_attribute[t.fid(mesh)].tags; });</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    }</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordflow">if</span> (mesh.m_offset_params.save_offset_correspondence) {</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        <span class="keyword">const</span> <span class="keyword">auto</span> ids = data.vertex_attributes.at(<span class="stringliteral">&quot;vid&quot;</span>).integers();</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        DataMatrix&lt;int64_t&gt; correspondence(data.V.rows(), 1);</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        <span class="keywordflow">for</span> (Eigen::Index i = 0; i &lt; ids.rows(); ++i)</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            correspondence(i, 0) = mesh.m_vertex_extra[ids(i, 0)].m_corr_input_vid;</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        data.vertex_attributes[<span class="stringliteral">&quot;corr_input_vid&quot;</span>].values = std::move(correspondence);</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        data.vertex_attributes[<span class="stringliteral">&quot;vid&quot;</span>].values = ids;</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    }</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    data.validate();</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>}</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>} <span class="comment">// namespace wmtk::components::topological_offset</span></div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <span class="keywordflow">if</span> (mesh.m_has_envelope) {</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        context.result.first[<span class="stringliteral">&quot;envelope&quot;</span>] = io::geometry_data(</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>            mesh.m_V_envelope,</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>            mesh.m_F_envelope,</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>            std::is_base_of_v&lt;TetMesh, Mesh&gt; ? CellType::Triangle : CellType::Edge);</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    }</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    data.validate();</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>}</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>} <span class="comment">// namespace wmtk::components::topological_offset</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

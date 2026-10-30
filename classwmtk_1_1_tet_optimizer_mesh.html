@@ -2927,7 +2927,7 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
 <p>The only quality that is comparable ACROSS cells. Raw cell_quality is not, once an application gives different regions different targets: the loose region's raw ceiling then hides degradation in the strict one, because a strict cell may get much worse and still sit below a number set somewhere it has nothing to do with. Shared code that compares one cell's quality against another's must go through here.</p>
 <p>The cube root is because cell_quality stores AMIPS^3, so that this means the same thing as its 2D twin: AMIPS relative to target, not AMIPS^3 relative to target. TetWild's target is uniform, so this is a monotone function of the raw quality divided by a constant &ndash; neither of which can change the outcome of a before/after comparison, so its behaviour is unchanged. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#afb5c39df96a5304e2b26b530eb47f7bc">wmtk::components::simwild::SimWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#afb5c39df96a5304e2b26b530eb47f7bc">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa66b2315f0f82b03a42f59d302fcce6c">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>

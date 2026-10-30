@@ -49,13 +49,14 @@ var searchData=
   ['surfacemeshedgeattribute_46',['SurfaceMeshEdgeAttribute',['../structwmtk_1_1components_1_1c1__simplification_1_1_surface_mesh_edge_attribute.html',1,'wmtk::components::c1_simplification']]],
   ['surfacemeshfaceattribute_47',['SurfaceMeshFaceAttribute',['../structwmtk_1_1components_1_1c1__simplification_1_1_surface_mesh_face_attribute.html',1,'wmtk::components::c1_simplification']]],
   ['surfacemeshvertexattribute_48',['SurfaceMeshVertexAttribute',['../structwmtk_1_1components_1_1c1__simplification_1_1_surface_mesh_vertex_attribute.html',1,'wmtk::components::c1_simplification']]],
-  ['surfacepoint_49',['SurfacePoint',['../structwmtk_1_1components_1_1tracking_1_1_surface_point.html',1,'wmtk::components::tracking']]],
-  ['surfacetagattributes_50',['SurfaceTagAttributes',['../classwmtk_1_1_surface_tag_attributes.html',1,'wmtk']]],
-  ['surfacetoposignature_51',['SurfaceTopoSignature',['../structwmtk_1_1utils_1_1_surface_topo_signature.html',1,'wmtk::utils']]],
-  ['swapinfocache_52',['swapinfocache',['../structwmtk_1_1_tet_optimizer_mesh_1_1_swap_info_cache.html',1,'wmtk::TetOptimizerMesh::SwapInfoCache'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_swap_info_cache.html',1,'wmtk::TriOptimizerMesh::SwapInfoCache']]],
-  ['swaprecord_53',['SwapRecord',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_record.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['swapsurfacesides_54',['SwapSurfaceSides',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_surface_sides.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['swaptagcache_55',['SwapTagCache',['../structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_tag_cache.html',1,'wmtk::components::simwild::SimWildMesh']]],
-  ['sweptcounters_56',['SweptCounters',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swept_counters.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['sweptderivcounts_57',['SweptDerivCounts',['../structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_swept_deriv_counts.html',1,'wmtk::components::topological_offset::BandVolumeEnergy3D']]]
+  ['surfaceoffseterror3d_49',['SurfaceOffsetError3D',['../classwmtk_1_1components_1_1topological__offset_1_1_surface_offset_error3_d.html',1,'wmtk::components::topological_offset']]],
+  ['surfacepoint_50',['SurfacePoint',['../structwmtk_1_1components_1_1tracking_1_1_surface_point.html',1,'wmtk::components::tracking']]],
+  ['surfacetagattributes_51',['SurfaceTagAttributes',['../classwmtk_1_1_surface_tag_attributes.html',1,'wmtk']]],
+  ['surfacetoposignature_52',['SurfaceTopoSignature',['../structwmtk_1_1utils_1_1_surface_topo_signature.html',1,'wmtk::utils']]],
+  ['swapinfocache_53',['swapinfocache',['../structwmtk_1_1_tet_optimizer_mesh_1_1_swap_info_cache.html',1,'wmtk::TetOptimizerMesh::SwapInfoCache'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_swap_info_cache.html',1,'wmtk::TriOptimizerMesh::SwapInfoCache']]],
+  ['swaprecord_54',['SwapRecord',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_record.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['swapsurfacesides_55',['SwapSurfaceSides',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_surface_sides.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['swaptagcache_56',['SwapTagCache',['../structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_tag_cache.html',1,'wmtk::components::simwild::SimWildMesh']]],
+  ['sweptcounters_57',['SweptCounters',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swept_counters.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['sweptderivcounts_58',['SweptDerivCounts',['../structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_swept_deriv_counts.html',1,'wmtk::components::topological_offset::BandVolumeEnergy3D']]]
 ];
