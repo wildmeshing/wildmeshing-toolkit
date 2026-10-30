@@ -842,10 +842,11 @@ public:
      * THE SMOOTHER minimises the vertex's part of E (smoothing_extra_energy()): the AMIPS term
      * over its ring (amips3_energy()) and, unless an input envelope holds the vertex, the band
      * term of its band cells (band_volume_energy_at()) -- the held-vertex exception is measured
-     * there. Every move is then judged by the ring's sum of this energy: a vertex held on a
-     * surface through the engine's projected step, which takes the first projected position where
-     * that sum drops (smoothing_ring_energy()); every other vertex through the veto after its
-     * solve (smooth_front_vertex(), smooth_nonfront_vertex()).
+     * there; under "exact" not where that term cancels (above), being a constant. Every move is
+     * then judged by the ring's sum of this energy: a vertex held on a surface through the engine's
+     * projected step, which takes the first projected position where that sum drops
+     * (smoothing_ring_energy()); every other vertex through the veto after its solve
+     * (smooth_front_vertex(), smooth_nonfront_vertex()).
      *
      * The front's face measure (face_offset_term()) is not part of E: the exit, the refinement and
      * the frames read it.
@@ -1065,7 +1066,7 @@ public:
      * was made. No triangle outside the corners' nearest (ties included) had a smaller mean; the
      * exact search is min_mean_distance(), on m_input_complex_envelope.
      *
-     * That is EXPERIMENTAL_band_volume_rule "corner_bound", the default. Under "exact" b(t) is
+     * That is EXPERIMENTAL_band_volume_rule "corner_bound". Under "exact", the default, b(t) is
      * J_t / delta, J_t = int_t (d - delta) dV in closed form (ExactBandIntegral::value()): exact
      * up to rounding, and an upper bound only on the pieces of t where two features' regions
      * meet on a curved border (rule (a)). Under "front_flux" b(t) is the same J_t / delta: the
@@ -2384,7 +2385,8 @@ public:
     /// vid. The AMIPS term over the ring (amips3_energy()) for every vertex -- the smoother adds no
     /// AMIPS term of its own, every caller passing opts.w_amips 0 -- plus the band term of the
     /// ring's band cells (band_volume_energy_at(); through front_energy() for a front vertex the
-    /// loop places) unless an input envelope holds vid, or, in the passes before the march, a
+    /// loop places) unless an input envelope holds vid or, under "exact", the term cancels over
+    /// the ring (band_term_cancels(): it does not move with vid), or, in the passes before the march, a
     /// repulsion vertex's term once per ring cell that carries it (repulsion_energy(),
     /// repulsion_cell_term()). Under TetWild's rules (m_op_rules) none: null, so the engine's
     /// smoother minimises the raw sum of AMIPS over the ring.
@@ -2413,6 +2415,24 @@ public:
             // iterations and ~20 line-search trials per iteration (72% of the smoother's value
             // calls), without it 3.9 and 1; 19.3 s -> 11.3 s. E still guards the move:
             // smooth_nonfront_vertex() vetoes on the ring's sum of tet_energy().
+            // Under "exact", not where it cancels (BAND TERM THAT CANCELS, tet_energy()): a ring
+            // of band cells clear of the input's bisectors tiles the star of vid, so the term is a
+            // constant, and its cells' exact integrals would add only work and their rounding to
+            // every Newton step. The veto's own test (cancels_before in smooth_nonfront_vertex()).
+            // Constant wherever the move can end, not only here: vid is not held, so not on the
+            // domain wall (face_is_held()), and its ring closes around it; the engine keeps no
+            // position that inverts a ring cell, so vid stays inside the convex hull of its link;
+            // and the test reads the points only through their box, their least side of each
+            // bisector polytope's planes, and min_P max d_P (d_P convex), none of which a point
+            // inside that hull changes. So the test here certifies every position the smoother
+            // can keep. "front_flux" and "exact_swept" leave the constant out by their own forms
+            // (band_volume_energy_at()). MEASURED (cube 1e-2 / 1e-4, 15 rounds, serial, two runs
+            // each): 659 of 46,594 non-front solves had such a ring; at every one's end the
+            // veto's test found it clear again, and every one was accepted; smoothing 7.7-7.9 s ->
+            // 7.4-7.5 s.
+            if (m_offset_params.band_volume_rule == "exact" &&
+                band_term_cancels(get_one_ring_tids_for_vertex(vid)))
+                return sum;
             if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
         }
         return sum;
@@ -2956,6 +2976,13 @@ public:
 
     /// Build the smooth offset potential from the extraction init_input_complex_bvh() kept.
     void init_offset_potential();
+
+    /// The exact band integral, m_band_exact, on the input triangles (m_phi_V, m_phi_F,
+    /// m_phi_F_inner, m_input_complex_envelope), built only where something reads it: the band
+    /// rules "exact", "front_flux" and "exact_swept" (with its value table and the bisector
+    /// search), "surface" with a label clean-up, settle_mark "max", DEBUG_output.
+    /// init_offset_potential() calls it.
+    void init_band_exact();
 
     /// The input complex as Phi's primitives: the BOUNDARY triangles of the label-1 tet region
     /// plus the complex's isolated triangles, every edge of those triangles plus the complex's
