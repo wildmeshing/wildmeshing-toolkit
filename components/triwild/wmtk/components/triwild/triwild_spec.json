@@ -1,6 +1,6 @@
 [
   {
-    "doc": "",
+    "doc": "Triangulates the plane around curve networks as they come -- polylines that cross, overlap or leave gaps -- following TriWild: the curves are simplified within the envelope, embedded exactly into a triangle mesh around them, and the mesh is then optimized for quality while the embedded curves stay inside an envelope around the input. filter removes the triangles outside.",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
@@ -77,13 +77,13 @@
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of triangular input meshes.",
+    "doc": "List of input curve networks: OBJ files of polylines ('v' and 'l' lines).",
     "min": 1
   },
   {
     "pointer": "/input/*",
     "type": "string",
-    "doc": "Triangular input mesh."
+    "doc": "One curve network: an OBJ file of polylines ('v' and 'l' lines)."
   },
   {
     "pointer": "/input_points",
@@ -123,7 +123,7 @@
     "pointer": "/num_threads",
     "type": "int",
     "default": 0,
-    "doc": "Number of threads used by the application"
+    "doc": "Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run."
   },
   {
     "pointer": "/max_iterations",
@@ -184,7 +184,7 @@
     "pointer": "/eps_rel",
     "type": "float",
     "default": 1e-3,
-    "doc": "Envelope thickness relative to the bounding box"
+    "doc": "Envelope thickness relative to the bounding box diagonal."
   },
   {
     "pointer": "/remove_duplicate_eps",
@@ -226,7 +226,7 @@
     "pointer": "/length_rel",
     "type": "float",
     "default": 5e-2,
-    "doc": "Target edge length relative to the bounding box"
+    "doc": "Target edge length relative to the bounding box diagonal."
   },
   {
     "pointer": "/stop_energy",

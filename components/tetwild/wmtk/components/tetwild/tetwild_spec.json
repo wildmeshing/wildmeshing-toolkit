@@ -1,6 +1,6 @@
 [
   {
-    "doc": "",
+    "doc": "Tetrahedralizes triangle surfaces as they come -- open, self-intersecting, non-manifold -- following TetWild: the input is simplified within the envelope, embedded exactly into a Delaunay tet mesh of its bounding box, and the tet mesh is then optimized for quality while the embedded surface stays inside an envelope around the input. filter removes the tets outside. The output keeps the embedded surface as tracked faces, and the inputs' winding numbers on the tets.",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
@@ -228,7 +228,7 @@
     "pointer": "/num_threads",
     "type": "int",
     "default": 0,
-    "doc": "Number of threads used by the application"
+    "doc": "Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run."
   },
   {
     "pointer": "/max_iterations",
@@ -265,13 +265,13 @@
     "pointer": "/eps_rel",
     "type": "float",
     "default": 1e-3,
-    "doc": "Envelope thickness relative to the bounding box"
+    "doc": "Envelope thickness relative to the bounding box diagonal."
   },
   {
     "pointer": "/length_rel",
     "type": "float",
     "default": 5e-2,
-    "doc": "Target edge length relative to the bounding box"
+    "doc": "Target edge length relative to the bounding box diagonal."
   },
   {
     "pointer": "/stop_energy",
