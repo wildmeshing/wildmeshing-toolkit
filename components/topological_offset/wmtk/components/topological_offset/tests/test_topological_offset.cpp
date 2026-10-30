@@ -1688,9 +1688,9 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
     // still is the ring sum. Under both band rules, "corner_bound" (the default until 2026-10-29)
     // and "exact". Under "exact" the star's band term does not move with its inner vertex (BAND
     // TERM THAT CANCELS, tet_energy()): the eight cells tile the star, whose union is fixed. The
-    // objective there is the AMIPS term plus a constant whose rounding over 2h is above the AMIPS
-    // slope (w 1, s 100), so the band part is checked to keep its value and to have no
-    // derivatives, and the objective's derivatives against central differences of the AMIPS term.
+    // objective there leaves it out -- it is the AMIPS term (amips3_energy()) -- so the ring sum
+    // less the objective is the band term, which is checked to keep its value and to have no
+    // derivatives.
     Eigen::MatrixXd V1(6, 3);
     V1 << 0., 0., 0.37, // a
         0., 0., 1.13, // b
@@ -1806,18 +1806,21 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 }
                 const auto energy = mesh->smoothing_extra_energy(v);
                 // Under "exact", fixture 1's inner vertex: its ring's band term does not move with
-                // it (band_term_cancels(), the smoother's own test), and the central differences
-                // below are of the AMIPS term (amips3_energy()), the objective's other part.
+                // it (band_term_cancels(), the smoother's own test), and the objective is the
+                // AMIPS term (amips3_energy()) alone.
                 const bool band_fixed = !front && mesh->band_term_cancels(ring);
                 REQUIRE(band_fixed == (rule == "exact" && v == fx.not_front && fx.has_band_ring));
                 const auto band = band_fixed ? mesh->band_volume_energy_at(v) : nullptr;
-                const auto fd_energy = band_fixed ? mesh->amips3_energy(v) : energy;
+                const auto amips = mesh->amips3_energy(v);
                 const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
                 Eigen::VectorXd xv = x0;
                 const double e0 = energy->value(xv);
-                const double d0 = e0 - ring_energy();
-                CHECK(d0 == Catch::Approx(0.).margin(1e-12 * std::max(1., std::abs(e0))));
                 const double b0 = band ? band->value(xv) : 0.;
+                const double d0 = e0 - ring_energy();
+                CHECK(
+                    d0 ==
+                    Catch::Approx(-b0).margin(1e-12 * std::max({1., std::abs(e0), std::abs(b0)})));
+                if (band) CHECK(e0 == amips->value(xv));
                 for (const Vector3d& dx :
                      {Vector3d(0.01, 0., 0.),
                       Vector3d(0., -0.008, 0.005),
@@ -1831,6 +1834,7 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                         e - ring_energy() ==
                         Catch::Approx(d0).margin(1e-12 * std::max(1., std::abs(e))));
                     if (band) {
+                        CHECK(e == amips->value(xv));
                         CHECK(
                             band->value(xv) ==
                             Catch::Approx(b0).margin(1e-12 * std::max(1., std::abs(b0))));
@@ -1851,10 +1855,14 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 energy->gradient(xv, g);
                 energy->hessian(xv, H);
                 if (band) {
-                    // The band part has no derivatives, to the margins the central differences
-                    // allow.
-                    Eigen::VectorXd gb(3);
-                    Eigen::MatrixXd Hb(3, 3);
+                    // The objective is the AMIPS term's, and the band part it leaves out has no
+                    // derivatives, to the margins the central differences allow.
+                    Eigen::VectorXd ga(3), gb(3);
+                    Eigen::MatrixXd Ha(3, 3), Hb(3, 3);
+                    amips->gradient(xv, ga);
+                    amips->hessian(xv, Ha);
+                    CHECK(g == ga);
+                    CHECK(H == Ha);
                     band->gradient(xv, gb);
                     band->hessian(xv, Hb);
                     CHECK(gb.norm() <= 1e-7 * g.norm());
@@ -1864,11 +1872,11 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                     Eigen::VectorXd xp = xv, xm = xv;
                     xp[i] += h;
                     xm[i] -= h;
-                    const double fd = (fd_energy->value(xp) - fd_energy->value(xm)) / (2. * h);
+                    const double fd = (energy->value(xp) - energy->value(xm)) / (2. * h);
                     CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * g.norm()));
                     Eigen::VectorXd gp(3), gm(3);
-                    fd_energy->gradient(xp, gp);
-                    fd_energy->gradient(xm, gm);
+                    energy->gradient(xp, gp);
+                    energy->gradient(xm, gm);
                     for (int j = 0; j < 3; ++j) {
                         const double fdh = (gp[j] - gm[j]) / (2. * h);
                         CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
