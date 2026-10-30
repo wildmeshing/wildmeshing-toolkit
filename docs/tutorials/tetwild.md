@@ -298,7 +298,7 @@ file, and the history's bytes under `history` when `history_output` is set.
   Remove it, or compensate with smaller values.
 - **`preserve_topology` on a dirty input** keeps every tiny handle, gap and sliver of the input,
   and the optimization may not converge around them. Repair the input first (see
-  [repair before meshing](workflows/repair-before-meshing.md)).
+  [manifold extraction](manifold_extraction.md)).
 - **A misspelled option is ignored.** `wmtk_app` and the Python bindings log a warning
   (`tetwild has no option ...`) and run with the defaults. Editors catch it beforehand with the
   [JSON Schemas](../json-schemas.md).

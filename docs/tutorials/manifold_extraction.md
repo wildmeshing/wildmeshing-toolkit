@@ -12,8 +12,7 @@ Use it on a tagged mesh whose regions touch, before a step that needs a manifold
 as a surface extracted for a solver or a surface remesher. The carving is a
 [topological offset](topological_offset.md) of the non-manifold edges and vertices, construction
 only: it is fast, but the cells it cuts are of lower quality, and
-[simwild remeshing](simwild.md) is the step after it (see
-[Repair before meshing](workflows/repair-before-meshing.md)).
+[simwild](../reference/simwild.md)'s remeshing is the step after it.
 
 ## What is non-manifold
 
@@ -200,9 +199,8 @@ passed.` (in 2D, `Curve manifoldness check passed.`), or a warning.
   non-manifold (on the two spheres, `tag_0` alone, or `tag_0 & tag_1`, which selects nothing),
   there is nothing to offset: the run logs it and returns the mesh unchanged.
 - **The quality drops.** The cut is not optimized: on the two spheres the max AMIPS goes from
-  7.26 to 42.06 (avg 3.69 to 4.29). Run [simwild remeshing](simwild.md) on the result; it keeps
-  the regions' topology and so their manifold boundary
-  ([Repair before meshing](workflows/repair-before-meshing.md)).
+  7.26 to 42.06 (avg 3.69 to 4.29). Run [simwild](../reference/simwild.md)'s remeshing on the
+  result; it keeps the regions' topology and so their manifold boundary.
 - **The radius is not a distance guarantee.** See [the size of the cut](#the-size-of-the-cut-radius_rel-radius):
   the cut stays within one ring of cells.
 - **A selection that reaches the mesh boundary.** Vertices on the mesh boundary are judged with the
@@ -216,5 +214,5 @@ passed.` (in 2D, `Curve manifoldness check passed.`), or a warning.
 
 - [Reference: every option of `manifold_extraction`](../reference/manifold_extraction.md)
 - [Topological offset](topological_offset.md): the carving is its construction
-- [Repair before meshing](workflows/repair-before-meshing.md): manifold extraction, then simwild remeshing
-- [SimWild](simwild.md): the tag expressions, and the remeshing that follows
+- [Regions](../concepts/regions.md): the tags and the expressions that select them
+- [Reference: every option of `simwild`](../reference/simwild.md): the remeshing that follows

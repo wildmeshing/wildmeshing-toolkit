@@ -27,6 +27,14 @@ exclude_docs: |
   /gallery/examples.yaml
   /gallery/scenes.py
 
+# Pages kept in the repository but not published: `mkdocs build` (and so the site) leaves them out,
+# `mkdocs serve` shows them, marked as drafts. The reference and the gallery drop their links to
+# them (docs/tools/gen_reference.py, gen_gallery.py); a published page must not link to one.
+draft_docs: |
+  /tutorials/simwild.md
+  /tutorials/workflows/regions.md
+  /tutorials/workflows/repair-before-meshing.md
+
 theme:
   name: material
   icon:
@@ -135,8 +143,6 @@ nav:
       - Meshing:
           - tutorials/tetwild.md
           - tutorials/triwild.md
-      - Multi-region meshes:
-          - tutorials/simwild.md
       - Offsets and repair:
           - tutorials/topological_offset.md
           - tutorials/manifold_extraction.md
@@ -144,9 +150,7 @@ nav:
           - tutorials/tracking.md
       - Workflows:
           - tutorials/workflows/index.md
-          - tutorials/workflows/regions.md
           - tutorials/workflows/tetwild-features.md
-          - tutorials/workflows/repair-before-meshing.md
   - Gallery: gallery/index.md
   - Reference:
       - Components: reference/
