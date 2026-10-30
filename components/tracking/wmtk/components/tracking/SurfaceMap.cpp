@@ -253,6 +253,8 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
     , m_in_face_alive(h.face_alive)
 {
     Replay r(h);
+    // While a collapse tries the removed vertex's star alone (CollapsePatch::removed_star).
+    bool removed_star_try = false;
     const auto layout = [](const Tri& t, const UV& uv) {
         return std::array<Eigen::Vector2d, 3>{{uv.at(t[0]), uv.at(t[1]), uv.at(t[2])}};
     };
@@ -624,6 +626,10 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
         }
         if (split_all) return joint(before, after, slots, cell);
         if (on_outline.size() > 1 || !ids.names.empty()) return false;
+        // The removed star of a curve vertex collapsed into a vertex of a sheet that is on its
+        // outline: the faces after do not cover the outline before, and the chord layout below
+        // would not be a bijection. Both stars map it.
+        if (removed_star_try) return false;
         const size_t i_rm = on_outline.front();
         const auto [prev, next] = neighbours(i_rm);
         const double a = length(prev, removed), b = length(removed, next);
@@ -936,7 +942,10 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
                 const MapWarnings warnings = m_build_warnings;
                 const size_t curve_collapses = m_curve_collapses, folded = m_folded_cells;
                 Step tried{e.kind, {}, {}, {}, {}};
-                if (map_sides(*star, tried)) {
+                removed_star_try = true;
+                const bool star_ok = map_sides(*star, tried);
+                removed_star_try = false;
+                if (star_ok) {
                     step = std::move(tried);
                     break;
                 }

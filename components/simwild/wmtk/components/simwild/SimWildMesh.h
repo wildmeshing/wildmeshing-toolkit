@@ -272,7 +272,6 @@ protected:
     bool optimization_stop_at_float() const override { return m_sim_params.stop_at_float; }
     void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
 
-    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override;
     bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const override;
 
     bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;

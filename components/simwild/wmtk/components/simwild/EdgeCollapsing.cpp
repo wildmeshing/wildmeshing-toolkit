@@ -8,17 +8,13 @@ namespace wmtk::components::simwild {
 // The order-2 edges are held by the base: tagged at init (tag_order2_edges()), every edge a
 // collapse keeps must stay in their tube, so the chord check that ran here only under
 // preserve_topology is gone.
-
-/// An order-2 vertex collapses only onto order >= 2: the order-2 curves never take in a vertex
-/// of a sheet. Not for the geometry -- the tube check alone holds the curves in place -- but for
-/// the surface and volume history maps, which follow each vertex in its own piece of the complex:
-/// without the rule, two overlapping spheres (tracking-example-simwild-volume) mapped 24 surface
-/// points off the surface and 62 points into another region.
-bool SimWildMesh::collapse_before_vertex(size_t v1, size_t v2, double edge_length)
-{
-    if (edge_length <= 0 || m_vertex_attribute[v1].m_order != 2) return true;
-    return m_vertex_attribute[v2].m_order >= 2;
-}
+//
+// No collapse rule of simwild's own either, as in tetwild: an order-2 vertex may collapse into a
+// vertex of a sheet, the tube holding the curve. Until 2026-10 it could collapse only onto
+// order >= 2, a rule kept for the history maps alone: on two overlapping spheres
+// (tracking-example-simwild-volume) such collapses failed 26 assertions, 24 operations not
+// keeping the surface and 62 points changing region. The maps were at fault, not the mesh, and
+// now map them (VolumeMap's collapse, SurfaceMap's removed star).
 
 bool SimWildMesh::collapse_quality_allowed(size_t v1, double quality, double ring_max) const
 {

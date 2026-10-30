@@ -735,6 +735,42 @@ private:
     }
 
     // ------------------------------------------------------------------ collapse
+    /// Whether the surface map's cells holding a face of side M's cap in the collapse of i into
+    /// j -- M's tracked faces at i before, at j after -- hold no other face: the cap is whole
+    /// cells, so M's small pair maps it whatever patch the surface map took.
+    bool cells_within(const Tets& M, const Vid i, const Vid j) const
+    {
+        Tets Ma = M;
+        for (Tet& t : Ma) std::replace(t.begin(), t.end(), i, j);
+        const auto Bb = boundary(M), Ba = boundary(Ma);
+        if (!Bb || !Ba) return false;
+        const volume::Faces cap_b = minus(*Bb, *Ba), cap_a = minus(*Ba, *Bb);
+        std::set<uint64_t> fb, fa;
+        for (const auto& t : m_faces.before) {
+            if (cap_b.count(t.face)) fb.insert(t.fid);
+        }
+        for (const auto& t : m_faces.after) {
+            if (cap_a.count(t.face)) fa.insert(t.fid);
+        }
+        if (fb.size() != cap_b.size() || fa.size() != cap_a.size()) return false;
+        bool any = false;
+        for (const auto* c : m_cells) {
+            const bool touches =
+                std::any_of(c->before.begin(), c->before.end(), [&](const auto& f) {
+                    return fb.count(f.fid) > 0;
+                });
+            if (!touches) continue;
+            any = true;
+            for (const auto& f : c->before) {
+                if (!fb.count(f.fid)) return false;
+            }
+            for (const auto& f : c->after) {
+                if (!fa.count(f.fid)) return false;
+            }
+        }
+        return any;
+    }
+
     void build_collapse()
     {
         if (m_e.op_vertices.size() != 2) throw Fail("collapse: not two vertices");
@@ -805,6 +841,11 @@ private:
                 if (vanishing) candidates.push_back({"vanishing side", Ns[0], false});
             } else if (!Ns.empty()) {
                 candidates.push_back({"single", merged(M, Ns[0]), false});
+            } else if (cls == 'a' && cells_within(M, i, j)) {
+                // A side j does not reach, the surface map's cells over both stars (a vertex of
+                // a curve collapsed into one of a sheet): its cap is i's faces on other sheets.
+                candidates.push_back({"small", M, true});
+                candidates.push_back({"small", M, false});
             }
             bool done = false;
             for (const Candidate& c : candidates) {
