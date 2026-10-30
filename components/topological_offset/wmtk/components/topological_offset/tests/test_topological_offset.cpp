@@ -1532,6 +1532,13 @@ std::unique_ptr<TopoOffsetTetMesh> energy_mesh(
     mesh->m_offset_potential = pot;
     mesh->m_input_complex_envelope = plane_triangles();
     mesh->m_input_complex_pad = input_pad(plane_vertices());
+    // The exact band integral on the same triangle, built as a run builds it: only for the
+    // settings that read it (TopoOffsetTetMesh::init_band_exact()).
+    mesh->m_phi_V = plane_vertices();
+    mesh->m_phi_F.resize(1, 3);
+    mesh->m_phi_F << 0, 1, 2;
+    mesh->m_phi_F_inner = {0}; // a lone triangle: it bounds no solid
+    mesh->init_band_exact();
     return mesh;
 }
 
@@ -1611,7 +1618,9 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
     // cell, plus the band term b = vol (mean corner d - delta) / delta for a band cell; MAX_ENERGY
     // for a degenerate cell. Four cells around the edge (a, b): 0 and 1 band, 2 background, 3
     // input complex. At (w, s) = (1, stop_energy 3), where both terms matter, (1, 100) and the
-    // default w at 100.
+    // default w at 100. Under both band rules, "corner_bound" (the default until 2026-10-29) and
+    // "exact": above the triangle's interior d is affine, so the exact integral of d over a cell
+    // is its volume times the corner mean.
     // Lifted 0.25 above the level set, so the band cells' mean distance is off it.
     Eigen::MatrixXd V(6, 3);
     V << 0., 0., 0.37, // a
@@ -1622,13 +1631,15 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
         0., -0.4, 0.75; // c3
     const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
     const std::vector<int> labels = {2, 2, 0, 1};
-    for (const auto& [w, s] : std::vector<std::pair<double, double>>{
-             {1., 3.},
-             {1., 100.},
-             {Parameters().offset_amips_weight, 100.}}) {
+    for (const auto& [rule, w, s] : std::vector<std::tuple<std::string, double, double>>{
+             {"corner_bound", 1., 3.},
+             {"corner_bound", 1., 100.},
+             {"corner_bound", Parameters().offset_amips_weight, 100.},
+             {"exact", 1., 3.},
+             {"exact", 1., 100.},
+             {"exact", Parameters().offset_amips_weight, 100.}}) {
         Parameters param;
-        // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
-        param.band_volume_rule = "corner_bound";
+        param.band_volume_rule = rule;
         param.offset_amips_weight = w;
         param.stop_energy = s;
         const auto pot = plane_field();
@@ -1646,7 +1657,7 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
             const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
             const double want =
                 w / (s * s * s) * vol * a3 + (labels[tid] == 2 ? band_term_by_hand(p) : 0.);
-            INFO("w " << w << ", s " << s << ", tet " << tid);
+            INFO(rule << ", w " << w << ", s " << s << ", tet " << tid);
             CHECK(mesh->tet_energy(tid) == Catch::Approx(want).epsilon(1e-10));
             if (labels[tid] == 2) CHECK(std::abs(band_term_by_hand(p)) > 1e-3);
         }
@@ -1674,7 +1685,12 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
     // (smoothing_ring_energy(), the projected step's test) is the same ring sum. use_rest_pose:
     // on the first fixture again with the plastic medium on, background cell 2 against a stamped
     // rest that its corner c2 has since left -- tet_energy() reads the rest, and the objective
-    // still is the ring sum.
+    // still is the ring sum. Under both band rules, "corner_bound" (the default until 2026-10-29)
+    // and "exact". Under "exact" the star's band term does not move with its inner vertex (BAND
+    // TERM THAT CANCELS, tet_energy()): the eight cells tile the star, whose union is fixed. The
+    // objective there is the AMIPS term plus a constant whose rounding over 2h is above the AMIPS
+    // slope (w 1, s 100), so the band part is checked to keep its value and to have no
+    // derivatives, and the objective's derivatives against central differences of the AMIPS term.
     Eigen::MatrixXd V1(6, 3);
     V1 << 0., 0., 0.37, // a
         0., 0., 1.13, // b
@@ -1689,7 +1705,7 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
         {{0, 1, 5, 2}}};
     // Beyond the apex, where d is curved: above the triangle's interior d is affine, the band
     // term's corner mean is exact there, and the sum over a closed star would not move with its
-    // inner vertex at all.
+    // inner vertex at all -- as under "exact", anywhere.
     Eigen::MatrixXd V2(7, 3);
     V2 << 0.05, 0.58, -0.02, // the inner vertex
         0.33, 0.6, 0.01, // +x
@@ -1716,15 +1732,19 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
         {V2, T2, std::vector<int>(8, 2), 0, true}};
     for (size_t fi = 0; fi < fixtures.size(); ++fi) {
         const Fixture& fx = fixtures[fi];
-        for (const auto& [w, s, plastic] : std::vector<std::tuple<double, double, bool>>{
-                 {1., 3., false},
-                 {Parameters().offset_amips_weight, 100., false},
-                 {1., 3., true},
-                 {Parameters().offset_amips_weight, 100., true}}) {
+        for (const auto& [rule, w, s, plastic] :
+             std::vector<std::tuple<std::string, double, double, bool>>{
+                 {"corner_bound", 1., 3., false},
+                 {"corner_bound", Parameters().offset_amips_weight, 100., false},
+                 {"corner_bound", 1., 3., true},
+                 {"corner_bound", Parameters().offset_amips_weight, 100., true},
+                 {"exact", 1., 3., false},
+                 {"exact", Parameters().offset_amips_weight, 100., false},
+                 {"exact", 1., 3., true},
+                 {"exact", Parameters().offset_amips_weight, 100., true}}) {
             if (plastic && fi != 0) continue; // fixture 1 is all band: nothing plastic
             Parameters param;
-            // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
-            param.band_volume_rule = "corner_bound";
+            param.band_volume_rule = rule;
             param.offset_amips_weight = w;
             param.stop_energy = s;
             const auto pot = plane_field();
@@ -1777,19 +1797,27 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 };
                 const bool front = mesh->vertex_carries_offset_term(v);
                 INFO(
-                    "fixture " << fi << ", w " << w << ", s " << s << ", plastic " << plastic
-                               << ", vertex " << v << (front ? " (front)" : ""));
+                    "fixture " << fi << ", " << rule << ", w " << w << ", s " << s << ", plastic "
+                               << plastic << ", vertex " << v << (front ? " (front)" : ""));
                 REQUIRE(front == (v != fx.not_front));
                 REQUIRE(!mesh->vertex_is_held(v));
                 if (v == fx.not_front) {
                     REQUIRE((mesh->band_volume_energy_at(v) != nullptr) == fx.has_band_ring);
                 }
                 const auto energy = mesh->smoothing_extra_energy(v);
+                // Under "exact", fixture 1's inner vertex: its ring's band term does not move with
+                // it (band_term_cancels(), the smoother's own test), and the central differences
+                // below are of the AMIPS term (amips3_energy()), the objective's other part.
+                const bool band_fixed = !front && mesh->band_term_cancels(ring);
+                REQUIRE(band_fixed == (rule == "exact" && v == fx.not_front && fx.has_band_ring));
+                const auto band = band_fixed ? mesh->band_volume_energy_at(v) : nullptr;
+                const auto fd_energy = band_fixed ? mesh->amips3_energy(v) : energy;
                 const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
                 Eigen::VectorXd xv = x0;
                 const double e0 = energy->value(xv);
                 const double d0 = e0 - ring_energy();
                 CHECK(d0 == Catch::Approx(0.).margin(1e-12 * std::max(1., std::abs(e0))));
+                const double b0 = band ? band->value(xv) : 0.;
                 for (const Vector3d& dx :
                      {Vector3d(0.01, 0., 0.),
                       Vector3d(0., -0.008, 0.005),
@@ -1802,6 +1830,11 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                     CHECK(
                         e - ring_energy() ==
                         Catch::Approx(d0).margin(1e-12 * std::max(1., std::abs(e))));
+                    if (band) {
+                        CHECK(
+                            band->value(xv) ==
+                            Catch::Approx(b0).margin(1e-12 * std::max(1., std::abs(b0))));
+                    }
                     // The projected step's test is the same ring sum, before and at a candidate.
                     std::vector<TetMesh::Tuple> ring_t;
                     for (const size_t tid : ring) ring_t.push_back(mesh->tuple_from_tet(tid));
@@ -1817,15 +1850,25 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 xv = x0;
                 energy->gradient(xv, g);
                 energy->hessian(xv, H);
+                if (band) {
+                    // The band part has no derivatives, to the margins the central differences
+                    // allow.
+                    Eigen::VectorXd gb(3);
+                    Eigen::MatrixXd Hb(3, 3);
+                    band->gradient(xv, gb);
+                    band->hessian(xv, Hb);
+                    CHECK(gb.norm() <= 1e-7 * g.norm());
+                    CHECK(Hb.norm() <= 1e-6 * H.norm());
+                }
                 for (int i = 0; i < 3; ++i) {
                     Eigen::VectorXd xp = xv, xm = xv;
                     xp[i] += h;
                     xm[i] -= h;
-                    const double fd = (energy->value(xp) - energy->value(xm)) / (2. * h);
+                    const double fd = (fd_energy->value(xp) - fd_energy->value(xm)) / (2. * h);
                     CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * g.norm()));
                     Eigen::VectorXd gp(3), gm(3);
-                    energy->gradient(xp, gp);
-                    energy->gradient(xm, gm);
+                    fd_energy->gradient(xp, gp);
+                    fd_energy->gradient(xm, gm);
                     for (int j = 0; j < 3; ++j) {
                         const double fdh = (gp[j] - gm[j]) / (2. * h);
                         CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
@@ -2140,6 +2183,9 @@ TEST_CASE("swap-candidate-record", "[offset][3d]")
     // an interior 4-4 swap of a band ring; a face swap of a band pair and of a background pair. For
     // the 4-4s and 5-6s the case search's score is checked too: op_case 0 is the sum of
     // tet_energy() over A's cells, a candidate the sum of candidate_energy() over B's cells.
+    // Under both band rules, "corner_bound" (the default until 2026-10-29) and "exact"; under
+    // "exact" the interior swap and the band face swap leave the band term out of every sum, and
+    // the term they leave out is the same before and after.
     const auto pot = plane_field();
     const auto ring_V = [](int k) {
         Eigen::MatrixXd V(2 + k, 3);
@@ -2161,37 +2207,55 @@ TEST_CASE("swap-candidate-record", "[offset][3d]")
             const std::vector<int>& labB,
             const int search,
             const std::function<void(TopoOffsetTetMesh&, const std::vector<size_t>&)>& before) {
-            Parameters pa, pb;
-            // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
-            pa.band_volume_rule = pb.band_volume_rule = "corner_bound";
-            auto A = energy_mesh(pa, V, TA, labA, pot);
-            auto B = energy_mesh(pb, V, TB, labB, pot);
-            std::vector<size_t> tids(TA.size());
-            std::iota(tids.begin(), tids.end(), size_t(0));
-            before(*A, tids);
-            std::vector<std::array<size_t, 4>> cells_b;
-            double sum_b = 0.;
-            for (size_t tb = 0; tb < TB.size(); ++tb) {
-                const auto vs = B->oriented_tet_vids(tb);
-                const double truth = B->tet_energy(tb);
-                INFO("new cell " << tb);
-                CHECK(A->candidate_energy(vs) == Catch::Approx(truth).epsilon(1e-12));
-                cells_b.push_back(vs);
-                sum_b += truth;
+            for (const std::string rule : {"corner_bound", "exact"}) {
+                INFO(rule);
+                Parameters pa, pb;
+                pa.band_volume_rule = pb.band_volume_rule = rule;
+                auto A = energy_mesh(pa, V, TA, labA, pot);
+                auto B = energy_mesh(pb, V, TB, labB, pot);
+                std::vector<size_t> tids(TA.size());
+                std::iota(tids.begin(), tids.end(), size_t(0));
+                before(*A, tids);
+                // BAND TERM THAT CANCELS (tet_energy()): under "exact" a swap of band cells keeps
+                // their union, so its band term is the same before and after, and the record
+                // leaves it out of both sums.
+                const bool cancels = A->band_term_cancels(tids);
+                const bool all_band =
+                    std::all_of(labA.begin(), labA.end(), [](int l) { return l == 2; });
+                REQUIRE(cancels == (rule == "exact" && all_band));
+                std::vector<std::array<size_t, 4>> cells_b;
+                double sum_b = 0., band_b = 0.;
+                for (size_t tb = 0; tb < TB.size(); ++tb) {
+                    const auto vs = B->oriented_tet_vids(tb);
+                    const double truth = B->tet_energy(tb, !cancels);
+                    INFO("new cell " << tb);
+                    CHECK(A->candidate_energy(vs) == Catch::Approx(truth).epsilon(1e-12));
+                    cells_b.push_back(vs);
+                    sum_b += truth;
+                    band_b += B->tet_energy(tb) - B->tet_energy(tb, false);
+                }
+                std::vector<std::array<size_t, 4>> cells_a;
+                double sum_a = 0., band_a = 0.;
+                for (const size_t t : tids) {
+                    cells_a.push_back(A->oriented_tet_vids(t));
+                    sum_a += A->tet_energy(t, !cancels);
+                    band_a += A->tet_energy(t) - A->tet_energy(t, false);
+                }
+                if (cancels) {
+                    CHECK(std::abs(band_a) > 1e-4); // the term left out is not 0
+                    CHECK(
+                        band_b ==
+                        Catch::Approx(band_a).margin(1e-12 * std::max(1., std::abs(band_a))));
+                }
+                if (search == 0) continue;
+                const auto score = [&](const std::vector<std::array<size_t, 4>>& cells,
+                                       int op_case) {
+                    return search == 4 ? A->swap_edge_44_energy(cells, op_case)
+                                       : A->swap_edge_56_energy(cells, op_case);
+                };
+                CHECK(score(cells_a, 0) == sum_a);
+                CHECK(score(cells_b, 1) == Catch::Approx(sum_b).epsilon(1e-12));
             }
-            if (search == 0) return;
-            std::vector<std::array<size_t, 4>> cells_a;
-            double sum_a = 0.;
-            for (const size_t t : tids) {
-                cells_a.push_back(A->oriented_tet_vids(t));
-                sum_a += A->tet_energy(t);
-            }
-            const auto score = [&](const std::vector<std::array<size_t, 4>>& cells, int op_case) {
-                return search == 4 ? A->swap_edge_44_energy(cells, op_case)
-                                   : A->swap_edge_56_energy(cells, op_case);
-            };
-            CHECK(score(cells_a, 0) == sum_a);
-            CHECK(score(cells_b, 1) == Catch::Approx(sum_b).epsilon(1e-12));
         };
     const std::vector<std::pair<int, int>> sides = {{2, 0}, {0, 2}, {2, 1}, {1, 2}};
 
@@ -2318,7 +2382,10 @@ TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
     // the energy's sum falls and the gate admits the swap. With both cells background the energy
     // is the AMIPS term alone and the swap is refused. The whole engine swap runs, with
     // perform_sanity_checks, so swap_after_cells() applies its rule and compares the gate's score
-    // with the mesh.
+    // with the mesh. That is "corner_bound" (the default until 2026-10-29). Under "exact" the band
+    // term is the integral of d over the cells' union, which the swap keeps (BAND TERM THAT
+    // CANCELS, tet_energy()): the band sums agree, the energy rises with AMIPS, and the swap is
+    // refused on the band too.
     const auto pot = plane_field();
     const double L = 0.4, h = L * std::sqrt(2. / 3.), R = L / std::sqrt(3.);
     const Vector3d m = kApex + Vector3d(0., 0.6, 0.);
@@ -2333,36 +2400,47 @@ TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
     const std::vector<std::array<int, 4>> TA = {{{a, b, c, d}}, {{a, b, c, e}}};
     const std::vector<std::array<int, 4>> TB = {{{a, b, d, e}}, {{b, c, d, e}}, {{c, a, d, e}}};
 
-    for (const int x : {2, 0}) {
-        INFO("label " << x);
+    for (const auto& [rule, x] : std::vector<std::pair<std::string, int>>{
+             {"corner_bound", 2},
+             {"corner_bound", 0},
+             {"exact", 2},
+             {"exact", 0}}) {
+        INFO(rule << ", label " << x);
+        const bool admits = rule == "corner_bound" && x == 2;
         Parameters pa, pb;
-        // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
-        pa.band_volume_rule = pb.band_volume_rule = "corner_bound";
+        pa.band_volume_rule = pb.band_volume_rule = rule;
         pa.perform_sanity_checks = true;
         auto A = energy_mesh(pa, V, TA, {x, x}, pot);
         auto B = energy_mesh(pb, V, TB, {x, x, x}, pot);
-        double amips_a = 0., amips_b = 0., energy_a = 0., energy_b = 0.;
+        double amips_a = 0., amips_b = 0., energy_a = 0., energy_b = 0., band_a = 0., band_b = 0.;
         for (size_t t = 0; t < 2; ++t) {
             amips_a = std::max(amips_a, A->TetOptimizerMesh::get_quality(A->oriented_tet_vids(t)));
             energy_a += A->tet_energy(t);
+            band_a += A->tet_energy(t) - A->tet_energy(t, false);
         }
         for (size_t t = 0; t < 3; ++t) {
             amips_b = std::max(amips_b, B->TetOptimizerMesh::get_quality(B->oriented_tet_vids(t)));
             energy_b += B->tet_energy(t);
+            band_b += B->tet_energy(t) - B->tet_energy(t, false);
         }
-        // The premises: AMIPS alone refuses this swap, and the energy admits it on the band.
+        // The premises: AMIPS alone refuses this swap, and the energy admits it on the band under
+        // "corner_bound" alone. Under "exact" the band sums agree.
         REQUIRE(amips_a == Catch::Approx(27.).epsilon(1e-9));
         REQUIRE(amips_b > amips_a);
-        REQUIRE((energy_b < energy_a) == (x == 2));
+        REQUIRE((energy_b < energy_a) == admits);
+        if (rule == "exact" && x == 2) {
+            CHECK(std::abs(band_a) > 1e-4);
+            CHECK(band_b == Catch::Approx(band_a).margin(1e-12 * std::max(1., std::abs(band_a))));
+        }
 
         std::vector<TopoOffsetTetMesh::Tuple> new_tets;
         const auto [face, fid] =
             A->tuple_from_face(std::array<size_t, 3>{{size_t(a), size_t(b), size_t(c)}});
         (void)fid;
-        CHECK(A->swap_face(face, new_tets) == (x == 2));
+        CHECK(A->swap_face(face, new_tets) == admits);
         CHECK(A->m_swap_scoring_mismatch.load() == 0);
-        CHECK(A->m_swap_scoring_checked.load() == (x == 2 ? 1 : 0));
-        if (x != 2) continue;
+        CHECK(A->m_swap_scoring_checked.load() == (admits ? 1 : 0));
+        if (!admits) continue;
         REQUIRE(new_tets.size() == 3);
         double energy_new = 0.;
         for (const auto& t : new_tets) energy_new += A->tet_energy(t.tid(*A));
@@ -2381,7 +2459,10 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
     // and highest around the longer (c0,c2). With the ring band the energy's sum falls under the
     // case (c1,c3) alone; the engine commits it, the after-hook's rule agrees, and the sanity check
     // compares the case search's score with the mesh. With the ring background the energy is the
-    // AMIPS term and nothing is taken.
+    // AMIPS term and nothing is taken. That is "corner_bound" (the default until 2026-10-29).
+    // Under "exact" the band term is the integral of d over the ring's union, which every case
+    // keeps (BAND TERM THAT CANCELS, tet_energy()): the band sums agree, and nothing is taken on
+    // the band either.
     const auto pot = plane_field();
     const double s = 0.2;
     const Vector3d m = kApex + Vector3d(0., 0.6, 0.);
@@ -2408,12 +2489,16 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
         {{b, c1, c2, c3}},
         {{a, c3, c0, c1}},
         {{b, c3, c0, c1}}};
-    for (const int x : {2, 0}) {
-        INFO("label " << x);
+    for (const auto& [rule, x] : std::vector<std::pair<std::string, int>>{
+             {"corner_bound", 2},
+             {"corner_bound", 0},
+             {"exact", 2},
+             {"exact", 0}}) {
+        INFO(rule << ", label " << x);
+        const bool takes = rule == "corner_bound" && x == 2;
         const std::vector<int> lab(4, x);
         Parameters pa, p02, p13;
-        // the fixture's band term is "corner_bound"'s (the default until 2026-10-29)
-        pa.band_volume_rule = p02.band_volume_rule = p13.band_volume_rule = "corner_bound";
+        pa.band_volume_rule = p02.band_volume_rule = p13.band_volume_rule = rule;
         pa.perform_sanity_checks = true;
         auto A = energy_mesh(pa, V, TA, lab, pot);
         auto B02 = energy_mesh(p02, V, T02, lab, pot);
@@ -2427,21 +2512,34 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
             }
             return std::make_pair(amips, energy);
         };
+        const auto band_sum = [](TopoOffsetTetMesh& mesh) {
+            double band = 0.;
+            for (size_t t = 0; t < 4; ++t) band += mesh.tet_energy(t) - mesh.tet_energy(t, false);
+            return band;
+        };
         const auto [amips_a, energy_a] = amips_and_sum(*A);
         const auto [amips_02, energy_02] = amips_and_sum(*B02);
         const auto [amips_13, energy_13] = amips_and_sum(*B13);
-        // The premises: AMIPS takes no case; on the band the energy takes (c1,c3) alone.
+        // The premises: AMIPS takes no case; on the band the energy takes (c1,c3) alone under
+        // "corner_bound", and under "exact" the band sums agree.
         REQUIRE(amips_02 > amips_a);
         REQUIRE(amips_13 > amips_a);
-        REQUIRE((energy_13 < energy_a) == (x == 2));
+        REQUIRE((energy_13 < energy_a) == takes);
         REQUIRE(!(energy_02 < energy_a));
+        if (rule == "exact" && x == 2) {
+            const double band_a = band_sum(*A);
+            const double margin = 1e-12 * std::max(1., std::abs(band_a));
+            CHECK(std::abs(band_a) > 1e-4);
+            CHECK(band_sum(*B02) == Catch::Approx(band_a).margin(margin));
+            CHECK(band_sum(*B13) == Catch::Approx(band_a).margin(margin));
+        }
 
         std::vector<TopoOffsetTetMesh::Tuple> new_tets;
         const auto edge = A->tuple_from_edge(std::array<size_t, 2>{{size_t(a), size_t(b)}});
-        CHECK(A->swap_edge_44(edge, new_tets) == (x == 2));
+        CHECK(A->swap_edge_44(edge, new_tets) == takes);
         CHECK(A->m_swap_scoring_mismatch.load() == 0);
-        CHECK(A->m_swap_scoring_checked.load() == (x == 2 ? 1 : 0));
-        if (x != 2) continue;
+        CHECK(A->m_swap_scoring_checked.load() == (takes ? 1 : 0));
+        if (!takes) continue;
         REQUIRE(new_tets.size() == 4);
         double energy_new = 0.;
         bool has_c1c3 = true;

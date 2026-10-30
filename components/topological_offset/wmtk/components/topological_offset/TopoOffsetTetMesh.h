@@ -1065,7 +1065,7 @@ public:
      * was made. No triangle outside the corners' nearest (ties included) had a smaller mean; the
      * exact search is min_mean_distance(), on m_input_complex_envelope.
      *
-     * That is EXPERIMENTAL_band_volume_rule "corner_bound", the default. Under "exact" b(t) is
+     * That is EXPERIMENTAL_band_volume_rule "corner_bound". Under "exact", the default, b(t) is
      * J_t / delta, J_t = int_t (d - delta) dV in closed form (ExactBandIntegral::value()): exact
      * up to rounding, and an upper bound only on the pieces of t where two features' regions
      * meet on a curved border (rule (a)). Under "front_flux" b(t) is the same J_t / delta: the
@@ -2956,6 +2956,13 @@ public:
 
     /// Build the smooth offset potential from the extraction init_input_complex_bvh() kept.
     void init_offset_potential();
+
+    /// The exact band integral, m_band_exact, on the input triangles (m_phi_V, m_phi_F,
+    /// m_phi_F_inner, m_input_complex_envelope), built only where something reads it: the band
+    /// rules "exact", "front_flux" and "exact_swept" (with its value table and the bisector
+    /// search), "surface" with a label clean-up, settle_mark "max", DEBUG_output.
+    /// init_offset_potential() calls it.
+    void init_band_exact();
 
     /// The input complex as Phi's primitives: the BOUNDARY triangles of the label-1 tet region
     /// plus the complex's isolated triangles, every edge of those triangles plus the complex's
