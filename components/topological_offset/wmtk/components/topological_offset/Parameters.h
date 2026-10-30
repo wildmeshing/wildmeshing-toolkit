@@ -100,10 +100,19 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold with a
     /// foldover face (front_face_field_angle() over foldover_angle) remains.
     bool exit_no_folds = true;
+    /// EXPERIMENTAL_coarsen_guard (see the spec), 3D, read only with coarsen_pass: what judges a
+    /// coarsening collapse. "bar" (the default): the survivor's offset faces must stay within the
+    /// bar, face_criterion_rel() <= 1, and the front is collapsed only by length-limited passes.
+    /// "no_rise" (2026-10-28): the max AMIPS of the cells a collapse changes may not rise, nor the
+    /// offset error of the faces it changes (collapse_after_connectivity()); front vertices are
+    /// collapsed too, only the final pass coarsens, and the coarsening runs after a loop that
+    /// converges without a final pass.
+    std::string coarsen_guard = "bar";
     /// EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
     /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off", "one_sided",
-    /// "one_sided_tips" or "one_sided_at_target" (the default).
+    /// "one_sided_tips", "one_sided_at_target" (the default) or "energy_decrease" (it needs
+    /// band_volume_rule "surface").
     std::string label_cleanup = "one_sided_at_target";
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
@@ -132,7 +141,17 @@ struct Parameters : public wmtk::OptimizerParameters
     // energy_criterion() and the frames, and in 2D also in the operations' energy rules
     // (TopoOffsetTriMesh::tri_energy()) and every front solve; the 3D energy has no face term.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::for_each_edge_sample.
-    int stencil_order;
+    // That is EXPERIMENTAL_stencil_type "subdivision", the default; the other types (3D) have
+    // their own lattices, below.
+    int stencil_order = 1; // the spec's default
+    /// EXPERIMENTAL_stencil_type (3D, 2026-10-28): which points stencil_order's face stencil
+    /// holds. "subdivision" (the default): the lattice above, subdivision_face_stencil().
+    /// "interior": interior_face_stencil(), (i, j, l) / (k + 2), i, j, l >= 1. "fem":
+    /// fem_face_stencil(), the degree-k Lagrange nodes (i, j, l) / k, i, j, l >= 0 (order 1 the
+    /// corners, 2 + the edge midpoints, 3 + two per edge and the centroid), weighted by their
+    /// lumped area weights (fem_face_stencil_weights()). "interior" and "fem" need stencil_order
+    /// >= 1. See the spec doc. 2D does not read it.
+    std::string stencil_type = "subdivision";
     /// Which measure the loop exits on and refines by, in 3D and in 2D; see the
     /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
     /// square of the face measures (face_offset_term()) of its incident offset faces -- in 2D
@@ -187,7 +206,21 @@ struct Parameters : public wmtk::OptimizerParameters
     /// by Reynolds' transport theorem over the band's boundary faces, or the ring cells' where a
     /// curved bisector crosses one), and its move is accepted on it, halved up to 4 times.
     /// See the spec doc and TopoOffsetTetMesh, EXACT SWEPT CHANGE.
+    /// "surface" (2026-10-27): no band term; the offset term is a surface integral over the
+    /// front, L / front_conv^2 (L the bounding box diagonal) sum over the offset faces of
+    /// (A_f / |S|) sum over the stencil of (d - target_distance)^2
+    /// (TopoOffsetTetMesh::surface_face_term()). See the spec doc.
     std::string band_volume_rule = "exact";
+    /// EXPERIMENTAL_band_volume_rule "surface" only: the settle test's stall threshold. O* = the
+    /// max over the front's stencil points of (d - target_distance)^2; a turn is settled when O*
+    /// < front_conv^2 or O*_prev - O* <= settle_stall_eps (O* - front_conv^2) -- TetWild's stall
+    /// test on the max offset error. See the spec doc.
+    double settle_stall_eps = 0.1;
+    /// EXPERIMENTAL_band_volume_rule "surface" only: which settle test. "stall" (the default):
+    /// O* stall test above (settle_stall_eps). "bar": the volume rules' bar test on the surface
+    /// integral -- settled when O_g = int over the front of (d - target_distance)^2 fell by less
+    /// than front_conv^2 times the front's area, O_g of a front one front_conv off everywhere.
+    std::string settle_test = "stall";
     /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
     /// turn is settled when the offset energy (E without its AMIPS term) fell by less than the bar
     /// energy
@@ -249,6 +282,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// mesh, each TetWild pass's start and every iteration of it, the end of the construction
     /// TetWild pass, the end of every turn of the loop, and the final mesh. See the spec doc.
     bool debug_remote_output = false;
+    /// DEBUG (2026-10-29), 3D, with DEBUG_output: every debug frame also writes <frame>_stencil.vtu,
+    /// one point per stencil point of every offset face with its offset error. See the spec doc.
+    bool debug_stencil = false;
     /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
     /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
     bool allow_mult_comp = false;
@@ -265,7 +301,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA >
     /// front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds
     /// front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the
-    /// 3-edge-midpoint rule. See the spec doc.
+    /// 3-edge-midpoint rule. "stencil" (2026-10-28): a face with a point of its offset stencil
+    /// (stencil_order, EXPERIMENTAL_stencil_type) at or beyond front_conv, (d - target_distance)^2
+    /// >= front_conv^2, or unmeasurable, has its corners' sizing halved; the exit needs none, i.e.
+    /// every stencil point within front_conv. See the spec doc.
     std::string settle_mark = "vertex_edge";
     std::string output_path; // no extension
     bool save_vtu;
@@ -347,6 +386,19 @@ struct Parameters : public wmtk::OptimizerParameters
         front_conv = json_params["front_conv"];
         front_conv_rel = json_params["front_conv_rel"];
         stencil_order = json_params["stencil_order"];
+        stencil_type = json_params["EXPERIMENTAL_stencil_type"];
+        if (stencil_type != "subdivision" && stencil_type != "interior" && stencil_type != "fem") {
+            log_and_throw_error(
+                "EXPERIMENTAL_stencil_type is \"subdivision\", \"interior\" or \"fem\", not "
+                "\"{}\"",
+                stencil_type);
+        }
+        if (stencil_type != "subdivision" && stencil_order < 1) {
+            log_and_throw_error(
+                "EXPERIMENTAL_stencil_type \"{}\" needs stencil_order >= 1, not {}",
+                stencil_type,
+                stencil_order);
+        }
         front_measure = json_params["front_measure"];
 
         sorted_marching = json_params["sorted_marching"];
@@ -359,10 +411,46 @@ struct Parameters : public wmtk::OptimizerParameters
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
         band_volume_rule = json_params["EXPERIMENTAL_band_volume_rule"];
         if (band_volume_rule != "corner_bound" && band_volume_rule != "exact" &&
-            band_volume_rule != "front_flux" && band_volume_rule != "exact_swept") {
+            band_volume_rule != "front_flux" && band_volume_rule != "exact_swept" &&
+            band_volume_rule != "surface") {
             log_and_throw_error(
-                "EXPERIMENTAL_band_volume_rule is \"corner_bound\", \"exact\", \"front_flux\" or "
-                "\"exact_swept\", not \"{}\"",
+                "EXPERIMENTAL_band_volume_rule is \"corner_bound\", \"exact\", \"front_flux\", "
+                "\"exact_swept\" or \"surface\", not \"{}\"",
+                band_volume_rule);
+        }
+        // The gate sums the cells' tet_energy(); under "surface" the offset term lives on the
+        // front's faces, which it would not see.
+        if (split_energy_gate && band_volume_rule == "surface") {
+            log_and_throw_error(
+                "EXPERIMENTAL_split_energy_gate compares the cells' energy, which under "
+                "EXPERIMENTAL_band_volume_rule \"surface\" has no offset term: leave it out");
+        }
+        settle_stall_eps = json_params["settle_stall_eps"];
+        settle_test = json_params["EXPERIMENTAL_settle_test"];
+        if (settle_test != "stall" && settle_test != "bar") {
+            log_and_throw_error(
+                "EXPERIMENTAL_settle_test is \"stall\" or \"bar\", not \"{}\"",
+                settle_test);
+        }
+        if (band_volume_rule != "surface" && settle_test != "stall") {
+            log_and_throw_error(
+                "EXPERIMENTAL_settle_test \"{}\" is read only under "
+                "EXPERIMENTAL_band_volume_rule \"surface\" (this config has \"{}\"): leave it "
+                "out",
+                settle_test,
+                band_volume_rule);
+        }
+        if (settle_test == "bar" && settle_stall_eps != 0.1) {
+            log_and_throw_error(
+                "settle_stall_eps ({}) is read only by EXPERIMENTAL_settle_test \"stall\": leave "
+                "it out under \"bar\"",
+                settle_stall_eps);
+        }
+        if (band_volume_rule != "surface" && settle_stall_eps != 0.1) {
+            log_and_throw_error(
+                "settle_stall_eps ({}) is read only under EXPERIMENTAL_band_volume_rule "
+                "\"surface\" (this config has \"{}\"): leave it out",
+                settle_stall_eps,
                 band_volume_rule);
         }
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
@@ -429,10 +517,11 @@ struct Parameters : public wmtk::OptimizerParameters
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex" &&
-            settle_mark != "vertex_edge" && settle_mark != "vertex_split") {
+            settle_mark != "vertex_edge" && settle_mark != "vertex_split" &&
+            settle_mark != "stencil") {
             log_and_throw_error(
-                "EXPERIMENTAL_settle_mark is \"max\", \"rms\", \"vertex\", \"vertex_edge\" or "
-                "\"vertex_split\", not \"{}\"",
+                "EXPERIMENTAL_settle_mark is \"max\", \"rms\", \"vertex\", \"vertex_edge\", "
+                "\"vertex_split\" or \"stencil\", not \"{}\"",
                 settle_mark);
         }
         output_path = json_params["output"];
@@ -457,6 +546,12 @@ struct Parameters : public wmtk::OptimizerParameters
         // DEBUG_remote_output overrides DEBUG_output: everything debug output computes is on, and
         // the frames follow the remote schedule (TopoOffsetTetMesh::remote_frames()).
         if (debug_remote_output) debug_output = true;
+        debug_stencil = json_params["DEBUG_stencil"];
+        if (debug_stencil && !debug_output) {
+            log_and_throw_error(
+                "DEBUG_stencil writes a file beside every debug frame: it needs DEBUG_output (or "
+                "DEBUG_remote_output)");
+        }
         lr = json_params["length_rel"];
         l = json_params["length"];
         stop_energy = json_params["stop_energy"];
@@ -477,6 +572,18 @@ struct Parameters : public wmtk::OptimizerParameters
         coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
         coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
         coarsen_max_rounds = json_params["coarsen_max_rounds"];
+        coarsen_guard = json_params["EXPERIMENTAL_coarsen_guard"];
+        if (coarsen_guard != "bar" && coarsen_guard != "no_rise") {
+            log_and_throw_error(
+                "EXPERIMENTAL_coarsen_guard is \"bar\" or \"no_rise\", not \"{}\"",
+                coarsen_guard);
+        }
+        if (coarsen_guard != "bar" && !coarsen_pass) {
+            log_and_throw_error(
+                "EXPERIMENTAL_coarsen_guard \"{}\" is read only with coarsen_pass true: set it, or "
+                "leave the guard out",
+                coarsen_guard);
+        }
         stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
         stuck_refine_cooldown = json_params["stuck_refine_cooldown"];
         stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
@@ -492,10 +599,32 @@ struct Parameters : public wmtk::OptimizerParameters
         exit_no_folds = json_params["EXPERIMENTAL_exit_no_folds"];
         label_cleanup = json_params["EXPERIMENTAL_label_cleanup"];
         if (label_cleanup != "off" && label_cleanup != "one_sided" &&
-            label_cleanup != "one_sided_tips" && label_cleanup != "one_sided_at_target") {
+            label_cleanup != "one_sided_tips" && label_cleanup != "one_sided_at_target" &&
+            label_cleanup != "energy_decrease") {
             log_and_throw_error(
-                "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\", \"one_sided_tips\" or "
-                "\"one_sided_at_target\", not \"{}\"",
+                "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\", \"one_sided_tips\", "
+                "\"one_sided_at_target\" or \"energy_decrease\", not \"{}\"",
+                label_cleanup);
+        }
+        // "energy_decrease" reads the face term of EXPERIMENTAL_band_volume_rule "surface".
+        if (label_cleanup == "energy_decrease" && band_volume_rule != "surface") {
+            log_and_throw_error(
+                "EXPERIMENTAL_label_cleanup \"energy_decrease\" needs "
+                "EXPERIMENTAL_band_volume_rule \"surface\" (this config has \"{}\")",
+                band_volume_rule);
+        }
+        // The "one_sided" modes read d through the exact band integral, which
+        // init_offset_potential() builds under the "exact", "front_flux" and "surface" rules,
+        // EXPERIMENTAL_settle_mark "max" or DEBUG_output: refused here rather than at the first
+        // clean-up.
+        if (label_cleanup != "off" && label_cleanup != "energy_decrease" &&
+            band_volume_rule == "corner_bound" && !(settle_refinement && settle_mark == "max") &&
+            !debug_output) {
+            log_and_throw_error(
+                "EXPERIMENTAL_label_cleanup \"{}\" reads the distance through the exact band "
+                "integral, which EXPERIMENTAL_band_volume_rule \"corner_bound\" does not build: "
+                "set "
+                "the clean-up \"off\", or another rule",
                 label_cleanup);
         }
         // The clean-up runs in loop_group()'s EXPERIMENTAL_front_pocket_split path, between the
