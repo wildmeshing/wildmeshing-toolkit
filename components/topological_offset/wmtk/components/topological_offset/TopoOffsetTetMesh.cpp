@@ -1124,6 +1124,81 @@ double TopoOffsetTetMesh::input_complex_distance(const Vector3d& p) const
     return std::sqrt(m_input_complex_envelope->squared_distance(p));
 }
 
+void TopoOffsetTetMesh::init_band_exact()
+{
+    // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's structure,
+    // beside the offset field. It also gives the settle loop's max test its exact max of d over a
+    // front face (ExactBandIntegral::max_distance()). DEBUG_output builds it too, for the debug
+    // frames' band_gap_bars (gather_vtu_frame()), without the value table; nothing else reads it
+    // unless one of the other conditions holds.
+    const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
+                            m_offset_params.band_volume_rule == "front_flux" ||
+                            m_offset_params.band_volume_rule == "exact_swept";
+    // EXPERIMENTAL_band_volume_rule "surface" with EXPERIMENTAL_label_cleanup: the clean-up
+    // reads d through the integral's searches (distance(), distance_bound()), nothing else.
+    const bool surface_cleanup =
+        m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";
+    if (exact_rule || surface_cleanup ||
+        (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
+        m_offset_params.debug_output) {
+        // The band is on the offset side of the input only (ExactBandIntegral's class
+        // doc), and that side is outside the label-1 cells whichever way the offset goes:
+        // they are the selection for offset_out and everything outside the selection for
+        // offset_in (label_input_complex()), and the band grows away from them. A face's
+        // side is its orient3d against the label-1 cell it bounds (m_phi_F_inner,
+        // positive: the row's normal points away from the cell), so sigma is +1 for both
+        // directions; both or neither: no side. The oriented volume of the boundary must
+        // come out positive; it is logged, and a warning if not.
+        // MEASURED (Geneva base, offset_in, 2026-10-13): sigma was -1 for offset_in, the
+        // inside of cells that are the outside of the selection, so the clip kept the far
+        // side: the band term at construction was 0 against -7.5046 unclipped (41988 band
+        // cells, volume 8.55). The volume logged, 6470.85, is the domain's 6814.66 minus
+        // tag_0's 343.81: the label-1 cells, not the selection.
+        const int sigma = m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
+        double vol6 = 0.;
+        for (int f = 0; f < m_phi_F.rows(); ++f) {
+            const Vector3d a = m_phi_V.row(m_phi_F(f, 0)).head<3>().transpose();
+            const Vector3d b = m_phi_V.row(m_phi_F(f, 1)).head<3>().transpose();
+            const Vector3d c = m_phi_V.row(m_phi_F(f, 2)).head<3>().transpose();
+            vol6 += double(m_phi_F_inner[size_t(f)]) * a.dot(b.cross(c));
+        }
+        logger().log(
+            vol6 > 0. ? spdlog::level::info : spdlog::level::warn,
+            "\tExact band integral: offset side {} (sigma {}), the label-1 cells' boundary "
+            "oriented by them encloses volume {}",
+            sigma > 0 ? "outside the label-1 cells" : "none",
+            sigma,
+            vol6 / 6.);
+        // The value table (ExactBandIntegral::value()) for the band term only, which
+        // reads cells again; twice the constructed mesh's tets, so that its live band
+        // cells seldom share a slot. Its box queries are m_input_complex_envelope's, built
+        // from the same rows of m_phi_F.
+        const size_t value_slots = exact_rule ? 2 * tet_capacity() : 0;
+        auto eb = std::make_shared<ExactBandIntegral>(
+            m_phi_V,
+            m_phi_F,
+            m_phi_F_inner,
+            sigma,
+            value_slots,
+            m_input_complex_envelope);
+        // "front_flux" and "exact": where bisectors within reach of the input can be, from
+        // the input alone (ExactBandIntegral::prepare_front_flux()). The front form reads
+        // it, and both rules' band term that cancels (tet_energy()).
+        if (exact_rule) {
+            const auto t0 = std::chrono::steady_clock::now();
+            eb->prepare_front_flux(m_offset_params.target_distance);
+            logger().info(
+                "\t{}: {} region overlaps within reach {} of the input can hold "
+                "bisectors ({:.3g} s)",
+                m_offset_params.band_volume_rule,
+                eb->front_flux_polytopes(),
+                eb->front_flux_reach(),
+                std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+        }
+        m_band_exact = std::move(eb);
+    }
+}
+
 void TopoOffsetTetMesh::init_offset_potential()
 {
     if (m_phi_V.rows() == 0 || !m_input_complex_envelope) {
@@ -1180,77 +1255,7 @@ void TopoOffsetTetMesh::init_offset_potential()
                 "energy's band term reads the distance to all of them at once",
                 m_n_regions);
         }
-        // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's
-        // structure, beside them. It also gives the settle loop's max test its exact max of d
-        // over a front face (ExactBandIntegral::max_distance()). DEBUG_output builds it too,
-        // for the debug frames' band_gap_bars (gather_vtu_frame()), without the value table;
-        // nothing else reads it unless one of the other conditions holds.
-        const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
-                                m_offset_params.band_volume_rule == "front_flux" ||
-                                m_offset_params.band_volume_rule == "exact_swept";
-        // EXPERIMENTAL_band_volume_rule "surface" with EXPERIMENTAL_label_cleanup: the clean-up
-        // reads d through the integral's searches (distance(), distance_bound()), nothing else.
-        const bool surface_cleanup =
-            m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";
-        if (exact_rule || surface_cleanup ||
-            (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
-            m_offset_params.debug_output) {
-            // The band is on the offset side of the input only (ExactBandIntegral's class
-            // doc), and that side is outside the label-1 cells whichever way the offset goes:
-            // they are the selection for offset_out and everything outside the selection for
-            // offset_in (label_input_complex()), and the band grows away from them. A face's
-            // side is its orient3d against the label-1 cell it bounds (m_phi_F_inner,
-            // positive: the row's normal points away from the cell), so sigma is +1 for both
-            // directions; both or neither: no side. The oriented volume of the boundary must
-            // come out positive; it is logged, and a warning if not.
-            // MEASURED (Geneva base, offset_in, 2026-10-13): sigma was -1 for offset_in, the
-            // inside of cells that are the outside of the selection, so the clip kept the far
-            // side: the band term at construction was 0 against -7.5046 unclipped (41988 band
-            // cells, volume 8.55). The volume logged, 6470.85, is the domain's 6814.66 minus
-            // tag_0's 343.81: the label-1 cells, not the selection.
-            const int sigma = m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
-            double vol6 = 0.;
-            for (int f = 0; f < m_phi_F.rows(); ++f) {
-                const Vector3d a = m_phi_V.row(m_phi_F(f, 0)).head<3>().transpose();
-                const Vector3d b = m_phi_V.row(m_phi_F(f, 1)).head<3>().transpose();
-                const Vector3d c = m_phi_V.row(m_phi_F(f, 2)).head<3>().transpose();
-                vol6 += double(m_phi_F_inner[size_t(f)]) * a.dot(b.cross(c));
-            }
-            logger().log(
-                vol6 > 0. ? spdlog::level::info : spdlog::level::warn,
-                "\tExact band integral: offset side {} (sigma {}), the label-1 cells' boundary "
-                "oriented by them encloses volume {}",
-                sigma > 0 ? "outside the label-1 cells" : "none",
-                sigma,
-                vol6 / 6.);
-            // The value table (ExactBandIntegral::value()) for the band term only, which
-            // reads cells again; twice the constructed mesh's tets, so that its live band
-            // cells seldom share a slot. Its box queries are m_input_complex_envelope's, built
-            // from the same rows of m_phi_F.
-            const size_t value_slots = exact_rule ? 2 * tet_capacity() : 0;
-            auto eb = std::make_shared<ExactBandIntegral>(
-                m_phi_V,
-                m_phi_F,
-                m_phi_F_inner,
-                sigma,
-                value_slots,
-                m_input_complex_envelope);
-            // "front_flux" and "exact": where bisectors within reach of the input can be, from
-            // the input alone (ExactBandIntegral::prepare_front_flux()). The front form reads
-            // it, and both rules' band term that cancels (tet_energy()).
-            if (exact_rule) {
-                const auto t0 = std::chrono::steady_clock::now();
-                eb->prepare_front_flux(m_offset_params.target_distance);
-                logger().info(
-                    "\t{}: {} region overlaps within reach {} of the input can hold "
-                    "bisectors ({:.3g} s)",
-                    m_offset_params.band_volume_rule,
-                    eb->front_flux_polytopes(),
-                    eb->front_flux_reach(),
-                    std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
-            }
-            m_band_exact = std::move(eb);
-        }
+        init_band_exact();
         return;
     }
 
