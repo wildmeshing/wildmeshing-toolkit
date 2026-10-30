@@ -821,7 +821,7 @@ TEST_CASE(
 }
 
 TEST_CASE(
-    "SimWild 3D matches TetWild's order-3 feature-envelope selection",
+    "SimWild 3D matches TetWild's order-2 envelope selection",
     "[simwild][tetwild][conformance][envelope]")
 {
     wmtk::components::tetwild::Parameters tet_params;
@@ -830,29 +830,32 @@ TEST_CASE(
     sim_params.init(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
 
     auto surface = std::make_shared<wmtk::Envelope>();
-    auto feature = std::make_shared<wmtk::Envelope>();
-    feature->init(
+    auto order2 = std::make_shared<wmtk::Envelope>();
+    order2->init(
         std::vector<Vector3d>{{0, 0, 0}, {1, 0, 0}},
         std::vector<Eigen::Vector2i>{{0, 1}},
         0.1);
 
     wmtk::components::tetwild::TetWildMesh tet(tet_params, surface, 0);
     wmtk::components::simwild::SimWildMesh sim(sim_params, sim_params.eps, 0);
-    tet.m_vertex_attribute.resize(1);
-    sim.m_vertex_attribute.resize(1);
-    tet.m_vertex_attribute[0].m_order = 3;
-    sim.m_vertex_attribute[0].m_order = 3;
-    tet.m_order2_edge_envelope = feature;
     sim.m_envelope = surface;
-    sim.m_order2_edge_envelope = feature;
+    // One tet whose edge (0,1) carries the order2 tag. The pull is chosen from the tags, as the
+    // containment is, so the vertex order -- set against the tags here -- decides nothing.
+    for (wmtk::TetOptimizerMesh* m :
+         {static_cast<wmtk::TetOptimizerMesh*>(&tet), static_cast<wmtk::TetOptimizerMesh*>(&sim)}) {
+        m->init(4, {{{0, 1, 2, 3}}});
+        m->enable_feature_edge_tracking();
+        m->m_feature_edge_attribute[m->tuple_from_edge({{0, 1}}).eid(*m)].add(
+            wmtk::TetOptimizerMesh::FeatureEdgeAttributes::order2);
+        m->m_order2_edge_envelope = order2;
+        m->m_vertex_attribute[0].m_order = 1;
+        m->m_vertex_attribute[2].m_order = 3;
+    }
 
-    CHECK(tet.smoothing_energy_envelope(0) == feature);
-    CHECK(sim.smoothing_energy_envelope(0) == tet.smoothing_energy_envelope(0));
-
-    tet.m_vertex_attribute[0].m_order = 1;
-    sim.m_vertex_attribute[0].m_order = 1;
-    CHECK(tet.smoothing_energy_envelope(0) == surface);
-    CHECK(sim.smoothing_energy_envelope(0) == surface);
+    CHECK(tet.smoothing_energy_envelope(0) == order2);
+    CHECK(sim.smoothing_energy_envelope(0) == order2);
+    CHECK(tet.smoothing_energy_envelope(2) == surface);
+    CHECK(sim.smoothing_energy_envelope(2) == surface);
 }
 
 TEST_CASE(

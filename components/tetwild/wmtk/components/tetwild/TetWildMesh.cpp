@@ -69,11 +69,11 @@ std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vi
     if (m_track_feature_edges && m_feature_envelope && vertex_has_feature_edge(vid)) {
         return m_feature_envelope;
     }
-    // Order 2 means the vertex is on a surface boundary or a non-manifold edge, toward the
-    // base's order-2 tube, which in tetwild holds the open boundaries only: a non-manifold
-    // vertex is pulled toward them too.
-    if (get_order_of_vertex(vid) >= 2 && m_order2_edge_envelope &&
-        m_order2_edge_envelope->initialized()) {
+    // A vertex on a held order-2 curve (an edge tagged order2) is pulled toward their tube.
+    // One on an order-2 edge tetwild does not hold -- a non-manifold edge, a rim glued shut --
+    // is pulled toward its inputs like any surface vertex, not toward the nearest open boundary.
+    if (m_order2_edge_envelope && m_order2_edge_envelope->initialized() &&
+        vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
         return m_order2_edge_envelope;
     }
     if (m_input_envelopes.empty()) return m_envelope;
