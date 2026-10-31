@@ -3886,10 +3886,12 @@ and fixed vertices stay where they are. They come in two forms:</p>
   input's vertex rows, whose edges are the curves (with an Int64 cell field <code>edge_id</code>) and whose
   points are the fixed vertices (with <code>vertex_id</code>). The ids are carried to the output: both halves
   of a split edge keep theirs. With an envelope, a tube of the same thickness holds the curves.</li>
-<li><a href="../../reference/isotropic_remeshing/#feature_fields"><code>feature_fields</code></a> names per-face fields of
-  a <code>.msh</code> input, labels, whose boundaries become curves; every output triangle has the value of
-  the input triangle it comes from. With an envelope, a tube of the same thickness holds these
-  curves too. It reads the file, so it works on the command line and on files only.</li>
+<li><a href="../../reference/isotropic_remeshing/#feature_fields"><code>feature_fields</code></a> names per-face fields,
+  labels, whose boundaries become curves: on the command line and on files, fields of a <code>.msh</code>
+  input; in memory, triangle attributes of the input. Every output triangle has the value of the
+  input triangle it comes from (an Int64 label has to be within 2^53 in magnitude, which the
+  remeshing carries exactly), and a degenerate input triangle, which the reader drops, takes its
+  value with it. With an envelope, a tube of the same thickness holds these curves too.</li>
 </ul>
 <p>The box again, without an envelope, its 12 sharp edges found by the angle between their two
 triangles, each with an id, and its 8 corners fixed:</p>
@@ -4079,9 +4081,12 @@ edges either way.</p>
 <ul>
 <li>The remeshed mesh: <code>output</code> on the command line (default <code>out.obj</code>), <code>outputs["mesh"]</code> in
   memory. With features, a <code>.vtu</code> output and its <code>_edge.vtu</code>, and in memory <code>outputs["mesh"]</code>
-  with the vertex field <code>vertex_id</code> and <code>outputs["edges"]</code>, the feature edges on the same vertex
+  with the vertex field <code>vertex_id</code> and the per-face fields of <code>feature_fields</code> (each in the type
+  it was given in, with its labels), and <code>outputs["edges"]</code>, the feature edges on the same vertex
   rows with <code>edge_id</code>. A result goes back in as it is: <code>mesh</code> as the input, <code>edges</code> as the
-  features.</li>
+  features. One made with <code>feature_fields</code> goes back in with its per-face fields named in
+  <code>feature_fields</code> again (<code>mesh</code> holds no <code>uv</code> or <code>normal</code>): an input may carry no triangle field
+  that <code>feature_fields</code> does not name.</li>
 <li>With <code>report</code>, a JSON file with the target length, the average, smallest and largest edge
   length, the valences, the vertex and triangle counts, the non-manifold edges and vertices, the
   number of operations refused because they would fold the surface, and the run time. In memory,
@@ -4143,8 +4148,10 @@ in <code>topo_annots_remeshed.vtu</code>, and 92 feature edges in <code>topo_ann
   triangles under a given angle at the end of every iteration.</li>
 <li><strong>The features are lost.</strong> Only a <code>.vtu</code> output holds the feature edges, their ids and the
   per-face fields; an <code>.obj</code> holds the triangles, and the run warns.</li>
-<li><strong><code>feature_fields</code> in memory.</strong> It reads the fields from the input file, so the memory route
-  refuses it; pass the curves as <code>features</code> instead.</li>
+<li><strong>A labelled result refused as the next input.</strong> In memory, <code>outputs["mesh"]</code> carries the
+  per-face fields of <code>feature_fields</code>, and an input may carry no triangle field that
+  <code>feature_fields</code> does not name (<code>Unknown mesh attribute</code>): pass the same per-face fields again.
+  The result holds no <code>uv</code> or <code>normal</code>, only their seams, in <code>edges</code>.</li>
 <li><strong>Inconsistently oriented input.</strong> The fold check
   (<a href="../../reference/isotropic_remeshing/#check_inversions"><code>check_inversions</code></a>) counts every flip
   of orientation as a fold, so most operations there are refused. Orient the input first.</li>

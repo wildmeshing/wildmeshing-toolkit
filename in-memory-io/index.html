@@ -3530,7 +3530,12 @@ not transfer arbitrary user attributes through topology changes. Geometry-only i
 attributes" below) ignore the fields <code>io::read_mesh</code> attaches to plain geometry files: vertex
 <code>vid</code>, and triangle <code>uv</code> and <code>normal</code>. A component may accept, and ignore, a field of its own
 results as well, so that a result can be the next call's input as it is: isotropic_remeshing's
-<code>vertex_id</code>, whose fixed vertices come from <code>features</code> alone.</p>
+<code>vertex_id</code>, whose fixed vertices come from <code>features</code> alone. isotropic_remeshing also takes the
+triangle fields its <code>feature_fields</code> names, as on the <code>.msh</code> route: the per-face ones it keeps as
+labels through the remeshing and returns on <code>mesh</code>, each in the type it was given in, with its
+labels (an Int64 one within 2^53 in magnitude, which Float64 holds exactly); <code>uv</code> and <code>normal</code>,
+per corner (6 and 9 columns), it neither carries nor returns: their seams are curves, in <code>edges</code>.
+So <code>mesh</code> goes back in with the same per-face fields named again.</p>
 <table>
 <thead>
 <tr>
@@ -3553,7 +3558,7 @@ results as well, so that a result can be the next call's input as it is: isotrop
 <tr>
 <td><code>isotropic_remeshing</code></td>
 <td><code>input</code>; optional <code>features</code></td>
-<td>Triangle geometry, no attributes but its own <code>vertex_id</code>, ignored; <code>features</code> on the rows of <code>input</code>: edges with Int64 <code>edge_id</code>, points with Int64 <code>vertex_id</code>, or Int64 vertex <code>vertex_id</code> (-1 for none)</td>
+<td>Triangle geometry, no attributes but its own <code>vertex_id</code>, ignored, and the triangle fields <code>feature_fields</code> names; <code>features</code> on the rows of <code>input</code>: edges with Int64 <code>edge_id</code>, points with Int64 <code>vertex_id</code>, or Int64 vertex <code>vertex_id</code> (-1 for none)</td>
 </tr>
 <tr>
 <td><code>tetwild</code></td>
@@ -3619,9 +3624,10 @@ geometry under fixed keys:</p>
 <ul>
 <li><code>surface</code>: the boundary (triangles in 3D; in 2D -- triwild, 2D simwild -- the boundary edges).
   Manifold extraction returns its extracted boundary here.</li>
-<li><code>edges</code>: simwild's 3D feature edges; isotropic_remeshing's feature edges, with <code>features</code>
-  (its Int64 <code>edge_id</code>, and <code>mesh</code>'s Int64 <code>vertex_id</code>, are what its <code>.vtu</code> output holds, an edge
-  block of none where there are none), which can be the next call's <code>features</code>.</li>
+<li><code>edges</code>: simwild's 3D feature edges; isotropic_remeshing's feature edges, with <code>features</code> or
+  <code>feature_fields</code> (its Int64 <code>edge_id</code>, and <code>mesh</code>'s Int64 <code>vertex_id</code> and per-face fields --
+  in the types they were given in, with their labels -- are what its <code>.vtu</code> output holds, an
+  edge block of none where there are none), which can be the next call's <code>features</code>.</li>
 <li><code>offset</code>: the offset surface or front; prismatic's classified offset faces.</li>
 <li><code>envelope</code>, <code>features</code>, <code>uv</code>, and manifold extraction's 3D input-complex preview <code>input_complex</code>.</li>
 <li>Prismatic <code>export_input_and_shell</code> adds <code>input_and_shell</code> and its classified offset faces as
