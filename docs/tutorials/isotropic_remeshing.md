@@ -320,7 +320,8 @@ in `topo_annots_remeshed.vtu`, and 92 feature edges in `topo_annots_remeshed_edg
   The result holds no `uv` or `normal`, only their seams, in `edges`.
 - **Inconsistently oriented input.** The fold check
   ([`check_inversions`](../reference/isotropic_remeshing.md#check_inversions)) counts every flip
-  of orientation as a fold, so most operations there are refused. Orient the input first.
+  of orientation inside a region of the feature curves as a fold -- not one along a curve between
+  two regions -- so most operations there are refused. Orient the input first.
 - **The output is not next to the JSON file.** `wmtk_app` reads `input` (and `features`) relative
   to the JSON file, but writes `output` and `report` relative to the working directory.
 

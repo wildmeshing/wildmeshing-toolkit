@@ -1160,7 +1160,9 @@ TEST_CASE("fold-check-judges-each-side-of-a-curve", "[test_remeshing][features]"
     // jittered in its plane. A star on a side edge spans both faces, and its normal, summed over
     // both, points between them: triangles of the smaller side face away from it, though nothing
     // is folded. Judging each side on its own, the fold check refuses nothing here; summed, it
-    // refused 216 operations on this prism. Nothing folds either way.
+    // refused 216 operations on this prism. Nothing folds either way, nor with no fold check at
+    // all; fold-check-refuses-folds-at-a-sharp-curve tests that the check still refuses a fold
+    // at a curve.
     const int n = 16, m = 16;
     const double h = 4, half = 4 * std::tan(20 * M_PI / 180);
     const std::array<Eigen::Vector3d, 3> P = {
@@ -1323,6 +1325,124 @@ TEST_CASE("fold-check-judges-each-side-of-a-curve", "[test_remeshing][features]"
         if ((b - a).cross(c - a).dot(normal[label(f, 0)]) <= 0) ++folded;
     }
     CHECK(folded == 0);
+}
+
+namespace {
+/// Two flat sides meeting at a curve along the x-axis at 40 degrees, so that the surface turns
+/// by 140 across it: R in z = 0, its rows of 5 vertices at y = -1 and -2, and S, its rows at
+/// `h` and 2 from the curve along `side`. The curve runs from boundary to boundary, so R and S
+/// are two regions. Vertex i of row k is 5 k + i: rows 0 and 1 are R's, 2 the curve's, 3 and 4
+/// S's. The triangles face away from the 40 degrees between the sides.
+struct Wedge
+{
+    std::vector<Eigen::Vector3d> V;
+    std::vector<std::array<size_t, 3>> F;
+    std::vector<Edge> curve;
+    const Eigen::Vector3d side{0, -std::cos(40 * M_PI / 180), std::sin(40 * M_PI / 180)};
+
+    explicit Wedge(const double h)
+    {
+        const std::array<double, 5> off = {{2, 1, 0, h, 2}};
+        for (int k = 0; k < 5; ++k) {
+            for (int i = 0; i < 5; ++i) {
+                V.push_back(
+                    Eigen::Vector3d(i, 0, 0) + off[k] * (k < 2 ? Eigen::Vector3d(0, -1, 0) : side));
+            }
+        }
+        const Eigen::Vector3d inside = Eigen::Vector3d(0, -1, 0) + side;
+        for (int k = 0; k < 4; ++k) {
+            for (int i = 0; i < 4; ++i) {
+                const size_t a = 5 * k + i, b = a + 1, c = a + 6, d = a + 5;
+                const std::array<std::array<size_t, 3>, 2> square = {{{{a, b, c}}, {{a, c, d}}}};
+                for (std::array<size_t, 3> f : square) {
+                    if ((V[f[1]] - V[f[0]]).cross(V[f[2]] - V[f[0]]).dot(inside) > 0) {
+                        std::swap(f[0], f[2]);
+                    }
+                    F.push_back(f);
+                }
+            }
+        }
+        for (size_t i = 0; i < 4; ++i) curve.push_back({{10 + i, 11 + i}});
+    }
+};
+} // namespace
+
+TEST_CASE("fold-check-refuses-folds-at-a-sharp-curve", "[test_remeshing][features]")
+{
+    // The wedge's vertex 17, on S next to the curve, moved by smooth_vertex_to with no envelope:
+    // within S past the curve, which turns its triangles at the curve over, as S's own normal
+    // sees; or round the curve toward R, flat onto R or through it. S turns by 40 degrees to get
+    // there, less than 90, so its triangles still face along its normal, and R's do not move:
+    // only the test of the crease sees it. With S's first row 0.02 from the curve -- needles --
+    // the normal summed over both sides let them through R too. Turned by 30 degrees the wedge is
+    // still open, and halfway to the curve nothing folds: both moves go through, which that
+    // summed normal, pointing between the sides, refused with the first row at 1. Without the
+    // fold check every move goes through.
+    for (const double h : {1., 0.02}) {
+        const Wedge w(h);
+        const Eigen::Vector3d foot(2, 0, 0);
+        const auto turned = [&](const double degrees) {
+            const double a = (140 + degrees) * M_PI / 180;
+            return Eigen::Vector3d(foot + h * Eigen::Vector3d(0, std::cos(a), std::sin(a)));
+        };
+        const std::vector<std::pair<Eigen::Vector3d, bool>> moves = {
+            {foot - 0.3 * h * w.side, true},
+            {Eigen::Vector3d(2, -h, 0), true}, // turned by 40 degrees, flat onto R exactly
+            {turned(60), true},
+            {turned(80), true},
+            {turned(30), false},
+            {foot + 0.5 * h * w.side, false}};
+        for (const auto& [p, folds] : moves) {
+            for (const bool check : {true, false}) {
+                INFO("h " << h << ", to " << p.transpose() << ", check " << check);
+                IsotropicRemeshing m(w.V, 0);
+                m.create_mesh(w.V.size(), w.F, {}, false);
+                m.set_feature_edges(w.curve);
+                m.set_check_inversions(check);
+                CHECK(m.smooth_vertex_to(17, p) == !(check && folds));
+                CHECK(m.refused_inversions() == size_t(check && folds));
+            }
+        }
+    }
+    // A wedge the input has closed through itself -- vertex 17 turned by 60 degrees, through R --
+    // may open again: the two triangles at the curve do not open it as the sides round the curve
+    // do, so it is no crease to keep.
+    Wedge w(1);
+    const Eigen::Vector3d home = w.V[17];
+    w.V[17] = Eigen::Vector3d(2, -std::cos(20 * M_PI / 180), -std::sin(20 * M_PI / 180));
+    IsotropicRemeshing m(w.V, 0);
+    m.create_mesh(w.V.size(), w.F, {}, false);
+    m.set_feature_edges(w.curve);
+    CHECK(m.smooth_vertex_to(17, home));
+    CHECK(m.refused_inversions() == 0);
+}
+
+TEST_CASE("feature-regions-before-or-after-create-mesh", "[test_remeshing][features]")
+{
+    // set_feature_edges() gives the faces their regions, and before create_mesh() there are no
+    // faces yet: create_mesh() gives them theirs. Either way R and S are two regions, and the
+    // fold check lets vertex 17 go halfway to the curve, which judged as one region it refused.
+    const Wedge w(1);
+    for (const bool first : {true, false}) {
+        INFO("set_feature_edges first " << first);
+        IsotropicRemeshing m(w.V, 0);
+        if (first) m.set_feature_edges(w.curve);
+        m.create_mesh(w.V.size(), w.F, {}, false);
+        if (!first) m.set_feature_edges(w.curve);
+        std::array<std::set<int64_t>, 2> regions; // R's, S's
+        for (const auto& f : m.get_faces()) {
+            const auto vs = m.oriented_tri_vids(f);
+            regions[*std::max_element(vs.begin(), vs.end()) >= 15].insert(
+                m.face_field_attrs.at(f.fid(m)).region);
+        }
+        REQUIRE(regions[0].size() == 1);
+        REQUIRE(regions[1].size() == 1);
+        CHECK(*regions[0].begin() >= 0);
+        CHECK(*regions[1].begin() >= 0);
+        CHECK(*regions[0].begin() != *regions[1].begin());
+        CHECK(m.smooth_vertex_to(17, Eigen::Vector3d(2, 0, 0) + 0.5 * w.side));
+        CHECK(m.refused_inversions() == 0);
+    }
 }
 
 namespace {
