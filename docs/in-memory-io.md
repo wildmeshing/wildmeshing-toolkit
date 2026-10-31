@@ -119,8 +119,11 @@ attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry 
 `vid`, and triangle `uv` and `normal`. A component may accept, and ignore, a field of its own
 results as well, so that a result can be the next call's input as it is: isotropic_remeshing's
 `vertex_id`, whose fixed vertices come from `features` alone. isotropic_remeshing also takes the
-triangle fields its `feature_fields` names, which it keeps as labels through the remeshing, as on
-the `.msh` route, and returns on `mesh`.
+triangle fields its `feature_fields` names, as on the `.msh` route: the per-face ones it keeps as
+labels through the remeshing and returns on `mesh`, each in the type it was given in, with its
+labels (an Int64 one within 2^53 in magnitude, which Float64 holds exactly); `uv` and `normal`,
+per corner (6 and 9 columns), it neither carries nor returns: their seams are curves, in `edges`.
+So `mesh` goes back in with the same per-face fields named again.
 
 | Component | Mesh selectors | Required data |
 | --- | --- | --- |
@@ -164,8 +167,8 @@ geometry under fixed keys:
   Manifold extraction returns its extracted boundary here.
 - `edges`: simwild's 3D feature edges; isotropic_remeshing's feature edges, with `features` or
   `feature_fields` (its Int64 `edge_id`, and `mesh`'s Int64 `vertex_id` and per-face fields --
-  Int64 where they were given as Int64 -- are what its `.vtu` output holds, an edge block of none
-  where there are none), which can be the next call's `features`.
+  in the types they were given in, with their labels -- are what its `.vtu` output holds, an
+  edge block of none where there are none), which can be the next call's `features`.
 - `offset`: the offset surface or front; prismatic's classified offset faces.
 - `envelope`, `features`, `uv`, and manifold extraction's 3D input-complex preview `input_complex`.
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as

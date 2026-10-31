@@ -34,32 +34,40 @@ struct FieldData
     std::vector<std::array<size_t, 2>> boundaries;
     /// The per-face fields among them, in the order given, with their number of components.
     std::vector<std::pair<std::string, size_t>> face_fields;
-    /// Those of face_fields given as Int64, which the memory route returns as Int64.
-    std::set<std::string> integer_fields;
+    /// Each of face_fields as given, without its rows: its type and its column labels, which the
+    /// memory route returns it with. Each type reaches face_values exactly: Float64 as it is,
+    /// UInt8, and Int64 within 2^53, beyond which field_boundaries refuses it.
+    std::vector<MeshAttribute> face_attributes;
     /// Each face's values of face_fields, one after the other.
     std::vector<std::vector<double>> face_values;
 };
 
+/// The per-corner fields io::read_mesh reads (io::ComponentIO::reader_corner_attributes), with
+/// their number of columns: corner after corner, two values per corner for uv, three for normal.
+const std::map<std::string, Eigen::Index> corner_columns = {{"uv", 6}, {"normal", 9}};
+
 /// The edges between two faces that differ in any of `fields`, triangle fields of `mesh` -- the
-/// mesh file as io::read_mesh reads it, or the memory input -- whose triangles are `tris` in row
-/// order; `path` names it in the errors. A per-corner field (io::read_mesh's uv and normal: three
-/// values per corner, corner after corner) differs across an edge where the two faces disagree on
-/// it at either end: a texture seam, say.
+/// mesh file as io::read_mesh reads it, or the memory input -- of whose triangles the reader made
+/// `tris`: `face_map` (io::ReadProvenance::cell_map) takes each of them to the one of `tris` it
+/// became, or is -1 for a degenerate one, which the cleaning dropped, and its values with it.
+/// `path` names it in the errors. A per-corner field (see corner_columns) differs across an edge
+/// where the two faces disagree on it at either end: a texture seam, say.
 FieldData field_boundaries(
     const MeshData& mesh,
     const std::string& path,
+    const std::vector<int>& face_map,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<std::string>& fields)
 {
     const auto it = mesh.cells.find(CellType::Triangle);
     const Eigen::Index n_faces = it == mesh.cells.end() ? 0 : it->second.connectivity.rows();
-    if (size_t(n_faces) != tris.size()) {
+    if (size_t(n_faces) != face_map.size()) {
         log_and_throw_error(
-            "feature_fields: reading {} dropped faces ({} of {} left), so its fields no longer "
-            "line up with the triangles",
+            "feature_fields: {} has {} triangles as io::read_mesh reads it and {} as the "
+            "remeshing reads it, so its fields do not line up with them",
             path,
-            tris.size(),
-            n_faces);
+            n_faces,
+            face_map.size());
     }
     FieldData out;
     std::vector<std::vector<double>>& value = out.face_values;
@@ -70,23 +78,54 @@ FieldData field_boundaries(
         if (a == it->second.attributes.end()) {
             log_and_throw_error("feature_fields: {} has no field {}", path, name);
         }
+        // The remeshing carries the values as Float64, which holds every integer up to 2^53 in
+        // magnitude and only some beyond: the limit is 2^53, not whichever ids happen to fit.
+        if (const auto* ints = std::get_if<DataMatrix<int64_t>>(&a->second.values)) {
+            constexpr int64_t limit = int64_t(1) << 53;
+            for (Eigen::Index i = 0; i < ints->size(); ++i) {
+                const int64_t x = ints->data()[i];
+                if (x > limit || x < -limit) {
+                    log_and_throw_error(
+                        "feature_fields: {} in {} has the value {}, beyond 2^53 in magnitude: "
+                        "the remeshing carries it as Float64, which holds integers exactly only "
+                        "up to 2^53",
+                        name,
+                        path,
+                        x);
+                }
+            }
+        }
         const DataMatrix<double> values = a->second.doubles();
-        const bool corner = io::ComponentIO::reader_corner_attributes.count(name) > 0;
-        if (corner && values.cols() % 3 != 0) {
+        const auto columns = corner_columns.find(name);
+        const bool corner = columns != corner_columns.end();
+        // Known by its name alone, as io::read_mesh names it: a per-face normal of 3 columns, say,
+        // would be read as one value per corner.
+        if (corner && values.cols() != columns->second) {
             log_and_throw_error(
-                "feature_fields: {} in {} holds a value per corner, but has {} columns",
+                "feature_fields: {0} in {1} has {2} columns, but {0} is per corner, as "
+                "io::read_mesh reads it: {3} columns, {4} values per corner, corner after corner",
                 name,
                 path,
-                values.cols());
+                values.cols(),
+                columns->second,
+                columns->second / 3);
         }
-        if (!corner) out.face_fields.emplace_back(name, size_t(values.cols()));
-        // An Int64 field converts to Float64 exactly, or doubles() refuses it, so it comes back.
-        if (!corner && std::holds_alternative<DataMatrix<int64_t>>(a->second.values)) {
-            out.integer_fields.insert(name);
+        if (!corner) {
+            out.face_fields.emplace_back(name, size_t(values.cols()));
+            MeshAttribute given;
+            given.labels = a->second.labels;
+            given.values = std::visit(
+                [](const auto& m) -> AttributeValues {
+                    return std::decay_t<decltype(m)>(0, m.cols());
+                },
+                a->second.values);
+            out.face_attributes.push_back(std::move(given));
         }
         const Eigen::Index k = values.cols() / 3;
-        for (size_t f = 0; f < tris.size(); ++f) {
-            const double* row = values.row(f).data();
+        for (size_t i = 0; i < face_map.size(); ++i) {
+            if (face_map[i] < 0) continue; // gone, and its values with it
+            const size_t f = size_t(face_map[i]);
+            const double* row = values.row(i).data();
             if (!corner) {
                 value[f].insert(value[f].end(), row, row + values.cols());
                 continue;
@@ -348,8 +387,9 @@ Features weld_features(
 /// feature edges to <stem>_edge.vtu, as simwild names its own, on the same points, a line cell
 /// each with the cell field edge_id (-1 for none) and the same vertex_id. With `memory`, the
 /// memory route's: the two meshes go there instead, under the names of the files (see
-/// io::DataWriter), the ids Int64 -- the .vtu has Float64, as every field there -- as the per-face
-/// fields given as Int64, and the edges with an edge block even where there are none.
+/// io::DataWriter), the ids Int64 -- the .vtu has Float64 and no labels, as every field there --
+/// the per-face fields in the type they were given in, with their labels, and the edges with an
+/// edge block even where there are none.
 void write_vtu(
     const IsotropicRemeshing& m,
     const std::filesystem::path& path,
@@ -376,17 +416,22 @@ void write_vtu(
     io::DataWriter triangles(memory);
     triangles.add_integer_field("vertex_id", vertex_id);
     size_t offset = 0;
-    for (const auto& [name, components] : fields.face_fields) {
+    for (size_t j = 0; j < fields.face_fields.size(); ++j) {
+        const auto& [name, components] = fields.face_fields[j];
         Eigen::MatrixXd values(faces.size(), components);
         for (size_t i = 0; i < faces.size(); ++i) {
             const auto& f = m.face_field_attrs.at(faces[i].fid(m)).values;
             for (size_t c = 0; c < components; ++c) values(i, c) = f.at(offset + c);
         }
-        if (fields.integer_fields.count(name)) {
-            triangles.add_integer_cell_field(name, values.cast<int64_t>());
-        } else {
-            triangles.add_cell_field(name, values);
-        }
+        // Back to the type it was given in, exactly (see FieldData::face_attributes).
+        MeshAttribute field = fields.face_attributes[j];
+        field.values = std::visit(
+            [&values](const auto& given) -> AttributeValues {
+                using Scalar = typename std::decay_t<decltype(given)>::Scalar;
+                return DataMatrix<Scalar>(values.cast<Scalar>());
+            },
+            field.values);
+        triangles.add_cell_field(name, field);
         offset += components;
     }
     if (!triangles.write_mesh(path.string(), V, F, paraviewo::CellType::Triangle)) {
@@ -530,7 +575,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     std::vector<size_t> modified_nonmanifold_v;
     // With a history: the file as read and the vertex of the mesh each of its vertices became,
     // so that the history starts at the file itself. With features too, which name vertices of
-    // the file.
+    // the file; and with feature_fields, which give values to its faces, of which the cleaning
+    // drops the degenerate ones.
     wmtk::io::ReadProvenance read;
     // Where the features come from, for the messages.
     const std::string features_source = features_input.empty() ? ""
@@ -548,7 +594,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             remove_duplicate_eps,
             -1,
             nullptr,
-            history_output.empty() && features_input.empty() ? nullptr : &read,
+            history_output.empty() && features_input.empty() && feature_fields.empty() ? nullptr
+                                                                                       : &read,
             // Ignored: the fixed vertices come from features.
             with_vertex_id(),
             // Read below, by field_boundaries.
@@ -556,6 +603,27 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
+    }
+    // Read here, before the mesh and its envelope are built, so that a field the remeshing cannot
+    // take is refused at once.
+    FieldData fields;
+    if (!feature_fields.empty()) {
+        if (component_io.memory()) {
+            fields = field_boundaries(
+                component_io.mesh(input_path),
+                "the mesh " + input_path,
+                read.cell_map,
+                tris,
+                feature_fields);
+        } else {
+            MeshData mesh;
+            try {
+                mesh = io::read_mesh(input_path);
+            } catch (const std::exception& e) {
+                log_and_throw_error("feature_fields: could not read {}: {}", input_path, e.what());
+            }
+            fields = field_boundaries(mesh, input_path, read.cell_map, tris, feature_fields);
+        }
     }
     if (!features_input.empty()) {
         // Merging duplicates and dropping unreferenced vertices renumbers them; the features
@@ -627,33 +695,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
     logger().info("absolute target length: {}", length_abs);
 
-    FieldData fields;
-    if (!feature_fields.empty()) {
-        if (component_io.memory()) {
-            fields = field_boundaries(
-                component_io.mesh(input_path),
-                "the mesh " + input_path,
-                tris,
-                feature_fields);
-        } else {
-            MeshData mesh;
-            try {
-                mesh = io::read_mesh(input_path);
-            } catch (const std::exception& e) {
-                log_and_throw_error("feature_fields: could not read {}: {}", input_path, e.what());
-            }
-            fields = field_boundaries(mesh, input_path, tris, feature_fields);
-        }
-        if (features_input.empty()) {
-            m.set_feature_edges(fields.boundaries);
-            // As for `features`: the surface envelope does not hold the curves; this keeps them
-            // within its eps.
-            m.set_feature_envelope(envelope_size);
-            logger().info(
-                "{} feature edges: the boundaries of {}",
-                m.feature_edges().size(),
-                nlohmann::json(feature_fields).dump());
-        }
+    if (!feature_fields.empty() && features_input.empty()) {
+        m.set_feature_edges(fields.boundaries);
+        // As for `features`: the surface envelope does not hold the curves; this keeps them
+        // within its eps.
+        m.set_feature_envelope(envelope_size);
+        logger().info(
+            "{} feature edges: the boundaries of {}",
+            m.feature_edges().size(),
+            nlohmann::json(feature_fields).dump());
     }
     if (!features_input.empty()) {
         const size_t listed = features.edges.size();
