@@ -253,8 +253,9 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
     , m_in_face_alive(h.face_alive)
 {
     Replay r(h);
-    // While a collapse tries the removed vertex's star alone (CollapsePatch::removed_star).
-    bool removed_star_try = false;
+    // While a collapse of a vertex on a curve into one on none tries the removed vertex's star
+    // alone (CollapsePatch::removed_star).
+    bool curve_into_sheet_try = false;
     const auto layout = [](const Tri& t, const UV& uv) {
         return std::array<Eigen::Vector2d, 3>{{uv.at(t[0]), uv.at(t[1]), uv.at(t[2])}};
     };
@@ -629,7 +630,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
         // The removed star of a curve vertex collapsed into a vertex of a sheet that is on its
         // outline: the faces after do not cover the outline before, and the chord layout below
         // would not be a bijection. Both stars map it.
-        if (removed_star_try) return false;
+        if (curve_into_sheet_try) return false;
         const size_t i_rm = on_outline.front();
         const auto [prev, next] = neighbours(i_rm);
         const double a = length(prev, removed), b = length(removed, next);
@@ -883,6 +884,21 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
                     ++n_spanning;
                 }
             }
+            // On a curve of the complex: on an edge of one face, of three or more, or a feature
+            // edge -- the edges sides_of() cuts at. Read before the replay applies the collapse,
+            // which puts the survivor on the removed vertex's curves.
+            const auto on_curve = [&r](const uint64_t v) {
+                std::map<uint64_t, int> n;
+                for (const uint64_t f : r.faces_of(v)) {
+                    for (const uint64_t x : r.faces()[f]) {
+                        if (x != v) ++n[x];
+                    }
+                }
+                return std::any_of(n.begin(), n.end(), [&](const auto& xn) {
+                    return xn.second != 2 || r.is_feature({{v, xn.first}});
+                });
+            };
+            const bool curve_into_sheet = star && on_curve(removed) && !on_curve(kept);
             r.apply(e);
             const std::vector<uint64_t> after_f = r.faces_of(kept);
             if (after_f.size() + n_spanning < both.f.size()) {
@@ -942,9 +958,9 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
                 const MapWarnings warnings = m_build_warnings;
                 const size_t curve_collapses = m_curve_collapses, folded = m_folded_cells;
                 Step tried{e.kind, {}, {}, {}, {}};
-                removed_star_try = true;
+                curve_into_sheet_try = curve_into_sheet;
                 const bool star_ok = map_sides(*star, tried);
-                removed_star_try = false;
+                curve_into_sheet_try = false;
                 if (star_ok) {
                     step = std::move(tried);
                     break;
