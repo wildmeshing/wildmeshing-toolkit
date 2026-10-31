@@ -793,7 +793,7 @@ size_t TriOptimizerMesh::anchor_feature_points(
 {
     // {vertex, radius}: the order-2 vertices first, then the input points.
     std::vector<std::pair<size_t, double>> anchors;
-    size_t n_ends = 0, n_junctions = 0;
+    size_t n_ends = 0, n_junctions = 0, n_free = 0;
     for (const Tuple& t : get_vertices()) {
         const size_t vid = t.vid(*this);
         size_t n_segments = 0;
@@ -801,8 +801,11 @@ size_t TriOptimizerMesh::anchor_feature_points(
             n_segments += is_edge_on_surface(e);
         }
         if (n_segments == 0 || n_segments == 2) continue;
+        if (!holds_order2_vertex(n_segments)) {
+            ++n_free;
+            continue;
+        }
         ++(n_segments == 1 ? n_ends : n_junctions);
-        if (!holds_order2_vertex(n_segments)) continue;
         anchors.emplace_back(vid, order2_radius);
     }
     for (const size_t vid : input_point_vids) {
@@ -819,9 +822,11 @@ size_t TriOptimizerMesh::anchor_feature_points(
         n_anchored += anchor_feature_point(vid, r);
     }
     logger().info(
-        "feature points: {} curve ends, {} junctions, {} input points; {} anchored",
+        "feature points: {} curve ends, {} junctions ({} more left free by the application's "
+        "rule), {} input points; {} anchored",
         n_ends,
         n_junctions,
+        n_free,
         input_point_vids.size(),
         n_anchored);
     return n_anchored;

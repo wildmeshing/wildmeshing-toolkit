@@ -449,7 +449,9 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         // check was live from the 2025-10-10 open-boundary fixes until the collapse
         // refactoring (cb9b81a66c) parked it -- the shared base could not call tetwild's
         // is_open_boundary_edge -- while giving its caching half the virtual below. This is
-        // that predicate, restored through the same virtual.
+        // that predicate, restored through the same virtual. Since 2026-10 only
+        // topological_offset overrides it: tetwild and simwild hold their order-2 edges by the
+        // order2 tags (the tube test above), and for them the default caches no edge.
         for (const auto& vids : cache.boundary_edges) {
             if (!collapse_is_order_2_edge(vids)) {
                 // The edge was order-2 before the collapse (that is why it was cached) but

@@ -364,6 +364,14 @@ void SimWildMeshTri::init_edge_tags(
             edge_tag_names.size(),
             SurfaceTagAttributes::max_inputs);
     }
+    // One column per name: a column past the names would set a bit of the region labels that
+    // follow them (see m_edge_tag_names), or shift past the set's width.
+    if (E_tagged.rows() > 0 && size_t(E_tags.cols()) != edge_tag_names.size()) {
+        log_and_throw_error(
+            "{} edge-tag columns for {} edge-tag names",
+            E_tags.cols(),
+            edge_tag_names.size());
+    }
     m_edge_tag_names = edge_tag_names;
     for (Eigen::Index r = 0; r < E_tagged.rows(); ++r) {
         const std::array<size_t, 2> vids = {{size_t(E_tagged(r, 0)), size_t(E_tagged(r, 1))}};
@@ -380,6 +388,17 @@ void SimWildMeshTri::init_edge_tags(
 
 void SimWildMeshTri::init_label_envelopes()
 {
+    // With one label the member would be m_envelope, so none is built, as triwild builds none
+    // for one input: the containment then answers with the union, as before the labels.
+    InputSet labels = 0;
+    for (const Tuple& e : get_edges()) {
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) labels |= attr.input_set();
+    }
+    if ((labels & (labels - 1)) == 0) {
+        m_input_envelopes.set({});
+        return;
+    }
     init_input_envelopes(
         m_V_envelope,
         m_E_envelope,

@@ -1413,6 +1413,9 @@ size_t TetOptimizerMesh::anchor_feature_points(
         }
     }
     for (const size_t vid : input_point_vids) {
+        if (vid >= vert_capacity()) {
+            log_and_throw_error("Input point vertex id {} out of range", vid);
+        }
         double r = feature_radius;
         if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
             r = std::min(r, order2_radius);

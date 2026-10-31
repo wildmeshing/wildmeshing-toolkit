@@ -324,6 +324,19 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             ++tet_count;
         }
 
+        // init(T) left the edge slots holding the old mesh's tags, and the outputs read them
+        // (on_open_boundary, the feature curves). The legacy optimizer carries no curve tags:
+        // clear them, and tag the output's open boundaries again from its tracked faces. Until
+        // 2026-10 a per-vertex flag was written back from the legacy optimizer instead.
+        if (m_track_feature_edges) {
+            for (size_t i = 0; i < m_feature_edge_attribute.size(); ++i) {
+                m_feature_edge_attribute[i] = FeatureEdgeAttributes{};
+            }
+        }
+        tag_order2_edges(
+            m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio,
+            m_envelope && m_envelope->use_exact);
+
         for (const Tuple& t : get_tets()) {
             // This could be also transferred from legacy_tetwild but I wanted to do that here to
             // ensure the energy is computed in the same way.
