@@ -55,6 +55,7 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
     TriWildMesh mesh(params, eps, 0);
     build_one_tri(mesh, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
     mesh.m_feature_points = {Vector2d(0, 0)};
+    mesh.m_feature_point_radius.assign(mesh.m_feature_points.size(), eps);
     mesh.m_feature_point_attribute[0].m_feature_point_id = 0;
 
     SECTION("a vertex carrying no feature is never blocked")
@@ -89,6 +90,7 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         // integration model it stranded a degenerate triangle and the max energy stayed at
         // 1e50 for all 82 iterations instead of converging in 3.
         mesh.m_feature_points.push_back(Vector2d(0.5, 0));
+        mesh.m_feature_point_radius.push_back(eps);
         mesh.m_feature_point_attribute[1].m_feature_point_id = 1;
         CHECK_FALSE(mesh.collapse_breaks_feature_point(0, 1));
         CHECK_FALSE(mesh.collapse_breaks_feature_point(1, 0));
@@ -100,6 +102,7 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         // vertex within eps, and the plain distance test catches that without needing a
         // special case for "v2 already carries something".
         mesh.m_feature_points.push_back(Vector2d(5, 0));
+        mesh.m_feature_point_radius.push_back(eps);
         mesh.m_feature_point_attribute[2].m_feature_point_id = 1;
         CHECK(mesh.collapse_breaks_feature_point(0, 2));
         CHECK(mesh.collapse_breaks_feature_point(2, 0));
@@ -118,16 +121,6 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         mesh.m_vertex_attribute[0].m_is_rounded = false;
         CHECK(mesh.collapse_breaks_feature_point(0, 2));
     }
-
-    SECTION("preserve_feature_points off restores the old behaviour")
-    {
-        params.preserve_feature_points = false;
-        TriWildMesh off(params, eps, 0);
-        build_one_tri(off, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
-        off.m_feature_points = {Vector2d(0, 0)};
-        off.m_feature_point_attribute[0].m_feature_point_id = 0;
-        CHECK_FALSE(off.collapse_breaks_feature_point(0, 2));
-    }
 }
 
 TEST_CASE("triwild-feature-smoothing-is-a-ball-not-a-pin", "[triwild_operation][feature_points]")
@@ -137,6 +130,7 @@ TEST_CASE("triwild-feature-smoothing-is-a-ball-not-a-pin", "[triwild_operation][
     TriWildMesh mesh(params, eps, 0);
     build_one_tri(mesh, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
     mesh.m_feature_points = {Vector2d(0, 0)};
+    mesh.m_feature_point_radius.assign(mesh.m_feature_points.size(), eps);
     mesh.m_feature_point_attribute[0].m_feature_point_id = 0;
 
     // A feature vertex is free to move, just not away: smoothing keeps whatever quality it
@@ -159,6 +153,7 @@ TEST_CASE("triwild-feature-retention-accounting", "[triwild_operation][feature_p
     TriWildMesh mesh(params, eps, 0);
     build_one_tri(mesh, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
     mesh.m_feature_points = {Vector2d(0, 0), Vector2d(5, 0)};
+    mesh.m_feature_point_radius.assign(mesh.m_feature_points.size(), eps);
 
     SECTION("anchors that still have a vertex on them are retained")
     {
@@ -181,6 +176,7 @@ TEST_CASE("triwild-feature-retention-accounting", "[triwild_operation][feature_p
     SECTION("an anchor with no vertex near it is not retained")
     {
         mesh.m_feature_points.push_back(Vector2d(50, 50)); // nothing is within eps of this
+        mesh.m_feature_point_radius.push_back(eps);
         const auto [kept, total] = mesh.feature_retention();
         CHECK(total == 3);
         CHECK(kept == 2);

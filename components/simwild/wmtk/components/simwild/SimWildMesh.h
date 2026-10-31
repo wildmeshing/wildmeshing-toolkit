@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/MeshData.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 #include <igl/Timer.h>
 #include <wmtk/SurfaceTagAttributes.h>
@@ -127,10 +128,6 @@ public:
     std::vector<std::tuple<ExprPtr, double>> m_quality_field;
 
     bool m_collapse_check_quality = true;
-
-    // for open boundary
-    /// Follows m_envelope's use_exact; see where it is built in VolumemesherInsertion.cpp.
-    std::shared_ptr<Envelope> m_order_2_edge_envelope;
 
     /// Envelope a vertex is pulled toward while smoothing.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
@@ -276,13 +273,7 @@ protected:
     bool optimization_stop_at_float() const override { return m_sim_params.stop_at_float; }
     void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
 
-    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override;
     bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const override;
-    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override;
-    bool collapse_after_connectivity(
-        size_t v1,
-        size_t v2,
-        const std::vector<std::array<size_t, 2>>& boundary_edges) override;
 
     bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
@@ -331,7 +322,9 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
     void init_from_image(
         const MatrixXd& V,
         const MatrixXi& T,
@@ -339,9 +332,15 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
 
-    void init_surfaces_and_boundaries();
+    /// `features`, optional: the input feature curves and points, and where the insertion put
+    /// them (`features_placed`, in the vertex numbering of the mesh), tagged and anchored here.
+    void init_surfaces_and_boundaries(
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
     /// Tracks the faces F_tagged (rows of T's vertices, as read_mesh_data gives them) as surface,
     /// with input set bit j where F_tags has a 1 in column j. Throws on a row that is no face.
     void init_face_tags(
@@ -365,16 +364,6 @@ public:
     size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
 
-    /**
-     * @brief Find open boundary edges of the embedded surface and initialize a BVH for the open
-     * boundary.
-     *
-     * The envelope for the open boundary uses a hack: A boundary edge is represented as a
-     * degenerate triangle, e.g., (v0,v1,v0). That way, the standard triangle envelope code can be
-     * used.
-     *
-     */
-    void find_order_2_edges();
     /**
      * @brief Checks if an edge COULD be an open boundary edge.
      *

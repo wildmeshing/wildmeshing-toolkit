@@ -71,16 +71,16 @@ It takes a few seconds.
 **The curve.** The insertion tiles the two input edges with 14 tet edges, and tags them. The
 optimization may split, collapse and move tagged edges like any other, as long as they stay in a
 tube around the input curve, of radius
-[`feature_envelope_ratio`](../../reference/tetwild.md#feature_envelope_ratio) (0.5) times
-\(\varepsilon\): 0.00173 here, with \(\varepsilon\) = 0.00346. In this run the 14 edges stay on the
+[`feature_envelope_ratio`](../../reference/tetwild.md#feature_envelope_ratio) (1) times
+\(\varepsilon\): 0.00346 here. In this run the 14 edges stay on the
 input curve, up to rounding. The bend at the cube's centre is a vertex of the curve like any other:
 it is not anchored, and the tube is what keeps the curve's shape there.
 
 **The points.** Five points are anchored: the curve's two ends, the free vertex of the edge file,
 and the two points of the point file. Each is a vertex of the output at exactly its input position.
 The optimization may move an anchored vertex within the tube's radius of its point, and refuses a
-collapse that would leave a point without a vertex within it
-([`preserve_feature_points`](../../reference/tetwild.md#preserve_feature_points)).
+collapse that would leave a point without a vertex within it. The curve's ends, and any vertex where
+three or more feature curves or open boundaries meet, are anchored the same way.
 
 **The curve network's topology.** The run compares the Euler characteristic of each connected
 curve of the input with that of the tagged edges, and warns when they differ. Here both are one
@@ -128,31 +128,19 @@ inside the tube. The anchors were at distance 0 in both.
 
 ## Without the anchors
 
-[`preserve_feature_points`](../../reference/tetwild.md#preserve_feature_points) false keeps the
-curve in its tube but anchors nothing:
-
-```python
---8<-- "docs/examples/python/workflow_tetwild_features.py:erosion"
-```
-
-```text
-preserve_feature_points false: the worst anchor is 0.11 from a vertex, the curve is covered to 0.18
-```
-
-The points' vertices moved or were collapsed away: the farthest point is now 0.11 from the nearest
-vertex, 64 times the tube's radius. And the curve lost 0.18 of its length at one end: its last
-tagged vertex is at (1.574, 1, 1.574) instead of (1.7, 1, 1.7). A collapse along the curve that
-shortens it keeps what is left inside the tube, so the tube alone cannot see it; that is what the
-anchors at the curve's ends are for.
+Until 2026-10, `preserve_feature_points` false kept the curve in its tube but anchored nothing.
+The points' vertices then moved or were collapsed away: the farthest point ended 0.11 from the
+nearest vertex, 64 times the tube's radius of the time (0.5 \(\varepsilon\)). And the curve lost
+0.18 of its length at one end: its last tagged vertex was at (1.574, 1, 1.574) instead of
+(1.7, 1, 1.7). A collapse along the curve that shortens it keeps what is left inside the tube, so
+the tube alone cannot see it; that is what the anchors at the curve's ends are for. They are now
+always on, as the tube and the surface envelope are.
 
 ## Options
 
-- [`feature_envelope_ratio`](../../reference/tetwild.md#feature_envelope_ratio) (0.5): the tube's
-  radius, as a fraction of \(\varepsilon\). Here 1.0 gives the same mesh: the curve did not use the
-  room.
-- [`allow_junction_cleanup`](../../reference/tetwild.md#allow_junction_cleanup) (true): where three
-  or more feature edges meet, the junction is not anchored, and may merge and move within the tube;
-  every curve through it stays tagged. False anchors junctions too.
+- [`feature_envelope_ratio`](../../reference/tetwild.md#feature_envelope_ratio) (1): the tube's
+  radius and the anchors' radius, as a fraction of \(\varepsilon\). Here 0.5 gives the same mesh:
+  the curve did not use the room.
 - [`filter`](../../reference/tetwild.md#filter): a feature in a region the filter removes leaves
   the tet mesh with it, but stays in the feature output. With an extra point at (2.5, 1, 1),
   outside the cube, the nearest vertex of the filtered mesh is 0.5 away, while the feature output
@@ -166,8 +154,8 @@ anchors at the curve's ends are for.
 - The [TetWild tutorial](../tetwild.md), and the reference of
   [`input_edges`](../../reference/tetwild.md#input_edges),
   [`input_points`](../../reference/tetwild.md#input_points) and
-  [`preserve_feature_points`](../../reference/tetwild.md#preserve_feature_points).
+  [`feature_envelope_ratio`](../../reference/tetwild.md#feature_envelope_ratio).
 - [Embedding](../../concepts/embedding.md): how the curves and points are inserted with the
   surface.
-- [TriWild](../triwild.md#feature-points-input_points-preserve_feature_points): the same anchors in
+- [TriWild](../triwild.md#feature-points-input_points): the same anchors in
   2D.

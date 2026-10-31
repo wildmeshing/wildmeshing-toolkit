@@ -98,7 +98,7 @@ std::set<std::array<size_t, 2>> tagged_edges(const wmtk::components::simwild::Si
 {
     std::set<std::array<size_t, 2>> out;
     for (const auto& e : m.get_edges()) {
-        if (!m.m_feature_edge_attribute[e.eid(m)].m_is_feature_edge) continue;
+        if (!m.m_feature_edge_attribute[e.eid(m)].is_tagged()) continue;
         size_t a = e.vid(m);
         size_t b = e.switch_vertex(m).vid(m);
         if (a > b) std::swap(a, b);
@@ -206,11 +206,12 @@ TEST_CASE(
     REQUIRE(cap0 > 0);
     REQUIRE(mesh.m_feature_edge_attribute.size() == 6 * cap0);
     for (size_t i = 0; i < mesh.m_feature_edge_attribute.size(); ++i) {
-        CHECK(!mesh.m_feature_edge_attribute[i].m_is_feature_edge);
+        CHECK(!mesh.m_feature_edge_attribute[i].is_tagged());
     }
 
     const auto axis = mesh.tuple_from_edge({{0, 1}});
-    mesh.m_feature_edge_attribute[axis.eid(mesh)].m_is_feature_edge = true;
+    mesh.m_feature_edge_attribute[axis.eid(mesh)].add(
+        wmtk::TetOptimizerMesh::FeatureEdgeAttributes::feature);
     REQUIRE(tagged_edges(mesh) == std::set<std::array<size_t, 2>>{{{0, 1}}});
 
     // Refine until the storage has to grow past what init() reserved.
@@ -250,7 +251,7 @@ TEST_CASE(
     init_tet_ring(mesh);
     REQUIRE(mesh.m_feature_point_attribute.size() == 0);
 
-    mesh.enable_feature_point_tracking(/*preserve=*/true);
+    mesh.enable_feature_point_tracking();
     const size_t cap0 = mesh.vert_storage_capacity();
     REQUIRE(cap0 > 0);
     REQUIRE(mesh.m_feature_point_attribute.size() == cap0);
@@ -258,9 +259,7 @@ TEST_CASE(
         CHECK(mesh.m_feature_point_attribute[i].m_feature_point_id == Mesh::NO_FEATURE_POINT);
     }
 
-    mesh.m_feature_eps = 1e-9;
-    mesh.m_feature_points = {mesh.m_vertex_attribute[2].m_posf};
-    mesh.m_feature_point_attribute[2].m_feature_point_id = 0;
+    REQUIRE(mesh.anchor_feature_point(2, 1e-9));
 
     for (size_t vid = 0; vid < 6; ++vid) mesh.m_vertex_attribute[vid].m_sizing_scalar = 0.3;
     mesh.split_all_edges();
@@ -273,8 +272,7 @@ TEST_CASE(
     // so consolidation has to move its id with it.
     size_t newest = 0;
     for (const auto& v : mesh.get_vertices()) newest = std::max(newest, v.vid(mesh));
-    mesh.m_feature_points.push_back(mesh.m_vertex_attribute[newest].m_posf);
-    mesh.m_feature_point_attribute[newest].m_feature_point_id = 1;
+    REQUIRE(mesh.anchor_feature_point(newest, 1e-9));
     for (const auto& v : mesh.get_vertices()) {
         mesh.m_vertex_attribute[v.vid(mesh)].m_sizing_scalar = 4.;
     }
@@ -299,7 +297,7 @@ TEST_CASE("feature-point tracking enabled after init (2D)", "[simwild][feature_t
     init_quad(mesh);
     REQUIRE(mesh.m_feature_point_attribute.size() == 0);
 
-    mesh.enable_feature_point_tracking(/*preserve=*/true);
+    mesh.enable_feature_point_tracking();
     const size_t cap0 = mesh.vert_storage_capacity();
     REQUIRE(cap0 > 0);
     REQUIRE(mesh.m_feature_point_attribute.size() == cap0);
@@ -307,9 +305,7 @@ TEST_CASE("feature-point tracking enabled after init (2D)", "[simwild][feature_t
         CHECK(mesh.m_feature_point_attribute[i].m_feature_point_id == Mesh::NO_FEATURE_POINT);
     }
 
-    mesh.m_feature_eps = 1e-9;
-    mesh.m_feature_points = {mesh.m_vertex_attribute[2].m_posf};
-    mesh.m_feature_point_attribute[2].m_feature_point_id = 0;
+    REQUIRE(mesh.anchor_feature_point(2, 1e-9));
 
     for (size_t vid = 0; vid < 4; ++vid) mesh.m_vertex_attribute[vid].m_sizing_scalar = 0.25;
     mesh.split_all_edges();
@@ -320,8 +316,7 @@ TEST_CASE("feature-point tracking enabled after init (2D)", "[simwild][feature_t
 
     size_t newest = 0;
     for (const auto& v : mesh.get_vertices()) newest = std::max(newest, v.vid(mesh));
-    mesh.m_feature_points.push_back(mesh.m_vertex_attribute[newest].m_posf);
-    mesh.m_feature_point_attribute[newest].m_feature_point_id = 1;
+    REQUIRE(mesh.anchor_feature_point(newest, 1e-9));
     for (const auto& v : mesh.get_vertices()) {
         mesh.m_vertex_attribute[v.vid(mesh)].m_sizing_scalar = 4.;
     }
@@ -420,7 +415,7 @@ TEST_CASE(
         // Before init() the calls run as they always did, and init() sizes the collections.
         HookedTetMesh mesh(params, params.eps, 0);
         mesh.enable_feature_edge_tracking();
-        mesh.enable_feature_point_tracking(true);
+        mesh.enable_feature_point_tracking();
         init_tet_ring(mesh);
         CHECK(mesh.m_feature_edge_attribute.size() == 6 * mesh.tet_storage_capacity());
         CHECK(mesh.m_feature_point_attribute.size() == mesh.vert_storage_capacity());
@@ -433,7 +428,7 @@ TEST_CASE(
     const std::vector<std::function<void(HookedTetMesh&)>> calls = {
         [&](HookedTetMesh& m) { m.add_edge_attributes(&extra); },
         [](HookedTetMesh& m) { m.enable_feature_edge_tracking(); },
-        [](HookedTetMesh& m) { m.enable_feature_point_tracking(true); }};
+        [](HookedTetMesh& m) { m.enable_feature_point_tracking(); }};
     for (size_t c = 0; c < calls.size(); ++c) {
         CAPTURE(c);
         for (const bool colored : {false, true}) {
@@ -452,7 +447,7 @@ TEST_CASE(
 
     {
         HookedTriMesh mesh(params, params.eps, 0);
-        mesh.enable_feature_point_tracking(true);
+        mesh.enable_feature_point_tracking();
         init_quad(mesh);
         CHECK(mesh.m_feature_point_attribute.size() == mesh.vert_storage_capacity());
         for (size_t i = 0; i < mesh.m_feature_point_attribute.size(); ++i) {
@@ -465,7 +460,7 @@ TEST_CASE(
         for (size_t vid = 0; vid < 4; ++vid) m.m_vertex_attribute[vid].m_sizing_scalar = 0.25;
     };
     const std::function<void(HookedTriMesh&)> call = [](HookedTriMesh& m) {
-        m.enable_feature_point_tracking(true);
+        m.enable_feature_point_tracking();
     };
     for (const bool colored : {false, true}) {
         check_refused_during_pass<HookedTriMesh>(call, colored, params, init);

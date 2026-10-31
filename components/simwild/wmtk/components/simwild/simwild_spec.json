@@ -12,6 +12,8 @@
       "input_type",
       "input_transform",
       "input_dir",
+      "input_edges",
+      "input_points",
       "skip_simplify",
       "tag_from_winding_number",
       "split_connected_components",
@@ -27,6 +29,7 @@
       "simplify_boundary_envelope",
       "remove_duplicate_eps",
       "order2_envelope_ratio",
+      "feature_envelope_ratio",
       "length",
       "length_rel",
       "sizing_field",
@@ -121,14 +124,14 @@
   {
     "pointer": "/input_type",
     "type": "list",
-    "doc": "One entry per input, saying what its tag marks. 'volume': the input encloses a volume, and the tets inside it get its name as a tag. 'surface': the input stays a surface, and the embedded faces on it get its name as a face tag. Empty (the default): every input is a volume. 3D surface inputs only.",
+    "doc": "One entry per input, saying what its tag marks. 'volume': the input encloses a volume (in 2D, a region), and the tets (in 2D, the triangles) inside it get its name as a tag. 'surface' (3D only): the input stays a surface, and the embedded faces on it get its name as a face tag. 'curve' (2D only): the input stays a curve, open or closed, and the arrangement's edges on it get its name as an edge tag, written as the edge block of the output mesh. 'surface' and 'curve' need tag_from_winding_number, and 'surface' needs split_connected_components off. Empty (the default): every input is a volume. Applies to surface and curve inputs, not to a tagged mesh input.",
     "default": []
   },
   {
     "pointer": "/input_type/*",
     "type": "string",
-    "options": ["volume", "surface"],
-    "doc": "What that input's tag marks: the tets it encloses, or the faces on it."
+    "options": ["volume", "surface", "curve"],
+    "doc": "What that input's tag marks: the tets (2D: triangles) it encloses, the faces on it (3D only), or the edges on it (2D only)."
   },
   {
     "pointer": "/operation",
@@ -180,6 +183,28 @@
     "type": "string",
     "default": "",
     "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
+  },
+  {
+    "pointer": "/input_edges",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). input_transform does not apply to them. The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the box is grown over them automatically, and with it the bounding box eps and the lengths are relative to. The optimization preserves them: the tet edges tiling them stay inside a tube of feature_envelope_ratio x eps around the input edges, and every vertex where they end or three or more meet is anchored within that radius. Read and held by the same code as tetwild's input_edges."
+  },
+  {
+    "pointer": "/input_edges/*",
+    "type": "string",
+    "doc": "One input feature edge mesh."
+  },
+  {
+    "pointer": "/input_points",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature POINT files, 3D surface inputs and 2D curve inputs (a .msh input and a tagged mesh refuse them): every vertex of each file is forced into the mesh as a vertex, exactly -- a tet vertex in 3D, a vertex of the curve arrangement in 2D, where only x and y are used (edges in these files are ignored, with a warning). input_transform does not apply to them, and they grow the background box as /input_edges do (in 2D the arrangement's box covers them). The optimization keeps a vertex within feature_envelope_ratio x eps of each, the smaller order2_envelope_ratio x eps where the point is on an order-2 edge (in 2D, at a vertex where a tracked curve ends or three or more meet). Read by the same code as tetwild's input_points, and held by the same anchors as tetwild's (3D) and triwild's (2D)."
+  },
+  {
+    "pointer": "/input_points/*",
+    "type": "string",
+    "doc": "One input feature point file (only the vertices are used)."
   },
   {
     "pointer": "/skip_simplify",
@@ -268,8 +293,14 @@
   {
     "pointer": "/order2_envelope_ratio",
     "type": "float",
-    "default": 0.5,
-    "doc": "Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface. Kept below 1 deliberately, unlike the surface envelope which uses the full eps. The two are not symmetric: on the surface a wider envelope REMOVES a constraint that was blocking collapses, whereas a boundary curve has no such blockage to relieve, so the extra room is only freedom for the boundary to wander within eps -- more geometry to resolve at the same final quality. Measured in tetwild on Thingi10K 36075 at stop_energy 5: 14 iterations and 31125 tets at 0.5, against 24 iterations and 41463 tets at 1.0, both converging to a max energy of about 4.95. 1.0 gives the boundary curves the full eps."
+    "default": 1.0,
+    "doc": "Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface and its non-manifold edges -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet. The tube is built around the order-2 edges as the insertion leaves them. When the simplification before insertion runs (preserve_topology false, skip_simplify false), it may already have moved an open boundary by up to order2_envelope_ratio x eps_simplify (see simplify_boundary_envelope), and the boundary then stays within order2_envelope_ratio x (eps + eps_simplify) of the input's; otherwise -- skip_simplify, or preserve_topology, whose simplification after insertion runs inside the tube -- within order2_envelope_ratio x eps. In 2D, the radius of the anchors where the region borders end or three or more meet. A 2026-10 sweep (13 tetwild integration configs with open boundaries; ratio 0.25, 0.5, 0.75 and 1.0, each at eps x0.99, x1 and x1.01) found no advantage below 1: 7 configs give identical output at every ratio, Thingi10K 111388 gives the fewest tets at 1.0 (27-28k, against 30-31k at 0.5) and the most at 0.25 (28-44k), and the others differ by less than the 1% eps perturbation does. The earlier case for 0.5 (Thingi10K 36075, 14 against 24 iterations) does not reproduce: that model now gives identical output at every ratio."
+  },
+  {
+    "pointer": "/feature_envelope_ratio",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge (/input_edges) must stay inside -- and the radius of the feature anchors (the /input_points, and the vertices where feature curves end or three or more meet), as a fraction of the surface envelope's eps. Where an anchor is also on an order-2 edge the smaller order2_envelope_ratio radius holds it. The default 1 holds them to the same eps as the surface: the tube is built around the input feature curves themselves. Unused without /input_edges and /input_points."
   },
   {
     "pointer": "/length",

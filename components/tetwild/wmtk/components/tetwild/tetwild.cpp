@@ -35,6 +35,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 #include <wmtk/utils/EnvelopeBudget.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -163,8 +164,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.lr = json_params["length_rel"];
     params.order2_envelope_ratio = json_params["order2_envelope_ratio"];
     params.feature_envelope_ratio = json_params["feature_envelope_ratio"];
-    params.preserve_feature_points = json_params["preserve_feature_points"];
-    params.allow_junction_cleanup = json_params["allow_junction_cleanup"];
     params.stop_energy = json_params["stop_energy"];
     params.split_high_valence_threshold = json_params["split_high_valence_threshold"];
     params.num_smoothing_passes = json_params["num_smoothing_passes"];
@@ -217,6 +216,14 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.skip_good_regions = json_params["skip_good_regions"];
     params.skip_good_regions_margin = json_params["skip_good_regions_margin"];
 
+    // The legacy optimizer carries no curve tags: the feature curves and points would leave the
+    // output without a word (mesh_improvement_legacy() re-tags the open boundaries only).
+    if (json_params["use_legacy_code"] &&
+        (!json_params["input_edges"].empty() || !json_params["input_points"].empty())) {
+        log_and_throw_error(
+            "input_edges and input_points: not with use_legacy_code, which "
+            "carries no feature curves or points");
+    }
     // Recording the tracked surface: from the input files as read, through the weld, the
     // simplification and the insertion, to the output.
     const std::string history_output = json_params["history_output"];
@@ -309,110 +316,16 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // points to force in as tet vertices. Both join the bounding box BEFORE eps and the
     // background box derive from it -- they are input geometry, and a feature outside the
     // surface's box must still land inside the triangulated domain.
-    std::vector<Vector3d> feature_edge_vertices;
-    std::vector<std::array<size_t, 2>> feature_edges;
-    std::vector<Vector3d> feature_points;
-    {
-        std::vector<std::string> edge_paths = json_params["input_edges"];
-        std::vector<std::string> point_paths = json_params["input_points"];
-        for (std::string& p : edge_paths) {
-            p = component_io.path(root, p);
-        }
-        for (std::string& p : point_paths) {
-            p = component_io.path(root, p);
-        }
-        for (size_t file = 0; file < edge_paths.size(); ++file) {
-            const std::string& path = edge_paths[file];
-            MatrixXd Ve;
-            MatrixXi Ee;
-            component_io.edges(path, Ve, Ee);
-            logger()
-                .info("Read feature edge mesh {}: #V = {}, #E = {}", path, Ve.rows(), Ee.rows());
-            const size_t base = feature_edge_vertices.size();
-            for (int i = 0; i < Ve.rows(); ++i) {
-                feature_edge_vertices.emplace_back(Ve.row(i));
-            }
-            for (int i = 0; i < Ee.rows(); ++i) {
-                feature_edges.push_back({{base + size_t(Ee(i, 0)), base + size_t(Ee(i, 1))}});
-            }
-            // A vertex of an edge file with no incident edge is a free point, same rule as
-            // triwild's 2D inputs.
-            std::vector<int> valence(Ve.rows(), 0);
-            for (int i = 0; i < Ee.rows(); ++i) {
-                ++valence[Ee(i, 0)];
-                ++valence[Ee(i, 1)];
-            }
-            for (int v = 0; v < Ve.rows(); ++v) {
-                if (valence[v] == 0) {
-                    feature_points.emplace_back(Ve.row(v));
-                }
-            }
-        }
-        for (const std::string& path : point_paths) {
-            MatrixXd Vp;
-            MatrixXi Ep;
-            component_io.edges(path, Vp, Ep);
-            if (Ep.rows() > 0) {
-                logger().warn(
-                    "input_points file {} has {} edges; only its {} vertices are used",
-                    path,
-                    Ep.rows(),
-                    Vp.rows());
-            }
-            logger().info("Read feature point file {}: #P = {}", path, Vp.rows());
-            for (int i = 0; i < Vp.rows(); ++i) {
-                feature_points.emplace_back(Vp.row(i));
-            }
-        }
-        for (const Vector3d& p : feature_edge_vertices) {
-            box_minmax.first = box_minmax.first.cwiseMin(p);
-            box_minmax.second = box_minmax.second.cwiseMax(p);
-        }
-        for (const Vector3d& p : feature_points) {
-            box_minmax.first = box_minmax.first.cwiseMin(p);
-            box_minmax.second = box_minmax.second.cwiseMax(p);
-        }
-    }
-
-    // The 0-dimensional features to anchor: every input point, and the feature network's
-    // endpoints (valence 1) -- junctions (valence >= 3) too when allow_junction_cleanup is
-    // off. Valence 2 is a curve interior: never anchored, the tube handles it.
-    // Anchors are REGISTERED unconditionally; preserve_feature_points gates only the
-    // collapse and smoothing policy. Same split as triwild, and it keeps the retention
-    // audit honest when the guard is off -- it reports 0/N instead of nothing to check.
-    std::vector<Vector3d> feature_anchors;
-    {
-        feature_anchors = feature_points;
-        std::vector<int> valence(feature_edge_vertices.size(), 0);
-        for (const auto& e : feature_edges) {
-            ++valence[e[0]];
-            ++valence[e[1]];
-        }
-        size_t n_endpoints = 0, n_junctions = 0;
-        for (size_t v = 0; v < feature_edge_vertices.size(); ++v) {
-            if (valence[v] == 0 || valence[v] == 2) {
-                continue;
-            }
-            if (valence[v] == 1) {
-                ++n_endpoints;
-            } else {
-                ++n_junctions;
-                if (params.allow_junction_cleanup) {
-                    continue;
-                }
-            }
-            feature_anchors.push_back(feature_edge_vertices[v]);
-        }
-        if (n_endpoints + n_junctions > 0) {
-            logger().info(
-                "feature anchors: {} curve endpoints, {} junctions; anchoring {} points in "
-                "total (junction cleanup {})",
-                n_endpoints,
-                n_junctions,
-                feature_anchors.size(),
-                params.allow_junction_cleanup ? "on" : "off");
-        }
-    }
+    // Read and grown over by the shared code simwild uses too (utils::read_feature_inputs()).
+    const utils::FeatureInputs features = utils::read_feature_inputs(
+        component_io,
+        root,
+        json_params["input_edges"],
+        json_params["input_points"]);
+    features.extend_bbox(box_minmax.first, box_minmax.second);
+    const std::vector<Vector3d>& feature_edge_vertices = features.edge_vertices;
+    const std::vector<std::array<size_t, 2>>& feature_edges = features.edges;
+    const std::vector<Vector3d>& feature_points = features.points;
 
     t_load = phase_timer.getElapsedTime();
     phase_timer.start(); // surface simplification begins
@@ -488,7 +401,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // envelope and scaled the same way: order2_envelope_ratio of the surface eps, and of that
     // simplify_envelope_ratio, for the same headroom reason as above. The optimizer's tube is
     // built around the boundary it is handed, so a boundary drifts at most
-    // (simplify_envelope_ratio + 1) * order2_envelope_ratio * eps in all -- 0.75 eps at the
+    // (simplify_envelope_ratio + 1) * order2_envelope_ratio * eps in all -- 1.5 eps at the
     // defaults.
     //
     // Not under preserve_topology: a hole narrower than the tube closes.
@@ -872,19 +785,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // The feature-curve tube: what the collapse guard checks tagged edges against, and what
     // curve-vertex smoothing will be pulled toward. Around the ORIGINAL input feature edges,
     // like every other envelope. Follows the surface envelope's choice of predicate.
-    if (!feature_edges.empty()) {
-        std::vector<Eigen::Vector2i> fe_env(feature_edges.size());
-        for (size_t i = 0; i < feature_edges.size(); ++i) {
-            fe_env[i] = Eigen::Vector2i(int(feature_edges[i][0]), int(feature_edges[i][1]));
-        }
-        mesh_new.m_feature_envelope = std::make_shared<Envelope>(!use_sample_envelope);
-        mesh_new.m_feature_envelope->init(
-            feature_edge_vertices,
-            fe_env,
-            params.epsr * params.diag_l * params.feature_envelope_ratio);
-    }
-    // The anchor ball has the tube's radius; input_points-only runs need it too.
-    mesh_new.m_feature_eps = params.epsr * params.diag_l * params.feature_envelope_ratio;
+    mesh_new.init_feature_envelope(
+        feature_edge_vertices,
+        feature_edges,
+        params.epsr * params.diag_l * params.feature_envelope_ratio,
+        !use_sample_envelope);
     mesh_new.init_from_Volumeremesher(
         v_rational,
         facets,
@@ -893,7 +798,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         tet_face_on_input_surface,
         &tet_face_orientation,
         has_features ? &features_out : nullptr,
-        has_features && !feature_anchors.empty() ? &feature_anchors : nullptr,
         input_envelopes.empty() ? nullptr : &facet_input_set);
     mesh_new.m_input_envelopes.set(std::move(input_envelopes));
 
@@ -987,6 +891,17 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.mesh_improvement_legacy(max_its);
     } else {
         mesh_new.mesh_improvement(max_its);
+        // The open-boundary guarantee, audited: every edge still carrying the order2 tag lies in
+        // its tube (tag_order2_edges()). Edges the operations made open carry no tag and are not
+        // counted. Not after the legacy optimizer: it rebuilds the mesh, whose open boundaries are
+        // tagged again from its output, so there is no input tube to audit against.
+        const size_t n_out =
+            mesh_new.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::order2);
+        if (n_out > 0) {
+            logger().warn("{} order-2 edges outside their tube", n_out);
+        } else {
+            logger().info("order-2 edges outside their tube: 0");
+        }
     }
     log_orientation_check("after optimization");
     t_optimize = phase_timer.getElapsedTime(); // optimization done
@@ -1021,7 +936,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     const bool features_present = !feature_edges.empty() || !feature_points.empty();
     if (features_present) {
         for (const auto& e : mesh_new.get_edges()) {
-            if (!mesh_new.m_feature_edge_attribute[e.eid(mesh_new)].m_is_feature_edge) {
+            if (!mesh_new.m_feature_edge_attribute[e.eid(mesh_new)].has(
+                    TetWildMesh::FeatureEdgeAttributes::feature)) {
                 continue;
             }
             hybrid_curve_segs.push_back(

@@ -46,6 +46,18 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
         mesh.set_sizing_field(json_params["sizing_field"]);
         mesh.set_quality_field(json_params["quality_field"]);
         mesh.mesh_improvement(json_params["max_iterations"]); // <-- tetwild
+        if constexpr (std::is_same_v<MeshT, SimWildMesh>) {
+            // The order-2 guarantee, audited: every edge still carrying the input's order-2 tag
+            // lies in its tube (tag_order2_edges()). Edges the operations made order-2 carry no
+            // tag and are not counted.
+            const size_t n_out =
+                mesh.tagged_edges_outside(SimWildMesh::FeatureEdgeAttributes::order2);
+            if (n_out > 0) {
+                logger().warn("{} order-2 edges outside their tube", n_out);
+            } else {
+                logger().info("order-2 edges outside their tube: 0");
+            }
+        }
     } else if (operation == "fill_holes_topo") {
         const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
         std::vector<CellTag> fill_holes_tags;
@@ -236,7 +248,9 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.tag_names,
             input_data.F_tagged,
             input_data.F_tags,
-            input_data.face_tag_names);
+            input_data.face_tag_names,
+            input_data.features.empty() ? nullptr : &input_data.features,
+            &input_data.features_placed);
     } else {
         logger().warn("Use RATIONAL input for TetWild");
         mesh.init_from_image(
@@ -246,7 +260,9 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.tag_names,
             input_data.F_tagged,
             input_data.F_tags,
-            input_data.face_tag_names);
+            input_data.face_tag_names,
+            input_data.features.empty() ? nullptr : &input_data.features,
+            &input_data.features_placed);
     }
 
     auto write_unique_vtu = [&params, &mesh]() {
@@ -272,7 +288,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             CellType::Tetrahedron,
             mesh.get_tets(),
             [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
-        io::collect_face_tags(mesh, outputs, mesh.m_face_tag_names);
+        io::collect_input_set_tags<CellType::Triangle>(mesh, outputs, mesh.m_face_tag_names);
         return outputs;
     };
 
@@ -418,20 +434,28 @@ void run_2D(
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
+        mesh.m_E_envelope_labels = input_data.F_envelope_labels;
     }
+    mesh.m_input_point_vids = input_data.input_point_vids;
     if (input_data.V_input_r.size() == 0) {
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
     } else {
         logger().warn("Use RATIONAL input for 2D");
         mesh.init_from_image(
             input_data.V_input_r,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
     }
 
     auto write_unique_vtu = [&params, &mesh]() {
@@ -497,6 +521,11 @@ void run_2D(
             CellType::Triangle,
             mesh.get_faces(),
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
+        // The curve inputs' edges, tagged by name, as the edge block of the mesh.
+        io::collect_input_set_tags<CellType::Edge>(
+            mesh,
+            component_io.result.first,
+            mesh.m_edge_tag_names);
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
@@ -559,7 +588,21 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (dimension != 0 && !envelope_selector.is_null()) {
         log_and_throw_error("`envelope` applies to tagged mesh inputs only");
     }
+    // The feature curves and points (input_edges, input_points) are forced into the mesh by the
+    // insertion: curves and points by the 3D surface insertion, points by the 2D curve
+    // arrangement. The other routes refuse them rather than drop them.
+    const bool has_features =
+        !json_params["input_edges"].empty() || !json_params["input_points"].empty();
+    const auto no_features = [&](const char* route) {
+        if (has_features) {
+            log_and_throw_error(
+                "input_edges and input_points apply to inserted inputs only (input_edges to 3D "
+                "surface inputs, input_points to 3D surface and 2D curve inputs), not to {}",
+                route);
+        }
+    };
     if (component_io.memory() && dimension == 0) {
+        no_features("a tagged mesh");
         // Label images become regions here as on the file route (read_image_msh).
         MeshData input = component_io.mesh(input_paths.at(0));
         tags_from_label_images(input, input_paths.at(0));
@@ -567,19 +610,37 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input,
             !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr);
     } else if (!component_io.memory() && extension == ".msh") {
+        no_features("a .msh input");
         input_data = read_image_msh(input_paths[0]);
     } else if (dimension == 2) {
+        if (!json_params["input_edges"].empty()) {
+            log_and_throw_error("input_edges apply to 3D surface inputs only, not to a 2D input");
+        }
+        // Read by the code the 3D route reads them with; only their x and y are used.
+        const utils::FeatureInputs features = utils::read_feature_inputs(
+            component_io,
+            root,
+            nlohmann::json::array(),
+            json_params["input_points"]);
         input_data = read_curves(
             input_paths,
             output_filename.string(),
             json_params,
-            component_io.memory() ? &component_io : nullptr);
+            component_io.memory() ? &component_io : nullptr,
+            &features);
     } else {
+        // Read by the code tetwild reads them with.
+        const utils::FeatureInputs features = utils::read_feature_inputs(
+            component_io,
+            root,
+            json_params["input_edges"],
+            json_params["input_points"]);
         input_data = read_mesh(
             input_paths,
             output_filename.string(),
             json_params,
-            component_io.memory() ? &component_io : nullptr);
+            component_io.memory() ? &component_io : nullptr,
+            &features);
     }
 
     if (input_data.T_input.cols() == 4) {

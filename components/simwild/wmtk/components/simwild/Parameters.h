@@ -34,10 +34,14 @@ struct Parameters : public wmtk::OptimizerParameters
 
 
     double epsr_simplify = 2e-4; // relative error bound (wrt diagonal) for simplification
-    /// Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the
-    /// surface envelope's. Deliberately below 1 where the surface envelope uses the full eps;
-    /// see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5.
-    double order2_envelope_ratio = 0.5;
+    /// Order-2 (open boundary / non-manifold edge) tube thickness, as a fraction of the surface
+    /// envelope's eps. 1: the tube's half-width is eps, as the surface envelope's; it is built
+    /// around the simplified boundary, whose own share adds on top. See /order2_envelope_ratio in
+    /// the spec for that bound and the sweep behind the default.
+    double order2_envelope_ratio = 1.0;
+    /// Feature-curve tube thickness, and the radius of the input points' anchors, as a fraction
+    /// of eps. 1, as order2_envelope_ratio; tetwild's parameter of the same name.
+    double feature_envelope_ratio = 1.0;
     double eps_simplify = -1.; // absolute error bound for simplification
     VectorXd box_min;
     VectorXd box_max;
@@ -81,6 +85,7 @@ struct Parameters : public wmtk::OptimizerParameters
 
         epsr_simplify = json_params["eps_simplify_rel"];
         order2_envelope_ratio = json_params["order2_envelope_ratio"];
+        feature_envelope_ratio = json_params["feature_envelope_ratio"];
         eps_simplify = json_params["eps_simplify"];
 
         w_amips = json_params["w_amips"];

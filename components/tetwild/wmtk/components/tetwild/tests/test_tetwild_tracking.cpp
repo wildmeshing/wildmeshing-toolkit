@@ -410,6 +410,31 @@ TEST_CASE("tetwild-volume-history-refusals", "[tetwild][tracking]")
     CHECK_FALSE(fs::exists(output.string() + ".wmtkvol"));
 }
 
+TEST_CASE("tetwild-refuses-features-with-legacy-code", "[tetwild][features]")
+{
+    // The legacy optimizer carries no curve tags, so feature curves and points given with it would
+    // leave the output without a word: refused before anything is read or written, as the volume
+    // history is above.
+    const fs::path dir = fs::current_path() / "tetwild_legacy_feature_refusal";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+    const std::string sphere = (fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj").string();
+    for (const char* key : {"input_points", "input_edges"}) {
+        CAPTURE(key);
+        const nlohmann::json j = {
+            {"application", "tetwild"},
+            {"input", {sphere}},
+            {key, {sphere}},
+            {"output", (dir / "out").string()},
+            {"use_legacy_code", true},
+            {"max_iterations", 1},
+            {"write_vtu", false},
+        };
+        CHECK_THROWS_AS(tetwild::tetwild(j), std::runtime_error);
+        CHECK_FALSE(fs::exists((dir / "out_final.msh").string()));
+    }
+}
+
 TEST_CASE("tetwild-volume-history-memory-route", "[tetwild][tracking]" + release_only)
 {
     // On the memory route the volume history comes back in the report, as the bytes of its file,

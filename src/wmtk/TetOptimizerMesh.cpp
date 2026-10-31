@@ -7,6 +7,7 @@
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/utils/EmbedTriangles.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
@@ -756,7 +757,9 @@ std::vector<std::array<size_t, 2>> TetOptimizerMesh::tracked_feature_edges() con
     std::vector<std::array<size_t, 2>> out;
     if (!m_track_feature_edges) return out;
     for (const Tuple& e : get_edges()) {
-        if (!m_feature_edge_attribute.at(e.eid(*this)).m_is_feature_edge) continue;
+        if (!m_feature_edge_attribute.at(e.eid(*this)).has(FeatureEdgeAttributes::feature)) {
+            continue;
+        }
         const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
         // An edge of a tracked face: a tet at it with a tracked face holding both ends.
         bool on_surface = false;
@@ -1123,11 +1126,174 @@ bool TetOptimizerMesh::vertex_has_feature_edge(const size_t vid) const
 {
     for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
         const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+        if (e.is_valid(*this) &&
+            m_feature_edge_attribute[e.eid(*this)].has(FeatureEdgeAttributes::feature)) {
             return true;
         }
     }
     return false;
+}
+
+bool TetOptimizerMesh::vertex_has_tagged_edge(const size_t vid) const
+{
+    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+        const Tuple e = tuple_from_edge({{vid, u}});
+        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].is_tagged()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool TetOptimizerMesh::vertex_has_edge_of_kind(
+    const size_t vid,
+    const FeatureEdgeAttributes::Kind k) const
+{
+    if (!m_track_feature_edges) return false;
+    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+        const Tuple e = tuple_from_edge({{vid, u}});
+        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].has(k)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::shared_ptr<Envelope> TetOptimizerMesh::tagged_edge_pull_envelope(const size_t vid) const
+{
+    if (!m_track_feature_edges) return nullptr;
+    // One walk of the one-ring for both kinds: this runs for every vertex every smoothing pass.
+    uint8_t kinds = 0;
+    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+        const Tuple e = tuple_from_edge({{vid, u}});
+        if (e.is_valid(*this)) kinds |= m_feature_edge_attribute[e.eid(*this)].m_kinds;
+    }
+    if ((kinds & FeatureEdgeAttributes::feature) && m_feature_envelope) {
+        return m_feature_envelope;
+    }
+    if ((kinds & FeatureEdgeAttributes::order2) && m_order2_edge_envelope &&
+        m_order2_edge_envelope->initialized()) {
+        return m_order2_edge_envelope;
+    }
+    return nullptr;
+}
+
+void TetOptimizerMesh::init_feature_envelope(
+    const std::vector<Vector3d>& V,
+    const std::vector<std::array<size_t, 2>>& E,
+    const double eps,
+    const bool exact)
+{
+    if (E.empty()) return;
+    std::vector<Eigen::Vector2i> fe_env(E.size());
+    for (size_t i = 0; i < E.size(); ++i) {
+        fe_env[i] = Eigen::Vector2i(int(E[i][0]), int(E[i][1]));
+    }
+    m_feature_envelope = std::make_shared<Envelope>(exact);
+    m_feature_envelope->init(V, fe_env, eps);
+}
+
+size_t TetOptimizerMesh::tag_feature_edges(const utils::EmbedFeaturesResult& placed)
+{
+    if (placed.edge_tiling.empty()) return 0;
+    enable_feature_edge_tracking();
+    size_t n_tagged = 0;
+    for (size_t e = 0; e < placed.edge_tiling.size(); ++e) {
+        for (const auto& seg : placed.edge_tiling[e]) {
+            const Tuple t = tuple_from_edge({{seg[0], seg[1]}});
+            if (!t.is_valid(*this)) {
+                log_and_throw_error(
+                    "Feature tiling edge ({}, {}) is not an edge of the initial mesh",
+                    seg[0],
+                    seg[1]);
+            }
+            m_feature_edge_attribute[t.eid(*this)].add(FeatureEdgeAttributes::feature);
+            ++n_tagged;
+        }
+    }
+    logger().info(
+        "feature tags: {} tet edges tagged across {} input edges",
+        n_tagged,
+        placed.edge_tiling.size());
+    return n_tagged;
+}
+
+size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
+{
+    // Tracked faces per edge, each face visited once, at the tet that owns it, and each edge
+    // counted under its own id: the mesh is at its largest here, so nothing is materialised.
+    std::vector<int> n_faces(6 * tet_capacity(), 0);
+    for (size_t t = 0; t < tet_capacity(); ++t) {
+        if (!tuple_from_tet(t).is_valid(*this)) continue;
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(t, j);
+            if (f.fid(*this) != 4 * t + j) continue; // a lower tet owns this face
+            if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+            ++n_faces[f.eid(*this)];
+            ++n_faces[f.switch_edge(*this).eid(*this)];
+            ++n_faces[f.switch_vertex(*this).switch_edge(*this).eid(*this)];
+        }
+    }
+    std::vector<size_t> eids;
+    std::vector<Eigen::Vector2i> edges;
+    for (size_t t = 0; t < tet_capacity(); ++t) {
+        if (!tuple_from_tet(t).is_valid(*this)) continue;
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(t, j);
+            const size_t eid = e.eid(*this);
+            if (eid != 6 * t + j) continue; // a lower tet owns this edge
+            if (!holds_order2_edge(n_faces[eid])) continue;
+            eids.push_back(eid);
+            edges.emplace_back(e.vid(*this), e.switch_vertex(*this).vid(*this));
+        }
+    }
+    if (eids.empty()) return 0;
+
+    enable_feature_edge_tracking();
+    for (const size_t eid : eids) m_feature_edge_attribute[eid].add(FeatureEdgeAttributes::order2);
+
+    std::vector<Eigen::Vector3d> v_posf(vert_capacity());
+    for (size_t i = 0; i < vert_capacity(); ++i) v_posf[i] = m_vertex_attribute[i].m_posf;
+    m_order2_edge_envelope = std::make_shared<Envelope>(exact);
+    m_order2_edge_envelope->init(v_posf, edges, eps);
+    return eids.size();
+}
+
+void TetOptimizerMesh::drop_stale_order2_tags(
+    const std::map<std::array<size_t, 2>, uint8_t>& cache,
+    const size_t v_old,
+    const size_t v_new)
+{
+    for (const auto& [pair, kinds] : cache) {
+        if ((kinds & FeatureEdgeAttributes::order2) == 0) continue;
+        std::array<size_t, 2> p = pair;
+        for (size_t& v : p) {
+            if (v == v_old) v = v_new;
+        }
+        if (p[0] == p[1]) continue; // the collapsed edge itself
+        const Tuple e = tuple_from_edge(p);
+        if (!e.is_valid(*this)) continue;
+        auto& attr = m_feature_edge_attribute[e.eid(*this)];
+        if (attr.has(FeatureEdgeAttributes::order2) &&
+            !holds_order2_edge(get_num_surface_faces_for_edge(p))) {
+            attr.remove(FeatureEdgeAttributes::order2);
+        }
+    }
+}
+
+size_t TetOptimizerMesh::tagged_edges_outside(const FeatureEdgeAttributes::Kind k) const
+{
+    const Envelope* env = tagged_edge_envelope(k);
+    if (!m_track_feature_edges || !env) return 0;
+    size_t n = 0;
+    for (const Tuple& e : get_edges()) {
+        if (!m_feature_edge_attribute[e.eid(*this)].has(k)) continue;
+        const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+        n += env->is_outside(
+            std::array<Eigen::Vector3d, 2>{
+                {m_vertex_attribute[a].m_posf, m_vertex_attribute[b].m_posf}});
+    }
+    return n;
 }
 
 size_t TetOptimizerMesh::substructure_order_of_edge(const std::array<size_t, 2>& vids) const
@@ -1135,7 +1301,7 @@ size_t TetOptimizerMesh::substructure_order_of_edge(const std::array<size_t, 2>&
     size_t order = TetMesh::substructure_order_of_edge(vids);
     if (order < 2 && m_track_feature_edges) {
         const Tuple e = tuple_from_edge(vids);
-        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].is_tagged()) {
             order = 2;
         }
     }
@@ -1149,7 +1315,7 @@ size_t TetOptimizerMesh::substructure_order_of_vertex(const size_t vid) const
         size_t n_tagged = 0;
         for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
             const Tuple e = tuple_from_edge({{vid, u}});
-            if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+            if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].is_tagged()) {
                 ++n_tagged;
             }
         }
@@ -1170,50 +1336,139 @@ void TetOptimizerMesh::substructure_feature_neighbors(const size_t vid, std::vec
     }
     for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
         const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].is_tagged()) {
             out.push_back(u);
         }
     }
 }
 
+uint8_t TetOptimizerMesh::tagged_edge_leaves_tube(
+    const uint8_t kinds,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b) const
+{
+    for (const auto k : {FeatureEdgeAttributes::feature, FeatureEdgeAttributes::order2}) {
+        if ((kinds & k) == 0) {
+            continue;
+        }
+        const Envelope* env = tagged_edge_envelope(k);
+        if (env && env->is_outside(std::array<Eigen::Vector3d, 2>{{a, b}})) {
+            return k;
+        }
+    }
+    return 0;
+}
+
 bool TetOptimizerMesh::feature_edges_at_vertex_inside(const size_t vid) const
 {
-    if (!m_track_feature_edges || !m_feature_envelope) {
+    if (!m_track_feature_edges || (!m_feature_envelope && !m_order2_edge_envelope)) {
         return true;
     }
     for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
         const Tuple e = tuple_from_edge({{vid, u}});
-        if (!e.is_valid(*this) || !m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+        if (!e.is_valid(*this)) {
             continue;
         }
-        if (m_feature_envelope->is_outside(
-                std::array<Eigen::Vector3d, 2>{
-                    {m_vertex_attribute[vid].m_posf, m_vertex_attribute[u].m_posf}})) {
+        const uint8_t kinds = m_feature_edge_attribute[e.eid(*this)].m_kinds;
+        if (kinds != 0 && tagged_edge_leaves_tube(
+                              kinds,
+                              m_vertex_attribute[vid].m_posf,
+                              m_vertex_attribute[u].m_posf) != 0) {
             return false;
         }
     }
     return true;
 }
 
+bool TetOptimizerMesh::anchor_feature_point(const size_t vid, const double radius)
+{
+    assert(m_track_feature_points);
+    size_t& f = m_feature_point_attribute[vid].m_feature_point_id;
+    if (f != NO_FEATURE_POINT) {
+        m_feature_point_radius[f] = std::min(m_feature_point_radius[f], radius);
+        return false;
+    }
+    f = m_feature_points.size();
+    m_feature_points.push_back(m_vertex_attribute[vid].m_posf);
+    m_feature_point_radius.push_back(radius);
+    return true;
+}
+
+size_t TetOptimizerMesh::anchor_feature_points(
+    const std::vector<size_t>& input_point_vids,
+    const double order2_radius,
+    const double feature_radius)
+{
+    // {vertex, radius}: the curve endpoints and junctions first, then the input points.
+    std::vector<std::pair<size_t, double>> anchors;
+    size_t n_ends = 0, n_junctions = 0;
+    if (m_track_feature_edges) {
+        for (const Tuple& t : get_vertices()) {
+            const size_t vid = t.vid(*this);
+            size_t n_tagged = 0;
+            uint8_t kinds = 0;
+            for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+                const Tuple e = tuple_from_edge({{vid, u}});
+                if (!e.is_valid(*this)) continue;
+                const FeatureEdgeAttributes& a = m_feature_edge_attribute[e.eid(*this)];
+                if (!a.is_tagged()) continue;
+                ++n_tagged;
+                kinds |= a.m_kinds;
+            }
+            if (n_tagged != 1 && n_tagged < 3) continue;
+            ++(n_tagged == 1 ? n_ends : n_junctions);
+            double r = std::numeric_limits<double>::infinity();
+            if (kinds & FeatureEdgeAttributes::order2) r = std::min(r, order2_radius);
+            if (kinds & FeatureEdgeAttributes::feature) r = std::min(r, feature_radius);
+            anchors.emplace_back(vid, r);
+        }
+    }
+    for (const size_t vid : input_point_vids) {
+        if (vid >= vert_capacity()) {
+            log_and_throw_error("Input point vertex id {} out of range", vid);
+        }
+        double r = feature_radius;
+        if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
+            r = std::min(r, order2_radius);
+        }
+        anchors.emplace_back(vid, r);
+    }
+    if (anchors.empty()) return 0;
+
+    enable_feature_point_tracking();
+    size_t n_anchored = 0;
+    for (const auto& [vid, r] : anchors) {
+        n_anchored += anchor_feature_point(vid, r);
+    }
+    logger().info(
+        "feature anchors: {} curve endpoints, {} junctions, {} input points; {} anchored",
+        n_ends,
+        n_junctions,
+        input_point_vids.size(),
+        n_anchored);
+    return n_anchored;
+}
+
 bool TetOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
 {
-    if (!m_preserve_feature_points) return false;
+    if (!m_track_feature_points) return false;
     // v1 disappears into v2, and v2 does not move: the only question is whether v2 still
     // covers the feature v1 stood for. See the 2D twin for why distance is the whole test.
     const size_t f1 = m_feature_point_attribute[v1_id].m_feature_point_id;
     if (f1 == NO_FEATURE_POINT) return false;
-    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
-           m_feature_eps * m_feature_eps;
+    const double r = m_feature_point_radius[f1];
+    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() > r * r;
 }
 
 bool TetOptimizerMesh::feature_point_ball_contains(const size_t vid, const Vector3d& p) const
 {
-    if (!m_preserve_feature_points) return true;
+    if (!m_track_feature_points) return true;
     const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
     if (f == NO_FEATURE_POINT) return true;
-    // A ball, not a pin -- the vertex may move anywhere within m_feature_eps of its
-    // anchor, exactly the freedom the envelope gives everywhere else.
-    return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
+    // A ball, not a pin -- the vertex may move anywhere within the anchor's radius of it,
+    // exactly the freedom the envelope gives everywhere else.
+    const double r = m_feature_point_radius[f];
+    return (p - m_feature_points[f]).squaredNorm() <= r * r;
 }
 
 std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_ratio) const
@@ -1238,14 +1493,15 @@ std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_rati
     const KNN knn(pts);
 
     size_t kept = 0;
-    for (const Vector3d& anchor : m_feature_points) {
+    for (size_t f = 0; f < m_feature_points.size(); ++f) {
         uint32_t idx = 0;
         double sq = 0;
-        knn.nearest_neighbor(anchor, idx, sq);
-        if (sq <= m_feature_eps * m_feature_eps) {
+        knn.nearest_neighbor(m_feature_points[f], idx, sq);
+        const double r = m_feature_point_radius[f];
+        if (sq <= r * r) {
             ++kept;
         } else if (worst_ratio) {
-            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / r);
         }
     }
     return {kept, m_feature_points.size()};
@@ -1254,7 +1510,7 @@ std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_rati
 
 void TetOptimizerMesh::feature_edges_cache(
     const std::vector<size_t>& tids,
-    std::map<std::array<size_t, 2>, bool>& cache)
+    std::map<std::array<size_t, 2>, uint8_t>& cache)
 {
     cache.clear();
     for (const size_t tid : tids) {
@@ -1269,14 +1525,14 @@ void TetOptimizerMesh::feature_edges_cache(
                 continue;
             }
             const size_t eid = tuple_from_edge(tid, local_eid).eid(*this);
-            cache.emplace(pair, m_feature_edge_attribute[eid].m_is_feature_edge);
+            cache.emplace(pair, m_feature_edge_attribute[eid].m_kinds);
         }
     }
 }
 
 void TetOptimizerMesh::feature_edges_restore_region(
     const std::vector<size_t>& tids,
-    const std::map<std::array<size_t, 2>, bool>& cache)
+    const std::map<std::array<size_t, 2>, uint8_t>& cache)
 {
     std::vector<Tuple> tets;
     tets.reserve(tids.size());
@@ -1288,7 +1544,7 @@ void TetOptimizerMesh::feature_edges_restore_region(
 
 void TetOptimizerMesh::feature_edges_restore_region(
     const std::vector<Tuple>& tets,
-    const std::map<std::array<size_t, 2>, bool>& cache)
+    const std::map<std::array<size_t, 2>, uint8_t>& cache)
 {
     for (const Tuple& t : tets) {
         const size_t tid = t.tid(*this);
@@ -1302,21 +1558,21 @@ void TetOptimizerMesh::feature_edges_restore_region(
             const auto it = cache.find(pair);
             // A pair not in the cache is a genuinely new edge: default, never inherit --
             // the slot may be reused and hold a stale value.
-            const bool tag = it != cache.end() && it->second;
+            const uint8_t kinds = it != cache.end() ? it->second : 0;
             const size_t eid = tuple_from_edge(tid, local_eid).eid(*this);
-            m_feature_edge_attribute[eid].m_is_feature_edge = tag;
+            m_feature_edge_attribute[eid].m_kinds = kinds;
         }
     }
 }
 
 bool TetOptimizerMesh::feature_edges_restore_remap(
-    const std::map<std::array<size_t, 2>, bool>& cache,
+    const std::map<std::array<size_t, 2>, uint8_t>& cache,
     const size_t v_old,
     const size_t v_new)
 {
-    // Remap and OR-merge first: (v_old,x) and (v_new,x) become the same pair.
-    std::map<std::array<size_t, 2>, bool> merged;
-    for (const auto& [pair, tag] : cache) {
+    // Remap and OR-merge the kind bits first: (v_old,x) and (v_new,x) become the same pair.
+    std::map<std::array<size_t, 2>, uint8_t> merged;
+    for (const auto& [pair, kinds] : cache) {
         std::array<size_t, 2> p = pair;
         for (size_t& v : p) {
             if (v == v_old) {
@@ -1329,17 +1585,17 @@ bool TetOptimizerMesh::feature_edges_restore_remap(
         if (p[0] > p[1]) {
             std::swap(p[0], p[1]);
         }
-        merged[p] = merged[p] || tag;
+        merged[p] |= kinds;
     }
-    for (const auto& [pair, tag] : merged) {
+    for (const auto& [pair, kinds] : merged) {
         const Tuple t = tuple_from_edge(pair);
         if (!t.is_valid(*this)) {
-            if (tag) {
+            if (kinds != 0) {
                 return false; // a tagged edge vanished; abort, as the face path does
             }
             continue;
         }
-        m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge = tag;
+        m_feature_edge_attribute[t.eid(*this)].m_kinds = kinds;
     }
     return true;
 }

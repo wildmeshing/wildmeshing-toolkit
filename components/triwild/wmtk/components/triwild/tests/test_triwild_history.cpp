@@ -85,12 +85,6 @@ history::CurveHistory history_of(const ComponentResult& r)
     return history::CurveHistory::from_bytes(r.second.at("history").get_binary());
 }
 
-/// The parameters the history recorded.
-nlohmann::json parameters_of(const ComponentResult& r)
-{
-    return nlohmann::json::parse(history_of(r).metadata);
-}
-
 /// A number in [0, 1) from the generator alone: mt19937 gives the same numbers everywhere, but
 /// std::uniform_real_distribution does not -- libstdc++ and libc++ draw them differently -- and
 /// the points mapped here must not depend on the standard library.
@@ -202,17 +196,13 @@ Mapped check_history(const ComponentResult& r, const size_t n_segments)
 
 } // namespace
 
-TEST_CASE("triwild-history-anchors-junctions", "[triwild][tracking]" + release_only)
+TEST_CASE("triwild-history-leaves-the-output-alone", "[triwild][tracking]" + release_only)
 {
-    // Recording anchors junctions -- allow_junction_cleanup defaults to false -- unless the
-    // config gives allow_junction_cleanup, or preserve_feature_points is off: that anchors
-    // nothing, junctions or ends, so recording leaves the option and the output alone.
-    CHECK_FALSE(parameters_of(run({})).at("allow_junction_cleanup").get<bool>());
-    CHECK(parameters_of(run({{"allow_junction_cleanup", true}})).at("allow_junction_cleanup"));
-    const nlohmann::json no_features = {{"preserve_feature_points", false}};
-    const ComponentResult recorded = run(no_features);
-    CHECK(parameters_of(recorded).at("allow_junction_cleanup"));
-    const ComponentResult plain = run(no_features, false);
+    // Recording never changes the meshing: the same config gives the same mesh recorded or
+    // not. Until 2026-10 recording anchored the junctions (allow_junction_cleanup off), so the
+    // two differed unless preserve_feature_points was off.
+    const ComponentResult recorded = run({});
+    const ComponentResult plain = run({}, false);
     CHECK_FALSE(plain.second.contains("history"));
     const MeshData& a = recorded.first.at("mesh");
     const MeshData& b = plain.first.at("mesh");
@@ -309,10 +299,9 @@ TEST_CASE("triwild-history-filters", "[triwild][tracking]" + release_only)
 
 TEST_CASE("triwild-history-free-junctions", "[triwild][tracking]" + release_only)
 {
-    // With allow_junction_cleanup the junctions may slide: the map follows them, a bijection
-    // still under preserve_topology.
-    const ComponentResult r = run({{"allow_junction_cleanup", true}, {"preserve_topology", true}});
-    CHECK(parameters_of(r).at("allow_junction_cleanup"));
+    // The junctions are free to slide: the map follows them, a bijection still under
+    // preserve_topology.
+    const ComponentResult r = run({{"preserve_topology", true}});
     const Mapped m = check_history(r, 400);
     CHECK(m.lost == 0);
     CHECK(m.round_trip < 1e-8);

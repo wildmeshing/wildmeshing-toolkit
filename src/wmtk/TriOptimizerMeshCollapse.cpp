@@ -100,9 +100,8 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
             if (const size_t n = m_feature_rejects.load(); n > 0) {
                 logger().info(
                     "[feature] {} collapses refused to keep a feature point (polyline endpoint, "
-                    "junction, or input free point) within {:.6} of its input position",
-                    n,
-                    m_feature_eps);
+                    "junction, or input free point) within its radius of its input position",
+                    n);
             }
             collapse_pass_end(total_success);
             accepted = total_success;
@@ -173,27 +172,11 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
             return false; // do not collapse away from surface
         }
 
-        if (VA[v1_id].m_is_rounded && get_order_of_vertex(v1_id) > 1 &&
-            get_order_of_vertex(v2_id) <= 1) {
-            /**
-             * In general, we don't want to collapse away from feature vertices. It is always fine
-             * to collapse into a feature vertex, though. However, we allow to feature vertices to
-             * be collapsed.
-             */
-            return false;
-        }
-
-        // if both vertices are on the surface, the collapsing edge should be inside the envelope
-        //
-        // The edge is not tracked, so it covers no input: its own (empty) attributes go to the
-        // hook, and triwild answers an untracked segment with the union, as before -- a
-        // necessary condition where tracked segments are held to their own inputs.
-        const size_t eid = loc.eid(*this);
-        if (VA[v2_id].m_is_on_surface && !m_edge_attribute.at(eid).m_is_surface_fs) {
-            if (surface_segment_is_outside(v1_id, v2_id, m_edge_attribute.at(eid))) {
-                return false;
-            }
-        }
+        // No order rule for the order-2 vertices (a curve's end, where three or more curves
+        // meet): one may collapse into a vertex of a curve, as an order-2 vertex may into a sheet
+        // in 3D. The anchor ball holds the ends (and simwild's junctions), and every segment the
+        // collapse makes is checked against its envelope below. Until 2026-10 a rounded order-2
+        // vertex could collapse only onto order >= 2.
     }
 
     const auto& n1_locs = get_one_ring_fids_for_vertex(loc);
@@ -234,6 +217,21 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         cache.changed_energies.emplace_back(q);
     }
     assert(cache.changed_energies.size() == cache.changed_fids.size());
+
+    // If both vertices are on the surface, the collapsing edge should be inside the envelope.
+    // After the energies, as 3D tests its tubes after quality: the exact segment test is the
+    // expensive one, and a collapse the quality gate refuses never pays for it.
+    //
+    // The edge is not tracked, so it covers no input: its own (empty) attributes go to the
+    // hook, and triwild answers an untracked segment with the union, as before -- a necessary
+    // condition where tracked segments are held to their own inputs.
+    if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
+        const size_t eid = loc.eid(*this);
+        if (!m_edge_attribute.at(eid).m_is_surface_fs &&
+            surface_segment_is_outside(v1_id, v2_id, m_edge_attribute.at(eid))) {
+            return false;
+        }
+    }
 
 
     //

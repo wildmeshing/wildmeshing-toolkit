@@ -46,51 +46,44 @@ public:
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
 
-    /**
-     * @brief One envelope per input curve file, when there are several: a tracked segment is
-     * held to those of its input set (EdgeAttributes::input_set()), m_envelope stays their
-     * union. The 2D twin of TetWildMesh::m_input_envelopes.
-     *
-     * Empty with one input, and then every segment is held to m_envelope as it always was.
-     * Built by init_mesh around the same curves as m_envelope, at the same eps and predicate.
-     */
-    wmtk::InputEnvelopes m_input_envelopes;
-
-    /// A tracked segment's containment: the envelopes of its input set. A segment that is not
-    /// tracked covers no input -- the collapse's chord pre-check asks about one -- and is held
-    /// to the union, as before: a necessary condition for the segments around it.
-    std::shared_ptr<Envelope> surface_envelope_for_edge(
-        const std::array<size_t, 2>& vids,
-        const EdgeAttributes& attr) const override
-    {
-        if (m_input_envelopes.empty() || !attr.m_is_surface_fs) return m_envelope;
-        return m_input_envelopes.containment(attr.input_set());
-    }
-
-    /// The pull toward the inputs of the vertex's own segments, one real envelope at a time:
-    /// the member of their union of input sets the vertex is farthest from. See
-    /// TetWildMesh::smoothing_energy_envelope.
-    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
+    // One envelope per input curve file, when there are several: the base's m_input_envelopes,
+    // built by init_mesh around the same curves as m_envelope, at the same eps and predicate,
+    // one input per file. Empty with one input, and then every segment is held to m_envelope
+    // as it always was. The containment and the pull are the base's defaults.
 
     // The curve network's 0-dimensional features are anchored by the base
-    // (TriOptimizerMesh's feature-point anchors), turned on in the constructor with
-    // m_feature_eps = the envelope eps. init_mesh fills m_feature_points from the
-    // arrangement's constrained edges: a vertex whose valence in that edge set is neither 0
-    // nor 2 is a feature -- valence 1 is an open polyline's endpoint, valence >= 3 a
-    // junction -- plus the input free points. Reading it off the arrangement rather than the
-    // raw input is deliberate: it is the network the optimizer actually starts from, so a
-    // junction the simplification was allowed to merge (which it may, without
-    // preserve_topology) is correctly absent, and no provenance or
-    // position-matching plumbing is needed.
+    // (TriOptimizerMesh::anchor_feature_points()), called by init_mesh once the tracked
+    // segments are set: the open polylines' endpoints this class holds (holds_order2_vertex())
+    // and the input free points, each in a ball of its kind's ratio x m_envelope_eps. Reading
+    // the endpoints off the arrangement rather than the raw input is deliberate: it is the
+    // network the optimizer actually starts from, and no provenance or position-matching
+    // plumbing is needed.
+
+    /**
+     * The polyline endpoints only (1 segment), not the junctions (3 and more).
+     *
+     * The erosion the anchors exist for (see init_mesh) is a property of ENDPOINTS: a polyline
+     * eats its own tip. A junction cannot erode a curve away -- every curve through it stays a
+     * constrained edge and the envelope still holds it within eps -- while anchoring it costs a
+     * great deal, because on a self-intersecting input nearly every arrangement vertex is a
+     * crossing: on 2D model 242427, 79615 of 87610 vertices are junctions, so almost every edge
+     * joins two of them and collapse is refused there. In August 2026 that model never left
+     * MAX_ENERGY with junctions anchored (1e50 for the whole run, the split pass growing it from
+     * 13k to 621k vertices) and converged to 10.48 in 12 iterations with them free; in October
+     * it converged either way but kept 2.6 times the vertices anchored (14257 against 5476,
+     * stop_energy 10, 8 threads). The two models the endpoint guard was introduced for (215292
+     * and 134005) were bit-identical either way. They are the 2D twin of tetwild's non-manifold
+     * edges, which tetwild does not hold either (TetWildMesh::holds_order2_edge()).
+     */
+    bool holds_order2_vertex(const size_t n_segments) const override { return n_segments == 1; }
 
     TriWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : wmtk::TriOptimizerMesh(_m_params)
         , m_tri_params(_m_params)
     {
         // Registered unconditionally, as the ids always were: the driver exports and audits
-        // the anchors whether or not preserve_feature_points turns the policy on.
-        enable_feature_point_tracking(m_tri_params.preserve_feature_points);
-        m_feature_eps = envelope_eps;
+        // the anchors.
+        enable_feature_point_tracking();
         m_envelope_eps = envelope_eps;
         NUM_THREADS = _num_threads;
 
