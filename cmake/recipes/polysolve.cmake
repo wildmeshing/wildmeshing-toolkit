@@ -11,10 +11,14 @@ message(STATUS "Third-party: creating target 'polysolve::polysolve'")
 # set(POLYSOLVE_WITH_ACCELERATE OFF CACHE BOOL "Enable Apple Accelerate" FORCE)
 
 include(CPM)
+# 1b01e6cec1 (polysolve#109) is the Eigen 5 fix, one commit after the previous pin 231f7e8: the
+# old forward declaration that gave Eigen::SparseQR a default ordering named its parameter
+# _MatrixType, and MSVC resolves that default against the parameter names of Eigen's own
+# definition, which Eigen 5 renamed to MatrixType_.
 CPMAddPackage(
     NAME polysolve
     GITHUB_REPOSITORY polyfem/polysolve
-    GIT_TAG 231f7e8ed6fc36aad41f21d9b3bf0cdf7816f78c
+    GIT_TAG 1b01e6cec13c6813ae48846d1f98654bbbf1402b
     OPTIONS
     "POLYSOLVE_WITH_ACCELERATE OFF"
     "POLYSOLVE_WITH_CHOLMOD OFF"
