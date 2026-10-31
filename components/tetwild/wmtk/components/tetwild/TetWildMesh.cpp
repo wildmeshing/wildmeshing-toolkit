@@ -62,20 +62,10 @@ void TetWildMesh::optimization_sanity_checks_extra()
 
 std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
 {
-    // A vertex on an input feature curve is pulled toward the feature tube. Checked FIRST:
-    // the feature is user-supplied where order 2 is derived, so where a vertex is both, the
-    // explicit constraint wins. Both are soft pulls; the hard vetoes (the collapse guard and
-    // the tagged-edge containment in smoothing) are unaffected by this order. Shared with
-    // simwild (feature_pull_envelope()).
-    if (auto feature = feature_pull_envelope(vid)) {
-        return feature;
-    }
-    // A vertex on a held order-2 curve (an edge tagged order2) is pulled toward their tube.
-    // One on an order-2 edge tetwild does not hold -- a non-manifold edge, a rim glued shut --
-    // is pulled toward its inputs like any surface vertex, not toward the nearest open boundary.
-    if (m_order2_edge_envelope && m_order2_edge_envelope->initialized() &&
-        vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
-        return m_order2_edge_envelope;
+    // A vertex on a tagged curve is pulled toward its tube, the feature tube first; shared with
+    // simwild (tagged_edge_pull_envelope()).
+    if (auto tube = tagged_edge_pull_envelope(vid)) {
+        return tube;
     }
     if (m_input_envelopes.empty()) return m_envelope;
     // Several inputs: toward the inputs of the vertex's own faces, one real envelope at a time

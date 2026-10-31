@@ -352,16 +352,21 @@ public:
     /// Does any edge incident to `vid` carry a tag, of any kind? Derived like the above.
     bool vertex_has_tagged_edge(size_t vid) const;
     /**
-     * @brief The tube a vertex with a `feature` edge is pulled toward while smoothing,
-     * m_feature_envelope; null for any other vertex or without the tube.
+     * @brief The tube a vertex on a tagged curve is pulled toward while smoothing: the feature
+     * tube for a vertex with a `feature` edge, else the order-2 tube for one with an `order2`
+     * edge; null for any other vertex, or without the tube.
      *
-     * Asked first by every application's smoothing_energy_envelope(): the feature curves are
-     * user-supplied where order 2 is derived, so where a vertex is on both the explicit
-     * constraint wins. A soft pull; the hard vetoes (the collapse guard, the tagged-edge
-     * containment in smoothing) do not read it. Without it simwild pulled a feature vertex off
-     * the surface toward the surface envelope, whose containment it is never held to.
+     * Asked first by tetwild's and simwild's smoothing_energy_envelope(), so the two pull alike
+     * (test "SimWild 3D matches TetWild's order-2 envelope selection"). The feature curves are
+     * user-supplied where order 2 is derived, so where a vertex is on both the explicit constraint
+     * wins. Keyed on the tags the containment reads, not on the vertex order: a vertex on an
+     * order-2 edge the application does not hold (tetwild's non-manifold edges, a rim glued shut)
+     * is pulled toward its inputs like any surface vertex. A soft pull; the hard vetoes (the
+     * collapse guard, the tagged-edge containment in smoothing) do not read it. Without the feature
+     * half simwild pulled a feature vertex off the surface toward the surface envelope, whose
+     * containment it is never held to.
      */
-    std::shared_ptr<Envelope> feature_pull_envelope(size_t vid) const;
+    std::shared_ptr<Envelope> tagged_edge_pull_envelope(size_t vid) const;
     /// Does any edge incident to `vid` carry kind `k`? False while edge tracking is off.
     bool vertex_has_edge_of_kind(size_t vid, FeatureEdgeAttributes::Kind k) const;
 

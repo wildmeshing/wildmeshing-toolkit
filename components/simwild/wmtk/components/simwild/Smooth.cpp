@@ -4,18 +4,11 @@ namespace wmtk::components::simwild {
 
 std::shared_ptr<Envelope> SimWildMesh::smoothing_energy_envelope(const size_t vid) const
 {
-    // Match TetWild: a vertex on an input feature curve is pulled toward the feature tube first
-    // (feature_pull_envelope()), where it is held; without this one off the surface was pulled
-    // toward the surface envelope.
-    if (auto feature = feature_pull_envelope(vid)) {
-        return feature;
-    }
-    // Match TetWild: a vertex on a held order-2 curve (an edge tagged order2: a surface
-    // boundary, a non-manifold edge, or a junction of them) is pulled toward their tube, the
-    // base's (tag_order2_edges()); the containment that holds it there reads the same tags.
-    if (m_order2_edge_envelope && m_order2_edge_envelope->initialized() &&
-        vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
-        return m_order2_edge_envelope;
+    // A vertex on a tagged curve is pulled toward its tube, the feature tube first, as tetwild
+    // pulls (tagged_edge_pull_envelope()); the containment that holds it there reads the same
+    // tags.
+    if (auto tube = tagged_edge_pull_envelope(vid)) {
+        return tube;
     }
     if (m_input_envelopes.empty()) return m_envelope;
     // Toward the tags of the vertex's own faces, one real envelope at a time -- the member of

@@ -13,8 +13,8 @@ struct Parameters : public wmtk::OptimizerParameters
 
 
     /**
-     * Radius of the anchors of the polyline endpoints, as a fraction of eps. 1: every held set
-     * stays within the one eps, as in tetwild and simwild.
+     * Radius of the anchors of the polyline endpoints, as a fraction of eps. 1: the radius is
+     * eps, the half-width of the curves' envelope, as tetwild's and simwild's order-2 tubes.
      *
      * Without the anchors the collapse pass deletes open polylines outright: a polyline erodes
      * into its own tip until one segment is left, and that segment has a feature at both ends,

@@ -6,9 +6,10 @@ namespace wmtk::components::tetwild {
 /// The fields shared with triwild and simwild live in wmtk::OptimizerParameters.
 struct Parameters : public wmtk::OptimizerParameters
 {
-    /// Order-2 (open boundary) tube thickness, as a fraction of the surface envelope's eps. 1:
-    /// every held set stays within the one eps; see /order2_envelope_ratio in the spec for the
-    /// sweep behind the default.
+    /// Order-2 (open boundary) tube thickness, as a fraction of the surface envelope's eps. 1: the
+    /// tube's half-width is eps, as the surface envelope's; it is built around the simplified
+    /// boundary, whose own share adds on top (1.5 eps in all at the defaults). See
+    /// /order2_envelope_ratio in the spec for that bound and the sweep behind the default.
     double order2_envelope_ratio = 1.0;
     /// Feature-curve tube thickness, and the feature-point anchors' radius, as a fraction of
     /// eps. 1, as order2_envelope_ratio.

@@ -1159,10 +1159,21 @@ bool TetOptimizerMesh::vertex_has_edge_of_kind(
     return false;
 }
 
-std::shared_ptr<Envelope> TetOptimizerMesh::feature_pull_envelope(const size_t vid) const
+std::shared_ptr<Envelope> TetOptimizerMesh::tagged_edge_pull_envelope(const size_t vid) const
 {
-    if (m_track_feature_edges && m_feature_envelope && vertex_has_feature_edge(vid)) {
+    if (!m_track_feature_edges) return nullptr;
+    // One walk of the one-ring for both kinds: this runs for every vertex every smoothing pass.
+    uint8_t kinds = 0;
+    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+        const Tuple e = tuple_from_edge({{vid, u}});
+        if (e.is_valid(*this)) kinds |= m_feature_edge_attribute[e.eid(*this)].m_kinds;
+    }
+    if ((kinds & FeatureEdgeAttributes::feature) && m_feature_envelope) {
         return m_feature_envelope;
+    }
+    if ((kinds & FeatureEdgeAttributes::order2) && m_order2_edge_envelope &&
+        m_order2_edge_envelope->initialized()) {
+        return m_order2_edge_envelope;
     }
     return nullptr;
 }

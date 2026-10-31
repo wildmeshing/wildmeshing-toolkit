@@ -216,6 +216,14 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.skip_good_regions = json_params["skip_good_regions"];
     params.skip_good_regions_margin = json_params["skip_good_regions_margin"];
 
+    // The legacy optimizer carries no curve tags: the feature curves and points would leave the
+    // output without a word (mesh_improvement_legacy() re-tags the open boundaries only).
+    if (json_params["use_legacy_code"] &&
+        (!json_params["input_edges"].empty() || !json_params["input_points"].empty())) {
+        log_and_throw_error(
+            "input_edges and input_points: not with use_legacy_code, which "
+            "carries no feature curves or points");
+    }
     // Recording the tracked surface: from the input files as read, through the weld, the
     // simplification and the insertion, to the output.
     const std::string history_output = json_params["history_output"];
@@ -885,7 +893,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.mesh_improvement(max_its);
         // The open-boundary guarantee, audited: every edge still carrying the order2 tag lies in
         // its tube (tag_order2_edges()). Edges the operations made open carry no tag and are not
-        // counted. Not after the legacy optimizer, which rebuilds the mesh without the tags.
+        // counted. Not after the legacy optimizer: it rebuilds the mesh, whose open boundaries are
+        // tagged again from its output, so there is no input tube to audit against.
         const size_t n_out =
             mesh_new.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::order2);
         if (n_out > 0) {
