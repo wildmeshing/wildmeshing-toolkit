@@ -394,7 +394,7 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
     // vertex is interior to the curve by construction. Set explicitly because attribute slots
     // are recycled and could carry a stale id.
     if (m_track_feature_points) {
-        m_feature_point_attribute[v_id].m_feature_point_id = NO_FEATURE_POINT;
+        m_feature_point_attribute[v_id] = FeaturePointAttributes{};
     }
     split_after_vertex(v_id);
 

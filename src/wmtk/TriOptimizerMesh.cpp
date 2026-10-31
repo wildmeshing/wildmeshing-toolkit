@@ -792,14 +792,17 @@ size_t TriOptimizerMesh::anchor_feature_points(
     const double feature_radius)
 {
     // {vertex, radius}: the order-2 vertices first, then the input points.
+    m_order2_anchor_radius = order2_radius;
     std::vector<std::pair<size_t, double>> anchors;
     size_t n_ends = 0, n_junctions = 0, n_free = 0;
+    bool any_tracked = false;
     for (const Tuple& t : get_vertices()) {
         const size_t vid = t.vid(*this);
         size_t n_segments = 0;
         for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
             n_segments += is_edge_on_surface(e);
         }
+        any_tracked |= n_segments > 0;
         if (n_segments == 0 || n_segments == 2) continue;
         if (!holds_order2_vertex(n_segments)) {
             ++n_free;
@@ -814,7 +817,7 @@ size_t TriOptimizerMesh::anchor_feature_points(
         }
         anchors.emplace_back(vid, feature_radius);
     }
-    if (anchors.empty()) return 0;
+    if (anchors.empty() && !any_tracked) return 0;
 
     enable_feature_point_tracking();
     size_t n_anchored = 0;
@@ -832,6 +835,40 @@ size_t TriOptimizerMesh::anchor_feature_points(
     return n_anchored;
 }
 
+std::pair<Vector2d, double> TriOptimizerMesh::anchor_of(const size_t vid) const
+{
+    const FeaturePointAttributes& a = m_feature_point_attribute[vid];
+    if (a.m_feature_point_id != NO_FEATURE_POINT) {
+        return {
+            m_feature_points[a.m_feature_point_id],
+            m_feature_point_radius[a.m_feature_point_id]};
+    }
+    return {a.m_anchor, a.m_radius};
+}
+
+void TriOptimizerMesh::anchor_new_curve_ends(const size_t v_new)
+{
+    if (!m_track_feature_points || !(m_order2_anchor_radius >= 0)) return;
+    std::vector<size_t> vids = {v_new};
+    for (const Tuple& e : get_one_ring_edges_for_vertex(v_new)) {
+        if (!is_edge_on_surface(e)) continue;
+        const auto ev = get_edge_vids(e);
+        vids.push_back(ev[0] == v_new ? ev[1] : ev[0]);
+    }
+    for (const size_t vid : vids) {
+        if (anchor_of(vid).second >= 0) continue;
+        size_t n_segments = 0;
+        for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+            n_segments += is_edge_on_surface(e);
+        }
+        if (n_segments == 0 || n_segments == 2 || !holds_order2_vertex(n_segments)) continue;
+        FeaturePointAttributes& a = m_feature_point_attribute[vid];
+        a.m_anchor = m_vertex_attribute[vid].m_posf;
+        a.m_radius = m_order2_anchor_radius;
+        m_pass_anchors.emplace_back(a.m_anchor, a.m_radius);
+    }
+}
+
 bool TriOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
 {
     if (!m_track_feature_points) {
@@ -839,8 +876,8 @@ bool TriOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const s
     }
     // v1 disappears into v2, and v2 does not move. So the question is only whether the
     // feature v1 stood for is still represented afterwards, by v2.
-    const size_t f1 = m_feature_point_attribute[v1_id].m_feature_point_id;
-    if (f1 == NO_FEATURE_POINT) {
+    const auto [anchor1, r1] = anchor_of(v1_id);
+    if (r1 < 0) {
         return false;
     }
     // Distance is the whole test. An earlier version also refused outright when v2 already
@@ -853,8 +890,7 @@ bool TriOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const s
     //
     // Two anchors further apart than the radius are still protected, because then v2 --
     // sitting on one of them -- is more than the radius from the other and fails this test.
-    const double r = m_feature_point_radius[f1];
-    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() > r * r;
+    return (m_vertex_attribute[v2_id].m_posf - anchor1).squaredNorm() > r1 * r1;
 }
 
 bool TriOptimizerMesh::feature_point_ball_contains(const size_t vid, const Vector2d& p) const
@@ -862,14 +898,13 @@ bool TriOptimizerMesh::feature_point_ball_contains(const size_t vid, const Vecto
     if (!m_track_feature_points) {
         return true;
     }
-    const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
-    if (f == NO_FEATURE_POINT) {
+    const auto [anchor, r] = anchor_of(vid);
+    if (r < 0) {
         return true;
     }
     // A ball, not a pin. The vertex may move anywhere within the radius of the feature it
     // stands for, which is exactly the guarantee the envelope gives everywhere else.
-    const double r = m_feature_point_radius[f];
-    return (p - m_feature_points[f]).squaredNorm() <= r * r;
+    return (p - anchor).squaredNorm() <= r * r;
 }
 
 std::pair<size_t, size_t> TriOptimizerMesh::feature_retention(double* worst_ratio) const
@@ -877,7 +912,14 @@ std::pair<size_t, size_t> TriOptimizerMesh::feature_retention(double* worst_rati
     if (worst_ratio) {
         *worst_ratio = 0;
     }
-    if (m_feature_points.empty()) {
+    // The anchors made at init, then those made during the passes.
+    std::vector<std::pair<Vector2d, double>> anchors;
+    anchors.reserve(m_feature_points.size() + m_pass_anchors.size());
+    for (size_t f = 0; f < m_feature_points.size(); ++f) {
+        anchors.emplace_back(m_feature_points[f], m_feature_point_radius[f]);
+    }
+    anchors.insert(anchors.end(), m_pass_anchors.begin(), m_pass_anchors.end());
+    if (anchors.empty()) {
         return {0, 0};
     }
 
@@ -896,14 +938,12 @@ std::pair<size_t, size_t> TriOptimizerMesh::feature_retention(double* worst_rati
         pts.emplace_back(p[0], p[1], 0);
     }
     if (pts.empty()) {
-        return {0, m_feature_points.size()};
+        return {0, anchors.size()};
     }
     const KNN knn(pts);
 
     size_t kept = 0;
-    for (size_t f = 0; f < m_feature_points.size(); ++f) {
-        const Vector2d& anchor = m_feature_points[f];
-        const double r = m_feature_point_radius[f];
+    for (const auto& [anchor, r] : anchors) {
         uint32_t idx = 0;
         double sq = 0;
         knn.nearest_neighbor(Vector3d(anchor[0], anchor[1], 0), idx, sq);
@@ -919,7 +959,7 @@ std::pair<size_t, size_t> TriOptimizerMesh::feature_retention(double* worst_rati
             *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / r);
         }
     }
-    return {kept, m_feature_points.size()};
+    return {kept, anchors.size()};
 }
 
 std::shared_ptr<Envelope> TriOptimizerMesh::smoothing_energy_envelope(const size_t vid) const

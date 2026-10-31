@@ -12,6 +12,7 @@
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/utils/SurfaceTopology.hpp>
 
@@ -495,10 +496,24 @@ public:
     {
         /// Index into m_feature_points, or NO_FEATURE_POINT.
         size_t m_feature_point_id = NO_FEATURE_POINT;
+        /// An anchor made during a pass (anchor_new_curve_ends()), which has no id: its position
+        /// and radius, m_radius < 0 for none. Kept on the vertex, because a parallel pass can
+        /// write only what its locks protect; m_feature_points grows only outside the passes.
+        Vector3d m_anchor = Vector3d::Zero();
+        double m_radius = -1;
     };
     using FeaturePointAttCol = AttributeCollection<FeaturePointAttributes>;
     /// Registered with m_vertex_attr_group only once enable_feature_point_tracking() ran.
     FeaturePointAttCol m_feature_point_attribute;
+    /// The anchor vertex `vid` is held to, {position, radius}: its feature's, else the one made
+    /// on it during a pass; radius < 0 for none.
+    std::pair<Vector3d, double> anchor_of(size_t vid) const;
+    /// The radii anchor_feature_points() was given, for the anchors made during the passes.
+    double m_order2_anchor_radius = -1;
+    double m_feature_anchor_radius = -1;
+    /// The anchors made during the passes, {position, radius}, for the retention audit. Appended
+    /// from the parallel passes, read only between them.
+    threading::collector<std::pair<Vector3d, double>> m_pass_anchors;
     /// Anchor positions, indexed by FeaturePointAttributes::m_feature_point_id. A vertex
     /// carrying feature f may never end up further than m_feature_point_radius[f] from
     /// m_feature_points[f]; the anchor never moves, so the id is a direct lookup.
@@ -543,7 +558,8 @@ public:
      * @brief Anchor the 0-dimensional features, after the edge tags are final: every vertex
      * with 1 or 3+ tagged edges (where a tagged curve ends, or three or more meet -- the vertices
      * the link condition counts as order 3), and every vertex of `input_point_vids`. Turns
-     * feature-point tracking on when there is something to anchor, so a run without any pays no
+     * feature-point tracking on when there is something to anchor or a tagged edge (a collapse
+     * can make a new curve end, see anchor_new_curve_ends()), so a run without either pays no
      * per-operation cost. Returns the number of anchors made.
      *
      * Each anchor's radius is the smallest of the radii of the kinds it is on: `order2_radius`
@@ -563,6 +579,25 @@ public:
      * deadlocks the mesh (measured in 2D, see TriOptimizerMesh).
      */
     bool collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const;
+
+    /**
+     * @brief After a collapse: anchor each vertex of `cache`'s edges (v_old renamed to v_new)
+     * that now has 1 or 3+ tagged edges and no anchor, at its position, with the radius rule of
+     * anchor_feature_points().
+     *
+     * A collapse can make a curve end where there was none: one that glues part of a rim, its
+     * tag dropped (drop_stale_order2_tags()), leaves the rest of the loop a chain with two new
+     * ends, and one that merges two tagged edges leaves their shared vertex with one fewer. An
+     * unanchored end erodes: collapsing it along its chain keeps every moved tagged edge in its
+     * tube, and the one-sided surface envelope cannot see the sheet shrink, so only an anchor
+     * refuses it -- the polyline erosion triwild measured before its anchors (215292: 28 open
+     * components after the arrangement, 0 in the output). The cache's edges have both endpoints
+     * in the collapse's locked one-ring, as drop_stale_order2_tags() states.
+     */
+    void anchor_new_curve_ends(
+        const std::map<std::array<size_t, 2>, uint8_t>& cache,
+        size_t v_old,
+        size_t v_new);
 
     /// May vertex `vid` sit at `p` as far as its anchor goes? True unless the vertex stands
     /// for a feature and `p` is outside that feature's ball.

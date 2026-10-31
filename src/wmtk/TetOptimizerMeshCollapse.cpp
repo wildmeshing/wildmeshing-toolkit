@@ -94,6 +94,9 @@ size_t TetOptimizerMesh::collapse_all_edges_impl(
                 std::move(collect_all_ops),
                 max_passes);
         });
+    if (const size_t n = m_pass_anchors.size(); n > 0) {
+        logger().info("[feature] {} curve ends anchored by the collapses so far", n);
+    }
     return accepted;
 }
 
@@ -518,10 +521,13 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     }
 
     // The survivor takes over the anchor the collapsed vertex carried, if it carries none.
-    if (m_track_feature_points &&
-        m_feature_point_attribute[v2_id].m_feature_point_id == NO_FEATURE_POINT) {
-        m_feature_point_attribute[v2_id].m_feature_point_id =
-            m_feature_point_attribute[v1_id].m_feature_point_id;
+    if (m_track_feature_points && anchor_of(v2_id).second < 0) {
+        m_feature_point_attribute[v2_id] = m_feature_point_attribute[v1_id];
+    }
+    // Then the curve ends the collapse made get theirs (after the drop above, and after the
+    // takeover, so an end that inherits an anchor keeps it).
+    if (m_track_feature_edges) {
+        anchor_new_curve_ends(cache.changed_edges, v1_id, v2_id);
     }
 
     // Now that the vertex flag OR (above) and the face tags (the loop above) are the

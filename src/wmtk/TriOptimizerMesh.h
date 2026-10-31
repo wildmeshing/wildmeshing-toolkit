@@ -11,6 +11,7 @@
 #include <wmtk/history/History.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 
 #include <spdlog/fmt/bundled/format.h>
@@ -268,6 +269,11 @@ public:
     {
         /// Index into m_feature_points, or NO_FEATURE_POINT.
         size_t m_feature_point_id = NO_FEATURE_POINT;
+        /// An anchor made during a pass (anchor_new_curve_ends()), which has no id: its position
+        /// and radius, m_radius < 0 for none. Kept on the vertex, because a parallel pass can
+        /// write only what its locks protect; m_feature_points grows only outside the passes.
+        Vector2d m_anchor = Vector2d::Zero();
+        double m_radius = -1;
     };
     using FeaturePointAttCol = AttributeCollection<FeaturePointAttributes>;
     /// Registered with m_vertex_attr_group only once enable_feature_point_tracking() ran.
@@ -292,6 +298,14 @@ public:
      * gate was the real cause.
      */
     std::vector<double> m_feature_point_radius;
+    /// The anchor vertex `vid` is held to, {position, radius}: its feature's, else the one made
+    /// on it during a pass; radius < 0 for none.
+    std::pair<Vector2d, double> anchor_of(size_t vid) const;
+    /// The order-2 radius anchor_feature_points() was given, for the anchors made in passes.
+    double m_order2_anchor_radius = -1;
+    /// The anchors made during the passes, {position, radius}, for the retention audit. Appended
+    /// from the parallel passes, read only between them.
+    threading::collector<std::pair<Vector2d, double>> m_pass_anchors;
     /// Whether the shared operations maintain and enforce the anchors
     /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
@@ -371,8 +385,9 @@ public:
      * @brief Anchor the 0-dimensional features, after the tracked curves are final: every
      * order-2 vertex holds_order2_vertex() holds, in a ball of `order2_radius`, and every
      * vertex of `input_point_vids`, in a ball of `feature_radius` (the smaller one for a vertex
-     * that is both). Turns feature-point tracking on when there is something to anchor, so a
-     * run without any pays no per-operation cost. Returns the number
+     * that is both). Turns feature-point tracking on when there is something to anchor or a
+     * tracked segment (a collapse can make a new curve end, see anchor_new_curve_ends()), so a
+     * run without either pays no per-operation cost. Returns the number
      * of anchors made.
      */
     size_t anchor_feature_points(
@@ -383,6 +398,18 @@ public:
     /// True iff collapsing v1 into v2 would drop or displace a feature point. False when
     /// tracking is off.
     bool collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const;
+
+    /**
+     * @brief After collapsing into `v_new`: anchor `v_new` and each vertex sharing a tracked
+     * segment with it that now has 1 or 3+ tracked segments, holds_order2_vertex() holds it,
+     * and it has no anchor, at its position, with the order-2 radius.
+     *
+     * The 2D twin of TetOptimizerMesh::anchor_new_curve_ends(): a collapse that merges two
+     * tracked segments leaves their shared vertex with one fewer, possibly a new curve end, and
+     * an unanchored end erodes (215292: 28 open components after the arrangement, 0 in the
+     * output, before the anchors). These vertices are in the collapse's locked one-ring.
+     */
+    void anchor_new_curve_ends(size_t v_new);
 
     /**
      * @brief May vertex `vid` sit at `p` as far as its anchor goes?
