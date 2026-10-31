@@ -74,6 +74,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface-members.html">List of all members</a>  </div>
@@ -81,13 +82,25 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The triangles an operation replaces, as <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad52457941592612d709a12c62436f5cd" title="Refuse a collapse, swap or smoothing that folds the surface over.">IsotropicRemeshing::set_check_inversions</a> sees them.  
- <a href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="_isotropic_remeshing_8h_source.html">IsotropicRemeshing.h</a>&gt;</code></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface_1_1_crease.html">Crease</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a52ed23c46fb11bba1adba17da33ea786" id="r_a52ed23c46fb11bba1adba17da33ea786"><td class="memItemLeft" align="right" valign="top"><a id="a52ed23c46fb11bba1adba17da33ea786" name="a52ed23c46fb11bba1adba17da33ea786"></a>
+std::optional&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>normal</b> (int64_t region) const</td></tr>
+<tr class="memdesc:a52ed23c46fb11bba1adba17da33ea786"><td class="mdescLeft">&#160;</td><td class="mdescRight">The summed area vectors of <code>region</code>; none if the triangles have none there. <br /></td></tr>
+<tr class="separator:a52ed23c46fb11bba1adba17da33ea786"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab5e89ca8e36e43292fde356c6227f58" id="r_aab5e89ca8e36e43292fde356c6227f58"><td class="memItemLeft" align="right" valign="top"><a id="aab5e89ca8e36e43292fde356c6227f58" name="aab5e89ca8e36e43292fde356c6227f58"></a>
+const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface_1_1_crease.html">Crease</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>crease</b> (size_t a, size_t b) const</td></tr>
+<tr class="memdesc:aab5e89ca8e36e43292fde356c6227f58"><td class="mdescLeft">&#160;</td><td class="mdescRight">The crease (a, b), in either order; none if the triangles have no such crease. <br /></td></tr>
+<tr class="separator:aab5e89ca8e36e43292fde356c6227f58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec7f8a1aece0cd96632e641d95b1fa1a" id="r_aec7f8a1aece0cd96632e641d95b1fa1a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html#aec7f8a1aece0cd96632e641d95b1fa1a">rename</a> (size_t from, size_t to)</td></tr>
+<tr class="separator:aec7f8a1aece0cd96632e641d95b1fa1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af81f726d26bdf4c89c0b29a8ffe7c95a" id="r_af81f726d26bdf4c89c0b29a8ffe7c95a"><td class="memItemLeft" align="right" valign="top"><a id="af81f726d26bdf4c89c0b29a8ffe7c95a" name="af81f726d26bdf4c89c0b29a8ffe7c95a"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>folded</b> () const</td></tr>
 <tr class="memdesc:af81f726d26bdf4c89c0b29a8ffe7c95a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether they, or the stars around them, fold the surface over already. <br /></td></tr>
@@ -95,20 +108,61 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>folded</b> () const</
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ac68c716d93da1f9a83a5e3bf261f4f4e" id="r_ac68c716d93da1f9a83a5e3bf261f4f4e"><td class="memItemLeft" align="right" valign="top"><a id="ac68c716d93da1f9a83a5e3bf261f4f4e" name="ac68c716d93da1f9a83a5e3bf261f4f4e"></a>
-Eigen::Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>normal</b> = Eigen::Vector3d::Zero()</td></tr>
-<tr class="memdesc:ac68c716d93da1f9a83a5e3bf261f4f4e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Their area vectors, summed. <br /></td></tr>
-<tr class="separator:ac68c716d93da1f9a83a5e3bf261f4f4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f28cf3d17b6a4ee64520fb192a6c34c" id="r_a5f28cf3d17b6a4ee64520fb192a6c34c"><td class="memItemLeft" align="right" valign="top"><a id="a5f28cf3d17b6a4ee64520fb192a6c34c" name="a5f28cf3d17b6a4ee64520fb192a6c34c"></a>
+std::vector&lt; std::pair&lt; int64_t, Eigen::Vector3d &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>normals</b></td></tr>
+<tr class="memdesc:a5f28cf3d17b6a4ee64520fb192a6c34c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Each region's area vectors, summed. <br /></td></tr>
+<tr class="separator:a5f28cf3d17b6a4ee64520fb192a6c34c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a165911aed11370fc4e351b2b5c8ee31d" id="r_a165911aed11370fc4e351b2b5c8ee31d"><td class="memItemLeft" align="right" valign="top"><a id="a165911aed11370fc4e351b2b5c8ee31d" name="a165911aed11370fc4e351b2b5c8ee31d"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>against</b> = 0</td></tr>
-<tr class="memdesc:a165911aed11370fc4e351b2b5c8ee31d"><td class="mdescLeft">&#160;</td><td class="mdescRight">The ones that do not face along <code>normal</code>. <br /></td></tr>
+<tr class="memdesc:a165911aed11370fc4e351b2b5c8ee31d"><td class="mdescLeft">&#160;</td><td class="mdescRight">The ones that do not face along their region's normal. <br /></td></tr>
 <tr class="separator:a165911aed11370fc4e351b2b5c8ee31d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4bd1b41578821d3f788b082ce1471a3f" id="r_a4bd1b41578821d3f788b082ce1471a3f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html#a4bd1b41578821d3f788b082ce1471a3f">star_folds</a> = 0</td></tr>
 <tr class="separator:a4bd1b41578821d3f788b082ce1471a3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f5702f1557decb3d1a2ad354ad48df0" id="r_a6f5702f1557decb3d1a2ad354ad48df0"><td class="memItemLeft" align="right" valign="top"><a id="a6f5702f1557decb3d1a2ad354ad48df0" name="a6f5702f1557decb3d1a2ad354ad48df0"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface_1_1_crease.html">Crease</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>creases</b></td></tr>
+<tr class="separator:a6f5702f1557decb3d1a2ad354ad48df0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The triangles an operation replaces, as <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad52457941592612d709a12c62436f5cd" title="Refuse a collapse, swap or smoothing that folds the surface over.">IsotropicRemeshing::set_check_inversions</a> sees them. </p>
-</div><h2 class="groupheader">Member Data Documentation</h2>
+<div class="textblock"><p>The triangles an operation replaces, as <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad52457941592612d709a12c62436f5cd" title="Refuse a collapse, swap or smoothing that folds the surface over.">IsotropicRemeshing::set_check_inversions</a> sees them: each region of the feature curves among them on its own (one, without curves). </p>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="aec7f8a1aece0cd96632e641d95b1fa1a" name="aec7f8a1aece0cd96632e641d95b1fa1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec7f8a1aece0cd96632e641d95b1fa1a">&#9670;&#160;</a></span>rename()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::isotropic_remeshing::ReplacedSurface::rename </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>from</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>to</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>A collapse renames the vertex it removes, <code>from</code>, to the one it keeps: the creases follow, so that an edge of the curve it leaves meets the edge it continues. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
 <a id="a4bd1b41578821d3f788b082ce1471a3f" name="a4bd1b41578821d3f788b082ce1471a3f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4bd1b41578821d3f788b082ce1471a3f">&#9670;&#160;</a></span>star_folds</h2>
 
@@ -120,7 +174,7 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>against</b> = 0</td
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The folds in the stars of their vertices: triangles that do not face along their star's summed area vector, over those stars. </p>
+<p>The folds in the stars of their vertices: triangles that do not face along the summed area vector of their region of the star, over those stars. </p>
 
 </div>
 </div>

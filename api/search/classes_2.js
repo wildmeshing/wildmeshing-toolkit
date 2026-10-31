@@ -25,11 +25,12 @@ var searchData=
   ['concurrent_5fqueue_22',['concurrent_queue',['../classwmtk_1_1threading_1_1concurrent__queue.html',1,'wmtk::threading']]],
   ['concurrent_5funordered_5fmap_23',['concurrent_unordered_map',['../classwmtk_1_1threading_1_1concurrent__unordered__map.html',1,'wmtk::threading']]],
   ['connectedcomponent_24',['ConnectedComponent',['../structwmtk_1_1components_1_1simwild_1_1_connected_component.html',1,'wmtk::components::simwild']]],
-  ['cubedamipsenergy3d_25',['CubedAMIPSEnergy3D',['../classwmtk_1_1components_1_1topological__offset_1_1_cubed_a_m_i_p_s_energy3_d.html',1,'wmtk::components::topological_offset']]],
-  ['curvemap_26',['CurveMap',['../classwmtk_1_1components_1_1tracking_1_1_curve_map.html',1,'wmtk::components::tracking']]],
-  ['curvemapoptions_27',['CurveMapOptions',['../structwmtk_1_1components_1_1tracking_1_1_curve_map_options.html',1,'wmtk::components::tracking']]],
-  ['curvemapwarnings_28',['CurveMapWarnings',['../structwmtk_1_1components_1_1tracking_1_1_curve_map_warnings.html',1,'wmtk::components::tracking']]],
-  ['curvepoint_29',['CurvePoint',['../structwmtk_1_1components_1_1tracking_1_1_curve_point.html',1,'wmtk::components::tracking']]],
-  ['curvetracking_30',['CurveTracking',['../classwmtk_1_1components_1_1tracking_1_1_curve_tracking.html',1,'wmtk::components::tracking']]],
-  ['cuttable_31',['CutTable',['../classwmtk_1_1_cut_table.html',1,'wmtk']]]
+  ['crease_25',['Crease',['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface_1_1_crease.html',1,'wmtk::components::isotropic_remeshing::ReplacedSurface']]],
+  ['cubedamipsenergy3d_26',['CubedAMIPSEnergy3D',['../classwmtk_1_1components_1_1topological__offset_1_1_cubed_a_m_i_p_s_energy3_d.html',1,'wmtk::components::topological_offset']]],
+  ['curvemap_27',['CurveMap',['../classwmtk_1_1components_1_1tracking_1_1_curve_map.html',1,'wmtk::components::tracking']]],
+  ['curvemapoptions_28',['CurveMapOptions',['../structwmtk_1_1components_1_1tracking_1_1_curve_map_options.html',1,'wmtk::components::tracking']]],
+  ['curvemapwarnings_29',['CurveMapWarnings',['../structwmtk_1_1components_1_1tracking_1_1_curve_map_warnings.html',1,'wmtk::components::tracking']]],
+  ['curvepoint_30',['CurvePoint',['../structwmtk_1_1components_1_1tracking_1_1_curve_point.html',1,'wmtk::components::tracking']]],
+  ['curvetracking_31',['CurveTracking',['../classwmtk_1_1components_1_1tracking_1_1_curve_tracking.html',1,'wmtk::components::tracking']]],
+  ['cuttable_32',['CutTable',['../classwmtk_1_1_cut_table.html',1,'wmtk']]]
 ];

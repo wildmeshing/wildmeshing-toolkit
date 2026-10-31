@@ -7,5 +7,6 @@ var searchData=
   ['needle_5fscan_4',['needle_scan',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#adeb56a2211cfa384fb3d40eec58b17e1',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::needle_scan()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1bd5bb8b3e0be27cbb5c1180debb62dc',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::needle_scan()']]],
   ['no_5fowner_5',['no_owner',['../classwmtk_1_1threading_1_1_vertex_mutex.html#a19cc31e14132dc14208338e27d7223dd',1,'wmtk::threading::VertexMutex']]],
   ['node_5fwinding_5fnumber_6',['node_winding_number',['../classwmtk_1_1utils_1_1_winding_number_hierarchy.html#a73c9645d7417274a1ec5eaebe7f7c522',1,'wmtk::utils::WindingNumberHierarchy']]],
-  ['not_5ffacing_7',['not_facing',['../classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad7584e5026fb6ac95d326e53aba6c657',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing']]]
+  ['normal_7',['normal',['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html#a52ed23c46fb11bba1adba17da33ea786',1,'wmtk::components::isotropic_remeshing::ReplacedSurface']]],
+  ['not_5ffacing_8',['not_facing',['../classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad7584e5026fb6ac95d326e53aba6c657',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing']]]
 ];
