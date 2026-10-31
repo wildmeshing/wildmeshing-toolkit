@@ -169,10 +169,12 @@ and fixed vertices stay where they are. They come in two forms:
   input's vertex rows, whose edges are the curves (with an Int64 cell field `edge_id`) and whose
   points are the fixed vertices (with `vertex_id`). The ids are carried to the output: both halves
   of a split edge keep theirs. With an envelope, a tube of the same thickness holds the curves.
-- [`feature_fields`](../reference/isotropic_remeshing.md#feature_fields) names per-face fields of
-  a `.msh` input, labels, whose boundaries become curves; every output triangle has the value of
-  the input triangle it comes from. With an envelope, a tube of the same thickness holds these
-  curves too. It reads the file, so it works on the command line and on files only.
+- [`feature_fields`](../reference/isotropic_remeshing.md#feature_fields) names per-face fields,
+  labels, whose boundaries become curves: on the command line and on files, fields of a `.msh`
+  input; in memory, triangle attributes of the input. Every output triangle has the value of the
+  input triangle it comes from (an Int64 label has to be within 2^53 in magnitude, which the
+  remeshing carries exactly), and a degenerate input triangle, which the reader drops, takes its
+  value with it. With an envelope, a tube of the same thickness holds these curves too.
 
 The box again, without an envelope, its 12 sharp edges found by the angle between their two
 triangles, each with an id, and its 8 corners fixed:
@@ -254,9 +256,12 @@ edges either way.
 
 - The remeshed mesh: `output` on the command line (default `out.obj`), `outputs["mesh"]` in
   memory. With features, a `.vtu` output and its `_edge.vtu`, and in memory `outputs["mesh"]`
-  with the vertex field `vertex_id` and `outputs["edges"]`, the feature edges on the same vertex
+  with the vertex field `vertex_id` and the per-face fields of `feature_fields` (each in the type
+  it was given in, with its labels), and `outputs["edges"]`, the feature edges on the same vertex
   rows with `edge_id`. A result goes back in as it is: `mesh` as the input, `edges` as the
-  features.
+  features. One made with `feature_fields` goes back in with its per-face fields named in
+  `feature_fields` again (`mesh` holds no `uv` or `normal`): an input may carry no triangle field
+  that `feature_fields` does not name.
 - With `report`, a JSON file with the target length, the average, smallest and largest edge
   length, the valences, the vertex and triangle counts, the non-manifold edges and vertices, the
   number of operations refused because they would fold the surface, and the run time. In memory,
@@ -309,11 +314,14 @@ in `topo_annots_remeshed.vtu`, and 92 feature edges in `topo_annots_remeshed_edg
   triangles under a given angle at the end of every iteration.
 - **The features are lost.** Only a `.vtu` output holds the feature edges, their ids and the
   per-face fields; an `.obj` holds the triangles, and the run warns.
-- **`feature_fields` in memory.** It reads the fields from the input file, so the memory route
-  refuses it; pass the curves as `features` instead.
+- **A labelled result refused as the next input.** In memory, `outputs["mesh"]` carries the
+  per-face fields of `feature_fields`, and an input may carry no triangle field that
+  `feature_fields` does not name (`Unknown mesh attribute`): pass the same per-face fields again.
+  The result holds no `uv` or `normal`, only their seams, in `edges`.
 - **Inconsistently oriented input.** The fold check
   ([`check_inversions`](../reference/isotropic_remeshing.md#check_inversions)) counts every flip
-  of orientation as a fold, so most operations there are refused. Orient the input first.
+  of orientation inside a region of the feature curves as a fold -- not one along a curve between
+  two regions -- so most operations there are refused. Orient the input first.
 - **The output is not next to the JSON file.** `wmtk_app` reads `input` (and `features`) relative
   to the JSON file, but writes `output` and `report` relative to the working directory.
 
