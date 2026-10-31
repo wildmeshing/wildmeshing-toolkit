@@ -3,6 +3,7 @@
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/history/Replay.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -125,7 +126,8 @@ void check_curve_on_grid(const IsotropicRemeshing& m)
     CHECK(left.size() + right.size() == m.feature_edges().size());
 }
 
-/// The DataArray `name` of a .vtu that paraviewo wrote: base64, a UInt64 byte count first.
+/// The DataArray `name` of a .vtu that paraviewo wrote -- "Points" for the points, whose array
+/// has no name: base64, a UInt64 byte count first.
 template <typename T>
 std::vector<T> vtu_array(const std::string& path, const std::string& name)
 {
@@ -133,7 +135,8 @@ std::vector<T> vtu_array(const std::string& path, const std::string& name)
     std::stringstream ss;
     ss << in.rdbuf();
     const std::string s = ss.str();
-    const size_t at = s.find("Name=\"" + name + "\"");
+    const size_t at = name == "Points" ? s.find("<DataArray", s.find("<Points>"))
+                                       : s.find("Name=\"" + name + "\"");
     REQUIRE(at != std::string::npos);
     const size_t begin = s.find('>', at) + 1;
     const std::string text = s.substr(begin, s.find("</DataArray>", begin) - begin);
@@ -835,6 +838,318 @@ TEST_CASE("features-memory-route", "[test_remeshing][features]" + release_only)
     wrong = curves;
     wrong.cells[CellType::Point].attributes.clear();
     refused(wrong, "Missing required mesh attribute: vertex_id");
+}
+
+TEST_CASE("feature-fields-memory-route", "[test_remeshing][features]" + release_only)
+{
+    // feature_fields on the memory route: triangle attributes of the input mesh, kept as labels as
+    // the .msh route keeps the file's, and returned on mesh -- an Int64 one as Int64. A strip of
+    // two labels, with a curve of id 5 across it and two fixed vertices.
+    const TempDir dir;
+    std::vector<Eigen::Vector3d> V;
+    std::vector<std::array<size_t, 3>> F;
+    grid(6, V, F);
+    DataMatrix<int64_t> label(F.size(), 1);
+    for (size_t f = 0; f < F.size(); ++f) {
+        label(f, 0) = (V[F[f][0]] + V[F[f][1]] + V[F[f][2]]).x() / 3 < 3 ? 0 : 1;
+    }
+    {
+        MshData msh;
+        msh.add_face_vertices(V.size(), [&](size_t i) { return V[i]; });
+        msh.add_faces(F.size(), [&](size_t i) { return F[i]; });
+        msh.add_face_attribute<1>("patch_id", [&label](size_t i) { return double(label(i, 0)); });
+        msh.save((dir.path / "in.msh").string());
+    }
+    nlohmann::json features;
+    for (size_t i = 0; i < 6; ++i) {
+        features["edges"].push_back({i * 7 + 3, (i + 1) * 7 + 3});
+        features["edge_ids"].push_back(5);
+    }
+    features["vertices"] = {{3, 11}, {6 * 7 + 3, 12}};
+    std::ofstream(dir.path / "features.json") << features.dump();
+    const nlohmann::json options = {
+        {"feature_fields", {"patch_id"}},
+        {"length_abs", 0.7},
+        {"eps_rel", 0.01},
+        {"max_iterations", 2},
+        {"cleanup_angle", 30}};
+
+    nlohmann::json file = options;
+    file["application"] = "isotropic_remeshing";
+    file["input"] = "in.msh";
+    file["input_dir"] = dir.path.string();
+    file["output"] = (dir.path / "out.vtu").string();
+    file["report"] = (dir.path / "report.json").string();
+    file["features"] = "features.json";
+    isotropic_remeshing(file);
+
+    MeshData surface;
+    surface.V.resize(V.size(), 3);
+    for (size_t i = 0; i < V.size(); ++i) surface.V.row(i) = V[i];
+    auto& tris = surface.cells[CellType::Triangle];
+    tris.connectivity.resize(F.size(), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        for (int k = 0; k < 3; ++k) tris.connectivity(i, k) = int64_t(F[i][k]);
+    }
+    tris.attributes["patch_id"].values = label;
+    MeshData curves;
+    curves.V = surface.V;
+    {
+        auto& edges = curves.cells[CellType::Edge];
+        edges.connectivity.resize(6, 2);
+        for (size_t i = 0; i < 6; ++i) {
+            edges.connectivity(i, 0) = features["edges"][i][0];
+            edges.connectivity(i, 1) = features["edges"][i][1];
+        }
+        edges.attributes["edge_id"].values =
+            DataMatrix<int64_t>(DataMatrix<int64_t>::Constant(6, 1, 5));
+        auto& points = curves.cells[CellType::Point];
+        points.connectivity.resize(2, 1);
+        points.connectivity << 3, 6 * 7 + 3;
+        DataMatrix<int64_t> vertex_id(2, 1);
+        vertex_id << 11, 12;
+        points.attributes["vertex_id"].values = vertex_id;
+    }
+    nlohmann::json memory = options;
+    memory["input"] = "surface";
+    memory["features"] = "curves";
+    const auto [meshes, report] =
+        isotropic_remeshing(memory, MeshMap{{"surface", surface}, {"curves", curves}});
+
+    // What the two .vtu files hold: the same points, triangles and labels on the same rows --
+    // Int64 here -- and the same feature edges, with their ids and the fixed vertices'.
+    REQUIRE(meshes.size() == 2);
+    const MeshData& mesh = meshes.at("mesh");
+    const MeshData& edges = meshes.at("edges");
+    const auto& patch = mesh.cell(CellType::Triangle).attributes.at("patch_id");
+    REQUIRE(std::holds_alternative<DataMatrix<int64_t>>(patch.values));
+    const std::string tri = (dir.path / "out.vtu").string();
+    const std::string lines = (dir.path / "out_edge.vtu").string();
+    const auto flat = [](const auto& m) {
+        using Scalar = typename std::decay_t<decltype(m)>::Scalar;
+        return std::vector<Scalar>(m.data(), m.data() + m.size());
+    };
+    const auto column = [&flat](const MeshAttribute& a) { return flat(a.doubles()); };
+    CHECK(flat(mesh.V) == vtu_array<double>(tri, "Points"));
+    CHECK(
+        flat(mesh.cell(CellType::Triangle).connectivity) ==
+        vtu_array<int64_t>(tri, "connectivity"));
+    CHECK(column(patch) == vtu_array<double>(tri, "patch_id"));
+    CHECK(column(mesh.vertex_attributes.at("vertex_id")) == vtu_array<double>(tri, "vertex_id"));
+    CHECK(edges.V == mesh.V);
+    CHECK(
+        flat(edges.cell(CellType::Edge).connectivity) == vtu_array<int64_t>(lines, "connectivity"));
+    CHECK(
+        column(edges.cell(CellType::Edge).attributes.at("edge_id")) ==
+        vtu_array<double>(lines, "edge_id"));
+    CHECK(column(edges.vertex_attributes.at("vertex_id")) == vtu_array<double>(lines, "vertex_id"));
+
+    // Each triangle has the label of its side of x = 3, which is a curve: none crosses it.
+    const auto check_labels = [](const MeshData& result) {
+        const auto& block = result.cell(CellType::Triangle);
+        const DataMatrix<double> label = block.attributes.at("patch_id").doubles();
+        REQUIRE(label.rows() == block.connectivity.rows());
+        std::set<double> seen;
+        for (Eigen::Index f = 0; f < label.rows(); ++f) {
+            seen.insert(label(f, 0));
+            for (int k = 0; k < 3; ++k) {
+                const double x = result.V(block.connectivity(f, k), 0);
+                CHECK((label(f, 0) == 0 ? x <= 3 + 1e-9 : x >= 3 - 1e-9));
+            }
+        }
+        CHECK(seen == std::set<double>{0, 1});
+    };
+    check_labels(mesh);
+    nlohmann::json file_report;
+    std::ifstream(dir.path / "report.json") >> file_report;
+    file_report.erase("time_sec");
+    nlohmann::json memory_report = report;
+    memory_report.erase("time_sec");
+    CHECK(memory_report == file_report);
+
+    // A result goes back in as it is, with the same feature_fields, its labels with it; without
+    // them, its patch_id is an attribute the input may not carry.
+    nlohmann::json again = options;
+    again["input"] = "mesh";
+    again["features"] = "edges";
+    const auto chained = isotropic_remeshing(again, meshes).first;
+    CHECK(
+        std::holds_alternative<DataMatrix<int64_t>>(
+            chained.at("mesh").cell(CellType::Triangle).attributes.at("patch_id").values));
+    check_labels(chained.at("mesh"));
+    nlohmann::json bare = again;
+    bare["feature_fields"] = nlohmann::json::array();
+    CHECK_THROWS_WITH(
+        isotropic_remeshing(bare, meshes),
+        Catch::Matchers::ContainsSubstring("Unknown mesh attribute: patch_id"));
+
+    // Without features: the label boundary is the only curve, of id -1. A Float64 field comes
+    // back Float64.
+    MeshData floats = surface;
+    floats.cells[CellType::Triangle].attributes["patch_id"].values = label.cast<double>().eval();
+    nlohmann::json fields_only = options;
+    fields_only["input"] = "surface";
+    const auto alone = isotropic_remeshing(fields_only, MeshMap{{"surface", floats}}).first;
+    CHECK(
+        std::holds_alternative<DataMatrix<double>>(
+            alone.at("mesh").cell(CellType::Triangle).attributes.at("patch_id").values));
+    check_labels(alone.at("mesh"));
+    const auto& edge_id = std::get<DataMatrix<int64_t>>(
+        alone.at("edges").cell(CellType::Edge).attributes.at("edge_id").values);
+    CHECK(edge_id.rows() >= 6);
+    CHECK((edge_id.array() == -1).all());
+
+    // A field feature_fields does not name is still refused, as one it names but the input lacks.
+    nlohmann::json unnamed = memory;
+    unnamed["feature_fields"] = nlohmann::json::array();
+    CHECK_THROWS_WITH(
+        isotropic_remeshing(unnamed, MeshMap{{"surface", surface}, {"curves", curves}}),
+        Catch::Matchers::ContainsSubstring("Unknown mesh attribute: patch_id"));
+    nlohmann::json missing = memory;
+    missing["feature_fields"] = {"patch_id", "side"};
+    CHECK_THROWS_WITH(
+        isotropic_remeshing(missing, MeshMap{{"surface", surface}, {"curves", curves}}),
+        Catch::Matchers::ContainsSubstring("has no field side"));
+}
+
+TEST_CASE("feature-fields-follow-the-cleaning", "[test_remeshing][features]")
+{
+    // Small enough for Debug builds, without an envelope: the fields name the faces of the input
+    // as given, of which the cleaning drops the degenerate ones -- one that repeats a vertex, and
+    // one with two corners that the merging of duplicates welds -- and the values follow the
+    // faces it keeps, on both routes. The memory route returns each per-face field in its own
+    // type, with its labels: an Int64 label, 2^53 (the largest id it takes) on one side, and
+    // UInt8 sides with column labels; and neither carries nor returns a per-corner normal.
+    const TempDir dir;
+    std::vector<Eigen::Vector3d> V;
+    std::vector<std::array<size_t, 3>> F;
+    grid(4, V, F);
+    constexpr int64_t limit = int64_t(1) << 53;
+    V.push_back(V[6]); // a copy of (1, 1), which the merging welds to it
+    // First, so that each face of the grid is two rows further down in the input than in the
+    // mesh.
+    const std::vector<std::array<size_t, 3>> degenerate = {{{5, 6, V.size() - 1}}, {{7, 7, 8}}};
+    F.insert(F.begin(), degenerate.begin(), degenerate.end());
+    DataMatrix<int64_t> label(F.size(), 1);
+    DataMatrix<uint8_t> side(F.size(), 2);
+    for (size_t f = 0; f < F.size(); ++f) {
+        const bool right = (V[F[f][0]] + V[F[f][1]] + V[F[f][2]]).x() / 3 > 2;
+        // The two the cleaning drops have values no other face has.
+        label(f, 0) = f < 2 ? 7 : right ? limit : 0;
+        side(f, 0) = f < 2 || !right;
+        side(f, 1) = f < 2 || right;
+    }
+    const nlohmann::json options = {
+        {"feature_fields", {"patch_id", "side"}},
+        {"length_abs", 0.7},
+        {"max_iterations", 1}};
+
+    MeshData surface;
+    surface.V.resize(V.size(), 3);
+    for (size_t i = 0; i < V.size(); ++i) surface.V.row(i) = V[i];
+    auto& tris = surface.cells[CellType::Triangle];
+    tris.connectivity.resize(F.size(), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        for (int k = 0; k < 3; ++k) tris.connectivity(i, k) = int64_t(F[i][k]);
+    }
+    tris.attributes["patch_id"].values = label;
+    tris.attributes["side"] = {side, {"left", "right"}};
+    MeshData with_normal = surface;
+    DataMatrix<double> normal = DataMatrix<double>::Zero(F.size(), 9);
+    for (int c = 0; c < 3; ++c) normal.col(3 * c + 2).setOnes(); // (0, 0, 1) at every corner
+    with_normal.cells[CellType::Triangle].attributes["normal"].values = normal;
+    nlohmann::json memory = options;
+    memory["input"] = "surface";
+    memory["feature_fields"].push_back("normal");
+    const auto result = isotropic_remeshing(memory, MeshMap{{"surface", with_normal}}).first;
+
+    const MeshData& mesh = result.at("mesh");
+    const auto& block = mesh.cell(CellType::Triangle);
+    CHECK(block.attributes.size() == 2); // patch_id and side; not the normal
+    REQUIRE(std::holds_alternative<DataMatrix<int64_t>>(block.attributes.at("patch_id").values));
+    REQUIRE(std::holds_alternative<DataMatrix<uint8_t>>(block.attributes.at("side").values));
+    CHECK(block.attributes.at("patch_id").labels.empty());
+    CHECK(block.attributes.at("side").labels == std::vector<std::string>{"left", "right"});
+    const auto& patch = std::get<DataMatrix<int64_t>>(block.attributes.at("patch_id").values);
+    const auto& sides = std::get<DataMatrix<uint8_t>>(block.attributes.at("side").values);
+    // Each triangle has its side's values, and the curves are the edges between the sides.
+    std::set<int64_t> seen;
+    std::map<Edge, std::set<int64_t>> labels_at;
+    for (Eigen::Index f = 0; f < patch.rows(); ++f) {
+        const bool right = patch(f, 0) == limit;
+        seen.insert(patch(f, 0));
+        CHECK(int(sides(f, 0)) == int(!right));
+        CHECK(int(sides(f, 1)) == int(right));
+        for (int k = 0; k < 3; ++k) {
+            const double x = mesh.V(block.connectivity(f, k), 0);
+            CHECK((right ? x >= 2 - 1e-9 : x <= 2 + 1e-9));
+            const size_t a = block.connectivity(f, k), b = block.connectivity(f, (k + 1) % 3);
+            labels_at[{{std::min(a, b), std::max(a, b)}}].insert(patch(f, 0));
+        }
+    }
+    CHECK(seen == std::set<int64_t>{0, limit});
+    std::set<Edge> curves;
+    const auto& lines = result.at("edges").cell(CellType::Edge).connectivity;
+    for (Eigen::Index i = 0; i < lines.rows(); ++i) {
+        curves.insert(
+            {{size_t(std::min(lines(i, 0), lines(i, 1))),
+              size_t(std::max(lines(i, 0), lines(i, 1)))}});
+    }
+    CHECK(!curves.empty());
+    for (const auto& [e, labels] : labels_at) CHECK((labels.size() == 2) == (curves.count(e) > 0));
+
+    // The file route reads the same fields from a .msh file, and writes the same mesh.
+    io::write_mesh(dir.path / "in.msh", surface);
+    nlohmann::json file = options;
+    file["application"] = "isotropic_remeshing";
+    file["input"] = "in.msh";
+    file["input_dir"] = dir.path.string();
+    file["output"] = (dir.path / "out.vtu").string();
+    isotropic_remeshing(file);
+    const std::string tri = (dir.path / "out.vtu").string();
+    CHECK(
+        std::vector<double>(mesh.V.data(), mesh.V.data() + mesh.V.size()) ==
+        vtu_array<double>(tri, "Points"));
+    CHECK(
+        std::vector<int64_t>(
+            block.connectivity.data(),
+            block.connectivity.data() + block.connectivity.size()) ==
+        vtu_array<int64_t>(tri, "connectivity"));
+    const DataMatrix<double> values = patch.cast<double>();
+    CHECK(
+        std::vector<double>(values.data(), values.data() + values.size()) ==
+        vtu_array<double>(tri, "patch_id"));
+
+    // Refused as soon as the input is read: an Int64 id beyond 2^53, which Float64 does not hold
+    // exactly, and a uv or normal that is not per corner, as io::read_mesh reads them.
+    const auto refused =
+        [&](const std::string& name, const MeshAttribute& field, const char* error) {
+            MeshData wrong = surface;
+            wrong.cells[CellType::Triangle].attributes[name] = field;
+            nlohmann::json j = memory;
+            j["feature_fields"] = std::set<std::string>{"patch_id", "side", name};
+            CHECK_THROWS_WITH(
+                isotropic_remeshing(j, MeshMap{{"surface", wrong}}),
+                Catch::Matchers::ContainsSubstring(error));
+        };
+    DataMatrix<int64_t> big = label;
+    big(5, 0) = limit + 1;
+    refused(
+        "patch_id",
+        {big, {}},
+        "patch_id in the mesh surface has the value 9007199254740993, beyond 2^53");
+    big(5, 0) = -limit - 1;
+    refused("patch_id", {big, {}}, "has the value -9007199254740993, beyond 2^53");
+    refused(
+        "uv",
+        {DataMatrix<double>(DataMatrix<double>::Zero(F.size(), 2)), {}},
+        "uv in the mesh surface has 2 columns, but uv is per corner, as io::read_mesh reads it: "
+        "6 columns");
+    refused(
+        "normal",
+        {DataMatrix<double>(DataMatrix<double>::Zero(F.size(), 3)), {}},
+        "normal in the mesh surface has 3 columns, but normal is per corner, as io::read_mesh "
+        "reads it: 9 columns");
 }
 
 namespace {
