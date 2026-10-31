@@ -394,7 +394,7 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     split_after_vertex(v_id, cache.is_edge_open_boundary);
     // A fresh split vertex stands for no anchor; its slot may be reused and stale.
     if (m_track_feature_points) {
-        m_feature_point_attribute[v_id] = FeaturePointAttributes{};
+        m_feature_point_attribute[v_id].m_feature_point_id = NO_FEATURE_POINT;
     }
 
     /// update face attribute

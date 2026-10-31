@@ -1389,11 +1389,8 @@ size_t TetOptimizerMesh::anchor_feature_points(
     const double feature_radius)
 {
     // {vertex, radius}: the curve endpoints and junctions first, then the input points.
-    m_order2_anchor_radius = order2_radius;
-    m_feature_anchor_radius = feature_radius;
     std::vector<std::pair<size_t, double>> anchors;
     size_t n_ends = 0, n_junctions = 0;
-    bool any_tagged = false;
     if (m_track_feature_edges) {
         for (const Tuple& t : get_vertices()) {
             const size_t vid = t.vid(*this);
@@ -1407,7 +1404,6 @@ size_t TetOptimizerMesh::anchor_feature_points(
                 ++n_tagged;
                 kinds |= a.m_kinds;
             }
-            any_tagged |= n_tagged > 0;
             if (n_tagged != 1 && n_tagged < 3) continue;
             ++(n_tagged == 1 ? n_ends : n_junctions);
             double r = std::numeric_limits<double>::infinity();
@@ -1426,7 +1422,7 @@ size_t TetOptimizerMesh::anchor_feature_points(
         }
         anchors.emplace_back(vid, r);
     }
-    if (anchors.empty() && !any_tagged) return 0;
+    if (anchors.empty()) return 0;
 
     enable_feature_point_tracking();
     size_t n_anchored = 0;
@@ -1442,71 +1438,26 @@ size_t TetOptimizerMesh::anchor_feature_points(
     return n_anchored;
 }
 
-std::pair<Vector3d, double> TetOptimizerMesh::anchor_of(const size_t vid) const
-{
-    const FeaturePointAttributes& a = m_feature_point_attribute[vid];
-    if (a.m_feature_point_id != NO_FEATURE_POINT) {
-        return {
-            m_feature_points[a.m_feature_point_id],
-            m_feature_point_radius[a.m_feature_point_id]};
-    }
-    return {a.m_anchor, a.m_radius};
-}
-
 bool TetOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
 {
     if (!m_track_feature_points) return false;
     // v1 disappears into v2, and v2 does not move: the only question is whether v2 still
     // covers the feature v1 stood for. See the 2D twin for why distance is the whole test.
-    const auto [anchor, r] = anchor_of(v1_id);
-    if (r < 0) return false;
-    return (m_vertex_attribute[v2_id].m_posf - anchor).squaredNorm() > r * r;
-}
-
-void TetOptimizerMesh::anchor_new_curve_ends(
-    const std::map<std::array<size_t, 2>, uint8_t>& cache,
-    const size_t v_old,
-    const size_t v_new)
-{
-    if (!m_track_feature_points) return;
-    std::vector<size_t> vids;
-    for (const auto& [e, kinds] : cache) {
-        if (kinds == 0) continue;
-        for (const size_t v : e) vids.push_back(v == v_old ? v_new : v);
-    }
-    wmtk::vector_unique(vids);
-    for (const size_t vid : vids) {
-        if (anchor_of(vid).second >= 0) continue;
-        size_t n_tagged = 0;
-        uint8_t kinds = 0;
-        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-            const Tuple e = tuple_from_edge({{vid, u}});
-            if (!e.is_valid(*this)) continue;
-            const FeatureEdgeAttributes& a = m_feature_edge_attribute[e.eid(*this)];
-            if (!a.is_tagged()) continue;
-            ++n_tagged;
-            kinds |= a.m_kinds;
-        }
-        if (n_tagged != 1 && n_tagged < 3) continue;
-        double r = std::numeric_limits<double>::infinity();
-        if (kinds & FeatureEdgeAttributes::order2) r = std::min(r, m_order2_anchor_radius);
-        if (kinds & FeatureEdgeAttributes::feature) r = std::min(r, m_feature_anchor_radius);
-        if (!(r >= 0) || !std::isfinite(r)) continue; // no radius given for the kind
-        FeaturePointAttributes& a = m_feature_point_attribute[vid];
-        a.m_anchor = m_vertex_attribute[vid].m_posf;
-        a.m_radius = r;
-        m_pass_anchors.emplace_back(a.m_anchor, r);
-    }
+    const size_t f1 = m_feature_point_attribute[v1_id].m_feature_point_id;
+    if (f1 == NO_FEATURE_POINT) return false;
+    const double r = m_feature_point_radius[f1];
+    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() > r * r;
 }
 
 bool TetOptimizerMesh::feature_point_ball_contains(const size_t vid, const Vector3d& p) const
 {
     if (!m_track_feature_points) return true;
-    const auto [anchor, r] = anchor_of(vid);
-    if (r < 0) return true;
+    const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
+    if (f == NO_FEATURE_POINT) return true;
     // A ball, not a pin -- the vertex may move anywhere within the anchor's radius of it,
     // exactly the freedom the envelope gives everywhere else.
-    return (p - anchor).squaredNorm() <= r * r;
+    const double r = m_feature_point_radius[f];
+    return (p - m_feature_points[f]).squaredNorm() <= r * r;
 }
 
 std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_ratio) const
@@ -1514,14 +1465,7 @@ std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_rati
     if (worst_ratio) {
         *worst_ratio = 0;
     }
-    // The anchors made at init, then those made during the passes.
-    std::vector<std::pair<Vector3d, double>> anchors;
-    anchors.reserve(m_feature_points.size() + m_pass_anchors.size());
-    for (size_t f = 0; f < m_feature_points.size(); ++f) {
-        anchors.emplace_back(m_feature_points[f], m_feature_point_radius[f]);
-    }
-    anchors.insert(anchors.end(), m_pass_anchors.begin(), m_pass_anchors.end());
-    if (anchors.empty()) {
+    if (m_feature_points.empty()) {
         return {0, 0};
     }
 
@@ -1533,22 +1477,23 @@ std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_rati
         pts.push_back(m_vertex_attribute[v.vid(*this)].m_posf);
     }
     if (pts.empty()) {
-        return {0, anchors.size()};
+        return {0, m_feature_points.size()};
     }
     const KNN knn(pts);
 
     size_t kept = 0;
-    for (const auto& [anchor, r] : anchors) {
+    for (size_t f = 0; f < m_feature_points.size(); ++f) {
         uint32_t idx = 0;
         double sq = 0;
-        knn.nearest_neighbor(anchor, idx, sq);
+        knn.nearest_neighbor(m_feature_points[f], idx, sq);
+        const double r = m_feature_point_radius[f];
         if (sq <= r * r) {
             ++kept;
         } else if (worst_ratio) {
             *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / r);
         }
     }
-    return {kept, anchors.size()};
+    return {kept, m_feature_points.size()};
 }
 
 

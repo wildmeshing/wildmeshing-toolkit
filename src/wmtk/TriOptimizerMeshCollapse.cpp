@@ -103,9 +103,6 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
                     "junction, or input free point) within its radius of its input position",
                     n);
             }
-            if (const size_t n = m_pass_anchors.size(); n > 0) {
-                logger().info("[feature] {} curve ends anchored by the collapses so far", n);
-            }
             collapse_pass_end(total_success);
             accepted = total_success;
         });
@@ -397,12 +394,10 @@ bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
     }
 
     // The survivor takes over the anchor the collapsed vertex carried, if it carries none.
-    // Then the curve ends the collapse made get theirs.
-    if (m_track_feature_points) {
-        if (anchor_of(v2_id).second < 0) {
-            m_feature_point_attribute[v2_id] = m_feature_point_attribute[v1_id];
-        }
-        anchor_new_curve_ends(v2_id);
+    if (m_track_feature_points &&
+        m_feature_point_attribute[v2_id].m_feature_point_id == NO_FEATURE_POINT) {
+        m_feature_point_attribute[v2_id].m_feature_point_id =
+            m_feature_point_attribute[v1_id].m_feature_point_id;
     }
 
     collapse_after_vertex(v1_id, v2_id);
