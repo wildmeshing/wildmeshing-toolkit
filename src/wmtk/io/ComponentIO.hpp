@@ -122,19 +122,24 @@ public:
         return out;
     }
     // One named input, uncleaned: the memory twin of reading one file. `vertex_attributes`: the
-    // ones it may carry, and that are ignored.
+    // ones it may carry, and that are ignored. `triangle_attributes`: the ones its triangles may
+    // carry besides the reader's per-corner ones, which the component reads itself
+    // (isotropic_remeshing's feature_fields).
     void raw_triangles(
         const std::string& name,
         MatrixXd& V,
         MatrixXi& F,
-        const std::set<std::string>& vertex_attributes = reader_vertex_attributes) const
+        const std::set<std::string>& vertex_attributes = reader_vertex_attributes,
+        const std::set<std::string>& triangle_attributes = {}) const
     {
         const auto& data = mesh(name);
         attributes(data.vertex_attributes, vertex_attributes);
+        std::set<std::string> allowed = reader_corner_attributes;
+        allowed.insert(triangle_attributes.begin(), triangle_attributes.end());
         for (const auto& [type, c] : data.cells) {
             if (type != CellType::Triangle)
                 throw std::runtime_error("Expected triangle input: " + name);
-            attributes(c.attributes, reader_corner_attributes);
+            attributes(c.attributes, allowed);
         }
         V = data.V;
         F = indices(data.cell(CellType::Triangle).connectivity);
@@ -158,8 +163,8 @@ public:
     // Like read_triangle_mesh(paths): concatenate the raw inputs, then clean them once, so
     // vertex merging sees the same vertices (isolated ones included) in the same order.
     // `read`, as there: the inputs as given, concatenated, and where their vertices and faces
-    // went. `vertex_attributes`, as in raw_triangles: a component's own output fields, say, so
-    // that a result can be the next call's input.
+    // went. `vertex_attributes` and `triangle_attributes`, as in raw_triangles: a component's own
+    // output fields, say, so that a result can be the next call's input.
     void triangles(
         const std::vector<std::string>& names,
         MatrixXd& V,
@@ -168,7 +173,8 @@ public:
         double abs,
         std::vector<int>* provenance = nullptr,
         ReadProvenance* read = nullptr,
-        const std::set<std::string>& vertex_attributes = reader_vertex_attributes) const
+        const std::set<std::string>& vertex_attributes = reader_vertex_attributes,
+        const std::set<std::string>& triangle_attributes = {}) const
     {
         if (!memory()) {
             read_triangle_mesh(names, V, F, rel, abs, provenance, read);
@@ -180,7 +186,7 @@ public:
         for (size_t i = 0; i < names.size(); ++i) {
             MatrixXd v;
             MatrixXi f;
-            raw_triangles(names[i], v, f, vertex_attributes);
+            raw_triangles(names[i], v, f, vertex_attributes, triangle_attributes);
             const auto nv = V.rows(), nf = F.rows();
             f.array() += nv;
             V.conservativeResize(nv + v.rows(), 3);

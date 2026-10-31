@@ -54,6 +54,30 @@ wmtk_copy_dll(wmtk_tests)
 # Register unit tests
 catch_discover_tests(wmtk_tests)
 
+# Eigen's heap across units built with different vectorization (cmake/recipes/eigen.cmake): a unit
+# with the build's settings, one with EIGEN_DONT_VECTORIZE as ipc-toolkit exports it, and, with an
+# x86 compiler that takes the flags, one built for AVX2. Its own executable, linking Eigen alone:
+# the AVX unit's copies of Eigen's inline functions may stand in for the others', and nothing else
+# should run them.
+add_executable(wmtk_test_eigen_heap
+    eigen_heap/test_eigen_heap.cpp
+    eigen_heap/eigen_heap_plain.cpp
+    eigen_heap/eigen_heap_novec.cpp
+)
+set_source_files_properties(eigen_heap/eigen_heap_novec.cpp PROPERTIES
+    COMPILE_DEFINITIONS EIGEN_DONT_VECTORIZE=1)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-mavx2 -mfma" WMTK_TEST_EIGEN_HEAP_AVX)
+if(WMTK_TEST_EIGEN_HEAP_AVX)
+    target_sources(wmtk_test_eigen_heap PRIVATE eigen_heap/eigen_heap_avx.cpp)
+    set_source_files_properties(eigen_heap/eigen_heap_avx.cpp PROPERTIES
+        COMPILE_OPTIONS "-mavx2;-mfma")
+    target_compile_definitions(wmtk_test_eigen_heap PRIVATE WMTK_TEST_EIGEN_HEAP_AVX)
+endif()
+target_link_libraries(wmtk_test_eigen_heap PRIVATE Eigen3::Eigen Catch2::Catch2WithMain)
+wmtk_copy_dll(wmtk_test_eigen_heap)
+catch_discover_tests(wmtk_test_eigen_heap)
+
 if(WMTK_BUILD_INTEGRATION_TESTS)
     message(STATUS "Include integration tests.")
     add_executable(wmtk_integration_tests integration_tests.cpp)

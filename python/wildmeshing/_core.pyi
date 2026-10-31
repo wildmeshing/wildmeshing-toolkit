@@ -213,7 +213,7 @@ def isotropic_remeshing(options: dict, meshes: dict) -> tuple:
       length_abs (float, default -1): Absolute target edge length.
       freeze_boundary (bool, default true): Freeze the vertices of the input's open boundary.
       log_file (string, default ""): Logs are not just printed on the terminal but also saved in this file.
-      feature_fields (list, default []): Triangle fields of a .msh input, as io::read_mesh reads it, whose boundaries the remeshing keeps as curves (see IsotropicRemeshing::set_feature_edges): per-face fields (labels), where two faces differ, and per-corner fields (uv and normal, three values per corner, corner after corner), where the two faces at an edge disagree at either end -- a seam.
+      feature_fields (list, default []): Triangle fields of a .msh input, as io::read_mesh reads it, whose boundaries the remeshing keeps as curves (see IsotropicRemeshing::set_feature_edges): per-face fields (labels), where two faces differ, and per-corner fields (uv and normal, known by their names: two and three values per corner, corner after corner, so 6 and 9 columns), where the two faces at an edge disagree at either end -- a seam.
       features (string, default ""): File route: a JSON file, its path resolved like input, of curves and vertices to keep: {"edges": [[a, b], ...], "edge_ids": [id, ...], "vertices": [[v, id], ...]}, every key optional.
       history_output (string, default ""): Record every committed operation and save the history here (see wmtk/history): the input surface and its edits, from which the map between input and output is rebuilt (the tracking application).
       report (string, default ""): A JSON file that stores information about the result and the method execution, e.g., runtime.
