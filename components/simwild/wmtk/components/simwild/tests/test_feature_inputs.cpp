@@ -54,11 +54,13 @@ double nearest_vertex(const MeshData& m, const Eigen::Vector3d& p)
 TEST_CASE("simwild-holds-input-feature-points", "[simwild][features]" + release_only)
 {
     // The curve's ends and the two points are anchored, in a ball of feature_envelope_ratio x
-    // eps. eps is relative to the embedding's box, which the features grow: the point at x = 1.5
-    // lies outside the cube's padded box, and without the growth the insertion refuses it. The
-    // radius checked, eps_rel x the inputs' bbox diagonal, is below the anchors' own. The whole
-    // eps range, not the default alone.
-    const double diag = std::sqrt(1.5 * 1.5 + 2.0); // the inputs' bbox is [0,1.5]x[0,1]^2
+    // eps (1 x eps at the default), eps as the run reports it. simwild takes eps relative to the
+    // embedding's box, which is padded past the inputs and which the features grow: the point at
+    // x = 1.5 lies outside the cube's padded box, and without the growth the insertion refuses
+    // it. That eps is about 1.2 times eps_rel x the inputs' bbox diagonal here, where tetwild
+    // takes the inputs' diagonal; the test once checked that smaller radius, which the anchors
+    // do not promise, and failed on Linux at eps_rel 1e-2 (0.0245 > 0.0206, inside the run's
+    // 0.0253). The whole eps range, not the default alone.
     for (const double eps_rel : {1e-3, 2e-3, 1e-2}) {
         for (const bool preserve_topology : {true, false}) {
             CAPTURE(eps_rel, preserve_topology);
@@ -70,10 +72,11 @@ TEST_CASE("simwild-holds-input-feature-points", "[simwild][features]" + release_
                  {"num_threads", 1}},
                 {{"cube", unit_cube()}, {"features", curve_and_points()}});
             const MeshData& m = result.first.at("mesh");
+            const double eps = result.second.at("eps").get<double>();
             const MeshData f = curve_and_points();
             for (const int v : {0, 2, 3, 4}) {
                 CAPTURE(v);
-                CHECK(nearest_vertex(m, f.V.row(v).transpose()) <= eps_rel * diag);
+                CHECK(nearest_vertex(m, f.V.row(v).transpose()) <= eps * (1 + 1e-9));
             }
         }
     }
