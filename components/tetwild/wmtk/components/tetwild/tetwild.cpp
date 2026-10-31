@@ -782,14 +782,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
 
     const bool has_features = !feature_edges.empty() || !feature_points.empty();
-    // The feature-curve tube: what the collapse guard checks tagged edges against, and what
-    // curve-vertex smoothing will be pulled toward. Around the ORIGINAL input feature edges,
-    // like every other envelope. Follows the surface envelope's choice of predicate.
-    mesh_new.init_feature_envelope(
-        feature_edge_vertices,
-        feature_edges,
-        params.epsr * params.diag_l * params.feature_envelope_ratio,
-        !use_sample_envelope);
+    // The feature-curve tubes -- what the collapse guard checks tagged edges against, and what
+    // curve-vertex smoothing is pulled toward -- are built with the tags, around the input
+    // feature edges and one per input_edges file (TetOptimizerMesh::tag_feature_edges()),
+    // following the surface envelope's choice of predicate.
     mesh_new.init_from_Volumeremesher(
         v_rational,
         facets,
@@ -798,7 +794,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         tet_face_on_input_surface,
         &tet_face_orientation,
         has_features ? &features_out : nullptr,
-        input_envelopes.empty() ? nullptr : &facet_input_set);
+        input_envelopes.empty() ? nullptr : &facet_input_set,
+        &features);
     mesh_new.m_input_envelopes.set(std::move(input_envelopes));
 
     // The oriented tracked surface is an integer 2-chain whose boundary the operations preserve:

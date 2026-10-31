@@ -233,7 +233,7 @@ bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
             tids.push_back(t.tid(*this));
         }
         feature_edges_cache(tids, cache.changed_edges);
-        cache.edge_kinds = m_feature_edge_attribute[loc0.eid(*this)].m_kinds;
+        cache.edge_tags = m_feature_edge_attribute[loc0.eid(*this)];
     }
 
     return split_before_cells(loc0, tets);
@@ -438,13 +438,13 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     // kind bits -- they are new pairs, so the region restore defaulted them.
     if (m_track_feature_edges) {
         feature_edges_restore_region(locs, cache.changed_edges);
-        if (cache.edge_kinds != 0) {
+        if (cache.edge_tags.is_tagged()) {
             const Tuple e1 = tuple_from_edge({{v1_id, v_id}});
             const Tuple e2 = tuple_from_edge({{v2_id, v_id}});
-            m_feature_edge_attribute[e1.eid(*this)].m_kinds = cache.edge_kinds;
-            m_feature_edge_attribute[e2.eid(*this)].m_kinds = cache.edge_kinds;
+            m_feature_edge_attribute[e1.eid(*this)] = cache.edge_tags;
+            m_feature_edge_attribute[e2.eid(*this)] = cache.edge_tags;
         }
-        split_after_vertex_feature(v_id, (cache.edge_kinds & FeatureEdgeAttributes::feature) != 0);
+        split_after_vertex_feature(v_id, cache.edge_tags.has(FeatureEdgeAttributes::feature));
     }
 
     m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;

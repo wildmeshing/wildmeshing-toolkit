@@ -2,9 +2,11 @@
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 #include <wmtk/components/tetwild/Parameters.h>
 #include <wmtk/components/tetwild/TetWildMesh.h>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <random>
 #include <set>
@@ -46,7 +48,11 @@ struct FeatureScene
     std::shared_ptr<components::shortest_edge_collapse::ShortestEdgeCollapse> surf;
 };
 
-FeatureScene build_scene()
+/// `fe_verts`, `fe`: the feature curves; `edge_input`: per edge, its input_edges file.
+FeatureScene build_scene(
+    const std::vector<Vector3d>& fe_verts = {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
+    const std::vector<std::array<size_t, 2>>& fe = {{{0, 1}}, {{1, 2}}},
+    const std::vector<int>& edge_input = {0, 1})
 {
     FeatureScene sc;
     // Cube [0,2]^3 with an interior 2-segment feature chain.
@@ -71,8 +77,8 @@ FeatureScene build_scene()
     auto* env_ptr = &sc.surf->m_envelope;
     const std::shared_ptr<Envelope> env(env_ptr, [](Envelope*) {});
 
-    sc.fe_verts = {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}};
-    sc.fe = {{{0, 1}}, {{1, 2}}};
+    sc.fe_verts = fe_verts;
+    sc.fe = fe;
 
     std::vector<Vector3r> v_rational;
     std::vector<std::array<size_t, 3>> facets;
@@ -97,16 +103,13 @@ FeatureScene build_scene()
             &features_out);
     }
     sc.mesh = std::make_shared<TetWildMesh>(sc.params, env, 0);
-    {
-        std::vector<Eigen::Vector2i> fe_env(sc.fe.size());
-        for (size_t i = 0; i < sc.fe.size(); ++i) {
-            fe_env[i] = Eigen::Vector2i(int(sc.fe[i][0]), int(sc.fe[i][1]));
-        }
-        sc.mesh->m_feature_envelope = std::make_shared<Envelope>();
-        sc.mesh->m_feature_envelope->init(sc.fe_verts, fe_env, 0.05);
-    }
-    // The init anchors the chain's endpoints, its tagged edges' ends, in a ball of the tube's
-    // radius.
+    // By default each segment its own input_edges file, so each tagged edge carries the file of
+    // the segment it tiles and is held in that file's tube, of radius 0.05 as the union's. The
+    // init anchors the chain's endpoints, its tagged edges' ends, in a ball of the tube's radius.
+    utils::FeatureInputs input;
+    input.edge_vertices = sc.fe_verts;
+    input.edges = sc.fe;
+    input.edge_input = edge_input;
     sc.params.feature_envelope_ratio = 0.05 / (sc.params.epsr * sc.params.diag_l);
     sc.mesh->init_from_Volumeremesher(
         v_rational,
@@ -115,7 +118,10 @@ FeatureScene build_scene()
         tets,
         tet_face_on_input_surface,
         /*tet_face_orientation=*/nullptr,
-        &features_out);
+        &features_out,
+        /*facet_input_set=*/nullptr,
+        &input);
+    REQUIRE(sc.mesh->m_feature_input_envelopes.size() == 2);
     return sc;
 }
 
@@ -156,18 +162,24 @@ param_on_segment(TetWildMesh& m, const size_t vid, const Vector3d& A, const Vect
 }
 
 /// Strict invariant (no collapses have run): every tagged edge lies EXACTLY on some input
-/// segment, with flagged endpoints.
+/// segment, with flagged endpoints, and carries exactly that segment's file (segment s is file
+/// s here) through the splits.
 void require_tags_on_curve(FeatureScene& sc)
 {
     for (const auto& e : tagged_edges(*sc.mesh)) {
         bool on_some_segment = false;
-        for (const auto& seg : sc.fe) {
+        for (size_t s = 0; s < sc.fe.size(); ++s) {
+            const auto& seg = sc.fe[s];
             const auto t0 =
                 param_on_segment(*sc.mesh, e[0], sc.fe_verts[seg[0]], sc.fe_verts[seg[1]]);
             const auto t1 =
                 param_on_segment(*sc.mesh, e[1], sc.fe_verts[seg[0]], sc.fe_verts[seg[1]]);
             if (t0.has_value() && t1.has_value()) {
                 on_some_segment = true;
+                const auto& attr =
+                    sc.mesh->m_feature_edge_attribute[sc.mesh->tuple_from_edge(e).eid(*sc.mesh)];
+                const InputSet set = attr.inputs(TetWildMesh::FeatureEdgeAttributes::feature);
+                REQUIRE(set == InputSet(1) << s);
                 break;
             }
         }
@@ -185,9 +197,16 @@ void require_tags_in_tube(FeatureScene& sc)
 {
     TetWildMesh& m = *sc.mesh;
     for (const auto& e : tagged_edges(m)) {
-        REQUIRE(!sc.mesh->m_feature_envelope->is_outside(
-            std::array<Eigen::Vector3d, 2>{
-                {m.m_vertex_attribute[e[0]].m_posf, m.m_vertex_attribute[e[1]].m_posf}}));
+        const std::array<Eigen::Vector3d, 2> seg = {
+            {m.m_vertex_attribute[e[0]].m_posf, m.m_vertex_attribute[e[1]].m_posf}};
+        REQUIRE(!sc.mesh->m_feature_envelope->is_outside(seg));
+        // The file set survives the collapses: never empty, and every file's own tube holds it.
+        const InputSet set = m.m_feature_edge_attribute[m.tuple_from_edge(e).eid(m)].inputs(
+            TetWildMesh::FeatureEdgeAttributes::feature);
+        REQUIRE(set != 0);
+        for (size_t i = 0; i < 2; ++i) {
+            if ((set >> i) & 1) REQUIRE(!m.m_feature_input_envelopes.member(i)->is_outside(seg));
+        }
         REQUIRE(m.vertex_has_feature_edge(e[0]));
         REQUIRE(m.vertex_has_feature_edge(e[1]));
     }
@@ -376,4 +395,52 @@ TEST_CASE("open-boundary-tags-drop-when-glued", "[tetwild_operation][order2]" + 
         CHECK(n_tagged > 0);
         CHECK(n_stale == 0);
     }
+}
+
+TEST_CASE("feature-curves-held-to-their-own-tubes", "[tetwild_operation][features]" + release_only)
+{
+    // Two parallel curves 0.07 apart, each its own input_edges file, in tubes of 0.05. The tubes
+    // overlap, so in their union a collapse may weld one curve onto the other, its edges then
+    // 0.07 off their own curve; each tagged edge is held to the tube of its own file instead.
+    // Checked after the whole optimization against the input segments themselves, not through the
+    // tubes: every tagged edge, sampled at 21 points, lies within 0.05 of the curve of every file
+    // it carries.
+    const double r = 0.05;
+    FeatureScene sc = build_scene(
+        {{0.5, 1.0, 1.0}, {1.5, 1.0, 1.0}, {0.5, 1.07, 1.0}, {1.5, 1.07, 1.0}},
+        {{{0, 1}}, {{2, 3}}},
+        {0, 1});
+    TetWildMesh& m = *sc.mesh;
+    m.mesh_improvement(3);
+
+    const auto distance_to_segment = [](const Vector3d& p, const Vector3d& a, const Vector3d& b) {
+        const double t = std::clamp((p - a).dot(b - a) / (b - a).squaredNorm(), 0.0, 1.0);
+        return (p - (a + t * (b - a))).norm();
+    };
+    size_t n_tagged = 0;
+    for (const auto& e : tagged_edges(m)) {
+        const InputSet set = m.m_feature_edge_attribute[m.tuple_from_edge(e).eid(m)].inputs(
+            TetWildMesh::FeatureEdgeAttributes::feature);
+        REQUIRE(set != 0);
+        ++n_tagged;
+        const Vector3d& a = m.m_vertex_attribute[e[0]].m_posf;
+        const Vector3d& b = m.m_vertex_attribute[e[1]].m_posf;
+        for (size_t file = 0; file < 2; ++file) {
+            if (((set >> file) & 1) == 0) continue;
+            const auto& seg = sc.fe[file];
+            double worst = 0;
+            for (int k = 0; k <= 20; ++k) {
+                worst = std::max(
+                    worst,
+                    distance_to_segment(
+                        a + (b - a) * (k / 20.0),
+                        sc.fe_verts[seg[0]],
+                        sc.fe_verts[seg[1]]));
+            }
+            CAPTURE(file, worst / r);
+            CHECK(worst <= r * (1 + 1e-9));
+        }
+    }
+    CHECK(n_tagged > 0);
+    CHECK(m.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::feature) == 0);
 }

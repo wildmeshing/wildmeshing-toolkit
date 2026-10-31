@@ -357,7 +357,8 @@ public:
         const std::vector<bool>& tet_face_on_input_surface,
         const std::vector<int8_t>* tet_face_orientation = nullptr,
         const utils::EmbedFeaturesResult* features = nullptr,
-        const std::vector<InputSet>* facet_input_set = nullptr);
+        const std::vector<InputSet>* facet_input_set = nullptr,
+        const utils::FeatureInputs* feature_input = nullptr);
 
     void init_from_file(std::string input_dir);
 

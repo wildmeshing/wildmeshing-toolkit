@@ -48,11 +48,13 @@ void TetWildMesh::optimization_sanity_checks_extra()
     // carry no tag and are not checked.
     if (!m_track_feature_edges || !m_order2_edge_envelope) return;
     for (const Tuple& e : get_edges()) {
-        if (!m_feature_edge_attribute[e.eid(*this)].has(FeatureEdgeAttributes::order2)) continue;
+        FeatureEdgeAttributes order2 = m_feature_edge_attribute[e.eid(*this)];
+        if (!order2.has(FeatureEdgeAttributes::order2)) continue;
+        order2.m_kinds = FeatureEdgeAttributes::order2; // its order-2 tubes only
         const size_t v1 = e.vid(*this);
         const size_t v2 = e.switch_vertex(*this).vid(*this);
         if (tagged_edge_leaves_tube(
-                FeatureEdgeAttributes::order2,
+                order2,
                 m_vertex_attribute[v1].m_posf,
                 m_vertex_attribute[v2].m_posf) != 0) {
             logger().warn("Open-boundary edge ({},{}) is outside its tube.", v1, v2);

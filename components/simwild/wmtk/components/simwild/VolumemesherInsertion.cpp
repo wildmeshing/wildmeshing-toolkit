@@ -468,20 +468,19 @@ void SimWildMesh::init_surfaces_and_boundaries(
     logger().info("order-2 edges tagged: {}", n_order2);
 
     // The input feature curves (input_edges), held as tetwild holds them, by the same code: the
-    // tet edges tiling them are tagged (tag_feature_edges()) and kept in a tube of
-    // feature_envelope_ratio x eps around the input curves (init_feature_envelope()), with the
-    // surface envelope's predicate, as the order-2 tube.
+    // tet edges tiling them are tagged with their input_edges file and kept in tubes of
+    // feature_envelope_ratio x eps -- around the input curves, and one per file
+    // (tag_feature_edges()) -- with the surface envelope's predicate, as the order-2 tubes.
     const double feature_eps =
         m_params.epsr * m_params.diag_l * m_sim_params.feature_envelope_ratio;
     std::vector<size_t> input_points;
     if (features != nullptr) {
         assert(features_placed != nullptr);
-        init_feature_envelope(
-            features->edge_vertices,
-            features->edges,
+        tag_feature_edges(
+            *features_placed,
+            features,
             feature_eps,
             m_envelope && m_envelope->use_exact);
-        tag_feature_edges(*features_placed);
         input_points = utils::placed_point_vertices(*features_placed);
     }
 

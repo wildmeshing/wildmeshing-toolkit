@@ -22,7 +22,7 @@ namespace wmtk::utils {
  * One implementation for tetwild and simwild, so the two read, insert and hold them alike:
  * read_feature_inputs() reads them, extend_bbox() grows the input bounding box over them,
  * embed_features_input() marshals them for embed_triangles_in_tets(), and the mesh holds what
- * the insertion made of them (TetOptimizerMesh::init_feature_envelope(), tag_feature_edges(),
+ * the insertion made of them (TetOptimizerMesh::tag_feature_edges(),
  * anchor_feature_points() with placed_point_vertices()).
  */
 struct FeatureInputs
@@ -31,6 +31,9 @@ struct FeatureInputs
     std::vector<Vector3d> edge_vertices;
     /// The feature edges, into edge_vertices.
     std::vector<std::array<size_t, 2>> edges;
+    /// Per edge, the input_edges file it came from (its position in the list): the edge's
+    /// input, as an input surface is a tracked face's (TetOptimizerMesh::tag_feature_edges()).
+    std::vector<int> edge_input;
     /// The feature points: every vertex of the point files, and every vertex of an edge file
     /// with no incident edge.
     std::vector<Vector3d> points;

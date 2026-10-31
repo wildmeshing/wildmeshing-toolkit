@@ -6,6 +6,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/envelope/CompositeEnvelopes.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
@@ -31,7 +32,8 @@
 namespace wmtk {
 namespace utils {
 struct EmbedFeaturesResult;
-}
+struct FeatureInputs;
+} // namespace utils
 
 /**
  * @brief What tetwild and simwild's 3D mesh share.
@@ -274,11 +276,32 @@ public:
         };
         /// The Kind bits of every curve this edge tiles; 0 = untagged.
         uint8_t m_kinds = 0;
+        /// Per kind, the inputs whose curves of that kind this edge tiles, bit i for input i, as
+        /// a tracked face carries the inputs it lies on (SurfaceTagAttributes::input_set()):
+        /// the input_edges file for `feature`, the inputs of the tracked faces at the edge for
+        /// `order2`. The edge is held to those inputs' tubes (tagged_edge_leaves_tube()); an
+        /// empty set falls back to the kind's union tube.
+        InputSet m_feature_inputs = 0;
+        InputSet m_order2_inputs = 0;
 
         bool is_tagged() const { return m_kinds != 0; }
         bool has(Kind k) const { return (m_kinds & k) != 0; }
         void add(Kind k) { m_kinds |= k; }
-        void remove(Kind k) { m_kinds &= uint8_t(~k); }
+        /// Drops the kind and its input set.
+        void remove(Kind k)
+        {
+            m_kinds &= uint8_t(~k);
+            inputs(k) = 0;
+        }
+        InputSet& inputs(Kind k) { return k == feature ? m_feature_inputs : m_order2_inputs; }
+        InputSet inputs(Kind k) const { return k == feature ? m_feature_inputs : m_order2_inputs; }
+        /// Add the tags of `o`: what one edge carries where a collapse welds two into it.
+        void merge(const FeatureEdgeAttributes& o)
+        {
+            m_kinds |= o.m_kinds;
+            m_feature_inputs |= o.m_feature_inputs;
+            m_order2_inputs |= o.m_order2_inputs;
+        }
     };
     using EdgeAttCol = AttributeCollection<FeatureEdgeAttributes>;
     /// Sized, protected and rolled back only once enable_feature_edge_tracking() ran.
@@ -318,12 +341,40 @@ public:
         return (k == FeatureEdgeAttributes::feature ? m_feature_envelope : m_order2_edge_envelope)
             .get();
     }
-    /// The first of `kinds`, in bit order, whose tube the segment (a, b) leaves; 0 when it stays
-    /// inside every one of them. A kind without a tube constrains nothing.
+    /**
+     * @brief Per kind, one tube per input, around that input's edges of the kind at init: what
+     * a tagged edge is held to through its input set (FeatureEdgeAttributes::inputs()), as a
+     * tracked face is held to the envelopes of its input set.
+     *
+     * The curve twin of the faces' per-input envelopes, for the same reason: one tube around
+     * every input lets a curve ride another input's curve within eps of it -- measured for
+     * faces, 12 faces up to 3.61 eps off the solid they belong to. Empty while the kind's edges
+     * come from one input; every edge is then held to the kind's union tube above, exactly as
+     * before, as faces are with one input. The union tube stays the tube of an edge whose set is
+     * empty.
+     */
+    InputEnvelopes m_feature_input_envelopes;
+    InputEnvelopes m_order2_input_envelopes;
+    const InputEnvelopes& tagged_edge_input_envelopes(FeatureEdgeAttributes::Kind k) const
+    {
+        return k == FeatureEdgeAttributes::feature ? m_feature_input_envelopes
+                                                   : m_order2_input_envelopes;
+    }
+    /// The first kind of `tags`, in bit order, whose tube the segment (a, b) leaves; 0 when it
+    /// stays inside every one of them. Each kind is tested in the tubes of its input set, all of
+    /// them, as a face is held to every envelope of its set; in the kind's union tube when it has
+    /// no per-input tubes or the set is empty. A kind without a tube constrains nothing.
     uint8_t tagged_edge_leaves_tube(
-        uint8_t kinds,
+        const FeatureEdgeAttributes& tags,
         const Eigen::Vector3d& a,
         const Eigen::Vector3d& b) const;
+    /// Build the per-input tubes of kind `k` (above), of half-width `eps`, around each input's
+    /// edges among `eids` as they lie now; leaves them empty when the edges have one input.
+    void init_tagged_edge_input_envelopes(
+        FeatureEdgeAttributes::Kind k,
+        const std::vector<size_t>& eids,
+        double eps,
+        bool exact);
 
     /**
      * @brief Turn on feature-edge tracking. The collection joins m_edge_attr_group beside
@@ -355,6 +406,11 @@ public:
      * @brief The tube a vertex on a tagged curve is pulled toward while smoothing: the feature
      * tube for a vertex with a `feature` edge, else the order-2 tube for one with an `order2`
      * edge; null for any other vertex, or without the tube.
+     *
+     * With per-input tubes (m_feature_input_envelopes, m_order2_input_envelopes), the member of
+     * the union of the vertex's edges' input sets it is farthest from, one real tube at a time,
+     * as a surface vertex is pulled toward its faces' inputs; the kind's union tube without them
+     * or without a set.
      *
      * Asked first by tetwild's and simwild's smoothing_energy_envelope(), so the two pull alike
      * (test "SimWild 3D matches TetWild's order-2 envelope selection"). The feature curves are
@@ -408,30 +464,26 @@ public:
      */
     size_t tag_order2_edges(double eps, bool exact);
     /**
-     * @brief Build the feature-curve tube, m_feature_envelope, of half-width `eps` around the
-     * input feature edges `E` over `V`, with the exact predicate when `exact`. Nothing without
-     * edges.
-     *
-     * Around the ORIGINAL input curves, like every other envelope, not around the tet edges
-     * tiling them (tag_feature_edges()): the tiling is exact, so the two are the same set at
-     * init, and the input is what the guarantee is stated against.
-     */
-    void init_feature_envelope(
-        const std::vector<Vector3d>& V,
-        const std::vector<std::array<size_t, 2>>& E,
-        double eps,
-        bool exact);
-    /**
      * @brief Tag every tet edge tiling an input feature edge (`placed`, from the insertion)
-     * with the feature kind. Returns the number of tet edges tagged.
+     * with the feature kind and the input_edges file it comes from, and build the tubes, of
+     * half-width `eps` with the exact predicate when `exact`. Returns the number of tet edges
+     * tagged.
+     *
+     * `input`, the curves as read: m_feature_envelope around them all -- around the ORIGINAL
+     * input curves, like every other envelope -- and, with several files, one tube per file
+     * around its tagged edges (m_feature_input_envelopes); the tiling is exact, so at init those
+     * are its input curves. Null: the tags alone, every edge from file 0, no tube.
      *
      * The tiling pairs come out of the same arrangement as the connectivity, so a missing edge
      * is a contract violation, not an input problem: it throws. Call once after init, before
      * anything renumbers the vertices. Turns edge tracking on only when there is a feature
-     * edge, as tag_order2_edges() does. The tiling is per input edge, so what an edge carries
-     * beyond the kind can be looked up by its input edge.
+     * edge, as tag_order2_edges() does.
      */
-    size_t tag_feature_edges(const utils::EmbedFeaturesResult& placed);
+    size_t tag_feature_edges(
+        const utils::EmbedFeaturesResult& placed,
+        const utils::FeatureInputs* input,
+        double eps,
+        bool exact);
     /**
      * @brief After a collapse: drop the order2 kind from each edge of `cache` (v_old renamed to
      * v_new) whose tracked-face count holds_order2_edge() no longer holds.
@@ -451,7 +503,7 @@ public:
      * them, so no other thread can change the faces counted here.
      */
     void drop_stale_order2_tags(
-        const std::map<std::array<size_t, 2>, uint8_t>& cache,
+        const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache,
         size_t v_old,
         size_t v_new);
     /// The audit of that guarantee: how many edges carrying kind `k` lie outside its tube now.
@@ -1495,7 +1547,7 @@ protected:
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
         /// Edge tag bits of the affected tets, by sorted vid pair (m_track_feature_edges).
-        std::map<std::array<size_t, 2>, uint8_t> changed_edges;
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> changed_edges;
 
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
@@ -1513,12 +1565,12 @@ protected:
         size_t v2_id = 0;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
-        /// The split edge's tag bits (FeatureEdgeAttributes::m_kinds); its two halves get them.
-        uint8_t edge_kinds = 0;
+        /// The split edge's tags, kinds and input sets; its two halves get them.
+        FeatureEdgeAttributes edge_tags;
         size_t edge_order = 0;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
         /// Edge tag bits of the affected tets, by sorted vid pair (m_track_feature_edges).
-        std::map<std::array<size_t, 2>, uint8_t> changed_edges;
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> changed_edges;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -1541,7 +1593,7 @@ protected:
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
         /// Edge tag bits of the affected tets, by sorted vid pair (m_track_feature_edges).
-        std::map<std::array<size_t, 2>, uint8_t> changed_edges;
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> changed_edges;
         /// Coarsening pass only: the worst relative quality in the region the composite may
         /// disturb, measured before the collapse. See collapse_edge_after.
         double region_max_rel_before = 0.;
@@ -1570,17 +1622,24 @@ protected:
     /// Cache the tag bits of every edge of every tet in `tids`.
     void feature_edges_cache(
         const std::vector<size_t>& tids,
-        std::map<std::array<size_t, 2>, uint8_t>& cache);
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache);
     /// Write back tags over every edge of every tet in `tets` (created regions).
     void feature_edges_restore_region(
         const std::vector<Tuple>& tets,
-        const std::map<std::array<size_t, 2>, uint8_t>& cache);
+        const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache);
     void feature_edges_restore_region(
         const std::vector<size_t>& tids,
-        const std::map<std::array<size_t, 2>, uint8_t>& cache);
+        const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache);
+    /// The cached tags with `v_old` renamed to `v_new`, the edges a collapse welds into one
+    /// merged (FeatureEdgeAttributes::merge()), the collapsed edge itself dropped: what the edges
+    /// around the survivor carry after the collapse.
+    static std::map<std::array<size_t, 2>, FeatureEdgeAttributes> remap_edge_tags(
+        const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache,
+        size_t v_old,
+        size_t v_new);
     /// Write back tags for every cached edge, with `v_old` renamed to `v_new` (collapse).
     bool feature_edges_restore_remap(
-        const std::map<std::array<size_t, 2>, uint8_t>& cache,
+        const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache,
         size_t v_old,
         size_t v_new);
 

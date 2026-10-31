@@ -256,21 +256,14 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         // collapse guard. Each kind refuses under its own reason, so the accounting can tell
         // the kinds apart.
         if (m_feature_envelope || m_order2_edge_envelope) {
-            for (const auto& [pair, kinds] : cache.changed_edges) {
-                if (kinds == 0) {
+            // The edges as they will be: renamed, and two the collapse welds into one merged, so
+            // the merged edge is held to the tubes of both its input sets.
+            for (const auto& [p, tags] : remap_edge_tags(cache.changed_edges, v1_id, v2_id)) {
+                if (!tags.is_tagged()) {
                     continue;
                 }
-                std::array<size_t, 2> p = pair;
-                for (size_t& v : p) {
-                    if (v == v1_id) {
-                        v = v2_id;
-                    }
-                }
-                if (p[0] == p[1]) {
-                    continue; // the collapsed edge itself; it disappears
-                }
                 const uint8_t left = tagged_edge_leaves_tube(
-                    kinds,
+                    tags,
                     m_vertex_attribute[p[0]].m_posf,
                     m_vertex_attribute[p[1]].m_posf);
                 if (left == FeatureEdgeAttributes::feature) {
