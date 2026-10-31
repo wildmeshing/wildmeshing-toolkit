@@ -12,7 +12,6 @@ that CI runs.
 | | [Isotropic remeshing](isotropic_remeshing.md) | Uniform, well-shaped triangles at a target edge length |
 | Meshing | [TetWild](tetwild.md) | Tet meshes of imperfect surfaces |
 | | [TriWild](triwild.md) | Triangle meshes of curve networks |
-| Multi-region meshes | [SimWild](simwild.md) | Meshing several inputs into one mesh with regions, and editing the regions |
 | Offsets and repair | [Topological offset](topological_offset.md) | A region at a distance around a selection |
 | | [Manifold extraction](manifold_extraction.md) | A manifold boundary for a region |
 | Mapping | [Tracking](tracking.md) | Correspondences between a remeshing's input and output |

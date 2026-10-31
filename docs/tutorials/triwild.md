@@ -10,7 +10,7 @@ outside the curves at the end.
 
 Use it to mesh a 2D domain bounded by drawn or traced curves, or several overlapping regions at
 once: each triangle records which inputs it lies inside. For the same in 3D, from triangle surfaces,
-use [TetWild](tetwild.md); for regions in a mesh you already have, [SimWild](simwild.md).
+use [TetWild](tetwild.md); for regions in a mesh you already have, [SimWild](../reference/simwild.md).
 
 ## A first run
 
@@ -264,6 +264,6 @@ two from it. Recording does not change the output.
 - [Reference: every option of `triwild`](../reference/triwild.md)
 - [Embedding](../concepts/embedding.md): the simplification, the arrangement and the filters;
   [Quality](../concepts/quality.md): the energy and the optimization loop.
-- [TetWild](tetwild.md), the same in 3D; [SimWild](simwild.md) for regions in a mesh;
+- [TetWild](tetwild.md), the same in 3D; [SimWild](../reference/simwild.md) for regions in a mesh;
   [tracking](tracking.md) to map points through the history.
 - Hu et al. 2019, [TriWild: Robust Triangulation with Curve Constraints](https://cims.nyu.edu/gcl/papers/2019-TriWild.pdf)
