@@ -98,6 +98,8 @@ void IsotropicRemeshing::create_mesh(
             }
         }
     }
+    // Feature edges set before had no faces to give regions to.
+    if (m_has_features) set_regions();
 }
 
 void IsotropicRemeshing::cache_edge_positions(const Tuple& t)
@@ -145,6 +147,7 @@ void remove_nbr(FeatureAttributes& f, const size_t v)
 }
 
 using wmtk::utils::predicates::faces_along;
+using wmtk::utils::predicates::orient3d;
 } // namespace
 
 Eigen::Vector3d IsotropicRemeshing::area_normal(const std::vector<Tuple>& tris) const
@@ -196,6 +199,48 @@ IsotropicRemeshing::by_region(const std::vector<Tuple>& tris) const
     return out;
 }
 
+template <typename F>
+void IsotropicRemeshing::for_each_region(const std::vector<Tuple>& tris, F&& side) const
+{
+    if (!m_has_regions) {
+        side(int64_t(-1), tris);
+        return;
+    }
+    for (const auto& [r, part] : by_region(tris)) side(r, part);
+}
+
+std::vector<std::array<size_t, 6>> IsotropicRemeshing::feature_wedges(
+    const std::vector<Tuple>& tris) const
+{
+    std::vector<std::array<size_t, 6>> out;
+    if (!m_has_features) return out;
+    for (const Tuple& f : tris) {
+        const auto vs = oriented_tri_vids(f);
+        for (int k = 0; k < 3; ++k) {
+            const size_t a = vs[k], b = vs[(k + 1) % 3];
+            if (!is_feature_edge(a, b)) continue;
+            if (std::any_of(out.begin(), out.end(), [&](const std::array<size_t, 6>& w) {
+                    return (w[0] == a && w[1] == b) || (w[0] == b && w[1] == a);
+                })) {
+                continue;
+            }
+            // Not on the boundary, nor where more than two triangles meet; nor where the two
+            // disagree on the orientation, so that the wedge between them has no inside.
+            const Tuple e = tuple_from_edge(a, b, f.fid(*this));
+            if (!is_manifold_edge(e)) continue;
+            const Tuple g = e.switch_face(*this).value();
+            const auto ws = oriented_tri_vids(g);
+            for (int j = 0; j < 3; ++j) {
+                if (ws[j] == b && ws[(j + 1) % 3] == a) {
+                    out.push_back(
+                        {{a, b, vs[(k + 2) % 3], ws[(j + 2) % 3], f.fid(*this), g.fid(*this)}});
+                }
+            }
+        }
+    }
+    return out;
+}
+
 size_t IsotropicRemeshing::star_folds(const std::vector<Tuple>& tris) const
 {
     std::vector<size_t> vs;
@@ -207,10 +252,11 @@ size_t IsotropicRemeshing::star_folds(const std::vector<Tuple>& tris) const
     size_t count = 0;
     for (const size_t v : vs) {
         // A star on a curve, each side against its own normal: see set_check_inversions.
-        for (const auto& [r, side] :
-             by_region(get_one_ring_tris_for_vertex(tuple_from_vertex(v)))) {
-            count += not_facing(side, area_normal(side));
-        }
+        for_each_region(
+            get_one_ring_tris_for_vertex(tuple_from_vertex(v)),
+            [&](int64_t, const std::vector<Tuple>& side) {
+                count += not_facing(side, area_normal(side));
+            });
     }
     return count;
 }
@@ -218,13 +264,60 @@ size_t IsotropicRemeshing::star_folds(const std::vector<Tuple>& tris) const
 ReplacedSurface IsotropicRemeshing::replaced(const std::vector<Tuple>& tris) const
 {
     ReplacedSurface out;
-    for (const auto& [r, side] : by_region(tris)) {
+    for_each_region(tris, [&](const int64_t r, const std::vector<Tuple>& side) {
         const Eigen::Vector3d n = area_normal(side);
         out.normals.emplace_back(r, n);
         out.against += not_facing(side, n);
-    }
+    });
     out.star_folds = star_folds(tris);
+    if (!m_has_regions) return out;
+    // The creases (see set_check_inversions): feature edges between two regions whose sides --
+    // each region's triangles round the edge's ends, their area vectors summed -- face more than
+    // 90 degrees apart, and whose two triangles open the wedge between the regions as the sides
+    // do. Where they do not -- a needle at the curve, whose plane is not its side's, or a wedge
+    // closed through itself already -- an operation may change that.
+    const auto P = [this](size_t v) -> const Eigen::Vector3d& { return vertex_attrs.at(v).pos; };
+    for (const auto& [a, b, p, q, f, g] : feature_wedges(tris)) {
+        const int64_t rf = face_field_attrs.at(f).region, rg = face_field_attrs.at(g).region;
+        if (rf == rg) continue;
+        Eigen::Vector3d nf = Eigen::Vector3d::Zero(), ng = Eigen::Vector3d::Zero();
+        std::vector<size_t> seen;
+        for (const size_t v : {a, b}) {
+            for (const Tuple& t : get_one_ring_tris_for_vertex(tuple_from_vertex(v))) {
+                if (std::find(seen.begin(), seen.end(), t.fid(*this)) != seen.end()) continue;
+                seen.push_back(t.fid(*this));
+                const int64_t r = face_field_attrs.at(t.fid(*this)).region;
+                if (r != rf && r != rg) continue;
+                const auto vs = oriented_tri_vids(t);
+                (r == rf ? nf : ng) += (P(vs[1]) - P(vs[0])).cross(P(vs[2]) - P(vs[0]));
+            }
+        }
+        if (nf.dot(ng) >= 0) continue;
+        // orient3d(a, b, p, q) is positive where q is below the plane of (a, b, p). The sides put
+        // q's side along (b - a) x ng from the edge: below p's side where that faces against nf.
+        const double above = (P(b) - P(a)).cross(ng).dot(nf);
+        const int sides = above < 0 ? 1 : above > 0 ? -1 : 0;
+        if (sides != 0 && int(orient3d(P(a), P(b), P(p), P(q))) == sides) {
+            out.creases.push_back({a, b, sides});
+        }
+    }
     return out;
+}
+
+bool IsotropicRemeshing::closes_a_crease(
+    const std::vector<Tuple>& tris,
+    const ReplacedSurface& before) const
+{
+    if (before.creases.empty()) return false;
+    const auto P = [this](size_t v) -> const Eigen::Vector3d& { return vertex_attrs.at(v).pos; };
+    for (const auto& [a, b, p, q, f, g] : feature_wedges(tris)) {
+        // The sign is the wedge's, whichever triangle it is read from: swapping a with b and p
+        // with q swaps it twice.
+        const ReplacedSurface::Crease* c = before.crease(a, b);
+        if (c == nullptr) continue;
+        if (int(orient3d(P(a), P(b), P(p), P(q))) != c->orientation) return true;
+    }
+    return false;
 }
 
 bool IsotropicRemeshing::more_folds(const std::vector<Tuple>& tris, const ReplacedSurface& before)
@@ -234,13 +327,13 @@ bool IsotropicRemeshing::more_folds(const std::vector<Tuple>& tris, const Replac
     // operation makes a region the triangles it replaced had none of; if one did, its own
     // normal stands in.
     size_t against_before = 0, against_now = 0;
-    for (const auto& [r, side] : by_region(tris)) {
+    for_each_region(tris, [&](const int64_t r, const std::vector<Tuple>& side) {
         const Eigen::Vector3d now = area_normal(side);
         against_before += not_facing(side, before.normal(r).value_or(now));
         against_now += not_facing(side, now);
-    }
+    });
     return std::max(against_before, against_now) > before.against ||
-           star_folds(tris) > before.star_folds;
+           star_folds(tris) > before.star_folds || closes_a_crease(tris, before);
 }
 
 bool IsotropicRemeshing::folds(const std::vector<Tuple>& tris, const ReplacedSurface& before)
@@ -323,7 +416,9 @@ bool IsotropicRemeshing::cleanup_allows(
     if (!more_folds(tris, before) && min_angle(tris) > floor) return true;
     // A fold already there confuses the fold check; the input's orientation may then let a
     // repair of it through. Only then: on a thin wall it is noise, and would let folds through.
-    return before.folded() && input_folds(tris) < input_folds_before;
+    // Nor through a crease, whose test a fold elsewhere does not confuse.
+    return before.folded() && input_folds(tris) < input_folds_before &&
+           !closes_a_crease(tris, before);
 }
 
 bool IsotropicRemeshing::cleanup_move(const size_t v, const double floor)
@@ -373,12 +468,17 @@ bool IsotropicRemeshing::cleanup_move(const size_t v, const double floor)
     std::sort(best.begin(), best.end());
     for (size_t k = 0; k < std::min<size_t>(best.size(), 12); ++k) {
         if (-best[k].first <= floor) break;
-        m_smooth_target = places[best[k].second];
-        const bool moved = smooth_vertex(tv);
-        m_smooth_target.reset();
-        if (moved) return true;
+        if (smooth_vertex_to(v, places[best[k].second])) return true;
     }
     return false;
+}
+
+bool IsotropicRemeshing::smooth_vertex_to(const size_t v, const Eigen::Vector3d& p)
+{
+    m_smooth_target = p;
+    const bool moved = smooth_vertex(tuple_from_vertex(v));
+    m_smooth_target.reset();
+    return moved;
 }
 
 size_t IsotropicRemeshing::cleanup_triangles(const double degrees)
@@ -493,7 +593,11 @@ void IsotropicRemeshing::set_feature_edges(
         if (ids[i] != -1) m_has_edge_ids = true;
     }
     m_has_features = !edges.empty();
+    set_regions();
+}
 
+void IsotropicRemeshing::set_regions()
+{
     // The regions of the curves: the faces each one reaches without crossing a feature edge.
     m_has_regions = m_has_features;
     if (!m_has_regions) return;
@@ -883,6 +987,7 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
             if (!std::count(vs.begin(), vs.end(), cache.v1)) tris.push_back(f);
         }
         cache.replaced = replaced(tris);
+        cache.replaced.rename(cache.v1, cache.v2);
         // See cleanup_allows: the input's orientation is read only where there is a fold.
         if (m_cleaning) cache.input_folds = cache.replaced.folded() ? input_folds(tris) : 0;
     }
