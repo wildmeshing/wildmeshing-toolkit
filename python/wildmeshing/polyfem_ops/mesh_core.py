@@ -23,7 +23,7 @@ import numpy as np
 
 # ---------------------------------------------------------------------------
 # Tag expressions — delegated to the C++ parser via the wildmeshing bindings
-# (see app/pywildmeshing/simwild_bindings.cpp::Expression). One grammar, one
+# (see python/src/simwild_bindings.cpp::Expression). One grammar, one
 # implementation; only the identifier lexer below lives in Python.
 # ---------------------------------------------------------------------------
 

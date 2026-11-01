@@ -57,6 +57,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
+option(WMTK_BUILD_DOC_EXAMPLES "Build the documentation's C++ examples; with BUILD_TESTING, test them and its Python and JSON examples" OFF)
 
 # Cross-checks every TriMesh split and collapse against a brute-force reference built from
 # the whole mesh, so it is O(#F) per operation. Tests only -- off by default, and gated at
@@ -172,7 +173,12 @@ set(WMTK_GENERATED_INCLUDE_DIR "${PROJECT_BINARY_DIR}/generated")
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # wmtk_app
-    add_subdirectory(app) # also contains python bindings
+    add_subdirectory(app)
+
+    # Python bindings: the compiled module wildmeshing._core
+    if(WMTK_PYBIND)
+        add_subdirectory(python/src)
+    endif()
 
     include(CTest)
 
@@ -184,6 +190,11 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 
     # components (automatically added to the app and integration tests)
     add_subdirectory(components)
+
+    # The documentation's examples (docs/examples), built and run as tests
+    if(WMTK_BUILD_DOC_EXAMPLES)
+        add_subdirectory(docs/examples)
+    endif()
 endif()
 
 if(WMTK_BUILD_DOCS)

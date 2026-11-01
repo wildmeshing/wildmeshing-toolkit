@@ -19,8 +19,7 @@ target_compile_definitions(wmtk_data INTERFACE WMTK_DATA_DIR=\"${WMTK_DATA_ROOT}
 # Only tests read the data (WMTK_DATA_DIR appears in test sources alone), so a build without them
 # does not download it -- among them the Python package, which configures with BUILD_TESTING=OFF
 # (pyproject.toml) and would otherwise clone all of data2 into every `pip install`. BUILD_TESTING
-# is CTest's option, and the top-level CMakeLists.txt includes CTest after app/ has included this
-# file: undefined here means a first configure that will take CTest's default, ON.
+# is CTest's option: undefined here means a first configure that will take CTest's default, ON.
 if(DEFINED BUILD_TESTING AND NOT BUILD_TESTING)
     return()
 endif()
@@ -88,6 +87,10 @@ ExternalProject_Add(
     # default in tetwild, triwild and simwild, and on crown (171k faces) the exact simplification
     # alone takes 54 minutes at 16 threads, against 8 s sampled; this case opts back into the
     # sampled one.
+    # At c91a67a (2026-10-30, data2 #12, branch danielepanozzo/stale-options off 89911f5) ten
+    # configs drop options the specs no longer have: front_conv_criterion from the nine 2D
+    # topological_offset cases (topological_offset_models.json, not run in CI) and w_smooth from
+    # simwild_energies_2d, which simwild ignored. No registered case changes.
     # At c11305f (2026-10-30, data2 main) four simwild tight_seal_geom cases join the list --
     # explicit and detected, 2D and 3D, the detected 3D one on the new
     # models/tight_seal_geom_bars_3d.msh -- each with tight_seal_geom_sanity on, so the op throws
@@ -101,6 +104,7 @@ ExternalProject_Add(
     # At 00e090e (2026-11-01, data2 main) the explicit 3D tight_seal_geom case uses d = 1.0
     # (was 0.5): at 0.5 no cell of double_sphere_hole is surely in the join region, and the case
     # filled nothing; at 1.0 it fills the cavity between the two shells.
+    # 00e090e descends from data2 #12's merge (421b458), so it holds c91a67a's changes too.
     #
     GIT_TAG 00e090e79b774ab6892a4a9912a82b19c49728c9
 

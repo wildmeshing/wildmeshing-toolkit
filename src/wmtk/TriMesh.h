@@ -872,7 +872,8 @@ public:
      * @param t Input Tuple for the edge to be collapsed.
      * @param[out] new_edges a vector of Tuples refering to the triangles incident to the new vertex
      * introduced
-     * @note collapse edge a,b and generate a new vertex c
+     * @note collapses edge a,b: one of its two vertices survives, at the position the after hook
+     * gives it
      * @return if collapse succeed
      */
     virtual bool collapse_edge(const Tuple& t, std::vector<Tuple>& new_t);

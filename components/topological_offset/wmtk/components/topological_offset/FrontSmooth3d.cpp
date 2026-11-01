@@ -67,9 +67,11 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     const auto solve_3d = [&]() {
         const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
         // EXPERIMENTAL_band_volume_rule "surface": the offset faces through vid move with it, and
-        // their term joins both sides of the veto.
+        // their term joins both sides of the veto. "exact_swept": the AMIPS part alone, for
+        // swept_accept().
         const bool surface = surface_energy();
-        const double before = tet_energy_sum(ring) + (surface ? surface_term_at(vid) : 0.);
+        const double before =
+            tet_energy_sum(ring, !swept_rule()) + (surface ? surface_term_at(vid) : 0.);
         // growth_mode "individual_op_reject": the folded offset faces through vid before the
         // move, which may not raise them (every face it changes goes through vid).
         int folds_before = -1;
@@ -133,8 +135,9 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
         }
         ++m_front_veto_asked;
-        if (!(tet_energy_sum(ring) + (surface ? surface_term_at(vid) : 0.) <=
-              before)) { // a NaN refuses
+        if (swept_rule() ? !swept_accept(vid, ring, x0, before, m_swept_front)
+                         : !(tet_energy_sum(ring) + (surface ? surface_term_at(vid) : 0.) <=
+                             before)) { // a NaN refuses
             ++m_front_veto_fired;
             --m_smooth_rejects.accepted;
             ++m_smooth_rejects.quality;
@@ -367,12 +370,30 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
         cells.push_back(c);
     }
     if (cells.empty()) return nullptr;
+    // EXPERIMENTAL_band_volume_rule "exact_swept": the search model is the function the move is
+    // judged on (BandVolumeEnergy3D::set_swept()), over the boundary faces of B through vid in the
+    // list and order swept_accept() reads (band_swept_faces()). None: no band term, the move's
+    // band change being 0.
+    std::vector<std::array<Vector3d, 2>> swept_faces;
+    if (swept_rule()) {
+        band_swept_faces(vid, m_vertex_attribute[vid].m_posf, swept_faces);
+        if (swept_faces.empty()) return nullptr;
+    }
     auto e = std::make_shared<BandVolumeEnergy3D>(
         m_input_complex_envelope,
         m_input_complex_pad,
         std::move(cells),
         m_vertex_attribute[vid].m_posf,
         m_offset_params.target_distance);
+    if (swept_rule()) {
+        e->set_swept(
+            m_band_exact,
+            m_offset_params.target_distance,
+            std::move(swept_faces),
+            &m_swept_derivs);
+        return e;
+    }
+
     // EXPERIMENTAL_band_volume_rule "exact": each cell's closed-form integral, as band_cell_term().
     if (m_offset_params.band_volume_rule == "exact") {
         e->set_exact_integral(m_band_exact, m_offset_params.target_distance);

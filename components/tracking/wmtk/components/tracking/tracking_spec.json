@@ -1,6 +1,6 @@
 [
   {
-    "doc": "",
+    "doc": "Rebuilds the map between an application's input surface and its output from the history the application recorded (history_output): one bijective local map per operation, composed in order. operation selects what to do with it: report on it (info), map points (map), carry fields (transfer), follow feature points (features), or do the same through a tet mesh's volume (volume, map_volume).",
     "pointer": "/",
     "type": "object",
     "required": [

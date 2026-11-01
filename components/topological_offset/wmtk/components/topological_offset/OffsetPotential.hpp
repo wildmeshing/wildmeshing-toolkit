@@ -12,6 +12,7 @@
 #include <polysolve/nonlinear/Problem.hpp>
 
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -959,6 +960,60 @@ public:
     /// The message of the last exception the front-flux band term threw on this thread, until
     /// the caller clears it (smooth_front_vertex() rethrows it after the solve).
     static std::string& front_flux_error();
+    /// "exact_swept": the band term's change for the vertex moving from x0 to x1,
+    ///     dE* / delta = ( sum over f of sign_f value(conv(x0, x1, a_f, b_f), delta) ) / delta,
+    /// f = (x, a_f, b_f) the boundary faces of the band B through the vertex, ordered with their
+    /// normal (a_f - x0) x (b_f - x0) out of B (TopoOffsetTetMesh::band_swept_faces()), sign_f
+    /// the sign of (x1 - x0) along it by exact orient3d, a flat swept tet skipped (TopoOffsetTetMesh,
+    /// EXACT SWEPT CHANGE). value() with a Stats (`st`, or a local one), which keeps the value
+    /// table out of the swept tets: no other call asks for them again. The one function both the
+    /// decisions (TopoOffsetTetMesh::band_swept_sum()) and the smoother's search model
+    /// (set_swept()) evaluate.
+    static double swept_change(
+        const ExactBandIntegral& eb,
+        double delta,
+        const Eigen::Vector3d& x0,
+        const Eigen::Vector3d& x1,
+        const std::vector<std::array<Eigen::Vector3d, 2>>& faces,
+        ExactBandIntegral::Stats* st = nullptr);
+    /// set_swept()'s counts: the search model's derivative evaluations, and of them those taken
+    /// from the ring's band cells (front_face_derivs() threw).
+    struct SweptDerivCounts
+    {
+        std::atomic<size_t> evals{0}, ring_cells{0};
+    };
+    /**
+     * @brief EXPERIMENTAL_band_volume_rule "exact_swept": the smoother's search model is the
+     * function the move is judged on (TopoOffsetTetMesh::swept_accept()). Its value at x is
+     * swept_change(x0, x) over `faces`, x0 the position at construction: (E(B(x)) - E(B(x0))) /
+     * delta, E(B) = int_B chi (d - delta) dV, exactly where value() integrates every piece
+     * exactly. Its gradient and Hessian are E(B)'s at x by Reynolds' transport theorem: the sum
+     * over f of ExactBandIntegral::front_face_derivs((x, a_f, b_f), delta, 0) / delta, the
+     * "front_flux" rule's derivative, no D_t term (d is Lipschitz). Each face's normal stays out
+     * of B at every x the solver evaluates, where no ring cell is inverted (polysolve tests
+     * is_step_valid() before each trial value). Defined at x = x0 too, where every swept tet is
+     * flat and its own value_grad_hess() would be 0.
+     *
+     * Where front_face_derivs() throws at x -- a curved bisector crossing a piece of a face (not
+     * logged, ExactBandIntegral::QuietCurvedBisector), or a face's pieces not tiling it -- the
+     * derivatives at that x are the "exact" rule's: the sum over the ring's band cells of
+     * ExactBandIntegral::grad_hess(t, 0) / delta, the derivative of the same E(B) up to the cells
+     * that do not move (the bound's on rule-(a) pieces). Every derivative evaluation is counted
+     * into `counts`, and those that took the ring cells'. The last point's value, and its
+     * gradient and Hessian, are kept.
+     *
+     * Why: the former model, the 7-point rule of G = psi(d) grad d over the front faces with each
+     * rule point's feature kind frozen at x0, differed from the judged function by the jumps of
+     * G.n across the bisectors, which it left out. MEASURED with it (uk-sonic, screw piece 15, 8
+     * threads, 5 turns, 2026-10-23): 4,752 of turn 2's 44,974 front solves refused after 4
+     * halvings (10.6%); the ring max held at one vertex, (2.169, -16.6, 3.056), through turns 1-3
+     * at 7.03 / 5.96 / 5.71x, against the "exact" rule's ring max 8.73 / 3.20 / 2.66x.
+     */
+    void set_swept(
+        std::shared_ptr<const ExactBandIntegral> eb,
+        double delta,
+        std::vector<std::array<Eigen::Vector3d, 2>> faces,
+        SweptDerivCounts* counts);
     /// The current certified ball, its centre and radius (radius < 0: none yet). For the tests.
     std::pair<Eigen::Vector3d, double> certified_ball() const { return {m_ball_c, m_ball_r}; }
 
@@ -1008,13 +1063,34 @@ private:
     /// The front form's value / derivatives at x (eval()).
     double ff_eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H)
         const;
+    /// set_swept(): on, the boundary faces of B through x as (a_f, b_f), per face its labelled
+    /// parts at the last x (ExactBandIntegral::FaceParts), and the counts.
+    bool m_sw = false;
+    std::vector<std::array<Eigen::Vector3d, 2>> m_sw_faces;
+    mutable std::vector<ExactBandIntegral::FaceParts> m_sw_fparts;
+    SweptDerivCounts* m_sw_counts = nullptr;
+    /// The "exact_swept" model's value / derivatives at x (eval()).
+    double sw_eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H)
+        const;
+    /// The moving vertex's position at construction.
+    Eigen::Vector3d m_x0 = Eigen::Vector3d::Zero();
 
     std::vector<Cell> m_cells;
 };
 
 /**
- * @brief The 3D face stencil of order k >= 1 (stencil_order): the barycentric weights of the
- * points of the lattice (i, j, l) / (k + 2) with i, j, l >= 1, every one interior to the face
+ * @brief The 3D face stencil of order k >= 0 under EXPERIMENTAL_stencil_type "subdivision" (the
+ * default): the barycentric weights of the points TopoOffsetTetMesh::for_each_face_sample() read
+ * before the other types existed, in its order. Order 0 is the three corners; order k >= 1 the
+ * vertices of the face subdivided k-1 times by 4-way midpoint refinement, then the centroid of
+ * each of its 4^(k-1) sub-triangles ("up" ones, then "down" ones) -- 4, 10, 31, 109 points for
+ * k = 1..4. Empty for k < 0. Equal weights.
+ */
+const std::vector<std::array<double, 3>>& subdivision_face_stencil(int order);
+
+/**
+ * @brief The 3D face stencil of order k >= 1 under EXPERIMENTAL_stencil_type "interior": the
+ * barycentric weights of the points of the lattice (i, j, l) / (k + 2) with i, j, l >= 1, every one interior to the face
  * (none on its edges or corners), k (k + 1) / 2 of them -- 1, 3, 6, 10, 15 for k = 1..5. Order 1
  * is the centroid. Empty for k < 1. Equal weights: the face integral of a function is read as the
  * area times the mean over the points (EXPERIMENTAL_band_volume_rule "surface").

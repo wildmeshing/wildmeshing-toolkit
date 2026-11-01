@@ -51,6 +51,15 @@ public:
             file.add_cell_field(name, field.doubles());
         }
     }
+    // A cell field in its own type, with its column labels: the memory output keeps both; the
+    // file, as every field there, has Float64 and no labels.
+    void add_cell_field(const std::string& name, const MeshAttribute& field)
+    {
+        if (output)
+            fields[name] = field;
+        else
+            file.add_cell_field(name, field.doubles());
+    }
     bool write_mesh(
         const std::string& path,
         const Eigen::MatrixXd& V,
@@ -86,10 +95,12 @@ public:
                 block(block.rows() - 1, j) = c.vertices[j];
             rows[type].push_back(i);
         }
-        // Each block its rows of every cell field, in the field's own type.
+        // Each block its rows of every cell field, in the field's own type, with its labels.
         for (const auto& [type, indices] : rows)
-            for (const auto& [name, a] : fields)
-                data.cells[type].attributes[name].values = std::visit(
+            for (const auto& [name, a] : fields) {
+                MeshAttribute& field = data.cells[type].attributes[name];
+                field.labels = a.labels;
+                field.values = std::visit(
                     [&indices](const auto& values) -> AttributeValues {
                         std::decay_t<decltype(values)> sub(indices.size(), values.cols());
                         for (size_t r = 0; r < indices.size(); ++r)
@@ -97,6 +108,7 @@ public:
                         return sub;
                     },
                     a.values);
+            }
         data.validate();
         output->insert_or_assign(path, std::move(data));
         // Like VTUWriter::write_mesh, which clears its fields after every write.

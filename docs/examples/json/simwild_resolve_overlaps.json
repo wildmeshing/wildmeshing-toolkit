@@ -1,0 +1,7 @@
+{
+  "application": "simwild",
+  "operation": "resolve_overlaps",
+  "input": ["double_sphere.msh"],
+  "output": "double_sphere_resolved",
+  "resolve_overlaps_tags": [["tag_0", "tag_1"]]
+}

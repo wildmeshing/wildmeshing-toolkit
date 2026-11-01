@@ -237,7 +237,7 @@ bool ManExtractTetMesh::vertex_is_manifold(const Tuple& t) const
     bool is_bound_v = is_boundary_vertex(t);
     if (is_bound_v) {
         out_b_faces.clear(); // should already be empty, just to be safe
-        auto out_b_faces = get_boundary_faces_for_out_tets(t.vid(*this));
+        out_b_faces = get_boundary_faces_for_out_tets(t.vid(*this));
     } // otherwise leave empty
     vertex_dfs_helper(visited_tids_out, out_nb_tets[0], false, out_b_faces);
 

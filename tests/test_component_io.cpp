@@ -655,7 +655,10 @@ TEST_CASE(
     WorkingDirectory cwd;
     // Tagged .msh inputs: physical-group order, the embedded EnvelopeSurface and the ambient group
     // all have to come through read_mesh as the .msh route reads them.
-    const auto file = GENERATE(as<std::string>{}, "topo_annots_groups.msh", "double_sphere.msh");
+    // bunny2d.msh holds its regions as label images (tag_<k> cell fields), which both routes
+    // turn into regions.
+    const auto file =
+        GENERATE(as<std::string>{}, "topo_annots_groups.msh", "double_sphere.msh", "bunny2d.msh");
     INFO(file);
     const auto path = data_file(file);
     compare_routes(
@@ -665,6 +668,21 @@ TEST_CASE(
         {path},
         {"tagged"},
         {{"tagged", io::read_mesh(path)}});
+}
+#endif
+#ifdef WMTK_TEST_manifold_extraction
+TEST_CASE("Manifold extraction leaves a manifold selection as it is", "[component_io]")
+{
+    // tag_0 alone is a sphere, whose boundary is manifold: nothing to offset. The 3D run used to
+    // crash on the empty input complex.
+    const MeshMap meshes{{"tagged", io::read_mesh(data_file("double_sphere_hole.msh"))}};
+    const auto [outputs, report] = manifold_extraction::manifold_extraction(
+        {{"input", "tagged"}, {"tag_selection", "tag_0"}},
+        meshes);
+    CHECK(report.at("after #t") == report.at("before #t"));
+    CHECK(
+        outputs.at("mesh").cell(CellType::Tetrahedron).connectivity.rows() ==
+        meshes.at("tagged").cell(CellType::Tetrahedron).connectivity.rows());
 }
 #endif
 #ifdef WMTK_TEST_manifold_extraction

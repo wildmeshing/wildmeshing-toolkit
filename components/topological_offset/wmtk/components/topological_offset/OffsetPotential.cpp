@@ -4,6 +4,7 @@
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/orient.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <Eigen/Eigenvalues>
 
@@ -18,6 +19,7 @@
 #include <limits>
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <string>
 
 namespace wmtk::components::topological_offset {
@@ -1339,6 +1341,7 @@ BandVolumeEnergy3D::BandVolumeEnergy3D(
     : m_env(std::move(env))
     , m_pad(pad)
     , m_delta(delta)
+    , m_x0(x0)
     , m_cells(std::move(cells))
 {
     for (Cell& c : m_cells) {
@@ -1378,6 +1381,112 @@ void BandVolumeEnergy3D::set_front_flux(
     m_eb_val_set = m_eb_der_set = false;
     m_eb_parts.clear();
     m_eb_parts.resize(m_cells.size());
+}
+
+double BandVolumeEnergy3D::swept_change(
+    const ExactBandIntegral& eb,
+    const double delta,
+    const Eigen::Vector3d& x0,
+    const Eigen::Vector3d& x1,
+    const std::vector<std::array<Eigen::Vector3d, 2>>& faces,
+    ExactBandIntegral::Stats* st)
+{
+    // See the declaration.
+    using wmtk::utils::predicates::orient3d;
+    using wmtk::utils::predicates::Orientation;
+    if (x0 == x1) return 0.;
+    ExactBandIntegral::Stats local;
+    ExactBandIntegral::Stats* sp = st ? st : &local;
+    double s = 0.;
+    for (const auto& [A, B] : faces) {
+        // sign((x1 - x0) . (A - x0) x (B - x0)) = -orient3d(x0, A, B, x1)
+        const Orientation mv = orient3d(x0, A, B, x1);
+        if (mv == Orientation::COPLANAR) continue; // a flat swept tet
+        const double sign = mv == Orientation::POSITIVE ? -1. : 1.;
+        s += sign * eb.value({{x0, x1, A, B}}, delta, sp);
+    }
+    return s / delta;
+}
+
+void BandVolumeEnergy3D::set_swept(
+    std::shared_ptr<const ExactBandIntegral> eb,
+    const double delta,
+    std::vector<std::array<Eigen::Vector3d, 2>> faces,
+    SweptDerivCounts* counts)
+{
+    m_eb = std::move(eb);
+    m_delta = delta;
+    m_sw = true;
+    m_sw_faces = std::move(faces);
+    m_sw_fparts.clear();
+    m_sw_fparts.resize(m_sw_faces.size());
+    m_sw_counts = counts;
+    m_eb_val_set = m_eb_der_set = false;
+    m_eb_parts.clear();
+    m_eb_parts.resize(m_cells.size());
+}
+
+double BandVolumeEnergy3D::sw_eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& H) const
+{
+    // EXPERIMENTAL_band_volume_rule "exact_swept" (set_swept())
+    const auto same = [&](const Eigen::Vector3d& y) {
+        return std::memcmp(x.data(), y.data(), 3 * sizeof(double)) == 0;
+    };
+    if (need == 0) {
+        if (!(m_eb_val_set && same(m_eb_val_x))) {
+            m_eb_E = swept_change(*m_eb, m_delta, m_x0, x, m_sw_faces);
+            m_eb_val_x = x;
+            m_eb_val_set = true;
+        }
+        g.setZero();
+        H.setZero();
+        return m_eb_E;
+    }
+    if (!(m_eb_der_set && same(m_eb_der_x))) {
+        m_eb_g.setZero();
+        m_eb_H.setZero();
+        bool ring = false;
+        try {
+            const ExactBandIntegral::QuietCurvedBisector quiet;
+            for (size_t i = 0; i < m_sw_faces.size(); ++i) {
+                const auto& [a, b] = m_sw_faces[i];
+                Eigen::Vector3d gf;
+                Eigen::Matrix3d hf;
+                m_eb->front_face_derivs({{x, a, b}}, m_delta, 0, gf, hf, &m_sw_fparts[i]);
+                m_eb_g += gf / m_delta;
+                m_eb_H += hf / m_delta;
+            }
+        } catch (const std::runtime_error&) {
+            ring = true;
+        }
+        if (ring) {
+            // the "exact" rule's derivatives (eval()), the faces' having thrown
+            m_eb_g.setZero();
+            m_eb_H.setZero();
+            for (size_t k = 0; k < m_cells.size(); ++k) {
+                const Cell& c = m_cells[k];
+                Eigen::Vector3d gc;
+                Eigen::Matrix3d hc;
+                m_eb->grad_hess({{x, c.q1, c.q2, c.q3}}, 0, m_delta, gc, hc, m_eb_parts[k]);
+                m_eb_g += gc / m_delta;
+                m_eb_H += hc / m_delta;
+            }
+        }
+        if (m_sw_counts) {
+            ++m_sw_counts->evals;
+            if (ring) ++m_sw_counts->ring_cells;
+        }
+        m_eb_der_x = x;
+        m_eb_der_set = true;
+    }
+    g = m_eb_g;
+    H = m_eb_H;
+    // the value is the value path's; gradient() and hessian() do not read it
+    return m_eb_val_set && same(m_eb_val_x) ? m_eb_E : std::numeric_limits<double>::quiet_NaN();
 }
 
 std::string& BandVolumeEnergy3D::front_flux_error()
@@ -1510,6 +1619,7 @@ double BandVolumeEnergy3D::eval(
     Eigen::Matrix3d& H) const
 {
     if (m_ff) return ff_eval(x, need, g, H);
+    if (m_sw) return sw_eval(x, need, g, H);
     if (m_eb) {
         // EXPERIMENTAL_band_volume_rule "exact": per cell J_t / delta with x a corner of t
         const auto same = [&](const Eigen::Vector3d& y) {
@@ -1740,6 +1850,46 @@ void StencilEnergy2D::hessian(const TVector& xv, MatrixXd& hess)
 // ---------------------------------------------------------------------------------------------
 
 namespace {
+std::vector<std::array<double, 3>> build_subdivision_face_stencil(const int k)
+{
+    // The lattice and order of the face sampling before EXPERIMENTAL_stencil_type, the same
+    // arithmetic for every weight, so a point (wa p0 + wb p1 + wc p2) is the same double.
+    std::vector<std::array<double, 3>> w;
+    if (k < 0) return w;
+    if (k == 0) {
+        w.push_back({{1., 0., 0.}});
+        w.push_back({{0., 1., 0.}});
+        w.push_back({{0., 0., 1.}});
+        return w;
+    }
+    // The vertices of the face subdivided k-1 times: n = 2^(k-1) segments per side.
+    const int n = 1 << (k - 1);
+    const double dn = double(n);
+    for (int i = n; i >= 0; --i) {
+        for (int j = n - i; j >= 0; --j) {
+            const int l = n - i - j;
+            w.push_back({{double(i) / dn, double(j) / dn, double(l) / dn}});
+        }
+    }
+    // The sub-triangles' centroids in integer barycentric coordinates over 3n: "up" triangles
+    // (3i+1, 3j+1, 3l+1) for i+j+l = n-1, then "down" triangles (3i+2, 3j+2, 3l+2) for
+    // i+j+l = n-2.
+    const double d3n = 3. * dn;
+    for (int i = n - 1; i >= 0; --i) {
+        for (int j = n - 1 - i; j >= 0; --j) {
+            const int l = n - 1 - i - j;
+            w.push_back({{(3. * i + 1.) / d3n, (3. * j + 1.) / d3n, (3. * l + 1.) / d3n}});
+        }
+    }
+    for (int i = n - 2; i >= 0; --i) {
+        for (int j = n - 2 - i; j >= 0; --j) {
+            const int l = n - 2 - i - j;
+            w.push_back({{(3. * i + 2.) / d3n, (3. * j + 2.) / d3n, (3. * l + 2.) / d3n}});
+        }
+    }
+    return w;
+}
+
 std::vector<std::array<double, 3>> build_interior_face_stencil(const int k)
 {
     std::vector<std::array<double, 3>> w;
@@ -1818,6 +1968,21 @@ const std::vector<double>& fem_face_stencil_weights(const int order)
     thread_local std::map<int, std::vector<double>> more;
     auto it = more.find(order);
     if (it == more.end()) it = more.emplace(order, build_fem_face_stencil_weights(order)).first;
+    return it->second;
+}
+
+const std::vector<std::array<double, 3>>& subdivision_face_stencil(const int order)
+{
+    // As interior_face_stencil(); the points grow as 4^k, so the table stops at order 6 (1,585).
+    static const std::array<std::vector<std::array<double, 3>>, 7> table = [] {
+        std::array<std::vector<std::array<double, 3>>, 7> t;
+        for (int k = 0; k < 7; ++k) t[size_t(k)] = build_subdivision_face_stencil(k);
+        return t;
+    }();
+    if (order >= 0 && order < 7) return table[size_t(order)];
+    thread_local std::map<int, std::vector<std::array<double, 3>>> more;
+    auto it = more.find(order);
+    if (it == more.end()) it = more.emplace(order, build_subdivision_face_stencil(order)).first;
     return it->second;
 }
 

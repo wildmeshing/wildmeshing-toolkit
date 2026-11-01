@@ -14,6 +14,7 @@
 #include <map>
 #include <numeric>
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 // Every function below is the Python function of the same name (exact_tri.py, exact_mesh.py,
@@ -4758,6 +4759,22 @@ struct ExactBandIntegral::FaceWork
     std::vector<std::pair<Ring, Field>> parts; ///< the labelled parts on the offset side
 };
 
+namespace {
+/// QuietCurvedBisector: alive on this thread
+thread_local bool t_quiet_curved = false;
+} // namespace
+
+ExactBandIntegral::QuietCurvedBisector::QuietCurvedBisector()
+    : m_prev(t_quiet_curved)
+{
+    t_quiet_curved = true;
+}
+
+ExactBandIntegral::QuietCurvedBisector::~QuietCurvedBisector()
+{
+    t_quiet_curved = m_prev;
+}
+
 ExactBandIntegral::FaceParts::FaceParts() = default;
 ExactBandIntegral::FaceParts::~FaceParts() = default;
 ExactBandIntegral::FaceParts::FaceParts(FaceParts&&) noexcept = default;
@@ -4797,7 +4814,7 @@ void ExactBandIntegral::label_face(const std::array<Eigen::Vector3d, 3>& f, Face
         Vec3 c = Vec3::Zero();
         for (const Vec3& y : Vr) c += y;
         c = c / double(Vr.size()) + w.c0;
-        log_and_throw_error(
+        const std::string msg = fmt::format(
             "ExactBandIntegral::front_face: {} between feature {} ({}) and feature {} ({}) on a "
             "piece at ({}, {}, {}) | {}",
             curved ? "the bisector is curved and crosses" : "members still cross after the split",
@@ -4809,6 +4826,8 @@ void ExactBandIntegral::label_face(const std::array<Eigen::Vector3d, 3>& f, Face
             c[1],
             c[2],
             face_string(f));
+        if (curved && t_quiet_curved) throw std::runtime_error(msg); // QuietCurvedBisector
+        log_and_throw_error(msg);
     };
     std::vector<int> S;
     std::vector<std::pair<Ring, int>> cells;

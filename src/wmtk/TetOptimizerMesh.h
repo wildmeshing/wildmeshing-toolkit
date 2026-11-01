@@ -1013,11 +1013,11 @@ protected:
      * downstream can undo that. The sizing field can ask for refinement afterwards; it cannot
      * refuse a collapse.
      *
-     * This governs the three BARE coarsening steps -- the opening pass, the closing pass, and
-     * coarsen_mesh() -- and not the collapse inside the loop, which is interleaved with splits
-     * and smoothing and answers to the criterion. Measured on the same model with only the
-     * closing pass left enabled: 1172 faces to 350, so gating the opening one alone is not
-     * enough.
+     * This governs the two BARE coarsening passes -- the opening one and the closing one -- and
+     * not coarsen_mesh(), which mesh_improvement() runs without this gate, nor the collapse inside
+     * the loop, which is interleaved with splits and smoothing and answers to the criterion.
+     * Measured on the same model with only the closing pass left enabled: 1172 faces to 350, so
+     * gating the opening one alone is not enough.
      */
     virtual bool optimization_bare_coarsen_passes() const { return true; }
     /// Called at the end of each iteration of mesh_improvement(), after its operation groups and

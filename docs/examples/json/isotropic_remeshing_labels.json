@@ -1,0 +1,9 @@
+{
+  "application": "isotropic_remeshing",
+  "input": "topo_annots.msh",
+  "output": "topo_annots_remeshed.vtu",
+  "feature_fields": ["tag_0"],
+  "length_abs": 2,
+  "boundary_eps_rel": 0.001,
+  "swap_quality": true
+}

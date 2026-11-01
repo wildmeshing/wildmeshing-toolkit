@@ -122,19 +122,11 @@ void positive_orientation_2D(const MatrixXd& V, MatrixXi& F)
     }
 }
 
-InputData read_image_msh(const std::string& path)
+void tags_from_label_images(MeshData& mesh, const std::string& what)
 {
-    if (!std::filesystem::exists(path)) {
-        log_and_throw_error("File {} does not exist.", path);
-    }
-    // The .msh route reads through the shared reader, so a file and the mesh it holds give the
-    // components the same input. As it always has, it takes the geometry and the region
-    // membership only: other fields in a file (diagnostics, older per-tag scalars such as
-    // tag_0) are not inputs.
-    MeshData mesh = io::read_mesh(path);
-    // A 2D file without physical groups may carry label images instead: integer cell fields
-    // tag_<k> whose value v > 0 puts a cell in region v of image k (img_to_msh_2d.py writes
-    // these). Regions are numbered across the images in k order and named tag_0, tag_1, ...
+    // A 2D mesh without regions may carry label images instead: integer cell fields tag_<k>
+    // whose value v > 0 puts a cell in region v of image k (img_to_msh_2d.py writes these).
+    // Regions are numbered across the images in k order and named tag_0, tag_1, ...
     const auto top =
         mesh.cells.count(CellType::Tetrahedron) ? CellType::Tetrahedron : CellType::Triangle;
     if (auto block = mesh.cells.find(top);
@@ -145,7 +137,7 @@ InputData read_image_msh(const std::string& path)
         if (!images.empty() && top == CellType::Tetrahedron)
             log_and_throw_error(
                 "{}: 3D label images (tag_<k> cell fields) are not supported",
-                path);
+                what);
         std::vector<std::string> labels;
         std::vector<std::pair<int, int>> columns; // (image, value) per region
         for (const auto& [k, img] : images)
@@ -160,8 +152,23 @@ InputData read_image_msh(const std::string& path)
                 for (size_t j = 0; j < columns.size(); ++j)
                     member(i, j) = int(images.at(columns[j].first)(i, 0)) == columns[j].second;
             block->second.attributes["tags"] = {std::move(member), std::move(labels)};
+            for (const auto& [k, img] : images)
+                block->second.attributes.erase("tag_" + std::to_string(k));
         }
     }
+}
+
+InputData read_image_msh(const std::string& path)
+{
+    if (!std::filesystem::exists(path)) {
+        log_and_throw_error("File {} does not exist.", path);
+    }
+    // The .msh route reads through the shared reader, so a file and the mesh it holds give the
+    // components the same input. As it always has, it takes the geometry and the region
+    // membership only: other fields in a file (diagnostics, older per-tag scalars such as
+    // tag_0) are not inputs.
+    MeshData mesh = io::read_mesh(path);
+    tags_from_label_images(mesh, path);
     mesh.vertex_attributes.clear();
     for (auto& [type, cells] : mesh.cells)
         for (auto it = cells.attributes.begin(); it != cells.attributes.end();)
@@ -478,8 +485,15 @@ int resolve_input_dimension(
         const auto& data = component_io->mesh(input_paths.at(0));
         const bool tets = data.cells.count(CellType::Tetrahedron) != 0;
         const bool triangles = data.cells.count(CellType::Triangle) != 0;
+        // Regions, or label images (tag_<k> cell fields) that tags_from_label_images turns into
+        // regions.
+        const auto has_regions = [](const MeshAttributes& attributes) {
+            for (const auto& [name, field] : attributes)
+                if (name == "tags" || name.rfind("tag_", 0) == 0) return true;
+            return false;
+        };
         const bool tagged =
-            tets || (triangles && data.cell(CellType::Triangle).attributes.count("tags"));
+            tets || (triangles && has_regions(data.cell(CellType::Triangle).attributes));
         const int topology = tets || (triangles && !tagged) ? 3 : 2;
         const std::string d = json_params.value("dimension", std::string("auto"));
         if (d != "auto") {
@@ -653,6 +667,30 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         return remap;
     };
     const auto remap = referenced(block.connectivity, out.V_input, out.T_input);
+    // An earlier offset's correspondence names the `vid` of each offset vertex's input vertex (a
+    // mesh row when there is no `vid`, as prismatic_mesh reads it); translated to V_input rows.
+    if (const auto c = mesh.vertex_attributes.find("corr_input_vid");
+        c != mesh.vertex_attributes.end()) {
+        const auto corr = c->second.integers();
+        const auto v = mesh.vertex_attributes.find("vid");
+        const bool has_vid = v != mesh.vertex_attributes.end();
+        const auto vid = has_vid ? v->second.integers() : DataMatrix<int64_t>();
+        if (corr.cols() != 1 || (has_vid && vid.cols() != 1))
+            throw std::runtime_error("corr_input_vid and vid must be scalar");
+        std::map<int64_t, Eigen::Index> row_of;
+        for (Eigen::Index r = 0; r < mesh.V.rows(); ++r)
+            if (!row_of.emplace(has_vid ? vid(r, 0) : r, r).second)
+                throw std::runtime_error("vid must be unique");
+        out.corr_input_vid.assign(out.V_input.rows(), -1);
+        for (Eigen::Index r = 0; r < mesh.V.rows(); ++r) {
+            if (remap[r] < 0 || corr(r, 0) < 0) continue;
+            const auto it = row_of.find(corr(r, 0));
+            if (it == row_of.end() || remap[it->second] < 0)
+                throw std::runtime_error(
+                    fmt::format("corr_input_vid {} names no vertex of the tets", corr(r, 0)));
+            out.corr_input_vid[remap[r]] = remap[it->second];
+        }
+    }
     // A 2D input may come clockwise; it is turned around, as the .msh route always did for
     // images. A counter-clockwise input is unchanged.
     if (dim == 2) positive_orientation_2D(out.V_input, out.T_input);

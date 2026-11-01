@@ -31,6 +31,12 @@ struct InputData
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;
 
+    /// The topological offset's correspondence handed on from an earlier offset (memory route,
+    /// vertex field corr_input_vid): per row of V_input, the V_input row of the input-complex
+    /// vertex it was split off from, -1 for none. Empty when the mesh has no such field. Only the
+    /// offset reads it, and only with save_offset_correspondence (see its spec).
+    std::vector<int64_t> corr_input_vid;
+
     /// A surface input with a history to record (history_output): the files as read and what
     /// became of them before the arrangement, and the input triangles each surface facet of the
     /// embedding lies on, by its corners' positions sorted. Empty otherwise.
@@ -43,6 +49,10 @@ struct InputData
 /**
  * @brief Read a .msh file that contains tags.
  */
+/// A 2D mesh's label images -- integer cell fields tag_<k>, as img_to_msh_2d.py writes them --
+/// as its region field, tags, when it has none: in place, both routes. `what` names the input in
+/// errors.
+void tags_from_label_images(MeshData& mesh, const std::string& what);
 InputData read_image_msh(const std::string& path);
 InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope = nullptr);
 

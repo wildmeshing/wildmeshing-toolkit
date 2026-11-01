@@ -3,7 +3,6 @@
 #include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
-#include <wmtk/utils/Preallocation.hpp>
 
 #include <igl/Timer.h>
 #include <igl/write_triangle_mesh.h>
@@ -637,7 +636,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     TriWildMesh mesh(params, opt_eps, NUM_THREADS);
-    wmtk::set_preallocation_factor_from_json(mesh, json_params);
     mesh.init_mesh(
         V,
         V_rational,

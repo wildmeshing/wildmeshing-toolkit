@@ -1,0 +1,13 @@
+{
+  "application": "tetwild",
+  "input": ["tetwild_features_cube.obj"],
+  "input_edges": ["tetwild_features_edges.obj"],
+  "input_points": ["tetwild_features_points.obj"],
+  "output": "cube",
+  "filter": "tracked",
+  "stop_energy": 10,
+  "num_threads": 0,
+  "report": "cube_report.json",
+  "DEBUG_hausdorff": true,
+  "DEBUG_feature_retention": true
+}

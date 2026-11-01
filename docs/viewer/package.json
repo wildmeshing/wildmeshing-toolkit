@@ -1,0 +1,13 @@
+{
+  "name": "wmtk-viewer",
+  "private": true,
+  "description": "The documentation's mesh viewer: src/wmtk-viewer.js bundled with three.js into docs/assets/viewer/wmtk-viewer.min.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "esbuild src/wmtk-viewer.js --bundle --minify --format=esm --target=es2020 --legal-comments=linked --outfile=../assets/viewer/wmtk-viewer.min.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.186.1"
+  }
+}

@@ -92,7 +92,7 @@ auto on_curves = c.to_output(on_input);   // OutputCurvePoint: .vertices, two me
 auto features = c.feature_points();       // {input_vertex, output_vertex} per feature point
 ```
 
-From Python, the same classes on NumPy arrays (`app/pywildmeshing/tracking_bindings.cpp`),
+From Python, the same classes on NumPy arrays (`python/src/tracking_bindings.cpp`),
 built from the history's bytes -- a memory call's `report["history"]`, or `wm.read_history` --
 or from its file:
 
@@ -1037,5 +1037,5 @@ iteration counts, and other load moves them too. Compare instruction counts.
 | triwild recording | `components/triwild/.../triwild.cpp` |
 | volume history, recorder, shared binary encoding | `src/wmtk/history/VolumeHistory.{hpp,cpp}`, `BinaryIO.hpp`; TetMesh's `start_volume_history` and captures in `TetMesh.cpp` |
 | volume map, its patches and geometry, VolumeTracking | `components/tracking/.../VolumeMap.{hpp,cpp}`, `volume_complex.{hpp,cpp}`, `volume_geometry.{hpp,cpp}`, `volume_io.{hpp,cpp}`, `tracking.hpp`; the app's `volume_app.cpp` |
-| Python classes | `app/pywildmeshing/tracking_bindings.cpp`; tests in `tests/python/test_tracking.py` |
+| Python classes | `python/src/tracking_bindings.cpp`; tests in `tests/python/test_tracking.py` |
 | tests | `tests/test_history.cpp`; `test_surface_map.cpp`, `test_curve_map.cpp`, `test_tracking.cpp`, `test_volume_map.cpp`, `test_volume_ops.cpp`; `test_remeshing_history.cpp`; `test_tetwild_history.cpp`, `test_tetwild_tracking.cpp`; `test_simwild_history.cpp`, `test_simwild_tracking.cpp`; `test_triwild_tracking.cpp` |

@@ -1,0 +1,10 @@
+{
+  "application": "isotropic_remeshing",
+  "input": "bunny.obj",
+  "output": "bunny_coarse.obj",
+  "eps_rel": 0.02,
+  "length_rel": 0.045,
+  "max_iterations": 5,
+  "num_threads": 8,
+  "history_output": "bunny_coarse.history"
+}

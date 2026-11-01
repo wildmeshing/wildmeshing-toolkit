@@ -1,0 +1,8 @@
+{
+  "application": "simwild",
+  "operation": "remeshing",
+  "input": ["double_sphere.msh"],
+  "output": "double_sphere_remeshed",
+  "sizing_field": [{"tags": "tag_0 & tag_1", "length_rel": 0.02}],
+  "num_threads": 4
+}

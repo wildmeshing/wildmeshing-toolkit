@@ -2,7 +2,6 @@
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
-#include <wmtk/utils/Preallocation.hpp>
 
 #include "Parameters.h"
 #include "TetWildMesh.h"
@@ -760,7 +759,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     auto background_owner =
         std::make_unique<tetwild::TetWildMesh>(params, tet_envelope, NUM_THREADS);
     auto& mesh = *background_owner;
-    wmtk::set_preallocation_factor_from_json(mesh, json_params);
 
     /////////////////////////////////////////////////////
 
@@ -856,7 +854,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, tet_envelope, NUM_THREADS);
-    wmtk::set_preallocation_factor_from_json(mesh_new, json_params);
     // Where each facet on the input lies there, by the positions its corners will have.
     for (size_t i = 0; i < facet_sources.size(); ++i) {
         if (facet_sources[i].empty()) continue;

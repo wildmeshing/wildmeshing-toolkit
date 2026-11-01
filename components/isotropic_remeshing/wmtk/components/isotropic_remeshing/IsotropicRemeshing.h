@@ -48,22 +48,59 @@ struct FeatureAttributes
     int64_t vertex_id = -1;
 };
 
-/// A face's values of the per-face fields (see IsotropicRemeshing::set_face_fields).
+/// A face's values of the per-face fields (see IsotropicRemeshing::set_face_fields), and the
+/// region of the feature curves it lies in (see IsotropicRemeshing::set_feature_edges).
 struct FaceFieldAttributes
 {
     std::vector<double> values;
+    int64_t region = -1;
 };
 
-/// The triangles an operation replaces, as IsotropicRemeshing::set_check_inversions sees them.
+/// The triangles an operation replaces, as IsotropicRemeshing::set_check_inversions sees them:
+/// each region of the feature curves among them on its own (one, without curves).
 struct ReplacedSurface
 {
-    /// Their area vectors, summed.
-    Eigen::Vector3d normal = Eigen::Vector3d::Zero();
-    /// The ones that do not face along `normal`.
+    /// Each region's area vectors, summed.
+    std::vector<std::pair<int64_t, Eigen::Vector3d>> normals;
+    /// The ones that do not face along their region's normal.
     size_t against = 0;
-    /// The folds in the stars of their vertices: triangles that do not face along their star's
-    /// summed area vector, over those stars.
+    /// The folds in the stars of their vertices: triangles that do not face along the summed area
+    /// vector of their region of the star, over those stars.
     size_t star_folds = 0;
+    /// A crease of theirs (see IsotropicRemeshing::set_check_inversions), and how its wedge
+    /// opens: the sign of the exact orient3d of its ends and the apexes of the two triangles at
+    /// it, which side of the one triangle's plane the other's apex is on.
+    struct Crease
+    {
+        size_t a = 0, b = 0;
+        int orientation = 0;
+    };
+    std::vector<Crease> creases;
+    /// The summed area vectors of `region`; none if the triangles have none there.
+    std::optional<Eigen::Vector3d> normal(int64_t region) const
+    {
+        for (const auto& [r, n] : normals) {
+            if (r == region) return n;
+        }
+        return std::nullopt;
+    }
+    /// The crease (a, b), in either order; none if the triangles have no such crease.
+    const Crease* crease(size_t a, size_t b) const
+    {
+        for (const Crease& c : creases) {
+            if ((c.a == a && c.b == b) || (c.a == b && c.b == a)) return &c;
+        }
+        return nullptr;
+    }
+    /// A collapse renames the vertex it removes, `from`, to the one it keeps: the creases follow,
+    /// so that an edge of the curve it leaves meets the edge it continues.
+    void rename(size_t from, size_t to)
+    {
+        for (Crease& c : creases) {
+            if (c.a == from) c.a = to;
+            if (c.b == from) c.b = to;
+        }
+    }
     /// Whether they, or the stars around them, fold the surface over already.
     bool folded() const { return against > 0 || star_folds > 0; }
 };
@@ -84,7 +121,8 @@ public:
     VertAttCol vertex_attrs;
     /// Read and written only while the mesh has feature edges or fixed vertices.
     wmtk::AttributeCollection<FeatureAttributes> feature_attrs;
-    /// The mesh's face attributes once set_face_fields() is called; untouched before.
+    /// The mesh's face attributes once set_face_fields() or set_feature_edges() is called;
+    /// untouched before.
     wmtk::AttributeCollection<FaceFieldAttributes> face_field_attrs;
 
     /**
@@ -101,6 +139,14 @@ public:
      *
      * These are the rules wmtk::history::Replay carries feature edges by, so a recorded history
      * holds the curves at every step.
+     *
+     * It also gives each face the region of the curves it lies in -- the faces it reaches without
+     * crossing a feature edge -- which every face keeps: a split gives both halves the face's
+     * region, and since no curve is swapped or merged, no swap or collapse joins two regions.
+     * The fold check judges each region on its own (see set_check_inversions). A curve that does
+     * not close off a region -- one ending away from other curves and the boundary -- has the
+     * same region on both sides. It may come before create_mesh(), which then gives the faces
+     * their regions.
      */
     void set_feature_edges(const std::vector<std::array<size_t, 2>>& edges);
     /**
@@ -200,9 +246,35 @@ public:
      * the operation may leave no more triangles that do not face along it -- face against it, or
      * are flat -- than there were, nor along the normal of the triangles it leaves. Nor may it
      * leave more folds in the stars of the vertices it touches, each star against its own
-     * normal: what it changes is in its neighbours' stars too. So it makes no fold, and may undo
-     * one the input has. A triangle faces along a normal when the exact orient3d says so (see
-     * faces_along in the .cpp). A split moves no vertex and is not checked. On by default.
+     * normal: what it changes is in its neighbours' stars too. So it turns no triangle over
+     * against the triangles around it, and may undo a fold the input has. A triangle faces along
+     * a normal when the exact orient3d says so (see faces_along in the .cpp). A split moves no
+     * vertex and is not checked. On by default.
+     *
+     * With feature curves, each region of the curves (see set_feature_edges) is judged on its own:
+     * its triangles against the normal of its own triangles, before and after, and in each star
+     * the triangles of each region against theirs. Across a curve the surface may turn by any
+     * angle, and where it turns by more than 90 degrees -- at a sharp edge of a B-rep -- the
+     * normal of triangles on both sides points between them, so that well-oriented triangles of
+     * the smaller side face away from it; at 90 degrees or less they face along it. A curve that
+     * does not close off a region has the same region on both sides, and they are judged
+     * together, as without curves.
+     *
+     * But where the surface turns by more than 90 degrees, a side has to turn by less than 90 --
+     * by 180 less the turn -- to lie flat on the other, and then to pass through it, and so still
+     * faces along its own normal. So an operation may not close a crease either: a feature edge
+     * of the triangles it leaves, between two regions whose sides -- each region's triangles
+     * round the edge's ends, their area vectors summed -- faced more than 90 degrees apart before
+     * it, where the two triangles at the edge opened the wedge between the regions as the sides
+     * do. They still have to after it, by the sign of the exact orient3d of the edge's ends and
+     * the two apexes. The sides, not the two triangles, tell how the surface turns there: at a
+     * curve a needle's plane need not be its side's, and two triangles can be closed through
+     * each other already -- the input has such wedges, which an operation may open. The edge a
+     * collapse along the curve leaves is judged against the one it continues; a split moves
+     * nothing, and turns no wedge. Where the surface turns by 90 degrees or less, a side has to
+     * turn by 90 or more to reach the other, and then no longer faces along its region's normal
+     * (where it is flat, at least). Without curves, and at a curve with one region on both
+     * sides, the check is the first paragraph's.
      */
     void set_check_inversions(bool check) { m_check_inversions = check; }
     /**
@@ -261,6 +333,13 @@ public:
     size_t cleanup_triangles(double degrees);
     /// The operations set_check_inversions() refused, since the mesh was made.
     size_t refused_inversions() const { return m_refused_inversions; }
+    /**
+     * @brief Moves `v` to `p` as a smoothing: smooth_vertex() with `p` in place of the smoothed
+     * position, so that the smoothing's rules, the envelopes and the fold check judge the move,
+     * and a history records it. Returns whether it moved. cleanup_triangles() moves its vertices
+     * so.
+     */
+    bool smooth_vertex_to(size_t v, const Eigen::Vector3d& p);
 
     int retry_limit = 10;
     IsotropicRemeshing(
@@ -286,6 +365,8 @@ public:
      *     surface for the tube to refuse), and the vertex splitting a boundary edge inherits
      *     the lineage. Holes and slits narrower than the tube can close when the link
      *     condition is off. Boundary an operation opens elsewhere is not judged.
+     *
+     * Feature edges set before it give the faces their regions here (see set_feature_edges).
      */
     void create_mesh(
         size_t n_vertices,
@@ -421,18 +502,41 @@ private:
     double m_collapse_target = 0;
     std::atomic<size_t> m_refused_inversions = 0;
 
+    /// The faces have their regions (see set_feature_edges).
+    bool m_has_regions = false;
+    /// Gives the faces the regions of the feature edges (see set_feature_edges), if there are
+    /// feature edges; on a mesh with no faces yet, create_mesh() calls it again.
+    void set_regions();
+    /// The region of the curves `f` lies in; -1 without curves.
+    int64_t region(const Tuple& f) const;
+    /// The triangles, by region (see set_feature_edges), in the order the regions first appear.
+    std::vector<std::pair<int64_t, std::vector<Tuple>>> by_region(
+        const std::vector<Tuple>& tris) const;
+    /// Calls side(region, triangles) for each region of the triangles, in the order of
+    /// by_region; without regions once, with all of them as they are, uncopied.
+    template <typename F>
+    void for_each_region(const std::vector<Tuple>& tris, F&& side) const;
+    /// The feature edges (a, b) of the triangles with a triangle on either side, oriented the same
+    /// way, as {a, b, p, q, f, g}: a to b in face f, with apex p, b to a in face g, with apex q.
+    /// Once each. An operation may read the triangle across, and the stars of a and b: one that
+    /// changes them holds a or b, which this operation holds.
+    std::vector<std::array<size_t, 6>> feature_wedges(const std::vector<Tuple>& tris) const;
+    /// Whether at a crease of `before` (see set_check_inversions) the triangles an operation left
+    /// open the wedge the other way, or are flat.
+    bool closes_a_crease(const std::vector<Tuple>& tris, const ReplacedSurface& before) const;
     /// The area vectors of the triangles, summed (twice over).
     Eigen::Vector3d area_normal(const std::vector<Tuple>& tris) const;
     /// How many of the triangles do not face along n.
     size_t not_facing(const std::vector<Tuple>& tris, const Eigen::Vector3d& n) const;
     /// Over the vertices of the triangles, the triangles of each one's star that do not face along
-    /// that star's area_normal. An operation may read these stars: one that changes a star holds
-    /// its centre, which is in the one-ring of what this operation changes, and so held by it.
+    /// the area_normal of their region of that star. An operation may read these stars: one that
+    /// changes a star holds its centre, which is in the one-ring of what this operation changes,
+    /// and so held by it.
     size_t star_folds(const std::vector<Tuple>& tris) const;
     /// The triangles an operation is about to replace.
     ReplacedSurface replaced(const std::vector<Tuple>& tris) const;
     /// Whether the triangles an operation left fold the surface over more than the `before` they
-    /// replaced.
+    /// replaced, or close a crease of theirs.
     bool more_folds(const std::vector<Tuple>& tris, const ReplacedSurface& before) const;
     /// The same; counts a refusal.
     bool folds(const std::vector<Tuple>& tris, const ReplacedSurface& before);
