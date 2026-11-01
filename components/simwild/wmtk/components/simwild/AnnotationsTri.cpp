@@ -886,7 +886,8 @@ void SimWildMeshTri::tight_seal_geom(
                 trace_dir = (b - a) / L;
                 // No split if the inside end is already on the level set (within the tolerance)
                 // or the trace leaves the edge.
-                const auto t = tight_seal::sphere_trace(dist_S, a, trace_dir, L, radius, tol, false);
+                const auto t =
+                    tight_seal::sphere_trace(dist_S, a, trace_dir, L, radius, tol, false);
                 if (!t || !(*t > 0.)) {
                     ++n_not_split;
                     continue;

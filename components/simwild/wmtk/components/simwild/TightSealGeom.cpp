@@ -200,11 +200,8 @@ double point_cell_distance(const Vector2d& p, const std::array<Vector2d, 3>& cel
     return inside ? 0. : best;
 }
 
-double point_triangle_distance(
-    const Vector3d& p,
-    const Vector3d& a,
-    const Vector3d& b,
-    const Vector3d& c)
+double
+point_triangle_distance(const Vector3d& p, const Vector3d& a, const Vector3d& b, const Vector3d& c)
 {
     // Ericson, Real-Time Collision Detection 5.1.5: the closest point by Voronoi regions
     const Vector3d ab = b - a, ac = c - a, ap = p - a;
@@ -660,9 +657,7 @@ size_t SimWildMesh::tight_seal_split_tracked(
     const std::vector<size_t> parents = get_incident_tids_for_edge(t);
     std::map<simplex::Edge, std::pair<bool, char>> parent_state;
     for (const size_t tid : parents) {
-        parent_state[simplex_from_tet(tid).opposite_edge(e)] = {
-            cells.count(tid) > 0,
-            filled[tid]};
+        parent_state[simplex_from_tet(tid).opposite_edge(e)] = {cells.count(tid) > 0, filled[tid]};
     }
 
     std::vector<Tuple> new_edges;

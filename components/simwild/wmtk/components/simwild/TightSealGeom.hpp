@@ -81,11 +81,8 @@ void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& tri
 double point_cell_distance(const Vector2d& p, const std::array<Vector2d, 3>& cell);
 double point_cell_distance(const Vector3d& p, const std::array<Vector3d, 4>& cell);
 /// The distance from p to the closed triangle (a, b, c) in 3D.
-double point_triangle_distance(
-    const Vector3d& p,
-    const Vector3d& a,
-    const Vector3d& b,
-    const Vector3d& c);
+double
+point_triangle_distance(const Vector3d& p, const Vector3d& a, const Vector3d& b, const Vector3d& c);
 
 /// Relative margin of certify_on_cell's tests, so that rounding can only refute a cell.
 inline constexpr double certify_margin = 1e-12;
