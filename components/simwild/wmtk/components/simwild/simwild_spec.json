@@ -252,7 +252,7 @@
     "pointer": "/eps_rel",
     "type": "float",
     "default": 0.002,
-    "doc": "Envelope thickness relative to the bounding box diagonal."
+    "doc": "Envelope thickness relative to the bounding box diagonal. The bounding box is the inputs' own, feature curves and points included, as in tetwild and triwild; a mesh input's is the mesh's. Until 2026-11 it was the embedding's box, padded by a fifteenth of the diagonal on each side: 1.22x the inputs' diagonal on simwild_double_sphere_notop_3d, 1.42x on simwild_curves_2d."
   },
   {
     "pointer": "/eps",
@@ -264,7 +264,7 @@
     "pointer": "/eps_simplify_rel",
     "type": "float",
     "default": 0.0002,
-    "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if skip_simplify is true or the input is already a tet mesh."
+    "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if skip_simplify is true or the input is already a tet mesh. The diagonal is eps_rel's, so both simplifications, before and after the insertion, run at the same eps; until 2026-11 the one before the insertion used the inputs' own and the one after the embedding's padded box."
   },
   {
     "pointer": "/envelope_reference",
@@ -313,7 +313,7 @@
     "pointer": "/length_rel",
     "type": "float",
     "default": 0.05,
-    "doc": "Target edge length relative to the bounding box diagonal."
+    "doc": "Target edge length relative to the bounding box diagonal. The diagonal is eps_rel's: the inputs' own bounding box."
   },
   {
     "pointer": "/sizing_field",

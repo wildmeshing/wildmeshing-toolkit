@@ -91,8 +91,13 @@ ExternalProject_Add(
     # configs drop options the specs no longer have: front_conv_criterion from the nine 2D
     # topological_offset cases (topological_offset_models.json, not run in CI) and w_smooth from
     # simwild_energies_2d, which simwild ignored. No registered case changes.
+    # At 1cf750d (2026-11-01, branch uday/notop-simplify-half off c91a67a)
+    # simwild_double_sphere_notop_3d's eps_simplify_rel goes from 1e-2 to 5e-3, half of its
+    # eps_rel. simwild's eps_rel and eps_simplify_rel are now relative to the same diagonal, so
+    # equal values ask for a simplification at the full eps, which envelope_reference "input"
+    # refuses; until then the simplification measured a diagonal 1.22x smaller on this case.
     #
-    GIT_TAG c91a67a4b99082af3737c58f47b8abb5b43df6b5
+    GIT_TAG 1cf750d6d5806d71d8c35f9f32f4ad466cda9d7d
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

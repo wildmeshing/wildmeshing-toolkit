@@ -223,20 +223,16 @@ double optimization_envelope_eps(const Parameters& params, bool is_3d)
 /// (utils::check_simplification_inside_envelope()); the order-2 tubes and curve anchors are set
 /// to follow it (OptimizerParameters::order2_envelope_eps).
 ///
-/// Checked at the eps the simplification runs at: read_mesh's before the insertion, which
-/// measures the inputs' own diagonal, and Parameters::eps_simplify after it
-/// (SimWildMesh::simplify()). Checked at Parameters::eps_simplify on both routes, a config with
-/// eps_simplify_rel equal to eps_rel was refused though it simplified at 0.82 eps
-/// (simwild_double_sphere_notop_3d).
+/// Both simplifications run at Parameters::eps_simplify: read_mesh derives it from the same
+/// diagonal (InputData::diag).
 double envelope_eps_and_check(Parameters& params, bool is_3d, const InputData& input_data)
 {
     const bool after_insertion = params.preserve_topology && simplification_runs(params, is_3d);
-    const bool before_insertion = input_data.simplified_before_insertion;
     wmtk::utils::check_simplification_inside_envelope(
         params.eps,
-        before_insertion ? input_data.eps_simplify_before_insertion : params.eps_simplify,
+        params.eps_simplify,
         params.envelope_around_simplified,
-        before_insertion || after_insertion);
+        input_data.simplified_before_insertion || after_insertion);
     const double eps = optimization_envelope_eps(params, is_3d);
     if (params.envelope_around_simplified) params.order2_envelope_eps = eps;
     return eps;
@@ -248,7 +244,10 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
 {
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
-    params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
+    params.init(
+        input_data.V_input.colwise().minCoeff(),
+        input_data.V_input.colwise().maxCoeff(),
+        input_data.diag);
 
     igl::Timer timer;
     timer.start();
@@ -469,7 +468,10 @@ void run_2D(
     }
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
-    params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
+    params.init(
+        input_data.V_input.colwise().minCoeff(),
+        input_data.V_input.colwise().maxCoeff(),
+        input_data.diag);
 
     igl::Timer timer;
     timer.start();

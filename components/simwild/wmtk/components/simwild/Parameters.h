@@ -133,11 +133,14 @@ struct Parameters : public wmtk::OptimizerParameters
         operation = json_params["operation"];
     }
 
-    void init(const VectorXd& min_, const VectorXd& max_)
+    /// `min_`, `max_`: the domain, the embedding's box with its padding. `diag`: the diagonal
+    /// eps_rel, eps_simplify_rel and length_rel are relative to, the inputs' own
+    /// (InputData::diag); -1, the domain's.
+    void init(const VectorXd& min_, const VectorXd& max_, const double diag = -1)
     {
         box_min = min_;
         box_max = max_;
-        init_lengths_from_diagonal((box_max - box_min).norm());
+        init_lengths_from_diagonal(diag > 0 ? diag : (box_max - box_min).norm());
 
         if (eps_simplify > 0) {
             epsr_simplify = eps_simplify / diag_l;

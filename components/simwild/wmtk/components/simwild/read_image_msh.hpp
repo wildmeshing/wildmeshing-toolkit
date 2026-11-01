@@ -38,10 +38,13 @@ struct InputData
     /// inserted, and the mesh holds only the input's own curves and curve points
     /// (TetOptimizerMesh::InputCurves); around the simplified geometry it is the simplification.
     bool simplified_before_insertion = false;
-    /// The eps that simplification ran at. It measures the inputs' own diagonal, not the padded
-    /// box's that Parameters::eps_simplify uses, so the two differ (by 1.22x on
-    /// simwild_double_sphere_notop_3d).
-    double eps_simplify_before_insertion = 0;
+    /// The diagonal eps_rel, eps_simplify_rel and length_rel are relative to (Parameters::init()):
+    /// the inputs' own bounding box, the feature curves and points included, as in tetwild and
+    /// triwild. -1 for a mesh input, whose own box is V_input's. Until 2026-11 SimWild used the
+    /// box of the embedding, padded by a fifteenth of the diagonal on each side, for the optimizer,
+    /// and the inputs' own for the simplification before the insertion: 1.22x apart on
+    /// simwild_double_sphere_notop_3d, 1.42x on simwild_curves_2d.
+    double diag = -1;
 
     /// The topological offset's correspondence handed on from an earlier offset (memory route,
     /// vertex field corr_input_vid): per row of V_input, the V_input row of the input-complex

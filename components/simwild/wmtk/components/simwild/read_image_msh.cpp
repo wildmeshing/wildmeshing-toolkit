@@ -244,6 +244,17 @@ InputData read_mesh(
         image_mesh.write_surf_off(output_filename + "_input.off");
     }
 
+    // The scale (InputData::diag), taken before any simplification moves the surface, and the
+    // simplification's eps from it as Parameters::init() derives it -- the absolute eps_simplify
+    // if given, else eps_simplify_rel of the diagonal -- so the simplifications before and after
+    // the insertion run at the same eps.
+    {
+        auto [lo, hi] = image_mesh.bbox_surf_minmax();
+        if (features != nullptr) features->extend_bbox(lo, hi);
+        input_data.diag = (hi - lo).norm();
+    }
+    if (eps_simplify <= 0) eps_simplify = epsr_simplify * input_data.diag;
+
     // Around the input (envelope_reference "input") the envelope is the surface as read, and the
     // labels below follow it; around the simplified surface, what the simplification leaves.
     const bool envelope_around_input = json_params["envelope_reference"] == "input";
@@ -256,11 +267,6 @@ InputData read_mesh(
          * simplification can change the topology. If topology preservation is required,
          * simplification is performed after insertion.
          */
-        auto [bbox_min, bbox_max] = image_mesh.bbox_surf_minmax();
-        double diag = (bbox_max - bbox_min).norm();
-        if (epsr_simplify > 0) {
-            eps_simplify = diag * epsr_simplify;
-        }
         logger().info("Simplify before insertion with eps = {:.4}", eps_simplify);
 
         // The open boundary. Frozen, the simplification cannot touch anything enclosed by
@@ -293,7 +299,6 @@ InputData read_mesh(
             NUM_THREADS,
             boundary_eps);
         input_data.simplified_before_insertion = true;
-        input_data.eps_simplify_before_insertion = eps_simplify;
 
         if (debug_output) {
             image_mesh.write_surf_off(output_filename + "_input_simplified.off");
@@ -488,6 +493,20 @@ InputData read_curves(
         curves.write_curves_obj(output_filename + "_input.obj");
     }
 
+    // The scale and the simplification's eps, as in 3D: the curves' own box, the input points
+    // included.
+    {
+        auto [lo, hi] = curves.bbox_curves_minmax();
+        if (features) {
+            for (const Vector3d& p : features->points) {
+                lo = lo.cwiseMin(p.head<2>());
+                hi = hi.cwiseMax(p.head<2>());
+            }
+        }
+        input_data.diag = (hi - lo).norm();
+    }
+    if (eps_simplify <= 0) eps_simplify = epsr_simplify * input_data.diag;
+
     // As in 3D: around the input the envelope is the curves as read.
     const bool envelope_around_input = json_params["envelope_reference"] == "input";
     MatrixXd V_read;
@@ -496,11 +515,6 @@ InputData read_curves(
     if (!preserve_topology && !skip_simplify) {
         // Same condition the 3D route uses: simplification can change the topology of the
         // input, so it only runs when the caller has said that is acceptable.
-        const auto [bbox_min, bbox_max] = curves.bbox_curves_minmax();
-        const double diag = (bbox_max - bbox_min).norm();
-        if (epsr_simplify > 0) {
-            eps_simplify = diag * epsr_simplify;
-        }
         if (envelope_around_input) {
             V_read = curves.V_curves();
             E_read = curves.E_curves();
@@ -511,7 +525,6 @@ InputData read_curves(
             !json_params["simplify_use_sample_envelope"],
             NUM_THREADS);
         input_data.simplified_before_insertion = true;
-        input_data.eps_simplify_before_insertion = eps_simplify;
 
         if (debug_output) {
             curves.write_curves_obj(output_filename + "_input_simplified.obj");
