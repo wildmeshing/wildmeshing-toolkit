@@ -968,19 +968,24 @@ public:
     /// EXACT SWEPT CHANGE). value() with a Stats (`st`, or a local one), which keeps the value
     /// table out of the swept tets: no other call asks for them again. The one function both the
     /// decisions (TopoOffsetTetMesh::band_swept_sum()) and the smoother's search model
-    /// (set_swept()) evaluate.
+    /// (set_swept()) evaluate. `keep` (the search model's): per face its swept tet's partition,
+    /// written here and read by the model's derivatives at the same x1 (sw_eval()); the value is
+    /// the one computed without it (ExactBandIntegral::Partition).
     static double swept_change(
         const ExactBandIntegral& eb,
         double delta,
         const Eigen::Vector3d& x0,
         const Eigen::Vector3d& x1,
         const std::vector<std::array<Eigen::Vector3d, 2>>& faces,
-        ExactBandIntegral::Stats* st = nullptr);
-    /// set_swept()'s counts: the search model's derivative evaluations, and of them those taken
-    /// from the ring's band cells (front_face_derivs() threw).
+        ExactBandIntegral::Stats* st = nullptr,
+        std::vector<ExactBandIntegral::Partition>* keep = nullptr);
+    /// set_swept()'s counts: the search model's derivative evaluations, of them those with a face
+    /// part labelled by rule (a) (ExactBandIntegral::CurvedBisectorRuleA), those taken from the
+    /// swept tets (grad_hess(), at x != x0) and those whose Hessian is the faces' hess_swept (at
+    /// x0), and those taken from the ring's band cells (front_face_derivs() threw).
     struct SweptDerivCounts
     {
-        std::atomic<size_t> evals{0}, ring_cells{0};
+        std::atomic<size_t> evals{0}, rule_a{0}, swept_tets{0}, swept_x0{0}, ring_cells{0};
     };
     /**
      * @brief EXPERIMENTAL_band_volume_rule "exact_swept": the smoother's search model is the
@@ -994,13 +999,42 @@ public:
      * is_step_valid() before each trial value). Defined at x = x0 too, where every swept tet is
      * flat and its own value_grad_hess() would be 0.
      *
-     * Where front_face_derivs() throws at x -- a curved bisector crossing a piece of a face (not
-     * logged, ExactBandIntegral::QuietCurvedBisector), or a face's pieces not tiling it -- the
+     * A piece of a face that a curved bisector crosses is labelled by value()'s rule (a) in the
+     * limit of a thin swept tet (ExactBandIntegral::CurvedBisectorRuleA), so at x = x0 the
+     * gradient is the exact derivative of the judged change, where value() and the face's
+     * labelling cut alike (not where two edge members cross with a planar bisector). There the
+     * change is no longer E(B(x)) - E(B(x0)): each swept tet takes its own rule (a), and the
+     * faces' derivatives at x are those of the change judged from x, whose sum is a gradient only
+     * where every face's parts take their neighbours' labels. So where a face holds a rule-(a)
+     * part or a swept tet a rule-(a) piece, the derivatives are those of the judged change itself:
+     * at x0 the faces' gradient and their hess_swept (front_face_derivs()), elsewhere the sum over
+     * the swept tets of sign_f ExactBandIntegral::grad_hess(conv(x0, x, a_f, b_f), 1) / delta, on
+     * the partitions the value at x made (swept_change()). Where front_face_derivs() still throws
+     * at x -- a face's pieces not tiling it, or members still crossing after the split -- the
      * derivatives at that x are the "exact" rule's: the sum over the ring's band cells of
      * ExactBandIntegral::grad_hess(t, 0) / delta, the derivative of the same E(B) up to the cells
      * that do not move (the bound's on rule-(a) pieces). Every derivative evaluation is counted
-     * into `counts`, and those that took the ring cells'. The last point's value, and its
+     * into `counts`, those with a rule-(a) face part, those from the swept tets (x != x0) or with
+     * their Hessian (x0), and those that took the ring cells'. The last point's value, and its
      * gradient and Hessian, are kept.
+     *
+     * Why the judged change's own derivatives where rule (a) applies (2026-10-31): MEASURED
+     * (Thingi 70565 piece 16 inward, 1 thread, turn 1, every front solve traced, 3416 solves):
+     * with the faces' derivatives, their summed Hessian was 1e-2 or more asymmetric in 449 solves
+     * (363 after the cut terms on every part's edge, front_face_derivs()), polysolve's LDLT (one
+     * triangle) failed its residual test up to regularization 10 or more, and 277 (141) solves
+     * took regularized gradient steps and moved less than 0.01, against 7 under the ring cells'
+     * derivatives; with these, 5, and no Hessian asymmetric beyond 1e-6. At vertex 18249 (tests,
+     * exact-band-front-rule-a-hessian) the faces' Hessian was 50% off the judged change's second
+     * differences and hess_swept 2.7e-7.
+     *
+     * Why rule (a) there rather than the ring cells' derivatives (2026-10-31): MEASURED (same
+     * input, 2 turns, 1358 sampled derivative evaluations against central differences of the
+     * swept change refined to 8^3 sub-tets), on the 1313 with rule (a) in the ring cells:
+     * gradient error / |true| p50 4.6e-5 against 1.4e-4, p90 0.12 against 0.16; Hessian p90
+     * 2.6e-2 against 5.8e-2; 1469 against 4873 us per evaluation with a rule-(a) face part. The
+     * faces' own derivatives at x were closer to the truth (gradient p90 4.5e-2) but are no
+     * gradient (above).
      *
      * Why: the former model, the 7-point rule of G = psi(d) grad d over the front faces with each
      * rule point's feature kind frozen at x0, differed from the judged function by the jumps of
@@ -1045,6 +1079,8 @@ private:
     /// value_grad_hess() (ExactBandIntegral::Partition).
     mutable std::vector<ExactBandIntegral::Partition> m_eb_parts;
     mutable bool m_eb_val_set = false, m_eb_der_set = false;
+    /// "exact_swept": a swept tet from x0 to m_eb_val_x had a piece labelled by rule (a)
+    mutable bool m_eb_val_rule_a = false;
     mutable Eigen::Vector3d m_eb_val_x = Eigen::Vector3d::Zero();
     mutable Eigen::Vector3d m_eb_der_x = Eigen::Vector3d::Zero();
     mutable double m_eb_E = 0.;
@@ -1068,6 +1104,8 @@ private:
     bool m_sw = false;
     std::vector<std::array<Eigen::Vector3d, 2>> m_sw_faces;
     mutable std::vector<ExactBandIntegral::FaceParts> m_sw_fparts;
+    /// per face its swept tet's partition at the last value's x (swept_change())
+    mutable std::vector<ExactBandIntegral::Partition> m_sw_tparts;
     SweptDerivCounts* m_sw_counts = nullptr;
     /// The "exact_swept" model's value / derivatives at x (eval()).
     double sw_eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H)

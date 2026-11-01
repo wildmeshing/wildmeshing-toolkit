@@ -2274,9 +2274,13 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
                 c->refused.exchange(0));
         }
         logger().info(
-            "\t[exact_swept] search model derivatives: {} evaluations, {} of them from the ring's "
-            "band cells (front_face_derivs() threw)",
+            "\t[exact_swept] search model derivatives: {} evaluations, {} with a face part "
+            "labelled by rule (a) (a curved bisector), {} from the swept tets, {} at x0 with "
+            "their Hessian, {} from the ring's band cells (front_face_derivs() threw)",
             m_swept_derivs.evals.exchange(0),
+            m_swept_derivs.rule_a.exchange(0),
+            m_swept_derivs.swept_tets.exchange(0),
+            m_swept_derivs.swept_x0.exchange(0),
             m_swept_derivs.ring_cells.exchange(0));
     }
     if (damping_active()) {

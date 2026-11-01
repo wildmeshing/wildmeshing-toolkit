@@ -1389,7 +1389,8 @@ double BandVolumeEnergy3D::swept_change(
     const Eigen::Vector3d& x0,
     const Eigen::Vector3d& x1,
     const std::vector<std::array<Eigen::Vector3d, 2>>& faces,
-    ExactBandIntegral::Stats* st)
+    ExactBandIntegral::Stats* st,
+    std::vector<ExactBandIntegral::Partition>* keep)
 {
     // See the declaration.
     using wmtk::utils::predicates::orient3d;
@@ -1398,12 +1399,14 @@ double BandVolumeEnergy3D::swept_change(
     ExactBandIntegral::Stats local;
     ExactBandIntegral::Stats* sp = st ? st : &local;
     double s = 0.;
-    for (const auto& [A, B] : faces) {
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const auto& [A, B] = faces[i];
         // sign((x1 - x0) . (A - x0) x (B - x0)) = -orient3d(x0, A, B, x1)
         const Orientation mv = orient3d(x0, A, B, x1);
         if (mv == Orientation::COPLANAR) continue; // a flat swept tet
         const double sign = mv == Orientation::POSITIVE ? -1. : 1.;
-        s += sign * eb.value({{x0, x1, A, B}}, delta, sp);
+        s += sign * (keep ? eb.value({{x0, x1, A, B}}, delta, sp, (*keep)[i])
+                          : eb.value({{x0, x1, A, B}}, delta, sp));
     }
     return s / delta;
 }
@@ -1420,6 +1423,8 @@ void BandVolumeEnergy3D::set_swept(
     m_sw_faces = std::move(faces);
     m_sw_fparts.clear();
     m_sw_fparts.resize(m_sw_faces.size());
+    m_sw_tparts.clear();
+    m_sw_tparts.resize(m_sw_faces.size());
     m_sw_counts = counts;
     m_eb_val_set = m_eb_der_set = false;
     m_eb_parts.clear();
@@ -1438,7 +1443,10 @@ double BandVolumeEnergy3D::sw_eval(
     };
     if (need == 0) {
         if (!(m_eb_val_set && same(m_eb_val_x))) {
-            m_eb_E = swept_change(*m_eb, m_delta, m_x0, x, m_sw_faces);
+            ExactBandIntegral::Stats
+                st; // its rule-(a) pieces (and no value table, as swept_change()'s own)
+            m_eb_E = swept_change(*m_eb, m_delta, m_x0, x, m_sw_faces, &st, &m_sw_tparts);
+            m_eb_val_rule_a = st.rule_a_pieces > 0;
             m_eb_val_x = x;
             m_eb_val_set = true;
         }
@@ -1449,19 +1457,67 @@ double BandVolumeEnergy3D::sw_eval(
     if (!(m_eb_der_set && same(m_eb_der_x))) {
         m_eb_g.setZero();
         m_eb_H.setZero();
-        bool ring = false;
-        try {
-            const ExactBandIntegral::QuietCurvedBisector quiet;
-            for (size_t i = 0; i < m_sw_faces.size(); ++i) {
-                const auto& [a, b] = m_sw_faces[i];
-                Eigen::Vector3d gf;
-                Eigen::Matrix3d hf;
-                m_eb->front_face_derivs({{x, a, b}}, m_delta, 0, gf, hf, &m_sw_fparts[i]);
-                m_eb_g += gf / m_delta;
-                m_eb_H += hf / m_delta;
+        bool ring = false, rule_a = false, swept = false;
+        // Where rule (a) labels a part, the faces' grad at x is the derivative of the band change
+        // judged from x, and summed over the faces it is a gradient only where every face's parts
+        // take their neighbours' labels: a swept tet's derivative is its flux through f and
+        // through its two side faces (x0, x, a), (x0, x, b), and two neighbouring swept tets'
+        // side-face fluxes cancel only where they integrate the same d. So the model takes the
+        // derivatives of its own value there: at x0 (the swept tets flat, the side faces of no
+        // area) the faces' grad and their hess_swept, the swept tets' Hessian at x0; elsewhere
+        // the swept tets' grad_hess() in x, when a face holds a rule-(a) part or a swept tet a
+        // rule-(a) piece (the value at x, computed there first by the solver's line search, whose
+        // partitions they read). See set_swept().
+        const bool at_x0 = same(m_x0);
+        const bool tets_rule_a = !at_x0 && m_eb_val_set && same(m_eb_val_x) && m_eb_val_rule_a;
+        Eigen::Matrix3d H0 = Eigen::Matrix3d::Zero();
+        if (!tets_rule_a) {
+            try {
+                const ExactBandIntegral::CurvedBisectorRuleA curved(0);
+                for (size_t i = 0; i < m_sw_faces.size(); ++i) {
+                    const auto& [a, b] = m_sw_faces[i];
+                    Eigen::Vector3d gf;
+                    Eigen::Matrix3d hf, h0;
+                    int ra = 0;
+                    m_eb->front_face_derivs(
+                        {{x, a, b}},
+                        m_delta,
+                        0,
+                        gf,
+                        hf,
+                        &m_sw_fparts[i],
+                        &ra,
+                        at_x0 ? &h0 : nullptr);
+                    rule_a = rule_a || ra > 0;
+                    m_eb_g += gf / m_delta;
+                    m_eb_H += hf / m_delta;
+                    if (at_x0) H0 += h0 / m_delta;
+                }
+            } catch (const std::runtime_error&) {
+                ring = true;
             }
-        } catch (const std::runtime_error&) {
-            ring = true;
+        }
+        if (!ring && rule_a && at_x0) {
+            m_eb_H = H0;
+            swept = true;
+        } else if (!ring && (tets_rule_a || rule_a)) {
+            // the swept tets' (swept_change()'s signs and corner order), in their corner x
+            using wmtk::utils::predicates::orient3d;
+            using wmtk::utils::predicates::Orientation;
+            m_eb_g.setZero();
+            m_eb_H.setZero();
+            for (size_t i = 0; i < m_sw_faces.size(); ++i) {
+                const auto& [A, B] = m_sw_faces[i];
+                const Orientation mv = orient3d(m_x0, A, B, x);
+                if (mv == Orientation::COPLANAR) continue;
+                const double sign = mv == Orientation::POSITIVE ? -1. : 1.;
+                Eigen::Vector3d gc;
+                Eigen::Matrix3d hc;
+                m_eb->grad_hess({{m_x0, x, A, B}}, 1, m_delta, gc, hc, m_sw_tparts[i]);
+                m_eb_g += sign * gc / m_delta;
+                m_eb_H += sign * hc / m_delta;
+            }
+            swept = true;
         }
         if (ring) {
             // the "exact" rule's derivatives (eval()), the faces' having thrown
@@ -1478,6 +1534,8 @@ double BandVolumeEnergy3D::sw_eval(
         }
         if (m_sw_counts) {
             ++m_sw_counts->evals;
+            if (rule_a) ++m_sw_counts->rule_a;
+            if (swept) ++(at_x0 ? m_sw_counts->swept_x0 : m_sw_counts->swept_tets);
             if (ring) ++m_sw_counts->ring_cells;
         }
         m_eb_der_x = x;

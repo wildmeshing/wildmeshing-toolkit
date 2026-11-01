@@ -221,6 +221,17 @@ public:
     };
     /// value(t, delta), t's partition read from or written to `keep` (Partition).
     double value(const std::array<Eigen::Vector3d, 4>& t, double delta, Partition& keep) const;
+    /// value(t, delta, stats) -- no value table -- with t's partition read from or written to
+    /// `keep`: "exact_swept"'s search model, whose derivatives at the same x read the swept tets'
+    /// partitions (BandVolumeEnergy3D::swept_change()).
+    double value(
+        const std::array<Eigen::Vector3d, 4>& t,
+        double delta,
+        Stats* stats,
+        Partition& keep) const
+    {
+        return evaluate(t, delta, stats, &keep);
+    }
     /// Grow the value table (value()) to at least `slots` slots, emptied; no table, or one that
     /// large already: nothing. Not thread-safe: called between passes. A table sized to the
     /// constructed mesh only answers few calls once the mesh has grown. MEASURED (cube 1e-2 /
@@ -353,10 +364,11 @@ public:
     /**
      * @brief One face's labelled parts, kept by the caller between front_face() calls on that
      * face, as Partition keeps a cell's partition: the parts are a function of f's 9 coordinates,
-     * in their order, and of the input alone (not of delta or kv). A call whose f equals, bit for
-     * bit, the f they were made for (by this integral) reads them; any other call makes them anew
-     * into it. Why: the smoother asks for the value at x and then for the derivatives at the same
-     * x, each labelling every boundary face through x.
+     * in their order, and of the input alone (not of delta or kv), and of the CurvedBisectorRuleA
+     * alive on the thread. A call whose f equals, bit for bit, the f they were made for (by this
+     * integral, under the same rule) reads them; any other call makes them anew into it. Why: the
+     * smoother asks for the value at x and then for the derivatives at the same x, each labelling
+     * every boundary face through x.
      */
     class FaceParts
     {
@@ -371,6 +383,7 @@ public:
         std::unique_ptr<FaceWork> m_w;
         uint64_t m_owner = 0; ///< the integral's m_id; 0: none
         double m_key[9] = {};
+        int m_rule_a = -1; ///< the CurvedBisectorRuleA's corner they were made under; -1: none
     };
     /**
      * @brief front_face(): int over the triangle f of G.n dA, n = (f1 - f0) x (f2 - f0) / |.| (f
@@ -382,15 +395,31 @@ public:
      *            - sum over cut edges c: n (x) g_c int_c (d - delta) phi^2 ds / |g_c,f|,
      * phi the hat function of corner kv, chi the offset side's indicator, N = (f1 - f0) x
      * (f2 - f0) with column l of dN/dx = e_l x (x_a - x_b) (f ordered (x, x_a, x_b)), and the cut
-     * edges the lines where f crosses an input face's plane into the far side (chi (d - delta)
-     * jumps by delta there; g_c the plane's normal out of the kept side, g_c,f its part in f's
-     * plane). Summed over the band's boundary faces through x these are E(B)'s gradient and
-     * Hessian in x: Reynolds' transport theorem on int_B chi (d - delta), the boundary moving
-     * with velocity phi; d is Lipschitz, so no medial-axis term and no D_t term. A part of f
-     * lying on the input (d = 0 on it) takes grad d from the band side (the side the band is on,
-     * the offset side with a side; -n without one), the one-sided limit, as value_grad_hess().
-     * Throws on a curved bisector (above) or if f's pieces do not tile it (max_distance()).
-     * With `keep`, f's labelled parts are read from or written to it (FaceParts).
+     * edges every edge of a part of f that is not an edge of f, each with its part's own
+     * integrand (g_c the normal of the plane that cut it, out of the part, g_c,f its part in f's
+     * plane): they cancel in pairs where the integrand is continuous across the edge and leave
+     * its jump where it is not -- where f crosses into the far side of an input face's plane or
+     * an edge or vertex member's side plane (chi (d - delta) jumps by delta), and on the edges of
+     * a part labelled by rule (a). Summed over the band's boundary faces through x these are
+     * E(B)'s gradient and Hessian in x: Reynolds' transport theorem on int_B chi (d - delta), the
+     * boundary moving with velocity phi; d is Lipschitz, so no medial-axis term and no D_t term. A
+     * part of f lying on the input (d = 0 on it) takes grad d from the band side (the side the
+     * band is on, the offset side with a side; -n without one), the one-sided limit, as
+     * value_grad_hess(). Throws on a curved bisector (above), unless a CurvedBisectorRuleA is
+     * alive on the thread, or if f's pieces do not tile it (max_distance()). With `keep`, f's
+     * labelled parts are read from or written to it (FaceParts). `rule_a`: the number of f's
+     * parts that CurvedBisectorRuleA labelled (0 without one).
+     * `hess_swept`: the Hessian at w = 0 of the integral over the swept tet conv(x, x + w, x_a,
+     * x_b), signed by w.n, its labels f's (the thin swept tet's, CurvedBisectorRuleA's rule (a)):
+     *     hess_swept = (n (x) Q + Q (x) n) / 2,   Q = int_f chi phi^2 grad d dA
+     *                  - sum over cut edges c: g_c int_c (d - delta) phi^2 ds / |g_c,f|,
+     * as the swept tet is {p + s w : p in f, 0 <= s <= phi(p)}, so its integral is
+     * (w.n) int_f int_0^phi chi (d - delta)(p + s w) ds dA, whose w-derivative at 0 is Q / 2 (the
+     * cut edges: a segment p + s w crossing a cut plane near the edge). hess is the derivative in
+     * x of grad, the band change judged from x; hess_swept the second derivative of the change
+     * judged from this x. Summed over the band's boundary faces they agree where every face's
+     * parts take the same labels as their neighbours' (no rule (a)); with rule (a) only
+     * hess_swept is a Hessian (BandVolumeEnergy3D::set_swept()).
      */
     double front_face(
         const std::array<Eigen::Vector3d, 3>& f,
@@ -402,25 +431,43 @@ public:
         int kv,
         Eigen::Vector3d& grad,
         Eigen::Matrix3d& hess,
-        FaceParts* keep = nullptr) const;
+        FaceParts* keep = nullptr,
+        int* rule_a = nullptr,
+        Eigen::Matrix3d* hess_swept = nullptr) const;
     /**
-     * @brief While one is alive on a thread, a curved bisector crossing a piece of a face
-     * (front_face(), front_face_derivs()) throws without being logged first; every other error is
-     * logged as before. "exact_swept"'s search model catches that throw and takes the ring cells'
-     * derivatives at that x instead (BandVolumeEnergy3D::set_swept()): there it is an expected
-     * outcome, not an error, and each throw would otherwise log a line with the face in hex
-     * floats.
+     * @brief While one is alive on a thread, a piece of a face (front_face(), front_face_derivs())
+     * that a curved bisector crosses is labelled by value()'s rule (a) in the limit of a thin
+     * swept tet, instead of throwing. The swept tet conv(x, x + t v, a, b) of the face f =
+     * (x, a, b) moving its corner `kv` = x has height t (v.n) phi over f, phi the hat function of
+     * x, so value()'s pieces of it are the pieces of f times that height, and its rule (a) keeps
+     * on such a piece the member g of smallest int d_g dV = t (v.n) int_R d_g phi dA + O(t^2).
+     * Here: the piece R (members S, after prune_points()) is split by the members' side planes as
+     * value()'s side_split() splits its piece; a part on the offset side of every member takes the
+     * member of smallest int_part d_g phi dA (the first in S on a tie, as value()); a part where
+     * they disagree takes the side of the member nearest at its centroid (nearest_member()), and
+     * if that is the offset side the member of smallest integral among those putting it there;
+     * else it is dropped. The part is then labelled with that member as any other (labeled()).
+     * So summed over the band's boundary faces through x, front_face_derivs() at x is the exact
+     * derivative at x of the band change "exact_swept" judges a move from x on (the sum of
+     * value() over the swept tets), where value() and the face's labelling cut alike: they do
+     * not where two edge members cross with a planar bisector (value() takes rule (a) there, the
+     * labelling splits the piece exactly).
+     *
+     * "exact_swept"'s search model opens one (BandVolumeEnergy3D::set_swept(); before, it took
+     * the ring cells' derivatives where a face threw). MEASURED (test_exact_swept's
+     * curved-bisector fixture, 2026-10-23): at x0, against central differences of the judged
+     * swept change, gradient 1.5e-11 relative; the ring cells' 2.2e-2.
      */
-    class QuietCurvedBisector
+    class CurvedBisectorRuleA
     {
     public:
-        QuietCurvedBisector();
-        ~QuietCurvedBisector();
-        QuietCurvedBisector(const QuietCurvedBisector&) = delete;
-        QuietCurvedBisector& operator=(const QuietCurvedBisector&) = delete;
+        explicit CurvedBisectorRuleA(int kv);
+        ~CurvedBisectorRuleA();
+        CurvedBisectorRuleA(const CurvedBisectorRuleA&) = delete;
+        CurvedBisectorRuleA& operator=(const CurvedBisectorRuleA&) = delete;
 
     private:
-        bool m_prev = false;
+        int m_prev = -1;
     };
     /**
      * @brief D_t = int_t (d - delta) dV - oint_dt G.n dA of the cell t (either orientation): 0

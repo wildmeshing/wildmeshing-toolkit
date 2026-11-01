@@ -1,6 +1,7 @@
 #include <wmtk/components/topological_offset/TopoOffsetTetMesh.h>
 #include <wmtk/components/topological_offset/ExactBandIntegral.hpp>
 #include <wmtk/components/topological_offset/OffsetPotential.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <Eigen/Geometry>
 #include <catch2/catch_approx.hpp>
@@ -372,11 +373,15 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
     //  (1) its value against band_swept_change() from x0, bit for bit;
     //  (2) its gradient and Hessian against central differences of its value and gradient;
     //  (3) its gradient and Hessian against the "exact" rule's (band_volume_energy_at() under
-    //      "exact"), at x0 and at displaced points: both are E(B)'s, and no derivative is taken
-    //      from the ring's band cells;
+    //      "exact"), at x0 and at displaced points: both are E(B)'s, and no face part is labelled
+    //      by rule (a) nor any derivative taken from the ring's band cells;
     //  (4) front faces crossed by the curved bisector of a face and an edge (the input of
-    //      exact-band-front-curved): the derivatives are the "exact" rule's, counted as taken
-    //      from the ring's band cells.
+    //      exact-band-front-curved): their pieces labelled by rule (a)
+    //      (ExactBandIntegral::CurvedBisectorRuleA), no derivative from the ring's band cells; at
+    //      x0 the faces' gradient and hess_swept, elsewhere the swept tets' grad_hess(), and with
+    //      the value computed first the same numbers from its partitions;
+    //  (5) there, at x0, the gradient and Hessian against differences of the value (the judged
+    //      swept change).
     std::printf("exact-swept-search-model\n");
     Eigen::MatrixXd Vc, Vv;
     Eigen::MatrixXi Fc, Fv;
@@ -404,7 +409,7 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
           std::tuple{"valley bisector", &in_valley, Vec3(0.2, 0.05, 0.052)}}) {
         double worst_g = 0., worst_h = 0., worst_eg = 0., worst_eh = 0.;
         int n_models = 0, n_points = 0, value_mismatch = 0;
-        size_t evals = 0, ring = 0;
+        size_t evals = 0, rule_a = 0, ring = 0;
         for (int trial = 0; trial < 20; ++trial) {
             std::vector<Vec3> pts;
             std::vector<std::array<int, 4>> T;
@@ -457,6 +462,7 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
                 worst_eh = std::max(worst_eh, (H - He).norm() / He.norm());
             }
             evals += mesh->m_swept_derivs.evals.exchange(0);
+            rule_a += mesh->m_swept_derivs.rule_a.exchange(0);
             ring += mesh->m_swept_derivs.ring_cells.exchange(0);
         }
         CHECK(n_models > 0);
@@ -466,6 +472,7 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
         CHECK(worst_eg <= 1e-9);
         CHECK(worst_eh <= 1e-8);
         CHECK(evals > 0);
+        CHECK(rule_a == 0);
         CHECK(ring == 0);
         std::printf(
             "  (1)-(3) %s: %d models, %d points: value against band_swept_change() %d "
@@ -515,28 +522,147 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
         const auto sw = energy_at(*mesh, "exact_swept");
         REQUIRE(ex);
         REQUIRE(sw);
-        double worst_g = 0., worst_h = 0.;
+        // face rule (a) by hand: the band's boundary faces through the vertex, the crossed pieces
+        // labelled by value()'s rule (a) (ExactBandIntegral::CurvedBisectorRuleA)
+        std::vector<std::array<Vec3, 2>> faces;
+        mesh->band_swept_faces(0, x0, faces);
+        const double delta = mesh->m_offset_params.target_distance;
+        // the faces' grad and (Hs) hess_swept, over delta
+        const auto fra = [&](const Vec3& x, Vec3& g, Eigen::Matrix3d& Hs, int& parts) {
+            const ExactBandIntegral::CurvedBisectorRuleA curved(0);
+            g.setZero();
+            Hs.setZero();
+            parts = 0;
+            for (const auto& [a, b] : faces) {
+                Vec3 gf;
+                Eigen::Matrix3d hf, hs;
+                int ra = 0;
+                mesh->m_band_exact
+                    ->front_face_derivs({{x, a, b}}, delta, 0, gf, hf, nullptr, &ra, &hs);
+                g += gf / delta;
+                Hs += hs / delta;
+                parts += ra;
+            }
+        };
+        // the swept tets' derivatives in their corner x (swept_change()'s signs), over delta
+        const auto swept = [&](const Vec3& x, Vec3& g, Eigen::Matrix3d& H) {
+            using wmtk::utils::predicates::orient3d;
+            using wmtk::utils::predicates::Orientation;
+            g.setZero();
+            H.setZero();
+            for (const auto& [a, b] : faces) {
+                const Orientation mv = orient3d(x0, a, b, x);
+                if (mv == Orientation::COPLANAR) continue;
+                const double sign = mv == Orientation::POSITIVE ? -1. : 1.;
+                Vec3 gc;
+                Eigen::Matrix3d hc;
+                ExactBandIntegral::Partition keep;
+                mesh->m_band_exact->grad_hess({{x0, x, a, b}}, 1, delta, gc, hc, keep);
+                g += sign * gc / delta;
+                H += sign * hc / delta;
+            }
+        };
+        // (4) the model's derivatives: at x0 the faces' grad and hess_swept, elsewhere the swept
+        // tets'; "exact"'s (the ring cells' rule-(a) bound's derivative) for the record
+        double worst_g = 0., worst_h = 0., worst_eg = 0., worst_eh = 0.;
         for (const Vec3& dx :
              {Vec3(0., 0., 0.), Vec3(0.004, -0.003, 0.005), Vec3(-0.005, 0.002, -0.004)}) {
-            Vec3 g, ge;
-            Eigen::Matrix3d H, He;
+            Vec3 g, ga, ge;
+            Eigen::Matrix3d H, Ha, He;
+            int pa = 0;
             derivs(*sw, x0 + dx, g, H);
+            if (dx.isZero()) {
+                fra(x0, ga, Ha, pa);
+            } else {
+                swept(x0 + dx, ga, Ha);
+            }
             derivs(*ex, x0 + dx, ge, He);
-            worst_g = std::max(worst_g, (g - ge).norm() / ge.norm());
-            worst_h = std::max(worst_h, (H - He).norm() / He.norm());
+            worst_g = std::max(worst_g, (g - ga).norm() / ga.norm());
+            worst_h = std::max(worst_h, (H - Ha).norm() / Ha.norm());
+            worst_eg = std::max(worst_eg, (g - ge).norm() / ge.norm());
+            worst_eh = std::max(worst_eh, (H - He).norm() / He.norm());
         }
         const size_t evals = mesh->m_swept_derivs.evals.exchange(0);
+        const size_t rule_a = mesh->m_swept_derivs.rule_a.exchange(0);
+        const size_t swept_tets = mesh->m_swept_derivs.swept_tets.exchange(0);
+        const size_t swept_x0 = mesh->m_swept_derivs.swept_x0.exchange(0);
         const size_t ring = mesh->m_swept_derivs.ring_cells.exchange(0);
         CHECK(evals == 3);
-        CHECK(ring == 3);
+        CHECK(rule_a == 3);
+        CHECK(swept_tets == 2);
+        CHECK(swept_x0 == 1);
+        CHECK(ring == 0);
         CHECK(worst_g <= 1e-14);
         CHECK(worst_h <= 1e-14);
+        {
+            // the value first, as the solver's line search: the derivatives read its swept tets'
+            // partitions (and skip the faces), the same numbers
+            const Vec3 y = x0 + Vec3(0.003, 0.004, -0.002);
+            const Eigen::VectorXd yv = y;
+            sw->value(yv);
+            Vec3 g, gs;
+            Eigen::Matrix3d H, Hs;
+            derivs(*sw, y, g, H);
+            swept(y, gs, Hs);
+            CHECK(g == gs);
+            CHECK(H == Hs);
+            CHECK(mesh->m_swept_derivs.swept_tets.exchange(0) == 1);
+            CHECK(mesh->m_swept_derivs.rule_a.exchange(0) == 0);
+            mesh->m_swept_derivs.evals.exchange(0);
+        }
         std::printf(
-            "  (4) curved bisector across the front faces: %zu derivative evaluations, %zu from "
-            "the ring's band cells; against \"exact\" gradient %.1e, Hessian %.1e\n",
+            "  (4) curved bisector across the front faces: %zu derivative evaluations, %zu with a "
+            "rule-(a) part, %zu from the swept tets, %zu at x0 with their Hessian, %zu from the "
+            "ring's band cells; against the faces' grad and hess_swept at x0 and the swept tets' "
+            "elsewhere gradient %.1e, Hessian %.1e; against \"exact\" gradient %.1e, Hessian "
+            "%.1e\n",
             evals,
+            rule_a,
+            swept_tets,
+            swept_x0,
             ring,
             worst_g,
-            worst_h);
+            worst_h,
+            worst_eg,
+            worst_eh);
+        // (5)
+        Vec3 gA;
+        Eigen::Matrix3d HA;
+        int parts = 0;
+        fra(x0, gA, HA, parts);
+        derivs(*sw, x0, gA, HA);
+        mesh->m_swept_derivs.evals.exchange(0);
+        mesh->m_swept_derivs.rule_a.exchange(0);
+        mesh->m_swept_derivs.swept_x0.exchange(0);
+        const auto val = [&](const Vec3& dx) {
+            const Eigen::VectorXd y = Vec3(x0 + dx);
+            return sw->value(y);
+        };
+        double eg = std::numeric_limits<double>::infinity(), eh = eg;
+        for (const double h : {1e-4, 3e-5, 1e-5}) {
+            Vec3 gf;
+            Eigen::Matrix3d Hf;
+            for (int i = 0; i < 3; ++i) {
+                const Vec3 ei = h * Vec3::Unit(i);
+                gf[i] = (val(ei) - val(-ei)) / (2. * h);
+                for (int j = 0; j < 3; ++j) {
+                    const Vec3 ej = h * Vec3::Unit(j);
+                    Hf(i, j) =
+                        (val(ei + ej) - val(ei - ej) - val(ej - ei) + val(-ei - ej)) / (4. * h * h);
+                }
+            }
+            eg = std::min(eg, (gf - gA).norm() / gA.norm());
+            eh = std::min(eh, (Hf - HA).norm() / HA.norm());
+        }
+        CHECK(parts > 0);
+        CHECK(eg <= 1e-6);
+        CHECK(eh <= 1e-5);
+        std::printf(
+            "  (5) the model across the same faces: %d rule-(a) parts; at x0 against differences "
+            "of "
+            "its value gradient %.1e, Hessian %.1e\n",
+            parts,
+            eg,
+            eh);
     }
 }
