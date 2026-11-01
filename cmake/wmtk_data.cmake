@@ -98,8 +98,11 @@ ExternalProject_Add(
     # data2 main gained since 89911f5: c91a67a's dropped options and the 3D cube offset cases.
     # At 5e6a19c (2026-11-01, data2 main) the two explicit tight_seal_geom cases drop
     # tight_seal_geom_growth, which simwild no longer has (and rejects as an unknown key).
+    # At 00e090e (2026-11-01, data2 main) the explicit 3D tight_seal_geom case uses d = 1.0
+    # (was 0.5): at 0.5 no cell of double_sphere_hole is surely in the join region, and the case
+    # filled nothing; at 1.0 it fills the cavity between the two shells.
     #
-    GIT_TAG 5e6a19c4a0eda4d2b22e5c8e77930f187d934723
+    GIT_TAG 00e090e79b774ab6892a4a9912a82b19c49728c9
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
