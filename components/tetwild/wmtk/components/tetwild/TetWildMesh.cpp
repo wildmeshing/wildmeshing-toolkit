@@ -326,7 +326,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             }
         }
         tag_order2_edges(
-            m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio,
+            m_tet_params.order2_eps() * m_tet_params.order2_envelope_ratio,
             m_envelope && m_envelope->use_exact);
 
         for (const Tuple& t : get_tets()) {

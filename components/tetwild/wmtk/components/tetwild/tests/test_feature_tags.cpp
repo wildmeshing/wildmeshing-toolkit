@@ -397,6 +397,97 @@ TEST_CASE("open-boundary-tags-drop-when-glued", "[tetwild_operation][order2]" + 
     }
 }
 
+TEST_CASE("open-boundary-tags-only-on-the-inputs-own", "[tetwild_operation][order2]" + release_only)
+{
+    // The input is the open square [0, 1]^2 in z = 0; the surface inserted is that square with
+    // the hole [0.4, 0.6]^2 cut out, as a simplification without preserve_topology can open a
+    // surface. The hole's rim lies on the input but on no curve of it. Held to the input's own
+    // curves (TetOptimizerMesh::InputCurves), the outer rim is tagged and the hole's is not;
+    // without them, as when nothing ran before the insertion, both are. Every edge still tagged
+    // after the optimization lies in its tube.
+    for (const bool around_input : {true, false}) {
+        CAPTURE(around_input);
+        Parameters params;
+        params.epsr = 1e-3;
+        const std::vector<Vector3d> v_in = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
+        const std::vector<std::array<size_t, 3>> f_in = {{{0, 1, 2}}, {{0, 2, 3}}};
+        const std::vector<Vector3d> v = {
+            {0, 0, 0},
+            {1, 0, 0},
+            {1, 1, 0},
+            {0, 1, 0},
+            {0.4, 0.4, 0},
+            {0.6, 0.4, 0},
+            {0.6, 0.6, 0},
+            {0.4, 0.6, 0}};
+        const std::vector<std::array<size_t, 3>> f = {
+            {{0, 1, 5}},
+            {{0, 5, 4}},
+            {{1, 2, 6}},
+            {{1, 6, 5}},
+            {{2, 3, 7}},
+            {{2, 7, 6}},
+            {{3, 0, 4}},
+            {{3, 4, 7}}};
+        params.init(v_in, f_in);
+        std::vector<Eigen::Vector3i> F_in;
+        for (const auto& t : f_in) F_in.emplace_back(int(t[0]), int(t[1]), int(t[2]));
+        auto env = std::make_shared<Envelope>();
+        env->init(v_in, F_in, params.eps);
+
+        std::vector<Vector3r> v_rational;
+        std::vector<std::array<size_t, 3>> facets;
+        std::vector<bool> is_v_on_input;
+        std::vector<std::array<size_t, 4>> tets;
+        std::vector<bool> tet_face_on_input_surface;
+        std::vector<int8_t> tet_face_orientation;
+        {
+            TetWildMesh mesh_insertion(params, env, 0);
+            mesh_insertion.insertion_by_volumeremesher(
+                v,
+                f,
+                v_rational,
+                facets,
+                is_v_on_input,
+                tets,
+                tet_face_on_input_surface,
+                &tet_face_orientation);
+        }
+        TetWildMesh mesh(params, env, 0);
+        if (around_input) mesh.set_input_curves(v_in, f_in, {1, 1}, nullptr);
+        mesh.init_from_Volumeremesher(
+            v_rational,
+            facets,
+            is_v_on_input,
+            tets,
+            tet_face_on_input_surface,
+            &tet_face_orientation);
+
+        size_t n_outer = 0, n_hole = 0;
+        for (const auto& e : mesh.get_edges()) {
+            if (!mesh.m_feature_edge_attribute[e.eid(mesh)].has(
+                    TetWildMesh::FeatureEdgeAttributes::order2)) {
+                continue;
+            }
+            const Vector3d mid = (mesh.m_vertex_attribute[e.vid(mesh)].m_posf +
+                                  mesh.m_vertex_attribute[e.switch_vertex(mesh).vid(mesh)].m_posf) /
+                                 2;
+            const bool in_hole = mid[0] > 0.3 && mid[0] < 0.7 && mid[1] > 0.3 && mid[1] < 0.7;
+            ++(in_hole ? n_hole : n_outer);
+        }
+        CAPTURE(n_outer, n_hole);
+        CHECK(n_outer > 0);
+        if (around_input) {
+            CHECK(n_hole == 0);
+        } else {
+            CHECK(n_hole > 0);
+        }
+
+        mesh.mesh_improvement(2);
+        CHECK(mesh.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::order2) == 0);
+    }
+}
+
 TEST_CASE("feature-curves-held-to-their-own-tubes", "[tetwild_operation][features]" + release_only)
 {
     // Two parallel curves 0.07 apart, each its own input_edges file, in tubes of 0.05. The tubes

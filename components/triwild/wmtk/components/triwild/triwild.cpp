@@ -403,29 +403,32 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         100 * simplify_envelope_ratio,
         envelope_eps);
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
-    // The only ratio that is wrong independently of how the envelope is implemented. Above 1
-    // the simplification is allowed to move geometry further than the triangulation's own
-    // envelope permits, so the optimizer starts from a mesh that is already outside it and
-    // every operation near those curves is vetoed.
+    // Which geometry every envelope and anchor is built around: the input, or the simplified
+    // curves (see below, where they are built).
+    const bool env_around_simplified = json_params["envelope_reference"] == "simplified";
+    // The only ratio that is wrong independently of how the envelope is implemented. At 1 and
+    // above, around the input, the simplification is allowed to move geometry as far as or
+    // further than the triangulation's own envelope permits, so the optimizer starts from a mesh
+    // that is outside it or on its boundary, and every operation near those curves is vetoed.
+    // Refused, before any work; until 2026-10 a warning above 1.
     //
     // There used to be a warning at 0.5 here. That number was the sampled backend's internal
     // compensation showing through -- its edge test accepts a segment only within eps/2,
     // because its sampling guarantees the other eps/2 -- and both backends guarantee the same
     // thing to their caller: everything they accept is within eps. A caller reasoning about
     // eps/2 is reasoning about an implementation detail it should not be able to see.
-    if (simplify_envelope_ratio > 1.0) {
-        logger().warn(
-            "simplify_envelope_ratio {} exceeds 1; the simplification may move curves further "
-            "than the triangulation's envelope allows, leaving the mesh outside it at init.",
-            simplify_envelope_ratio);
-    }
+    const bool skip_simplify = json_params["skip_simplify"];
+    wmtk::utils::check_simplification_inside_envelope(
+        envelope_eps,
+        simplify_eps,
+        env_around_simplified,
+        /*simplification_ran=*/!skip_simplify);
 
     MatrixXd V_simp = V_in;
     MatrixXi E_simp = E_in;
     std::vector<int> E_simp_input = E_in_input;
     std::vector<history::Edit> collapses;
     std::vector<int> surviving_vertices;
-    const bool skip_simplify = json_params["skip_simplify"];
     if (skip_simplify) {
         logger().info("skip simplification");
     } else {
@@ -590,9 +593,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     // Which curves is the optimizer's envelope built around, and at what radius?
     //
-    // Default: the ORIGINAL input curves at the full eps.
+    // envelope_reference "input", the default: the ORIGINAL input curves at the full eps.
     //
-    // With optimize_envelope_around_simplified: the SIMPLIFIED curves at the REMAINING
+    // envelope_reference "simplified": the SIMPLIFIED curves at the REMAINING
     // tolerance, envelope_eps - simplify_eps. The deviation budget is unchanged by the
     // triangle inequality -- the simplification is already within simplify_eps of the input,
     // so anything within (envelope_eps - simplify_eps) of it is within envelope_eps of the
@@ -606,7 +609,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // there is nothing to charge, and subtracting anyway would confine the optimizer to a
     // fraction of the tolerance its result is judged against -- for no gain, since the
     // geometry already starts centred in the full envelope.
-    const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
     const bool charge_simplify = env_around_simplified && !skip_simplify;
     const double opt_eps = wmtk::utils::optimization_envelope_eps(
         envelope_eps,
@@ -627,6 +629,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     TriWildMesh mesh(params, opt_eps, NUM_THREADS);
+    // Around the input after a simplification, the input's own curve ends and junctions: the
+    // anchors are centred on them, and an end the simplification made is not anchored
+    // (TriOptimizerMesh::m_input_curve_points).
+    if (!env_around_simplified && !skip_simplify) mesh.set_input_curve_points(V_in, E_in);
     mesh.init_mesh(
         V,
         V_rational,

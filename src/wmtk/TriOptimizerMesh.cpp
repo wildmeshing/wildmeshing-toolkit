@@ -24,6 +24,7 @@
 // clang-format on
 
 #include <queue>
+#include <tuple>
 
 namespace wmtk {
 
@@ -772,7 +773,45 @@ bool TriOptimizerMesh::is_edge_on_bbox(const std::array<size_t, 2>& vids) const
     return m_edge_attribute[eid].m_is_bbox_fs >= 0;
 }
 
+void TriOptimizerMesh::set_input_curve_points(const MatrixXd& V, const MatrixXi& E)
+{
+    // Vertices merged by exact position, so curves of different inputs meet, and each segment
+    // counted once.
+    std::map<std::array<double, 2>, size_t> id_of;
+    std::vector<Vector2d> P;
+    const auto id = [&](const Eigen::Index v) {
+        const Vector2d p = V.row(v).head<2>().transpose();
+        const auto [it, added] = id_of.emplace(std::array<double, 2>{{p[0], p[1]}}, P.size());
+        if (added) P.push_back(p);
+        return it->second;
+    };
+    std::set<std::array<size_t, 2>> segments;
+    for (Eigen::Index i = 0; i < E.rows(); ++i) {
+        const size_t a = id(E(i, 0)), b = id(E(i, 1));
+        if (a != b) segments.insert({{std::min(a, b), std::max(a, b)}});
+    }
+    std::vector<size_t> valence(P.size(), 0);
+    for (const auto& s : segments) {
+        ++valence[s[0]];
+        ++valence[s[1]];
+    }
+    std::vector<Vector2d> points;
+    for (size_t i = 0; i < P.size(); ++i) {
+        if (valence[i] != 2 && holds_order2_vertex(valence[i])) points.push_back(P[i]);
+    }
+    logger().info("input's own curves: {} curve ends and junctions", points.size());
+    m_input_curve_points = std::move(points);
+}
+
 bool TriOptimizerMesh::anchor_feature_point(const size_t vid, const double radius)
+{
+    return anchor_feature_point(vid, radius, m_vertex_attribute[vid].m_posf);
+}
+
+bool TriOptimizerMesh::anchor_feature_point(
+    const size_t vid,
+    const double radius,
+    const Vector2d& centre)
 {
     assert(m_track_feature_points);
     size_t& f = m_feature_point_attribute[vid].m_feature_point_id;
@@ -781,7 +820,7 @@ bool TriOptimizerMesh::anchor_feature_point(const size_t vid, const double radiu
         return false;
     }
     f = m_feature_points.size();
-    m_feature_points.push_back(m_vertex_attribute[vid].m_posf);
+    m_feature_points.push_back(centre);
     m_feature_point_radius.push_back(radius);
     return true;
 }
@@ -791,9 +830,26 @@ size_t TriOptimizerMesh::anchor_feature_points(
     const double order2_radius,
     const double feature_radius)
 {
-    // {vertex, radius}: the order-2 vertices first, then the input points.
-    std::vector<std::pair<size_t, double>> anchors;
+    // {vertex, radius, centre}: the order-2 vertices first, then the input points.
+    std::vector<std::tuple<size_t, double, Vector2d>> anchors;
     size_t n_ends = 0, n_junctions = 0, n_free = 0;
+    // With the input's own curve points (m_input_curve_points), an order-2 vertex is the
+    // input's only where one of them is in its ball, which is then centred there, as in 3D. An
+    // input point keeps its own position. The kd-tree is 3D: the points lifted to z = 0.
+    std::unique_ptr<KNN> input_curve_points;
+    std::vector<bool> is_input_point;
+    size_t n_not_input = 0;
+    if (m_input_curve_points) {
+        if (!m_input_curve_points->empty()) {
+            std::vector<Vector3d> lifted;
+            for (const Vector2d& p : *m_input_curve_points) lifted.emplace_back(p[0], p[1], 0);
+            input_curve_points = std::make_unique<KNN>(lifted);
+        }
+        is_input_point.assign(vert_capacity(), false);
+        for (const size_t vid : input_point_vids) {
+            if (vid < vert_capacity()) is_input_point[vid] = true;
+        }
+    }
     for (const Tuple& t : get_vertices()) {
         const size_t vid = t.vid(*this);
         size_t n_segments = 0;
@@ -806,20 +862,44 @@ size_t TriOptimizerMesh::anchor_feature_points(
             continue;
         }
         ++(n_segments == 1 ? n_ends : n_junctions);
-        anchors.emplace_back(vid, order2_radius);
+        const Vector2d& p = m_vertex_attribute[vid].m_posf;
+        if (m_input_curve_points && !is_input_point[vid]) {
+            // The nearest curve point, tested as the anchor will hold it
+            // (feature_point_ball_contains()).
+            uint32_t nearest = 0;
+            double sq = 0;
+            if (input_curve_points) {
+                input_curve_points->nearest_neighbor(Vector3d(p[0], p[1], 0), nearest, sq);
+            }
+            const double r = order2_radius;
+            if (!input_curve_points ||
+                (p - (*m_input_curve_points)[nearest]).squaredNorm() > r * r) {
+                ++n_not_input;
+                continue;
+            }
+            anchors.emplace_back(vid, order2_radius, (*m_input_curve_points)[nearest]);
+            continue;
+        }
+        anchors.emplace_back(vid, order2_radius, p);
     }
     for (const size_t vid : input_point_vids) {
         if (vid >= vert_capacity()) {
             log_and_throw_error("Input point vertex id {} out of range", vid);
         }
-        anchors.emplace_back(vid, feature_radius);
+        anchors.emplace_back(vid, feature_radius, m_vertex_attribute[vid].m_posf);
+    }
+    if (m_input_curve_points) {
+        logger().info(
+            "feature points: {} curve ends and junctions with no curve point of the input in "
+            "reach, left free",
+            n_not_input);
     }
     if (anchors.empty()) return 0;
 
     enable_feature_point_tracking();
     size_t n_anchored = 0;
-    for (const auto& [vid, r] : anchors) {
-        n_anchored += anchor_feature_point(vid, r);
+    for (const auto& [vid, r, centre] : anchors) {
+        n_anchored += anchor_feature_point(vid, r, centre);
     }
     logger().info(
         "feature points: {} curve ends, {} junctions ({} more left free by the application's "

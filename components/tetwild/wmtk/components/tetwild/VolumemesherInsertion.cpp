@@ -456,9 +456,10 @@ void TetWildMesh::init_from_Volumeremesher(
     // every tagged edge a collapse keeps, or a smoothing move touches, stays in it, no swap
     // removes one, and a collapse that leaves one with other than one face drops its tag.
     // tetwild's own open-boundary flags and their tube are gone (see TetWildMesh.h). The
-    // non-manifold edges are not held, as before: the reason is at holds_order2_edge().
+    // non-manifold edges are not held, as before: the reason is at holds_order2_edge(). After a
+    // simplification, under envelope_reference "input", only the input's own (InputCurves).
     const size_t n_order2 = tag_order2_edges(
-        m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio,
+        m_tet_params.order2_eps() * m_tet_params.order2_envelope_ratio,
         m_envelope && m_envelope->use_exact);
     logger().info("order-2 edges tagged: {}", n_order2);
 
@@ -473,7 +474,7 @@ void TetWildMesh::init_from_Volumeremesher(
         const double eps = m_params.epsr * m_params.diag_l;
         anchor_feature_points(
             input_points,
-            eps * m_tet_params.order2_envelope_ratio,
+            m_tet_params.order2_eps() * m_tet_params.order2_envelope_ratio,
             eps * m_tet_params.feature_envelope_ratio);
     }
 

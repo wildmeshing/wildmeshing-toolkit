@@ -387,7 +387,7 @@ def simwild(options: dict, meshes: dict) -> tuple:
       eps_rel (float, default 0.002): Envelope thickness relative to the bounding box diagonal.
       eps (float, default -1): Absolute envelope thickness.
       eps_simplify_rel (float, default 0.0002): Envelope thickness relative to the bounding box for the initial simplification.
-      optimize_envelope_around_simplified (bool, default false): Build the optimizer's envelope around the SIMPLIFIED geometry at the remaining tolerance (eps - simplify_eps) instead of around the original input at the full eps.
+      envelope_reference (string, default "input"): Which geometry every envelope, tube and anchor is built around: the surface (2D: curve) envelope and the per-label ones, the order-2 and feature tubes, and the curve anchors, one choice for all.
       eps_simplify (float, default -1): Absolute envelope thickness for the initial simplification.
       simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses).
       remove_duplicate_eps (float, default 0): Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal.
@@ -479,7 +479,7 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects.
       simplify_envelope_ratio (float, default 0.5): Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation.
       simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges.
-      optimize_envelope_around_simplified (bool, default false): EXPERIMENT.
+      envelope_reference (string, default "input"): Which geometry every envelope, tube and anchor is built around: the surface envelope, the order-2 (open boundary) and feature tubes, and the curve anchors, one choice for all.
       order2_envelope_ratio (float, default 1.0): Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet (see feature_envelope_ratio).
       use_sample_envelope (bool, default false): Use sample envelope instead of exact one.
       use_legacy_code (bool, default false): Use the original TetWild code for the mesh improvement.
@@ -706,7 +706,7 @@ def triwild(options: dict, meshes: dict) -> tuple:
       max_iterations (int, default 80): Maximum iterations before stopping.
       skip_simplify (bool, default false): If true, input simplification will be skipped.
       simplify_envelope_ratio (float, default 0.5): Envelope thickness used for the input simplification, as a fraction of the one used for the triangulation.
-      optimize_envelope_around_simplified (bool, default false): Build the optimizer's envelope around the SIMPLIFIED geometry at the remaining tolerance (eps - simplify_eps) instead of around the original input at the full eps.
+      envelope_reference (string, default "input"): Which geometry the envelope and the curve anchors are built around, one choice for both.
       simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects.
       use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one.
       filter (string, default "none"): Remove the outside region based on different criteria.

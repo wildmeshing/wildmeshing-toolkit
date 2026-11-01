@@ -442,6 +442,48 @@ public:
     }
 
     /**
+     * @brief The input's own curves, when the envelopes are built around the input
+     * (envelope_reference "input") and the surface inserted is not the input: a simplification
+     * ran, and without preserve_topology it glues rims of the input away and makes rims and
+     * non-manifold edges of its own.
+     *
+     * Set, tag_order2_edges() builds the tubes around `order2` -- per input, the edges of the
+     * input's own faces holds_order2_edge() holds -- and tags an edge only if every input of its
+     * set has such a curve and the edge lies in its tube; anchor_feature_points() anchors a curve
+     * end or junction only if one of `points` lies in its ball, and centres the ball there. What
+     * the simplification made is then held by the surface envelope alone, and what it removed is
+     * lost, as the topology change it is allowed to make. Measured on the tetwild integration
+     * configs (2026-10): 8 carried order-2 curves on no curve of the input (crown, 1017012,
+     * 101168, 104187, 104188, 104509 and 111388 entirely, 314748 18%), and of 678 anchored curve
+     * ends and junctions, 605 were on such curves.
+     *
+     * Unset, the tagged edges and their vertices as the insertion leaves them are the input's --
+     * they are, with no simplification before the insertion -- and the tubes and anchors are
+     * built around them. Set by the application before init, by set_input_curves().
+     */
+    struct InputCurves
+    {
+        std::vector<Eigen::Vector3d> V;
+        /// Segments into V, each with the inputs it is a curve of (bit k = input k).
+        std::vector<Eigen::Vector2i> order2;
+        std::vector<InputSet> order2_inputs;
+        /// Where the input's curves -- those segments and the feature curves -- end or three or
+        /// more meet, coincident vertices merged.
+        std::vector<Eigen::Vector3d> points;
+    };
+    std::optional<InputCurves> m_input_curves;
+    /**
+     * @brief Set m_input_curves from the input surface `V`, `F`, each face with its input set
+     * (`F_inputs`), and the feature curves (`features`, may be null): per input, the edges
+     * holds_order2_edge() holds by their count of that input's faces.
+     */
+    void set_input_curves(
+        const std::vector<Eigen::Vector3d>& V,
+        const std::vector<std::array<size_t, 3>>& F,
+        const std::vector<InputSet>& F_inputs,
+        const utils::FeatureInputs* features);
+
+    /**
      * @brief Tag the input's order-2 edges the application holds (holds_order2_edge()) with the
      * order2 kind and build their tube, m_order2_edge_envelope, of half-width `eps`. Returns the
      * number of edges tagged.
@@ -461,6 +503,9 @@ public:
      * input's and is not held, and one they make ordinary loses its tag (see
      * drop_stale_order2_tags()). Turns edge tracking on only when there is such an edge, since
      * tracking costs every operation its cache (see enable_feature_edge_tracking()).
+     *
+     * With m_input_curves set, the tubes are around the input's own curves, and only the edges
+     * in them are tagged (see InputCurves).
      */
     size_t tag_order2_edges(double eps, bool exact);
     /**
@@ -595,6 +640,8 @@ public:
      * whether a new anchor was made. Feature-point tracking must be on.
      */
     bool anchor_feature_point(size_t vid, double radius);
+    /// The same, with the ball centred at `centre` rather than at the vertex.
+    bool anchor_feature_point(size_t vid, double radius, const Vector3d& centre);
 
     /**
      * @brief Anchor the 0-dimensional features, after the edge tags are final: every vertex
@@ -617,6 +664,10 @@ public:
      * tetwild integration configs (2026-10): the rims glued away all the same (366725: 2 and 3
      * of 181 rim edges left), at 5 times the iterations on 366725 and 15-33% more tets on crown
      * and 111388.
+     *
+     * With m_input_curves set, a curve end or junction is anchored only if one of the input's
+     * own curve points lies in its ball, and the ball is centred on the nearest such point (see
+     * InputCurves). An input point is anchored as before: it is the input's.
      */
     size_t anchor_feature_points(
         const std::vector<size_t>& input_point_vids,

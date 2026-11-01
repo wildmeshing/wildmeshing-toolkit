@@ -38,15 +38,21 @@ struct OptimizerParameters
     bool preserve_topology = false;
 
     /**
-     * Build the optimizer's envelope around the SIMPLIFIED geometry at the REMAINING
-     * tolerance (eps - simplify_eps), instead of around the original input at the full eps.
+     * envelope_reference "simplified" (true) or "input" (false, the default): which geometry
+     * every envelope, tube and anchor is built around -- the surface or curve envelope, the
+     * order-2 and feature tubes, the anchors -- one choice for all of them.
      *
-     * The deviation budget is identical by the triangle inequality: the simplification is
-     * already within simplify_eps of the input, so anything within (eps - simplify_eps) of the
-     * simplification is within eps of the input. What changes is where the geometry STARTS.
-     * The envelope is a hard veto, not a penalty, so a surface handed to the optimizer close
-     * to the boundary has most of its moves refused; built this way it starts at the centre,
-     * with the whole radius available in every direction.
+     * "input": the original input, at eps times each one's ratio. What a simplification made
+     * and the input does not have (rims, non-manifold edges, curve ends) is held by the
+     * surface envelope alone (TetOptimizerMesh::InputCurves).
+     *
+     * "simplified": the SIMPLIFIED geometry, at the REMAINING tolerance (eps - simplify_eps)
+     * times each one's ratio. The deviation budget is identical by the triangle inequality: the
+     * simplification is already within simplify_eps of the input, so anything within
+     * (eps - simplify_eps) of the simplification is within eps of the input. What changes is
+     * where the geometry STARTS. The envelope is a hard veto, not a penalty, so a surface
+     * handed to the optimizer close to the boundary has most of its moves refused; built this
+     * way it starts at the centre, with the whole radius available in every direction.
      *
      * That headroom is load-bearing: deliberately starving it on tetwild (simplify_envelope_
      * ratio 0.95, which leaves the simplification free to use nearly the whole tolerance) was
@@ -55,14 +61,22 @@ struct OptimizerParameters
      * The cost is elements. Holding the surface within eps/2 of the simplified geometry is
      * stricter than eps of the input wherever the simplification smoothed detail away, so
      * fewer coarsening collapses are allowed: measured on 106838 the output went from 200k to
-     * 560k tets and on 116060 from 133k to 267k, at unchanged final quality. Off by default
-     * for that reason.
-     *
-     * SimWild's 3D mesh already rebuilds its envelope around the simplified surface; there
-     * this flag only narrows the radius to the remaining budget, which is the part it was
-     * missing. SimWild's 2D mesh has no simplification stage, so the flag does not apply.
+     * 560k tets and on 116060 from 133k to 267k, at unchanged final quality. "input" by
+     * default for that reason.
      */
-    bool optimize_envelope_around_simplified = false;
+    bool envelope_around_simplified = false;
+    /**
+     * The eps the order-2 tubes and the curve anchors are built at, before their ratio: the
+     * surface envelope's. eps around the input; under envelope_reference "simplified", what the
+     * simplification left of it (eps - simplify_eps), around the simplified geometry. Until
+     * 2026-10 they took the full eps there in 3D, and an open boundary could drift
+     * (1 + simplify_envelope_ratio) x order2_envelope_ratio x eps. -1: eps. Set by the driver.
+     */
+    double order2_envelope_eps = -1;
+    double order2_eps() const
+    {
+        return order2_envelope_eps > 0 ? order2_envelope_eps : epsr * diag_l;
+    }
 
     /**
      * Incident-cell count above which a link vertex accepts only one valence-increasing split

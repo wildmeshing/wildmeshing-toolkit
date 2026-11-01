@@ -388,6 +388,16 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         simplify_eps,
         100 * simplify_envelope_ratio,
         tet_eps);
+    // Which geometry every envelope, tube and anchor is built around: the input, or the
+    // simplified surface (see below, where they are built). Around the input, a simplification
+    // that may leave the envelope is refused here, before any work: the simplified surface would
+    // start outside what it is held to.
+    const bool env_around_simplified = json_params["envelope_reference"] == "simplified";
+    wmtk::utils::check_simplification_inside_envelope(
+        tet_eps,
+        simplify_eps,
+        env_around_simplified,
+        /*simplification_ran=*/!skip_simplify);
 
     // The open boundary. Frozen, the simplification cannot touch anything enclosed by boundary
     // loops packed too tightly to leave a free vertex between them, and on Thingi10K 55928 that
@@ -400,9 +410,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // input's boundary edges, the simplification counterpart of the optimizer's order-2
     // envelope and scaled the same way: order2_envelope_ratio of the surface eps, and of that
     // simplify_envelope_ratio, for the same headroom reason as above. The optimizer's tube is
-    // built around the boundary it is handed, so a boundary drifts at most
-    // (simplify_envelope_ratio + 1) * order2_envelope_ratio * eps in all -- 1.5 eps at the
-    // defaults.
+    // built around the input's own boundary, or under envelope_reference "simplified" around the
+    // simplified one at what the simplification left of eps, so a boundary drifts at most
+    // order2_envelope_ratio * eps in all. Until 2026-10 it was built around the simplified
+    // boundary at the full eps: (simplify_envelope_ratio + 1) * order2_envelope_ratio * eps,
+    // 1.5 eps at the defaults.
     //
     // Not under preserve_topology: a hole narrower than the tube closes.
     const double simplify_boundary_eps = simplify_boundary_envelope && !params.preserve_topology
@@ -546,9 +558,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // Which surface is the optimizer's envelope built around, and at what radius?
     //
-    // Default: the ORIGINAL input at the full tet eps, like the simplification one but wider.
+    // envelope_reference "input", the default: the ORIGINAL input at the full tet eps, like the
+    // simplification one but wider.
     //
-    // With optimize_envelope_around_simplified: the SIMPLIFIED surface at the REMAINING
+    // envelope_reference "simplified": the SIMPLIFIED surface at the REMAINING
     // tolerance, tet_eps - simplify_eps. The triangle-inequality budget is unchanged -- the
     // simplification is already within simplify_eps of the input, so anything within
     // (tet_eps - simplify_eps) of the simplification is within tet_eps of the input -- but the
@@ -563,7 +576,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // there is nothing to charge, and subtracting anyway would confine the optimizer to a
     // fraction of the tolerance its result is judged against -- for no gain, since the
     // geometry already starts centred in the full envelope.
-    const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
     const bool charge_simplify = env_around_simplified && !skip_simplify;
     const double opt_eps = wmtk::utils::optimization_envelope_eps(
         tet_eps,
@@ -638,6 +650,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             "per-input envelopes: {} inputs, each tracked face held to the envelopes of its own",
             input_envelopes.size());
     }
+
+    // The order-2 tube and the curve anchors follow the surface envelope: around the simplified
+    // surface they are built at what the simplification left of eps.
+    if (env_around_simplified) params.order2_envelope_eps = opt_eps;
 
     // params.eps is deliberately NOT narrowed to match.
     //
@@ -780,6 +796,17 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     }
     facet_sources = {};
     mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
+
+    // Around the input after a simplification, the input's own curves: the tubes and anchors
+    // are built around them, and an order-2 edge or curve end the simplification made is not
+    // held by its own (TetOptimizerMesh::InputCurves). The input surface as the envelope has
+    // it, each triangle with its input.
+    if (!env_around_simplified && !skip_simplify) {
+        assert(tri_input.size() == tris.size());
+        std::vector<InputSet> tri_sets(tris.size());
+        for (size_t i = 0; i < tris.size(); ++i) tri_sets[i] = InputSet(1) << tri_input[i];
+        mesh_new.set_input_curves(verts, tris, tri_sets, &features);
+    }
 
     const bool has_features = !feature_edges.empty() || !feature_points.empty();
     // The feature-curve tubes -- what the collapse guard checks tagged edges against, and what

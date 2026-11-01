@@ -361,11 +361,28 @@ public:
     }
 
     /**
+     * @brief Where the input's own curves end or three or more meet, as holds_order2_vertex()
+     * holds them: set when the envelopes are built around the input (envelope_reference "input")
+     * and the curves inserted are not the input -- a simplification ran, and without
+     * preserve_topology it merges junctions and curves passing within its envelope.
+     *
+     * The 2D twin of TetOptimizerMesh::InputCurves, which says why. Set, anchor_feature_points()
+     * anchors an order-2 vertex only if one of these lies in its ball, and centres the ball
+     * there. Unset, the order-2 vertices as the insertion leaves them are the input's. Set by
+     * the application before init, by set_input_curve_points().
+     */
+    std::optional<std::vector<Vector2d>> m_input_curve_points;
+    /// Set m_input_curve_points from the input curves `V`, `E`, coincident vertices merged.
+    void set_input_curve_points(const MatrixXd& V, const MatrixXi& E);
+
+    /**
      * @brief Anchor vertex `vid` at its current position, in a ball of `radius`. A vertex
      * already anchored keeps its anchor, whose radius becomes the smaller of the two. Returns
      * whether a new anchor was made. Feature-point tracking must be on.
      */
     bool anchor_feature_point(size_t vid, double radius);
+    /// The same, with the ball centred at `centre` rather than at the vertex.
+    bool anchor_feature_point(size_t vid, double radius, const Vector2d& centre);
 
     /**
      * @brief Anchor the 0-dimensional features, after the tracked curves are final: every
@@ -375,6 +392,9 @@ public:
      * run without any pays no per-operation cost. At init only, as in 3D, whose
      * anchor_feature_points() says why an end a collapse makes needs no anchor. Returns the number
      * of anchors made.
+     *
+     * With m_input_curve_points set, an order-2 vertex is anchored only if one of the input's
+     * own curve points lies in its ball, and the ball is centred on the nearest one.
      */
     size_t anchor_feature_points(
         const std::vector<size_t>& input_point_vids,

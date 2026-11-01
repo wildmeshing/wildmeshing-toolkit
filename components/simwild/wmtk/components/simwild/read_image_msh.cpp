@@ -244,6 +244,12 @@ InputData read_mesh(
         image_mesh.write_surf_off(output_filename + "_input.off");
     }
 
+    // Around the input (envelope_reference "input") the envelope is the surface as read, and the
+    // labels below follow it; around the simplified surface, what the simplification leaves.
+    const bool envelope_around_input = json_params["envelope_reference"] == "input";
+    MatrixXd V_read;
+    MatrixXi F_read;
+    std::vector<size_t> F_read_input;
     if (!preserve_topology && !skip_simplify) {
         /**
          * Simplify the input surface only if topology preservation is not required, since
@@ -276,19 +282,27 @@ InputData read_mesh(
             logger().info("simplification freezes the open boundary");
         }
 
+        if (envelope_around_input) {
+            V_read = image_mesh.V_surface();
+            F_read = image_mesh.F_surface();
+            F_read_input = image_mesh.F_input();
+        }
         image_mesh.simplify_surface(
             eps_simplify,
             !json_params["simplify_use_sample_envelope"],
             NUM_THREADS,
             boundary_eps);
+        input_data.simplified_before_insertion = true;
+        input_data.eps_simplify_before_insertion = eps_simplify;
 
         if (debug_output) {
             image_mesh.write_surf_off(output_filename + "_input_simplified.off");
         }
     }
 
-    input_data.V_envelope = image_mesh.V_surface();
-    input_data.F_envelope = image_mesh.F_surface();
+    const bool envelope_is_read = F_read.size() != 0;
+    input_data.V_envelope = envelope_is_read ? V_read : image_mesh.V_surface();
+    input_data.F_envelope = envelope_is_read ? F_read : image_mesh.F_surface();
 
     const bool all_rounded =
         image_mesh.embed_surface(preserve_topology, tag_from_winding_number, has_surface, features);
@@ -379,7 +393,7 @@ InputData read_mesh(
     }
 
     {
-        const auto& F_input = image_mesh.F_input();
+        const auto& F_input = envelope_is_read ? F_read_input : image_mesh.F_input();
         // Only where every envelope triangle's input is known; else the mesh's faces serve.
         if (F_input.size() == size_t(input_data.F_envelope.rows())) {
             input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
@@ -474,6 +488,11 @@ InputData read_curves(
         curves.write_curves_obj(output_filename + "_input.obj");
     }
 
+    // As in 3D: around the input the envelope is the curves as read.
+    const bool envelope_around_input = json_params["envelope_reference"] == "input";
+    MatrixXd V_read;
+    MatrixXi E_read;
+    std::vector<size_t> E_read_input;
     if (!preserve_topology && !skip_simplify) {
         // Same condition the 3D route uses: simplification can change the topology of the
         // input, so it only runs when the caller has said that is acceptable.
@@ -482,26 +501,36 @@ InputData read_curves(
         if (epsr_simplify > 0) {
             eps_simplify = diag * epsr_simplify;
         }
+        if (envelope_around_input) {
+            V_read = curves.V_curves();
+            E_read = curves.E_curves();
+            E_read_input = curves.E_input();
+        }
         curves.simplify_curves(
             eps_simplify,
             !json_params["simplify_use_sample_envelope"],
             NUM_THREADS);
+        input_data.simplified_before_insertion = true;
+        input_data.eps_simplify_before_insertion = eps_simplify;
 
         if (debug_output) {
             curves.write_curves_obj(output_filename + "_input_simplified.obj");
         }
     }
 
-    // The envelope is built from the SIMPLIFIED input curves, taken here -- after
-    // simplification, before the arrangement -- exactly as read_mesh does in 3D.
-    input_data.V_envelope = curves.V_curves();
-    input_data.F_envelope = curves.E_curves();
+    // The envelope is built from the input curves as read (envelope_reference "input"), or from
+    // the SIMPLIFIED ones, taken here -- after simplification, before the arrangement -- exactly
+    // as read_mesh does in 3D.
+    const bool envelope_is_read = E_read.size() != 0;
+    input_data.V_envelope = envelope_is_read ? V_read : curves.V_curves();
+    input_data.F_envelope = envelope_is_read ? E_read : curves.E_curves();
+    const std::vector<size_t>& E_input = envelope_is_read ? E_read_input : curves.E_input();
     // Each envelope row's label bit (input_bit). Only where every row's input is known; else
     // the mesh's edges serve.
-    if (curves.E_input().size() == size_t(input_data.F_envelope.rows())) {
+    if (E_input.size() == size_t(input_data.F_envelope.rows())) {
         input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
         for (Eigen::Index r = 0; r < input_data.F_envelope.rows(); ++r) {
-            const size_t in = curves.E_input()[r];
+            const size_t in = E_input[r];
             if (in < n_inputs && input_bit[in] < size_t(SurfaceTagAttributes::max_inputs)) {
                 input_data.F_envelope_labels[r] = InputSet(1) << input_bit[in];
             }

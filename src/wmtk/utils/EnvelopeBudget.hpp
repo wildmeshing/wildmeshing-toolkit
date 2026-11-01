@@ -26,6 +26,7 @@ namespace wmtk::utils {
  * @param simplify_eps              what the simplification was allowed to spend
  * @param envelope_around_simplified whether the optimizer's envelope is built around the
  *                                  simplified geometry rather than the input
+ *                                  (envelope_reference "simplified")
  * @param simplification_ran        whether a simplification actually ran. Charging for one
  *                                  that did not run confines the optimizer to a fraction of
  *                                  the tolerance its result is judged against, for no gain:
@@ -42,6 +43,20 @@ namespace wmtk::utils {
  * positive eps2 and yields a silently smaller envelope instead of an error.
  */
 double optimization_envelope_eps(
+    double eps,
+    double simplify_eps,
+    bool envelope_around_simplified,
+    bool simplification_ran);
+
+/**
+ * @brief Refuse a simplification that may leave the optimizer's envelope, under
+ * envelope_reference "input": with `simplify_eps` at or above `eps` the simplified geometry may
+ * start outside the envelope around the input it is then held to, where every operation near it
+ * is vetoed. Throws then, before any work; does nothing under "simplified", whose envelope is
+ * built around the simplified geometry (optimization_envelope_eps() handles that case), or when
+ * no simplification runs.
+ */
+void check_simplification_inside_envelope(
     double eps,
     double simplify_eps,
     bool envelope_around_simplified,

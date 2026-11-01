@@ -33,6 +33,15 @@ struct InputData
     std::vector<uint64_t> F_envelope_labels;
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;
+    /// Whether the input was simplified before the insertion (preserve_topology off). Around the
+    /// input (envelope_reference "input") V_envelope is then the input as read, not what was
+    /// inserted, and the mesh holds only the input's own curves and curve points
+    /// (TetOptimizerMesh::InputCurves); around the simplified geometry it is the simplification.
+    bool simplified_before_insertion = false;
+    /// The eps that simplification ran at. It measures the inputs' own diagonal, not the padded
+    /// box's that Parameters::eps_simplify uses, so the two differ (by 1.22x on
+    /// simwild_double_sphere_notop_3d).
+    double eps_simplify_before_insertion = 0;
 
     /// The topological offset's correspondence handed on from an earlier offset (memory route,
     /// vertex field corr_input_vid): per row of V_input, the V_input row of the input-complex

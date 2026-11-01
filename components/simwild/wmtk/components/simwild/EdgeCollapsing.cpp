@@ -33,12 +33,37 @@ void SimWildMesh::simplify()
     // The same switch as tetwild's: the sampled envelope for the simplification alone, the
     // exact one dominating its cost on a large input. Otherwise the simplification keeps the
     // mode use_sample_envelope gave m_envelope. Nothing to restore afterwards: the envelope is
-    // rebuilt below, by init_envelope, in that mode.
+    // rebuilt below in that mode, around the input or around the result.
     if (m_sim_params.simplify_use_sample_envelope) {
         m_envelope->use_exact = false;
     }
     m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
     init_label_envelopes(m_sim_params.eps_simplify, m_envelope->use_exact);
+
+    // Around the simplified surface (envelope_reference "simplified") the order-2 curves are
+    // tagged again around the result below, as the surface envelope is rebuilt, so the
+    // simplification holds them as it holds the surface: within order2_envelope_ratio x
+    // eps_simplify, the triangle inequality's share. Around the input they stay in their tubes
+    // around it throughout. The curve anchors stay centred on the input's points either way,
+    // at the radius of the reference: re-centring them would need to tell the input points'
+    // anchors apart from the curve ends', which the anchors do not record.
+    const bool around_simplified = m_sim_params.envelope_around_simplified;
+    const auto retag_order2_edges = [this](const double eps, const bool exact) {
+        if (m_track_feature_edges) {
+            for (const Tuple& e : get_edges()) {
+                m_feature_edge_attribute[e.eid(*this)].remove(FeatureEdgeAttributes::order2);
+            }
+        }
+        m_order2_edge_envelope = nullptr;
+        m_order2_input_envelopes.set({});
+        const size_t n = tag_order2_edges(eps, exact);
+        logger().info("order-2 edges tagged again: {} (tube eps {:.6})", n, eps);
+    };
+    if (around_simplified) {
+        retag_order2_edges(
+            m_sim_params.eps_simplify * m_sim_params.order2_envelope_ratio,
+            m_envelope->use_exact);
+    }
 
     /**
      * Not checking the quality here can lead to horrible elements that take forever to fix in the
@@ -51,6 +76,16 @@ void SimWildMesh::simplify()
         write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     }
     // m_collapse_check_quality = true;
+
+    if (!around_simplified) {
+        // Back to the envelopes around the input, at the optimizer's eps.
+        logger().info("Envelope around the input restored");
+        m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
+        m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+        init_label_envelopes(m_envelope_eps, m_envelope->use_exact);
+        logger().info("===== Simplification done =====");
+        return;
+    }
 
     logger().warn("Update envelope");
     MatrixXd V(vert_capacity(), 3);
@@ -78,6 +113,9 @@ void SimWildMesh::simplify()
         logger().warn("No surface faces left after simplification, skip re-building envelope");
     }
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
+    retag_order2_edges(
+        m_params.order2_eps() * m_sim_params.order2_envelope_ratio,
+        !m_sim_params.use_sample_envelope);
     logger().info("===== Simplification done =====");
 }
 
