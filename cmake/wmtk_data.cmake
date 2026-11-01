@@ -105,8 +105,10 @@ ExternalProject_Add(
     # (was 0.5): at 0.5 no cell of double_sphere_hole is surely in the join region, and the case
     # filled nothing; at 1.0 it fills the cavity between the two shells.
     # 00e090e descends from data2 #12's merge (421b458), so it holds c91a67a's changes too.
+    # At de49170 (2026-11-01, data2 main) models/127891.msh is back: 596be38 had deleted it with
+    # the old 3D offset cases, and the topological_offset docs examples read it.
     #
-    GIT_TAG 00e090e79b774ab6892a4a9912a82b19c49728c9
+    GIT_TAG de4917026b2dd3f2769d4e6d98e1cee0d094e27b
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
