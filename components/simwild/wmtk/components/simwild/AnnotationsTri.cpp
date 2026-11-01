@@ -1,4 +1,5 @@
 #include "SimWildMeshTri.hpp"
+#include "TightSealGeom.hpp"
 
 namespace wmtk::components::simwild::tri {
 
@@ -578,7 +579,6 @@ void SimWildMeshTri::tight_seal_topo(
 void SimWildMeshTri::tight_seal_geom(
     const std::vector<int64_t>& listed_tags,
     const double distance,
-    const bool growth,
     const double trace_rel_tol,
     const std::string& selection,
     const int64_t min_regions,
@@ -601,10 +601,6 @@ void SimWildMeshTri::tight_seal_geom(
             "the parts that border every listed tag",
             min_regions);
     }
-    const auto is_ambient = [&](const int64_t tag) {
-        const auto it = m_tag_id_to_name.find(tag);
-        return it != m_tag_id_to_name.end() && it->second == "ambient";
-    };
     // the tags of the regions: the listed ones, or every tag but ambient that some face has alone
     std::vector<int64_t> tags;
     if (detected) {
@@ -616,7 +612,7 @@ void SimWildMeshTri::tight_seal_geom(
         CellTag found;
         for (const Tuple& t : get_faces()) {
             const CellTag& tag = m_face_attribute[t.fid(*this)].tags;
-            if (tag.size() == 1 && !is_ambient(*tag.begin())) {
+            if (tag.size() == 1 && !tight_seal::is_ambient(m_tag_id_to_name, *tag.begin())) {
                 found.insert(*tag.begin());
             }
         }
@@ -630,7 +626,7 @@ void SimWildMeshTri::tight_seal_geom(
             log_and_throw_error("tight_seal_geom needs distinct tags. Input was {}", tags);
         }
         for (const int64_t tag : tags) {
-            if (is_ambient(tag)) {
+            if (tight_seal::is_ambient(m_tag_id_to_name, tag)) {
                 log_and_throw_error("tight_seal_geom cannot seal ambient. Input was {}", tags);
             }
         }
@@ -641,7 +637,7 @@ void SimWildMeshTri::tight_seal_geom(
     if (!(distance > 0)) {
         log_and_throw_error("tight_seal_geom needs a positive distance. Input was {}", distance);
     }
-    if (growth && !(trace_rel_tol > 0 && trace_rel_tol < 1)) {
+    if (!(trace_rel_tol > 0 && trace_rel_tol < 1)) {
         log_and_throw_error(
             "tight_seal_geom needs a trace tolerance in (0, 1). Input was {}",
             trace_rel_tol);
@@ -674,116 +670,14 @@ void SimWildMeshTri::tight_seal_geom(
         }
     }
 
-    // BVH of the boundary of a set of faces: its interfaces and its edges on the mesh boundary.
-    // From a point outside the set, the distance to it is the distance to this boundary.
-    // Returns false if the set is empty.
-    // BVH of segments, given as consecutive pairs of points. Returns false if there are none.
-    const auto segments_bvh = [](const std::vector<Vector2d>& vertices, SimpleBVH::BVH& bvh) {
-        if (vertices.empty()) {
-            return false;
-        }
-        MatrixXd V(vertices.size(), 2);
-        MatrixXi E(vertices.size() / 2, 2);
-        for (size_t i = 0; i < vertices.size(); ++i) {
-            V.row(i) = vertices[i];
-        }
-        for (int i = 0; i < E.rows(); ++i) {
-            E.row(i) << 2 * i, 2 * i + 1;
-        }
-        bvh.init(V, E, 0);
-        return true;
-    };
-    const auto boundary_bvh = [&](const auto& in_set, SimpleBVH::BVH& bvh) {
-        std::vector<Vector2d> vertices;
-        for (const size_t fid : fids) {
-            if (!in_set(fid)) {
-                continue;
-            }
-            for (int j = 0; j < 3; ++j) {
-                const Tuple edge_tup = tuple_from_edge(fid, j);
-                const auto t_opp = edge_tup.switch_face(*this);
-                if (t_opp && in_set(t_opp->fid(*this))) {
-                    continue;
-                }
-                vertices.push_back(pos(edge_tup.vid(*this)));
-                vertices.push_back(pos(edge_tup.switch_vertex(*this).vid(*this)));
-            }
-        }
-        return segments_bvh(vertices, bvh);
-    };
-    const auto bvh_distance = [](const SimpleBVH::BVH& bvh, const Vector2d& p) {
-        double sq_dist;
-        Vector2d nearest_point;
-        bvh.nearest_facet(p, nearest_point, sq_dist);
-        return std::sqrt(sq_dist);
-    };
-
     // m_voronoi_split_fn places the vertex of each split below (split_adjust_position)
-    struct ClearVoronoiSplit
-    {
-        std::function<double(const Vector2d&)>& fn;
-        ~ClearVoronoiSplit() { fn = nullptr; }
-    } clear_voronoi_split{m_voronoi_split_fn};
+    tight_seal::ClearOnExit<std::function<double(const Vector2d&)>> clear_voronoi_split{
+        m_voronoi_split_fn};
 
     // filled[fid]: the Voronoi fill set the face's region. A split's children inherit it from
     // their parent, so it stays right whichever component's split cuts the face. For the sanity
     // check.
     std::vector<char> filled(tri_capacity(), 0);
-
-    // Split edge e, keeping `faces` up to date: the children of a face in it replace it. Calls
-    // on_child(fid, end_vid) for each child in it, end_vid being the endpoint of e the child
-    // keeps. Returns the new vertex, or -1 if the split was refused.
-    const auto split_tracked = [&](const simplex::Edge& e,
-                                   std::unordered_set<size_t>& faces,
-                                   const auto& on_child) -> size_t {
-        const auto [e0, e1] = e.vertices();
-        const auto [t, eid] = tuple_from_edge(e.vertices());
-
-        // Each face on the edge gives two children, which keep the face's vertex opposite the
-        // edge. Record by that vertex whether the face is in the set, and whether it was filled.
-        const std::vector<size_t> parents = get_incident_fids_for_edge(t);
-        std::map<size_t, std::pair<bool, char>> parent_state;
-        for (const size_t fid : parents) {
-            parent_state[simplex_from_face(fid).opposite_vertex(e).id()] = {
-                faces.count(fid) > 0,
-                filled[fid]};
-        }
-
-        std::vector<Tuple> new_tris;
-        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
-        if (!split_edge(t, new_tris)) {
-            return size_t(-1);
-        }
-
-        const size_t v_new = m_last_split_vertex;
-        for (const size_t fid : parents) {
-            faces.erase(fid);
-        }
-        filled.resize(tri_capacity(), 0);
-        const std::vector<size_t> children = get_one_ring_fids_for_vertex(v_new);
-        for (const size_t fid : children) {
-            size_t end_vid = -1;
-            size_t opp_vid = -1;
-            for (const size_t v : oriented_tri_vids(fid)) {
-                if (v == e0 || v == e1) {
-                    end_vid = v;
-                } else if (v != v_new) {
-                    opp_vid = v;
-                }
-            }
-            if (end_vid == size_t(-1) || parent_state.count(opp_vid) == 0) {
-                log_and_throw_error("Could not find the parent of a face after a split.");
-            }
-            const auto [in_set, parent_filled] = parent_state.at(opp_vid);
-            filled[fid] = parent_filled;
-            if (!in_set) {
-                continue; // outside the set, keeps its tags
-            }
-            faces.insert(fid);
-            on_child(fid, end_vid);
-        }
-        return v_new;
-    };
 
     std::vector<SimpleBVH::BVH> region_bvhs(n);
     std::vector<ConnectedComponent> components_seal;
@@ -801,13 +695,19 @@ void SimWildMeshTri::tight_seal_geom(
             tags);
     } else {
         for (size_t i = 0; i < n; ++i) {
-            boundary_bvh([&](const size_t fid) { return region[fid] == int(i); }, region_bvhs[i]);
+            tight_seal_boundary_bvh(
+                fids,
+                [&](const size_t fid) { return region[fid] == int(i); },
+                region_bvhs[i]);
         }
 
-        // U: vertices at distance >= d/2 from R, the union of the R_i. The vertices of R's own
-        // faces are at distance 0.
+        // The distance to R, the union of the R_i: from outside R, the distance to its boundary.
+        // dR at every vertex, 0 on R's own faces.
         SimpleBVH::BVH bvh_R;
-        boundary_bvh([&](const size_t fid) { return region[fid] >= 0; }, bvh_R);
+        tight_seal_boundary_bvh(fids, [&](const size_t fid) { return region[fid] >= 0; }, bvh_R);
+        const std::function<double(const Vector2d&)> dist_R = [&](const Vector2d& p) {
+            return tight_seal::bvh_distance(bvh_R, p);
+        };
         std::vector<bool> on_R(vert_capacity(), false);
         for (const size_t fid : fids) {
             if (region[fid] >= 0) {
@@ -816,319 +716,300 @@ void SimWildMeshTri::tight_seal_geom(
                 }
             }
         }
-        std::vector<bool> in_U(vert_capacity(), false);
+        std::vector<double> dR(vert_capacity(), 0.);
         for (const Tuple& t : get_vertices()) {
             const size_t vid = t.vid(*this);
-            in_U[vid] = !on_R[vid] && bvh_distance(bvh_R, pos(vid)) >= radius;
+            dR[vid] = on_R[vid] ? 0. : dist_R(pos(vid));
         }
+        const auto corners = [&](const std::array<size_t, 3>& vs) {
+            return std::array<Vector2d, 3>{{pos(vs[0]), pos(vs[1]), pos(vs[2])}};
+        };
 
-        // U_mesh: the faces of E whose three vertices are in U
-        std::vector<bool> in_U_mesh(tri_capacity(), false);
-        std::vector<bool> on_U_mesh(vert_capacity(), false);
+        // 1. The faces surely in J, the closing of R by the disk B of radius d/2 minus R (the
+        // spec's v2). U^ = R and the faces whose points are all within d/2 of R: inside R + B.
+        // V^ = the faces of U^ whose points are all farther than d/2 from dU^, the boundary of U^
+        // (outside the mesh counts as outside U^): inside U^ - B, so inside the closing. J^ = V^
+        // minus R. Both tests are certified by tight_seal::certify_on_cell, so rounding can only
+        // leave a face out.
+        std::vector<bool> in_Uh(tri_capacity(), false);
         for (const size_t fid : fids) {
             const auto vs = oriented_tri_vids(fid);
-            if (region[fid] >= 0 || !in_U[vs[0]] || !in_U[vs[1]] || !in_U[vs[2]]) {
+            in_Uh[fid] = region[fid] >= 0 || tight_seal::certify_on_cell(
+                                                 corners(vs),
+                                                 {{dR[vs[0]], dR[vs[1]], dR[vs[2]]}},
+                                                 dist_R,
+                                                 radius,
+                                                 true,
+                                                 tight_seal::certify_depth_2d);
+        }
+        SimpleBVH::BVH bvh_dUh;
+        const bool has_dUh = tight_seal_boundary_bvh(
+            fids,
+            [&](const size_t fid) { return bool(in_Uh[fid]); },
+            bvh_dUh);
+        const std::function<double(const Vector2d&)> dist_dUh = [&](const Vector2d& p) {
+            return has_dUh ? tight_seal::bvh_distance(bvh_dUh, p)
+                           : std::numeric_limits<double>::infinity();
+        };
+        std::vector<double> dUh(vert_capacity(), -1.); // at the vertices of U^'s faces outside R
+        std::vector<bool> in_Jh(tri_capacity(), false);
+        size_t n_Uh = 0;
+        size_t n_Jh = 0;
+        for (const size_t fid : fids) {
+            if (!in_Uh[fid] || region[fid] >= 0) {
                 continue;
             }
-            in_U_mesh[fid] = true;
+            ++n_Uh;
+            const auto vs = oriented_tri_vids(fid);
             for (const size_t v : vs) {
-                on_U_mesh[v] = true;
+                if (dUh[v] < 0) {
+                    dUh[v] = dist_dUh(pos(v));
+                }
             }
+            in_Jh[fid] = tight_seal::certify_on_cell(
+                corners(vs),
+                {{dUh[vs[0]], dUh[vs[1]], dUh[vs[2]]}},
+                dist_dUh,
+                radius,
+                false,
+                tight_seal::certify_depth_2d);
+            n_Jh += in_Jh[fid];
         }
 
-        // With growth, U_mesh is cut along the level set d(x, R) = d/2 rather than made of whole
-        // faces. Each edge of E from a vertex outside U to one in U is sphere traced from its
-        // outer end, outwards from R, to where the distance to R reaches d/2 (within the
-        // tolerance, on R's side), and in each face of E, U_mesh is the part on U's side of the
-        // segment between its two traced points. Nothing is split: only the distance to U_mesh
-        // changes. Whole faces fall short of U by up to a face, which left a strip of J along
-        // every body's outer side; this U_mesh holds U up to the tolerance, so that strip is not
-        // farther than d/2 from it.
-        SimpleBVH::BVH bvh_U;
-        bool has_U_mesh = false;
-        if (!growth) {
-            has_U_mesh =
-                boundary_bvh([&](const size_t fid) { return bool(in_U_mesh[fid]); }, bvh_U);
-        } else {
+        logger().info(
+            "tight_seal_geom: U^ holds {} faces outside R, J^ {} of them, distance {}",
+            n_Uh,
+            n_Jh,
+            distance);
+
+        if (n_Jh > 0) {
             const double tol = trace_rel_tol * radius;
-            std::map<simplex::Edge, Vector2d> traced;
-            size_t n_failed = 0;
-            // the point of edge (v_out, v_in) where d(x, R) reaches d/2, v_in being in U
-            const auto trace_to_U = [&](const size_t v_out, const size_t v_in) -> Vector2d {
-                const simplex::Edge e(v_out, v_in);
-                const auto it = traced.find(e);
-                if (it != traced.end()) {
-                    return it->second;
-                }
-                const Vector2d a = pos(v_out);
-                const double L = (pos(v_in) - a).norm();
-                const Vector2d dir = (pos(v_in) - a) / L;
-                Vector2d p = pos(v_in); // if the trace leaves the edge, U keeps only v_in
-                bool on_level = false;
-                double t = 0.;
-                while (t < L && t >= 0.) {
-                    const Vector2d q = a + t * dir;
-                    const double g = bvh_distance(bvh_R, q);
-                    if (std::abs(g - radius) <= tol) {
-                        p = q;
-                        on_level = true;
-                        break;
-                    }
-                    t += radius - g;
-                }
-                if (!on_level) {
-                    ++n_failed;
-                }
-                traced[e] = p;
-                return p;
+
+            // 2. The dilation surface S, the level set d(x, R) = d/2 (the boundary of R + B),
+            // traced on the edges that cross it and joined in each face. The closing is the part
+            // of R + B at least d/2 from S, so J ends where d(x, S) falls to d/2.
+            SimpleBVH::BVH bvh_S;
+            size_t n_S_traced = 0;
+            size_t n_S_failed = 0;
+            const bool has_S = tight_seal_dilation_surface_bvh(
+                fids,
+                region,
+                dR,
+                dist_R,
+                radius,
+                tol,
+                bvh_S,
+                n_S_traced,
+                n_S_failed);
+            logger().info(
+                "tight_seal_geom: dilation surface traced on {} edges to d(x, R) = d/2 ({} left "
+                "the edge)",
+                n_S_traced,
+                n_S_failed);
+            const std::function<double(const Vector2d&)> dist_S = [&](const Vector2d& p) {
+                return has_S ? tight_seal::bvh_distance(bvh_S, p)
+                             : std::numeric_limits<double>::infinity();
             };
 
-            // the boundary of U_mesh: the edges of whole faces in U not shared with another, and
-            // each cut face's part in U, walked corner by corner
-            std::vector<Vector2d> segments;
+            // 3. Conservative growth of all of J^. A vertex is inside if it is a vertex of a J^
+            // face, or if it lies in R + B (d(v, R) < d/2) with d(v, S) > d/2: in the closing.
+            // From J^, the faces outside R are flooded through edges with a vertex inside. Each
+            // edge of the flooded faces from an inside vertex to an outside one is split where
+            // d(x, S) falls to d/2, sphere traced from the inside end: d(x, S) is 1-Lipschitz, so
+            // a step of d(x, S) - d/2 cannot cross the level set, and the trace stops within the
+            // tolerance of it (as TopoOffsetTriMesh::edge_split_sphere_trace). Edges on R's
+            // boundary are split too, and so are the faces of R on them (their children keep
+            // R's tags). J is then the flooded faces whose vertices are all inside or on the
+            // level set.
+            std::vector<char> inside(vert_capacity(), 0);
+            for (const Tuple& t : get_vertices()) {
+                const size_t vid = t.vid(*this);
+                inside[vid] = dR[vid] < radius && dist_S(pos(vid)) > radius;
+            }
+            std::vector<size_t> flooded;
+            std::vector<char> in_flood(tri_capacity(), 0);
             for (const size_t fid : fids) {
-                if (region[fid] >= 0) {
+                if (!in_Jh[fid]) {
                     continue;
                 }
-                const auto vs = oriented_tri_vids(fid);
-                if (in_U_mesh[fid]) {
-                    for (int j = 0; j < 3; ++j) {
-                        const auto t_opp = tuple_from_edge(fid, j).switch_face(*this);
-                        if (t_opp && in_U_mesh[t_opp->fid(*this)]) {
-                            continue;
-                        }
-                        const Tuple edge_tup = tuple_from_edge(fid, j);
-                        segments.push_back(pos(edge_tup.vid(*this)));
-                        segments.push_back(pos(edge_tup.switch_vertex(*this).vid(*this)));
-                    }
-                    continue;
-                }
-                std::vector<Vector2d> part;
-                for (int j = 0; j < 3; ++j) {
-                    const size_t va = vs[j];
-                    const size_t vb = vs[(j + 1) % 3];
-                    if (in_U[va]) {
-                        part.push_back(pos(va));
-                    }
-                    if (in_U[va] != in_U[vb]) {
-                        part.push_back(in_U[va] ? trace_to_U(vb, va) : trace_to_U(va, vb));
-                    }
-                }
-                for (size_t k = 0; k < part.size(); ++k) {
-                    segments.push_back(part[k]);
-                    segments.push_back(part[(k + 1) % part.size()]);
+                flooded.push_back(fid);
+                in_flood[fid] = 1;
+                for (const size_t v : oriented_tri_vids(fid)) {
+                    inside[v] = 1;
                 }
             }
-            has_U_mesh = segments_bvh(segments, bvh_U);
-            logger().info(
-                "tight_seal_geom: U traced on {} edges to d(x, R) = d/2 ({} left the edge)",
-                traced.size(),
-                n_failed);
-        }
-
-        // J: the vertices outside U_mesh at distance > d/2 from it (all of them if it is empty)
-        std::vector<bool> in_J(vert_capacity(), false);
-        for (const Tuple& t : get_vertices()) {
-            const size_t vid = t.vid(*this);
-            const bool on_U = growth ? bool(in_U[vid]) : bool(on_U_mesh[vid]);
-            in_J[vid] = !on_U && (!has_U_mesh || bvh_distance(bvh_U, pos(vid)) > radius);
-        }
-
-        // J_mesh: the faces of E whose three vertices are in J. With growth, the faces of E with
-        // a vertex in J, cut down below to their part on the J side.
-        std::vector<bool> in_J_mesh(tri_capacity(), false);
-        for (const size_t fid : fids) {
-            const auto vs = oriented_tri_vids(fid);
-            const int n_in_J = int(in_J[vs[0]]) + int(in_J[vs[1]]) + int(in_J[vs[2]]);
-            in_J_mesh[fid] = region[fid] < 0 && (growth ? n_in_J > 0 : n_in_J == 3);
-        }
-
-        // Connected components of J_mesh; keep the ones that share an edge with every R_i (with
-        // detected tags: with min_regions R_i or more, which the component is then filled with).
-        // Faces connect through an edge with a vertex in J, which with growth keeps a part on the J
-        // side; without growth every edge of J_mesh has.
-        std::vector<int> comp_id(tri_capacity(), -1);
-        size_t n_components = 0;
-        for (const size_t fid : fids) {
-            if (!in_J_mesh[fid] || comp_id[fid] != -1) {
-                continue;
-            }
-            ConnectedComponent comp;
-            std::vector<bool> borders(n, false);
-            comp.cells.push_back(fid);
-            comp_id[fid] = int(n_components);
-            for (size_t i = 0; i < comp.cells.size(); ++i) { // BFS loop with comp.cells growing
-                const size_t cur = comp.cells[i];
-                comp.volume += triangle_area(cur);
+            for (size_t i = 0; i < flooded.size(); ++i) { // BFS loop with flooded growing
+                const size_t cur = flooded[i];
                 for (int j = 0; j < 3; ++j) {
                     const Tuple edge_tup = tuple_from_edge(cur, j);
-                    if (!in_J[edge_tup.vid(*this)] &&
-                        !in_J[edge_tup.switch_vertex(*this).vid(*this)]) {
+                    if (!inside[edge_tup.vid(*this)] &&
+                        !inside[edge_tup.switch_vertex(*this).vid(*this)]) {
                         continue;
                     }
                     const auto t_opp = edge_tup.switch_face(*this);
                     if (!t_opp) {
-                        comp.touches_boundary = true;
                         continue;
                     }
                     const size_t nbr = t_opp->fid(*this);
-                    if (region[nbr] >= 0) {
-                        borders[region[nbr]] = true;
-                    }
-                    if (!in_J_mesh[nbr] || comp_id[nbr] != -1) {
+                    if (region[nbr] >= 0 || in_flood[nbr]) {
                         continue;
                     }
-                    comp_id[nbr] = int(n_components);
-                    comp.cells.push_back(nbr);
+                    in_flood[nbr] = 1;
+                    flooded.push_back(nbr);
                 }
             }
-            ++n_components;
-            std::vector<size_t> comp_regions;
-            for (size_t i = 0; i < n; ++i) {
-                if (borders[i]) {
-                    comp_regions.push_back(i);
-                }
-            }
-            if (comp_regions.size() >= needed) {
-                if (detected) {
-                    std::vector<int64_t> comp_tags;
-                    for (const size_t i : comp_regions) {
-                        comp_tags.push_back(tags[i]);
+            std::vector<simplex::Edge> split_edges;
+            for (const size_t fid : flooded) {
+                const auto vs = oriented_tri_vids(fid);
+                for (int j = 0; j < 3; ++j) {
+                    if (inside[vs[j]] != inside[vs[(j + 1) % 3]]) {
+                        split_edges.emplace_back(vs[j], vs[(j + 1) % 3]);
                     }
-                    logger().info(
-                        "tight_seal_geom: component {} ({} faces) borders tags {}",
-                        components_seal.size(),
-                        comp.cells.size(),
-                        comp_tags);
                 }
-                components_seal.push_back(std::move(comp));
-                components_regions.push_back(std::move(comp_regions));
             }
-        }
+            vector_unique(split_edges);
 
-        if (detected) {
-            logger().info(
-                "tight_seal_geom: {} of {} unreachable components border {} or more of the "
-                "detected tags {}, distance {}",
-                components_seal.size(),
-                n_components,
-                needed,
-                tags,
-                distance);
-        } else {
-            logger().info(
-                "tight_seal_geom: {} of {} unreachable components border all tags {}, distance {}",
-                components_seal.size(),
-                n_components,
-                tags,
-                distance);
-        }
-
-        // Growth. Each edge of a sealed component from a vertex in J to one outside is split
-        // where it leaves J: where the distance f to U_mesh falls to d/2, found by sphere tracing
-        // from the J end. f is 1-Lipschitz, so from a point with f > d/2 the level set is at
-        // least f - d/2 away and a step that long along the edge cannot cross it: the trace
-        // stops at the first crossing (within the tolerance) and the part of the edge kept is
-        // in J. As TopoOffsetTriMesh::edge_split_sphere_trace. The component then keeps its
-        // faces with no vertex outside J. (No vertex is outside J if U_mesh is empty.)
-        if (growth) {
-            const double tol = trace_rel_tol * radius;
+            std::unordered_set<size_t> grown(flooded.begin(), flooded.end());
             Vector2d trace_point;
             Vector2d trace_dir;
             // linear along the edge, zero at the traced point, so the split lands on it
             m_voronoi_split_fn = [&](const Vector2d& p) -> double {
                 return (p - trace_point).dot(trace_dir);
             };
-            size_t n_traced = 0;
+            size_t n_split = 0;
             size_t n_not_split = 0;
-            for (ConnectedComponent& comp : components_seal) {
-                std::unordered_set<size_t> comp_faces(comp.cells.begin(), comp.cells.end());
-                std::vector<simplex::Edge> split_edges;
-                for (const size_t fid : comp.cells) {
-                    const auto vs = oriented_tri_vids(fid);
-                    for (int j = 0; j < 3; ++j) {
-                        if (in_J[vs[j]] != in_J[vs[(j + 1) % 3]]) {
-                            split_edges.emplace_back(vs[j], vs[(j + 1) % 3]);
-                        }
-                    }
+            for (const simplex::Edge& e : split_edges) {
+                const auto [e0, e1] = e.vertices();
+                const Vector2d a = pos(inside[e0] ? e0 : e1);
+                const Vector2d b = pos(inside[e0] ? e1 : e0);
+                const double L = (b - a).norm();
+                trace_dir = (b - a) / L;
+                // No split if the inside end is already on the level set (within the tolerance)
+                // or the trace leaves the edge.
+                const auto t = tight_seal::sphere_trace(dist_S, a, trace_dir, L, radius, tol, false);
+                if (!t || !(*t > 0.)) {
+                    ++n_not_split;
+                    continue;
                 }
-                vector_unique(split_edges);
-
-                for (const simplex::Edge& e : split_edges) {
-                    const auto [e0, e1] = e.vertices();
-                    const Vector2d a = pos(in_J[e0] ? e0 : e1);
-                    const Vector2d b = pos(in_J[e0] ? e1 : e0);
-                    const double L = (b - a).norm();
-                    trace_dir = (b - a) / L;
-                    // Past the far end: the trace left the edge. At the J end: that end is
-                    // already on the level set, and the edge keeps no part in J.
-                    bool on_level = false;
-                    double t = 0.;
-                    while (t < L && t >= 0.) {
-                        trace_point = a + t * trace_dir;
-                        const double f = bvh_distance(bvh_U, trace_point);
-                        if (std::abs(f - radius) <= tol) {
-                            on_level = t > 0.;
-                            break;
-                        }
-                        t += f - radius;
-                    }
-                    if (!on_level) {
-                        ++n_not_split;
-                        continue;
-                    }
-                    const size_t v_new =
-                        split_tracked(e, comp_faces, [](const size_t, const size_t) {});
-                    if (v_new == size_t(-1)) {
-                        ++n_not_split;
-                        continue;
-                    }
-                    ++n_traced;
-                    if (v_new >= in_J.size()) {
-                        in_J.resize(v_new + 1, false);
-                    }
-                    in_J[v_new] = true; // on the level set, the J side's boundary
+                trace_point = a + *t * trace_dir;
+                const size_t v_new =
+                    tight_seal_split_tracked(e, grown, filled, [](const size_t, const size_t) {});
+                if (v_new == size_t(-1)) {
+                    ++n_not_split;
+                    continue;
                 }
-
-                comp.cells.clear();
-                comp.volume = 0.;
-                for (const size_t fid : comp_faces) {
-                    const auto vs = oriented_tri_vids(fid);
-                    if (in_J[vs[0]] && in_J[vs[1]] && in_J[vs[2]]) {
-                        comp.cells.push_back(fid);
-                        comp.volume += triangle_area(fid);
-                    }
+                ++n_split;
+                if (v_new >= inside.size()) {
+                    inside.resize(v_new + 1, 0);
                 }
-                std::sort(comp.cells.begin(), comp.cells.end());
+                inside[v_new] = 1; // on the level set, J's boundary
             }
             m_voronoi_split_fn = nullptr;
+
+            std::vector<size_t> J_faces;
+            std::vector<char> in_J(tri_capacity(), 0);
+            for (const size_t fid : grown) {
+                const auto vs = oriented_tri_vids(fid);
+                if (inside[vs[0]] && inside[vs[1]] && inside[vs[2]]) {
+                    J_faces.push_back(fid);
+                    in_J[fid] = 1;
+                }
+            }
+            std::sort(J_faces.begin(), J_faces.end());
             logger().info(
-                "tight_seal_geom: growth split {} edges where they leave J, {} not split (the "
-                "trace started on the level set, left the edge, or the split was refused)",
-                n_traced,
-                n_not_split);
+                "tight_seal_geom: growth flooded {} faces, split {} edges where d(x, S) falls to "
+                "d/2 ({} not split: the trace started on the level set or left the edge, or the "
+                "split was refused); J holds {} faces",
+                flooded.size(),
+                n_split,
+                n_not_split,
+                J_faces.size());
+
+            // 4. Connected components of J (through edges); keep the ones that share an edge with
+            // every R_i (with detected tags: with min_regions R_i or more, which the component is
+            // then filled with). Regions are found by tag: the faces of R split above have no
+            // entry in `region`.
+            const auto region_of = [&](const size_t fid) {
+                const CellTag& tag = m_face_attribute[fid].tags;
+                if (tag.size() != 1) {
+                    return -1;
+                }
+                const auto it = std::find(tags.begin(), tags.end(), *tag.begin());
+                return it == tags.end() ? -1 : int(it - tags.begin());
+            };
+            std::vector<int> comp_id(tri_capacity(), -1);
+            size_t n_components = 0;
+            for (const size_t fid : J_faces) {
+                if (comp_id[fid] != -1) {
+                    continue;
+                }
+                ConnectedComponent comp;
+                std::vector<bool> borders(n, false);
+                comp.cells.push_back(fid);
+                comp_id[fid] = int(n_components);
+                for (size_t i = 0; i < comp.cells.size(); ++i) { // BFS loop with comp.cells growing
+                    const size_t cur = comp.cells[i];
+                    comp.volume += triangle_area(cur);
+                    for (int j = 0; j < 3; ++j) {
+                        const auto t_opp = tuple_from_edge(cur, j).switch_face(*this);
+                        if (!t_opp) {
+                            comp.touches_boundary = true;
+                            continue;
+                        }
+                        const size_t nbr = t_opp->fid(*this);
+                        const int r = region_of(nbr);
+                        if (r >= 0) {
+                            borders[r] = true;
+                        }
+                        if (!in_J[nbr] || comp_id[nbr] != -1) {
+                            continue;
+                        }
+                        comp_id[nbr] = int(n_components);
+                        comp.cells.push_back(nbr);
+                    }
+                }
+                ++n_components;
+                std::vector<size_t> comp_regions;
+                for (size_t i = 0; i < n; ++i) {
+                    if (borders[i]) {
+                        comp_regions.push_back(i);
+                    }
+                }
+                if (comp_regions.size() >= needed) {
+                    if (detected) {
+                        std::vector<int64_t> comp_tags;
+                        for (const size_t i : comp_regions) {
+                            comp_tags.push_back(tags[i]);
+                        }
+                        logger().info(
+                            "tight_seal_geom: component {} ({} faces) borders tags {}",
+                            components_seal.size(),
+                            comp.cells.size(),
+                            comp_tags);
+                    }
+                    std::sort(comp.cells.begin(), comp.cells.end());
+                    components_seal.push_back(std::move(comp));
+                    components_regions.push_back(std::move(comp_regions));
+                }
+            }
+            logger().info(
+                "tight_seal_geom: J has {} components; {} of them border {} {}",
+                n_components,
+                components_seal.size(),
+                detected ? fmt::format("{} or more of the detected tags", needed)
+                         : std::string("all tags"),
+                tags);
         }
     }
 
     // Voronoi fill, of each component with its regions. A point's region is the one of them
     // nearest to it. An edge whose endpoints are in regions a and b is split where d_a = d_b, by
     // split_adjust_position's bisection.
-    const auto nearest_region = [&](const Vector2d& p, const std::vector<size_t>& regions) {
-        size_t best = 0;
-        double best_d = std::numeric_limits<double>::infinity();
-        for (const size_t i : regions) {
-            const double d = bvh_distance(region_bvhs[i], p);
-            if (d < best_d) {
-                best = i;
-                best_d = d;
-            }
-        }
-        return best;
-    };
     size_t split_a = 0;
     size_t split_b = 0;
     m_voronoi_split_fn = [&](const Vector2d& p) -> double {
-        return bvh_distance(region_bvhs[split_a], p) - bvh_distance(region_bvhs[split_b], p);
+        return tight_seal::bvh_distance(region_bvhs[split_a], p) -
+               tight_seal::bvh_distance(region_bvhs[split_b], p);
     };
 
     size_t n_splits = 0;
@@ -1150,10 +1031,15 @@ void SimWildMeshTri::tight_seal_geom(
         std::unordered_map<size_t, size_t> vertex_region;
         for (const size_t fid : comp.cells) {
             const auto vs = oriented_tri_vids(fid);
-            set_region(fid, nearest_region((pos(vs[0]) + pos(vs[1]) + pos(vs[2])) / 3, regions));
+            set_region(
+                fid,
+                tight_seal::nearest_region(
+                    region_bvhs,
+                    Vector2d((pos(vs[0]) + pos(vs[1]) + pos(vs[2])) / 3),
+                    regions));
             for (const size_t v : vs) {
                 if (vertex_region.count(v) == 0) {
-                    vertex_region[v] = nearest_region(pos(v), regions);
+                    vertex_region[v] = tight_seal::nearest_region(region_bvhs, pos(v), regions);
                 }
             }
         }
@@ -1180,8 +1066,11 @@ void SimWildMeshTri::tight_seal_geom(
         for (const simplex::Edge& e : split_edges) {
             split_a = vertex_region.at(e.vertices()[0]);
             split_b = vertex_region.at(e.vertices()[1]);
-            const size_t v_new =
-                split_tracked(e, comp_faces, [&](const size_t fid, const size_t end_vid) {
+            const size_t v_new = tight_seal_split_tracked(
+                e,
+                comp_faces,
+                filled,
+                [&](const size_t fid, const size_t end_vid) {
                     set_region(fid, vertex_region.at(end_vid));
                 });
             if (v_new != size_t(-1)) {
@@ -1204,72 +1093,7 @@ void SimWildMeshTri::tight_seal_geom(
     // filled faces, connected through edges, borders two regions or more. A part bordering a
     // single region would be a concave feature of that body, filled.
     if (sanity) {
-        const CellTag region_tags(tags.begin(), tags.end());
-        std::vector<size_t> filled_ids;
-        for (const Tuple& t : get_faces()) {
-            const size_t fid = t.fid(*this);
-            if (is_inverted(fid)) {
-                log_and_throw_error("tight_seal_geom sanity check: face {} is inverted", fid);
-            }
-            if (!filled[fid]) {
-                continue;
-            }
-            filled_ids.push_back(fid);
-            const CellTag& tag = m_face_attribute[fid].tags;
-            if (std::count_if(tag.begin(), tag.end(), [&](const int64_t x) {
-                    return region_tags.count(x) > 0;
-                }) != 1) {
-                log_and_throw_error(
-                    "tight_seal_geom sanity check: filled face {} has tags {}, not exactly one "
-                    "of {}",
-                    fid,
-                    std::vector<int64_t>(tag.begin(), tag.end()),
-                    tags);
-            }
-        }
-        std::vector<char> visited(filled.size(), 0);
-        size_t n_parts = 0;
-        for (const size_t start : filled_ids) {
-            if (visited[start]) {
-                continue;
-            }
-            visited[start] = 1;
-            std::vector<size_t> part{start};
-            CellTag borders;
-            for (size_t i = 0; i < part.size(); ++i) { // BFS loop with part growing
-                for (int j = 0; j < 3; ++j) {
-                    const auto t_opp = tuple_from_edge(part[i], j).switch_face(*this);
-                    if (!t_opp) {
-                        continue;
-                    }
-                    const size_t nbr = t_opp->fid(*this);
-                    if (filled[nbr]) {
-                        if (!visited[nbr]) {
-                            visited[nbr] = 1;
-                            part.push_back(nbr);
-                        }
-                        continue;
-                    }
-                    const CellTag& tag = m_face_attribute[nbr].tags;
-                    if (tag.size() == 1 && region_tags.count(*tag.begin()) > 0) {
-                        borders.insert(*tag.begin());
-                    }
-                }
-            }
-            ++n_parts;
-            if (borders.size() < 2) {
-                log_and_throw_error(
-                    "tight_seal_geom sanity check: a filled part of {} faces borders only the "
-                    "regions {}, so a concave feature of one body was filled",
-                    part.size(),
-                    std::vector<int64_t>(borders.begin(), borders.end()));
-            }
-        }
-        logger().info(
-            "tight_seal_geom sanity check passed: no face inverted; {} filled faces in {} "
-            "parts, each bordering two regions or more",
-            filled_ids.size(),
-            n_parts);
+        tight_seal_geom_sanity(tags, filled);
     }
 
     m_E_envelope.clear();

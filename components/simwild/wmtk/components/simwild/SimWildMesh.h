@@ -27,7 +27,9 @@
 
 #include <igl/remove_unreferenced.h>
 #include <atomic>
+#include <functional>
 #include <memory>
+#include <unordered_set>
 
 #include <wmtk/utils/SurfaceTopology.hpp>
 #include <wmtk/utils/partition_utils.hpp>
@@ -299,6 +301,45 @@ protected:
     bool swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip) override;
 
 private:
+    // tight_seal_geom's helpers that need the mesh, defined in TightSealGeom.cpp
+    /// BVH of the boundary of the tets of `tids` for which in_set holds: their interfaces with
+    /// the other tets and their faces on the mesh boundary. From a point outside the set, the
+    /// distance to the set is the distance to this boundary. Returns false if the set is empty.
+    bool tight_seal_boundary_bvh(
+        const std::vector<size_t>& tids,
+        const std::function<bool(size_t)>& in_set,
+        SimpleBVH::BVH& bvh) const;
+    /// Split edge e, keeping `cells` up to date: the children of a tet in it replace it, and
+    /// each child takes its parent's flag in `filled` (resized to the new capacity). Calls
+    /// on_child(id, end_vid) for each child in `cells`, end_vid being the endpoint of e the child
+    /// keeps. Returns the new vertex, or -1 if the split was refused.
+    size_t tight_seal_split_tracked(
+        const simplex::Edge& e,
+        std::unordered_set<size_t>& cells,
+        std::vector<char>& filled,
+        const std::function<void(size_t, size_t)>& on_child);
+    /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
+    /// as a BVH of triangles. On each edge of a tet outside R (region < 0) between a vertex with
+    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
+    /// from the near end (to within tol, on R's side); the crossings of each tet are joined into
+    /// its cut polygon (a triangle or a quad, in two triangles). Returns false if S is empty; n_traced: edges traced, n_failed: traces that left
+    /// their edge (the far end is taken).
+    bool tight_seal_dilation_surface_bvh(
+        const std::vector<size_t>& tids,
+        const std::vector<int>& region,
+        const std::vector<double>& dist_R_at,
+        const std::function<double(const Vector3d&)>& dist_R,
+        double radius,
+        double tol,
+        SimpleBVH::BVH& bvh,
+        size_t& n_traced,
+        size_t& n_failed) const;
+    /// tight_seal_geom's `sanity` checks, on the output: throws if a tet is inverted, a filled
+    /// tet (filled[id] set) carries other than exactly one of `tags`, or a part of the filled
+    /// tets, connected through faces, borders fewer than two of them.
+    void tight_seal_geom_sanity(const std::vector<int64_t>& tags, const std::vector<char>& filled)
+        const;
+
     ////// Operations
 
     struct SplitTagCache
@@ -466,16 +507,23 @@ public:
      * @brief Geometric tight seal between the regions R_i, the tets tagged with `tags[i]` and
      * nothing else. The 3D counterpart of SimWildMeshTri::tight_seal_geom.
      *
-     * A ball of radius distance/2 moves through E, everything outside the R_i, without entering
-     * them. Each connected part of E it cannot reach that borders every R_i is filled with the
-     * Voronoi diagram of the R_i: edges whose endpoints have different nearest regions are split
-     * on the bisector, and each tet gets the tag of its region.
-     *
-     * Without `growth`, the ball's centres are the tets whose four vertices are far enough from
-     * the R_i, and a part is the tets whose four vertices the ball cannot reach. With it, both
-     * are cut along their level sets by sphere tracing on the edges (to within trace_rel_tol x
-     * distance/2): the centres are cut without splitting, a part by splitting the edges that
-     * leave it.
+     * J is the closing of the union R of the R_i by the ball B of diameter `distance`, minus R:
+     * the part of E that B cannot reach. It is found in four steps.
+     *  1. The tets surely in J (the spec's v2): U^ = R and the tets whose points are all
+     *     within distance/2 of R (inside R + B); V^ = the tets of U^ whose points are all
+     *     farther than distance/2 from U^'s boundary (inside the closing); J^ = V^ minus R. Both
+     *     tests are certified by conservative subdivision (tight_seal::certify_on_cell).
+     *  2. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
+     *  3. Conservative growth of all of J^ to the level set d(x, S) = distance/2: the tets
+     *     outside R are flooded from J^ through faces with a vertex inside (in R + B and
+     *     d(v, S) > distance/2), each flooded edge from an inside vertex to an outside one is
+     *     split where it leaves J, sphere traced from the inside end (to within trace_rel_tol x
+     *     distance/2), edges on R's boundary included, and J is the flooded tets with all
+     *     vertices inside.
+     *  4. The connected components of J (through faces) are kept by the rule of `selection`.
+     * Each component is then filled with the Voronoi diagram of its regions: edges whose
+     * endpoints have different nearest regions are split on the bisector, and each tet gets
+     * the tag of its region.
      *
      * `selection` "explicit": the regions are `tags`, which may not hold ambient (the tag named
      * "ambient"). "detected": `tags` is ignored (with a warning if it is not empty), the regions
@@ -490,7 +538,6 @@ public:
     void tight_seal_geom(
         const std::vector<int64_t>& tags,
         double distance,
-        bool growth = true,
         double trace_rel_tol = 0.01,
         const std::string& selection = "explicit",
         int64_t min_regions = 2,

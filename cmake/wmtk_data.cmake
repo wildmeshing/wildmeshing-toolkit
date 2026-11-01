@@ -96,8 +96,10 @@ ExternalProject_Add(
     # superseded by #1123), and the case keeps the model's curves and corners through
     # isotropic_remeshing's features (models/rings_iso_features.json). The pin also takes in what
     # data2 main gained since 89911f5: c91a67a's dropped options and the 3D cube offset cases.
+    # At 5e6a19c (2026-11-01, data2 main) the two explicit tight_seal_geom cases drop
+    # tight_seal_geom_growth, which simwild no longer has (and rejects as an unknown key).
     #
-    GIT_TAG c11305fe6a8fe37b8d8920a0e98fcb558926084e
+    GIT_TAG 5e6a19c4a0eda4d2b22e5c8e77930f187d934723
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

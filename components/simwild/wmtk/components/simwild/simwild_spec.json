@@ -3,7 +3,10 @@
     "doc": "[README](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/simwild/README.md)",
     "pointer": "/",
     "type": "object",
-    "required": ["application", "input"],
+    "required": [
+      "application",
+      "input"
+    ],
     "optional": [
       "operation",
       "dimension",
@@ -77,7 +80,6 @@
       "tight_seal_threshold",
       "tight_seal_geom_tags",
       "tight_seal_geom_distance",
-      "tight_seal_geom_growth",
       "tight_seal_geom_trace_rel_tol",
       "tight_seal_geom_selection",
       "tight_seal_geom_min_regions",
@@ -142,16 +144,7 @@
     "pointer": "/operation",
     "type": "string",
     "default": "remeshing",
-    "options": [
-      "remeshing",
-      "fill_holes_topo",
-      "tight_seal_topo",
-      "tight_seal_geom",
-      "keep_lcc",
-      "resolve_overlaps",
-      "replace_tags",
-      "tag_priority"
-    ],
+    "options": ["remeshing", "fill_holes_topo", "tight_seal_topo", "tight_seal_geom", "keep_lcc", "resolve_overlaps", "replace_tags", "tag_priority"],
     "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
   },
   {
@@ -299,8 +292,13 @@
   {
     "pointer": "/sizing_field/*",
     "type": "object",
-    "required": ["tags"],
-    "optional": ["length", "length_rel"],
+    "required": [
+      "tags"
+    ],
+    "optional": [
+      "length",
+      "length_rel"
+    ],
     "doc": "A region and its target length."
   },
   {
@@ -329,7 +327,10 @@
   {
     "pointer": "/quality_field/*",
     "type": "object",
-    "required": ["tags", "quality"],
+    "required": [
+      "tags",
+      "quality"
+    ],
     "doc": "A region and its target quality."
   },
   {
@@ -605,19 +606,13 @@
     "pointer": "/tight_seal_geom_distance",
     "type": "float",
     "default": -1,
-    "doc": "For tight_seal_geom: the distance d, which must be positive. A disk (a ball in 3D) of diameter d moves through the cells outside the regions without entering them; each connected part it cannot reach that borders every region is filled with the regions' Voronoi diagram."
-  },
-  {
-    "pointer": "/tight_seal_geom_growth",
-    "type": "bool",
-    "default": true,
-    "doc": "For tight_seal_geom. true (the default): conservative growth, below. false: the disk's possible centres are the cells whose vertices are all at least d/2 from the regions, and an unreachable part is the cells whose vertices the disk can reach none of. true (conservative growth): the centres are cut along the level set 'distance to the regions = d/2', traced on each edge from the regions' side, without splitting anything; an unreachable part is the cells with at least one unreachable vertex, each edge from an unreachable vertex to a reachable one split where it leaves the part (sphere traced from the unreachable end), and only the cells on the unreachable side kept."
+    "doc": "For tight_seal_geom: the distance d, which must be positive. A disk (a ball in 3D) of diameter d moves through the cells outside the regions without entering them; each connected part it cannot reach that borders the regions (see tight_seal_geom_selection) is filled with their Voronoi diagram. The parts are found as cells surely unreachable (certified, whole cells), filtered, and grown by sphere tracing to where the disk's reach begins."
   },
   {
     "pointer": "/tight_seal_geom_trace_rel_tol",
     "type": "float",
     "default": 0.01,
-    "doc": "For tight_seal_geom with tight_seal_geom_growth, in (0, 1): the sphere trace stops where the distance to the disk's reachable centres is within this x d/2 of d/2. As topological_offset's sphere_trace_target_rel_tol."
+    "doc": "For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the growth's, where the distance to the dilation surface falls to d/2. As topological_offset's sphere_trace_target_rel_tol."
   },
   {
     "pointer": "/tight_seal_geom_selection",

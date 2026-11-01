@@ -117,7 +117,6 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
         mesh.tight_seal_geom(
             tags,
             json_params["tight_seal_geom_distance"],
-            json_params["tight_seal_geom_growth"],
             json_params["tight_seal_geom_trace_rel_tol"],
             selection,
             json_params["tight_seal_geom_min_regions"],
