@@ -261,17 +261,21 @@ public:
      *
      * J is the closing of the union R of the R_i by the disk B of diameter `distance`, minus R:
      * the part of E that B cannot reach. It is found in four steps.
-     *  1. The faces surely in J (the spec's v2): U^ = R and the faces whose points are all
-     *     within distance/2 of R (inside R + B); V^ = the faces of U^ whose points are all
-     *     farther than distance/2 from U^'s boundary (inside the closing); J^ = V^ minus R. Both
-     *     tests are certified by conservative subdivision (tight_seal::certify_on_cell).
+     *  1. `join_mode` "guaranteed" only: the faces surely in J (the spec's v2): U^ = R and the
+     *     faces whose points are all within distance/2 of R (inside R + B); V^ = the faces of U^
+     *     whose points are all farther than distance/2 from U^'s boundary (inside the closing);
+     *     J^ = V^ minus R. Both tests are certified by conservative subdivision
+     *     (tight_seal::certify_on_cell).
      *  2. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
-     *  3. Conservative growth of all of J^ to the level set d(x, S) = distance/2: the faces
-     *     outside R are flooded from J^ through edges with a vertex inside (in R + B and
-     *     d(v, S) > distance/2), each flooded edge from an inside vertex to an outside one is
-     *     split where it leaves J, sphere traced from the inside end (to within trace_rel_tol x
-     *     distance/2), edges on R's boundary included, and J is the flooded faces with all
-     *     vertices inside.
+     *  3. A vertex is inside if it is in R + B and d(v, S) > distance/2 ("marched": farther than
+     *     (1 + trace_rel_tol) x distance/2, so that vertices on the level set, such as R's where
+     *     S is R's own offset, are outside whatever the rounding). The faces processed:
+     *     "guaranteed", conservative growth of all of J^, the faces outside R flooded from J^
+     *     through edges with a vertex inside; "marched", every face outside R with a vertex
+     *     inside. Each of their edges from an inside vertex to an outside one is split where it
+     *     leaves J, at d(x, S) = distance/2, sphere traced from the inside end (to within
+     *     trace_rel_tol x distance/2), edges on R's boundary included, and J is the processed
+     *     faces with all vertices inside.
      *  4. The connected components of J (through edges) are kept by the rule of `selection`.
      * Each component is then filled with the Voronoi diagram of its regions: edges whose
      * endpoints have different nearest regions are split on the bisector, and each face gets
@@ -286,6 +290,9 @@ public:
      * `sanity`: afterwards, throw if a face is inverted, a filled face carries other than one
      * region's tag, or a part of the filled faces borders fewer than two regions (a concave
      * feature of one body, filled).
+     *
+     * `join_mode` "guaranteed" (default) grows J from the faces surely in it, so a gap with no
+     * such face stays unsealed; "marched" finds J at every vertex of the mesh.
      */
     void tight_seal_geom(
         const std::vector<int64_t>& tags,
@@ -293,7 +300,8 @@ public:
         double trace_rel_tol = 0.01,
         const std::string& selection = "explicit",
         int64_t min_regions = 2,
-        bool sanity = false);
+        bool sanity = false,
+        const std::string& join_mode = "guaranteed");
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 

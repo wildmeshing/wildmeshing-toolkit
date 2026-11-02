@@ -582,13 +582,20 @@ void SimWildMeshTri::tight_seal_geom(
     const double trace_rel_tol,
     const std::string& selection,
     const int64_t min_regions,
-    const bool sanity)
+    const bool sanity,
+    const std::string& join_mode)
 {
     const bool detected = selection == "detected";
     if (!detected && selection != "explicit") {
         log_and_throw_error(
             "tight_seal_geom: selection must be \"explicit\" or \"detected\". Input was {}",
             selection);
+    }
+    const bool marched = join_mode == "marched";
+    if (!marched && join_mode != "guaranteed") {
+        log_and_throw_error(
+            "tight_seal_geom: join_mode must be \"guaranteed\" or \"marched\". Input was {}",
+            join_mode);
     }
     if (detected && min_regions < 2) {
         log_and_throw_error(
@@ -725,64 +732,68 @@ void SimWildMeshTri::tight_seal_geom(
             return std::array<Vector2d, 3>{{pos(vs[0]), pos(vs[1]), pos(vs[2])}};
         };
 
-        // 1. The faces surely in J, the closing of R by the disk B of radius d/2 minus R (the
-        // spec's v2). U^ = R and the faces whose points are all within d/2 of R: inside R + B.
-        // V^ = the faces of U^ whose points are all farther than d/2 from dU^, the boundary of U^
-        // (outside the mesh counts as outside U^): inside U^ - B, so inside the closing. J^ = V^
-        // minus R. Both tests are certified by tight_seal::certify_on_cell, so rounding can only
-        // leave a face out.
-        std::vector<bool> in_Uh(tri_capacity(), false);
-        for (const size_t fid : fids) {
-            const auto vs = oriented_tri_vids(fid);
-            in_Uh[fid] = region[fid] >= 0 || tight_seal::certify_on_cell(
-                                                 corners(vs),
-                                                 {{dR[vs[0]], dR[vs[1]], dR[vs[2]]}},
-                                                 dist_R,
-                                                 radius,
-                                                 true,
-                                                 tight_seal::certify_depth_2d);
-        }
-        SimpleBVH::BVH bvh_dUh;
-        const bool has_dUh = tight_seal_boundary_bvh(
-            fids,
-            [&](const size_t fid) { return bool(in_Uh[fid]); },
-            bvh_dUh);
-        const std::function<double(const Vector2d&)> dist_dUh = [&](const Vector2d& p) {
-            return has_dUh ? tight_seal::bvh_distance(bvh_dUh, p)
-                           : std::numeric_limits<double>::infinity();
-        };
-        std::vector<double> dUh(vert_capacity(), -1.); // at the vertices of U^'s faces outside R
+        // 1. join_mode "guaranteed": the faces surely in J, the closing of R by the disk B of
+        // radius d/2 minus R (the spec's v2). U^ = R and the faces whose points are all within
+        // d/2 of R: inside R + B. V^ = the faces of U^ whose points are all farther than d/2 from
+        // dU^, the boundary of U^ (outside the mesh counts as outside U^): inside U^ - B, so
+        // inside the closing. J^ = V^ minus R. Both tests are certified by
+        // tight_seal::certify_on_cell, so rounding can only leave a face out. "marched" skips
+        // this step.
         std::vector<bool> in_Jh(tri_capacity(), false);
-        size_t n_Uh = 0;
         size_t n_Jh = 0;
-        for (const size_t fid : fids) {
-            if (!in_Uh[fid] || region[fid] >= 0) {
-                continue;
+        if (!marched) {
+            std::vector<bool> in_Uh(tri_capacity(), false);
+            for (const size_t fid : fids) {
+                const auto vs = oriented_tri_vids(fid);
+                in_Uh[fid] = region[fid] >= 0 || tight_seal::certify_on_cell(
+                                                     corners(vs),
+                                                     {{dR[vs[0]], dR[vs[1]], dR[vs[2]]}},
+                                                     dist_R,
+                                                     radius,
+                                                     true,
+                                                     tight_seal::certify_depth_2d);
             }
-            ++n_Uh;
-            const auto vs = oriented_tri_vids(fid);
-            for (const size_t v : vs) {
-                if (dUh[v] < 0) {
-                    dUh[v] = dist_dUh(pos(v));
+            SimpleBVH::BVH bvh_dUh;
+            const bool has_dUh = tight_seal_boundary_bvh(
+                fids,
+                [&](const size_t fid) { return bool(in_Uh[fid]); },
+                bvh_dUh);
+            const std::function<double(const Vector2d&)> dist_dUh = [&](const Vector2d& p) {
+                return has_dUh ? tight_seal::bvh_distance(bvh_dUh, p)
+                               : std::numeric_limits<double>::infinity();
+            };
+            // at the vertices of U^'s faces outside R
+            std::vector<double> dUh(vert_capacity(), -1.);
+            size_t n_Uh = 0;
+            for (const size_t fid : fids) {
+                if (!in_Uh[fid] || region[fid] >= 0) {
+                    continue;
                 }
+                ++n_Uh;
+                const auto vs = oriented_tri_vids(fid);
+                for (const size_t v : vs) {
+                    if (dUh[v] < 0) {
+                        dUh[v] = dist_dUh(pos(v));
+                    }
+                }
+                in_Jh[fid] = tight_seal::certify_on_cell(
+                    corners(vs),
+                    {{dUh[vs[0]], dUh[vs[1]], dUh[vs[2]]}},
+                    dist_dUh,
+                    radius,
+                    false,
+                    tight_seal::certify_depth_2d);
+                n_Jh += in_Jh[fid];
             }
-            in_Jh[fid] = tight_seal::certify_on_cell(
-                corners(vs),
-                {{dUh[vs[0]], dUh[vs[1]], dUh[vs[2]]}},
-                dist_dUh,
-                radius,
-                false,
-                tight_seal::certify_depth_2d);
-            n_Jh += in_Jh[fid];
+
+            logger().info(
+                "tight_seal_geom: U^ holds {} faces outside R, J^ {} of them, distance {}",
+                n_Uh,
+                n_Jh,
+                distance);
         }
 
-        logger().info(
-            "tight_seal_geom: U^ holds {} faces outside R, J^ {} of them, distance {}",
-            n_Uh,
-            n_Jh,
-            distance);
-
-        if (n_Jh > 0) {
+        if (marched || n_Jh > 0) {
             const double tol = trace_rel_tol * radius;
 
             // 2. The dilation surface S, the level set d(x, R) = d/2 (the boundary of R + B),
@@ -811,51 +822,65 @@ void SimWildMeshTri::tight_seal_geom(
                              : std::numeric_limits<double>::infinity();
             };
 
-            // 3. Conservative growth of all of J^. A vertex is inside if it is a vertex of a J^
-            // face, or if it lies in R + B (d(v, R) < d/2) with d(v, S) > d/2: in the closing.
-            // From J^, the faces outside R are flooded through edges with a vertex inside. Each
-            // edge of the flooded faces from an inside vertex to an outside one is split where
-            // d(x, S) falls to d/2, sphere traced from the inside end: d(x, S) is 1-Lipschitz, so
-            // a step of d(x, S) - d/2 cannot cross the level set, and the trace stops within the
-            // tolerance of it (as TopoOffsetTriMesh::edge_split_sphere_trace). Edges on R's
-            // boundary are split too, and so are the faces of R on them (their children keep
-            // R's tags). J is then the flooded faces whose vertices are all inside or on the
-            // level set.
+            // 3. A vertex is inside if it lies in R + B (d(v, R) < d/2) with d(v, S) > d/2: in
+            // the closing. "marched" asks d(v, S) > d/2 + tol, so that a vertex on the level set
+            // (such as a vertex of R where the dilation surface is R's own offset) counts as
+            // outside whatever the rounding. The faces to process: "guaranteed", conservative
+            // growth of all of J^ (the vertices of J^'s faces are inside too, and the faces
+            // outside R are flooded from J^ through edges with a vertex inside); "marched", every
+            // face outside R with a vertex inside. Each edge of those faces from an inside vertex
+            // to an outside one is split where d(x, S) falls to d/2, sphere traced from the
+            // inside end: d(x, S) is 1-Lipschitz, so a step of d(x, S) - d/2 cannot cross the
+            // level set, and the trace stops within the tolerance of it (as
+            // TopoOffsetTriMesh::edge_split_sphere_trace). Edges on R's boundary are split too,
+            // and so are the faces of R on them (their children keep R's tags). J is then the
+            // processed faces whose vertices are all inside or on the level set.
+            const double inside_level = marched ? radius + tol : radius;
             std::vector<char> inside(vert_capacity(), 0);
             for (const Tuple& t : get_vertices()) {
                 const size_t vid = t.vid(*this);
-                inside[vid] = dR[vid] < radius && dist_S(pos(vid)) > radius;
+                inside[vid] = dR[vid] < radius && dist_S(pos(vid)) > inside_level;
             }
             std::vector<size_t> flooded;
             std::vector<char> in_flood(tri_capacity(), 0);
-            for (const size_t fid : fids) {
-                if (!in_Jh[fid]) {
-                    continue;
+            if (marched) {
+                for (const size_t fid : fids) {
+                    const auto vs = oriented_tri_vids(fid);
+                    if (region[fid] < 0 && (inside[vs[0]] || inside[vs[1]] || inside[vs[2]])) {
+                        flooded.push_back(fid);
+                        in_flood[fid] = 1;
+                    }
                 }
-                flooded.push_back(fid);
-                in_flood[fid] = 1;
-                for (const size_t v : oriented_tri_vids(fid)) {
-                    inside[v] = 1;
+            } else {
+                for (const size_t fid : fids) {
+                    if (!in_Jh[fid]) {
+                        continue;
+                    }
+                    flooded.push_back(fid);
+                    in_flood[fid] = 1;
+                    for (const size_t v : oriented_tri_vids(fid)) {
+                        inside[v] = 1;
+                    }
                 }
-            }
-            for (size_t i = 0; i < flooded.size(); ++i) { // BFS loop with flooded growing
-                const size_t cur = flooded[i];
-                for (int j = 0; j < 3; ++j) {
-                    const Tuple edge_tup = tuple_from_edge(cur, j);
-                    if (!inside[edge_tup.vid(*this)] &&
-                        !inside[edge_tup.switch_vertex(*this).vid(*this)]) {
-                        continue;
+                for (size_t i = 0; i < flooded.size(); ++i) { // BFS loop with flooded growing
+                    const size_t cur = flooded[i];
+                    for (int j = 0; j < 3; ++j) {
+                        const Tuple edge_tup = tuple_from_edge(cur, j);
+                        if (!inside[edge_tup.vid(*this)] &&
+                            !inside[edge_tup.switch_vertex(*this).vid(*this)]) {
+                            continue;
+                        }
+                        const auto t_opp = edge_tup.switch_face(*this);
+                        if (!t_opp) {
+                            continue;
+                        }
+                        const size_t nbr = t_opp->fid(*this);
+                        if (region[nbr] >= 0 || in_flood[nbr]) {
+                            continue;
+                        }
+                        in_flood[nbr] = 1;
+                        flooded.push_back(nbr);
                     }
-                    const auto t_opp = edge_tup.switch_face(*this);
-                    if (!t_opp) {
-                        continue;
-                    }
-                    const size_t nbr = t_opp->fid(*this);
-                    if (region[nbr] >= 0 || in_flood[nbr]) {
-                        continue;
-                    }
-                    in_flood[nbr] = 1;
-                    flooded.push_back(nbr);
                 }
             }
             std::vector<simplex::Edge> split_edges;
@@ -918,9 +943,10 @@ void SimWildMeshTri::tight_seal_geom(
             }
             std::sort(J_faces.begin(), J_faces.end());
             logger().info(
-                "tight_seal_geom: growth flooded {} faces, split {} edges where d(x, S) falls to "
-                "d/2 ({} not split: the trace started on the level set or left the edge, or the "
-                "split was refused); J holds {} faces",
+                "tight_seal_geom: {} {} faces, split {} edges where d(x, S) falls to d/2 ({} not "
+                "split: the trace started on the level set or left the edge, or the split was "
+                "refused); J holds {} faces",
+                marched ? "marched" : "growth flooded",
                 flooded.size(),
                 n_split,
                 n_not_split,
