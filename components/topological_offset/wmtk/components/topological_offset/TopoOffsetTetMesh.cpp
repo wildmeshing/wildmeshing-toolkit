@@ -2681,32 +2681,29 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         //   field_normal_angle  front_face_field_angle(): the angle in degrees between the face's
         //                       normal, out of the band, and grad d at its centroid. NaN where it
         //                       cannot be measured.
-        //   offset_foldover     1 on the two faces of every real fold, the folds count_real_folds()
-        //                       counts and EXPERIMENTAL_exit_no_folds holds the exit for: an edge
-        //                       with exactly two offset faces whose normals out of the band are
-        //                       within 30 degrees of opposite. Else 0.
-        //   field_angle_foldover 1 where field_normal_angle > foldover_angle, else 0 (the
-        //                       end-of-run [foldover] count's test; offset_foldover until
+        //   offset_foldover     1 on the two faces of every fold (fold_test(), through
+        //                       count_folds()), the folds EXPERIMENTAL_exit_no_folds holds the
+        //                       exit for. Else 0; a ridge edge's two faces are 0 (until
+        //                       2026-11-02 they were 1, every pair of opposite faces).
+        //   field_angle_turned  1 where field_normal_angle > foldover_angle, else 0: a face
+        //                       turned from the field, the end-of-run [turned faces] count's test
+        //                       (field_angle_foldover until 2026-11-02, offset_foldover until
         //                       2026-10-26). MEASURED: it reads a face against grad d at its
         //                       centroid, so the faces of a sharp crease of the target, each on
-        //                       its own sheet, read 0 degrees (input1 inward at 0.5 delta_1: 8 real
-        //                       folds, both faces of each within 0.4 front_conv of the target),
-        //                       while a face across a crease line can read up to 64 (cube_in at
-        //                       0.45, 2026-10-25) with no fold.
+        //                       its own sheet, read 0 degrees (input1 inward at 0.5 delta_1: 8
+        //                       ridge edges, both faces of each within 0.4 front_conv of the
+        //                       target), while a face across a crease line can read up to 64
+        //                       (cube_in at 0.45, 2026-10-25) with no fold.
         //   dihedral_angle      the band-side dihedral angle (band_side_dihedral(); 180 flat,
         //                       toward 0 or 360 as two faces fold onto each other) across the
         //                       face's most folded edge, the one closest to 0 or 360; edges with
         //                       other than two offset faces, or a neighbour without a normal, are
         //                       not measured. NaN with no measured edge.
-        //   offset_foldover_dihedral  1 where that angle is below foldover_angle or above 360
-        //                       minus it (dihedral_is_foldover()), else 0: a fold between
-        //                       neighbouring faces, whatever the field does.
         fr.f_err.resize(faces_off.size());
         fr.f_fold = VectorXd::Zero(faces_off.size());
-        fr.f_field_fold = VectorXd::Zero(faces_off.size());
+        fr.f_field_turned = VectorXd::Zero(faces_off.size());
         fr.f_field_angle = VectorXd::Constant(faces_off.size(), nan);
         fr.f_dihedral = VectorXd::Constant(faces_off.size(), nan);
-        fr.f_fold_dihedral = VectorXd::Zero(faces_off.size());
         fr.f_len.resize(faces_off.size());
         fr.f_inside = VectorXd::Constant(faces_off.size(), nan);
         fr.f_outside = VectorXd::Constant(faces_off.size(), nan);
@@ -2738,7 +2735,8 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 const Vector3d pa = VA[a].m_posf, pb = VA[b].m_posf, pc = VA[c].m_posf;
                 fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
                 fr.f_field_angle[i] = front_face_field_angle(a, b, c);
-                fr.f_field_fold[i] = fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
+                fr.f_field_turned[i] =
+                    fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
                 Vector3d n;
                 if (front_face_out_normal(a, b, c, n)) {
                     face_n[i] = n.normalized();
@@ -2769,7 +2767,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         });
         {
             std::vector<std::array<size_t, 3>> fold_faces;
-            count_real_folds(nullptr, &fold_faces);
+            count_folds(&fold_faces);
             std::sort(fold_faces.begin(), fold_faces.end());
             for (size_t i = 0; i < n_off; ++i) {
                 std::array<size_t, 3> f = faces_off[i];
@@ -2834,12 +2832,6 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 }
             }
             e += m;
-        }
-        for (size_t i = 0; i < n_off; ++i) {
-            if (!std::isfinite(fr.f_dihedral[int(i)])) continue;
-            fr.f_fold_dihedral[int(i)] =
-                dihedral_is_foldover(fr.f_dihedral[int(i)], m_offset_params.foldover_angle) ? 1.
-                                                                                            : 0.;
         }
         fr.ring = VectorXd::Constant(vert_capacity(), std::numeric_limits<double>::quiet_NaN());
         for (size_t vid = 0; vid < vert_capacity(); ++vid) {
@@ -2979,9 +2971,8 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
         off_writer.add_cell_field("chord_length", fr.f_len);
         off_writer.add_cell_field("field_normal_angle", fr.f_field_angle);
         off_writer.add_cell_field("offset_foldover", fr.f_fold);
-        off_writer.add_cell_field("field_angle_foldover", fr.f_field_fold);
+        off_writer.add_cell_field("field_angle_turned", fr.f_field_turned);
         off_writer.add_cell_field("dihedral_angle", fr.f_dihedral);
-        off_writer.add_cell_field("offset_foldover_dihedral", fr.f_fold_dihedral);
         off_writer.add_field("vid", fr.vid);
         off_writer.add_field("sizing_scalar", fr.sizing);
         off_writer.add_field("input_distance", fr.in_dist);

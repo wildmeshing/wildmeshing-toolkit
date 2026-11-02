@@ -434,6 +434,252 @@ TEST_CASE("exact-band-front-curved", "[offset][exact_band][front_flux]")
     CHECK_NOTHROW(eb.front_face(g, 0.3));
 }
 
+namespace {
+
+/// exact-band-front-rule-a-hessian on one front vertex x: the input's triangles (V, F, side,
+/// sigma 1), target_distance delta, and the band's boundary faces through x as (a, b), ordered
+/// (x, a, b) with the normal out of the band, under CurvedBisectorRuleA.
+///  - Per face and summed, front_face_derivs()' hess against central differences of its grad.
+///    With `labels_agree` (every face's parts labelled as its neighbours'), the sum symmetric.
+///  - The swept change from x, S(w) = sum over the faces of sign(w.N) value(conv(x, x + w, a, b))
+///    ("exact_swept"'s, BandVolumeEnergy3D::swept_change()): at w = 0 its gradient the faces'
+///    grad and its Hessian their hess_swept, against differences of S; at w1 != 0 the swept
+///    tets' value_grad_hess() in their moving corner, against central differences of S and of
+///    that gradient.
+void rule_a_hessian_case(
+    const char* name,
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const std::vector<int8_t>& side,
+    const double delta,
+    const Vec3& x,
+    const std::vector<std::array<Vec3, 2>>& ab,
+    const bool labels_agree)
+{
+    const ExactBandIntegral eb(V, F, side, 1);
+    const ExactBandIntegral::CurvedBisectorRuleA curved(0);
+    // face i at y, or (i = ab.size()) the sum over the faces
+    const auto derivs = [&](const size_t i, const Vec3& y, Vec3& g, Eigen::Matrix3d& H, int& ra) {
+        g.setZero();
+        H.setZero();
+        ra = 0;
+        for (size_t k = 0; k < ab.size(); ++k) {
+            if (i < ab.size() && k != i) continue;
+            Vec3 gk;
+            Eigen::Matrix3d Hk;
+            int rk = 0;
+            eb.front_face_derivs({{y, ab[k][0], ab[k][1]}}, delta, 0, gk, Hk, nullptr, &rk);
+            g += gk;
+            H += Hk;
+            ra += rk;
+        }
+    };
+    int parts = 0;
+    for (size_t i = 0; i <= ab.size(); ++i) {
+        Vec3 g;
+        Eigen::Matrix3d H;
+        int ra = 0;
+        derivs(i, x, g, H, ra);
+        double err = std::numeric_limits<double>::infinity();
+        for (const double h : {1e-5, 1e-6, 1e-7}) {
+            Eigen::Matrix3d J;
+            for (int j = 0; j < 3; ++j) {
+                Vec3 xp = x, xm = x, gp, gm;
+                Eigen::Matrix3d Hp, Hm;
+                int rp = 0, rm = 0;
+                xp[j] += h;
+                xm[j] -= h;
+                derivs(i, xp, gp, Hp, rp);
+                derivs(i, xm, gm, Hm, rm);
+                J.col(j) = (gp - gm) / (2. * h);
+            }
+            err = std::min(err, (H - J).norm() / J.norm());
+        }
+        const double asym = (H - H.transpose()).norm() / H.norm();
+        std::printf(
+            "exact-band-front-rule-a-hessian %s: %s, %d rule-(a) parts: hess against central "
+            "differences %.1e, asymmetry %.1e\n",
+            name,
+            i < ab.size() ? ("face " + std::to_string(i)).c_str() : "the sum",
+            ra,
+            err,
+            asym);
+        CHECK(err <= 1e-6);
+        if (i == ab.size()) {
+            parts = ra;
+            if (labels_agree) CHECK(asym <= 1e-12);
+        }
+    }
+    CHECK(parts > 0);
+    const auto S = [&](const Vec3& w) {
+        double s = 0.;
+        for (const auto& [a, b] : ab) {
+            const double wn = w.dot((a - x).cross(b - x));
+            if (wn == 0.) continue;
+            s += (wn > 0. ? 1. : -1.) * eb.value({{x, Vec3(x + w), a, b}}, delta);
+        }
+        return s;
+    };
+    const auto swept_derivs = [&](const Vec3& w, Vec3& g, Eigen::Matrix3d& H) {
+        g.setZero();
+        H.setZero();
+        for (const auto& [a, b] : ab) {
+            const double wn = w.dot((a - x).cross(b - x));
+            if (wn == 0.) continue;
+            Vec3 gk;
+            Eigen::Matrix3d Hk;
+            eb.value_grad_hess({{x, Vec3(x + w), a, b}}, 1, delta, gk, Hk);
+            g += (wn > 0. ? 1. : -1.) * gk;
+            H += (wn > 0. ? 1. : -1.) * Hk;
+        }
+    };
+    Vec3 g0 = Vec3::Zero();
+    Eigen::Matrix3d H0 = Eigen::Matrix3d::Zero(), Hf = Eigen::Matrix3d::Zero();
+    for (const auto& [a, b] : ab) {
+        Vec3 gk;
+        Eigen::Matrix3d Hk, Hs;
+        eb.front_face_derivs({{x, a, b}}, delta, 0, gk, Hk, nullptr, nullptr, &Hs);
+        g0 += gk;
+        Hf += Hk;
+        H0 += Hs;
+    }
+    double eg0 = std::numeric_limits<double>::infinity(), eh0 = eg0, ehf = eg0;
+    for (const double h : {1e-4, 3e-5, 1e-5}) {
+        Vec3 gd;
+        Eigen::Matrix3d Hd;
+        for (int i = 0; i < 3; ++i) {
+            const Vec3 ei = h * Vec3::Unit(i);
+            gd[i] = (S(ei) - S(-ei)) / (2. * h);
+            for (int j = 0; j < 3; ++j) {
+                const Vec3 ej = h * Vec3::Unit(j);
+                Hd(i, j) = (S(ei + ej) - S(ei - ej) - S(ej - ei) + S(-ei - ej)) / (4. * h * h);
+            }
+        }
+        eg0 = std::min(eg0, (g0 - gd).norm() / gd.norm());
+        eh0 = std::min(eh0, (H0 - Hd).norm() / Hd.norm());
+        ehf = std::min(ehf, (Hf - Hd).norm() / Hd.norm());
+    }
+    const Vec3 w1(0.004, -0.003, 0.005);
+    Vec3 g1;
+    Eigen::Matrix3d H1;
+    swept_derivs(w1, g1, H1);
+    double eg1 = std::numeric_limits<double>::infinity(), eh1 = eg1;
+    for (const double h : {1e-5, 1e-6, 1e-7}) {
+        Vec3 gd;
+        Eigen::Matrix3d Jd;
+        for (int j = 0; j < 3; ++j) {
+            const Vec3 ej = h * Vec3::Unit(j);
+            gd[j] = (S(w1 + ej) - S(w1 - ej)) / (2. * h);
+            Vec3 gp, gm;
+            Eigen::Matrix3d Hp, Hm;
+            swept_derivs(w1 + ej, gp, Hp);
+            swept_derivs(w1 - ej, gm, Hm);
+            Jd.col(j) = (gp - gm) / (2. * h);
+        }
+        eg1 = std::min(eg1, (g1 - gd).norm() / gd.norm());
+        eh1 = std::min(eh1, (H1 - Jd).norm() / Jd.norm());
+    }
+    std::printf(
+        "exact-band-front-rule-a-hessian %s: the swept change S, at x against its differences: "
+        "gradient %.1e, hess_swept %.1e (hess %.1e); at x + w1: value_grad_hess() gradient %.1e, "
+        "Hessian %.1e, asymmetry %.1e\n",
+        name,
+        eg0,
+        eh0,
+        ehf,
+        eg1,
+        eh1,
+        (H1 - H1.transpose()).norm() / H1.norm());
+    CHECK(eg0 <= 1e-6);
+    CHECK(eh0 <= 1e-5);
+    CHECK(eg1 <= 1e-6);
+    CHECK(eh1 <= 1e-5);
+}
+
+} // namespace
+
+TEST_CASE("exact-band-front-rule-a-hessian", "[offset][exact_band][front_flux]")
+{
+    // Thingi 70565 piece 16 inward (target_distance 0.1786), turn 1: two front vertices, each with
+    // the input's triangles within 1 of it and their sides (the same results as the whole
+    // input's), and the band's boundary faces through it, from the run (DEBUG_trace_vertex).
+    // MEASURED: at vertex 33877, without the cut terms on the edges of every part (before
+    // 2026-10-31), the two faces holding a rule-(a) part 16% and 14% off their central
+    // differences and the sum 18% asymmetric; with them 9.6e-10 and 9.3e-10 and 4.4e-16, and the
+    // faces' labels agree, so hess and hess_swept are both S's Hessian. At vertex 18249 each
+    // face's hess is its grad's derivative (3e-9 at most on the whole input) but the sum is 89%
+    // asymmetric: the faces' rule (a) disagree, and only hess_swept is S's Hessian.
+    {
+        Eigen::MatrixXd V(15, 3);
+        V << 19.110957514344246, -18.062454530884175, 0, //
+            19.952326214994017, -16.185589805633718, 0.16240899310579282, //
+            20.034980228512506, -16.563123981053209, 0, //
+            20.572631757911861, -17.400838790702732, 0, //
+            20.589947663535405, -17.556716803215981, 0.30888584113167161, //
+            20.87074881073837, -16.923401137245413, 0.99000674716712944, //
+            21.105875000000001, -17.789175, 0.10687674999999999, //
+            21.373753928290565, -18.136304471875633, 0, //
+            21.630372896352903, -17.667912360563591, 1.1456579760742434, //
+            21.858699999999999, -18.3935, 0.42282199999999998, //
+            22.136162718494909, -18.201814923536723, 0.15710433795807696, //
+            22.141775707716491, -20.593213746326168, 0, //
+            22.175873697767756, -18.369762054746296, 0, //
+            21.108680592309934, -17.911516280314807, 0.3445777298437373, //
+            20.505858785844161, -19.590477852230258, 0;
+        Eigen::MatrixXi F(18, 3);
+        F << 0, 2, 3, 0, 3, 7, 0, 7, 14, 1, 2, 4, 1, 4, 5, 2, 3, 4, 3, 4, 6, 3, 6, 7, 4, 5, 8, 4, 6,
+            13, 4, 8, 13, 6, 7, 10, 6, 9, 10, 6, 9, 13, 7, 10, 12, 7, 11, 12, 7, 11, 14, 8, 9, 13;
+        const std::vector<int8_t> side =
+            {-1, -1, -1, 1, 1, 1, -1, -1, -1, 1, -1, 1, -1, 1, -1, 1, -1, -1};
+        const Vec3 p1(20.322892899911544, -18.529692530353092, 0.019899807793012245);
+        const Vec3 p2(21.108712155119662, -17.931405549406836, 0.35654486476878983);
+        const Vec3 p3(20.570880805258774, -17.563236677323236, 0.30490374391504294);
+        const Vec3 p4(20.867885178288397, -17.838600252541163, 0.53959964535171023);
+        rule_a_hessian_case(
+            "vertex 33877",
+            V,
+            F,
+            side,
+            0.1786,
+            Vec3(20.839796480189218, -17.747321113365036, 0.33072430434191635),
+            {{{p1, p2}}, {{p3, p1}}, {{p2, p4}}, {{p4, p3}}},
+            true);
+    }
+    {
+        Eigen::MatrixXd V(12, 3);
+        V << -4.4887300000000003, -29, 3, //
+            -4.3538582260600656, -27.973361338306105, 2.9249422929996052, //
+            -4.0673910617725566, -27.155269621741404, 2.9970899128528057, //
+            -3.4660365657820122, -26.285660920525018, 2.9999854930612027, //
+            -2.8626200000000002, -28.363499999999998, 2.5146799999999998, //
+            -2.7902399999999998, -29.883099999999999, 2.6482000000000001, //
+            -2.585414976139246, -29.642248741956227, 3, //
+            -2.4512099138263124, -27.541056193783181, 2.38904942623748, //
+            -2.3991363809678643, -28.231992043105052, 3, //
+            -2.3138506574896867, -29.033279457060058, 1.8397080814394722, //
+            -1.97337953768533, -27.895721568913871, 1.7031225337608746, //
+            -1.5336444820385657, -27.259151638561057, 3;
+        Eigen::MatrixXi F(12, 3);
+        F << 0, 1, 8, 0, 6, 8, 1, 2, 8, 2, 3, 8, 3, 8, 11, 4, 5, 6, 4, 5, 9, 4, 6, 8, 4, 7, 8, 4, 7,
+            10, 4, 9, 10, 7, 8, 11;
+        const std::vector<int8_t> side = {1, -1, 1, 1, -1, 1, -1, 1, -1, 1, -1, 1};
+        const Vec3 q1(-3.0373655123749517, -29.322605812459532, 2.9800835175148959);
+        const Vec3 q2(-3.22973470390576, -28.584781363406574, 2.9799673951172401);
+        const Vec3 q3(-3.3186428005813036, -28.109182754899376, 2.9456516717422292);
+        const Vec3 q4(-2.4990945271817449, -28.226737338982257, 2.9768364112965777);
+        const Vec3 q5(-2.8813631359098077, -28.358596409257746, 2.5198365214611465);
+        rule_a_hessian_case(
+            "vertex 18249",
+            V,
+            F,
+            side,
+            0.1786,
+            Vec3(-2.8296862828001306, -28.65985463403447, 2.634911795899848),
+            {{{q1, q2}}, {{q3, q4}}, {{q2, q3}}, {{q4, q5}}, {{q5, q1}}},
+            false);
+    }
+}
+
 /**
  * Hidden benchmark: FRONT_FLUX_BENCH_FILE=<band>.bin ./wmtk_test_topological_offset
  * "[.bench_front]". Reads a stored band (int32 nV, nF, nT; double delta; V; F; the band cells,

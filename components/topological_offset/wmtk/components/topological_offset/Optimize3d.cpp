@@ -700,7 +700,7 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         sides.saw_case = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
-    m_swap_folds_before.local() = -1; // an interior swap changes no offset face
+    m_swap_turned_before.local() = -1; // an interior swap changes no offset face
     if (!swap_capture_tag(tids)) return false;
     // The energy rule's before-half (see swap_after_cells()): the sum over the ring. A cell's
     // energy is its own corners' and label's, so no cell outside the ring changes energy.
@@ -744,7 +744,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
         sides.saw_case = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
-    m_swap_folds_before.local() = -1; // set below for a flip of the offset surface
+    m_swap_turned_before.local() = -1; // set below for a flip of the offset surface
 
     // NOT swap_capture_tag(): that is the interior rule, and on this path it can never pass --
     // the ring of a surface flip always spans band and background, which is what makes its faces
@@ -790,11 +790,11 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // followed through the rest of the swap by [flip funnel]. It is judged by the energy rule like
     // every other swap (swap_after_cells()); no rule of its own.
     if (face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
-        // growth_mode "individual_op_reject": the folded faces among the two the flip replaces
+        // growth_mode "individual_op_reject": the turned faces among the two the flip replaces
         // (their band cells are in the ring), for swap_after_cells().
-        if (fold_reject_active()) {
-            m_swap_folds_before.local() =
-                int(face_folded_in(a, b, c, tids)) + int(face_folded_in(a, b, d, tids));
+        if (turned_reject_active()) {
+            m_swap_turned_before.local() =
+                int(face_turned_in(a, b, c, tids)) + int(face_turned_in(a, b, d, tids));
         }
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.worthwhile = true;
@@ -1000,19 +1000,19 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     const bool cancels_before = !projected && !swept && band_term_cancels(ring);
     const double before_no_band = cancels_before ? tet_energy_sum(ring, false) : 0.;
     // growth_mode "individual_op_reject": a front vertex held on a surface (the domain wall, say)
-    // moves its offset faces too; the move may not raise the folded ones among them.
-    int folds_before = -1;
-    if (fold_reject_active() && m_vertex_extra[vid].m_is_on_offset) {
+    // moves its offset faces too; the move may not raise the turned ones among them.
+    int turned_before = -1;
+    if (turned_reject_active() && m_vertex_extra[vid].m_is_on_offset) {
         std::set<std::array<size_t, 3>> f;
-        folded_front_faces_at(vid, f);
-        folds_before = int(f.size());
+        turned_front_faces_at(vid, f);
+        turned_before = int(f.size());
     }
-    const auto raises_folds = [&]() {
-        if (folds_before < 0) return false;
+    const auto raises_turned = [&]() {
+        if (turned_before < 0) return false;
         std::set<std::array<size_t, 3>> f;
-        folded_front_faces_at(vid, f);
-        if (int(f.size()) <= folds_before) return false;
-        ++m_fold_reject_smooth;
+        turned_front_faces_at(vid, f);
+        if (int(f.size()) <= turned_before) return false;
+        ++m_turned_reject_smooth;
         --m_smooth_rejects.accepted;
         ++m_smooth_rejects.quality;
         return true;
@@ -1033,11 +1033,11 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
             ++m_smooth_rejects.quality;
             return false;
         }
-        if (raises_folds()) return false;
+        if (raises_turned()) return false;
         count_damped_move(vid, x0, opts.max_step);
         return true;
     }
-    if (raises_folds()) return false;
+    if (raises_turned()) return false;
     if (projected) {
         count_damped_move(vid, x0, opts.max_step);
         return true;
@@ -1397,15 +1397,15 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         stamp_rest_cell(t); // created by the swap: stamped at creation, as above
     }
     close_labels(tids);
-    // growth_mode "individual_op_reject": the flip may not raise the folded faces among the two it
+    // growth_mode "individual_op_reject": the flip may not raise the turned faces among the two it
     // changes -- (a,b,c), (a,b,d) out, (a,c,d), (b,c,d) in, whose band cells are new cells now.
     // Counted as app_sag_raised, the engine's name for a flip that makes the surface worse.
-    if (const int before = m_swap_folds_before.local(); before >= 0) {
+    if (const int before = m_swap_turned_before.local(); before >= 0) {
         const auto& q = sides.abcd;
-        const int after = int(face_folded_in(q[0], q[2], q[3], tids)) +
-                          int(face_folded_in(q[1], q[2], q[3], tids));
+        const int after = int(face_turned_in(q[0], q[2], q[3], tids)) +
+                          int(face_turned_in(q[1], q[2], q[3], tids));
         if (after > before) {
-            ++m_fold_reject_swap;
+            ++m_turned_reject_swap;
             return swap_reject(SwapReject::app_sag_raised);
         }
     }
@@ -1465,18 +1465,18 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return collapse_reject(CollapseReject::app_substructure_link);
     }
-    // growth_mode "individual_op_reject": the folded faces through the two ends, for
+    // growth_mode "individual_op_reject": the turned faces through the two ends, for
     // collapse_after_connectivity(); -1 (no rule) when neither end is on the front.
     {
         const auto& cc = collapse_cache.local();
-        int& folds = m_collapse_folds_before.local();
-        folds = -1;
-        if (fold_reject_active() &&
+        int& turned = m_collapse_turned_before.local();
+        turned = -1;
+        if (turned_reject_active() &&
             (m_vertex_extra[cc.v1_id].m_is_on_offset || m_vertex_extra[cc.v2_id].m_is_on_offset)) {
             std::set<std::array<size_t, 3>> f;
-            folded_front_faces_at(cc.v1_id, f);
-            folded_front_faces_at(cc.v2_id, f);
-            folds = int(f.size());
+            turned_front_faces_at(cc.v1_id, f);
+            turned_front_faces_at(cc.v2_id, f);
+            turned = int(f.size());
         }
     }
     // The energy rule's before-half is taken in collapse_before_vertex().
@@ -1673,11 +1673,11 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     // growth_mode "individual_op_reject": the faces through the survivor are every offset face
     // the collapse changed (it moves no vertex); refused, the base counts after_connectivity and
     // rolls back, as for the energy rule below.
-    if (const int before = m_collapse_folds_before.local(); before >= 0) {
+    if (const int before = m_collapse_turned_before.local(); before >= 0) {
         std::set<std::array<size_t, 3>> f;
-        folded_front_faces_at(v2_id, f);
+        turned_front_faces_at(v2_id, f);
         if (int(f.size()) > before) {
-            ++m_fold_reject_collapse;
+            ++m_turned_reject_collapse;
             return false;
         }
     }
@@ -2274,9 +2274,13 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
                 c->refused.exchange(0));
         }
         logger().info(
-            "\t[exact_swept] search model derivatives: {} evaluations, {} of them from the ring's "
-            "band cells (front_face_derivs() threw)",
+            "\t[exact_swept] search model derivatives: {} evaluations, {} with a face part "
+            "labelled by rule (a) (a curved bisector), {} from the swept tets, {} at x0 with "
+            "their Hessian, {} from the ring's band cells (front_face_derivs() threw)",
             m_swept_derivs.evals.exchange(0),
+            m_swept_derivs.rule_a.exchange(0),
+            m_swept_derivs.swept_tets.exchange(0),
+            m_swept_derivs.swept_x0.exchange(0),
             m_swept_derivs.ring_cells.exchange(0));
     }
     if (damping_active()) {
@@ -4535,15 +4539,14 @@ bool TopoOffsetTetMesh::offset_face_normal_out_of_band(const Tuple& f, Vector3d&
     return true;
 }
 
-size_t TopoOffsetTetMesh::count_real_folds(
-    std::vector<char>* corners,
-    std::vector<std::array<size_t, 3>>* faces) const
+TopoOffsetTetMesh::FoldCount TopoOffsetTetMesh::count_folds(
+    std::vector<std::array<size_t, 3>>* fold_faces) const
 {
-    // Each live offset face once, its normal out of the band; then the edges with exactly two.
-    // Ported unchanged from the fold work (wmtk-pinned-split, 2026-10-24).
+    // Each live offset face once, its normal out of the band; then the edges with exactly two,
+    // sorted by fold_test(). The normals and the field angles are the ones the fold work's count
+    // (2026-10-24) and the exit read before fold_test() (2026-11-02).
     std::map<std::array<size_t, 2>, std::vector<std::pair<std::array<size_t, 3>, Vector3d>>>
         by_edge;
-    size_t vmax = 0;
     for (const Tuple& f : get_faces()) {
         if (!face_is_offset_surface_live(f)) continue;
         Vector3d n;
@@ -4552,26 +4555,33 @@ size_t TopoOffsetTetMesh::count_real_folds(
         for (int i = 0; i < 3; ++i) {
             const size_t a = fv[i], b = fv[(i + 1) % 3];
             by_edge[{{std::min(a, b), std::max(a, b)}}].push_back({fv, n});
-            vmax = std::max(vmax, std::max(a, b));
         }
     }
-    if (corners) corners->assign(vmax + 1, 0);
-    size_t folds = 0;
+    FoldCount c;
     for (const auto& [e, fs] : by_edge) {
-        if (fs.size() != 2 || fs[0].second.dot(fs[1].second) >= kCos150) continue;
-        ++folds;
+        if (fs.size() != 2) continue;
+        double ang[2] = {0., 0.};
+        const auto field_angle = [&](const int k) {
+            const auto& fv = fs[size_t(k)].first;
+            return ang[k] = front_face_field_angle(fv[0], fv[1], fv[2]);
+        };
+        const FoldTest t =
+            fold_test(fs[0].second, fs[1].second, field_angle, m_offset_params.foldover_angle);
+        if (t == FoldTest::none) continue;
+        if (t == FoldTest::ridge_edge) {
+            ++c.ridge_edges;
+            c.ridge_max_angle = std::max({c.ridge_max_angle, ang[0], ang[1]});
+            continue;
+        }
+        ++c.folds;
+        if (!fold_faces) continue;
         for (const auto& [fv, n] : fs) {
-            if (corners) {
-                for (const size_t v : fv) (*corners)[v] = 1;
-            }
-            if (faces) {
-                std::array<size_t, 3> s = fv;
-                std::sort(s.begin(), s.end());
-                faces->push_back(s);
-            }
+            std::array<size_t, 3> s = fv;
+            std::sort(s.begin(), s.end());
+            fold_faces->push_back(s);
         }
     }
-    return folds;
+    return c;
 }
 
 bool TopoOffsetTetMesh::edge_is_offset_surface_live(const size_t a, const size_t b) const
@@ -4687,7 +4697,7 @@ bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
     });
 }
 
-void TopoOffsetTetMesh::folded_front_faces_at(
+void TopoOffsetTetMesh::turned_front_faces_at(
     const size_t vid,
     std::set<std::array<size_t, 3>>& out) const
 {
@@ -4829,7 +4839,7 @@ void TopoOffsetTetMesh::live_offset_faces_at(
     });
 }
 
-bool TopoOffsetTetMesh::face_folded_in(
+bool TopoOffsetTetMesh::face_turned_in(
     const size_t a,
     const size_t b,
     const size_t c,
@@ -4981,10 +4991,10 @@ double TopoOffsetTetMesh::front_face_angle_to_field(
     return std::atan2(n.cross(g).norm(), n.dot(g)) * 180. / M_PI;
 }
 
-TopoOffsetTetMesh::FoldCensus TopoOffsetTetMesh::fold_census() const
+TopoOffsetTetMesh::TurnedFaceCensus TopoOffsetTetMesh::turned_face_census() const
 {
     // See the declaration.
-    FoldCensus c;
+    TurnedFaceCensus c;
     for (const auto& f : offset_surface_faces()) {
         ++c.n_faces;
         const double ang = front_face_field_angle(f[0], f[1], f[2]);
@@ -4993,7 +5003,7 @@ TopoOffsetTetMesh::FoldCensus TopoOffsetTetMesh::fold_census() const
             continue;
         }
         if (!(ang > m_offset_params.foldover_angle)) continue;
-        ++c.n_fold;
+        ++c.n_turned;
         if (ang > c.worst) {
             c.worst = ang;
             c.worst_at = (m_vertex_attribute[f[0]].m_posf + m_vertex_attribute[f[1]].m_posf +
@@ -6081,7 +6091,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     const bool refine,
     const std::string& label,
     const int max_turns,
-    const bool fold_free)
+    const bool turned_free)
 {
     // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
     // with the front placed by the offset objective inside the smoothing passes. No envelope
@@ -6192,8 +6202,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
-            const int fold_c0 = m_fold_reject_collapse.load(), fold_s0 = m_fold_reject_swap.load(),
-                      fold_m0 = m_fold_reject_smooth.load();
+            const int fold_c0 = m_turned_reject_collapse.load(),
+                      fold_s0 = m_turned_reject_swap.load(),
+                      fold_m0 = m_turned_reject_smooth.load();
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
             // [energy step] lines: the group's baseline here, then one per smoothing pass from
@@ -6223,16 +6234,17 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     m_volume_reject_collapse.load() - vol_c0,
                     m_volume_reject_swap.load() - vol_s0,
                     m_volume_reject_split.load() - vol_p0);
-                if (fold_reject_active()) {
+                if (turned_reject_active()) {
                     logger().info(
-                        "\t[op reject] turn {} {} group: refused for raising the folded offset "
-                        "faces (growth_mode individual_op_reject): {} collapses, {} offset-surface "
+                        "\t[op reject] turn {} {} group: refused for raising the offset faces "
+                        "turned from the field (growth_mode individual_op_reject): {} collapses, "
+                        "{} offset-surface "
                         "flips, {} smoothing moves",
                         it + 1,
                         group_names[gi],
-                        m_fold_reject_collapse.load() - fold_c0,
-                        m_fold_reject_swap.load() - fold_s0,
-                        m_fold_reject_smooth.load() - fold_m0);
+                        m_turned_reject_collapse.load() - fold_c0,
+                        m_turned_reject_swap.load() - fold_s0,
+                        m_turned_reject_smooth.load() - fold_m0);
                 }
                 if (m_plastic_active) {
                     logger().info(
@@ -6477,84 +6489,71 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // front_conv from the level set) in place of converged(); the criterion's measures are
         // then diagnostics.
         bool resolved = settle ? settle_exit : ec.converged();
-        // EXPERIMENTAL_exit_no_folds: no exit while a real fold (count_real_folds()) with a
-        // foldover face remains -- one of its two faces whose normal, out of the band, is more
-        // than foldover_angle from the field's normal at its centroid (front_face_field_angle());
-        // a face that cannot be measured counts as one, so the exit is never released on what was
-        // not measured. The vertex exit tests the front's vertices only; a flat sheet of inner
-        // cells within front_conv of the level set passes it. MEASURED (cube_in at 0.45,
-        // front_conv 5%, 30 runs, 8 threads): one run exited with an inner region of 0.5% of the
-        // target's volume, every front point within 0.76 front_conv, 5 real folds; 5-7 of each
-        // batch's 28-30 exits had 1-5 real folds.
+        // EXPERIMENTAL_exit_no_folds: no exit while a fold remains (fold_test(), through
+        // count_folds()): an edge with two offset faces whose normals out of the band are within
+        // foldover_angle of opposite, one of the two more than foldover_angle from the field's
+        // normal at its centroid (front_face_field_angle()); a face that cannot be measured
+        // counts as turned, so the exit is never released on what was not measured. The vertex exit
+        // tests the front's vertices only; a flat sheet of inner cells within front_conv of the
+        // level set passes it. MEASURED (cube_in at 0.45, front_conv 5%, 30 runs, 8 threads): one
+        // run exited with an inner region of 0.5% of the target's volume, every front point within
+        // 0.76 front_conv, 5 real folds; 5-7 of each batch's 28-30 exits had 1-5 real folds.
         //
-        // Why only the folds with a foldover face: where the level set itself has a ridge
-        // sharper than 30 degrees, the correct front is a fold whose faces follow the field, and
-        // holding the exit for every fold held such runs to the turn cap. MEASURED offline (every
-        // turn of the 10-26 batch held for the folds: 117 turns of 31 runs, d exact): in the 4
-        // runs held to the 30-turn cap (p70565 piece17 and input1, inward at 0.5 and 0.25
-        // delta_1, 10%), 845 of 858 folds had both faces within 10 degrees of the field, on a
-        // level set 7.7 to 27 degrees sharp there; the other 13, at 87 to 131 degrees, were at 2
-        // early turns. In the 27 runs that resolved, every one of the 74 folds of their 32 held
-        // turns had a face 32 to 161 degrees from the field (median 108), though 73 had every
+        // Why two opposite faces that both follow the field are no fold (a ridge edge): where the
+        // level set itself has a ridge sharper than 30 degrees, the correct front has such an
+        // edge, and holding the exit for every pair of opposite faces (the key until 2026-10-27)
+        // held such runs to the turn cap. MEASURED offline (every turn of the 10-26 batch held
+        // for the pairs: 117 turns of 31 runs, d exact): in the 4 runs held to the 30-turn cap
+        // (p70565 piece17 and input1, inward at 0.5 and 0.25 delta_1, 10%), 845 of 858 pairs had
+        // both faces within 10 degrees of the field, on a level set 7.7 to 27 degrees sharp
+        // there; the other 13, at 87 to 131 degrees, were at 2 early turns. In the 27 runs that
+        // resolved, every one of the 74 pairs of their 32 held turns had a face 32 to 161
+        // degrees from the field (median 108), though 73 had every
         // corner, edge midpoint and centroid of both faces within front_conv of the level set: a
         // test of the faces' distance instead would have let 31 of those 32 turns exit. MEASURED
         // with this rule (those 31 runs, 8 threads): all 31 resolved; the 4 in 38 turns against
-        // 120 at the cap, each releasing once, 35 folds whose faces lay within 0.57 front_conv of
-        // the level set, within 13.1 degrees of the field, on a level set 7.7 to 31.4 degrees
-        // sharp there; the 27 released none and exited with no fold. The counts are logged every
-        // turn, the key on or off, so a run without it shows what it exited with.
+        // 120 at the cap, each releasing once, 35 ridge edges whose faces lay within 0.57
+        // front_conv of the level set, within 13.1 degrees of the field, on a level set 7.7 to 31.4
+        // degrees sharp there; the 27 released none and exited with no fold. The counts are logged
+        // every turn, the key on or off, so a run without it shows what it exited with.
         {
-            std::vector<std::array<size_t, 3>> fold_faces; // two per fold, in order
-            const size_t folds = count_real_folds(nullptr, &fold_faces);
-            size_t folds_turned = 0;
-            double worst = 0.;
-            for (size_t i = 0; i + 1 < fold_faces.size(); i += 2) {
-                bool turned = false;
-                for (size_t j = i; j < i + 2; ++j) {
-                    const auto& f = fold_faces[j];
-                    const double ang = front_face_field_angle(f[0], f[1], f[2]);
-                    if (ang > worst) worst = ang;
-                    turned = turned || !(ang <= m_offset_params.foldover_angle);
-                }
-                if (turned) ++folds_turned;
-            }
+            const FoldCount fc = count_folds();
             logger().info(
-                "\t[exit folds] turn {}: real folds {}{}",
+                "\t[exit folds] turn {}: folds {}{}",
                 it + 1,
-                folds,
-                resolved && folds > 0
+                fc.folds,
+                resolved && fc.folds > 0
                     ? (m_offset_params.exit_no_folds
-                           ? (folds_turned > 0 ? " -- the exit test passes; held for the folds"
-                                               : " -- the exit test passes; not held: no fold has "
-                                                 "a foldover face")
+                           ? " -- the exit test passes; held for the folds"
                            : " -- the exit test passes; EXPERIMENTAL_exit_no_folds is off")
                     : "");
-            if (folds > 0) {
+            if (fc.ridge_edges > 0) {
                 logger().info(
-                    "\t[exit folds foldover] turn {}: {} of {} real folds have a foldover face (a "
-                    "face's normal more than foldover_angle {} degrees from the field's, or not "
-                    "measurable); their faces reach {:.4} degrees",
+                    "\t[exit ridge edges] turn {}: {} edges with two opposite offset faces both "
+                    "within foldover_angle {} degrees of the field (not folds); their faces reach "
+                    "{:.4} degrees",
                     it + 1,
-                    folds_turned,
-                    folds,
+                    fc.ridge_edges,
                     m_offset_params.foldover_angle,
-                    worst);
+                    fc.ridge_max_angle);
             }
-            if (m_offset_params.exit_no_folds && folds_turned > 0) resolved = false;
+            if (m_offset_params.exit_no_folds && fc.folds > 0) resolved = false;
         }
-        // fold_free (growth_mode "smart"): a converged loop with a folded offset face has failed,
+        // turned_free (growth_mode "smart"): a converged loop with an offset face turned from the
+        // field has failed,
         // judged here, before the verdict and the final TetWild pass, which it does not get.
-        if (resolved && fold_free) {
-            const FoldCensus fc = fold_census();
-            if (fc.n_fold > 0) {
+        if (resolved && turned_free) {
+            const TurnedFaceCensus fc = turned_face_census();
+            if (fc.n_turned > 0) {
                 logger().warn(
                     "[{}] converged at target_distance {:.6g} after {} turn(s), but {} of {} "
-                    "offset faces are folded (more than foldover_angle {} degrees from grad d; the "
-                    "worst {:.4g} degrees, at ({:.4}, {:.4}, {:.4})): not fold-free",
+                    "offset faces are turned from the field (more than foldover_angle {} degrees "
+                    "from "
+                    "grad d; the worst {:.4g} degrees, at ({:.4}, {:.4}, {:.4}))",
                     label,
                     m_offset_params.target_distance,
                     it + 1,
-                    fc.n_fold,
+                    fc.n_turned,
                     fc.n_faces,
                     m_offset_params.foldover_angle,
                     fc.worst,
@@ -7042,7 +7041,7 @@ void TopoOffsetTetMesh::smart_growth()
         logger().info(
             "======== [smart growth] level {} attempt {}: target_distance {:.6g} ({:.4g}x "
             "target_distance {:.6g}), from the converged {:.6g}{}; up to smart_growth_attempts {} "
-            "turns, converged and fold-free to succeed ========",
+            "turns, converged and free of turned faces to succeed ========",
             level,
             attempt,
             t,
@@ -7057,7 +7056,7 @@ void TopoOffsetTetMesh::smart_growth()
             /*refine=*/true,
             label,
             attempts,
-            /*fold_free=*/true);
+            /*turned_free=*/true);
         const int turns = m_iterations_used;
         const double base = sched.base;
         switch (sched.report(ok)) {
@@ -7096,7 +7095,8 @@ void TopoOffsetTetMesh::smart_growth()
             restore_snapshot(snap);
             logger().warn(
                 "[smart growth] level {} attempt {} at target_distance {:.6g} failed (not "
-                "converged in {} turn(s), or folded; see above): the mesh is back at the "
+                "converged in {} turn(s), or with turned faces; see above): the mesh is back at "
+                "the "
                 "converged {:.6g} (#V {}, #T {}){}",
                 level,
                 attempt,
@@ -7409,21 +7409,21 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // DEBUG_remote_output: the final mesh, the one the driver writes.
     if (remote_frames()) write_debug_frame("final");
 
-    // Foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in the
-    // delivered mesh, not a debug curiosity, so it is reported whether or not debug_output wrote
-    // the per-face field. Run here, at the end of optimize_offset, so it describes the mesh the
+    // Offset faces turned from the field, checked UNCONDITIONALLY -- a defect in the delivered
+    // mesh, not a debug curiosity, so it is reported whether or not debug_output wrote the
+    // per-face field. Run here, at the end of optimize_offset, so it describes the mesh the
     // driver is about to write: after the finishing pass, not at the loop's verdict. Reported for
-    // a run that did not converge too. A face is a foldover when its normal, out of the band, is
-    // more than foldover_angle from the field's normal (front_face_field_angle()).
+    // a run that did not converge too. A face is turned when its normal, out of the band, is more
+    // than foldover_angle from the field's normal (front_face_turned()).
     {
-        const FoldCensus fc = fold_census();
-        if (fc.n_fold > 0) {
+        const TurnedFaceCensus fc = turned_face_census();
+        if (fc.n_turned > 0) {
             logger().warn(
-                "[foldover] {} of {} offset faces are folded: their normal, out of the band, is "
-                "more "
-                "than foldover_angle {} degrees from the field's normal (grad d at the centroid); "
+                "[turned faces] {} of {} offset faces are turned from the field: their normal, "
+                "out of the band, is more than foldover_angle {} degrees from the field's normal "
+                "(grad d at the centroid); "
                 "the worst {:.4g} degrees, at ({:.4}, {:.4}, {:.4}). {} face(s) not measurable. {}",
-                fc.n_fold,
+                fc.n_turned,
                 fc.n_faces,
                 m_offset_params.foldover_angle,
                 fc.worst,
@@ -7432,8 +7432,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
                 fc.worst_at[2],
                 fc.n_unmeasured,
                 m_offset_params.debug_output
-                    ? "The per-face flag field_angle_foldover is on the debug frames' _off files."
-                    : "Set DEBUG_output to get the per-face field_angle_foldover field.");
+                    ? "The per-face flag field_angle_turned is on the debug frames' _off files."
+                    : "Set DEBUG_output to get the per-face field_angle_turned field.");
         }
     }
 
