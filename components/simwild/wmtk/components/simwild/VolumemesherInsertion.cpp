@@ -463,7 +463,8 @@ void SimWildMesh::init_surfaces_and_boundaries(
     // curves. Its radius is order2_envelope_ratio x eps, 1 by default, around the order-2 edges as
     // the insertion leaves them, after any simplification; see /order2_envelope_ratio in the spec
     // for the bound against the input and the sweep. After a simplification before the insertion,
-    // under envelope_reference "input", only the input's own (InputCurves); under "simplified" at
+    // under envelope_reference "input", around the input's own curves where they lie in them,
+    // else around themselves, and where inputs meet not at all (InputCurves); under "simplified" at
     // what the simplification left of eps (OptimizerParameters::order2_eps()).
     const double order2_eps = m_params.order2_eps() * m_sim_params.order2_envelope_ratio;
     const size_t n_order2 = tag_order2_edges(order2_eps, m_envelope && m_envelope->use_exact);

@@ -35,7 +35,7 @@ struct InputData
     std::string envelope_name;
     /// Whether the input was simplified before the insertion (preserve_topology off). Around the
     /// input (envelope_reference "input") V_envelope is then the input as read, not what was
-    /// inserted, and the mesh holds only the input's own curves and curve points
+    /// inserted, and the mesh holds the input's own curves and curve points around the input
     /// (TetOptimizerMesh::InputCurves); around the simplified geometry it is the simplification.
     bool simplified_before_insertion = false;
     /// The diagonal eps_rel, eps_simplify_rel and length_rel are relative to (Parameters::init()):

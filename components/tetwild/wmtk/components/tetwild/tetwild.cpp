@@ -798,9 +798,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
 
     // Around the input after a simplification, the input's own curves: the tubes and anchors
-    // are built around them, and an order-2 edge or curve end the simplification made is not
-    // held by its own (TetOptimizerMesh::InputCurves). The input surface as the envelope has
-    // it, each triangle with its input.
+    // are built around them, and an order-2 edge or curve end the simplification made is held
+    // around itself (TetOptimizerMesh::InputCurves). The input surface as the envelope has it,
+    // each triangle with its input.
     if (!env_around_simplified && !skip_simplify) {
         assert(tri_input.size() == tris.size());
         std::vector<InputSet> tri_sets(tris.size());

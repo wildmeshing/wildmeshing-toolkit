@@ -397,14 +397,17 @@ TEST_CASE("open-boundary-tags-drop-when-glued", "[tetwild_operation][order2]" + 
     }
 }
 
-TEST_CASE("open-boundary-tags-only-on-the-inputs-own", "[tetwild_operation][order2]" + release_only)
+TEST_CASE(
+    "open-boundary-tags-around-the-input-and-the-simplification",
+    "[tetwild_operation][order2]" + release_only)
 {
     // The input is the open square [0, 1]^2 in z = 0; the surface inserted is that square with
     // the hole [0.4, 0.6]^2 cut out, as a simplification without preserve_topology can open a
     // surface. The hole's rim lies on the input but on no curve of it. Held to the input's own
-    // curves (TetOptimizerMesh::InputCurves), the outer rim is tagged and the hole's is not;
-    // without them, as when nothing ran before the insertion, both are. Every edge still tagged
-    // after the optimization lies in its tube.
+    // curves (TetOptimizerMesh::InputCurves), the outer rim is tagged in the tube around the
+    // input's rim and the hole's in a tube around itself, since a free rim erodes; without them,
+    // as when nothing ran before the insertion, both around themselves. Every edge still tagged
+    // after the optimization lies in its tube, and the hole keeps its rim.
     for (const bool around_input : {true, false}) {
         CAPTURE(around_input);
         Parameters params;
@@ -463,28 +466,30 @@ TEST_CASE("open-boundary-tags-only-on-the-inputs-own", "[tetwild_operation][orde
             tet_face_on_input_surface,
             &tet_face_orientation);
 
-        size_t n_outer = 0, n_hole = 0;
-        for (const auto& e : mesh.get_edges()) {
-            if (!mesh.m_feature_edge_attribute[e.eid(mesh)].has(
-                    TetWildMesh::FeatureEdgeAttributes::order2)) {
-                continue;
+        // Order-2 edges on the outer rim and on the hole's.
+        const auto count = [&mesh]() {
+            std::array<size_t, 2> n = {{0, 0}};
+            for (const auto& e : mesh.get_edges()) {
+                if (!mesh.m_feature_edge_attribute[e.eid(mesh)].has(
+                        TetWildMesh::FeatureEdgeAttributes::order2)) {
+                    continue;
+                }
+                const Vector3d mid =
+                    (mesh.m_vertex_attribute[e.vid(mesh)].m_posf +
+                     mesh.m_vertex_attribute[e.switch_vertex(mesh).vid(mesh)].m_posf) /
+                    2;
+                ++n[mid[0] > 0.3 && mid[0] < 0.7 && mid[1] > 0.3 && mid[1] < 0.7];
             }
-            const Vector3d mid = (mesh.m_vertex_attribute[e.vid(mesh)].m_posf +
-                                  mesh.m_vertex_attribute[e.switch_vertex(mesh).vid(mesh)].m_posf) /
-                                 2;
-            const bool in_hole = mid[0] > 0.3 && mid[0] < 0.7 && mid[1] > 0.3 && mid[1] < 0.7;
-            ++(in_hole ? n_hole : n_outer);
-        }
+            return n;
+        };
+        const auto [n_outer, n_hole] = count();
         CAPTURE(n_outer, n_hole);
         CHECK(n_outer > 0);
-        if (around_input) {
-            CHECK(n_hole == 0);
-        } else {
-            CHECK(n_hole > 0);
-        }
+        CHECK(n_hole > 0);
 
         mesh.mesh_improvement(2);
         CHECK(mesh.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::order2) == 0);
+        CHECK(count()[1] > 0);
     }
 }
 

@@ -630,7 +630,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     TriWildMesh mesh(params, opt_eps, NUM_THREADS);
     // Around the input after a simplification, the input's own curve ends and junctions: the
-    // anchors are centred on them, and an end the simplification made is not anchored
+    // anchors are centred on them, and an end the simplification made is anchored where it is
     // (TriOptimizerMesh::m_input_curve_points).
     if (!env_around_simplified && !skip_simplify) mesh.set_input_curve_points(V_in, E_in);
     mesh.init_mesh(

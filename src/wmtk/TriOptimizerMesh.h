@@ -367,9 +367,10 @@ public:
      * preserve_topology it merges junctions and curves passing within its envelope.
      *
      * The 2D twin of TetOptimizerMesh::InputCurves, which says why. Set, anchor_feature_points()
-     * anchors an order-2 vertex only if one of these lies in its ball, and centres the ball
-     * there. Unset, the order-2 vertices as the insertion leaves them are the input's. Set by
-     * the application before init, by set_input_curve_points().
+     * centres the ball of an order-2 vertex on the nearest of these when one lies in it, and at
+     * the vertex otherwise: a curve end the simplification made still erodes its curve, and the
+     * input on it, if left free. Unset, the order-2 vertices as the insertion leaves them are
+     * the input's. Set by the application before init, by set_input_curve_points().
      */
     std::optional<std::vector<Vector2d>> m_input_curve_points;
     /// Set m_input_curve_points from the input curves `V`, `E`, coincident vertices merged.

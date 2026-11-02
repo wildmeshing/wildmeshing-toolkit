@@ -834,8 +834,9 @@ size_t TriOptimizerMesh::anchor_feature_points(
     std::vector<std::tuple<size_t, double, Vector2d>> anchors;
     size_t n_ends = 0, n_junctions = 0, n_free = 0;
     // With the input's own curve points (m_input_curve_points), an order-2 vertex is the
-    // input's only where one of them is in its ball, which is then centred there, as in 3D. An
-    // input point keeps its own position. The kd-tree is 3D: the points lifted to z = 0.
+    // input's only where one of them is in its ball, which is then centred there, as in 3D; any
+    // other the simplification made, and its ball is centred where it is. An input point keeps
+    // its own position. The kd-tree is 3D: the points lifted to z = 0.
     std::unique_ptr<KNN> input_curve_points;
     std::vector<bool> is_input_point;
     size_t n_not_input = 0;
@@ -874,7 +875,9 @@ size_t TriOptimizerMesh::anchor_feature_points(
             const double r = order2_radius;
             if (!input_curve_points ||
                 (p - (*m_input_curve_points)[nearest]).squaredNorm() > r * r) {
+                // A curve end the simplification made: anchored where it is, as in 3D.
                 ++n_not_input;
+                anchors.emplace_back(vid, order2_radius, p);
                 continue;
             }
             anchors.emplace_back(vid, order2_radius, (*m_input_curve_points)[nearest]);
@@ -891,7 +894,7 @@ size_t TriOptimizerMesh::anchor_feature_points(
     if (m_input_curve_points) {
         logger().info(
             "feature points: {} curve ends and junctions with no curve point of the input in "
-            "reach, left free",
+            "reach, anchored where they are",
             n_not_input);
     }
     if (anchors.empty()) return 0;

@@ -263,7 +263,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     }
     // Around the input after a simplification before the insertion, the input's own curves: the
     // order-2 tubes and the curve anchors are built around them, and a rim, non-manifold edge or
-    // curve end the simplification made is not held by its own (TetOptimizerMesh::InputCurves).
+    // curve end the simplification made is held around itself (TetOptimizerMesh::InputCurves).
     // Where the inputs meet, the input's curves are their intersections, which only an
     // arrangement of the input gives: there the edges are left to the surface envelope.
     if (!params.envelope_around_simplified && input_data.simplified_before_insertion) {

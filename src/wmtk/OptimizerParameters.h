@@ -43,8 +43,9 @@ struct OptimizerParameters
      * order-2 and feature tubes, the anchors -- one choice for all of them.
      *
      * "input": the original input, at eps times each one's ratio. What a simplification made
-     * and the input does not have (rims, non-manifold edges, curve ends) is held by the
-     * surface envelope alone (TetOptimizerMesh::InputCurves).
+     * and the input does not have (rims, non-manifold edges, curve ends) is held around itself
+     * as the insertion leaves it, since a free one erodes the input along its curve
+     * (TetOptimizerMesh::InputCurves).
      *
      * "simplified": the SIMPLIFIED geometry, at the REMAINING tolerance (eps - simplify_eps)
      * times each one's ratio. The deviation budget is identical by the triangle inequality: the

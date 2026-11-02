@@ -457,7 +457,8 @@ void TetWildMesh::init_from_Volumeremesher(
     // removes one, and a collapse that leaves one with other than one face drops its tag.
     // tetwild's own open-boundary flags and their tube are gone (see TetWildMesh.h). The
     // non-manifold edges are not held, as before: the reason is at holds_order2_edge(). After a
-    // simplification, under envelope_reference "input", only the input's own (InputCurves).
+    // simplification, under envelope_reference "input", around the input's own curves where they
+    // lie in them, else around themselves (InputCurves).
     const size_t n_order2 = tag_order2_edges(
         m_tet_params.order2_eps() * m_tet_params.order2_envelope_ratio,
         m_envelope && m_envelope->use_exact);

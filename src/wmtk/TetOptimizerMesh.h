@@ -448,14 +448,25 @@ public:
      * non-manifold edges of its own.
      *
      * Set, tag_order2_edges() builds the tubes around `order2` -- per input, the edges of the
-     * input's own faces holds_order2_edge() holds -- and tags an edge only if every input of its
-     * set has such a curve and the edge lies in its tube; anchor_feature_points() anchors a curve
-     * end or junction only if one of `points` lies in its ball, and centres the ball there. What
-     * the simplification made is then held by the surface envelope alone, and what it removed is
-     * lost, as the topology change it is allowed to make. Measured on the tetwild integration
-     * configs (2026-10): 8 carried order-2 curves on no curve of the input (crown, 1017012,
-     * 101168, 104187, 104188, 104509 and 111388 entirely, 314748 18%), and of 678 anchored curve
-     * ends and junctions, 605 were on such curves.
+     * input's own faces holds_order2_edge() holds -- and holds there an edge that lies in the
+     * tube of every input of its set; anchor_feature_points() centres the ball of a curve end or
+     * junction on the nearest of `points` when one lies in it. Measured on the tetwild
+     * integration configs (2026-10): 8 carried order-2 curves on no curve of the input (crown,
+     * 1017012, 101168, 104187, 104188, 104509 and 111388 entirely, 314748 18%), and of 678
+     * anchored curve ends and junctions, 605 were on such curves.
+     *
+     * What the simplification made -- an order-2 edge of one input outside those tubes, a curve
+     * end or junction with none of `points` in reach -- is held around itself as the insertion
+     * leaves it: in a tube around its own curve, in a ball at its own position. Not for the
+     * input's sake, but because the one-sided surface envelope cannot keep a curve from eroding
+     * from its end, whoever made it, and the input on that curve erodes with it. Left to the
+     * surface envelope alone, measured (2026-11, input samples farther than eps from the output,
+     * held -> left free): tetwild 104509 239 -> 317, crown 554 -> 695, 104187 1058 -> 1222,
+     * 104188 962 -> 1105; triwild 202260 927 -> 1315, 191265 148259 -> 181805, 196407 2.29M ->
+     * 2.41M of 2.54M. Where two or more inputs meet the edges are left to the surface envelopes:
+     * the input's curves there are the intersections, which only an arrangement of the input
+     * would give. What the simplification removed is lost, as the topology change it is allowed
+     * to make.
      *
      * Unset, the tagged edges and their vertices as the insertion leaves them are the input's --
      * they are, with no simplification before the insertion -- and the tubes and anchors are
@@ -504,8 +515,9 @@ public:
      * drop_stale_order2_tags()). Turns edge tracking on only when there is such an edge, since
      * tracking costs every operation its cache (see enable_feature_edge_tracking()).
      *
-     * With m_input_curves set, the tubes are around the input's own curves, and only the edges
-     * in them are tagged (see InputCurves).
+     * With m_input_curves set, the tubes are around the input's own curves where an edge lies
+     * in them, and around the edge's own curve where the simplification made it; where two or
+     * more inputs meet nothing is tagged (see InputCurves).
      */
     size_t tag_order2_edges(double eps, bool exact);
     /**
@@ -665,8 +677,8 @@ public:
      * of 181 rim edges left), at 5 times the iterations on 366725 and 15-33% more tets on crown
      * and 111388.
      *
-     * With m_input_curves set, a curve end or junction is anchored only if one of the input's
-     * own curve points lies in its ball, and the ball is centred on the nearest such point (see
+     * With m_input_curves set, the ball of a curve end or junction is centred on the nearest of
+     * the input's own curve points when one lies in it, and at the vertex otherwise (see
      * InputCurves). An input point is anchored as before: it is the input's.
      */
     size_t anchor_feature_points(

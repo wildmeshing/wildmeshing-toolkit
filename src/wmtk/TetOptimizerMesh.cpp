@@ -1370,68 +1370,114 @@ size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
         }
     }
 
-    // Held to the input's own curves (InputCurves): the tubes around them, one per input, and
-    // the tag only for an edge in the tubes it will be held to (tagged_edge_leaves_tube()) --
-    // every input of its set with a curve of its own here, and the edge in each one's tube. The
-    // smoothing pull asks each of those tubes, so an input without one cannot be in the set.
+    // Held to the input's own curves (InputCurves). An edge in the tubes around them -- every
+    // input of its set with a curve of its own here, and the edge in each one's tube
+    // (tagged_edge_leaves_tube()) -- is held there. An edge of one input that is not is a curve
+    // the simplification made, and is held in a tube around itself as it lies now: the
+    // one-sided surface envelope cannot hold a rim against eroding, whoever made it. An edge
+    // where two or more inputs meet is left to the surface envelopes: the input's curves there
+    // are the intersections, which only an arrangement of the input would give. Both kinds
+    // share one tube per input, so an edge stays within eps of an order-2 curve of its own
+    // input, the input's or the simplification's. The smoothing pull asks each tube of the set,
+    // so an input without one cannot be in it.
     if (m_input_curves) {
         const InputCurves& in = *m_input_curves;
-        if (in.order2.empty()) return 0;
-        InputSet all = 0;
-        for (const InputSet s : in.order2_inputs) all |= s;
-        m_order2_edge_envelope = std::make_shared<Envelope>(exact);
-        m_order2_edge_envelope->init(in.V, in.order2, eps);
-        std::vector<std::shared_ptr<Envelope>> members;
-        if ((all & (all - 1)) != 0) { // one input: the union tube is that input's
-            for (size_t i = 0; i < size_t(SurfaceTagAttributes::max_inputs) && (all >> i) != 0;
-                 ++i) {
-                std::vector<Eigen::Vector2i> segments;
-                for (size_t s = 0; s < in.order2.size(); ++s) {
-                    if ((in.order2_inputs[s] >> i) & 1) segments.push_back(in.order2[s]);
+        // The tubes around `segments` into `V`, one per input of `sets` when there are several.
+        const auto build_tubes = [&](const std::vector<Eigen::Vector3d>& V,
+                                     const std::vector<Eigen::Vector2i>& segments,
+                                     const std::vector<InputSet>& sets) {
+            InputSet all = 0;
+            for (const InputSet s : sets) all |= s;
+            m_order2_edge_envelope = std::make_shared<Envelope>(exact);
+            m_order2_edge_envelope->init(V, segments, eps);
+            std::vector<std::shared_ptr<Envelope>> members;
+            if ((all & (all - 1)) != 0) { // one input: the union tube is that input's
+                for (size_t i = 0; i < size_t(SurfaceTagAttributes::max_inputs) && (all >> i) != 0;
+                     ++i) {
+                    std::vector<Eigen::Vector2i> own;
+                    for (size_t s = 0; s < segments.size(); ++s) {
+                        if ((sets[s] >> i) & 1) own.push_back(segments[s]);
+                    }
+                    if (own.empty()) {
+                        members.push_back(nullptr); // no curve of its own, so no edge to hold
+                        continue;
+                    }
+                    auto env = std::make_shared<Envelope>(exact);
+                    env->init(V, own, eps);
+                    members.push_back(std::move(env));
                 }
-                if (segments.empty()) {
-                    members.push_back(nullptr); // no curve of its own, so no edge to hold
-                    continue;
-                }
-                auto env = std::make_shared<Envelope>(exact);
-                env->init(in.V, segments, eps);
-                members.push_back(std::move(env));
+            }
+            m_order2_input_envelopes.set(std::move(members));
+        };
+        InputSet input_all = 0;
+        for (const InputSet s : in.order2_inputs) input_all |= s;
+        if (!in.order2.empty()) build_tubes(in.V, in.order2, in.order2_inputs);
+
+        std::vector<size_t> held, made;
+        std::vector<Eigen::Vector2i> made_edges;
+        size_t n_meet = 0;
+        for (size_t k = 0; k < eids.size(); ++k) {
+            const InputSet set = set_of.at(eids[k]);
+            bool in_tubes = false;
+            if (!in.order2.empty() && (set & ~input_all) == 0) {
+                FeatureEdgeAttributes only;
+                only.add(FeatureEdgeAttributes::order2);
+                only.inputs(FeatureEdgeAttributes::order2) = set;
+                in_tubes = tagged_edge_leaves_tube(
+                               only,
+                               m_vertex_attribute[edges[k][0]].m_posf,
+                               m_vertex_attribute[edges[k][1]].m_posf) == 0;
+            }
+            if (in_tubes) {
+                held.push_back(eids[k]);
+            } else if ((set & (set - 1)) == 0) {
+                made.push_back(eids[k]);
+                made_edges.push_back(edges[k]);
+            } else {
+                ++n_meet;
             }
         }
-        m_order2_input_envelopes.set(std::move(members));
-
-        std::vector<size_t> held;
-        for (const size_t eid : eids) {
-            const InputSet set = set_of.at(eid);
-            if ((set & ~all) != 0) continue; // an input of its set has no such curve
-            FeatureEdgeAttributes only;
-            only.add(FeatureEdgeAttributes::order2);
-            only.inputs(FeatureEdgeAttributes::order2) = set;
-            const Tuple e = tuple_from_edge(eid / 6, int(eid % 6));
-            if (tagged_edge_leaves_tube(
-                    only,
-                    m_vertex_attribute[e.vid(*this)].m_posf,
-                    m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_posf) == 0) {
-                held.push_back(eid);
+        if (!made.empty()) {
+            // The input's curves and the made ones, the latter at the mesh's positions.
+            std::vector<Eigen::Vector3d> V = in.V;
+            std::vector<Eigen::Vector2i> segments = in.order2;
+            std::vector<InputSet> sets = in.order2_inputs;
+            std::map<int, int> index_of;
+            const auto index = [&](const int v) {
+                const auto [it, added] = index_of.emplace(v, int(V.size()));
+                if (added) V.push_back(m_vertex_attribute[v].m_posf);
+                return it->second;
+            };
+            for (size_t k = 0; k < made.size(); ++k) {
+                const int a = index(made_edges[k][0]);
+                const int b = index(made_edges[k][1]);
+                segments.emplace_back(a, b);
+                sets.push_back(set_of.at(made[k]));
             }
+            build_tubes(V, segments, sets);
         }
         logger().info(
-            "order-2 edges in the tubes around the input's own curves: {} of {} tagged, the rest "
-            "held by the surface envelope alone",
+            "order-2 edges in the tubes around the input's own curves: {} of {}; {} the "
+            "simplification made, held in tubes around themselves; {} where inputs meet, left to "
+            "the surface envelopes",
             held.size(),
-            eids.size());
-        if (held.empty()) {
+            eids.size(),
+            made.size(),
+            n_meet);
+        if (held.empty() && made.empty()) {
             m_order2_edge_envelope = nullptr;
             m_order2_input_envelopes.set({});
             return 0;
         }
         enable_feature_edge_tracking();
-        for (const size_t eid : held) {
-            auto& attr = m_feature_edge_attribute[eid];
-            attr.add(FeatureEdgeAttributes::order2);
-            attr.inputs(FeatureEdgeAttributes::order2) = set_of.at(eid);
+        for (const std::vector<size_t>* tagged : {&held, &made}) {
+            for (const size_t eid : *tagged) {
+                auto& attr = m_feature_edge_attribute[eid];
+                attr.add(FeatureEdgeAttributes::order2);
+                attr.inputs(FeatureEdgeAttributes::order2) = set_of.at(eid);
+            }
         }
-        return held.size();
+        return held.size() + made.size();
     }
 
     enable_feature_edge_tracking();
@@ -1656,8 +1702,9 @@ size_t TetOptimizerMesh::anchor_feature_points(
     std::vector<std::tuple<size_t, double, Vector3d>> anchors;
     size_t n_ends = 0, n_junctions = 0;
     // With the input's own curves (InputCurves), a curve end or junction is the input's only
-    // where one of its curve points is in the ball, and the ball is centred there. An input
-    // point is the input's whatever its curves, and keeps its own position.
+    // where one of its curve points is in the ball, and the ball is centred there; any other
+    // the simplification made, and its ball is centred where it is. An input point is the
+    // input's whatever its curves, and keeps its own position.
     std::unique_ptr<KNN> input_curve_points;
     std::vector<bool> is_input_point;
     size_t n_not_input = 0;
@@ -1697,7 +1744,10 @@ size_t TetOptimizerMesh::anchor_feature_points(
                 if (input_curve_points) input_curve_points->nearest_neighbor(p, nearest, sq);
                 if (!input_curve_points ||
                     (p - m_input_curves->points[nearest]).squaredNorm() > r * r) {
+                    // A curve end or junction the simplification made: anchored where it is,
+                    // since the tube along a curve cannot stop it eroding from its end.
                     ++n_not_input;
+                    anchors.emplace_back(vid, r, p);
                     continue;
                 }
                 anchors.emplace_back(vid, r, m_input_curves->points[nearest]);
@@ -1719,7 +1769,7 @@ size_t TetOptimizerMesh::anchor_feature_points(
     if (m_input_curves) {
         logger().info(
             "feature anchors: {} curve endpoints and junctions with no curve point of the input "
-            "in reach, left free",
+            "in reach, anchored where they are",
             n_not_input);
     }
     if (anchors.empty()) return 0;
