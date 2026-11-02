@@ -34,5 +34,6 @@ var searchData=
   ['trivtuwriter_31',['TriVTUWriter',['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html',1,'wmtk::io']]],
   ['triwildmesh_32',['TriWildMesh',['../classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html',1,'wmtk::components::triwild']]],
   ['triwork_33',['TriWork',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_tri_work.html',1,'wmtk::components::topological_offset::ExactBandIntegral']]],
-  ['tuple_34',['tuple',['../classwmtk_1_1_tet_mesh_1_1_tuple.html',1,'wmtk::TetMesh::Tuple'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html',1,'wmtk::TriMesh::Tuple']]]
+  ['tuple_34',['tuple',['../classwmtk_1_1_tet_mesh_1_1_tuple.html',1,'wmtk::TetMesh::Tuple'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html',1,'wmtk::TriMesh::Tuple']]],
+  ['turnedfacecensus_35',['TurnedFaceCensus',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_turned_face_census.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]]
 ];

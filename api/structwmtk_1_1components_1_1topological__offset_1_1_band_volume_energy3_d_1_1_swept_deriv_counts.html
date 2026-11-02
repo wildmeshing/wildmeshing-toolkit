@@ -87,12 +87,21 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a8db9e1888063398aa2ca686fce5ecc56" id="r_a8db9e1888063398aa2ca686fce5ecc56"><td class="memItemLeft" align="right" valign="top"><a id="a8db9e1888063398aa2ca686fce5ecc56" name="a8db9e1888063398aa2ca686fce5ecc56"></a>
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>evals</b> {0}</td></tr>
 <tr class="separator:a8db9e1888063398aa2ca686fce5ecc56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f41c285decea3c7b3d0964800817fc9" id="r_a8f41c285decea3c7b3d0964800817fc9"><td class="memItemLeft" align="right" valign="top"><a id="a8f41c285decea3c7b3d0964800817fc9" name="a8f41c285decea3c7b3d0964800817fc9"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>rule_a</b> {0}</td></tr>
+<tr class="separator:a8f41c285decea3c7b3d0964800817fc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a919663e0dc09af5d16219abbccec66ed" id="r_a919663e0dc09af5d16219abbccec66ed"><td class="memItemLeft" align="right" valign="top"><a id="a919663e0dc09af5d16219abbccec66ed" name="a919663e0dc09af5d16219abbccec66ed"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>swept_tets</b> {0}</td></tr>
+<tr class="separator:a919663e0dc09af5d16219abbccec66ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbe73584019228e84c94508b4e31ee87" id="r_adbe73584019228e84c94508b4e31ee87"><td class="memItemLeft" align="right" valign="top"><a id="adbe73584019228e84c94508b4e31ee87" name="adbe73584019228e84c94508b4e31ee87"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>swept_x0</b> {0}</td></tr>
+<tr class="separator:adbe73584019228e84c94508b4e31ee87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4bf350442111eba24b0e04017dcd582b" id="r_a4bf350442111eba24b0e04017dcd582b"><td class="memItemLeft" align="right" valign="top"><a id="a4bf350442111eba24b0e04017dcd582b" name="a4bf350442111eba24b0e04017dcd582b"></a>
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ring_cells</b> {0}</td></tr>
 <tr class="separator:a4bf350442111eba24b0e04017dcd582b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#afcaf8931611dbe4b0cd2d035ef413cf4" title="EXPERIMENTAL_band_volume_rule &quot;exact_swept&quot;: the smoother&#39;s search model is the function the move is ...">set_swept()</a>'s counts: the search model's derivative evaluations, and of them those taken from the ring's band cells (front_face_derivs() threw). </p>
+<div class="textblock"><p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#afcaf8931611dbe4b0cd2d035ef413cf4" title="EXPERIMENTAL_band_volume_rule &quot;exact_swept&quot;: the smoother&#39;s search model is the function the move is ...">set_swept()</a>'s counts: the search model's derivative evaluations, of them those with a face part labelled by rule (a) (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_curved_bisector_rule_a.html" title="While one is alive on a thread, a piece of a face (front_face(), front_face_derivs()) that a curved b...">ExactBandIntegral::CurvedBisectorRuleA</a>), those taken from the swept tets (grad_hess(), at x != x0) and those whose Hessian is the faces' hess_swept (at x0), and those taken from the ring's band cells (front_face_derivs() threw). </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a></li>
 </ul>

@@ -583,7 +583,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold with a foldover face (front_face_field_angle() over foldover_angle) remains. </p>
+<p>EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a fold (TopoOffsetTetMesh::fold_test()) remains. </p>
 
 </div>
 </div>
@@ -598,7 +598,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>3D: a front face is a foldover when the angle between its normal, out of the band, and the field's normal (grad d at its centroid) exceeds this many degrees (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b88a5bd6272a6dcd46a3d2f360c4342" title="The foldover measure of front face (a, b, c): the angle, in degrees, between its unit normal,...">TopoOffsetTetMesh::front_face_field_angle()</a>): the debug frames' per-face field_angle_foldover and the end-of-run [foldover] count, and which real folds hold the exit under EXPERIMENTAL_exit_no_folds. See the spec doc. </p>
+<p>3D: the fold predicate's angle (TopoOffsetTetMesh::fold_test()). A fold is an edge with two offset faces whose normals out of the band are within this many degrees of opposite, one of them turned from the field: the angle between its normal and the field's normal (grad d at its centroid, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b88a5bd6272a6dcd46a3d2f360c4342" title="The field angle of front face (a, b, c): the angle, in degrees, between its unit normal,...">TopoOffsetTetMesh::front_face_field_angle()</a>) over this. The same face test alone gives the debug frames' per-face field_angle_turned and the end-of-run [turned faces] count. See the spec doc. </p>
 
 </div>
 </div>
@@ -673,7 +673,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>3D (2026-10-21; "linear" was EXPERIMENTAL_incremental_growth): how the loop grows the offset when the march traces the front below target_distance (construction_mode "max_marchable_fallback", the target not below the maximum marchable distance), from the traced distance d_0. "none": the ordinary loop at target_distance. "linear": loops at d_0 and at d_0 + k (target_distance - d_0) / linear_growth_steps, each to convergence, the last the ordinary loop (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3b59978c08fcb14fa0185fe1d126c785">TopoOffsetTetMesh::linear_growth()</a>). "smart": a loop at d_0, then attempts toward target_distance, reverted and halved when they fail (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6e063a55735b56f5586de9aefad248f8">TopoOffsetTetMesh::smart_growth()</a>). "individual_op_reject": loops at d_0 and at target_distance (linear with one step), every collapse, offset-surface flip and smoothing move that raises the folded offset faces refused (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8092931adbc52fc376b06a52630c9c3e">TopoOffsetTetMesh::fold_reject_active()</a>). See the spec doc. </p>
+<p>3D (2026-10-21; "linear" was EXPERIMENTAL_incremental_growth): how the loop grows the offset when the march traces the front below target_distance (construction_mode "max_marchable_fallback", the target not below the maximum marchable distance), from the traced distance d_0. "none": the ordinary loop at target_distance. "linear": loops at d_0 and at d_0 + k (target_distance - d_0) / linear_growth_steps, each to convergence, the last the ordinary loop (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3b59978c08fcb14fa0185fe1d126c785">TopoOffsetTetMesh::linear_growth()</a>). "smart": a loop at d_0, then attempts toward target_distance, reverted and halved when they fail (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6e063a55735b56f5586de9aefad248f8">TopoOffsetTetMesh::smart_growth()</a>). "individual_op_reject": loops at d_0 and at target_distance (linear with one step), every collapse, offset-surface flip and smoothing move that raises the offset faces turned from the field refused (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a0643521e5dafcf9b841f09ef0c42dbdd">TopoOffsetTetMesh::turned_reject_active()</a>). See the spec doc. </p>
 
 </div>
 </div>

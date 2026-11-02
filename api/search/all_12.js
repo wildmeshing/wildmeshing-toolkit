@@ -254,7 +254,7 @@ var searchData=
   ['swapstage_251',['SwapStage',['../classwmtk_1_1_tet_optimizer_mesh.html#a1c99dc279e204f54c97cd632934a592d',1,'wmtk::TetOptimizerMesh']]],
   ['swapsurfacesides_252',['SwapSurfaceSides',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_surface_sides.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
   ['swaptagcache_253',['SwapTagCache',['../structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_tag_cache.html',1,'wmtk::components::simwild::SimWildMesh']]],
-  ['swept_5fchange_254',['swept_change',['../classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#ad2b21dd43afcc2f97a3851b94bd98036',1,'wmtk::components::topological_offset::BandVolumeEnergy3D']]],
+  ['swept_5fchange_254',['swept_change',['../classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a5a126c9c881533bcc8e9145256defb04',1,'wmtk::components::topological_offset::BandVolumeEnergy3D']]],
   ['swept_5ffaces_255',['swept_faces',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_collapse_volume.html#a289c85e18de9bf5c6300cf9960d94567',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::CollapseVolume']]],
   ['swept_5frule_256',['swept_rule',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a735812e9a4023bbe1bfcca254937c2d2',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
   ['sweptcounters_257',['SweptCounters',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swept_counters.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
