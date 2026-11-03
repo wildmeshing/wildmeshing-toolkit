@@ -143,8 +143,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
-        jse::embed::wmtk_tetwild_spec::tetwild_spec::spec(),
-        false);
+        jse::embed::wmtk_tetwild_spec::tetwild_spec::spec());
     const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     tetwild::Parameters params;

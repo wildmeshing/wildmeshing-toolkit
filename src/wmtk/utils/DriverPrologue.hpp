@@ -22,17 +22,20 @@ namespace wmtk::utils {
  * @param[in,out] json_params  verified against `spec`, then replaced by the defaults-injected
  *                             version -- so the caller sees every optional key filled in
  * @param spec    the component's embedded jse spec
- * @param strict  reject unknown keys (simwild does; tetwild and triwild do not)
  * @return the resolved input directory, i.e. json_params["input_dir"]
+ *
+ * A key the spec does not have is refused, in all three: it is a typo or a removed option, and
+ * ignoring it runs something the caller did not ask for -- an old skip_simplify: true would
+ * simplify since simplify replaced it. Until 2026-11 only simwild refused one; tetwild and
+ * triwild ignored it, warned only by wmtk_app and the Python bindings.
  */
 inline std::filesystem::path verify_and_setup_logger(
     nlohmann::json& json_params,
-    const nlohmann::json& spec,
-    const bool strict = false)
+    const nlohmann::json& spec)
 {
     {
         jse::JSE spec_engine;
-        spec_engine.strict = strict;
+        spec_engine.strict = true;
         if (!spec_engine.verify_json(json_params, spec)) {
             log_and_throw_error(spec_engine.log2str());
         }

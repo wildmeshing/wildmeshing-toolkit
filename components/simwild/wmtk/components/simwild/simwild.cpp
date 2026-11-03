@@ -599,8 +599,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
-        jse::embed::wmtk_simwild_spec::simwild_spec::spec(),
-        true);
+        jse::embed::wmtk_simwild_spec::simwild_spec::spec());
     const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     // std::filesystem::path output_filename = resolve_path(root, json_params["output"]);

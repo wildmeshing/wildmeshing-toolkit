@@ -237,8 +237,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
-        jse::embed::wmtk_triwild_spec::triwild_spec::spec(),
-        false);
+        jse::embed::wmtk_triwild_spec::triwild_spec::spec());
     const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     triwild::Parameters params(json_params);
