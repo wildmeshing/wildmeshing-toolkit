@@ -151,7 +151,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.output_enabled = !component_io.memory();
 
     std::string output_path = json_params["output"];
-    bool skip_simplify = json_params["skip_simplify"];
+    bool simplify = json_params["simplify"];
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
     const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
     const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
@@ -397,7 +397,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         tet_eps,
         simplify_eps,
         env_around_simplified,
-        /*simplification_ran=*/!skip_simplify);
+        /*simplification_ran=*/simplify);
 
     // The open boundary. Frozen, the simplification cannot touch anything enclosed by boundary
     // loops packed too tightly to leave a free vertex between them, and on Thingi10K 55928 that
@@ -435,7 +435,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         tri_input);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
-    if (skip_simplify == false) {
+    if (simplify) {
         logger().info("input {} simplification", input_paths);
         {
             size_t nm_e = 0;
@@ -502,7 +502,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             surf_mesh.get_vertices().size(),
             surf_mesh.get_faces().size());
     } else {
-        logger().info("skip simplification");
+        logger().info("no simplification (simplify false)");
     }
     if (!component_io.memory())
         surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
@@ -572,16 +572,16 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // converging run into a diverging one on 1368052.
     //
     // The narrowing is charged for the simplification's deviation, so it applies only when a
-    // simplification actually ran. Under skip_simplify the "simplified" surface IS the input,
+    // simplification actually ran. With simplify false the "simplified" surface IS the input,
     // there is nothing to charge, and subtracting anyway would confine the optimizer to a
     // fraction of the tolerance its result is judged against -- for no gain, since the
     // geometry already starts centred in the full envelope.
-    const bool charge_simplify = env_around_simplified && !skip_simplify;
+    const bool charge_simplify = env_around_simplified && simplify;
     const double opt_eps = wmtk::utils::optimization_envelope_eps(
         tet_eps,
         simplify_eps,
         env_around_simplified,
-        /*simplification_ran=*/!skip_simplify);
+        /*simplification_ran=*/simplify);
 
     MeshData memory_envelope;
     auto tet_envelope = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
@@ -671,7 +671,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         std::sqrt(tet_envelope->eps2),
         !env_around_simplified ? "input"
         : charge_simplify      ? "SIMPLIFIED surface"
-                               : "input (skip_simplify: nothing to charge, full eps)");
+                               : "input (simplify false: nothing to charge, full eps)");
 
     if (json_params["DEBUG_disable_envelope"]) {
         logger().warn(
@@ -801,7 +801,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // are built around them, and an order-2 edge or curve end the simplification made is held
     // around itself (TetOptimizerMesh::InputCurves). The input surface as the envelope has it,
     // each triangle with its input.
-    if (!env_around_simplified && !skip_simplify) {
+    if (!env_around_simplified && simplify) {
         assert(tri_input.size() == tris.size());
         std::vector<InputSet> tri_sets(tris.size());
         for (size_t i = 0; i < tris.size(); ++i) tri_sets[i] = InputSet(1) << tri_input[i];

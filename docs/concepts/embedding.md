@@ -37,7 +37,7 @@ envelope of its own:
 The tighter envelope leaves the optimizer room: the simplified surface is within half of
 \(\varepsilon\) of the input (by default), and the optimizer, which is held to the full
 \(\varepsilon\) around the original input, starts with room to move.
-[`skip_simplify`](../reference/tetwild.md#skip_simplify) inserts the input as it is.
+With [`simplify`](../reference/tetwild.md#simplify) false, the input is inserted as it is.
 
 ## 3. The background mesh and the arrangement
 

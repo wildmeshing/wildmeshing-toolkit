@@ -377,11 +377,11 @@ def simwild(options: dict, meshes: dict) -> tuple:
       input_dir (string, default ""): Directory where the input files are located.
       input_edges (list, default []): List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint.
       input_points (list, default []): List of input feature POINT files, 3D surface inputs and 2D curve inputs (a .msh input and a tagged mesh refuse them): every vertex of each file is forced into the mesh as a vertex, exactly -- a tet vertex in 3D, a vertex of the curve arrangement in 2D, where only x and y are used (edges in these files are ignored, with a warning).
-      skip_simplify (bool, default false): If true, input simplification will be skipped.
+      simplify (bool, default true): If true, the input is simplified.
       tag_from_winding_number (bool, default true): How the cells of the arrangement are tagged.
       split_connected_components (bool, default false): Treat each connected component of an input file as an input in its own right, rather than the file as a whole.
       use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one.
-      simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only -- in 3D, of the input surface before insertion without preserve_topology, of the tet mesh after insertion with it (operation remeshing); in 2D, of the input curves before insertion without preserve_topology; in every case unless skip_simplify; the optimization keeps whatever use_sample_envelope selects.
+      simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only -- in 3D, of the input surface before insertion without preserve_topology, of the tet mesh after insertion with it (operation remeshing); in 2D, of the input curves before insertion without preserve_topology; in every case only if simplify is true; the optimization keeps whatever use_sample_envelope selects.
       num_threads (int, default 0): Number of threads.
       max_iterations (int, default 80): Maximum iterations before stopping.
       eps_rel (float, default 0.002): Envelope thickness relative to the bounding box diagonal.
@@ -475,7 +475,7 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       input_names (list, default []): Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route.
       input_dir (string, default ""): Directory where the input files are located.
       write_vtu (bool, default true): Write the VTU output next to the MSH.
-      skip_simplify (bool, default false): If true, input simplification will be skipped.
+      simplify (bool, default true): If true, the input surface is simplified first.
       simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects.
       simplify_envelope_ratio (float, default 0.5): Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation.
       simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges.
@@ -704,7 +704,7 @@ def triwild(options: dict, meshes: dict) -> tuple:
       input_dir (string, default ""): Directory where the input files are located.
       num_threads (int, default 0): Number of threads.
       max_iterations (int, default 80): Maximum iterations before stopping.
-      skip_simplify (bool, default false): If true, input simplification will be skipped.
+      simplify (bool, default true): If true, the input curves are simplified first.
       simplify_envelope_ratio (float, default 0.5): Envelope thickness used for the input simplification, as a fraction of the one used for the triangulation.
       envelope_reference (string, default "input"): Which geometry the envelope and the curve anchors are built around, one choice for both.
       simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects.

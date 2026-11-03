@@ -159,7 +159,7 @@ unit tests do — ran a different configuration than every driver run:
 | tetwild | `stuck_refine_rings` | 3 | **0** |
 | tetwild | `skip_good_regions` | true | **false** |
 | triwild | `stop_energy` | 20 | **100** |
-| simwild | `skip_simplify` | true | **false** |
+| simwild | `simplify` | false | **true** |
 | simwild | `eps_simplify_rel` | 2e-3 | **2e-4** (10x) |
 | simwild | `preserve_topology` | false | **true** |
 | simwild | `stuck_refine_num_worst` | 50 | **0** |

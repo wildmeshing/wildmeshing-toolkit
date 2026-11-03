@@ -32,7 +32,7 @@ namespace wmtk::utils {
  *                                  the tolerance its result is judged against, for no gain:
  *                                  the geometry is the input, already centred in the full
  *                                  envelope. Which config settings imply this is per-app --
- *                                  `skip_simplify` in tetwild and triwild, and in simwild also
+ *                                  `simplify` false in tetwild and triwild, and in simwild also
  *                                  `preserve_topology` outside the remeshing operation.
  *
  * @return the eps to build the optimizer's envelope with; always > 0.

@@ -417,20 +417,20 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // because its sampling guarantees the other eps/2 -- and both backends guarantee the same
     // thing to their caller: everything they accept is within eps. A caller reasoning about
     // eps/2 is reasoning about an implementation detail it should not be able to see.
-    const bool skip_simplify = json_params["skip_simplify"];
+    const bool simplify = json_params["simplify"];
     wmtk::utils::check_simplification_inside_envelope(
         envelope_eps,
         simplify_eps,
         env_around_simplified,
-        /*simplification_ran=*/!skip_simplify);
+        /*simplification_ran=*/simplify);
 
     MatrixXd V_simp = V_in;
     MatrixXi E_simp = E_in;
     std::vector<int> E_simp_input = E_in_input;
     std::vector<history::Edit> collapses;
     std::vector<int> surviving_vertices;
-    if (skip_simplify) {
-        logger().info("skip simplification");
+    if (!simplify) {
+        logger().info("no simplification (simplify false)");
     } else {
         Envelope simplify_envelope(!simplify_use_sample_envelope);
         simplify_envelope.init(V_in, E_in, simplify_eps);
@@ -614,16 +614,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // driver for the measurements.
     //
     // The narrowing is charged for the simplification's deviation, so it applies only when a
-    // simplification actually ran. Under skip_simplify the "simplified" curves ARE the input,
+    // simplification actually ran. With simplify false the "simplified" curves ARE the input,
     // there is nothing to charge, and subtracting anyway would confine the optimizer to a
     // fraction of the tolerance its result is judged against -- for no gain, since the
     // geometry already starts centred in the full envelope.
-    const bool charge_simplify = env_around_simplified && !skip_simplify;
+    const bool charge_simplify = env_around_simplified && simplify;
     const double opt_eps = wmtk::utils::optimization_envelope_eps(
         envelope_eps,
         simplify_eps,
         env_around_simplified,
-        /*simplification_ran=*/!skip_simplify);
+        /*simplification_ran=*/simplify);
     const MatrixXd& V_env = env_around_simplified ? V_simp : V_in;
     const MatrixXi& E_env = env_around_simplified ? E_simp : E_in;
     const std::vector<int>& E_env_input = env_around_simplified ? E_simp_input : E_in_input;
@@ -641,7 +641,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // Around the input after a simplification, the input's own curve ends and junctions: the
     // anchors are centred on them, and an end the simplification made is anchored where it is
     // (TriOptimizerMesh::m_input_curve_points).
-    if (!env_around_simplified && !skip_simplify) mesh.set_input_curve_points(V_in, E_in);
+    if (!env_around_simplified && simplify) mesh.set_input_curve_points(V_in, E_in);
     mesh.init_mesh(
         V,
         V_rational,

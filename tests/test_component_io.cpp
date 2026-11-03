@@ -292,7 +292,7 @@ TEST_CASE("TriWild embeds named curves in memory", "[component_io]")
     check(
         triwild::triwild(
             {{"input", {"curves"}},
-             {"skip_simplify", true},
+             {"simplify", false},
              {"max_iterations", 0},
              {"num_threads", 1},
              {"DEBUG_output", true},
@@ -311,7 +311,7 @@ TEST_CASE("TetWild embeds a named surface in memory", "[component_io]" + release
     check(
         tetwild::tetwild(
             {{"input", {"surface"}},
-             {"skip_simplify", true},
+             {"simplify", false},
              {"max_iterations", 0},
              {"num_threads", 1},
              {"DEBUG_output", true},
@@ -526,7 +526,7 @@ TEST_CASE(
         {{"input", {"surface"}},
          {"input_names", {"tag_0"}},
          {"max_iterations", 0},
-         {"skip_simplify", true},
+         {"simplify", false},
          {"num_threads", 1},
          {"length_rel", 0.5},
          {"coarsen_pass", false}},

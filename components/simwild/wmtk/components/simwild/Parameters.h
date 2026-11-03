@@ -57,7 +57,7 @@ struct Parameters : public wmtk::OptimizerParameters
      */
     bool verbose_quality_stats = true;
 
-    bool skip_simplify = false;
+    bool simplify = true;
     bool use_sample_envelope = false;
     /// Opt-in: the sampled envelope for the input simplification alone; see the spec.
     bool simplify_use_sample_envelope = false;
@@ -68,7 +68,7 @@ struct Parameters : public wmtk::OptimizerParameters
     Parameters(const nlohmann::json& json_params)
     {
         output_path = json_params["output"];
-        skip_simplify = json_params["skip_simplify"];
+        simplify = json_params["simplify"];
         use_sample_envelope = json_params["use_sample_envelope"];
         simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
         NUM_THREADS = json_params["num_threads"];

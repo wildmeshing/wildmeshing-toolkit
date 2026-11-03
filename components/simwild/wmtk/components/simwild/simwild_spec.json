@@ -14,7 +14,7 @@
       "input_dir",
       "input_edges",
       "input_points",
-      "skip_simplify",
+      "simplify",
       "tag_from_winding_number",
       "split_connected_components",
       "use_sample_envelope",
@@ -207,10 +207,10 @@
     "doc": "One input feature point file (only the vertices are used)."
   },
   {
-    "pointer": "/skip_simplify",
+    "pointer": "/simplify",
     "type": "bool",
-    "default": false,
-    "doc": "If true, input simplification will be skipped. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified."
+    "default": true,
+    "doc": "If true, the input is simplified. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified."
   },
   {
     "pointer": "/tag_from_winding_number",
@@ -234,7 +234,7 @@
     "pointer": "/simplify_use_sample_envelope",
     "type": "bool",
     "default": false,
-    "doc": "Use the sampled envelope instead of the exact one for the input simplification only -- in 3D, of the input surface before insertion without preserve_topology, of the tet mesh after insertion with it (operation remeshing); in 2D, of the input curves before insertion without preserve_topology; in every case unless skip_simplify; the optimization keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the sampled test cannot see what happens between two samples, and on thin lattice geometry the sampled simplification has been observed to over-collapse badly (in tetwild)."
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only -- in 3D, of the input surface before insertion without preserve_topology, of the tet mesh after insertion with it (operation remeshing); in 2D, of the input curves before insertion without preserve_topology; in every case only if simplify is true; the optimization keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the sampled test cannot see what happens between two samples, and on thin lattice geometry the sampled simplification has been observed to over-collapse badly (in tetwild)."
   },
   {
     "pointer": "/num_threads",
@@ -264,7 +264,7 @@
     "pointer": "/eps_simplify_rel",
     "type": "float",
     "default": 0.0002,
-    "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if skip_simplify is true or the input is already a tet mesh. The diagonal is eps_rel's, so both simplifications, before and after the insertion, run at the same eps; until 2026-11 the one before the insertion used the inputs' own and the one after the embedding's padded box."
+    "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if simplify is false or the input is already a tet mesh. The diagonal is eps_rel's, so both simplifications, before and after the insertion, run at the same eps; until 2026-11 the one before the insertion used the inputs' own and the one after the embedding's padded box."
   },
   {
     "pointer": "/envelope_reference",
@@ -277,13 +277,13 @@
     "pointer": "/eps_simplify",
     "type": "float",
     "default": -1,
-    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if skip_simplify is true or the input is already a tet mesh."
+    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if simplify is false or the input is already a tet mesh."
   },
   {
     "pointer": "/simplify_boundary_envelope",
     "type": "bool",
     "default": true,
-    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses). When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex. Boundary that the simplification opens away from the input's is not judged by the tube. Only affects the simplification before insertion, which runs only when preserve_topology is false and skip_simplify is false; under preserve_topology the surface is simplified after insertion against the order-2 envelope instead."
+    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses). When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex. Boundary that the simplification opens away from the input's is not judged by the tube. Only affects the simplification before insertion, which runs only when preserve_topology is false and simplify is true; under preserve_topology the surface is simplified after insertion against the order-2 envelope instead."
   },
   {
     "pointer": "/remove_duplicate_eps",
@@ -295,7 +295,7 @@
     "pointer": "/order2_envelope_ratio",
     "type": "float",
     "default": 1.0,
-    "doc": "Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface and its non-manifold edges -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet. The tube is built around the order-2 edges as the insertion leaves them. When the simplification before insertion runs (preserve_topology false, skip_simplify false), it may already have moved an open boundary by up to order2_envelope_ratio x eps_simplify (see simplify_boundary_envelope), and the boundary then stays within order2_envelope_ratio x (eps + eps_simplify) of the input's; otherwise -- skip_simplify, or preserve_topology, whose simplification after insertion runs inside the tube -- within order2_envelope_ratio x eps. In 2D, the radius of the anchors where the region borders end or three or more meet. A 2026-10 sweep (13 tetwild integration configs with open boundaries; ratio 0.25, 0.5, 0.75 and 1.0, each at eps x0.99, x1 and x1.01) found no advantage below 1: 7 configs give identical output at every ratio, Thingi10K 111388 gives the fewest tets at 1.0 (27-28k, against 30-31k at 0.5) and the most at 0.25 (28-44k), and the others differ by less than the 1% eps perturbation does. The earlier case for 0.5 (Thingi10K 36075, 14 against 24 iterations) does not reproduce: that model now gives identical output at every ratio."
+    "doc": "Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface and its non-manifold edges -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet. The tube is built around the order-2 edges as the insertion leaves them. When the simplification before insertion runs (preserve_topology false, simplify true), it may already have moved an open boundary by up to order2_envelope_ratio x eps_simplify (see simplify_boundary_envelope), and the boundary then stays within order2_envelope_ratio x (eps + eps_simplify) of the input's; otherwise -- simplify false, or preserve_topology, whose simplification after insertion runs inside the tube -- within order2_envelope_ratio x eps. In 2D, the radius of the anchors where the region borders end or three or more meet. A 2026-10 sweep (13 tetwild integration configs with open boundaries; ratio 0.25, 0.5, 0.75 and 1.0, each at eps x0.99, x1 and x1.01) found no advantage below 1: 7 configs give identical output at every ratio, Thingi10K 111388 gives the fewest tets at 1.0 (27-28k, against 30-31k at 0.5) and the most at 0.25 (28-44k), and the others differ by less than the 1% eps perturbation does. The earlier case for 0.5 (Thingi10K 36075, 14 against 24 iterations) does not reproduce: that model now gives identical output at every ratio."
   },
   {
     "pointer": "/feature_envelope_ratio",

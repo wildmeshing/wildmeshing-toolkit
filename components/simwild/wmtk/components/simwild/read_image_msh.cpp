@@ -194,7 +194,7 @@ InputData read_mesh(
     const bool debug_output = !component_io && bool(json_params["DEBUG_output"]);
     const bool perform_sanity_checks = json_params["DEBUG_sanity_checks"];
     const bool preserve_topology = json_params["preserve_topology"];
-    const bool skip_simplify = json_params["skip_simplify"];
+    const bool simplify = json_params["simplify"];
     const bool tag_from_winding_number = json_params["tag_from_winding_number"];
     const bool split_connected_components = json_params["split_connected_components"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
@@ -261,7 +261,7 @@ InputData read_mesh(
     MatrixXd V_read;
     MatrixXi F_read;
     std::vector<size_t> F_read_input;
-    if (!preserve_topology && !skip_simplify) {
+    if (!preserve_topology && simplify) {
         /**
          * Simplify the input surface only if topology preservation is not required, since
          * simplification can change the topology. If topology preservation is required,
@@ -453,7 +453,7 @@ InputData read_curves(
     const int NUM_THREADS = json_params["num_threads"];
     const bool debug_output = !component_io && bool(json_params["DEBUG_output"]);
     const bool preserve_topology = json_params["preserve_topology"];
-    const bool skip_simplify = json_params["skip_simplify"];
+    const bool simplify = json_params["simplify"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
     double eps_simplify = json_params["eps_simplify"];
     const std::vector<std::string> input_names = json_params["input_names"];
@@ -512,7 +512,7 @@ InputData read_curves(
     MatrixXd V_read;
     MatrixXi E_read;
     std::vector<size_t> E_read_input;
-    if (!preserve_topology && !skip_simplify) {
+    if (!preserve_topology && simplify) {
         // Same condition the 3D route uses: simplification can change the topology of the
         // input, so it only runs when the caller has said that is acceptable.
         if (envelope_around_input) {

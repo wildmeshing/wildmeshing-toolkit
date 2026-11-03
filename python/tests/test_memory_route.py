@@ -35,7 +35,7 @@ def _square_obj(path, lo, hi):
     return str(path)
 
 
-S2T = {"eps_rel": 1e-2, "skip_simplify": True}
+S2T = {"eps_rel": 1e-2, "simplify": False}
 OFFSET = {"offset_selection": "a", "target_distance": 0.05, "offset_output_tags": ["off"],
           "optimize_offset": False}
 

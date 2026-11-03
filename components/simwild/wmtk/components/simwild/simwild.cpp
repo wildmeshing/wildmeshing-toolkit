@@ -176,10 +176,10 @@ namespace {
  * SimWild simplifies in one of two places, and which one applies turns on preserve_topology:
  *
  *  - BEFORE insertion, in read_mesh / read_curves (read_image_msh.cpp), when
- *    `!preserve_topology && !skip_simplify`. Simplification can change the topology of the
+ *    `!preserve_topology && simplify`. Simplification can change the topology of the
  *    input, so this route only runs where the caller has said that is acceptable.
  *  - AFTER insertion, SimWildMesh::simplify() from run_3D, when
- *    `preserve_topology && !skip_simplify && operation == "remeshing"`. It collapses at
+ *    `preserve_topology && simplify && operation == "remeshing"`. It collapses at
  *    eps_simplify with the quality check off and then REBUILDS the envelope around the
  *    result, so it displaces the envelope geometry exactly as the pre-insertion route does.
  *
@@ -188,7 +188,7 @@ namespace {
  */
 bool simplification_runs(const Parameters& params, bool is_3d)
 {
-    if (params.skip_simplify) return false;
+    if (!params.simplify) return false;
     if (!params.preserve_topology) return true; // pre-insertion, both dimensions
     return is_3d && params.operation == "remeshing"; // post-insertion, 3D only
 }
@@ -365,7 +365,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         mesh.record_volume_history();
     }
 
-    if (params.operation == "remeshing" && params.preserve_topology && !params.skip_simplify) {
+    if (params.operation == "remeshing" && params.preserve_topology && params.simplify) {
         // collapse for getting the right edge length
         logger().info("Simplify after insertion");
         mesh.simplify();
