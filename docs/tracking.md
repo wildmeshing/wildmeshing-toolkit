@@ -694,6 +694,13 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     112 eps and under 2 segment lengths;
   - `transfer` (surfaces): fields onto the output;
   - `map`: user points;
+  - `map_curves` (surfaces): user polylines. Every local map is piecewise linear, so a segment's
+    image is a polyline: `SurfaceMap::curves_to_output` cuts it at each local map's edges with
+    `walk_segment` (`segment_walk.{hpp,cpp}`, exact `orient2d` on the ends and corners), first
+    at the pieces of a face a virtual vertex split. Ends land as points do, sharing `map()`'s
+    code, so a curve's image agrees with the point map up to rounding. Nothing is straightened:
+    curves grow with the bends of the map, about linearly in the edits. A segment with no image
+    breaks the curve into parts (`MapWarnings::broken_segments`);
   - `features` (curves): the input's feature points and the output vertices they became.
 
   The file says whether it holds a surface or curves (`history::face_size`); the app picks.

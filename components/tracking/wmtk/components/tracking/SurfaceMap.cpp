@@ -1,6 +1,7 @@
 #include "SurfaceMap.hpp"
 
 #include "scaffold2d.hpp"
+#include "segment_walk.hpp"
 #include "slim2d.hpp"
 
 #include <wmtk/history/Replay.hpp>
@@ -177,6 +178,63 @@ Eigen::Vector3d local_coordinates(
 bool positive(const Eigen::Vector2d& a, const Eigen::Vector2d& b, const Eigen::Vector2d& c)
 {
     return utils::predicates::orient2d(a, b, c) == utils::predicates::Orientation::POSITIVE;
+}
+
+/// The piece of a face holding a point, among those from `first` to `last`, and the point in it.
+std::pair<size_t, Eigen::Vector3d> piece_of(
+    const Eigen::Vector3d& bary,
+    const std::vector<SurfaceMap::Face>& pieces,
+    const size_t first,
+    const size_t last)
+{
+    size_t piece = first;
+    Eigen::Vector3d l = bary;
+    if (last - first > 1) {
+        double best = -std::numeric_limits<double>::infinity();
+        for (size_t k = first; k < last; ++k) {
+            const Eigen::Vector3d lk = local_coordinates(pieces[k].sub, bary);
+            if (lk.minCoeff() > best) {
+                best = lk.minCoeff();
+                piece = k;
+                l = lk;
+            }
+        }
+    }
+    return {piece, l};
+}
+
+/// Where a point of the domain lands among a cell's pieces.
+struct Landing
+{
+    size_t piece = 0;
+    Eigen::Vector3d l = Eigen::Vector3d::Constant(1. / 3);
+    /// False if it fell outside them all; l is then clamped onto the nearest.
+    bool inside = true;
+};
+
+Landing land(const Eigen::Vector2d& q, const std::vector<SurfaceMap::Face>& to)
+{
+    double best = -std::numeric_limits<double>::infinity();
+    Landing at;
+    for (size_t k = 0; k < to.size(); ++k) {
+        const Eigen::Vector3d lk = barycentric(q, to[k].uv[0], to[k].uv[1], to[k].uv[2]);
+        const double score = lk.minCoeff();
+        if (std::isfinite(score) && score > best) {
+            best = score;
+            at.piece = k;
+            at.l = lk;
+        }
+    }
+    if (!(best >= -1e-9)) {
+        at.inside = false;
+        at.l = at.l.cwiseMax(0.);
+        if (at.l.sum() > 0) {
+            at.l /= at.l.sum();
+        } else {
+            at.l = Eigen::Vector3d(1. / 3, 1. / 3, 1. / 3);
+        }
+    }
+    return at;
 }
 
 /// A face, or a piece of one, in a local patch: its corners -- vertex ids, or a virtual vertex on
@@ -753,24 +811,36 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
                     const uint64_t prev = (*loop)[(i + n - 1) % n], next = (*loop)[(i + 1) % n];
                     curve.insert(std::minmax(prev, next));
                     if (curve.size() > 1) return false;
+                    // Measured from the same end on both sides of the curve, so that rounding
+                    // cannot have one side see a move the other does not: a move of no length
+                    // split on one side alone would part them by the clamp below.
+                    const uint64_t first = std::min(prev, next), second = std::max(prev, next);
                     const auto fraction = [&](const Positions& Q) {
-                        const double a = (Q.at(prev) - Q.at(v)).norm(),
-                                     b = (Q.at(v) - Q.at(next)).norm();
+                        const double a = (Q.at(first) - Q.at(v)).norm(),
+                                     b = (Q.at(v) - Q.at(second)).norm();
                         return a + b > 0 ? a / (a + b) : -1.;
                     };
-                    const double f_old = fraction(P), f_new = fraction(Pa);
-                    if (!(f_old > 0 && f_old < 1 && f_new > 0 && f_new < 1)) return false;
+                    const double from_first_old = fraction(P), from_first_new = fraction(Pa);
+                    if (!(from_first_old > 0 && from_first_old < 1 && from_first_new > 0 &&
+                          from_first_new < 1)) {
+                        return false;
+                    }
+                    const bool towards_first = from_first_new < from_first_old;
+                    const bool moved = from_first_new != from_first_old;
+                    const bool towards_prev = prev == first ? towards_first : !towards_first;
+                    const double f_old = prev == first ? from_first_old : 1 - from_first_old;
+                    const double f_new = prev == first ? from_first_new : 1 - from_first_new;
                     // Kept off the edge's ends, as a collapse's: a split there would be a piece
                     // flat in the face but not in the domain, which the map could not invert. The
                     // bounds are symmetric, so the other side of the curve, measuring from its
                     // other end, splits the edge at the same point.
                     const auto clamped = [](double tau) { return std::clamp(tau, 0.01, 0.99); };
-                    if (f_new < f_old) { // v moved towards prev
+                    if (moved && towards_prev) {
                         before.split(prev, v, clamped(f_new / f_old), kVirtual);
                         after.split(v, next, clamped((f_old - f_new) / (1 - f_new)), kVirtual);
                         slots[i] = {kVirtual, v};
                         slots.insert(slots.begin() + long(i) + 1, {v, kVirtual});
-                    } else if (f_new > f_old) {
+                    } else if (moved) {
                         before.split(v, next, clamped((f_new - f_old) / (1 - f_old)), kVirtual);
                         after.split(prev, v, clamped(f_old / f_new), kVirtual);
                         slots[i] = {v, kVirtual};
@@ -1211,48 +1281,15 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
                 if (it != on_face.end()) {
                     for (const size_t i : it->second) {
                         // The piece of the face holding the point, and the point in the domain.
-                        size_t piece = first;
-                        Eigen::Vector3d l = pts[i].bary;
-                        if (last - first > 1) {
-                            double best = -std::numeric_limits<double>::infinity();
-                            for (size_t k = first; k < last; ++k) {
-                                const Eigen::Vector3d lk =
-                                    local_coordinates(from[k].sub, pts[i].bary);
-                                if (lk.minCoeff() > best) {
-                                    best = lk.minCoeff();
-                                    piece = k;
-                                    l = lk;
-                                }
-                            }
-                        }
+                        const auto [piece, l] = piece_of(pts[i].bary, from, first, last);
                         const auto& f = from[piece];
                         const Eigen::Vector2d q = l[0] * f.uv[0] + l[1] * f.uv[1] + l[2] * f.uv[2];
-                        double best = -std::numeric_limits<double>::infinity();
-                        size_t best_k = 0;
-                        Eigen::Vector3d best_l(1. / 3, 1. / 3, 1. / 3);
-                        for (size_t k = 0; k < to.size(); ++k) {
-                            const Eigen::Vector3d lk =
-                                barycentric(q, to[k].uv[0], to[k].uv[1], to[k].uv[2]);
-                            const double score = lk.minCoeff();
-                            if (std::isfinite(score) && score > best) {
-                                best = score;
-                                best_k = k;
-                                best_l = lk;
-                            }
-                        }
-                        if (!(best >= -1e-9)) {
-                            ++w.unlocated;
-                            best_l = best_l.cwiseMax(0.);
-                            if (best_l.sum() > 0) {
-                                best_l /= best_l.sum();
-                            } else {
-                                best_l = Eigen::Vector3d(1. / 3, 1. / 3, 1. / 3);
-                            }
-                        }
-                        const auto& g = to[best_k];
+                        const Landing at = land(q, to);
+                        if (!at.inside) ++w.unlocated;
+                        const auto& g = to[at.piece];
                         pts[i] = {
                             g.fid,
-                            best_l[0] * g.sub[0] + best_l[1] * g.sub[1] + best_l[2] * g.sub[2]};
+                            at.l[0] * g.sub[0] + at.l[1] * g.sub[1] + at.l[2] * g.sub[2]};
                         landed.emplace_back(g.fid, i);
                     }
                     on_face.erase(it);
@@ -1277,6 +1314,281 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
     }
     if (warnings) *warnings = w;
     return pts;
+}
+
+std::vector<std::vector<SurfaceCurve>> SurfaceMap::curves_to_output(
+    const std::vector<SurfaceCurve>& curves,
+    MapWarnings* warnings) const
+{
+    return map_curves(curves, true, warnings);
+}
+
+std::vector<std::vector<SurfaceCurve>> SurfaceMap::curves_to_input(
+    const std::vector<SurfaceCurve>& curves,
+    MapWarnings* warnings) const
+{
+    return map_curves(curves, false, warnings);
+}
+
+std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
+    const std::vector<SurfaceCurve>& curves,
+    const bool forward,
+    MapWarnings* warnings) const
+{
+    MapWarnings w;
+    // The curves as linked lists of segments, since a step replaces one by several anywhere. A
+    // segment with no image stays in its list, with no face, to mark where a part ends.
+    struct Link
+    {
+        SurfaceSegment s;
+        size_t next;
+    };
+    constexpr size_t kEnd = std::numeric_limits<size_t>::max();
+    std::vector<Link> links;
+    std::vector<size_t> heads;
+    std::unordered_map<uint64_t, std::vector<size_t>> on_face;
+    const auto& alive = forward ? m_in_face_alive : m_out_face_alive;
+    for (const SurfaceCurve& c : curves) {
+        heads.push_back(c.empty() ? kEnd : links.size());
+        for (size_t i = 0; i < c.size(); ++i) {
+            const size_t id = links.size();
+            links.push_back({c[i], i + 1 < c.size() ? id + 1 : kEnd});
+            if (c[i].face < alive.size() && alive[c[i].face]) {
+                on_face[c[i].face].push_back(id);
+            } else {
+                links[id].s.face = kNone;
+                ++w.broken_segments;
+            }
+        }
+    }
+    std::vector<std::pair<uint64_t, size_t>> landed;
+
+    const auto drop = [&](const size_t id) {
+        links[id].s.face = kNone;
+        ++w.broken_segments;
+    };
+    // The segments `id` becomes, in order, the first in its place.
+    const auto replace = [&](const size_t id, const std::vector<SurfaceSegment>& pieces) {
+        const size_t next = links[id].next;
+        size_t last = id;
+        links[id].s = pieces.front();
+        landed.emplace_back(pieces.front().face, id);
+        for (size_t k = 1; k < pieces.size(); ++k) {
+            links.push_back({pieces[k], next});
+            links[last].next = links.size() - 1;
+            last = links.size() - 1;
+            landed.emplace_back(pieces[k].face, last);
+        }
+    };
+    // Coordinates that come from a solve leave a rounding where a zero was.
+    const auto snapped = [](Eigen::Vector3d l) {
+        for (int k = 0; k < 3; ++k) {
+            if (std::abs(l[k]) < 1e-14) l[k] = 0;
+        }
+        const double sum = l.sum();
+        return Eigen::Vector3d(l / sum);
+    };
+    // A corner of a piece on the outline, or a point on an edge of it, is where the cell's other
+    // side has the same corner or edge: it stays there exactly, zeros and all. Elsewhere the point
+    // lands where a point does.
+    const auto land_end =
+        [&](const Face& f, const Eigen::Vector3d& l, const std::vector<Face>& to) -> WalkPoint {
+        if (l[0] == 0 || l[1] == 0 || l[2] == 0) {
+            for (size_t k = 0; k < to.size(); ++k) {
+                if (const auto kept = carry(f.uv, l, to[k].uv)) return {k, *kept};
+            }
+        }
+        const Landing at = land(l[0] * f.uv[0] + l[1] * f.uv[1] + l[2] * f.uv[2], to);
+        if (!at.inside) ++w.unlocated;
+        return {at.piece, snapped(at.l)};
+    };
+
+    const auto visit = [&](const Step& s) {
+        if (s.kind == EditKind::consolidate) {
+            const auto& ids = forward ? s.old_to_new : s.new_to_old;
+            std::unordered_map<uint64_t, std::vector<size_t>> renamed;
+            for (auto& [f, on] : on_face) {
+                const uint64_t g = f < ids.size() ? ids[f] : kNone;
+                for (const size_t id : on) {
+                    if (g == kNone) {
+                        drop(id);
+                    } else {
+                        links[id].s.face = g;
+                    }
+                }
+                if (g != kNone) renamed[g] = std::move(on);
+            }
+            on_face = std::move(renamed);
+            return;
+        }
+        landed.clear();
+        if (s.kind == EditKind::embed) {
+            // A segment keeps its place in space: it is walked over the faces lying on its face,
+            // laid out in that face's plane.
+            const Embedding& em = s.embedding;
+            const auto& from = forward ? em.before : em.after;
+            const auto& to = forward ? em.after : em.before;
+            const auto& candidates = forward ? em.to_after : em.to_before;
+            for (auto& [f, on] : on_face) {
+                if (f >= candidates.size() || candidates[f].empty()) {
+                    for (const size_t id : on) drop(id);
+                    continue;
+                }
+                const auto& c = from[f];
+                const Eigen::Vector3d x = (c[1] - c[0]).normalized();
+                const Eigen::Vector3d n = (c[1] - c[0]).cross(c[2] - c[0]).normalized();
+                const Eigen::Vector3d y = n.cross(x);
+                const auto flat = [&](const Eigen::Vector3d& p) {
+                    return Eigen::Vector2d((p - c[0]).dot(x), (p - c[0]).dot(y));
+                };
+                std::vector<Triangle2> tris;
+                std::vector<uint64_t> faces;
+                for (const uint64_t g : candidates[f]) {
+                    const Triangle2 t = {{flat(to[g][0]), flat(to[g][1]), flat(to[g][2])}};
+                    if (!positive(t[0], t[1], t[2])) continue;
+                    tris.push_back(t);
+                    faces.push_back(g);
+                }
+                const auto end = [&](const Eigen::Vector3d& b) -> std::optional<WalkPoint> {
+                    const Eigen::Vector3d p = b[0] * c[0] + b[1] * c[1] + b[2] * c[2];
+                    double best = -std::numeric_limits<double>::infinity();
+                    std::optional<WalkPoint> at;
+                    for (size_t k = 0; k < faces.size(); ++k) {
+                        const Eigen::Vector3d l = barycentric3(p, to[faces[k]]);
+                        if (std::isfinite(l.minCoeff()) && l.minCoeff() > best) {
+                            best = l.minCoeff();
+                            at = WalkPoint{k, l};
+                        }
+                    }
+                    if (at) {
+                        at->bary = at->bary.cwiseMax(0.);
+                        at->bary /= at->bary.sum();
+                    }
+                    return at;
+                };
+                for (const size_t id : on) {
+                    const SurfaceSegment seg = links[id].s;
+                    const auto a = end(seg.bary[0]), b = end(seg.bary[1]);
+                    const auto walked = a && b ? walk_segment(tris, *a, *b) : std::nullopt;
+                    if (!walked) {
+                        drop(id);
+                        continue;
+                    }
+                    std::vector<SurfaceSegment> pieces;
+                    for (const WalkPiece& p : *walked) pieces.push_back({faces[p.tri], p.bary});
+                    if (pieces.empty()) pieces.push_back({faces[a->tri], {a->bary, a->bary}});
+                    replace(id, pieces);
+                }
+            }
+            on_face.clear();
+            for (const auto& [f, id] : landed) on_face[f].push_back(id);
+            return;
+        }
+        for (const Cell& c : s.cells) {
+            const auto& from = forward ? c.before : c.after;
+            const auto& to = forward ? c.after : c.before;
+            std::vector<Triangle2> to_tris;
+            for (size_t first = 0; first < from.size();) {
+                size_t last = first + 1;
+                while (last < from.size() && from[last].fid == from[first].fid) ++last;
+                const auto it = on_face.find(from[first].fid);
+                if (it != on_face.end()) {
+                    if (to_tris.empty()) {
+                        for (const Face& g : to) to_tris.push_back(g.uv);
+                    }
+                    // A face in pieces bends along their edges: cut it there first, in the face.
+                    std::vector<Triangle2> sub_tris;
+                    for (size_t k = first; k < last && last - first > 1; ++k) {
+                        Triangle2 t;
+                        for (int j = 0; j < 3; ++j) {
+                            t[j] = Eigen::Vector2d(from[k].sub[j][1], from[k].sub[j][2]);
+                        }
+                        sub_tris.push_back(t);
+                    }
+                    for (const size_t id : it->second) {
+                        const SurfaceSegment seg = links[id].s;
+                        std::vector<WalkPiece> parts = {{0, seg.bary}};
+                        if (last - first > 1) {
+                            const auto [a, la] = piece_of(seg.bary[0], from, first, last);
+                            const auto [b, lb] = piece_of(seg.bary[1], from, first, last);
+                            const auto cut = walk_segment(
+                                sub_tris,
+                                {a - first, snapped(la)},
+                                {b - first, snapped(lb)});
+                            if (!cut) {
+                                drop(id);
+                                continue;
+                            }
+                            parts = *cut;
+                            if (parts.empty()) parts = {{a - first, {snapped(la), snapped(la)}}};
+                        }
+                        std::vector<SurfaceSegment> pieces;
+                        bool ok = true;
+                        for (const WalkPiece& part : parts) {
+                            const Face& f = from[first + part.tri];
+                            const WalkPoint a = land_end(f, part.bary[0], to);
+                            const WalkPoint b = land_end(f, part.bary[1], to);
+                            const auto walked = walk_segment(to_tris, a, b);
+                            if (!walked) {
+                                ok = false;
+                                break;
+                            }
+                            const auto in_face = [&](const size_t k, const Eigen::Vector3d& l) {
+                                const Face& g = to[k];
+                                return Eigen::Vector3d(
+                                    l[0] * g.sub[0] + l[1] * g.sub[1] + l[2] * g.sub[2]);
+                            };
+                            for (const WalkPiece& p : *walked) {
+                                pieces.push_back(
+                                    {to[p.tri].fid,
+                                     {in_face(p.tri, p.bary[0]), in_face(p.tri, p.bary[1])}});
+                            }
+                            if (walked->empty()) {
+                                const Eigen::Vector3d e = in_face(a.tri, a.bary);
+                                pieces.push_back({to[a.tri].fid, {e, e}});
+                            }
+                        }
+                        if (ok) {
+                            replace(id, pieces);
+                        } else {
+                            drop(id);
+                        }
+                    }
+                    on_face.erase(it);
+                }
+                first = last;
+            }
+        }
+        for (const uint64_t f : forward ? s.dead : s.born) {
+            const auto it = on_face.find(f);
+            if (it == on_face.end()) continue;
+            for (const size_t id : it->second) drop(id);
+            on_face.erase(it);
+        }
+        for (const auto& [f, id] : landed) on_face[f].push_back(id);
+    };
+
+    if (forward) {
+        for (const Step& s : m_steps) visit(s);
+    } else {
+        for (auto it = m_steps.rbegin(); it != m_steps.rend(); ++it) visit(*it);
+    }
+
+    std::vector<std::vector<SurfaceCurve>> out(curves.size());
+    for (size_t c = 0; c < curves.size(); ++c) {
+        SurfaceCurve part;
+        for (size_t id = heads[c]; id != kEnd; id = links[id].next) {
+            if (links[id].s.face == kNone) {
+                if (!part.empty()) out[c].push_back(std::move(part));
+                part.clear();
+            } else {
+                part.push_back(links[id].s);
+            }
+        }
+        if (!part.empty()) out[c].push_back(std::move(part));
+    }
+    if (warnings) *warnings = w;
+    return out;
 }
 
 std::vector<const SurfaceMap::Cell*> SurfaceMap::cells_of(const size_t edit) const

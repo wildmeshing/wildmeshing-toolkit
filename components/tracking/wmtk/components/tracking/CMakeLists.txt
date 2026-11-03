@@ -8,6 +8,8 @@ endif()
 set(SRC_FILES
 	SurfaceMap.hpp
 	SurfaceMap.cpp
+	segment_walk.hpp
+	segment_walk.cpp
 	CurveMap.hpp
 	CurveMap.cpp
 	VolumeMap.hpp

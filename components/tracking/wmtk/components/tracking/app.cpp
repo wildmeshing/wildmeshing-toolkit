@@ -30,7 +30,7 @@ void log_warnings(const char* what, const MapWarnings& w)
 {
     logger().info(
         "{}: {} warning(s) -- not a disk {}, flat triangle {}, inverted {}, merged faces {}, "
-        "unlocated {}, replaced faces {}",
+        "unlocated {}, replaced faces {}, broken curve segments {}",
         what,
         w.total(),
         w.not_a_disk,
@@ -38,7 +38,8 @@ void log_warnings(const char* what, const MapWarnings& w)
         w.inverted,
         w.merged_faces,
         w.unlocated,
-        w.replaced);
+        w.replaced,
+        w.broken_segments);
     if (w.total() > 0) logger().warn("{}: the map is not a bijection everywhere", what);
 }
 
@@ -287,6 +288,61 @@ void map_points(
         forward ? "output" : "input",
         timer.getElapsedTimeInSec(),
         lost,
+        output_points);
+    log_warnings("mapping", warnings);
+}
+
+/// The map_curves operation: curves on the input to the output, or back. Each line of the file is
+/// a segment, `curve face a0 a1 a2 b0 b1 b2`; a curve's segments are in order.
+void map_surface_curves(
+    const history::SurfaceHistory& h,
+    const nlohmann::json& json_params,
+    const std::filesystem::path& root)
+{
+    using wmtk::utils::resolve_path;
+    if (std::string(json_params["output_points"]).empty()) {
+        log_and_throw_error("map_curves: output_points is required");
+    }
+    const std::string output_points = resolve_path(root, json_params["output_points"]).string();
+    const bool forward = json_params["direction"] == "to_output";
+    igl::Timer timer;
+    timer.start();
+    const SurfaceMap map(h, options_of(json_params));
+    logger().info("map built in {:.3}s", timer.getElapsedTimeInSec());
+    std::vector<SurfaceCurve> curves;
+    for (const auto& r : read_points(resolve_path(root, json_params["points"]).string(), 8)) {
+        const size_t c = size_t(r[0]);
+        if (c >= curves.size()) curves.resize(c + 1);
+        curves[c].push_back(
+            {id_of(r[1]), {Eigen::Vector3d(r[2], r[3], r[4]), Eigen::Vector3d(r[5], r[6], r[7])}});
+    }
+    timer.start();
+    MapWarnings warnings;
+    const auto mapped =
+        forward ? map.curves_to_output(curves, &warnings) : map.curves_to_input(curves, &warnings);
+    const double time = timer.getElapsedTimeInSec();
+    std::ofstream out(output_points);
+    if (!out) log_and_throw_error("Could not write {}", output_points);
+    out.precision(17);
+    size_t in = 0, total = 0;
+    for (const SurfaceCurve& c : curves) in += c.size();
+    for (size_t c = 0; c < mapped.size(); ++c) {
+        for (size_t part = 0; part < mapped[c].size(); ++part) {
+            for (const SurfaceSegment& s : mapped[c][part]) {
+                ++total;
+                out << c << " " << part << " " << s.face;
+                for (const auto& b : s.bary) out << " " << b[0] << " " << b[1] << " " << b[2];
+                out << "\n";
+            }
+        }
+    }
+    logger().info(
+        "{} curves mapped to the {} in {:.3}s: {} segments became {}; written to {}",
+        curves.size(),
+        forward ? "output" : "input",
+        time,
+        in,
+        total,
         output_points);
     log_warnings("mapping", warnings);
 }
@@ -604,7 +660,7 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // through Tracking, CurveTracking and VolumeTracking (wm.Tracking, wm.CurveTracking and
         // wm.VolumeTracking in Python).
         const std::string op = json_params["operation"];
-        if (op == "map" || op == "map_volume") {
+        if (op == "map" || op == "map_curves" || op == "map_volume") {
             throw std::runtime_error(
                 "tracking: operation " + op +
                 " reads and writes files of points; on the memory route only info, transfer, "
@@ -661,6 +717,10 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         history_path,
         timer.getElapsedTimeInSec());
 
+    if (json_params["operation"] == "map_curves") {
+        map_surface_curves(h, json_params, root);
+        return;
+    }
     if (json_params["operation"] == "map") {
         map_points(h, json_params, root);
         return;

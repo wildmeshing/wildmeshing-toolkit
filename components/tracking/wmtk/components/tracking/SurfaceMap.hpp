@@ -19,6 +19,17 @@ struct SurfacePoint
     Eigen::Vector3d bary;
 };
 
+/// A straight piece of a curve: one face, and the barycentric coordinates of its two ends.
+struct SurfaceSegment
+{
+    uint64_t face;
+    std::array<Eigen::Vector3d, 2> bary;
+};
+
+/// A curve on a triangle complex: segments end to end, each on one face. Where a curve goes from
+/// one face to another, it does so on their shared edge or corner.
+using SurfaceCurve = std::vector<SurfaceSegment>;
+
 /// Where a map stops being a bijection. Counted, never fatal: the map still answers.
 struct MapWarnings
 {
@@ -38,10 +49,14 @@ struct MapWarnings
     /// Faces a change no operation describes removed or added (history::EditKind::replace_faces):
     /// points there have nowhere to go.
     size_t replaced = 0;
+    /// Segments of a curve that have no image: on a face with nowhere to go, or across a local map
+    /// that could not be walked. The curve goes on in another part after them.
+    size_t broken_segments = 0;
 
     size_t total() const
     {
-        return not_a_disk + flat_triangle + inverted + merged_faces + unlocated + replaced;
+        return not_a_disk + flat_triangle + inverted + merged_faces + unlocated + replaced +
+               broken_segments;
     }
 };
 
@@ -115,6 +130,24 @@ public:
     /// Points on the first state, mapped onto the last; see to_input.
     std::vector<SurfacePoint> to_output(
         std::vector<SurfacePoint> points,
+        MapWarnings* warnings = nullptr) const;
+
+    /**
+     * @brief Curves on the first state, mapped onto the last, each to the parts it became.
+     *
+     * The image of a curve under the map, not an approximation of it: every local map is piecewise
+     * linear, so the image of a segment is a polyline that bends where the local map does. Each
+     * segment is cut at the local map's edges and nothing is straightened, so a point of a curve
+     * and its point under to_output() agree up to rounding, and curves grow where the map bends.
+     * One part unless a segment has no image (MapWarnings::broken_segments). `warnings`, as in
+     * to_output(); the map is not changed.
+     */
+    std::vector<std::vector<SurfaceCurve>> curves_to_output(
+        const std::vector<SurfaceCurve>& curves,
+        MapWarnings* warnings = nullptr) const;
+    /// Curves on the last state, mapped onto the first; see curves_to_output.
+    std::vector<std::vector<SurfaceCurve>> curves_to_input(
+        const std::vector<SurfaceCurve>& curves,
         MapWarnings* warnings = nullptr) const;
 
     /// What building the map found.
@@ -193,6 +226,8 @@ private:
 
     std::vector<SurfacePoint>
     map(std::vector<SurfacePoint> points, bool forward, MapWarnings* warnings) const;
+    std::vector<std::vector<SurfaceCurve>>
+    map_curves(const std::vector<SurfaceCurve>& curves, bool forward, MapWarnings* warnings) const;
 
     std::vector<Step> m_steps;
     MapWarnings m_build_warnings;
