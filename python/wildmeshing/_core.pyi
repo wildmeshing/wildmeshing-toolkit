@@ -432,11 +432,10 @@ def simwild(options: dict, meshes: dict) -> tuple:
       tight_seal_threshold (float, default -1): For tight_seal_topo: only fill a hole cluster if its total size (area in 2D, volume in 3D, in model units) is less than this threshold.
       tight_seal_geom_tags (list, default []): For tight_seal_geom (2D and 3D): the tags to seal, two or three.
       tight_seal_geom_distance (float, default -1): For tight_seal_geom: the distance d, which must be positive.
-      tight_seal_geom_trace_rel_tol (float, default 0.01): For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the growth's, where the distance to the dilation surface falls to d/2.
+      tight_seal_geom_trace_rel_tol (float, default 0.01): For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the parts' boundary, where the distance to the dilation surface falls to d/2.
       tight_seal_geom_selection (string, default "explicit"): For tight_seal_geom: which regions are sealed.
       tight_seal_geom_min_regions (int, default 2): For tight_seal_geom with tight_seal_geom_selection "detected": a part is filled only if it borders at least this many regions, 2 or 3; parts bordering fewer are left alone, and so are parts bordering four or more (with a warning).
       tight_seal_geom_sanity (bool, default false): For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell carries other than one region's tag, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two regions, which would be a concave feature of one body, filled.
-      tight_seal_geom_join_mode (string, default "marched"): For tight_seal_geom: how the parts the disk (ball) cannot reach are found.
       keep_lcc_tags (list, default []): For keep_lcc: list of tag values for which only the largest connected component is kept.
       keep_lcc_num (int, default 1): Number of largest connected components that are kept.
       resolve_overlaps_tags (list, default []): Resolve intersections between tags by filling the areas with intersections with the nearest of the intersecting tags.

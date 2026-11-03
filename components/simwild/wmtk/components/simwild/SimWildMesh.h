@@ -546,25 +546,18 @@ public:
      * nothing else. The 3D counterpart of SimWildMeshTri::tight_seal_geom.
      *
      * J is the closing of the union R of the R_i by the ball B of diameter `distance`, minus R:
-     * the part of E that B cannot reach. It is found in four steps.
-     *  1. `join_mode` "guaranteed" only: the tets surely in J (the spec's v2): U^ = R and the
-     *     tets whose points are all within distance/2 of R (inside R + B); V^ = the tets of U^
-     *     whose points are all farther than distance/2 from U^'s boundary (inside the closing);
-     *     J^ = V^ minus R. Both tests are certified by conservative subdivision
-     *     (tight_seal::certify_on_cell).
-     *  2. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
-     *  3. A vertex is inside if it is in R + B and d(v, S) > distance/2. "marched" counts it
-     *     inside from (1 - trace_rel_tol) x distance/2 up, so a vertex on the level set is
-     *     never split off by rounding, and counts every vertex of R inside (R lies in the
-     *     closing; S, linear in each tet, can pass closer to R than the level set). The tets
-     *     processed: "guaranteed", conservative growth of all of J^, the tets outside R
-     *     flooded from J^ through faces with a vertex inside; "marched", every tet outside R
-     *     with a vertex inside. Each of their edges from an inside vertex to an outside one is
+     * the part of E that B cannot reach. It is found in three steps.
+     *  1. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
+     *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
+     *  2. A vertex is inside if it is in R + B and d(v, S) > distance/2, counted from
+     *     (1 - trace_rel_tol) x distance/2 up, so a vertex on the level set is never split off
+     *     by rounding; every vertex of R is inside (R lies in the closing; S, linear in each
+     *     tet, can pass closer to R than the level set). Every tet outside R with a vertex
+     *     inside is processed: each of its edges from an inside vertex to an outside one is
      *     split where it leaves J, at d(x, S) = distance/2, sphere traced from the inside end
      *     (to within trace_rel_tol x distance/2; not split if the inside end is already that
-     *     close or closer), edges on R's boundary included in "guaranteed", and J is the
-     *     processed tets whose vertices are all inside.
-     *  4. The connected components of J (through faces) are kept by the rule of `selection`.
+     *     close or closer), and J is the processed tets whose vertices are all inside.
+     *  3. The connected components of J (through faces) are kept by the rule of `selection`.
      * Each component (connected through faces, so two touching at an edge or a vertex are filled
      * separately) is then filled with the Voronoi diagram of its regions, by enumeration
      * (MultiVoronoiEnumeration.hpp): every vertex gets the set of regions nearest to it; each
@@ -582,9 +575,6 @@ public:
      * `sanity`: afterwards, throw if a tet is inverted, a filled tet carries other than one
      * region's tag, or a part of the filled tets borders fewer than two regions (a concave
      * feature of one body, filled).
-     *
-     * `join_mode` "marched" (default) finds J at every vertex of the mesh; "guaranteed" grows J
-     * from the tets surely in it, so a gap with no such tet stays unsealed.
      */
     void tight_seal_geom(
         const std::vector<int64_t>& tags,
@@ -592,8 +582,7 @@ public:
         double trace_rel_tol = 0.01,
         const std::string& selection = "explicit",
         int64_t min_regions = 2,
-        bool sanity = false,
-        const std::string& join_mode = "marched");
+        bool sanity = false);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 

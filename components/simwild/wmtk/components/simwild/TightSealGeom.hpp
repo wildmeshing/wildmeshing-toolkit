@@ -77,47 +77,6 @@ inline constexpr std::array<std::array<int, 2>, 6> tet_edges = {
 /// triples of points).
 void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& triangles);
 
-/// The distance from p to a closed cell: a triangle in 2D, a tet in 3D; 0 inside it.
-double point_cell_distance(const Vector2d& p, const std::array<Vector2d, 3>& cell);
-double point_cell_distance(const Vector3d& p, const std::array<Vector3d, 4>& cell);
-/// The distance from p to the closed triangle (a, b, c) in 3D.
-double
-point_triangle_distance(const Vector3d& p, const Vector3d& a, const Vector3d& b, const Vector3d& c);
-
-/// Relative margin of certify_on_cell's tests, so that rounding can only refute a cell.
-inline constexpr double certify_margin = 1e-12;
-/// certify_on_cell's subdivision levels in 2D and 3D, past which an undecided cell is refuted.
-inline constexpr int certify_depth_2d = 8;
-inline constexpr int certify_depth_3d = 5;
-
-/**
- * @brief Certifies that a 1-Lipschitz function f stays on one side of `level` over a whole cell
- * (a triangle in 2D, a tet in 3D), conservatively: true only if proven.
- *
- * at_most: max over the cell of f <= level; otherwise: min over the cell of f > level. The
- * conservative circle (sphere) subdivision of topological_offset's Circle.hpp and Sphere.hpp: a
- * circle of radius rho around c holds only values within rho of f(c). Starting from the circle
- * around the cell's bounding square (cube), a circle whose values are all on the right side
- * (by the relative margin certify_margin) is certified; the cell is refuted if a corner is not
- * (corner_values, with the margin), or if a circle's centre lies in the cell with f on the wrong
- * side; any other circle is refined into the circles around its square's 2^dim sub-squares that
- * overlap the cell, and refutes the cell once `max_depth` levels down.
- */
-bool certify_on_cell(
-    const std::array<Vector2d, 3>& cell,
-    const std::array<double, 3>& corner_values,
-    const std::function<double(const Vector2d&)>& f,
-    double level,
-    bool at_most,
-    int max_depth);
-bool certify_on_cell(
-    const std::array<Vector3d, 4>& cell,
-    const std::array<double, 4>& corner_values,
-    const std::function<double(const Vector3d&)>& f,
-    double level,
-    bool at_most,
-    int max_depth);
-
 /// Sets `fn` to nullptr when it goes out of scope: m_voronoi_split_fn must not outlive the
 /// operation that set it.
 template <typename Fn>
