@@ -329,23 +329,26 @@ public:
     const OffsetPotential3D& potential_for_face(const Tuple& f) const;
 
     /**
-     * @brief THE ENVELOPES. One, m_envelope (the base's pointer): an Envelope of half-width
-     * envelope_size around every HELD face (face_is_held()), built by build_envelopes() before
-     * anything moves -- after the simplicial embedding, before the repulsion and the march --
-     * and swapped for a wider one only for a TetWild pass (build_final_envelopes()).
-     * The offset surface is held by nothing in the loop; only a TetWild pass holds it, to
-     * m_offset_envelope.
+     * @brief THE ENVELOPES, as in tetwild and simwild. m_envelope (the base's pointer): an
+     * Envelope of half-width envelope_size around every HELD face (face_is_held()), and the base's
+     * m_input_envelopes, one per label over the held faces carrying it, each held face held to
+     * those of its labels (the base's surface_envelope_for_face(); the union with one label or
+     * without per_input_envelopes). A face's labels are its face tags and the tet tags of the
+     * regions it bounds (assign_face_labels()), as simwild's. Built by build_envelopes() before
+     * anything moves -- after the simplicial embedding, before the repulsion and the march -- and
+     * swapped for wider ones only for a TetWild pass (build_final_envelopes()). The offset surface
+     * is held by nothing in the loop; only a TetWild pass holds it, to m_offset_envelope.
      *
      * Which faces are held, asked live of the mesh (the operations carry the cell tags and
      * labels it reads), never stored:
-     * - a domain-wall face (no opposite tet), always;
      * - the input complex's boundary (face_is_complex_boundary()), always;
      * - every other region boundary, only in a TetWild pass (m_tetwild_pass), where
-     *   build_final_envelopes() adds them to m_envelope at their position then. In the loop they
-     *   stay tracked faces -- the operations preserve their topology -- but nothing holds them.
-     * One envelope for all of them, as TetWild's: where two held surfaces meet, a vertex is kept
-     * within eps of their union, not pinned to the junction curve. As archive/spenbert-offset had
-     * it (2026-10-13).
+     *   build_final_envelopes() adds them at their position then. In the loop they stay tracked
+     *   faces -- the operations preserve their topology -- but nothing holds them.
+     * The domain wall is not: the box rule holds it, as in tetwild and simwild (a wall vertex is
+     * not smoothed, collapses only along its walls, and a split of a wall edge stays on it).
+     * Until 2026-11 one envelope held every held face, the wall included, its vertices smoothed
+     * inside it; see smooth_before() for why the wall was held so.
      */
     bool face_is_held(const Tuple& f) const;
     /// A vertex is held when one of its tracked faces is (face_is_held()): the smoother then
@@ -358,6 +361,13 @@ public:
     /// simplicial embedding: the complex has to be labelled for face_is_held(), and it has to
     /// precede the march, whose band replaces the tags of the cells it covers.
     void build_envelopes();
+    /// Give every tracked face off the wall its labels, as input-set bits beside its face tags:
+    /// bit F + t - 1 (F face tags) for each tet tag t in the tag set of exactly one of its two
+    /// tets, ambient (0) carrying none -- simwild's labels (SimWildMesh::init_label_envelopes()) --
+    /// and the envelope surface group's tag (m_sheet_tag) on a face of it.
+    /// Called by build_envelopes(), before the march; the operations carry the bits after. Not
+    /// written: the output takes only the face-tag bits (io::collect_input_set_tags()).
+    void assign_face_labels();
     /// The final pass's envelopes: the offset surface's envelope (build_offset_envelope()), and
     /// m_envelope swapped for one that also holds every other region boundary, at its position as
     /// the loop left it, beside the surfaces build_envelopes() captured (held where they were
@@ -426,8 +436,10 @@ public:
     /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
     std::vector<Eigen::Vector3d> m_held_verts;
     std::vector<Eigen::Vector3i> m_held_tris;
-    /// The loop's m_envelope while the final pass holds its own.
+    std::vector<InputSet> m_held_sets; ///< per m_held_tris row: the face's labels
+    /// The loop's m_envelope and m_input_envelopes while the final pass holds its own.
     std::shared_ptr<Envelope> m_loop_envelope;
+    InputEnvelopes m_loop_input_envelopes;
 
     /// Inside tetwild_pass(): every tracked face is held, the offset surface to m_offset_envelope
     /// (surface_envelope_for_face(), face_is_held()); a front vertex is smoothed like every other
@@ -2171,13 +2183,13 @@ public:
 
     /**
      * @brief The containment of a tracked face an operation has just made (the base asks only
-     * after the fact). A wall face: m_envelope, band or not -- nothing leaves the domain box.
-     * The offset surface: nothing in the loop, m_offset_envelope in a TetWild pass. Any other
-     * tracked face: m_envelope when it is held (face_is_held()), else nothing.
+     * after the fact). The offset surface: nothing in the loop, m_offset_envelope in a TetWild
+     * pass. A held face (face_is_held()): the base's rule, the envelopes of its labels. Any other
+     * tracked face, the domain wall among them (the box rule holds it): nothing.
      */
     std::shared_ptr<Envelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids,
-        const FaceAttributes& /*attr*/) const override
+        const FaceAttributes& attr) const override
     {
         const auto found = try_tuple_from_face(vids);
         if (!found) return m_envelope; // not reached: every caller asks about an existing face
@@ -2185,7 +2197,7 @@ public:
         if (f.switch_tetrahedron(*this) && face_is_offset_surface_live(f)) {
             return m_tetwild_pass ? m_offset_envelope : nullptr;
         }
-        return face_is_held(f) ? m_envelope : nullptr;
+        return face_is_held(f) ? TetOptimizerMesh::surface_envelope_for_face(vids, attr) : nullptr;
     }
 
     /// No test of the collapsing edge (TetOptimizerMesh::collapsing_edge_envelope()) yet: the
@@ -2259,33 +2271,33 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
-    /// A held vertex is pulled to and contained in m_envelope -- a real Envelope, as the
-    /// pull requires. In a TetWild pass a front vertex no other envelope holds is pulled to and
-    /// contained in the front's own envelope, m_offset_envelope (one on another held surface too
-    /// keeps m_envelope, which its front faces are not in, so it stays where it is). Any other
-    /// vertex, and the front in the loop, is held by nothing.
+    /// A held vertex is pulled by the base's rule, toward the labels of its faces (the member it
+    /// is farthest from), as in tetwild and simwild. In a TetWild pass a front vertex no other
+    /// envelope holds is pulled to the front's own envelope, m_offset_envelope. Any other vertex,
+    /// and the front in the loop, is pulled by nothing. Until 2026-11 a held vertex was pulled to
+    /// the one union envelope, so onto another label's surface as readily as its own.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
     {
-        return smoothing_envelope(vid);
+        if (vertex_is_held(vid)) return TetOptimizerMesh::smoothing_energy_envelope(vid);
+        if (m_tetwild_pass && m_vertex_extra[vid].m_is_on_offset) return m_offset_envelope;
+        return nullptr;
     }
+    /// Whether anything holds this vertex: what FrontSmooth3d asks before reading its faces.
     std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const
-    {
-        return smoothing_envelope(vid);
-    }
-    std::shared_ptr<Envelope> smoothing_envelope(const size_t vid) const
     {
         if (vertex_is_held(vid)) return m_envelope;
         if (m_tetwild_pass && m_vertex_extra[vid].m_is_on_offset) return m_offset_envelope;
         return nullptr;
     }
-    /// The smoother holds every tracked face at a held vertex to that one envelope, whatever the
-    /// face: the per-vertex answer above, not the base's per-face one.
+    /// The smoother holds each tracked face at a vertex to its own containment, the base's
+    /// per-face answer (surface_envelope_for_face() above), as in tetwild and simwild. Until
+    /// 2026-11 every tracked face at a held vertex was held to the one union envelope.
     std::shared_ptr<Envelope> smoothing_containment_envelope(
-        const size_t vid,
-        const std::array<size_t, 3>& /*face*/,
-        const FaceAttributes& /*attr*/) const override
+        const size_t /*vid*/,
+        const std::array<size_t, 3>& face,
+        const FaceAttributes& attr) const override
     {
-        return smoothing_containment_envelope(vid);
+        return surface_envelope_for_face(face, attr);
     }
 
     /**

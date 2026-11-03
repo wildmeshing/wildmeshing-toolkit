@@ -381,6 +381,7 @@ struct Parameters : public wmtk::OptimizerParameters
         optimize_offset = json_params["optimize_offset"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
+        per_input_envelopes = json_params["per_input_envelopes"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
         front_conv = json_params["front_conv"];

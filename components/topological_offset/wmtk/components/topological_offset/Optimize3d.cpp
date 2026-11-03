@@ -1913,15 +1913,19 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     pre = {ring_max_quality(vid), m_vertex_attribute[vid].m_posf};
     if (pre.first >= kNeedleQuality) ++m_needle_smooth_offered;
 
-    // The base's smooth_before minus its bounding-box refusal, which is why this does not call
-    // it: the base freezes every vertex on the domain wall. Here the wall is a region boundary
-    // held in ambient's tag envelope like any other, so its vertices are smoothed and the
-    // containment check decides whether the move survives. As in 2D.
-    //
-    // Rounding still has to happen, and its failure still refuses the move.
+    // The base's smooth_before, counted: rounding has to happen, and its failure refuses the
+    // move; a vertex on the domain wall is not smoothed, the box rule holding the wall as in
+    // tetwild and simwild. Until 2026-11 the wall was held in an envelope and its vertices
+    // smoothed inside it: with the wall frozen and its edges unsplittable, a tet resting on the box
+    // had bisected onto the plane, max AMIPS 6.9e21 against 364 held so (2026-08). Wall edges
+    // split now (the base's split_edge_after() keeps the new vertex on the walls both ends share).
     const bool rounded_now = round(t);
     if (!m_vertex_attribute[vid].m_is_rounded && !rounded_now) {
         ++m_smooth_trace.before_unrounded;
+        return false;
+    }
+    if (!m_vertex_attribute[vid].on_bbox_faces.empty()) {
+        ++m_smooth_trace.before_bbox;
         return false;
     }
 

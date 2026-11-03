@@ -565,6 +565,7 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       throw_on_nonconvergence (bool, default false): If true, a run that finishes without meeting the convergence criteria raises an error instead of logging a warning.
       optimize_offset (bool, default true): Run the optimization (optimize_offset: pre-loop setup, the loop's turns, the final pass and the convergence verdict) after the offset is constructed.
       envelope_size_rel (float, default 0.001): Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it.
+      per_input_envelopes (bool, default true): Hold each input to its own envelopes.
       envelope_size (float, default -1.0): Absolute half-width of the envelope that holds the held surfaces (see envelope_size_rel).
       offset_field (string, default "euclidean"): Which field defines the offset, and so what the front is placed on, what the criterion measures and what the sizing field refines by.
       offset_dhat_factor (float, default 2.0): Support radius of the smooth offset potential, as a multiple of target_distance.

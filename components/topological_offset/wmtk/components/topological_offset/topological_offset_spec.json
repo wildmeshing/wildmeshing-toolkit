@@ -21,6 +21,7 @@
       "optimize_offset",
       "envelope_size",
       "envelope_size_rel",
+      "per_input_envelopes",
       "offset_field",
       "offset_dhat_factor",
       "front_conv",
@@ -204,6 +205,12 @@
     "type": "float",
     "default": 0.001,
     "doc": "Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built after the simplicial embedding, before the repulsion and the march: during the loop the domain wall and the input complex's boundary; in a TetWild pass (the final pass, and optimize_construction's) every other region boundary as well, at its position then (see use_rest_pose). The offset surface is never in it, but in a TetWild pass it is held to an envelope of its own with this same eps (since 2026-10-20, when offset_envelope / offset_envelope_rel were removed; optimize_construction's pass holds it to half the traced distance instead). This eps is also the derived sizing floor when min_edge_length_rel is negative. 2D: one envelope per region tag, as before. Ignored if envelope_size > 0."
+  },
+  {
+    "pointer": "/per_input_envelopes",
+    "type": "bool",
+    "default": true,
+    "doc": "Hold each input to its own envelopes. An input is a label: a face tag, or the tet tag of a region a held face bounds. With two or more, each held face (the input complex's boundary) is held to the envelopes of its own labels, and a held vertex pulled toward them, as in tetwild and simwild. false: one shared envelope for all labels, as until 2026-11, where a face of one label may end up on another's surface within envelope_size."
   },
   {
     "pointer": "/envelope_size",
