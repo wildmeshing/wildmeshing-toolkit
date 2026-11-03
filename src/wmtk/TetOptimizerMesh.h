@@ -1053,6 +1053,16 @@ public:
         return m_input_envelopes.containment(attr.input_set());
     }
 
+    /**
+     * @brief The envelope a collapsing edge must lie in when both its ends are on the surface
+     * and it is on no tracked face (TetOptimizerMesh::collapse_edge_before()); null skips the
+     * test. The default is the union, m_envelope, as 2D answers an untracked segment.
+     */
+    virtual std::shared_ptr<Envelope> collapsing_edge_envelope(size_t /*v1*/, size_t /*v2*/) const
+    {
+        return m_envelope;
+    }
+
     /// Whether the tracked-surface triangle (a,b,c) with attributes `attr` (see
     /// surface_envelope_for_face()) is outside its containment envelope. False when it has none.
     /// Every surface containment check in the operations goes through here.
@@ -1515,6 +1525,7 @@ protected:
         surface_leaves_envelope, // v1 on the surface, v2 not, and v2 not inside the envelope
         inverted, // a cell the collapse reshapes would invert
         quality, // collapse_quality_allowed() said no
+        edge_leaves_envelope, // both ends on the surface, the edge on none and outside the envelope
         substructure_link, // preserve_topology, both ends on the surface: substructure link
         feature_leaves_tube, // an edge tagged `feature` the collapse moves would leave its tube
         order2_leaves_tube, // an edge tagged `order2` the collapse moves would leave its tube

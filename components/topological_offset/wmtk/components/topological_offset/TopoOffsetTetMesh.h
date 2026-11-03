@@ -2188,6 +2188,15 @@ public:
         return face_is_held(f) ? m_envelope : nullptr;
     }
 
+    /// No test of the collapsing edge (TetOptimizerMesh::collapsing_edge_envelope()) yet: the
+    /// front's vertices are surface vertices that move by design and lie outside m_envelope, so
+    /// the base's union would refuse the front's collapses. It comes with the offset following
+    /// the other apps' envelope rules.
+    std::shared_ptr<Envelope> collapsing_edge_envelope(size_t, size_t) const override
+    {
+        return nullptr;
+    }
+
     /// Surface edges may be flipped, as a topology-preserving diagonal flip. Both tracked
     /// surfaces need it: the offset surface is re-triangulated constantly.
     bool allow_surface_swap() const override { return true; }

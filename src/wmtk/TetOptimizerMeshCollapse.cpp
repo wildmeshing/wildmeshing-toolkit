@@ -213,6 +213,25 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     }
     assert(cache.changed_energies.size() == cache.changed_tids.size());
 
+    // If both vertices are on the surface and the edge is on no tracked face, the collapsing
+    // edge itself must be inside the envelope (collapsing_edge_envelope()), as in 2D
+    // (TriOptimizerMesh::collapse_edge_before()). The check of every face the collapse keeps
+    // does not cover it: the envelope is one-sided and the union of a whole input's faces, so
+    // a surface vertex moved through a solid onto another surface of its input keeps every
+    // face on a surface while the solid between folds away. Until 2026-11 3D had no such rule;
+    // measured on orientation-configurations (a box resting on a plate and the rest), 1956
+    // such collapses were tried, refused by the quality gate (976), which the coarsening pass
+    // skips, by the inversion test (967) and by the faces' own check (13), none by a rule of
+    // their own. After the energies, as in 2D: the exact segment test is the expensive one.
+    if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface &&
+        get_num_surface_faces_for_edge({{v1_id, v2_id}}) == 0) {
+        const std::shared_ptr<Envelope> env = collapsing_edge_envelope(v1_id, v2_id);
+        if (env &&
+            env->is_outside(std::array<Eigen::Vector3d, 2>{{VA[v1_id].m_posf, VA[v2_id].m_posf}})) {
+            return collapse_reject(CollapseReject::edge_leaves_envelope);
+        }
+    }
+
     //
     const auto n12_locs = get_incident_tids_for_edge(loc); // todo: duplicated computation
     for (const size_t& tid : n12_locs) {
@@ -562,6 +581,7 @@ const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
     case CollapseReject::surface_leaves_envelope: return "surface_leaves_envelope";
     case CollapseReject::inverted: return "inverted";
     case CollapseReject::quality: return "quality";
+    case CollapseReject::edge_leaves_envelope: return "edge_leaves_envelope";
     case CollapseReject::substructure_link: return "substructure_link";
     case CollapseReject::feature_leaves_tube: return "feature_leaves_tube";
     case CollapseReject::order2_leaves_tube: return "order2_leaves_tube";
