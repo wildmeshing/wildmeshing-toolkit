@@ -96,8 +96,10 @@ ExternalProject_Add(
     # eps_rel. simwild's eps_rel and eps_simplify_rel are now relative to the same diagonal, so
     # equal values ask for a simplification at the full eps, which envelope_reference "input"
     # refuses; until then the simplification measured a diagonal 1.22x smaller on this case.
+    # At f5e1ddd (2026-11-03, same branch) that config drops skip_simplify, which the toolkit
+    # renamed simplify and simwild refuses; it set the default, so the run is unchanged.
     #
-    GIT_TAG 1cf750d6d5806d71d8c35f9f32f4ad466cda9d7d
+    GIT_TAG f5e1ddd14351e621ad9a1c9cadc2a07e8841b250
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
