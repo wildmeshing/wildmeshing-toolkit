@@ -218,20 +218,12 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     }
     assert(cache.changed_energies.size() == cache.changed_fids.size());
 
-    // If both vertices are on the surface, the collapsing edge should be inside the envelope.
-    // After the energies, as 3D tests its tubes after quality: the exact segment test is the
-    // expensive one, and a collapse the quality gate refuses never pays for it.
-    //
-    // The edge is not tracked, so it covers no input: its own (empty) attributes go to the
-    // hook, and triwild answers an untracked segment with the union, as before -- a necessary
-    // condition where tracked segments are held to their own inputs.
-    if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
-        const size_t eid = loc.eid(*this);
-        if (!m_edge_attribute.at(eid).m_is_surface_fs &&
-            surface_segment_is_outside(v1_id, v2_id, m_edge_attribute.at(eid))) {
-            return false;
-        }
-    }
+    // No test of the collapsing edge itself when both its vertices are on the surface: the edge
+    // disappears in the collapse. The topology is the link condition's (under preserve_topology
+    // an edge of lower order than both its vertices never collapses), and the geometry is the
+    // check of every segment the collapse makes (collapse_edge_after()). Until 2026-11 an
+    // untracked edge between two surface vertices had to lie inside the union envelope (triwild,
+    // since 2026-06); that held neither, and 3D never had it.
 
 
     //

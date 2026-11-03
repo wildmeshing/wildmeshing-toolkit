@@ -1032,10 +1032,10 @@ public:
      * SurfaceTagAttributes::m_surface_class) answers per class -- the offset boundary, for
      * instance, is free to move and is checked against nothing.
      *
-     * A face that is not tracked covers no input and is held to the union, m_envelope, as in
-     * 2D. A tracked face with an empty input set throws (InputEnvelopes): it is an insertion or
-     * propagation defect. Until 2026-11 simwild held such a face to m_envelope instead; no
-     * simwild configuration of the integration and challenging sets has one.
+     * Asked about tracked faces only: no operation holds an untracked one to an envelope, as in
+     * 2D. One with an empty input set throws (InputEnvelopes): it is an insertion or propagation
+     * defect. Until 2026-11 simwild held such a face to m_envelope instead; no simwild
+     * configuration of the integration and challenging sets has one.
      *
      * Keyed on the vertex ids rather than the fid because every caller is a topological
      * operation asking about the triangles it is ABOUT to create or has just created, where
@@ -1049,7 +1049,7 @@ public:
         const std::array<size_t, 3>& vids,
         const FaceAttributes& attr) const
     {
-        if (m_input_envelopes.empty() || !attr.m_is_surface_fs) return m_envelope;
+        if (m_input_envelopes.empty()) return m_envelope;
         return m_input_envelopes.containment(attr.input_set());
     }
 
