@@ -149,8 +149,6 @@ public:
     // is_open_boundary_edge(), which classified edges by the flags and the tube.
 
 
-    /// Envelope a vertex is pulled toward while smoothing.
-    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
     TetWildMesh(Parameters& _m_params, std::shared_ptr<Envelope> _m_envelope, int _num_threads = 1)
         : wmtk::TetOptimizerMesh(_m_params, std::move(_m_envelope))
         , m_tet_params(_m_params)

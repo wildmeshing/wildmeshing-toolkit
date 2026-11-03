@@ -1239,10 +1239,17 @@ public:
     }
     /**
      * @brief Envelope a surface vertex is pulled toward while smoothing. A real envelope, never a
-     * composite (see smoothing_containment_envelope()). A derived mesh may select an order-2 or
-     * feature envelope here.
+     * composite (see smoothing_containment_envelope()).
+     *
+     * By default a vertex on a tagged curve is pulled toward its tube, the feature tube first
+     * (tagged_edge_pull_envelope()). Else, with per-input envelopes, toward the inputs of the
+     * vertex's own faces, one real envelope at a time: the member of their union of input sets
+     * the vertex is farthest from, since the containment holds every face to its own set, so a
+     * vertex where a solid's boundary meets a sheet is pulled to whichever it strays from most.
+     * Else, and for a vertex on no tracked face, the union, m_envelope. tetwild's and simwild's,
+     * the same code in both, moved here; topological_offset asks it for a held vertex.
      */
-    virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const = 0;
+    virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const;
 
     /**
      * @brief An extra term the application adds to this vertex's smoothing objective, or null.

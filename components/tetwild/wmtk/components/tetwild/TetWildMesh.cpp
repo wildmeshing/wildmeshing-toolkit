@@ -62,34 +62,6 @@ void TetWildMesh::optimization_sanity_checks_extra()
     }
 }
 
-std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
-{
-    // A vertex on a tagged curve is pulled toward its tube, the feature tube first; shared with
-    // simwild (tagged_edge_pull_envelope()).
-    if (auto tube = tagged_edge_pull_envelope(vid)) {
-        return tube;
-    }
-    if (m_input_envelopes.empty()) return m_envelope;
-    // Several inputs: toward the inputs of the vertex's own faces, one real envelope at a time
-    // -- the member of their union of input sets the vertex is farthest from, as
-    // topological_offset pulls a junction vertex. The containment check holds every face to its
-    // own set, so a vertex where the solid's boundary meets a sheet is pulled to whichever it
-    // strays from most. A vertex flagged on the surface with no tracked face left (a stale
-    // flag) has no inputs, and keeps the union's pull.
-    InputSet set = 0;
-    const auto& FA = std::as_const(m_face_attribute);
-    // Named, not iterated as a temporary: faces() returns a reference into the collection, which
-    // a range-for over get_surface_faces_for_vertex(vid).faces() destroys before the first
-    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
-    const simplex::SimplexCollection surf = get_surface_faces_for_vertex(vid);
-    for (const simplex::Face& f : surf.faces()) {
-        set |= FA[std::get<1>(tuple_from_face(f.vertices()))].input_set();
-    }
-    if (set == 0) return m_envelope;
-    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
-}
-
-
 void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
     logger().set_level(spdlog::level::level_enum::debug);
