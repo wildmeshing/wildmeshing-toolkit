@@ -446,7 +446,8 @@ public:
     std::vector<InputSet> m_held_sets; ///< per m_held_tris row: the face's labels
     /// The loop's m_envelope and m_input_envelopes while the final pass holds its own.
     std::shared_ptr<Envelope> m_loop_envelope;
-    InputEnvelopes m_loop_input_envelopes;
+    /// m_input_envelopes' members, kept by copy: InputEnvelopes itself is not copyable.
+    std::vector<std::shared_ptr<Envelope>> m_loop_input_members;
 
     /// Inside tetwild_pass(): every tracked face is held, the offset surface to m_offset_envelope
     /// (surface_envelope_for_face(), face_is_held()); a front vertex is smoothed like every other
