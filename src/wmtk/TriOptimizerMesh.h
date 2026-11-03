@@ -905,11 +905,10 @@ public:
      * application tracking more than one surface (see SurfaceTagAttributes::m_surface_class)
      * answers per class.
      *
-     * Asked about tracked segments only: no operation holds an untracked one to an envelope.
-     * One with an empty input set throws (InputEnvelopes), whether an insertion or propagation
-     * defect left it so or a caller passed an untracked segment. Until 2026-11 an untracked
-     * segment was answered with the union, m_envelope, for the collapse's test of the collapsing
-     * edge itself, which is gone (TriOptimizerMesh::collapse_edge_before()).
+     * A segment that is not tracked covers no input -- the collapse's test of the collapsing
+     * edge asks about one (TriOptimizerMesh::collapse_edge_before()) -- and is held to the union,
+     * m_envelope. A tracked segment with an empty input set throws (InputEnvelopes): it is an
+     * insertion or propagation defect.
      *
      * Keyed on the vertex ids rather than the eid because every caller is a topological
      * operation asking about segments it is ABOUT to create or has just created; the attributes
@@ -919,7 +918,7 @@ public:
         const std::array<size_t, 2>& vids,
         const EdgeAttributes& attr) const
     {
-        if (m_input_envelopes.empty()) return m_envelope;
+        if (m_input_envelopes.empty() || !attr.m_is_surface_fs) return m_envelope;
         return m_input_envelopes.containment(attr.input_set());
     }
 
