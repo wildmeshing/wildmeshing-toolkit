@@ -553,15 +553,18 @@ public:
      *     J^ = V^ minus R. Both tests are certified by conservative subdivision
      *     (tight_seal::certify_on_cell).
      *  2. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
-     *  3. A vertex is inside if it is in R + B and d(v, S) > distance/2 ("marched": farther than
-     *     (1 + trace_rel_tol) x distance/2, so that vertices on the level set, such as R's where
-     *     S is R's own offset, are outside whatever the rounding). The tets processed:
-     *     "guaranteed", conservative growth of all of J^, the tets outside R flooded from J^
-     *     through faces with a vertex inside; "marched", every tet outside R with a vertex
-     *     inside. Each of their edges from an inside vertex to an outside one is split where it
-     *     leaves J, at d(x, S) = distance/2, sphere traced from the inside end (to within
-     *     trace_rel_tol x distance/2), edges on R's boundary included, and J is the processed
-     *     tets with all vertices inside.
+     *  3. A vertex is inside if it is in R + B and d(v, S) > distance/2. "marched" gives it one
+     *     of three states: outside (d(v, S) below (1 - trace_rel_tol) x distance/2, or outside
+     *     R + B), on J's boundary (within trace_rel_tol x distance/2 of distance/2) or inside
+     *     (above (1 + trace_rel_tol) x distance/2), so that a vertex on the level set, such as
+     *     R's where S is R's own offset, is never split off by rounding, and one just inside it
+     *     still belongs to J. The tets processed: "guaranteed", conservative growth of all of
+     *     J^, the tets outside R flooded from J^ through faces with a vertex inside; "marched",
+     *     every tet outside R with a vertex inside or on J's boundary. Each of their edges
+     *     from an inside vertex to an outside one is split where it leaves J, at d(x, S) =
+     *     distance/2, sphere traced from the inside end (to within trace_rel_tol x distance/2),
+     *     edges on R's boundary included, and J is the processed tets whose vertices are all
+     *     inside or on J's boundary.
      *  4. The connected components of J (through faces) are kept by the rule of `selection`.
      * Each component (connected through faces, so two touching at an edge or a vertex are filled
      * separately) is then filled with the Voronoi diagram of its regions, by enumeration

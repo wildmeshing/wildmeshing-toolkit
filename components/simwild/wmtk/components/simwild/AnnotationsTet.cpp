@@ -819,23 +819,43 @@ void SimWildMesh::tight_seal_geom(
             };
 
             // 3. A vertex is inside if it lies in R + B (d(v, R) < d/2) with d(v, S) > d/2: in
-            // the closing. "marched" asks d(v, S) > d/2 + tol, so that a vertex on the level set
-            // (such as a vertex of R where the dilation surface is R's own offset) counts as
-            // outside whatever the rounding. The tets to process: "guaranteed", conservative
-            // growth of all of J^ (the vertices of J^'s tets are inside too, and the tets outside
-            // R are flooded from J^ through faces with a vertex inside); "marched", every tet
-            // outside R with a vertex inside. Each edge of those tets from an inside vertex to an
-            // outside one is split where d(x, S) falls to d/2, sphere traced from the inside end:
-            // d(x, S) is 1-Lipschitz, so a step of d(x, S) - d/2 cannot cross the level set, and
-            // the trace stops within the tolerance of it (as TopoOffsetTetMesh's marching sphere
-            // trace). Edges on R's boundary are split too, and so are the tets of R on them
-            // (their children keep R's tags). J is then the processed tets whose vertices are all
-            // inside or on the level set.
-            const double inside_level = marched ? radius + tol : radius;
-            std::vector<char> inside(vert_capacity(), 0);
+            // the closing. "marched" gives each vertex one of three states by d(v, S): outside
+            // (below (1 - tol) x d/2, or outside R + B), on J's boundary (within tol x d/2 of
+            // d/2) or inside (above (1 + tol) x d/2). A vertex on the level set whatever the
+            // rounding (such as a vertex of R where the dilation surface is R's own offset) is
+            // never split off, and one just inside it still belongs to J. The tets to process:
+            // "guaranteed", conservative growth of all of J^ (the vertices of J^'s tets are
+            // inside too, and the tets outside R are flooded from J^ through faces with a vertex
+            // inside); "marched", every tet outside R with a vertex inside or on J's boundary.
+            // Each edge of those tets from an inside vertex to an outside one is split where
+            // d(x, S) falls to d/2 (an edge from a vertex on J's boundary is not: that vertex is
+            // already on the level set), sphere traced from the inside end: d(x, S) is
+            // 1-Lipschitz, so a step of d(x, S) - d/2 cannot cross the level set, and the trace
+            // stops within the tolerance of it. Edges on R's boundary are split too, and so are
+            // the tets of R on them (their children keep R's tags). J is then the processed
+            // tets whose vertices are all inside or on the level set.
+            std::vector<char> inside(vert_capacity(), 0); // inside J or on its boundary
+            std::vector<char> strictly(vert_capacity(), 0); // "marched": inside, off the boundary
+            size_t n_inside = 0;
+            size_t n_on = 0;
             for (const Tuple& t : get_vertices()) {
                 const size_t vid = t.vid(*this);
-                inside[vid] = dR[vid] < radius && dist_S(pos(vid)) > inside_level;
+                if (marched) {
+                    const double ds = dR[vid] < radius ? dist_S(pos(vid)) : 0.;
+                    strictly[vid] = ds > radius + tol;
+                    inside[vid] = ds >= radius - tol;
+                    n_inside += strictly[vid];
+                    n_on += inside[vid] && !strictly[vid];
+                } else {
+                    inside[vid] = dR[vid] < radius && dist_S(pos(vid)) > radius;
+                }
+            }
+            if (marched) {
+                logger().info(
+                    "tight_seal_geom: marched: {} vertices inside J, {} on its boundary (within "
+                    "the tolerance of d/2 from S)",
+                    n_inside,
+                    n_on);
             }
             std::vector<size_t> flooded;
             std::vector<char> in_flood(tet_capacity(), 0);
@@ -881,11 +901,16 @@ void SimWildMesh::tight_seal_geom(
                     }
                 }
             }
+            // the edges J's boundary crosses: from inside to outside ("marched": strictly inside)
+            const auto crosses_level = [&](const size_t u, const size_t w) {
+                return marched ? (strictly[u] && !inside[w]) || (strictly[w] && !inside[u])
+                               : inside[u] != inside[w];
+            };
             std::vector<simplex::Edge> split_edges;
             for (const size_t tid : flooded) {
                 const auto vs = oriented_tet_vids(tid);
                 for (const auto& [a, b] : tight_seal::tet_edges) {
-                    if (inside[vs[a]] != inside[vs[b]]) {
+                    if (crosses_level(vs[a], vs[b])) {
                         split_edges.emplace_back(vs[a], vs[b]);
                     }
                 }

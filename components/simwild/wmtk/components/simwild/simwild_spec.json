@@ -639,7 +639,7 @@
       "guaranteed",
       "marched"
     ],
-    "doc": "For tight_seal_geom: how the parts the disk (ball) cannot reach are found. \"guaranteed\": from the cells surely unreachable (certified, whole cells), grown by sphere tracing to where the disk's reach begins; a gap with no such cell, only a few cells wide, stays unsealed. \"marched\": every vertex within d/2 of the regions is inside if it is farther than (1 + tight_seal_geom_trace_rel_tol) x d/2 from the dilation surface (where the distance to the regions is d/2), and each edge of the cells outside the regions from an inside vertex to an outside one is split where that distance falls to d/2."
+    "doc": "For tight_seal_geom: how the parts the disk (ball) cannot reach are found. \"guaranteed\": from the cells surely unreachable (certified, whole cells), grown by sphere tracing to where the disk's reach begins; a gap with no such cell, only a few cells wide, stays unsealed. \"marched\": every vertex within d/2 of the regions is inside if it is farther than (1 + tight_seal_geom_trace_rel_tol) x d/2 from the dilation surface (where the distance to the regions is d/2), on the parts' boundary if it is within tight_seal_geom_trace_rel_tol x d/2 of d/2, and outside otherwise; each edge of the cells outside the regions from an inside vertex to an outside one is split where that distance falls to d/2, and a cell whose vertices are all inside or on the boundary is in a part."
   },
   {
     "pointer": "/keep_lcc_tags",
