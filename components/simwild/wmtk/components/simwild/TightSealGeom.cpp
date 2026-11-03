@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <tuple>
 #include <unordered_set>
 
 namespace wmtk::components::simwild::tight_seal {
@@ -471,6 +472,35 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
     return v_new;
 }
 
+size_t SimWildMeshTri::tight_seal_split_face_tracked(
+    const size_t fid,
+    const Vector2d& p,
+    std::unordered_set<size_t>& faces,
+    std::vector<char>& filled)
+{
+    const bool in_set = faces.count(fid) > 0;
+    const char parent_filled = filled[fid];
+    const Tuple t = tuple_from_tri(fid);
+    reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+    m_face_split_position = p;
+    std::vector<Tuple> new_tris;
+    const bool ok = split_face(t, new_tris);
+    m_face_split_position.reset();
+    if (!ok) {
+        return size_t(-1);
+    }
+    const size_t v_new = m_last_split_vertex;
+    faces.erase(fid);
+    filled.resize(tri_capacity(), 0);
+    for (const size_t f : get_one_ring_fids_for_vertex(v_new)) {
+        filled[f] = parent_filled;
+        if (in_set) {
+            faces.insert(f);
+        }
+    }
+    return v_new;
+}
+
 void SimWildMeshTri::tight_seal_geom_sanity(
     const std::vector<int64_t>& tags,
     const std::vector<char>& filled) const
@@ -647,17 +677,22 @@ size_t SimWildMesh::tight_seal_split_tracked(
     const simplex::Edge& e,
     std::unordered_set<size_t>& cells,
     std::vector<char>& filled,
-    const std::function<void(size_t, size_t)>& on_child)
+    const std::function<void(size_t, size_t)>& on_child,
+    std::vector<int>* cell_group)
 {
     const auto [e0, e1] = e.vertices();
     const Tuple t = tuple_from_edge(e.vertices());
 
     // Each tet on the edge gives two children, which keep the tet's edge opposite the split
-    // edge. Record by that edge whether the tet is in the set, and whether it was filled.
+    // edge. Record by that edge whether the tet is in the set, whether it was filled, and its
+    // group.
     const std::vector<size_t> parents = get_incident_tids_for_edge(t);
-    std::map<simplex::Edge, std::pair<bool, char>> parent_state;
+    std::map<simplex::Edge, std::tuple<bool, char, int>> parent_state;
     for (const size_t tid : parents) {
-        parent_state[simplex_from_tet(tid).opposite_edge(e)] = {cells.count(tid) > 0, filled[tid]};
+        parent_state[simplex_from_tet(tid).opposite_edge(e)] = {
+            cells.count(tid) > 0,
+            filled[tid],
+            cell_group ? (*cell_group)[tid] : -1};
     }
 
     std::vector<Tuple> new_edges;
@@ -671,6 +706,9 @@ size_t SimWildMesh::tight_seal_split_tracked(
         cells.erase(tid);
     }
     filled.resize(tet_capacity(), 0);
+    if (cell_group) {
+        cell_group->resize(tet_capacity(), -1);
+    }
     const std::vector<size_t> children = get_one_ring_tids_for_vertex(v_new);
     for (const size_t tid : children) {
         size_t end_vid = -1;
@@ -689,8 +727,11 @@ size_t SimWildMesh::tight_seal_split_tracked(
         if (it == parent_state.end()) {
             log_and_throw_error("Could not find the parent of a tet after a split.");
         }
-        const auto [in_set, parent_filled] = it->second;
+        const auto [in_set, parent_filled, parent_group] = it->second;
         filled[tid] = parent_filled;
+        if (cell_group) {
+            (*cell_group)[tid] = parent_group;
+        }
         if (!in_set) {
             continue; // outside the set, keeps its tags
         }

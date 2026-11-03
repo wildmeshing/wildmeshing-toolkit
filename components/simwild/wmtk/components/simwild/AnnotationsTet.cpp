@@ -594,9 +594,9 @@ void SimWildMesh::tight_seal_geom(
             "tight_seal_geom: join_mode must be \"guaranteed\" or \"marched\". Input was {}",
             join_mode);
     }
-    if (detected && min_regions < 2) {
+    if (detected && (min_regions < 2 || min_regions > 3)) {
         log_and_throw_error(
-            "tight_seal_geom: min_regions must be at least 2. Input was {}",
+            "tight_seal_geom: min_regions must be 2 or 3. Input was {}",
             min_regions);
     }
     if (!detected && min_regions != 2) {
@@ -623,8 +623,8 @@ void SimWildMesh::tight_seal_geom(
         tags.assign(found.begin(), found.end());
     } else {
         tags = listed_tags;
-        if (tags.size() < 2) {
-            log_and_throw_error("tight_seal_geom needs at least two tags. Input was {}", tags);
+        if (tags.size() < 2 || tags.size() > 3) {
+            log_and_throw_error("tight_seal_geom needs two or three tags. Input was {}", tags);
         }
         if (CellTag(tags.begin(), tags.end()).size() != tags.size()) {
             log_and_throw_error("tight_seal_geom needs distinct tags. Input was {}", tags);
@@ -963,6 +963,7 @@ void SimWildMesh::tight_seal_geom(
             };
             std::vector<int> comp_id(tet_capacity(), -1);
             size_t n_components = 0;
+            size_t n_too_many = 0; // components bordering more than three regions
             for (const size_t tid : J_tets) {
                 if (comp_id[tid] != -1) {
                     continue;
@@ -999,6 +1000,24 @@ void SimWildMesh::tight_seal_geom(
                         comp_regions.push_back(i);
                     }
                 }
+                // The fill handles two or three regions per component: one bordering more
+                // (only detected tags can give that; at most three are listed) is left alone.
+                if (comp_regions.size() > 3) {
+                    std::vector<std::string> names;
+                    for (const size_t i : comp_regions) {
+                        const auto it = m_tag_id_to_name.find(tags[i]);
+                        names.push_back(
+                            it != m_tag_id_to_name.end() ? it->second : std::to_string(tags[i]));
+                    }
+                    logger().warn(
+                        "tight_seal_geom: a component of J ({} tets) borders {} regions {}, more "
+                        "than three: detected but not filled",
+                        comp.cells.size(),
+                        comp_regions.size(),
+                        names);
+                    ++n_too_many;
+                    continue;
+                }
                 if (comp_regions.size() >= needed) {
                     if (detected) {
                         std::vector<int64_t> comp_tags;
@@ -1017,12 +1036,15 @@ void SimWildMesh::tight_seal_geom(
                 }
             }
             logger().info(
-                "tight_seal_geom: J has {} components; {} of them border {} {}",
+                "tight_seal_geom: J has {} components; {} of them border {} {}; {} border more "
+                "than three and are not filled",
                 n_components,
                 components_seal.size(),
-                detected ? fmt::format("{} or more of the detected tags", needed)
-                         : std::string("all tags"),
-                tags);
+                detected
+                    ? fmt::format("{}{} of the detected tags", needed, needed < 3 ? " to 3" : "")
+                    : std::string("all tags"),
+                tags,
+                n_too_many);
         }
     }
 
@@ -1036,9 +1058,25 @@ void SimWildMesh::tight_seal_geom(
                tight_seal::bvh_distance(region_bvhs[split_b], p);
     };
 
+    // The component of each tet, kept up to date through the splits. Components are connected
+    // through faces, so two of them can share an edge, and splitting it for one also splits the
+    // other's tets: each component's tets are read from here when its turn comes.
+    std::vector<int> cell_comp(tet_capacity(), -1);
+    for (size_t c = 0; c < components_seal.size(); ++c) {
+        for (const size_t tid : components_seal[c].cells) {
+            cell_comp[tid] = int(c);
+        }
+    }
+
     size_t n_splits = 0;
     for (size_t c = 0; c < components_seal.size(); ++c) {
-        const ConnectedComponent& comp = components_seal[c];
+        std::vector<size_t> cells;
+        for (const Tuple& t : get_tets()) {
+            const size_t tid = t.tid(*this);
+            if (tid < cell_comp.size() && cell_comp[tid] == int(c)) {
+                cells.push_back(tid);
+            }
+        }
         const std::vector<size_t>& regions = components_regions[c];
         // replace the tet's tags of the component's regions with tags[i]; other tags stay
         const auto set_region = [&](const size_t tid, const size_t i) {
@@ -1051,9 +1089,9 @@ void SimWildMesh::tight_seal_geom(
         };
 
         // the component's tets, kept up to date as its edges are split
-        std::unordered_set<size_t> comp_cells(comp.cells.begin(), comp.cells.end());
+        std::unordered_set<size_t> comp_cells(cells.begin(), cells.end());
         std::unordered_map<size_t, size_t> vertex_region;
-        for (const size_t tid : comp.cells) {
+        for (const size_t tid : cells) {
             const auto vs = oriented_tet_vids(tid);
             set_region(
                 tid,
@@ -1069,7 +1107,7 @@ void SimWildMesh::tight_seal_geom(
         }
 
         std::vector<simplex::Edge> split_edges;
-        for (const size_t tid : comp.cells) {
+        for (const size_t tid : cells) {
             const auto vs = oriented_tet_vids(tid);
             for (const auto& [a, b] : tight_seal::tet_edges) {
                 const size_t v0 = vs[a];
@@ -1096,7 +1134,8 @@ void SimWildMesh::tight_seal_geom(
                 filled,
                 [&](const size_t tid, const size_t end_vid) {
                     set_region(tid, vertex_region.at(end_vid));
-                });
+                },
+                &cell_comp);
             if (v_new != size_t(-1)) {
                 ++n_splits;
             }

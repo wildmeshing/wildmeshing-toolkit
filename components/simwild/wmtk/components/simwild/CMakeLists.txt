@@ -39,6 +39,7 @@ set(SRC_FILES
 	AnnotationsTet.cpp
 	TightSealGeom.hpp
 	TightSealGeom.cpp
+	MultiVoronoiEnumeration.hpp
 
 	expression_parser/Expression.hpp
 	expression_parser/Parser.hpp

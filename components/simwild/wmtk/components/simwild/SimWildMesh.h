@@ -310,14 +310,16 @@ private:
         const std::function<bool(size_t)>& in_set,
         SimpleBVH::BVH& bvh) const;
     /// Split edge e, keeping `cells` up to date: the children of a tet in it replace it, and
-    /// each child takes its parent's flag in `filled` (resized to the new capacity). Calls
-    /// on_child(id, end_vid) for each child in `cells`, end_vid being the endpoint of e the child
-    /// keeps. Returns the new vertex, or -1 if the split was refused.
+    /// each child takes its parent's flag in `filled` (resized to the new capacity) and, if
+    /// given, its entry in `cell_group` (resized with -1). Calls on_child(id, end_vid) for each
+    /// child in `cells`, end_vid being the endpoint of e the child keeps. Returns the new vertex,
+    /// or -1 if the split was refused.
     size_t tight_seal_split_tracked(
         const simplex::Edge& e,
         std::unordered_set<size_t>& cells,
         std::vector<char>& filled,
-        const std::function<void(size_t, size_t)>& on_child);
+        const std::function<void(size_t, size_t)>& on_child,
+        std::vector<int>* cell_group = nullptr);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
     /// as a BVH of triangles. On each edge of a tet outside R (region < 0) between a vertex with
     /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
@@ -525,15 +527,17 @@ public:
      *     trace_rel_tol x distance/2), edges on R's boundary included, and J is the processed
      *     tets with all vertices inside.
      *  4. The connected components of J (through faces) are kept by the rule of `selection`.
-     * Each component is then filled with the Voronoi diagram of its regions: edges whose
+     * Each component (connected through faces, so two touching at an edge or a vertex are filled
+     * separately) is then filled with the Voronoi diagram of its regions: edges whose
      * endpoints have different nearest regions are split on the bisector, and each tet gets
      * the tag of its region.
      *
-     * `selection` "explicit": the regions are `tags`, which may not hold ambient (the tag named
-     * "ambient"). "detected": `tags` is ignored (with a warning if it is not empty), the regions
-     * are every tag but ambient that some tet has alone, and each part that borders
-     * `min_regions` of them or more (at least 2; ignored, with a warning if not 2, for "explicit")
-     * is filled with those it borders.
+     * `selection` "explicit": the regions are `tags`, two or three, which may not hold ambient
+     * (the tag named "ambient"). "detected": `tags` is ignored (with a warning if it is not
+     * empty), the regions are every tag but ambient that some tet has alone, and each part that
+     * borders `min_regions` (2 or 3; ignored, with a warning if not 2, for "explicit") to three of
+     * them is filled with those it borders. A part bordering four or more is left alone, with a
+     * warning: the fill handles at most three regions.
      *
      * `sanity`: afterwards, throw if a tet is inverted, a filled tet carries other than one
      * region's tag, or a part of the filled tets borders fewer than two regions (a concave
