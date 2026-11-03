@@ -584,8 +584,8 @@ public:
      * region's tag, or a part of the filled tets borders fewer than two regions (a concave
      * feature of one body, filled).
      *
-     * `join_mode` "guaranteed" (default) grows J from the tets surely in it, so a gap with no
-     * such tet stays unsealed; "marched" finds J at every vertex of the mesh.
+     * `join_mode` "marched" (default) finds J at every vertex of the mesh; "guaranteed" grows J
+     * from the tets surely in it, so a gap with no such tet stays unsealed.
      */
     void tight_seal_geom(
         const std::vector<int64_t>& tags,
@@ -594,7 +594,7 @@ public:
         const std::string& selection = "explicit",
         int64_t min_regions = 2,
         bool sanity = false,
-        const std::string& join_mode = "guaranteed");
+        const std::string& join_mode = "marched");
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 
