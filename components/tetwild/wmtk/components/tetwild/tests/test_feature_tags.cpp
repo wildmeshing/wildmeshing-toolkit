@@ -493,6 +493,104 @@ TEST_CASE(
     }
 }
 
+TEST_CASE(
+    "order2-tags-where-inputs-meet-around-themselves",
+    "[tetwild_operation][order2]" + release_only)
+{
+    // Two squares, each its own input, crossing along x = 0.5, z = 0.5: there the edges have four
+    // tracked faces, two of each input, and no curve of either input lies there. Held to the
+    // input's own curves (TetOptimizerMesh::InputCurves) they are tagged in a tube around
+    // themselves, as without them; until 2026-11 they were left untagged then. tetwild holds its
+    // open boundaries only, so the mesh here takes the base's rule, simwild's, which holds the
+    // non-manifold edges too. Every edge still tagged after the optimization lies in its tube.
+    struct HoldsNonManifold : TetWildMesh
+    {
+        using TetWildMesh::TetWildMesh;
+        bool holds_order2_edge(const size_t n_faces) const override
+        {
+            return n_faces == 1 || n_faces >= 3;
+        }
+    };
+    for (const bool around_input : {true, false}) {
+        CAPTURE(around_input);
+        Parameters params;
+        params.epsr = 1e-3;
+        const std::vector<Vector3d> v = {
+            {0, 0, 0.5},
+            {1, 0, 0.5},
+            {1, 1, 0.5},
+            {0, 1, 0.5},
+            {0.5, 0, 0},
+            {0.5, 1, 0},
+            {0.5, 1, 1},
+            {0.5, 0, 1}};
+        const std::vector<std::array<size_t, 3>> f = {
+            {{0, 1, 2}},
+            {{0, 2, 3}},
+            {{4, 5, 6}},
+            {{4, 6, 7}}};
+        const std::vector<int> face_input = {0, 0, 1, 1};
+        params.init(v, f);
+        std::vector<Eigen::Vector3i> F;
+        for (const auto& t : f) F.emplace_back(int(t[0]), int(t[1]), int(t[2]));
+        auto env = std::make_shared<Envelope>();
+        env->init(v, F, params.eps);
+
+        std::vector<Vector3r> v_rational;
+        std::vector<std::array<size_t, 3>> facets;
+        std::vector<bool> is_v_on_input;
+        std::vector<std::array<size_t, 4>> tets;
+        std::vector<bool> tet_face_on_input_surface;
+        std::vector<int8_t> tet_face_orientation;
+        std::vector<InputSet> facet_input_set;
+        {
+            TetWildMesh mesh_insertion(params, env, 0);
+            mesh_insertion.insertion_by_volumeremesher(
+                v,
+                f,
+                v_rational,
+                facets,
+                is_v_on_input,
+                tets,
+                tet_face_on_input_surface,
+                &tet_face_orientation,
+                {},
+                {},
+                {},
+                nullptr,
+                &face_input,
+                &facet_input_set);
+        }
+        HoldsNonManifold mesh(params, env, 0);
+        if (around_input) mesh.set_input_curves(v, f, {1, 1, 2, 2}, nullptr);
+        mesh.init_from_Volumeremesher(
+            v_rational,
+            facets,
+            is_v_on_input,
+            tets,
+            tet_face_on_input_surface,
+            &tet_face_orientation,
+            nullptr,
+            &facet_input_set);
+
+        // The edges where the squares cross, and those of them tagged.
+        size_t n_meet = 0, n_meet_tagged = 0;
+        for (const auto& e : mesh.get_edges()) {
+            const size_t v0 = e.vid(mesh), v1 = e.switch_vertex(mesh).vid(mesh);
+            if (mesh.get_num_surface_faces_for_edge({{v0, v1}}) < 3) continue;
+            ++n_meet;
+            n_meet_tagged += mesh.m_feature_edge_attribute[e.eid(mesh)].has(
+                TetWildMesh::FeatureEdgeAttributes::order2);
+        }
+        CAPTURE(n_meet, n_meet_tagged);
+        REQUIRE(n_meet > 0);
+        CHECK(n_meet_tagged == n_meet);
+
+        mesh.mesh_improvement(2);
+        CHECK(mesh.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::order2) == 0);
+    }
+}
+
 TEST_CASE("feature-curves-held-to-their-own-tubes", "[tetwild_operation][features]" + release_only)
 {
     // Two parallel curves 0.07 apart, each its own input_edges file, in tubes of 0.05. The tubes

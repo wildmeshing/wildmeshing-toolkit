@@ -1372,14 +1372,19 @@ size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
 
     // Held to the input's own curves (InputCurves). An edge in the tubes around them -- every
     // input of its set with a curve of its own here, and the edge in each one's tube
-    // (tagged_edge_leaves_tube()) -- is held there. An edge of one input that is not is a curve
-    // the simplification made, and is held in a tube around itself as it lies now: the
-    // one-sided surface envelope cannot hold a rim against eroding, whoever made it. An edge
-    // where two or more inputs meet is left to the surface envelopes: the input's curves there
-    // are the intersections, which only an arrangement of the input would give. Both kinds
-    // share one tube per input, so an edge stays within eps of an order-2 curve of its own
-    // input, the input's or the simplification's. The smoothing pull asks each tube of the set,
-    // so an input without one cannot be in it.
+    // (tagged_edge_leaves_tube()) -- is held there. That is the guarantee's own question, asked
+    // with the predicate that then enforces it: an edge is held within eps of an order-2 curve
+    // of its own inputs, not of the curve it came from, so no correspondence is needed.
+    //
+    // Any other edge is on a curve the input does not have: one the simplification made on one
+    // input, or one where two or more inputs meet, whose curve in the input is the intersection
+    // of the inputs, which only an arrangement of the original would give. It is held in a tube
+    // around itself as it lies now, as every order-2 edge is with no simplification before the
+    // insertion: the one-sided surface envelope cannot hold a curve against eroding, whoever
+    // made it. Until 2026-11 an edge where inputs meet was left to the surface envelopes alone.
+    // Both kinds share one tube per input of their set, so an edge stays within eps of an
+    // order-2 curve of each of its inputs, the input's or the inserted one. The smoothing pull
+    // asks each tube of the set, so an input without one cannot be in it.
     if (m_input_curves) {
         const InputCurves& in = *m_input_curves;
         // The tubes around `segments` into `V`, one per input of `sets` when there are several.
@@ -1430,11 +1435,10 @@ size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
             }
             if (in_tubes) {
                 held.push_back(eids[k]);
-            } else if ((set & (set - 1)) == 0) {
+            } else {
                 made.push_back(eids[k]);
                 made_edges.push_back(edges[k]);
-            } else {
-                ++n_meet;
+                n_meet += (set & (set - 1)) != 0;
             }
         }
         if (!made.empty()) {
@@ -1457,9 +1461,8 @@ size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
             build_tubes(V, segments, sets);
         }
         logger().info(
-            "order-2 edges in the tubes around the input's own curves: {} of {}; {} the "
-            "simplification made, held in tubes around themselves; {} where inputs meet, left to "
-            "the surface envelopes",
+            "order-2 edges in the tubes around the input's own curves: {} of {}; {} on no curve "
+            "of the input, held in tubes around themselves, {} of them where inputs meet",
             held.size(),
             eids.size(),
             made.size(),

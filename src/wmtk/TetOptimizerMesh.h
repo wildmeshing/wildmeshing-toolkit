@@ -463,10 +463,10 @@ public:
      * surface envelope alone, measured (2026-11, input samples farther than eps from the output,
      * held -> left free): tetwild 104509 239 -> 317, crown 554 -> 695, 104187 1058 -> 1222,
      * 104188 962 -> 1105; triwild 202260 927 -> 1315, 191265 148259 -> 181805, 196407 2.29M ->
-     * 2.41M of 2.54M. Where two or more inputs meet the edges are left to the surface envelopes:
-     * the input's curves there are the intersections, which only an arrangement of the input
-     * would give. What the simplification removed is lost, as the topology change it is allowed
-     * to make.
+     * 2.41M of 2.54M. An order-2 edge where two or more inputs meet is held the same way: the
+     * input's curve there is the intersection of the inputs, which only an arrangement of the
+     * original would give (until 2026-11 such an edge was left to the surface envelopes). What
+     * the simplification removed is lost, as the topology change it is allowed to make.
      *
      * Unset, the tagged edges and their vertices as the insertion leaves them are the input's --
      * they are, with no simplification before the insertion -- and the tubes and anchors are
@@ -516,8 +516,8 @@ public:
      * tracking costs every operation its cache (see enable_feature_edge_tracking()).
      *
      * With m_input_curves set, the tubes are around the input's own curves where an edge lies
-     * in them, and around the edge's own curve where the simplification made it; where two or
-     * more inputs meet nothing is tagged (see InputCurves).
+     * in them, and around the edge's own curve elsewhere: where the simplification made it, or
+     * where two or more inputs meet (see InputCurves).
      */
     size_t tag_order2_edges(double eps, bool exact);
     /**
