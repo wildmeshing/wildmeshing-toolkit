@@ -95,9 +95,11 @@ In memory, `input` names entries of the meshes dictionary.
 
 [`eps_rel`](../reference/tetwild.md#eps_rel) (default 0.001) is the distance the output's surface
 may be from the input, relative to the bounding box diagonal. The input is first simplified within
-half of it, so detail smaller than \(\varepsilon\) may disappear; the optimization then keeps
-every tracked face within \(\varepsilon\) of the input. A thinner envelope keeps the surface
-closer and leaves the optimizer less room, so it takes more tets to reach the same quality:
+[`eps_simplify_rel`](../reference/tetwild.md#eps_simplify_rel) of the diagonal (default 0.0005,
+half the default \(\varepsilon\)), so detail smaller than \(\varepsilon\) may disappear; the
+optimization then keeps every tracked face within \(\varepsilon\) of the input. A thinner envelope
+keeps the surface closer and leaves the optimizer less room, so it takes more tets to reach the
+same quality:
 
 | `eps_rel` | \(\varepsilon\) | tets | largest distance to the input |
 |---|---|---|---|
@@ -105,6 +107,10 @@ closer and leaves the optimizer less room, so it takes more tets to reach the sa
 | 0.001 (default) | 0.117 | 8,000–9,500 | 0.065–0.067 |
 | 0.002 | 0.235 | 6,817 | 0.140 |
 | 0.005 | 0.586 | 6,400–6,600 | 0.33–0.36 |
+
+These runs simplified within half of each \(\varepsilon\), `eps_simplify_rel` = `eps_rel` / 2.
+`eps_simplify_rel` does not follow `eps_rel`, and an `eps_rel` at or below it is refused under the
+default `envelope_reference`: lower both together.
 
 The distance is what [`DEBUG_hausdorff`](../reference/tetwild.md#DEBUG_hausdorff) measures and the
 report stores as `hausdorff`: the largest distance from a point of the output's surface to the

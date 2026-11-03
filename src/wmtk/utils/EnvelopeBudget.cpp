@@ -21,8 +21,8 @@ void check_envelope_reference(
     log_and_throw_error(
         "envelope_reference \"input\": the simplification's eps {:.6} is not below the "
         "optimizer's eps {:.6}, so the simplified geometry may start outside the envelope it is "
-        "held to. Lower the simplification's eps, or build the envelopes around the simplified "
-        "geometry (envelope_reference \"simplified\").",
+        "held to. Lower the simplification's eps (eps_simplify_rel or eps_simplify), or build the "
+        "envelopes around the simplified geometry (envelope_reference \"simplified\").",
         simplify_eps,
         eps);
 }

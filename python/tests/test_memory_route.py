@@ -152,7 +152,7 @@ def test_mesh_generation_same_as_file_route(m1, boxes):
 def test_triwild_same_as_file_route(work):
     objs = [_square_obj(work / "sa.obj", (0, 0), (1, 1)),
             _square_obj(work / "sb.obj", (0.5, 0.25), (1.5, 1.25))]
-    options = {"input_names": ["a", "b"], "eps_rel": 1e-2}
+    options = {"input_names": ["a", "b"], "eps_rel": 1e-2, "eps_simplify_rel": 5e-3}
     wm.triwild({"input": objs, "output": str(work / "t1"), "input_dir": str(work), **options})
     out, _ = wm.triwild({"input": ["a", "b"], **options},
                         {"a": wm.read_mesh(objs[0]), "b": wm.read_mesh(objs[1])})

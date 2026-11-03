@@ -54,9 +54,10 @@ public:
     ///
     /// The optimizer after the simplification holds each face to its own input, so a face the
     /// simplification lets drift onto another input starts there outside: tetwild, a wave sheet
-    /// within 0.7 eps of a flat one (simplify_envelope_ratio 0.9), held to the union, had 735
-    /// faces outside their own input's envelope at the optimizer's init and timed out at 1500 s;
-    /// held to its own, 0, and 15 iterations in 129 s.
+    /// within 0.7 eps of a flat one (a simplification at 0.9 eps, simplify_envelope_ratio 0.9
+    /// until 2026-11), held to the union, had 735 faces outside their own input's envelope at
+    /// the optimizer's init and timed out at 1500 s; held to its own, 0, and 15 iterations in
+    /// 129 s.
     std::vector<std::shared_ptr<wmtk::Envelope>> m_input_envelopes;
     bool m_has_envelope = false;
     /// Tube around the boundary edges of the mesh given to create_mesh(), used instead of

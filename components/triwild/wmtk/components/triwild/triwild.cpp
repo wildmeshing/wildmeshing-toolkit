@@ -376,9 +376,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     // The whole eps around the original input, as in tetwild. This used to be params.eps / 2
     // on the grounds that "the arrangement gets the other half, which is what leaves room for
-    // the optimizer to move" -- but reserving that room is what simplify_envelope_ratio does,
-    // immediately below, so the two compounded and the simplification ran at eps/4 while the
-    // optimizer was held to half the tolerance its result is judged against.
+    // the optimizer to move" -- but reserving that room is what the simplification's own,
+    // smaller eps does (simplify_envelope_ratio 0.5 then), so the two compounded and the
+    // simplification ran at eps/4 while the optimizer was held to half the tolerance its result
+    // is judged against.
     const double envelope_eps = params.eps;
     // The simplification and the triangulation used to share one envelope object at the same
     // eps, which leaves the optimizer no room: a simplification free to place a vertex right
@@ -394,25 +395,33 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             "condition of the input simplification",
             params.preserve_topology);
     }
-    const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
-    const double simplify_eps = envelope_eps * simplify_envelope_ratio;
+    // The simplification's eps is a length of its own, not a fraction of envelope_eps:
+    // eps_simplify when positive, else eps_simplify_rel of the same diagonal as envelope_eps --
+    // the two keys and the rule of simwild's Parameters::init(), now in all three apps. The
+    // default, 5e-4 of the diagonal, is 0.5 envelope_eps at the default eps_rel, as
+    // simplify_envelope_ratio 0.5 was until 2026-11. It does not follow eps_rel: under
+    // envelope_reference "input" one at or above envelope_eps is refused just below.
+    const double eps_simplify_rel = json_params["eps_simplify_rel"];
+    const double eps_simplify = json_params["eps_simplify"];
+    const double simplify_eps = eps_simplify > 0 ? eps_simplify : eps_simplify_rel * params.diag_l;
     logger().info(
         "envelope eps: simplification {:.6} ({:.0f}% of triangulation {:.6})",
         simplify_eps,
-        100 * simplify_envelope_ratio,
+        100 * simplify_eps / envelope_eps,
         envelope_eps);
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
     // Which geometry every envelope and anchor is built around: the input, or the simplified
     // curves (see below, where they are built).
     const bool env_around_simplified = json_params["envelope_reference"] == "simplified";
-    // The only ratio that is wrong independently of how the envelope is implemented. At 1 and
-    // above, around the input, the simplification is allowed to move geometry as far as or
-    // further than the triangulation's own envelope permits, so the optimizer starts from a mesh
-    // that is outside it or on its boundary, and every operation near those curves is vetoed.
-    // Refused, before any work; until 2026-10 a warning above 1. Around the simplified curves,
-    // which replace the input, any ratio is allowed, and no simplification is refused.
+    // The only simplification eps that is wrong independently of how the envelope is
+    // implemented. At eps and above, around the input, the simplification is allowed to move
+    // geometry as far as or further than the triangulation's own envelope permits, so the
+    // optimizer starts from a mesh that is outside it or on its boundary, and every operation
+    // near those curves is vetoed. Refused, before any work; until 2026-10 a warning above eps.
+    // Around the simplified curves, which replace the input, any simplification eps is allowed,
+    // and no simplification is refused.
     //
-    // There used to be a warning at 0.5 here. That number was the sampled backend's internal
+    // There used to be a warning at eps/2 here. That number was the sampled backend's internal
     // compensation showing through -- its edge test accepts a segment only within eps/2,
     // because its sampling guarantees the other eps/2 -- and both backends guarantee the same
     // thing to their caller: everything they accept is within eps. A caller reasoning about

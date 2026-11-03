@@ -152,7 +152,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     std::string output_path = json_params["output"];
     bool simplify = json_params["simplify"];
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
-    const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
+    const double eps_simplify_rel = json_params["eps_simplify_rel"];
+    const double eps_simplify = json_params["eps_simplify"];
     const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
@@ -370,9 +371,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // envelope_size / 2, which left the optimizer working inside half the tolerance its
     // result is judged against -- the Hausdorff check below uses params.eps == epsr * diag.
     // Half the caller's tolerance was simply unreachable, and the headroom argument above
-    // does not justify it: reserving headroom for the optimizer is what
-    // simplify_envelope_ratio does, one line down, so the two halvings compounded and the
-    // simplification ran at eps/4.
+    // does not justify it: reserving headroom for the optimizer is what the simplification's
+    // own, smaller eps does (simplify_envelope_ratio 0.5 then), so the two halvings compounded
+    // and the simplification ran at eps/4.
     //
     // Measured on the 15 Thingi10K models that exhausted max_iterations = 80 at
     // stop_energy 10: 14 of 14 run converge, in 10-24 iterations (101954: 80 iterations
@@ -381,11 +382,17 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // so the contract the envelope exists to enforce is unchanged -- it is now the same
     // number the acceptance check uses.
     const double tet_eps = envelope_size;
-    const double simplify_eps = tet_eps * simplify_envelope_ratio;
+    // The simplification's eps is a length of its own, not a fraction of tet_eps: eps_simplify
+    // when positive, else eps_simplify_rel of the same diagonal as tet_eps -- the two keys and
+    // the rule of simwild's Parameters::init(), now in all three apps. The default, 5e-4 of the
+    // diagonal, is 0.5 tet_eps at the default eps_rel, as simplify_envelope_ratio 0.5 was until
+    // 2026-11. It does not follow eps_rel: under envelope_reference "input" one at or above
+    // tet_eps is refused just below.
+    const double simplify_eps = eps_simplify > 0 ? eps_simplify : eps_simplify_rel * diag;
     logger().info(
         "envelope eps: simplification {:.6} ({:.0f}% of tetrahedralisation {:.6})",
         simplify_eps,
-        100 * simplify_envelope_ratio,
+        100 * simplify_eps / tet_eps,
         tet_eps);
     // Which geometry every envelope, tube and anchor is built around: the input, or the
     // simplified surface (see below, where they are built). Refused here, before any work: around
@@ -407,13 +414,13 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     //
     // With the envelope the boundary may move as long as it stays within a tube around the
     // input's boundary edges, the simplification counterpart of the optimizer's order-2
-    // envelope and scaled the same way: order2_envelope_ratio of the surface eps, and of that
-    // simplify_envelope_ratio, for the same headroom reason as above. The optimizer's tube is
-    // built around the input's own boundary, or under envelope_reference "simplified" around the
-    // simplified one at what the simplification left of eps, so a boundary drifts at most
-    // order2_envelope_ratio * eps in all. Until 2026-10 it was built around the simplified
-    // boundary at the full eps: (simplify_envelope_ratio + 1) * order2_envelope_ratio * eps,
-    // 1.5 eps at the defaults.
+    // envelope and scaled the same way: order2_envelope_ratio of the simplification's eps, where
+    // the optimizer's is of the surface eps, for the same headroom reason as above. The
+    // optimizer's tube is built around the input's own boundary, or under envelope_reference
+    // "simplified" around the simplified one at what the simplification left of eps, so a
+    // boundary drifts at most order2_envelope_ratio * eps in all. Until 2026-10 it was built
+    // around the simplified boundary at the full eps: order2_envelope_ratio * (eps +
+    // simplify_eps), 1.5 eps at the defaults.
     //
     // Not under preserve_topology: a hole narrower than the tube closes.
     const double simplify_boundary_eps = simplify_boundary_envelope && !params.preserve_topology
@@ -565,9 +572,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // the input. The geometry starts at the CENTRE of the envelope it is judged against rather
     // than somewhere inside it. That matters because the envelope is a hard veto, not a penalty:
     // a surface handed over already close to the boundary has most of its moves refused, and
-    // deliberately starving that headroom (simplify_envelope_ratio 0.95) was enough to turn a
-    // converging run into a diverging one on 1368052. Until 2026-11 it was built at the remaining
-    // tolerance, tet_eps - simplify_eps, keeping the output within tet_eps of the input.
+    // deliberately starving that headroom (a simplification at 0.95 eps, simplify_envelope_ratio
+    // 0.95 until 2026-11) was enough to turn a converging run into a diverging one on 1368052.
+    // Until 2026-11 it was built at the remaining tolerance, tet_eps - simplify_eps, keeping the
+    // output within tet_eps of the input.
 
     MeshData memory_envelope;
     auto tet_envelope = std::make_shared<wmtk::Envelope>(!use_sample_envelope);

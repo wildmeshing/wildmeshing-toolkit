@@ -48,10 +48,12 @@ def triangulate(options, meshes=curves, inputs=NAMES):
 
 
 # --8<-- [start:sweep]
-# One option at a time against the first run (filter input, stop_energy 10).
+# One option at a time against the first run (filter input, stop_energy 10); eps_rel with the
+# simplification at half of it, as at the default.
 base = {"filter": "input", "stop_energy": 10}
 for change in [{}, {"stop_energy": 100}, {"stop_energy": 5}, {"stop_energy": 3},
-               {"eps_rel": 0.0002}, {"eps_rel": 0.005},
+               {"eps_rel": 0.0002, "eps_simplify_rel": 0.0001},
+               {"eps_rel": 0.005, "eps_simplify_rel": 0.0025},
                {"length_rel": 0.02}, {"length_rel": 0.01},
                {"coarsen_pass": True}]:
     outputs, report = triangulate({**base, **change, "DEBUG_hausdorff": True})

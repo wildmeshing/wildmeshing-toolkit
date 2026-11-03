@@ -53,9 +53,9 @@ struct OptimizerParameters
      * included. The geometry starts at the centre of the envelope it is held to, where around
      * the input it starts up to simplify_eps off it; the envelope is a hard veto, not a penalty,
      * so a surface handed to the optimizer close to the boundary has most of its moves refused.
-     * Starving that headroom on tetwild (simplify_envelope_ratio 0.95, the simplification free
-     * to use nearly the whole tolerance) turned a converging run into a diverging one on
-     * Thingi10K 1368052.
+     * Starving that headroom on tetwild (a simplification at 0.95 eps, simplify_envelope_ratio
+     * 0.95 until 2026-11: the simplification free to use nearly the whole tolerance) turned a
+     * converging run into a diverging one on Thingi10K 1368052.
      *
      * Refused without a simplification, and "input" with simplify_eps at or above eps
      * (utils::check_envelope_reference()). Until 2026-11 "simplified" built at eps -

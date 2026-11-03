@@ -24,8 +24,9 @@ than asked for, which it would first have to coarsen. So the input is simplified
 envelope of its own:
 
 - In 3D, tetwild simplifies the input surface, a `TriMesh`, by shortest edge collapse, with the
-  envelope as invariant, at `simplify_envelope_ratio` \(\cdot\,\varepsilon\) (half of
-  \(\varepsilon\) by default). The link condition applies only with
+  envelope as invariant, at [`eps_simplify_rel`](../reference/tetwild.md#eps_simplify_rel)
+  \(\cdot\,\text{diag}\), or [`eps_simplify`](../reference/tetwild.md#eps_simplify) if given
+  (half of \(\varepsilon\) at the default `eps_rel`). The link condition applies only with
   [`preserve_topology`](../reference/tetwild.md#preserve_topology), so by default the
   simplification may change the topology of the surface. The open boundary may move within a tube
   around the input's boundary ([`simplify_boundary_envelope`](../reference/tetwild.md#simplify_boundary_envelope)).

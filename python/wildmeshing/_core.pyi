@@ -477,8 +477,9 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       write_vtu (bool, default true): Write the VTU output next to the MSH.
       simplify (bool, default true): If true, the input surface is simplified first.
       simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects.
-      simplify_envelope_ratio (float, default 0.5): Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation.
-      simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges.
+      eps_simplify_rel (float, default 0.0005): Envelope thickness used for the input simplification, relative to the same bounding box diagonal as eps_rel.
+      eps_simplify (float, default -1): Absolute envelope thickness used for the input simplification.
+      simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * the simplification's eps of the input's boundary edges.
       envelope_reference (string, default "input"): Which geometry every envelope, tube and anchor is built around: the surface envelope, the order-2 (open boundary) and feature tubes, and the curve anchors, one choice for all.
       order2_envelope_ratio (float, default 1.0): Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet (see feature_envelope_ratio).
       use_sample_envelope (bool, default false): Use sample envelope instead of exact one.
@@ -705,7 +706,8 @@ def triwild(options: dict, meshes: dict) -> tuple:
       num_threads (int, default 0): Number of threads.
       max_iterations (int, default 80): Maximum iterations before stopping.
       simplify (bool, default true): If true, the input curves are simplified first.
-      simplify_envelope_ratio (float, default 0.5): Envelope thickness used for the input simplification, as a fraction of the one used for the triangulation.
+      eps_simplify_rel (float, default 0.0005): Envelope thickness used for the input simplification, relative to the same bounding box diagonal as eps_rel.
+      eps_simplify (float, default -1): Absolute envelope thickness used for the input simplification.
       envelope_reference (string, default "input"): Which geometry the envelope and the curve anchors are built around, one choice for both.
       simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects.
       use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one.
