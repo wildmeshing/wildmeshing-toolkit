@@ -434,6 +434,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     } else {
         Envelope simplify_envelope(!simplify_use_sample_envelope);
         simplify_envelope.init(V_in, E_in, simplify_eps);
+        // With several input files, each segment held to its own file's envelope, as the
+        // optimizer holds it after (m_input_envelopes).
+        const auto segment_envelopes = wmtk::utils::input_segment_envelopes(
+            V_in,
+            E_in,
+            E_in_input,
+            simplify_eps,
+            !simplify_use_sample_envelope);
         std::vector<int> surviving;
         const size_t removed = wmtk::utils::simplify_segments(
             V_simp,
@@ -442,7 +450,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             simplify_use_link_condition,
             &surviving,
             record_history ? &collapses : nullptr,
-            record_history ? &surviving_vertices : nullptr);
+            record_history ? &surviving_vertices : nullptr,
+            &segment_envelopes);
         E_simp_input.resize(surviving.size());
         for (size_t i = 0; i < surviving.size(); ++i) E_simp_input[i] = E_in_input[surviving[i]];
         logger().info(

@@ -328,3 +328,31 @@ TEST_CASE("metis_test_bigmesh", "[test_sec][.slow]")
         timecost.push_back(time);
     }
 }
+TEST_CASE("sec-holds-each-face-to-its-own-input", "[test_sec]")
+{
+    // Input 0: a square tent, its apex 3 eps above the flat square of input 1. The apex is the
+    // one vertex not on a boundary, so the only collapses move it onto a corner, which lays
+    // input 0 flat on input 1, 2 eps from itself at a remaining face's centroid. Held to the
+    // union that is inside; held to its own input's envelope it is not, and the apex stays.
+    const double eps = 1e-2;
+    const std::vector<Eigen::Vector3d> v = {
+        {0, 0, 0},
+        {1, 0, 0},
+        {1, 1, 0},
+        {0, 1, 0},
+        {0.5, 0.5, 3 * eps},
+        {0, 0, 0},
+        {1, 0, 0},
+        {1, 1, 0},
+        {0, 1, 0}};
+    const std::vector<std::array<size_t, 3>> tris =
+        {{{0, 1, 4}}, {{1, 2, 4}}, {{2, 3, 4}}, {{3, 0, 4}}, {{5, 6, 7}}, {{5, 7, 8}}};
+    const auto n_vertices_after = [&](const std::vector<int>& tri_input) {
+        ShortestEdgeCollapse m(v, 0, true);
+        m.create_mesh(v.size(), tris, {}, eps, 0, tri_input);
+        m.collapse_shortest(0);
+        return m.get_vertices().size();
+    };
+    CHECK(n_vertices_after({}) == 8); // the control: the union lets the apex go
+    CHECK(n_vertices_after({0, 0, 0, 0, 1, 1}) == 9);
+}

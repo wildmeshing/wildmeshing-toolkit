@@ -115,13 +115,25 @@ void EmbedCurves::simplify_curves(
     // Link condition on: simplification here may not change the topology of the curve
     // network, because the winding-number tags are evaluated against the untouched per-input
     // copies and merging two curves would make them disagree.
+    //
+    // With several inputs, each segment held to its own input's envelope, as the optimizer
+    // holds it after (SimWildMeshTri::init_label_envelopes()).
+    const auto segment_envelopes = utils::input_segment_envelopes(
+        m_V_curves,
+        m_E_curves,
+        std::vector<int>(m_E_input.begin(), m_E_input.end()),
+        eps,
+        use_exact_envelope);
     std::vector<int> surviving_edges;
     const size_t removed = utils::simplify_segments(
         m_V_curves,
         m_E_curves,
         envelope,
         /*use_link_condition=*/true,
-        m_E_input.empty() ? nullptr : &surviving_edges);
+        m_E_input.empty() ? nullptr : &surviving_edges,
+        nullptr,
+        nullptr,
+        &segment_envelopes);
     if (!m_E_input.empty()) {
         std::vector<size_t> E_input(surviving_edges.size());
         for (size_t k = 0; k < surviving_edges.size(); ++k) {

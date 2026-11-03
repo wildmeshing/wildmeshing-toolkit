@@ -288,6 +288,31 @@ TEST_CASE("simplify-segments-deterministic", "[triwild_operation][simplify]" + r
     CHECK(E1 == E2);
 }
 
+TEST_CASE("simplify-segments-holds-each-segment-to-its-own-input", "[triwild_operation][simplify]")
+{
+    // Input 0: a corner 2 eps below the straight segment of input 1, between the same two
+    // points. The corner is the one vertex not frozen, and collapsing it onto an end lays input
+    // 0 on input 1, 2 eps from itself. Held to the union that is inside; held to its own
+    // input's envelope it is not, and the corner stays.
+    const double eps = 1e-2;
+    MatrixXd V0(5, 2);
+    V0 << 0, 0, 1, -2 * eps, 2, 0, 0, 0, 2, 0;
+    MatrixXi E0(3, 2);
+    E0 << 0, 1, 1, 2, 3, 4;
+    const Envelope env = make_envelope(V0, E0, eps);
+
+    MatrixXd V = V0;
+    MatrixXi E = E0;
+    CHECK(wmtk::utils::simplify_segments(V, E, env) == 1); // the control: the union lets it go
+
+    V = V0;
+    E = E0;
+    const auto own = wmtk::utils::input_segment_envelopes(V0, E0, {0, 0, 1}, eps, true);
+    REQUIRE(own.size() == 3);
+    CHECK(wmtk::utils::simplify_segments(V, E, env, true, nullptr, nullptr, nullptr, &own) == 0);
+    CHECK(E == E0);
+}
+
 TEST_CASE("simplify-segments-already-coarse", "[triwild_operation][simplify]")
 {
     // Nothing to do: a triangle is already minimal, and the input must come back untouched.

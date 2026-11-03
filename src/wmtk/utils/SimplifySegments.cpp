@@ -30,10 +30,18 @@ size_t simplify_segments(
     bool use_link_condition,
     std::vector<int>* surviving_edges,
     std::vector<history::Edit>* collapses,
-    std::vector<int>* surviving_vertices)
+    std::vector<int>* surviving_vertices,
+    const std::vector<std::shared_ptr<Envelope>>* segment_envelopes)
 {
     const int nv = static_cast<int>(V.rows());
     const int ne = static_cast<int>(E.rows());
+    if (segment_envelopes != nullptr && segment_envelopes->empty()) segment_envelopes = nullptr;
+    if (segment_envelopes != nullptr && segment_envelopes->size() != size_t(ne)) {
+        log_and_throw_error(
+            "simplify_segments: {} segment envelopes for {} segments",
+            segment_envelopes->size(),
+            ne);
+    }
     if (surviving_edges != nullptr) {
         surviving_edges->clear();
         for (int e = 0; e < ne; ++e) surviving_edges->push_back(e);
@@ -182,7 +190,8 @@ size_t simplify_segments(
             }
             const std::array<Vector2d, 2> s = {
                 {position_after(seg[f][0]), position_after(seg[f][1])}};
-            if (envelope.is_outside(s)) {
+            const Envelope& own = segment_envelopes ? *(*segment_envelopes)[f] : envelope;
+            if (own.is_outside(s)) {
                 ok = false;
                 break;
             }
@@ -310,6 +319,49 @@ size_t simplify_segments(
     V = V_new;
     E = E_new;
     return n_removed;
+}
+
+std::vector<std::shared_ptr<Envelope>> input_segment_envelopes(
+    const MatrixXd& V,
+    const MatrixXi& E,
+    const std::vector<int>& segment_input,
+    const double eps,
+    const bool exact)
+{
+    const bool several_inputs =
+        segment_input.size() == size_t(E.rows()) &&
+        std::any_of(segment_input.begin(), segment_input.end(), [&](int in) {
+            return in != segment_input[0];
+        });
+    if (!several_inputs) return {};
+    const int n_inputs = *std::max_element(segment_input.begin(), segment_input.end()) + 1;
+    std::vector<std::shared_ptr<Envelope>> members(n_inputs);
+    for (int k = 0; k < n_inputs; ++k) {
+        // This input's segments over its own vertices only: an envelope keeps a copy of the
+        // vertices it is given.
+        std::vector<int> local(V.rows(), -1);
+        std::vector<Vector2d> V_k;
+        std::vector<Vector2i> E_k;
+        for (Eigen::Index r = 0; r < E.rows(); ++r) {
+            if (segment_input[r] != k) continue;
+            Vector2i e;
+            for (int j = 0; j < 2; ++j) {
+                int& l = local[E(r, j)];
+                if (l < 0) {
+                    l = int(V_k.size());
+                    V_k.emplace_back(V(E(r, j), 0), V(E(r, j), 1));
+                }
+                e[j] = l;
+            }
+            E_k.push_back(e);
+        }
+        if (E_k.empty()) continue; // no segment, so none to hold
+        members[k] = std::make_shared<Envelope>(exact);
+        members[k]->init(V_k, E_k, eps);
+    }
+    std::vector<std::shared_ptr<Envelope>> per_row(E.rows());
+    for (Eigen::Index r = 0; r < E.rows(); ++r) per_row[r] = members[segment_input[r]];
+    return per_row;
 }
 
 } // namespace wmtk::utils
