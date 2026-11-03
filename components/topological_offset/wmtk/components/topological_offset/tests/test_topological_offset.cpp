@@ -19,9 +19,7 @@
 #include <tuple>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
-#include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
-#include <wmtk/components/topological_offset/Sphere.hpp>
 #include <wmtk/components/topological_offset/output_conversion.hpp>
 #include <wmtk/components/topological_offset/topological_offset.hpp>
 #include <wmtk/io/mesh_io.hpp>
@@ -852,77 +850,6 @@ TEST_CASE("invariant_2d", "[2d]")
 }
 
 
-TEST_CASE("circle_tri_overlap", "[dist_growth][2d]")
-{
-    Eigen::MatrixXd V(3, 2);
-    V << 0, 0, 0, 1, 1, 0;
-    Eigen::MatrixXi F(1, 3);
-    F << 0, 1, 2;
-    MatrixSi Tags(1, 1); // dont care
-    std::vector<std::string> tag_names = {"a"};
-    Tags.coeffRef(0, 0) = 0;
-    MatrixXd V_env_dummy;
-    MatrixXi F_env_dummy;
-
-    Parameters param;
-    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
-    // param.offset_selection = parse("tag_0 & tag_1");
-    TopoOffsetTriMesh mesh(param, 0);
-    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
-
-    Circle circ1(Vector2d(1.0, 1.0), 0.5); // false
-    Circle circ2(Vector2d(0.55, 0.55), 0.5); // true
-    Circle circ3(Vector2d(0.2, 0.2), 0.1); // true
-    Circle circ4(Vector2d(0.2, 0.2), 1000.0); // true
-    Circle circ5(Vector2d(10.0, 10.0), 1.0); // false
-
-    REQUIRE(!circ1.overlaps_tri(mesh, 0));
-    REQUIRE(circ2.overlaps_tri(mesh, 0));
-    REQUIRE(circ3.overlaps_tri(mesh, 0));
-    REQUIRE(circ4.overlaps_tri(mesh, 0));
-    REQUIRE(!circ5.overlaps_tri(mesh, 0));
-}
-
-
-TEST_CASE("circle_refine", "[dist_growth][2d]")
-{
-    Circle c(Vector2d(0.0, 0.0), 1.0);
-    std::queue<Circle> q;
-    c.refine(q);
-    REQUIRE(q.size() == 4);
-
-    double r_new = q.front().radius();
-    REQUIRE(fabs(r_new - 0.5) < pow(10, -6));
-
-    Vector2d c1 = q.front().center();
-    REQUIRE(fabs(c1(0) + (1.0 / (2.0 * sqrt(2.0)))) < pow(10, -6));
-    REQUIRE(fabs(c1(1) + (1.0 / (2.0 * sqrt(2.0)))) < pow(10, -6));
-}
-
-
-TEST_CASE("circle_init", "[dist_growth][2d]")
-{
-    MatrixXd V(3, 2);
-    V << 0, 0, 1, 0, 0.5, 0.5 * sqrt(3.0);
-    MatrixXi F(1, 3);
-    F << 0, 1, 2;
-    MatrixSi Tags(1, 1); // dont care
-    std::vector<std::string> tag_names = {"a"};
-    Tags.coeffRef(0, 0) = 0;
-    MatrixXd V_env_dummy;
-    MatrixXi F_env_dummy;
-
-    Parameters param;
-    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
-    // param.offset_selection = parse("tag_0 & tag_1");
-    TopoOffsetTriMesh mesh(param, 0);
-    mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
-
-    Circle circ(mesh, 0);
-    REQUIRE(fabs(circ.radius() - (sqrt(2.0) / 2.0)) < pow(10, -6));
-}
-
-
 TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
 {
     Eigen::MatrixXd V(3, 2);
@@ -1040,68 +967,6 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
     REQUIRE(fabs(dist - sqrt(86.0)) < pow(10, -6));
 }
 
-
-TEST_CASE("cube_tet_fit", "[dist_growth][3d]")
-{
-    Vector3d p0(0.0, 0.0, 0.0);
-    Vector3d p1(1.0, 0.0, 0.0);
-    Vector3d p2(0.0, 2.0, 0.0);
-    Vector3d p3(0.0, 0.0, 3.0);
-    Vector3d res_c;
-    double res_l;
-    Sphere::fit_cube(p0, p1, p2, p3, res_c, res_l);
-    bool res = (fabs(res_c(0) - 0.5) < pow(10, -6)) && (fabs(res_c(1) - 1.0) < pow(10, -6)) &&
-               (fabs(res_c(2) - 1.5) < pow(10, -6)) && (fabs(res_l - 3.0) < pow(10, -6));
-    REQUIRE(res);
-}
-
-
-TEST_CASE("sphere_tet_overlap", "[dist_growth][3d]")
-{
-    Eigen::MatrixXd V(4, 3);
-    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
-    Eigen::MatrixXi T(1, 4);
-    T << 0, 1, 2, 3;
-    MatrixSi Tags(1, 1); // dont care
-    std::vector<std::string> tag_names = {"a"};
-    Tags.coeffRef(0, 0) = 0;
-    MatrixXd V_env_dummy;
-    MatrixXi F_env_dummy;
-
-    Parameters param;
-    // param.offset_selection = parse("tag_0 & tag_1");
-    TopoOffsetTetMesh mesh(param, 0);
-    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
-
-    Sphere sphere1(Vector3d(1.0, 1.0, 1.0), 0.5); // false
-    Sphere sphere2(Vector3d(0.55, 0.55, 0.55), 0.5); // true
-    Sphere sphere3(Vector3d(0.2, 0.2, 0.2), 0.1); // true
-    Sphere sphere4(Vector3d(0.2, 0.2, 0.2), 1000.0); // true
-    Sphere sphere5(Vector3d(10.0, 10.0, 10.0), 1.0); // false
-
-    REQUIRE(!sphere1.overlaps_tet(mesh, 0));
-    REQUIRE(sphere2.overlaps_tet(mesh, 0));
-    REQUIRE(sphere3.overlaps_tet(mesh, 0));
-    REQUIRE(sphere4.overlaps_tet(mesh, 0));
-    REQUIRE(!sphere5.overlaps_tet(mesh, 0));
-}
-
-
-TEST_CASE("sphere_refine", "[dist_growth][2d]")
-{
-    Sphere s(Vector3d(0.0, 0.0, 0.0), 1.0);
-    std::queue<Sphere> q;
-    s.refine(q);
-    REQUIRE(q.size() == 8);
-
-    double r_new = q.front().radius();
-    REQUIRE(fabs(r_new - 0.5) < pow(10, -6));
-
-    Vector3d c1 = q.front().center();
-    REQUIRE(fabs(c1(0) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
-    REQUIRE(fabs(c1(1) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
-    REQUIRE(fabs(c1(2) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
-}
 
 TEST_CASE("stencil-order-point-counts", "[offset]")
 {

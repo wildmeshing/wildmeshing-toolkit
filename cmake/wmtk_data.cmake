@@ -107,8 +107,10 @@ ExternalProject_Add(
     # 00e090e descends from data2 #12's merge (421b458), so it holds c91a67a's changes too.
     # At de49170 (2026-11-01, data2 main) models/127891.msh is back: 596be38 had deleted it with
     # the old 3D offset cases, and the topological_offset docs examples read it.
+    # At 8d3a193 (2026-11-03, data2 main) the explicit 2D tight_seal_geom case seals tag_0, tag_1
+    # and tag_4: two parts border all three, so the 2D fill's triple point and strip run too.
     #
-    GIT_TAG de4917026b2dd3f2769d4e6d98e1cee0d094e27b
+    GIT_TAG 8d3a193c231729b9c4385bcea63a88bfe7548a3a
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

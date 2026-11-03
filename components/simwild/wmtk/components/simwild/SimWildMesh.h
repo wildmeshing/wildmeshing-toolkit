@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <wmtk/MeshData.hpp>
 
 #include <igl/Timer.h>
@@ -290,6 +292,20 @@ protected:
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
         override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
+    /// A face split puts the new vertex at m_face_split_position (the face's centroid if unset),
+    /// in doubles, so every corner must be rounded. The children of each tet on the face take its
+    /// attributes; the face's three pieces take the face's, and the tets' other faces keep
+    /// theirs. Refused if a child is inverted, or while feature edges are tracked (their tags
+    /// would not follow).
+    bool split_face_before(const Tuple& t) override;
+    bool split_face_after(const Tuple& t) override;
+    /// A tet split puts the new vertex at the tet's centroid, in doubles, so every corner must be
+    /// rounded. The four children take the tet's attributes and its four faces keep theirs; the
+    /// six faces inside it are new. Refused if a child is inverted, or while feature edges are
+    /// tracked (their tags would not follow). Only tight_seal_geom's simplicial embedding of its
+    /// regions splits tets.
+    bool split_tet_before(const Tuple& t) override;
+    bool split_tet_after(const Tuple& t) override;
 
     bool swap_before_interior(const std::vector<size_t>& tids) override;
     bool swap_before_surface(
@@ -310,14 +326,24 @@ private:
         const std::function<bool(size_t)>& in_set,
         SimpleBVH::BVH& bvh) const;
     /// Split edge e, keeping `cells` up to date: the children of a tet in it replace it, and
-    /// each child takes its parent's flag in `filled` (resized to the new capacity). Calls
-    /// on_child(id, end_vid) for each child in `cells`, end_vid being the endpoint of e the child
-    /// keeps. Returns the new vertex, or -1 if the split was refused.
+    /// each child takes its parent's flag in `filled` (resized to the new capacity) and, if
+    /// given, its entry in `cell_group` (resized with -1). Calls on_child(id, end_vid) for each
+    /// child in `cells`, end_vid being the endpoint of e the child keeps. Returns the new vertex,
+    /// or -1 if the split was refused.
     size_t tight_seal_split_tracked(
         const simplex::Edge& e,
         std::unordered_set<size_t>& cells,
         std::vector<char>& filled,
-        const std::function<void(size_t, size_t)>& on_child);
+        const std::function<void(size_t, size_t)>& on_child,
+        std::vector<int>* cell_group = nullptr);
+    /// Split face f at p, keeping `cells`, `filled` and `cell_group` up to date as
+    /// tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused.
+    size_t tight_seal_split_face_tracked(
+        const std::array<size_t, 3>& f,
+        const Vector3d& p,
+        std::unordered_set<size_t>& cells,
+        std::vector<char>& filled,
+        std::vector<int>* cell_group = nullptr);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
     /// as a BVH of triangles. On each edge of a tet outside R (region < 0) between a vertex with
     /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
@@ -341,6 +367,38 @@ private:
         const;
 
     ////// Operations
+
+    // Where split_face() puts the new vertex; the face's centroid if unset. Set before
+    // split_face(), cleared after.
+    std::optional<Vector3d> m_face_split_position;
+    size_t m_last_face_split_vertex = 0;
+    // split_face_before() to split_face_after(). Face splits are serial (only tight_seal_geom
+    // makes them).
+    struct FaceSplitCache
+    {
+        std::array<size_t, 3> v; // the face
+        FaceAttributes face;
+        std::vector<std::pair<size_t, TetAttributes>> tets; // by each tet's corner off the face
+        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> faces; // the tets' others
+        Vector3d position;
+        double sizing_scalar = 1;
+        size_t partition_id = 0;
+        std::vector<int> on_bbox_faces;
+    };
+    FaceSplitCache m_face_split_cache;
+    // split_tet_before() to split_tet_after(). Tet splits are serial (only tight_seal_geom makes
+    // them).
+    struct TetSplitCache
+    {
+        std::array<size_t, 4> v; // the tet
+        TetAttributes tet;
+        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> faces; // its four faces
+        Vector3d position;
+        double sizing_scalar = 1;
+        size_t partition_id = 0;
+        std::vector<int> on_bbox_faces;
+    };
+    TetSplitCache m_tet_split_cache;
 
     struct SplitTagCache
     {
@@ -508,28 +566,36 @@ public:
      * nothing else. The 3D counterpart of SimWildMeshTri::tight_seal_geom.
      *
      * J is the closing of the union R of the R_i by the ball B of diameter `distance`, minus R:
-     * the part of E that B cannot reach. It is found in four steps.
-     *  1. The tets surely in J (the spec's v2): U^ = R and the tets whose points are all
-     *     within distance/2 of R (inside R + B); V^ = the tets of U^ whose points are all
-     *     farther than distance/2 from U^'s boundary (inside the closing); J^ = V^ minus R. Both
-     *     tests are certified by conservative subdivision (tight_seal::certify_on_cell).
-     *  2. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
-     *  3. Conservative growth of all of J^ to the level set d(x, S) = distance/2: the tets
-     *     outside R are flooded from J^ through faces with a vertex inside (in R + B and
-     *     d(v, S) > distance/2), each flooded edge from an inside vertex to an outside one is
-     *     split where it leaves J, sphere traced from the inside end (to within trace_rel_tol x
-     *     distance/2), edges on R's boundary included, and J is the flooded tets with all
-     *     vertices inside.
-     *  4. The connected components of J (through faces) are kept by the rule of `selection`.
-     * Each component is then filled with the Voronoi diagram of its regions: edges whose
-     * endpoints have different nearest regions are split on the bisector, and each tet gets
-     * the tag of its region.
+     * the part of E that B cannot reach. First R is made simplicially embedded (no tet outside R
+     * has all its vertices on R; wmtk/utils/SimplicialEmbedding.hpp): each tet outside R whose four
+     * faces lie on R is split at its centroid, then each face outside R whose three edges do, then
+     * each edge outside R joining two vertices of R at its midpoint. Without it, a gap one tet wide
+     * would be in J at any distance, every vertex of R counting as inside. Then J is found in three
+     * steps.
+     *  1. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
+     *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
+     *  2. A vertex is inside if it is in R + B and d(v, S) > distance/2, counted from
+     *     (1 - trace_rel_tol) x distance/2 up, so a vertex on the level set is never split off
+     *     by rounding; every vertex of R is inside (R lies in the closing; S, linear in each
+     *     tet, can pass closer to R than the level set). Every tet outside R with a vertex
+     *     inside is processed: each of its edges from an inside vertex to an outside one is
+     *     split where it leaves J, at d(x, S) = distance/2, sphere traced from the inside end
+     *     (to within trace_rel_tol x distance/2; not split if the inside end is already that
+     *     close or closer), and J is the processed tets whose vertices are all inside.
+     *  3. The connected components of J (through faces) are kept by the rule of `selection`.
+     * Each component (connected through faces, so two touching at an edge or a vertex are filled
+     * separately) is then filled with the Voronoi diagram of its regions, by enumeration
+     * (MultiVoronoiEnumeration.hpp): every vertex gets the set of regions nearest to it; each
+     * face that the triple line (where three regions meet) pierces is split at its centroid, and
+     * each edge where its ends' nearest regions change (twice where a third region crosses it);
+     * each tet gets the tag of the region its corners share.
      *
-     * `selection` "explicit": the regions are `tags`, which may not hold ambient (the tag named
-     * "ambient"). "detected": `tags` is ignored (with a warning if it is not empty), the regions
-     * are every tag but ambient that some tet has alone, and each part that borders
-     * `min_regions` of them or more (at least 2; ignored, with a warning if not 2, for "explicit")
-     * is filled with those it borders.
+     * `selection` "explicit": the regions are `tags`, two or three, which may not hold ambient
+     * (the tag named "ambient"). "detected": `tags` is ignored (with a warning if it is not
+     * empty), the regions are every tag but ambient that some tet has alone, and each part that
+     * borders `min_regions` (2 or 3; ignored, with a warning if not 2, for "explicit") to three of
+     * them is filled with those it borders. A part bordering four or more is left alone, with a
+     * warning: the fill handles at most three regions.
      *
      * `sanity`: afterwards, throw if a tet is inverted, a filled tet carries other than one
      * region's tag, or a part of the filled tets borders fewer than two regions (a concave

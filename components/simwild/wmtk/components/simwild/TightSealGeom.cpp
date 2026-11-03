@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <tuple>
 #include <unordered_set>
 
 namespace wmtk::components::simwild::tight_seal {
@@ -160,178 +161,6 @@ void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& tri
     }
 }
 
-namespace {
-
-template <typename Vec>
-double point_segment_distance(const Vec& p, const Vec& a, const Vec& b)
-{
-    const Vec ab = b - a;
-    const double len2 = ab.squaredNorm();
-    const double t = len2 > 0 ? std::clamp((p - a).dot(ab) / len2, 0., 1.) : 0.;
-    return (p - a - t * ab).norm();
-}
-
-double cross2(const Vector2d& u, const Vector2d& v)
-{
-    return u[0] * v[1] - u[1] * v[0];
-}
-
-double orient3(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d)
-{
-    return (b - a).cross(c - a).dot(d - a);
-}
-
-} // namespace
-
-double point_cell_distance(const Vector2d& p, const std::array<Vector2d, 3>& cell)
-{
-    // inside: on the same side of each edge as the opposite corner (or on the edge)
-    bool inside = true;
-    double best = std::numeric_limits<double>::infinity();
-    for (int k = 0; k < 3; ++k) {
-        const Vector2d& a = cell[k];
-        const Vector2d& b = cell[(k + 1) % 3];
-        const Vector2d& opp = cell[(k + 2) % 3];
-        if (cross2(b - a, opp - a) * cross2(b - a, p - a) < 0) {
-            inside = false;
-        }
-        best = std::min(best, point_segment_distance(p, a, b));
-    }
-    return inside ? 0. : best;
-}
-
-double
-point_triangle_distance(const Vector3d& p, const Vector3d& a, const Vector3d& b, const Vector3d& c)
-{
-    // Ericson, Real-Time Collision Detection 5.1.5: the closest point by Voronoi regions
-    const Vector3d ab = b - a, ac = c - a, ap = p - a;
-    const double d1 = ab.dot(ap), d2 = ac.dot(ap);
-    if (d1 <= 0 && d2 <= 0) return ap.norm();
-    const Vector3d bp = p - b;
-    const double d3 = ab.dot(bp), d4 = ac.dot(bp);
-    if (d3 >= 0 && d4 <= d3) return bp.norm();
-    const double vc = d1 * d4 - d3 * d2;
-    if (vc <= 0 && d1 >= 0 && d3 <= 0) return point_segment_distance(p, a, b);
-    const Vector3d cp = p - c;
-    const double d5 = ab.dot(cp), d6 = ac.dot(cp);
-    if (d6 >= 0 && d5 <= d6) return cp.norm();
-    const double vb = d5 * d2 - d1 * d6;
-    if (vb <= 0 && d2 >= 0 && d6 <= 0) return point_segment_distance(p, a, c);
-    const double va = d3 * d6 - d5 * d4;
-    if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) return point_segment_distance(p, b, c);
-    const double denom = va + vb + vc;
-    if (!(denom > 0)) { // a degenerate triangle: its edges
-        return std::min(
-            {point_segment_distance(p, a, b),
-             point_segment_distance(p, b, c),
-             point_segment_distance(p, c, a)});
-    }
-    return (p - (a + ab * (vb / denom) + ac * (vc / denom))).norm();
-}
-
-double point_cell_distance(const Vector3d& p, const std::array<Vector3d, 4>& cell)
-{
-    // inside: on the same side of each face as the opposite corner (or on the face)
-    bool inside = true;
-    double best = std::numeric_limits<double>::infinity();
-    for (int k = 0; k < 4; ++k) {
-        const Vector3d& a = cell[(k + 1) % 4];
-        const Vector3d& b = cell[(k + 2) % 4];
-        const Vector3d& c = cell[(k + 3) % 4];
-        if (orient3(a, b, c, cell[k]) * orient3(a, b, c, p) < 0) {
-            inside = false;
-        }
-        best = std::min(best, point_triangle_distance(p, a, b, c));
-    }
-    return inside ? 0. : best;
-}
-
-namespace {
-
-template <int D, typename Vec>
-bool certify_on_cell_impl(
-    const std::array<Vec, D + 1>& cell,
-    const std::array<double, D + 1>& corner_values,
-    const std::function<double(const Vec&)>& f,
-    const double level,
-    const bool at_most,
-    const int max_depth)
-{
-    const double lo = level * (1 - certify_margin);
-    const double hi = level * (1 + certify_margin);
-    // Written so that NaN refutes: a comparison with NaN is false.
-    for (const double v : corner_values) {
-        if (at_most ? !(v <= lo) : !(v > hi)) {
-            return false;
-        }
-    }
-    Vec mn = cell[0];
-    Vec mx = cell[0];
-    for (const Vec& p : cell) {
-        mn = mn.cwiseMin(p);
-        mx = mx.cwiseMax(p);
-    }
-    struct Ball
-    {
-        Vec c;
-        double rho;
-        int depth;
-    };
-    // the circle (sphere) through the corners of the bounding square (cube)
-    std::vector<Ball> stack{{(mn + mx) / 2, (mx - mn).maxCoeff() * std::sqrt(double(D)) / 2, 0}};
-    while (!stack.empty()) {
-        const Ball b = stack.back();
-        stack.pop_back();
-        const double fc = f(b.c);
-        if (at_most ? fc + b.rho <= lo : fc - b.rho > hi) {
-            continue; // certified
-        }
-        if (point_cell_distance(b.c, cell) == 0. && (at_most ? fc > level : fc <= level)) {
-            return false; // a point of the cell on the wrong side
-        }
-        if (b.depth >= max_depth) {
-            return false; // undecided: refuted, conservatively
-        }
-        // the sub-squares' centres are a quarter side, rho / (2 sqrt(dim)) per axis, away
-        const double off = b.rho / (2 * std::sqrt(double(D)));
-        for (int s = 0; s < (1 << D); ++s) {
-            Vec c = b.c;
-            for (int k = 0; k < D; ++k) {
-                c[k] += (s >> k & 1) ? off : -off;
-            }
-            const double rho = b.rho / 2;
-            if (!(point_cell_distance(c, cell) >= rho)) { // overlaps the cell (NaN counts)
-                stack.push_back({c, rho, b.depth + 1});
-            }
-        }
-    }
-    return true;
-}
-
-} // namespace
-
-bool certify_on_cell(
-    const std::array<Vector2d, 3>& cell,
-    const std::array<double, 3>& corner_values,
-    const std::function<double(const Vector2d&)>& f,
-    const double level,
-    const bool at_most,
-    const int max_depth)
-{
-    return certify_on_cell_impl<2>(cell, corner_values, f, level, at_most, max_depth);
-}
-
-bool certify_on_cell(
-    const std::array<Vector3d, 4>& cell,
-    const std::array<double, 4>& corner_values,
-    const std::function<double(const Vector3d&)>& f,
-    const double level,
-    const bool at_most,
-    const int max_depth)
-{
-    return certify_on_cell_impl<3>(cell, corner_values, f, level, at_most, max_depth);
-}
-
 } // namespace wmtk::components::simwild::tight_seal
 
 
@@ -467,6 +296,35 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
         }
         faces.insert(fid);
         on_child(fid, end_vid);
+    }
+    return v_new;
+}
+
+size_t SimWildMeshTri::tight_seal_split_face_tracked(
+    const size_t fid,
+    const Vector2d& p,
+    std::unordered_set<size_t>& faces,
+    std::vector<char>& filled)
+{
+    const bool in_set = faces.count(fid) > 0;
+    const char parent_filled = filled[fid];
+    const Tuple t = tuple_from_tri(fid);
+    reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+    m_face_split_position = p;
+    std::vector<Tuple> new_tris;
+    const bool ok = split_face(t, new_tris);
+    m_face_split_position.reset();
+    if (!ok) {
+        return size_t(-1);
+    }
+    const size_t v_new = m_last_split_vertex;
+    faces.erase(fid);
+    filled.resize(tri_capacity(), 0);
+    for (const size_t f : get_one_ring_fids_for_vertex(v_new)) {
+        filled[f] = parent_filled;
+        if (in_set) {
+            faces.insert(f);
+        }
     }
     return v_new;
 }
@@ -647,17 +505,22 @@ size_t SimWildMesh::tight_seal_split_tracked(
     const simplex::Edge& e,
     std::unordered_set<size_t>& cells,
     std::vector<char>& filled,
-    const std::function<void(size_t, size_t)>& on_child)
+    const std::function<void(size_t, size_t)>& on_child,
+    std::vector<int>* cell_group)
 {
     const auto [e0, e1] = e.vertices();
     const Tuple t = tuple_from_edge(e.vertices());
 
     // Each tet on the edge gives two children, which keep the tet's edge opposite the split
-    // edge. Record by that edge whether the tet is in the set, and whether it was filled.
+    // edge. Record by that edge whether the tet is in the set, whether it was filled, and its
+    // group.
     const std::vector<size_t> parents = get_incident_tids_for_edge(t);
-    std::map<simplex::Edge, std::pair<bool, char>> parent_state;
+    std::map<simplex::Edge, std::tuple<bool, char, int>> parent_state;
     for (const size_t tid : parents) {
-        parent_state[simplex_from_tet(tid).opposite_edge(e)] = {cells.count(tid) > 0, filled[tid]};
+        parent_state[simplex_from_tet(tid).opposite_edge(e)] = {
+            cells.count(tid) > 0,
+            filled[tid],
+            cell_group ? (*cell_group)[tid] : -1};
     }
 
     std::vector<Tuple> new_edges;
@@ -671,6 +534,9 @@ size_t SimWildMesh::tight_seal_split_tracked(
         cells.erase(tid);
     }
     filled.resize(tet_capacity(), 0);
+    if (cell_group) {
+        cell_group->resize(tet_capacity(), -1);
+    }
     const std::vector<size_t> children = get_one_ring_tids_for_vertex(v_new);
     for (const size_t tid : children) {
         size_t end_vid = -1;
@@ -689,13 +555,88 @@ size_t SimWildMesh::tight_seal_split_tracked(
         if (it == parent_state.end()) {
             log_and_throw_error("Could not find the parent of a tet after a split.");
         }
-        const auto [in_set, parent_filled] = it->second;
+        const auto [in_set, parent_filled, parent_group] = it->second;
         filled[tid] = parent_filled;
+        if (cell_group) {
+            (*cell_group)[tid] = parent_group;
+        }
         if (!in_set) {
             continue; // outside the set, keeps its tags
         }
         cells.insert(tid);
         on_child(tid, end_vid);
+    }
+    return v_new;
+}
+
+size_t SimWildMesh::tight_seal_split_face_tracked(
+    const std::array<size_t, 3>& f,
+    const Vector3d& p,
+    std::unordered_set<size_t>& cells,
+    std::vector<char>& filled,
+    std::vector<int>* cell_group)
+{
+    std::array<size_t, 3> sorted = f;
+    std::sort(sorted.begin(), sorted.end());
+    const Tuple t = std::get<0>(tuple_from_face(sorted));
+
+    // The tets on the face give three children each, which keep the tet's corner off the face.
+    // Record by that corner whether the tet is in the set, whether it was filled, and its group.
+    std::vector<size_t> parents = {t.tid(*this)};
+    if (const auto opp = t.switch_tetrahedron(*this)) {
+        parents.push_back(opp->tid(*this));
+    }
+    const auto off_face = [&](const size_t tid) {
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (v != f[0] && v != f[1] && v != f[2]) {
+                return v;
+            }
+        }
+        return size_t(-1);
+    };
+    std::map<size_t, std::tuple<bool, char, int>> parent_state;
+    for (const size_t tid : parents) {
+        parent_state[off_face(tid)] = {
+            cells.count(tid) > 0,
+            filled[tid],
+            cell_group ? (*cell_group)[tid] : -1};
+    }
+
+    reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+    m_face_split_position = p;
+    std::vector<Tuple> new_tets;
+    const bool ok = split_face(t, new_tets);
+    m_face_split_position.reset();
+    if (!ok) {
+        return size_t(-1);
+    }
+    const size_t v_new = m_last_face_split_vertex;
+    for (const size_t tid : parents) {
+        cells.erase(tid);
+    }
+    filled.resize(tet_capacity(), 0);
+    if (cell_group) {
+        cell_group->resize(tet_capacity(), -1);
+    }
+    for (const size_t tid : get_one_ring_tids_for_vertex(v_new)) {
+        size_t off = size_t(-1);
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (v != f[0] && v != f[1] && v != f[2] && v != v_new) {
+                off = v;
+            }
+        }
+        const auto it = parent_state.find(off);
+        if (it == parent_state.end()) {
+            log_and_throw_error("Could not find the parent of a tet after a face split.");
+        }
+        const auto [in_set, parent_filled, parent_group] = it->second;
+        filled[tid] = parent_filled;
+        if (cell_group) {
+            (*cell_group)[tid] = parent_group;
+        }
+        if (in_set) {
+            cells.insert(tid);
+        }
     }
     return v_new;
 }

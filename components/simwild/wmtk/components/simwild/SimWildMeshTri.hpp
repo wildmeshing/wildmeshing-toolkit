@@ -6,6 +6,7 @@
 
 #include <wmtk/SurfaceTagAttributes.h>
 #include <limits>
+#include <optional>
 #include <unordered_set>
 
 #include <wmtk/utils/PartitionMesh.h>
@@ -260,28 +261,35 @@ public:
      * nothing else.
      *
      * J is the closing of the union R of the R_i by the disk B of diameter `distance`, minus R:
-     * the part of E that B cannot reach. It is found in four steps.
-     *  1. The faces surely in J (the spec's v2): U^ = R and the faces whose points are all
-     *     within distance/2 of R (inside R + B); V^ = the faces of U^ whose points are all
-     *     farther than distance/2 from U^'s boundary (inside the closing); J^ = V^ minus R. Both
-     *     tests are certified by conservative subdivision (tight_seal::certify_on_cell).
-     *  2. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
-     *  3. Conservative growth of all of J^ to the level set d(x, S) = distance/2: the faces
-     *     outside R are flooded from J^ through edges with a vertex inside (in R + B and
-     *     d(v, S) > distance/2), each flooded edge from an inside vertex to an outside one is
-     *     split where it leaves J, sphere traced from the inside end (to within trace_rel_tol x
-     *     distance/2), edges on R's boundary included, and J is the flooded faces with all
-     *     vertices inside.
-     *  4. The connected components of J (through edges) are kept by the rule of `selection`.
-     * Each component is then filled with the Voronoi diagram of its regions: edges whose
-     * endpoints have different nearest regions are split on the bisector, and each face gets
-     * the tag of its region.
+     * the part of E that B cannot reach. First R is made simplicially embedded (no face outside R
+     * has all its vertices on R; wmtk/utils/SimplicialEmbedding.hpp): each face outside R whose
+     * three edges lie on R is split at its centroid, then each edge outside R joining two vertices
+     * of R at its midpoint. Without it, a gap one face wide would be in J at any distance, every
+     * vertex of R counting as inside. Then J is found in three steps.
+     *  1. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
+     *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
+     *  2. A vertex is inside if it is in R + B and d(v, S) > distance/2, counted from
+     *     (1 - trace_rel_tol) x distance/2 up, so a vertex on the level set is never split off
+     *     by rounding; every vertex of R is inside (R lies in the closing; S, linear in each
+     *     face, can pass closer to R than the level set). Every face outside R with a vertex
+     *     inside is processed: each of its edges from an inside vertex to an outside one is
+     *     split where it leaves J, at d(x, S) = distance/2, sphere traced from the inside end
+     *     (to within trace_rel_tol x distance/2; not split if the inside end is already that
+     *     close or closer), and J is the processed faces whose vertices are all inside.
+     *  3. The connected components of J (through edges) are kept by the rule of `selection`.
+     * Each component (connected through edges, so two touching at a vertex are filled
+     * separately) is then filled with the Voronoi diagram of its regions, by enumeration
+     * (MultiVoronoiEnumeration.hpp): every vertex gets the set of regions nearest to it, each
+     * face is split as its corners' sets require (an edge where its ends' nearest regions
+     * change, twice where a third region crosses it; the face itself at its centroid where three
+     * regions meet inside it), and each face gets the tag of the region its corners share.
      *
-     * `selection` "explicit": the regions are `tags`, which may not hold ambient (the tag named
-     * "ambient"). "detected": `tags` is ignored (with a warning if it is not empty), the regions
-     * are every tag but ambient that some face has alone, and each part that borders
-     * `min_regions` of them or more (at least 2; ignored, with a warning if not 2, for "explicit")
-     * is filled with those it borders.
+     * `selection` "explicit": the regions are `tags`, two or three, which may not hold ambient
+     * (the tag named "ambient"). "detected": `tags` is ignored (with a warning if it is not
+     * empty), the regions are every tag but ambient that some face has alone, and each part that
+     * borders `min_regions` (2 or 3; ignored, with a warning if not 2, for "explicit") to three of
+     * them is filled with those it borders. A part bordering four or more is left alone, with a
+     * warning: the fill handles at most three regions.
      *
      * `sanity`: afterwards, throw if a face is inverted, a filled face carries other than one
      * region's tag, or a part of the filled faces borders fewer than two regions (a concave
@@ -308,6 +316,22 @@ private:
     std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
     size_t m_last_split_vertex = 0;
 
+    // Where split_face() puts the new vertex; the face's centroid if unset. Set before
+    // split_face(), cleared after.
+    std::optional<Vector2d> m_face_split_position;
+    // split_face_before() to split_face_after(): the face's corners, attributes and edges. Face
+    // splits are serial (only tight_seal_geom makes them).
+    struct FaceSplitCache
+    {
+        std::array<size_t, 3> v;
+        FaceAttributes face;
+        std::array<std::pair<simplex::Edge, EdgeAttributes>, 3> edges;
+        Vector2d position;
+        double sizing_scalar = 1;
+        size_t partition_id = 0;
+    };
+    FaceSplitCache m_face_split_cache;
+
     // tight_seal_geom's helpers that need the mesh, defined in TightSealGeom.cpp
     /// BVH of the boundary of the faces of `fids` for which in_set holds: their interfaces with
     /// the other faces and their edges on the mesh boundary. From a point outside the set, the
@@ -325,6 +349,13 @@ private:
         std::unordered_set<size_t>& faces,
         std::vector<char>& filled,
         const std::function<void(size_t, size_t)>& on_child);
+    /// Split face fid at p, keeping `faces` and `filled` up to date as tight_seal_split_tracked
+    /// does. Returns the new vertex, or -1 if the split was refused.
+    size_t tight_seal_split_face_tracked(
+        size_t fid,
+        const Vector2d& p,
+        std::unordered_set<size_t>& faces,
+        std::vector<char>& filled);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
     /// as a BVH of segments. On each edge of a face outside R (region < 0) between a vertex with
     /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
@@ -357,6 +388,11 @@ protected:
     bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max) const override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
     void split_after_vertex(size_t v_new) override { m_last_split_vertex = v_new; }
+    /// A face split puts the new vertex at m_face_split_position (the centroid if unset), in
+    /// doubles, so every corner must be rounded. The three children take the face's attributes,
+    /// the face's edges keep theirs, and the split is refused if a child is inverted.
+    bool split_face_before(const Tuple& t) override;
+    bool split_face_after(const Tuple& t) override;
 };
 
 } // namespace wmtk::components::simwild::tri

@@ -1,6 +1,7 @@
 #include <wmtk/io/DataWriter.hpp>
 
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SimplicialEmbedding.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
 #include "TopoOffsetTetMesh.h"
 
@@ -1479,13 +1480,23 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
     assert(ambient_assert());
 }
 
+namespace {
+
+/// The input complex as the shared simplicial embedding sees it: the simplices labelled nonzero.
+wmtk::utils::TetComplex labelled_complex(const TopoOffsetTetMesh& m)
+{
+    return {
+        [&m](const size_t v) { return m.m_vertex_extra[v].label != 0; },
+        [&m](const TetMesh::Tuple& e) { return m.m_edge_attribute[e.eid(m)].label != 0; },
+        [&m](const TetMesh::Tuple& f) { return m.m_face_extra[f.fid(m)].label != 0; },
+        [&m](const TetMesh::Tuple& t) { return m.m_tet_attribute[t.tid(m)].label != 0; }};
+}
+
+} // namespace
+
 bool TopoOffsetTetMesh::is_simplicially_embedded() const
 {
-    int bad_tets = 0;
-    auto tets = get_tets();
-    for (const Tuple& t : tets) {
-        bad_tets += (!tet_is_simp_emb(t));
-    }
+    const size_t bad_tets = wmtk::utils::count_embedding_violations(*this, labelled_complex(*this));
     if (bad_tets == 0) {
         logger().info("\tInput complex/offset simplicially embedded: TRUE");
         return true;
@@ -1499,126 +1510,22 @@ bool TopoOffsetTetMesh::is_simplicially_embedded() const
 
 bool TopoOffsetTetMesh::tet_is_simp_emb(const Tuple& t) const
 {
-    size_t t_id = t.tid(*this);
-    if (m_tet_attribute[t_id].label != 0) { // entire tet in input/offset
-        return true;
-    }
-
-    auto vs = oriented_tet_vids(t);
-    std::vector<size_t> vs_in;
-    for (int i = 0; i < 4; i++) {
-        if (m_vertex_extra[vs[i]].label != 0) {
-            vs_in.push_back(vs[i]);
-        }
-    }
-    if (vs_in.size() <= 1) { // nothing or just one vertex in input
-        return true;
-    } else if (vs_in.size() == 2) { // potentially one edge in input
-        size_t glob_eid = tuple_from_edge({{vs_in[0], vs_in[1]}}).eid(*this);
-        return (m_edge_attribute[glob_eid].label != 0);
-    } else if (vs_in.size() == 3) { // potentially one face in input
-        auto [_, glob_fid] = tuple_from_face({{vs_in[0], vs_in[1], vs_in[2]}});
-        return (m_face_extra[glob_fid].label != 0);
-    } else { // all four verts in complex but tet isn't, can't be simplicially embedded
-        return false;
-    }
+    return wmtk::utils::cell_keeps_embedding(*this, labelled_complex(*this), t);
 }
 
 void TopoOffsetTetMesh::simplicial_embedding()
 {
-    // identify necessary tets to split (by vertices)
-    std::vector<simplex::Tet> tets_to_split;
-    auto tets = get_tets();
-    for (const Tuple& tet : tets) {
-        auto vs = oriented_tet_vids(tet);
-        if (m_tet_attribute[tet.tid(*this)].label == 0) {
-            bool to_split = true;
-            for (int i = 0; i < 4; i++) {
-                size_t v1 = vs[i];
-                size_t v2 = vs[(i + 1) % 4];
-                size_t v3 = vs[(i + 2) % 4];
-                auto [_, glob_fid] = tuple_from_face({{v1, v2, v3}});
-                if (m_face_extra[glob_fid].label == 0) {
-                    to_split = false;
-                    break;
-                }
-            }
-
-            if (to_split) { // tet not in input but all faces are
-                tets_to_split.push_back(simplex::Tet(vs[0], vs[1], vs[2], vs[3]));
-            }
-        }
+    // the shared embedding (wmtk/utils/SimplicialEmbedding.hpp): tets outside the complex whose
+    // faces are all in it, then faces whose edges are, then edges whose vertices are; the split
+    // hooks give the new simplices the label of the simplex split, 0
+    const wmtk::utils::SimplicialEmbeddingStats stats =
+        wmtk::utils::simplicial_embedding(*this, labelled_complex(*this));
+    if (stats.refused > 0) {
+        log_and_throw_error("{} splits failed! (simplicial_embedding)", stats.refused);
     }
-
-    // actually split tets
-    for (const simplex::Tet& tet : tets_to_split) {
-        const auto& vs = tet.vertices();
-        Tuple t = tuple_from_vids(vs[0], vs[1], vs[2], vs[3]);
-        std::vector<Tuple> garbage;
-        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
-        if (!split_tet(t, garbage)) {
-            log_and_throw_error("tet split failed! (simplicial_embedding)");
-        }
-    }
-    logger().info("\tTets split: {}", tets_to_split.size());
-
-    // identify necessary faces to split
-    std::vector<simplex::Face> faces_to_split;
-    auto faces = get_faces();
-    for (const Tuple& f : faces) {
-        auto vs = get_face_vids(f);
-        if (m_face_extra[f.fid(*this)].label == 0) {
-            bool to_split = true;
-            for (int i = 0; i < 3; i++) {
-                size_t v1 = vs[i];
-                size_t v2 = vs[(i + 1) % 3];
-                size_t glob_eid = tuple_from_edge({{v1, v2}}).eid(*this);
-                if (m_edge_attribute[glob_eid].label == 0) {
-                    to_split = false;
-                }
-            }
-
-            if (to_split) {
-                faces_to_split.push_back(simplex::Face(vs[0], vs[1], vs[2]));
-            }
-        }
-    }
-
-    // actually split faces
-    for (const simplex::Face& f : faces_to_split) {
-        const auto& vs = f.vertices();
-        auto [t, _] = tuple_from_face({{vs[0], vs[1], vs[2]}});
-        std::vector<Tuple> garbage;
-        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
-        if (!split_face(t, garbage)) {
-            log_and_throw_error("face split failed! (simplicial_embedding)");
-        }
-    }
-    logger().info("\tFaces split: {}", faces_to_split.size());
-
-    // identify edges to split
-    std::vector<simplex::Edge> edges_to_split;
-    auto edges = get_edges();
-    for (const Tuple& e : edges) {
-        if (m_edge_attribute[e.eid(*this)].label == 0) { // edge not in input
-            size_t v1_id = e.vid(*this);
-            size_t v2_id = switch_vertex(e).vid(*this);
-            if ((m_vertex_extra[v1_id].label != 0) && (m_vertex_extra[v2_id].label != 0)) {
-                edges_to_split.push_back(simplex::Edge(v1_id, v2_id));
-            }
-        }
-    }
-
-    // actually split edges
-    for (const simplex::Edge& e : edges_to_split) {
-        Tuple t = tuple_from_edge(e.vertices());
-        std::vector<Tuple> garbage;
-        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
-        if (!split_edge(t, garbage)) {
-            log_and_throw_error("edge split failed! (simplicial_embedding)");
-        }
-    }
-    logger().info("\tEdges split: {}", edges_to_split.size());
+    logger().info("\tTets split: {}", stats.tets_split);
+    logger().info("\tFaces split: {}", stats.faces_split);
+    logger().info("\tEdges split: {}", stats.edges_split);
 }
 
 void TopoOffsetTetMesh::relabel_input_complex()

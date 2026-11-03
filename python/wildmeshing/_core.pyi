@@ -430,11 +430,11 @@ def simwild(options: dict, meshes: dict) -> tuple:
       fill_holes_threshold (float, default -1): For fill_holes_topo: only fill a connected component if its size (area in 2D, volume in 3D, in model units) is less than this threshold.
       tight_seal_tag_sets (list, default []): For tight_seal_topo: list of tag sets.
       tight_seal_threshold (float, default -1): For tight_seal_topo: only fill a hole cluster if its total size (area in 2D, volume in 3D, in model units) is less than this threshold.
-      tight_seal_geom_tags (list, default []): For tight_seal_geom (2D and 3D): the tags to seal, at least two.
+      tight_seal_geom_tags (list, default []): For tight_seal_geom (2D and 3D): the tags to seal, two or three.
       tight_seal_geom_distance (float, default -1): For tight_seal_geom: the distance d, which must be positive.
-      tight_seal_geom_trace_rel_tol (float, default 0.01): For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the growth's, where the distance to the dilation surface falls to d/2.
+      tight_seal_geom_trace_rel_tol (float, default 0.01): For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the parts' boundary, where the distance to the dilation surface falls to d/2.
       tight_seal_geom_selection (string, default "explicit"): For tight_seal_geom: which regions are sealed.
-      tight_seal_geom_min_regions (int, default 2): For tight_seal_geom with tight_seal_geom_selection "detected": a part is filled only if it borders at least this many regions; parts bordering fewer are left alone.
+      tight_seal_geom_min_regions (int, default 2): For tight_seal_geom with tight_seal_geom_selection "detected": a part is filled only if it borders at least this many regions, 2 or 3; parts bordering fewer are left alone, and so are parts bordering four or more (with a warning).
       tight_seal_geom_sanity (bool, default false): For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell carries other than one region's tag, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two regions, which would be a concave feature of one body, filled.
       keep_lcc_tags (list, default []): For keep_lcc: list of tag values for which only the largest connected component is kept.
       keep_lcc_num (int, default 1): Number of largest connected components that are kept.
@@ -645,7 +645,7 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       offset_amips_weight (float, default 1.0): Under EXPERIMENTAL_band_volume_rule "surface" w multiplies the AMIPS term only (the offset term is unweighted, 2026-10-28): w is the ratio of the two terms.
       EXPERIMENTAL_front_pocket_split (bool, default true): EXPERIMENTAL (2026-10-22), 3D.
       EXPERIMENTAL_front_spanned_split (bool, default true): EXPERIMENTAL (2026-10-24), 3D, needs EXPERIMENTAL_front_pocket_split.
-      EXPERIMENTAL_exit_no_folds (bool, default true): EXPERIMENTAL (2026-10-26; foldover faces only since 2026-10-27), 3D.
+      EXPERIMENTAL_exit_no_folds (bool, default true): EXPERIMENTAL (2026-10-26; foldover faces only since 2026-10-27; the fold predicate since 2026-11-02), 3D.
       EXPERIMENTAL_label_cleanup (string, default "one_sided_at_target"): EXPERIMENTAL (2026-10-26), 3D, with EXPERIMENTAL_front_pocket_split true (refused otherwise).
       DEBUG_crossings (bool, default false): Log-only: after every operation pass and every smoothing pass, count the front vertices whose ring measure crossed the bar (from <= 1 to > 1, and back), plus new vertices already over it; inside the front smoother, classify each accepted move whose ring-measure crossing it caused as the moved vertex's own or a front neighbour's.
       smoothing_mode (string, default "projected"): How smoothing places a surface vertex.

@@ -587,7 +587,7 @@
     "pointer": "/tight_seal_geom_tags",
     "type": "list",
     "default": [],
-    "doc": "For tight_seal_geom (2D and 3D): the tags to seal, at least two. Each entry is a single tag other than ambient; its region is the cells (faces in 2D, tets in 3D) tagged with it and nothing else. Ignored, with a warning, if tight_seal_geom_selection is \"detected\"."
+    "doc": "For tight_seal_geom (2D and 3D): the tags to seal, two or three. Each entry is a single tag other than ambient; its region is the cells (faces in 2D, tets in 3D) tagged with it and nothing else. Ignored, with a warning, if tight_seal_geom_selection is \"detected\"."
   },
   {
     "pointer": "/tight_seal_geom_tags/*",
@@ -598,13 +598,13 @@
     "pointer": "/tight_seal_geom_distance",
     "type": "float",
     "default": -1,
-    "doc": "For tight_seal_geom: the distance d, which must be positive. A disk (a ball in 3D) of diameter d moves through the cells outside the regions without entering them; each connected part it cannot reach that borders the regions (see tight_seal_geom_selection) is filled with their Voronoi diagram. The parts are found as cells surely unreachable (certified, whole cells), grown by sphere tracing to where the disk's reach begins, and then selected."
+    "doc": "For tight_seal_geom: the distance d, which must be positive. A disk (a ball in 3D) of diameter d moves through the cells outside the regions without entering them or leaving the mesh; each connected part it cannot reach that borders the regions (see tight_seal_geom_selection) is filled with their Voronoi diagram. The union of the regions is first made simplicially embedded: each cell outside it whose facets all lie on it is split at its centroid, and so on down to the edges outside it joining two of its vertices (split at their midpoint), so that no cell outside the regions has all its vertices on them and a gap one cell wide is decided by d. A vertex is in a part if it is on the regions, or within d/2 of them and at least (1 - tight_seal_geom_trace_rel_tol) x d/2 from the dilation surface (where the distance to the regions is d/2); each edge of the cells outside the regions from such a vertex to one that is not is split where that distance falls to d/2 (not if the first is already within tight_seal_geom_trace_rel_tol x d/2 of it, or closer), and a cell whose vertices are all in the parts is in one."
   },
   {
     "pointer": "/tight_seal_geom_trace_rel_tol",
     "type": "float",
     "default": 0.01,
-    "doc": "For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the growth's, where the distance to the dilation surface falls to d/2. As topological_offset's sphere_trace_target_rel_tol."
+    "doc": "For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the parts' boundary, where the distance to the dilation surface falls to d/2. As topological_offset's sphere_trace_target_rel_tol."
   },
   {
     "pointer": "/tight_seal_geom_selection",
@@ -614,14 +614,15 @@
       "explicit",
       "detected"
     ],
-    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders tight_seal_geom_min_regions regions or more (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags."
+    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders tight_seal_geom_min_regions to three regions (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags. A part bordering four regions or more is not filled; a warning names its regions."
   },
   {
     "pointer": "/tight_seal_geom_min_regions",
     "type": "int",
     "default": 2,
     "min": 2,
-    "doc": "For tight_seal_geom with tight_seal_geom_selection \"detected\": a part is filled only if it borders at least this many regions; parts bordering fewer are left alone. At least 2. Ignored, with a warning if not 2, with \"explicit\", which fills the parts that border every listed region."
+    "max": 3,
+    "doc": "For tight_seal_geom with tight_seal_geom_selection \"detected\": a part is filled only if it borders at least this many regions, 2 or 3; parts bordering fewer are left alone, and so are parts bordering four or more (with a warning). Ignored, with a warning if not 2, with \"explicit\", which fills the parts that border every listed region."
   },
   {
     "pointer": "/tight_seal_geom_sanity",
