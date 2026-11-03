@@ -389,12 +389,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // the tet phase began and had ~94% of smoothing attempts vetoed.
     // preserve_topology holds the input simplification to the link condition as well.
     const bool simplify_use_link_condition = params.preserve_topology;
-    if (json_params.contains("simplify_use_link_condition")) {
-        logger().warn(
-            "simplify_use_link_condition is gone: preserve_topology ({}) now sets the link "
-            "condition of the input simplification",
-            params.preserve_topology);
-    }
     // The simplification's eps is a length of its own, not a fraction of envelope_eps:
     // eps_simplify when positive, else eps_simplify_rel of the same diagonal as envelope_eps --
     // the two keys and the rule of simwild's Parameters::init(), now in all three apps. The

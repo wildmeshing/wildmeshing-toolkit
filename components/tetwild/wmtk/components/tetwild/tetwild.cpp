@@ -189,12 +189,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // preserve_topology holds the input simplification to the link condition as well, so the
     // surface handed to the arrangement has the input's topology.
     const bool simplify_use_link_condition = params.preserve_topology;
-    if (json_params.contains("simplify_use_link_condition")) {
-        logger().warn(
-            "simplify_use_link_condition is gone: preserve_topology ({}) now sets the link "
-            "condition of the input simplification",
-            params.preserve_topology);
-    }
 
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
@@ -416,9 +410,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // input's boundary edges, the simplification counterpart of the optimizer's order-2
     // envelope and scaled the same way: order2_envelope_ratio of the simplification's eps, where
     // the optimizer's is of the surface eps, for the same headroom reason as above. The
-    // optimizer's tube is built around the input's own boundary, or under envelope_reference
-    // "simplified" around the simplified one at what the simplification left of eps, so a
-    // boundary drifts at most order2_envelope_ratio * eps in all. Until 2026-10 it was built
+    // optimizer's tube is built around the input's own boundary at order2_envelope_ratio * eps,
+    // so a boundary of the input drifts at most that from it; under envelope_reference
+    // "simplified" around the simplified one at the same radius. Until 2026-10 it was built
     // around the simplified boundary at the full eps: order2_envelope_ratio * (eps +
     // simplify_eps), 1.5 eps at the defaults.
     //
