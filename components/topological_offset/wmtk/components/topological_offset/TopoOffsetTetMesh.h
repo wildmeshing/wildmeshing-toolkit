@@ -448,6 +448,9 @@ public:
     std::shared_ptr<Envelope> m_loop_envelope;
     /// m_input_envelopes' members, kept by copy: InputEnvelopes itself is not copyable.
     std::vector<std::shared_ptr<Envelope>> m_loop_input_members;
+    /// Whether build_final_envelopes() set the two above. The loop's envelope may be none: an
+    /// input complex of curves or points holds no face, and the wall is the box rule's.
+    bool m_final_envelopes = false;
 
     /// Inside tetwild_pass(): every tracked face is held, the offset surface to m_offset_envelope
     /// (surface_envelope_for_face(), face_is_held()); a front vertex is smoothed like every other

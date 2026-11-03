@@ -477,6 +477,7 @@ void TopoOffsetTetMesh::build_final_envelopes()
     m_loop_input_members.clear();
     for (size_t i = 0; i < m_input_envelopes.size(); ++i)
         m_loop_input_members.push_back(m_input_envelopes.member(i));
+    m_final_envelopes = true;
     if (n_region == 0) {
         logger().info("\t[envelope] final pass: no region boundary besides the held surfaces");
         return;
@@ -495,12 +496,13 @@ void TopoOffsetTetMesh::build_final_envelopes()
 
 void TopoOffsetTetMesh::release_final_envelopes()
 {
-    if (m_loop_envelope) {
+    if (m_final_envelopes) {
         m_envelope = m_loop_envelope;
         m_input_envelopes.set(m_loop_input_members);
     }
     m_loop_envelope = nullptr;
     m_loop_input_members.clear();
+    m_final_envelopes = false;
 }
 
 void TopoOffsetTetMesh::mark_input_complex_vertices()
