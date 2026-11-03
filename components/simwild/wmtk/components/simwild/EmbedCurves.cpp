@@ -105,7 +105,8 @@ std::pair<Vector2d, Vector2d> EmbedCurves::bbox_curves_minmax() const
 void EmbedCurves::simplify_curves(
     const double eps,
     const bool use_exact_envelope,
-    const int num_threads)
+    const int num_threads,
+    const bool per_input_envelopes)
 {
     Envelope envelope(use_exact_envelope);
     envelope.init(m_V_curves, m_E_curves, eps);
@@ -117,13 +118,15 @@ void EmbedCurves::simplify_curves(
     // copies and merging two curves would make them disagree.
     //
     // With several inputs, each segment held to its own input's envelope, as the optimizer
-    // holds it after (SimWildMeshTri::init_label_envelopes()).
-    const auto segment_envelopes = utils::input_segment_envelopes(
-        m_V_curves,
-        m_E_curves,
-        std::vector<int>(m_E_input.begin(), m_E_input.end()),
-        eps,
-        use_exact_envelope);
+    // holds it after (SimWildMeshTri::init_label_envelopes()); shared without per_input_envelopes.
+    const auto segment_envelopes = per_input_envelopes
+                                       ? utils::input_segment_envelopes(
+                                             m_V_curves,
+                                             m_E_curves,
+                                             std::vector<int>(m_E_input.begin(), m_E_input.end()),
+                                             eps,
+                                             use_exact_envelope)
+                                       : std::vector<std::shared_ptr<Envelope>>{};
     std::vector<int> surviving_edges;
     const size_t removed = utils::simplify_segments(
         m_V_curves,

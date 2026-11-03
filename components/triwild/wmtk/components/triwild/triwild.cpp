@@ -438,13 +438,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         Envelope simplify_envelope(!simplify_use_sample_envelope);
         simplify_envelope.init(V_in, E_in, simplify_eps);
         // With several input files, each segment held to its own file's envelope, as the
-        // optimizer holds it after (m_input_envelopes).
-        const auto segment_envelopes = wmtk::utils::input_segment_envelopes(
-            V_in,
-            E_in,
-            E_in_input,
-            simplify_eps,
-            !simplify_use_sample_envelope);
+        // optimizer holds it after (m_input_envelopes); shared without per_input_envelopes.
+        const auto segment_envelopes = params.per_input_envelopes
+                                           ? wmtk::utils::input_segment_envelopes(
+                                                 V_in,
+                                                 E_in,
+                                                 E_in_input,
+                                                 simplify_eps,
+                                                 !simplify_use_sample_envelope)
+                                           : std::vector<std::shared_ptr<wmtk::Envelope>>{};
         std::vector<int> surviving;
         const size_t removed = wmtk::utils::simplify_segments(
             V_simp,

@@ -1031,6 +1031,10 @@ void TriOptimizerMesh::init_input_envelopes(
     const double eps,
     const bool exact)
 {
+    if (!m_params.per_input_envelopes) {
+        m_input_envelopes.set({}); // shared: every segment held to the union, m_envelope
+        return;
+    }
     // Each input from one source: its rows of (V, E) when E_sets says which and it has any,
     // else the tracked segments carrying it.
     InputSet from_rows = 0;

@@ -48,7 +48,8 @@ void ShortestEdgeCollapse::create_mesh(
     const std::vector<size_t>& frozen_verts,
     double eps,
     double boundary_eps,
-    const std::vector<int>& tri_input)
+    const std::vector<int>& tri_input,
+    const bool per_input_envelopes)
 {
     wmtk::TriMesh::init(n_vertices, tris);
     if (!tri_input.empty()) {
@@ -76,7 +77,7 @@ void ShortestEdgeCollapse::create_mesh(
         const bool several_inputs = std::any_of(tri_input.begin(), tri_input.end(), [&](int in) {
             return in != tri_input[0];
         });
-        if (several_inputs) {
+        if (several_inputs && per_input_envelopes) {
             const int n_inputs = *std::max_element(tri_input.begin(), tri_input.end()) + 1;
             m_input_envelopes.assign(n_inputs, nullptr);
             for (int k = 0; k < n_inputs; ++k) {

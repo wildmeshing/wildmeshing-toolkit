@@ -334,6 +334,7 @@ TEST_CASE("sec-holds-each-face-to-its-own-input", "[test_sec]")
     // one vertex not on a boundary, so the only collapses move it onto a corner, which lays
     // input 0 flat on input 1, 2 eps from itself at a remaining face's centroid. Held to the
     // union that is inside; held to its own input's envelope it is not, and the apex stays.
+    // Without per_input_envelopes the inputs share one envelope again, whatever tri_input says.
     const double eps = 1e-2;
     const std::vector<Eigen::Vector3d> v = {
         {0, 0, 0},
@@ -347,12 +348,13 @@ TEST_CASE("sec-holds-each-face-to-its-own-input", "[test_sec]")
         {0, 1, 0}};
     const std::vector<std::array<size_t, 3>> tris =
         {{{0, 1, 4}}, {{1, 2, 4}}, {{2, 3, 4}}, {{3, 0, 4}}, {{5, 6, 7}}, {{5, 7, 8}}};
-    const auto n_vertices_after = [&](const std::vector<int>& tri_input) {
+    const auto n_vertices_after = [&](const std::vector<int>& tri_input, bool per_input = true) {
         ShortestEdgeCollapse m(v, 0, true);
-        m.create_mesh(v.size(), tris, {}, eps, 0, tri_input);
+        m.create_mesh(v.size(), tris, {}, eps, 0, tri_input, per_input);
         m.collapse_shortest(0);
         return m.get_vertices().size();
     };
     CHECK(n_vertices_after({}) == 8); // the control: the union lets the apex go
     CHECK(n_vertices_after({0, 0, 0, 0, 1, 1}) == 9);
+    CHECK(n_vertices_after({0, 0, 0, 0, 1, 1}, false) == 8);
 }

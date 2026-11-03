@@ -53,9 +53,14 @@ public:
      * Must be a small envelope: the winding-number tags below are evaluated against the
      * ORIGINAL per-input curves, not the simplified union, so moving the curves too far
      * makes the tags disagree with the geometry. Same constraint EmbedSurface documents.
+     * With two or more inputs each segment is held to its own input's envelope, all to one
+     * without per_input_envelopes (OptimizerParameters::per_input_envelopes).
      */
-    void
-    simplify_curves(const double eps, const bool use_exact_envelope, const int num_threads = 0);
+    void simplify_curves(
+        const double eps,
+        const bool use_exact_envelope,
+        const int num_threads = 0,
+        const bool per_input_envelopes = true);
 
     /**
      * @brief Compute the exact arrangement of the (simplified) curve union.

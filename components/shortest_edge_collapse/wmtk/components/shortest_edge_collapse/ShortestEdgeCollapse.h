@@ -91,6 +91,8 @@ public:
      * @param tri_input    optional, per triangle: the input it came from, into face_attrs. With
      *   two or more inputs and an envelope, each face is held to its own input's
      *   (m_input_envelopes).
+     * @param per_input_envelopes  false: one envelope for all inputs whatever tri_input says,
+     *   which then only goes into face_attrs (OptimizerParameters::per_input_envelopes).
      */
     void create_mesh(
         size_t n_vertices,
@@ -98,7 +100,8 @@ public:
         const std::vector<size_t>& frozen_verts = {},
         double eps = 0,
         double boundary_eps = 0,
-        const std::vector<int>& tri_input = {});
+        const std::vector<int>& tri_input = {},
+        bool per_input_envelopes = true);
 
     ~ShortestEdgeCollapse() {}
 

@@ -25,6 +25,7 @@
       "eps",
       "eps_simplify_rel",
       "envelope_reference",
+      "per_input_envelopes",
       "eps_simplify",
       "simplify_boundary_envelope",
       "remove_duplicate_eps",
@@ -272,6 +273,12 @@
     "default": "input",
     "options": ["input", "simplified"],
     "doc": "Which geometry every envelope, tube and anchor is built around: the surface (2D: curve) envelope and the per-label ones, the order-2 and feature tubes, and the curve anchors, one choice for all. \"input\": the input as read, at eps times each one's ratio, through either simplification; the output is within eps of it. Before the insertion (preserve_topology off), an open boundary, non-manifold edge or curve end the simplification made, and every curve where two inputs meet, is held around itself as the insertion leaves it, since a free one erodes the input along its curve; after it (preserve_topology on, remeshing), the result is held to the envelope around the input again. Needs eps_simplify below eps, else refused: the simplified geometry could start outside its envelope. \"simplified\": the simplified geometry, which replaces the input, at eps times each one's ratio; the output is within eps of it, so within eps_simplify plus eps of the input, and any eps_simplify is allowed. Refused when no simplification runs (simplify false; under preserve_topology, in 2D and outside remeshing). After a simplification following the insertion the order-2 curves are tagged again around its result, the simplification holding them within order2_envelope_ratio x eps_simplify, and the curve anchors keep their centres at that radius. Until 2026-11 \"simplified\" built at eps minus eps_simplify; until 2026-10 the key optimize_envelope_around_simplified, and SimWild built every envelope around the simplified geometry whatever it said."
+  },
+  {
+    "pointer": "/per_input_envelopes",
+    "type": "bool",
+    "default": true,
+    "doc": "Hold each input to its own envelopes. With two or more labels: one surface (2D: curve) envelope per label, in 3D one order-2 and one feature tube per input, and the input simplification's envelope per input likewise, so a face or curve of one input cannot end up on another. false: one shared envelope of each kind for all labels, faster where inputs come within eps of each other (the simplification measured 3% to 20% faster shared, 2026-11), but an input may then end up on another within eps. Anchors are per point either way."
   },
   {
     "pointer": "/eps_simplify",

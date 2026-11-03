@@ -297,7 +297,8 @@ InputData read_mesh(
             eps_simplify,
             !json_params["simplify_use_sample_envelope"],
             NUM_THREADS,
-            boundary_eps);
+            boundary_eps,
+            json_params["per_input_envelopes"]);
         input_data.simplified_before_insertion = true;
 
         if (debug_output) {
@@ -523,7 +524,8 @@ InputData read_curves(
         curves.simplify_curves(
             eps_simplify,
             !json_params["simplify_use_sample_envelope"],
-            NUM_THREADS);
+            NUM_THREADS,
+            json_params["per_input_envelopes"]);
         input_data.simplified_before_insertion = true;
 
         if (debug_output) {

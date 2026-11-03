@@ -1396,7 +1396,8 @@ size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
             m_order2_edge_envelope = std::make_shared<Envelope>(exact);
             m_order2_edge_envelope->init(V, segments, eps);
             std::vector<std::shared_ptr<Envelope>> members;
-            if ((all & (all - 1)) != 0) { // one input: the union tube is that input's
+            // One input: the union tube is that input's. Shared without per_input_envelopes.
+            if (m_params.per_input_envelopes && (all & (all - 1)) != 0) {
                 for (size_t i = 0; i < size_t(SurfaceTagAttributes::max_inputs) && (all >> i) != 0;
                      ++i) {
                     std::vector<Eigen::Vector2i> own;
@@ -1508,8 +1509,10 @@ void TetOptimizerMesh::init_tagged_edge_input_envelopes(
         k == FeatureEdgeAttributes::feature ? m_feature_input_envelopes : m_order2_input_envelopes;
     InputSet all = 0;
     for (const size_t eid : eids) all |= m_feature_edge_attribute[eid].inputs(k);
-    if ((all & (all - 1)) == 0) {
-        tubes.set({}); // one input (or none): the union tube is that input's
+    if (!m_params.per_input_envelopes || (all & (all - 1)) == 0) {
+        // One input (or none): the union tube is that input's. Shared without
+        // per_input_envelopes.
+        tubes.set({});
         return;
     }
     std::vector<Eigen::Vector3d> v_posf(vert_capacity());

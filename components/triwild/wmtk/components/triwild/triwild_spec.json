@@ -16,6 +16,7 @@
       "eps_simplify_rel",
       "eps_simplify",
       "envelope_reference",
+      "per_input_envelopes",
       "simplify_use_sample_envelope",
       "use_sample_envelope",
       "filter",
@@ -155,6 +156,12 @@
     "default": "input",
     "options": ["input", "simplified"],
     "doc": "Which geometry the envelope and the curve anchors are built around, one choice for both. \"input\": the original input curves, at eps times each one's ratio; the output is within eps of them. A curve end the simplification made is anchored where it is, since a free one erodes the input along its curve. Needs the simplification's eps (eps_simplify_rel or eps_simplify) below eps, else refused: the simplified curves could start outside their envelope. \"simplified\": the SIMPLIFIED curves, which replace the input, at eps times each one's ratio; the output is within eps of them, so within the simplification's eps plus eps of the input, and any simplification eps is allowed. Refused with simplify false. The mesh starts at the CENTRE of the envelope it is held to rather than somewhere inside it, which matters since the envelope is a hard veto rather than a penalty. Until 2026-11 \"simplified\" built at eps minus the simplification's eps; until 2026-10 the key optimize_envelope_around_simplified."
+  },
+  {
+    "pointer": "/per_input_envelopes",
+    "type": "bool",
+    "default": true,
+    "doc": "Hold each input to its own envelopes. With two or more input files: one curve envelope per input, and the input simplification's envelope per input likewise, so a segment of one input cannot end up on another. false: one shared envelope for all inputs, faster where inputs come within eps of each other (measured on the 3D simplification, 3% to 20% faster shared, 2026-11), but an input may then end up on another within eps. Anchors are per point either way."
   },
   {
     "pointer": "/simplify_use_sample_envelope",

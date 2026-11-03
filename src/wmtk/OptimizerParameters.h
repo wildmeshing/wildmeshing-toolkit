@@ -63,6 +63,16 @@ struct OptimizerParameters
      * with a warning when nothing was left.
      */
     bool envelope_around_simplified = false;
+    /**
+     * per_input_envelopes (default true): with two or more inputs, each is held to its own --
+     * one surface (2D: curve) envelope per input, one order-2 and one feature tube per input,
+     * and the input simplification's envelope per input likewise -- rather than one shared
+     * envelope of each kind for all inputs. false shares them: an input may then end up on
+     * another within eps, for speed where inputs come within eps of each other (the
+     * simplification measured 3% to 20% faster shared, 2026-11). Anchors are per point either
+     * way. An input is an input file in tetwild and triwild, a label in simwild.
+     */
+    bool per_input_envelopes = true;
     /// The eps the order-2 tubes and the curve anchors are built at, before their ratio: the
     /// surface envelope's, eps, around whichever geometry envelope_around_simplified names.
     double order2_eps() const { return epsr * diag_l; }

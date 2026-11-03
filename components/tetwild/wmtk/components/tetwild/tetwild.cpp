@@ -186,6 +186,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
 
     params.preserve_topology = json_params["preserve_topology"];
+    params.per_input_envelopes = json_params["per_input_envelopes"];
     // preserve_topology holds the input simplification to the link condition as well, so the
     // surface handed to the arrangement has the input's topology.
     const bool simplify_use_link_condition = params.preserve_topology;
@@ -432,7 +433,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         modified_nonmanifold_v,
         simplify_eps,
         simplify_boundary_eps,
-        tri_input);
+        tri_input,
+        params.per_input_envelopes);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (simplify) {
@@ -603,7 +605,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // finalization. With one input the member would BE tet_envelope, so none is built and every
     // face is held to tet_envelope exactly as before.
     std::vector<std::shared_ptr<wmtk::Envelope>> input_envelopes;
-    if (input_paths.size() > 1) {
+    if (input_paths.size() > 1 && params.per_input_envelopes) {
         const std::vector<Eigen::Vector3d>& src_V = env_around_simplified ? vsimp : verts;
         const std::vector<std::array<size_t, 3>>& src_F = env_around_simplified ? fsimp : tris;
         const std::vector<int>& src_input = env_around_simplified ? fsimp_input : tri_input;

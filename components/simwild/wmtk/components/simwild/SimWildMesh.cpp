@@ -480,6 +480,10 @@ size_t SimWildMesh::refine_sizing_around_worst(double)
 
 void SimWildMesh::init_label_envelopes(const double eps, const bool exact)
 {
+    if (!m_params.per_input_envelopes) {
+        m_input_envelopes.set({}); // shared: every face held to the union, m_envelope
+        return;
+    }
     constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
     // Each label from one source: the input triangles m_envelope is built around, when their
     // labels are known and the label has any, else the mesh's faces carrying it.

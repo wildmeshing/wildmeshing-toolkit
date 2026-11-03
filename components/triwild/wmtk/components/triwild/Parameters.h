@@ -68,6 +68,7 @@ struct Parameters : public wmtk::OptimizerParameters
         stop_energy = json_params["stop_energy"];
         preserve_topology = json_params["preserve_topology"];
         envelope_around_simplified = json_params["envelope_reference"] == "simplified";
+        per_input_envelopes = json_params["per_input_envelopes"];
         order2_envelope_ratio = json_params["order2_envelope_ratio"];
         feature_envelope_ratio = json_params["feature_envelope_ratio"];
 

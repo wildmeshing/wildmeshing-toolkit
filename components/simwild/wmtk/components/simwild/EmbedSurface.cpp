@@ -534,7 +534,8 @@ void EmbedSurface::simplify_surface(
     const double eps,
     const bool use_exact,
     const int num_threads,
-    const double boundary_eps)
+    const double boundary_eps,
+    const bool per_input_envelopes)
 {
     // convert to STL vectors
     std::vector<Eigen::Vector3d> verts = V_surf_to_vector();
@@ -548,7 +549,14 @@ void EmbedSurface::simplify_surface(
     if (m_F_input.size() == tris.size()) tri_input.assign(m_F_input.begin(), m_F_input.end());
 
     // must be a small envelope to ensure correct tet tags later on
-    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, eps, boundary_eps, tri_input);
+    surf_mesh.create_mesh(
+        verts.size(),
+        tris,
+        modified_nonmanifold_v,
+        eps,
+        boundary_eps,
+        tri_input,
+        per_input_envelopes);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     std::shared_ptr<history::Recorder> recorder;

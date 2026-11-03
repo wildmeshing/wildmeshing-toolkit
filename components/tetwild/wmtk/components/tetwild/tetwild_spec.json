@@ -17,6 +17,7 @@
       "eps_simplify",
       "simplify_boundary_envelope",
       "envelope_reference",
+      "per_input_envelopes",
       "order2_envelope_ratio",
       "feature_envelope_ratio",
       "DEBUG_feature_retention",
@@ -191,6 +192,12 @@
     "default": "input",
     "options": ["input", "simplified"],
     "doc": "Which geometry every envelope, tube and anchor is built around: the surface envelope, the order-2 (open boundary) and feature tubes, and the curve anchors, one choice for all. \"input\": the original input, at eps times each one's ratio; the output is within eps of it. An open boundary or curve end the simplification made is held around itself as the insertion leaves it, since a free one erodes the input along its curve (measured 2026-11: left free, 104509 239 -> 317 input samples farther than eps from the output, crown 554 -> 695), and one it removed is lost, as the topology change it may make without preserve_topology; measured on the integration configs (2026-10), 8 of them carried order-2 curves on no curve of the input. Needs the simplification's eps (eps_simplify_rel or eps_simplify) below eps, else refused: the simplified surface could start outside its envelope. \"simplified\": the SIMPLIFIED surface, which replaces the input, at eps times each one's ratio; the output is within eps of it, so within the simplification's eps plus eps of the input, and any simplification eps is allowed. Refused with simplify false. The geometry starts at the CENTRE of the envelope it is held to rather than somewhere inside it, which matters since the envelope is a hard veto rather than a penalty (starving that headroom, a simplification at 0.95 eps -- simplify_envelope_ratio 0.95, until 2026-11 -- turned a converging run on Thingi10K 1368052 into a diverging one). Until 2026-11 \"simplified\" built at eps minus the simplification's eps; until 2026-10 the key optimize_envelope_around_simplified, which moved the surface envelope only."
+  },
+  {
+    "pointer": "/per_input_envelopes",
+    "type": "bool",
+    "default": true,
+    "doc": "Hold each input to its own envelopes. With two or more input files: one surface envelope per input, one order-2 and one feature tube per input, and the input simplification's envelope per input likewise, so a face or curve of one input cannot end up on another. false: one shared envelope of each kind for all inputs, faster where inputs come within eps of each other (the simplification measured 3% to 20% faster shared, 2026-11), but an input may then end up on another within eps. Anchors are per point either way."
   },
   {
     "pointer": "/order2_envelope_ratio",
