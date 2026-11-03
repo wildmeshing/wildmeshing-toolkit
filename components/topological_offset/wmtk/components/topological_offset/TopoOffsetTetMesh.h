@@ -368,6 +368,13 @@ public:
     /// Called by build_envelopes(), before the march; the operations carry the bits after. Not
     /// written: the output takes only the face-tag bits (io::collect_input_set_tags()).
     void assign_face_labels();
+    /// The held surfaces' curves and points, as tetwild and simwild hold theirs: the order-2 edges
+    /// (rims, non-manifold edges where labelled regions meet) tagged and held in tubes around
+    /// themselves, of half-width order2_envelope_ratio x envelope_size, one per label, and the curve
+    /// ends and junctions anchored at that radius. After build_envelopes() and before the march,
+    /// so the front, which the march makes, is never among them. Until 2026-11 the offset held no
+    /// curve and no point; the surface envelope alone held them.
+    void hold_curves_and_points();
     /// The final pass's envelopes: the offset surface's envelope (build_offset_envelope()), and
     /// m_envelope swapped for one that also holds every other region boundary, at its position as
     /// the loop left it, beside the surfaces build_envelopes() captured (held where they were

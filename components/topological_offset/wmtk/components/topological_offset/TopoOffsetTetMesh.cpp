@@ -394,6 +394,21 @@ void TopoOffsetTetMesh::build_envelopes()
         m_envelope_eps);
 }
 
+void TopoOffsetTetMesh::hold_curves_and_points()
+{
+    // See the declaration. As simwild after its insertion: the base's rule for which edges are
+    // order-2 (1 tracked face, or 3 and more), tagged here once and carried by the operations,
+    // each held in a tube around itself, one tube per label; the anchors where they end.
+    const double order2_eps = m_envelope_eps * m_offset_params.order2_envelope_ratio;
+    const size_t n_order2 = tag_order2_edges(order2_eps, /*exact=*/true);
+    const size_t n_anchors = anchor_feature_points({}, order2_eps, order2_eps);
+    logger().info(
+        "\t[curves] {} order-2 edges tagged, {} curve ends and junctions anchored (eps {:.6g})",
+        n_order2,
+        n_anchors,
+        order2_eps);
+}
+
 void TopoOffsetTetMesh::assign_face_labels()
 {
     // See the declaration. Bits past the face tags, one per tet tag; refused past InputSet's
@@ -1511,6 +1526,7 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
 
     // THE envelope, once: the complex is labelled and embedded, and nothing has moved yet.
     build_envelopes();
+    hold_curves_and_points();
 
     // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
     repulsion_smoothing();
