@@ -370,10 +370,10 @@ public:
     void assign_face_labels();
     /// The held surfaces' curves and points, as tetwild and simwild hold theirs: the order-2 edges
     /// (rims, non-manifold edges where labelled regions meet) tagged and held in tubes around
-    /// themselves, of half-width order2_envelope_ratio x envelope_size, one per label, and the curve
-    /// ends and junctions anchored at that radius. After build_envelopes() and before the march,
-    /// so the front, which the march makes, is never among them. Until 2026-11 the offset held no
-    /// curve and no point; the surface envelope alone held them.
+    /// themselves, of half-width order2_envelope_ratio x envelope_size, one per label, and the
+    /// curve ends and junctions anchored at that radius. After build_envelopes() and before the
+    /// march, so the front, which the march makes, is never among them. Until 2026-11 the offset
+    /// held no curve and no point; the surface envelope alone held them.
     void hold_curves_and_points();
     /// The final pass's envelopes: the offset surface's envelope (build_offset_envelope()), and
     /// m_envelope swapped for one that also holds every other region boundary, at its position as
@@ -2207,13 +2207,15 @@ public:
         return face_is_held(f) ? TetOptimizerMesh::surface_envelope_for_face(vids, attr) : nullptr;
     }
 
-    /// No test of the collapsing edge (TetOptimizerMesh::collapsing_edge_envelope()) yet: the
-    /// front's vertices are surface vertices that move by design and lie outside m_envelope, so
-    /// the base's union would refuse the front's collapses. It comes with the offset following
-    /// the other apps' envelope rules.
-    std::shared_ptr<Envelope> collapsing_edge_envelope(size_t, size_t) const override
+    /// The collapsing edge's own test (TetOptimizerMesh::collapsing_edge_envelope()) where both
+    /// ends are on the held surfaces: the union of the held faces, m_envelope, so a vertex cannot
+    /// cross a solid of the input onto another of its surfaces. Not where an end is on the front,
+    /// which moves by design and lies outside m_envelope; an edge from the input complex to the
+    /// front is refused anyway (CollapseReject::app_both_surfaces).
+    std::shared_ptr<Envelope> collapsing_edge_envelope(size_t v1, size_t v2) const override
     {
-        return nullptr;
+        if (m_vertex_extra[v1].m_is_on_offset || m_vertex_extra[v2].m_is_on_offset) return nullptr;
+        return vertex_is_held(v1) && vertex_is_held(v2) ? m_envelope : nullptr;
     }
 
     /// Surface edges may be flipped, as a topology-preserving diagonal flip. Both tracked
