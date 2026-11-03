@@ -354,6 +354,11 @@ void TopoOffsetTetMesh::build_envelopes()
             "envelope_size or envelope_size_rel to a positive length",
             m_envelope_eps);
     }
+    // The envelope energy's weight (smoothing_mode "exact"): 1/eps^2, so the distance enters
+    // relative to the envelope, as tetwild and simwild set theirs. Until 2026-11 never set, -1,
+    // which turned the term's penalty into a reward under "exact"; "projected", the default,
+    // does not read it.
+    m_s_envelope = 1. / (m_envelope_eps * m_envelope_eps);
     std::vector<Eigen::Vector3i> tris;
     size_t n_tracked = 0, n_wall = 0;
     for (const Tuple& f : get_faces()) {
