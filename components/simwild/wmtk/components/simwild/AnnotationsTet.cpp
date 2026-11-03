@@ -1,3 +1,4 @@
+#include "MultiVoronoiEnumeration.hpp"
 #include "SimWildMesh.h"
 #include "TightSealGeom.hpp"
 
@@ -1048,15 +1049,17 @@ void SimWildMesh::tight_seal_geom(
         }
     }
 
-    // Voronoi fill, of each component with its regions. A point's region is the one of them
-    // nearest to it. An edge whose endpoints are in regions a and b is split where d_a = d_b, by
-    // split_adjust_position's bisection.
-    size_t split_a = 0;
-    size_t split_b = 0;
-    m_voronoi_split_fn = [&](const Vector3d& p) -> double {
-        return tight_seal::bvh_distance(region_bvhs[split_a], p) -
-               tight_seal::bvh_distance(region_bvhs[split_b], p);
-    };
+    // Voronoi fill of each component with its regions, by enumeration
+    // (MultiVoronoiEnumeration.hpp): each vertex gets the set of the component's regions nearest to
+    // it (those it touches, for a vertex on a region), and each tet is split as its corners' sets
+    // require (its pierced faces, then its edges) and labelled with the region they share.
+    Vector3d lo = Vector3d::Constant(std::numeric_limits<double>::infinity());
+    Vector3d hi = -lo;
+    for (const Tuple& t : get_vertices()) {
+        lo = lo.cwiseMin(pos(t.vid(*this)));
+        hi = hi.cwiseMax(pos(t.vid(*this)));
+    }
+    const double tie_eps = 1e-10 * (hi - lo).norm(); // distances this close count as a tie
 
     // The component of each tet, kept up to date through the splits. Components are connected
     // through faces, so two of them can share an edge, and splitting it for one also splits the
@@ -1068,7 +1071,92 @@ void SimWildMesh::tight_seal_geom(
         }
     }
 
-    size_t n_splits = 0;
+    // The fill's view of the mesh, for one component: label l is region regions[l].
+    struct FillAdapter
+    {
+        SimWildMesh& m;
+        std::unordered_set<size_t>& cells;
+        std::vector<char>& filled;
+        std::vector<int>& cell_comp;
+        const std::vector<size_t>& regions;
+        const std::vector<SimpleBVH::BVH>& bvhs;
+        const std::vector<int64_t>& tags;
+        multi_voronoi::LabelSet all;
+        double eps;
+
+        std::array<size_t, 4> tet_vertices(const size_t t) const { return m.oriented_tet_vids(t); }
+        Vector3d position(const size_t v) const { return m.m_vertex_attribute[v].m_posf; }
+        double distance(const Vector3d& x, const int l) const
+        {
+            return tight_seal::bvh_distance(bvhs[regions[l]], x);
+        }
+        multi_voronoi::LabelSet initial_labels(const size_t v) const
+        {
+            // the regions of the tets at v; a filled tet (of another component) carries a
+            // region's tag too, but is no region
+            multi_voronoi::LabelSet s = 0;
+            for (const size_t t : m.get_one_ring_tids_for_vertex(v)) {
+                const CellTag& tag = m.m_tet_attribute[t].tags;
+                if (tag.size() != 1 || filled[t]) {
+                    continue;
+                }
+                for (size_t l = 0; l < regions.size(); ++l) {
+                    if (tags[regions[l]] == *tag.begin()) {
+                        s |= multi_voronoi::label_bit(int(l));
+                    }
+                }
+            }
+            if (s != 0) {
+                return s;
+            }
+            return multi_voronoi::nearest_labels(
+                [this](const Vector3d& x, const int l) { return distance(x, l); },
+                position(v),
+                all,
+                eps);
+        }
+        bool alive(const size_t t) const { return cells.count(t) > 0; }
+        size_t split_edge(const size_t v0, const size_t v1, const Vector3d& x)
+        {
+            // linear along the edge, zero at x, so split_adjust_position puts the vertex there
+            const Vector3d dir = (position(v1) - position(v0)).normalized();
+            m.m_voronoi_split_fn = [x, dir](const Vector3d& p) { return (p - x).dot(dir); };
+            const size_t v = m.tight_seal_split_tracked(
+                simplex::Edge(v0, v1),
+                cells,
+                filled,
+                [](const size_t, const size_t) {},
+                &cell_comp);
+            m.m_voronoi_split_fn = nullptr;
+            return v;
+        }
+        size_t split_face(const size_t v0, const size_t v1, const size_t v2, const Vector3d& x)
+        {
+            return m.tight_seal_split_face_tracked({{v0, v1, v2}}, x, cells, filled, &cell_comp);
+        }
+        std::vector<size_t> tets_around(const size_t v) const
+        {
+            std::vector<size_t> out;
+            for (const size_t t : m.get_one_ring_tids_for_vertex(v)) {
+                if (cells.count(t) > 0) {
+                    out.push_back(t);
+                }
+            }
+            return out;
+        }
+        // replace the tet's tags of the component's regions with label l's; other tags stay
+        void set_label(const size_t t, const int l)
+        {
+            CellTag& tag = m.m_tet_attribute[t].tags;
+            for (const size_t j : regions) {
+                tag.erase(tags[j]);
+            }
+            tag.insert(tags[regions[l]]);
+            filled[t] = 1;
+        }
+    };
+
+    multi_voronoi::FillStats3D fill_stats;
     for (size_t c = 0; c < components_seal.size(); ++c) {
         std::vector<size_t> cells;
         for (const Tuple& t : get_tets()) {
@@ -1078,77 +1166,47 @@ void SimWildMesh::tight_seal_geom(
             }
         }
         const std::vector<size_t>& regions = components_regions[c];
-        // replace the tet's tags of the component's regions with tags[i]; other tags stay
-        const auto set_region = [&](const size_t tid, const size_t i) {
-            CellTag& tag = m_tet_attribute[tid].tags;
-            for (const size_t j : regions) {
-                tag.erase(tags[j]);
-            }
-            tag.insert(tags[i]);
-            filled[tid] = 1;
-        };
-
-        // the component's tets, kept up to date as its edges are split
+        if (regions.size() > size_t(multi_voronoi::max_labels)) {
+            log_and_throw_error(
+                "tight_seal_geom: a component borders {} regions, more than the fill's {}",
+                regions.size(),
+                multi_voronoi::max_labels);
+        }
+        const multi_voronoi::LabelSet all = regions.size() == size_t(multi_voronoi::max_labels)
+                                                ? ~multi_voronoi::LabelSet(0)
+                                                : multi_voronoi::label_bit(int(regions.size())) - 1;
         std::unordered_set<size_t> comp_cells(cells.begin(), cells.end());
-        std::unordered_map<size_t, size_t> vertex_region;
-        for (const size_t tid : cells) {
-            const auto vs = oriented_tet_vids(tid);
-            set_region(
-                tid,
-                tight_seal::nearest_region(
-                    region_bvhs,
-                    Vector3d((pos(vs[0]) + pos(vs[1]) + pos(vs[2]) + pos(vs[3])) / 4),
-                    regions));
-            for (const size_t v : vs) {
-                if (vertex_region.count(v) == 0) {
-                    vertex_region[v] = tight_seal::nearest_region(region_bvhs, pos(v), regions);
-                }
-            }
-        }
-
-        std::vector<simplex::Edge> split_edges;
-        for (const size_t tid : cells) {
-            const auto vs = oriented_tet_vids(tid);
-            for (const auto& [a, b] : tight_seal::tet_edges) {
-                const size_t v0 = vs[a];
-                const size_t v1 = vs[b];
-                split_a = vertex_region.at(v0);
-                split_b = vertex_region.at(v1);
-                if (split_a == split_b) {
-                    continue;
-                }
-                // only split edges if their endpoints aren't already on the bisector
-                if (m_voronoi_split_fn(pos(v0)) < -1e-20 && m_voronoi_split_fn(pos(v1)) > 1e-20) {
-                    split_edges.emplace_back(v0, v1);
-                }
-            }
-        }
-        vector_unique(split_edges);
-
-        for (const simplex::Edge& e : split_edges) {
-            split_a = vertex_region.at(e.vertices()[0]);
-            split_b = vertex_region.at(e.vertices()[1]);
-            const size_t v_new = tight_seal_split_tracked(
-                e,
-                comp_cells,
-                filled,
-                [&](const size_t tid, const size_t end_vid) {
-                    set_region(tid, vertex_region.at(end_vid));
-                },
-                &cell_comp);
-            if (v_new != size_t(-1)) {
-                ++n_splits;
-            }
-        }
+        FillAdapter
+            adapter{*this, comp_cells, filled, cell_comp, regions, region_bvhs, tags, all, tie_eps};
+        fill_stats += multi_voronoi::fill_component_3d(adapter, cells, all, tie_eps);
         if (m_params.debug_output) {
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }
     }
     if (!components_seal.empty()) {
         logger().info(
-            "tight_seal_geom: sealed {} components, {} edges split",
+            "tight_seal_geom: Voronoi fill of {} components: tets planned as {} sheet, {} slab, "
+            "{} Y, {} other; {} edges crossed twice; {} face splits, {} edge splits; {} tets "
+            "revisited",
             components_seal.size(),
-            n_splits);
+            fill_stats.sheet,
+            fill_stats.slab,
+            fill_stats.y,
+            fill_stats.other,
+            fill_stats.fake_edges,
+            fill_stats.face_splits,
+            fill_stats.edge_splits,
+            fill_stats.visits);
+        if (fill_stats.other > 0 || fill_stats.refused_splits > 0 ||
+            fill_stats.fallback_labels > 0 || fill_stats.gave_up) {
+            logger().warn(
+                "tight_seal_geom: Voronoi fill: {} tets of no known case, {} splits refused, {} "
+                "tets labelled by their centroid's nearest region{}",
+                fill_stats.other,
+                fill_stats.refused_splits,
+                fill_stats.fallback_labels,
+                fill_stats.gave_up ? ", the visit cap was reached" : "");
+        }
     }
 
     // Sanity checks, on the output alone rather than on the components above: no tet is

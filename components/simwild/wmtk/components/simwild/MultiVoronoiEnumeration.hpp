@@ -10,6 +10,7 @@
 #include <limits>
 #include <map>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 /**
@@ -39,9 +40,25 @@
  *  - Each new cell gets the label its corners share; one that shares none is visited again
  *    (only a strip whose two edges are both crossed twice leaves one).
  *
- * The parts that do not depend on the dimension (label sets, the crossings of an edge) are
- * templated on the point type, for the 3D version to come. The face plan and the visit loop are
- * 2D; they work on any mesh through the adapter documented at fill_component_2d.
+ * 3D (tets): the same tests on the tet's edges and faces. A face whose word is xyz, with no
+ * corner holding all three labels, is pierced by the triple line (where the three regions meet)
+ * and is split at it (at its centroid for now). A tet holds one region, a sheet (two regions), a
+ * slab (three regions, two sheets that do not meet) or a Y (three sheets meeting along the
+ * triple line, which runs through the tet: two pierced faces, or one and a corner holding all
+ * three labels). The pierced faces are split first, then the edges, those crossed twice first;
+ * no tet split is needed. See fill_component_3d.
+ *
+ * The edge crossings, the label sets and the face word do not depend on the dimension; the
+ * fills work on any mesh through the adapters documented at fill_component_2d and
+ * fill_component_3d.
+ *
+ * Future option, not implemented: place the triple point exactly. It is put at the face's
+ * centroid (2D: the face; 3D: the pierced face), so the boundaries that meet there are bent.
+ * Solving d_a = d_b = d_c on the face by Newton (two equations in the face's plane; the gradient
+ * of d_i is the unit vector from region i's nearest point), started from the centroid of the
+ * face's switch points and falling back to the centroid if it leaves the face, would place it
+ * exactly. On control1 frame 0 (3D) the centroid leaves 3.5% of the filled volume with a region
+ * other than the nearest, most of it around the triple lines.
  */
 namespace wmtk::components::simwild::multi_voronoi {
 
@@ -217,6 +234,7 @@ struct FacePlan2D
 {
     FaceKind kind = FaceKind::Other;
     int label = -1; ///< FaceKind::One: the face's label
+    LabelSet regions = 0; ///< the labels of the face's boundary word
     std::array<std::vector<Crossing>, 3> crossings; ///< of edge k, from corner k to corner k + 1
     std::array<int, 3> edge_order = {{0, 1, 2}}; ///< the order to split the edges in
     LabelSet triple = 0; ///< FaceKind::Triple: the labels of the vertex the face is split at
@@ -225,17 +243,18 @@ struct FacePlan2D
 /**
  * @brief Tests 1 and 4 for a face with corners X, corner label sets S and the crossings of its
  * edges (edge k from corner k to corner k + 1, parameters from corner k): what the face holds
- * and the order to split its edges in.
+ * and the order to split its edges in. Vec is the point type: a face of a triangle mesh, or of
+ * a tet.
  */
-template <typename Dist>
-FacePlan2D classify_face_2d(
+template <typename Dist, typename Vec>
+FacePlan2D classify_face(
     const Dist& dist,
-    const std::array<Eigen::Vector2d, 3>& X,
+    const std::array<Vec, 3>& X,
     const std::array<LabelSet, 3>& S,
     std::array<std::vector<Crossing>, 3> crossings)
 {
     FacePlan2D plan;
-    const Eigen::Vector2d centroid = (X[0] + X[1] + X[2]) / 3;
+    const Vec centroid = (X[0] + X[1] + X[2]) / 3;
 
     // 1. closed: the corners share a label
     const LabelSet common = S[0] & S[1] & S[2];
@@ -243,12 +262,13 @@ FacePlan2D classify_face_2d(
         plan.kind = FaceKind::One;
         plan.label =
             label_count(common) == 1 ? lowest_label(common) : nearest_label(dist, centroid, common);
+        plan.regions = label_bit(plan.label);
         return plan;
     }
     plan.crossings = std::move(crossings);
 
     // 4. the boundary word: the region of each piece between neighbouring points, merged
-    std::vector<std::pair<Eigen::Vector2d, LabelSet>> pts;
+    std::vector<std::pair<Vec, LabelSet>> pts;
     for (int k = 0; k < 3; ++k) {
         pts.emplace_back(X[k], S[k]);
         for (const Crossing& c : plan.crossings[k]) {
@@ -265,8 +285,8 @@ FacePlan2D classify_face_2d(
             region = lowest_label(R);
         } else if (R != 0) {
             // the piece runs along a medial axis: the region just inside the face
-            const Eigen::Vector2d mid = 0.5 * (xa + xb);
-            region = nearest_label(dist, Eigen::Vector2d(mid + 1e-3 * (centroid - mid)), R);
+            const Vec mid = 0.5 * (xa + xb);
+            region = nearest_label(dist, Vec(mid + 1e-3 * (centroid - mid)), R);
         }
         if (word.empty() || word.back() != region) {
             word.push_back(region);
@@ -274,6 +294,11 @@ FacePlan2D classify_face_2d(
     }
     while (word.size() > 1 && word.front() == word.back()) {
         word.pop_back();
+    }
+    for (const int r : word) {
+        if (r >= 0) {
+            plan.regions |= label_bit(r);
+        }
     }
 
     const bool broken = std::find(word.begin(), word.end(), -1) != word.end();
@@ -326,7 +351,7 @@ FacePlan2D plan_face_2d(
             edge_crossings(dist, all, eps, X[k], X[l], 0., S[k], 1., S[l], crossings[k]);
         }
     }
-    return classify_face_2d(dist, X, S, std::move(crossings));
+    return classify_face(dist, X, S, std::move(crossings));
 }
 
 struct FillStats2D
@@ -476,7 +501,7 @@ FillStats2D fill_component_2d(
                 crossings[k].end(),
                 [](const Crossing& p, const Crossing& q) { return p.t < q.t; });
         }
-        const FacePlan2D plan = classify_face_2d(dist, X, S, std::move(crossings));
+        const FacePlan2D plan = classify_face(dist, X, S, std::move(crossings));
         count_kind(plan);
         if (plan.kind == FaceKind::Triple) {
             triple_faces.emplace_back(f, plan.triple);
@@ -603,6 +628,401 @@ FillStats2D fill_component_2d(
         }
         for (const std::size_t v : new_vertices) {
             for (const std::size_t g : mesh.faces_around(v)) {
+                stack.push_back(g);
+            }
+        }
+    }
+    return stats;
+}
+
+// ---------------------------------------------------------------------------------------------
+// 3D
+// ---------------------------------------------------------------------------------------------
+
+/// The corners of a tet's edge k, and of its face k (the face opposite corner k).
+constexpr std::array<std::array<int, 2>, 6> tet_edges = {
+    {{{0, 1}}, {{0, 2}}, {{0, 3}}, {{1, 2}}, {{1, 3}}, {{2, 3}}}};
+constexpr std::array<std::array<int, 3>, 4> tet_faces = {
+    {{{1, 2, 3}}, {{0, 2, 3}}, {{0, 1, 3}}, {{0, 1, 2}}}};
+
+/// What a tet holds.
+enum class TetKind {
+    One, ///< one region: no split
+    Sheet, ///< two regions, one sheet between them
+    Slab, ///< three regions, two sheets that do not meet: the triple line does not run through
+    Y, ///< three sheets meeting along the triple line, which runs through the tet
+    Other ///< a face of no known kind
+};
+
+struct TetPlan3D
+{
+    TetKind kind = TetKind::Other;
+    int label = -1; ///< TetKind::One: the tet's label
+    std::array<std::vector<Crossing>, 6> crossings; ///< of edge k, from its first corner
+    std::array<FacePlan2D, 4> faces; ///< of face k; FaceKind::Triple: pierced
+    std::array<int, 6> edge_order = {{0, 1, 2, 3, 4, 5}}; ///< the order to split the edges in
+};
+
+/// The crossings along a -> b, for corners a and b of a tet, from the crossings of its edges.
+inline std::vector<Crossing>
+oriented_crossings(const std::array<std::vector<Crossing>, 6>& crossings, const int a, const int b)
+{
+    for (int k = 0; k < 6; ++k) {
+        if (tet_edges[k][0] == a && tet_edges[k][1] == b) {
+            return crossings[k];
+        }
+        if (tet_edges[k][0] == b && tet_edges[k][1] == a) {
+            std::vector<Crossing> out;
+            for (auto it = crossings[k].rbegin(); it != crossings[k].rend(); ++it) {
+                out.push_back({1 - it->t, it->labels});
+            }
+            return out;
+        }
+    }
+    return {};
+}
+
+/**
+ * @brief The plan for a tet with corners X, corner label sets S and the crossings of its edges:
+ * the word of each face (test 4 of 2D on the face; a face with word xyz and no corner holding
+ * all three is pierced by the triple line) and what the tet holds. The triple line runs through
+ * the tet when two faces are pierced, or one face and a corner holds all three labels.
+ */
+template <typename Dist, typename Vec>
+TetPlan3D classify_tet(
+    const Dist& dist,
+    const std::array<Vec, 4>& X,
+    const std::array<LabelSet, 4>& S,
+    std::array<std::vector<Crossing>, 6> crossings)
+{
+    TetPlan3D plan;
+    const LabelSet common = S[0] & S[1] & S[2] & S[3];
+    if (common) {
+        const Vec centroid = (X[0] + X[1] + X[2] + X[3]) / 4;
+        plan.kind = TetKind::One;
+        plan.label =
+            label_count(common) == 1 ? lowest_label(common) : nearest_label(dist, centroid, common);
+        return plan;
+    }
+    plan.crossings = std::move(crossings);
+    LabelSet regions = 0;
+    int pierced = 0;
+    int triple_corners = 0;
+    bool other = false;
+    for (int f = 0; f < 4; ++f) {
+        const auto& c = tet_faces[f];
+        std::array<std::vector<Crossing>, 3> fc;
+        for (int k = 0; k < 3; ++k) {
+            fc[k] = oriented_crossings(plan.crossings, c[k], c[(k + 1) % 3]);
+        }
+        plan.faces[f] = classify_face(
+            dist,
+            std::array<Vec, 3>{{X[c[0]], X[c[1]], X[c[2]]}},
+            std::array<LabelSet, 3>{{S[c[0]], S[c[1]], S[c[2]]}},
+            std::move(fc));
+        regions |= plan.faces[f].regions;
+        pierced += plan.faces[f].kind == FaceKind::Triple;
+        other = other || plan.faces[f].kind == FaceKind::Other;
+    }
+    for (const LabelSet s : S) {
+        triple_corners += label_count(s) >= 3;
+    }
+    if (other) {
+        plan.kind = TetKind::Other;
+    } else if (label_count(regions) <= 2) {
+        plan.kind = TetKind::Sheet;
+    } else if (pierced == 2 || (pierced == 1 && triple_corners >= 1)) {
+        plan.kind = TetKind::Y;
+    } else {
+        plan.kind = TetKind::Slab;
+    }
+    // the edges with the most crossings first
+    std::stable_sort(plan.edge_order.begin(), plan.edge_order.end(), [&](int i, int j) {
+        return plan.crossings[i].size() > plan.crossings[j].size();
+    });
+    return plan;
+}
+
+struct FillStats3D
+{
+    std::size_t visits = 0; ///< tets that still needed a split after the planned ones
+    std::size_t sheet = 0;
+    std::size_t slab = 0;
+    std::size_t y = 0;
+    std::size_t other = 0;
+    std::size_t fake_edges = 0;
+    std::size_t face_splits = 0;
+    std::size_t edge_splits = 0;
+    std::size_t refused_splits = 0;
+    std::size_t fallback_labels = 0; ///< tets labelled by their centroid's nearest region
+    bool gave_up = false; ///< the visit cap was reached
+
+    FillStats3D& operator+=(const FillStats3D& o)
+    {
+        visits += o.visits;
+        sheet += o.sheet;
+        slab += o.slab;
+        y += o.y;
+        other += o.other;
+        fake_edges += o.fake_edges;
+        face_splits += o.face_splits;
+        edge_splits += o.edge_splits;
+        refused_splits += o.refused_splits;
+        fallback_labels += o.fallback_labels;
+        gave_up = gave_up || o.gave_up;
+        return *this;
+    }
+};
+
+/**
+ * @brief The Voronoi fill of one component of a tet mesh, as fill_component_2d.
+ *
+ *  1. Every tet is planned on the mesh as it is: each edge's crossings and each face's word are
+ *     found once, so the tets on an edge or a face agree.
+ *  2. The splits: first every pierced face, at its centroid (its vertex labelled with the three
+ *     labels); then the edges crossed twice; then the other crossings. In a tet with two
+ *     pierced faces, the second face split happens in a child of the first whose opposite
+ *     corner is the first piercing point, so the triple line's segment through the tet becomes
+ *     an edge (with a corner holding all three labels, that corner is the one opposite the
+ *     pierced face); the edge splits build the sheets around it. No tet split is needed.
+ *  3. The tets are visited: a tet whose corners share a label gets it; any other (only some
+ *     tets with two or more edges crossed twice leave one) is planned again and split, and the
+ *     tets around its new vertices are visited in turn. A tet whose plan splits nothing, and
+ *     every tet after 20 visits per tet of the component, is labelled by its centroid's nearest
+ *     region.
+ *
+ * `mesh` is an adapter with:
+ *  - std::array<size_t, 4> tet_vertices(size_t t) const
+ *  - Eigen::Vector3d position(size_t v) const
+ *  - double distance(const Eigen::Vector3d& x, int label) const
+ *  - LabelSet initial_labels(size_t v) const: asked for every vertex of `tets` before the first
+ *    split
+ *  - bool alive(size_t t) const: t is a tet of the component
+ *  - size_t split_edge(size_t v0, size_t v1, const Eigen::Vector3d& x): the new vertex, or
+ *    invalid_id if refused
+ *  - size_t split_face(size_t v0, size_t v1, size_t v2, const Eigen::Vector3d& x): likewise
+ *  - std::vector<size_t> tets_around(size_t v) const: the component's tets at v
+ *  - void set_label(size_t t, int label)
+ */
+template <typename Mesh>
+FillStats3D fill_component_3d(
+    Mesh& mesh,
+    const std::vector<std::size_t>& tets,
+    const LabelSet all,
+    const double eps)
+{
+    using Vec = Eigen::Vector3d;
+    FillStats3D stats;
+    const auto dist = [&](const Vec& x, const int l) { return mesh.distance(x, l); };
+
+    std::unordered_map<std::size_t, LabelSet> L;
+    for (const std::size_t t : tets) {
+        for (const std::size_t v : mesh.tet_vertices(t)) {
+            if (L.count(v) == 0) {
+                L[v] = mesh.initial_labels(v);
+            }
+        }
+    }
+    const auto labels = [&](const std::size_t v) {
+        const auto it = L.find(v);
+        return it != L.end() ? it->second : (L[v] = mesh.initial_labels(v));
+    };
+    const auto count_kind = [&](const TetPlan3D& plan) {
+        stats.sheet += plan.kind == TetKind::Sheet;
+        stats.slab += plan.kind == TetKind::Slab;
+        stats.y += plan.kind == TetKind::Y;
+        stats.other += plan.kind == TetKind::Other;
+    };
+    const auto corners = [&](const std::array<std::size_t, 4>& vs) {
+        std::array<Vec, 4> X;
+        std::array<LabelSet, 4> S;
+        for (int k = 0; k < 4; ++k) {
+            X[k] = mesh.position(vs[k]);
+            S[k] = labels(vs[k]);
+        }
+        return std::make_pair(X, S);
+    };
+
+    // 1. the plans, on the mesh as it is
+    struct EdgeSplits
+    {
+        std::size_t u, w; // the crossings run from u to w
+        std::vector<Vec> points;
+        std::vector<LabelSet> labels;
+    };
+    std::map<std::pair<std::size_t, std::size_t>, EdgeSplits> edges;
+    std::map<std::array<std::size_t, 3>, LabelSet> pierced; // a face, its vertex's labels
+    for (const std::size_t t : tets) {
+        const std::array<std::size_t, 4> vs = mesh.tet_vertices(t);
+        const auto [X, S] = corners(vs);
+        if (S[0] & S[1] & S[2] & S[3]) {
+            continue;
+        }
+        std::array<std::vector<Crossing>, 6> crossings;
+        for (int k = 0; k < 6; ++k) {
+            const int a = tet_edges[k][0];
+            const int b = tet_edges[k][1];
+            const auto key = std::minmax(vs[a], vs[b]);
+            auto it = edges.find(key);
+            if (it == edges.end()) {
+                // from the lower vertex, so all the tets on the edge find the same crossings
+                const int p = vs[a] < vs[b] ? a : b;
+                const int q = p == a ? b : a;
+                std::vector<Crossing> c;
+                edge_crossings(dist, all, eps, X[p], X[q], 0., S[p], 1., S[q], c);
+                EdgeSplits es{vs[p], vs[q], {}, {}};
+                for (const Crossing& cr : c) {
+                    es.points.push_back(X[p] + cr.t * (X[q] - X[p]));
+                    es.labels.push_back(cr.labels);
+                }
+                stats.fake_edges += c.size() > 1;
+                it = edges.emplace(key, std::move(es)).first;
+            }
+            const EdgeSplits& es = it->second;
+            const double len2 = (X[b] - X[a]).squaredNorm();
+            for (std::size_t r = 0; r < es.points.size(); ++r) {
+                crossings[k].push_back(
+                    {(es.points[r] - X[a]).dot(X[b] - X[a]) / len2, es.labels[r]});
+            }
+            std::sort(
+                crossings[k].begin(),
+                crossings[k].end(),
+                [](const Crossing& x, const Crossing& y) { return x.t < y.t; });
+        }
+        const TetPlan3D plan = classify_tet(dist, X, S, std::move(crossings));
+        count_kind(plan);
+        for (int f = 0; f < 4; ++f) {
+            if (plan.faces[f].kind == FaceKind::Triple) {
+                std::array<std::size_t, 3> key = {
+                    {vs[tet_faces[f][0]], vs[tet_faces[f][1]], vs[tet_faces[f][2]]}};
+                std::sort(key.begin(), key.end());
+                pierced.emplace(key, plan.faces[f].triple);
+            }
+        }
+    }
+
+    // 2. the splits: pierced faces, then the edges crossed twice, then the others
+    for (const auto& [f, triple] : pierced) {
+        const Vec centroid = (mesh.position(f[0]) + mesh.position(f[1]) + mesh.position(f[2])) / 3;
+        const std::size_t p = mesh.split_face(f[0], f[1], f[2], centroid);
+        if (p == invalid_id) {
+            ++stats.refused_splits;
+            continue;
+        }
+        L[p] = triple;
+        ++stats.face_splits;
+    }
+    for (const bool doubly : {true, false}) {
+        for (const auto& [key, es] : edges) {
+            if (es.points.empty() || (es.points.size() > 1) != doubly) {
+                continue;
+            }
+            std::size_t a = es.u; // what is left of the edge is a -> es.w
+            for (std::size_t r = 0; r < es.points.size(); ++r) {
+                const std::size_t v = mesh.split_edge(a, es.w, es.points[r]);
+                if (v == invalid_id) {
+                    ++stats.refused_splits;
+                    break;
+                }
+                L[v] = es.labels[r];
+                ++stats.edge_splits;
+                a = v;
+            }
+        }
+    }
+
+    // 3. the labels, with a visit for each tet that still needs a split
+    std::vector<std::size_t> stack;
+    for (const std::size_t t : tets) {
+        if (mesh.alive(t)) {
+            stack.push_back(t);
+        }
+    }
+    // every tet a split made has a vertex with two labels or more
+    for (const auto& [v, s] : L) {
+        if (label_count(s) > 1) {
+            for (const std::size_t g : mesh.tets_around(v)) {
+                stack.push_back(g);
+            }
+        }
+    }
+    const std::size_t cap = 20 * tets.size() + 100;
+    while (!stack.empty()) {
+        const std::size_t t = stack.back();
+        stack.pop_back();
+        if (!mesh.alive(t)) {
+            continue;
+        }
+        const std::array<std::size_t, 4> vs = mesh.tet_vertices(t);
+        const auto [X, S] = corners(vs);
+        const Vec centroid = (X[0] + X[1] + X[2] + X[3]) / 4;
+        const LabelSet common = S[0] & S[1] & S[2] & S[3];
+        if (common) {
+            mesh.set_label(
+                t,
+                label_count(common) == 1 ? lowest_label(common)
+                                         : nearest_label(dist, centroid, common));
+            continue;
+        }
+        if (++stats.visits > cap) {
+            stats.gave_up = true;
+            mesh.set_label(t, nearest_label(dist, centroid, all));
+            ++stats.fallback_labels;
+            continue;
+        }
+
+        std::array<std::vector<Crossing>, 6> crossings;
+        for (int k = 0; k < 6; ++k) {
+            const int a = tet_edges[k][0];
+            const int b = tet_edges[k][1];
+            edge_crossings(dist, all, eps, X[a], X[b], 0., S[a], 1., S[b], crossings[k]);
+            stats.fake_edges += crossings[k].size() > 1;
+        }
+        const TetPlan3D plan = classify_tet(dist, X, S, crossings);
+        count_kind(plan);
+
+        std::vector<std::size_t> new_vertices;
+        for (int f = 0; f < 4; ++f) {
+            if (plan.faces[f].kind != FaceKind::Triple) {
+                continue;
+            }
+            const auto& c = tet_faces[f];
+            const std::size_t p = mesh.split_face(
+                vs[c[0]],
+                vs[c[1]],
+                vs[c[2]],
+                Vec((X[c[0]] + X[c[1]] + X[c[2]]) / 3));
+            if (p == invalid_id) {
+                ++stats.refused_splits;
+                continue;
+            }
+            L[p] = plan.faces[f].triple;
+            new_vertices.push_back(p);
+            ++stats.face_splits;
+        }
+        for (const int k : plan.edge_order) {
+            const int a = tet_edges[k][0];
+            const int b = tet_edges[k][1];
+            std::size_t u = vs[a]; // what is left of the edge is u -> vs[b]
+            for (const Crossing& c : plan.crossings[k]) {
+                const std::size_t v = mesh.split_edge(u, vs[b], Vec(X[a] + c.t * (X[b] - X[a])));
+                if (v == invalid_id) {
+                    ++stats.refused_splits;
+                    break;
+                }
+                L[v] = c.labels;
+                new_vertices.push_back(v);
+                ++stats.edge_splits;
+                u = v;
+            }
+        }
+        if (new_vertices.empty()) {
+            mesh.set_label(t, nearest_label(dist, centroid, all));
+            ++stats.fallback_labels;
+            continue;
+        }
+        for (const std::size_t v : new_vertices) {
+            for (const std::size_t g : mesh.tets_around(v)) {
                 stack.push_back(g);
             }
         }

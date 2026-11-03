@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <wmtk/MeshData.hpp>
 
 #include <igl/Timer.h>
@@ -290,6 +292,13 @@ protected:
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
         override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
+    /// A face split puts the new vertex at m_face_split_position (the face's centroid if unset),
+    /// in doubles, so every corner must be rounded. The children of each tet on the face take its
+    /// attributes; the face's three pieces take the face's, and the tets' other faces keep
+    /// theirs. Refused if a child is inverted, or while feature edges are tracked (their tags
+    /// would not follow).
+    bool split_face_before(const Tuple& t) override;
+    bool split_face_after(const Tuple& t) override;
 
     bool swap_before_interior(const std::vector<size_t>& tids) override;
     bool swap_before_surface(
@@ -320,6 +329,14 @@ private:
         std::vector<char>& filled,
         const std::function<void(size_t, size_t)>& on_child,
         std::vector<int>* cell_group = nullptr);
+    /// Split face f at p, keeping `cells`, `filled` and `cell_group` up to date as
+    /// tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused.
+    size_t tight_seal_split_face_tracked(
+        const std::array<size_t, 3>& f,
+        const Vector3d& p,
+        std::unordered_set<size_t>& cells,
+        std::vector<char>& filled,
+        std::vector<int>* cell_group = nullptr);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
     /// as a BVH of triangles. On each edge of a tet outside R (region < 0) between a vertex with
     /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
@@ -343,6 +360,25 @@ private:
         const;
 
     ////// Operations
+
+    // Where split_face() puts the new vertex; the face's centroid if unset. Set before
+    // split_face(), cleared after.
+    std::optional<Vector3d> m_face_split_position;
+    size_t m_last_face_split_vertex = 0;
+    // split_face_before() to split_face_after(). Face splits are serial (only tight_seal_geom
+    // makes them).
+    struct FaceSplitCache
+    {
+        std::array<size_t, 3> v; // the face
+        FaceAttributes face;
+        std::vector<std::pair<size_t, TetAttributes>> tets; // by each tet's corner off the face
+        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> faces; // the tets' others
+        Vector3d position;
+        double sizing_scalar = 1;
+        size_t partition_id = 0;
+        std::vector<int> on_bbox_faces;
+    };
+    FaceSplitCache m_face_split_cache;
 
     struct SplitTagCache
     {
@@ -528,9 +564,11 @@ public:
      *     tets with all vertices inside.
      *  4. The connected components of J (through faces) are kept by the rule of `selection`.
      * Each component (connected through faces, so two touching at an edge or a vertex are filled
-     * separately) is then filled with the Voronoi diagram of its regions: edges whose
-     * endpoints have different nearest regions are split on the bisector, and each tet gets
-     * the tag of its region.
+     * separately) is then filled with the Voronoi diagram of its regions, by enumeration
+     * (MultiVoronoiEnumeration.hpp): every vertex gets the set of regions nearest to it; each
+     * face that the triple line (where three regions meet) pierces is split at its centroid, and
+     * each edge where its ends' nearest regions change (twice where a third region crosses it);
+     * each tet gets the tag of the region its corners share.
      *
      * `selection` "explicit": the regions are `tags`, two or three, which may not hold ambient
      * (the tag named "ambient"). "detected": `tags` is ignored (with a warning if it is not

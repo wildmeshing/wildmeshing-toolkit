@@ -741,6 +741,78 @@ size_t SimWildMesh::tight_seal_split_tracked(
     return v_new;
 }
 
+size_t SimWildMesh::tight_seal_split_face_tracked(
+    const std::array<size_t, 3>& f,
+    const Vector3d& p,
+    std::unordered_set<size_t>& cells,
+    std::vector<char>& filled,
+    std::vector<int>* cell_group)
+{
+    std::array<size_t, 3> sorted = f;
+    std::sort(sorted.begin(), sorted.end());
+    const Tuple t = std::get<0>(tuple_from_face(sorted));
+
+    // The tets on the face give three children each, which keep the tet's corner off the face.
+    // Record by that corner whether the tet is in the set, whether it was filled, and its group.
+    std::vector<size_t> parents = {t.tid(*this)};
+    if (const auto opp = t.switch_tetrahedron(*this)) {
+        parents.push_back(opp->tid(*this));
+    }
+    const auto off_face = [&](const size_t tid) {
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (v != f[0] && v != f[1] && v != f[2]) {
+                return v;
+            }
+        }
+        return size_t(-1);
+    };
+    std::map<size_t, std::tuple<bool, char, int>> parent_state;
+    for (const size_t tid : parents) {
+        parent_state[off_face(tid)] = {
+            cells.count(tid) > 0,
+            filled[tid],
+            cell_group ? (*cell_group)[tid] : -1};
+    }
+
+    reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+    m_face_split_position = p;
+    std::vector<Tuple> new_tets;
+    const bool ok = split_face(t, new_tets);
+    m_face_split_position.reset();
+    if (!ok) {
+        return size_t(-1);
+    }
+    const size_t v_new = m_last_face_split_vertex;
+    for (const size_t tid : parents) {
+        cells.erase(tid);
+    }
+    filled.resize(tet_capacity(), 0);
+    if (cell_group) {
+        cell_group->resize(tet_capacity(), -1);
+    }
+    for (const size_t tid : get_one_ring_tids_for_vertex(v_new)) {
+        size_t off = size_t(-1);
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (v != f[0] && v != f[1] && v != f[2] && v != v_new) {
+                off = v;
+            }
+        }
+        const auto it = parent_state.find(off);
+        if (it == parent_state.end()) {
+            log_and_throw_error("Could not find the parent of a tet after a face split.");
+        }
+        const auto [in_set, parent_filled, parent_group] = it->second;
+        filled[tid] = parent_filled;
+        if (cell_group) {
+            (*cell_group)[tid] = parent_group;
+        }
+        if (in_set) {
+            cells.insert(tid);
+        }
+    }
+    return v_new;
+}
+
 void SimWildMesh::tight_seal_geom_sanity(
     const std::vector<int64_t>& tags,
     const std::vector<char>& filled) const
