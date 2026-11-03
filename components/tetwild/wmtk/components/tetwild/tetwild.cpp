@@ -644,7 +644,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     logger().info(
         "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
         tet_envelope->use_exact ? "EXACT" : "sampled",
-        std::sqrt(tet_envelope->eps2),
+        tet_envelope->eps(), // until 2026-11 sqrt(eps2), the sampled path's 0.42 eps
         env_around_simplified ? "SIMPLIFIED surface" : "input");
 
     if (json_params["DEBUG_disable_envelope"]) {

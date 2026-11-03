@@ -2074,8 +2074,10 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
             bad.push_back({vids, offset, farthest(*env, p, 6)});
             continue;
         }
-        if (!(env->eps2 > 0.)) continue;
-        const double frac = farthest(*env, p, 2) / std::sqrt(env->eps2);
+        // In units of the envelope's own eps (Envelope::eps()). Until 2026-11 of sqrt(eps2), the
+        // sampled path's shrunk radius, 0.42 eps, so the margins read 2.37x too high.
+        if (!(env->eps() > 0.)) continue;
+        const double frac = farthest(*env, p, 2) / env->eps();
         worst_frac = std::max(worst_frac, frac);
         ++band[frac < 0.5 ? 0 : frac < 0.9 ? 1 : frac < 0.99 ? 2 : frac < 1. ? 3 : 4];
         if (frac >= 0.9) snug.push_back({vids, offset, frac});
