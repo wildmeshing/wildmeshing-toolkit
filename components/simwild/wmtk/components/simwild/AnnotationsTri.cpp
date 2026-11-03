@@ -2,6 +2,8 @@
 #include "SimWildMeshTri.hpp"
 #include "TightSealGeom.hpp"
 
+#include <wmtk/utils/SimplicialEmbedding.hpp>
+
 namespace wmtk::components::simwild::tri {
 
 std::vector<ConnectedComponent> SimWildMeshTri::compute_connected_components(
@@ -653,22 +655,71 @@ void SimWildMeshTri::tight_seal_geom(
         return m_vertex_attribute[vid].m_posf;
     };
 
-    // region[fid] = i for the faces of R_i (tagged tags[i] and nothing else), -1 for E
+    // The region of a face: i for the faces of R_i (tagged tags[i] and nothing else), -1 for E.
+    // By tag, so it holds for the faces the splits below make.
+    const auto region_of = [&](const size_t fid) {
+        const CellTag& tag = m_face_attribute[fid].tags;
+        if (tag.size() != 1) {
+            return -1;
+        }
+        const auto it = std::find(tags.begin(), tags.end(), *tag.begin());
+        return it == tags.end() ? -1 : int(it - tags.begin());
+    };
+    std::vector<bool> region_found(n, false);
+    for (const Tuple& t : get_faces()) {
+        const int r = region_of(t.fid(*this));
+        if (r >= 0) {
+            region_found[r] = true;
+        }
+    }
+    const bool can_seal =
+        n >= needed &&
+        std::find(region_found.begin(), region_found.end(), false) == region_found.end();
+
+    // 0. R, the union of the regions, is made simplicially embedded
+    // (wmtk/utils/SimplicialEmbedding.hpp): each face outside R whose three edges lie on R is
+    // split at its centroid, then each edge outside R joining two vertices of R at its midpoint.
+    // Then no face outside R has all its corners on R: a gap one face wide gets a vertex off R,
+    // whose distances decide whether the gap is in J. (Every vertex of R counts as inside J, so
+    // without the embedding such a face would be in J at any distance.)
+    if (can_seal) {
+        const wmtk::utils::TriComplex R_complex{
+            [&](const size_t vid) {
+                for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
+                    if (region_of(fid) >= 0) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+            [&](const Tuple& e) {
+                if (region_of(e.fid(*this)) >= 0) {
+                    return true;
+                }
+                const auto opp = e.switch_face(*this);
+                return opp.has_value() && region_of(opp->fid(*this)) >= 0;
+            },
+            [&](const Tuple& f) { return region_of(f.fid(*this)) >= 0; }};
+        const wmtk::utils::SimplicialEmbeddingStats emb =
+            wmtk::utils::simplicial_embedding(*this, R_complex);
+        logger().info(
+            "tight_seal_geom: simplicial embedding of the regions: split {} faces and {} edges",
+            emb.faces_split,
+            emb.edges_split);
+        if (emb.refused > 0) {
+            logger().warn(
+                "tight_seal_geom: {} splits of the simplicial embedding were refused; a face "
+                "outside the regions may still have all its corners on them",
+                emb.refused);
+        }
+    }
+
     std::vector<size_t> fids;
     std::vector<int> region(tri_capacity(), -1);
-    std::vector<bool> region_found(n, false);
     for (const Tuple& t : get_faces()) {
         const size_t fid = t.fid(*this);
         fids.push_back(fid);
-        const CellTag& tag = m_face_attribute[fid].tags;
-        if (tag.size() != 1) {
-            continue;
-        }
-        const auto it = std::find(tags.begin(), tags.end(), *tag.begin());
-        if (it != tags.end()) {
-            region[fid] = int(it - tags.begin());
-            region_found[region[fid]] = true;
-        }
+        region[fid] = region_of(fid);
     }
 
     // m_voronoi_split_fn places the vertex of each split below (split_adjust_position)
@@ -862,16 +913,8 @@ void SimWildMeshTri::tight_seal_geom(
 
         // 3. Connected components of J (through edges); keep the ones that share an edge with
         // every R_i (with detected tags: with min_regions R_i or more, which the component is
-        // then filled with). Regions are found by tag: the faces made by the splits above
-        // have no entry in `region`.
-        const auto region_of = [&](const size_t fid) {
-            const CellTag& tag = m_face_attribute[fid].tags;
-            if (tag.size() != 1) {
-                return -1;
-            }
-            const auto it = std::find(tags.begin(), tags.end(), *tag.begin());
-            return it == tags.end() ? -1 : int(it - tags.begin());
-        };
+        // then filled with). Regions are found by tag (region_of): the faces made by the splits
+        // above have no entry in `region`.
         std::vector<int> comp_id(tri_capacity(), -1);
         size_t n_components = 0;
         size_t n_too_many = 0; // components bordering more than three regions

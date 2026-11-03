@@ -299,6 +299,13 @@ protected:
     /// would not follow).
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
+    /// A tet split puts the new vertex at the tet's centroid, in doubles, so every corner must be
+    /// rounded. The four children take the tet's attributes and its four faces keep theirs; the
+    /// six faces inside it are new. Refused if a child is inverted, or while feature edges are
+    /// tracked (their tags would not follow). Only tight_seal_geom's simplicial embedding of its
+    /// regions splits tets.
+    bool split_tet_before(const Tuple& t) override;
+    bool split_tet_after(const Tuple& t) override;
 
     bool swap_before_interior(const std::vector<size_t>& tids) override;
     bool swap_before_surface(
@@ -379,6 +386,19 @@ private:
         std::vector<int> on_bbox_faces;
     };
     FaceSplitCache m_face_split_cache;
+    // split_tet_before() to split_tet_after(). Tet splits are serial (only tight_seal_geom makes
+    // them).
+    struct TetSplitCache
+    {
+        std::array<size_t, 4> v; // the tet
+        TetAttributes tet;
+        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> faces; // its four faces
+        Vector3d position;
+        double sizing_scalar = 1;
+        size_t partition_id = 0;
+        std::vector<int> on_bbox_faces;
+    };
+    TetSplitCache m_tet_split_cache;
 
     struct SplitTagCache
     {
@@ -546,7 +566,12 @@ public:
      * nothing else. The 3D counterpart of SimWildMeshTri::tight_seal_geom.
      *
      * J is the closing of the union R of the R_i by the ball B of diameter `distance`, minus R:
-     * the part of E that B cannot reach. It is found in three steps.
+     * the part of E that B cannot reach. First R is made simplicially embedded (no tet outside R
+     * has all its vertices on R; wmtk/utils/SimplicialEmbedding.hpp): each tet outside R whose four
+     * faces lie on R is split at its centroid, then each face outside R whose three edges do, then
+     * each edge outside R joining two vertices of R at its midpoint. Without it, a gap one tet wide
+     * would be in J at any distance, every vertex of R counting as inside. Then J is found in three
+     * steps.
      *  1. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
      *  2. A vertex is inside if it is in R + B and d(v, S) > distance/2, counted from

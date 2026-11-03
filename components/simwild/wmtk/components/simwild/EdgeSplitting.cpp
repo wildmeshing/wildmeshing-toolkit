@@ -182,6 +182,91 @@ bool SimWildMesh::split_face_after(const Tuple& t)
     return true;
 }
 
+bool SimWildMesh::split_tet_before(const Tuple& t)
+{
+    if (m_track_feature_edges) {
+        return false;
+    }
+    auto& c = m_tet_split_cache;
+    c.v = oriented_tet_vids(t);
+    Vector3d centroid = Vector3d::Zero();
+    c.sizing_scalar = 0;
+    for (const size_t v : c.v) {
+        if (!m_vertex_attribute[v].m_is_rounded) {
+            return false; // the new vertex is placed in doubles
+        }
+        centroid += m_vertex_attribute[v].m_posf / 4;
+        c.sizing_scalar += m_vertex_attribute[v].m_sizing_scalar / 4;
+    }
+    c.position = centroid;
+    c.partition_id = m_vertex_attribute[c.v[0]].partition_id;
+    c.on_bbox_faces = m_vertex_attribute[c.v[0]].on_bbox_faces;
+    for (int k = 1; k < 4; ++k) {
+        c.on_bbox_faces =
+            wmtk::set_intersection(c.on_bbox_faces, m_vertex_attribute[c.v[k]].on_bbox_faces);
+    }
+    c.tet = m_tet_attribute[t.tid(*this)];
+    c.faces.clear();
+    for (int k = 0; k < 4; ++k) {
+        std::array<size_t, 3> f = {{c.v[(k + 1) % 4], c.v[(k + 2) % 4], c.v[(k + 3) % 4]}};
+        std::sort(f.begin(), f.end());
+        c.faces.emplace_back(f, m_face_attribute[std::get<1>(tuple_from_face(f))]);
+    }
+    return true;
+}
+
+bool SimWildMesh::split_tet_after(const Tuple& t)
+{
+    const auto& c = m_tet_split_cache;
+    // the new vertex: the corner of t's tet that is not one of the old tet's
+    size_t v_new = size_t(-1);
+    for (const size_t v : oriented_tet_vids(t)) {
+        if (std::find(c.v.begin(), c.v.end(), v) == c.v.end()) {
+            v_new = v;
+        }
+    }
+    if (v_new == size_t(-1)) {
+        return false;
+    }
+
+    VertexAttributes va;
+    va.m_posf = c.position;
+    va.m_is_rounded = true;
+    va.set_pos_to_posf();
+    va.m_is_on_surface = false; // inside the old tet
+    va.m_order = 0;
+    va.on_bbox_faces = c.on_bbox_faces;
+    va.m_sizing_scalar = c.sizing_scalar;
+    va.partition_id = c.partition_id;
+    m_vertex_attribute[v_new] = va;
+    if (m_track_feature_points) {
+        m_feature_point_attribute[v_new].m_feature_point_id = NO_FEATURE_POINT;
+    }
+
+    // the tet's four faces keep their attributes (their ids follow the tets); the six faces
+    // inside it are new
+    for (const auto& [f, attrs] : c.faces) {
+        m_face_attribute[std::get<1>(tuple_from_face(f))] = attrs;
+    }
+    for (int i = 0; i < 4; ++i) {
+        for (int j = i + 1; j < 4; ++j) {
+            std::array<size_t, 3> f = {{c.v[i], c.v[j], v_new}};
+            std::sort(f.begin(), f.end());
+            m_face_attribute[std::get<1>(tuple_from_face(f))].reset();
+        }
+    }
+
+    for (const size_t tid : get_one_ring_tids_for_vertex(v_new)) {
+        m_tet_attribute[tid] = c.tet;
+        const Tuple child = tuple_from_tet(tid);
+        if (is_inverted(child)) {
+            return false; // split_tet rolls back
+        }
+        m_tet_attribute[tid].m_quality = get_quality(child);
+    }
+    return true;
+}
+
 bool SimWildMesh::split_adjust_position(const size_t v_new, const std::vector<Tuple>& children)
 {
     if (!m_voronoi_split_fn || !m_vertex_attribute[v_new].m_is_rounded) return true;

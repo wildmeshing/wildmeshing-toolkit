@@ -261,7 +261,11 @@ public:
      * nothing else.
      *
      * J is the closing of the union R of the R_i by the disk B of diameter `distance`, minus R:
-     * the part of E that B cannot reach. It is found in three steps.
+     * the part of E that B cannot reach. First R is made simplicially embedded (no face outside R
+     * has all its vertices on R; wmtk/utils/SimplicialEmbedding.hpp): each face outside R whose
+     * three edges lie on R is split at its centroid, then each edge outside R joining two vertices
+     * of R at its midpoint. Without it, a gap one face wide would be in J at any distance, every
+     * vertex of R counting as inside. Then J is found in three steps.
      *  1. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
      *  2. A vertex is inside if it is in R + B and d(v, S) > distance/2, counted from
