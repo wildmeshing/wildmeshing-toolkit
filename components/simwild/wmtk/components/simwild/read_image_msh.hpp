@@ -28,8 +28,8 @@ struct InputData
     MatrixXd V_envelope;
     MatrixXi F_envelope;
     /// Per row of F_envelope: the label bits of the input it came from, as the mesh's faces
-    /// (2D: edges) carry them (SimWildMesh::m_input_envelopes; 2D, SimWildMeshTri's). Empty when
-    /// F_envelope is not the inputs'.
+    /// (2D: edges) carry them (SimWildMesh::init_label_envelopes(); 2D, SimWildMeshTri's).
+    /// Empty when F_envelope is not the inputs'.
     std::vector<uint64_t> F_envelope_labels;
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;

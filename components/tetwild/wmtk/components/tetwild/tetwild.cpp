@@ -610,8 +610,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // One envelope per input, around the same surface as tet_envelope and at the same eps, with
     // the same predicate: what each tracked face is held to, through its input set
-    // (TetWildMesh::surface_envelope_for_face). tet_envelope stays the union for the uses that
-    // need one -- the collapse's point prefilter, the order-2 and feature fallbacks, the
+    // (TetOptimizerMesh::surface_envelope_for_face). tet_envelope stays the union for the uses
+    // that need one -- the collapse's point prefilter, the order-2 and feature fallbacks, the
     // finalization. With one input the member would BE tet_envelope, so none is built and every
     // face is held to tet_envelope exactly as before.
     std::vector<std::shared_ptr<wmtk::Envelope>> input_envelopes;

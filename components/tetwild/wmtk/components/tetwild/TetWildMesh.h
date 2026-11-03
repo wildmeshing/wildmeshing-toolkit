@@ -79,23 +79,10 @@ public:
     /// tetwild-only fields.
     Parameters& m_tet_params;
 
-    /**
-     * @brief One envelope per input surface, when there are several: a tracked face is held to
-     * those of its input set (FaceAttributes::input_set()), m_envelope stays their union.
-     *
-     * Empty with one input, and then every face is held to m_envelope as it always was. Built
-     * by the driver around the same surface as m_envelope, at the same eps and predicate.
-     */
-    wmtk::InputEnvelopes m_input_envelopes;
-
-    /// A tracked face's containment: the envelopes of its input set (see m_input_envelopes).
-    std::shared_ptr<Envelope> surface_envelope_for_face(
-        const std::array<size_t, 3>& vids,
-        const FaceAttributes& attr) const override
-    {
-        if (m_input_envelopes.empty()) return m_envelope;
-        return m_input_envelopes.containment(attr.input_set());
-    }
+    // One envelope per input surface file, when there are several: the base's
+    // m_input_envelopes, built by the driver around the same surface as m_envelope, at the same
+    // eps and predicate. Empty with one input, and then every face is held to m_envelope as it
+    // always was. The containment is the base's default.
 
     /// Optional per-input names (JSON "input_names"), used to label the per-input
     /// winding-number output fields. Empty => the fields are numbered.

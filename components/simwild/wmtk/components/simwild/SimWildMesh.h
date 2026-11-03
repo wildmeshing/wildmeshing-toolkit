@@ -68,7 +68,8 @@ public:
     std::vector<std::string> m_face_tag_names;
 
     /**
-     * @brief One envelope per label, and each surface face held by those of the labels it lies on:
+     * @brief (Re)build the base's m_input_envelopes: one envelope per label, and each surface
+     * face held by those of the labels it lies on:
      * bit i < F of a face's input set is face tag i (m_face_tag_names, F of them), bit F + j the
      * boundary of tet tag j's region. A border between tet tag sets S and S' carries the bits
      * of the tags in one and not the other; ambient is the empty set, so a border of region X with
@@ -82,14 +83,15 @@ public:
      * it: at eps_simplify while the simplification runs, around the simplified surface after.
      * Built around the faces embedded on the inputs instead, the members cost +33 to +70% time;
      * around the input triangles, +2 to +6%. m_envelope stays the union, for the engine's direct
-     * uses of it and for a surface face carrying no label.
+     * uses of it. A surface face carrying no label throws, as in tetwild (the base's
+     * surface_envelope_for_face()).
      *
      * With one union envelope a collapse by the seam of two sheets side by side moved a face of
      * one 0.125 off it (eps 0.029), within eps of the other. Two volumes a fraction of eps apart
      * did not drift so with it (each region's boundary stayed within 0.7 eps of its own box,
      * the tets between them in the way); their labels' envelopes make that hold by construction.
      */
-    wmtk::InputEnvelopes m_input_envelopes;
+    void init_label_envelopes(double eps, bool exact);
 
     /// The face-tag bits of an input set: those below the number of face tags.
     InputSet face_tag_mask() const
@@ -102,20 +104,6 @@ public:
     /// Per row of m_F_envelope: its label bits, when m_F_envelope is the inputs' triangles
     /// (InputData::F_envelope_labels); empty once m_F_envelope is rebuilt from the mesh.
     std::vector<InputSet> m_F_envelope_labels;
-
-    /// (Re)build m_input_envelopes at `eps`, around the same surface as m_envelope: each label's
-    /// rows of m_F_envelope when m_F_envelope_labels says which, else the mesh's faces carrying
-    /// the label. The input triangles are far fewer than the faces embedded on them.
-    void init_label_envelopes(double eps, bool exact);
-
-    /// A tracked face's containment: its labels' envelopes if it has any, else m_envelope.
-    std::shared_ptr<Envelope> surface_envelope_for_face(
-        const std::array<size_t, 3>& vids,
-        const FaceAttributes& attr) const override
-    {
-        if (m_input_envelopes.empty() || attr.input_set() == 0) return m_envelope;
-        return m_input_envelopes.containment(attr.input_set());
-    }
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// simwild-only fields (tags, quality/sizing fields, the operation name).

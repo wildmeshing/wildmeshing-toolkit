@@ -729,6 +729,17 @@ public:
     /// Surface envelope: what a surface vertex is pulled toward and checked against.
     std::shared_ptr<Envelope> m_envelope;
 
+    /**
+     * @brief One envelope per input, and each tracked face held to those of its input set
+     * (FaceAttributes::input_set()); m_envelope stays their union. The 3D twin of
+     * TriOptimizerMesh::m_input_envelopes.
+     *
+     * What an input is, is the application's: tetwild's are its input surface files, simwild's
+     * its labels (SimWildMesh::init_label_envelopes()). Built by the application. Empty by
+     * default, and then every face is held to m_envelope.
+     */
+    InputEnvelopes m_input_envelopes;
+
     /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
     /// distance) on a comparable footing.
     double m_s_amips = 1.;
@@ -1015,11 +1026,16 @@ public:
      * operation is about to write there.
      *
      * Null means this triangle carries no containment requirement, and every containment check
-     * on it is skipped. The default answers with the one surface envelope; tetwild answers with
-     * the envelopes of the face's input set (SurfaceTagAttributes::input_set()), and an
-     * application tracking more than one surface (see SurfaceTagAttributes::m_surface_class)
-     * answers per class -- the offset boundary, for instance, is free to move and is checked
-     * against nothing.
+     * on it is skipped. The default answers with the one surface envelope, or with
+     * m_input_envelopes built, a tracked face with the envelopes of its input set
+     * (SurfaceTagAttributes::input_set()); an application tracking more than one surface (see
+     * SurfaceTagAttributes::m_surface_class) answers per class -- the offset boundary, for
+     * instance, is free to move and is checked against nothing.
+     *
+     * A face that is not tracked covers no input and is held to the union, m_envelope, as in
+     * 2D. A tracked face with an empty input set throws (InputEnvelopes): it is an insertion or
+     * propagation defect. Until 2026-11 simwild held such a face to m_envelope instead; no
+     * simwild configuration of the integration and challenging sets has one.
      *
      * Keyed on the vertex ids rather than the fid because every caller is a topological
      * operation asking about the triangles it is ABOUT to create or has just created, where
@@ -1033,7 +1049,8 @@ public:
         const std::array<size_t, 3>& vids,
         const FaceAttributes& attr) const
     {
-        return m_envelope;
+        if (m_input_envelopes.empty() || !attr.m_is_surface_fs) return m_envelope;
+        return m_input_envelopes.containment(attr.input_set());
     }
 
     /// Whether the tracked-surface triangle (a,b,c) with attributes `attr` (see
