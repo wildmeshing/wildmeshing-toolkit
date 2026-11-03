@@ -409,7 +409,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // above, around the input, the simplification is allowed to move geometry as far as or
     // further than the triangulation's own envelope permits, so the optimizer starts from a mesh
     // that is outside it or on its boundary, and every operation near those curves is vetoed.
-    // Refused, before any work; until 2026-10 a warning above 1.
+    // Refused, before any work; until 2026-10 a warning above 1. Around the simplified curves,
+    // which replace the input, any ratio is allowed, and no simplification is refused.
     //
     // There used to be a warning at 0.5 here. That number was the sampled backend's internal
     // compensation showing through -- its edge test accepts a segment only within eps/2,
@@ -417,7 +418,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // thing to their caller: everything they accept is within eps. A caller reasoning about
     // eps/2 is reasoning about an implementation detail it should not be able to see.
     const bool simplify = json_params["simplify"];
-    wmtk::utils::check_simplification_inside_envelope(
+    wmtk::utils::check_envelope_reference(
         envelope_eps,
         simplify_eps,
         env_around_simplified,
@@ -603,40 +604,25 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     //
     // envelope_reference "input", the default: the ORIGINAL input curves at the full eps.
     //
-    // envelope_reference "simplified": the SIMPLIFIED curves at the REMAINING
-    // tolerance, envelope_eps - simplify_eps. The deviation budget is unchanged by the
-    // triangle inequality -- the simplification is already within simplify_eps of the input,
-    // so anything within (envelope_eps - simplify_eps) of it is within envelope_eps of the
-    // input -- but the geometry now starts at the CENTRE of the envelope it is judged against
-    // rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a
-    // mesh handed over close to the boundary has most of its moves refused. See the tetwild
-    // driver for the measurements.
-    //
-    // The narrowing is charged for the simplification's deviation, so it applies only when a
-    // simplification actually ran. With simplify false the "simplified" curves ARE the input,
-    // there is nothing to charge, and subtracting anyway would confine the optimizer to a
-    // fraction of the tolerance its result is judged against -- for no gain, since the
-    // geometry already starts centred in the full envelope.
-    const bool charge_simplify = env_around_simplified && simplify;
-    const double opt_eps = wmtk::utils::optimization_envelope_eps(
-        envelope_eps,
-        simplify_eps,
-        env_around_simplified,
-        /*simplification_ran=*/simplify);
+    // envelope_reference "simplified": the SIMPLIFIED curves, which replace the input, at the
+    // full eps too: the output is within envelope_eps of them, so within simplify_eps +
+    // envelope_eps of the input. The geometry starts at the CENTRE of the envelope it is judged
+    // against rather than somewhere inside it. The envelope is a hard veto rather than a penalty,
+    // so a mesh handed over close to the boundary has most of its moves refused. See the tetwild
+    // driver for the measurements. Until 2026-11 they were built at the remaining tolerance,
+    // envelope_eps - simplify_eps, keeping the output within envelope_eps of the input.
     const MatrixXd& V_env = env_around_simplified ? V_simp : V_in;
     const MatrixXi& E_env = env_around_simplified ? E_simp : E_in;
     const std::vector<int>& E_env_input = env_around_simplified ? E_simp_input : E_in_input;
     if (env_around_simplified) {
         logger().info(
-            "optimization envelope: eps {:.6} ({}) around the {} curves (#V {}, #E {})",
-            opt_eps,
-            charge_simplify ? "full eps minus the simplification's share" : "the full eps",
-            charge_simplify ? "SIMPLIFIED" : "input, un-simplified,",
+            "optimization envelope: eps {:.6} around the SIMPLIFIED curves (#V {}, #E {})",
+            envelope_eps,
             V_env.rows(),
             E_env.rows());
     }
 
-    TriWildMesh mesh(params, opt_eps, NUM_THREADS);
+    TriWildMesh mesh(params, envelope_eps, NUM_THREADS);
     // Around the input after a simplification, the input's own curve ends and junctions: the
     // anchors are centred on them, and an end the simplification made is anchored where it is
     // (TriOptimizerMesh::m_input_curve_points).

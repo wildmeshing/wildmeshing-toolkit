@@ -171,7 +171,8 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
 namespace {
 
 /**
- * @brief Does a simplification actually run, and so have to be charged against eps?
+ * @brief Does a simplification actually run, so that there is a simplified geometry to build
+ * the envelopes around?
  *
  * SimWild simplifies in one of two places, and which one applies turns on preserve_topology:
  *
@@ -194,48 +195,31 @@ bool simplification_runs(const Parameters& params, bool is_3d)
 }
 
 /**
- * @brief The eps the optimizer's envelope should use.
+ * @brief The eps the optimizer's envelope uses, the full eps, after refusing an
+ * envelope_reference the run cannot honour (utils::check_envelope_reference()).
  *
  * envelope_reference "input", the default: the envelope is around the input as read -- read_mesh
  * in 3D and the curve pipeline in 2D hand it over, and SimWildMesh::simplify() puts it back after
- * simplifying -- at the full eps. "simplified": around the simplified geometry, at what the
- * simplification left of eps.
+ * simplifying. "simplified": around the simplified geometry, which replaces the input. Both at
+ * the full eps; until 2026-11 "simplified" took what the simplification left of it.
  *
  * Until 2026-10 SimWild built it around the simplified geometry whatever the flag said, and
  * charged the simplification only with the flag on: without it the envelope used the full eps
  * around geometry that had already moved up to eps_simplify from the input, so a vertex could
  * end up eps_simplify + eps away from it rather than eps.
  *
- * Narrowing here rather than at each init_envelope call is deliberate: every later rebuild
- * reads m_envelope_eps, so doing it once at construction covers them all -- including the
- * rebuild at the end of SimWildMesh::simplify() -- and cannot double-subtract.
+ * Both simplifications run at Parameters::eps_simplify: read_mesh derives it from the same
+ * diagonal (InputData::diag).
  */
-double optimization_envelope_eps(const Parameters& params, bool is_3d)
-{
-    return wmtk::utils::optimization_envelope_eps(
-        params.eps,
-        params.eps_simplify,
-        params.envelope_around_simplified,
-        simplification_runs(params, is_3d));
-}
-
-/// The eps the optimizer's envelope uses, after refusing a simplification that may leave it
-/// (utils::check_simplification_inside_envelope()); the order-2 tubes and curve anchors are set
-/// to follow it (OptimizerParameters::order2_envelope_eps).
-///
-/// Both simplifications run at Parameters::eps_simplify: read_mesh derives it from the same
-/// diagonal (InputData::diag).
-double envelope_eps_and_check(Parameters& params, bool is_3d, const InputData& input_data)
+double envelope_eps_and_check(const Parameters& params, bool is_3d, const InputData& input_data)
 {
     const bool after_insertion = params.preserve_topology && simplification_runs(params, is_3d);
-    wmtk::utils::check_simplification_inside_envelope(
+    wmtk::utils::check_envelope_reference(
         params.eps,
         params.eps_simplify,
         params.envelope_around_simplified,
         input_data.simplified_before_insertion || after_insertion);
-    const double eps = optimization_envelope_eps(params, is_3d);
-    if (params.envelope_around_simplified) params.order2_envelope_eps = eps;
-    return eps;
+    return params.eps;
 }
 
 } // namespace

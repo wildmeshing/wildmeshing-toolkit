@@ -388,11 +388,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         100 * simplify_envelope_ratio,
         tet_eps);
     // Which geometry every envelope, tube and anchor is built around: the input, or the
-    // simplified surface (see below, where they are built). Around the input, a simplification
-    // that may leave the envelope is refused here, before any work: the simplified surface would
-    // start outside what it is held to.
+    // simplified surface (see below, where they are built). Refused here, before any work: around
+    // the input, a simplification that may leave the envelope, since the simplified surface would
+    // start outside what it is held to; around the simplified surface, no simplification.
     const bool env_around_simplified = json_params["envelope_reference"] == "simplified";
-    wmtk::utils::check_simplification_inside_envelope(
+    wmtk::utils::check_envelope_reference(
         tet_eps,
         simplify_eps,
         env_around_simplified,
@@ -560,27 +560,14 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // envelope_reference "input", the default: the ORIGINAL input at the full tet eps, like the
     // simplification one but wider.
     //
-    // envelope_reference "simplified": the SIMPLIFIED surface at the REMAINING
-    // tolerance, tet_eps - simplify_eps. The triangle-inequality budget is unchanged -- the
-    // simplification is already within simplify_eps of the input, so anything within
-    // (tet_eps - simplify_eps) of the simplification is within tet_eps of the input -- but the
-    // geometry now starts at the CENTRE of the envelope it is judged against rather than
-    // somewhere inside it. That matters because the envelope is a hard veto, not a penalty: a
-    // surface handed over already close to the boundary has most of its moves refused, and
+    // envelope_reference "simplified": the SIMPLIFIED surface, which replaces the input, at the
+    // full tet eps too: the output is within tet_eps of it, so within simplify_eps + tet_eps of
+    // the input. The geometry starts at the CENTRE of the envelope it is judged against rather
+    // than somewhere inside it. That matters because the envelope is a hard veto, not a penalty:
+    // a surface handed over already close to the boundary has most of its moves refused, and
     // deliberately starving that headroom (simplify_envelope_ratio 0.95) was enough to turn a
-    // converging run into a diverging one on 1368052.
-    //
-    // The narrowing is charged for the simplification's deviation, so it applies only when a
-    // simplification actually ran. With simplify false the "simplified" surface IS the input,
-    // there is nothing to charge, and subtracting anyway would confine the optimizer to a
-    // fraction of the tolerance its result is judged against -- for no gain, since the
-    // geometry already starts centred in the full envelope.
-    const bool charge_simplify = env_around_simplified && simplify;
-    const double opt_eps = wmtk::utils::optimization_envelope_eps(
-        tet_eps,
-        simplify_eps,
-        env_around_simplified,
-        /*simplification_ran=*/simplify);
+    // converging run into a diverging one on 1368052. Until 2026-11 it was built at the remaining
+    // tolerance, tet_eps - simplify_eps, keeping the output within tet_eps of the input.
 
     MeshData memory_envelope;
     auto tet_envelope = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
@@ -602,7 +589,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 env_F[i] << (int)tris[i][0], (int)tris[i][1], (int)tris[i][2];
             }
         }
-        tet_envelope->init(env_V, env_F, opt_eps);
+        tet_envelope->init(env_V, env_F, tet_eps);
         if (component_io.memory())
             memory_envelope = io::geometry_data(env_V, env_F, CellType::Triangle);
     }
@@ -642,7 +629,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 continue;
             }
             auto env = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
-            env->init(V_k, F_k, opt_eps);
+            env->init(V_k, F_k, tet_eps);
             input_envelopes.push_back(std::move(env));
         }
         logger().info(
@@ -650,27 +637,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             input_envelopes.size());
     }
 
-    // The order-2 tube and the curve anchors follow the surface envelope: around the simplified
-    // surface they are built at what the simplification left of eps.
-    if (env_around_simplified) params.order2_envelope_eps = opt_eps;
-
-    // params.eps is deliberately NOT narrowed to match.
-    //
-    // It looks like it should be -- the veto now uses opt_eps -- but params.eps also sets
-    // l_min, the minimum edge length, and the smoothing energy scale. Halving it halves l_min,
-    // which is a RESOLUTION change, not an envelope one: measured on 106838 it took the output
-    // from 200k to 580k tets (2.9x) and on 116060 from 133k to 285k (2.1x), at unchanged final
-    // quality and ~40% more wall time. That swamps the effect under test. Leaving params.eps
-    // alone keeps this experiment to the single variable it is about: which surface the
-    // envelope is built around, and how much room the geometry starts with inside it.
-
     logger().info(
         "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
         tet_envelope->use_exact ? "EXACT" : "sampled",
         std::sqrt(tet_envelope->eps2),
-        !env_around_simplified ? "input"
-        : charge_simplify      ? "SIMPLIFIED surface"
-                               : "input (simplify false: nothing to charge, full eps)");
+        env_around_simplified ? "SIMPLIFIED surface" : "input");
 
     if (json_params["DEBUG_disable_envelope"]) {
         logger().warn(
