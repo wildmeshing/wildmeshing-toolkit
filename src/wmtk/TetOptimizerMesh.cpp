@@ -1499,6 +1499,75 @@ size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
     return eids.size();
 }
 
+size_t TetOptimizerMesh::init_input_envelopes(
+    const std::vector<Eigen::Vector3d>& V,
+    const std::vector<Eigen::Vector3i>& F,
+    const std::vector<InputSet>& F_sets,
+    const double eps,
+    const bool exact)
+{
+    if (!m_params.per_input_envelopes) {
+        m_input_envelopes.set({}); // shared: every face held to the union, m_envelope
+        return 0;
+    }
+    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
+    // Each input from one source: its triangles among (V, F) when F_sets says which and it has
+    // any, else the mesh's faces carrying it.
+    std::vector<std::vector<std::array<Eigen::Vector3d, 3>>> buckets(max_bits);
+    if (F_sets.size() == F.size()) {
+        for (size_t r = 0; r < F.size(); ++r) {
+            const InputSet set = F_sets[r];
+            if (set == 0) continue;
+            const auto& f = F[r];
+            for (size_t b = 0; b < max_bits; ++b) {
+                if (set & (InputSet(1) << b)) {
+                    buckets[b].push_back({{V[f[0]], V[f[1]], V[f[2]]}});
+                }
+            }
+        }
+    }
+    std::vector<bool> from_rows(max_bits);
+    for (size_t b = 0; b < max_bits; ++b) from_rows[b] = !buckets[b].empty();
+    for (const Tuple& f : get_faces()) {
+        const InputSet set = m_face_attribute[f.fid(*this)].input_set();
+        if (set == 0) continue;
+        const auto vs = get_face_vids(f);
+        for (size_t b = 0; b < max_bits; ++b) {
+            if ((set & (InputSet(1) << b)) && !from_rows[b]) {
+                buckets[b].push_back(
+                    {{m_vertex_attribute[vs[0]].m_posf,
+                      m_vertex_attribute[vs[1]].m_posf,
+                      m_vertex_attribute[vs[2]].m_posf}});
+            }
+        }
+    }
+    size_t n = 0;
+    for (size_t b = 0; b < max_bits; ++b) {
+        if (!buckets[b].empty()) n = b + 1;
+    }
+    std::vector<std::shared_ptr<Envelope>> members;
+    for (size_t b = 0; b < n; ++b) {
+        if (buckets[b].empty()) {
+            members.push_back(nullptr); // no face, so nothing to hold
+            continue;
+        }
+        std::vector<Eigen::Vector3d> V_b;
+        std::vector<Eigen::Vector3i> F_b;
+        V_b.reserve(3 * buckets[b].size());
+        F_b.reserve(buckets[b].size());
+        for (const auto& t : buckets[b]) {
+            const int k = int(V_b.size());
+            V_b.insert(V_b.end(), t.begin(), t.end());
+            F_b.emplace_back(k, k + 1, k + 2);
+        }
+        auto env = std::make_shared<Envelope>(exact);
+        env->init(V_b, F_b, eps);
+        members.push_back(std::move(env));
+    }
+    m_input_envelopes.set(std::move(members));
+    return n;
+}
+
 void TetOptimizerMesh::init_tagged_edge_input_envelopes(
     const FeatureEdgeAttributes::Kind k,
     const std::vector<size_t>& eids,

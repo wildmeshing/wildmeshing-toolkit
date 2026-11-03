@@ -735,10 +735,30 @@ public:
      * TriOptimizerMesh::m_input_envelopes.
      *
      * What an input is, is the application's: tetwild's are its input surface files, simwild's
-     * its labels (SimWildMesh::init_label_envelopes()). Built by the application. Empty by
-     * default, and then every face is held to m_envelope.
+     * its labels (SimWildMesh::init_label_envelopes()). Built by the application, tetwild's
+     * directly, simwild's by init_input_envelopes(). Empty by default, and then every face is
+     * held to m_envelope.
      */
     InputEnvelopes m_input_envelopes;
+
+    /**
+     * @brief (Re)build m_input_envelopes, at `eps` and with predicate `exact`: member b around the
+     * triangles (V, F) whose F_sets entry has bit b, else -- for an input no row carries, or for
+     * every input when F_sets is not one entry per row of F -- around the mesh's faces carrying
+     * bit b. Null for an input neither has. Shared, empty, without per_input_envelopes. Returns
+     * the number of members.
+     *
+     * Each member is built from its triangles as a soup: the envelope keeps a copy of what it is
+     * given, and coincident corners only cost memory, not correctness. The 3D twin of
+     * TriOptimizerMesh::init_input_envelopes(); simwild's label envelopes, moved here unchanged
+     * (SimWildMesh::init_label_envelopes()).
+     */
+    size_t init_input_envelopes(
+        const std::vector<Eigen::Vector3d>& V,
+        const std::vector<Eigen::Vector3i>& F,
+        const std::vector<InputSet>& F_sets,
+        double eps,
+        bool exact);
 
     /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
     /// distance) on a comparable footing.
