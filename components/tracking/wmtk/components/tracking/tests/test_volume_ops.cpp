@@ -5,6 +5,7 @@
 // (det J > 0), and back.
 
 #include <wmtk/components/tracking/VolumeMap.hpp>
+#include <wmtk/components/tracking/volume_complex.hpp>
 #include <wmtk/components/tracking/volume_geometry.hpp>
 #include <wmtk/history/TrackedRecorder.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
@@ -957,6 +958,32 @@ TEST_CASE("volume-ops-collapse-off-surface-no-cells", "[volume_map]")
         CHECK(map.stats().through_failed == 0);
     }
     REQUIRE(found);
+}
+
+TEST_CASE("volume-surface-link-condition", "[volume_map]")
+{
+    // Whether a collapse keeps the tracked surface's topology (volume::surface_link_condition()),
+    // which decides whether its map may keep the surface. The fan of 0 over the hexagon 1..6 is a
+    // disk; without its face (0, 6, 1), an open sheet whose boundary runs through 0.
+    using volume::Faces;
+    using volume::surface_link_condition;
+    using volume::Vid;
+    Faces disk, open;
+    for (Vid k = 1; k <= 6; ++k) {
+        const volume::Tri f = volume::sorted(volume::Tri{{0, k, Vid(k % 6 + 1)}});
+        disk.insert(f);
+        if (k < 6) open.insert(f);
+    }
+    CHECK(surface_link_condition(disk, 0, 1)); // an edge inside the disk
+    CHECK(surface_link_condition(disk, 1, 7)); // into a vertex off the surface: a move there
+    CHECK(surface_link_condition(open, 0, 1)); // along the boundary
+    CHECK(!surface_link_condition(open, 0, 3)); // inside, between two boundary vertices: a pinch
+    // A second sheet over the edge (2, 3): collapsing 0 into 1 makes (0, 2, 3) and (1, 2, 3) one
+    // face, a weld.
+    Faces two = disk;
+    two.insert(volume::sorted(volume::Tri{{1, 2, 3}}));
+    two.insert(volume::sorted(volume::Tri{{1, 3, 8}}));
+    CHECK(!surface_link_condition(two, 0, 1));
 }
 
 TEST_CASE("volume-ops-swap-decomposition", "[volume_map]")

@@ -780,6 +780,13 @@ private:
         const Vid i = m_e.op_vertices[0], j = m_e.op_vertices[1];
         const auto direct = collapse(m_K, i, j);
         if (!direct || keys(*direct) != keys(m_A)) throw Fail("collapse: the tets do not match it");
+        // A collapse that changes the tracked surface's topology -- two sheets welded, a curve
+        // pinched -- has no bijection of the surface, so no map of the volume keeps it: build()
+        // maps the volume alone. A pair built here regardless would squeeze the volume between
+        // the welded sheets into what the tets around them leave.
+        if (!surface_link_condition(m_surf_b, i, j)) {
+            throw Fail("collapse: the tracked surface changes topology");
+        }
         const volume::Faces sa = surf_after(m_surf_b, i, j);
         const volume::Faces capB = cap_faces(false), capA = cap_faces(true);
         const bool j_on = std::any_of(m_surf_b.begin(), m_surf_b.end(), [j](const Tri& f) {
