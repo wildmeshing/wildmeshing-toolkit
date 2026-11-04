@@ -76,27 +76,16 @@ public:
      * edge tag carries its own bit. A border between triangle tag sets S and S' carries the bits
      * of the tags in one and not the other; ambient is the empty set, so a border of region X
      * with ambient is held by X's envelope, one between X and Y by both. The 2D twin of
-     * SimWildMesh::m_input_envelopes.
+     * SimWildMesh::init_label_envelopes().
      *
      * Member b is built around the same curves as m_envelope, restricted to label b -- the
      * input curves of that label in generation, else the mesh's surface edges carrying it
      * (TriOptimizerMesh::init_input_envelopes()) -- at m_envelope_eps and with the predicate
-     * m_envelope has. m_envelope stays the union, for the engine's direct uses of it and for a
-     * surface edge carrying no label. At most 64 edge tags and triangle tags together: a mesh
-     * with more throws.
+     * m_envelope has. m_envelope stays the union, for the engine's direct uses of it. A surface
+     * edge carrying no label throws, as in triwild (the base's surface_envelope_for_edge()). At
+     * most 64 edge tags and triangle tags together: a mesh with more throws.
      */
     void init_label_envelopes();
-
-    /// A tracked segment's containment: its labels' envelopes if it has any, else m_envelope,
-    /// as simwild 3D holds a surface face with no label. The base throws on such a segment
-    /// instead; that is triwild's defect check, kept there.
-    std::shared_ptr<Envelope> surface_envelope_for_edge(
-        const std::array<size_t, 2>& vids,
-        const EdgeAttributes& attr) const override
-    {
-        if (attr.m_is_surface_fs && attr.input_set() == 0) return m_envelope;
-        return TriOptimizerMesh::surface_envelope_for_edge(vids, attr);
-    }
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
     std::vector<std::tuple<ExprPtr, double>> m_quality_field;

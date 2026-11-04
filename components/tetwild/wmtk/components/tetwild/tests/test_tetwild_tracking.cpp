@@ -552,6 +552,7 @@ TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_on
     options["input"] = "sphere";
     options["length_rel"] = 0.3;
     options["eps_rel"] = 0.02;
+    options["eps_simplify_rel"] = 0.01; // half of eps_rel, the simplification this was pinned at
     options["max_iterations"] = 1;
     options["preserve_topology"] = true;
     const auto [outputs, report] = tetwild::tetwild(options, {{"sphere", icosphere(1, 1)}});

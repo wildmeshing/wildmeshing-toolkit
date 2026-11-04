@@ -241,7 +241,8 @@ void TetWildMesh::init_from_Volumeremesher(
     const std::vector<bool>& tet_face_on_input_surface,
     const std::vector<int8_t>* tet_face_orientation,
     const utils::EmbedFeaturesResult* features,
-    const std::vector<InputSet>* facet_input_set)
+    const std::vector<InputSet>* facet_input_set,
+    const utils::FeatureInputs* feature_input)
 {
     // Turn on feature tracking BEFORE init so the connectivity init sizes the edge
     // attributes along with everything else. Only when features exist: with the flag off the
@@ -371,10 +372,15 @@ void TetWildMesh::init_from_Volumeremesher(
         NUM_THREADS);
     logger().info("#faces = {}", n_faces.load());
 
-    // Feature tags: each tet edge tiling an input feature edge carries the feature kind
-    // (tag_feature_edges()); the tags are the only feature-curve state.
+    // Feature tags: each tet edge tiling an input feature edge carries the feature kind and its
+    // input_edges file, and is held in that file's tube (tag_feature_edges()); the tags are the
+    // only feature-curve state. Without feature_input the tags alone, no tube.
     if (features != nullptr) {
-        tag_feature_edges(*features);
+        tag_feature_edges(
+            *features,
+            feature_input,
+            m_params.epsr * m_params.diag_l * m_tet_params.feature_envelope_ratio,
+            m_envelope && m_envelope->use_exact);
     }
 
     // track bounding box (parallel). The per-face exact-rational corner test is the
@@ -450,9 +456,11 @@ void TetWildMesh::init_from_Volumeremesher(
     // every tagged edge a collapse keeps, or a smoothing move touches, stays in it, no swap
     // removes one, and a collapse that leaves one with other than one face drops its tag.
     // tetwild's own open-boundary flags and their tube are gone (see TetWildMesh.h). The
-    // non-manifold edges are not held, as before: the reason is at holds_order2_edge().
+    // non-manifold edges are not held, as before: the reason is at holds_order2_edge(). After a
+    // simplification, under envelope_reference "input", around the input's own curves where they
+    // lie in them, else around themselves (InputCurves).
     const size_t n_order2 = tag_order2_edges(
-        m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio,
+        m_tet_params.order2_eps() * m_tet_params.order2_envelope_ratio,
         m_envelope && m_envelope->use_exact);
     logger().info("order-2 edges tagged: {}", n_order2);
 
@@ -467,7 +475,7 @@ void TetWildMesh::init_from_Volumeremesher(
         const double eps = m_params.epsr * m_params.diag_l;
         anchor_feature_points(
             input_points,
-            eps * m_tet_params.order2_envelope_ratio,
+            m_tet_params.order2_eps() * m_tet_params.order2_envelope_ratio,
             eps * m_tet_params.feature_envelope_ratio);
     }
 

@@ -1913,15 +1913,19 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     pre = {ring_max_quality(vid), m_vertex_attribute[vid].m_posf};
     if (pre.first >= kNeedleQuality) ++m_needle_smooth_offered;
 
-    // The base's smooth_before minus its bounding-box refusal, which is why this does not call
-    // it: the base freezes every vertex on the domain wall. Here the wall is a region boundary
-    // held in ambient's tag envelope like any other, so its vertices are smoothed and the
-    // containment check decides whether the move survives. As in 2D.
-    //
-    // Rounding still has to happen, and its failure still refuses the move.
+    // The base's smooth_before, counted: rounding has to happen, and its failure refuses the
+    // move; a vertex on the domain wall is not smoothed, the box rule holding the wall as in
+    // tetwild and simwild. Until 2026-11 the wall was held in an envelope and its vertices
+    // smoothed inside it: with the wall frozen and its edges unsplittable, a tet resting on the box
+    // had bisected onto the plane, max AMIPS 6.9e21 against 364 held so (2026-08). Wall edges
+    // split now (the base's split_edge_after() keeps the new vertex on the walls both ends share).
     const bool rounded_now = round(t);
     if (!m_vertex_attribute[vid].m_is_rounded && !rounded_now) {
         ++m_smooth_trace.before_unrounded;
+        return false;
+    }
+    if (!m_vertex_attribute[vid].on_bbox_faces.empty()) {
+        ++m_smooth_trace.before_bbox;
         return false;
     }
 
@@ -2034,7 +2038,11 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     // dispatch the operations and the sanity check use, so this cannot disagree with them --
     // and, for the faces inside, how much room is left as a fraction of eps: `is_outside` is a
     // yes/no, and a face resting on the skin of its envelope is the one the next operation pushes
-    // out. Both envelopes are real Envelopes, so squared_distance() is safe on them.
+    // out. A face on two or more labels is held to the intersection of their envelopes
+    // (InputEnvelopes::containment()), a composite whose BVH is null and which must never be
+    // asked squared_distance() (CompositeEnvelopes.hpp): its members are asked instead, as the 2D
+    // audit asks its tag tubes, and the face's distance is the largest, since inside the
+    // intersection is inside each.
     struct Face
     {
         std::array<size_t, 3> v{{0, 0, 0}};
@@ -2057,6 +2065,16 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
         }
         return d;
     };
+    // The real envelopes behind a face's: an intersection's members, else the envelope itself.
+    const auto real_parts = [](const Envelope& env) {
+        std::vector<const Envelope*> out;
+        if (const auto* both = dynamic_cast<const IntersectionEnvelope*>(&env)) {
+            for (const auto& m : both->members()) out.push_back(m.get());
+        } else {
+            out.push_back(&env);
+        }
+        return out;
+    };
     for (const Tuple& f : get_faces()) {
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         ++n_tracked;
@@ -2070,12 +2088,20 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
              m_vertex_attribute[vids[1]].m_posf,
              m_vertex_attribute[vids[2]].m_posf}};
         const bool offset = env == m_offset_envelope;
+        const std::vector<const Envelope*> parts = real_parts(*env);
         if (env->is_outside(p)) {
-            bad.push_back({vids, offset, farthest(*env, p, 6)});
+            double d = 0.;
+            for (const Envelope* e : parts) d = std::max(d, farthest(*e, p, 6));
+            bad.push_back({vids, offset, d});
             continue;
         }
-        if (!(env->eps2 > 0.)) continue;
-        const double frac = farthest(*env, p, 2) / std::sqrt(env->eps2);
+        // In units of each envelope's own eps (Envelope::eps()). Until 2026-11 of sqrt(eps2), the
+        // sampled path's shrunk radius, 0.42 eps, so the margins read 2.37x too high.
+        double frac = -1.;
+        for (const Envelope* e : parts) {
+            if (e->eps() > 0.) frac = std::max(frac, farthest(*e, p, 2) / e->eps());
+        }
+        if (frac < 0.) continue;
         worst_frac = std::max(worst_frac, frac);
         ++band[frac < 0.5 ? 0 : frac < 0.9 ? 1 : frac < 0.99 ? 2 : frac < 1. ? 3 : 4];
         if (frac >= 0.9) snug.push_back({vids, offset, frac});

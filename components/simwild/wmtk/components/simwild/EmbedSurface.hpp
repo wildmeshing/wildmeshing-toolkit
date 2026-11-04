@@ -129,12 +129,15 @@ public:
      * @param boundary_eps How the open boundary is held: 0 freezes it; positive lets it move
      *        within a tube of this radius around the input's boundary edges. See
      *        ShortestEdgeCollapse::create_mesh.
+     * @param per_input_envelopes With two or more inputs, each face is held to its own input's
+     *        envelope; false: all to one (OptimizerParameters::per_input_envelopes).
      */
     void simplify_surface(
         const double eps,
         const bool use_exact,
         const int num_threads = 0,
-        const double boundary_eps = 0);
+        const double boundary_eps = 0,
+        const bool per_input_envelopes = true);
 
     /**
      * @brief Merge vertices that are closer than eps.

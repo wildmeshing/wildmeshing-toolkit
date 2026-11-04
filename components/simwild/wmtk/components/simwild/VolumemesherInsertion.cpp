@@ -462,26 +462,28 @@ void SimWildMesh::init_surfaces_and_boundaries(
     // no reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
     // curves. Its radius is order2_envelope_ratio x eps, 1 by default, around the order-2 edges as
     // the insertion leaves them, after any simplification; see /order2_envelope_ratio in the spec
-    // for the bound against the input and the sweep.
-    const double order2_eps = m_params.epsr * m_params.diag_l * m_sim_params.order2_envelope_ratio;
+    // for the bound against the input and the sweep. After a simplification before the insertion,
+    // under envelope_reference "input", around the input's own curves where they lie in them,
+    // else around themselves, where inputs meet too (InputCurves); under "simplified" around the
+    // simplified geometry, at the same radius (OptimizerParameters::order2_eps()).
+    const double order2_eps = m_params.order2_eps() * m_sim_params.order2_envelope_ratio;
     const size_t n_order2 = tag_order2_edges(order2_eps, m_envelope && m_envelope->use_exact);
     logger().info("order-2 edges tagged: {}", n_order2);
 
     // The input feature curves (input_edges), held as tetwild holds them, by the same code: the
-    // tet edges tiling them are tagged (tag_feature_edges()) and kept in a tube of
-    // feature_envelope_ratio x eps around the input curves (init_feature_envelope()), with the
-    // surface envelope's predicate, as the order-2 tube.
+    // tet edges tiling them are tagged with their input_edges file and kept in tubes of
+    // feature_envelope_ratio x eps -- around the input curves, and one per file
+    // (tag_feature_edges()) -- with the surface envelope's predicate, as the order-2 tubes.
     const double feature_eps =
         m_params.epsr * m_params.diag_l * m_sim_params.feature_envelope_ratio;
     std::vector<size_t> input_points;
     if (features != nullptr) {
         assert(features_placed != nullptr);
-        init_feature_envelope(
-            features->edge_vertices,
-            features->edges,
+        tag_feature_edges(
+            *features_placed,
+            features,
             feature_eps,
             m_envelope && m_envelope->use_exact);
-        tag_feature_edges(*features_placed);
         input_points = utils::placed_point_vertices(*features_placed);
     }
 

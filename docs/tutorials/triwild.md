@@ -98,16 +98,21 @@ strings.
 ### The envelope: `eps_rel`
 
 [`eps_rel`](../reference/triwild.md#eps_rel) (default 0.001) is the distance the output's curves
-may be from the input, relative to the bounding box diagonal. The input is simplified within half
-of it, so detail smaller than \(\varepsilon\) may disappear, and the optimization keeps every
-tracked edge within \(\varepsilon\) of the input. A thinner envelope keeps more of the input's vertices
-and constrains the optimization more:
+may be from the input, relative to the bounding box diagonal. The input is simplified within
+[`eps_simplify_rel`](../reference/triwild.md#eps_simplify_rel) of the diagonal (default 0.0005,
+half the default \(\varepsilon\)), so detail smaller than \(\varepsilon\) may disappear, and the
+optimization keeps every tracked edge within \(\varepsilon\) of the input. A thinner envelope keeps
+more of the input's vertices and constrains the optimization more:
 
 | `eps_rel` | \(\varepsilon\) | triangles | largest distance to the input | iterations |
 |---|---|---|---|---|
 | 0.0002 | 0.025 | 977 | 0.018 | 10 |
 | 0.001 (default) | 0.127 | 428 | 0.090 | 2 |
 | 0.005 | 0.637 | 297 | 0.447 | 1 |
+
+These runs simplified within half of each \(\varepsilon\), `eps_simplify_rel` = `eps_rel` / 2.
+`eps_simplify_rel` does not follow `eps_rel`, and an `eps_rel` at or below it is refused under the
+default `envelope_reference`: lower both together.
 
 The distance is the containment that `DEBUG_hausdorff` measures: the largest distance from a
 point of the output's curves to the input. It stays below \(\varepsilon\) in every run.

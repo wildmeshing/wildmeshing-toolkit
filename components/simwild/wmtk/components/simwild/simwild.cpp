@@ -207,15 +207,16 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
 namespace {
 
 /**
- * @brief Does a simplification actually run, and so have to be charged against eps?
+ * @brief Does a simplification actually run, so that there is a simplified geometry to build
+ * the envelopes around?
  *
  * SimWild simplifies in one of two places, and which one applies turns on preserve_topology:
  *
  *  - BEFORE insertion, in read_mesh / read_curves (read_image_msh.cpp), when
- *    `!preserve_topology && !skip_simplify`. Simplification can change the topology of the
+ *    `!preserve_topology && simplify`. Simplification can change the topology of the
  *    input, so this route only runs where the caller has said that is acceptable.
  *  - AFTER insertion, SimWildMesh::simplify() from run_3D, when
- *    `preserve_topology && !skip_simplify && operation == "remeshing"`. It collapses at
+ *    `preserve_topology && simplify && operation == "remeshing"`. It collapses at
  *    eps_simplify with the quality check off and then REBUILDS the envelope around the
  *    result, so it displaces the envelope geometry exactly as the pre-insertion route does.
  *
@@ -224,35 +225,37 @@ namespace {
  */
 bool simplification_runs(const Parameters& params, bool is_3d)
 {
-    if (params.skip_simplify) return false;
+    if (!params.simplify) return false;
     if (!params.preserve_topology) return true; // pre-insertion, both dimensions
     return is_3d && params.operation == "remeshing"; // post-insertion, 3D only
 }
 
 /**
- * @brief The eps the optimizer's envelope should use.
+ * @brief The eps the optimizer's envelope uses, the full eps, after refusing an
+ * envelope_reference the run cannot honour (utils::check_envelope_reference()).
  *
- * SimWild already builds its envelope around the SIMPLIFIED geometry -- read_mesh in 3D and
- * the curve pipeline in 2D both hand over the simplified input, and SimWildMesh::simplify()
- * later rebuilds it around the simplified surface. So the part tetwild and triwild gain from
- * optimize_envelope_around_simplified, SimWild has always had.
+ * envelope_reference "input", the default: the envelope is around the input as read -- read_mesh
+ * in 3D and the curve pipeline in 2D hand it over, and SimWildMesh::simplify() puts it back after
+ * simplifying. "simplified": around the simplified geometry, which replaces the input. Both at
+ * the full eps; until 2026-11 "simplified" took what the simplification left of it.
  *
- * What it does NOT do is charge the simplification against the budget: the envelope uses the
- * full eps around geometry that has already moved up to eps_simplify from the input, so a
- * vertex may end up eps_simplify + eps away from it rather than eps. With the flag on, spend
- * only the remainder, which makes the total deviation eps as advertised.
+ * Until 2026-10 SimWild built it around the simplified geometry whatever the flag said, and
+ * charged the simplification only with the flag on: without it the envelope used the full eps
+ * around geometry that had already moved up to eps_simplify from the input, so a vertex could
+ * end up eps_simplify + eps away from it rather than eps.
  *
- * Narrowing here rather than at each init_envelope call is deliberate: every later rebuild
- * reads m_envelope_eps, so doing it once at construction covers them all -- including the
- * rebuild at the end of SimWildMesh::simplify() -- and cannot double-subtract.
+ * Both simplifications run at Parameters::eps_simplify: read_mesh derives it from the same
+ * diagonal (InputData::diag).
  */
-double optimization_envelope_eps(const Parameters& params, bool is_3d)
+double envelope_eps_and_check(const Parameters& params, bool is_3d, const InputData& input_data)
 {
-    return wmtk::utils::optimization_envelope_eps(
+    const bool after_insertion = params.preserve_topology && simplification_runs(params, is_3d);
+    wmtk::utils::check_envelope_reference(
         params.eps,
         params.eps_simplify,
-        params.optimize_envelope_around_simplified,
-        simplification_runs(params, is_3d));
+        params.envelope_around_simplified,
+        input_data.simplified_before_insertion || after_insertion);
+    return params.eps;
 }
 
 } // namespace
@@ -261,19 +264,46 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
 {
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
-    params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
+    params.init(
+        input_data.V_input.colwise().minCoeff(),
+        input_data.V_input.colwise().maxCoeff(),
+        input_data.diag);
 
     igl::Timer timer;
     timer.start();
 
     simwild::SimWildMesh mesh(
         params,
-        optimization_envelope_eps(params, /*is_3d=*/true),
+        envelope_eps_and_check(params, /*is_3d=*/true, input_data),
         params.NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
         mesh.m_F_envelope_labels = input_data.F_envelope_labels;
+    }
+    // Around the input after a simplification before the insertion, the input's own curves: the
+    // order-2 tubes and the curve anchors are built around them, and a rim, non-manifold edge or
+    // curve end the simplification made is held around itself (TetOptimizerMesh::InputCurves).
+    // Where the inputs meet, the input's curves are their intersections, which only an
+    // arrangement of the input gives: there the edges are held around themselves too.
+    if (!params.envelope_around_simplified && input_data.simplified_before_insertion) {
+        if (input_data.F_envelope_labels.size() == size_t(input_data.F_envelope.rows())) {
+            std::vector<Eigen::Vector3d> V(input_data.V_envelope.rows());
+            for (size_t i = 0; i < V.size(); ++i) V[i] = input_data.V_envelope.row(i).transpose();
+            std::vector<std::array<size_t, 3>> F(input_data.F_envelope.rows());
+            for (size_t i = 0; i < F.size(); ++i) {
+                for (int j = 0; j < 3; ++j) F[i][j] = size_t(input_data.F_envelope(i, j));
+            }
+            mesh.set_input_curves(
+                V,
+                F,
+                input_data.F_envelope_labels,
+                input_data.features.empty() ? nullptr : &input_data.features);
+        } else {
+            logger().warn(
+                "envelope_reference \"input\": the input triangles' labels are not known, so "
+                "the order-2 tubes and curve anchors are built around the simplified surface");
+        }
     }
     if (input_data.V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");
@@ -355,7 +385,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         mesh.record_volume_history();
     }
 
-    if (params.operation == "remeshing" && params.preserve_topology && !params.skip_simplify) {
+    if (params.operation == "remeshing" && params.preserve_topology && params.simplify) {
         // collapse for getting the right edge length
         logger().info("Simplify after insertion");
         mesh.simplify();
@@ -458,19 +488,27 @@ void run_2D(
     }
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
-    params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
+    params.init(
+        input_data.V_input.colwise().minCoeff(),
+        input_data.V_input.colwise().maxCoeff(),
+        input_data.diag);
 
     igl::Timer timer;
     timer.start();
 
     simwild::tri::SimWildMeshTri mesh(
         params,
-        optimization_envelope_eps(params, /*is_3d=*/false),
+        envelope_eps_and_check(params, /*is_3d=*/false, input_data),
         params.NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
         mesh.m_E_envelope_labels = input_data.F_envelope_labels;
+    }
+    // Around the input after a simplification, the input's own curve ends and junctions: the
+    // anchors are centred on them (TriOptimizerMesh::m_input_curve_points), as in 3D.
+    if (!params.envelope_around_simplified && input_data.simplified_before_insertion) {
+        mesh.set_input_curve_points(input_data.V_envelope, input_data.F_envelope);
     }
     mesh.m_input_point_vids = input_data.input_point_vids;
     if (input_data.V_input_r.size() == 0) {
@@ -581,8 +619,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
-        jse::embed::wmtk_simwild_spec::simwild_spec::spec(),
-        true);
+        jse::embed::wmtk_simwild_spec::simwild_spec::spec());
     const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     // std::filesystem::path output_filename = resolve_path(root, json_params["output"]);

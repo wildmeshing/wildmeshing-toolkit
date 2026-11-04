@@ -69,6 +69,10 @@ public:
      */
     double eps2_edge = 1e-6;
     double sampling_dist = 1e-3;
+    /// The eps the envelope was built with: what every query guarantees, sampled or exact --
+    /// everything it accepts is within it. eps2 and eps2_edge are the sampled path's shrunk
+    /// acceptance radii, 0.42 and 0.5 of it, not the envelope's radius.
+    double eps() const { return sampling_dist; }
 
     /**
      * @brief How many threads one triangle query may use. 1, the default: every sample is

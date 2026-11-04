@@ -29,7 +29,8 @@ FeatureInputs read_feature_inputs(
     std::vector<std::string> edge_paths, point_paths;
     for (const auto& s : edge_selectors) edge_paths.push_back(component_io.path(root, s));
     for (const auto& s : point_selectors) point_paths.push_back(component_io.path(root, s));
-    for (const std::string& path : edge_paths) {
+    for (size_t file = 0; file < edge_paths.size(); ++file) {
+        const std::string& path = edge_paths[file];
         MatrixXd Ve;
         MatrixXi Ee;
         component_io.edges(path, Ve, Ee);
@@ -40,6 +41,7 @@ FeatureInputs read_feature_inputs(
         }
         for (int i = 0; i < Ee.rows(); ++i) {
             out.edges.push_back({{base + size_t(Ee(i, 0)), base + size_t(Ee(i, 1))}});
+            out.edge_input.push_back(int(file));
         }
         // A vertex of an edge file with no incident edge is a free point, same rule as
         // triwild's 2D inputs.

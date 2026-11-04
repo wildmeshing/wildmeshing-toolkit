@@ -28,11 +28,23 @@ struct InputData
     MatrixXd V_envelope;
     MatrixXi F_envelope;
     /// Per row of F_envelope: the label bits of the input it came from, as the mesh's faces
-    /// (2D: edges) carry them (SimWildMesh::m_input_envelopes; 2D, SimWildMeshTri's). Empty when
-    /// F_envelope is not the inputs'.
+    /// (2D: edges) carry them (SimWildMesh::init_label_envelopes(); 2D, SimWildMeshTri's).
+    /// Empty when F_envelope is not the inputs'.
     std::vector<uint64_t> F_envelope_labels;
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;
+    /// Whether the input was simplified before the insertion (preserve_topology off). Around the
+    /// input (envelope_reference "input") V_envelope is then the input as read, not what was
+    /// inserted, and the mesh holds the input's own curves and curve points around the input
+    /// (TetOptimizerMesh::InputCurves); around the simplified geometry it is the simplification.
+    bool simplified_before_insertion = false;
+    /// The diagonal eps_rel, eps_simplify_rel and length_rel are relative to (Parameters::init()):
+    /// the inputs' own bounding box, the feature curves and points included, as in tetwild and
+    /// triwild. -1 for a mesh input, whose own box is V_input's. Until 2026-11 SimWild used the
+    /// box of the embedding, padded by a fifteenth of the diagonal on each side, for the optimizer,
+    /// and the inputs' own for the simplification before the insertion: 1.22x apart on
+    /// simwild_double_sphere_notop_3d, 1.42x on simwild_curves_2d.
+    double diag = -1;
 
     /// The topological offset's correspondence handed on from an earlier offset (memory route,
     /// vertex field corr_input_vid): per row of V_input, the V_input row of the input-complex

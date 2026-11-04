@@ -22,7 +22,6 @@ set(SRC_FILES
 	EdgeSplitting.cpp
 	EdgeCollapsing.cpp
 	EdgeSwapping.cpp
-	Smooth.cpp
 	
 	VolumemesherInsertion.cpp
 

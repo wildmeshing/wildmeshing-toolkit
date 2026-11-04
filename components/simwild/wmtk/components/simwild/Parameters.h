@@ -57,7 +57,7 @@ struct Parameters : public wmtk::OptimizerParameters
      */
     bool verbose_quality_stats = true;
 
-    bool skip_simplify = false;
+    bool simplify = true;
     bool use_sample_envelope = false;
     /// Opt-in: the sampled envelope for the input simplification alone; see the spec.
     bool simplify_use_sample_envelope = false;
@@ -68,7 +68,7 @@ struct Parameters : public wmtk::OptimizerParameters
     Parameters(const nlohmann::json& json_params)
     {
         output_path = json_params["output"];
-        skip_simplify = json_params["skip_simplify"];
+        simplify = json_params["simplify"];
         use_sample_envelope = json_params["use_sample_envelope"];
         simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
         NUM_THREADS = json_params["num_threads"];
@@ -81,7 +81,8 @@ struct Parameters : public wmtk::OptimizerParameters
         stop_energy = json_params["stop_energy"];
         stop_at_float = json_params["stop_at_float"];
         preserve_topology = json_params["preserve_topology"];
-        optimize_envelope_around_simplified = json_params["optimize_envelope_around_simplified"];
+        envelope_around_simplified = json_params["envelope_reference"] == "simplified";
+        per_input_envelopes = json_params["per_input_envelopes"];
 
         epsr_simplify = json_params["eps_simplify_rel"];
         order2_envelope_ratio = json_params["order2_envelope_ratio"];
@@ -133,11 +134,14 @@ struct Parameters : public wmtk::OptimizerParameters
         operation = json_params["operation"];
     }
 
-    void init(const VectorXd& min_, const VectorXd& max_)
+    /// `min_`, `max_`: the domain, the embedding's box with its padding. `diag`: the diagonal
+    /// eps_rel, eps_simplify_rel and length_rel are relative to, the inputs' own
+    /// (InputData::diag); -1, the domain's.
+    void init(const VectorXd& min_, const VectorXd& max_, const double diag = -1)
     {
         box_min = min_;
         box_max = max_;
-        init_lengths_from_diagonal((box_max - box_min).norm());
+        init_lengths_from_diagonal(diag > 0 ? diag : (box_max - box_min).norm());
 
         if (eps_simplify > 0) {
             epsr_simplify = eps_simplify / diag_l;

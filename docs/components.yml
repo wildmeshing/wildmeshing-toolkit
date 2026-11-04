@@ -63,7 +63,7 @@ components:
     title: SimWild
     group: regions
     tutorial: tutorials/simwild.md
-    key_options: [input, input_names, input_type, operation, dimension, output, input_transform, eps_rel, length_rel, sizing_field, quality_field, stop_energy, preserve_topology, skip_simplify, num_threads]
+    key_options: [input, input_names, input_type, operation, dimension, output, input_transform, eps_rel, length_rel, sizing_field, quality_field, stop_energy, preserve_topology, simplify, num_threads]
 
   topological_offset:
     title: Topological offset

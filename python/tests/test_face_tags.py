@@ -50,7 +50,7 @@ def square(n=4, rect=SQUARE):
 
 INPUTS = {"cube": box((0, 0, 0), (1, 1, 1)), "box": box(*GREEN), "square": square()}
 GEN = {"input": ["cube", "box", "square"], "input_names": ["red", "green", "yellow"],
-       "input_type": ["volume", "surface", "surface"], "skip_simplify": True, "eps_rel": EPS_REL}
+       "input_type": ["volume", "surface", "surface"], "simplify": False, "eps_rel": EPS_REL}
 
 
 def generate(**extra):
@@ -204,7 +204,7 @@ def test_generation_keeps_side_by_side_sheets_apart(iterations):
     a, b = (1.5, 2.0, 0.1, 0.9, 0.5), (2.0, 2.5, 0.1, 0.9, 0.5)
     inputs = {"cube": INPUTS["cube"], "a": square(rect=a), "b": square(rect=b)}
     m = wm.simwild({"input": ["cube", "a", "b"], "input_names": ["red", "A", "B"],
-                    "input_type": ["volume", "surface", "surface"], "skip_simplify": True,
+                    "input_type": ["volume", "surface", "surface"], "simplify": False,
                     "eps_rel": EPS_REL, "max_iterations": iterations}, inputs)[0]["mesh"]
     assert len(rows(m, "triangle", "A")) and len(rows(m, "triangle", "B"))
     eps = EPS_REL * np.linalg.norm([2.5, 1, 1])  # inputs' bbox [0,2.5]x[0,1]x[0,1]
@@ -217,7 +217,7 @@ def test_close_volumes_keep_their_own_borders():
     """Two boxes half an eps apart: each region's boundary stays within eps of its own box."""
     eps = EPS_REL * np.linalg.norm([2, 1, 1])  # inputs' bbox about [0,2]x[0,1]x[0,1]
     A, B = ((0, 0, 0), (1, 1, 1)), ((1 + 0.5 * eps, 0, 0), (2, 1, 1))
-    m = wm.simwild({"input": ["a", "b"], "input_names": ["A", "B"], "skip_simplify": True,
+    m = wm.simwild({"input": ["a", "b"], "input_names": ["A", "B"], "simplify": False,
                     "eps_rel": EPS_REL},
                    {"a": box(*A), "b": box(*B)})[0]["mesh"]
     for label, lo_hi in [("A", A), ("B", B)]:
@@ -285,7 +285,7 @@ def test_generation_keeps_curve_inputs_as_tagged_edges_2d(tmp_path, iterations):
     inputs = {"sq": write_obj(tmp_path / "sq.obj", [SQUARE_2D]),
               "path": write_obj(tmp_path / "path.obj", [PATH_2D])}
     m = wm.simwild({"input": ["sq", "path"], "input_names": ["red", "path"],
-                    "input_type": ["volume", "curve"], "dimension": "2", "skip_simplify": True,
+                    "input_type": ["volume", "curve"], "dimension": "2", "simplify": False,
                     "eps_rel": EPS_REL, "max_iterations": iterations}, inputs)[0]["mesh"]
     E = rows(m, "edge", "path")
     assert len(E), "no edge tagged path"
@@ -322,7 +322,7 @@ def test_close_regions_keep_their_own_borders_2d(tmp_path, gap):
     B = [(x, 0), (2, 0), (2, 1), (x, 1), (x, 0)]
     inputs = {"a": write_obj(tmp_path / "a.obj", [A]), "b": write_obj(tmp_path / "b.obj", [B])}
     m = wm.simwild({"input": ["a", "b"], "input_names": ["A", "B"], "dimension": "2",
-                    "skip_simplify": True, "eps_rel": EPS_REL}, inputs)[0]["mesh"]
+                    "simplify": False, "eps_rel": EPS_REL}, inputs)[0]["mesh"]
     for label, square in [("A", A), ("B", B)]:
         E = boundary_2d(rows(m, "triangle", label))
         assert len(E) and to_polyline(np.asarray(m["V"])[E].reshape(-1, 3), square).max() <= eps
@@ -337,7 +337,7 @@ def test_input_point_is_kept_2d(tmp_path, iterations):
               "pt": {"V": np.array([[point[0], point[1], 0.0]]),
                      "cells": {"point": {"connectivity": np.array([[0]], np.int64)}}}}
     m = wm.simwild({"input": ["sq"], "input_points": ["pt"], "dimension": "2",
-                    "skip_simplify": True, "eps_rel": EPS_REL, "max_iterations": iterations},
+                    "simplify": False, "eps_rel": EPS_REL, "max_iterations": iterations},
                    inputs)[0]["mesh"]
     V = np.asarray(m["V"])[:, :2]
     assert np.linalg.norm(V - point, axis=1).min() <= EPS_2D

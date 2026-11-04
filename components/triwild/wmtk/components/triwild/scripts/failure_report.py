@@ -14,7 +14,7 @@ DATA = os.path.join(ROOT, "data")
 PHASES = [
     ("Read edge mesh", "read input"),
     ("input simplification:", "simplified"),
-    ("skip simplification", "simplified"),
+    ("no simplification", "simplified"),
     ("2D arrangement:", "arrangement done"),
     ("Envelope sanity check", "init_mesh done"),
     ("========it pre========", "pre-collapse"),

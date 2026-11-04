@@ -361,11 +361,29 @@ public:
     }
 
     /**
+     * @brief Where the input's own curves end or three or more meet, as holds_order2_vertex()
+     * holds them: set when the envelopes are built around the input (envelope_reference "input")
+     * and the curves inserted are not the input -- a simplification ran, and without
+     * preserve_topology it merges junctions and curves passing within its envelope.
+     *
+     * The 2D twin of TetOptimizerMesh::InputCurves, which says why. Set, anchor_feature_points()
+     * centres the ball of an order-2 vertex on the nearest of these when one lies in it, and at
+     * the vertex otherwise: a curve end the simplification made still erodes its curve, and the
+     * input on it, if left free. Unset, the order-2 vertices as the insertion leaves them are
+     * the input's. Set by the application before init, by set_input_curve_points().
+     */
+    std::optional<std::vector<Vector2d>> m_input_curve_points;
+    /// Set m_input_curve_points from the input curves `V`, `E`, coincident vertices merged.
+    void set_input_curve_points(const MatrixXd& V, const MatrixXi& E);
+
+    /**
      * @brief Anchor vertex `vid` at its current position, in a ball of `radius`. A vertex
      * already anchored keeps its anchor, whose radius becomes the smaller of the two. Returns
      * whether a new anchor was made. Feature-point tracking must be on.
      */
     bool anchor_feature_point(size_t vid, double radius);
+    /// The same, with the ball centred at `centre` rather than at the vertex.
+    bool anchor_feature_point(size_t vid, double radius, const Vector2d& centre);
 
     /**
      * @brief Anchor the 0-dimensional features, after the tracked curves are final: every
@@ -375,6 +393,9 @@ public:
      * run without any pays no per-operation cost. At init only, as in 3D, whose
      * anchor_feature_points() says why an end a collapse makes needs no anchor. Returns the number
      * of anchors made.
+     *
+     * With m_input_curve_points set, an order-2 vertex is anchored only if one of the input's
+     * own curve points lies in its ball, and the ball is centred on the nearest one.
      */
     size_t anchor_feature_points(
         const std::vector<size_t>& input_point_vids,
@@ -884,9 +905,9 @@ public:
      * application tracking more than one surface (see SurfaceTagAttributes::m_surface_class)
      * answers per class.
      *
-     * A segment that is not tracked covers no input -- the collapse's chord pre-check asks
-     * about one -- and is held to the union, m_envelope: a necessary condition for the segments
-     * around it. A tracked segment with an empty input set throws (InputEnvelopes): it is an
+     * A segment that is not tracked covers no input -- the collapse's test of the collapsing
+     * edge asks about one (TriOptimizerMesh::collapse_edge_before()) -- and is held to the union,
+     * m_envelope. A tracked segment with an empty input set throws (InputEnvelopes): it is an
      * insertion or propagation defect.
      *
      * Keyed on the vertex ids rather than the eid because every caller is a topological

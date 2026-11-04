@@ -218,13 +218,18 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     }
     assert(cache.changed_energies.size() == cache.changed_fids.size());
 
-    // If both vertices are on the surface, the collapsing edge should be inside the envelope.
-    // After the energies, as 3D tests its tubes after quality: the exact segment test is the
-    // expensive one, and a collapse the quality gate refuses never pays for it.
+    // If both vertices are on the surface, the collapsing edge itself must be inside the
+    // envelope. The check of every segment the collapse makes (collapse_edge_after()) does not
+    // cover it: the envelope is one-sided, and the union of a whole input's curves, so a curve
+    // vertex moved across a region onto another curve of its input leaves every new segment on
+    // a curve, inside, while the region between folds away. Removed for one commit (2026-11) on
+    // the argument that the edge disappears; orientation-2d-square-resting-on-a-strip then lost
+    // the square (tracked area 1.0 for 4) and orientation-2d-square-and-clockwise-square 4.8%
+    // of its area. After the energies, as 3D tests its tubes after quality: the exact segment
+    // test is the expensive one, and a collapse the quality gate refuses never pays for it.
     //
     // The edge is not tracked, so it covers no input: its own (empty) attributes go to the
-    // hook, and triwild answers an untracked segment with the union, as before -- a necessary
-    // condition where tracked segments are held to their own inputs.
+    // hook, which answers an untracked segment with the union.
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
         const size_t eid = loc.eid(*this);
         if (!m_edge_attribute.at(eid).m_is_surface_fs &&

@@ -44,6 +44,10 @@ struct Parameters : public wmtk::OptimizerParameters
     // envelope build refuses, so such a test sets envelope_size itself.
     double envelope_size = -1.0;
     double envelope_size_rel = 1e-3;
+    /// Half-width of the tube that holds the order-2 edges of the held surfaces -- their rims and
+    /// non-manifold edges -- as a fraction of envelope_size, and the radius of the anchors where
+    /// those curves end or three or more meet. 1, as tetwild's and simwild's key of the same name.
+    double order2_envelope_ratio = 1.0;
 
     // ---- the smooth offset potential ----
     // Support radius of the potential, as a multiple of target_distance. Must be > 1: the offset
@@ -383,6 +387,8 @@ struct Parameters : public wmtk::OptimizerParameters
         optimize_offset = json_params["optimize_offset"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
+        per_input_envelopes = json_params["per_input_envelopes"];
+        order2_envelope_ratio = json_params["order2_envelope_ratio"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
         front_conv = json_params["front_conv"];

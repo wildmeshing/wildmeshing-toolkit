@@ -307,11 +307,11 @@ TEST_CASE("triwild-history-free-junctions", "[triwild][tracking]" + release_only
     CHECK(m.round_trip < 1e-8);
 }
 
-TEST_CASE("triwild-history-skip-simplify", "[triwild][tracking]" + release_only)
+TEST_CASE("triwild-history-without-simplification", "[triwild][tracking]" + release_only)
 {
     // Without the input simplification the history goes from the curves as read to the
     // arrangement directly: a weld, then the embed.
-    const ComponentResult r = run({{"skip_simplify", true}, {"preserve_topology", true}});
+    const ComponentResult r = run({{"simplify", false}, {"preserve_topology", true}});
     const history::CurveHistory h = history_of(r);
     REQUIRE(h.edits.size() >= 2);
     CHECK(h.edits[0].kind == history::EditKind::relabel);

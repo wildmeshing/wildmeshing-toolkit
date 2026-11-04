@@ -119,7 +119,7 @@ class Tracking(unittest.TestCase):
             "isotropic_remeshing": dict(REMESH),
             "qslim": {"target_rel": 0.5, "num_threads": 1},
             "shortest_edge_collapse": {"target_rel": 0.5, "num_threads": 1},
-            "tetwild": {"skip_simplify": True, "max_iterations": 1, "num_threads": 1},
+            "tetwild": {"simplify": False, "max_iterations": 1, "num_threads": 1},
         }
         for name, options in runs.items():
             with self.subTest(component=name):
@@ -290,7 +290,7 @@ class Tracking(unittest.TestCase):
     def test_transfer_onto_a_tet_mesh_in_memory(self):
         tracking = getattr(wm, TRACKING)
         meshed, report = wm.tetwild(
-            {"input": "in", "skip_simplify": True, "max_iterations": 1, "num_threads": 1,
+            {"input": "in", "simplify": False, "max_iterations": 1, "num_threads": 1,
              "history_output": "x"}, {"in": sphere()})
         outputs, _ = tracking(
             {"history": report["history"], "operation": "transfer", "input": "in",
@@ -362,7 +362,7 @@ class Classes(unittest.TestCase):
             {**REMESH, "input": "in", "history_output": "x"}, {"in": sphere()})
         cls.surface = report["history"]
         cls.tets, report = wm.tetwild(
-            {"input": "in", "skip_simplify": True, "max_iterations": 1, "num_threads": 1,
+            {"input": "in", "simplify": False, "max_iterations": 1, "num_threads": 1,
              "history_output": "x"}, {"in": sphere()})
         cls.tet = report["history"]
         cls.curves_out, report = wm.triwild({**TRIWILD, "history_output": "x"}, curves())

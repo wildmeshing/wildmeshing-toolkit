@@ -5,6 +5,8 @@
 #include <wmtk/history/History.hpp>
 
 #include <cstddef>
+#include <memory>
+#include <vector>
 
 namespace wmtk::utils {
 
@@ -62,6 +64,13 @@ namespace wmtk::utils {
  *                   among them: surviving_vertices and surviving_edges describe it.
  * @param[out] surviving_vertices  optional: for each row of the compacted V, its row in the V
  *                   that was passed in.
+ * @param segment_envelopes  optional, per row of the E passed in: the envelope that segment is
+ *                   held to instead of `envelope`. A collapse rewires segments but never
+ *                   creates one, so a segment keeps its own through every collapse. With
+ *                   several inputs, its own input's (input_segment_envelopes()), as the 3D
+ *                   ShortestEdgeCollapse holds each face to its own input's: the optimizer
+ *                   after holds each segment to its own input, so one the simplification lets
+ *                   drift onto another input starts there outside.
  * @return the number of vertices removed
  */
 size_t simplify_segments(
@@ -71,6 +80,21 @@ size_t simplify_segments(
     bool use_link_condition = true,
     std::vector<int>* surviving_edges = nullptr,
     std::vector<history::Edit>* collapses = nullptr,
-    std::vector<int>* surviving_vertices = nullptr);
+    std::vector<int>* surviving_vertices = nullptr,
+    const std::vector<std::shared_ptr<Envelope>>* segment_envelopes = nullptr);
+
+/**
+ * @brief Per row of E, its own input's envelope -- around that input's rows of (V, E) alone, at
+ * `eps` and with the exact predicate when `exact` -- for simplify_segments()'s
+ * segment_envelopes. `segment_input`: per row of E, the input it came from. Empty when the
+ * rows are of fewer than two inputs, or segment_input is not one entry per row: the one
+ * envelope around (V, E) is then already each row's own.
+ */
+std::vector<std::shared_ptr<Envelope>> input_segment_envelopes(
+    const MatrixXd& V,
+    const MatrixXi& E,
+    const std::vector<int>& segment_input,
+    double eps,
+    bool exact);
 
 } // namespace wmtk::utils

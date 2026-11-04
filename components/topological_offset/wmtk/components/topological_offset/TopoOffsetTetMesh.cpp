@@ -317,7 +317,7 @@ bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
 {
     // See the declaration. The caller has a tracked face (m_is_surface_fs); the offset surface
     // is surface_envelope_for_face()'s to answer, and is excluded here for vertex_is_held().
-    if (!f.switch_tetrahedron(*this)) return true; // the domain wall
+    if (!f.switch_tetrahedron(*this)) return false; // the domain wall: the box rule holds it
     if (face_is_offset_surface_live(f)) return false;
     // The loop holds the input complex's boundary only; a TetWild pass every other tracked face
     // too, the region boundaries (build_final_envelopes()).
@@ -354,34 +354,100 @@ void TopoOffsetTetMesh::build_envelopes()
             "envelope_size or envelope_size_rel to a positive length",
             m_envelope_eps);
     }
+    // The envelope energy's weight (smoothing_mode "exact"): 1/eps^2, so the distance enters
+    // relative to the envelope, as tetwild and simwild set theirs. Until 2026-11 never set, -1,
+    // which turned the term's penalty into a reward under "exact"; "projected", the default,
+    // does not read it.
+    m_s_envelope = 1. / (m_envelope_eps * m_envelope_eps);
+    assign_face_labels();
     std::vector<Eigen::Vector3i> tris;
-    size_t n_tracked = 0, n_wall = 0;
+    std::vector<InputSet> sets;
+    size_t n_tracked = 0;
     for (const Tuple& f : get_faces()) {
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         ++n_tracked;
         if (!face_is_held(f)) continue;
-        if (!f.switch_tetrahedron(*this)) ++n_wall;
         const auto vs = get_face_vids(f);
         tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
+        sets.push_back(m_face_attribute[f.fid(*this)].input_set());
     }
     // Kept as built, so the final pass can hold the same surfaces where they were here
     // (build_final_envelopes()).
     m_held_verts.assign(vert_capacity(), Eigen::Vector3d::Zero());
     for (size_t i = 0; i < vert_capacity(); ++i) m_held_verts[i] = m_vertex_attribute[i].m_posf;
     m_held_tris = tris;
+    m_held_sets = sets;
     if (tris.empty()) {
         m_envelope = nullptr;
+        m_input_envelopes.set({});
     } else {
         m_envelope = std::make_shared<Envelope>(/*exact=*/true);
         m_envelope->init(m_held_verts, tris, m_envelope_eps);
+        init_input_envelopes(m_held_verts, tris, sets, m_envelope_eps, /*exact=*/true);
     }
     logger().info(
-        "\t[envelope] {} of {} tracked faces held ({} on the domain wall; the input complex "
-        "boundary and the wall), eps {:.6g}, EXACT",
+        "\t[envelope] {} of {} tracked faces held (the input complex boundary), {} label "
+        "envelopes, eps {:.6g}, EXACT",
         tris.size(),
         n_tracked,
-        n_wall,
+        m_input_envelopes.size(),
         m_envelope_eps);
+}
+
+void TopoOffsetTetMesh::hold_curves_and_points()
+{
+    // See the declaration. As simwild after its insertion: the base's rule for which edges are
+    // order-2 (1 tracked face, or 3 and more), tagged here once and carried by the operations,
+    // each held in a tube around itself, one tube per label; the anchors where they end.
+    const double order2_eps = m_envelope_eps * m_offset_params.order2_envelope_ratio;
+    const size_t n_order2 = tag_order2_edges(order2_eps, /*exact=*/true);
+    const size_t n_anchors = anchor_feature_points({}, order2_eps, order2_eps);
+    logger().info(
+        "\t[curves] {} order-2 edges tagged, {} curve ends and junctions anchored (eps {:.6g})",
+        n_order2,
+        n_anchors,
+        order2_eps);
+}
+
+void TopoOffsetTetMesh::assign_face_labels()
+{
+    // See the declaration. Bits past the face tags, one per tet tag; refused past InputSet's
+    // width rather than wrapped onto another label.
+    const size_t F = m_face_tag_names.size();
+    size_t n_labelled = 0;
+    for (const Tuple& f : get_faces()) {
+        const size_t fid = f.fid(*this);
+        if (!m_face_attribute[fid].m_is_surface_fs) continue;
+        const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
+        if (!opp) continue; // the domain wall
+        const CellTag& a = m_tet_attribute[f.tid(*this)].tag;
+        const CellTag& b = m_tet_attribute[opp->tid(*this)].tag;
+        InputSet bits = 0;
+        const auto add = [&](const CellTag& x, const CellTag& y) {
+            for (const int64_t t : x) {
+                if (t <= 0 || y.count(t)) continue; // ambient carries no label
+                const size_t bit = F + size_t(t) - 1;
+                if (bit >= size_t(SurfaceTagAttributes::max_inputs)) {
+                    log_and_throw_error(
+                        "{} face tags and tet tag {} need more than the {} labels an input set "
+                        "holds",
+                        F,
+                        t,
+                        SurfaceTagAttributes::max_inputs);
+                }
+                bits |= InputSet(1) << bit;
+            }
+        };
+        add(a, b);
+        add(b, a);
+        // The envelope surface group, when the .msh has one (m_sheet_tag): its faces lie on it,
+        // matched geometrically, with the same tags on both sides, so it is a label of its own.
+        if (m_sheet_tag > 0 && m_face_extra[fid].on_sheet) add(CellTag{m_sheet_tag}, CellTag{});
+        if (bits == 0) continue;
+        m_face_attribute[fid].set_input_set(m_face_attribute[fid].input_set() | bits);
+        ++n_labelled;
+    }
+    logger().info("\t[labels] {} faces carry the tet tags of the regions they bound", n_labelled);
 }
 
 void TopoOffsetTetMesh::build_final_envelopes()
@@ -393,19 +459,25 @@ void TopoOffsetTetMesh::build_final_envelopes()
     // complex's boundary.
     std::vector<Eigen::Vector3d> verts = m_held_verts;
     std::vector<Eigen::Vector3i> tris = m_held_tris;
+    std::vector<InputSet> sets = m_held_sets;
     const int base = int(verts.size());
     for (size_t i = 0; i < vert_capacity(); ++i) verts.push_back(m_vertex_attribute[i].m_posf);
     size_t n_region = 0;
     for (const Tuple& f : get_faces()) {
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
-        if (!f.switch_tetrahedron(*this)) continue; // the wall: already held
+        if (!f.switch_tetrahedron(*this)) continue; // the wall: the box rule holds it
         if (face_is_offset_surface_live(f)) continue; // its own envelope
         if (face_is_complex_boundary(f)) continue; // already held
         const auto vs = get_face_vids(f);
         tris.emplace_back(base + int(vs[0]), base + int(vs[1]), base + int(vs[2]));
+        sets.push_back(m_face_attribute[f.fid(*this)].input_set());
         ++n_region;
     }
     m_loop_envelope = m_envelope;
+    m_loop_input_members.clear();
+    for (size_t i = 0; i < m_input_envelopes.size(); ++i)
+        m_loop_input_members.push_back(m_input_envelopes.member(i));
+    m_final_envelopes = true;
     if (n_region == 0) {
         logger().info("\t[envelope] final pass: no region boundary besides the held surfaces");
         return;
@@ -413,6 +485,7 @@ void TopoOffsetTetMesh::build_final_envelopes()
     // m_envelope_eps is build_envelopes()'s, which refuses an invalid one.
     m_envelope = std::make_shared<Envelope>(/*exact=*/true);
     m_envelope->init(verts, tris, m_envelope_eps);
+    init_input_envelopes(verts, tris, sets, m_envelope_eps, /*exact=*/true);
     logger().info(
         "\t[envelope] final pass: {} region-boundary faces held beside the {} held at "
         "construction, eps {:.6g}",
@@ -423,8 +496,13 @@ void TopoOffsetTetMesh::build_final_envelopes()
 
 void TopoOffsetTetMesh::release_final_envelopes()
 {
-    if (m_loop_envelope) m_envelope = m_loop_envelope;
+    if (m_final_envelopes) {
+        m_envelope = m_loop_envelope;
+        m_input_envelopes.set(m_loop_input_members);
+    }
     m_loop_envelope = nullptr;
+    m_loop_input_members.clear();
+    m_final_envelopes = false;
 }
 
 void TopoOffsetTetMesh::mark_input_complex_vertices()
@@ -1452,6 +1530,7 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
 
     // THE envelope, once: the complex is labelled and embedded, and nothing has moved yet.
     build_envelopes();
+    hold_curves_and_points();
 
     // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
     repulsion_smoothing();

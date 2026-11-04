@@ -77,7 +77,7 @@ TEST_CASE("simwild-holds-an-open-boundary-in-its-tube", "[simwild][order2]" + re
             {{"input", {"cube", "square"}},
              {"input_names", {"cube", "square"}},
              {"input_type", {"volume", "surface"}},
-             {"skip_simplify", true},
+             {"simplify", false},
              {"eps_rel", eps_rel},
              {"num_threads", 1}},
             {{"cube", unit_cube()}, {"square", open_square(8)}});

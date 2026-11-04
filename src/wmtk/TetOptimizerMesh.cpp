@@ -8,6 +8,7 @@
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EmbedTriangles.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
@@ -26,6 +27,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <queue>
+#include <tuple>
 
 namespace wmtk {
 
@@ -1159,46 +1161,85 @@ bool TetOptimizerMesh::vertex_has_edge_of_kind(
     return false;
 }
 
+std::shared_ptr<Envelope> TetOptimizerMesh::smoothing_energy_envelope(const size_t vid) const
+{
+    // See the declaration.
+    if (auto tube = tagged_edge_pull_envelope(vid)) {
+        return tube;
+    }
+    if (m_input_envelopes.empty()) return m_envelope;
+    InputSet set = 0;
+    const auto& FA = std::as_const(m_face_attribute);
+    // Named, not iterated as a temporary: faces() returns a reference into the collection, which
+    // a range-for over get_surface_faces_for_vertex(vid).faces() destroys before the first
+    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
+    const simplex::SimplexCollection surf = get_surface_faces_for_vertex(vid);
+    for (const simplex::Face& f : surf.faces()) {
+        set |= FA[std::get<1>(tuple_from_face(f.vertices()))].input_set();
+    }
+    if (set == 0) return m_envelope;
+    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
+}
+
 std::shared_ptr<Envelope> TetOptimizerMesh::tagged_edge_pull_envelope(const size_t vid) const
 {
     if (!m_track_feature_edges) return nullptr;
     // One walk of the one-ring for both kinds: this runs for every vertex every smoothing pass.
-    uint8_t kinds = 0;
+    FeatureEdgeAttributes around; // the kinds and input sets of the vertex's edges, merged
     for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
         const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this)) kinds |= m_feature_edge_attribute[e.eid(*this)].m_kinds;
+        if (e.is_valid(*this)) around.merge(m_feature_edge_attribute[e.eid(*this)]);
     }
-    if ((kinds & FeatureEdgeAttributes::feature) && m_feature_envelope) {
-        return m_feature_envelope;
+    // Toward the inputs of the vertex's own edges of the kind, one real tube at a time -- the
+    // member of their union the vertex is farthest from, as a surface vertex is pulled toward
+    // its faces' inputs; the union tube without per-input tubes or without a set.
+    const auto pull = [&](const FeatureEdgeAttributes::Kind k,
+                          const std::shared_ptr<Envelope>& tube) -> std::shared_ptr<Envelope> {
+        const InputEnvelopes& per_input = tagged_edge_input_envelopes(k);
+        if (per_input.empty() || around.inputs(k) == 0) return tube;
+        return per_input.pull(around.inputs(k), m_vertex_attribute[vid].m_posf);
+    };
+    if (around.has(FeatureEdgeAttributes::feature) && m_feature_envelope) {
+        return pull(FeatureEdgeAttributes::feature, m_feature_envelope);
     }
-    if ((kinds & FeatureEdgeAttributes::order2) && m_order2_edge_envelope &&
+    if (around.has(FeatureEdgeAttributes::order2) && m_order2_edge_envelope &&
         m_order2_edge_envelope->initialized()) {
-        return m_order2_edge_envelope;
+        return pull(FeatureEdgeAttributes::order2, m_order2_edge_envelope);
     }
     return nullptr;
 }
 
-void TetOptimizerMesh::init_feature_envelope(
-    const std::vector<Vector3d>& V,
-    const std::vector<std::array<size_t, 2>>& E,
+size_t TetOptimizerMesh::tag_feature_edges(
+    const utils::EmbedFeaturesResult& placed,
+    const utils::FeatureInputs* input,
     const double eps,
     const bool exact)
 {
-    if (E.empty()) return;
-    std::vector<Eigen::Vector2i> fe_env(E.size());
-    for (size_t i = 0; i < E.size(); ++i) {
-        fe_env[i] = Eigen::Vector2i(int(E[i][0]), int(E[i][1]));
-    }
-    m_feature_envelope = std::make_shared<Envelope>(exact);
-    m_feature_envelope->init(V, fe_env, eps);
-}
-
-size_t TetOptimizerMesh::tag_feature_edges(const utils::EmbedFeaturesResult& placed)
-{
     if (placed.edge_tiling.empty()) return 0;
+    if (input != nullptr) {
+        assert(input->edges.size() == placed.edge_tiling.size());
+        assert(input->edge_input.size() == input->edges.size());
+        std::vector<Eigen::Vector2i> fe_env(input->edges.size());
+        for (size_t i = 0; i < input->edges.size(); ++i) {
+            fe_env[i] = Eigen::Vector2i(int(input->edges[i][0]), int(input->edges[i][1]));
+        }
+        m_feature_envelope = std::make_shared<Envelope>(exact);
+        m_feature_envelope->init(input->edge_vertices, fe_env, eps);
+    }
     enable_feature_edge_tracking();
     size_t n_tagged = 0;
+    std::vector<size_t> eids;
     for (size_t e = 0; e < placed.edge_tiling.size(); ++e) {
+        // The file the input edge came from: its input, as an input surface is a face's.
+        const size_t file = input != nullptr ? size_t(input->edge_input[e]) : 0;
+        if (file >= size_t(SurfaceTagAttributes::max_inputs)) {
+            log_and_throw_error(
+                "input_edges file {}: a tagged edge records its files in {} bits, so at most {} "
+                "are supported",
+                file,
+                SurfaceTagAttributes::max_inputs,
+                SurfaceTagAttributes::max_inputs);
+        }
         for (const auto& seg : placed.edge_tiling[e]) {
             const Tuple t = tuple_from_edge({{seg[0], seg[1]}});
             if (!t.is_valid(*this)) {
@@ -1207,15 +1248,96 @@ size_t TetOptimizerMesh::tag_feature_edges(const utils::EmbedFeaturesResult& pla
                     seg[0],
                     seg[1]);
             }
-            m_feature_edge_attribute[t.eid(*this)].add(FeatureEdgeAttributes::feature);
+            auto& attr = m_feature_edge_attribute[t.eid(*this)];
+            attr.add(FeatureEdgeAttributes::feature);
+            attr.inputs(FeatureEdgeAttributes::feature) |= InputSet(1) << file;
+            eids.push_back(t.eid(*this));
             ++n_tagged;
         }
+    }
+    if (input != nullptr) {
+        init_tagged_edge_input_envelopes(FeatureEdgeAttributes::feature, eids, eps, exact);
     }
     logger().info(
         "feature tags: {} tet edges tagged across {} input edges",
         n_tagged,
         placed.edge_tiling.size());
     return n_tagged;
+}
+
+void TetOptimizerMesh::set_input_curves(
+    const std::vector<Eigen::Vector3d>& V,
+    const std::vector<std::array<size_t, 3>>& F,
+    const std::vector<InputSet>& F_inputs,
+    const utils::FeatureInputs* features)
+{
+    assert(F_inputs.size() == F.size());
+    InputCurves in;
+    in.V = V;
+    // {a, b, input} for every edge of every face and every input of the face, sorted: a run is
+    // one input's faces at one edge, and an edge's runs are adjacent.
+    std::vector<std::array<size_t, 3>> sides;
+    sides.reserve(3 * F.size());
+    for (size_t f = 0; f < F.size(); ++f) {
+        for (int j = 0; j < 3; ++j) {
+            const size_t a = F[f][j], b = F[f][(j + 1) % 3];
+            if (a == b) continue;
+            for (size_t i = 0; i < size_t(SurfaceTagAttributes::max_inputs); ++i) {
+                if ((F_inputs[f] >> i) & 1) sides.push_back({{std::min(a, b), std::max(a, b), i}});
+            }
+        }
+    }
+    std::sort(sides.begin(), sides.end());
+    for (size_t s = 0; s < sides.size();) {
+        InputSet set = 0;
+        size_t t = s;
+        while (t < sides.size() && sides[t][0] == sides[s][0] && sides[t][1] == sides[s][1]) {
+            size_t u = t;
+            while (u < sides.size() && sides[u] == sides[t]) ++u;
+            if (holds_order2_edge(u - t)) set |= InputSet(1) << sides[t][2];
+            t = u;
+        }
+        if (set != 0) {
+            in.order2.emplace_back(int(sides[s][0]), int(sides[s][1]));
+            in.order2_inputs.push_back(set);
+        }
+        s = t;
+    }
+
+    // The curve points, read off those segments and the feature curves together as
+    // anchor_feature_points() reads them off the tags: every vertex where one ends or three or
+    // more meet. Vertices are merged by exact position, so curves of different inputs meet.
+    std::map<std::array<double, 3>, size_t> id_of;
+    std::vector<Eigen::Vector3d> P;
+    const auto id = [&](const Eigen::Vector3d& p) {
+        const auto [it, added] = id_of.emplace(std::array<double, 3>{{p[0], p[1], p[2]}}, P.size());
+        if (added) P.push_back(p);
+        return it->second;
+    };
+    std::set<std::array<size_t, 2>> segments;
+    const auto add = [&](const Eigen::Vector3d& p, const Eigen::Vector3d& q) {
+        const size_t a = id(p), b = id(q);
+        if (a != b) segments.insert({{std::min(a, b), std::max(a, b)}});
+    };
+    for (const auto& e : in.order2) add(V[e[0]], V[e[1]]);
+    if (features != nullptr) {
+        for (const auto& e : features->edges) {
+            add(features->edge_vertices[e[0]], features->edge_vertices[e[1]]);
+        }
+    }
+    std::vector<size_t> valence(P.size(), 0);
+    for (const auto& s : segments) {
+        ++valence[s[0]];
+        ++valence[s[1]];
+    }
+    for (size_t i = 0; i < P.size(); ++i) {
+        if (valence[i] == 1 || valence[i] >= 3) in.points.push_back(P[i]);
+    }
+    logger().info(
+        "input's own curves: {} order-2 segments, {} curve ends and junctions",
+        in.order2.size(),
+        in.points.size());
+    m_input_curves = std::move(in);
 }
 
 size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
@@ -1249,23 +1371,271 @@ size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
     }
     if (eids.empty()) return 0;
 
+    // Each held edge's input set: the inputs of its tracked faces, as a face carries the inputs
+    // it lies on. Looked up for the held edges only, the mesh being at its largest here.
+    std::map<size_t, InputSet> set_of;
+    for (const size_t eid : eids) set_of.emplace(eid, 0);
+    for (size_t t = 0; t < tet_capacity(); ++t) {
+        if (!tuple_from_tet(t).is_valid(*this)) continue;
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(t, j);
+            if (f.fid(*this) != 4 * t + j) continue; // a lower tet owns this face
+            const auto& fa = m_face_attribute[f.fid(*this)];
+            if (!fa.m_is_surface_fs) continue;
+            for (const Tuple& e :
+                 {f, f.switch_edge(*this), f.switch_vertex(*this).switch_edge(*this)}) {
+                const auto it = set_of.find(e.eid(*this));
+                if (it != set_of.end()) it->second |= fa.input_set();
+            }
+        }
+    }
+
+    // Held to the input's own curves (InputCurves). An edge in the tubes around them -- every
+    // input of its set with a curve of its own here, and the edge in each one's tube
+    // (tagged_edge_leaves_tube()) -- is held there. That is the guarantee's own question, asked
+    // with the predicate that then enforces it: an edge is held within eps of an order-2 curve
+    // of its own inputs, not of the curve it came from, so no correspondence is needed.
+    //
+    // Any other edge is on a curve the input does not have: one the simplification made on one
+    // input, or one where two or more inputs meet, whose curve in the input is the intersection
+    // of the inputs, which only an arrangement of the original would give. It is held in a tube
+    // around itself as it lies now, as every order-2 edge is with no simplification before the
+    // insertion: the one-sided surface envelope cannot hold a curve against eroding, whoever
+    // made it. Until 2026-11 an edge where inputs meet was left to the surface envelopes alone.
+    // Both kinds share one tube per input of their set, so an edge stays within eps of an
+    // order-2 curve of each of its inputs, the input's or the inserted one. The smoothing pull
+    // asks each tube of the set, so an input without one cannot be in it.
+    if (m_input_curves) {
+        const InputCurves& in = *m_input_curves;
+        // The tubes around `segments` into `V`, one per input of `sets` when there are several.
+        const auto build_tubes = [&](const std::vector<Eigen::Vector3d>& V,
+                                     const std::vector<Eigen::Vector2i>& segments,
+                                     const std::vector<InputSet>& sets) {
+            InputSet all = 0;
+            for (const InputSet s : sets) all |= s;
+            m_order2_edge_envelope = std::make_shared<Envelope>(exact);
+            m_order2_edge_envelope->init(V, segments, eps);
+            std::vector<std::shared_ptr<Envelope>> members;
+            // One input: the union tube is that input's. Shared without per_input_envelopes.
+            if (m_params.per_input_envelopes && (all & (all - 1)) != 0) {
+                for (size_t i = 0; i < size_t(SurfaceTagAttributes::max_inputs) && (all >> i) != 0;
+                     ++i) {
+                    std::vector<Eigen::Vector2i> own;
+                    for (size_t s = 0; s < segments.size(); ++s) {
+                        if ((sets[s] >> i) & 1) own.push_back(segments[s]);
+                    }
+                    if (own.empty()) {
+                        members.push_back(nullptr); // no curve of its own, so no edge to hold
+                        continue;
+                    }
+                    auto env = std::make_shared<Envelope>(exact);
+                    env->init(V, own, eps);
+                    members.push_back(std::move(env));
+                }
+            }
+            m_order2_input_envelopes.set(std::move(members));
+        };
+        InputSet input_all = 0;
+        for (const InputSet s : in.order2_inputs) input_all |= s;
+        if (!in.order2.empty()) build_tubes(in.V, in.order2, in.order2_inputs);
+
+        std::vector<size_t> held, made;
+        std::vector<Eigen::Vector2i> made_edges;
+        size_t n_meet = 0;
+        for (size_t k = 0; k < eids.size(); ++k) {
+            const InputSet set = set_of.at(eids[k]);
+            bool in_tubes = false;
+            if (!in.order2.empty() && (set & ~input_all) == 0) {
+                FeatureEdgeAttributes only;
+                only.add(FeatureEdgeAttributes::order2);
+                only.inputs(FeatureEdgeAttributes::order2) = set;
+                in_tubes = tagged_edge_leaves_tube(
+                               only,
+                               m_vertex_attribute[edges[k][0]].m_posf,
+                               m_vertex_attribute[edges[k][1]].m_posf) == 0;
+            }
+            if (in_tubes) {
+                held.push_back(eids[k]);
+            } else {
+                made.push_back(eids[k]);
+                made_edges.push_back(edges[k]);
+                n_meet += (set & (set - 1)) != 0;
+            }
+        }
+        if (!made.empty()) {
+            // The input's curves and the made ones, the latter at the mesh's positions.
+            std::vector<Eigen::Vector3d> V = in.V;
+            std::vector<Eigen::Vector2i> segments = in.order2;
+            std::vector<InputSet> sets = in.order2_inputs;
+            std::map<int, int> index_of;
+            const auto index = [&](const int v) {
+                const auto [it, added] = index_of.emplace(v, int(V.size()));
+                if (added) V.push_back(m_vertex_attribute[v].m_posf);
+                return it->second;
+            };
+            for (size_t k = 0; k < made.size(); ++k) {
+                const int a = index(made_edges[k][0]);
+                const int b = index(made_edges[k][1]);
+                segments.emplace_back(a, b);
+                sets.push_back(set_of.at(made[k]));
+            }
+            build_tubes(V, segments, sets);
+        }
+        logger().info(
+            "order-2 edges in the tubes around the input's own curves: {} of {}; {} on no curve "
+            "of the input, held in tubes around themselves, {} of them where inputs meet",
+            held.size(),
+            eids.size(),
+            made.size(),
+            n_meet);
+        if (held.empty() && made.empty()) {
+            m_order2_edge_envelope = nullptr;
+            m_order2_input_envelopes.set({});
+            return 0;
+        }
+        enable_feature_edge_tracking();
+        for (const std::vector<size_t>* tagged : {&held, &made}) {
+            for (const size_t eid : *tagged) {
+                auto& attr = m_feature_edge_attribute[eid];
+                attr.add(FeatureEdgeAttributes::order2);
+                attr.inputs(FeatureEdgeAttributes::order2) = set_of.at(eid);
+            }
+        }
+        return held.size() + made.size();
+    }
+
     enable_feature_edge_tracking();
-    for (const size_t eid : eids) m_feature_edge_attribute[eid].add(FeatureEdgeAttributes::order2);
+    for (const size_t eid : eids) {
+        auto& attr = m_feature_edge_attribute[eid];
+        attr.add(FeatureEdgeAttributes::order2);
+        attr.inputs(FeatureEdgeAttributes::order2) = set_of.at(eid);
+    }
 
     std::vector<Eigen::Vector3d> v_posf(vert_capacity());
     for (size_t i = 0; i < vert_capacity(); ++i) v_posf[i] = m_vertex_attribute[i].m_posf;
     m_order2_edge_envelope = std::make_shared<Envelope>(exact);
     m_order2_edge_envelope->init(v_posf, edges, eps);
+    init_tagged_edge_input_envelopes(FeatureEdgeAttributes::order2, eids, eps, exact);
     return eids.size();
 }
 
+size_t TetOptimizerMesh::init_input_envelopes(
+    const std::vector<Eigen::Vector3d>& V,
+    const std::vector<Eigen::Vector3i>& F,
+    const std::vector<InputSet>& F_sets,
+    const double eps,
+    const bool exact)
+{
+    if (!m_params.per_input_envelopes) {
+        m_input_envelopes.set({}); // shared: every face held to the union, m_envelope
+        return 0;
+    }
+    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
+    // Each input from one source: its triangles among (V, F) when F_sets says which and it has
+    // any, else the mesh's faces carrying it.
+    std::vector<std::vector<std::array<Eigen::Vector3d, 3>>> buckets(max_bits);
+    if (F_sets.size() == F.size()) {
+        for (size_t r = 0; r < F.size(); ++r) {
+            const InputSet set = F_sets[r];
+            if (set == 0) continue;
+            const auto& f = F[r];
+            for (size_t b = 0; b < max_bits; ++b) {
+                if (set & (InputSet(1) << b)) {
+                    buckets[b].push_back({{V[f[0]], V[f[1]], V[f[2]]}});
+                }
+            }
+        }
+    }
+    std::vector<bool> from_rows(max_bits);
+    for (size_t b = 0; b < max_bits; ++b) from_rows[b] = !buckets[b].empty();
+    for (const Tuple& f : get_faces()) {
+        const InputSet set = m_face_attribute[f.fid(*this)].input_set();
+        if (set == 0) continue;
+        const auto vs = get_face_vids(f);
+        for (size_t b = 0; b < max_bits; ++b) {
+            if ((set & (InputSet(1) << b)) && !from_rows[b]) {
+                buckets[b].push_back(
+                    {{m_vertex_attribute[vs[0]].m_posf,
+                      m_vertex_attribute[vs[1]].m_posf,
+                      m_vertex_attribute[vs[2]].m_posf}});
+            }
+        }
+    }
+    size_t n = 0;
+    for (size_t b = 0; b < max_bits; ++b) {
+        if (!buckets[b].empty()) n = b + 1;
+    }
+    std::vector<std::shared_ptr<Envelope>> members;
+    for (size_t b = 0; b < n; ++b) {
+        if (buckets[b].empty()) {
+            members.push_back(nullptr); // no face, so nothing to hold
+            continue;
+        }
+        std::vector<Eigen::Vector3d> V_b;
+        std::vector<Eigen::Vector3i> F_b;
+        V_b.reserve(3 * buckets[b].size());
+        F_b.reserve(buckets[b].size());
+        for (const auto& t : buckets[b]) {
+            const int k = int(V_b.size());
+            V_b.insert(V_b.end(), t.begin(), t.end());
+            F_b.emplace_back(k, k + 1, k + 2);
+        }
+        auto env = std::make_shared<Envelope>(exact);
+        env->init(V_b, F_b, eps);
+        members.push_back(std::move(env));
+    }
+    m_input_envelopes.set(std::move(members));
+    return n;
+}
+
+void TetOptimizerMesh::init_tagged_edge_input_envelopes(
+    const FeatureEdgeAttributes::Kind k,
+    const std::vector<size_t>& eids,
+    const double eps,
+    const bool exact)
+{
+    InputEnvelopes& tubes =
+        k == FeatureEdgeAttributes::feature ? m_feature_input_envelopes : m_order2_input_envelopes;
+    InputSet all = 0;
+    for (const size_t eid : eids) all |= m_feature_edge_attribute[eid].inputs(k);
+    if (!m_params.per_input_envelopes || (all & (all - 1)) == 0) {
+        // One input (or none): the union tube is that input's. Shared without
+        // per_input_envelopes.
+        tubes.set({});
+        return;
+    }
+    std::vector<Eigen::Vector3d> v_posf(vert_capacity());
+    for (size_t i = 0; i < vert_capacity(); ++i) v_posf[i] = m_vertex_attribute[i].m_posf;
+    std::vector<std::shared_ptr<Envelope>> members;
+    for (size_t i = 0; i < size_t(SurfaceTagAttributes::max_inputs) && (all >> i) != 0; ++i) {
+        std::vector<Eigen::Vector2i> edges;
+        for (const size_t eid : eids) {
+            if (((m_feature_edge_attribute[eid].inputs(k) >> i) & 1) == 0) continue;
+            const Tuple e = tuple_from_edge(eid / 6, int(eid % 6));
+            edges.emplace_back(int(e.vid(*this)), int(e.switch_vertex(*this).vid(*this)));
+        }
+        if (edges.empty()) {
+            members.push_back(nullptr); // no edge of the kind to hold
+            continue;
+        }
+        auto env = std::make_shared<Envelope>(exact);
+        env->init(v_posf, edges, eps);
+        members.push_back(std::move(env));
+    }
+    logger().info(
+        "{} tubes: one per input, {} inputs",
+        k == FeatureEdgeAttributes::feature ? "feature" : "order-2",
+        members.size());
+    tubes.set(std::move(members));
+}
+
 void TetOptimizerMesh::drop_stale_order2_tags(
-    const std::map<std::array<size_t, 2>, uint8_t>& cache,
+    const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache,
     const size_t v_old,
     const size_t v_new)
 {
-    for (const auto& [pair, kinds] : cache) {
-        if ((kinds & FeatureEdgeAttributes::order2) == 0) continue;
+    for (const auto& [pair, tags] : cache) {
+        if (!tags.has(FeatureEdgeAttributes::order2)) continue;
         std::array<size_t, 2> p = pair;
         for (size_t& v : p) {
             if (v == v_old) v = v_new;
@@ -1287,11 +1657,14 @@ size_t TetOptimizerMesh::tagged_edges_outside(const FeatureEdgeAttributes::Kind 
     if (!m_track_feature_edges || !env) return 0;
     size_t n = 0;
     for (const Tuple& e : get_edges()) {
-        if (!m_feature_edge_attribute[e.eid(*this)].has(k)) continue;
+        FeatureEdgeAttributes only = m_feature_edge_attribute[e.eid(*this)];
+        if (!only.has(k)) continue;
+        only.m_kinds = k; // in the tubes of its input set, as the operations hold it
         const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
-        n += env->is_outside(
-            std::array<Eigen::Vector3d, 2>{
-                {m_vertex_attribute[a].m_posf, m_vertex_attribute[b].m_posf}});
+        n += tagged_edge_leaves_tube(
+                 only,
+                 m_vertex_attribute[a].m_posf,
+                 m_vertex_attribute[b].m_posf) != 0;
     }
     return n;
 }
@@ -1343,16 +1716,29 @@ void TetOptimizerMesh::substructure_feature_neighbors(const size_t vid, std::vec
 }
 
 uint8_t TetOptimizerMesh::tagged_edge_leaves_tube(
-    const uint8_t kinds,
+    const FeatureEdgeAttributes& tags,
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b) const
 {
+    const std::array<Eigen::Vector3d, 2> segment = {{a, b}};
     for (const auto k : {FeatureEdgeAttributes::feature, FeatureEdgeAttributes::order2}) {
-        if ((kinds & k) == 0) {
+        if (!tags.has(k)) {
+            continue;
+        }
+        // Every tube of its input set, as a face is held to every envelope of its set. Member
+        // by member: the faces' IntersectionEnvelope has no segment test.
+        const InputEnvelopes& per_input = tagged_edge_input_envelopes(k);
+        const InputSet set = tags.inputs(k);
+        if (!per_input.empty() && set != 0) {
+            for (size_t i = 0; i < per_input.size(); ++i) {
+                if (((set >> i) & 1) == 0) continue;
+                const auto& env = per_input.member(i);
+                if (env && env->is_outside(segment)) return k;
+            }
             continue;
         }
         const Envelope* env = tagged_edge_envelope(k);
-        if (env && env->is_outside(std::array<Eigen::Vector3d, 2>{{a, b}})) {
+        if (env && env->is_outside(segment)) {
             return k;
         }
     }
@@ -1369,11 +1755,11 @@ bool TetOptimizerMesh::feature_edges_at_vertex_inside(const size_t vid) const
         if (!e.is_valid(*this)) {
             continue;
         }
-        const uint8_t kinds = m_feature_edge_attribute[e.eid(*this)].m_kinds;
-        if (kinds != 0 && tagged_edge_leaves_tube(
-                              kinds,
-                              m_vertex_attribute[vid].m_posf,
-                              m_vertex_attribute[u].m_posf) != 0) {
+        const FeatureEdgeAttributes& tags = m_feature_edge_attribute[e.eid(*this)];
+        if (tags.is_tagged() && tagged_edge_leaves_tube(
+                                    tags,
+                                    m_vertex_attribute[vid].m_posf,
+                                    m_vertex_attribute[u].m_posf) != 0) {
             return false;
         }
     }
@@ -1382,6 +1768,14 @@ bool TetOptimizerMesh::feature_edges_at_vertex_inside(const size_t vid) const
 
 bool TetOptimizerMesh::anchor_feature_point(const size_t vid, const double radius)
 {
+    return anchor_feature_point(vid, radius, m_vertex_attribute[vid].m_posf);
+}
+
+bool TetOptimizerMesh::anchor_feature_point(
+    const size_t vid,
+    const double radius,
+    const Vector3d& centre)
+{
     assert(m_track_feature_points);
     size_t& f = m_feature_point_attribute[vid].m_feature_point_id;
     if (f != NO_FEATURE_POINT) {
@@ -1389,7 +1783,7 @@ bool TetOptimizerMesh::anchor_feature_point(const size_t vid, const double radiu
         return false;
     }
     f = m_feature_points.size();
-    m_feature_points.push_back(m_vertex_attribute[vid].m_posf);
+    m_feature_points.push_back(centre);
     m_feature_point_radius.push_back(radius);
     return true;
 }
@@ -1399,9 +1793,25 @@ size_t TetOptimizerMesh::anchor_feature_points(
     const double order2_radius,
     const double feature_radius)
 {
-    // {vertex, radius}: the curve endpoints and junctions first, then the input points.
-    std::vector<std::pair<size_t, double>> anchors;
+    // {vertex, radius, centre}: the curve endpoints and junctions first, then the input points.
+    std::vector<std::tuple<size_t, double, Vector3d>> anchors;
     size_t n_ends = 0, n_junctions = 0;
+    // With the input's own curves (InputCurves), a curve end or junction is the input's only
+    // where one of its curve points is in the ball, and the ball is centred there; any other
+    // the simplification made, and its ball is centred where it is. An input point is the
+    // input's whatever its curves, and keeps its own position.
+    std::unique_ptr<KNN> input_curve_points;
+    std::vector<bool> is_input_point;
+    size_t n_not_input = 0;
+    if (m_input_curves) {
+        if (!m_input_curves->points.empty()) {
+            input_curve_points = std::make_unique<KNN>(m_input_curves->points);
+        }
+        is_input_point.assign(vert_capacity(), false);
+        for (const size_t vid : input_point_vids) {
+            if (vid < vert_capacity()) is_input_point[vid] = true;
+        }
+    }
     if (m_track_feature_edges) {
         for (const Tuple& t : get_vertices()) {
             const size_t vid = t.vid(*this);
@@ -1420,7 +1830,25 @@ size_t TetOptimizerMesh::anchor_feature_points(
             double r = std::numeric_limits<double>::infinity();
             if (kinds & FeatureEdgeAttributes::order2) r = std::min(r, order2_radius);
             if (kinds & FeatureEdgeAttributes::feature) r = std::min(r, feature_radius);
-            anchors.emplace_back(vid, r);
+            const Vector3d& p = m_vertex_attribute[vid].m_posf;
+            if (m_input_curves && !is_input_point[vid]) {
+                // The nearest curve point, tested as the anchor will hold it
+                // (feature_point_ball_contains()).
+                uint32_t nearest = 0;
+                double sq = 0;
+                if (input_curve_points) input_curve_points->nearest_neighbor(p, nearest, sq);
+                if (!input_curve_points ||
+                    (p - m_input_curves->points[nearest]).squaredNorm() > r * r) {
+                    // A curve end or junction the simplification made: anchored where it is,
+                    // since the tube along a curve cannot stop it eroding from its end.
+                    ++n_not_input;
+                    anchors.emplace_back(vid, r, p);
+                    continue;
+                }
+                anchors.emplace_back(vid, r, m_input_curves->points[nearest]);
+                continue;
+            }
+            anchors.emplace_back(vid, r, p);
         }
     }
     for (const size_t vid : input_point_vids) {
@@ -1431,14 +1859,20 @@ size_t TetOptimizerMesh::anchor_feature_points(
         if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
             r = std::min(r, order2_radius);
         }
-        anchors.emplace_back(vid, r);
+        anchors.emplace_back(vid, r, m_vertex_attribute[vid].m_posf);
+    }
+    if (m_input_curves) {
+        logger().info(
+            "feature anchors: {} curve endpoints and junctions with no curve point of the input "
+            "in reach, anchored where they are",
+            n_not_input);
     }
     if (anchors.empty()) return 0;
 
     enable_feature_point_tracking();
     size_t n_anchored = 0;
-    for (const auto& [vid, r] : anchors) {
-        n_anchored += anchor_feature_point(vid, r);
+    for (const auto& [vid, r, centre] : anchors) {
+        n_anchored += anchor_feature_point(vid, r, centre);
     }
     logger().info(
         "feature anchors: {} curve endpoints, {} junctions, {} input points; {} anchored",
@@ -1510,7 +1944,7 @@ std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_rati
 
 void TetOptimizerMesh::feature_edges_cache(
     const std::vector<size_t>& tids,
-    std::map<std::array<size_t, 2>, uint8_t>& cache)
+    std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache)
 {
     cache.clear();
     for (const size_t tid : tids) {
@@ -1525,14 +1959,14 @@ void TetOptimizerMesh::feature_edges_cache(
                 continue;
             }
             const size_t eid = tuple_from_edge(tid, local_eid).eid(*this);
-            cache.emplace(pair, m_feature_edge_attribute[eid].m_kinds);
+            cache.emplace(pair, m_feature_edge_attribute[eid]);
         }
     }
 }
 
 void TetOptimizerMesh::feature_edges_restore_region(
     const std::vector<size_t>& tids,
-    const std::map<std::array<size_t, 2>, uint8_t>& cache)
+    const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache)
 {
     std::vector<Tuple> tets;
     tets.reserve(tids.size());
@@ -1544,7 +1978,7 @@ void TetOptimizerMesh::feature_edges_restore_region(
 
 void TetOptimizerMesh::feature_edges_restore_region(
     const std::vector<Tuple>& tets,
-    const std::map<std::array<size_t, 2>, uint8_t>& cache)
+    const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache)
 {
     for (const Tuple& t : tets) {
         const size_t tid = t.tid(*this);
@@ -1558,21 +1992,23 @@ void TetOptimizerMesh::feature_edges_restore_region(
             const auto it = cache.find(pair);
             // A pair not in the cache is a genuinely new edge: default, never inherit --
             // the slot may be reused and hold a stale value.
-            const uint8_t kinds = it != cache.end() ? it->second : 0;
             const size_t eid = tuple_from_edge(tid, local_eid).eid(*this);
-            m_feature_edge_attribute[eid].m_kinds = kinds;
+            m_feature_edge_attribute[eid] =
+                it != cache.end() ? it->second : FeatureEdgeAttributes{};
         }
     }
 }
 
-bool TetOptimizerMesh::feature_edges_restore_remap(
-    const std::map<std::array<size_t, 2>, uint8_t>& cache,
+std::map<std::array<size_t, 2>, TetOptimizerMesh::FeatureEdgeAttributes>
+TetOptimizerMesh::remap_edge_tags(
+    const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache,
     const size_t v_old,
     const size_t v_new)
 {
-    // Remap and OR-merge the kind bits first: (v_old,x) and (v_new,x) become the same pair.
-    std::map<std::array<size_t, 2>, uint8_t> merged;
-    for (const auto& [pair, kinds] : cache) {
+    // (v_old,x) and (v_new,x) become the same pair: their kinds and input sets are OR-merged,
+    // as two faces a collapse welds carry the union of their input sets.
+    std::map<std::array<size_t, 2>, FeatureEdgeAttributes> merged;
+    for (const auto& [pair, tags] : cache) {
         std::array<size_t, 2> p = pair;
         for (size_t& v : p) {
             if (v == v_old) {
@@ -1585,17 +2021,25 @@ bool TetOptimizerMesh::feature_edges_restore_remap(
         if (p[0] > p[1]) {
             std::swap(p[0], p[1]);
         }
-        merged[p] |= kinds;
+        merged[p].merge(tags);
     }
-    for (const auto& [pair, kinds] : merged) {
+    return merged;
+}
+
+bool TetOptimizerMesh::feature_edges_restore_remap(
+    const std::map<std::array<size_t, 2>, FeatureEdgeAttributes>& cache,
+    const size_t v_old,
+    const size_t v_new)
+{
+    for (const auto& [pair, tags] : remap_edge_tags(cache, v_old, v_new)) {
         const Tuple t = tuple_from_edge(pair);
         if (!t.is_valid(*this)) {
-            if (kinds != 0) {
+            if (tags.is_tagged()) {
                 return false; // a tagged edge vanished; abort, as the face path does
             }
             continue;
         }
-        m_feature_edge_attribute[t.eid(*this)].m_kinds = kinds;
+        m_feature_edge_attribute[t.eid(*this)] = tags;
     }
     return true;
 }

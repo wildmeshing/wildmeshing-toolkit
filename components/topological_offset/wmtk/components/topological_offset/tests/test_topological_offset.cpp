@@ -171,12 +171,13 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 }
 
 
-TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
+TEST_CASE("held_faces_and_their_envelopes", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
     // boundary, every outer face a domain-wall face. Every one of them is a tracked face; which
     // are HELD depends on the input complex and on whether the final pass is running, read live
-    // off the cells, and one envelope holds them all.
+    // off the cells. The wall never is: the box rule holds it, as in tetwild and simwild. A held
+    // face is held to the envelopes of its labels, here the tags of the two regions it bounds.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -206,32 +207,40 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
         REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
     }
 
-    // In the loop, no input complex: the a/b boundary stays a tracked face but nothing holds it;
-    // the wall is held.
+    // In the loop, no input complex: the a/b boundary stays a tracked face but nothing holds it,
+    // nor the wall, so there is no envelope.
     REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
+    REQUIRE(!mesh.face_is_held(face(0, 1, 2)));
     mesh.build_envelopes();
-    REQUIRE(mesh.m_envelope != nullptr);
+    REQUIRE(mesh.m_envelope == nullptr);
     REQUIRE(envelope_of(1, 2, 3) == nullptr);
-    REQUIRE(envelope_of(0, 1, 2) == mesh.m_envelope);
+    REQUIRE(envelope_of(0, 1, 2) == nullptr);
     const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
-    REQUIRE(mesh.m_envelope->is_outside(on_shared)); // the shared face is not in the envelope
-    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
 
-    // The final pass: every region boundary is held too, in one envelope with the wall, and the
-    // loop's envelope comes back afterwards.
-    const auto loop_env = mesh.m_envelope;
+    // The final pass: every region boundary is held, to its labels' envelopes, the wall still
+    // not; and the loop's envelope, none, comes back afterwards.
     mesh.build_final_envelopes();
     mesh.m_tetwild_pass = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(envelope_of(1, 2, 3) == mesh.m_envelope);
-    for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
+    REQUIRE(!mesh.face_is_held(face(0, 1, 2)));
+    const auto shared_env = envelope_of(1, 2, 3);
+    REQUIRE(shared_env != nullptr);
+    REQUIRE(!shared_env->is_outside(on_shared));
+    REQUIRE(shared_env->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
+    REQUIRE(envelope_of(0, 1, 2) == nullptr);
+    // The shared face is on both tags, so held to the intersection of their envelopes, which the
+    // containment audit must read through its members: it once asked the composite itself.
+    REQUIRE(dynamic_cast<const wmtk::IntersectionEnvelope*>(shared_env.get()) != nullptr);
+    mesh.audit_surface_containment("final pass");
+    for (size_t v = 1; v < 4; ++v) REQUIRE(mesh.vertex_is_held(v));
+    REQUIRE(!mesh.vertex_is_held(0)); // on wall faces only
+    REQUIRE(!mesh.vertex_is_held(4));
+    REQUIRE(mesh.m_envelope != nullptr);
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
-    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
-    REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
+    REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
     mesh.m_tetwild_pass = false;
     mesh.release_final_envelopes();
-    REQUIRE(mesh.m_envelope == loop_env);
+    REQUIRE(mesh.m_envelope == nullptr);
     REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
 
     // ... and with tet 0 the input complex, the shared face is its boundary, so held again.

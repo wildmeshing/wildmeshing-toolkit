@@ -107,8 +107,17 @@ ExternalProject_Add(
     # 00e090e descends from data2 #12's merge (421b458), so it holds c91a67a's changes too.
     # At de49170 (2026-11-01, data2 main) models/127891.msh is back: 596be38 had deleted it with
     # the old 3D offset cases, and the topological_offset docs examples read it.
+    # At 1cf750d (2026-11-01, branch uday/notop-simplify-half off c91a67a)
+    # simwild_double_sphere_notop_3d's eps_simplify_rel goes from 1e-2 to 5e-3, half of its
+    # eps_rel. simwild's eps_rel and eps_simplify_rel are now relative to the same diagonal, so
+    # equal values ask for a simplification at the full eps, which envelope_reference "input"
+    # refuses; until then the simplification measured a diagonal 1.22x smaller on this case.
+    # At f5e1ddd (2026-11-03, same branch) that config drops skip_simplify, which the toolkit
+    # renamed simplify and simwild refuses; it set the default, so the run is unchanged.
+    # At 6dc625a (2026-11-03, data2 #13) both lines join: data2 main up to 8d3a193 (the explicit 2D
+    # tight_seal_geom case seals tag_0, tag_1 and tag_4) and f5e1ddd.
     #
-    GIT_TAG de4917026b2dd3f2769d4e6d98e1cee0d094e27b
+    GIT_TAG 6dc625ab455ee8b79fc2a9d5a9e07ecdd125b452
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

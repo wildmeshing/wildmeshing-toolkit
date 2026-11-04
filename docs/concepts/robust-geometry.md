@@ -94,11 +94,12 @@ fraction of the diagonal of the input's bounding box, \(\varepsilon = \texttt{ep
 relative to the same diagonal. simwild also takes absolute values,
 [`eps`](../reference/simwild.md#eps) and [`length`](../reference/simwild.md#length).
 
-tetwild builds the main envelope around the original input, at \(\varepsilon\), and the other
-envelopes it needs as fractions of it: the input simplification runs inside
-`simplify_envelope_ratio` \(\cdot\,\varepsilon\) (0.5), so the optimizer starts with room to move;
-open boundaries and non-manifold edges stay in a tube of `order2_envelope_ratio` \(\cdot\,\varepsilon\);
-feature curves in one of `feature_envelope_ratio` \(\cdot\,\varepsilon\). With several inputs,
+tetwild builds the main envelope around the original input, at \(\varepsilon\). The input
+simplification runs inside one of its own, `eps_simplify_rel` \(\cdot\,\text{diag}\) (0.0005, half
+of \(\varepsilon\) at the default `eps_rel`), so the optimizer starts with room to move. The other
+envelopes it needs are fractions of \(\varepsilon\): open boundaries and non-manifold edges stay
+in a tube of `order2_envelope_ratio` \(\cdot\,\varepsilon\); feature curves in one of
+`feature_envelope_ratio` \(\cdot\,\varepsilon\). With several inputs,
 each tracked face is held to the envelopes of the inputs it lies on, not only to the envelope of
 all of them together.
 

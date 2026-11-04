@@ -59,6 +59,9 @@ nlohmann::json params(const std::filesystem::path& input, const bool boundary_en
     j["preserve_topology"] = false; // the only route that simplifies before insertion
     j["eps_simplify_rel"] = 1e-2;
     j["simplify_boundary_envelope"] = boundary_envelope;
+    // So that the optimizer's envelope is the simplification, which boundary_edges() reads; around
+    // the input, the default, it is the input as read.
+    j["envelope_reference"] = "simplified";
     const auto spec = jse::embed::wmtk_simwild_spec::simwild_spec::spec();
     jse::JSE engine;
     REQUIRE(engine.verify_json(j, spec));

@@ -48,45 +48,19 @@ void TetWildMesh::optimization_sanity_checks_extra()
     // carry no tag and are not checked.
     if (!m_track_feature_edges || !m_order2_edge_envelope) return;
     for (const Tuple& e : get_edges()) {
-        if (!m_feature_edge_attribute[e.eid(*this)].has(FeatureEdgeAttributes::order2)) continue;
+        FeatureEdgeAttributes order2 = m_feature_edge_attribute[e.eid(*this)];
+        if (!order2.has(FeatureEdgeAttributes::order2)) continue;
+        order2.m_kinds = FeatureEdgeAttributes::order2; // its order-2 tubes only
         const size_t v1 = e.vid(*this);
         const size_t v2 = e.switch_vertex(*this).vid(*this);
         if (tagged_edge_leaves_tube(
-                FeatureEdgeAttributes::order2,
+                order2,
                 m_vertex_attribute[v1].m_posf,
                 m_vertex_attribute[v2].m_posf) != 0) {
             logger().warn("Open-boundary edge ({},{}) is outside its tube.", v1, v2);
         }
     }
 }
-
-std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
-{
-    // A vertex on a tagged curve is pulled toward its tube, the feature tube first; shared with
-    // simwild (tagged_edge_pull_envelope()).
-    if (auto tube = tagged_edge_pull_envelope(vid)) {
-        return tube;
-    }
-    if (m_input_envelopes.empty()) return m_envelope;
-    // Several inputs: toward the inputs of the vertex's own faces, one real envelope at a time
-    // -- the member of their union of input sets the vertex is farthest from, as
-    // topological_offset pulls a junction vertex. The containment check holds every face to its
-    // own set, so a vertex where the solid's boundary meets a sheet is pulled to whichever it
-    // strays from most. A vertex flagged on the surface with no tracked face left (a stale
-    // flag) has no inputs, and keeps the union's pull.
-    InputSet set = 0;
-    const auto& FA = std::as_const(m_face_attribute);
-    // Named, not iterated as a temporary: faces() returns a reference into the collection, which
-    // a range-for over get_surface_faces_for_vertex(vid).faces() destroys before the first
-    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
-    const simplex::SimplexCollection surf = get_surface_faces_for_vertex(vid);
-    for (const simplex::Face& f : surf.faces()) {
-        set |= FA[std::get<1>(tuple_from_face(f.vertices()))].input_set();
-    }
-    if (set == 0) return m_envelope;
-    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
-}
-
 
 void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
@@ -324,7 +298,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             }
         }
         tag_order2_edges(
-            m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio,
+            m_tet_params.order2_eps() * m_tet_params.order2_envelope_ratio,
             m_envelope && m_envelope->use_exact);
 
         for (const Tuple& t : get_tets()) {
