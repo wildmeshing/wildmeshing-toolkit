@@ -46,6 +46,11 @@ std::vector<Tets> sides(const Tets& T, Vid c, const Faces& surf);
 std::vector<Tets> side_groups(const Tets& T, const Faces& surf);
 /// `surf` after collapsing (i, j) into j.
 Faces surf_after(const Faces& surf, Vid i, Vid j);
+/// Whether collapsing (i, j) keeps the tracked surface `surf`, every face of it at i and j, the
+/// same complex up to homeomorphism: the link condition on the surface and its curves (edges on
+/// one face or on three and more), as TetMesh::substructure_link_condition() asks it of a tet
+/// mesh's tracked faces. False where the collapse welds two sheets or pinches a curve.
+bool surface_link_condition(const Faces& surf, Vid i, Vid j);
 
 /// Two patches a local map takes one onto the other: both balls, whose boundaries differ in
 /// tracked faces only -- the cap before and after, disks with one outline -- and agree on the

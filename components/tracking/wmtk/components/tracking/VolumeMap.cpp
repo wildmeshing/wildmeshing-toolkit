@@ -307,13 +307,16 @@ struct CellIndex
         return f;
     }
     /// A point of face `fid` (coordinates in its stored corner order) through the cell holding
-    /// it: the face it lands on, and its coordinates there.
+    /// it: the face it lands on, and its coordinates there. A face no cell holds keeps both, as
+    /// in the surface map, which moves only the points on its cells' faces: the operation's
+    /// surface edits changed it at most by moving its corners -- a surface vertex collapsed into
+    /// one off the surface is a move there, and one the surface map keeps barycentric has no cell.
     std::pair<uint64_t, Eigen::Vector3d>
     map(const uint64_t fid, const Eigen::Vector3d& bs, const bool forward) const
     {
         const int src = forward ? 0 : 1;
         const auto it = index[src].find(fid);
-        if (it == index[src].end()) throw Fail("cap point on a face no cell holds");
+        if (it == index[src].end()) return {fid, bs};
         double best = -std::numeric_limits<double>::infinity();
         size_t bc = 0;
         Eigen::Vector2d q = Eigen::Vector2d::Zero();
@@ -777,6 +780,13 @@ private:
         const Vid i = m_e.op_vertices[0], j = m_e.op_vertices[1];
         const auto direct = collapse(m_K, i, j);
         if (!direct || keys(*direct) != keys(m_A)) throw Fail("collapse: the tets do not match it");
+        // A collapse that changes the tracked surface's topology -- two sheets welded, a curve
+        // pinched -- has no bijection of the surface, so no map of the volume keeps it: build()
+        // maps the volume alone. A pair built here regardless would squeeze the volume between
+        // the welded sheets into what the tets around them leave.
+        if (!surface_link_condition(m_surf_b, i, j)) {
+            throw Fail("collapse: the tracked surface changes topology");
+        }
         const volume::Faces sa = surf_after(m_surf_b, i, j);
         const volume::Faces capB = cap_faces(false), capA = cap_faces(true);
         const bool j_on = std::any_of(m_surf_b.begin(), m_surf_b.end(), [j](const Tri& f) {

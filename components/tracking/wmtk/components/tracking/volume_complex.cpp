@@ -251,6 +251,120 @@ Faces surf_after(const Faces& surf, const Vid i, const Vid j)
     return out;
 }
 
+bool surface_link_condition(const Faces& surf, const Vid i, const Vid j)
+{
+    // TetMesh::substructure_link_condition()'s levels 1 and 2, on `surf` alone, with its dummy
+    // vertex w past every curve edge.
+    constexpr Vid w = Vid(-1);
+    const auto faces_at = [&surf](const Vid v) {
+        std::vector<Tri> out;
+        for (const Tri& f : surf) {
+            if (contains(f, v)) out.push_back(f);
+        }
+        return out;
+    };
+    const auto edge_faces = [&surf](const Vid a, const Vid b) {
+        size_t n = 0;
+        for (const Tri& f : surf) n += contains(f, a) && contains(f, b);
+        return n;
+    };
+    const auto edge_order = [&](const Vid a, const Vid b) {
+        const size_t n = edge_faces(a, b);
+        return n == 0 ? 0 : n == 2 ? 1 : 2;
+    };
+    const auto others = [](const Tri& f, const Vid v) {
+        std::array<Vid, 2> e{};
+        int k = 0;
+        for (const Vid x : f) {
+            if (x != v) e[k++] = x;
+        }
+        if (e[0] > e[1]) std::swap(e[0], e[1]);
+        return e;
+    };
+    // TetMesh::compute_vertex_order(): 0 off the surface, 1 inside it, 2 on one curve (two curve
+    // edges of one face count), 3 where curves end or meet, or where the faces do not connect.
+    const auto vertex_order = [&](const Vid v) {
+        const std::vector<Tri> F = faces_at(v);
+        if (F.empty()) return 0;
+        std::map<Vid, size_t> nf;
+        for (const Tri& f : F) {
+            for (const Vid x : others(f, v)) nf[x] = edge_faces(v, x);
+        }
+        std::map<size_t, size_t> curve_edges; // by face count
+        for (const auto& [x, n] : nf) {
+            if (n != 0 && n != 2) ++curve_edges[n];
+        }
+        int order = 1;
+        if (!curve_edges.empty()) {
+            if (curve_edges.size() != 1 || curve_edges.begin()->second != 2) return 3;
+            order = 2;
+        }
+        std::vector<char> seen(F.size(), 0);
+        std::vector<size_t> stack = {0};
+        seen[0] = 1;
+        size_t n_seen = 1;
+        while (!stack.empty()) {
+            const Tri f = F[stack.back()];
+            stack.pop_back();
+            for (size_t g = 0; g < F.size(); ++g) {
+                if (seen[g]) continue;
+                int common = 0;
+                for (const Vid x : F[g]) common += contains(f, x);
+                if (common < 2) continue;
+                seen[g] = 1;
+                ++n_seen;
+                stack.push_back(g);
+            }
+        }
+        return n_seen == F.size() ? order : 3;
+    };
+    const int e_order = edge_order(i, j);
+    if (e_order < vertex_order(i) && e_order < vertex_order(j)) return false;
+    // Level 1: the edges opposite v in its faces, and (w, x) for each curve edge (v, x), with
+    // their vertices. Level 2: the far ends of v's curve edges.
+    struct Link
+    {
+        std::set<Vid> vertices, curve;
+        std::set<std::array<Vid, 2>> edges;
+    };
+    const auto link_of = [&](const Vid v) {
+        Link L;
+        for (const Tri& f : faces_at(v)) {
+            const auto e = others(f, v);
+            L.edges.insert(e);
+            L.vertices.insert(e.begin(), e.end());
+            for (const Vid x : e) {
+                if (edge_order(v, x) == 2) L.curve.insert(x);
+            }
+        }
+        for (const Vid x : L.curve) {
+            L.edges.insert({{std::min(w, x), std::max(w, x)}});
+            L.vertices.insert(w);
+        }
+        return L;
+    };
+    const Link Li = link_of(i), Lj = link_of(j);
+    for (const Vid x : Li.curve) {
+        if (Lj.curve.count(x)) return false;
+    }
+    for (const auto& e : Li.edges) {
+        if (Lj.edges.count(e)) return false; // the edge's link has no edges
+    }
+    std::set<Vid> common, edge_link;
+    for (const Vid x : Li.vertices) {
+        if (Lj.vertices.count(x)) common.insert(x);
+    }
+    for (const Tri& f : surf) {
+        if (contains(f, i) && contains(f, j)) {
+            for (const Vid x : f) {
+                if (x != i && x != j) edge_link.insert(x);
+            }
+        }
+    }
+    if (e_order == 2) edge_link.insert(w);
+    return common == edge_link;
+}
+
 std::optional<PairSpec> make_pair(
     const std::string& kind,
     const Tets& Tb,

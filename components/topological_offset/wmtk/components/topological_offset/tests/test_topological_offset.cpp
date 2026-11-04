@@ -171,12 +171,13 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 }
 
 
-TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
+TEST_CASE("held_faces_and_their_envelopes", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
     // boundary, every outer face a domain-wall face. Every one of them is a tracked face; which
     // are HELD depends on the input complex and on whether the final pass is running, read live
-    // off the cells, and one envelope holds them all.
+    // off the cells. The wall never is: the box rule holds it, as in tetwild and simwild. A held
+    // face is held to the envelopes of its labels, here the tags of the two regions it bounds.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -206,32 +207,40 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
         REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
     }
 
-    // In the loop, no input complex: the a/b boundary stays a tracked face but nothing holds it;
-    // the wall is held.
+    // In the loop, no input complex: the a/b boundary stays a tracked face but nothing holds it,
+    // nor the wall, so there is no envelope.
     REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
+    REQUIRE(!mesh.face_is_held(face(0, 1, 2)));
     mesh.build_envelopes();
-    REQUIRE(mesh.m_envelope != nullptr);
+    REQUIRE(mesh.m_envelope == nullptr);
     REQUIRE(envelope_of(1, 2, 3) == nullptr);
-    REQUIRE(envelope_of(0, 1, 2) == mesh.m_envelope);
+    REQUIRE(envelope_of(0, 1, 2) == nullptr);
     const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
-    REQUIRE(mesh.m_envelope->is_outside(on_shared)); // the shared face is not in the envelope
-    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
 
-    // The final pass: every region boundary is held too, in one envelope with the wall, and the
-    // loop's envelope comes back afterwards.
-    const auto loop_env = mesh.m_envelope;
+    // The final pass: every region boundary is held, to its labels' envelopes, the wall still
+    // not; and the loop's envelope, none, comes back afterwards.
     mesh.build_final_envelopes();
     mesh.m_tetwild_pass = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(envelope_of(1, 2, 3) == mesh.m_envelope);
-    for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
+    REQUIRE(!mesh.face_is_held(face(0, 1, 2)));
+    const auto shared_env = envelope_of(1, 2, 3);
+    REQUIRE(shared_env != nullptr);
+    REQUIRE(!shared_env->is_outside(on_shared));
+    REQUIRE(shared_env->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
+    REQUIRE(envelope_of(0, 1, 2) == nullptr);
+    // The shared face is on both tags, so held to the intersection of their envelopes, which the
+    // containment audit must read through its members: it once asked the composite itself.
+    REQUIRE(dynamic_cast<const wmtk::IntersectionEnvelope*>(shared_env.get()) != nullptr);
+    mesh.audit_surface_containment("final pass");
+    for (size_t v = 1; v < 4; ++v) REQUIRE(mesh.vertex_is_held(v));
+    REQUIRE(!mesh.vertex_is_held(0)); // on wall faces only
+    REQUIRE(!mesh.vertex_is_held(4));
+    REQUIRE(mesh.m_envelope != nullptr);
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
-    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
-    REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
+    REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
     mesh.m_tetwild_pass = false;
     mesh.release_final_envelopes();
-    REQUIRE(mesh.m_envelope == loop_env);
+    REQUIRE(mesh.m_envelope == nullptr);
     REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
 
     // ... and with tet 0 the input complex, the shared face is its boundary, so held again.
@@ -3123,8 +3132,7 @@ bool frames_identical(const TopoOffsetTetMesh::VtuFrame& a, const TopoOffsetTetM
           &TopoOffsetTetMesh::VtuFrame::f_err,      &TopoOffsetTetMesh::VtuFrame::f_len,
           &TopoOffsetTetMesh::VtuFrame::f_inside,   &TopoOffsetTetMesh::VtuFrame::f_outside,
           &TopoOffsetTetMesh::VtuFrame::f_fold,     &TopoOffsetTetMesh::VtuFrame::f_field_angle,
-          &TopoOffsetTetMesh::VtuFrame::f_dihedral, &TopoOffsetTetMesh::VtuFrame::f_fold_dihedral,
-          &TopoOffsetTetMesh::VtuFrame::ring}) {
+          &TopoOffsetTetMesh::VtuFrame::f_dihedral, &TopoOffsetTetMesh::VtuFrame::ring}) {
         ok = ok && same(a.*m, b.*m);
     }
     ok = ok && same(a.S, b.S) && same(a.S_cells, b.S_cells);
@@ -3213,10 +3221,9 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
         {"settle_inside_bars", &fs.f_inside, &ft.f_inside},
         {"settle_outside_bars", &fs.f_outside, &ft.f_outside},
         {"offset_foldover", &fs.f_fold, &ft.f_fold},
-        {"field_angle_foldover", &fs.f_field_fold, &ft.f_field_fold},
+        {"field_angle_turned", &fs.f_field_turned, &ft.f_field_turned},
         {"field_normal_angle", &fs.f_field_angle, &ft.f_field_angle},
         {"dihedral_angle", &fs.f_dihedral, &ft.f_dihedral},
-        {"offset_foldover_dihedral", &fs.f_fold_dihedral, &ft.f_fold_dihedral},
         {"front_ring_ratio", &fs.ring, &ft.ring}};
     for (const auto& [name, x, y] : fields) {
         INFO(name);
@@ -3285,13 +3292,14 @@ TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]" + release_only)
     CHECK(frames_identical(changed, frame("_changed_again")));
 }
 
-TEST_CASE("folded-faces-at-vertex", "[offset][3d]")
+TEST_CASE("turned-faces-at-vertex", "[offset][3d]")
 {
-    // growth_mode "individual_op_reject" counts folds per operation with folded_front_faces_at(),
-    // which reads one vertex's own tet list (lock-safe in the operation passes). Over every vertex
-    // it must find exactly the folded faces fold_census() finds over the whole offset surface
-    // (offset_surface_faces()). The grid mesh with one front vertex dragged to the input's centre,
-    // which turns its offset faces back toward the input: folds to find.
+    // growth_mode "individual_op_reject" counts the faces turned from the field per operation with
+    // turned_front_faces_at(), which reads one vertex's own tet list (lock-safe in the operation
+    // passes). Over every vertex it must find exactly the turned faces turned_face_census() finds
+    // over the whole offset surface (offset_surface_faces()). The grid mesh with one front vertex
+    // dragged to the input's centre, which turns its offset faces back toward the input: turned
+    // faces to find.
     const GridInput g = grid_input();
     Parameters param = construction_params(
         {{"offset_selection", "tag_0"},
@@ -3302,11 +3310,11 @@ TEST_CASE("folded-faces-at-vertex", "[offset][3d]")
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_folded_faces";
     const auto mesh = grid_offset_mesh(g, param, out);
-    CHECK_FALSE(mesh->fold_reject_active()); // growth_mode "none"
+    CHECK_FALSE(mesh->turned_reject_active()); // growth_mode "none"
     const auto census_set = [&]() {
         std::set<std::array<size_t, 3>> s;
         for (const auto& f : mesh->offset_surface_faces()) {
-            if (mesh->front_face_is_foldover(f[0], f[1], f[2])) {
+            if (mesh->front_face_turned(f[0], f[1], f[2])) {
                 auto k = f;
                 std::sort(k.begin(), k.end());
                 s.insert(k);
@@ -3316,7 +3324,7 @@ TEST_CASE("folded-faces-at-vertex", "[offset][3d]")
     };
     const auto per_vertex_set = [&]() {
         std::set<std::array<size_t, 3>> s;
-        for (const auto& v : mesh->get_vertices()) mesh->folded_front_faces_at(v.vid(*mesh), s);
+        for (const auto& v : mesh->get_vertices()) mesh->turned_front_faces_at(v.vid(*mesh), s);
         return s;
     };
     CHECK(census_set().empty()); // as constructed
@@ -3331,21 +3339,21 @@ TEST_CASE("folded-faces-at-vertex", "[offset][3d]")
     REQUIRE(front != static_cast<size_t>(-1));
     mesh->set_vertex_position(front, Vector3d::Zero());
     const auto census = census_set();
-    INFO(census.size() << " folded faces");
+    INFO(census.size() << " turned faces");
     REQUIRE(!census.empty());
     CHECK(per_vertex_set() == census);
-    CHECK(mesh->fold_census().n_fold == census.size());
-    // Every folded face found through the moved vertex goes through it.
+    CHECK(mesh->turned_face_census().n_turned == census.size());
+    // Every turned face found through the moved vertex goes through it.
     std::set<std::array<size_t, 3>> at;
-    mesh->folded_front_faces_at(front, at);
+    mesh->turned_front_faces_at(front, at);
     CHECK(!at.empty());
     for (const auto& f : at) CHECK(std::find(f.begin(), f.end(), front) != f.end());
 
     // The rule is on in the loops of growth_mode "individual_op_reject" only.
     mesh->m_offset_params.growth_mode = "individual_op_reject";
-    CHECK(mesh->fold_reject_active());
+    CHECK(mesh->turned_reject_active());
     mesh->m_tetwild_pass = true;
-    CHECK_FALSE(mesh->fold_reject_active());
+    CHECK_FALSE(mesh->turned_reject_active());
     mesh->m_tetwild_pass = false;
 }
 
@@ -3577,12 +3585,11 @@ TEST_CASE("front-conv-rel-of-target", "[offset][3d]")
 
 TEST_CASE("band-side-dihedral", "[offset][3d]")
 {
-    // The debug frames' dihedral angle (band_side_dihedral()) and its foldover test
-    // (dihedral_is_foldover()). Face 1 lies in z = 0 with its normal +z out of the band and runs
-    // the shared edge along +y; face 2 turns about that edge by phi, its normal (sin phi, 0, cos
-    // phi): phi > 0 bends the front away from the band (convex seen from the offset side), the
-    // band-side angle 180 - phi; phi -> 180 folds face 2 flat onto face 1 from the offset side
-    // (angle -> 0), phi -> -180 from the band side (-> 360).
+    // The debug frames' dihedral angle (band_side_dihedral()). Face 1 lies in z = 0 with its normal
+    // +z out of the band and runs the shared edge along +y; face 2 turns about that edge by phi,
+    // its normal (sin phi, 0, cos phi): phi > 0 bends the front away from the band (convex seen
+    // from the offset side), the band-side angle 180 - phi; phi -> 180 folds face 2 flat onto face
+    // 1 from the offset side (angle -> 0), phi -> -180 from the band side (-> 360).
     const Vector3d n1(0., 0., 1.), t(0., 1., 0.);
     const auto n2 = [](const double deg) {
         const double r = deg * M_PI / 180.;
@@ -3598,15 +3605,48 @@ TEST_CASE("band-side-dihedral", "[offset][3d]")
     CHECK(angle(-170.) == Catch::Approx(350.));
     // Swapping the faces runs the edge the other way: the same angle.
     CHECK(TopoOffsetTetMesh::band_side_dihedral(n2(45.), n1, -t) == Catch::Approx(135.));
-    // Within foldover_angle of a full fold, either way, is a foldover; a crease is not.
-    const double th = 30.;
-    CHECK(TopoOffsetTetMesh::dihedral_is_foldover(angle(170.), th));
-    CHECK(TopoOffsetTetMesh::dihedral_is_foldover(angle(-170.), th));
-    CHECK_FALSE(TopoOffsetTetMesh::dihedral_is_foldover(angle(90.), th)); // a 90-degree crease
-    CHECK_FALSE(TopoOffsetTetMesh::dihedral_is_foldover(angle(-90.), th));
-    CHECK_FALSE(TopoOffsetTetMesh::dihedral_is_foldover(angle(0.), th));
-    CHECK_FALSE(TopoOffsetTetMesh::dihedral_is_foldover(angle(149.), th)); // 31 degrees left
-    CHECK(TopoOffsetTetMesh::dihedral_is_foldover(angle(151.), th)); // 29 degrees left
+}
+
+TEST_CASE("fold-test", "[offset][3d]")
+{
+    // The fold predicate (fold_test()), over the whole range of foldover_angle. Face 1's normal
+    // out of the band is +z; face 2 turns about the shared edge by phi, its normal (sin phi, 0,
+    // cos phi), 180 - phi degrees from opposite. A fold: the normals within `angle` of opposite
+    // and one face turned from the field (its field angle over `angle`, or NaN); two opposite
+    // faces both along the field are a ridge edge; faces not opposite are neither, and the field
+    // is not asked of them (it costs a nearest-primitive query).
+    using FT = TopoOffsetTetMesh::FoldTest;
+    const Vector3d n1(0., 0., 1.);
+    const auto n2 = [](const double deg) {
+        const double r = deg * M_PI / 180.;
+        return Vector3d(std::sin(r), 0., std::cos(r));
+    };
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for (const double angle : {1., 10., 29., 30., 31., 45., 90., 120., 170., 179.}) {
+        INFO("foldover_angle " << angle);
+        int asked = 0;
+        const auto test = [&](const double phi, const double a0, const double a1) {
+            asked = 0;
+            const auto field = [&](const int k) {
+                ++asked;
+                return k == 0 ? a0 : a1;
+            };
+            return TopoOffsetTetMesh::fold_test(n1, n2(phi), field, angle);
+        };
+        // within `angle` of opposite, and beyond it (halfway to the face lying flat)
+        const double within = 180. - 0.5 * angle, beyond = 0.5 * (180. - angle);
+        // a field angle within `angle` (along the field) and one over it (turned)
+        const double along = 0.5 * angle, turned = 0.5 * (angle + 180.);
+        CHECK(test(beyond, turned, turned) == FT::none);
+        CHECK(asked == 0);
+        CHECK(test(within, along, along) == FT::ridge_edge);
+        CHECK(test(within, angle, angle) == FT::ridge_edge); // exactly `angle` is not over it
+        CHECK(test(within, turned, along) == FT::fold);
+        CHECK(test(within, along, turned) == FT::fold);
+        CHECK(test(within, nan, along) == FT::fold); // unmeasured is never taken for no fold
+        CHECK(test(within, along, nan) == FT::fold);
+        CHECK(test(180., turned, turned) == FT::fold); // flat onto each other
+    }
 }
 
 TEST_CASE("smart-growth-schedule", "[offset][3d]")
@@ -3710,10 +3750,10 @@ TEST_CASE("foldover-face-angle", "[offset][3d]")
     CHECK(mesh.front_face_field_angle(3, 2, 1) == Catch::Approx(0.).margin(1e-6));
     CHECK(mesh.front_face_field_angle(0, 1, 2) == Catch::Approx(away).epsilon(1e-9));
     CHECK(mesh.front_face_field_angle(0, 1, 3) == Catch::Approx(away).epsilon(1e-9));
-    CHECK_FALSE(mesh.front_face_is_foldover(1, 2, 3));
-    CHECK(mesh.front_face_is_foldover(0, 1, 2));
+    CHECK_FALSE(mesh.front_face_turned(1, 2, 3));
+    CHECK(mesh.front_face_turned(0, 1, 2));
     mesh.m_offset_params.foldover_angle = 130.;
-    CHECK_FALSE(mesh.front_face_is_foldover(0, 1, 2));
+    CHECK_FALSE(mesh.front_face_turned(0, 1, 2));
 }
 
 TEST_CASE("debug-remote-output-key", "[offset][3d]")
