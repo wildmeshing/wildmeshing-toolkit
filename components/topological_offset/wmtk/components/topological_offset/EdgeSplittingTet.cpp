@@ -376,11 +376,24 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
     for (const auto& pair : cache.internal_e) { // for every oppo vertex
         size_t opp_vid = pair.first;
 
-        // face attributes
+        // face attributes: the two halves of the split face (v1, v2, opp) lie on its surfaces,
+        // each with its orientation converted as the engine's split converts it
+        // (TetOptimizerMeshSplit.cpp): (v1, v2, opp) -> (v1, v, opp) + (v, v2, opp), each half
+        // replacing one endpoint by v in place, so along those orders it carries the face's
+        // orientation along (v1, v2, opp). The orientation is stored against the ascending order
+        // of a face's own ids; until 2026-11 the snapshot was restored as is, right on a half only
+        // when v sorted into the replaced corner's place, so the output's face-tag triangles
+        // (io::collect_input_set_tags()) could come out turned over.
+        const FaceSnapshot& split_face = cache.split_f[opp_vid];
+        const int o =
+            split_face.tags.orientation_along(std::array<size_t, 3>{{v1_id, v2_id, opp_vid}});
+        FaceSnapshot half1 = split_face, half2 = split_face;
+        half1.tags.set_orientation_along(std::array<size_t, 3>{{v1_id, v_id, opp_vid}}, o);
+        half2.tags.set_orientation_along(std::array<size_t, 3>{{v_id, v2_id, opp_vid}}, o);
         auto [_1, glob_fid1] = tuple_from_face({{opp_vid, v1_id, v_id}});
         auto [_2, glob_fid2] = tuple_from_face({{opp_vid, v2_id, v_id}});
-        restore_face(glob_fid1, cache.split_f[opp_vid]);
-        restore_face(glob_fid2, cache.split_f[opp_vid]);
+        restore_face(glob_fid1, half1);
+        restore_face(glob_fid2, half2);
 
         // edge attributes
         size_t glob_eid = tuple_from_edge({{v_id, opp_vid}}).eid(*this);

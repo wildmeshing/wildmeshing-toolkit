@@ -3404,6 +3404,92 @@ TEST_CASE("band-covered-face-tags", "[offset][3d][envelope]")
     }
 }
 
+TEST_CASE("band-crossed-sheet-keeps-its-orientation", "[offset][3d][split_op]")
+{
+    // The square S of band-covered-face-tags, protected, so the march splits its faces both
+    // inside the band and beyond it and every half keeps the tag. S is given with its normal +y.
+    // A face tag's orientation is stored against the ascending order of the face's own ids, so a
+    // half of a split face, whose ids differ, has to have it converted
+    // (marching_split_edge_after()). After construction every tagged face of S, oriented as the
+    // output orients it (io::collect_input_set_tags(): ascending, the last two swapped when the
+    // orientation is negative), still faces +y.
+    const GridInput g = grid_input(5);
+    std::set<std::array<int, 3>> seen;
+    std::vector<std::array<int, 3>> S;
+    for (Eigen::Index t = 0; t < g.Tm.rows(); ++t) {
+        for (int skip = 0; skip < 4; ++skip) {
+            std::array<int, 3> f{};
+            int n = 0;
+            for (int j = 0; j < 4; ++j) {
+                if (j != skip) f[size_t(n++)] = g.Tm(t, j);
+            }
+            bool on = true;
+            Eigen::Vector3d c = Eigen::Vector3d::Zero();
+            for (const int v : f) {
+                on = on && g.V(v, 1) == 0.5;
+                c += g.V.row(v).transpose() / 3.;
+            }
+            if (!on || !(c[0] > 0.5 && c[0] < 1.5 && std::abs(c[2]) < 0.5)) continue;
+            std::array<int, 3> key = f;
+            std::sort(key.begin(), key.end());
+            if (!seen.insert(key).second) continue;
+            const Eigen::Vector3d a = g.V.row(f[0]).transpose();
+            const Eigen::Vector3d b = g.V.row(f[1]).transpose();
+            const Eigen::Vector3d d = g.V.row(f[2]).transpose();
+            if ((b - a).cross(d - a)[1] < 0.) std::swap(f[1], f[2]); // normal +y
+            S.push_back(f);
+        }
+    }
+    REQUIRE(S.size() == 2);
+    Eigen::MatrixXi F_tagged(int(S.size()), 3);
+    MatrixSi F_tags(int(S.size()), 1);
+    for (size_t r = 0; r < S.size(); ++r) {
+        for (int k = 0; k < 3; ++k) F_tagged(int(r), k) = S[r][size_t(k)];
+        F_tags.coeffRef(int(r), 0) = 1;
+    }
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"},
+         {"num_threads", 0},
+         {"target_distance", 0.2},
+         {"protected_tags", {"S"}}},
+        g.V);
+    const auto mesh = tagged_grid_offset_mesh(
+        g,
+        g.Tags,
+        {"tag_0"},
+        F_tagged,
+        F_tags,
+        {"S"},
+        "tag_0",
+        param,
+        std::filesystem::temp_directory_path() / "wmtk_offset_sheet_orientation");
+    const SquareFaces s = square_faces(
+        *mesh,
+        1,
+        0.5,
+        Eigen::Vector3d(0.5, -0.5, -0.5),
+        Eigen::Vector3d(1.5, 0.5, 0.5));
+    REQUIRE(!s.covered.empty()); // halves inside the band ...
+    REQUIRE(!s.beyond.empty()); // ... and beyond it
+    size_t n_tagged = 0;
+    for (const auto& f : mesh->get_faces()) {
+        const auto& attr = mesh->m_face_attribute[f.fid(*mesh)];
+        if (!attr.m_is_surface_fs || (attr.input_set() & 1) == 0) continue; // S is bit 0
+        std::array<size_t, 3> vs = mesh->get_face_vids(f);
+        std::sort(vs.begin(), vs.end());
+        const int o = attr.orientation_along(vs);
+        INFO("face (" << vs[0] << ", " << vs[1] << ", " << vs[2] << "), orientation " << o);
+        CHECK(o != 0);
+        if (o < 0) std::swap(vs[1], vs[2]);
+        const Eigen::Vector3d a = mesh->m_vertex_attribute[vs[0]].m_posf;
+        const Eigen::Vector3d b = mesh->m_vertex_attribute[vs[1]].m_posf;
+        const Eigen::Vector3d d = mesh->m_vertex_attribute[vs[2]].m_posf;
+        CHECK((b - a).cross(d - a)[1] > 0.);
+        ++n_tagged;
+    }
+    CHECK(n_tagged > S.size()); // S's faces were split
+}
+
 TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
 {
     // The corner pocket. p is a vertex of the input complex C (tag_0, three tets) where three of
