@@ -183,43 +183,57 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    }</div>
 <div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    block.attributes[<span class="stringliteral">&quot;tags&quot;</span>] = {std::move(values), std::move(labels)};</div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>}</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="comment">// The faces whose input set is not empty, as the triangle block of outputs[&quot;mesh&quot;]: rows of its</span></div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="comment">// V (the vertices in get_vertices() order, as compact_slot_outputs leaves them), one tags</span></div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><span class="comment">// column per name (bit j of the input set is names[j]), each row oriented as the face&#39;s input</span></div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span><span class="comment">// was. Nothing is written without names.</span></div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Mesh&gt;</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span><span class="keywordtype">void</span> collect_face_tags(<span class="keyword">const</span> Mesh&amp; mesh, MeshMap&amp; outputs, <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; names)</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>{</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>    <span class="keywordflow">if</span> (names.empty()) <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    std::vector&lt;int64_t&gt; row(mesh.vert_capacity(), -1);</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>    int64_t n = 0;</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; v : mesh.get_vertices()) row[v.vid(mesh)] = n++;</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    std::vector&lt;std::array&lt;int64_t, 3&gt;&gt; faces;</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    std::vector&lt;InputSet&gt; sets;</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    <span class="keyword">const</span> InputSet mask = names.size() &gt;= size_t(<a class="code hl_variable" href="classwmtk_1_1_surface_tag_attributes.html#aa10482b477bd212489df7345832ecf72">SurfaceTagAttributes::max_inputs</a>)</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>                              ? ~InputSet(0)</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>                              : (InputSet(1) &lt;&lt; names.size()) - 1;</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; f : mesh.get_faces()) {</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; attr = mesh.m_face_attribute[f.fid(mesh)];</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        <span class="comment">// Bits past the names are not face tags -- simwild&#39;s region labels -- and are not written.</span></div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        <span class="keyword">const</span> InputSet set = attr.input_set() &amp; mask;</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        <span class="keywordflow">if</span> (set == 0) <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <span class="keyword">auto</span> vids = mesh.get_face_vids(f);</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        std::sort(vids.begin(), vids.end());</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        <span class="keywordflow">if</span> (attr.orientation_along(vids) &lt; 0) std::swap(vids[1], vids[2]);</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        faces.push_back({{row[vids[0]], row[vids[1]], row[vids[2]]}});</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        sets.push_back(set);</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>    }</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>    <span class="keyword">auto</span>&amp; block = outputs.at(<span class="stringliteral">&quot;mesh&quot;</span>).cells[CellType::Triangle];</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>    block.connectivity.resize(faces.size(), 3);</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>    DataMatrix&lt;uint8_t&gt; member = DataMatrix&lt;uint8_t&gt;::Zero(faces.size(), names.size());</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; faces.size(); ++i) {</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> k = 0; k &lt; 3; ++k) block.connectivity(i, k) = faces[i][k];</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> j = 0; j &lt; names.size(); ++j) member(i, j) = (sets[i] &gt;&gt; j) &amp; 1;</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>    }</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>    block.attributes[<span class="stringliteral">&quot;tags&quot;</span>] = {std::move(member), names};</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>}</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>} <span class="comment">// namespace wmtk::io</span></div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="comment">// The tracked simplices -- `type` Triangle: a tet mesh&#39;s faces; Edge: a triangle mesh&#39;s edges --</span></div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="comment">// whose input set is not empty, as the `type` block of outputs[&quot;mesh&quot;]: rows of its V (the</span></div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><span class="comment">// vertices in get_vertices() order, as compact_slot_outputs leaves them), one tags column per</span></div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span><span class="comment">// name (bit j of the input set is names[j]), each row oriented as the simplex&#39;s input was.</span></div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span><span class="comment">// Nothing is written without names.</span></div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span><span class="keyword">template</span> &lt;CellType type, <span class="keyword">typename</span> Mesh&gt;</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span><span class="keywordtype">void</span> collect_input_set_tags(</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>    <span class="keyword">const</span> Mesh&amp; mesh,</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    MeshMap&amp; outputs,</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; names)</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>{</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    <span class="keyword">static_assert</span>(type == CellType::Triangle || type == CellType::Edge);</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> N = type == CellType::Triangle ? 3 : 2;</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    <span class="keywordflow">if</span> (names.empty()) <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    std::vector&lt;int64_t&gt; row(mesh.vert_capacity(), -1);</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    int64_t n = 0;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; v : mesh.get_vertices()) row[v.vid(mesh)] = n++;</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    std::vector&lt;std::array&lt;int64_t, N&gt;&gt; simplices;</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    std::vector&lt;InputSet&gt; sets;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>    <span class="keyword">const</span> InputSet mask = names.size() &gt;= size_t(<a class="code hl_variable" href="classwmtk_1_1_surface_tag_attributes.html#aa10482b477bd212489df7345832ecf72">SurfaceTagAttributes::max_inputs</a>)</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>                              ? ~InputSet(0)</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>                              : (InputSet(1) &lt;&lt; names.size()) - 1;</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    <span class="keyword">const</span> <span class="keyword">auto</span> add = [&amp;](<span class="keyword">const</span> SurfaceTagAttributes&amp; attr, std::array&lt;size_t, N&gt; vids) {</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        <span class="comment">// Bits past the names are not these tags -- simwild&#39;s region labels -- and are not</span></div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <span class="comment">// written.</span></div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        <span class="keyword">const</span> InputSet set = attr.input_set() &amp; mask;</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <span class="keywordflow">if</span> (set == 0) <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        std::sort(vids.begin(), vids.end());</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        <span class="keywordflow">if</span> (attr.orientation_along(vids) &lt; 0) std::swap(vids[N - 2], vids[N - 1]);</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>        std::array&lt;int64_t, N&gt; r;</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> k = 0; k &lt; N; ++k) r[k] = row[vids[k]];</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        simplices.push_back(r);</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>        sets.push_back(set);</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>    };</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>    <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (type == CellType::Triangle) {</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; f : mesh.get_faces())</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>            add(mesh.m_face_attribute[f.fid(mesh)], mesh.get_face_vids(f));</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; e : mesh.get_edges())</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>            add(mesh.m_edge_attribute[e.eid(mesh)], mesh.get_edge_vids(e));</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    }</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    <span class="keyword">auto</span>&amp; block = outputs.at(<span class="stringliteral">&quot;mesh&quot;</span>).cells[type];</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    block.connectivity.resize(simplices.size(), N);</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>    DataMatrix&lt;uint8_t&gt; member = DataMatrix&lt;uint8_t&gt;::Zero(simplices.size(), names.size());</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; simplices.size(); ++i) {</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> k = 0; k &lt; N; ++k) block.connectivity(i, k) = simplices[i][k];</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> j = 0; j &lt; names.size(); ++j) member(i, j) = (sets[i] &gt;&gt; j) &amp; 1;</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>    }</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>    block.attributes[<span class="stringliteral">&quot;tags&quot;</span>] = {std::move(member), names};</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>}</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>} <span class="comment">// namespace wmtk::io</span></div>
 <div class="ttc" id="aclasswmtk_1_1_surface_tag_attributes_html_aa10482b477bd212489df7345832ecf72"><div class="ttname"><a href="classwmtk_1_1_surface_tag_attributes.html#aa10482b477bd212489df7345832ecf72">wmtk::SurfaceTagAttributes::max_inputs</a></div><div class="ttdeci">static constexpr int max_inputs</div><div class="ttdoc">One input per bit of InputSet: the width is set there, and only there.</div><div class="ttdef"><b>Definition</b> SurfaceTagAttributes.h:130</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

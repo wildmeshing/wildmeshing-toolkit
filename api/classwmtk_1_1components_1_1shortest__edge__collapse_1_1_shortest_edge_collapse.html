@@ -106,8 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af75e0301f87435b04d4517699d79295a" id="r_af75e0301f87435b04d4517699d79295a"><td class="memItemLeft" align="right" valign="top"><a id="af75e0301f87435b04d4517699d79295a" name="af75e0301f87435b04d4517699d79295a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>freeze_boundary</b> ()</td></tr>
 <tr class="separator:af75e0301f87435b04d4517699d79295a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a2518583b24f70324a5f2d07fbafd08" id="r_a0a2518583b24f70324a5f2d07fbafd08"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#a0a2518583b24f70324a5f2d07fbafd08">create_mesh</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris, const std::vector&lt; size_t &gt; &amp;frozen_verts={}, double eps=0, double boundary_eps=0, const std::vector&lt; int &gt; &amp;tri_input={})</td></tr>
-<tr class="separator:a0a2518583b24f70324a5f2d07fbafd08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6f3a9f4758cf3d63c07b10ba3492051" id="r_ab6f3a9f4758cf3d63c07b10ba3492051"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#ab6f3a9f4758cf3d63c07b10ba3492051">create_mesh</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris, const std::vector&lt; size_t &gt; &amp;frozen_verts={}, double eps=0, double boundary_eps=0, const std::vector&lt; int &gt; &amp;tri_input={}, bool per_input_envelopes=true)</td></tr>
+<tr class="separator:ab6f3a9f4758cf3d63c07b10ba3492051"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b5c9cb9c0224bfe05d5a76960846b70" id="r_a3b5c9cb9c0224bfe05d5a76960846b70"><td class="memItemLeft" align="right" valign="top"><a id="a3b5c9cb9c0224bfe05d5a76960846b70" name="a3b5c9cb9c0224bfe05d5a76960846b70"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>partition_mesh</b> ()</td></tr>
 <tr class="separator:a3b5c9cb9c0224bfe05d5a76960846b70"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -484,6 +484,8 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a4681d638b409314bf5f9b9c7237bd6c5" id="r_a4681d638b409314bf5f9b9c7237bd6c5"><td class="memItemLeft" align="right" valign="top"><a id="a4681d638b409314bf5f9b9c7237bd6c5" name="a4681d638b409314bf5f9b9c7237bd6c5"></a>
 <a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
 <tr class="separator:a4681d638b409314bf5f9b9c7237bd6c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8aba0be46033a97d7b093b594a874ca" id="r_ad8aba0be46033a97d7b093b594a874ca"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#ad8aba0be46033a97d7b093b594a874ca">m_input_envelopes</a></td></tr>
+<tr class="separator:ad8aba0be46033a97d7b093b594a874ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaddab1a84f5c58cd58c31da9df420f08" id="r_aaddab1a84f5c58cd58c31da9df420f08"><td class="memItemLeft" align="right" valign="top"><a id="aaddab1a84f5c58cd58c31da9df420f08" name="aaddab1a84f5c58cd58c31da9df420f08"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_envelope</b> = false</td></tr>
 <tr class="separator:aaddab1a84f5c58cd58c31da9df420f08"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -635,8 +637,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
-<a id="a0a2518583b24f70324a5f2d07fbafd08" name="a0a2518583b24f70324a5f2d07fbafd08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a2518583b24f70324a5f2d07fbafd08">&#9670;&#160;</a></span>create_mesh()</h2>
+<a id="ab6f3a9f4758cf3d63c07b10ba3492051" name="ab6f3a9f4758cf3d63c07b10ba3492051"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6f3a9f4758cf3d63c07b10ba3492051">&#9670;&#160;</a></span>create_mesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -675,7 +677,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::vector&lt; int &gt; &amp;&#160;</td>
-          <td class="paramname"><em>tri_input</em> = <code>{}</code>&#160;</td>
+          <td class="paramname"><em>tri_input</em> = <code>{}</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>per_input_envelopes</em> = <code>true</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -691,7 +699,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 <p>&zwj;0: no boundary vertex is frozen; instead every boundary edge a collapse leaves that descends from the input's boundary (touches an input_boundary vertex) must lie within boundary_eps of the boundary edges of this input. The outline can then coarsen, and holes and slits smaller than the tube close. Boundary that a collapse opens elsewhere is not judged, as with a frozen boundary: with the link condition off, simplifying a dense closed patch passes through such transient tears, and refusing them leaves it stuck as a non-manifold tangle (Thingi10K 55928, the second eye). </p>
 </blockquote>
 </td></tr>
-    <tr><td class="paramname">tri_input</td><td>optional, per triangle: the input it came from, into face_attrs. </td></tr>
+    <tr><td class="paramname">tri_input</td><td>optional, per triangle: the input it came from, into face_attrs. With two or more inputs and an envelope, each face is held to its own input's (m_input_envelopes). </td></tr>
+    <tr><td class="paramname">per_input_envelopes</td><td>false: one envelope for all inputs whatever tri_input says, which then only goes into face_attrs (<a class="el" href="structwmtk_1_1_optimizer_parameters.html#abe56a64eb3016c5b6eab6d3d9f5c2f99">OptimizerParameters::per_input_envelopes</a>). </td></tr>
   </table>
   </dd>
 </dl>
@@ -747,7 +756,23 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Tube around the boundary edges of the mesh given to <a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#a0a2518583b24f70324a5f2d07fbafd08">create_mesh()</a>, used instead of freezing the boundary when <a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#a0a2518583b24f70324a5f2d07fbafd08">create_mesh()</a> gets a positive boundary_eps. See there. initialized() is false otherwise, and for a closed input. </p>
+<p>Tube around the boundary edges of the mesh given to <a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#ab6f3a9f4758cf3d63c07b10ba3492051">create_mesh()</a>, used instead of freezing the boundary when <a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#ab6f3a9f4758cf3d63c07b10ba3492051">create_mesh()</a> gets a positive boundary_eps. See there. initialized() is false otherwise, and for a closed input. </p>
+
+</div>
+</div>
+<a id="ad8aba0be46033a97d7b093b594a874ca" name="ad8aba0be46033a97d7b093b594a874ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8aba0be46033a97d7b093b594a874ca">&#9670;&#160;</a></span>m_input_envelopes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a>&gt; &gt; wmtk::components::shortest_edge_collapse::ShortestEdgeCollapse::m_input_envelopes</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>With faces of two or more inputs (<a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#ab6f3a9f4758cf3d63c07b10ba3492051">create_mesh()</a>'s tri_input), one envelope per input, around its own triangles alone at m_envelope's eps, and each face held to its own input's (FaceAttributes::input) instead of m_envelope, the union. Null for an input with no triangle; empty otherwise.</p>
+<p>The optimizer after the simplification holds each face to its own input, so a face the simplification lets drift onto another input starts there outside: tetwild, a wave sheet within 0.7 eps of a flat one (a simplification at 0.9 eps, simplify_envelope_ratio 0.9 until 2026-11), held to the union, had 735 faces outside their own input's envelope at the optimizer's init and timed out at 1500 s; held to its own, 0, and 15 iterations in 129 s. </p>
 
 </div>
 </div>

@@ -100,6 +100,8 @@ Inheritance diagram for wmtk::OptimizerParameters:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a3cbde7e1a00eba52ae217f7a44431122" id="r_a3cbde7e1a00eba52ae217f7a44431122"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a3cbde7e1a00eba52ae217f7a44431122">order2_eps</a> () const</td></tr>
+<tr class="separator:a3cbde7e1a00eba52ae217f7a44431122"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78f7816473bd1a74aca85f74774a9a52" id="r_a78f7816473bd1a74aca85f74774a9a52"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">init_lengths_from_diagonal</a> (const double diag)</td></tr>
 <tr class="memdesc:a78f7816473bd1a74aca85f74774a9a52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Derive the edge-length and envelope quantities from the bounding-box diagonal.  <br /></td></tr>
 <tr class="separator:a78f7816473bd1a74aca85f74774a9a52"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -130,8 +132,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>diag_l</b> = -1.</t
 <tr class="memitem:a9b14bb91a58a22cb381c02bdf7e8ca85" id="r_a9b14bb91a58a22cb381c02bdf7e8ca85"><td class="memItemLeft" align="right" valign="top"><a id="a9b14bb91a58a22cb381c02bdf7e8ca85" name="a9b14bb91a58a22cb381c02bdf7e8ca85"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>preserve_topology</b> = false</td></tr>
 <tr class="separator:a9b14bb91a58a22cb381c02bdf7e8ca85"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34a7ae8497a0194dbd52399cbba57a59" id="r_a34a7ae8497a0194dbd52399cbba57a59"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a34a7ae8497a0194dbd52399cbba57a59">optimize_envelope_around_simplified</a> = false</td></tr>
-<tr class="separator:a34a7ae8497a0194dbd52399cbba57a59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd8ce98aaa41806ea279699fdb937187" id="r_acd8ce98aaa41806ea279699fdb937187"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#acd8ce98aaa41806ea279699fdb937187">envelope_around_simplified</a> = false</td></tr>
+<tr class="separator:acd8ce98aaa41806ea279699fdb937187"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe56a64eb3016c5b6eab6d3d9f5c2f99" id="r_abe56a64eb3016c5b6eab6d3d9f5c2f99"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#abe56a64eb3016c5b6eab6d3d9f5c2f99">per_input_envelopes</a> = true</td></tr>
+<tr class="separator:abe56a64eb3016c5b6eab6d3d9f5c2f99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99fbd3031d9726ffa1af82b6977acfae" id="r_a99fbd3031d9726ffa1af82b6977acfae"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a99fbd3031d9726ffa1af82b6977acfae">split_high_valence_threshold</a> = 0</td></tr>
 <tr class="separator:a99fbd3031d9726ffa1af82b6977acfae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a268234aa3af6a0da6942a4b8ce0e86" id="r_a9a268234aa3af6a0da6942a4b8ce0e86"><td class="memItemLeft" align="right" valign="top"><a id="a9a268234aa3af6a0da6942a4b8ce0e86" name="a9a268234aa3af6a0da6942a4b8ce0e86"></a>
@@ -262,6 +266,32 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 <p>Derive the edge-length and envelope quantities from the bounding-box diagonal. </p>
 <p>The identical algebra in all three applications' init(). The caller computes diag_l from its own bounding box (whose type and meaning differ &ndash; see the class comment) and sets its own l_min afterwards. </p>
+
+</div>
+</div>
+<a id="a3cbde7e1a00eba52ae217f7a44431122" name="a3cbde7e1a00eba52ae217f7a44431122"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3cbde7e1a00eba52ae217f7a44431122">&#9670;&#160;</a></span>order2_eps()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::OptimizerParameters::order2_eps </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The eps the order-2 tubes and the curve anchors are built at, before their ratio: the surface envelope's, eps, around whichever geometry envelope_around_simplified names. </p>
 
 </div>
 </div>
@@ -434,22 +464,36 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
-<a id="a34a7ae8497a0194dbd52399cbba57a59" name="a34a7ae8497a0194dbd52399cbba57a59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a34a7ae8497a0194dbd52399cbba57a59">&#9670;&#160;</a></span>optimize_envelope_around_simplified</h2>
+<a id="acd8ce98aaa41806ea279699fdb937187" name="acd8ce98aaa41806ea279699fdb937187"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd8ce98aaa41806ea279699fdb937187">&#9670;&#160;</a></span>envelope_around_simplified</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::OptimizerParameters::optimize_envelope_around_simplified = false</td>
+          <td class="memname">bool wmtk::OptimizerParameters::envelope_around_simplified = false</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Build the optimizer's envelope around the SIMPLIFIED geometry at the REMAINING tolerance (eps - simplify_eps), instead of around the original input at the full eps.</p>
-<p>The deviation budget is identical by the triangle inequality: the simplification is already within simplify_eps of the input, so anything within (eps - simplify_eps) of the simplification is within eps of the input. What changes is where the geometry STARTS. The envelope is a hard veto, not a penalty, so a surface handed to the optimizer close to the boundary has most of its moves refused; built this way it starts at the centre, with the whole radius available in every direction.</p>
-<p>That headroom is load-bearing: deliberately starving it on tetwild (simplify_envelope_ ratio 0.95, which leaves the simplification free to use nearly the whole tolerance) was enough to turn a converging run into a diverging one on Thingi10K 1368052.</p>
-<p>The cost is elements. Holding the surface within eps/2 of the simplified geometry is stricter than eps of the input wherever the simplification smoothed detail away, so fewer coarsening collapses are allowed: measured on 106838 the output went from 200k to 560k tets and on 116060 from 133k to 267k, at unchanged final quality. Off by default for that reason.</p>
-<p>SimWild's 3D mesh already rebuilds its envelope around the simplified surface; there this flag only narrows the radius to the remaining budget, which is the part it was missing. SimWild's 2D mesh has no simplification stage, so the flag does not apply. </p>
+<p>envelope_reference "simplified" (true) or "input" (false, the default): which geometry every envelope, tube and anchor is built around &ndash; the surface or curve envelope, the order-2 and feature tubes, the anchors &ndash; one choice for all of them.</p>
+<p>"input": the original input, at eps times each one's ratio. What a simplification made and the input does not have (rims, non-manifold edges, curve ends) is held around itself as the insertion leaves it, since a free one erodes the input along its curve (<a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_input_curves.html" title="The input&#39;s own curves, when the envelopes are built around the input (envelope_reference &quot;input&quot;) an...">TetOptimizerMesh::InputCurves</a>).</p>
+<p>"simplified": the SIMPLIFIED geometry, which replaces the input, at eps times each one's ratio: the output is within eps of the simplification, so within simplify_eps + eps of the input, and any simplify_eps is allowed &ndash; a coarse simplification of a dense input included. The geometry starts at the centre of the envelope it is held to, where around the input it starts up to simplify_eps off it; the envelope is a hard veto, not a penalty, so a surface handed to the optimizer close to the boundary has most of its moves refused. Starving that headroom on tetwild (a simplification at 0.95 eps, simplify_envelope_ratio 0.95 until 2026-11: the simplification free to use nearly the whole tolerance) turned a converging run into a diverging one on Thingi10K 1368052.</p>
+<p>Refused without a simplification, and "input" with simplify_eps at or above eps (utils::check_envelope_reference()). Until 2026-11 "simplified" built at eps - simplify_eps, keeping the output within eps of the input, and fell back to the full eps with a warning when nothing was left. </p>
+
+</div>
+</div>
+<a id="abe56a64eb3016c5b6eab6d3d9f5c2f99" name="abe56a64eb3016c5b6eab6d3d9f5c2f99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe56a64eb3016c5b6eab6d3d9f5c2f99">&#9670;&#160;</a></span>per_input_envelopes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::OptimizerParameters::per_input_envelopes = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>per_input_envelopes (default true): with two or more inputs, each is held to its own &ndash; one surface (2D: curve) envelope per input, one order-2 and one feature tube per input, and the input simplification's envelope per input likewise &ndash; rather than one shared envelope of each kind for all inputs. false shares them: an input may then end up on another within eps, for speed where inputs come within eps of each other (the simplification measured 3% to 20% faster shared, 2026-11). Anchors are per point either way. An input is an input file in tetwild and triwild, a label in simwild. </p>
 
 </div>
 </div>

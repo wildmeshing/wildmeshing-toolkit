@@ -12,7 +12,7 @@ What it does
    target edge length (length_rel) both relative to the bounding box diagonal.
 3. Tetrahedralizes the simplified surface with wm.tetwild, with its own (thinner) envelope and
    edge length, and:
-   - skip_simplify: the surface is not simplified again;
+   - simplify false: the surface is not simplified again;
    - preserve_topology and check_surface_folds: the surface keeps its topology and does not fold
      over, so the map through tetwild stays a bijection (without them, tens of warnings);
    - filter input: only the tets inside the simplified surface, by its winding number (the bunny
@@ -205,7 +205,7 @@ def run(args):
         "input": "simplified",
         "eps_rel": args.tet_eps_rel,
         "length_rel": args.tet_length_rel,
-        "skip_simplify": True,  # the surface is already as coarse as wanted
+        "simplify": False,  # the surface is already as coarse as wanted
         "preserve_topology": True,
         "check_surface_folds": True,
         # The bunny is open: no flood fill, and no winding number of the tracked surface.

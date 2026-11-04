@@ -74,27 +74,88 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
+<a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::TetOptimizerMesh::FeatureEdgeAttributes Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
-<p>Per-edge feature tag: does this tet edge tile an input feature curve.  
+<p>Per-edge curve tags: which kinds of input curve this tet edge tiles.  
  <a href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_tet_optimizer_mesh_8h_source.html">TetOptimizerMesh.h</a>&gt;</code></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a47e5cef65ea9e84453d2bbe610ccb3a7" id="r_a47e5cef65ea9e84453d2bbe610ccb3a7"><td class="memItemLeft" align="right" valign="top"><a id="a47e5cef65ea9e84453d2bbe610ccb3a7" name="a47e5cef65ea9e84453d2bbe610ccb3a7"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><b>Kind</b> : uint8_t { <b>feature</b> = 1 &lt;&lt; 0
+, <b>order2</b> = 1 &lt;&lt; 1
+ }</td></tr>
+<tr class="separator:a47e5cef65ea9e84453d2bbe610ccb3a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:aa7a0cc3de7257487b8b64d1c86594484" id="r_aa7a0cc3de7257487b8b64d1c86594484"><td class="memItemLeft" align="right" valign="top"><a id="aa7a0cc3de7257487b8b64d1c86594484" name="aa7a0cc3de7257487b8b64d1c86594484"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_tagged</b> () const</td></tr>
+<tr class="separator:aa7a0cc3de7257487b8b64d1c86594484"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4ddf32cc2176e1afbbac7f7d4bbb9f0" id="r_ad4ddf32cc2176e1afbbac7f7d4bbb9f0"><td class="memItemLeft" align="right" valign="top"><a id="ad4ddf32cc2176e1afbbac7f7d4bbb9f0" name="ad4ddf32cc2176e1afbbac7f7d4bbb9f0"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>has</b> (Kind k) const</td></tr>
+<tr class="separator:ad4ddf32cc2176e1afbbac7f7d4bbb9f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a17cf299a7b002f752d4ce1b6773b8f" id="r_a6a17cf299a7b002f752d4ce1b6773b8f"><td class="memItemLeft" align="right" valign="top"><a id="a6a17cf299a7b002f752d4ce1b6773b8f" name="a6a17cf299a7b002f752d4ce1b6773b8f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>add</b> (Kind k)</td></tr>
+<tr class="separator:a6a17cf299a7b002f752d4ce1b6773b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b2acdead6db1a683fd68f013ff1cec8" id="r_a8b2acdead6db1a683fd68f013ff1cec8"><td class="memItemLeft" align="right" valign="top"><a id="a8b2acdead6db1a683fd68f013ff1cec8" name="a8b2acdead6db1a683fd68f013ff1cec8"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>remove</b> (Kind k)</td></tr>
+<tr class="memdesc:a8b2acdead6db1a683fd68f013ff1cec8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Drops the kind and its input set. <br /></td></tr>
+<tr class="separator:a8b2acdead6db1a683fd68f013ff1cec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47760edf54581008cbcd06157b1c795f" id="r_a47760edf54581008cbcd06157b1c795f"><td class="memItemLeft" align="right" valign="top"><a id="a47760edf54581008cbcd06157b1c795f" name="a47760edf54581008cbcd06157b1c795f"></a>
+InputSet &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>inputs</b> (Kind k)</td></tr>
+<tr class="separator:a47760edf54581008cbcd06157b1c795f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78b668397ddbce0258d73fb1788bba79" id="r_a78b668397ddbce0258d73fb1788bba79"><td class="memItemLeft" align="right" valign="top"><a id="a78b668397ddbce0258d73fb1788bba79" name="a78b668397ddbce0258d73fb1788bba79"></a>
+InputSet&#160;</td><td class="memItemRight" valign="bottom"><b>inputs</b> (Kind k) const</td></tr>
+<tr class="separator:a78b668397ddbce0258d73fb1788bba79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab09e3967ec893d138c1a7f314dff44c3" id="r_ab09e3967ec893d138c1a7f314dff44c3"><td class="memItemLeft" align="right" valign="top"><a id="ab09e3967ec893d138c1a7f314dff44c3" name="ab09e3967ec893d138c1a7f314dff44c3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>merge</b> (const <a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes.html">FeatureEdgeAttributes</a> &amp;o)</td></tr>
+<tr class="memdesc:ab09e3967ec893d138c1a7f314dff44c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add the tags of <code>o</code>: what one edge carries where a collapse welds two into it. <br /></td></tr>
+<tr class="separator:ab09e3967ec893d138c1a7f314dff44c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a4829fd78e92191b826ab807644dea78e" id="r_a4829fd78e92191b826ab807644dea78e"><td class="memItemLeft" align="right" valign="top"><a id="a4829fd78e92191b826ab807644dea78e" name="a4829fd78e92191b826ab807644dea78e"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_feature_edge</b> = false</td></tr>
-<tr class="separator:a4829fd78e92191b826ab807644dea78e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe481b10a3eec6909213cf2f5db062c6" id="r_afe481b10a3eec6909213cf2f5db062c6"><td class="memItemLeft" align="right" valign="top"><a id="afe481b10a3eec6909213cf2f5db062c6" name="afe481b10a3eec6909213cf2f5db062c6"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_kinds</b> = 0</td></tr>
+<tr class="memdesc:afe481b10a3eec6909213cf2f5db062c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The Kind bits of every curve this edge tiles; 0 = untagged. <br /></td></tr>
+<tr class="separator:afe481b10a3eec6909213cf2f5db062c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a697c5bae282752d2796b469f5e8603ec" id="r_a697c5bae282752d2796b469f5e8603ec"><td class="memItemLeft" align="right" valign="top">InputSet&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes.html#a697c5bae282752d2796b469f5e8603ec">m_feature_inputs</a> = 0</td></tr>
+<tr class="separator:a697c5bae282752d2796b469f5e8603ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2622d8f1e01a5e02008b09e94f9d8744" id="r_a2622d8f1e01a5e02008b09e94f9d8744"><td class="memItemLeft" align="right" valign="top"><a id="a2622d8f1e01a5e02008b09e94f9d8744" name="a2622d8f1e01a5e02008b09e94f9d8744"></a>
+InputSet&#160;</td><td class="memItemRight" valign="bottom"><b>m_order2_inputs</b> = 0</td></tr>
+<tr class="separator:a2622d8f1e01a5e02008b09e94f9d8744"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Per-edge feature tag: does this tet edge tile an input feature curve. </p>
-<p>A single union bool: which curve an edge belongs to is not carried through the optimization, and the edges are held by one tube around all the curves (m_feature_envelope). Tracked faces are different: each carries its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">SurfaceTagAttributes::input_set()</a>) through every operation and is held to its own inputs' envelopes, because one envelope around every input let a solid's boundary ride a sheet crossing it &ndash; measured, 12 faces up to 3.61 eps off the solid &ndash; and an audit at the end can find that but not prevent it. Curves are expected to follow the faces once two of them close together can be measured drifting the same way. </p>
-</div><hr/>The documentation for this struct was generated from the following file:<ul>
+<div class="textblock"><p>Per-edge curve tags: which kinds of input curve this tet edge tiles. </p>
+<p>One bit per KIND of curve, because each kind is held to its own tube (see <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2c33b0ac6ddfae4970370cf6b214d43a" title="The tube edges of kind k are held to (one of the two above); null if there is none.">tagged_edge_envelope()</a>), and one edge can tile two kinds at once:</p><ul>
+<li>feature: the input feature curves the application was given, held by m_feature_envelope;</li>
+<li>order2: the input's order-2 edges the application holds (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a4978151a697924b40cc51fcdffbd70e3" title="Does the application hold an order-2 edge with n_faces tracked faces?">holds_order2_edge()</a>), held by m_order2_edge_envelope; set by <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#adc3a96eaf504aac6d1cb69295a54772c" title="Tag the input&#39;s order-2 edges the application holds (holds_order2_edge()) with the order2 kind and bu...">tag_order2_edges()</a>. An edge with any bit set is TAGGED, and the operations treat every tagged edge alike &ndash; propagated through split, collapse and swap, never removed by a swap, order-2 substructure for the link condition. Only the tube it is held to, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a438be18d7cc2c0fb54c01cddfcacc5aa">vertex_has_feature_edge()</a>, read the kind.</li>
+</ul>
+<p>Within a kind the tag is a union: which curve an edge belongs to is not carried through the optimization, and the kind's edges are held by one tube around all its curves. Tracked faces are different: each carries its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">SurfaceTagAttributes::input_set()</a>) through every operation and is held to its own inputs' envelopes, because one envelope around every input let a solid's boundary ride a sheet crossing it &ndash; measured, 12 faces up to 3.61 eps off the solid &ndash; and an audit at the end can find that but not prevent it. Curves are expected to follow the faces once two of them close together can be measured drifting the same way. </p>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a697c5bae282752d2796b469f5e8603ec" name="a697c5bae282752d2796b469f5e8603ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a697c5bae282752d2796b469f5e8603ec">&#9670;&#160;</a></span>m_feature_inputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">InputSet wmtk::TetOptimizerMesh::FeatureEdgeAttributes::m_feature_inputs = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per kind, the inputs whose curves of that kind this edge tiles, bit i for input i, as a tracked face carries the inputs it lies on (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">SurfaceTagAttributes::input_set()</a>): the input_edges file for <code>feature</code>, the inputs of the tracked faces at the edge for <code>order2</code>. The edge is held to those inputs' tubes (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a0ccdb28131156599f8772e80eed094af">tagged_edge_leaves_tube()</a>); an empty set falls back to the kind's union tube. </p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
 <li>src/wmtk/<a class="el" href="_tet_optimizer_mesh_8h_source.html">TetOptimizerMesh.h</a></li>
 </ul>
 </div><!-- contents -->

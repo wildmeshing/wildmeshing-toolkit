@@ -107,6 +107,8 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a40062e0f2e06b84c87ea693759181166" id="r_a40062e0f2e06b84c87ea693759181166"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a40062e0f2e06b84c87ea693759181166">Envelope</a> (bool exact=true)</td></tr>
 <tr class="separator:a40062e0f2e06b84c87ea693759181166"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a095dab355c3bf152bc6a3d73553f3561" id="r_a095dab355c3bf152bc6a3d73553f3561"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a095dab355c3bf152bc6a3d73553f3561">eps</a> () const</td></tr>
+<tr class="separator:a095dab355c3bf152bc6a3d73553f3561"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42d1e1a8f2ab19816ca52ad1f3862720" id="r_a42d1e1a8f2ab19816ca52ad1f3862720"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a42d1e1a8f2ab19816ca52ad1f3862720">set_max_threads</a> (int n)</td></tr>
 <tr class="memdesc:a42d1e1a8f2ab19816ca52ad1f3862720"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many threads one triangle query may use. 1, the default: every sample is checked on the calling thread.  <br /></td></tr>
 <tr class="separator:a42d1e1a8f2ab19816ca52ad1f3862720"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -119,7 +121,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::
 <tr class="memitem:acb4a33f51acd1771f42e4ac756d88a13" id="r_acb4a33f51acd1771f42e4ac756d88a13"><td class="memItemLeft" align="right" valign="top"><a id="acb4a33f51acd1771f42e4ac756d88a13" name="acb4a33f51acd1771f42e4ac756d88a13"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::vector&lt; Eigen::Vector2d &gt; &amp;m_ver, const std::vector&lt; Eigen::Vector2i &gt; &amp;m_edges, const double)</td></tr>
 <tr class="separator:acb4a33f51acd1771f42e4ac756d88a13"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c5305415fa180bbe78b191caf6084f3" id="r_a9c5305415fa180bbe78b191caf6084f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a9c5305415fa180bbe78b191caf6084f3">init</a> (const Eigen::MatrixXd &amp;V, const Eigen::MatrixXi &amp;F, const double eps)</td></tr>
+<tr class="memitem:a9c5305415fa180bbe78b191caf6084f3" id="r_a9c5305415fa180bbe78b191caf6084f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a9c5305415fa180bbe78b191caf6084f3">init</a> (const Eigen::MatrixXd &amp;V, const Eigen::MatrixXi &amp;F, const double <a class="el" href="classwmtk_1_1_envelope.html#a095dab355c3bf152bc6a3d73553f3561">eps</a>)</td></tr>
 <tr class="memdesc:a9c5305415fa180bbe78b191caf6084f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same, from Eigen matrices, dispatching on the column counts.  <br /></td></tr>
 <tr class="separator:a9c5305415fa180bbe78b191caf6084f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac104bbd60fa4355f303e543ba624e22b" id="r_ac104bbd60fa4355f303e543ba624e22b"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#ac104bbd60fa4355f303e543ba624e22b">is_outside</a> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;tris) const</td></tr>
@@ -311,6 +313,32 @@ fastEnvelope::FastEnvelope2D&#160;</td><td class="memItemRight" valign="bottom">
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a095dab355c3bf152bc6a3d73553f3561" name="a095dab355c3bf152bc6a3d73553f3561"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a095dab355c3bf152bc6a3d73553f3561">&#9670;&#160;</a></span>eps()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::Envelope::eps </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The eps the envelope was built with: what every query guarantees, sampled or exact &ndash; everything it accepts is within it. eps2 and eps2_edge are the sampled path's shrunk acceptance radii, 0.42 and 0.5 of it, not the envelope's radius. </p>
+
+</div>
+</div>
 <a id="a9c5305415fa180bbe78b191caf6084f3" name="a9c5305415fa180bbe78b191caf6084f3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9c5305415fa180bbe78b191caf6084f3">&#9670;&#160;</a></span>init()</h2>
 

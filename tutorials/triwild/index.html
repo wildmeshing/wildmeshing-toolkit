@@ -1426,10 +1426,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#feature-points-input_points-preserve_feature_points" class="md-nav__link">
+  <a href="#feature-points-input_points" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Feature points: input_points, preserve_feature_points
+        Feature points: input_points
       
     </span>
   </a>
@@ -3511,10 +3511,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#feature-points-input_points-preserve_feature_points" class="md-nav__link">
+  <a href="#feature-points-input_points" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Feature points: input_points, preserve_feature_points
+        Feature points: input_points
       
     </span>
   </a>
@@ -3722,23 +3722,25 @@ several of them.</p>
 <h2 id="key-settings">Key settings<a class="headerlink" href="#key-settings" title="Permanent link">&para;</a></h2>
 <p>The numbers below come from the <code>sweep</code> section of the example, which changes one option at a
 time against the first run (with <code>num_threads</code> 0, so that they repeat exactly):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># One option at a time against the first run (filter input, stop_energy 10).</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">base</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"filter"</span><span class="p">:</span> <span class="s2">"input"</span><span class="p">,</span> <span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">10</span><span class="p">}</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">for</span> <span class="n">change</span> <span class="ow">in</span> <span class="p">[{},</span> <span class="p">{</span><span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span> <span class="p">{</span><span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span> <span class="p">{</span><span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>               <span class="p">{</span><span class="s2">"eps_rel"</span><span class="p">:</span> <span class="mf">0.0002</span><span class="p">},</span> <span class="p">{</span><span class="s2">"eps_rel"</span><span class="p">:</span> <span class="mf">0.005</span><span class="p">},</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>               <span class="p">{</span><span class="s2">"length_rel"</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">},</span> <span class="p">{</span><span class="s2">"length_rel"</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">},</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>               <span class="p">{</span><span class="s2">"coarsen_pass"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}]:</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">outputs</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">triangulate</span><span class="p">({</span><span class="o">**</span><span class="n">base</span><span class="p">,</span> <span class="o">**</span><span class="n">change</span><span class="p">,</span> <span class="s2">"DEBUG_hausdorff"</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">change</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'#t'</span><span class="p">]</span><span class="si">}</span><span class="s2"> triangles, max energy </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'max_energy'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, "</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>          <span class="sa">f</span><span class="s2">"avg </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'avg_energy'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, iterations </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'#iterations'</span><span class="p">]</span><span class="si">}</span><span class="s2">, "</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>          <span class="sa">f</span><span class="s2">"curves within </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'hausdorff'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> of the input (eps </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'eps'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># One option at a time against the first run (filter input, stop_energy 10); eps_rel with the</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># simplification at half of it, as at the default.</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">base</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"filter"</span><span class="p">:</span> <span class="s2">"input"</span><span class="p">,</span> <span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">10</span><span class="p">}</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">for</span> <span class="n">change</span> <span class="ow">in</span> <span class="p">[{},</span> <span class="p">{</span><span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span> <span class="p">{</span><span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span> <span class="p">{</span><span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>               <span class="p">{</span><span class="s2">"eps_rel"</span><span class="p">:</span> <span class="mf">0.0002</span><span class="p">,</span> <span class="s2">"eps_simplify_rel"</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">},</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>               <span class="p">{</span><span class="s2">"eps_rel"</span><span class="p">:</span> <span class="mf">0.005</span><span class="p">,</span> <span class="s2">"eps_simplify_rel"</span><span class="p">:</span> <span class="mf">0.0025</span><span class="p">},</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>               <span class="p">{</span><span class="s2">"length_rel"</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">},</span> <span class="p">{</span><span class="s2">"length_rel"</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">},</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>               <span class="p">{</span><span class="s2">"coarsen_pass"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}]:</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">outputs</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">triangulate</span><span class="p">({</span><span class="o">**</span><span class="n">base</span><span class="p">,</span> <span class="o">**</span><span class="n">change</span><span class="p">,</span> <span class="s2">"DEBUG_hausdorff"</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">change</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'#t'</span><span class="p">]</span><span class="si">}</span><span class="s2"> triangles, max energy </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'max_energy'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, "</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>          <span class="sa">f</span><span class="s2">"avg </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'avg_energy'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, iterations </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'#iterations'</span><span class="p">]</span><span class="si">}</span><span class="s2">, "</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>          <span class="sa">f</span><span class="s2">"curves within </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'hausdorff'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> of the input (eps </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'eps'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="the-inputs-input-input_names-output">The inputs: <code>input</code>, <code>input_names</code>, <code>output</code><a class="headerlink" href="#the-inputs-input-input_names-output" title="Permanent link">&para;</a></h3>
 <p><a href="../../reference/triwild/#input"><code>input</code></a> is a list of OBJ files of polylines (<code>v</code> and <code>l</code> lines),
 up to 64. Each file is one input: its curves are kept apart from the others' in the output tags,
 and each tracked edge is held to the envelope of the inputs it lies on. Vertices that coincide
 exactly are merged when a file is read; a vertex of a curve file that no segment uses is kept as a
-<a href="#feature-points-input_points-preserve_feature_points">feature point</a>.
+<a href="#feature-points-input_points">feature point</a>.
 <a href="../../reference/triwild/#input_names"><code>input_names</code></a> gives the inputs names, in the same order:
 they label the tag columns of the output (<code>tag_0</code>, <code>tag_1</code>, ... without them).
 <a href="../../reference/triwild/#output"><code>output</code></a> is the file name without extension.</p>
@@ -3746,10 +3748,11 @@ they label the tag columns of the output (<code>tag_0</code>, <code>tag_1</code>
 strings.</p>
 <h3 id="the-envelope-eps_rel">The envelope: <code>eps_rel</code><a class="headerlink" href="#the-envelope-eps_rel" title="Permanent link">&para;</a></h3>
 <p><a href="../../reference/triwild/#eps_rel"><code>eps_rel</code></a> (default 0.001) is the distance the output's curves
-may be from the input, relative to the bounding box diagonal. The input is simplified within half
-of it, so detail smaller than <span class="arithmatex">\(\varepsilon\)</span> may disappear, and the optimization keeps every
-tracked edge within <span class="arithmatex">\(\varepsilon\)</span> of the input. A thinner envelope keeps more of the input's vertices
-and constrains the optimization more:</p>
+may be from the input, relative to the bounding box diagonal. The input is simplified within
+<a href="../../reference/triwild/#eps_simplify_rel"><code>eps_simplify_rel</code></a> of the diagonal (default 0.0005,
+half the default <span class="arithmatex">\(\varepsilon\)</span>), so detail smaller than <span class="arithmatex">\(\varepsilon\)</span> may disappear, and the
+optimization keeps every tracked edge within <span class="arithmatex">\(\varepsilon\)</span> of the input. A thinner envelope keeps
+more of the input's vertices and constrains the optimization more:</p>
 <table>
 <thead>
 <tr>
@@ -3784,6 +3787,9 @@ and constrains the optimization more:</p>
 </tr>
 </tbody>
 </table>
+<p>These runs simplified within half of each <span class="arithmatex">\(\varepsilon\)</span>, <code>eps_simplify_rel</code> = <code>eps_rel</code> / 2.
+<code>eps_simplify_rel</code> does not follow <code>eps_rel</code>, and an <code>eps_rel</code> at or below it is refused under the
+default <code>envelope_reference</code>: lower both together.</p>
 <p>The distance is the containment that <code>DEBUG_hausdorff</code> measures: the largest distance from a
 point of the output's curves to the input. It stays below <span class="arithmatex">\(\varepsilon\)</span> in every run.</p>
 <h3 id="the-edge-length-length_rel">The edge length: <code>length_rel</code><a class="headerlink" href="#the-edge-length-length_rel" title="Permanent link">&para;</a></h3>
@@ -3909,49 +3915,29 @@ four of the shapes run clockwise and the rectangle counterclockwise, so the wind
 inside a clockwise shape and 0 where one overlaps the rectangle, and only the part of the
 rectangle that no other curve covers is kept. <code>input</code> orients each input on its own. Use it for
 several inputs. All three need closed curves (see the <a href="#pitfalls">pitfalls</a>).</p>
-<h3 id="feature-points-input_points-preserve_feature_points">Feature points: <code>input_points</code>, <code>preserve_feature_points</code><a class="headerlink" href="#feature-points-input_points-preserve_feature_points" title="Permanent link">&para;</a></h3>
+<h3 id="feature-points-input_points">Feature points: <code>input_points</code><a class="headerlink" href="#feature-points-input_points" title="Permanent link">&para;</a></h3>
 <p><a href="../../reference/triwild/#input_points"><code>input_points</code></a> lists files whose vertices are inserted as
 vertices of the triangulation (their edges are ignored). The endpoints of open polylines are kept
-the same way. <a href="../../reference/triwild/#preserve_feature_points"><code>preserve_feature_points</code></a> (on by
-default) anchors them: some vertex stays within <span class="arithmatex">\(\varepsilon\)</span> of each, and a collapse that would
-remove it is refused. Here a closed curve and twelve points, nine inside it and three outside:</p>
+the same way. Each is anchored: some vertex stays within its radius of it --
+<a href="../../reference/triwild/#feature_envelope_ratio"><code>feature_envelope_ratio</code></a> <span class="arithmatex">\(\cdot\,\varepsilon\)</span>
+for the points, <a href="../../reference/triwild/#order2_envelope_ratio"><code>order2_envelope_ratio</code></a>
+<span class="arithmatex">\(\cdot\,\varepsilon\)</span> for the endpoints, both <span class="arithmatex">\(\varepsilon\)</span> by default -- and a collapse that
+would remove it is refused. Junctions, where three or more polylines meet, are not anchored. Here a closed curve and twelve points, nine inside it and three outside:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># A closed curve and twelve points to keep as vertices: nine inside, three outside.</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">star</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"curve"</span><span class="p">:</span> <span class="n">wm</span><span class="o">.</span><span class="n">read_mesh</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"triwild_free_points_curve.obj"</span><span class="p">)),</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>        <span class="s2">"points"</span><span class="p">:</span> <span class="n">wm</span><span class="o">.</span><span class="n">read_mesh</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"triwild_free_points_points.obj"</span><span class="p">))}</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">for</span> <span class="n">preserve</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">outputs</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">triangulate</span><span class="p">(</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="p">{</span><span class="s2">"input_points"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"points"</span><span class="p">],</span> <span class="s2">"preserve_feature_points"</span><span class="p">:</span> <span class="n">preserve</span><span class="p">,</span> <span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>         <span class="s2">"DEBUG_feature_retention"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>        <span class="n">star</span><span class="p">,</span> <span class="p">[</span><span class="s2">"curve"</span><span class="p">])</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">V</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">][</span><span class="s2">"V"</span><span class="p">]</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="c1"># How far each input point is from the nearest vertex of the output.</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">worst</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">V</span> <span class="o">-</span> <span class="n">p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">star</span><span class="p">[</span><span class="s2">"points"</span><span class="p">][</span><span class="s2">"V"</span><span class="p">])</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"preserve_feature_points </span><span class="si">{</span><span class="n">preserve</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'features_retained'</span><span class="p">]</span><span class="si">}</span><span class="s2"> of "</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>          <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'features_total'</span><span class="p">]</span><span class="si">}</span><span class="s2"> points kept, the worst </span><span class="si">{</span><span class="n">worst</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> from a vertex "</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>          <span class="sa">f</span><span class="s2">"(eps </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'eps'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">outputs</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">triangulate</span><span class="p">(</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="p">{</span><span class="s2">"input_points"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"points"</span><span class="p">],</span> <span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">"DEBUG_feature_retention"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">star</span><span class="p">,</span> <span class="p">[</span><span class="s2">"curve"</span><span class="p">])</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">V</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">][</span><span class="s2">"V"</span><span class="p">]</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c1"># How far each input point is from the nearest vertex of the output.</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">worst</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">V</span> <span class="o">-</span> <span class="n">p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">star</span><span class="p">[</span><span class="s2">"points"</span><span class="p">][</span><span class="s2">"V"</span><span class="p">])</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'features_retained'</span><span class="p">]</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'features_total'</span><span class="p">]</span><span class="si">}</span><span class="s2"> points kept, the worst "</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>      <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">worst</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> from a vertex (eps </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'eps'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 </code></pre></div>
-<table>
-<thead>
-<tr>
-<th><code>preserve_feature_points</code></th>
-<th>points with a vertex within <span class="arithmatex">\(\varepsilon\)</span></th>
-<th>farthest point from a vertex</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>true (default)</td>
-<td>12 of 12</td>
-<td>0</td>
-</tr>
-<tr>
-<td>false</td>
-<td>0 of 12</td>
-<td>1.50, 44 <span class="arithmatex">\(\varepsilon\)</span></td>
-</tr>
-</tbody>
-</table>
-<p>Without the anchors, the collapses take the points' vertices like any other. The points outside
+<p>All 12 points keep a vertex within <span class="arithmatex">\(\varepsilon\)</span>, the farthest at 0. Without the anchors (until
+2026-10, <code>preserve_feature_points</code> false turned them off), the collapses took the points' vertices
+like any other: 0 of 12 kept, the farthest 1.50 (44 <span class="arithmatex">\(\varepsilon\)</span>) from a vertex. The points outside
 the curve's bounding box grow it, and with it <span class="arithmatex">\(\varepsilon\)</span> and the edge length, which are
 relative to its diagonal. A point in a region the filter discards leaves the mesh with that region,
 but stays in the feature output.</p>
@@ -3993,8 +3979,7 @@ to 455 triangles. On inputs of this size a run takes a fraction of a second eith
 The report holds the same keys as the file.</p>
 <p><a href="../../reference/triwild/#history_output"><code>history_output</code></a> records every change to the tracked
 curves, from the input files to the output, and <a href="../tracking/">tracking</a> maps points between the
-two from it. Recording anchors the junctions too, which changes the output, unless
-<a href="../../reference/triwild/#allow_junction_cleanup"><code>allow_junction_cleanup</code></a> is given.</p>
+two from it. Recording does not change the output.</p>
 <h2 id="pitfalls">Pitfalls<a class="headerlink" href="#pitfalls" title="Permanent link">&para;</a></h2>
 <ul>
 <li>

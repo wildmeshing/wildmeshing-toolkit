@@ -3617,7 +3617,7 @@ concatenated.</p>
 <a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="s2">"input"</span><span class="p">:</span> <span class="s2">"simplified"</span><span class="p">,</span>
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="s2">"eps_rel"</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">tet_eps_rel</span><span class="p">,</span>
 <a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="s2">"length_rel"</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">tet_length_rel</span><span class="p">,</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="s2">"skip_simplify"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># the surface is already as coarse as wanted</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="s2">"simplify"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># the surface is already as coarse as wanted</span>
 <a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="s2">"preserve_topology"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
 <a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="s2">"check_surface_folds"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
 <a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="c1"># The bunny is open: no flood fill, and no winding number of the tracked surface.</span>
@@ -3632,7 +3632,7 @@ concatenated.</p>
 </code></pre></div>
 <p>The options that keep this map a bijection:</p>
 <ul>
-<li><a href="../../reference/tetwild/#skip_simplify"><code>skip_simplify</code></a>: the surface is already as coarse as
+<li><a href="../../reference/tetwild/#simplify"><code>simplify</code></a> false: the surface is already as coarse as
   wanted, so TetWild does not simplify it again.</li>
 <li><a href="../../reference/tetwild/#preserve_topology"><code>preserve_topology</code></a> and
   <a href="../../reference/tetwild/#check_surface_folds"><code>check_surface_folds</code></a>: the tracked surface keeps

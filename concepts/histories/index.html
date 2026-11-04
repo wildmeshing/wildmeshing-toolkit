@@ -3445,9 +3445,7 @@ edge split
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="p">}</span>
 </code></pre></div>
 <p>A refused operation records nothing, since it is rolled back before its commit point. Recording
-changes nothing the operations do, with one exception: triwild anchors curve junctions while it
-records, unless <code>allow_junction_cleanup</code> is given (see its
-<a href="../../reference/triwild/#history_output"><code>history_output</code></a>).</p>
+changes nothing the operations do.</p>
 <p>The tracked surface of a tet mesh has no stable face ids, so the recorder gives it ids of its own
 and records each operation as the difference between the tracked faces around it before and
 after. The stages before the optimization are recorded into the same history: the weld of the

@@ -158,6 +158,8 @@ std::vector&lt; Tets &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>
 <a class="el" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a7619df0e6ae42552d9446646de07f355">Faces</a>&#160;</td><td class="memItemRight" valign="bottom"><b>surf_after</b> (const <a class="el" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a7619df0e6ae42552d9446646de07f355">Faces</a> &amp;surf, Vid i, Vid j)</td></tr>
 <tr class="memdesc:abbfd924e2dd26417662627b49f2c6401"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>surf</code> after collapsing (i, j) into j. <br /></td></tr>
 <tr class="separator:abbfd924e2dd26417662627b49f2c6401"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f780191db21e5ed2ea5be591baf6aae" id="r_a9f780191db21e5ed2ea5be591baf6aae"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a9f780191db21e5ed2ea5be591baf6aae">surface_link_condition</a> (const <a class="el" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a7619df0e6ae42552d9446646de07f355">Faces</a> &amp;surf, const Vid i, const Vid j)</td></tr>
+<tr class="separator:a9f780191db21e5ed2ea5be591baf6aae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf7843f87ea42d2f5adcb728db475fd1" id="r_adf7843f87ea42d2f5adcb728db475fd1"><td class="memItemLeft" align="right" valign="top"><a id="adf7843f87ea42d2f5adcb728db475fd1" name="adf7843f87ea42d2f5adcb728db475fd1"></a>
 std::optional&lt; <a class="el" href="structwmtk_1_1components_1_1tracking_1_1volume_1_1_pair_spec.html">PairSpec</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>make_pair</b> (const std::string &amp;kind, const Tets &amp;Tb, const Tets &amp;Ta, const <a class="el" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a7619df0e6ae42552d9446646de07f355">Faces</a> &amp;sb, const <a class="el" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a7619df0e6ae42552d9446646de07f355">Faces</a> &amp;sa, std::string *why=nullptr)</td></tr>
 <tr class="memdesc:adf7843f87ea42d2f5adcb728db475fd1"><td class="mdescLeft">&#160;</td><td class="mdescRight">The pair (Tb, Ta) if it is one; <code>sb</code> and <code>sa</code> are the tracked faces before and after. <br /></td></tr>
@@ -582,6 +584,41 @@ template&lt;typename Accept &gt; </td></tr>
       </table>
 </div><div class="memdoc">
 <p>The tets of T grouped across the faces two of them share that are not in <code>surf</code>: the sides of the tracked surface among them. </p>
+
+</div>
+</div>
+<a id="a9f780191db21e5ed2ea5be591baf6aae" name="a9f780191db21e5ed2ea5be591baf6aae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f780191db21e5ed2ea5be591baf6aae">&#9670;&#160;</a></span>surface_link_condition()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::tracking::volume::surface_link_condition </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a7619df0e6ae42552d9446646de07f355">Faces</a> &amp;&#160;</td>
+          <td class="paramname"><em>surf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vid&#160;</td>
+          <td class="paramname"><em>i</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vid&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether collapsing (i, j) keeps the tracked surface <code>surf</code>, every face of it at i and j, the same complex up to homeomorphism: the link condition on the surface and its curves (edges on one face or on three and more), as <a class="el" href="classwmtk_1_1_tet_mesh.html#aa85f8199512a563b9c64b1338536e261" title="Link condition that also considers substructures.">TetMesh::substructure_link_condition()</a> asks it of a tet mesh's tracked faces. False where the collapse welds two sheets or pinches a curve. </p>
 
 </div>
 </div>

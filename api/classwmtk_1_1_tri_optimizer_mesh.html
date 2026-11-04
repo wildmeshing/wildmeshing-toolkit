@@ -160,6 +160,9 @@ Public Member Functions</h2></td></tr>
 std::vector&lt; std::pair&lt; size_t, int &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tracked_curve_boundary</b> () const</td></tr>
 <tr class="memdesc:a4ff0715ca94ae4fa13a612421d9b2853"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vertices where the oriented tracked curves have a boundary (in minus out != 0), each with that sum. Empty for closed input curves; the operations preserve it. <br /></td></tr>
 <tr class="separator:a4ff0715ca94ae4fa13a612421d9b2853"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6ac8da9c40fe2bd3d3ef6ee91670dfb" id="r_af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af6ac8da9c40fe2bd3d3ef6ee91670dfb">init_input_envelopes</a> (const std::vector&lt; Vector2d &gt; &amp;V, const std::vector&lt; Vector2i &gt; &amp;E, const std::vector&lt; InputSet &gt; &amp;E_sets, double eps, bool exact)</td></tr>
+<tr class="memdesc:af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member i around the rows of the curves (V, E) whose E_sets entry has bit i, else &ndash; for an input no row carries, or for every input when E_sets is not one entry per row of E &ndash; around the tracked segments carrying bit i. Null for an input neither has.  <br /></td></tr>
+<tr class="separator:af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82979ee23eb94c2488543dcfd827ac4a" id="r_a82979ee23eb94c2488543dcfd827ac4a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a82979ee23eb94c2488543dcfd827ac4a">TriOptimizerMesh</a> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params)</td></tr>
 <tr class="separator:a82979ee23eb94c2488543dcfd827ac4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3f31270434c883de9661b1983f0e916" id="r_af3f31270434c883de9661b1983f0e916"><td class="memItemLeft" align="right" valign="top"><a id="af3f31270434c883de9661b1983f0e916" name="af3f31270434c883de9661b1983f0e916"></a>
@@ -279,9 +282,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_smoothing_positio
 <tr class="separator:aff6c13e43410189c7d2b42e9635e0230"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b023939e27813c833e8cb1b21b39604" id="r_a8b023939e27813c833e8cb1b21b39604"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8b023939e27813c833e8cb1b21b39604">smoothing_position_is_allowed</a> (const size_t vid, const Vector2d &amp;p) const</td></tr>
 <tr class="separator:a8b023939e27813c833e8cb1b21b39604"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a84527f36a7bfcd3d3b78ec7672939ace" id="r_a84527f36a7bfcd3d3b78ec7672939ace"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a84527f36a7bfcd3d3b78ec7672939ace">smoothing_energy_envelope</a> (const size_t vid) const</td></tr>
-<tr class="memdesc:a84527f36a7bfcd3d3b78ec7672939ace"><td class="mdescLeft">&#160;</td><td class="mdescRight">The envelope this vertex is PULLED TOWARD while smoothing, and the one it is CONTAINED BY afterwards. Split, as in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>.  <br /></td></tr>
-<tr class="separator:a84527f36a7bfcd3d3b78ec7672939ace"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a950ec202ad02373ea6ebf6030adcf173" id="r_a950ec202ad02373ea6ebf6030adcf173"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a950ec202ad02373ea6ebf6030adcf173">smoothing_energy_envelope</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:a950ec202ad02373ea6ebf6030adcf173"><td class="mdescLeft">&#160;</td><td class="mdescRight">The envelope this vertex is PULLED TOWARD while smoothing, and the one it is CONTAINED BY afterwards. Split, as in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>.  <br /></td></tr>
+<tr class="separator:a950ec202ad02373ea6ebf6030adcf173"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8f627ba175a2718f23db4ad8fce646f" id="r_ad8f627ba175a2718f23db4ad8fce646f"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad8f627ba175a2718f23db4ad8fce646f">smoothing_containment_envelope</a> (const size_t, const std::array&lt; size_t, 2 &gt; &amp;edge, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">EdgeAttributes</a> &amp;attr) const</td></tr>
 <tr class="separator:ad8f627ba175a2718f23db4ad8fce646f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad53db51377c95f0dfc59f946915e2572" id="r_ad53db51377c95f0dfc59f946915e2572"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad53db51377c95f0dfc59f946915e2572">smoothing_extra_energy</a> (const size_t vid) const</td></tr>
@@ -699,6 +702,9 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a
 <tr class="memitem:afb7836d522c81f89a4c895aad2fb721e" id="r_afb7836d522c81f89a4c895aad2fb721e"><td class="memItemLeft" align="right" valign="top"><a id="afb7836d522c81f89a4c895aad2fb721e" name="afb7836d522c81f89a4c895aad2fb721e"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> = -1</td></tr>
 <tr class="separator:afb7836d522c81f89a4c895aad2fb721e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8452e265098625fa90a5da375843cedd" id="r_a8452e265098625fa90a5da375843cedd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_input_envelopes.html">wmtk::InputEnvelopes</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8452e265098625fa90a5da375843cedd">m_input_envelopes</a></td></tr>
+<tr class="memdesc:a8452e265098625fa90a5da375843cedd"><td class="mdescLeft">&#160;</td><td class="mdescRight">One envelope per input, and each tracked segment held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">EdgeAttributes::input_set()</a>); m_envelope stays their union. The 2D twin of the per-input envelopes of tetwild and simwild 3D.  <br /></td></tr>
+<tr class="separator:a8452e265098625fa90a5da375843cedd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa60213b39e8f40b355b17bd5a059cc01" id="r_aa60213b39e8f40b355b17bd5a059cc01"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aa60213b39e8f40b355b17bd5a059cc01">m_s_amips</a> = -1</td></tr>
 <tr class="separator:aa60213b39e8f40b355b17bd5a059cc01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a518e7ba602d4095d00efde95ecbf7e86" id="r_a518e7ba602d4095d00efde95ecbf7e86"><td class="memItemLeft" align="right" valign="top"><a id="a518e7ba602d4095d00efde95ecbf7e86" name="a518e7ba602d4095d00efde95ecbf7e86"></a>
@@ -898,52 +904,67 @@ std::vector&lt; std::vector&lt; uint64_t &gt; &gt;&#160;</td><td class="memItemR
 <tr class="separator:a9158fefaef1e6e817cce953dd43fda56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Feature-point anchors</h2></td></tr>
-<tr><td class="ititle" colspan="2"><p>A feature point is a 0-dimensional feature of the tracked curves: an open polyline's endpoint, a junction, or an input free point, as the application decides. Each anchor vertex names WHICH feature it stands for, not merely that it stands for one &ndash; the deliberate difference from tetwild's m_is_on_open_boundary.</p>
+<tr><td class="ititle" colspan="2"><p>A feature point is a 0-dimensional feature of the tracked curves: an open polyline's endpoint, a junction, or an input free point, as the application decides. Each anchor vertex names WHICH feature it stands for, not merely that it stands for one &ndash; the deliberate difference from tetwild's open-boundary vertex flag (now its order2 edge tags).</p>
 <p>That difference is the whole point. tetwild asks "is the survivor inside the envelope of
 the boundary?", a containment question, and in 3D a boundary is a curve with many edges so collapsing one shortens it rather than deleting it. In 2D the feature is a single point, and a containment test passes trivially when one endpoint is collapsed onto another &ndash; the target IS a feature point, distance zero &ndash; while the first endpoint quietly stops being represented. Preserving features is a COVERAGE property, so the constraint has to bind a vertex to a specific point.</p>
-<p>Opt-in, in two levels. <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8af385bed0af8eb4a91a3180b682c2e8" title="Turn on feature-point tracking, and the policy when preserve.">enable_feature_point_tracking()</a> registers the per-vertex ids and has the shared operations maintain them: a split vertex stands for no feature, and a collapse survivor that stands for none takes over the collapsed vertex's. Its <code>preserve</code> argument additionally turns on the policy: a collapse that would leave a feature further than m_feature_eps from every vertex is refused (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a89559cd487533b27d5484cb59a2763c2">collapse_breaks_feature_point()</a>, counted in m_feature_rejects), and smoothing may move an anchor vertex only inside its ball (the default <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8b023939e27813c833e8cb1b21b39604">smoothing_position_is_allowed()</a>). The ids are maintained with the policy off too, so an application can still export and audit its anchors.</p>
-<p>The application supplies the data, because which vertices stand for which features depends on its input: it fills m_feature_points and the ids after <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a>, and sets m_feature_eps. Lifted from triwild unchanged; the 3D twin is <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a>'s block of the same name. </p>
+<p>Opt-in: <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad74b7a474b46f6f7d8ce02b68dd81972" title="Turn on feature-point tracking.">enable_feature_point_tracking()</a> registers the per-vertex ids and has the shared operations maintain and enforce them. A split vertex stands for no feature, and a collapse survivor that stands for none takes over the collapsed vertex's; a collapse that would leave a feature further than its radius from every vertex is refused (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a89559cd487533b27d5484cb59a2763c2">collapse_breaks_feature_point()</a>, counted in m_feature_rejects), and smoothing may move an anchor vertex only inside its ball (the default <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8b023939e27813c833e8cb1b21b39604">smoothing_position_is_allowed()</a>). No switch turns the holding off, as none does for the curves; until 2026-10 triwild had one, preserve_feature_points, kept to reproduce the behaviour before the anchors.</p>
+<p>Which vertices are anchored is read off the tracked curves, by <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abecbaaf0adadbffe79e697c57593cb87" title="Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex holds_ord...">anchor_feature_points()</a>; the application adds only its input points, which no curve marks. Lifted from triwild; the 3D twin is <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a>'s block of the same name. </p>
 </td></tr>
 <tr class="memitem:adceb94d546aa70a10d40fa00267bbc4f" id="r_adceb94d546aa70a10d40fa00267bbc4f"><td class="memItemLeft" align="right" valign="top"><a id="adceb94d546aa70a10d40fa00267bbc4f" name="adceb94d546aa70a10d40fa00267bbc4f"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>FeaturePointAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_feature_point_attributes.html">FeaturePointAttributes</a> &gt;</td></tr>
 <tr class="separator:adceb94d546aa70a10d40fa00267bbc4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfda9227835106b117639ef4352b8011" id="r_abfda9227835106b117639ef4352b8011"><td class="memItemLeft" align="right" valign="top"><a id="abfda9227835106b117639ef4352b8011" name="abfda9227835106b117639ef4352b8011"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">FeaturePointAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_point_attribute</b></td></tr>
-<tr class="memdesc:abfda9227835106b117639ef4352b8011"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registered with m_vertex_attr_group only once <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8af385bed0af8eb4a91a3180b682c2e8" title="Turn on feature-point tracking, and the policy when preserve.">enable_feature_point_tracking()</a> ran. <br /></td></tr>
+<tr class="memdesc:abfda9227835106b117639ef4352b8011"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registered with m_vertex_attr_group only once <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad74b7a474b46f6f7d8ce02b68dd81972" title="Turn on feature-point tracking.">enable_feature_point_tracking()</a> ran. <br /></td></tr>
 <tr class="separator:abfda9227835106b117639ef4352b8011"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5bbee055b6dec586f9b1601772252b7" id="r_af5bbee055b6dec586f9b1601772252b7"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af5bbee055b6dec586f9b1601772252b7">m_feature_points</a></td></tr>
 <tr class="separator:af5bbee055b6dec586f9b1601772252b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8f4492dd4a18536bc3b162fc3eab054" id="r_af8f4492dd4a18536bc3b162fc3eab054"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af8f4492dd4a18536bc3b162fc3eab054">m_feature_eps</a> = -1</td></tr>
-<tr class="separator:af8f4492dd4a18536bc3b162fc3eab054"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ce2585f6652ea33412e5bec957e183a" id="r_a8ce2585f6652ea33412e5bec957e183a"><td class="memItemLeft" align="right" valign="top"><a id="a8ce2585f6652ea33412e5bec957e183a" name="a8ce2585f6652ea33412e5bec957e183a"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_track_feature_points</b> = false</td></tr>
-<tr class="memdesc:a8ce2585f6652ea33412e5bec957e183a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the shared operations maintain the ids (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8af385bed0af8eb4a91a3180b682c2e8" title="Turn on feature-point tracking, and the policy when preserve.">enable_feature_point_tracking()</a>). <br /></td></tr>
+<tr class="memitem:a71d66cece73d649c94d5c2edae1e4c8c" id="r_a71d66cece73d649c94d5c2edae1e4c8c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a71d66cece73d649c94d5c2edae1e4c8c">m_feature_point_radius</a></td></tr>
+<tr class="separator:a71d66cece73d649c94d5c2edae1e4c8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ce2585f6652ea33412e5bec957e183a" id="r_a8ce2585f6652ea33412e5bec957e183a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8ce2585f6652ea33412e5bec957e183a">m_track_feature_points</a> = false</td></tr>
 <tr class="separator:a8ce2585f6652ea33412e5bec957e183a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29fd75319bb5d282b89f6af8d21dcd52" id="r_a29fd75319bb5d282b89f6af8d21dcd52"><td class="memItemLeft" align="right" valign="top"><a id="a29fd75319bb5d282b89f6af8d21dcd52" name="a29fd75319bb5d282b89f6af8d21dcd52"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_preserve_feature_points</b> = false</td></tr>
-<tr class="memdesc:a29fd75319bb5d282b89f6af8d21dcd52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the collapse and smoothing policy is on (its <code>preserve</code> argument). <br /></td></tr>
-<tr class="separator:a29fd75319bb5d282b89f6af8d21dcd52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace3fb1d2e341955935d4042b0ab24516" id="r_ace3fb1d2e341955935d4042b0ab24516"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ace3fb1d2e341955935d4042b0ab24516">m_feature_rejects</a> = 0</td></tr>
 <tr class="separator:ace3fb1d2e341955935d4042b0ab24516"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6649d65ae0b0400ca539523445cb416a" id="r_a6649d65ae0b0400ca539523445cb416a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a6649d65ae0b0400ca539523445cb416a">m_in_operation_pass</a> = false</td></tr>
 <tr class="memdesc:a6649d65ae0b0400ca539523445cb416a"><td class="mdescLeft">&#160;</td><td class="mdescRight">True while a pass of the shared operations runs.  <br /></td></tr>
 <tr class="separator:a6649d65ae0b0400ca539523445cb416a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a959bfbaff57cc1ed3e9c9b647d3e034e" id="r_a959bfbaff57cc1ed3e9c9b647d3e034e"><td class="memItemLeft" align="right" valign="top">std::optional&lt; std::vector&lt; Vector2d &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a959bfbaff57cc1ed3e9c9b647d3e034e">m_input_curve_points</a></td></tr>
+<tr class="memdesc:a959bfbaff57cc1ed3e9c9b647d3e034e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Where the input's own curves end or three or more meet, as <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a4baa005cbad4dd53a10067018e2d850b" title="Does the application anchor a vertex with n_segments tracked segments?">holds_order2_vertex()</a> holds them: set when the envelopes are built around the input (envelope_reference "input") and the curves inserted are not the input &ndash; a simplification ran, and without preserve_topology it merges junctions and curves passing within its envelope.  <br /></td></tr>
+<tr class="separator:a959bfbaff57cc1ed3e9c9b647d3e034e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d5a2b808754646956a55fc0ef2a365a" id="r_a9d5a2b808754646956a55fc0ef2a365a"><td class="memItemLeft" align="right" valign="top"><a id="a9d5a2b808754646956a55fc0ef2a365a" name="a9d5a2b808754646956a55fc0ef2a365a"></a>
 static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>NO_FEATURE_POINT</b> = std::numeric_limits&lt;size_t&gt;::max()</td></tr>
 <tr class="memdesc:a9d5a2b808754646956a55fc0ef2a365a"><td class="mdescLeft">&#160;</td><td class="mdescRight">A vertex that stands for no feature point. See <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_feature_point_attributes.html">FeaturePointAttributes</a>. <br /></td></tr>
 <tr class="separator:a9d5a2b808754646956a55fc0ef2a365a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc8816abba6396fbe3154e6baaaf2150" id="r_abc8816abba6396fbe3154e6baaaf2150"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abc8816abba6396fbe3154e6baaaf2150">throw_if_in_operation_pass</a> (const char *call) const</td></tr>
 <tr class="separator:abc8816abba6396fbe3154e6baaaf2150"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8af385bed0af8eb4a91a3180b682c2e8" id="r_a8af385bed0af8eb4a91a3180b682c2e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8af385bed0af8eb4a91a3180b682c2e8">enable_feature_point_tracking</a> (const bool preserve)</td></tr>
-<tr class="memdesc:a8af385bed0af8eb4a91a3180b682c2e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Turn on feature-point tracking, and the policy when <code>preserve</code>.  <br /></td></tr>
-<tr class="separator:a8af385bed0af8eb4a91a3180b682c2e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad74b7a474b46f6f7d8ce02b68dd81972" id="r_ad74b7a474b46f6f7d8ce02b68dd81972"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad74b7a474b46f6f7d8ce02b68dd81972">enable_feature_point_tracking</a> ()</td></tr>
+<tr class="memdesc:ad74b7a474b46f6f7d8ce02b68dd81972"><td class="mdescLeft">&#160;</td><td class="mdescRight">Turn on feature-point tracking.  <br /></td></tr>
+<tr class="separator:ad74b7a474b46f6f7d8ce02b68dd81972"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4baa005cbad4dd53a10067018e2d850b" id="r_a4baa005cbad4dd53a10067018e2d850b"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a4baa005cbad4dd53a10067018e2d850b">holds_order2_vertex</a> (const size_t n_segments) const</td></tr>
+<tr class="memdesc:a4baa005cbad4dd53a10067018e2d850b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Does the application anchor a vertex with <code>n_segments</code> tracked segments?  <br /></td></tr>
+<tr class="separator:a4baa005cbad4dd53a10067018e2d850b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1753c8f081ce6acb3913d120f552a0a2" id="r_a1753c8f081ce6acb3913d120f552a0a2"><td class="memItemLeft" align="right" valign="top"><a id="a1753c8f081ce6acb3913d120f552a0a2" name="a1753c8f081ce6acb3913d120f552a0a2"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_curve_points</b> (const MatrixXd &amp;V, const MatrixXi &amp;E)</td></tr>
+<tr class="memdesc:a1753c8f081ce6acb3913d120f552a0a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set m_input_curve_points from the input curves <code>V</code>, <code>E</code>, coincident vertices merged. <br /></td></tr>
+<tr class="separator:a1753c8f081ce6acb3913d120f552a0a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b04848d2cfcd463e1807f8b52051243" id="r_a8b04848d2cfcd463e1807f8b52051243"><td class="memItemLeft" align="right" valign="top"><a id="a8b04848d2cfcd463e1807f8b52051243" name="a8b04848d2cfcd463e1807f8b52051243"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>anchor_feature_point</b> (size_t vid, double radius)</td></tr>
+<tr class="memdesc:a8b04848d2cfcd463e1807f8b52051243"><td class="mdescLeft">&#160;</td><td class="mdescRight">Anchor vertex <code>vid</code> at its current position, in a ball of <code>radius</code>. A vertex already anchored keeps its anchor, whose radius becomes the smaller of the two. Returns whether a new anchor was made. Feature-point tracking must be on. <br /></td></tr>
+<tr class="separator:a8b04848d2cfcd463e1807f8b52051243"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbf70a5f2089a7de1ce7ec4486d72b82" id="r_abbf70a5f2089a7de1ce7ec4486d72b82"><td class="memItemLeft" align="right" valign="top"><a id="abbf70a5f2089a7de1ce7ec4486d72b82" name="abbf70a5f2089a7de1ce7ec4486d72b82"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>anchor_feature_point</b> (size_t vid, double radius, const Vector2d &amp;centre)</td></tr>
+<tr class="memdesc:abbf70a5f2089a7de1ce7ec4486d72b82"><td class="mdescLeft">&#160;</td><td class="mdescRight">The same, with the ball centred at <code>centre</code> rather than at the vertex. <br /></td></tr>
+<tr class="separator:abbf70a5f2089a7de1ce7ec4486d72b82"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abecbaaf0adadbffe79e697c57593cb87" id="r_abecbaaf0adadbffe79e697c57593cb87"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abecbaaf0adadbffe79e697c57593cb87">anchor_feature_points</a> (const std::vector&lt; size_t &gt; &amp;input_point_vids, double order2_radius, double feature_radius)</td></tr>
+<tr class="memdesc:abecbaaf0adadbffe79e697c57593cb87"><td class="mdescLeft">&#160;</td><td class="mdescRight">Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a4baa005cbad4dd53a10067018e2d850b" title="Does the application anchor a vertex with n_segments tracked segments?">holds_order2_vertex()</a> holds, in a ball of <code>order2_radius</code>, and every vertex of <code>input_point_vids</code>, in a ball of <code>feature_radius</code> (the smaller one for a vertex that is both). Turns feature-point tracking on when there is something to anchor, so a run without any pays no per-operation cost. At init only, as in 3D, whose <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abecbaaf0adadbffe79e697c57593cb87" title="Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex holds_ord...">anchor_feature_points()</a> says why an end a collapse makes needs no anchor. Returns the number of anchors made.  <br /></td></tr>
+<tr class="separator:abecbaaf0adadbffe79e697c57593cb87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a89559cd487533b27d5484cb59a2763c2" id="r_a89559cd487533b27d5484cb59a2763c2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a89559cd487533b27d5484cb59a2763c2">collapse_breaks_feature_point</a> (const size_t v1_id, const size_t v2_id) const</td></tr>
 <tr class="separator:a89559cd487533b27d5484cb59a2763c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a227f93405e5b04af7bf43b44b297ab5b" id="r_a227f93405e5b04af7bf43b44b297ab5b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a227f93405e5b04af7bf43b44b297ab5b">feature_point_ball_contains</a> (const size_t vid, const Vector2d &amp;p) const</td></tr>
 <tr class="memdesc:a227f93405e5b04af7bf43b44b297ab5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">May vertex <code>vid</code> sit at <code>p</code> as far as its anchor goes?  <br /></td></tr>
 <tr class="separator:a227f93405e5b04af7bf43b44b297ab5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7e23ae58a24a84075a808f192480d84" id="r_ac7e23ae58a24a84075a808f192480d84"><td class="memItemLeft" align="right" valign="top">std::pair&lt; size_t, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac7e23ae58a24a84075a808f192480d84">feature_retention</a> (double *worst_ratio=nullptr) const</td></tr>
-<tr class="memdesc:ac7e23ae58a24a84075a808f192480d84"><td class="mdescLeft">&#160;</td><td class="mdescRight">{feature points still represented within m_feature_eps, total feature points}.  <br /></td></tr>
+<tr class="memdesc:ac7e23ae58a24a84075a808f192480d84"><td class="mdescLeft">&#160;</td><td class="mdescRight">{feature points still represented within their radius, total feature points}.  <br /></td></tr>
 <tr class="separator:ac7e23ae58a24a84075a808f192480d84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
@@ -1035,6 +1056,43 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="abecbaaf0adadbffe79e697c57593cb87" name="abecbaaf0adadbffe79e697c57593cb87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abecbaaf0adadbffe79e697c57593cb87">&#9670;&#160;</a></span>anchor_feature_points()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TriOptimizerMesh::anchor_feature_points </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>input_point_vids</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>order2_radius</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>feature_radius</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a4baa005cbad4dd53a10067018e2d850b" title="Does the application anchor a vertex with n_segments tracked segments?">holds_order2_vertex()</a> holds, in a ball of <code>order2_radius</code>, and every vertex of <code>input_point_vids</code>, in a ball of <code>feature_radius</code> (the smaller one for a vertex that is both). Turns feature-point tracking on when there is something to anchor, so a run without any pays no per-operation cost. At init only, as in 3D, whose <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abecbaaf0adadbffe79e697c57593cb87" title="Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex holds_ord...">anchor_feature_points()</a> says why an end a collapse makes needs no anchor. Returns the number of anchors made. </p>
+<p>With m_input_curve_points set, an order-2 vertex is anchored only if one of the input's own curve points lies in its ball, and the ball is centred on the nearest one. </p>
+
+</div>
+</div>
 <a id="a6ecf324f85959eb767c43bf4c7a3eab3" name="a6ecf324f85959eb767c43bf4c7a3eab3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6ecf324f85959eb767c43bf4c7a3eab3">&#9670;&#160;</a></span>coarsen_collapse_edge()</h2>
 
@@ -1112,7 +1170,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
         </tr>
       </table>
 </div><div class="memdoc">
-<p>True iff collapsing v1 into v2 would drop or displace a feature point. False when the policy is off. </p>
+<p>True iff collapsing v1 into v2 would drop or displace a feature point. False when tracking is off. </p>
 
 </div>
 </div>
@@ -1186,7 +1244,6 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 <p>check if on bbox/surface/boundary</p>
-<p>In general, we don't want to collapse away from feature vertices. It is always fine to collapse into a feature vertex, though. However, we allow to feature vertices to be collapsed.</p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#af004507051c4f5cf2c0c515baf366372">wmtk::TriMesh</a>.</p>
 
@@ -1305,8 +1362,8 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
-<a id="a8af385bed0af8eb4a91a3180b682c2e8" name="a8af385bed0af8eb4a91a3180b682c2e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8af385bed0af8eb4a91a3180b682c2e8">&#9670;&#160;</a></span>enable_feature_point_tracking()</h2>
+<a id="ad74b7a474b46f6f7d8ce02b68dd81972" name="ad74b7a474b46f6f7d8ce02b68dd81972"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad74b7a474b46f6f7d8ce02b68dd81972">&#9670;&#160;</a></span>enable_feature_point_tracking()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1317,8 +1374,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
         <tr>
           <td class="memname">void wmtk::TriOptimizerMesh::enable_feature_point_tracking </td>
           <td>(</td>
-          <td class="paramtype">const bool&#160;</td>
-          <td class="paramname"><em>preserve</em></td><td>)</td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1329,8 +1385,8 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </table>
 </div><div class="memdoc">
 
-<p>Turn on feature-point tracking, and the policy when <code>preserve</code>. </p>
-<p>Valid before or after <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a>, not during an operation pass (it throws then; see <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abc8816abba6396fbe3154e6baaaf2150">throw_if_in_operation_pass()</a>). Before <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> the storage is empty and the resize is a no-op; <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> sizes the ids with the rest of m_vertex_attr_group. After <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> the resize brings them to what <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> and every capacity growth size vertex collections to, vert_storage_capacity(), with every vertex NO_FEATURE_POINT; the application then anchors what it needs. Late enabling is supported because an application may learn only from the built mesh whether its input has feature points, and enabling it for every input would make every operation cache and restore anchors it does not have. A second call changes only the policy. </p>
+<p>Turn on feature-point tracking. </p>
+<p>Valid before or after <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a>, not during an operation pass (it throws then; see <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abc8816abba6396fbe3154e6baaaf2150">throw_if_in_operation_pass()</a>). Before <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> the storage is empty and the resize is a no-op; <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> sizes the ids with the rest of m_vertex_attr_group. After <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> the resize brings them to what <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> and every capacity growth size vertex collections to, vert_storage_capacity(), with every vertex NO_FEATURE_POINT; the application then anchors what it needs. Late enabling is supported because an application may learn only from the built mesh whether its input has feature points, and enabling it for every input would make every operation cache and restore anchors it does not have. Idempotent. </p>
 
 </div>
 </div>
@@ -1361,7 +1417,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 
 <p>May vertex <code>vid</code> sit at <code>p</code> as far as its anchor goes? </p>
-<p>False only when the policy is on, the vertex stands for a feature point and <code>p</code> is more than m_feature_eps away from it. Smoothing is free to move a feature vertex inside that ball &ndash; it is a containment test, not a freeze, so the optimizer keeps the quality it can get near features. </p>
+<p>False only when the vertex stands for a feature point and <code>p</code> is more than its radius away from it. Smoothing is free to move a feature vertex inside that ball &ndash; it is a containment test, not a freeze, so the optimizer keeps the quality it can get near features. </p>
 
 </div>
 </div>
@@ -1381,7 +1437,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
       </table>
 </div><div class="memdoc">
 
-<p>{feature points still represented within m_feature_eps, total feature points}. </p>
+<p>{feature points still represented within their radius, total feature points}. </p>
 <p>The invariant the policy maintains, measured on the finished mesh rather than assumed from the per-operation checks. </p>
 
 </div>
@@ -1435,6 +1491,86 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 <p>Monotone (only-decreasing) gradation smoothing of the sizing field. </p>
 <p>Enforces m_sizing_scalar[v] &lt;= grade * m_sizing_scalar[u] for every edge (u,v), propagating outward from <code>seeds</code> with a min-relaxation. It never raises a sizing value, so it only ever spreads more refinement into the halo around already-refined vertices, avoiding sharp resolution jumps. </p>
+
+</div>
+</div>
+<a id="a4baa005cbad4dd53a10067018e2d850b" name="a4baa005cbad4dd53a10067018e2d850b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4baa005cbad4dd53a10067018e2d850b">&#9670;&#160;</a></span>holds_order2_vertex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TriOptimizerMesh::holds_order2_vertex </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>n_segments</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Does the application anchor a vertex with <code>n_segments</code> tracked segments? </p>
+<p>The 2D twin of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a4978151a697924b40cc51fcdffbd70e3" title="Does the application hold an order-2 edge with n_faces tracked faces?">TetOptimizerMesh::holds_order2_edge()</a>: a vertex with 1 tracked segment (where a curve ends) or 3 and more (where three or more meet) is an order-2 vertex, and <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abecbaaf0adadbffe79e697c57593cb87" title="Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex holds_ord...">anchor_feature_points()</a> anchors those this rule holds. The default holds both; simwild keeps it, its junctions being where the regions it was given meet. triwild holds the ends only, and its override says why. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#af227e6a92da574bbbe2e26b52c986d42">wmtk::components::triwild::TriWildMesh</a>.</p>
+
+</div>
+</div>
+<a id="af6ac8da9c40fe2bd3d3ef6ee91670dfb" name="af6ac8da9c40fe2bd3d3ef6ee91670dfb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6ac8da9c40fe2bd3d3ef6ee91670dfb">&#9670;&#160;</a></span>init_input_envelopes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriOptimizerMesh::init_input_envelopes </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; Vector2d &gt; &amp;&#160;</td>
+          <td class="paramname"><em>V</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; Vector2i &gt; &amp;&#160;</td>
+          <td class="paramname"><em>E</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; InputSet &gt; &amp;&#160;</td>
+          <td class="paramname"><em>E_sets</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>exact</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member i around the rows of the curves (V, E) whose E_sets entry has bit i, else &ndash; for an input no row carries, or for every input when E_sets is not one entry per row of E &ndash; around the tracked segments carrying bit i. Null for an input neither has. </p>
+<p>Each member keeps only its own vertices, numbered in first use along the rows: an envelope keeps a copy of the vertices it is given. That is triwild's builder, moved here unchanged; the fallback to the tracked segments is simwild 3D's (SimWildMesh's label envelopes), for a label whose input curves are not known, as when the envelope was given or rebuilt from the mesh. </p>
 
 </div>
 </div>
@@ -1884,7 +2020,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 
 <p>Run TriWild's vertex-smoothing pass. </p>
-<p>TriWild is the behavioral source of truth. SimWild shares the pass verbatim, including the single m_envelope used for both smoothing energy and containment, the surface quality veto, and skip_good_regions selection. </p>
+<p>TriWild is the behavioral source of truth. SimWild shares the pass verbatim, including the envelopes used for smoothing energy and containment (m_envelope, or the per-input envelopes; see <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a950ec202ad02373ea6ebf6030adcf173" title="The envelope this vertex is PULLED TOWARD while smoothing, and the one it is CONTAINED BY afterwards....">smoothing_energy_envelope()</a>), the surface quality veto, and skip_good_regions selection. </p>
 
 </div>
 </div>
@@ -2004,8 +2140,8 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
-<a id="a84527f36a7bfcd3d3b78ec7672939ace" name="a84527f36a7bfcd3d3b78ec7672939ace"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a84527f36a7bfcd3d3b78ec7672939ace">&#9670;&#160;</a></span>smoothing_energy_envelope()</h2>
+<a id="a950ec202ad02373ea6ebf6030adcf173" name="a950ec202ad02373ea6ebf6030adcf173"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a950ec202ad02373ea6ebf6030adcf173">&#9670;&#160;</a></span>smoothing_energy_envelope()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2014,7 +2150,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::TriOptimizerMesh::smoothing_energy_envelope </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::TriOptimizerMesh::smoothing_energy_envelope </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
           <td class="paramname"><em>vid</em></td><td>)</td>
@@ -2023,17 +2159,17 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
 <p>The envelope this vertex is PULLED TOWARD while smoothing, and the one it is CONTAINED BY afterwards. Split, as in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>. </p>
 <p>Null means "no envelope for this vertex", which the smoother handles by minimising AMIPS (plus whatever <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad53db51377c95f0dfc59f946915e2572" title="An extra term the application adds to this vertex&#39;s smoothing objective, or null.">smoothing_extra_energy()</a> adds) with no pull and no containment check.</p>
-<p>The default of both is what TriWild and SimWild do &ndash; one envelope, applied to every vertex on the tracked surface &ndash; so overriding nothing leaves their behaviour untouched. An application tracking more than one surface overrides them: topological_offset returns null for a vertex that is ONLY on the offset boundary, because that is the surface the optimization exists to move, and a tube around its initial position caps how far it can ever travel.</p>
-<p>WHY TWO HOOKS AND NOT ONE. The pull calls the NON-virtual <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> queries &ndash; nearest_point and the ExactDistanceEnergy2D trio &ndash; so whatever it returns must be a real envelope with a built BVH. Containment asks only is_outside(), which is virtual, so it may be answered by a composite over several envelopes (topological_offset holds a junction simplex in the INTERSECTION of its tags' tubes). Answering both from one hook would statically bind a composite's null BVH the moment a junction vertex was pulled. </p>
+<p>The default of both is what TriWild and SimWild do &ndash; one envelope, applied to every vertex on the tracked surface, or with m_input_envelopes built, the envelopes of each segment's input set (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac232b143240a6d4b4d788c9fb4faf560" title="Envelope the tracked-surface segment vids must stay inside, given the attributes attr it carries – or...">surface_envelope_for_edge()</a>) and the pull below. An application tracking more than one surface overrides them: topological_offset returns null for a vertex that is ONLY on the offset boundary, because that is the surface the optimization exists to move, and a tube around its initial position caps how far it can ever travel.</p>
+<p>WHY TWO HOOKS AND NOT ONE. The pull calls the NON-virtual <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> queries &ndash; nearest_point and the ExactDistanceEnergy2D trio &ndash; so whatever it returns must be a real envelope with a built BVH. Containment asks only is_outside(), which is virtual, so it may be answered by a composite over several envelopes (topological_offset holds a junction simplex in the INTERSECTION of its tags' tubes). Answering both from one hook would statically bind a composite's null BVH the moment a junction vertex was pulled. With m_input_envelopes built, the pull is toward the inputs of the vertex's own segments, one real envelope at a time: the member of their union of input sets the vertex is farthest from (<a class="el" href="classwmtk_1_1_input_envelopes.html#a2ed7927e1f2ee208358b8a792693424e" title="The member of set farthest from p (Vector2d or Vector3d). Ties go to the lower input.">InputEnvelopes::pull()</a>). The containment check then holds every segment to its own set. A vertex whose segments carry no input keeps m_envelope's pull. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af7d24138d8269113c17e05dfd65e817f">wmtk::components::topological_offset::TopoOffsetTriMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a04339a0aa3322c9a1125345b6cefd882">wmtk::components::triwild::TriWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af7d24138d8269113c17e05dfd65e817f">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
@@ -2104,7 +2240,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 <p>Per-vertex positional constraint, on top of the envelope. The default is the feature-point ball, which answers true when the anchors are off; an application overriding this while anchoring feature points must AND its own answer with <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a227f93405e5b04af7bf43b44b297ab5b" title="May vertex vid sit at p as far as its anchor goes?">feature_point_ball_contains()</a>. The 3D twin is <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a>'s hook of the same name. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a92e0bd44c11243d4c380d1705410b0d8">wmtk::components::simwild::tri::SimWildMeshTri</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8c0a32d6e1d34a156b09c24fd00ce335">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8c0a32d6e1d34a156b09c24fd00ce335">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
@@ -2306,10 +2442,11 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 
 <p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface segment <code>vids</code> must stay inside, given the attributes <code>attr</code> it carries &ndash; or, for a segment an operation is creating, the ones the operation is about to write there. </p>
-<p>The 2D counterpart of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3739c2160bf9fab80cbeebf2506f6cb6" title="Envelope the tracked-surface triangle vids must stay inside, given the attributes attr it carries – o...">wmtk::TetOptimizerMesh::surface_envelope_for_face</a>. Null means this segment carries no containment requirement, and every containment check on it is skipped. The default answers with the one envelope; triwild answers with the envelopes of the segment's input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">SurfaceTagAttributes::input_set()</a>), and an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>) answers per class.</p>
+<p>The 2D counterpart of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3739c2160bf9fab80cbeebf2506f6cb6" title="Envelope the tracked-surface triangle vids must stay inside, given the attributes attr it carries – o...">wmtk::TetOptimizerMesh::surface_envelope_for_face</a>. Null means this segment carries no containment requirement, and every containment check on it is skipped. The default answers with the one envelope, or with m_input_envelopes built, a tracked segment with the envelopes of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">SurfaceTagAttributes::input_set()</a>); an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>) answers per class.</p>
+<p>A segment that is not tracked covers no input &ndash; the collapse's test of the collapsing edge asks about one (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aeb199d4e0cf5bd0bedc5cb4e78d8ef55" title="User specified preparations and desideratas for an edge collapse including the link check as collapse...">TriOptimizerMesh::collapse_edge_before()</a>) &ndash; and is held to the union, m_envelope. A tracked segment with an empty input set throws (<a class="el" href="classwmtk_1_1_input_envelopes.html" title="One envelope per input, and the containment and the pull of an INPUT SET (bit i = input i; see Surfac...">InputEnvelopes</a>): it is an insertion or propagation defect.</p>
 <p>Keyed on the vertex ids rather than the eid because every caller is a topological operation asking about segments it is ABOUT to create or has just created; the attributes come from the caller for the same reason (see the 3D twin). </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a82d475052c6b723f631b881f0d57bc86">wmtk::components::topological_offset::TopoOffsetTriMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a1a3a2426a5b6d1edd8fb7deadde4b30a">wmtk::components::triwild::TriWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a82d475052c6b723f631b881f0d57bc86">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
@@ -2726,19 +2863,19 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
-<a id="af8f4492dd4a18536bc3b162fc3eab054" name="af8f4492dd4a18536bc3b162fc3eab054"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af8f4492dd4a18536bc3b162fc3eab054">&#9670;&#160;</a></span>m_feature_eps</h2>
+<a id="a71d66cece73d649c94d5c2edae1e4c8c" name="a71d66cece73d649c94d5c2edae1e4c8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71d66cece73d649c94d5c2edae1e4c8c">&#9670;&#160;</a></span>m_feature_point_radius</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">double wmtk::TriOptimizerMesh::m_feature_eps = -1</td>
+          <td class="memname">std::vector&lt;double&gt; wmtk::TriOptimizerMesh::m_feature_point_radius</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Radius of the ball a feature-carrying vertex must stay inside.</p>
-<p>triwild sets it equal to m_envelope_eps, but it is deliberately a separate name: the two are different quantities &ndash; the envelope bounds how far the CURVE may deviate, this bounds how far a SURVIVOR VERTEX may sit from an anchor &ndash; so tying them means a tighter envelope silently tightens feature retention by the same factor. Measured on triwild20k 189017 at eps_rel 1e-4, giving this its own (10x wider) value cut collapse refusals 75270 -&gt; 61666 and delayed the mesh blow-up by two iterations. That was not enough to fix that model on its own &ndash; the collapse length gate was the real cause &ndash; so the value is left alone and only the coupling is made visible. </p>
+<p>Radius of each anchor's ball, beside m_feature_points: per anchor, because each kind of feature has its own radius (see <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abecbaaf0adadbffe79e697c57593cb87" title="Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex holds_ord...">anchor_feature_points()</a>).</p>
+<p>A separate quantity from m_envelope_eps, though both apps' defaults make them equal: the envelope bounds how far the CURVE may deviate, this bounds how far a SURVIVOR VERTEX may sit from an anchor, so tying them means a tighter envelope silently tightens feature retention by the same factor. Measured on triwild20k 189017 at eps_rel 1e-4, a 10x wider ball cut collapse refusals 75270 -&gt; 61666 and delayed the mesh blow-up by two iterations. That was not enough to fix that model on its own &ndash; the collapse length gate was the real cause. </p>
 
 </div>
 </div>
@@ -2753,7 +2890,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Anchor positions, indexed by <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_feature_point_attributes.html#a4b17fa6d3d405f9f425c862aaa6bb220" title="Index into m_feature_points, or NO_FEATURE_POINT.">FeaturePointAttributes::m_feature_point_id</a>. A vertex carrying feature f may never end up further than m_feature_eps from m_feature_points[f]. Since the anchor never moves, no spatial index is required: the id is a direct lookup. </p>
+<p>Anchor positions, indexed by <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_feature_point_attributes.html#a4b17fa6d3d405f9f425c862aaa6bb220" title="Index into m_feature_points, or NO_FEATURE_POINT.">FeaturePointAttributes::m_feature_point_id</a>. A vertex carrying feature f may never end up further than m_feature_point_radius[f] from m_feature_points[f]. Since the anchor never moves, no spatial index is required: the id is a direct lookup. </p>
 
 </div>
 </div>
@@ -2786,6 +2923,40 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 <p>True while a pass of the shared operations runs. </p>
 <p>Set, and restored on exit or throw, by the two drivers every such pass goes through: run_pass() (utils/RunPass.cpp) and the colored smoothing sweep (utils::smooth_classes_checked). No existing state says this: the attribute collections' protect flag is per thread and per operation, so it is false between two operations of a pass and on every thread not running one. Only the calls that register a collection read it; see <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abc8816abba6396fbe3154e6baaaf2150">throw_if_in_operation_pass()</a>. </p>
+
+</div>
+</div>
+<a id="a959bfbaff57cc1ed3e9c9b647d3e034e" name="a959bfbaff57cc1ed3e9c9b647d3e034e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a959bfbaff57cc1ed3e9c9b647d3e034e">&#9670;&#160;</a></span>m_input_curve_points</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::optional&lt;std::vector&lt;Vector2d&gt; &gt; wmtk::TriOptimizerMesh::m_input_curve_points</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Where the input's own curves end or three or more meet, as <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a4baa005cbad4dd53a10067018e2d850b" title="Does the application anchor a vertex with n_segments tracked segments?">holds_order2_vertex()</a> holds them: set when the envelopes are built around the input (envelope_reference "input") and the curves inserted are not the input &ndash; a simplification ran, and without preserve_topology it merges junctions and curves passing within its envelope. </p>
+<p>The 2D twin of <a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_input_curves.html" title="The input&#39;s own curves, when the envelopes are built around the input (envelope_reference &quot;input&quot;) an...">TetOptimizerMesh::InputCurves</a>, which says why. Set, <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abecbaaf0adadbffe79e697c57593cb87" title="Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex holds_ord...">anchor_feature_points()</a> centres the ball of an order-2 vertex on the nearest of these when one lies in it, and at the vertex otherwise: a curve end the simplification made still erodes its curve, and the input on it, if left free. Unset, the order-2 vertices as the insertion leaves them are the input's. Set by the application before init, by <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a1753c8f081ce6acb3913d120f552a0a2" title="Set m_input_curve_points from the input curves V, E, coincident vertices merged.">set_input_curve_points()</a>. </p>
+
+</div>
+</div>
+<a id="a8452e265098625fa90a5da375843cedd" name="a8452e265098625fa90a5da375843cedd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8452e265098625fa90a5da375843cedd">&#9670;&#160;</a></span>m_input_envelopes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_input_envelopes.html">wmtk::InputEnvelopes</a> wmtk::TriOptimizerMesh::m_input_envelopes</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>One envelope per input, and each tracked segment held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">EdgeAttributes::input_set()</a>); m_envelope stays their union. The 2D twin of the per-input envelopes of tetwild and simwild 3D. </p>
+<p>What an input is, is the application's: triwild's are its input curve files, simwild's its labels (an input kept as a curve, and the region of each triangle tag). Built by <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af6ac8da9c40fe2bd3d3ef6ee91670dfb" title="(Re)build m_input_envelopes, at eps and with predicate exact: member i around the rows of the curves ...">init_input_envelopes()</a>. Empty by default, and then every segment is held to m_envelope, as it was before triwild moved these here. </p>
 
 </div>
 </div>
@@ -2842,6 +3013,21 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a8ce2585f6652ea33412e5bec957e183a" name="a8ce2585f6652ea33412e5bec957e183a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ce2585f6652ea33412e5bec957e183a">&#9670;&#160;</a></span>m_track_feature_points</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TriOptimizerMesh::m_track_feature_points = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether the shared operations maintain and enforce the anchors (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad74b7a474b46f6f7d8ce02b68dd81972" title="Turn on feature-point tracking.">enable_feature_point_tracking()</a>). </p>
+
+</div>
+</div>
 <a id="a3f1876bfae472df2abec64e47b26bdf4" name="a3f1876bfae472df2abec64e47b26bdf4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3f1876bfae472df2abec64e47b26bdf4">&#9670;&#160;</a></span>m_vertex_attr_group</h2>
 
@@ -2855,7 +3041,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 
 <p>What p_vertex_attrs points at, so a derived class can register more. </p>
-<p><a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_vertex_attributes.html">VertexAttributes</a> holds only what both 2D applications need. The feature-point ids are registered through here only by an application that anchors feature points (see <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8af385bed0af8eb4a91a3180b682c2e8" title="Turn on feature-point tracking, and the policy when preserve.">enable_feature_point_tracking()</a>; triwild does), so simwild-2D, which has no 0-dimensional features, does not carry the field. </p>
+<p><a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_vertex_attributes.html">VertexAttributes</a> holds only what both 2D applications need. The feature-point ids are registered through here only when there are feature points to anchor (see <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad74b7a474b46f6f7d8ce02b68dd81972" title="Turn on feature-point tracking.">enable_feature_point_tracking()</a> and <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abecbaaf0adadbffe79e697c57593cb87" title="Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex holds_ord...">anchor_feature_points()</a>), so a run without any does not carry the field. </p>
 
 </div>
 </div>

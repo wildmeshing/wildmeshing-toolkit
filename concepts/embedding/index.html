@@ -3444,8 +3444,9 @@ than asked for, which it would first have to coarsen. So the input is simplified
 envelope of its own:</p>
 <ul>
 <li>In 3D, tetwild simplifies the input surface, a <code>TriMesh</code>, by shortest edge collapse, with the
-  envelope as invariant, at <code>simplify_envelope_ratio</code> <span class="arithmatex">\(\cdot\,\varepsilon\)</span> (half of
-  <span class="arithmatex">\(\varepsilon\)</span> by default). The link condition applies only with
+  envelope as invariant, at <a href="../../reference/tetwild/#eps_simplify_rel"><code>eps_simplify_rel</code></a>
+  <span class="arithmatex">\(\cdot\,\text{diag}\)</span>, or <a href="../../reference/tetwild/#eps_simplify"><code>eps_simplify</code></a> if given
+  (half of <span class="arithmatex">\(\varepsilon\)</span> at the default <code>eps_rel</code>). The link condition applies only with
   <a href="../../reference/tetwild/#preserve_topology"><code>preserve_topology</code></a>, so by default the
   simplification may change the topology of the surface. The open boundary may move within a tube
   around the input's boundary (<a href="../../reference/tetwild/#simplify_boundary_envelope"><code>simplify_boundary_envelope</code></a>).
@@ -3457,7 +3458,7 @@ envelope of its own:</p>
 <p>The tighter envelope leaves the optimizer room: the simplified surface is within half of
 <span class="arithmatex">\(\varepsilon\)</span> of the input (by default), and the optimizer, which is held to the full
 <span class="arithmatex">\(\varepsilon\)</span> around the original input, starts with room to move.
-<a href="../../reference/tetwild/#skip_simplify"><code>skip_simplify</code></a> inserts the input as it is.</p>
+With <a href="../../reference/tetwild/#simplify"><code>simplify</code></a> false, the input is inserted as it is.</p>
 <h2 id="3-the-background-mesh-and-the-arrangement">3. The background mesh and the arrangement<a class="headerlink" href="#3-the-background-mesh-and-the-arrangement" title="Permanent link">&para;</a></h2>
 <p><strong>In 3D</strong> (tetwild, and simwild on surfaces), the background is a Delaunay tetrahedralization of
 the simplified input's vertices, the eight corners of the input's bounding box grown by a

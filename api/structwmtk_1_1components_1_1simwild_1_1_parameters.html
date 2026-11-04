@@ -102,13 +102,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a2359e3e5a54ad665b16d704dfa6ce0e1" id="r_a2359e3e5a54ad665b16d704dfa6ce0e1"><td class="memItemLeft" align="right" valign="top"><a id="a2359e3e5a54ad665b16d704dfa6ce0e1" name="a2359e3e5a54ad665b16d704dfa6ce0e1"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Parameters</b> (const nlohmann::json &amp;json_params)</td></tr>
 <tr class="separator:a2359e3e5a54ad665b16d704dfa6ce0e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4de66d05e86bdf1d2db3f72fc073c333" id="r_a4de66d05e86bdf1d2db3f72fc073c333"><td class="memItemLeft" align="right" valign="top"><a id="a4de66d05e86bdf1d2db3f72fc073c333" name="a4de66d05e86bdf1d2db3f72fc073c333"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const VectorXd &amp;min_, const VectorXd &amp;max_)</td></tr>
-<tr class="separator:a4de66d05e86bdf1d2db3f72fc073c333"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1d694647b5281111c8536b6c5739c15" id="r_aa1d694647b5281111c8536b6c5739c15"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html#aa1d694647b5281111c8536b6c5739c15">init</a> (const VectorXd &amp;min_, const VectorXd &amp;max_, const double diag=-1)</td></tr>
+<tr class="separator:aa1d694647b5281111c8536b6c5739c15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a1d7abf7b06fd7926846971da53f0f4" id="r_a0a1d7abf7b06fd7926846971da53f0f4"><td class="memItemLeft" align="right" valign="top"><a id="a0a1d7abf7b06fd7926846971da53f0f4" name="a0a1d7abf7b06fd7926846971da53f0f4"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::vector&lt; Vector3d &gt; &amp;vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;faces)</td></tr>
 <tr class="separator:a0a1d7abf7b06fd7926846971da53f0f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_structwmtk_1_1_optimizer_parameters"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_structwmtk_1_1_optimizer_parameters')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="structwmtk_1_1_optimizer_parameters.html">wmtk::OptimizerParameters</a></td></tr>
+<tr class="memitem:a3cbde7e1a00eba52ae217f7a44431122 inherit pub_methods_structwmtk_1_1_optimizer_parameters" id="r_a3cbde7e1a00eba52ae217f7a44431122"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a3cbde7e1a00eba52ae217f7a44431122">order2_eps</a> () const</td></tr>
+<tr class="separator:a3cbde7e1a00eba52ae217f7a44431122 inherit pub_methods_structwmtk_1_1_optimizer_parameters"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78f7816473bd1a74aca85f74774a9a52 inherit pub_methods_structwmtk_1_1_optimizer_parameters" id="r_a78f7816473bd1a74aca85f74774a9a52"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">init_lengths_from_diagonal</a> (const double diag)</td></tr>
 <tr class="memdesc:a78f7816473bd1a74aca85f74774a9a52 inherit pub_methods_structwmtk_1_1_optimizer_parameters"><td class="mdescLeft">&#160;</td><td class="mdescRight">Derive the edge-length and envelope quantities from the bounding-box diagonal.  <br /></td></tr>
 <tr class="separator:a78f7816473bd1a74aca85f74774a9a52 inherit pub_methods_structwmtk_1_1_optimizer_parameters"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -127,8 +128,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_surface_topolog
 <tr class="memitem:a1d3344d40990071178097c45667f6073" id="r_a1d3344d40990071178097c45667f6073"><td class="memItemLeft" align="right" valign="top"><a id="a1d3344d40990071178097c45667f6073" name="a1d3344d40990071178097c45667f6073"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>epsr_simplify</b> = 2e-4</td></tr>
 <tr class="separator:a1d3344d40990071178097c45667f6073"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a974a89306c43ec0d98fb654467863911" id="r_a974a89306c43ec0d98fb654467863911"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html#a974a89306c43ec0d98fb654467863911">order2_envelope_ratio</a> = 0.5</td></tr>
+<tr class="memitem:a974a89306c43ec0d98fb654467863911" id="r_a974a89306c43ec0d98fb654467863911"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html#a974a89306c43ec0d98fb654467863911">order2_envelope_ratio</a> = 1.0</td></tr>
 <tr class="separator:a974a89306c43ec0d98fb654467863911"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ede1df0ef92be603f01689d41faac20" id="r_a7ede1df0ef92be603f01689d41faac20"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html#a7ede1df0ef92be603f01689d41faac20">feature_envelope_ratio</a> = 1.0</td></tr>
+<tr class="separator:a7ede1df0ef92be603f01689d41faac20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6640cfda542fcde84456ac01c52dc771" id="r_a6640cfda542fcde84456ac01c52dc771"><td class="memItemLeft" align="right" valign="top"><a id="a6640cfda542fcde84456ac01c52dc771" name="a6640cfda542fcde84456ac01c52dc771"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>eps_simplify</b> = -1.</td></tr>
 <tr class="separator:a6640cfda542fcde84456ac01c52dc771"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -146,9 +149,9 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>operation</b> 
 <tr class="separator:ad0a60fc17188816bc84ef1569e9ec8de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4e07d636f18f85be3bd7f0f238bfc96" id="r_ab4e07d636f18f85be3bd7f0f238bfc96"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html#ab4e07d636f18f85be3bd7f0f238bfc96">verbose_quality_stats</a> = true</td></tr>
 <tr class="separator:ab4e07d636f18f85be3bd7f0f238bfc96"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6043762a1975ebf715cb26d4fed8a55" id="r_af6043762a1975ebf715cb26d4fed8a55"><td class="memItemLeft" align="right" valign="top"><a id="af6043762a1975ebf715cb26d4fed8a55" name="af6043762a1975ebf715cb26d4fed8a55"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>skip_simplify</b> = false</td></tr>
-<tr class="separator:af6043762a1975ebf715cb26d4fed8a55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a784e35efbcbb4979cbd86f6b3f81d7fb" id="r_a784e35efbcbb4979cbd86f6b3f81d7fb"><td class="memItemLeft" align="right" valign="top"><a id="a784e35efbcbb4979cbd86f6b3f81d7fb" name="a784e35efbcbb4979cbd86f6b3f81d7fb"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>simplify</b> = true</td></tr>
+<tr class="separator:a784e35efbcbb4979cbd86f6b3f81d7fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf8e741fd98844dc9b8ed9d77702789f" id="r_aaf8e741fd98844dc9b8ed9d77702789f"><td class="memItemLeft" align="right" valign="top"><a id="aaf8e741fd98844dc9b8ed9d77702789f" name="aaf8e741fd98844dc9b8ed9d77702789f"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>use_sample_envelope</b> = false</td></tr>
 <tr class="separator:aaf8e741fd98844dc9b8ed9d77702789f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -187,8 +190,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>diag_l</b> = -1.</t
 <tr class="memitem:a9b14bb91a58a22cb381c02bdf7e8ca85 inherit pub_attribs_structwmtk_1_1_optimizer_parameters" id="r_a9b14bb91a58a22cb381c02bdf7e8ca85"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>preserve_topology</b> = false</td></tr>
 <tr class="separator:a9b14bb91a58a22cb381c02bdf7e8ca85 inherit pub_attribs_structwmtk_1_1_optimizer_parameters"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34a7ae8497a0194dbd52399cbba57a59 inherit pub_attribs_structwmtk_1_1_optimizer_parameters" id="r_a34a7ae8497a0194dbd52399cbba57a59"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a34a7ae8497a0194dbd52399cbba57a59">optimize_envelope_around_simplified</a> = false</td></tr>
-<tr class="separator:a34a7ae8497a0194dbd52399cbba57a59 inherit pub_attribs_structwmtk_1_1_optimizer_parameters"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd8ce98aaa41806ea279699fdb937187 inherit pub_attribs_structwmtk_1_1_optimizer_parameters" id="r_acd8ce98aaa41806ea279699fdb937187"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#acd8ce98aaa41806ea279699fdb937187">envelope_around_simplified</a> = false</td></tr>
+<tr class="separator:acd8ce98aaa41806ea279699fdb937187 inherit pub_attribs_structwmtk_1_1_optimizer_parameters"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe56a64eb3016c5b6eab6d3d9f5c2f99 inherit pub_attribs_structwmtk_1_1_optimizer_parameters" id="r_abe56a64eb3016c5b6eab6d3d9f5c2f99"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#abe56a64eb3016c5b6eab6d3d9f5c2f99">per_input_envelopes</a> = true</td></tr>
+<tr class="separator:abe56a64eb3016c5b6eab6d3d9f5c2f99 inherit pub_attribs_structwmtk_1_1_optimizer_parameters"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99fbd3031d9726ffa1af82b6977acfae inherit pub_attribs_structwmtk_1_1_optimizer_parameters" id="r_a99fbd3031d9726ffa1af82b6977acfae"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a99fbd3031d9726ffa1af82b6977acfae">split_high_valence_threshold</a> = 0</td></tr>
 <tr class="separator:a99fbd3031d9726ffa1af82b6977acfae inherit pub_attribs_structwmtk_1_1_optimizer_parameters"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a268234aa3af6a0da6942a4b8ce0e86 inherit pub_attribs_structwmtk_1_1_optimizer_parameters" id="r_a9a268234aa3af6a0da6942a4b8ce0e86"><td class="memItemLeft" align="right" valign="top">
@@ -312,7 +317,66 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="aa1d694647b5281111c8536b6c5739c15" name="aa1d694647b5281111c8536b6c5739c15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1d694647b5281111c8536b6c5739c15">&#9670;&#160;</a></span>init()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::Parameters::init </td>
+          <td>(</td>
+          <td class="paramtype">const VectorXd &amp;&#160;</td>
+          <td class="paramname"><em>min_</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const VectorXd &amp;&#160;</td>
+          <td class="paramname"><em>max_</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>diag</em> = <code>-1</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p><code>min_</code>, <code>max_</code>: the domain, the embedding's box with its padding. <code>diag</code>: the diagonal eps_rel, eps_simplify_rel and length_rel are relative to, the inputs' own (<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#a5afd233dbfb3b82f0fa2ce7b3d163ff9">InputData::diag</a>); -1, the domain's. </p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a7ede1df0ef92be603f01689d41faac20" name="a7ede1df0ef92be603f01689d41faac20"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ede1df0ef92be603f01689d41faac20">&#9670;&#160;</a></span>feature_envelope_ratio</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::simwild::Parameters::feature_envelope_ratio = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Feature-curve tube thickness, and the radius of the input points' anchors, as a fraction of eps. 1, as order2_envelope_ratio; tetwild's parameter of the same name. </p>
+
+</div>
+</div>
 <a id="a974a89306c43ec0d98fb654467863911" name="a974a89306c43ec0d98fb654467863911"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a974a89306c43ec0d98fb654467863911">&#9670;&#160;</a></span>order2_envelope_ratio</h2>
 
@@ -320,11 +384,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">double wmtk::components::simwild::Parameters::order2_envelope_ratio = 0.5</td>
+          <td class="memname">double wmtk::components::simwild::Parameters::order2_envelope_ratio = 1.0</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the surface envelope's. Deliberately below 1 where the surface envelope uses the full eps; see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5. </p>
+<p>Order-2 (open boundary / non-manifold edge) tube thickness, as a fraction of the surface envelope's eps. 1: the tube's half-width is eps, as the surface envelope's; it is built around the simplified boundary, whose own share adds on top. See /order2_envelope_ratio in the spec for that bound and the sweep behind the default. </p>
 
 </div>
 </div>

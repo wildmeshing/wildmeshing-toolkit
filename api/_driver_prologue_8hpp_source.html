@@ -96,35 +96,34 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span> </div>
 <div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="keyword">namespace </span>wmtk::utils {</div>
 <div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span> </div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">inline</span> std::filesystem::path verify_and_setup_logger(</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    nlohmann::json&amp; json_params,</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <span class="keyword">const</span> nlohmann::json&amp; spec,</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="keyword">const</span> <span class="keywordtype">bool</span> strict = <span class="keyword">false</span>)</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>{</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    {</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>        jse::JSE spec_engine;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        spec_engine.strict = strict;</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        <span class="keywordflow">if</span> (!spec_engine.verify_json(json_params, spec)) {</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>            log_and_throw_error(spec_engine.log2str());</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        }</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        json_params = spec_engine.inject_defaults(json_params, spec);</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    }</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keyword">const</span> std::filesystem::path root = json_params[<span class="stringliteral">&quot;input_dir&quot;</span>];</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    {</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        std::string log_file_name = json_params[<span class="stringliteral">&quot;log_file&quot;</span>];</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        <span class="keywordflow">if</span> (!log_file_name.empty()) {</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>            log_file_name = resolve_path(root, log_file_name).string();</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>            wmtk::set_file_logger(log_file_name);</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>            logger().flush_on(spdlog::level::info);</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        }</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    }</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <span class="keywordflow">return</span> root;</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>}</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keyword">inline</span> std::filesystem::path verify_and_setup_logger(</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    nlohmann::json&amp; json_params,</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <span class="keyword">const</span> nlohmann::json&amp; spec)</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>{</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    {</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        jse::JSE spec_engine;</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        spec_engine.strict = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        <span class="keywordflow">if</span> (!spec_engine.verify_json(json_params, spec)) {</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>            log_and_throw_error(spec_engine.log2str());</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        }</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        json_params = spec_engine.inject_defaults(json_params, spec);</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    }</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <span class="keyword">const</span> std::filesystem::path root = json_params[<span class="stringliteral">&quot;input_dir&quot;</span>];</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    {</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        std::string log_file_name = json_params[<span class="stringliteral">&quot;log_file&quot;</span>];</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        <span class="keywordflow">if</span> (!log_file_name.empty()) {</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>            log_file_name = resolve_path(root, log_file_name).string();</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>            wmtk::set_file_logger(log_file_name);</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>            logger().flush_on(spdlog::level::info);</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        }</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    }</div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>} <span class="comment">// namespace wmtk::utils</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="keywordflow">return</span> root;</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>}</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>} <span class="comment">// namespace wmtk::utils</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

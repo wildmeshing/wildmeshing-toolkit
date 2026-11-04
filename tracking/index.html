@@ -4607,17 +4607,17 @@ the one it ends at.</p>
   the input simplification without the link condition: all of them <code>topology</code> warnings. With
   <code>preserve_topology</code> there are none of these left.</li>
 <li>Duplicate segments in the input files (<code>merged_segments</code>), which the weld makes one.</li>
-<li><strong>Not a warning, but a distortion: junctions that slide.</strong> Without tracking, triwild anchors
-  only curve ends (<code>allow_junction_cleanup</code> defaults to true); a junction is free to move, and
-  does: on 190246 one slid 14 units in a single smoothing step, zipping two curves that run
+<li><strong>Not a warning, but a distortion: junctions that slide.</strong> triwild anchors only curve ends; a
+  junction is free to move, with or without tracking, and does: on 190246 one slid 14 units in a single smoothing step, zipping two curves that run
   side by side inside the envelope. The map still takes the junction to the junction, so one
   branch stretches 12 times and the others shrink as much. Points then drift far along the
   curves (mean 0.97, max 174 segment lengths), and a point that rides the junction loses
   precision through the steps that stretch it (round trip 6.76 there). With junctions anchored
-  they stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths. So
-  <code>history_output</code> anchors them (<code>allow_junction_cleanup</code> defaults to false then, unless the
-  config gives it; without <code>preserve_feature_points</code>, which anchors nothing, it is left alone). The freeze the option was introduced for in August, a self-intersecting
-  input stuck at MAX_ENERGY by its anchored crossings, no longer happens on its example:
+  they stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths. Until
+  2026-10 <code>history_output</code> anchored them (<code>allow_junction_cleanup</code> off); it no longer does,
+  because recording must not change the meshing, and the option is gone. The freeze junctions
+  were freed for in August, a self-intersecting input stuck at MAX_ENERGY by its anchored
+  crossings, no longer happens on its example:
   242427 converges either way at default topology, anchored keeping about 2.5 times the
   vertices (stop_energy 100: max energy 99.5 and 3443 vertices free, 99.2 and 8483 anchored,
   17.5 s and 22.3 s with recording; stop_energy 10: 5476 and 14257 vertices). With
@@ -4658,7 +4658,7 @@ on each history:</p>
 <tbody>
 <tr>
 <td>default</td>
-<td>anchored (the default with <code>history_output</code>)</td>
+<td>anchored (<code>history_output</code>'s default until 2026-10)</td>
 <td>on 22 of 24 (welds)</td>
 <td>2.4e-9</td>
 <td>24 of 24</td>
@@ -4668,7 +4668,7 @@ on each history:</p>
 </tr>
 <tr>
 <td>default</td>
-<td>free (<code>allow_junction_cleanup: true</code>)</td>
+<td>free (the only setting since 2026-10)</td>
 <td>on 22 of 24 (welds)</td>
 <td>2.8e-10</td>
 <td>24 of 24</td>
@@ -4678,7 +4678,7 @@ on each history:</p>
 </tr>
 <tr>
 <td><code>preserve_topology</code></td>
-<td>anchored (the default with <code>history_output</code>)</td>
+<td>anchored (<code>history_output</code>'s default until 2026-10)</td>
 <td>0</td>
 <td>3.3e-6</td>
 <td>18 of 24</td>
@@ -4688,7 +4688,7 @@ on each history:</p>
 </tr>
 <tr>
 <td><code>preserve_topology</code></td>
-<td>free (<code>allow_junction_cleanup: true</code>)</td>
+<td>free (the only setting since 2026-10)</td>
 <td>0</td>
 <td>6.76 (190246; next 1.5e-4)</td>
 <td>14 of 24</td>
@@ -4703,9 +4703,8 @@ on each history:</p>
 point reaches an output vertex but 9 of 584 on 226193 at default topology with junctions free,
 where the input simplification without the link condition retires their vertices. Recording
 costs 2.6–4.0% instructions at default settings with junctions free (12 models, serial), with
-the output <code>.msh</code> byte-identical with recording off and on and to the parent commit's. Since
-<code>history_output</code> anchors the junctions, recording changes the output unless the config gives
-<code>allow_junction_cleanup</code>.</p>
+the output <code>.msh</code> byte-identical with recording off and on and to the parent commit's.
+Recording does not change the output.</p>
 <h3 id="what-breaks-bijectivity">What breaks bijectivity<a class="headerlink" href="#what-breaks-bijectivity" title="Permanent link">&para;</a></h3>
 <p>Each of these shows up as warnings, never as a refusal to run:
 - topology changes: welds of two surface vertices along a non-surface edge, sheets merging,

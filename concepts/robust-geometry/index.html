@@ -3497,11 +3497,12 @@ fraction of the diagonal of the input's bounding box, <span class="arithmatex">\
 \text{diag}\)</span>, and the target edge length <a href="../../reference/tetwild/#length_rel"><code>length_rel</code></a> is
 relative to the same diagonal. simwild also takes absolute values,
 <a href="../../reference/simwild/#eps"><code>eps</code></a> and <a href="../../reference/simwild/#length"><code>length</code></a>.</p>
-<p>tetwild builds the main envelope around the original input, at <span class="arithmatex">\(\varepsilon\)</span>, and the other
-envelopes it needs as fractions of it: the input simplification runs inside
-<code>simplify_envelope_ratio</code> <span class="arithmatex">\(\cdot\,\varepsilon\)</span> (0.5), so the optimizer starts with room to move;
-open boundaries and non-manifold edges stay in a tube of <code>order2_envelope_ratio</code> <span class="arithmatex">\(\cdot\,\varepsilon\)</span>;
-feature curves in one of <code>feature_envelope_ratio</code> <span class="arithmatex">\(\cdot\,\varepsilon\)</span>. With several inputs,
+<p>tetwild builds the main envelope around the original input, at <span class="arithmatex">\(\varepsilon\)</span>. The input
+simplification runs inside one of its own, <code>eps_simplify_rel</code> <span class="arithmatex">\(\cdot\,\text{diag}\)</span> (0.0005, half
+of <span class="arithmatex">\(\varepsilon\)</span> at the default <code>eps_rel</code>), so the optimizer starts with room to move. The other
+envelopes it needs are fractions of <span class="arithmatex">\(\varepsilon\)</span>: open boundaries and non-manifold edges stay
+in a tube of <code>order2_envelope_ratio</code> <span class="arithmatex">\(\cdot\,\varepsilon\)</span>; feature curves in one of
+<code>feature_envelope_ratio</code> <span class="arithmatex">\(\cdot\,\varepsilon\)</span>. With several inputs,
 each tracked face is held to the envelopes of the inputs it lies on, not only to the envelope of
 all of them together.</p>
 <h3 id="the-containment-test-exact-or-sampled">The containment test: exact or sampled<a class="headerlink" href="#the-containment-test-exact-or-sampled" title="Permanent link">&para;</a></h3>

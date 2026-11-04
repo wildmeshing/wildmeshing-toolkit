@@ -13,6 +13,8 @@
   "throw_on_nonconvergence": false,
   "optimize_offset": true,
   "envelope_size_rel": 0.001,
+  "per_input_envelopes": true,
+  "order2_envelope_ratio": 1.0,
   "envelope_size": -1.0,
   "offset_field": "euclidean",
   "offset_dhat_factor": 2.0,

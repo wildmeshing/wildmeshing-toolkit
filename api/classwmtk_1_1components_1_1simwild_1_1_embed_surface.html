@@ -98,16 +98,18 @@ const <a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744
 FacetSources &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>facet_sources</b> ()</td></tr>
 <tr class="memdesc:a875bd09c2bac297aee9b4bf891e21f49"><td class="mdescLeft">&#160;</td><td class="mdescRight">With record_history, once embedded: the input triangles each surface facet lies on. <br /></td></tr>
 <tr class="separator:a875bd09c2bac297aee9b4bf891e21f49"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad090a61f3c05cd3c919321962e1f52e" id="r_aad090a61f3c05cd3c919321962e1f52e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aad090a61f3c05cd3c919321962e1f52e">simplify_surface</a> (const double eps, const bool use_exact, const int num_threads=0, const double boundary_eps=0)</td></tr>
-<tr class="memdesc:aad090a61f3c05cd3c919321962e1f52e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify the input surface while staying within the eps envelope.  <br /></td></tr>
-<tr class="separator:aad090a61f3c05cd3c919321962e1f52e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeda359093a7b60e792c648d20ad4d71d" id="r_aeda359093a7b60e792c648d20ad4d71d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structwmtk_1_1utils_1_1_embed_features_result.html">utils::EmbedFeaturesResult</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aeda359093a7b60e792c648d20ad4d71d">features_placed</a> () const</td></tr>
+<tr class="separator:aeda359093a7b60e792c648d20ad4d71d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a296d4cc81cbff515bbd646b8023b40bc" id="r_a296d4cc81cbff515bbd646b8023b40bc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a296d4cc81cbff515bbd646b8023b40bc">simplify_surface</a> (const double eps, const bool use_exact, const int num_threads=0, const double boundary_eps=0, const bool per_input_envelopes=true)</td></tr>
+<tr class="memdesc:a296d4cc81cbff515bbd646b8023b40bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify the input surface while staying within the eps envelope.  <br /></td></tr>
+<tr class="separator:a296d4cc81cbff515bbd646b8023b40bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa74c124f5249f70b274105df856a699a" id="r_aa74c124f5249f70b274105df856a699a"><td class="memItemLeft" align="right" valign="top"><a id="aa74c124f5249f70b274105df856a699a" name="aa74c124f5249f70b274105df856a699a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>remove_duplicates</b> (const double eps)</td></tr>
 <tr class="memdesc:aa74c124f5249f70b274105df856a699a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Merge vertices that are closer than eps. <br /></td></tr>
 <tr class="separator:aa74c124f5249f70b274105df856a699a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae930c0e89e7eebf504f015d38642063b" id="r_ae930c0e89e7eebf504f015d38642063b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#ae930c0e89e7eebf504f015d38642063b">embed_surface</a> (const bool flood_fill=false, const bool <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#acc817f8f6500325879aff94703123805">tag_from_winding_number</a>=true, const bool provenance=false)</td></tr>
-<tr class="memdesc:ae930c0e89e7eebf504f015d38642063b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the arrangement and tag the resulting cells.  <br /></td></tr>
-<tr class="separator:ae930c0e89e7eebf504f015d38642063b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4199651ffda9d78412f2660a7163210b" id="r_a4199651ffda9d78412f2660a7163210b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a4199651ffda9d78412f2660a7163210b">embed_surface</a> (const bool flood_fill=false, const bool <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#acc817f8f6500325879aff94703123805">tag_from_winding_number</a>=true, const bool provenance=false, const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> *features=nullptr)</td></tr>
+<tr class="memdesc:a4199651ffda9d78412f2660a7163210b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the arrangement and tag the resulting cells.  <br /></td></tr>
+<tr class="separator:a4199651ffda9d78412f2660a7163210b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a247c5b4ea204873b007265da6815f155" id="r_a247c5b4ea204873b007265da6815f155"><td class="memItemLeft" align="right" valign="top"><a id="a247c5b4ea204873b007265da6815f155" name="a247c5b4ea204873b007265da6815f155"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>consolidate</b> ()</td></tr>
 <tr class="memdesc:a247c5b4ea204873b007265da6815f155"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove unreferenced vertices. <br /></td></tr>
@@ -210,6 +212,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_record_history</b> 
 <tr class="memitem:aa38a16bb1ba8d88e95113f60424d4631" id="r_aa38a16bb1ba8d88e95113f60424d4631"><td class="memItemLeft" align="right" valign="top"><a id="aa38a16bb1ba8d88e95113f60424d4631" name="aa38a16bb1ba8d88e95113f60424d4631"></a>
 FacetSources&#160;</td><td class="memItemRight" valign="bottom"><b>m_facet_sources</b></td></tr>
 <tr class="separator:aa38a16bb1ba8d88e95113f60424d4631"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af413463d2adb52e798cad655d6f14f0f" id="r_af413463d2adb52e798cad655d6f14f0f"><td class="memItemLeft" align="right" valign="top"><a id="af413463d2adb52e798cad655d6f14f0f" name="af413463d2adb52e798cad655d6f14f0f"></a>
+<a class="el" href="structwmtk_1_1utils_1_1_embed_features_result.html">utils::EmbedFeaturesResult</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_features_placed</b></td></tr>
+<tr class="separator:af413463d2adb52e798cad655d6f14f0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08ee8d5a1cbcf4db31c4c6bd3cff1b8b" id="r_a08ee8d5a1cbcf4db31c4c6bd3cff1b8b"><td class="memItemLeft" align="right" valign="top"><a id="a08ee8d5a1cbcf4db31c4c6bd3cff1b8b" name="a08ee8d5a1cbcf4db31c4c6bd3cff1b8b"></a>
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_img_filenames</b></td></tr>
 <tr class="separator:a08ee8d5a1cbcf4db31c4c6bd3cff1b8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -359,8 +364,8 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 
 </div>
 </div>
-<a id="ae930c0e89e7eebf504f015d38642063b" name="ae930c0e89e7eebf504f015d38642063b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae930c0e89e7eebf504f015d38642063b">&#9670;&#160;</a></span>embed_surface()</h2>
+<a id="a4199651ffda9d78412f2660a7163210b" name="a4199651ffda9d78412f2660a7163210b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4199651ffda9d78412f2660a7163210b">&#9670;&#160;</a></span>embed_surface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -381,7 +386,13 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const bool&#160;</td>
-          <td class="paramname"><em>provenance</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>provenance</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> *&#160;</td>
+          <td class="paramname"><em>features</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -397,6 +408,7 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
     <tr><td class="paramname">flood_fill</td><td>Unify the tags of each region bounded by the surface. </td></tr>
     <tr><td class="paramname">tag_from_winding_number</td><td>Decide each cell's tags by evaluating the winding number of every input at its centroid (the default), rather than by propagating them across the arrangement's own surface provenance. See tag_from_provenance. </td></tr>
     <tr><td class="paramname">provenance</td><td>Also record which inputs tile each surface face (<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#ae69e4ed1f9484d98f9573deba19221d9" title="Per row of F_on_surface(): the inputs tiling it. Empty unless embed_surface recorded it.">F_tags_surface()</a>), which the provenance tagging records anyway. </td></tr>
+    <tr><td class="paramname">features</td><td>Optional feature curves and points forced into the embedding with the surface; the background box is grown over them. Where they went: <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aeda359093a7b60e792c648d20ad4d71d">features_placed()</a>. </td></tr>
   </table>
   </dd>
 </dl>
@@ -435,8 +447,34 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 
 </div>
 </div>
-<a id="aad090a61f3c05cd3c919321962e1f52e" name="aad090a61f3c05cd3c919321962e1f52e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad090a61f3c05cd3c919321962e1f52e">&#9670;&#160;</a></span>simplify_surface()</h2>
+<a id="aeda359093a7b60e792c648d20ad4d71d" name="aeda359093a7b60e792c648d20ad4d71d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeda359093a7b60e792c648d20ad4d71d">&#9670;&#160;</a></span>features_placed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="structwmtk_1_1utils_1_1_embed_features_result.html">utils::EmbedFeaturesResult</a> &amp; wmtk::components::simwild::EmbedSurface::features_placed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>With features, once embedded: where each ended up, in V_emb()'s numbering (<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a247c5b4ea204873b007265da6815f155" title="Remove unreferenced vertices.">consolidate()</a> renumbers it with the vertices). </p>
+
+</div>
+</div>
+<a id="a296d4cc81cbff515bbd646b8023b40bc" name="a296d4cc81cbff515bbd646b8023b40bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a296d4cc81cbff515bbd646b8023b40bc">&#9670;&#160;</a></span>simplify_surface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -463,7 +501,13 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const double&#160;</td>
-          <td class="paramname"><em>boundary_eps</em> = <code>0</code>&#160;</td>
+          <td class="paramname"><em>boundary_eps</em> = <code>0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>per_input_envelopes</em> = <code>true</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -479,6 +523,7 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
     <tr><td class="paramname">eps</td><td>The absolute envelope thickness. </td></tr>
     <tr><td class="paramname">use_exact</td><td>Whether the envelope uses the exact predicate rather than the sampled one. The simwild application passes !simplify_use_sample_envelope. </td></tr>
     <tr><td class="paramname">boundary_eps</td><td>How the open boundary is held: 0 freezes it; positive lets it move within a tube of this radius around the input's boundary edges. See ShortestEdgeCollapse::create_mesh. </td></tr>
+    <tr><td class="paramname">per_input_envelopes</td><td>With two or more inputs, each face is held to its own input's envelope; false: all to one (<a class="el" href="structwmtk_1_1_optimizer_parameters.html#abe56a64eb3016c5b6eab6d3d9f5c2f99">OptimizerParameters::per_input_envelopes</a>). </td></tr>
   </table>
   </dd>
 </dl>

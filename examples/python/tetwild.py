@@ -35,9 +35,10 @@ print(len(mesh["V"]), "vertices,", len(tets), "tets,", len(surface), "surface tr
 
 # --8<-- [start:sweep]
 # One option at a time against the first run. With 4 threads the numbers vary a little from run
-# to run; num_threads 0 makes them repeat exactly, in about twice the time.
+# to run; num_threads 0 makes them repeat exactly, in about twice the time. eps_rel with the
+# simplification at half of it, as at the default.
 for change in [{}, {"stop_energy": 100}, {"coarsen_pass": True}, {"length_rel": 0.1},
-               {"eps_rel": 0.005}]:
+               {"eps_rel": 0.005, "eps_simplify_rel": 0.0025}]:
     options = {"input": ["snowman"], "filter": "tracked", "stop_energy": 10, "num_threads": 4,
                "DEBUG_hausdorff": True, **change}
     outputs, report = wm.tetwild(options, {"snowman": snowman})

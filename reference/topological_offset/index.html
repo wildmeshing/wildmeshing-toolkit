@@ -2536,6 +2536,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#per_input_envelopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        per_input_envelopes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#order2_envelope_ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        order2_envelope_ratio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#envelope_size" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4512,6 +4534,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#per_input_envelopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        per_input_envelopes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#order2_envelope_ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        order2_envelope_ratio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#envelope_size" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5358,6 +5402,12 @@
 <h3 id="envelope_size_rel"><code>envelope_size_rel</code><a class="headerlink" href="#envelope_size_rel" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>0.001</code></p>
 <p>Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built after the simplicial embedding, before the repulsion and the march: during the loop the domain wall and the input complex's boundary; in a TetWild pass (the final pass, and optimize_construction's) every other region boundary as well, at its position then (see use_rest_pose). The offset surface is never in it, but in a TetWild pass it is held to an envelope of its own with this same eps (since 2026-10-20, when offset_envelope / offset_envelope_rel were removed; optimize_construction's pass holds it to half the traced distance instead). This eps is also the derived sizing floor when min_edge_length_rel is negative. 2D: one envelope per region tag, as before. Ignored if envelope_size &gt; 0.</p>
+<h3 id="per_input_envelopes"><code>per_input_envelopes</code><a class="headerlink" href="#per_input_envelopes" title="Permanent link">&para;</a></h3>
+<p><strong>bool</strong> · default <code>true</code></p>
+<p>Hold each input to its own envelopes. An input is a label: a face tag, or the tet tag of a region a held face bounds. With two or more, each held face (the input complex's boundary) is held to the envelopes of its own labels, and a held vertex pulled toward them, as in tetwild and simwild. false: one shared envelope for all labels, as until 2026-11, where a face of one label may end up on another's surface within envelope_size.</p>
+<h3 id="order2_envelope_ratio"><code>order2_envelope_ratio</code><a class="headerlink" href="#order2_envelope_ratio" title="Permanent link">&para;</a></h3>
+<p><strong>float</strong> · default <code>1.0</code></p>
+<p>Thickness of the tube that holds the order-2 edges of the held surfaces -- their rims and the non-manifold edges where labelled regions meet -- as a fraction of envelope_size, and the radius of the anchors where those curves end or three or more meet. Tagged once before the march, so the front is never among them, and held in a tube around themselves, one per label, as tetwild's and simwild's key of the same name.</p>
 <h3 id="envelope_size"><code>envelope_size</code><a class="headerlink" href="#envelope_size" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>-1.0</code></p>
 <p>Absolute half-width of the envelope that holds the held surfaces (see envelope_size_rel). If &lt;= 0 (the default -1): derived from envelope_size_rel.</p>

@@ -2392,10 +2392,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#skip_simplify" class="md-nav__link">
+  <a href="#simplify" class="md-nav__link">
     <span class="md-ellipsis">
       
-        skip_simplify
+        simplify
       
     </span>
   </a>
@@ -2429,6 +2429,28 @@
   
     <nav class="md-nav" aria-label="Other options">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input_edges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        input_edges
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        input_points
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#tag_from_winding_number" class="md-nav__link">
@@ -2508,10 +2530,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#optimize_envelope_around_simplified" class="md-nav__link">
+  <a href="#envelope_reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        optimize_envelope_around_simplified
+        envelope_reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per_input_envelopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        per_input_envelopes
       
     </span>
   </a>
@@ -2556,6 +2589,17 @@
     <span class="md-ellipsis">
       
         order2_envelope_ratio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feature_envelope_ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        feature_envelope_ratio
       
     </span>
   </a>
@@ -4451,10 +4495,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#skip_simplify" class="md-nav__link">
+  <a href="#simplify" class="md-nav__link">
     <span class="md-ellipsis">
       
-        skip_simplify
+        simplify
       
     </span>
   </a>
@@ -4488,6 +4532,28 @@
   
     <nav class="md-nav" aria-label="Other options">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input_edges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        input_edges
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        input_points
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#tag_from_winding_number" class="md-nav__link">
@@ -4567,10 +4633,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#optimize_envelope_around_simplified" class="md-nav__link">
+  <a href="#envelope_reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        optimize_envelope_around_simplified
+        envelope_reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per_input_envelopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        per_input_envelopes
       
     </span>
   </a>
@@ -4615,6 +4692,17 @@
     <span class="md-ellipsis">
       
         order2_envelope_ratio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feature_envelope_ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        feature_envelope_ratio
       
     </span>
   </a>
@@ -5294,8 +5382,8 @@
 <p>Each entry: Name for one input mesh.</p>
 <h3 id="input_type"><code>input_type</code><a class="headerlink" href="#input_type" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>[]</code></p>
-<p>One entry per input, saying what its tag marks. 'volume': the input encloses a volume, and the tets inside it get its name as a tag. 'surface': the input stays a surface, and the embedded faces on it get its name as a face tag. Empty (the default): every input is a volume. 3D surface inputs only.</p>
-<p>Each entry: What that input's tag marks: the tets it encloses, or the faces on it.</p>
+<p>One entry per input, saying what its tag marks. 'volume': the input encloses a volume (in 2D, a region), and the tets (in 2D, the triangles) inside it get its name as a tag. 'surface' (3D only): the input stays a surface, and the embedded faces on it get its name as a face tag. 'curve' (2D only): the input stays a curve, open or closed, and the arrangement's edges on it get its name as an edge tag, written as the edge block of the output mesh. 'surface' and 'curve' need tag_from_winding_number, and 'surface' needs split_connected_components off. Empty (the default): every input is a volume. Applies to surface and curve inputs, not to a tagged mesh input.</p>
+<p>Each entry: What that input's tag marks: the tets (2D: triangles) it encloses, the faces on it (3D only), or the edges on it (2D only).</p>
 <h3 id="operation"><code>operation</code><a class="headerlink" href="#operation" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"remeshing"</code> · one of <code>remeshing</code>, <code>fill_holes_topo</code>, <code>tight_seal_topo</code>, <code>tight_seal_geom</code>, <code>keep_lcc</code>, <code>resolve_overlaps</code>, <code>replace_tags</code>, <code>tag_priority</code></p>
 <p>What to do. 'remeshing' meshes the inputs, or improves the quality of a tagged .msh; the others edit the regions of a tagged .msh, each with its own options below. Depending on the operation, more parameters might be required.</p>
@@ -5311,10 +5399,10 @@
 <p>Each entry: Homogeneous transformation matrix for one input: 4x4 for a 3D input, 3x3 for a 2D one. An empty list means identity.</p>
 <h3 id="eps_rel"><code>eps_rel</code><a class="headerlink" href="#eps_rel" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>0.002</code></p>
-<p>Envelope thickness relative to the bounding box diagonal.</p>
+<p>Envelope thickness relative to the bounding box diagonal. The bounding box is the inputs' own, feature curves and points included, as in tetwild and triwild; a mesh input's is the mesh's. Until 2026-11 it was the embedding's box, padded by a fifteenth of the diagonal on each side: 1.22x the inputs' diagonal on simwild_double_sphere_notop_3d, 1.42x on simwild_curves_2d.</p>
 <h3 id="length_rel"><code>length_rel</code><a class="headerlink" href="#length_rel" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>0.05</code></p>
-<p>Target edge length relative to the bounding box diagonal.</p>
+<p>Target edge length relative to the bounding box diagonal. The diagonal is eps_rel's: the inputs' own bounding box.</p>
 <h3 id="sizing_field"><code>sizing_field</code><a class="headerlink" href="#sizing_field" title="Permanent link">&para;</a></h3>
 <p><strong>list of objects</strong> · default <code>[]</code></p>
 <p>Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescribed length will be used for each vertex. Example: [{"tags": "tag_0 &amp; tag_1", "length": 0.1}, {"tags": "tag_2", "length_rel": 0.05}]</p>
@@ -5340,13 +5428,21 @@
 <h3 id="preserve_topology"><code>preserve_topology</code><a class="headerlink" href="#preserve_topology" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
 <p>Preserve topology of input.</p>
-<h3 id="skip_simplify"><code>skip_simplify</code><a class="headerlink" href="#skip_simplify" title="Permanent link">&para;</a></h3>
-<p><strong>bool</strong> · default <code>false</code></p>
-<p>If true, input simplification will be skipped. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified.</p>
+<h3 id="simplify"><code>simplify</code><a class="headerlink" href="#simplify" title="Permanent link">&para;</a></h3>
+<p><strong>bool</strong> · default <code>true</code></p>
+<p>If true, the input is simplified. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified.</p>
 <h3 id="num_threads"><code>num_threads</code><a class="headerlink" href="#num_threads" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>0</code></p>
 <p>Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run.</p>
 <h2 id="other-options">Other options<a class="headerlink" href="#other-options" title="Permanent link">&para;</a></h2>
+<h3 id="input_edges"><code>input_edges</code><a class="headerlink" href="#input_edges" title="Permanent link">&para;</a></h3>
+<p><strong>list of string</strong> · default <code>[]</code></p>
+<p>List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). input_transform does not apply to them. The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the box is grown over them automatically, and with it the bounding box eps and the lengths are relative to. The optimization preserves them: the tet edges tiling them stay inside a tube of feature_envelope_ratio x eps around the input edges, and every vertex where they end or three or more meet is anchored within that radius. Read and held by the same code as tetwild's input_edges.</p>
+<p>Each entry: One input feature edge mesh.</p>
+<h3 id="input_points"><code>input_points</code><a class="headerlink" href="#input_points" title="Permanent link">&para;</a></h3>
+<p><strong>list of string</strong> · default <code>[]</code></p>
+<p>List of input feature POINT files, 3D surface inputs and 2D curve inputs (a .msh input and a tagged mesh refuse them): every vertex of each file is forced into the mesh as a vertex, exactly -- a tet vertex in 3D, a vertex of the curve arrangement in 2D, where only x and y are used (edges in these files are ignored, with a warning). input_transform does not apply to them, and they grow the background box as /input_edges do (in 2D the arrangement's box covers them). The optimization keeps a vertex within feature_envelope_ratio x eps of each, the smaller order2_envelope_ratio x eps where the point is on an order-2 edge (in 2D, at a vertex where a tracked curve ends or three or more meet). Read by the same code as tetwild's input_points, and held by the same anchors as tetwild's (3D) and triwild's (2D).</p>
+<p>Each entry: One input feature point file (only the vertices are used).</p>
 <h3 id="tag_from_winding_number"><code>tag_from_winding_number</code><a class="headerlink" href="#tag_from_winding_number" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
 <p>How the cells of the arrangement are tagged. True evaluates the winding number of every input at each cell's centroid. False propagates the tags across the arrangement's own surface provenance instead: combinatorial and exact, starting from a cell of the padded box (which is outside everything) and flipping membership of an input whenever a face belonging to that input is crossed. The provenance route needs every input surface to be closed, and says which crossings disagree rather than returning a tagging that depends on the traversal order. 3D surface input only -- a .msh input arrives already tagged.</p>
@@ -5358,7 +5454,7 @@
 <p>Use the sampled envelope instead of the exact one. Governs both the 3D surface envelope and, since the exact envelope gained support for edges, the order-2 (open boundary and non-manifold) curve envelope and the 2D polyline envelope -- all three are containment tests against the same input at the same epsilon, so they follow one flag. The sampled test places points along the query and asks whether each is within eps of the input, so it cannot see what happens between two samples and shrinks its acceptance radius to compensate; the exact one decides coverage by the union of the eps-neighbourhoods without sampling, so it uses the full eps and is strictly sharper.</p>
 <h3 id="simplify_use_sample_envelope"><code>simplify_use_sample_envelope</code><a class="headerlink" href="#simplify_use_sample_envelope" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
-<p>Use the sampled envelope instead of the exact one for the input simplification only -- in 3D, of the input surface before insertion without preserve_topology, of the tet mesh after insertion with it (operation remeshing); in 2D, of the input curves before insertion without preserve_topology; in every case unless skip_simplify; the optimization keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the sampled test cannot see what happens between two samples, and on thin lattice geometry the sampled simplification has been observed to over-collapse badly (in tetwild).</p>
+<p>Use the sampled envelope instead of the exact one for the input simplification only -- in 3D, of the input surface before insertion without preserve_topology, of the tet mesh after insertion with it (operation remeshing); in 2D, of the input curves before insertion without preserve_topology; in every case only if simplify is true; the optimization keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the sampled test cannot see what happens between two samples, and on thin lattice geometry the sampled simplification has been observed to over-collapse badly (in tetwild).</p>
 <h3 id="max_iterations"><code>max_iterations</code><a class="headerlink" href="#max_iterations" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>80</code></p>
 <p>Maximum iterations before stopping.</p>
@@ -5367,22 +5463,28 @@
 <p>Absolute envelope thickness. If this value is negative, the relative envelope thickness is used to compute the absolute one.</p>
 <h3 id="eps_simplify_rel"><code>eps_simplify_rel</code><a class="headerlink" href="#eps_simplify_rel" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>0.0002</code></p>
-<p>Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if skip_simplify is true or the input is already a tet mesh.</p>
-<h3 id="optimize_envelope_around_simplified"><code>optimize_envelope_around_simplified</code><a class="headerlink" href="#optimize_envelope_around_simplified" title="Permanent link">&para;</a></h3>
-<p><strong>bool</strong> · default <code>false</code></p>
-<p>Build the optimizer's envelope around the SIMPLIFIED geometry at the remaining tolerance (eps - simplify_eps) instead of around the original input at the full eps. The deviation budget is identical by the triangle inequality, but the geometry starts at the CENTRE of the envelope it is judged against rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a mesh handed over close to the boundary has most of its moves refused. Costs elements: holding the surface within eps/2 of the simplified geometry is stricter than eps of the input wherever simplification smoothed detail away, measured at 2-3x the output tets on tetwild at unchanged final quality. Off by default.</p>
+<p>Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if simplify is false or the input is already a tet mesh. The diagonal is eps_rel's, so both simplifications, before and after the insertion, run at the same eps; until 2026-11 the one before the insertion used the inputs' own and the one after the embedding's padded box.</p>
+<h3 id="envelope_reference"><code>envelope_reference</code><a class="headerlink" href="#envelope_reference" title="Permanent link">&para;</a></h3>
+<p><strong>string</strong> · default <code>"input"</code> · one of <code>input</code>, <code>simplified</code></p>
+<p>Which geometry every envelope, tube and anchor is built around: the surface (2D: curve) envelope and the per-label ones, the order-2 and feature tubes, and the curve anchors, one choice for all. "input": the input as read, at eps times each one's ratio, through either simplification; the output is within eps of it. Before the insertion (preserve_topology off), an open boundary, non-manifold edge or curve end the simplification made, and every curve where two inputs meet, is held around itself as the insertion leaves it, since a free one erodes the input along its curve; after it (preserve_topology on, remeshing), the result is held to the envelope around the input again. Needs eps_simplify below eps, else refused: the simplified geometry could start outside its envelope. "simplified": the simplified geometry, which replaces the input, at eps times each one's ratio; the output is within eps of it, so within eps_simplify plus eps of the input, and any eps_simplify is allowed. Refused when no simplification runs (simplify false; under preserve_topology, in 2D and outside remeshing). After a simplification following the insertion the order-2 curves are tagged again around its result, the simplification holding them within order2_envelope_ratio x eps_simplify, and the curve anchors keep their centres at that radius. Until 2026-11 "simplified" built at eps minus eps_simplify; until 2026-10 the key optimize_envelope_around_simplified, and SimWild built every envelope around the simplified geometry whatever it said.</p>
+<h3 id="per_input_envelopes"><code>per_input_envelopes</code><a class="headerlink" href="#per_input_envelopes" title="Permanent link">&para;</a></h3>
+<p><strong>bool</strong> · default <code>true</code></p>
+<p>Hold each input to its own envelopes. With two or more labels: one surface (2D: curve) envelope per label, in 3D one order-2 and one feature tube per input, and the input simplification's envelope per input likewise, so a face or curve of one input cannot end up on another. false: one shared envelope of each kind for all labels, faster where inputs come within eps of each other (the simplification measured 3% to 20% faster shared, 2026-11), but an input may then end up on another within eps. Anchors are per point either way.</p>
 <h3 id="eps_simplify"><code>eps_simplify</code><a class="headerlink" href="#eps_simplify" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>-1</code></p>
-<p>Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if skip_simplify is true or the input is already a tet mesh.</p>
+<p>Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if simplify is false or the input is already a tet mesh.</p>
 <h3 id="simplify_boundary_envelope"><code>simplify_boundary_envelope</code><a class="headerlink" href="#simplify_boundary_envelope" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
-<p>Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses). When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex. Boundary that the simplification opens away from the input's is not judged by the tube. Only affects the simplification before insertion, which runs only when preserve_topology is false and skip_simplify is false; under preserve_topology the surface is simplified after insertion against the order-2 envelope instead.</p>
+<p>Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses). When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex. Boundary that the simplification opens away from the input's is not judged by the tube. Only affects the simplification before insertion, which runs only when preserve_topology is false and simplify is true; under preserve_topology the surface is simplified after insertion against the order-2 envelope instead.</p>
 <h3 id="remove_duplicate_eps"><code>remove_duplicate_eps</code><a class="headerlink" href="#remove_duplicate_eps" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>0</code></p>
 <p>Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. Applied to each input file separately, right after it is read and before it is split into connected components -- unmerged coincident vertices would otherwise leave one surface looking like several. 0 merges only exactly coincident vertices; negative skips the pass entirely.</p>
 <h3 id="order2_envelope_ratio"><code>order2_envelope_ratio</code><a class="headerlink" href="#order2_envelope_ratio" title="Permanent link">&para;</a></h3>
-<p><strong>float</strong> · default <code>0.5</code></p>
-<p>Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface. Kept below 1 deliberately, unlike the surface envelope which uses the full eps. The two are not symmetric: on the surface a wider envelope REMOVES a constraint that was blocking collapses, whereas a boundary curve has no such blockage to relieve, so the extra room is only freedom for the boundary to wander within eps -- more geometry to resolve at the same final quality. Measured in tetwild on Thingi10K 36075 at stop_energy 5: 14 iterations and 31125 tets at 0.5, against 24 iterations and 41463 tets at 1.0, both converging to a max energy of about 4.95. 1.0 gives the boundary curves the full eps.</p>
+<p><strong>float</strong> · default <code>1.0</code></p>
+<p>Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface and its non-manifold edges -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet. Under envelope_reference "input" the tube is built around the input's own order-2 curves where the inserted edges lie in it, so such an edge stays within order2_envelope_ratio x eps of the input's; one the simplification before the insertion made, or one where two inputs meet, is held in a tube around itself as inserted, and the simplification after the insertion (preserve_topology) runs inside the tube. Under "simplified", around the order-2 edges of the simplified geometry. Until 2026-11 the tube was built around the edges as the insertion left them whatever envelope_reference said, and an open boundary could drift order2_envelope_ratio x (eps + eps_simplify) from the input's. In 2D, the radius of the anchors where the region borders end or three or more meet. A 2026-10 sweep (13 tetwild integration configs with open boundaries; ratio 0.25, 0.5, 0.75 and 1.0, each at eps x0.99, x1 and x1.01) found no advantage below 1: 7 configs give identical output at every ratio, Thingi10K 111388 gives the fewest tets at 1.0 (27-28k, against 30-31k at 0.5) and the most at 0.25 (28-44k), and the others differ by less than the 1% eps perturbation does. The earlier case for 0.5 (Thingi10K 36075, 14 against 24 iterations) does not reproduce: that model now gives identical output at every ratio.</p>
+<h3 id="feature_envelope_ratio"><code>feature_envelope_ratio</code><a class="headerlink" href="#feature_envelope_ratio" title="Permanent link">&para;</a></h3>
+<p><strong>float</strong> · default <code>1.0</code></p>
+<p>Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge (/input_edges) must stay inside -- and the radius of the feature anchors (the /input_points, and the vertices where feature curves end or three or more meet), as a fraction of the surface envelope's eps. Where an anchor is also on an order-2 edge the smaller order2_envelope_ratio radius holds it. The default 1 holds them to the same eps as the surface: the tube is built around the input feature curves themselves. Unused without /input_edges and /input_points.</p>
 <h3 id="length"><code>length</code><a class="headerlink" href="#length" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>-1</code></p>
 <p>Absolute target edge length. If this value is negative, the relative length is used to compute the absolute one.</p>

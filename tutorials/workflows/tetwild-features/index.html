@@ -3567,15 +3567,15 @@ It takes a few seconds.</p>
 <p><strong>The curve.</strong> The insertion tiles the two input edges with 14 tet edges, and tags them. The
 optimization may split, collapse and move tagged edges like any other, as long as they stay in a
 tube around the input curve, of radius
-<a href="../../../reference/tetwild/#feature_envelope_ratio"><code>feature_envelope_ratio</code></a> (0.5) times
-<span class="arithmatex">\(\varepsilon\)</span>: 0.00173 here, with <span class="arithmatex">\(\varepsilon\)</span> = 0.00346. In this run the 14 edges stay on the
+<a href="../../../reference/tetwild/#feature_envelope_ratio"><code>feature_envelope_ratio</code></a> (1) times
+<span class="arithmatex">\(\varepsilon\)</span>: 0.00346 here. In this run the 14 edges stay on the
 input curve, up to rounding. The bend at the cube's centre is a vertex of the curve like any other:
 it is not anchored, and the tube is what keeps the curve's shape there.</p>
 <p><strong>The points.</strong> Five points are anchored: the curve's two ends, the free vertex of the edge file,
 and the two points of the point file. Each is a vertex of the output at exactly its input position.
 The optimization may move an anchored vertex within the tube's radius of its point, and refuses a
-collapse that would leave a point without a vertex within it
-(<a href="../../../reference/tetwild/#preserve_feature_points"><code>preserve_feature_points</code></a>).</p>
+collapse that would leave a point without a vertex within it. The curve's ends, and any vertex where
+three or more feature curves or open boundaries meet, are anchored the same way.</p>
 <p><strong>The curve network's topology.</strong> The run compares the Euler characteristic of each connected
 curve of the input with that of the tagged edges, and warns when they differ. Here both are one
 open curve.</p>
@@ -3632,7 +3632,7 @@ of the point file; the curve's ends are vertices of the curve.</p>
 <a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a>    <span class="k">return</span> <span class="n">worst_anchor</span><span class="p">,</span> <span class="n">containment</span><span class="p">,</span> <span class="n">coverage</span>
 <a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a>
 <a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a>
-<a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a><span class="n">tube</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">report</span><span class="p">[</span><span class="s2">"eps"</span><span class="p">]</span>  <span class="c1"># feature_envelope_ratio (0.5) times eps</span>
+<a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a><span class="n">tube</span> <span class="o">=</span> <span class="n">report</span><span class="p">[</span><span class="s2">"eps"</span><span class="p">]</span>  <span class="c1"># feature_envelope_ratio (1) times eps</span>
 <a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a><span class="n">worst_anchor</span><span class="p">,</span> <span class="n">containment</span><span class="p">,</span> <span class="n">coverage</span> <span class="o">=</span> <span class="n">check</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">features</span><span class="p">)</span>
 <a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"anchors: the worst is </span><span class="si">{</span><span class="n">worst_anchor</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2"> from a vertex (tube radius </span><span class="si">{</span><span class="n">tube</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 <a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"curve: tagged edges within </span><span class="si">{</span><span class="n">containment</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2"> of it, covering it to </span><span class="si">{</span><span class="n">coverage</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -3644,29 +3644,18 @@ of the point file; the curve's ends are vertices of the curve.</p>
 14 and 17 tagged edges, and in one of them the tagged edges moved up to 0.00069 off the curve,
 inside the tube. The anchors were at distance 0 in both.</p>
 <h2 id="without-the-anchors">Without the anchors<a class="headerlink" href="#without-the-anchors" title="Permanent link">&para;</a></h2>
-<p><a href="../../../reference/tetwild/#preserve_feature_points"><code>preserve_feature_points</code></a> false keeps the
-curve in its tube but anchors nothing:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Without the anchors, the curve's free end and the points may move away.</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">outputs</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">tetwild</span><span class="p">({</span><span class="o">**</span><span class="n">options</span><span class="p">,</span> <span class="s2">"preserve_feature_points"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span> <span class="n">inputs</span><span class="p">)</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">worst_anchor</span><span class="p">,</span> <span class="n">containment</span><span class="p">,</span> <span class="n">coverage</span> <span class="o">=</span> <span class="n">check</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">],</span> <span class="n">outputs</span><span class="p">[</span><span class="s2">"features"</span><span class="p">])</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"preserve_feature_points false: the worst anchor is </span><span class="si">{</span><span class="n">worst_anchor</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2"> from a vertex, "</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>      <span class="sa">f</span><span class="s2">"the curve is covered to </span><span class="si">{</span><span class="n">coverage</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>preserve_feature_points false: the worst anchor is 0.11 from a vertex, the curve is covered to 0.18
-</code></pre></div>
-<p>The points' vertices moved or were collapsed away: the farthest point is now 0.11 from the nearest
-vertex, 64 times the tube's radius. And the curve lost 0.18 of its length at one end: its last
-tagged vertex is at (1.574, 1, 1.574) instead of (1.7, 1, 1.7). A collapse along the curve that
-shortens it keeps what is left inside the tube, so the tube alone cannot see it; that is what the
-anchors at the curve's ends are for.</p>
+<p>Until 2026-10, <code>preserve_feature_points</code> false kept the curve in its tube but anchored nothing.
+The points' vertices then moved or were collapsed away: the farthest point ended 0.11 from the
+nearest vertex, 64 times the tube's radius of the time (0.5 <span class="arithmatex">\(\varepsilon\)</span>). And the curve lost
+0.18 of its length at one end: its last tagged vertex was at (1.574, 1, 1.574) instead of
+(1.7, 1, 1.7). A collapse along the curve that shortens it keeps what is left inside the tube, so
+the tube alone cannot see it; that is what the anchors at the curve's ends are for. They are now
+always on, as the tube and the surface envelope are.</p>
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../../reference/tetwild/#feature_envelope_ratio"><code>feature_envelope_ratio</code></a> (0.5): the tube's
-  radius, as a fraction of <span class="arithmatex">\(\varepsilon\)</span>. Here 1.0 gives the same mesh: the curve did not use the
-  room.</li>
-<li><a href="../../../reference/tetwild/#allow_junction_cleanup"><code>allow_junction_cleanup</code></a> (true): where three
-  or more feature edges meet, the junction is not anchored, and may merge and move within the tube;
-  every curve through it stays tagged. False anchors junctions too.</li>
+<li><a href="../../../reference/tetwild/#feature_envelope_ratio"><code>feature_envelope_ratio</code></a> (1): the tube's
+  radius and the anchors' radius, as a fraction of <span class="arithmatex">\(\varepsilon\)</span>. Here 0.5 gives the same mesh:
+  the curve did not use the room.</li>
 <li><a href="../../../reference/tetwild/#filter"><code>filter</code></a>: a feature in a region the filter removes leaves
   the tet mesh with it, but stays in the feature output. With an extra point at (2.5, 1, 1),
   outside the cube, the nearest vertex of the filtered mesh is 0.5 away, while the feature output
@@ -3680,10 +3669,10 @@ anchors at the curve's ends are for.</p>
 <li>The <a href="../../tetwild/">TetWild tutorial</a>, and the reference of
   <a href="../../../reference/tetwild/#input_edges"><code>input_edges</code></a>,
   <a href="../../../reference/tetwild/#input_points"><code>input_points</code></a> and
-  <a href="../../../reference/tetwild/#preserve_feature_points"><code>preserve_feature_points</code></a>.</li>
+  <a href="../../../reference/tetwild/#feature_envelope_ratio"><code>feature_envelope_ratio</code></a>.</li>
 <li><a href="../../../concepts/embedding/">Embedding</a>: how the curves and points are inserted with the
   surface.</li>
-<li><a href="../../triwild/#feature-points-input_points-preserve_feature_points">TriWild</a>: the same anchors in
+<li><a href="../../triwild/#feature-points-input_points">TriWild</a>: the same anchors in
   2D.</li>
 </ul>
 
