@@ -6716,10 +6716,11 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
 
 double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, const bool coarsen)
 {
-    // The final envelopes -- the front's envelope, and m_envelope widened to every region boundary
-    // as placement left them (build_final_envelopes()). TetWild's own rules (m_op_rules: the
-    // smoother's raw AMIPS sum, the operations' max of AMIPS^3), no band term, no plastic medium
-    // (AMIPS against the regular tet); the front smoothed inside its envelope like any held vertex.
+    // The final envelopes -- the front's envelope (build_final_envelopes()); every other tracked
+    // surface stays in the loop's envelopes, where build_envelopes() captured it. TetWild's own
+    // rules (m_op_rules: the smoother's raw AMIPS sum, the operations' max of AMIPS^3), no band
+    // term, no plastic medium (AMIPS against the regular tet); the front smoothed inside its
+    // envelope like any held vertex.
     build_final_envelopes();
     m_tetwild_pass = true;
     // TetWild's own rules for the operations and the smoother (m_op_rules).
@@ -6782,7 +6783,6 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, cons
     m_plastic_active = plastic_was;
     m_op_rules = rules_was;
     m_tetwild_pass = false;
-    release_final_envelopes();
     assign_band_regions();
     return std::get<0>(optimization_quality_stats());
 }

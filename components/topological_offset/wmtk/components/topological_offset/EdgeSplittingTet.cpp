@@ -405,6 +405,8 @@ bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
     // get split face tags (used a bunch later)
     size_t split_f_id = t.fid(*this);
     cache.splitf_label = m_face_extra[split_f_id].label;
+    cache.split_f = face_snapshot(split_f_id);
+    cache.splitf_on_region = face_is_region(split_f_id);
 
     // new vertex
     cache.v1_id = t.vid(*this);
@@ -496,12 +498,32 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
         (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar +
          m_vertex_attribute[v3_id].m_sizing_scalar) /
         3;
+    // On the split face's surfaces, as the edge split's new vertex is on its edge's
+    // (marching_split_edge_after()): a region boundary's, the walls all three corners share, and
+    // then the base's union flag, which every containment check is gated on.
+    m_vertex_extra[v_id].m_is_on_region = cache.splitf_on_region;
+    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+        wmtk::set_intersection(
+            m_vertex_attribute[v1_id].on_bbox_faces,
+            m_vertex_attribute[v2_id].on_bbox_faces),
+        m_vertex_attribute[v3_id].on_bbox_faces);
+    if (vertex_is_on_region(v_id)) {
+        m_vertex_attribute[v_id].m_is_on_surface = true;
+    }
 
     // new edges/faces on split face
     EdgeAttributes splitf_eattr;
     splitf_eattr.label = cache.splitf_label;
-    FaceSnapshot splitf_fattr;
-    splitf_fattr.extra.label = cache.splitf_label;
+    // THE SPLIT RULE, as the edge split, the tet split and the 2D edge split keep it: a piece of a
+    // split simplex lies on every surface the simplex was on; a simplex new inside one cell lies
+    // on none. So each piece takes the split face's snapshot -- tracking, wall side, class, input
+    // set, sheet, label -- with its orientation, which is stored against the ascending order of
+    // a face's own vertices, converted: the piece (v_i, v_i+1, v) replaces v_i+2 by v in place,
+    // so along that order it carries the face's orientation along (v_i, v_i+1, v_i+2), a cyclic
+    // turn of (v1, v2, v3). Until 2026-11 the pieces took a fresh snapshot with the label alone,
+    // so a tracked face split here lost its tracking: its surface got a hole -- its topology no
+    // longer kept, its face tags missing on the pieces, nothing holding them.
+    const int splitf_orientation = cache.split_f.tags.orientation_along(splitf_vids);
     for (int i = 0; i < 3; i++) {
         size_t curr_v1_id = splitf_vids[i];
         size_t curr_v2_id = splitf_vids[(i + 1) % 3];
@@ -509,8 +531,12 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
         size_t glob_eid = tuple_from_edge({{curr_v1_id, v_id}}).eid(*this); // new edge
         m_edge_attribute[glob_eid] = splitf_eattr;
 
+        FaceSnapshot piece = cache.split_f;
+        piece.tags.set_orientation_along(
+            std::array<size_t, 3>{{curr_v1_id, curr_v2_id, v_id}},
+            splitf_orientation);
         auto [_, glob_fid] = tuple_from_face({{curr_v1_id, curr_v2_id, v_id}}); // new face
-        restore_face(glob_fid, splitf_fattr);
+        restore_face(glob_fid, piece);
     }
 
     // existing edges on split face
