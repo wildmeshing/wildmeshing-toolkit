@@ -1,3 +1,9 @@
+# No LTO: pybind11_add_module adds its own unless CMAKE_INTERPROCEDURAL_OPTIMIZATION is defined
+# (OFF is CMake's default for every target, so this directory loses nothing). The components the
+# module links are static libraries of plain objects, so LTO only ever reached the binding code,
+# and mixing the two broke GCC 15.2's link of the offset module, which links the same libraries;
+# see components/topological_offset/.../CMakeLists.txt. The Release strip and MSVC's extras stay.
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
 pybind11_add_module(wildmeshing pywildmeshing.cpp mesh_conversion.cpp)
 
 target_link_libraries(wildmeshing PUBLIC

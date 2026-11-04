@@ -1962,6 +1962,75 @@ TEST_CASE("exact-band-integral-hessian-contact", "[offset][exact_band]")
         b);
 }
 
+TEST_CASE("exact-band-integral-hessian-needle", "[offset][exact_band]")
+{
+    // p70565 piece16 inward (delta 0.1786), exact_swept, 1 thread, turn 1, 2026-10-31: a swept
+    // tet (x0, x, a, b) of front vertex 7151, moving corner x (kv 1), a sliver of volume 9.5e-9
+    // with edges 0.06-0.85 whose face (x, a, b) is a needle (|N| / its longest edge^2 6.5e-4),
+    // with the input triangles that have a corner or centroid within 1 of one of its corners (the
+    // same gradient and Hessian as the whole input's, bit for bit). One piece, of a face member.
+    // MEASURED with the edges of t told from the other faces' planes (before 2026-11-01): the
+    // Hessian 3.0e3 (relative) off its central differences and 2.4e-2 asymmetric -- the edges
+    // x-a and x-b lay 5e-15..1.6e-14 off the needle's plane (tol 4.8e-15), so they took cut terms
+    // of 0.4-1.8 against |H| 1.8e-4.
+    Eigen::MatrixXd V(16, 3);
+    V << 22.141775707716491, -20.593213746326168, 0, //
+        23.252800000000001, -20.005400000000002, 1.5, //
+        23.308250842856602, -23.18232077868495, 1.5, //
+        23.327554731022996, -23.237654313274735, 0, //
+        23.33914203209136, -18.322312231041515, 0, //
+        24.120002530843372, -19.773058018767841, 1.5, //
+        24.294520430316609, -23.678150116557099, 1.5, //
+        24.355, -23.728999999999999, 0, //
+        24.68873953310149, -20.715313051767581, 0, //
+        24.758400000000002, -20.811699999999998, 1.5, //
+        24.866220713994959, -20.296661846706453, 1.5, //
+        25.35281684781604, -19.568442537499358, 1.5, //
+        25.75405043006019, -18.873496942629938, 0, //
+        25.956420350996723, -22.511814257166524, 1.5, //
+        26.070804335577076, -22.704961204466734, 0, //
+        22.977038960455403, -21.608723381875372, 1.5;
+    Eigen::MatrixXi F(17, 3);
+    F << 0, 3, 8, 0, 4, 8, 1, 5, 10, 1, 9, 10, 1, 9, 15, 2, 6, 9, 2, 9, 15, 3, 7, 8, 4, 8, 12, 5,
+        10, 11, 6, 9, 13, 7, 8, 14, 8, 9, 10, 8, 9, 13, 8, 10, 11, 8, 11, 12, 8, 13, 14;
+    const std::vector<int8_t> side = {1, -1, 1, -1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1};
+    const ExactBandIntegral eb(V, F, side, 1);
+    const double delta = 0.1786;
+    const Tet T = {
+        {Vec3(24.705501428139677, -20.796986005249821, 0.74998652524223974),
+         Vec3(24.717413920863997, -20.840921306816576, 0.79007299731419245),
+         Vec3(24.960582938388821, -21.352458185309033, 1.3362979195790436),
+         Vec3(24.865276012723704, -21.153121304516027, 1.1230389836714425)}};
+    const int kv = 1;
+    Vec3 G;
+    Eigen::Matrix3d H;
+    eb.value_grad_hess(T, kv, delta, G, H);
+    double err = std::numeric_limits<double>::infinity();
+    for (const double h : {1e-5, 1e-6, 1e-7}) {
+        Eigen::Matrix3d J;
+        for (int j = 0; j < 3; ++j) {
+            Tet Tp = T, Tm = T;
+            Tp[size_t(kv)][j] += h;
+            Tm[size_t(kv)][j] -= h;
+            Vec3 Gp, Gm;
+            Eigen::Matrix3d Hp, Hm;
+            eb.value_grad_hess(Tp, kv, delta, Gp, Hp);
+            eb.value_grad_hess(Tm, kv, delta, Gm, Hm);
+            J.col(j) = (Gp - Gm) / (2. * h);
+        }
+        err = std::min(err, (H - J).norm() / J.norm());
+    }
+    const double asym = (H - H.transpose()).norm() / H.norm();
+    std::printf(
+        "exact-band-integral-hessian-needle: |H| %.2e, against central differences %.1e, "
+        "asymmetry %.1e\n",
+        H.norm(),
+        err,
+        asym);
+    CHECK(err <= 1e-4);
+    CHECK(asym <= 1e-6);
+}
+
 /**
  * Hidden check of the "exact" rule's one-vertex Hessian on a stored band:
  * EXACT_HESS_STATE=<band>.bin ./wmtk_test_topological_offset "[.hess_states]". The file is the

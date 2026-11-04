@@ -42,6 +42,16 @@ target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 # reimplement, so the script calls this and gets the same field the run uses. Optional: the
 # component builds and the app runs whether or not this target exists.
 if(WMTK_PYBIND AND TARGET pybind11::module)
+    # No LTO: pybind11_add_module adds its own unless CMAKE_INTERPROCEDURAL_OPTIMIZATION is
+    # defined (OFF is CMake's default for every target, so this directory loses nothing). With
+    # it, the module's source is compiled -flto -fno-fat-lto-objects while the static libraries
+    # it links are plain objects that define the same inline Eigen and libigl functions, and
+    # with GCC 15.2 (ubuntu-26.04) the link left TopoOffsetTetMesh.cpp.o's calls to some of them
+    # undefined (Eigen's resize, assignment and storage destructor; libigl's default_num_threads
+    # guard), apparently because it keeps the module's LTO copies and LTO then drops them. GCC
+    # 13.3 linked it. Not NO_EXTRAS: that would also drop the Release strip and, on MSVC,
+    # /bigobj. python/src/CMakeLists.txt does the same for wildmeshing._core.
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
     pybind11_add_module(wmtk_offset_field python/offset_field_py.cpp)
     target_link_libraries(wmtk_offset_field PRIVATE wmtk_${COMPONENT_NAME})
     # The component and everything under it are static; a shared module can only link them if
