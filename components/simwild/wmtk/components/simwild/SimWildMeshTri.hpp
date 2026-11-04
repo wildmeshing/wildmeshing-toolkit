@@ -51,6 +51,52 @@ public:
 
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
+    /// Per row of m_E_envelope: its label bits, when m_E_envelope is the input curves
+    /// (InputData::F_envelope_labels); empty once m_E_envelope is rebuilt from the mesh.
+    std::vector<InputSet> m_E_envelope_labels;
+    /// The vertices of the input points (input_points), set before init: anchored there, in a
+    /// ball of feature_envelope_ratio x eps (TriOptimizerMesh::anchor_feature_points()).
+    std::vector<size_t> m_input_point_vids;
+
+    /// Names of the edge tags: bit i of an edge's input set is m_edge_tag_names[i].
+    std::vector<std::string> m_edge_tag_names;
+
+    /// The edge-tag bits of an input set: those below the number of edge tags.
+    InputSet edge_tag_mask() const
+    {
+        const size_t n = m_edge_tag_names.size();
+        return n >= size_t(SurfaceTagAttributes::max_inputs) ? ~InputSet(0)
+                                                             : (InputSet(1) << n) - 1;
+    }
+
+    /**
+     * @brief The labels, one envelope each (the base's m_input_envelopes), and each surface
+     * edge held by those of the labels it lies on: bit i < C of an edge's input set is edge tag
+     * i (m_edge_tag_names, C of them), bit C + j the boundary of triangle tag j's region. An
+     * edge tag carries its own bit. A border between triangle tag sets S and S' carries the bits
+     * of the tags in one and not the other; ambient is the empty set, so a border of region X
+     * with ambient is held by X's envelope, one between X and Y by both. The 2D twin of
+     * SimWildMesh::m_input_envelopes.
+     *
+     * Member b is built around the same curves as m_envelope, restricted to label b -- the
+     * input curves of that label in generation, else the mesh's surface edges carrying it
+     * (TriOptimizerMesh::init_input_envelopes()) -- at m_envelope_eps and with the predicate
+     * m_envelope has. m_envelope stays the union, for the engine's direct uses of it and for a
+     * surface edge carrying no label. At most 64 edge tags and triangle tags together: a mesh
+     * with more throws.
+     */
+    void init_label_envelopes();
+
+    /// A tracked segment's containment: its labels' envelopes if it has any, else m_envelope,
+    /// as simwild 3D holds a surface face with no label. The base throws on such a segment
+    /// instead; that is triwild's defect check, kept there.
+    std::shared_ptr<Envelope> surface_envelope_for_edge(
+        const std::array<size_t, 2>& vids,
+        const EdgeAttributes& attr) const override
+    {
+        if (attr.m_is_surface_fs && attr.input_set() == 0) return m_envelope;
+        return TriOptimizerMesh::surface_envelope_for_edge(vids, attr);
+    }
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
     std::vector<std::tuple<ExprPtr, double>> m_quality_field;
@@ -58,13 +104,6 @@ public:
     bool m_collapse_check_link_condition = false; // classical link condition
     bool m_collapse_check_topology = false; // sanity check
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
-
-    /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
-    /// the envelope. See TriOptimizerMesh's feature-point anchors for the case that is.
-    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override
-    {
-        return true;
-    }
 
     SimWildMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : wmtk::TriOptimizerMesh(_m_params)
@@ -97,7 +136,10 @@ public:
         const MatrixXd& V,
         const MatrixXi& T,
         const MatrixSi& T_tags,
-        const std::vector<std::string>& tag_names);
+        const std::vector<std::string>& tag_names,
+        const MatrixXi& E_tagged = MatrixXi(),
+        const MatrixSi& E_tags = MatrixSi(),
+        const std::vector<std::string>& edge_tag_names = {});
 
     /**
      * @brief Same, from EXACT input positions.
@@ -110,9 +152,19 @@ public:
         const MatrixXr& V,
         const MatrixXi& T,
         const MatrixSi& T_tags,
-        const std::vector<std::string>& tag_names);
+        const std::vector<std::string>& tag_names,
+        const MatrixXi& E_tagged = MatrixXi(),
+        const MatrixSi& E_tags = MatrixSi(),
+        const std::vector<std::string>& edge_tag_names = {});
 
     void init_surfaces_and_boundaries();
+    /// Tracks the edges E_tagged (rows of T's vertices, as read_curves gives them) as surface,
+    /// with input set bit j where E_tags has a 1 in column j. Throws on a row that is no edge.
+    /// The 2D twin of SimWildMesh::init_face_tags.
+    void init_edge_tags(
+        const MatrixXi& E_tagged,
+        const MatrixSi& E_tags,
+        const std::vector<std::string>& edge_tag_names);
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 

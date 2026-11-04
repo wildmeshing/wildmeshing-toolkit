@@ -64,17 +64,14 @@ for change in [{}, {"stop_energy": 100}, {"stop_energy": 5}, {"stop_energy": 3},
 # A closed curve and twelve points to keep as vertices: nine inside, three outside.
 star = {"curve": wm.read_mesh(str(DATA / "triwild_free_points_curve.obj")),
         "points": wm.read_mesh(str(DATA / "triwild_free_points_points.obj"))}
-for preserve in [True, False]:
-    outputs, report = triangulate(
-        {"input_points": ["points"], "preserve_feature_points": preserve, "stop_energy": 10,
-         "DEBUG_feature_retention": True},
-        star, ["curve"])
-    V = outputs["mesh"]["V"]
-    # How far each input point is from the nearest vertex of the output.
-    worst = max(np.linalg.norm(V - p, axis=1).min() for p in star["points"]["V"])
-    print(f"preserve_feature_points {preserve}: {report['features_retained']} of "
-          f"{report['features_total']} points kept, the worst {worst:.3f} from a vertex "
-          f"(eps {report['eps']:.3f})")
+outputs, report = triangulate(
+    {"input_points": ["points"], "stop_energy": 10, "DEBUG_feature_retention": True},
+    star, ["curve"])
+V = outputs["mesh"]["V"]
+# How far each input point is from the nearest vertex of the output.
+worst = max(np.linalg.norm(V - p, axis=1).min() for p in star["points"]["V"])
+print(f"{report['features_retained']} of {report['features_total']} points kept, the worst "
+      f"{worst:.3f} from a vertex (eps {report['eps']:.3f})")
 # --8<-- [end:points]
 
 # --8<-- [start:open]

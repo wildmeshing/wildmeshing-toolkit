@@ -375,6 +375,8 @@ def simwild(options: dict, meshes: dict) -> tuple:
       output (string, default "out"): Output file name (without extension).
       input_transform (list, default []): Transformation matrices for the inputs.
       input_dir (string, default ""): Directory where the input files are located.
+      input_edges (list, default []): List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint.
+      input_points (list, default []): List of input feature POINT files, 3D surface inputs and 2D curve inputs (a .msh input and a tagged mesh refuse them): every vertex of each file is forced into the mesh as a vertex, exactly -- a tet vertex in 3D, a vertex of the curve arrangement in 2D, where only x and y are used (edges in these files are ignored, with a warning).
       skip_simplify (bool, default false): If true, input simplification will be skipped.
       tag_from_winding_number (bool, default true): How the cells of the arrangement are tagged.
       split_connected_components (bool, default false): Treat each connected component of an input file as an input in its own right, rather than the file as a whole.
@@ -389,7 +391,8 @@ def simwild(options: dict, meshes: dict) -> tuple:
       eps_simplify (float, default -1): Absolute envelope thickness for the initial simplification.
       simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses).
       remove_duplicate_eps (float, default 0): Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal.
-      order2_envelope_ratio (float, default 0.5): Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface.
+      order2_envelope_ratio (float, default 1.0): Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface and its non-manifold edges -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet.
+      feature_envelope_ratio (float, default 1.0): Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge (/input_edges) must stay inside -- and the radius of the feature anchors (the /input_points, and the vertices where feature curves end or three or more meet), as a fraction of the surface envelope's eps.
       length (float, default -1): Absolute target edge length.
       length_rel (float, default 0.05): Target edge length relative to the bounding box diagonal.
       sizing_field (list, default []): Prescribe a length for a specific region defined by tags.
@@ -472,10 +475,8 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       input (list, required): List of triangular input meshes.
       input_edges (list, default []): List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint.
       input_points (list, default []): List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning).
-      preserve_feature_points (bool, default true): Keep the 0-dimensional features -- every /input_points point, and the endpoints of open feature curves (junctions too, when allow_junction_cleanup is off) -- within the feature tube radius of where the input put them.
-      allow_junction_cleanup (bool, default true): Anchor only the endpoints of open feature curves, letting junctions (valence >= 3 in the feature network) merge and move within the tube.
       DEBUG_feature_retention (bool, default false): Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius.
-      feature_envelope_ratio (float, default 0.5): Envelope thickness for the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- as a fraction of the surface envelope's eps.
+      feature_envelope_ratio (float, default 1.0): Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- and the radius of the feature-point anchors, as a fraction of the surface envelope's eps.
       output (string, default "out"): Output file name (without extension).
       input_names (list, default []): Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route.
       input_dir (string, default ""): Directory where the input files are located.
@@ -485,7 +486,7 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       simplify_envelope_ratio (float, default 0.5): Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation.
       simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges.
       optimize_envelope_around_simplified (bool, default false): EXPERIMENT.
-      order2_envelope_ratio (float, default 0.5): Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface.
+      order2_envelope_ratio (float, default 1.0): Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet (see feature_envelope_ratio).
       use_sample_envelope (bool, default false): Use sample envelope instead of exact one.
       use_legacy_code (bool, default false): Use the original TetWild code for the mesh improvement.
       num_threads (int, default 0): Number of threads.
@@ -735,8 +736,8 @@ def triwild(options: dict, meshes: dict) -> tuple:
       interleaved_smoothing (bool, default true): Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes.
       interleaved_smoothing_passes (int, default 1): Smoothing passes to run after each topology pass when interleaved_smoothing is set.
       colored_smoothing (bool, default true): Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks.
-      preserve_feature_points (bool, default true): Keep the curve network's 0-dimensional features -- the endpoints of open polylines, and junctions -- within eps of where the arrangement placed them.
-      allow_junction_cleanup (bool, default true): Let the operations clean up junctions, anchoring only the endpoints of open polylines.
+      order2_envelope_ratio (float, default 1.0): Radius of the anchors of the polyline endpoints, as a fraction of eps.
+      feature_envelope_ratio (float, default 1.0): Radius of the anchors of the input free points (see order2_envelope_ratio), as a fraction of eps.
       preserve_topology (bool, default false): Preserve the topology of the input curve network.
       throw_on_fail (bool, default false): Throw exception if the output does not fulfil the desired criteria.
       log_file (string, default ""): Logs are not just printed on the terminal but also saved in this file.

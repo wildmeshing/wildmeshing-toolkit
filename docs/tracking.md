@@ -794,17 +794,17 @@ the one it ends at.
   the input simplification without the link condition: all of them `topology` warnings. With
   `preserve_topology` there are none of these left.
 - Duplicate segments in the input files (`merged_segments`), which the weld makes one.
-- **Not a warning, but a distortion: junctions that slide.** Without tracking, triwild anchors
-  only curve ends (`allow_junction_cleanup` defaults to true); a junction is free to move, and
-  does: on 190246 one slid 14 units in a single smoothing step, zipping two curves that run
+- **Not a warning, but a distortion: junctions that slide.** triwild anchors only curve ends; a
+  junction is free to move, with or without tracking, and does: on 190246 one slid 14 units in a single smoothing step, zipping two curves that run
   side by side inside the envelope. The map still takes the junction to the junction, so one
   branch stretches 12 times and the others shrink as much. Points then drift far along the
   curves (mean 0.97, max 174 segment lengths), and a point that rides the junction loses
   precision through the steps that stretch it (round trip 6.76 there). With junctions anchored
-  they stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths. So
-  `history_output` anchors them (`allow_junction_cleanup` defaults to false then, unless the
-  config gives it; without `preserve_feature_points`, which anchors nothing, it is left alone). The freeze the option was introduced for in August, a self-intersecting
-  input stuck at MAX_ENERGY by its anchored crossings, no longer happens on its example:
+  they stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths. Until
+  2026-10 `history_output` anchored them (`allow_junction_cleanup` off); it no longer does,
+  because recording must not change the meshing, and the option is gone. The freeze junctions
+  were freed for in August, a self-intersecting input stuck at MAX_ENERGY by its anchored
+  crossings, no longer happens on its example:
   242427 converges either way at default topology, anchored keeping about 2.5 times the
   vertices (stop_energy 100: max energy 99.5 and 3443 vertices free, 99.2 and 8483 anchored,
   17.5 s and 22.3 s with recording; stop_energy 10: 5476 and 14257 vertices). With
@@ -832,19 +832,18 @@ on each history:
 
 | triwild settings | junctions | topology warnings | worst round trip | below 1e-8 | drift, median of means | edits | map build |
 |---|---|---|---|---|---|---|---|
-| default | anchored (the default with `history_output`) | on 22 of 24 (welds) | 2.4e-9 | 24 of 24 | 0.043 segment lengths | 0.5k–51k | at most 0.20 s |
-| default | free (`allow_junction_cleanup: true`) | on 22 of 24 (welds) | 2.8e-10 | 24 of 24 | 0.044 | 0.5k–49k | at most 0.16 s |
-| `preserve_topology` | anchored (the default with `history_output`) | 0 | 3.3e-6 | 18 of 24 | 0.045 | up to 2.0M | up to 9.3 s |
-| `preserve_topology` | free (`allow_junction_cleanup: true`) | 0 | 6.76 (190246; next 1.5e-4) | 14 of 24 | 0.099 | up to 1.9M | up to 8.7 s |
+| default | anchored (`history_output`'s default until 2026-10) | on 22 of 24 (welds) | 2.4e-9 | 24 of 24 | 0.043 segment lengths | 0.5k–51k | at most 0.20 s |
+| default | free (the only setting since 2026-10) | on 22 of 24 (welds) | 2.8e-10 | 24 of 24 | 0.044 | 0.5k–49k | at most 0.16 s |
+| `preserve_topology` | anchored (`history_output`'s default until 2026-10) | 0 | 3.3e-6 | 18 of 24 | 0.045 | up to 2.0M | up to 9.3 s |
+| `preserve_topology` | free (the only setting since 2026-10) | 0 | 6.76 (190246; next 1.5e-4) | 14 of 24 | 0.099 | up to 1.9M | up to 8.7 s |
 
 The other warnings are the input's: duplicate segments (`merged_segments`, up to 4,144 on
 202361) and overlapping ones (`overlapping`). No point is lost anywhere; every input feature
 point reaches an output vertex but 9 of 584 on 226193 at default topology with junctions free,
 where the input simplification without the link condition retires their vertices. Recording
 costs 2.6–4.0% instructions at default settings with junctions free (12 models, serial), with
-the output `.msh` byte-identical with recording off and on and to the parent commit's. Since
-`history_output` anchors the junctions, recording changes the output unless the config gives
-`allow_junction_cleanup`.
+the output `.msh` byte-identical with recording off and on and to the parent commit's.
+Recording does not change the output.
 
 ### What breaks bijectivity
 

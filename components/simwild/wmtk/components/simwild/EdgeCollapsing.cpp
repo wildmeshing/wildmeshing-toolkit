@@ -5,40 +5,21 @@
 
 namespace wmtk::components::simwild {
 
-bool SimWildMesh::collapse_before_vertex(size_t v1, size_t v2, double edge_length)
-{
-    if (edge_length <= 0 || m_vertex_attribute[v1].m_order != 2) return true;
-    return m_vertex_attribute[v2].m_order >= 2;
-}
+// The order-2 edges are held by the base: tagged at init (tag_order2_edges()), every edge a
+// collapse keeps must stay in their tube, so the chord check that ran here only under
+// preserve_topology is gone.
+//
+// No collapse rule of simwild's own either, as in tetwild: an order-2 vertex may collapse into a
+// vertex of a sheet, the tube holding the curve. Until 2026-10 it could collapse only onto
+// order >= 2, a rule kept for the history maps alone: on two overlapping spheres
+// (tracking-example-simwild-volume) such collapses failed 26 assertions, 24 operations not
+// keeping the surface and 62 points changing region. The maps were at fault, not the mesh, and
+// now map them (VolumeMap's collapse, SurfaceMap's removed star).
 
 bool SimWildMesh::collapse_quality_allowed(size_t v1, double quality, double ring_max) const
 {
     return !m_collapse_check_quality ||
            TetOptimizerMesh::collapse_quality_allowed(v1, quality, ring_max);
-}
-
-bool SimWildMesh::collapse_is_order_2_edge(const std::array<size_t, 2>& e)
-{
-    // These extra curve-envelope checks are SimWild's preserve-topology policy. TetWild's
-    // shared surface link condition is already gated by the same flag in the common core.
-    return m_params.preserve_topology && is_order_2_edge(e);
-}
-
-bool SimWildMesh::collapse_after_connectivity(
-    size_t v1,
-    size_t v2,
-    const std::vector<std::array<size_t, 2>>& boundary_edges)
-{
-    m_vertex_attribute[v2].m_order =
-        std::max(m_vertex_attribute[v1].m_order, m_vertex_attribute[v2].m_order);
-
-    if (collapse_cache.local().edge_length <= 0) return true;
-    for (const auto& vids : boundary_edges) {
-        const std::array<Vector3d, 2> pts{
-            {m_vertex_attribute.at(vids[0]).m_posf, m_vertex_attribute.at(vids[1]).m_posf}};
-        if (m_order_2_edge_envelope->is_outside(pts)) return false;
-    }
-    return true;
 }
 
 void SimWildMesh::simplify()

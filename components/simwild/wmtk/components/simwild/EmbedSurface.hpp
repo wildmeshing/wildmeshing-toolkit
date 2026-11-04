@@ -7,6 +7,7 @@
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/utils/Delaunay.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 namespace wmtk::components::simwild {
 
@@ -29,6 +30,8 @@ using FacetSources = std::vector<std::pair<PositionKey, std::vector<uint32_t>>>;
  * @param tets The tets from the tetrahedralization.
  * @param box_min The box corner with the lowest coordinate values.
  * @param box_max The box corner with the largest coordinate values.
+ * @param features Optional feature curves and points the box is grown over too, as tetwild grows
+ * its input bbox over them (utils::FeatureInputs::extend_bbox()).
  */
 void delaunay_box_mesh(
     const wmtk::Envelope& envelope,
@@ -36,7 +39,8 @@ void delaunay_box_mesh(
     std::vector<wmtk::delaunay::Point3D>& points,
     std::vector<wmtk::delaunay::Tetrahedron>& tets,
     Vector3d& box_min,
-    Vector3d& box_max);
+    Vector3d& box_max,
+    const utils::FeatureInputs* features = nullptr);
 
 /**
  * @brief Embed a surface in the given volumetric mesh.
@@ -57,6 +61,8 @@ void delaunay_box_mesh(
  * @param[out] F_on_surface_orientations Parallel to F_on_surface_inputs: each listed input's
  * direction on the face, against the row's vertex order -- +1 along, -1 against, 0 where that
  * input's triangles there face both ways. Filled with F_on_surface_inputs.
+ * @param features Optional feature edges and points to force into the embedding, exactly.
+ * @param[out] features_out With features: where each ended up, in V_emb's numbering.
  */
 void embed_surface(
     const MatrixXd& V_surface,
@@ -70,7 +76,9 @@ void embed_surface(
     const std::vector<size_t>& F_input = {},
     std::vector<std::vector<size_t>>* F_on_surface_inputs = nullptr,
     std::vector<std::vector<int>>* F_on_surface_orientations = nullptr,
-    FacetSources* facet_sources = nullptr);
+    FacetSources* facet_sources = nullptr,
+    const utils::EmbedFeaturesInput* features = nullptr,
+    utils::EmbedFeaturesResult* features_out = nullptr);
 
 /**
  * A class for reading an image and converting it into a tet mesh.
@@ -108,6 +116,9 @@ public:
     const history::SurfaceHistory& input_history() const { return m_input_history; }
     /// With record_history, once embedded: the input triangles each surface facet lies on.
     FacetSources& facet_sources() { return m_facet_sources; }
+    /// With features, once embedded: where each ended up, in V_emb()'s numbering (consolidate()
+    /// renumbers it with the vertices).
+    const utils::EmbedFeaturesResult& features_placed() const { return m_features_placed; }
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.
@@ -139,11 +150,14 @@ public:
      * across the arrangement's own surface provenance. See tag_from_provenance.
      * @param provenance Also record which inputs tile each surface face (F_tags_surface()),
      * which the provenance tagging records anyway.
+     * @param features Optional feature curves and points forced into the embedding with the
+     * surface; the background box is grown over them. Where they went: features_placed().
      */
     bool embed_surface(
         const bool flood_fill = false,
         const bool tag_from_winding_number = true,
-        const bool provenance = false);
+        const bool provenance = false,
+        const utils::FeatureInputs* features = nullptr);
 
     /**
      * @brief Remove unreferenced vertices.
@@ -172,6 +186,7 @@ private:
     bool m_record_history = false;
     history::SurfaceHistory m_input_history;
     FacetSources m_facet_sources;
+    utils::EmbedFeaturesResult m_features_placed;
 
 public:
     /**

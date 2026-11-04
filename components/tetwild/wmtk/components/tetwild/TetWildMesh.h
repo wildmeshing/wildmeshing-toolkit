@@ -66,39 +66,18 @@ public:
 class TetWildMesh : public wmtk::TetOptimizerMesh
 {
 public:
-    /**
-     * @brief tetwild's per-vertex additions to the shared VertexAttributes.
-     *
-     * Registered with the base's m_vertex_attr_group, so it is resized, protected and rolled
-     * back exactly like the shared collection -- which matters, because collapse_edge_after and
-     * split_edge_after both write it.
-     */
-    struct VertexExtras
-    {
-        /// Whether the vertex lies on an open boundary of the input surface. The 2D
-        /// counterpart is the base's feature-point id
-        /// (TriOptimizerMesh::FeaturePointAttributes), which differs deliberately -- see the
-        /// comment there.
-        bool m_is_on_open_boundary = false;
-        /// Whether the vertex lies on an input feature curve (see EdgeAttributes).
-        bool m_is_on_feature_curve = false;
-    };
-    wmtk::AttributeCollection<VertexExtras> m_vertex_extra;
+    // The feature curves are held by the base: tagged at init (tag_feature_edges()), in their
+    // tube (init_feature_envelope()). The tags are the only state; a vertex is on a curve when
+    // it has a feature edge (vertex_has_feature_edge()). tetwild's per-vertex flag, which only
+    // tests read, is gone with the hooks that maintained it.
 
-    // The 0-dimensional features -- the input feature points, and the feature-curve
-    // endpoints (junctions too, when allow_junction_cleanup is off) -- are anchored by the
-    // base (TetOptimizerMesh's feature-point anchors), turned on in the constructor. The
-    // driver sets m_feature_eps alongside m_feature_envelope; init_from_Volumeremesher fills
-    // the anchors.
+    // The 0-dimensional features -- the input points, and every vertex where a tagged curve
+    // ends or three or more meet -- are anchored by the base (TetOptimizerMesh's feature-point
+    // anchors, anchor_feature_points()), at the end of init_from_Volumeremesher.
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// tetwild-only fields.
     Parameters& m_tet_params;
-
-    /// Envelope for order-2 vertices, i.e. those on a surface boundary or a non-manifold
-    /// edge. Named for the order rather than for "open boundary" because that is what
-    /// TetMesh::compute_vertex_order actually reports, and it is the broader set.
-    std::shared_ptr<Envelope> m_order2_envelope;
 
     /**
      * @brief One envelope per input surface, when there are several: a tracked face is held to
@@ -167,75 +146,20 @@ public:
     }
     bool allow_surface_swap() const override { return m_tet_params.allow_surface_swap; }
     bool check_surface_topology() const override { return m_tet_params.check_surface_topology; }
-    void split_after_vertex(const size_t vid, const bool is_open_boundary) override
-    {
-        m_vertex_extra[vid].m_is_on_open_boundary = is_open_boundary;
-    }
-    bool boundary_edges_at_vertex_inside(size_t vid) const override
-    {
-        if (!m_vertex_extra[vid].m_is_on_open_boundary || !m_order2_envelope) {
-            return true;
-        }
-        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-            if (!m_vertex_extra[u].m_is_on_open_boundary) {
-                continue;
-            }
-            // Exact membership: an open boundary edge has exactly one incident tracked
-            // face. Flags alone would also catch interior chords between two boundary
-            // vertices (e.g. across a corner), which must not be tube-tested.
-            if (get_num_surface_faces_for_edge({{vid, u}}) != 1) {
-                continue;
-            }
-            if (m_order2_envelope->is_outside(
-                    std::array<Eigen::Vector3d, 2>{
-                        {m_vertex_attribute[vid].m_posf, m_vertex_attribute[u].m_posf}})) {
-                return false;
-            }
-        }
-        return true;
-    }
-    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override
-    {
-        if (edge_length <= 0 || !m_vertex_extra[v1].m_is_on_open_boundary) return true;
-        return m_vertex_extra[v2].m_is_on_open_boundary ||
-               !m_order2_envelope->is_outside(m_vertex_attribute[v2].m_posf);
-    }
-
-    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override
-    {
-        return is_open_boundary_edge(e);
-    }
-    bool collapse_after_connectivity(
-        size_t v1,
-        size_t v2,
-        const std::vector<std::array<size_t, 2>>&) override
-    {
-        m_vertex_extra[v2].m_is_on_open_boundary =
-            m_vertex_extra[v1].m_is_on_open_boundary || m_vertex_extra[v2].m_is_on_open_boundary;
-        m_vertex_extra[v2].m_is_on_feature_curve =
-            m_vertex_extra[v1].m_is_on_feature_curve || m_vertex_extra[v2].m_is_on_feature_curve;
-        return true;
-    }
-    void collapse_after_vertex(size_t, size_t v2) override
-    {
-        if (m_vertex_extra[v2].m_is_on_open_boundary && !is_vertex_on_boundary(v2)) {
-            m_vertex_extra[v2].m_is_on_open_boundary = false;
-        }
-    }
-    void collapse_after_features(size_t, size_t v2) override
-    {
-        // Same cleanup for the feature flag: v1's flag was OR-ed in (see
-        // collapse_after_connectivity), but if the survivor has no incident tagged edge the
-        // curve rerouted around it and the flag is stale.
-        if (m_vertex_extra[v2].m_is_on_feature_curve && !vertex_has_feature_edge(v2)) {
-            m_vertex_extra[v2].m_is_on_feature_curve = false;
-        }
-    }
-
-    void split_after_vertex_feature(size_t vid, bool on_feature) override
-    {
-        m_vertex_extra[vid].m_is_on_feature_curve = on_feature;
-    }
+    /// The open boundaries only. tetwild's non-manifold edges are ones the input's own
+    /// triangles need not have: Thingi10K 111388 is a closed STL whose triangles all meet in
+    /// pairs, and after simplification and insertion 278 of its 329 order-2 edges are
+    /// non-manifold. Holding them in the tube made that run stop at the 40-iteration cap with
+    /// max energy 5.78 (stop 5), against 12 iterations and 4.85 without.
+    bool holds_order2_edge(const size_t n_faces) const override { return n_faces == 1; }
+    // The open boundaries are held by the base: tagged at init (tag_order2_edges()), every
+    // tagged edge a collapse keeps, or a smoothing move touches, must stay in
+    // m_order2_edge_envelope, no swap removes one, and a collapse that leaves one with other
+    // than one face drops its tag. tetwild's own open-boundary machinery is gone with it: the
+    // per-vertex flags, their tube m_order2_envelope (the same tube as the base's), the
+    // collapse's point test (a flagged vertex collapses only onto a flagged vertex or into the
+    // tube, implied by the base's segment test whenever the vertex has a tagged edge) and
+    // is_open_boundary_edge(), which classified edges by the flags and the tube.
 
 
     /// Envelope a vertex is pulled toward while smoothing.
@@ -244,10 +168,9 @@ public:
         : wmtk::TetOptimizerMesh(_m_params, std::move(_m_envelope))
         , m_tet_params(_m_params)
     {
-        m_vertex_attr_group.add(&m_vertex_extra);
         // Registered unconditionally, as the ids always were: the driver exports and audits
-        // the anchors whether or not preserve_feature_points turns the policy on.
-        enable_feature_point_tracking(m_tet_params.preserve_feature_points);
+        // the anchors.
+        enable_feature_point_tracking();
         NUM_THREADS = _num_threads;
         m_tet_attr_group.add(&m_tet_attribute);
         p_tet_attrs = &m_tet_attr_group;
@@ -268,9 +191,6 @@ public:
     {
         const size_t n_tet = _tet_attribute.size();
         m_vertex_attribute.resize(_vertex_attribute.size());
-        // The extras carry no data a caller supplies -- every field defaults -- so they only
-        // have to be sized alongside the shared collection.
-        m_vertex_extra.resize(_vertex_attribute.size());
         m_feature_point_attribute.resize(_vertex_attribute.size());
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);
@@ -308,12 +228,6 @@ public:
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 
 public:
-    //
-    /**
-     * brief Check if the vertex has an incident boundary edge.
-     * This performs a topological check.
-     */
-    bool is_vertex_on_boundary(const size_t vid);
     //
     /**
      * @brief Call the original TetWild code.
@@ -443,7 +357,6 @@ public:
         const std::vector<bool>& tet_face_on_input_surface,
         const std::vector<int8_t>* tet_face_orientation = nullptr,
         const utils::EmbedFeaturesResult* features = nullptr,
-        const std::vector<Vector3d>* feature_anchors = nullptr,
         const std::vector<InputSet>* facet_input_set = nullptr);
 
     void init_from_file(std::string input_dir);
@@ -462,13 +375,6 @@ public:
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
     size_t refine_sizing_around_worst(double max_energy) override;
-
-    // for open boundary
-    void find_open_boundary();
-    /// tetwild's surface is the input mesh, which may be non-watertight, so the base's
-    /// "no open boundary" default does not hold here. See TetOptimizerMesh.
-    bool is_open_boundary_edge(const Tuple& e) override;
-    bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
 public:
     // substructure functions

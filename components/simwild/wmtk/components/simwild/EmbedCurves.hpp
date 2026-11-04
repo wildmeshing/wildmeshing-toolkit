@@ -63,9 +63,19 @@ public:
      * @param tag_from_winding_number Decide each face's tags by evaluating the winding
      * number of every input at its barycenter (the default), rather than by propagating them
      * across the arrangement's own segment provenance. See tag_from_provenance.
+     * @param collect_provenance Collect E_constrained_inputs() with the winding-number
+     * tagging too: the curve inputs' edges are read off it.
+     * @param points input points (input_points), each inserted as a vertex of the arrangement,
+     * exactly; point_vids() says which. They carry no winding number.
      * @return true when every arrangement vertex has an exact double representation.
      */
-    bool embed_curves(const bool tag_from_winding_number = true);
+    bool embed_curves(
+        const bool tag_from_winding_number = true,
+        const bool collect_provenance = false,
+        const std::vector<Vector2d>& points = {});
+
+    /// Per input point given to embed_curves(): its row of V_emb(), kept through consolidate().
+    const std::vector<size_t>& point_vids() const { return m_point_vids; }
 
     /**
      * @brief Remove vertices not referenced by any output face.
@@ -79,8 +89,16 @@ public:
     /// The simplified input curves -- what the envelope is built from.
     const MatrixXd& V_curves() const { return m_V_curves; }
     const MatrixXi& E_curves() const { return m_E_curves; }
+    /// Per row of E_curves(): the input it came from. Empty when that could not be traced.
+    const std::vector<size_t>& E_input() const { return m_E_input; }
     /// The constrained edges of the arrangement, i.e. the output edges tiling the input.
     const MatrixXi& E_constrained() const { return m_E_constrained; }
+    /// Per row of E_constrained(): the inputs it tiles, ascending. Empty unless collected (see
+    /// embed_curves()).
+    const std::vector<std::vector<size_t>>& E_constrained_inputs() const
+    {
+        return m_E_constrained_inputs;
+    }
 
     std::pair<Vector2d, Vector2d> bbox_curves_minmax() const;
 
@@ -126,8 +144,10 @@ private:
     /// Per row of m_E_curves: which input it came from. Kept alongside m_E_curves across the
     /// simplification, so the arrangement's provenance can be read back in input terms.
     std::vector<size_t> m_E_input;
-    /// Per row of m_E_constrained: which inputs tile it. Only filled for tag_from_provenance.
+    /// Per row of m_E_constrained: which inputs tile it. Filled for tag_from_provenance, or on
+    /// request (embed_curves()).
     std::vector<std::vector<size_t>> m_E_constrained_inputs;
+    std::vector<size_t> m_point_vids;
 
     MatrixXd m_V_emb;
     MatrixXr m_V_emb_r;

@@ -11,36 +11,20 @@ struct Parameters : public wmtk::OptimizerParameters
     Vector2d box_min = Vector2d::Zero();
     Vector2d box_max = Vector2d::Ones();
 
-    /**
-     * Keep the curve network's 0-dimensional features -- open polyline endpoints and
-     * junctions -- within eps of where the arrangement put them.
-     *
-     * Without it the collapse pass deletes open polylines outright: a polyline erodes into
-     * its own tip until one segment is left, and that segment has a feature at both ends,
-     * which nothing else refuses. Off only for A/B against the old behaviour.
-     */
-    bool preserve_feature_points = true;
 
     /**
-     * Let the operations clean up junctions, anchoring only open-polyline endpoints.
+     * Radius of the anchors of the polyline endpoints, as a fraction of eps. 1: the radius is
+     * eps, the half-width of the curves' envelope, as tetwild's and simwild's order-2 tubes.
      *
-     * The erosion argument above is about ENDPOINTS: a polyline eats its own tip. A junction
-     * -- valence >= 3 in the constrained edges -- cannot erode a curve away, because every
-     * curve through it stays a constrained edge and the envelope still holds it within eps.
-     * Anchoring it buys little and costs a great deal, because on a self-intersecting input
-     * nearly every arrangement vertex is a crossing: on 2D model 242427, 79615 of 87610
-     * vertices are junctions, so almost every edge joins two of them and collapse -- the only
-     * operation that removes a bad element outright -- is refused everywhere. That model then
-     * never leaves MAX_ENERGY: it sat at 1e50 for the whole run while the sizing field
-     * saturated and the split pass grew it from 13k to 621k vertices.
-     *
-     * With junctions free it converges to max energy 10.48, fully rounded, in 12 iterations.
-     * Measured no change on the two models the endpoint guard was introduced for (215292 and
-     * 134005): identical energies, iteration counts and Euler characteristics either way.
-     *
-     * Ignored when preserve_feature_points is off, which already anchors nothing.
+     * Without the anchors the collapse pass deletes open polylines outright: a polyline erodes
+     * into its own tip until one segment is left, and that segment has a feature at both ends,
+     * which nothing else refuses. Always on; until 2026-10 preserve_feature_points could turn
+     * them off, to reproduce the behaviour before them.
      */
-    bool allow_junction_cleanup = true;
+    double order2_envelope_ratio = 1.0;
+    /// Radius of the anchors of the input free points, as a fraction of eps. 1, as
+    /// order2_envelope_ratio.
+    double feature_envelope_ratio = 1.0;
 
     /**
      * Verify at init that every constrained edge starts inside the envelope.
@@ -84,8 +68,8 @@ struct Parameters : public wmtk::OptimizerParameters
         stop_energy = json_params["stop_energy"];
         preserve_topology = json_params["preserve_topology"];
         optimize_envelope_around_simplified = json_params["optimize_envelope_around_simplified"];
-        preserve_feature_points = json_params["preserve_feature_points"];
-        allow_junction_cleanup = json_params["allow_junction_cleanup"];
+        order2_envelope_ratio = json_params["order2_envelope_ratio"];
+        feature_envelope_ratio = json_params["feature_envelope_ratio"];
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];

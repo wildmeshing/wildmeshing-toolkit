@@ -5,6 +5,7 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EmbedTriangles.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 #include "TetWildMesh.h"
@@ -138,67 +139,17 @@ void TetWildMesh::insertion_by_volumeremesher(
     opts.num_threads = NUM_THREADS;
     opts.triangle_input = face_input; // the orientation repair keeps to one input
 
-    // Marshal the feature inputs into the remesher's flat arrays, and check the domain: the
-    // features AND their forcing-triangle apexes -- which stick out by up to 0.1x the edge
-    // length along an axis -- must lie inside the background box, or the remesher's
-    // non-Delaunay insertion cannot locate them. The caller grows the input bbox over the
-    // features, so a violation here means only one thing: a feature edge so long that a
-    // tenth of it exceeds the box padding (diag/15). Throw with that diagnosis rather than
-    // letting the remesher assert.
+    // Marshal the feature inputs into the remesher's flat arrays, and check them and their
+    // forcing-triangle apexes against the background box (utils::embed_features_input()).
     const bool has_features = !feature_edges.empty() || !feature_points.empty();
     utils::EmbedFeaturesInput vr_features;
     if (has_features) {
-        const auto& lo = m_tet_params.box_min;
-        const auto& hi = m_tet_params.box_max;
-        const auto in_box = [&](const Vector3d& p, double margin) {
-            for (int d = 0; d < 3; ++d) {
-                if (p[d] - margin < lo[d] || p[d] + margin > hi[d]) {
-                    return false;
-                }
-            }
-            return true;
-        };
-        vr_features.edge_vrt_coord.reserve(3 * feature_edge_vertices.size());
-        for (const Vector3d& p : feature_edge_vertices) {
-            vr_features.edge_vrt_coord.insert(
-                vr_features.edge_vrt_coord.end(),
-                p.data(),
-                p.data() + 3);
-        }
-        vr_features.edge_indices.reserve(2 * feature_edges.size());
-        for (const auto& e : feature_edges) {
-            const Vector3d& a = feature_edge_vertices.at(e[0]);
-            const Vector3d& b = feature_edge_vertices.at(e[1]);
-            const double apex_margin = 0.1 * (a - b).norm();
-            if (!in_box(a, apex_margin) || !in_box(b, apex_margin)) {
-                log_and_throw_error(
-                    "Feature edge ({}, {}) or its forcing-triangle apexes (offset 0.1 x its "
-                    "length {}) leave the background box [{}, {}]; the edge is too long "
-                    "relative to the box padding",
-                    a.transpose(),
-                    b.transpose(),
-                    (a - b).norm(),
-                    lo.transpose(),
-                    hi.transpose());
-            }
-            vr_features.edge_indices.push_back(uint32_t(e[0]));
-            vr_features.edge_indices.push_back(uint32_t(e[1]));
-        }
-        // Point apexes are offset by 0.1x the estimated point spacing, itself bounded by the
-        // point set's own bbox diagonal -- small against the box padding; checked with the
-        // conservative margin of the padding itself would over-reject, so points are checked
-        // with no margin and the remesher's own debug assert stays as the backstop.
-        vr_features.point_coord.reserve(3 * feature_points.size());
-        for (const Vector3d& p : feature_points) {
-            if (!in_box(p, 0)) {
-                log_and_throw_error(
-                    "Feature point ({}) lies outside the background box [{}, {}]",
-                    p.transpose(),
-                    lo.transpose(),
-                    hi.transpose());
-            }
-            vr_features.point_coord.insert(vr_features.point_coord.end(), p.data(), p.data() + 3);
-        }
+        vr_features = utils::embed_features_input(
+            feature_edge_vertices,
+            feature_edges,
+            feature_points,
+            m_tet_params.box_min,
+            m_tet_params.box_max);
     }
 
     const bool want_inputs = face_input != nullptr && facet_input_set != nullptr;
@@ -290,7 +241,6 @@ void TetWildMesh::init_from_Volumeremesher(
     const std::vector<bool>& tet_face_on_input_surface,
     const std::vector<int8_t>* tet_face_orientation,
     const utils::EmbedFeaturesResult* features,
-    const std::vector<Vector3d>* feature_anchors,
     const std::vector<InputSet>* facet_input_set)
 {
     // Turn on feature tracking BEFORE init so the connectivity init sizes the edge
@@ -421,75 +371,10 @@ void TetWildMesh::init_from_Volumeremesher(
         NUM_THREADS);
     logger().info("#faces = {}", n_faces.load());
 
-    // Feature tags: mark each tiling edge with its input file id and flag its vertices.
-    // The tiling pairs come out of the same arrangement as the connectivity, so a missing
-    // edge is a contract violation, not an input problem -- throw, don't warn.
+    // Feature tags: each tet edge tiling an input feature edge carries the feature kind
+    // (tag_feature_edges()); the tags are the only feature-curve state.
     if (features != nullptr) {
-        size_t n_tagged = 0;
-        for (size_t e = 0; e < features->edge_tiling.size(); ++e) {
-            for (const auto& seg : features->edge_tiling[e]) {
-                const Tuple t = tuple_from_edge({{seg[0], seg[1]}});
-                if (!t.is_valid(*this)) {
-                    log_and_throw_error(
-                        "Feature tiling edge ({}, {}) is not an edge of the initial mesh",
-                        seg[0],
-                        seg[1]);
-                }
-                m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge = true;
-                m_vertex_extra[seg[0]].m_is_on_feature_curve = true;
-                m_vertex_extra[seg[1]].m_is_on_feature_curve = true;
-                ++n_tagged;
-            }
-        }
-        logger().info(
-            "feature tags: {} tet edges tagged across {} input edges",
-            n_tagged,
-            features->edge_tiling.size());
-
-        // Anchor the 0-dimensional features. Anchor positions are input coordinates, and
-        // every one of them exists in the output exactly -- input points via the point
-        // provenance, curve endpoints as tiling vertices -- and input coordinates are
-        // explicit points, so their rationals ARE doubles and an exact double lookup finds
-        // them. A vertex already carrying an id keeps it: one anchor per position is
-        // enough, the retention audit is geometric.
-        if (feature_anchors != nullptr && !feature_anchors->empty()) {
-            std::map<std::array<double, 3>, size_t> vid_of;
-            const auto key = [](const Vector3d& p) {
-                return std::array<double, 3>{{p[0], p[1], p[2]}};
-            };
-            for (const int64_t v : features->point_vertex) {
-                if (v >= 0) {
-                    vid_of.emplace(key(m_vertex_attribute[size_t(v)].m_posf), size_t(v));
-                }
-            }
-            for (const auto& tiling : features->edge_tiling) {
-                for (const auto& seg : tiling) {
-                    for (const size_t v : {seg[0], seg[1]}) {
-                        vid_of.emplace(key(m_vertex_attribute[v].m_posf), v);
-                    }
-                }
-            }
-            size_t n_anchored = 0;
-            for (const Vector3d& p : *feature_anchors) {
-                const auto it = vid_of.find(key(p));
-                if (it == vid_of.end()) {
-                    log_and_throw_error(
-                        "Feature anchor ({}) is not a vertex of the initial mesh",
-                        p.transpose());
-                }
-                auto& anchor = m_feature_point_attribute[it->second];
-                if (anchor.m_feature_point_id != NO_FEATURE_POINT) {
-                    continue;
-                }
-                anchor.m_feature_point_id = m_feature_points.size();
-                m_feature_points.push_back(p);
-                ++n_anchored;
-            }
-            logger().info(
-                "feature anchors: {} points anchored within {:.6} of their input positions",
-                n_anchored,
-                m_feature_eps);
-        }
+        tag_feature_edges(*features);
     }
 
     // track bounding box (parallel). The per-face exact-rational corner test is the
@@ -548,9 +433,6 @@ void TetWildMesh::init_from_Volumeremesher(
 
     for_each_vertex([&](const Tuple& v) { vector_unique(VA[v.vid(*this)].on_bbox_faces); });
 
-    // track open boundaries
-    find_open_boundary();
-
     init_vertex_order();
     {
         std::array<size_t, 4> vo{{0, 0, 0, 0}};
@@ -562,6 +444,31 @@ void TetWildMesh::init_from_Volumeremesher(
         }
         assert(vo[0] + vo[1] + vo[2] + vo[3] == vs.size());
         logger().info("{} vertices with order counts (0,1,2,3): {}", vs.size(), vo);
+    }
+
+    // The open boundaries are tagged and held by the base's tube (see tag_order2_edges()):
+    // every tagged edge a collapse keeps, or a smoothing move touches, stays in it, no swap
+    // removes one, and a collapse that leaves one with other than one face drops its tag.
+    // tetwild's own open-boundary flags and their tube are gone (see TetWildMesh.h). The
+    // non-manifold edges are not held, as before: the reason is at holds_order2_edge().
+    const size_t n_order2 = tag_order2_edges(
+        m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio,
+        m_envelope && m_envelope->use_exact);
+    logger().info("order-2 edges tagged: {}", n_order2);
+
+    // The 0-dimensional features, anchored once both kinds of tag are final: every vertex where
+    // a tagged curve ends or three or more meet, and the input points (anchor_feature_points()).
+    // Each input point is the output vertex exactly equal to it. Until 2026-10 the anchors were
+    // computed from the input curves' valence, the open boundaries' ends were not anchored, and
+    // feature-curve junctions only with allow_junction_cleanup off (default on).
+    {
+        const std::vector<size_t> input_points =
+            features != nullptr ? utils::placed_point_vertices(*features) : std::vector<size_t>{};
+        const double eps = m_params.epsr * m_params.diag_l;
+        anchor_feature_points(
+            input_points,
+            eps * m_tet_params.order2_envelope_ratio,
+            eps * m_tet_params.feature_envelope_ratio);
     }
 
     // Round the indirect vertices in parallel. Rounding snaps m_pos to its double
@@ -655,138 +562,6 @@ void TetWildMesh::init_from_Volumeremesher(
     // init qualities
     for_each_tetra(
         [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
-}
-
-void TetWildMesh::find_open_boundary()
-{
-    // Runs right after insertion, when the mesh is at its largest, so it lists nothing it does
-    // not keep: faces are visited in place at their canonical tet, and of the edges only the
-    // open-boundary ones -- a tiny fraction -- are collected. Materialising get_faces() and
-    // get_edges() here was the peak of the whole run on the larger tetwild inputs.
-    std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
-
-    // for open boundary envelope
-    std::vector<Eigen::Vector3d> v_posf(vert_capacity());
-    std::vector<Eigen::Vector2i> open_boundaries;
-
-    for (size_t i = 0; i < vert_capacity(); i++) {
-        v_posf[i] = m_vertex_attribute[i].m_posf;
-    }
-
-    // count incident surface faces per edge (parallel; atomic_ref increments the shared array)
-    threading::parallel_for(
-        threading::range(0, tet_capacity()),
-        [&](const threading::range& r) {
-            for (size_t t = r.begin(); t < r.end(); t++) {
-                if (!tuple_from_tet(t).is_valid(*this)) continue;
-                for (int j = 0; j < 4; j++) {
-                    const Tuple f = tuple_from_face(t, j);
-                    if (f.fid(*this) != 4 * t + j) continue; // a lower tet owns this face
-                    if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
-                    const size_t eid1 = f.eid(*this);
-                    const size_t eid2 = f.switch_edge(*this).eid(*this);
-                    const size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
-                    std::atomic_ref<int>(edge_on_open_boundary[eid1])
-                        .fetch_add(1, std::memory_order_relaxed);
-                    std::atomic_ref<int>(edge_on_open_boundary[eid2])
-                        .fetch_add(1, std::memory_order_relaxed);
-                    std::atomic_ref<int>(edge_on_open_boundary[eid3])
-                        .fetch_add(1, std::memory_order_relaxed);
-                }
-            }
-        },
-        NUM_THREADS);
-
-    // collect open-boundary edges (exactly one incident surface face), then put them in
-    // get_edges() order -- by (min vid, max vid) -- so the boundary envelope is built from the
-    // same sequence as before.
-    {
-        using KeyedEdge = std::pair<std::pair<size_t, size_t>, Tuple>;
-        std::vector<KeyedEdge> ob_edges;
-        std::mutex ob_mutex;
-        threading::parallel_for(
-            threading::range(0, tet_capacity()),
-            [&](const threading::range& r) {
-                std::vector<KeyedEdge> local;
-                for (size_t t = r.begin(); t < r.end(); t++) {
-                    if (!tuple_from_tet(t).is_valid(*this)) continue;
-                    for (int j = 0; j < 6; j++) {
-                        const Tuple e = tuple_from_edge(t, j);
-                        if (e.eid(*this) != 6 * t + j) continue; // a lower tet owns this edge
-                        if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
-                        size_t v0 = e.vid(*this);
-                        size_t v1 = e.switch_vertex(*this).vid(*this);
-                        if (v0 > v1) std::swap(v0, v1);
-                        local.emplace_back(std::make_pair(v0, v1), e);
-                    }
-                }
-                if (local.empty()) return;
-                std::lock_guard<std::mutex> lk(ob_mutex);
-                ob_edges.insert(ob_edges.end(), local.begin(), local.end());
-            },
-            NUM_THREADS);
-        std::sort(ob_edges.begin(), ob_edges.end(), [](const auto& a, const auto& b) {
-            return a.first < b.first;
-        });
-        open_boundaries.reserve(ob_edges.size());
-        for (const auto& [key, e] : ob_edges) {
-            const size_t v1 = e.vid(*this);
-            const size_t v2 = e.switch_vertex(*this).vid(*this);
-            m_vertex_extra[v1].m_is_on_open_boundary = true;
-            m_vertex_extra[v2].m_is_on_open_boundary = true;
-            open_boundaries.emplace_back(v1, v2);
-        }
-    }
-
-    wmtk::logger().info("open boundary num: {}", open_boundaries.size());
-
-    if (open_boundaries.size() == 0) {
-        return;
-    }
-
-    // init the order-2 envelope (surface boundaries and non-manifold edges)
-    //
-    // It follows the surface envelope's choice of predicate rather than being hard-wired to
-    // the sampled one. Both are containment tests against the same input at the same epsilon,
-    // so having `use_sample_envelope: false` hold for the surface but not for its boundary
-    // curves was an accident of the exact envelope not supporting edges until now.
-    if (!m_order2_envelope) {
-        m_order2_envelope = std::make_shared<Envelope>(m_envelope && m_envelope->use_exact);
-    }
-    // A FRACTION of eps here, deliberately, where the surface envelope in tetwild.cpp uses
-    // all of it. The two are not symmetric: on the surface, widening the envelope REMOVES a
-    // constraint that was blocking collapses, which is the whole point of that change; on an
-    // open-boundary curve there is no such blockage to relieve, so the extra room is only
-    // freedom for the boundary to wander within eps -- more geometry to resolve at the same
-    // final quality. See /order2_envelope_ratio in the spec for the measurement.
-    m_order2_envelope->init(
-        v_posf,
-        open_boundaries,
-        m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio);
-}
-
-bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
-{
-    size_t v1 = e.vid(*this);
-    size_t v2 = e.switch_vertex(*this).vid(*this);
-    if (!m_vertex_extra[v1].m_is_on_open_boundary || !m_vertex_extra[v2].m_is_on_open_boundary)
-        return false;
-
-    return !m_order2_envelope->is_outside(
-        std::array<Eigen::Vector3d, 2>{
-            {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
-}
-
-bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
-{
-    size_t v1 = e[0];
-    size_t v2 = e[1];
-    if (!m_vertex_extra[v1].m_is_on_open_boundary || !m_vertex_extra[v2].m_is_on_open_boundary)
-        return false;
-
-    return !m_order2_envelope->is_outside(
-        std::array<Eigen::Vector3d, 2>{
-            {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
 }
 
 // After having called the following:

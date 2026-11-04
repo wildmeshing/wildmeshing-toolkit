@@ -29,6 +29,9 @@
 #include <vector>
 
 namespace wmtk {
+namespace utils {
+struct EmbedFeaturesResult;
+}
 
 /**
  * @brief What tetwild and simwild's 3D mesh share.
@@ -241,20 +244,41 @@ public:
     }
 
     /**
-     * @brief Per-edge feature tag: does this tet edge tile an input feature curve.
+     * @brief Per-edge curve tags: which kinds of input curve this tet edge tiles.
      *
-     * A single union bool: which curve an edge belongs to is not carried through the
-     * optimization, and the edges are held by one tube around all the curves
-     * (m_feature_envelope). Tracked faces are different: each carries its input set
-     * (SurfaceTagAttributes::input_set()) through every operation and is held to its own
-     * inputs' envelopes, because one envelope around every input let a solid's boundary ride a
-     * sheet crossing it -- measured, 12 faces up to 3.61 eps off the solid -- and an audit at the
-     * end can find that but not prevent it. Curves are expected to follow the faces once two of
-     * them close together can be measured drifting the same way.
+     * One bit per KIND of curve, because each kind is held to its own tube (see
+     * tagged_edge_envelope()), and one edge can tile two kinds at once:
+     *  - feature: the input feature curves the application was given, held by
+     *    m_feature_envelope;
+     *  - order2: the input's order-2 edges the application holds (holds_order2_edge()), held
+     *    by m_order2_edge_envelope; set by tag_order2_edges().
+     * An edge with any bit set is TAGGED, and the operations treat every tagged edge alike --
+     * propagated through split, collapse and swap, never removed by a swap, order-2 substructure
+     * for the link condition. Only the tube it is held to, and vertex_has_feature_edge(), read
+     * the kind.
+     *
+     * Within a kind the tag is a union: which curve an edge belongs to is not carried through
+     * the optimization, and the kind's edges are held by one tube around all its curves.
+     * Tracked faces are different: each carries its input set (SurfaceTagAttributes::input_set())
+     * through every operation and is held to its own inputs' envelopes, because one envelope
+     * around every input let a solid's boundary ride a sheet crossing it -- measured, 12 faces up
+     * to 3.61 eps off the solid -- and an audit at the end can find that but not prevent it.
+     * Curves are expected to follow the faces once two of them close together can be measured
+     * drifting the same way.
      */
     struct FeatureEdgeAttributes
     {
-        bool m_is_feature_edge = false;
+        enum Kind : uint8_t {
+            feature = 1 << 0,
+            order2 = 1 << 1,
+        };
+        /// The Kind bits of every curve this edge tiles; 0 = untagged.
+        uint8_t m_kinds = 0;
+
+        bool is_tagged() const { return m_kinds != 0; }
+        bool has(Kind k) const { return (m_kinds & k) != 0; }
+        void add(Kind k) { m_kinds |= k; }
+        void remove(Kind k) { m_kinds &= uint8_t(~k); }
     };
     using EdgeAttCol = AttributeCollection<FeatureEdgeAttributes>;
     /// Sized, protected and rolled back only once enable_feature_edge_tracking() ran.
@@ -270,14 +294,36 @@ public:
     bool m_track_feature_edges = false;
 
     /**
-     * @brief Envelope around the input feature curves: the tube a tagged edge must stay in.
+     * @brief Envelope around the input feature curves: the tube an edge tagged `feature` must
+     * stay in.
      *
      * The collapse guard's veto (see collapse_edge_before). Kept SEPARATE from the surface
      * envelope and the order-2 envelope: merging would let feature curves vouch for open
-     * boundaries (and vice versa) in guard decisions. Null => tagged edges are propagated
+     * boundaries (and vice versa) in guard decisions. Null => feature edges are propagated
      * but not geometrically constrained.
      */
     std::shared_ptr<Envelope> m_feature_envelope;
+    /**
+     * @brief Envelope around the input's order-2 edges: the tube an edge tagged `order2` must
+     * stay in.
+     *
+     * The order2 counterpart of m_feature_envelope, separate from it for the reason given there.
+     * Null => order2 edges are propagated but not geometrically constrained. Built by
+     * tag_order2_edges().
+     */
+    std::shared_ptr<Envelope> m_order2_edge_envelope;
+    /// The tube edges of kind `k` are held to (one of the two above); null if there is none.
+    const Envelope* tagged_edge_envelope(FeatureEdgeAttributes::Kind k) const
+    {
+        return (k == FeatureEdgeAttributes::feature ? m_feature_envelope : m_order2_edge_envelope)
+            .get();
+    }
+    /// The first of `kinds`, in bit order, whose tube the segment (a, b) leaves; 0 when it stays
+    /// inside every one of them. A kind without a tube constrains nothing.
+    uint8_t tagged_edge_leaves_tube(
+        uint8_t kinds,
+        const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b) const;
 
     /**
      * @brief Turn on feature-edge tracking. The collection joins m_edge_attr_group beside
@@ -299,43 +345,153 @@ public:
         m_track_feature_edges = true;
     }
 
-    /// Does any edge incident to `vid` carry the feature tag? Derived from the edge tags
-    /// rather than from a vertex flag, so it cannot go stale.
+    /// Does any edge incident to `vid` carry the `feature` kind? Derived from the edge tags
+    /// rather than from a vertex flag, so it cannot go stale. The feature kind only: tetwild's
+    /// smoothing pull asks it to prefer the user's feature tube over the derived order-2 one.
     bool vertex_has_feature_edge(size_t vid) const;
+    /// Does any edge incident to `vid` carry a tag, of any kind? Derived like the above.
+    bool vertex_has_tagged_edge(size_t vid) const;
+    /**
+     * @brief The tube a vertex on a tagged curve is pulled toward while smoothing: the feature
+     * tube for a vertex with a `feature` edge, else the order-2 tube for one with an `order2`
+     * edge; null for any other vertex, or without the tube.
+     *
+     * Asked first by tetwild's and simwild's smoothing_energy_envelope(), so the two pull alike
+     * (test "SimWild 3D matches TetWild's order-2 envelope selection"). The feature curves are
+     * user-supplied where order 2 is derived, so where a vertex is on both the explicit constraint
+     * wins. Keyed on the tags the containment reads, not on the vertex order: a vertex on an
+     * order-2 edge the application does not hold (tetwild's non-manifold edges, a rim glued shut)
+     * is pulled toward its inputs like any surface vertex. A soft pull; the hard vetoes (the
+     * collapse guard, the tagged-edge containment in smoothing) do not read it. Without the feature
+     * half simwild pulled a feature vertex off the surface toward the surface envelope, whose
+     * containment it is never held to.
+     */
+    std::shared_ptr<Envelope> tagged_edge_pull_envelope(size_t vid) const;
+    /// Does any edge incident to `vid` carry kind `k`? False while edge tracking is off.
+    bool vertex_has_edge_of_kind(size_t vid, FeatureEdgeAttributes::Kind k) const;
 
-    // Substructure widening for the link condition (preserve_topology): a tagged feature
-    // edge is order-2 substructure, a vertex with two incident tagged edges is on a curve
+    /**
+     * @brief Does the application hold an order-2 edge with `n_faces` tracked faces?
+     *
+     * The application's rule, asked at both ends of the tag's life: tag_order2_edges() tags the
+     * edges it holds, and drop_stale_order2_tags() drops the tag of an edge a collapse leaves
+     * with a count it does not hold. The default holds every order-2 edge, the open boundaries
+     * (1 face) and the non-manifold edges (3 and more); simwild keeps it, its non-manifold edges
+     * being where the pieces it was given meet. tetwild holds its open boundaries only, and its
+     * override says why.
+     */
+    virtual bool holds_order2_edge(const size_t n_faces) const
+    {
+        return n_faces == 1 || n_faces >= 3;
+    }
+
+    /**
+     * @brief Tag the input's order-2 edges the application holds (holds_order2_edge()) with the
+     * order2 kind and build their tube, m_order2_edge_envelope, of half-width `eps`. Returns the
+     * number of edges tagged.
+     *
+     * An order-2 edge has 1 tracked face (an open boundary) or 3 and more (a non-manifold
+     * edge): it is where a sheet ends. The one-sided surface envelope cannot see a sheet
+     * shortening there -- a rim sliding inward keeps every face on its sheet -- so these edges
+     * need a tube of their own, and they need it whether or not topology is preserved: keeping
+     * them in place is a geometric guarantee, separate from the topological one. Measured on
+     * simwild, whose smoothing had no boundary check: an open square inside a cube lost 3 of its
+     * 4 corners, its rim 7.4 tube radii off at the default eps and 14.8 at eps_rel 1e-3, the
+     * same 0.038 at every eps. Tagged, the edges get every check the feature kind has: the
+     * collapse guard, the smoothing containment, the swap refusal, the link condition's orders.
+     *
+     * Call once after init, with the tracked faces final. Membership is decided here, from the
+     * tracked-face counts, and then carried: an edge the operations make order-2 is not the
+     * input's and is not held, and one they make ordinary loses its tag (see
+     * drop_stale_order2_tags()). Turns edge tracking on only when there is such an edge, since
+     * tracking costs every operation its cache (see enable_feature_edge_tracking()).
+     */
+    size_t tag_order2_edges(double eps, bool exact);
+    /**
+     * @brief Build the feature-curve tube, m_feature_envelope, of half-width `eps` around the
+     * input feature edges `E` over `V`, with the exact predicate when `exact`. Nothing without
+     * edges.
+     *
+     * Around the ORIGINAL input curves, like every other envelope, not around the tet edges
+     * tiling them (tag_feature_edges()): the tiling is exact, so the two are the same set at
+     * init, and the input is what the guarantee is stated against.
+     */
+    void init_feature_envelope(
+        const std::vector<Vector3d>& V,
+        const std::vector<std::array<size_t, 2>>& E,
+        double eps,
+        bool exact);
+    /**
+     * @brief Tag every tet edge tiling an input feature edge (`placed`, from the insertion)
+     * with the feature kind. Returns the number of tet edges tagged.
+     *
+     * The tiling pairs come out of the same arrangement as the connectivity, so a missing edge
+     * is a contract violation, not an input problem: it throws. Call once after init, before
+     * anything renumbers the vertices. Turns edge tracking on only when there is a feature
+     * edge, as tag_order2_edges() does. The tiling is per input edge, so what an edge carries
+     * beyond the kind can be looked up by its input edge.
+     */
+    size_t tag_feature_edges(const utils::EmbedFeaturesResult& placed);
+    /**
+     * @brief After a collapse: drop the order2 kind from each edge of `cache` (v_old renamed to
+     * v_new) whose tracked-face count holds_order2_edge() no longer holds.
+     *
+     * The tag holds an edge while it is still order-2. Without preserve_topology a collapse may
+     * close a slit, glue a sheet's rim onto another sheet or remove a lone triangle, and the
+     * edge there is then an ordinary one; holding it in the tube only pins the surface. Measured
+     * on 111388 (tetwild, no preserve_topology) with every order-2 edge tagged: after 4
+     * iterations 49 of the 141 tagged edges had 2 faces again. With the open boundaries alone
+     * tagged and no drop, it reached the stop energy in 22 iterations (4.997, stop 5), 16 with
+     * it; test open-boundary-tags-drop-when-glued keeps 14 or 15 of 72 tags stale without it,
+     * at every eps. Only a collapse changes a surviving edge's count: a split's halves have the
+     * parent's faces, a face swap never removes a tracked face, and a surface flip replaces an
+     * untagged two-face edge and keeps the four rim edges' counts. tetwild cleared its
+     * open-boundary vertex flags the same way, after each collapse. The cache's edges have both
+     * endpoints in the locked one-ring of the collapse, and every tet around such an edge contains
+     * them, so no other thread can change the faces counted here.
+     */
+    void drop_stale_order2_tags(
+        const std::map<std::array<size_t, 2>, uint8_t>& cache,
+        size_t v_old,
+        size_t v_new);
+    /// The audit of that guarantee: how many edges carrying kind `k` lie outside its tube now.
+    /// Zero after every run unless an operation lets a tagged edge out; 0 when tracking is off
+    /// or the kind has no tube.
+    size_t tagged_edges_outside(FeatureEdgeAttributes::Kind k) const;
+
+    // Substructure widening for the link condition (preserve_topology): a tagged edge, of any
+    // kind, is order-2 substructure, a vertex with two incident tagged edges is on a curve
     // (order 2), with one or three-plus it is a curve endpoint or junction (order 3). The
     // meaning of get_order_of_* is untouched.
     size_t substructure_order_of_edge(const std::array<size_t, 2>& vids) const override;
     size_t substructure_order_of_vertex(size_t vid) const override;
     void substructure_feature_neighbors(size_t vid, std::vector<size_t>& out) const override;
-    /// Are all tagged edges at `vid` inside the feature tube, at the CURRENT positions?
-    /// True when tracking or the tube is off. Smoothing calls this with the candidate
-    /// position already written into the vertex attribute.
+    /// Are all tagged edges at `vid` inside their kinds' tubes, at the CURRENT positions? Each
+    /// kind an edge carries is tested in its own tube (tagged_edge_leaves_tube()). True when
+    /// tracking is off or no kind has a tube. Smoothing calls this with the candidate position
+    /// already written into the vertex attribute.
     bool feature_edges_at_vertex_inside(size_t vid) const;
 
     /**
      * @name Feature-point anchors
      *
      * The 3D twin of TriOptimizerMesh's block of the same name, which states the reasoning:
-     * preserving a 0-dimensional feature -- an input point, or a feature curve's endpoint (a
-     * junction too, when the application anchors those) -- is a COVERAGE property, so each
-     * anchor vertex names WHICH feature it stands for. Lifted from tetwild, itself a port of
-     * triwild, with the same semantics and the same distance test.
+     * preserving a 0-dimensional feature -- an input point, or where a tagged curve ends or
+     * three or more meet -- is a COVERAGE property, so each anchor vertex names WHICH feature
+     * it stands for. Lifted from tetwild, itself a port of triwild, with the same semantics and
+     * the same distance test.
      *
-     * Opt-in, in two levels. enable_feature_point_tracking() registers the per-vertex ids
-     * and has the shared operations maintain them: a split vertex stands for no feature, and
-     * a collapse survivor that stands for none takes over the collapsed vertex's. Its
-     * `preserve` argument additionally turns on the policy: a collapse that would leave a
-     * feature further than m_feature_eps from every vertex is refused
+     * Opt-in: enable_feature_point_tracking() registers the per-vertex ids and has the shared
+     * operations maintain and enforce them. A split vertex stands for no feature, and a collapse
+     * survivor that stands for none takes over the collapsed vertex's; a collapse that would
+     * leave a feature further than its radius from every vertex is refused
      * (CollapseReject::feature_point), and smoothing may move an anchor vertex only inside its
-     * ball (the default smoothing_position_is_allowed()). The ids are maintained with the
-     * policy off too, so an application can still export and audit its anchors.
+     * ball (the default smoothing_position_is_allowed()). No switch turns the holding off, as
+     * none does for the curves and the surfaces; until 2026-10 tetwild and triwild had one,
+     * preserve_feature_points, kept to reproduce the behaviour before the anchors.
      *
-     * The application supplies the data, because which vertices stand for which features
-     * depends on its input: it fills m_feature_points and the ids after init(), and sets
-     * m_feature_eps.
+     * Which vertices are anchored is read off the tags, by anchor_feature_points(); the
+     * application adds only its input points, which no tag marks.
      * @{
      */
     /// A vertex that stands for no feature point. See FeaturePointAttributes.
@@ -349,19 +505,18 @@ public:
     /// Registered with m_vertex_attr_group only once enable_feature_point_tracking() ran.
     FeaturePointAttCol m_feature_point_attribute;
     /// Anchor positions, indexed by FeaturePointAttributes::m_feature_point_id. A vertex
-    /// carrying feature f may never end up further than m_feature_eps from
+    /// carrying feature f may never end up further than m_feature_point_radius[f] from
     /// m_feature_points[f]; the anchor never moves, so the id is a direct lookup.
     std::vector<Vector3d> m_feature_points;
-    /// Radius of the anchor ball. A separate name from the tube eps for the same reason
-    /// triwild keeps it separate from its envelope eps; tetwild gives both the same value.
-    double m_feature_eps = -1;
-    /// Whether the shared operations maintain the ids (enable_feature_point_tracking()).
+    /// Radius of each anchor's ball, beside m_feature_points. Per anchor, because each kind of
+    /// feature has its own radius (see anchor_feature_points()).
+    std::vector<double> m_feature_point_radius;
+    /// Whether the shared operations maintain and enforce the anchors
+    /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
-    /// Whether the collapse and smoothing policy is on (its `preserve` argument).
-    bool m_preserve_feature_points = false;
 
     /**
-     * @brief Turn on feature-point tracking, and the policy when `preserve`.
+     * @brief Turn on feature-point tracking.
      *
      * Valid before or after init(), not during an operation pass (it throws then; see
      * throw_if_in_operation_pass()). Before init() the storage is empty and the resize is a no-op;
@@ -370,10 +525,9 @@ public:
      * vert_storage_capacity(), with every vertex NO_FEATURE_POINT; the application then anchors
      * what it needs. Late enabling is supported because an application may learn only from the
      * built mesh whether its input has feature points, and enabling it for every input would make
-     * every operation cache and restore anchors it does not have. A second call changes only the
-     * policy.
+     * every operation cache and restore anchors it does not have. Idempotent.
      */
-    void enable_feature_point_tracking(const bool preserve)
+    void enable_feature_point_tracking()
     {
         throw_if_in_operation_pass("enable_feature_point_tracking");
         if (!m_track_feature_points) {
@@ -381,23 +535,56 @@ public:
             m_feature_point_attribute.resize(vert_storage_capacity());
         }
         m_track_feature_points = true;
-        m_preserve_feature_points = preserve;
     }
 
     /**
+     * @brief Anchor vertex `vid` at its current position, in a ball of `radius`. A vertex
+     * already anchored keeps its anchor, whose radius becomes the smaller of the two. Returns
+     * whether a new anchor was made. Feature-point tracking must be on.
+     */
+    bool anchor_feature_point(size_t vid, double radius);
+
+    /**
+     * @brief Anchor the 0-dimensional features, after the edge tags are final: every vertex
+     * with 1 or 3+ tagged edges (where a tagged curve ends, or three or more meet -- the vertices
+     * the link condition counts as order 3), and every vertex of `input_point_vids`. Turns
+     * feature-point tracking on when there is something to anchor, so a run without any pays no
+     * per-operation cost. Returns the number of anchors made.
+     *
+     * Each anchor's radius is the smallest of the radii of the kinds it is on: `order2_radius`
+     * if it has an order2 edge, `feature_radius` if it has a feature edge or is an input point.
+     * The smallest, because ball(r) around a point of a curve held in a tube of r lies in that
+     * tube, and a point is then held as tightly as every curve through it.
+     *
+     * At init only, as the tags. A collapse can make a curve end later, but only by gluing: a rim
+     * edge stops having one face (its tag drops, drop_stale_order2_tags()), or two tagged edges
+     * merge. Such an end sits where the rim meets the glued seam, and collapsing it along the
+     * rim moves the other sheet's faces onto the next rim vertex, which must stay within that
+     * sheet's envelope: it glues the rim one edge further where the two are already within eps,
+     * the gluing preserve_topology off allows, and loses no coverage. Anchored, measured on the
+     * tetwild integration configs (2026-10): the rims glued away all the same (366725: 2 and 3
+     * of 181 rim edges left), at 5 times the iterations on 366725 and 15-33% more tets on crown
+     * and 111388.
+     */
+    size_t anchor_feature_points(
+        const std::vector<size_t>& input_point_vids,
+        double order2_radius,
+        double feature_radius);
+
+    /**
      * True iff collapsing v1 into v2 would drop or displace a feature-point anchor. False
-     * when the policy is off. Distance test included, as in 2D: two anchors within
-     * m_feature_eps of each other are allowed to merge -- the survivor covers both -- and
-     * forbidding that deadlocks the mesh (measured in 2D, see TriOptimizerMesh).
+     * when tracking is off. Distance test included, as in 2D: two anchors within each
+     * other's radius are allowed to merge -- the survivor covers both -- and forbidding that
+     * deadlocks the mesh (measured in 2D, see TriOptimizerMesh).
      */
     bool collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const;
 
-    /// May vertex `vid` sit at `p` as far as its anchor goes? True unless the policy is on,
-    /// the vertex stands for a feature, and `p` is outside that feature's ball.
+    /// May vertex `vid` sit at `p` as far as its anchor goes? True unless the vertex stands
+    /// for a feature and `p` is outside that feature's ball.
     bool feature_point_ball_contains(const size_t vid, const Vector3d& p) const;
 
-    /// {anchors still represented within m_feature_eps, total}. Geometric, as in 2D: "some
-    /// vertex is within eps of this anchor", whether or not it carries the id.
+    /// {anchors still represented within their radius, total}. Geometric, as in 2D: "some
+    /// vertex is within the radius of this anchor", whether or not it carries the id.
     std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
     /** @} */
 
@@ -619,7 +806,7 @@ public:
     std::array<size_t, 3> orient_tracked_face(
         const std::array<size_t, 3>& f,
         const std::vector<size_t>& tets) const override;
-    /// The tagged feature edges (m_feature_edge_attribute) that are edges of tracked faces.
+    /// The edges tagged `feature` (m_feature_edge_attribute) that are edges of tracked faces.
     std::vector<std::array<size_t, 2>> tracked_feature_edges() const override;
 
     /// m_params.check_surface_folds; see there.
@@ -694,8 +881,9 @@ public:
      * between differently tagged tets, and around an interior edge the tags change an even
      * number of times going around the tet ring, so an interface can never terminate there. It
      * can only end where it meets the bbox -- and is_edge_on_bbox() has already rejected those
-     * edges by the time this is asked. tetwild overrides it because its surface is the input
-     * mesh, which may be non-watertight anywhere.
+     * edges by the time this is asked. An open boundary of an input surface -- tetwild's, or a
+     * simwild surface input's -- carries the order2 tag, and a tagged edge is never swapped
+     * (swap_edge_before()), so it needs no answer here. topological_offset overrides it.
      */
     virtual bool is_open_boundary_edge(const Tuple& e) { return false; }
     /**
@@ -893,12 +1081,6 @@ public:
      * feature envelope here.
      */
     virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const = 0;
-
-    /// Are all OPEN-BOUNDARY edges at `vid` inside the order-2 tube, at the current positions?
-    /// Default true; tetwild overrides with its open-boundary flags and envelope. Membership is
-    /// decided by flags + the topological face count, NOT by the tube itself -- a tube-based
-    /// membership test self-disables the moment geometry leaves the tube.
-    virtual bool boundary_edges_at_vertex_inside(size_t) const { return true; }
 
     /**
      * @brief An extra term the application adds to this vertex's smoothing objective, or null.
@@ -1115,7 +1297,7 @@ protected:
         valence, // wrong incident-tet count for this swap kind
         bbox, // edge on the bounding box
         surface_not_allowed, // has surface faces and allow_surface_swap() is false
-        feature_edge, // the swap would delete a tagged feature edge (it is the operated edge)
+        feature_edge, // the swap would delete a tagged edge, any kind (it is the operated edge)
         prepare_flip, // prepare_surface_flip() refused (see the flip_* reasons)
         interior_hook, // swap_before_interior() refused
         flip_open_boundary, // flipping would change the surface's boundary loops
@@ -1202,7 +1384,8 @@ protected:
         inverted, // a cell the collapse reshapes would invert
         quality, // collapse_quality_allowed() said no
         substructure_link, // preserve_topology, both ends on the surface: substructure link
-        feature_leaves_tube, // a tagged feature edge the collapse moves would leave its tube
+        feature_leaves_tube, // an edge tagged `feature` the collapse moves would leave its tube
+        order2_leaves_tube, // an edge tagged `order2` the collapse moves would leave its tube
         feature_point, // v1 stands for a feature point and v2 is outside its ball
         app_both_surfaces, // application: an end on the input complex and an end on the offset
         app_front_unlimited, // application: an unlimited-length pass may not remove a front vertex
@@ -1311,8 +1494,8 @@ protected:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
-        std::map<std::array<size_t, 2>, bool> changed_edges;
+        /// Edge tag bits of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, uint8_t> changed_edges;
 
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
@@ -1330,11 +1513,12 @@ protected:
         size_t v2_id = 0;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
-        bool is_edge_on_feature = false;
+        /// The split edge's tag bits (FeatureEdgeAttributes::m_kinds); its two halves get them.
+        uint8_t edge_kinds = 0;
         size_t edge_order = 0;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
-        std::map<std::array<size_t, 2>, bool> changed_edges;
+        /// Edge tag bits of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, uint8_t> changed_edges;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -1356,8 +1540,8 @@ protected:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
-        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
-        std::map<std::array<size_t, 2>, bool> changed_edges;
+        /// Edge tag bits of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, uint8_t> changed_edges;
         /// Coarsening pass only: the worst relative quality in the region the composite may
         /// disturb, measured before the collapse. See collapse_edge_after.
         double region_max_rel_before = 0.;
@@ -1383,24 +1567,24 @@ protected:
     //    false if a TAGGED cached edge no longer exists (the caller aborts, mirroring the
     //    face path's try_tuple_from_face bailout).
 
-    /// Cache the feature tag of every edge of every tet in `tids`.
+    /// Cache the tag bits of every edge of every tet in `tids`.
     void feature_edges_cache(
         const std::vector<size_t>& tids,
-        std::map<std::array<size_t, 2>, bool>& cache);
+        std::map<std::array<size_t, 2>, uint8_t>& cache);
     /// Write back tags over every edge of every tet in `tets` (created regions).
     void feature_edges_restore_region(
         const std::vector<Tuple>& tets,
-        const std::map<std::array<size_t, 2>, bool>& cache);
+        const std::map<std::array<size_t, 2>, uint8_t>& cache);
     void feature_edges_restore_region(
         const std::vector<size_t>& tids,
-        const std::map<std::array<size_t, 2>, bool>& cache);
+        const std::map<std::array<size_t, 2>, uint8_t>& cache);
     /// Write back tags for every cached edge, with `v_old` renamed to `v_new` (collapse).
     bool feature_edges_restore_remap(
-        const std::map<std::array<size_t, 2>, bool>& cache,
+        const std::map<std::array<size_t, 2>, uint8_t>& cache,
         size_t v_old,
         size_t v_new);
 
-    /// Hook: the split vertex was created on a feature edge (or not). Runs only when
+    /// Hook: the split vertex was created on an edge tagged `feature` (or not). Runs only when
     /// m_track_feature_edges is set; the counterpart of split_after_vertex for the feature
     /// flag, separate so existing overrides keep their signature.
     virtual void split_after_vertex_feature(size_t, bool) {}
