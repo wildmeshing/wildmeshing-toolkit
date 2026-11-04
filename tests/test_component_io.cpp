@@ -9,7 +9,10 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <map>
+#include <utility>
 #include <wmtk/MeshData.hpp>
+#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #ifdef WMTK_TEST_qslim
@@ -1164,5 +1167,413 @@ TEST_CASE(
         path,
         "tagged",
         {{"tagged", io::read_mesh(path)}});
+}
+#endif
+#if defined(WMTK_TEST_simwild) && (defined(WMTK_TEST_tetwild) || defined(WMTK_TEST_triwild))
+namespace {
+template <typename A, typename B>
+bool equal_arrays(const A& x, const B& y)
+{
+    return x.rows() == y.rows() && x.cols() == y.cols() && x == y;
+}
+// Whether two meshes hold the same arrays, exactly: positions, connectivity, attributes, labels.
+bool same_data(const MeshData& a, const MeshData& b)
+{
+    if (!equal_arrays(a.V, b.V) || a.cells.size() != b.cells.size() ||
+        a.vertex_attributes.size() != b.vertex_attributes.size())
+        return false;
+    for (const auto& [type, ca] : a.cells) {
+        const auto cb = b.cells.find(type);
+        if (cb == b.cells.end() || !equal_arrays(ca.connectivity, cb->second.connectivity) ||
+            ca.attributes.size() != cb->second.attributes.size())
+            return false;
+        for (const auto& [name, x] : ca.attributes) {
+            const auto y = cb->second.attributes.find(name);
+            if (y == cb->second.attributes.end() || x.values.index() != y->second.values.index() ||
+                x.labels != y->second.labels || !equal_arrays(x.doubles(), y->second.doubles()))
+                return false;
+        }
+    }
+    return true;
+}
+} // namespace
+#endif
+#if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_simwild)
+namespace {
+// An icosahedron subdivided `levels` times onto the sphere of radius `r` about `c`, facing out.
+MeshData icosphere(const int levels, const double r, const Vector3d& c)
+{
+    const double t = (1 + std::sqrt(5.0)) / 2;
+    std::vector<Vector3d> V = {
+        {-1, t, 0},
+        {1, t, 0},
+        {-1, -t, 0},
+        {1, -t, 0},
+        {0, -1, t},
+        {0, 1, t},
+        {0, -1, -t},
+        {0, 1, -t},
+        {t, 0, -1},
+        {t, 0, 1},
+        {-t, 0, -1},
+        {-t, 0, 1}};
+    for (Vector3d& v : V) v.normalize();
+    std::vector<std::array<int64_t, 3>> F = {
+        {{0, 11, 5}}, {{0, 5, 1}},  {{0, 1, 7}},   {{0, 7, 10}}, {{0, 10, 11}},
+        {{1, 5, 9}},  {{5, 11, 4}}, {{11, 10, 2}}, {{10, 7, 6}}, {{7, 1, 8}},
+        {{3, 9, 4}},  {{3, 4, 2}},  {{3, 2, 6}},   {{3, 6, 8}},  {{3, 8, 9}},
+        {{4, 9, 5}},  {{2, 4, 11}}, {{6, 2, 10}},  {{8, 6, 7}},  {{9, 8, 1}}};
+    for (int level = 0; level < levels; ++level) {
+        std::map<std::pair<int64_t, int64_t>, int64_t> middle;
+        const auto mid = [&](const int64_t p, const int64_t q) {
+            const auto [it, added] =
+                middle.emplace(std::make_pair(std::min(p, q), std::max(p, q)), int64_t(V.size()));
+            if (added) V.push_back((V[p] + V[q]).normalized());
+            return it->second;
+        };
+        std::vector<std::array<int64_t, 3>> G;
+        for (const auto& f : F) {
+            const int64_t x = mid(f[0], f[1]), y = mid(f[1], f[2]), z = mid(f[2], f[0]);
+            G.push_back({{f[0], x, z}});
+            G.push_back({{f[1], y, x}});
+            G.push_back({{f[2], z, y}});
+            G.push_back({{x, y, z}});
+        }
+        F = std::move(G);
+    }
+    MeshData data;
+    data.V.resize(V.size(), 3);
+    for (size_t i = 0; i < V.size(); ++i) data.V.row(i) = (c + r * V[i]).transpose();
+    auto& C = data.cells[CellType::Triangle].connectivity;
+    C.resize(F.size(), 3);
+    for (size_t i = 0; i < F.size(); ++i)
+        for (int j = 0; j < 3; ++j) C(i, j) = F[i][j];
+    return data;
+}
+} // namespace
+TEST_CASE(
+    "TetWild hands on its envelope and SimWild holds a tagged mesh to it on both routes",
+    "[component_io][io][envelope]" + release_only)
+{
+    // Two spheres `a` and `b`, and a segment inside `a` as a feature file. tetwild simplifies
+    // them within half its eps, so the faces it hands on leave the spheres by up to that much:
+    // a run at a tenth of its eps cannot hold them. simwild remeshes tetwild's mesh held to the
+    // envelope tetwild returns, the spheres as given, at tetwild's eps, and must return a mesh
+    // within that eps of them -- of the original input, not of the mesh it received.
+    WorkingDirectory cwd;
+    const MeshData a = icosphere(3, 1, Vector3d::Zero());
+    const MeshData b = icosphere(3, 0.5, Vector3d(2.5, 0, 0));
+    MeshData curve;
+    curve.V.resize(2, 3);
+    curve.V << -0.5, 0.1, 0.1, 0.5, 0.2, 0.1;
+    curve.cells[CellType::Edge].connectivity.resize(1, 2);
+    curve.cells[CellType::Edge].connectivity << 0, 1;
+    const nlohmann::json tetwild_options = {
+        {"input_names", {"a", "b"}},
+        {"eps_rel", 1e-2},
+        {"eps_simplify_rel", 5e-3},
+        {"filter", "input"},
+        {"max_iterations", 2},
+        {"num_threads", 1}};
+    auto memory_options = tetwild_options;
+    memory_options["input"] = {"a", "b"};
+    memory_options["input_edges"] = {"curve"};
+    const auto meshed = tetwild::tetwild(memory_options, {{"a", a}, {"b", b}, {"curve", curve}});
+    check(meshed);
+    write_obj("a.obj", a);
+    write_obj("b.obj", b);
+    write_obj("curve.obj", curve);
+    auto file_options = tetwild_options;
+    file_options["application"] = "tetwild";
+    file_options["input"] = {here("a.obj"), here("b.obj")};
+    file_options["input_edges"] = {here("curve.obj")};
+    file_options["output"] = "t";
+    file_options["write_vtu"] = false;
+    tetwild::tetwild(file_options);
+    const double eps = meshed.second.at("eps");
+    const MeshData envelope = io::read_mesh("t_envelope.msh");
+
+    // The envelope is the input, labelled as the mesh's tags: each sphere's triangles under its
+    // name, the segment as feature_0. The same on both routes.
+    REQUIRE(meshed.first.count("envelope"));
+    const MeshData& memory_envelope = meshed.first.at("envelope");
+    for (const MeshData* e : {&memory_envelope, &envelope}) {
+        REQUIRE(
+            e->cell(CellType::Triangle).attributes.at("tags").labels ==
+            std::vector<std::string>{"a", "b"});
+        REQUIRE(
+            e->cell(CellType::Edge).attributes.at("tags").labels ==
+            std::vector<std::string>{"feature_0"});
+        CHECK(
+            labelled_rows(*e, CellType::Triangle, "a").size() ==
+            size_t(a.cell(CellType::Triangle).connectivity.rows()));
+        CHECK(
+            labelled_rows(*e, CellType::Triangle, "b").size() ==
+            size_t(b.cell(CellType::Triangle).connectivity.rows()));
+        CHECK(labelled_rows(*e, CellType::Edge, "feature_0").size() == 1);
+    }
+    for (const std::string name : {"a", "b"}) {
+        CHECK(
+            canonical(labelled_rows(memory_envelope, CellType::Triangle, name)) ==
+            canonical(labelled_rows(envelope, CellType::Triangle, name)));
+    }
+    CHECK(
+        canonical(labelled_rows(memory_envelope, CellType::Edge, "feature_0")) ==
+        canonical(labelled_rows(envelope, CellType::Edge, "feature_0")));
+
+    // simwild on tetwild's mesh, held to the envelope at tetwild's eps, on both routes: on the
+    // file route the envelope is a path relative to input_dir.
+    const MeshData tagged = tags_only(io::read_mesh("t_final.msh"));
+    const nlohmann::json simwild_options = {
+        {"eps", eps},
+        {"max_iterations", 2},
+        {"num_threads", 1}};
+    auto simwild_memory = simwild_options;
+    simwild_memory["input"] = "tagged";
+    simwild_memory["envelope"] = "envelope";
+    const MeshMap inputs{{"tagged", tagged}, {"envelope", envelope}};
+    const auto remeshed = simwild::simwild(simwild_memory, inputs);
+    for (const auto& [name, data] : remeshed.first) REQUIRE_NOTHROW(data.validate());
+    auto simwild_file = simwild_options;
+    simwild_file["application"] = "simwild";
+    simwild_file["input"] = {here("t_final.msh")};
+    simwild_file["input_dir"] = std::filesystem::current_path().string();
+    simwild_file["envelope"] = "t_envelope.msh";
+    simwild_file["output"] = "s";
+    simwild_file["write_vtu"] = false;
+    simwild::simwild(simwild_file);
+    const MeshData file = io::read_mesh("s.msh");
+
+    // The envelope comes back as given, for the next component, on both routes.
+    REQUIRE(remeshed.first.count("envelope"));
+    CHECK(same_data(remeshed.first.at("envelope"), envelope));
+    CHECK(same_data(io::read_mesh("s_envelope.msh"), envelope));
+    // The same mesh on both routes.
+    const MeshData& memory = remeshed.first.at("mesh");
+    for (const std::string name : {"a", "b"}) {
+        CHECK(
+            canonical(labelled_rows(memory, CellType::Triangle, name)) ==
+            canonical(labelled_rows(file, CellType::Triangle, name)));
+    }
+    // A feature curve has no direction: each edge's ends in order of position.
+    const auto undirected = [](std::vector<std::vector<Vector3d>> rows) {
+        for (auto& e : rows) {
+            if (std::lexicographical_compare(
+                    e[1].data(),
+                    e[1].data() + 3,
+                    e[0].data(),
+                    e[0].data() + 3))
+                std::swap(e[0], e[1]);
+        }
+        return canonical(rows);
+    };
+    CHECK(
+        undirected(labelled_rows(memory, CellType::Edge, "feature_0")) ==
+        undirected(labelled_rows(file, CellType::Edge, "feature_0")));
+
+    // Every face within eps of its own sphere as given to tetwild, in its exact envelope and as
+    // measured at its corners, edge midpoints and centroid; every feature edge within eps of the
+    // segment (feature_envelope_ratio 1).
+    const Vector3d p = curve.V.row(0).transpose(), q = curve.V.row(1).transpose();
+    const auto off_segment = [&](const Vector3d& x) {
+        const Vector3d d = q - p;
+        const double s = std::clamp((x - p).dot(d) / d.squaredNorm(), 0.0, 1.0);
+        return (p + s * d - x).norm();
+    };
+    for (const MeshData* mesh : {&memory, &file}) {
+        const std::array<std::pair<std::string, const MeshData*>, 2> spheres = {
+            {{"a", &a}, {"b", &b}}};
+        for (const auto& [name, sphere] : spheres) {
+            std::vector<Vector3d> V;
+            std::vector<Vector3i> F;
+            for (Eigen::Index v = 0; v < sphere->V.rows(); ++v)
+                V.push_back(sphere->V.row(v).transpose());
+            const auto& C = sphere->cell(CellType::Triangle).connectivity;
+            for (Eigen::Index f = 0; f < C.rows(); ++f)
+                F.emplace_back(int(C(f, 0)), int(C(f, 1)), int(C(f, 2)));
+            Envelope exact(true);
+            exact.init(V, F, eps);
+            const auto rows = labelled_rows(*mesh, CellType::Triangle, name);
+            REQUIRE(!rows.empty());
+            size_t outside = 0;
+            double farthest = 0;
+            for (const auto& f : rows) {
+                outside += exact.is_outside(std::array<Vector3d, 3>{{f[0], f[1], f[2]}});
+                const std::array<Vector3d, 7> samples = {
+                    {f[0],
+                     f[1],
+                     f[2],
+                     Vector3d((f[0] + f[1]) / 2),
+                     Vector3d((f[1] + f[2]) / 2),
+                     Vector3d((f[2] + f[0]) / 2),
+                     Vector3d((f[0] + f[1] + f[2]) / 3)}};
+                for (const Vector3d& x : samples)
+                    farthest = std::max(farthest, std::sqrt(exact.squared_distance(x)));
+            }
+            INFO(name << ": " << rows.size() << " faces, farthest " << farthest / eps << " eps");
+            CHECK(outside == 0);
+            CHECK(farthest <= eps * (1 + 1e-9));
+        }
+        const auto edges = labelled_rows(*mesh, CellType::Edge, "feature_0");
+        REQUIRE(!edges.empty());
+        for (const auto& e : edges)
+            for (const Vector3d& x : e) CHECK(off_segment(x) <= eps * (1 + 1e-9));
+    }
+
+    // At a tenth of tetwild's eps the faces it simplified lie outside: refused, naming the label.
+    auto narrow = simwild_memory;
+    narrow["eps"] = eps / 10;
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(narrow, inputs),
+        Catch::Matchers::ContainsSubstring("held faces outside") &&
+            Catch::Matchers::ContainsSubstring("a ("));
+    // A label the mesh holds that the envelope lacks, of a face or of a feature curve: refused,
+    // naming it.
+    MeshData renamed = envelope;
+    renamed.cells.at(CellType::Triangle).attributes.at("tags").labels = {"a", "c"};
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(simwild_memory, {{"tagged", tagged}, {"envelope", renamed}}),
+        Catch::Matchers::ContainsSubstring("labelled b"));
+    renamed = envelope;
+    renamed.cells.at(CellType::Edge).attributes.at("tags").labels = {"feature_1"};
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(simwild_memory, {{"tagged", tagged}, {"envelope", renamed}}),
+        Catch::Matchers::ContainsSubstring("labelled feature_0"));
+}
+#endif
+#if defined(WMTK_TEST_triwild) && defined(WMTK_TEST_simwild)
+namespace {
+// The closed polyline of `n` segments around the circle of radius `r` about (cx, 0),
+// counter-clockwise.
+MeshData circle(const int n, const double r, const double cx)
+{
+    MeshData data;
+    data.V = DataMatrix<double>::Zero(n, 3);
+    auto& E = data.cells[CellType::Edge].connectivity;
+    E.resize(n, 2);
+    for (int i = 0; i < n; ++i) {
+        const double angle = 2 * std::acos(-1.0) * i / n;
+        data.V(i, 0) = cx + r * std::cos(angle);
+        data.V(i, 1) = r * std::sin(angle);
+        E(i, 0) = i;
+        E(i, 1) = (i + 1) % n;
+    }
+    return data;
+}
+} // namespace
+TEST_CASE(
+    "TriWild hands on its envelope and SimWild holds a tagged mesh to it on both routes",
+    "[component_io][io][envelope]" + release_only)
+{
+    // The 2D twin of the case above: two circles `a` and `b`, simplified by triwild within half
+    // its eps, remeshed by simwild held to triwild's envelope at triwild's eps.
+    WorkingDirectory cwd;
+    const MeshData a = circle(64, 1, 0), b = circle(64, 0.5, 2.5);
+    const nlohmann::json triwild_options = {
+        {"input_names", {"a", "b"}},
+        {"eps_rel", 1e-2},
+        {"eps_simplify_rel", 5e-3},
+        {"max_iterations", 2},
+        {"num_threads", 1}};
+    auto memory_options = triwild_options;
+    memory_options["input"] = {"a", "b"};
+    const auto meshed = triwild::triwild(memory_options, {{"a", a}, {"b", b}});
+    check(meshed);
+    write_obj("a.obj", a);
+    write_obj("b.obj", b);
+    auto file_options = triwild_options;
+    file_options["application"] = "triwild";
+    file_options["input"] = {here("a.obj"), here("b.obj")};
+    file_options["output"] = "t";
+    file_options["write_vtu"] = false;
+    triwild::triwild(file_options);
+    const double eps = meshed.second.at("eps");
+    const MeshData envelope = io::read_mesh("t_envelope.msh");
+
+    // The envelope is the input curves, each segment under its curve's name, on both routes.
+    REQUIRE(meshed.first.count("envelope"));
+    for (const MeshData* e : {&meshed.first.at("envelope"), &envelope}) {
+        REQUIRE(
+            e->cell(CellType::Edge).attributes.at("tags").labels ==
+            std::vector<std::string>{"a", "b"});
+        CHECK(labelled_rows(*e, CellType::Edge, "a").size() == 64);
+        CHECK(labelled_rows(*e, CellType::Edge, "b").size() == 64);
+    }
+    for (const std::string name : {"a", "b"}) {
+        CHECK(
+            canonical(labelled_rows(meshed.first.at("envelope"), CellType::Edge, name)) ==
+            canonical(labelled_rows(envelope, CellType::Edge, name)));
+    }
+
+    const MeshData tagged = tags_only(io::read_mesh("t.msh"));
+    const nlohmann::json simwild_options = {
+        {"eps", eps},
+        {"max_iterations", 2},
+        {"num_threads", 1}};
+    auto simwild_memory = simwild_options;
+    simwild_memory["input"] = "tagged";
+    simwild_memory["envelope"] = "envelope";
+    const MeshMap inputs{{"tagged", tagged}, {"envelope", envelope}};
+    const auto remeshed = simwild::simwild(simwild_memory, inputs);
+    for (const auto& [name, data] : remeshed.first) REQUIRE_NOTHROW(data.validate());
+    auto simwild_file = simwild_options;
+    simwild_file["application"] = "simwild";
+    simwild_file["input"] = {here("t.msh")};
+    simwild_file["input_dir"] = std::filesystem::current_path().string();
+    simwild_file["envelope"] = "t_envelope.msh";
+    simwild_file["output"] = "s";
+    simwild_file["write_vtu"] = false;
+    simwild::simwild(simwild_file);
+    const MeshData file = io::read_mesh("s.msh");
+
+    REQUIRE(remeshed.first.count("envelope"));
+    CHECK(same_data(remeshed.first.at("envelope"), envelope));
+    CHECK(same_data(io::read_mesh("s_envelope.msh"), envelope));
+    const MeshData& memory = remeshed.first.at("mesh");
+    for (const std::string name : {"a", "b"}) {
+        CHECK(
+            canonical(labelled_rows(memory, CellType::Edge, name)) ==
+            canonical(labelled_rows(file, CellType::Edge, name)));
+    }
+    // Every tracked edge within eps of its own circle as given to triwild.
+    for (const MeshData* mesh : {&memory, &file}) {
+        const std::array<std::pair<std::string, const MeshData*>, 2> circles = {
+            {{"a", &a}, {"b", &b}}};
+        for (const auto& [name, input] : circles) {
+            std::vector<Vector2d> V;
+            std::vector<Vector2i> E;
+            for (Eigen::Index v = 0; v < input->V.rows(); ++v)
+                V.emplace_back(input->V(v, 0), input->V(v, 1));
+            const auto& C = input->cell(CellType::Edge).connectivity;
+            for (Eigen::Index e = 0; e < C.rows(); ++e) E.emplace_back(int(C(e, 0)), int(C(e, 1)));
+            Envelope exact(true);
+            exact.init(V, E, eps);
+            const auto rows = labelled_rows(*mesh, CellType::Edge, name);
+            REQUIRE(!rows.empty());
+            size_t outside = 0;
+            double farthest = 0;
+            for (const auto& e : rows) {
+                const Vector2d x = e[0].head<2>(), y = e[1].head<2>();
+                outside += exact.is_outside(std::array<Vector2d, 2>{{x, y}});
+                for (const Vector2d& s : {x, y, Vector2d((x + y) / 2)})
+                    farthest = std::max(farthest, std::sqrt(exact.squared_distance(s)));
+            }
+            INFO(name << ": " << rows.size() << " edges, farthest " << farthest / eps << " eps");
+            CHECK(outside == 0);
+            CHECK(farthest <= eps * (1 + 1e-9));
+        }
+    }
+
+    auto narrow = simwild_memory;
+    narrow["eps"] = eps / 10;
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(narrow, inputs),
+        Catch::Matchers::ContainsSubstring("held edges outside") &&
+            Catch::Matchers::ContainsSubstring("a ("));
+    MeshData renamed = envelope;
+    renamed.cells.at(CellType::Edge).attributes.at("tags").labels = {"a", "c"};
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(simwild_memory, {{"tagged", tagged}, {"envelope", renamed}}),
+        Catch::Matchers::ContainsSubstring("labelled b"));
 }
 #endif

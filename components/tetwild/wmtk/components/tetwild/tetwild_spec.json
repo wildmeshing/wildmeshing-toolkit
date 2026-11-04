@@ -131,7 +131,7 @@
     "pointer": "/output",
     "type": "string",
     "default": "out",
-    "doc": "Output file name (without extension)."
+    "doc": "Output file name (without extension): the tet mesh is <output>_final.msh. Next to it <output>_envelope.msh, the memory route's outputs[\"envelope\"]: the reference the tags were held to -- the input, or the simplified input under envelope_reference \"simplified\" -- labelled as the mesh labels them (a triangle block, one column per input; an edge block of the feature curves, feature_<i>; the input points), the `envelope` a later simwild, manifold_extraction or topological_offset takes. It holds no eps: the receiver builds its own envelopes around it, so a chain stays within one eps of this input."
   },
   {
     "pointer": "/input_names",

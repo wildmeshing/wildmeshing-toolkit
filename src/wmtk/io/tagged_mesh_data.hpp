@@ -61,6 +61,67 @@ MeshData feature_data(
     data.validate();
     return data;
 }
+// The envelope a component hands on -- outputs["envelope"] on the memory route,
+// <output>_envelope.msh on the file route -- is the REFERENCE it held its tags to: the geometry its
+// envelopes, tubes and anchors were built around (the input, or the simplified input, per
+// envelope_reference), labelled as its output mesh labels what it held there. In 3D a triangle
+// block (an input surface's face tag, a region's tet tag) and an edge block (the feature curves,
+// feature_<i>), in 2D an edge block, each with one `tags` column per label; the input points as a
+// point block without tags, since the mesh writes nothing for them. No eps: a receiver builds its
+// own envelopes around the reference at its own eps, label by label, so that every stage of a
+// chain holds its tags within one eps of the first component's input. Rebuilt from the mesh it
+// receives, the bound would grow by one eps per stage.
+//
+// append_envelope_block() adds one kind of it: the `type` cells of `block` (geometry_data() of
+// the reference's cells), on vertices of their own after the envelope's, row r labelled by the
+// bits of sets[r] (bit j: names[j]); without names, unlabelled. A block without cells adds
+// nothing. One block per type.
+inline void append_envelope_block(
+    MeshData& envelope,
+    const MeshData& block,
+    const CellType type,
+    const std::vector<InputSet>& sets,
+    const std::vector<std::string>& names)
+{
+    const auto& cells = block.cell(type).connectivity;
+    if (cells.rows() == 0) return;
+    if (envelope.cells.count(type))
+        throw std::runtime_error("An envelope has one block of each cell type");
+    if (!names.empty() && sets.size() != size_t(cells.rows()))
+        throw std::runtime_error("An envelope needs one label set per cell");
+    const Eigen::Index base = envelope.V.rows();
+    envelope.V.conservativeResize(base + block.V.rows(), 3);
+    envelope.V.bottomRows(block.V.rows()) = block.V;
+    auto& out = envelope.cells[type];
+    out.connectivity = (cells.array() + int64_t(base)).matrix();
+    if (names.empty()) return;
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(cells.rows(), names.size());
+    for (Eigen::Index r = 0; r < cells.rows(); ++r)
+        for (size_t j = 0; j < names.size() && j < size_t(SurfaceTagAttributes::max_inputs); ++j)
+            member(r, j) = (sets[r] >> j) & 1;
+    out.attributes["tags"] = {std::move(member), names};
+}
+// The reference's input points, as the envelope's point block, without tags.
+template <typename Point>
+void append_envelope_points(MeshData& envelope, const std::vector<Point>& points)
+{
+    std::vector<std::array<int64_t, 1>> cells(points.size());
+    for (size_t i = 0; i < points.size(); ++i) cells[i] = {{int64_t(i)}};
+    append_envelope_block(
+        envelope,
+        geometry_data(points, cells, CellType::Point),
+        CellType::Point,
+        {},
+        {});
+}
+// Whether `envelope` is a labelled reference (append_envelope_block()), as producers write it,
+// rather than bare geometry: its triangles (3D) or edges (2D) carry `tags`. Bare geometry, an
+// `envelope` the caller built, is held to as a whole, as before the labels.
+inline bool is_labelled_envelope(const MeshData& envelope, const bool is_3d)
+{
+    const auto it = envelope.cells.find(is_3d ? CellType::Triangle : CellType::Edge);
+    return it != envelope.cells.end() && it->second.attributes.count("tags");
+}
 // The labels of tags 0 to count - 1, named by `names` (id -> name): a tag's name, or tag_<id>
 // without one, unless that name is taken, in which case '_' is appended as SimWildMesh::write_msh
 // does; labels must be unique.

@@ -9,6 +9,7 @@
 #include <wmtk/components/simwild/EmbedCurves.hpp>
 #include <wmtk/components/simwild/EmbedSurface.hpp>
 #include <wmtk/io/mesh_io.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -158,7 +159,7 @@ void tags_from_label_images(MeshData& mesh, const std::string& what)
     }
 }
 
-InputData read_image_msh(const std::string& path)
+InputData read_image_msh(const std::string& path, const MeshData* envelope)
 {
     if (!std::filesystem::exists(path)) {
         log_and_throw_error("File {} does not exist.", path);
@@ -177,7 +178,7 @@ InputData read_image_msh(const std::string& path)
     for (auto& [type, cells] : mesh.cells)
         for (auto it = cells.attributes.begin(); it != cells.attributes.end();)
             it = it->first == "tags" ? std::next(it) : cells.attributes.erase(it);
-    return read_mesh_data(mesh);
+    return read_mesh_data(mesh, envelope);
 }
 
 InputData read_mesh(
@@ -991,7 +992,7 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
             place_tagged(edges, et, out.F_tagged, out.F_tags, "edge");
         }
     }
-    if (envelope) {
+    if (envelope && !io::is_labelled_envelope(*envelope, dim == 3)) {
         envelope->validate();
         io::ComponentIO::attributes(envelope->vertex_attributes, {});
         const auto t = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
@@ -1002,6 +1003,102 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         out.V_envelope = envelope->V.leftCols(type == CellType::Tetrahedron ? 3 : 2);
         out.F_envelope = io::ComponentIO::indices(envelope->cell(t).connectivity);
         out.envelope_name = "EnvelopeSurface";
+    } else if (envelope) {
+        // A labelled reference (io::append_envelope_block()): its triangles (2D: segments) and,
+        // in 3D, feature curves, each row with its labels, which name the mesh's tags; its points,
+        // which no tag of a mesh marks, are only handed on. Matched to the mesh by name, after
+        // the mesh's own labels are read above.
+        envelope->validate();
+        io::ComponentIO::attributes(envelope->vertex_attributes, {});
+        const auto t = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
+        for (const auto& [ct, c] : envelope->cells) {
+            if (ct != t && ct != CellType::Point && !(dim == 3 && ct == CellType::Edge))
+                throw std::runtime_error("Incompatible envelope topology");
+            io::ComponentIO::attributes(c.attributes, {"tags"});
+        }
+        const auto labelled = [](const CellData& cells) -> const MeshAttribute& {
+            const auto it = cells.attributes.find("tags");
+            if (it == cells.attributes.end())
+                throw std::runtime_error("A labelled envelope needs tags on each of its blocks");
+            const MeshAttribute& field = it->second;
+            if (!std::holds_alternative<DataMatrix<uint8_t>>(field.values) ||
+                field.labels.size() != size_t(field.cols()))
+                throw std::runtime_error(
+                    "tags must be a UInt8 membership matrix with column labels");
+            if ((std::get<DataMatrix<uint8_t>>(field.values).array() > 1).any())
+                throw std::runtime_error("tags must be binary");
+            return field;
+        };
+        // The rows of `cells` on vertices of their own, renumbered in order.
+        const auto own_vertices = [&](const DataMatrix<int64_t>& cells, MatrixXd& V, MatrixXi& C) {
+            std::vector<int> row_of(envelope->V.rows(), -1);
+            for (Eigen::Index i = 0; i < cells.size(); ++i) row_of[cells.data()[i]] = 0;
+            int n = 0;
+            for (auto& r : row_of)
+                if (r == 0) r = n++;
+            V.resize(n, dim);
+            for (Eigen::Index v = 0; v < envelope->V.rows(); ++v)
+                if (row_of[v] >= 0) V.row(row_of[v]) = envelope->V.row(v).head(dim);
+            C = io::ComponentIO::indices(cells);
+            for (Eigen::Index i = 0; i < C.size(); ++i) C.data()[i] = row_of[C.data()[i]];
+        };
+        // The mesh's bits named `name`: a face tag's (2D: an edge tag's), a region's after them.
+        // In 2D a curve and a region may share a name, as triwild names them, and the segments
+        // then hold both: the curve is the region's boundary.
+        const auto bits_named = [&](const std::string& name) {
+            InputSet bits = 0;
+            const size_t F = out.face_tag_names.size();
+            for (size_t i = 0; i < F && i < size_t(SurfaceTagAttributes::max_inputs); ++i)
+                if (out.face_tag_names[i] == name) bits |= InputSet(1) << i;
+            for (size_t j = 0; j < out.tag_names.size(); ++j)
+                if (out.tag_names[j] == name && F + j < size_t(SurfaceTagAttributes::max_inputs))
+                    bits |= InputSet(1) << (F + j);
+            return bits;
+        };
+        const CellData& rows = envelope->cell(t);
+        const MeshAttribute& row_tags = labelled(rows);
+        const auto& member = std::get<DataMatrix<uint8_t>>(row_tags.values);
+        own_vertices(rows.connectivity, out.V_envelope, out.F_envelope);
+        out.F_envelope_labels.assign(out.F_envelope.rows(), 0);
+        for (size_t j = 0; j < row_tags.labels.size(); ++j) {
+            const InputSet bits = bits_named(row_tags.labels[j]);
+            for (Eigen::Index r = 0; r < member.rows(); ++r)
+                if (member(r, Eigen::Index(j))) out.F_envelope_labels[r] |= bits;
+        }
+        out.envelope_name = "EnvelopeSurface";
+        // The feature curves of the labels the mesh's feature curves have (feature_edge_names),
+        // one input edge per edge and label, as the mesh's own are read above.
+        const auto curve_block = envelope->cells.find(CellType::Edge);
+        if (dim == 3 && curve_block != envelope->cells.end()) {
+            const MeshAttribute& curve_tags = labelled(curve_block->second);
+            const auto& on = std::get<DataMatrix<uint8_t>>(curve_tags.values);
+            const auto& E = curve_block->second.connectivity;
+            std::map<int64_t, size_t> vertex_of; // envelope row -> reference_curves.edge_vertices
+            const auto vertex = [&](const int64_t v) {
+                const auto [it, added] =
+                    vertex_of.emplace(v, out.reference_curves.edge_vertices.size());
+                if (added)
+                    out.reference_curves.edge_vertices.emplace_back(
+                        envelope->V(v, 0),
+                        envelope->V(v, 1),
+                        envelope->V(v, 2));
+                return it->second;
+            };
+            for (size_t j = 0; j < curve_tags.labels.size(); ++j) {
+                const auto k = std::find(
+                    out.feature_edge_names.begin(),
+                    out.feature_edge_names.end(),
+                    curve_tags.labels[j]);
+                if (k == out.feature_edge_names.end()) continue;
+                for (Eigen::Index r = 0; r < E.rows(); ++r) {
+                    if (!on(r, Eigen::Index(j))) continue;
+                    out.reference_curves.edges.push_back({{vertex(E(r, 0)), vertex(E(r, 1))}});
+                    out.reference_curves.edge_input.push_back(
+                        int(k - out.feature_edge_names.begin()));
+                }
+            }
+        }
+        out.envelope_reference = *envelope;
     }
     return out;
 }

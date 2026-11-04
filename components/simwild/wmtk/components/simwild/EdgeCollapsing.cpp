@@ -107,6 +107,13 @@ void SimWildMesh::simplify()
     m_V_envelope.clear();
     m_F_envelope.clear();
     m_F_envelope_labels.clear();
+    // The faces' input sets, in get_faces_by_condition()'s order: the labels of the envelope
+    // handed on (envelope_data()).
+    m_F_envelope_face_sets.clear();
+    for (const Tuple& f : get_faces()) {
+        const auto& attr = m_face_attribute[f.fid(*this)];
+        if (attr.m_is_surface_fs) m_F_envelope_face_sets.push_back(attr.input_set());
+    }
     if (V.size() > 0 && F.size() > 0) {
         init_envelope(V, F);
     } else {

@@ -1,5 +1,6 @@
 #include "tetwild.hpp"
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 
@@ -573,7 +574,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // Until 2026-11 it was built at the remaining tolerance, tet_eps - simplify_eps, keeping the
     // output within tet_eps of the input.
 
-    MeshData memory_envelope;
+    // The reference handed on (io::append_envelope_block()): that surface, each triangle with its
+    // input's face tag; the feature curves, which every tube is built around as read, each segment
+    // with its file's tag; the input points.
+    MeshData envelope_out;
     auto tet_envelope = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
     {
         std::vector<Eigen::Vector3d> env_V;
@@ -594,8 +598,34 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             }
         }
         tet_envelope->init(env_V, env_F, tet_eps);
-        if (component_io.memory())
-            memory_envelope = io::geometry_data(env_V, env_F, CellType::Triangle);
+        const std::vector<int>& env_input = env_around_simplified ? fsimp_input : tri_input;
+        std::vector<InputSet> F_sets(env_F.size(), 0);
+        for (size_t i = 0; i < env_F.size() && i < env_input.size(); ++i) {
+            if (env_input[i] >= 0) F_sets[i] = InputSet(1) << env_input[i];
+        }
+        io::append_envelope_block(
+            envelope_out,
+            io::geometry_data(env_V, env_F, CellType::Triangle),
+            CellType::Triangle,
+            F_sets,
+            io::input_labels(
+                json_params["input_names"].get<std::vector<std::string>>(),
+                input_paths.size()));
+        std::vector<InputSet> E_sets;
+        for (const int file : features.edge_input) {
+            E_sets.push_back(file < SurfaceTagAttributes::max_inputs ? InputSet(1) << file : 0);
+        }
+        std::vector<std::string> E_names;
+        for (size_t i = 0; i < json_params["input_edges"].size(); ++i) {
+            E_names.push_back(utils::feature_input_name(i));
+        }
+        io::append_envelope_block(
+            envelope_out,
+            io::geometry_data(features.edge_vertices, features.edges, CellType::Edge),
+            CellType::Edge,
+            E_sets,
+            E_names);
+        io::append_envelope_points(envelope_out, features.points);
     }
 
     // One envelope per input, around the same surface as tet_envelope and at the same eps, with
@@ -1414,6 +1444,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     }
 
     mesh_new.output_mesh(output_path + "_final.msh", face_tags, feature_tags);
+    // The reference the tags were held to, for the next component (the memory route's
+    // outputs["envelope"]), in a file of its own: _final.msh is read as a mesh by gmsh and polyfem.
+    if (!component_io.memory()) io::write_mesh(output_path + "_envelope.msh", envelope_out);
 
     if (!component_io.memory()) igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
 
@@ -1466,7 +1499,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         if (features_present)
             component_io.result.first["features"] =
                 io::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
-        component_io.result.first["envelope"] = std::move(memory_envelope);
+        component_io.result.first["envelope"] = std::move(envelope_out);
         return {}; // the memory overload returns component_io.result instead
     }
     return mesh_new.export_mesh_data();

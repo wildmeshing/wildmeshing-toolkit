@@ -3,6 +3,7 @@
 #include <wmtk/io/ComponentIO.hpp>
 
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
 #include <wmtk/Types.hpp>
 #include <wmtk/history/History.hpp>
@@ -34,6 +35,17 @@ struct InputData
     std::vector<uint64_t> F_envelope_labels;
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;
+    /// An `envelope` input that is a labelled reference (io::is_labelled_envelope()), as tetwild,
+    /// triwild and simwild hand theirs on: as given, for the run to hand on in turn while it holds
+    /// to it. Its triangles (2D: segments) are then V_envelope and F_envelope, every row, and
+    /// F_envelope_labels their labels' bits by name: a label is every bit of the mesh named as it
+    /// (a face tag's, 2D an edge tag's, i; a region's, the face tags' count + j), 0 for a label the
+    /// mesh does not have. Empty without one, and for an `envelope` without labels, held to as a
+    /// whole as before the labels.
+    std::optional<MeshData> envelope_reference;
+    /// Its feature curves (3D, its edge block) of the labels the mesh's feature curves have: an
+    /// input edge per edge and label, edge_input that label's feature input (feature_edge_names).
+    utils::FeatureInputs reference_curves;
     /// Whether the input was simplified before the insertion (preserve_topology off). Around the
     /// input (envelope_reference "input") V_envelope is then the input as read, not what was
     /// inserted, and the mesh holds the input's own curves and curve points around the input
@@ -82,7 +94,8 @@ struct InputData
 /// as its region field, tags, when it has none: in place, both routes. `what` names the input in
 /// errors.
 void tags_from_label_images(MeshData& mesh, const std::string& what);
-InputData read_image_msh(const std::string& path);
+/// `envelope`, optional: an `envelope` input, on both routes read_mesh_data()'s.
+InputData read_image_msh(const std::string& path, const MeshData* envelope = nullptr);
 InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope = nullptr);
 
 /**

@@ -310,6 +310,7 @@ void SimWildMesh::init_surfaces_and_boundaries(
 
     // tag surface faces and vertices
     std::vector<Eigen::Vector3i> tempF;
+    std::vector<InputSet> tempF_sets; // their input sets, for the envelope handed on
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
 
@@ -354,6 +355,7 @@ void SimWildMesh::init_surfaces_and_boundaries(
         m_vertex_attribute[v3].m_is_on_surface = true;
 
         tempF.emplace_back(v1, v2, v3);
+        tempF_sets.push_back(m_face_attribute[ff.fid()].input_set());
     }
 
     auto reinit_envelope = [&]() {
@@ -376,7 +378,11 @@ void SimWildMesh::init_surfaces_and_boundaries(
         m_V_envelope = tempV;
         m_F_envelope = tempF;
         m_F_envelope_labels.clear();
+        m_F_envelope_face_sets = tempF_sets;
         reinit_envelope();
+    } else if (m_has_reference) {
+        // A reference is held to as given (m_has_reference): checked below, label by label, and
+        // never rebuilt from the mesh, which would hold it to the sender's output instead.
     } else if (m_sim_params.operation == "remeshing") {
         // Deliberately NOT behind check_envelope_at_init, unlike triwild's: the answer is not an
         // assertion but a decision -- if any surface face starts outside, the envelope is rebuilt
@@ -411,10 +417,12 @@ void SimWildMesh::init_surfaces_and_boundaries(
             m_V_envelope = tempV;
             m_F_envelope = tempF;
             m_F_envelope_labels.clear();
+            m_F_envelope_face_sets = tempF_sets;
             reinit_envelope();
         }
     }
 
+    if (m_has_reference) require_reference_face_labels();
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
 
     // track bounding box
@@ -486,6 +494,11 @@ void SimWildMesh::init_surfaces_and_boundaries(
             m_envelope && m_envelope->use_exact);
         input_points = utils::placed_point_vertices(*features_placed);
     }
+    // With a reference the tubes are around its curves, not around the edges received.
+    if (m_has_reference) init_reference_feature_tubes(feature_eps, m_envelope->use_exact);
+    // Before a remeshing, which holds the mesh to the reference: what was received must already
+    // lie in it. The tag operations hold nothing to it, and drop it.
+    if (m_has_reference && m_sim_params.operation == "remeshing") check_reference_containment();
 
     // Where a tagged curve ends or three or more meet, and at every input point (input_points),
     // the vertex is anchored (anchor_feature_points()), held like the curves: always. The radius
