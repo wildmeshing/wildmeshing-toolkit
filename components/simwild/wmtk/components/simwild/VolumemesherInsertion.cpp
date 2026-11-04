@@ -377,7 +377,11 @@ void SimWildMesh::init_surfaces_and_boundaries(
 
         m_V_envelope = tempV;
         m_F_envelope = tempF;
-        m_F_envelope_labels.clear();
+        // Each row's labels, so every per-label envelope is built from these rows, the faces as
+        // they are now, and not from the mesh's faces wherever they are when it is built: after
+        // the simplification, under envelope_reference "input", the per-label envelopes are
+        // rebuilt around the input as the union is (simplify()), not around the simplified faces.
+        m_F_envelope_labels = tempF_sets;
         m_F_envelope_face_sets = tempF_sets;
         reinit_envelope();
     } else if (m_has_reference) {
@@ -416,7 +420,7 @@ void SimWildMesh::init_surfaces_and_boundaries(
             }
             m_V_envelope = tempV;
             m_F_envelope = tempF;
-            m_F_envelope_labels.clear();
+            m_F_envelope_labels = tempF_sets; // as above
             m_F_envelope_face_sets = tempF_sets;
             reinit_envelope();
         }

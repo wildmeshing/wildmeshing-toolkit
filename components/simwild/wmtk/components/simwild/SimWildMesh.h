@@ -109,13 +109,16 @@ public:
     }
 
     /// Per row of m_F_envelope: its label bits, when m_F_envelope is the inputs' triangles
-    /// (InputData::F_envelope_labels); empty once m_F_envelope is rebuilt from the mesh.
+    /// (InputData::F_envelope_labels) or the mesh's own surface faces at load
+    /// (init_surfaces_and_boundaries(): each face's input set); empty once simplify() rebuilds
+    /// m_F_envelope around the simplified faces. init_label_envelopes() reads an empty one as
+    /// "around the mesh's faces as they are then": at load that left the per-label envelopes to
+    /// follow the faces, so after the simplification under envelope_reference "input" they were
+    /// rebuilt around the simplified faces while the union was rebuilt around the input.
     std::vector<InputSet> m_F_envelope_labels;
     /// Per row of m_F_envelope, when it was built from the mesh's own surface faces
     /// (init_surfaces_and_boundaries(), simplify()): that face's input set; empty otherwise. What
-    /// envelope_data() labels the rows by where m_F_envelope_labels is empty. Kept apart from it:
-    /// init_label_envelopes() reads an empty m_F_envelope_labels as "around the mesh's faces as
-    /// they are then", which after simplify() is not where m_F_envelope was built.
+    /// envelope_data() labels the rows by where m_F_envelope_labels is empty (after simplify()).
     std::vector<InputSet> m_F_envelope_face_sets;
 
     /**
