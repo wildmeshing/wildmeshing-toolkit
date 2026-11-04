@@ -228,6 +228,10 @@ TEST_CASE("held_faces_and_their_envelopes", "[3d][envelope]")
     REQUIRE(!shared_env->is_outside(on_shared));
     REQUIRE(shared_env->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
     REQUIRE(envelope_of(0, 1, 2) == nullptr);
+    // The shared face is on both tags, so held to the intersection of their envelopes, which the
+    // containment audit must read through its members: it once asked the composite itself.
+    REQUIRE(dynamic_cast<const wmtk::IntersectionEnvelope*>(shared_env.get()) != nullptr);
+    mesh.audit_surface_containment("final pass");
     for (size_t v = 1; v < 4; ++v) REQUIRE(mesh.vertex_is_held(v));
     REQUIRE(!mesh.vertex_is_held(0)); // on wall faces only
     REQUIRE(!mesh.vertex_is_held(4));

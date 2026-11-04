@@ -2038,7 +2038,11 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     // dispatch the operations and the sanity check use, so this cannot disagree with them --
     // and, for the faces inside, how much room is left as a fraction of eps: `is_outside` is a
     // yes/no, and a face resting on the skin of its envelope is the one the next operation pushes
-    // out. Both envelopes are real Envelopes, so squared_distance() is safe on them.
+    // out. A face on two or more labels is held to the intersection of their envelopes
+    // (InputEnvelopes::containment()), a composite whose BVH is null and which must never be
+    // asked squared_distance() (CompositeEnvelopes.hpp): its members are asked instead, as the 2D
+    // audit asks its tag tubes, and the face's distance is the largest, since inside the
+    // intersection is inside each.
     struct Face
     {
         std::array<size_t, 3> v{{0, 0, 0}};
@@ -2061,6 +2065,16 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
         }
         return d;
     };
+    // The real envelopes behind a face's: an intersection's members, else the envelope itself.
+    const auto real_parts = [](const Envelope& env) {
+        std::vector<const Envelope*> out;
+        if (const auto* both = dynamic_cast<const IntersectionEnvelope*>(&env)) {
+            for (const auto& m : both->members()) out.push_back(m.get());
+        } else {
+            out.push_back(&env);
+        }
+        return out;
+    };
     for (const Tuple& f : get_faces()) {
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         ++n_tracked;
@@ -2074,14 +2088,20 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
              m_vertex_attribute[vids[1]].m_posf,
              m_vertex_attribute[vids[2]].m_posf}};
         const bool offset = env == m_offset_envelope;
+        const std::vector<const Envelope*> parts = real_parts(*env);
         if (env->is_outside(p)) {
-            bad.push_back({vids, offset, farthest(*env, p, 6)});
+            double d = 0.;
+            for (const Envelope* e : parts) d = std::max(d, farthest(*e, p, 6));
+            bad.push_back({vids, offset, d});
             continue;
         }
-        // In units of the envelope's own eps (Envelope::eps()). Until 2026-11 of sqrt(eps2), the
+        // In units of each envelope's own eps (Envelope::eps()). Until 2026-11 of sqrt(eps2), the
         // sampled path's shrunk radius, 0.42 eps, so the margins read 2.37x too high.
-        if (!(env->eps() > 0.)) continue;
-        const double frac = farthest(*env, p, 2) / env->eps();
+        double frac = -1.;
+        for (const Envelope* e : parts) {
+            if (e->eps() > 0.) frac = std::max(frac, farthest(*e, p, 2) / e->eps());
+        }
+        if (frac < 0.) continue;
         worst_frac = std::max(worst_frac, frac);
         ++band[frac < 0.5 ? 0 : frac < 0.9 ? 1 : frac < 0.99 ? 2 : frac < 1. ? 3 : 4];
         if (frac >= 0.9) snug.push_back({vids, offset, frac});
