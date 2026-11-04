@@ -2,8 +2,8 @@
 
 - On the same input, every op gives the file route's result (compared
   independently of cell order).
-- A .msh output holds the mesh only; the envelope is an entry of the memory
-  result, passed on to the next call only when the caller does so.
+- A .msh output holds the mesh and its tags only; the envelope is an entry of
+  the memory result, passed on to the next call only when the caller does so.
 - save/load checkpoints round-trip exactly, and the PolyFEM ops' reader
   (gmsh) reads them with every cell, the background included.
 
@@ -129,7 +129,13 @@ def _same_as_file(memory_result, file_msh):
     back = wm.read_mesh(file_msh)
     assert canonical(memory_result["mesh"]) == canonical(back)
     envelope_type = "triangle" if _top(back) == "tetrahedron" else "edge"
-    assert envelope_type not in back["cells"]   # files hold the mesh only
+    # files hold the mesh and its tags only: a block of the envelope's type is the inputs'
+    # tagged curves or faces, and a reader takes its EnvelopeSurface rows (or a block without
+    # tags) as an envelope
+    low = back["cells"].get(envelope_type)
+    if low is not None:
+        tags = low.get("attributes", {}).get("tags")
+        assert tags is not None and "EnvelopeSurface" not in tags["labels"]
 
 
 @pytest.mark.parametrize("op", sorted(OPS))
