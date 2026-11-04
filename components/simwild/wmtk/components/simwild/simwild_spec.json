@@ -1,6 +1,6 @@
 [
   {
-    "doc": "Builds and edits multi-region meshes. With surfaces (3D) or curve networks (2D) as input, it meshes them all into one tet or triangle mesh with a region per input, overlaps included, and optimizes it like tetwild and triwild. With a tagged .msh as input, operation selects an edit: remeshing improves the mesh; fill_holes_topo, tight_seal_topo, keep_lcc, resolve_overlaps, replace_tags and tag_priority edit its regions.",
+    "doc": "Builds and edits multi-region meshes. With surfaces (3D) or curve networks (2D) as input, it meshes them all into one tet or triangle mesh with a region per input, overlaps included, and optimizes it like tetwild and triwild. With a tagged .msh as input, operation selects an edit: remeshing improves the mesh; fill_holes_topo, tight_seal_topo, tight_seal_geom, keep_lcc, resolve_overlaps, replace_tags and tag_priority edit its regions.",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
@@ -78,6 +78,12 @@
       "fill_holes_threshold",
       "tight_seal_tag_sets",
       "tight_seal_threshold",
+      "tight_seal_geom_tags",
+      "tight_seal_geom_distance",
+      "tight_seal_geom_trace_rel_tol",
+      "tight_seal_geom_selection",
+      "tight_seal_geom_min_regions",
+      "tight_seal_geom_sanity",
       "keep_lcc_tags",
       "keep_lcc_num",
       "resolve_overlaps_tags",
@@ -142,6 +148,7 @@
       "remeshing",
       "fill_holes_topo",
       "tight_seal_topo",
+      "tight_seal_geom",
       "keep_lcc",
       "resolve_overlaps",
       "replace_tags",
@@ -614,6 +621,52 @@
     "type": "float",
     "default": -1,
     "doc": "For tight_seal_topo: only fill a hole cluster if its total size (area in 2D, volume in 3D, in model units) is less than this threshold. Negative value means no threshold."
+  },
+  {
+    "pointer": "/tight_seal_geom_tags",
+    "type": "list",
+    "default": [],
+    "doc": "For tight_seal_geom (2D and 3D): the tags to seal, at least two. Each entry is a single tag other than ambient; its region is the cells (faces in 2D, tets in 3D) tagged with it and nothing else. Ignored, with a warning, if tight_seal_geom_selection is \"detected\"."
+  },
+  {
+    "pointer": "/tight_seal_geom_tags/*",
+    "type": "string",
+    "doc": "One tag name."
+  },
+  {
+    "pointer": "/tight_seal_geom_distance",
+    "type": "float",
+    "default": -1,
+    "doc": "For tight_seal_geom: the distance d, which must be positive. A disk (a ball in 3D) of diameter d moves through the cells outside the regions without entering them; each connected part it cannot reach that borders the regions (see tight_seal_geom_selection) is filled with their Voronoi diagram. The parts are found as cells surely unreachable (certified, whole cells), grown by sphere tracing to where the disk's reach begins, and then selected."
+  },
+  {
+    "pointer": "/tight_seal_geom_trace_rel_tol",
+    "type": "float",
+    "default": 0.01,
+    "doc": "For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the growth's, where the distance to the dilation surface falls to d/2. As topological_offset's sphere_trace_target_rel_tol."
+  },
+  {
+    "pointer": "/tight_seal_geom_selection",
+    "type": "string",
+    "default": "explicit",
+    "options": [
+      "explicit",
+      "detected"
+    ],
+    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders tight_seal_geom_min_regions regions or more (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags."
+  },
+  {
+    "pointer": "/tight_seal_geom_min_regions",
+    "type": "int",
+    "default": 2,
+    "min": 2,
+    "doc": "For tight_seal_geom with tight_seal_geom_selection \"detected\": a part is filled only if it borders at least this many regions; parts bordering fewer are left alone. At least 2. Ignored, with a warning if not 2, with \"explicit\", which fills the parts that border every listed region."
+  },
+  {
+    "pointer": "/tight_seal_geom_sanity",
+    "type": "bool",
+    "default": false,
+    "doc": "For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell carries other than one region's tag, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two regions, which would be a concave feature of one body, filled. For tests; the integration tests set it."
   },
   {
     "pointer": "/keep_lcc_tags",

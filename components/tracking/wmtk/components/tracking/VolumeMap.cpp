@@ -307,13 +307,16 @@ struct CellIndex
         return f;
     }
     /// A point of face `fid` (coordinates in its stored corner order) through the cell holding
-    /// it: the face it lands on, and its coordinates there.
+    /// it: the face it lands on, and its coordinates there. A face no cell holds keeps both, as
+    /// in the surface map, which moves only the points on its cells' faces: the operation's
+    /// surface edits changed it at most by moving its corners -- a surface vertex collapsed into
+    /// one off the surface is a move there, and one the surface map keeps barycentric has no cell.
     std::pair<uint64_t, Eigen::Vector3d>
     map(const uint64_t fid, const Eigen::Vector3d& bs, const bool forward) const
     {
         const int src = forward ? 0 : 1;
         const auto it = index[src].find(fid);
-        if (it == index[src].end()) throw Fail("cap point on a face no cell holds");
+        if (it == index[src].end()) return {fid, bs};
         double best = -std::numeric_limits<double>::infinity();
         size_t bc = 0;
         Eigen::Vector2d q = Eigen::Vector2d::Zero();

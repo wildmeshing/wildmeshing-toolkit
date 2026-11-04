@@ -507,16 +507,17 @@ public:
     /// init_optimize loop: it returns on convergence without the final TetWild pass and
     /// without deciding the verdict.
     /// `refine` false skips the halving. `label` names the loop in its log. `max_turns` > 0 caps
-    /// the turns in place of max_rounds (growth_mode "smart"'s attempts). `fold_free`: a converged
-    /// turn with any folded offset face (fold_census()) ends the loop as not converged, before the
-    /// verdict and the final TetWild pass. Returns whether the loop converged (fold-free when
-    /// asked) within its turns.
+    /// the turns in place of max_rounds (growth_mode "smart"'s attempts). `turned_free`: a converged
+    /// turn with any offset face turned from the field (turned_face_census()) ends the loop as not
+    /// converged, before the
+    /// verdict and the final TetWild pass. Returns whether the loop converged (free of turned faces
+    /// when asked) within its turns.
     bool optimize_offset_loop(
         bool final_stage = true,
         bool refine = true,
         const std::string& label = std::string(),
         int max_turns = 0,
-        bool fold_free = false);
+        bool turned_free = false);
     /**
      * @brief The loop's local_operations(ops). Under EXPERIMENTAL_front_pocket_split, the group's
      * operation passes in one call and then each of its ops[3] smoothing passes in a call of its
@@ -634,8 +635,8 @@ public:
     };
     /// growth_mode "smart" (see the spec doc): the loop at d_0 up to max_rounds turns (throws when
     /// it does not converge), then attempts of smart_growth_attempts turns each, as
-    /// SmartGrowthSchedule picks their targets, each judged converged and fold-free
-    /// (optimize_offset_loop(..., fold_free true)). The mesh is stored (take_snapshot()) after
+    /// SmartGrowthSchedule picks their targets, each judged converged and free of faces turned
+    /// from the field (optimize_offset_loop(..., turned_free true)). The mesh is stored (take_snapshot()) after
     /// level 0 and after every success, and put back (restore_snapshot()) after every failure;
     /// SmartGrowthSchedule::Next::GiveUp throws. The attempt at target_distance is the final
     /// stage: on success it runs the final TetWild pass and decides the verdict.
@@ -1388,19 +1389,45 @@ public:
      * The 2D twin is edge_is_offset_surface_live().
      */
     bool face_is_offset_surface_live(const Tuple& f) const;
-    /// cos 150 degrees: a real fold's two offset faces have normals out of the band closer to
-    /// opposite than this (the [foldover] dihedral reading, analyze.py's).
-    static constexpr double kCos150 = -0.86602540378443864676;
     /// The normal of live offset face f, unit, pointing out of the band; false when f has no band
     /// cell or no area.
     bool offset_face_normal_out_of_band(const Tuple& f, Vector3d& n) const;
-    /// The real folds now: offset-surface edges with exactly two offset faces whose normals out of
-    /// the band are within 30 degrees of opposite (the edge of a zero-volume sheet, Lemma 5 of the
-    /// case table, 2026-10-24); `corners`, when given, marks the corners of every fold's two faces,
-    /// and `faces`, when given, receives those faces as sorted vertex triples.
-    size_t count_real_folds(
-        std::vector<char>* corners = nullptr,
-        std::vector<std::array<size_t, 3>>* faces = nullptr) const;
+    /// The fold predicate, the one test of what a fold is (2026-11-02). An edge of the offset
+    /// surface with exactly two offset faces, their normals out of the band n0 and n1, is a fold
+    /// when the normals are within `angle` (foldover_angle) of opposite -- the edge of a
+    /// zero-volume sheet, Lemma 5 of the case table (2026-10-24) -- and at least one of the two
+    /// faces is turned from the field: its angle to the field's normal, field_angle(0) or
+    /// field_angle(1) (front_face_field_angle()), over `angle`, or not measurable (NaN), so that
+    /// nothing unmeasured passes for no fold. Two opposite faces that both follow the field are no
+    /// fold but a ridge edge: the front following a ridge of the level set sharper than `angle`,
+    /// which is where it belongs. MEASURED (piece17 inward at 0.5 delta_1, 10%, 8 threads,
+    /// 2026-11-01): 12 ridge edges at the exit, every face within 1.03 degrees of the field.
+    /// field_angle is asked only of an opposite pair: it costs a nearest-primitive query.
+    /// EXPERIMENTAL_exit_no_folds, the [exit folds] count and the debug frames' offset_foldover
+    /// read this predicate, through count_folds(). Until 2026-11-02 the logs and this component's
+    /// notes called every edge with two opposite offset faces a "real fold", ridge edges included,
+    /// with the opposite test fixed at 30 degrees.
+    enum class FoldTest { none, ridge_edge, fold };
+    template <typename FieldAngle>
+    static FoldTest fold_test(
+        const Vector3d& n0,
+        const Vector3d& n1,
+        const FieldAngle& field_angle,
+        const double angle)
+    {
+        if (!(n0.dot(n1) < -std::cos(angle * M_PI / 180.))) return FoldTest::none;
+        const double a0 = field_angle(0), a1 = field_angle(1);
+        return !(a0 <= angle) || !(a1 <= angle) ? FoldTest::fold : FoldTest::ridge_edge;
+    }
+    /// The edges of the offset surface with exactly two offset faces, sorted by fold_test(): the
+    /// folds, and the ridge edges with the largest field angle among their faces. `fold_faces`,
+    /// when given, receives the two faces of every fold as sorted vertex triples.
+    struct FoldCount
+    {
+        size_t folds = 0, ridge_edges = 0;
+        double ridge_max_angle = 0.;
+    };
+    FoldCount count_folds(std::vector<std::array<size_t, 3>>* fold_faces = nullptr) const;
     /// Whether edge (a, b) lies on the band's outer surface: some incident face does.
     bool edge_is_offset_surface_live(size_t a, size_t b) const;
     /// Every live offset-surface face as a sorted vertex triple.
@@ -1473,15 +1500,16 @@ public:
     void report_offset_face_lookup_misses(const char* when) const;
 
     /**
-     * @brief The foldover measure of front face (a, b, c): the angle, in degrees, between its
+     * @brief The field angle of front face (a, b, c): the angle, in degrees, between its
      * unit normal, oriented out of its band cell (front_face_band_cell(); away from the cell's
      * fourth corner), and the field's unit normal at its centroid, the gradient of the distance
      * d to the input complex (m_input_complex_envelope's nearest primitive). 0 where the face
      * faces along the field, 180 where it faces back toward the input. NaN where it cannot be
      * measured: no band cell, a degenerate face, no input envelope yet, or a zero gradient.
-     * The face is a foldover when the angle exceeds foldover_angle (front_face_is_foldover()).
-     * Debug frames write both per face on the _off file; the end of optimize_offset() counts
-     * the folded faces. The 2D code still labels vertices (TopoOffsetTriMesh).
+     * The face is turned from the field when the angle exceeds foldover_angle
+     * (front_face_turned()); a fold needs such a face (fold_test()). Debug frames write both per
+     * face on the _off file; the end of optimize_offset() counts the turned faces. The 2D code
+     * still labels vertices (TopoOffsetTriMesh).
      */
     double front_face_field_angle(size_t a, size_t b, size_t c) const;
     /// Front face (a, b, c)'s area normal (b - a) x (c - a) in `n`, turned out of its band cell
@@ -1506,55 +1534,51 @@ public:
     {
         return 180. - std::atan2(n1.cross(n2).dot(t), n1.dot(n2)) * 180. / M_PI;
     }
-    /// foldover_angle's dihedral test: the two faces close to within `angle` degrees of each other,
-    /// either way -- a band-side dihedral (band_side_dihedral()) below `angle` or above
-    /// 360 - `angle`. The debug frames' offset_foldover_dihedral.
-    static bool dihedral_is_foldover(const double dihedral, const double angle)
-    {
-        return dihedral < angle || dihedral > 360. - angle;
-    }
-    /// front_face_field_angle() > foldover_angle; an unmeasurable face is not a foldover.
-    bool front_face_is_foldover(size_t a, size_t b, size_t c) const
+    /// A front face turned from the field: front_face_field_angle() > foldover_angle; an
+    /// unmeasurable face is not one. A property of one face, not a fold (fold_test(), which takes
+    /// an unmeasurable face as turned).
+    bool front_face_turned(size_t a, size_t b, size_t c) const
     {
         return front_face_field_angle(a, b, c) > m_offset_params.foldover_angle;
     }
-    /// The offset surface's foldovers: over offset_surface_faces(), the faces whose
-    /// front_face_field_angle() exceeds foldover_angle, the unmeasurable ones (NaN, not folds),
-    /// and the worst angle with its face's centroid. The end-of-run [foldover] warning and
-    /// growth_mode "smart"'s fold-free test read it.
-    struct FoldCensus
+    /// The offset surface's faces turned from the field: over offset_surface_faces(), the faces
+    /// whose front_face_field_angle() exceeds foldover_angle, the unmeasurable ones (NaN, not
+    /// counted as turned), and the worst angle with its face's centroid. The end-of-run
+    /// [turned faces] warning and growth_mode "smart"'s test read it.
+    struct TurnedFaceCensus
     {
-        size_t n_fold = 0, n_faces = 0, n_unmeasured = 0;
+        size_t n_turned = 0, n_faces = 0, n_unmeasured = 0;
         double worst = 0.;
         Vector3d worst_at = Vector3d::Zero();
     };
-    FoldCensus fold_census() const;
+    TurnedFaceCensus turned_face_census() const;
     /// growth_mode "individual_op_reject": a collapse, a flip of the offset surface or a smoothing
-    /// move that raises the number of folded offset faces (front_face_is_foldover()'s test) among
+    /// move that raises the number of offset faces turned from the field (front_face_turned()) among
     /// the faces it changes is refused. In the loops only: not in a TetWild pass (the
     /// optimize_construction pass, the final pass), nor before the march.
-    bool fold_reject_active() const
+    bool turned_reject_active() const
     {
         return m_offset_params.growth_mode == "individual_op_reject" && !m_tetwild_pass &&
                !m_repulsion_potential;
     }
-    /// The folded live offset faces through vid (front_face_field_angle() > foldover_angle), as
+    /// The live offset faces through vid turned from the field (front_face_field_angle() >
+    /// foldover_angle), as
     /// sorted vertex triples, added to `out`. Reads vid's own tet list and its cells only, as
     /// vertex_has_live_offset_face() does (for_each_live_offset_face_at()), so the operation hooks
     /// may ask it: the passes' locks always claim vid's list.
-    void folded_front_faces_at(size_t vid, std::set<std::array<size_t, 3>>& out) const;
-    /// Whether face (a, b, c) is folded, its band cell looked for among `cells` (a band cell
+    void turned_front_faces_at(size_t vid, std::set<std::array<size_t, 3>>& out) const;
+    /// Whether face (a, b, c) is turned from the field, its band cell looked for among `cells` (a band cell
     /// holding it); false when none is.
-    bool face_folded_in(size_t a, size_t b, size_t c, const std::vector<size_t>& cells) const;
-    /// growth_mode "individual_op_reject": the folded faces the collapse / offset-surface flip in
-    /// flight saw before it (folded_front_faces_at(), face_folded_in()), per thread; -1 for no
+    bool face_turned_in(size_t a, size_t b, size_t c, const std::vector<size_t>& cells) const;
+    /// growth_mode "individual_op_reject": the turned faces the collapse / offset-surface flip in
+    /// flight saw before it (turned_front_faces_at(), face_turned_in()), per thread; -1 for no
     /// rule.
-    mutable wmtk::threading::enumerable_thread_specific<int> m_collapse_folds_before{-1},
-        m_swap_folds_before{-1};
-    /// Operations refused for raising the folded faces (fold_reject_active()), per operation
+    mutable wmtk::threading::enumerable_thread_specific<int> m_collapse_turned_before{-1},
+        m_swap_turned_before{-1};
+    /// Operations refused for raising the turned faces (turned_reject_active()), per operation
     /// group; logged as [op reject].
-    mutable std::atomic<int> m_fold_reject_collapse{0}, m_fold_reject_swap{0},
-        m_fold_reject_smooth{0};
+    mutable std::atomic<int> m_turned_reject_collapse{0}, m_turned_reject_swap{0},
+        m_turned_reject_smooth{0};
 
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.
@@ -3105,8 +3129,8 @@ public:
         VectorXd labels, order, vid, sizing;
         VectorXd in_dist, dist_ratio, front_err, front_change;
         // the _off file's: per offset face, and the ring measure per vertex
-        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_fold, f_field_angle, f_dihedral,
-            f_fold_dihedral, ring;
+        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_turned, f_field_angle,
+            f_dihedral, ring;
         // the _stencil file's: one point per stencil point of every offset face (S, a vertex
         // cell each in S_cells), and its fields
         MatrixXd S;
