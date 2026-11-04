@@ -216,7 +216,9 @@ On files, `output` names:
 - `shapes.msh`: the triangles, with the vertices in 3D (z = 0). Each triangle has its `quality`
   (its energy) and `tags`: one column per input, labelled by `input_names`, 1 where the triangle is
   inside that input. When the filter keeps triangles that are inside no input, an `ambient` column
-  marks them.
+  marks them. The tracked curves are its edges, with `tags` too, one column per input under the
+  same labels: each edge under every input it lies on, oriented as its input. simwild reads them
+  back as edge tags.
 - `shapes.vtu`: the same triangles for ParaView, with a field `tag_<i>` per input, `quality`, and
   `flood_fill` (the regions the curves separate) when the flood fill ran
   ([`compute_flood_fill`](../reference/triwild.md#compute_flood_fill)).

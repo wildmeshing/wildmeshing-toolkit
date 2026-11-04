@@ -20,7 +20,8 @@ struct InputData
 
     /// Tagged faces of a tet mesh: rows of V_input, with one 0/1 column per face_tag_names
     /// entry. Empty when the mesh has no triangle block. In 2D, the tagged edges (two columns)
-    /// of the curve inputs, and face_tag_names their edge tags' names.
+    /// of the curve inputs or of a tagged mesh's edge block, and face_tag_names their edge tags'
+    /// names. A row's vertex order is its orientation.
     MatrixXi F_tagged;
     MatrixSi F_tags;
     std::vector<std::string> face_tag_names;
@@ -46,8 +47,8 @@ struct InputData
     /// simwild_double_sphere_notop_3d, 1.42x on simwild_curves_2d.
     double diag = -1;
 
-    /// The topological offset's correspondence handed on from an earlier offset (memory route,
-    /// vertex field corr_input_vid): per row of V_input, the V_input row of the input-complex
+    /// The topological offset's correspondence handed on from an earlier offset (vertex field
+    /// corr_input_vid, on both routes): per row of V_input, the V_input row of the input-complex
     /// vertex it was split off from, -1 for none. Empty when the mesh has no such field. Only the
     /// offset reads it, and only with save_offset_correspondence (see its spec).
     std::vector<int64_t> corr_input_vid;
@@ -61,9 +62,14 @@ struct InputData
         facet_sources;
 
     /// A surface input with feature curves or points (input_edges, input_points): them as read,
-    /// and where the insertion put them, in V_input's numbering. Empty otherwise.
+    /// and where the insertion put them, in V_input's numbering. A tagged tet mesh with an edge
+    /// block: its feature edges, one input edge per edge and tag (edge_input the tag's column),
+    /// each placed on itself. Empty otherwise.
     utils::FeatureInputs features;
     utils::EmbedFeaturesResult features_placed;
+    /// The name of each feature input, bit i of a feature edge's input set: feature_<i> for
+    /// input_edges file i, a tagged tet mesh's edge tags. Empty without feature curves.
+    std::vector<std::string> feature_edge_names;
     /// A 2D curve input with input points (input_points): the row of V_input each became, in
     /// input order. Empty otherwise.
     std::vector<size_t> input_point_vids;

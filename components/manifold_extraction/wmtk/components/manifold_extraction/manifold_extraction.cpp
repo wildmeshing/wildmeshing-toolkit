@@ -77,9 +77,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                   component_io.mesh(input_path),
                   !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr)
             : read_image_msh(input_path);
-    // Tagged faces would be dropped silently; refuse them until they are carried.
+    // Tagged faces (2D: tagged edges) and feature curves would be dropped silently; refuse them
+    // until they are carried.
     if (input_data.F_tagged.rows())
-        log_and_throw_error("manifold_extraction does not take tagged faces yet");
+        log_and_throw_error("manifold_extraction does not take tagged faces (2D: edges) yet");
+    if (!input_data.features.empty())
+        log_and_throw_error("manifold_extraction does not take feature curves yet");
     man_params.init(
         input_data.V_input.colwise().minCoeff(),
         input_data.V_input.colwise().maxCoeff());

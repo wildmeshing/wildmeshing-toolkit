@@ -96,7 +96,7 @@
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of input files. A .msh is an already-tagged mesh and is used as-is. Anything else is inserted by VolumeRemesher: a triangular surface mesh in 3D, or an OBJ curve network ('v'/'l' polylines) in 2D. See /dimension.",
+    "doc": "List of input files. A .msh is an already-tagged mesh and is used as-is. Anything else is inserted by VolumeRemesher: a triangular surface mesh in 3D, or an OBJ curve network ('v'/'l' polylines) in 2D. See /dimension. A tagged mesh's lower blocks are tags too, on both routes: in 3D its triangles are face tags and its edges feature curves, one feature input per label, held as /input_edges are; in 2D its edges are edge tags, as curve inputs give them (see /input_type). Their rows labelled EnvelopeSurface, and in 2D an edge block without tags, are the envelope. simwild writes its tags back the same way, and reads tetwild's and triwild's outputs as such tagged meshes.",
     "min": 1
   },
   {
@@ -189,7 +189,7 @@
     "pointer": "/input_edges",
     "type": "list",
     "default": [],
-    "doc": "List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). input_transform does not apply to them. The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the box is grown over them automatically, and with it the bounding box eps and the lengths are relative to. The optimization preserves them: the tet edges tiling them stay inside a tube of feature_envelope_ratio x eps around the input edges, and every vertex where they end or three or more meet is anchored within that radius. Read and held by the same code as tetwild's input_edges."
+    "doc": "List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). input_transform does not apply to them. The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the box is grown over them automatically, and with it the bounding box eps and the lengths are relative to. The optimization preserves them: the tet edges tiling them stay inside a tube of feature_envelope_ratio x eps around the input edges, and every vertex where they end or three or more meet is anchored within that radius. Read and held by the same code as tetwild's input_edges. The output mesh holds them on both routes as its edge block, one tag per file, feature_<i> for the i-th, as tetwild writes them, and a tagged tet mesh input's edge block is read back as such curves (see /input)."
   },
   {
     "pointer": "/input_edges/*",

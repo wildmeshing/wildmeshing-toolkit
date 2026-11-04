@@ -106,7 +106,7 @@
   {
     "pointer": "/input_names",
     "type": "list",
-    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc. Each name labels the input twice in the output mesh, on both routes: its region, the triangles its winding number puts inside, and its curves, the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags.",
     "default": []
   },
   {

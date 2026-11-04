@@ -715,6 +715,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // Exact arrangement of the simplified surface against a Delaunay background
     // mesh; the remesher's own tets are used directly, so no Steiner points.
     utils::EmbedFeaturesResult features_out;
+    // With several inputs, each tracked face's inputs are taken from the arrangement whether or
+    // not each is held to its own envelopes (per_input_envelopes): they are also the output's face
+    // tags, one per input. As triwild takes its segments'. Until 2026-11 only with
+    // per_input_envelopes, and without it every tracked face was input 0's.
+    const bool per_input = input_paths.size() > 1;
     std::vector<InputSet> facet_input_set; // per facet, with several inputs only
     std::vector<std::vector<uint32_t>> facet_sources;
     mesh.insertion_by_volumeremesher(
@@ -730,8 +735,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         feature_edges,
         feature_points,
         &features_out,
-        input_envelopes.empty() ? nullptr : &fsimp_input,
-        input_envelopes.empty() ? nullptr : &facet_input_set,
+        per_input ? &fsimp_input : nullptr,
+        per_input ? &facet_input_set : nullptr,
         record_history ? &facet_sources : nullptr);
 
     if (!feature_edges.empty() || !feature_points.empty()) {
@@ -795,7 +800,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         tet_face_on_input_surface,
         &tet_face_orientation,
         has_features ? &features_out : nullptr,
-        input_envelopes.empty() ? nullptr : &facet_input_set,
+        per_input ? &facet_input_set : nullptr,
         &features);
     mesh_new.m_input_envelopes.set(std::move(input_envelopes));
 
@@ -1397,7 +1402,18 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.save_paraview(output_path, false);
     }
 
-    mesh_new.output_mesh(output_path + "_final.msh");
+    // The output's tags, the same on both routes: the tracked faces of each input surface, named
+    // as triwild's and simwild's tags name an input (input_names, else tag_<i>; tetwild names
+    // nothing else after them but the wn_ fields), and the tet edges tiling each input_edges
+    // file, feature_<i>. Each with its input set, the faces oriented as their input.
+    const std::vector<std::string> face_tags =
+        io::input_labels(mesh_new.m_input_names, input_paths.size());
+    std::vector<std::string> feature_tags;
+    for (size_t i = 0; i < json_params["input_edges"].size(); ++i) {
+        feature_tags.push_back(utils::feature_input_name(i));
+    }
+
+    mesh_new.output_mesh(output_path + "_final.msh", face_tags, feature_tags);
 
     if (!component_io.memory()) igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
 
@@ -1439,6 +1455,13 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.save_paraview("mesh", false, &raw);
         io::compact_slot_outputs(mesh_new, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
+        // The tags _final.msh holds on the file route (output_mesh()), as the triangle and edge
+        // blocks of the mesh.
+        io::collect_input_set_tags<CellType::Triangle>(
+            mesh_new,
+            component_io.result.first,
+            face_tags);
+        io::collect_feature_edge_tags(mesh_new, component_io.result.first, feature_tags);
         component_io.result.first.merge(io::named_outputs(std::move(history_meshes)));
         if (features_present)
             component_io.result.first["features"] =

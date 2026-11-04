@@ -66,6 +66,11 @@ public:
     std::map<std::string, int64_t> m_tag_name_to_id;
     /// Names of the face tags: bit i of a face's input set is m_face_tag_names[i].
     std::vector<std::string> m_face_tag_names;
+    /// Names of the feature curves' inputs: bit i of a feature edge's input set
+    /// (FeatureEdgeAttributes::inputs(feature)) is m_feature_edge_names[i], the output's edge tag
+    /// (io::collect_feature_edge_tags()). Set by the driver: feature_<i> for input_edges file i,
+    /// or the edge tags of a tagged mesh input (InputData::feature_edge_names).
+    std::vector<std::string> m_feature_edge_names;
 
     /**
      * @brief (Re)build the base's m_input_envelopes: one envelope per label, and each surface

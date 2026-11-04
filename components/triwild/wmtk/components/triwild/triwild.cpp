@@ -1051,6 +1051,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             CellType::Triangle,
             mesh.get_faces(),
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
+        // The tracked curves, one edge tag per input, named as its triangle tag (input_names, else
+        // tag_<i>), each edge with its input set and oriented as its input: the edge block of the
+        // mesh, as simwild writes its curve inputs.
+        io::collect_input_set_tags<CellType::Edge>(
+            mesh,
+            component_io.result.first,
+            io::input_labels(tag_names, input_paths.size()));
         component_io.result.first["envelope"] =
             io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
         if (!component_io.memory())

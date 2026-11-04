@@ -306,7 +306,9 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
 
     write_unique_vtu();
 
-    // The tagged tet mesh as the output .msh holds it: tets, their tags, the face tags.
+    // The tagged tet mesh as the output .msh holds it: tets, their tags, the face tags, the
+    // feature curves' edge tags.
+    mesh.m_feature_edge_names = input_data.feature_edge_names;
     auto tagged_outputs = [&mesh]() {
         MeshMap raw;
         mesh.write_vtu("mesh", &raw);
@@ -319,6 +321,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             mesh.get_tets(),
             [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
         io::collect_input_set_tags<CellType::Triangle>(mesh, outputs, mesh.m_face_tag_names);
+        io::collect_feature_edge_tags(mesh, outputs, mesh.m_feature_edge_names);
         return outputs;
     };
 

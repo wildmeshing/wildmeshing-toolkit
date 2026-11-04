@@ -144,8 +144,12 @@ column labelled `ambient` is the background, as is a cell without a tag; a mesh 
 field is all background. Tagged results label their background `ambient` explicitly; the shared
 readers and writers infer nothing from an untagged row. Existing exported diagnostics have fixed allowed
 names in the adapters and may be supplied again. Extra unrelated fields are errors. As on the
-`.msh` route, a lower-dimensional block of the envelope's type (triangles in a tet mesh, edges in
-a triangle mesh) is the envelope, e.g. simwild's `EnvelopeSurface`; it cannot be combined with an
+`.msh` route, the lower-dimensional blocks are tags, one `tags` column per input: in a tet mesh,
+triangles are tagged faces (an input surface, each row oriented as its input) and edges tagged
+feature curves (an `input_edges` file, `feature_<i>`); in a triangle mesh, edges are tagged curves
+(an input curve, each row oriented as its input). simwild, tetwild and triwild write them so, and
+simwild reads them back as the tags it holds. Rows labelled `EnvelopeSurface` (in a triangle mesh,
+an edge block without `tags` too) are the envelope instead, which cannot be combined with an
 `envelope` input. Other lower-dimensional blocks are rejected.
 
 The prismatic adapter accepts scalar `tag_0` and `offset_tag`, or the corresponding columns of

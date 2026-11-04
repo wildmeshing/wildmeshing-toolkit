@@ -28,7 +28,7 @@
   {
     "pointer": "/input",
     "type": "string",
-    "doc": "Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh."
+    "doc": "Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh. Tagged faces (2D: tagged edges) and feature curves are refused: they are not carried yet."
   },
   {
     "pointer": "/output",
