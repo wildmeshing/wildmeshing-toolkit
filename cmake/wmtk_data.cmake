@@ -91,8 +91,33 @@ ExternalProject_Add(
     # configs drop options the specs no longer have: front_conv_criterion from the nine 2D
     # topological_offset cases (topological_offset_models.json, not run in CI) and w_smooth from
     # simwild_energies_2d, which simwild ignored. No registered case changes.
+    # At c11305f (2026-10-30, data2 main) four simwild tight_seal_geom cases join the list --
+    # explicit and detected, 2D and 3D, the detected 3D one on the new
+    # models/tight_seal_geom_bars_3d.msh -- each with tight_seal_geom_sanity on, so the op throws
+    # if it fills a concave feature of one body. cad_remeshing_rings becomes
+    # isotropic_remeshing_rings: the cad_remeshing component never reached the toolkit (#1090,
+    # superseded by #1123), and the case keeps the model's curves and corners through
+    # isotropic_remeshing's features (models/rings_iso_features.json). The pin also takes in what
+    # data2 main gained since 89911f5: c91a67a's dropped options and the 3D cube offset cases.
+    # At 5e6a19c (2026-11-01, data2 main) the two explicit tight_seal_geom cases drop
+    # tight_seal_geom_growth, which simwild no longer has (and rejects as an unknown key).
+    # At 00e090e (2026-11-01, data2 main) the explicit 3D tight_seal_geom case uses d = 1.0
+    # (was 0.5): at 0.5 no cell of double_sphere_hole is surely in the join region, and the case
+    # filled nothing; at 1.0 it fills the cavity between the two shells.
+    # 00e090e descends from data2 #12's merge (421b458), so it holds c91a67a's changes too.
+    # At de49170 (2026-11-01, data2 main) models/127891.msh is back: 596be38 had deleted it with
+    # the old 3D offset cases, and the topological_offset docs examples read it.
+    # At 1cf750d (2026-11-01, branch uday/notop-simplify-half off c91a67a)
+    # simwild_double_sphere_notop_3d's eps_simplify_rel goes from 1e-2 to 5e-3, half of its
+    # eps_rel. simwild's eps_rel and eps_simplify_rel are now relative to the same diagonal, so
+    # equal values ask for a simplification at the full eps, which envelope_reference "input"
+    # refuses; until then the simplification measured a diagonal 1.22x smaller on this case.
+    # At f5e1ddd (2026-11-03, same branch) that config drops skip_simplify, which the toolkit
+    # renamed simplify and simwild refuses; it set the default, so the run is unchanged.
+    # At 6dc625a (2026-11-03, data2 #13) both lines join: data2 main up to 8d3a193 (the explicit 2D
+    # tight_seal_geom case seals tag_0, tag_1 and tag_4) and f5e1ddd.
     #
-    GIT_TAG c91a67a4b99082af3737c58f47b8abb5b43df6b5
+    GIT_TAG 6dc625ab455ee8b79fc2a9d5a9e07ecdd125b452
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

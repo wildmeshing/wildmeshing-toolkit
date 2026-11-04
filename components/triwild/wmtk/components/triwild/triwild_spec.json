@@ -12,9 +12,11 @@
       "num_threads",
       "max_iterations",
       "max_expected_iterations",
-      "skip_simplify",
-      "simplify_envelope_ratio",
-      "optimize_envelope_around_simplified",
+      "simplify",
+      "eps_simplify_rel",
+      "eps_simplify",
+      "envelope_reference",
+      "per_input_envelopes",
       "simplify_use_sample_envelope",
       "use_sample_envelope",
       "filter",
@@ -40,8 +42,8 @@
       "coarsen_max_rounds",
       "coarsen_max_inner_passes",
       "preserve_topology",
-      "preserve_feature_points",
-      "allow_junction_cleanup",
+      "order2_envelope_ratio",
+      "feature_envelope_ratio",
       "remove_duplicate_eps",
       "throw_on_fail",
       "log_file",
@@ -131,28 +133,41 @@
     "doc": "Maximum iterations before stopping."
   },
   {
-    "pointer": "/skip_simplify",
+    "pointer": "/simplify",
     "type": "bool",
-    "default": false,
-    "doc": "If true, input simplification will be skipped. The input curves are otherwise coarsened first, by collapsing their shortest segments while staying inside the simplification envelope, so the exact arrangement and the initial mesh do not carry input detail far below the target edge length."
+    "default": true,
+    "doc": "If true, the input curves are simplified first. They are coarsened by collapsing their shortest segments while staying inside the simplification envelope, so the exact arrangement and the initial mesh do not carry input detail far below the target edge length. False inserts them as they are."
   },
   {
-    "pointer": "/simplify_envelope_ratio",
+    "pointer": "/eps_simplify_rel",
     "type": "float",
-    "default": 0.5,
-    "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the triangulation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
+    "default": 5e-4,
+    "doc": "Envelope thickness used for the input simplification, relative to the same bounding box diagonal as eps_rel. Simplifying inside a tighter envelope than the triangulation's reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. The default is half of eps at the default eps_rel, and does not follow eps_rel: under envelope_reference \"input\" the simplification's eps must be below eps, else the run is refused, so an eps_rel at or below eps_simplify_rel needs it lowered too. Ignored if simplify is false or eps_simplify is positive. Until 2026-11 the key simplify_envelope_ratio, the simplification's eps as a fraction of eps (default 0.5)."
   },
   {
-    "pointer": "/optimize_envelope_around_simplified",
+    "pointer": "/eps_simplify",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute envelope thickness used for the input simplification. When positive it is used instead of eps_simplify_rel, as in simwild; otherwise eps_simplify_rel sets it. Ignored if simplify is false."
+  },
+  {
+    "pointer": "/envelope_reference",
+    "type": "string",
+    "default": "input",
+    "options": ["input", "simplified"],
+    "doc": "Which geometry the envelope and the curve anchors are built around, one choice for both. \"input\": the original input curves, at eps times each one's ratio; the output is within eps of them. A curve end the simplification made is anchored where it is, since a free one erodes the input along its curve. Needs the simplification's eps (eps_simplify_rel or eps_simplify) below eps, else refused: the simplified curves could start outside their envelope. \"simplified\": the SIMPLIFIED curves, which replace the input, at eps times each one's ratio; the output is within eps of them, so within the simplification's eps plus eps of the input, and any simplification eps is allowed. Refused with simplify false. The mesh starts at the CENTRE of the envelope it is held to rather than somewhere inside it, which matters since the envelope is a hard veto rather than a penalty. Until 2026-11 \"simplified\" built at eps minus the simplification's eps; until 2026-10 the key optimize_envelope_around_simplified."
+  },
+  {
+    "pointer": "/per_input_envelopes",
     "type": "bool",
-    "default": false,
-    "doc": "Build the optimizer's envelope around the SIMPLIFIED geometry at the remaining tolerance (eps - simplify_eps) instead of around the original input at the full eps. The deviation budget is identical by the triangle inequality, but the geometry starts at the CENTRE of the envelope it is judged against rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a mesh handed over close to the boundary has most of its moves refused. Costs elements: holding the surface within eps/2 of the simplified geometry is stricter than eps of the input wherever simplification smoothed detail away, measured at 2-3x the output tets on tetwild at unchanged final quality. Off by default."
+    "default": true,
+    "doc": "Hold each input to its own envelopes. With two or more input files: one curve envelope per input, and the input simplification's envelope per input likewise, so a segment of one input cannot end up on another. false: one shared envelope for all inputs, faster where inputs come within eps of each other (measured on the 3D simplification, 3% to 20% faster shared, 2026-11), but an input may then end up on another within eps. Anchors are per point either way."
   },
   {
     "pointer": "/simplify_use_sample_envelope",
     "type": "bool",
     "default": false,
-    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large curve network. Both backends guarantee the same thing, that everything they accept lies within simplify_envelope_ratio * eps of the input; they differ only in how much of that budget they manage to use, so this does not change what simplify_envelope_ratio means."
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large curve network. Both backends guarantee the same thing, that everything they accept lies within the simplification's eps of the input; they differ only in how much of that budget they manage to use, so this does not change what eps_simplify_rel and eps_simplify mean."
   },
   {
     "pointer": "/use_sample_envelope",
@@ -219,7 +234,7 @@
     "pointer": "/DEBUG_envelope_sanity_check",
     "type": "bool",
     "default": false,
-    "doc": "Sanity Check: verify at init that every constrained edge of the arrangement already lies inside the envelope, and abort if one does not. The invariant is real and not trivially true -- the envelope is built around the input curves at eps, while the constrained edges come from curves the simplification was free to move by simplify_envelope_ratio * eps -- so this asks whether the simplification stayed inside its share of the budget. Everything downstream assumes it did: an operation vetoed by the envelope is only meaningful if the starting mesh was inside it. Off by default because it costs one sampled segment query per constrained edge, serially -- 22s on a 3.5M-edge input, paid on every run -- to catch a condition that has fired once in 15665 models, and that time is charged against the run's own budget. Turn it on when changing the simplification, the envelope, or their two eps values."
+    "doc": "Sanity Check: verify at init that every constrained edge of the arrangement already lies inside the envelope, and abort if one does not. The invariant is real and not trivially true -- the envelope is built around the input curves at eps, while the constrained edges come from curves the simplification was free to move by its own eps -- so this asks whether the simplification stayed inside its share of the budget. Everything downstream assumes it did: an operation vetoed by the envelope is only meaningful if the starting mesh was inside it. Off by default because it costs one sampled segment query per constrained edge, serially -- 22s on a 3.5M-edge input, paid on every run -- to catch a condition that has fired once in 15665 models, and that time is charged against the run's own budget. Turn it on when changing the simplification, the envelope, or their two eps values."
   },
   {
     "pointer": "/length_rel",
@@ -289,16 +304,16 @@
     "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way."
   },
   {
-    "pointer": "/preserve_feature_points",
-    "type": "bool",
-    "default": true,
-    "doc": "Keep the curve network's 0-dimensional features -- the endpoints of open polylines, and junctions -- within eps of where the arrangement placed them. Each such vertex is bound to a specific feature point, so a collapse is refused when it would leave that point unrepresented or move it further than eps, and smoothing may move the vertex anywhere inside that ball but no further. Without this the collapse pass deletes open polylines outright: a polyline erodes into its own tip until a single segment is left, and that segment carries a feature at BOTH ends, which the surface order test does not refuse (it only forbids collapsing a feature into a non-feature). Measured on the 2D dataset, model 215292 went from 28 open components after the arrangement to 0 in the output. Turn off only to reproduce the old behaviour."
+    "pointer": "/order2_envelope_ratio",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Radius of the anchors of the polyline endpoints, as a fraction of eps. The default 1 gives them the radius eps, the half-width of the curves' envelope, as tetwild's and simwild's order-2 tubes have. The anchors keep the curve network's 0-dimensional features -- the endpoints of open polylines, and the input free points -- within their anchor's radius of where the arrangement placed them (order2_envelope_ratio x eps for endpoints, feature_envelope_ratio x eps for free points). Each such vertex is bound to a specific feature point, so a collapse is refused when it would leave that point unrepresented or move it further than the radius, and smoothing may move the vertex anywhere inside that ball but no further. Junctions (3 or more polylines meeting) are not anchored: the erosion below is a property of ENDPOINTS, every curve through a junction remains a constrained edge held by the envelope, and on a self-intersecting input nearly every arrangement vertex is a junction -- on model 242427, 79615 of 87610 -- so anchoring them kept 2.6 times the vertices (5476 output vertices in 14 s free, 14257 in 19 s anchored, stop_energy 10, 8 threads, October 2026). Without them the collapse pass deletes open polylines outright: a polyline erodes into its own tip until a single segment is left, and that segment carries a feature at BOTH ends, which the surface order test does not refuse (it only forbids collapsing a feature into a non-feature). Measured on the 2D dataset, model 215292 went from 28 open components after the arrangement to 0 in the output. Always on, as the envelope is."
   },
   {
-    "pointer": "/allow_junction_cleanup",
-    "type": "bool",
-    "default": true,
-    "doc": "Let the operations clean up junctions, anchoring only the endpoints of open polylines. The erosion the endpoint guard exists for is a property of ENDPOINTS -- a polyline eats its own tip -- and does not apply to a junction (valence >= 3 in the constrained edges), because every curve through a junction remains a constrained edge and the envelope still holds it within eps. Anchoring junctions costs most on a self-intersecting input, where nearly every arrangement vertex is a crossing: on model 242427, 79615 of 87610 vertices are junctions, so almost every edge joins two of them and collapse is refused there. When this option was added (August 2026) that model never left MAX_ENERGY with junctions anchored. It now converges either way, but anchored it keeps 2.6 times the vertices: at stop_energy 10, max energy 9.98 with 5476 output vertices in 14 s with junctions free, and 14257 in 19 s anchored (8 threads, October 2026). The two models the endpoint guard was introduced for (215292, 134005) were bit-identical either way in August. Ignored when preserve_feature_points is off. Defaults to false when history_output is set and preserve_feature_points is on: a junction the operations slide along a curve drags the curve map with it, stretched by large factors (on model 190246 a junction slid 14 units in one smoothing step, and points there came back 6.76 away from where they started)."
+    "pointer": "/feature_envelope_ratio",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Radius of the anchors of the input free points (see order2_envelope_ratio), as a fraction of eps. 1, as order2_envelope_ratio. A free point that is also a polyline endpoint takes the smaller of the two radii."
   },
   {
     "pointer": "/preserve_topology",
@@ -322,7 +337,7 @@
     "pointer": "/history_output",
     "type": "string",
     "default": "",
-    "doc": "Record every change to the tracked curves, from the input files as read to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The output names a point on its curves by two vertices of the output mesh. A filter's removal of tracked edges is recorded too, as segments no map can follow. Anchors junctions unless allow_junction_cleanup is given or preserve_feature_points is off, so the output differs from a run without recording; give allow_junction_cleanup to get the same output with and without. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording."
+    "doc": "Record every change to the tracked curves, from the input files as read to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The output names a point on its curves by two vertices of the output mesh. A filter's removal of tracked edges is recorded too, as segments no map can follow. Recording does not change the output. Junctions are free (see order2_envelope_ratio), and the map follows one the operations slide along a curve: on model 190246 a junction slid 14 units in one smoothing step, and points there came back 6.76 away from where they started. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording."
   },
   {
     "pointer": "/report",

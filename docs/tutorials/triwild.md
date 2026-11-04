@@ -87,7 +87,7 @@ time against the first run (with `num_threads` 0, so that they repeat exactly):
 up to 64. Each file is one input: its curves are kept apart from the others' in the output tags,
 and each tracked edge is held to the envelope of the inputs it lies on. Vertices that coincide
 exactly are merged when a file is read; a vertex of a curve file that no segment uses is kept as a
-[feature point](#feature-points-input_points-preserve_feature_points).
+[feature point](#feature-points-input_points).
 [`input_names`](../reference/triwild.md#input_names) gives the inputs names, in the same order:
 they label the tag columns of the output (`tag_0`, `tag_1`, ... without them).
 [`output`](../reference/triwild.md#output) is the file name without extension.
@@ -98,16 +98,21 @@ strings.
 ### The envelope: `eps_rel`
 
 [`eps_rel`](../reference/triwild.md#eps_rel) (default 0.001) is the distance the output's curves
-may be from the input, relative to the bounding box diagonal. The input is simplified within half
-of it, so detail smaller than \(\varepsilon\) may disappear, and the optimization keeps every
-tracked edge within \(\varepsilon\) of the input. A thinner envelope keeps more of the input's vertices
-and constrains the optimization more:
+may be from the input, relative to the bounding box diagonal. The input is simplified within
+[`eps_simplify_rel`](../reference/triwild.md#eps_simplify_rel) of the diagonal (default 0.0005,
+half the default \(\varepsilon\)), so detail smaller than \(\varepsilon\) may disappear, and the
+optimization keeps every tracked edge within \(\varepsilon\) of the input. A thinner envelope keeps
+more of the input's vertices and constrains the optimization more:
 
 | `eps_rel` | \(\varepsilon\) | triangles | largest distance to the input | iterations |
 |---|---|---|---|---|
 | 0.0002 | 0.025 | 977 | 0.018 | 10 |
 | 0.001 (default) | 0.127 | 428 | 0.090 | 2 |
 | 0.005 | 0.637 | 297 | 0.447 | 1 |
+
+These runs simplified within half of each \(\varepsilon\), `eps_simplify_rel` = `eps_rel` / 2.
+`eps_simplify_rel` does not follow `eps_rel`, and an `eps_rel` at or below it is refused under the
+default `envelope_reference`: lower both together.
 
 The distance is the containment that `DEBUG_hausdorff` measures: the largest distance from a
 point of the output's curves to the input. It stays below \(\varepsilon\) in every run.
@@ -165,24 +170,23 @@ inside a clockwise shape and 0 where one overlaps the rectangle, and only the pa
 rectangle that no other curve covers is kept. `input` orients each input on its own. Use it for
 several inputs. All three need closed curves (see the [pitfalls](#pitfalls)).
 
-### Feature points: `input_points`, `preserve_feature_points`
+### Feature points: `input_points`
 
 [`input_points`](../reference/triwild.md#input_points) lists files whose vertices are inserted as
 vertices of the triangulation (their edges are ignored). The endpoints of open polylines are kept
-the same way. [`preserve_feature_points`](../reference/triwild.md#preserve_feature_points) (on by
-default) anchors them: some vertex stays within \(\varepsilon\) of each, and a collapse that would
-remove it is refused. Here a closed curve and twelve points, nine inside it and three outside:
+the same way. Each is anchored: some vertex stays within its radius of it --
+[`feature_envelope_ratio`](../reference/triwild.md#feature_envelope_ratio) \(\cdot\,\varepsilon\)
+for the points, [`order2_envelope_ratio`](../reference/triwild.md#order2_envelope_ratio)
+\(\cdot\,\varepsilon\) for the endpoints, both \(\varepsilon\) by default -- and a collapse that
+would remove it is refused. Junctions, where three or more polylines meet, are not anchored. Here a closed curve and twelve points, nine inside it and three outside:
 
 ```python
 --8<-- "docs/examples/python/triwild.py:points"
 ```
 
-| `preserve_feature_points` | points with a vertex within \(\varepsilon\) | farthest point from a vertex |
-|---|---|---|
-| true (default) | 12 of 12 | 0 |
-| false | 0 of 12 | 1.50, 44 \(\varepsilon\) |
-
-Without the anchors, the collapses take the points' vertices like any other. The points outside
+All 12 points keep a vertex within \(\varepsilon\), the farthest at 0. Without the anchors (until
+2026-10, `preserve_feature_points` false turned them off), the collapses took the points' vertices
+like any other: 0 of 12 kept, the farthest 1.50 (44 \(\varepsilon\)) from a vertex. The points outside
 the curve's bounding box grow it, and with it \(\varepsilon\) and the edge length, which are
 relative to its diagonal. A point in a region the filter discards leaves the mesh with that region,
 but stays in the feature output.
@@ -231,8 +235,7 @@ The report holds the same keys as the file.
 
 [`history_output`](../reference/triwild.md#history_output) records every change to the tracked
 curves, from the input files to the output, and [tracking](tracking.md) maps points between the
-two from it. Recording anchors the junctions too, which changes the output, unless
-[`allow_junction_cleanup`](../reference/triwild.md#allow_junction_cleanup) is given.
+two from it. Recording does not change the output.
 
 ## Pitfalls
 

@@ -480,64 +480,8 @@ size_t SimWildMesh::refine_sizing_around_worst(double)
 
 void SimWildMesh::init_label_envelopes(const double eps, const bool exact)
 {
-    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
-    // Each label from one source: the input triangles m_envelope is built around, when their
-    // labels are known and the label has any, else the mesh's faces carrying it.
-    std::vector<std::vector<std::array<Eigen::Vector3d, 3>>> buckets(max_bits);
-    if (m_F_envelope_labels.size() == m_F_envelope.size()) {
-        for (size_t r = 0; r < m_F_envelope.size(); ++r) {
-            const InputSet set = m_F_envelope_labels[r];
-            if (set == 0) continue;
-            const auto& f = m_F_envelope[r];
-            for (size_t b = 0; b < max_bits; ++b) {
-                if (set & (InputSet(1) << b)) {
-                    buckets[b].push_back(
-                        {{m_V_envelope[f[0]], m_V_envelope[f[1]], m_V_envelope[f[2]]}});
-                }
-            }
-        }
-    }
-    std::vector<bool> from_inputs(max_bits);
-    for (size_t b = 0; b < max_bits; ++b) from_inputs[b] = !buckets[b].empty();
-    for (const Tuple& f : get_faces()) {
-        const InputSet set = m_face_attribute[f.fid(*this)].input_set();
-        if (set == 0) continue;
-        const auto vs = get_face_vids(f);
-        for (size_t b = 0; b < max_bits; ++b) {
-            if ((set & (InputSet(1) << b)) && !from_inputs[b]) {
-                buckets[b].push_back(
-                    {{m_vertex_attribute[vs[0]].m_posf,
-                      m_vertex_attribute[vs[1]].m_posf,
-                      m_vertex_attribute[vs[2]].m_posf}});
-            }
-        }
-    }
-    size_t n = 0;
-    for (size_t b = 0; b < max_bits; ++b) {
-        if (!buckets[b].empty()) n = b + 1;
-    }
-    std::vector<std::shared_ptr<Envelope>> members;
-    for (size_t b = 0; b < n; ++b) {
-        if (buckets[b].empty()) {
-            members.push_back(nullptr); // no face, so nothing to hold
-            continue;
-        }
-        // The triangles as a soup: the envelope keeps a copy of what it is given, and coincident
-        // corners only cost memory, not correctness.
-        std::vector<Eigen::Vector3d> V_b;
-        std::vector<Eigen::Vector3i> F_b;
-        V_b.reserve(3 * buckets[b].size());
-        F_b.reserve(buckets[b].size());
-        for (const auto& t : buckets[b]) {
-            const int k = int(V_b.size());
-            V_b.insert(V_b.end(), t.begin(), t.end());
-            F_b.emplace_back(k, k + 1, k + 2);
-        }
-        auto env = std::make_shared<Envelope>(exact);
-        env->init(V_b, F_b, eps);
-        members.push_back(std::move(env));
-    }
-    m_input_envelopes.set(std::move(members));
+    const size_t n =
+        init_input_envelopes(m_V_envelope, m_F_envelope, m_F_envelope_labels, eps, exact);
     if (n > 0) {
         logger().info(
             "label envelopes: {} face tags and {} tet tags, each surface face held to its own "

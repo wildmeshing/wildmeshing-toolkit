@@ -233,7 +233,7 @@ bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
             tids.push_back(t.tid(*this));
         }
         feature_edges_cache(tids, cache.changed_edges);
-        cache.is_edge_on_feature = m_feature_edge_attribute[loc0.eid(*this)].m_is_feature_edge;
+        cache.edge_tags = m_feature_edge_attribute[loc0.eid(*this)];
     }
 
     return split_before_cells(loc0, tets);
@@ -435,16 +435,16 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
 
     // Feature-edge tags: rewrite every edge of the children (locs is exactly the one-ring of
     // the new vertex, i.e. the created tets), then the split edge's two halves inherit its
-    // tag -- they are new pairs, so the region restore defaulted them.
+    // kind bits -- they are new pairs, so the region restore defaulted them.
     if (m_track_feature_edges) {
         feature_edges_restore_region(locs, cache.changed_edges);
-        if (cache.is_edge_on_feature) {
+        if (cache.edge_tags.is_tagged()) {
             const Tuple e1 = tuple_from_edge({{v1_id, v_id}});
             const Tuple e2 = tuple_from_edge({{v2_id, v_id}});
-            m_feature_edge_attribute[e1.eid(*this)].m_is_feature_edge = true;
-            m_feature_edge_attribute[e2.eid(*this)].m_is_feature_edge = true;
+            m_feature_edge_attribute[e1.eid(*this)] = cache.edge_tags;
+            m_feature_edge_attribute[e2.eid(*this)] = cache.edge_tags;
         }
-        split_after_vertex_feature(v_id, cache.is_edge_on_feature);
+        split_after_vertex_feature(v_id, cache.edge_tags.has(FeatureEdgeAttributes::feature));
     }
 
     m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;

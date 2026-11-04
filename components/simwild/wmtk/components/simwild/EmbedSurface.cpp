@@ -37,12 +37,16 @@ void delaunay_box_mesh(
     std::vector<wmtk::delaunay::Point3D>& points,
     std::vector<wmtk::delaunay::Tetrahedron>& tets,
     Vector3d& box_min,
-    Vector3d& box_max)
+    Vector3d& box_max,
+    const utils::FeatureInputs* features)
 {
     assert(vertices.cols() == 3);
 
-    const Vector3d vertices_max = vertices.colwise().maxCoeff();
-    const Vector3d vertices_min = vertices.colwise().minCoeff();
+    Vector3d vertices_max = vertices.colwise().maxCoeff();
+    Vector3d vertices_min = vertices.colwise().minCoeff();
+    // A feature outside the surface's box must still land inside the triangulated domain, with
+    // the margin its forcing triangles need (utils::embed_features_input()).
+    if (features != nullptr) features->extend_bbox(vertices_min, vertices_max);
 
     ///points for delaunay
     points.resize(vertices.rows());
@@ -76,7 +80,9 @@ void embed_surface(
     const std::vector<size_t>& F_input,
     std::vector<std::vector<size_t>>* F_on_surface_inputs,
     std::vector<std::vector<int>>* F_on_surface_orientations,
-    FacetSources* facet_sources)
+    FacetSources* facet_sources,
+    const utils::EmbedFeaturesInput* features,
+    utils::EmbedFeaturesResult* features_out)
 {
     // old output
     std::vector<std::array<size_t, 3>> facets_after;
@@ -142,7 +148,10 @@ void embed_surface(
         tets_after,
         tet_face_on_input_surface,
         opts,
-        F_on_surface_inputs == nullptr && facet_sources == nullptr ? nullptr : &prov);
+        F_on_surface_inputs == nullptr && facet_sources == nullptr ? nullptr : &prov,
+        /*tet_face_orientation=*/nullptr,
+        features,
+        features_out);
 
     if (facet_sources != nullptr) {
         // By the positions the facet's corners have here and in the mesh made from this.
@@ -525,7 +534,8 @@ void EmbedSurface::simplify_surface(
     const double eps,
     const bool use_exact,
     const int num_threads,
-    const double boundary_eps)
+    const double boundary_eps,
+    const bool per_input_envelopes)
 {
     // convert to STL vectors
     std::vector<Eigen::Vector3d> verts = V_surf_to_vector();
@@ -533,8 +543,20 @@ void EmbedSurface::simplify_surface(
 
     shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(verts, num_threads, use_exact);
 
+    // Which input each triangle came from: with two or more, each face is held to its own
+    // input's envelope, as the optimizer holds it after (ShortestEdgeCollapse::m_input_envelopes).
+    std::vector<int> tri_input;
+    if (m_F_input.size() == tris.size()) tri_input.assign(m_F_input.begin(), m_F_input.end());
+
     // must be a small envelope to ensure correct tet tags later on
-    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, eps, boundary_eps);
+    surf_mesh.create_mesh(
+        verts.size(),
+        tris,
+        modified_nonmanifold_v,
+        eps,
+        boundary_eps,
+        tri_input,
+        per_input_envelopes);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     std::shared_ptr<history::Recorder> recorder;
@@ -615,7 +637,8 @@ void EmbedSurface::remove_duplicates(const double eps)
 bool EmbedSurface::embed_surface(
     const bool flood_fill,
     const bool tag_from_winding_number,
-    const bool provenance)
+    const bool provenance,
+    const utils::FeatureInputs* features)
 {
     logger().info("Embed with VolumeInsertion");
 
@@ -644,7 +667,19 @@ bool EmbedSurface::embed_surface(
     std::vector<wmtk::delaunay::Tetrahedron> tets;
     Vector3d box_min;
     Vector3d box_max;
-    delaunay_box_mesh(*ptr_env, m_V_surface, points, tets, box_min, box_max);
+    delaunay_box_mesh(*ptr_env, m_V_surface, points, tets, box_min, box_max, features);
+
+    // The features as tetwild hands them to the insertion, checked against the padded box.
+    const bool has_features = features != nullptr && !features->empty();
+    utils::EmbedFeaturesInput vr_features;
+    if (has_features) {
+        vr_features = utils::embed_features_input(
+            features->edge_vertices,
+            features->edges,
+            features->points,
+            box_min,
+            box_max);
+    }
 
     MatrixXd V_vol;
     V_vol.resize(points.size(), 3);
@@ -672,7 +707,9 @@ bool EmbedSurface::embed_surface(
         m_F_input,
         tag_from_winding_number && !provenance ? nullptr : &m_F_tags_surface,
         &m_F_tags_surface_orientation,
-        m_record_history ? &m_facet_sources : nullptr);
+        m_record_history ? &m_facet_sources : nullptr,
+        has_features ? &vr_features : nullptr,
+        has_features ? &m_features_placed : nullptr);
 
     if (m_perform_sanity_checks) {
         // check that all tets contain valid vertex indices and no duplicates
@@ -982,6 +1019,16 @@ void EmbedSurface::consolidate()
         for (size_t j = 0; j < 3; ++j) {
             F_surf(i, j) = old2new[m_F_on_surface(i, j)];
         }
+    }
+
+    // The placed features are renumbered with the vertices: every one is a tet vertex.
+    for (auto& tiling : m_features_placed.edge_tiling) {
+        for (auto& seg : tiling) {
+            for (size_t& v : seg) v = old2new.at(v);
+        }
+    }
+    for (int64_t& v : m_features_placed.point_vertex) {
+        if (v >= 0) v = int64_t(old2new.at(size_t(v)));
     }
 
     m_V_emb = V;

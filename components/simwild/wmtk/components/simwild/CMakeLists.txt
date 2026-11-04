@@ -22,7 +22,6 @@ set(SRC_FILES
 	EdgeSplitting.cpp
 	EdgeCollapsing.cpp
 	EdgeSwapping.cpp
-	Smooth.cpp
 	
 	VolumemesherInsertion.cpp
 
@@ -37,6 +36,8 @@ set(SRC_FILES
 	ConnectedComponent.hpp
 	AnnotationsTri.cpp
 	AnnotationsTet.cpp
+	TightSealGeom.hpp
+	TightSealGeom.cpp
 
 	expression_parser/Expression.hpp
 	expression_parser/Parser.hpp

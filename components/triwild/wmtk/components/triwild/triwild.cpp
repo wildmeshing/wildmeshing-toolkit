@@ -235,19 +235,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     component_io.prepare(json_params, "triwild");
     using wmtk::utils::resolve_path;
 
-    // Recording anchors junctions unless allow_junction_cleanup is given: a junction the
-    // operations slide along a curve drags the curve map with it, stretched by large factors.
-    // Without preserve_feature_points nothing is anchored, junctions or not, so nothing changes.
-    const bool junction_cleanup_given = json_params.contains("allow_junction_cleanup");
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
-        jse::embed::wmtk_triwild_spec::triwild_spec::spec(),
-        false);
-    if (!junction_cleanup_given && json_params["preserve_feature_points"] &&
-        !json_params["history_output"].get<std::string>().empty()) {
-        json_params["allow_junction_cleanup"] = false;
-        logger().info("history_output: junctions anchored (allow_junction_cleanup false)");
-    }
+        jse::embed::wmtk_triwild_spec::triwild_spec::spec());
     const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     triwild::Parameters params(json_params);
@@ -386,9 +376,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     // The whole eps around the original input, as in tetwild. This used to be params.eps / 2
     // on the grounds that "the arrangement gets the other half, which is what leaves room for
-    // the optimizer to move" -- but reserving that room is what simplify_envelope_ratio does,
-    // immediately below, so the two compounded and the simplification ran at eps/4 while the
-    // optimizer was held to half the tolerance its result is judged against.
+    // the optimizer to move" -- but reserving that room is what the simplification's own,
+    // smaller eps does (simplify_envelope_ratio 0.5 then), so the two compounded and the
+    // simplification ran at eps/4 while the optimizer was held to half the tolerance its result
+    // is judged against.
     const double envelope_eps = params.eps;
     // The simplification and the triangulation used to share one envelope object at the same
     // eps, which leaves the optimizer no room: a simplification free to place a vertex right
@@ -398,48 +389,64 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // the tet phase began and had ~94% of smoothing attempts vetoed.
     // preserve_topology holds the input simplification to the link condition as well.
     const bool simplify_use_link_condition = params.preserve_topology;
-    if (json_params.contains("simplify_use_link_condition")) {
-        logger().warn(
-            "simplify_use_link_condition is gone: preserve_topology ({}) now sets the link "
-            "condition of the input simplification",
-            params.preserve_topology);
-    }
-    const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
-    const double simplify_eps = envelope_eps * simplify_envelope_ratio;
+    // The simplification's eps is a length of its own, not a fraction of envelope_eps:
+    // eps_simplify when positive, else eps_simplify_rel of the same diagonal as envelope_eps --
+    // the two keys and the rule of simwild's Parameters::init(), now in all three apps. The
+    // default, 5e-4 of the diagonal, is 0.5 envelope_eps at the default eps_rel, as
+    // simplify_envelope_ratio 0.5 was until 2026-11. It does not follow eps_rel: under
+    // envelope_reference "input" one at or above envelope_eps is refused just below.
+    const double eps_simplify_rel = json_params["eps_simplify_rel"];
+    const double eps_simplify = json_params["eps_simplify"];
+    const double simplify_eps = eps_simplify > 0 ? eps_simplify : eps_simplify_rel * params.diag_l;
     logger().info(
         "envelope eps: simplification {:.6} ({:.0f}% of triangulation {:.6})",
         simplify_eps,
-        100 * simplify_envelope_ratio,
+        100 * simplify_eps / envelope_eps,
         envelope_eps);
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
-    // The only ratio that is wrong independently of how the envelope is implemented. Above 1
-    // the simplification is allowed to move geometry further than the triangulation's own
-    // envelope permits, so the optimizer starts from a mesh that is already outside it and
-    // every operation near those curves is vetoed.
+    // Which geometry every envelope and anchor is built around: the input, or the simplified
+    // curves (see below, where they are built).
+    const bool env_around_simplified = json_params["envelope_reference"] == "simplified";
+    // The only simplification eps that is wrong independently of how the envelope is
+    // implemented. At eps and above, around the input, the simplification is allowed to move
+    // geometry as far as or further than the triangulation's own envelope permits, so the
+    // optimizer starts from a mesh that is outside it or on its boundary, and every operation
+    // near those curves is vetoed. Refused, before any work; until 2026-10 a warning above eps.
+    // Around the simplified curves, which replace the input, any simplification eps is allowed,
+    // and no simplification is refused.
     //
-    // There used to be a warning at 0.5 here. That number was the sampled backend's internal
+    // There used to be a warning at eps/2 here. That number was the sampled backend's internal
     // compensation showing through -- its edge test accepts a segment only within eps/2,
     // because its sampling guarantees the other eps/2 -- and both backends guarantee the same
     // thing to their caller: everything they accept is within eps. A caller reasoning about
     // eps/2 is reasoning about an implementation detail it should not be able to see.
-    if (simplify_envelope_ratio > 1.0) {
-        logger().warn(
-            "simplify_envelope_ratio {} exceeds 1; the simplification may move curves further "
-            "than the triangulation's envelope allows, leaving the mesh outside it at init.",
-            simplify_envelope_ratio);
-    }
+    const bool simplify = json_params["simplify"];
+    wmtk::utils::check_envelope_reference(
+        envelope_eps,
+        simplify_eps,
+        env_around_simplified,
+        /*simplification_ran=*/simplify);
 
     MatrixXd V_simp = V_in;
     MatrixXi E_simp = E_in;
     std::vector<int> E_simp_input = E_in_input;
     std::vector<history::Edit> collapses;
     std::vector<int> surviving_vertices;
-    const bool skip_simplify = json_params["skip_simplify"];
-    if (skip_simplify) {
-        logger().info("skip simplification");
+    if (!simplify) {
+        logger().info("no simplification (simplify false)");
     } else {
         Envelope simplify_envelope(!simplify_use_sample_envelope);
         simplify_envelope.init(V_in, E_in, simplify_eps);
+        // With several input files, each segment held to its own file's envelope, as the
+        // optimizer holds it after (m_input_envelopes); shared without per_input_envelopes.
+        const auto segment_envelopes = params.per_input_envelopes
+                                           ? wmtk::utils::input_segment_envelopes(
+                                                 V_in,
+                                                 E_in,
+                                                 E_in_input,
+                                                 simplify_eps,
+                                                 !simplify_use_sample_envelope)
+                                           : std::vector<std::shared_ptr<wmtk::Envelope>>{};
         std::vector<int> surviving;
         const size_t removed = wmtk::utils::simplify_segments(
             V_simp,
@@ -448,7 +455,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             simplify_use_link_condition,
             &surviving,
             record_history ? &collapses : nullptr,
-            record_history ? &surviving_vertices : nullptr);
+            record_history ? &surviving_vertices : nullptr,
+            &segment_envelopes);
         E_simp_input.resize(surviving.size());
         for (size_t i = 0; i < surviving.size(); ++i) E_simp_input[i] = E_in_input[surviving[i]];
         logger().info(
@@ -599,43 +607,31 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     // Which curves is the optimizer's envelope built around, and at what radius?
     //
-    // Default: the ORIGINAL input curves at the full eps.
+    // envelope_reference "input", the default: the ORIGINAL input curves at the full eps.
     //
-    // With optimize_envelope_around_simplified: the SIMPLIFIED curves at the REMAINING
-    // tolerance, envelope_eps - simplify_eps. The deviation budget is unchanged by the
-    // triangle inequality -- the simplification is already within simplify_eps of the input,
-    // so anything within (envelope_eps - simplify_eps) of it is within envelope_eps of the
-    // input -- but the geometry now starts at the CENTRE of the envelope it is judged against
-    // rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a
-    // mesh handed over close to the boundary has most of its moves refused. See the tetwild
-    // driver for the measurements.
-    //
-    // The narrowing is charged for the simplification's deviation, so it applies only when a
-    // simplification actually ran. Under skip_simplify the "simplified" curves ARE the input,
-    // there is nothing to charge, and subtracting anyway would confine the optimizer to a
-    // fraction of the tolerance its result is judged against -- for no gain, since the
-    // geometry already starts centred in the full envelope.
-    const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
-    const bool charge_simplify = env_around_simplified && !skip_simplify;
-    const double opt_eps = wmtk::utils::optimization_envelope_eps(
-        envelope_eps,
-        simplify_eps,
-        env_around_simplified,
-        /*simplification_ran=*/!skip_simplify);
+    // envelope_reference "simplified": the SIMPLIFIED curves, which replace the input, at the
+    // full eps too: the output is within envelope_eps of them, so within simplify_eps +
+    // envelope_eps of the input. The geometry starts at the CENTRE of the envelope it is judged
+    // against rather than somewhere inside it. The envelope is a hard veto rather than a penalty,
+    // so a mesh handed over close to the boundary has most of its moves refused. See the tetwild
+    // driver for the measurements. Until 2026-11 they were built at the remaining tolerance,
+    // envelope_eps - simplify_eps, keeping the output within envelope_eps of the input.
     const MatrixXd& V_env = env_around_simplified ? V_simp : V_in;
     const MatrixXi& E_env = env_around_simplified ? E_simp : E_in;
     const std::vector<int>& E_env_input = env_around_simplified ? E_simp_input : E_in_input;
     if (env_around_simplified) {
         logger().info(
-            "optimization envelope: eps {:.6} ({}) around the {} curves (#V {}, #E {})",
-            opt_eps,
-            charge_simplify ? "full eps minus the simplification's share" : "the full eps",
-            charge_simplify ? "SIMPLIFIED" : "input, un-simplified,",
+            "optimization envelope: eps {:.6} around the SIMPLIFIED curves (#V {}, #E {})",
+            envelope_eps,
             V_env.rows(),
             E_env.rows());
     }
 
-    TriWildMesh mesh(params, opt_eps, NUM_THREADS);
+    TriWildMesh mesh(params, envelope_eps, NUM_THREADS);
+    // Around the input after a simplification, the input's own curve ends and junctions: the
+    // anchors are centred on them, and an end the simplification made is anchored where it is
+    // (TriOptimizerMesh::m_input_curve_points).
+    if (!env_around_simplified && simplify) mesh.set_input_curve_points(V_in, E_in);
     mesh.init_mesh(
         V,
         V_rational,

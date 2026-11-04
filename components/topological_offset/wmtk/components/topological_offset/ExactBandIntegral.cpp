@@ -88,6 +88,9 @@ struct Ctx
     /// decision adds to the budget (ring_tol()). Null for a cell.
     const Vec3* ring_n = nullptr;
     double ring_cap = 0.;
+    /// A face's partition (tri_partition(), label_face()): every plane pclip() cuts a ring by,
+    /// appended, for front_face_derivs()' cut terms on the parts' edges. Null: none kept.
+    std::vector<std::pair<Vec3, double>>* planes = nullptr;
 };
 
 struct Timer
@@ -1585,7 +1588,9 @@ Cut pclip(const Ring& V, const Vec3& g, const double h, Ring& out, const Ctx& cx
         }
     }
     if (cx.tol_cut) *cx.tol_cut += budget;
-    return clean_ring(P, tol, out) ? Cut::New : Cut::None;
+    if (!clean_ring(P, tol, out)) return Cut::None;
+    if (cx.planes) cx.planes->push_back({g, h});
+    return Cut::New;
 }
 
 /// R = pclip(R, g, h) in place (_pclip_keep); false (R emptied) if None.
@@ -3403,6 +3408,9 @@ struct ExactBandIntegral::TriWork : Local
 {
     Ring V0; ///< f in local coordinates
     std::vector<RingPiece> pieces; ///< the partition of f with member sets
+    /// the planes f's rings were cut by, local coordinates (Ctx::planes): tri_partition()'s, then
+    /// label_face()'s
+    std::vector<std::pair<Vec3, double>> planes;
 };
 
 void ExactBandIntegral::localize(const Eigen::Vector3d* t, const int n, Local& w, Stats* stats)
@@ -3529,6 +3537,18 @@ const ExactBandIntegral::Work* ExactBandIntegral::cell_partition(
     Work* own,
     Partition* keep) const
 {
+    if (stats && keep) {
+        // value(t, delta, stats, keep): partitioned afresh (counted), and kept for
+        // value_grad_hess() of the same t
+        if (!keep->m_w) keep->m_w = std::make_unique<Work>();
+        keep->m_owner = 0; // none until partition() returns (it may throw)
+        keep->m_ok = partition(T, *keep->m_w, stats);
+        for (int i = 0; i < 4; ++i) {
+            std::memcpy(keep->m_key + 3 * i, T[size_t(i)].data(), 3 * sizeof(double));
+        }
+        keep->m_owner = m_id;
+        return keep->m_ok ? keep->m_w.get() : nullptr;
+    }
     if (stats) return partition(T, *own, stats) ? own : nullptr;
     if (!keep) {
         // MEASURED (Geneva base, inward, collapse pass): 29.8 s with a per-thread table of the
@@ -3557,6 +3577,8 @@ void ExactBandIntegral::tri_partition(const std::array<Eigen::Vector3d, 3>& f, T
     w.tol_cut = w.tol_any = 0.;
     cx.tol_cut = &w.tol_cut;
     cx.tol_any = &w.tol_any;
+    w.planes.clear();
+    cx.planes = &w.planes;
     // _tri_partition: step 0 as partition()'s, origin c0 = f's centroid (P3.mean(0)).
     w.c0 = ((f[0] + f[1]) + f[2]) / 3.;
     localize(f.data(), 3, w, nullptr);
@@ -4450,6 +4472,30 @@ double ExactBandIntegral::value_grad_hess_impl(
         gradV += n * N.norm() / 6.; // area / 3
     }
 
+    // A segment of the face F of t (tet face f) on an edge of t, which moves with t: both ends
+    // within tol of the line through two of F's corners (front_face_derivs()' test of f's edges).
+    // Not by the other faces' planes: a needle face's unit normal is off by about eps / (|N| / its
+    // longest edge^2), so its plane misses its own corners by more than tol. MEASURED (p70565
+    // piece16, a sliver swept tet, test exact-band-integral-hessian-needle): two edges of t lay
+    // 5e-15..1.6e-14 off its needle face's plane (tol 4.8e-15), were taken for cut edges, and the
+    // Hessian came 3.0e3 (relative) off its central differences and 2.4e-2 asymmetric.
+    const auto on_t_edge = [&](const int f, const Vec3& y1, const Vec3& y2) {
+        for (int j = 0; j < 4; ++j) {
+            if (j == f) continue;
+            int c[2], m = 0; // the edge F shares with face j: the corners but f and j
+            for (int q = 0; q < 4; ++q) {
+                if (q != f && q != j) c[m++] = q;
+            }
+            const Vec3& P = Tl[size_t(c[0])];
+            const Vec3 t = (Tl[size_t(c[1])] - P).normalized();
+            const auto off = [&](const Vec3& y) {
+                const Vec3 r = y - P;
+                return maxabs(r - r.dot(t) * t);
+            };
+            if (off(y1) <= tol && off(y2) <= tol) return true;
+        }
+        return false;
+    };
     // the boundary terms of one piece (exact_mesh.value_grad_hess, accumulate), added to G, H
     const auto accumulate = [&](const Elem& e, Vec3& Ga, Eigen::Matrix3d& Ha) {
         const Poly& Q = e.Q;
@@ -4491,13 +4537,7 @@ double ExactBandIntegral::value_grad_hess_impl(
                     const Vec3& y1 = Vf[ee];
                     const Vec3& y2 = Vf[(ee + 1) % kf];
                     if (maxabs(y2 - y1) <= tol) continue;
-                    bool t_edge = false; // an edge of t: moves with it
-                    for (int j = 0; j < 4 && !t_edge; ++j) {
-                        const auto& [m, h] = tet_planes[size_t(j)];
-                        t_edge = j != tf.i && std::abs(m.dot(y1) - h) <= tol &&
-                                 std::abs(m.dot(y2) - h) <= tol;
-                    }
-                    if (t_edge) continue;
+                    if (on_t_edge(tf.i, y1, y2)) continue; // an edge of t: moves with it
                     // the neighbouring face of Q along this edge: the face whose ring runs it
                     // backwards (a clip result is a closed surface, its faces sharing each edge by
                     // vertex id). Only if none does, the face whose plane holds both endpoints (its
@@ -4603,13 +4643,7 @@ double ExactBandIntegral::value_grad_hess_impl(
                     if (std::abs(tf.nu.dot(y1) - hF) > 1e3 * tol ||
                         std::abs(tf.nu.dot(y2) - hF) > 1e3 * tol)
                         continue;
-                    bool t_edge = false; // an edge of t: moves with it
-                    for (int j = 0; j < 4 && !t_edge; ++j) {
-                        const auto& [m, h] = tet_planes[size_t(j)];
-                        t_edge = j != tf.i && std::abs(m.dot(y1) - h) <= tol &&
-                                 std::abs(m.dot(y2) - h) <= tol;
-                    }
-                    if (t_edge) continue;
+                    if (on_t_edge(tf.i, y1, y2)) continue; // an edge of t: moves with it
                     const double P3 = cut_integral(y1, y2, e, l0, g0);
                     Ha -= tf.nu * ng.transpose() * (P3 / gp.norm());
                 }
@@ -4757,22 +4791,27 @@ struct ExactBandIntegral::FaceWork
     TriWork w; ///< f's partition
     Vec3 n = Vec3::Zero(); ///< f's unit normal; zero for a flat face
     std::vector<std::pair<Ring, Field>> parts; ///< the labelled parts on the offset side
+    int rule_a = 0; ///< parts labelled by CurvedBisectorRuleA
 };
 
 namespace {
-/// QuietCurvedBisector: alive on this thread
-thread_local bool t_quiet_curved = false;
+/// CurvedBisectorRuleA: its corner kv while one is alive on this thread; -1: none
+thread_local int t_rule_a_kv = -1;
+/// label_face()'s fail() under CurvedBisectorRuleA: a curved bisector crosses the piece
+struct CurvedPiece
+{
+};
 } // namespace
 
-ExactBandIntegral::QuietCurvedBisector::QuietCurvedBisector()
-    : m_prev(t_quiet_curved)
+ExactBandIntegral::CurvedBisectorRuleA::CurvedBisectorRuleA(const int kv)
+    : m_prev(t_rule_a_kv)
 {
-    t_quiet_curved = true;
+    t_rule_a_kv = kv;
 }
 
-ExactBandIntegral::QuietCurvedBisector::~QuietCurvedBisector()
+ExactBandIntegral::CurvedBisectorRuleA::~CurvedBisectorRuleA()
 {
-    t_quiet_curved = m_prev;
+    t_rule_a_kv = m_prev;
 }
 
 ExactBandIntegral::FaceParts::FaceParts() = default;
@@ -4785,10 +4824,12 @@ void ExactBandIntegral::label_face(const std::array<Eigen::Vector3d, 3>& f, Face
 {
     TriWork& w = fw.w;
     fw.parts.clear();
+    fw.rule_a = 0;
     tri_partition(f, w);
     check_face_pieces(f, w, "front_face");
     Ctx cx; // the sub-pieces' clips: no tolerance budget (as max_distance())
     cx.scale = w.scale;
+    cx.planes = &w.planes;
     const std::vector<Loc>& loc = w.loc;
     const Ring& V0 = w.V0;
     Vec3 n = (V0[1] - V0[0]).cross(V0[2] - V0[0]);
@@ -4811,6 +4852,7 @@ void ExactBandIntegral::label_face(const std::array<Eigen::Vector3d, 3>& f, Face
                           const int kb,
                           const std::vector<Vec3>& Vr,
                           const bool curved) {
+        if (curved && t_rule_a_kv >= 0) throw CurvedPiece(); // CurvedBisectorRuleA
         Vec3 c = Vec3::Zero();
         for (const Vec3& y : Vr) c += y;
         c = c / double(Vr.size()) + w.c0;
@@ -4826,8 +4868,118 @@ void ExactBandIntegral::label_face(const std::array<Eigen::Vector3d, 3>& f, Face
             c[1],
             c[2],
             face_string(f));
-        if (curved && t_quiet_curved) throw std::runtime_error(msg); // QuietCurvedBisector
         log_and_throw_error(msg);
+    };
+    // CurvedBisectorRuleA (class doc): phi = l0 + g0.y, the hat function of corner kv, as
+    // front_face_derivs(); int_R d_g phi dA, a face member over its two affine sides; and the
+    // piece R with members S labelled as value()'s rule (a) labels its piece, side_split() and
+    // nearest_member() on the ring
+    const int kv = t_rule_a_kv;
+    Vec3 g0 = Vec3::Zero();
+    double l0 = 0.;
+    if (kv >= 0) {
+        const Vec3& xk = V0[size_t(kv)];
+        const Vec3& bk = V0[size_t((kv + 1) % 3)];
+        const Vec3& ck = V0[size_t((kv + 2) % 3)];
+        const Vec3 m = n.cross(ck - bk);
+        g0 = m / (xk - bk).dot(m);
+        l0 = -g0.dot(bk);
+    }
+    const auto int_d_phi = [&](const Ring& R, const Loc& g) {
+        if (g.kind == 0) {
+            std::vector<std::pair<Ring, Field>> sides;
+            labeled(R, g, SidePlane(), 0, ops, sides); // d = W.y - c >= 0 on each side
+            double s = 0.;
+            for (const auto& [C, fd] : sides) {
+                s += poly_polygon(C.data(), int(C.size()), [&](const Vec3& Y) {
+                    return (Y.dot(fd.dir) - fd.c) * (l0 + g0.dot(Y));
+                });
+            }
+            return s;
+        }
+        double p1 = 0.;
+        Vec3 p2;
+        if (g.kind == 1) {
+            face_line_derivs(R.data(), int(R.size()), n, g.p, g.dir, l0, g0, p1, p2, false);
+        } else {
+            face_point_derivs(R.data(), int(R.size()), n, g.p, l0, g0, p1, p2, cx);
+        }
+        return p1;
+    };
+    struct SidePartR
+    {
+        Ring R;
+        std::vector<char> on;
+    };
+    const auto rule_a = [&](const Ring& R0, const std::vector<int>& S) {
+        std::vector<SidePartR> parts(1), next;
+        parts[0].R = R0;
+        Ring in, out;
+        for (const int k : S) {
+            const SidePlane sp = side_plane(k);
+            const double sg = double(m_sigma);
+            next.clear();
+            for (SidePartR& c : parts) {
+                bool same = false;
+                if (m_sigma == 0 || !sp.has) { // side_clip(): the whole part on
+                    c.on.push_back(1);
+                    next.push_back(std::move(c));
+                    continue;
+                }
+                if (!ops.cut(c.R, -sg * sp.N, -sg * sp.N.dot(sp.ql), in, same) || same) {
+                    c.on.push_back(same ? 1 : 0);
+                    next.push_back(std::move(c));
+                    continue;
+                }
+                SidePartR a;
+                a.R = in;
+                a.on = c.on;
+                a.on.push_back(1);
+                bool same_o = false;
+                const bool has_o = ops.cut(c.R, sg * sp.N, sg * sp.N.dot(sp.ql), out, same_o);
+                next.push_back(std::move(a));
+                if (!has_o) continue;
+                SidePartR b;
+                b.R = same_o ? c.R : out;
+                b.on = std::move(c.on);
+                b.on.push_back(0);
+                next.push_back(std::move(b));
+            }
+            std::swap(parts, next);
+        }
+        for (const SidePartR& pt : parts) {
+            bool all = true, any = false;
+            for (const char o : pt.on) {
+                all = all && o;
+                any = any || o;
+            }
+            if (!any) continue;
+            if (!all) { // the members' planes disagree: the nearest member's side holds
+                const Vec3 cen = area_centroid(pt.R.data(), int(pt.R.size()), n).second;
+                size_t best = 0;
+                double dmin = std::numeric_limits<double>::infinity();
+                for (size_t q = 0; q < S.size(); ++q) {
+                    const double dq = d_feat(loc[size_t(S[q])], cen);
+                    if (dq < dmin) dmin = dq, best = q;
+                }
+                if (!pt.on[best]) continue;
+            }
+            double mv = std::numeric_limits<double>::infinity();
+            int bk = -1;
+            for (size_t q = 0; q < S.size(); ++q) {
+                if (!pt.on[q]) continue;
+                const double v = int_d_phi(pt.R, loc[size_t(S[q])]);
+                if (v < mv) mv = v, bk = S[q];
+            }
+            if (bk < 0) {
+                log_and_throw_error(
+                    "ExactBandIntegral::front_face: rule (a) on a curved piece: no member's "
+                    "integral is a number | {}",
+                    face_string(f));
+            }
+            labeled(pt.R, loc[size_t(bk)], side_plane(bk), m_sigma, ops, fw.parts);
+            ++fw.rule_a;
+        }
     };
     std::vector<int> S;
     std::vector<std::pair<Ring, int>> cells;
@@ -4835,7 +4987,12 @@ void ExactBandIntegral::label_face(const std::array<Eigen::Vector3d, 3>& f, Face
         if (pc.S.empty()) continue;
         S = pc.S.size() > 1 ? prune_points(pc.R, pc.S, loc) : pc.S;
         cells.clear();
-        resolve(pc.R, S, loc, ops, w.scale, 0, cells, fail);
+        try {
+            resolve(pc.R, S, loc, ops, w.scale, 0, cells, fail);
+        } catch (const CurvedPiece&) {
+            rule_a(pc.R, S);
+            continue;
+        }
         for (const auto& [C, k] : cells) {
             labeled(C, loc[size_t(k)], side_plane(k), m_sigma, ops, fw.parts);
         }
@@ -4848,7 +5005,7 @@ const ExactBandIntegral::FaceWork& ExactBandIntegral::face_parts(
 {
     double key[9];
     for (int i = 0; i < 3; ++i) std::memcpy(key + 3 * i, f[size_t(i)].data(), 3 * sizeof(double));
-    if (keep && keep->m_w && keep->m_owner == m_id &&
+    if (keep && keep->m_w && keep->m_owner == m_id && keep->m_rule_a == t_rule_a_kv &&
         std::memcmp(keep->m_key, key, sizeof(key)) == 0) {
         return *keep->m_w;
     }
@@ -4865,6 +5022,7 @@ const ExactBandIntegral::FaceWork& ExactBandIntegral::face_parts(
     if (keep) {
         std::memcpy(keep->m_key, key, sizeof(key));
         keep->m_owner = m_id;
+        keep->m_rule_a = t_rule_a_kv;
     }
     return *fw;
 }
@@ -4889,11 +5047,15 @@ void ExactBandIntegral::front_face_derivs(
     const int kv,
     Eigen::Vector3d& grad,
     Eigen::Matrix3d& hess,
-    FaceParts* keep) const
+    FaceParts* keep,
+    int* rule_a,
+    Eigen::Matrix3d* hess_swept) const
 {
     grad.setZero();
     hess.setZero();
+    if (hess_swept) hess_swept->setZero();
     const FaceWork& fw = face_parts(f, keep);
+    if (rule_a) *rule_a = fw.rule_a;
     const TriWork& w = fw.w;
     const Vec3& n = fw.n;
     if (n.isZero(0.)) return; // a flat face: no area, every term 0
@@ -4915,9 +5077,84 @@ void ExactBandIntegral::front_face_derivs(
     double gi = 0.;
     Vec3 P2 = Vec3::Zero();
     Eigen::Matrix3d Hcut = Eigen::Matrix3d::Zero();
+    Vec3 Qcut = Vec3::Zero(); // hess_swept's: - sum g_c P3 / |g_c,f| (Hcut = n (x) Qcut)
+    // The cut terms (value_grad_hess()'s, accumulate()): an edge of a part that is not an edge of
+    // f lies on a plane that cut f's partition there (TriWork::planes), fixed in space, so it
+    // slides over f as x moves, and the part's chi (d - delta) along it adds
+    //     - n (x) g_c / |g_c,f| int_edge (d - delta) phi^2 ds,   g_c the plane's normal out of the part,
+    // with the part's own d. Where the part across the edge has the same integrand there (d
+    // continuous, both on the offset side) the two terms cancel; where it jumps they leave the
+    // jump's: the offset side's clip (a face member's far side, an edge or vertex member's side
+    // plane: chi (d - delta) from -delta to 0) and the edges of a part labelled by rule (a), whose
+    // member's d is not its neighbour's. An edge of f moves with it: no term; a plane parallel to
+    // f does not slide over it; a rounding sliver of a part is skipped (its neighbours' terms
+    // pair up across it), as accumulate().
+    // MEASURED: without the far side's terms (tests, a ring astride a cube face) the Hessian came
+    // 2.1 (relative) off its central differences and 1.3 off the "exact" rule's. With them only
+    // (before 2026-10-31; Thingi 70565 piece 16 inward, turn 1, vertex 33877, tests
+    // exact-swept-hessian-repro): on the two faces holding a rule-(a) part, 16% and 14% off its
+    // central differences, the sum over its four faces 17% off them and 18% asymmetric, so
+    // polysolve's LDLT (one triangle) failed its residual test up to regularization 10 and the
+    // solve took gradient steps of 2e-4: 272 of the turn's 277 stalled front solves.
+    const auto cut_terms = [&](const Vec3* V, const int nk, const Field& fd) {
+        double ma = w.scale, emax = 0.;
+        for (int i = 0; i < nk; ++i) {
+            ma = std::max(ma, maxabs(V[i]));
+            emax = std::max(emax, (V[(i + 1) % nk] - V[i]).norm());
+        }
+        const double tolc = 64 * EPS * ma;
+        const auto [A, cen] = area_centroid(V, nk, n);
+        if (std::abs(A) <= 1e3 * tolc * emax) return; // a rounding sliver
+        Elem e; // its integrand: d - delta for a face member, d (and - delta below) otherwise
+        e.kind = fd.kind;
+        e.p = fd.p;
+        e.dir = fd.dir;
+        e.c = fd.kind == 0 ? fd.c + delta : 0.;
+        for (int i = 0; i < nk; ++i) {
+            const Vec3 &y1 = V[i], &y2 = V[(i + 1) % nk];
+            if (maxabs(y2 - y1) <= tolc) continue;
+            bool f_edge = false;
+            for (int k = 0; k < 3 && !f_edge; ++k) {
+                const Vec3& P = V0[size_t(k)];
+                const Vec3 t = (V0[size_t((k + 1) % 3)] - P).normalized();
+                const auto off = [&](const Vec3& y) {
+                    const Vec3 r = y - P;
+                    return maxabs(r - r.dot(t) * t);
+                };
+                f_edge = off(y1) <= tolc && off(y2) <= tolc;
+            }
+            if (f_edge) continue;
+            const std::pair<Vec3, double>* pl = nullptr;
+            for (const auto& q : w.planes) {
+                const double tq = 64 * EPS * (std::abs(q.second) + ma);
+                if (std::abs(q.first.dot(y1) - q.second) > tq ||
+                    std::abs(q.first.dot(y2) - q.second) > tq) {
+                    continue;
+                }
+                if ((q.first - q.first.dot(n) * n).norm() <= 1e-12) continue; // parallel to f
+                pl = &q;
+                break;
+            }
+            if (!pl) continue;
+            const Vec3 gc = pl->first.dot(cen) < pl->second ? pl->first : Vec3(-pl->first);
+            const Vec3 gp = gc - gc.dot(n) * n;
+            double P3 = cut_integral(y1, y2, e, l0, g0);
+            if (fd.kind != 0) {
+                const auto l2 = [&](const Vec3& y) {
+                    const double l = lam(y);
+                    return l * l;
+                };
+                P3 -= delta * (y2 - y1).norm() * (l2(y1) + 4 * l2(Vec3(0.5 * (y1 + y2))) + l2(y2)) /
+                      6.; // Simpson, exact for phi^2
+            }
+            Hcut -= n * gc.transpose() * (P3 / gp.norm());
+            Qcut -= gc * (P3 / gp.norm());
+        }
+    };
     for (const auto& [R, fd] : fw.parts) {
         const Vec3* V = R.data();
         const int nk = int(R.size());
+        cut_terms(V, nk, fd);
         if (fd.kind == 0) {
             gi += poly_polygon(V, nk, [&](const Vec3& Y) {
                 return (Y.dot(fd.dir) - fd.c - delta) * lam(Y);
@@ -4933,42 +5170,6 @@ void ExactBandIntegral::front_face_derivs(
                       const double l = lam(Y);
                       return l * l;
                   });
-            if (!fd.far) continue;
-            // The cut edges: where f crosses the face's plane into the far side, chi (d - delta)
-            // jumps from -delta to 0, and the line slides over f as x moves (value_grad_hess()'s
-            // cut edges, which the offset side keeps there too). An edge of f moves with it: no
-            // term. A part lying on the plane has no cut edge (g_c along n: g_c,f = 0).
-            // MEASURED (tests, a ring astride a cube face): without these terms the Hessian came
-            // 2.1 (relative) off its central differences and 1.3 off the "exact" rule's.
-            const double tolc = 64 * EPS * (std::abs(fd.c) + std::max(ring_max_abs(R), w.scale));
-            const Vec3 gc = -fd.dir; // out of the kept side
-            const Vec3 gp = gc - gc.dot(n) * n;
-            if (gp.norm() <= 1e-12) continue;
-            for (int i = 0; i < nk; ++i) {
-                const Vec3 &y1 = V[i], &y2 = V[(i + 1) % nk];
-                if (maxabs(y2 - y1) <= tolc) continue;
-                if (std::abs(y1.dot(fd.dir) - fd.c) > tolc ||
-                    std::abs(y2.dot(fd.dir) - fd.c) > tolc) {
-                    continue;
-                }
-                bool f_edge = false;
-                for (int e = 0; e < 3 && !f_edge; ++e) {
-                    const Vec3& P = V0[size_t(e)];
-                    const Vec3 t = (V0[size_t((e + 1) % 3)] - P).normalized();
-                    const auto off = [&](const Vec3& y) {
-                        const Vec3 r = y - P;
-                        return maxabs(r - r.dot(t) * t);
-                    };
-                    f_edge = off(y1) <= tolc && off(y2) <= tolc;
-                }
-                if (f_edge) continue;
-                Elem e; // phi = d - delta on the kept side
-                e.kind = 0;
-                e.dir = fd.dir;
-                e.c = fd.c + delta;
-                const double P3 = cut_integral(y1, y2, e, l0, g0);
-                Hcut -= n * gc.transpose() * (P3 / gp.norm());
-            }
             continue;
         }
         const auto [A, cen] = area_centroid(V, nk, n);
@@ -4984,6 +5185,10 @@ void ExactBandIntegral::front_face_derivs(
     }
     grad = gi * n;
     hess = n * P2.transpose() + (gi / nN) * dN + Hcut;
+    if (hess_swept) {
+        const Vec3 Q = P2 + Qcut;
+        *hess_swept = 0.5 * (n * Q.transpose() + Q * n.transpose());
+    }
 }
 
 double ExactBandIntegral::bisector_jump(

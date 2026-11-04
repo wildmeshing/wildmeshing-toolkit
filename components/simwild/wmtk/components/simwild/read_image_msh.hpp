@@ -6,6 +6,7 @@
 #include <string>
 #include <wmtk/Types.hpp>
 #include <wmtk/history/History.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 namespace wmtk::components::simwild {
 
@@ -18,7 +19,8 @@ struct InputData
     std::vector<std::string> tag_names;
 
     /// Tagged faces of a tet mesh: rows of V_input, with one 0/1 column per face_tag_names
-    /// entry. Empty when the mesh has no triangle block.
+    /// entry. Empty when the mesh has no triangle block. In 2D, the tagged edges (two columns)
+    /// of the curve inputs, and face_tag_names their edge tags' names.
     MatrixXi F_tagged;
     MatrixSi F_tags;
     std::vector<std::string> face_tag_names;
@@ -26,10 +28,23 @@ struct InputData
     MatrixXd V_envelope;
     MatrixXi F_envelope;
     /// Per row of F_envelope: the label bits of the input it came from, as the mesh's faces
-    /// carry them (SimWildMesh::m_input_envelopes). Empty when F_envelope is not the inputs'.
+    /// (2D: edges) carry them (SimWildMesh::init_label_envelopes(); 2D, SimWildMeshTri's).
+    /// Empty when F_envelope is not the inputs'.
     std::vector<uint64_t> F_envelope_labels;
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;
+    /// Whether the input was simplified before the insertion (preserve_topology off). Around the
+    /// input (envelope_reference "input") V_envelope is then the input as read, not what was
+    /// inserted, and the mesh holds the input's own curves and curve points around the input
+    /// (TetOptimizerMesh::InputCurves); around the simplified geometry it is the simplification.
+    bool simplified_before_insertion = false;
+    /// The diagonal eps_rel, eps_simplify_rel and length_rel are relative to (Parameters::init()):
+    /// the inputs' own bounding box, the feature curves and points included, as in tetwild and
+    /// triwild. -1 for a mesh input, whose own box is V_input's. Until 2026-11 SimWild used the
+    /// box of the embedding, padded by a fifteenth of the diagonal on each side, for the optimizer,
+    /// and the inputs' own for the simplification before the insertion: 1.22x apart on
+    /// simwild_double_sphere_notop_3d, 1.42x on simwild_curves_2d.
+    double diag = -1;
 
     /// The topological offset's correspondence handed on from an earlier offset (memory route,
     /// vertex field corr_input_vid): per row of V_input, the V_input row of the input-complex
@@ -44,6 +59,14 @@ struct InputData
     history::SurfaceHistory input_history;
     std::vector<std::pair<std::array<std::array<double, 3>, 3>, std::vector<uint32_t>>>
         facet_sources;
+
+    /// A surface input with feature curves or points (input_edges, input_points): them as read,
+    /// and where the insertion put them, in V_input's numbering. Empty otherwise.
+    utils::FeatureInputs features;
+    utils::EmbedFeaturesResult features_placed;
+    /// A 2D curve input with input points (input_points): the row of V_input each became, in
+    /// input order. Empty otherwise.
+    std::vector<size_t> input_point_vids;
 };
 
 /**
@@ -59,13 +82,15 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope = nullpt
 /**
  * @brief Read one or multiple meshes and convert them into a tet mesh.
  *
- * Winding number is used to tag inside/outside.
+ * Winding number is used to tag inside/outside. `features`, optional: feature curves and points
+ * forced into the embedding with the surface (see InputData::features).
  */
 InputData read_mesh(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io = nullptr);
+    const io::ComponentIO* component_io = nullptr,
+    const utils::FeatureInputs* features = nullptr);
 
 /**
  * @brief Read one or multiple 2D curve networks and convert them into a tagged triangle mesh.
@@ -77,7 +102,8 @@ InputData read_curves(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io = nullptr);
+    const io::ComponentIO* component_io = nullptr,
+    const utils::FeatureInputs* features = nullptr);
 
 /**
  * @brief Decide whether an input is 2D or 3D.

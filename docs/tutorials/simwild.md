@@ -295,7 +295,7 @@ Python, `outputs.at("envelope")` in C++, a triangle mesh in 3D and a set of segm
 the inputs as simwild simplified them, within
 [`eps_simplify_rel`](../reference/simwild.md#eps_simplify_rel): in 3D, by default, the interfaces
 right after the simplification that follows the insertion; with
-[`skip_simplify`](../reference/simwild.md#skip_simplify), the inputs themselves; in 2D, the input
+[`simplify`](../reference/simwild.md#simplify) false, the inputs themselves; in 2D, the input
 curves (simplified when `preserve_topology` is off).
 
 A later `remeshing` of the same mesh takes it as the `envelope` input:
@@ -309,9 +309,9 @@ interfaces to it; without it, simwild builds an envelope from the interfaces of 
 given, wherever the previous run left them. Pass it on when you remesh a mesh whose regions have
 not changed since the run that returned it. In 3D, the remeshing first
 simplifies the mesh within `eps_simplify_rel` of that envelope (unless
-[`skip_simplify`](../reference/simwild.md#skip_simplify)) and then holds the optimization to the
+[`simplify`](../reference/simwild.md#simplify) is false) and then holds the optimization to the
 simplified interfaces, so the envelope bounds how far the simplification moves them; with
-`skip_simplify`, and in 2D, it bounds the whole run.
+`simplify` false, and in 2D, it bounds the whole run.
 
 Do not pass it after a region edit. The edits change which faces are interfaces, so they return no
 envelope, and an old one does not cover the new interfaces: simwild finds faces outside it, warns

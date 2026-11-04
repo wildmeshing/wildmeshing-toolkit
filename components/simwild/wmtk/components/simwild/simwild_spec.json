@@ -1,6 +1,6 @@
 [
   {
-    "doc": "Builds and edits multi-region meshes. With surfaces (3D) or curve networks (2D) as input, it meshes them all into one tet or triangle mesh with a region per input, overlaps included, and optimizes it like tetwild and triwild. With a tagged .msh as input, operation selects an edit: remeshing improves the mesh; fill_holes_topo, tight_seal_topo, keep_lcc, resolve_overlaps, replace_tags and tag_priority edit its regions.",
+    "doc": "Builds and edits multi-region meshes. With surfaces (3D) or curve networks (2D) as input, it meshes them all into one tet or triangle mesh with a region per input, overlaps included, and optimizes it like tetwild and triwild. With a tagged .msh as input, operation selects an edit: remeshing improves the mesh; fill_holes_topo, tight_seal_topo, tight_seal_geom, keep_lcc, resolve_overlaps, replace_tags and tag_priority edit its regions.",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
@@ -12,7 +12,9 @@
       "input_type",
       "input_transform",
       "input_dir",
-      "skip_simplify",
+      "input_edges",
+      "input_points",
+      "simplify",
       "tag_from_winding_number",
       "split_connected_components",
       "use_sample_envelope",
@@ -22,11 +24,13 @@
       "eps_rel",
       "eps",
       "eps_simplify_rel",
-      "optimize_envelope_around_simplified",
+      "envelope_reference",
+      "per_input_envelopes",
       "eps_simplify",
       "simplify_boundary_envelope",
       "remove_duplicate_eps",
       "order2_envelope_ratio",
+      "feature_envelope_ratio",
       "length",
       "length_rel",
       "sizing_field",
@@ -74,6 +78,12 @@
       "fill_holes_threshold",
       "tight_seal_tag_sets",
       "tight_seal_threshold",
+      "tight_seal_geom_tags",
+      "tight_seal_geom_distance",
+      "tight_seal_geom_trace_rel_tol",
+      "tight_seal_geom_selection",
+      "tight_seal_geom_min_regions",
+      "tight_seal_geom_sanity",
       "keep_lcc_tags",
       "keep_lcc_num",
       "resolve_overlaps_tags",
@@ -121,14 +131,14 @@
   {
     "pointer": "/input_type",
     "type": "list",
-    "doc": "One entry per input, saying what its tag marks. 'volume': the input encloses a volume, and the tets inside it get its name as a tag. 'surface': the input stays a surface, and the embedded faces on it get its name as a face tag. Empty (the default): every input is a volume. 3D surface inputs only.",
+    "doc": "One entry per input, saying what its tag marks. 'volume': the input encloses a volume (in 2D, a region), and the tets (in 2D, the triangles) inside it get its name as a tag. 'surface' (3D only): the input stays a surface, and the embedded faces on it get its name as a face tag. 'curve' (2D only): the input stays a curve, open or closed, and the arrangement's edges on it get its name as an edge tag, written as the edge block of the output mesh. 'surface' and 'curve' need tag_from_winding_number, and 'surface' needs split_connected_components off. Empty (the default): every input is a volume. Applies to surface and curve inputs, not to a tagged mesh input.",
     "default": []
   },
   {
     "pointer": "/input_type/*",
     "type": "string",
-    "options": ["volume", "surface"],
-    "doc": "What that input's tag marks: the tets it encloses, or the faces on it."
+    "options": ["volume", "surface", "curve"],
+    "doc": "What that input's tag marks: the tets (2D: triangles) it encloses, the faces on it (3D only), or the edges on it (2D only)."
   },
   {
     "pointer": "/operation",
@@ -138,6 +148,7 @@
       "remeshing",
       "fill_holes_topo",
       "tight_seal_topo",
+      "tight_seal_geom",
       "keep_lcc",
       "resolve_overlaps",
       "replace_tags",
@@ -182,10 +193,32 @@
     "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
-    "pointer": "/skip_simplify",
+    "pointer": "/input_edges",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). input_transform does not apply to them. The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the box is grown over them automatically, and with it the bounding box eps and the lengths are relative to. The optimization preserves them: the tet edges tiling them stay inside a tube of feature_envelope_ratio x eps around the input edges, and every vertex where they end or three or more meet is anchored within that radius. Read and held by the same code as tetwild's input_edges."
+  },
+  {
+    "pointer": "/input_edges/*",
+    "type": "string",
+    "doc": "One input feature edge mesh."
+  },
+  {
+    "pointer": "/input_points",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature POINT files, 3D surface inputs and 2D curve inputs (a .msh input and a tagged mesh refuse them): every vertex of each file is forced into the mesh as a vertex, exactly -- a tet vertex in 3D, a vertex of the curve arrangement in 2D, where only x and y are used (edges in these files are ignored, with a warning). input_transform does not apply to them, and they grow the background box as /input_edges do (in 2D the arrangement's box covers them). The optimization keeps a vertex within feature_envelope_ratio x eps of each, the smaller order2_envelope_ratio x eps where the point is on an order-2 edge (in 2D, at a vertex where a tracked curve ends or three or more meet). Read by the same code as tetwild's input_points, and held by the same anchors as tetwild's (3D) and triwild's (2D)."
+  },
+  {
+    "pointer": "/input_points/*",
+    "type": "string",
+    "doc": "One input feature point file (only the vertices are used)."
+  },
+  {
+    "pointer": "/simplify",
     "type": "bool",
-    "default": false,
-    "doc": "If true, input simplification will be skipped. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified."
+    "default": true,
+    "doc": "If true, the input is simplified. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified."
   },
   {
     "pointer": "/tag_from_winding_number",
@@ -209,7 +242,7 @@
     "pointer": "/simplify_use_sample_envelope",
     "type": "bool",
     "default": false,
-    "doc": "Use the sampled envelope instead of the exact one for the input simplification only -- in 3D, of the input surface before insertion without preserve_topology, of the tet mesh after insertion with it (operation remeshing); in 2D, of the input curves before insertion without preserve_topology; in every case unless skip_simplify; the optimization keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the sampled test cannot see what happens between two samples, and on thin lattice geometry the sampled simplification has been observed to over-collapse badly (in tetwild)."
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only -- in 3D, of the input surface before insertion without preserve_topology, of the tet mesh after insertion with it (operation remeshing); in 2D, of the input curves before insertion without preserve_topology; in every case only if simplify is true; the optimization keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the sampled test cannot see what happens between two samples, and on thin lattice geometry the sampled simplification has been observed to over-collapse badly (in tetwild)."
   },
   {
     "pointer": "/num_threads",
@@ -227,7 +260,7 @@
     "pointer": "/eps_rel",
     "type": "float",
     "default": 0.002,
-    "doc": "Envelope thickness relative to the bounding box diagonal."
+    "doc": "Envelope thickness relative to the bounding box diagonal. The bounding box is the inputs' own, feature curves and points included, as in tetwild and triwild; a mesh input's is the mesh's. Until 2026-11 it was the embedding's box, padded by a fifteenth of the diagonal on each side: 1.22x the inputs' diagonal on simwild_double_sphere_notop_3d, 1.42x on simwild_curves_2d."
   },
   {
     "pointer": "/eps",
@@ -239,25 +272,32 @@
     "pointer": "/eps_simplify_rel",
     "type": "float",
     "default": 0.0002,
-    "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if skip_simplify is true or the input is already a tet mesh."
+    "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if simplify is false or the input is already a tet mesh. The diagonal is eps_rel's, so both simplifications, before and after the insertion, run at the same eps; until 2026-11 the one before the insertion used the inputs' own and the one after the embedding's padded box."
   },
   {
-    "pointer": "/optimize_envelope_around_simplified",
+    "pointer": "/envelope_reference",
+    "type": "string",
+    "default": "input",
+    "options": ["input", "simplified"],
+    "doc": "Which geometry every envelope, tube and anchor is built around: the surface (2D: curve) envelope and the per-label ones, the order-2 and feature tubes, and the curve anchors, one choice for all. \"input\": the input as read, at eps times each one's ratio, through either simplification; the output is within eps of it. Before the insertion (preserve_topology off), an open boundary, non-manifold edge or curve end the simplification made, and every curve where two inputs meet, is held around itself as the insertion leaves it, since a free one erodes the input along its curve; after it (preserve_topology on, remeshing), the result is held to the envelope around the input again. Needs eps_simplify below eps, else refused: the simplified geometry could start outside its envelope. \"simplified\": the simplified geometry, which replaces the input, at eps times each one's ratio; the output is within eps of it, so within eps_simplify plus eps of the input, and any eps_simplify is allowed. Refused when no simplification runs (simplify false; under preserve_topology, in 2D and outside remeshing). After a simplification following the insertion the order-2 curves are tagged again around its result, the simplification holding them within order2_envelope_ratio x eps_simplify, and the curve anchors keep their centres at that radius. Until 2026-11 \"simplified\" built at eps minus eps_simplify; until 2026-10 the key optimize_envelope_around_simplified, and SimWild built every envelope around the simplified geometry whatever it said."
+  },
+  {
+    "pointer": "/per_input_envelopes",
     "type": "bool",
-    "default": false,
-    "doc": "Build the optimizer's envelope around the SIMPLIFIED geometry at the remaining tolerance (eps - simplify_eps) instead of around the original input at the full eps. The deviation budget is identical by the triangle inequality, but the geometry starts at the CENTRE of the envelope it is judged against rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a mesh handed over close to the boundary has most of its moves refused. Costs elements: holding the surface within eps/2 of the simplified geometry is stricter than eps of the input wherever simplification smoothed detail away, measured at 2-3x the output tets on tetwild at unchanged final quality. Off by default."
+    "default": true,
+    "doc": "Hold each input to its own envelopes. With two or more labels: one surface (2D: curve) envelope per label, in 3D one order-2 and one feature tube per input, and the input simplification's envelope per input likewise, so a face or curve of one input cannot end up on another. false: one shared envelope of each kind for all labels, faster where inputs come within eps of each other (the simplification measured 3% to 20% faster shared, 2026-11), but an input may then end up on another within eps. Anchors are per point either way."
   },
   {
     "pointer": "/eps_simplify",
     "type": "float",
     "default": -1,
-    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if skip_simplify is true or the input is already a tet mesh."
+    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if simplify is false or the input is already a tet mesh."
   },
   {
     "pointer": "/simplify_boundary_envelope",
     "type": "bool",
     "default": true,
-    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses). When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex. Boundary that the simplification opens away from the input's is not judged by the tube. Only affects the simplification before insertion, which runs only when preserve_topology is false and skip_simplify is false; under preserve_topology the surface is simplified after insertion against the order-2 envelope instead."
+    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses). When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex. Boundary that the simplification opens away from the input's is not judged by the tube. Only affects the simplification before insertion, which runs only when preserve_topology is false and simplify is true; under preserve_topology the surface is simplified after insertion against the order-2 envelope instead."
   },
   {
     "pointer": "/remove_duplicate_eps",
@@ -268,8 +308,14 @@
   {
     "pointer": "/order2_envelope_ratio",
     "type": "float",
-    "default": 0.5,
-    "doc": "Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface. Kept below 1 deliberately, unlike the surface envelope which uses the full eps. The two are not symmetric: on the surface a wider envelope REMOVES a constraint that was blocking collapses, whereas a boundary curve has no such blockage to relieve, so the extra room is only freedom for the boundary to wander within eps -- more geometry to resolve at the same final quality. Measured in tetwild on Thingi10K 36075 at stop_energy 5: 14 iterations and 31125 tets at 0.5, against 24 iterations and 41463 tets at 1.0, both converging to a max energy of about 4.95. 1.0 gives the boundary curves the full eps."
+    "default": 1.0,
+    "doc": "Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface and its non-manifold edges -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet. Under envelope_reference \"input\" the tube is built around the input's own order-2 curves where the inserted edges lie in it, so such an edge stays within order2_envelope_ratio x eps of the input's; one the simplification before the insertion made, or one where two inputs meet, is held in a tube around itself as inserted, and the simplification after the insertion (preserve_topology) runs inside the tube. Under \"simplified\", around the order-2 edges of the simplified geometry. Until 2026-11 the tube was built around the edges as the insertion left them whatever envelope_reference said, and an open boundary could drift order2_envelope_ratio x (eps + eps_simplify) from the input's. In 2D, the radius of the anchors where the region borders end or three or more meet. A 2026-10 sweep (13 tetwild integration configs with open boundaries; ratio 0.25, 0.5, 0.75 and 1.0, each at eps x0.99, x1 and x1.01) found no advantage below 1: 7 configs give identical output at every ratio, Thingi10K 111388 gives the fewest tets at 1.0 (27-28k, against 30-31k at 0.5) and the most at 0.25 (28-44k), and the others differ by less than the 1% eps perturbation does. The earlier case for 0.5 (Thingi10K 36075, 14 against 24 iterations) does not reproduce: that model now gives identical output at every ratio."
+  },
+  {
+    "pointer": "/feature_envelope_ratio",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge (/input_edges) must stay inside -- and the radius of the feature anchors (the /input_points, and the vertices where feature curves end or three or more meet), as a fraction of the surface envelope's eps. Where an anchor is also on an order-2 edge the smaller order2_envelope_ratio radius holds it. The default 1 holds them to the same eps as the surface: the tube is built around the input feature curves themselves. Unused without /input_edges and /input_points."
   },
   {
     "pointer": "/length",
@@ -281,7 +327,7 @@
     "pointer": "/length_rel",
     "type": "float",
     "default": 0.05,
-    "doc": "Target edge length relative to the bounding box diagonal."
+    "doc": "Target edge length relative to the bounding box diagonal. The diagonal is eps_rel's: the inputs' own bounding box."
   },
   {
     "pointer": "/sizing_field",
@@ -575,6 +621,52 @@
     "type": "float",
     "default": -1,
     "doc": "For tight_seal_topo: only fill a hole cluster if its total size (area in 2D, volume in 3D, in model units) is less than this threshold. Negative value means no threshold."
+  },
+  {
+    "pointer": "/tight_seal_geom_tags",
+    "type": "list",
+    "default": [],
+    "doc": "For tight_seal_geom (2D and 3D): the tags to seal, at least two. Each entry is a single tag other than ambient; its region is the cells (faces in 2D, tets in 3D) tagged with it and nothing else. Ignored, with a warning, if tight_seal_geom_selection is \"detected\"."
+  },
+  {
+    "pointer": "/tight_seal_geom_tags/*",
+    "type": "string",
+    "doc": "One tag name."
+  },
+  {
+    "pointer": "/tight_seal_geom_distance",
+    "type": "float",
+    "default": -1,
+    "doc": "For tight_seal_geom: the distance d, which must be positive. A disk (a ball in 3D) of diameter d moves through the cells outside the regions without entering them; each connected part it cannot reach that borders the regions (see tight_seal_geom_selection) is filled with their Voronoi diagram. The parts are found as cells surely unreachable (certified, whole cells), grown by sphere tracing to where the disk's reach begins, and then selected."
+  },
+  {
+    "pointer": "/tight_seal_geom_trace_rel_tol",
+    "type": "float",
+    "default": 0.01,
+    "doc": "For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the growth's, where the distance to the dilation surface falls to d/2. As topological_offset's sphere_trace_target_rel_tol."
+  },
+  {
+    "pointer": "/tight_seal_geom_selection",
+    "type": "string",
+    "default": "explicit",
+    "options": [
+      "explicit",
+      "detected"
+    ],
+    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders tight_seal_geom_min_regions regions or more (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags."
+  },
+  {
+    "pointer": "/tight_seal_geom_min_regions",
+    "type": "int",
+    "default": 2,
+    "min": 2,
+    "doc": "For tight_seal_geom with tight_seal_geom_selection \"detected\": a part is filled only if it borders at least this many regions; parts bordering fewer are left alone. At least 2. Ignored, with a warning if not 2, with \"explicit\", which fills the parts that border every listed region."
+  },
+  {
+    "pointer": "/tight_seal_geom_sanity",
+    "type": "bool",
+    "default": false,
+    "doc": "For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell carries other than one region's tag, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two regions, which would be a concave feature of one body, filled. For tests; the integration tests set it."
   },
   {
     "pointer": "/keep_lcc_tags",

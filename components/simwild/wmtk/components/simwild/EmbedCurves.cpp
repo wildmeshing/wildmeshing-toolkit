@@ -105,7 +105,8 @@ std::pair<Vector2d, Vector2d> EmbedCurves::bbox_curves_minmax() const
 void EmbedCurves::simplify_curves(
     const double eps,
     const bool use_exact_envelope,
-    const int num_threads)
+    const int num_threads,
+    const bool per_input_envelopes)
 {
     Envelope envelope(use_exact_envelope);
     envelope.init(m_V_curves, m_E_curves, eps);
@@ -115,13 +116,27 @@ void EmbedCurves::simplify_curves(
     // Link condition on: simplification here may not change the topology of the curve
     // network, because the winding-number tags are evaluated against the untouched per-input
     // copies and merging two curves would make them disagree.
+    //
+    // With several inputs, each segment held to its own input's envelope, as the optimizer
+    // holds it after (SimWildMeshTri::init_label_envelopes()); shared without per_input_envelopes.
+    const auto segment_envelopes = per_input_envelopes
+                                       ? utils::input_segment_envelopes(
+                                             m_V_curves,
+                                             m_E_curves,
+                                             std::vector<int>(m_E_input.begin(), m_E_input.end()),
+                                             eps,
+                                             use_exact_envelope)
+                                       : std::vector<std::shared_ptr<Envelope>>{};
     std::vector<int> surviving_edges;
     const size_t removed = utils::simplify_segments(
         m_V_curves,
         m_E_curves,
         envelope,
         /*use_link_condition=*/true,
-        m_E_input.empty() ? nullptr : &surviving_edges);
+        m_E_input.empty() ? nullptr : &surviving_edges,
+        nullptr,
+        nullptr,
+        &segment_envelopes);
     if (!m_E_input.empty()) {
         std::vector<size_t> E_input(surviving_edges.size());
         for (size_t k = 0; k < surviving_edges.size(); ++k) {
@@ -141,20 +156,49 @@ void EmbedCurves::simplify_curves(
         eps);
 }
 
-bool EmbedCurves::embed_curves(const bool tag_from_winding_number)
+bool EmbedCurves::embed_curves(
+    const bool tag_from_winding_number,
+    const bool collect_provenance,
+    const std::vector<Vector2d>& points)
 {
+    const bool provenance = !tag_from_winding_number || collect_provenance;
+    // The input points after the curves' vertices, as vertices no segment references: the
+    // arrangement triangulates every point it is handed, and its point map finds each again,
+    // as triwild finds its free points.
+    MatrixXd V_points;
+    if (!points.empty()) {
+        V_points.resize(m_V_curves.rows() + Eigen::Index(points.size()), 2);
+        V_points.topRows(m_V_curves.rows()) = m_V_curves;
+        for (size_t i = 0; i < points.size(); ++i) {
+            V_points.row(m_V_curves.rows() + Eigen::Index(i)) = points[i];
+        }
+    }
     std::vector<Vector2r> V_rational;
     std::vector<std::vector<int>> E_sources;
+    std::vector<int> point_map;
     utils::embed_segments(
-        m_V_curves,
+        points.empty() ? m_V_curves : V_points,
         m_E_curves,
         m_V_emb,
         V_rational,
         m_F_emb,
         m_E_constrained,
-        tag_from_winding_number ? nullptr : &E_sources);
+        provenance ? &E_sources : nullptr,
+        nullptr,
+        points.empty() ? nullptr : &point_map);
+    m_point_vids.clear();
+    for (size_t i = 0; i < points.size(); ++i) {
+        const int vid = point_map[size_t(m_V_curves.rows()) + i];
+        if (vid < 0) {
+            log_and_throw_error(
+                "Input point ({}, {}) was dropped by the arrangement",
+                points[i][0],
+                points[i][1]);
+        }
+        m_point_vids.push_back(size_t(vid));
+    }
 
-    if (!tag_from_winding_number) {
+    if (provenance) {
         if (m_E_input.empty()) {
             log_and_throw_error(
                 "Provenance tagging asked for, but the input segments could not be traced "
@@ -415,6 +459,7 @@ void EmbedCurves::consolidate()
             m_E_constrained(i, j) = old2new[m_E_constrained(i, j)];
         }
     }
+    for (size_t& v : m_point_vids) v = size_t(old2new[v]);
     m_V_emb = V;
     m_V_emb_r = Vr;
     logger().info("consolidate: #V {} -> {}", old2new.size(), n_new);

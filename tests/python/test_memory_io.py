@@ -220,13 +220,13 @@ class MemoryIO(unittest.TestCase):
                 self.assertIn("tag_0", field["labels"])
 
     def test_triwild(self):
-        self.run_memory("triwild", dict(input=["curves"], skip_simplify=True,
+        self.run_memory("triwild", dict(input=["curves"], simplify=False,
                                        max_iterations=0, num_threads=1,
                                        DEBUG_output=True, write_vtu=True),
                         {"curves": curves()})
 
     def test_tetwild(self):
-        self.run_memory("tetwild", dict(input="surface", skip_simplify=True,
+        self.run_memory("tetwild", dict(input="surface", simplify=False,
                                        max_iterations=0, num_threads=1,
                                        DEBUG_output=True, write_vtu=True),
                         {"surface": surface()})
@@ -268,7 +268,7 @@ class MemoryIO(unittest.TestCase):
     def test_pipeline(self):
         meshes, _ = self.run_memory(
             "simwild", dict(input="surface", input_names=["tag_0"], max_iterations=0,
-                            skip_simplify=True, num_threads=1, length_rel=0.5, coarsen_pass=False),
+                            simplify=False, num_threads=1, length_rel=0.5, coarsen_pass=False),
             {"surface": surface()})
         meshes, _ = self.run_memory(
             "topological_offset", dict(input="mesh", envelope="envelope", offset_selection="tag_0",
@@ -282,7 +282,7 @@ class MemoryIO(unittest.TestCase):
         right["V"][:, 0] += 3
         outputs, _ = self.run_memory(
             "simwild", dict(input=["right", "left"], input_names=["right_region", "left_region"],
-                            max_iterations=0, skip_simplify=True, num_threads=1,
+                            max_iterations=0, simplify=False, num_threads=1,
                             length_rel=0.5, coarsen_pass=False),
             {"left": left, "right": right})
         mesh = outputs["mesh"]

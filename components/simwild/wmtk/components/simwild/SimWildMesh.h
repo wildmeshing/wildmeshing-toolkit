@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/MeshData.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 #include <igl/Timer.h>
 #include <wmtk/SurfaceTagAttributes.h>
@@ -27,7 +28,9 @@
 
 #include <igl/remove_unreferenced.h>
 #include <atomic>
+#include <functional>
 #include <memory>
+#include <unordered_set>
 
 #include <wmtk/utils/SurfaceTopology.hpp>
 #include <wmtk/utils/partition_utils.hpp>
@@ -67,7 +70,8 @@ public:
     std::vector<std::string> m_face_tag_names;
 
     /**
-     * @brief One envelope per label, and each surface face held by those of the labels it lies on:
+     * @brief (Re)build the base's m_input_envelopes: one envelope per label, and each surface
+     * face held by those of the labels it lies on:
      * bit i < F of a face's input set is face tag i (m_face_tag_names, F of them), bit F + j the
      * boundary of tet tag j's region. A border between tet tag sets S and S' carries the bits
      * of the tags in one and not the other; ambient is the empty set, so a border of region X with
@@ -81,14 +85,15 @@ public:
      * it: at eps_simplify while the simplification runs, around the simplified surface after.
      * Built around the faces embedded on the inputs instead, the members cost +33 to +70% time;
      * around the input triangles, +2 to +6%. m_envelope stays the union, for the engine's direct
-     * uses of it and for a surface face carrying no label.
+     * uses of it. A surface face carrying no label throws, as in tetwild (the base's
+     * surface_envelope_for_face()).
      *
      * With one union envelope a collapse by the seam of two sheets side by side moved a face of
      * one 0.125 off it (eps 0.029), within eps of the other. Two volumes a fraction of eps apart
      * did not drift so with it (each region's boundary stayed within 0.7 eps of its own box,
      * the tets between them in the way); their labels' envelopes make that hold by construction.
      */
-    wmtk::InputEnvelopes m_input_envelopes;
+    void init_label_envelopes(double eps, bool exact);
 
     /// The face-tag bits of an input set: those below the number of face tags.
     InputSet face_tag_mask() const
@@ -102,20 +107,6 @@ public:
     /// (InputData::F_envelope_labels); empty once m_F_envelope is rebuilt from the mesh.
     std::vector<InputSet> m_F_envelope_labels;
 
-    /// (Re)build m_input_envelopes at `eps`, around the same surface as m_envelope: each label's
-    /// rows of m_F_envelope when m_F_envelope_labels says which, else the mesh's faces carrying
-    /// the label. The input triangles are far fewer than the faces embedded on them.
-    void init_label_envelopes(double eps, bool exact);
-
-    /// A tracked face's containment: its labels' envelopes if it has any, else m_envelope.
-    std::shared_ptr<Envelope> surface_envelope_for_face(
-        const std::array<size_t, 3>& vids,
-        const FaceAttributes& attr) const override
-    {
-        if (m_input_envelopes.empty() || attr.input_set() == 0) return m_envelope;
-        return m_input_envelopes.containment(attr.input_set());
-    }
-
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// simwild-only fields (tags, quality/sizing fields, the operation name).
     Parameters& m_sim_params;
@@ -128,12 +119,6 @@ public:
 
     bool m_collapse_check_quality = true;
 
-    // for open boundary
-    /// Follows m_envelope's use_exact; see where it is built in VolumemesherInsertion.cpp.
-    std::shared_ptr<Envelope> m_order_2_edge_envelope;
-
-    /// Envelope a vertex is pulled toward while smoothing.
-    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
 
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.
@@ -276,13 +261,7 @@ protected:
     bool optimization_stop_at_float() const override { return m_sim_params.stop_at_float; }
     void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
 
-    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override;
     bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const override;
-    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override;
-    bool collapse_after_connectivity(
-        size_t v1,
-        size_t v2,
-        const std::vector<std::array<size_t, 2>>& boundary_edges) override;
 
     bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
@@ -299,6 +278,45 @@ protected:
     bool swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip) override;
 
 private:
+    // tight_seal_geom's helpers that need the mesh, defined in TightSealGeom.cpp
+    /// BVH of the boundary of the tets of `tids` for which in_set holds: their interfaces with
+    /// the other tets and their faces on the mesh boundary. From a point outside the set, the
+    /// distance to the set is the distance to this boundary. Returns false if the set is empty.
+    bool tight_seal_boundary_bvh(
+        const std::vector<size_t>& tids,
+        const std::function<bool(size_t)>& in_set,
+        SimpleBVH::BVH& bvh) const;
+    /// Split edge e, keeping `cells` up to date: the children of a tet in it replace it, and
+    /// each child takes its parent's flag in `filled` (resized to the new capacity). Calls
+    /// on_child(id, end_vid) for each child in `cells`, end_vid being the endpoint of e the child
+    /// keeps. Returns the new vertex, or -1 if the split was refused.
+    size_t tight_seal_split_tracked(
+        const simplex::Edge& e,
+        std::unordered_set<size_t>& cells,
+        std::vector<char>& filled,
+        const std::function<void(size_t, size_t)>& on_child);
+    /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
+    /// as a BVH of triangles. On each edge of a tet outside R (region < 0) between a vertex with
+    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
+    /// from the near end (to within tol, on R's side); the crossings of each tet are joined into
+    /// its cut polygon (a triangle or a quad, in two triangles). Returns false if S is empty; n_traced: edges traced, n_failed: traces that left
+    /// their edge (the far end is taken).
+    bool tight_seal_dilation_surface_bvh(
+        const std::vector<size_t>& tids,
+        const std::vector<int>& region,
+        const std::vector<double>& dist_R_at,
+        const std::function<double(const Vector3d&)>& dist_R,
+        double radius,
+        double tol,
+        SimpleBVH::BVH& bvh,
+        size_t& n_traced,
+        size_t& n_failed) const;
+    /// tight_seal_geom's `sanity` checks, on the output: throws if a tet is inverted, a filled
+    /// tet (filled[id] set) carries other than exactly one of `tags`, or a part of the filled
+    /// tets, connected through faces, borders fewer than two of them.
+    void tight_seal_geom_sanity(const std::vector<int64_t>& tags, const std::vector<char>& filled)
+        const;
+
     ////// Operations
 
     struct SplitTagCache
@@ -331,7 +349,9 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
     void init_from_image(
         const MatrixXd& V,
         const MatrixXi& T,
@@ -339,9 +359,15 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
 
-    void init_surfaces_and_boundaries();
+    /// `features`, optional: the input feature curves and points, and where the insertion put
+    /// them (`features_placed`, in the vertex numbering of the mesh), tagged and anchored here.
+    void init_surfaces_and_boundaries(
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
     /// Tracks the faces F_tagged (rows of T's vertices, as read_mesh_data gives them) as surface,
     /// with input set bit j where F_tags has a 1 in column j. Throws on a row that is no face.
     void init_face_tags(
@@ -365,16 +391,6 @@ public:
     size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
 
-    /**
-     * @brief Find open boundary edges of the embedded surface and initialize a BVH for the open
-     * boundary.
-     *
-     * The envelope for the open boundary uses a hack: A boundary edge is represented as a
-     * degenerate triangle, e.g., (v0,v1,v0). That way, the standard triangle envelope code can be
-     * used.
-     *
-     */
-    void find_order_2_edges();
     /**
      * @brief Checks if an edge COULD be an open boundary edge.
      *
@@ -461,6 +477,46 @@ public:
     void tight_seal_topo(
         const std::vector<std::vector<CellTag>>& tight_seal_tag_sets,
         double threshold = std::numeric_limits<double>::infinity());
+
+    /**
+     * @brief Geometric tight seal between the regions R_i, the tets tagged with `tags[i]` and
+     * nothing else. The 3D counterpart of SimWildMeshTri::tight_seal_geom.
+     *
+     * J is the closing of the union R of the R_i by the ball B of diameter `distance`, minus R:
+     * the part of E that B cannot reach. It is found in four steps.
+     *  1. The tets surely in J (the spec's v2): U^ = R and the tets whose points are all
+     *     within distance/2 of R (inside R + B); V^ = the tets of U^ whose points are all
+     *     farther than distance/2 from U^'s boundary (inside the closing); J^ = V^ minus R. Both
+     *     tests are certified by conservative subdivision (tight_seal::certify_on_cell).
+     *  2. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
+     *  3. Conservative growth of all of J^ to the level set d(x, S) = distance/2: the tets
+     *     outside R are flooded from J^ through faces with a vertex inside (in R + B and
+     *     d(v, S) > distance/2), each flooded edge from an inside vertex to an outside one is
+     *     split where it leaves J, sphere traced from the inside end (to within trace_rel_tol x
+     *     distance/2), edges on R's boundary included, and J is the flooded tets with all
+     *     vertices inside.
+     *  4. The connected components of J (through faces) are kept by the rule of `selection`.
+     * Each component is then filled with the Voronoi diagram of its regions: edges whose
+     * endpoints have different nearest regions are split on the bisector, and each tet gets
+     * the tag of its region.
+     *
+     * `selection` "explicit": the regions are `tags`, which may not hold ambient (the tag named
+     * "ambient"). "detected": `tags` is ignored (with a warning if it is not empty), the regions
+     * are every tag but ambient that some tet has alone, and each part that borders
+     * `min_regions` of them or more (at least 2; ignored, with a warning if not 2, for "explicit")
+     * is filled with those it borders.
+     *
+     * `sanity`: afterwards, throw if a tet is inverted, a filled tet carries other than one
+     * region's tag, or a part of the filled tets borders fewer than two regions (a concave
+     * feature of one body, filled).
+     */
+    void tight_seal_geom(
+        const std::vector<int64_t>& tags,
+        double distance,
+        double trace_rel_tol = 0.01,
+        const std::string& selection = "explicit",
+        int64_t min_regions = 2,
+        bool sanity = false);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 

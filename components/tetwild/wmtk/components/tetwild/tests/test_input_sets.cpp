@@ -409,7 +409,6 @@ TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]" + releas
         tet_face_on_input_surface,
         &tet_face_orientation,
         nullptr,
-        nullptr,
         &facet_input_set);
     mesh.m_input_envelopes.set({envelope_of(0), envelope_of(1)});
 
@@ -533,7 +532,6 @@ TEST_CASE("input-sets-touching-boxes", "[tetwild][input_sets]" + release_only)
         tets,
         tet_face_on_input_surface,
         &tet_face_orientation,
-        nullptr,
         nullptr,
         &facet_input_set);
     mesh.m_input_envelopes.set({envelope_of(0), envelope_of(1)});

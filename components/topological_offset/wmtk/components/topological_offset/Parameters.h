@@ -44,6 +44,10 @@ struct Parameters : public wmtk::OptimizerParameters
     // envelope build refuses, so such a test sets envelope_size itself.
     double envelope_size = -1.0;
     double envelope_size_rel = 1e-3;
+    /// Half-width of the tube that holds the order-2 edges of the held surfaces -- their rims and
+    /// non-manifold edges -- as a fraction of envelope_size, and the radius of the anchors where
+    /// those curves end or three or more meet. 1, as tetwild's and simwild's key of the same name.
+    double order2_envelope_ratio = 1.0;
 
     // ---- the smooth offset potential ----
     // Support radius of the potential, as a multiple of target_distance. Must be > 1: the offset
@@ -97,8 +101,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL_front_spanned_split (see the spec): front_pocket_split() splits spanned edges
     /// and faces too, not only pinned cells.
     bool front_spanned_split = true;
-    /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold with a
-    /// foldover face (front_face_field_angle() over foldover_angle) remains.
+    /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a fold
+    /// (TopoOffsetTetMesh::fold_test()) remains.
     bool exit_no_folds = true;
     /// EXPERIMENTAL_coarsen_guard (see the spec), 3D, read only with coarsen_pass: what judges a
     /// coarsening collapse. "bar" (the default): the survivor's offset faces must stay within the
@@ -260,7 +264,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// attempts toward target_distance, reverted and halved when they fail
     /// (TopoOffsetTetMesh::smart_growth()). "individual_op_reject": loops at d_0 and at
     /// target_distance (linear with one step), every collapse, offset-surface flip and smoothing
-    /// move that raises the folded offset faces refused (TopoOffsetTetMesh::fold_reject_active()).
+    /// move that raises the offset faces turned from the field refused
+    /// (TopoOffsetTetMesh::turned_reject_active()).
     /// See the spec doc.
     std::string growth_mode = "none";
     /// growth_mode "linear": N, the steps from d_0 to target_distance, so N + 1 loops. At least 1
@@ -271,11 +276,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// growth_mode "smart": the failed attempts allowed from one converged distance before the run
     /// gives up (throws). At least 1 (the spec's min).
     int smart_growth_max_fails = 10;
-    /// 3D: a front face is a foldover when the angle between its normal, out of the band, and
-    /// the field's normal (grad d at its centroid) exceeds this many degrees
-    /// (TopoOffsetTetMesh::front_face_field_angle()): the debug frames' per-face
-    /// field_angle_foldover and the end-of-run [foldover] count, and which real folds hold the
-    /// exit under EXPERIMENTAL_exit_no_folds. See the spec doc.
+    /// 3D: the fold predicate's angle (TopoOffsetTetMesh::fold_test()). A fold is an edge with
+    /// two offset faces whose normals out of the band are within this many degrees of opposite,
+    /// one of them turned from the field: the angle between its normal and the field's normal
+    /// (grad d at its centroid, TopoOffsetTetMesh::front_face_field_angle()) over this. The same
+    /// face test alone gives the debug frames' per-face field_angle_turned and the end-of-run
+    /// [turned faces] count. See the spec doc.
     double foldover_angle = 30.;
     /// DEBUG (2026-10-20), 3D: debug frames for a remote machine short on space -- overrides
     /// DEBUG_output (sets it, so every debug computation runs) and writes only the constructed
@@ -381,6 +387,8 @@ struct Parameters : public wmtk::OptimizerParameters
         optimize_offset = json_params["optimize_offset"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
+        per_input_envelopes = json_params["per_input_envelopes"];
+        order2_envelope_ratio = json_params["order2_envelope_ratio"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
         front_conv = json_params["front_conv"];

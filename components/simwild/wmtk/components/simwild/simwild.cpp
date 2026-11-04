@@ -46,6 +46,18 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
         mesh.set_sizing_field(json_params["sizing_field"]);
         mesh.set_quality_field(json_params["quality_field"]);
         mesh.mesh_improvement(json_params["max_iterations"]); // <-- tetwild
+        if constexpr (std::is_same_v<MeshT, SimWildMesh>) {
+            // The order-2 guarantee, audited: every edge still carrying the input's order-2 tag
+            // lies in its tube (tag_order2_edges()). Edges the operations made order-2 carry no
+            // tag and are not counted.
+            const size_t n_out =
+                mesh.tagged_edges_outside(SimWildMesh::FeatureEdgeAttributes::order2);
+            if (n_out > 0) {
+                logger().warn("{} order-2 edges outside their tube", n_out);
+            } else {
+                logger().info("order-2 edges outside their tube: 0");
+            }
+        }
     } else if (operation == "fill_holes_topo") {
         const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
         std::vector<CellTag> fill_holes_tags;
@@ -85,6 +97,42 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
         const double threshold =
             raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
         mesh.tight_seal_topo(tag_sets, threshold);
+    } else if (operation == "tight_seal_geom") {
+        const std::string selection = json_params["tight_seal_geom_selection"];
+        const std::vector<std::string> tag_names = json_params["tight_seal_geom_tags"];
+        std::vector<int64_t> tags;
+        if (selection == "detected") {
+            if (!tag_names.empty()) {
+                logger().warn(
+                    "tight_seal_geom_selection is \"detected\", so tight_seal_geom_tags {} is "
+                    "ignored",
+                    tag_names);
+            }
+        } else {
+            for (const auto& tag_name : tag_names) {
+                const auto expr = expression_parser::parse(tag_name, mesh.m_tag_name_to_id);
+                // the reader drops ambient (the untagged cells), so it is no tag to parse into
+                if (expr->tag_names_involved().count("ambient") > 0) {
+                    log_and_throw_error(
+                        "tight_seal_geom_tags cannot hold ambient. Got {}",
+                        tag_names);
+                }
+                const CellTag tag = expr->tags_involved();
+                if (!expr->contains_only_and() || tag.size() != 1) {
+                    log_and_throw_error(
+                        "Each tight_seal_geom_tags entry must be a single tag. Got {}",
+                        tag_name);
+                }
+                tags.push_back(*tag.begin());
+            }
+        }
+        mesh.tight_seal_geom(
+            tags,
+            json_params["tight_seal_geom_distance"],
+            json_params["tight_seal_geom_trace_rel_tol"],
+            selection,
+            json_params["tight_seal_geom_min_regions"],
+            json_params["tight_seal_geom_sanity"]);
     } else if (operation == "keep_lcc") {
         const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
         std::vector<CellTag> lcc_tags;
@@ -159,15 +207,16 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
 namespace {
 
 /**
- * @brief Does a simplification actually run, and so have to be charged against eps?
+ * @brief Does a simplification actually run, so that there is a simplified geometry to build
+ * the envelopes around?
  *
  * SimWild simplifies in one of two places, and which one applies turns on preserve_topology:
  *
  *  - BEFORE insertion, in read_mesh / read_curves (read_image_msh.cpp), when
- *    `!preserve_topology && !skip_simplify`. Simplification can change the topology of the
+ *    `!preserve_topology && simplify`. Simplification can change the topology of the
  *    input, so this route only runs where the caller has said that is acceptable.
  *  - AFTER insertion, SimWildMesh::simplify() from run_3D, when
- *    `preserve_topology && !skip_simplify && operation == "remeshing"`. It collapses at
+ *    `preserve_topology && simplify && operation == "remeshing"`. It collapses at
  *    eps_simplify with the quality check off and then REBUILDS the envelope around the
  *    result, so it displaces the envelope geometry exactly as the pre-insertion route does.
  *
@@ -176,35 +225,37 @@ namespace {
  */
 bool simplification_runs(const Parameters& params, bool is_3d)
 {
-    if (params.skip_simplify) return false;
+    if (!params.simplify) return false;
     if (!params.preserve_topology) return true; // pre-insertion, both dimensions
     return is_3d && params.operation == "remeshing"; // post-insertion, 3D only
 }
 
 /**
- * @brief The eps the optimizer's envelope should use.
+ * @brief The eps the optimizer's envelope uses, the full eps, after refusing an
+ * envelope_reference the run cannot honour (utils::check_envelope_reference()).
  *
- * SimWild already builds its envelope around the SIMPLIFIED geometry -- read_mesh in 3D and
- * the curve pipeline in 2D both hand over the simplified input, and SimWildMesh::simplify()
- * later rebuilds it around the simplified surface. So the part tetwild and triwild gain from
- * optimize_envelope_around_simplified, SimWild has always had.
+ * envelope_reference "input", the default: the envelope is around the input as read -- read_mesh
+ * in 3D and the curve pipeline in 2D hand it over, and SimWildMesh::simplify() puts it back after
+ * simplifying. "simplified": around the simplified geometry, which replaces the input. Both at
+ * the full eps; until 2026-11 "simplified" took what the simplification left of it.
  *
- * What it does NOT do is charge the simplification against the budget: the envelope uses the
- * full eps around geometry that has already moved up to eps_simplify from the input, so a
- * vertex may end up eps_simplify + eps away from it rather than eps. With the flag on, spend
- * only the remainder, which makes the total deviation eps as advertised.
+ * Until 2026-10 SimWild built it around the simplified geometry whatever the flag said, and
+ * charged the simplification only with the flag on: without it the envelope used the full eps
+ * around geometry that had already moved up to eps_simplify from the input, so a vertex could
+ * end up eps_simplify + eps away from it rather than eps.
  *
- * Narrowing here rather than at each init_envelope call is deliberate: every later rebuild
- * reads m_envelope_eps, so doing it once at construction covers them all -- including the
- * rebuild at the end of SimWildMesh::simplify() -- and cannot double-subtract.
+ * Both simplifications run at Parameters::eps_simplify: read_mesh derives it from the same
+ * diagonal (InputData::diag).
  */
-double optimization_envelope_eps(const Parameters& params, bool is_3d)
+double envelope_eps_and_check(const Parameters& params, bool is_3d, const InputData& input_data)
 {
-    return wmtk::utils::optimization_envelope_eps(
+    const bool after_insertion = params.preserve_topology && simplification_runs(params, is_3d);
+    wmtk::utils::check_envelope_reference(
         params.eps,
         params.eps_simplify,
-        params.optimize_envelope_around_simplified,
-        simplification_runs(params, is_3d));
+        params.envelope_around_simplified,
+        input_data.simplified_before_insertion || after_insertion);
+    return params.eps;
 }
 
 } // namespace
@@ -213,19 +264,46 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
 {
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
-    params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
+    params.init(
+        input_data.V_input.colwise().minCoeff(),
+        input_data.V_input.colwise().maxCoeff(),
+        input_data.diag);
 
     igl::Timer timer;
     timer.start();
 
     simwild::SimWildMesh mesh(
         params,
-        optimization_envelope_eps(params, /*is_3d=*/true),
+        envelope_eps_and_check(params, /*is_3d=*/true, input_data),
         params.NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
         mesh.m_F_envelope_labels = input_data.F_envelope_labels;
+    }
+    // Around the input after a simplification before the insertion, the input's own curves: the
+    // order-2 tubes and the curve anchors are built around them, and a rim, non-manifold edge or
+    // curve end the simplification made is held around itself (TetOptimizerMesh::InputCurves).
+    // Where the inputs meet, the input's curves are their intersections, which only an
+    // arrangement of the input gives: there the edges are held around themselves too.
+    if (!params.envelope_around_simplified && input_data.simplified_before_insertion) {
+        if (input_data.F_envelope_labels.size() == size_t(input_data.F_envelope.rows())) {
+            std::vector<Eigen::Vector3d> V(input_data.V_envelope.rows());
+            for (size_t i = 0; i < V.size(); ++i) V[i] = input_data.V_envelope.row(i).transpose();
+            std::vector<std::array<size_t, 3>> F(input_data.F_envelope.rows());
+            for (size_t i = 0; i < F.size(); ++i) {
+                for (int j = 0; j < 3; ++j) F[i][j] = size_t(input_data.F_envelope(i, j));
+            }
+            mesh.set_input_curves(
+                V,
+                F,
+                input_data.F_envelope_labels,
+                input_data.features.empty() ? nullptr : &input_data.features);
+        } else {
+            logger().warn(
+                "envelope_reference \"input\": the input triangles' labels are not known, so "
+                "the order-2 tubes and curve anchors are built around the simplified surface");
+        }
     }
     if (input_data.V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");
@@ -236,7 +314,9 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.tag_names,
             input_data.F_tagged,
             input_data.F_tags,
-            input_data.face_tag_names);
+            input_data.face_tag_names,
+            input_data.features.empty() ? nullptr : &input_data.features,
+            &input_data.features_placed);
     } else {
         logger().warn("Use RATIONAL input for TetWild");
         mesh.init_from_image(
@@ -246,7 +326,9 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.tag_names,
             input_data.F_tagged,
             input_data.F_tags,
-            input_data.face_tag_names);
+            input_data.face_tag_names,
+            input_data.features.empty() ? nullptr : &input_data.features,
+            &input_data.features_placed);
     }
 
     auto write_unique_vtu = [&params, &mesh]() {
@@ -272,7 +354,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             CellType::Tetrahedron,
             mesh.get_tets(),
             [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
-        io::collect_face_tags(mesh, outputs, mesh.m_face_tag_names);
+        io::collect_input_set_tags<CellType::Triangle>(mesh, outputs, mesh.m_face_tag_names);
         return outputs;
     };
 
@@ -303,7 +385,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         mesh.record_volume_history();
     }
 
-    if (params.operation == "remeshing" && params.preserve_topology && !params.skip_simplify) {
+    if (params.operation == "remeshing" && params.preserve_topology && params.simplify) {
         // collapse for getting the right edge length
         logger().info("Simplify after insertion");
         mesh.simplify();
@@ -406,32 +488,48 @@ void run_2D(
     }
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
-    params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
+    params.init(
+        input_data.V_input.colwise().minCoeff(),
+        input_data.V_input.colwise().maxCoeff(),
+        input_data.diag);
 
     igl::Timer timer;
     timer.start();
 
     simwild::tri::SimWildMeshTri mesh(
         params,
-        optimization_envelope_eps(params, /*is_3d=*/false),
+        envelope_eps_and_check(params, /*is_3d=*/false, input_data),
         params.NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
+        mesh.m_E_envelope_labels = input_data.F_envelope_labels;
     }
+    // Around the input after a simplification, the input's own curve ends and junctions: the
+    // anchors are centred on them (TriOptimizerMesh::m_input_curve_points), as in 3D.
+    if (!params.envelope_around_simplified && input_data.simplified_before_insertion) {
+        mesh.set_input_curve_points(input_data.V_envelope, input_data.F_envelope);
+    }
+    mesh.m_input_point_vids = input_data.input_point_vids;
     if (input_data.V_input_r.size() == 0) {
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
     } else {
         logger().warn("Use RATIONAL input for 2D");
         mesh.init_from_image(
             input_data.V_input_r,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
     }
 
     auto write_unique_vtu = [&params, &mesh]() {
@@ -497,6 +595,11 @@ void run_2D(
             CellType::Triangle,
             mesh.get_faces(),
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
+        // The curve inputs' edges, tagged by name, as the edge block of the mesh.
+        io::collect_input_set_tags<CellType::Edge>(
+            mesh,
+            component_io.result.first,
+            mesh.m_edge_tag_names);
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
@@ -516,8 +619,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
-        jse::embed::wmtk_simwild_spec::simwild_spec::spec(),
-        true);
+        jse::embed::wmtk_simwild_spec::simwild_spec::spec());
     const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     // std::filesystem::path output_filename = resolve_path(root, json_params["output"]);
@@ -559,7 +661,21 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (dimension != 0 && !envelope_selector.is_null()) {
         log_and_throw_error("`envelope` applies to tagged mesh inputs only");
     }
+    // The feature curves and points (input_edges, input_points) are forced into the mesh by the
+    // insertion: curves and points by the 3D surface insertion, points by the 2D curve
+    // arrangement. The other routes refuse them rather than drop them.
+    const bool has_features =
+        !json_params["input_edges"].empty() || !json_params["input_points"].empty();
+    const auto no_features = [&](const char* route) {
+        if (has_features) {
+            log_and_throw_error(
+                "input_edges and input_points apply to inserted inputs only (input_edges to 3D "
+                "surface inputs, input_points to 3D surface and 2D curve inputs), not to {}",
+                route);
+        }
+    };
     if (component_io.memory() && dimension == 0) {
+        no_features("a tagged mesh");
         // Label images become regions here as on the file route (read_image_msh).
         MeshData input = component_io.mesh(input_paths.at(0));
         tags_from_label_images(input, input_paths.at(0));
@@ -567,19 +683,37 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input,
             !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr);
     } else if (!component_io.memory() && extension == ".msh") {
+        no_features("a .msh input");
         input_data = read_image_msh(input_paths[0]);
     } else if (dimension == 2) {
+        if (!json_params["input_edges"].empty()) {
+            log_and_throw_error("input_edges apply to 3D surface inputs only, not to a 2D input");
+        }
+        // Read by the code the 3D route reads them with; only their x and y are used.
+        const utils::FeatureInputs features = utils::read_feature_inputs(
+            component_io,
+            root,
+            nlohmann::json::array(),
+            json_params["input_points"]);
         input_data = read_curves(
             input_paths,
             output_filename.string(),
             json_params,
-            component_io.memory() ? &component_io : nullptr);
+            component_io.memory() ? &component_io : nullptr,
+            &features);
     } else {
+        // Read by the code tetwild reads them with.
+        const utils::FeatureInputs features = utils::read_feature_inputs(
+            component_io,
+            root,
+            json_params["input_edges"],
+            json_params["input_points"]);
         input_data = read_mesh(
             input_paths,
             output_filename.string(),
             json_params,
-            component_io.memory() ? &component_io : nullptr);
+            component_io.memory() ? &component_io : nullptr,
+            &features);
     }
 
     if (input_data.T_input.cols() == 4) {

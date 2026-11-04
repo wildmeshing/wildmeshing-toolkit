@@ -180,7 +180,8 @@ InputData read_mesh(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io)
+    const io::ComponentIO* component_io,
+    const utils::FeatureInputs* features)
 {
     InputData input_data;
 
@@ -193,7 +194,7 @@ InputData read_mesh(
     const bool debug_output = !component_io && bool(json_params["DEBUG_output"]);
     const bool perform_sanity_checks = json_params["DEBUG_sanity_checks"];
     const bool preserve_topology = json_params["preserve_topology"];
-    const bool skip_simplify = json_params["skip_simplify"];
+    const bool simplify = json_params["simplify"];
     const bool tag_from_winding_number = json_params["tag_from_winding_number"];
     const bool split_connected_components = json_params["split_connected_components"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
@@ -212,6 +213,8 @@ InputData read_mesh(
                 input_paths.size());
         for (size_t i = 0; i < input_type.size(); ++i) is_volume[i] = input_type[i] == "volume";
     }
+    if (std::count(input_type.begin(), input_type.end(), "curve"))
+        log_and_throw_error("Curve inputs (input_type curve) are 2D only");
     const bool has_surface = std::count(is_volume.begin(), is_volume.end(), false) > 0;
     if (has_surface && split_connected_components)
         log_and_throw_error(
@@ -241,17 +244,29 @@ InputData read_mesh(
         image_mesh.write_surf_off(output_filename + "_input.off");
     }
 
-    if (!preserve_topology && !skip_simplify) {
+    // The scale (InputData::diag), taken before any simplification moves the surface, and the
+    // simplification's eps from it as Parameters::init() derives it -- the absolute eps_simplify
+    // if given, else eps_simplify_rel of the diagonal -- so the simplifications before and after
+    // the insertion run at the same eps.
+    {
+        auto [lo, hi] = image_mesh.bbox_surf_minmax();
+        if (features != nullptr) features->extend_bbox(lo, hi);
+        input_data.diag = (hi - lo).norm();
+    }
+    if (eps_simplify <= 0) eps_simplify = epsr_simplify * input_data.diag;
+
+    // Around the input (envelope_reference "input") the envelope is the surface as read, and the
+    // labels below follow it; around the simplified surface, what the simplification leaves.
+    const bool envelope_around_input = json_params["envelope_reference"] == "input";
+    MatrixXd V_read;
+    MatrixXi F_read;
+    std::vector<size_t> F_read_input;
+    if (!preserve_topology && simplify) {
         /**
          * Simplify the input surface only if topology preservation is not required, since
          * simplification can change the topology. If topology preservation is required,
          * simplification is performed after insertion.
          */
-        auto [bbox_min, bbox_max] = image_mesh.bbox_surf_minmax();
-        double diag = (bbox_max - bbox_min).norm();
-        if (epsr_simplify > 0) {
-            eps_simplify = diag * epsr_simplify;
-        }
         logger().info("Simplify before insertion with eps = {:.4}", eps_simplify);
 
         // The open boundary. Frozen, the simplification cannot touch anything enclosed by
@@ -273,23 +288,35 @@ InputData read_mesh(
             logger().info("simplification freezes the open boundary");
         }
 
+        if (envelope_around_input) {
+            V_read = image_mesh.V_surface();
+            F_read = image_mesh.F_surface();
+            F_read_input = image_mesh.F_input();
+        }
         image_mesh.simplify_surface(
             eps_simplify,
             !json_params["simplify_use_sample_envelope"],
             NUM_THREADS,
-            boundary_eps);
+            boundary_eps,
+            json_params["per_input_envelopes"]);
+        input_data.simplified_before_insertion = true;
 
         if (debug_output) {
             image_mesh.write_surf_off(output_filename + "_input_simplified.off");
         }
     }
 
-    input_data.V_envelope = image_mesh.V_surface();
-    input_data.F_envelope = image_mesh.F_surface();
+    const bool envelope_is_read = F_read.size() != 0;
+    input_data.V_envelope = envelope_is_read ? V_read : image_mesh.V_surface();
+    input_data.F_envelope = envelope_is_read ? F_read : image_mesh.F_surface();
 
     const bool all_rounded =
-        image_mesh.embed_surface(preserve_topology, tag_from_winding_number, has_surface);
+        image_mesh.embed_surface(preserve_topology, tag_from_winding_number, has_surface, features);
     image_mesh.consolidate();
+    if (features != nullptr && !features->empty()) {
+        input_data.features = *features;
+        input_data.features_placed = image_mesh.features_placed();
+    }
 
     if (debug_output) {
         image_mesh.write_emb_surf_off(output_filename + "_input_emb.off");
@@ -372,7 +399,7 @@ InputData read_mesh(
     }
 
     {
-        const auto& F_input = image_mesh.F_input();
+        const auto& F_input = envelope_is_read ? F_read_input : image_mesh.F_input();
         // Only where every envelope triangle's input is known; else the mesh's faces serve.
         if (F_input.size() == size_t(input_data.F_envelope.rows())) {
             input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
@@ -395,13 +422,28 @@ InputData read_curves(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io)
+    const io::ComponentIO* component_io,
+    const utils::FeatureInputs* features)
 {
-    {
-        const std::vector<std::string> input_type = json_params["input_type"];
-        if (std::count(input_type.begin(), input_type.end(), "surface"))
-            log_and_throw_error("Surface inputs (input_type surface) are 3D only");
+    // Which inputs enclose a region (triangle tags) and which stay curves (edge tags).
+    const std::vector<std::string> input_type = json_params["input_type"];
+    if (std::count(input_type.begin(), input_type.end(), "surface"))
+        log_and_throw_error("Surface inputs (input_type surface) are 3D only");
+    std::vector<bool> is_curve(input_paths.size(), false);
+    if (!input_type.empty()) {
+        if (input_type.size() != input_paths.size())
+            log_and_throw_error(
+                "input_type needs one entry per input: {} entries for {} inputs",
+                input_type.size(),
+                input_paths.size());
+        for (size_t i = 0; i < input_type.size(); ++i) is_curve[i] = input_type[i] == "curve";
     }
+    const bool has_curve = std::count(is_curve.begin(), is_curve.end(), true) > 0;
+    const bool tag_from_winding_number = json_params["tag_from_winding_number"];
+    // An open curve encloses nothing, so the provenance tagging, which needs every input closed,
+    // cannot run with one.
+    if (has_curve && !tag_from_winding_number)
+        log_and_throw_error("Curve inputs (input_type curve) need tag_from_winding_number");
     InputData input_data;
 
     std::vector<Matrix3d> input_transforms(input_paths.size());
@@ -412,10 +454,31 @@ InputData read_curves(
     const int NUM_THREADS = json_params["num_threads"];
     const bool debug_output = !component_io && bool(json_params["DEBUG_output"]);
     const bool preserve_topology = json_params["preserve_topology"];
-    const bool skip_simplify = json_params["skip_simplify"];
+    const bool simplify = json_params["simplify"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
     double eps_simplify = json_params["eps_simplify"];
     const std::vector<std::string> input_names = json_params["input_names"];
+    // Each input's name, and its label bit as the mesh's edges will carry it: a curve input's
+    // edge-tag column, a region input's triangle tag after the edge tags. Without curve inputs,
+    // input i is triangle tag i, as before.
+    const size_t n_inputs = input_paths.size();
+    std::vector<size_t> region_column(n_inputs, SIZE_MAX), curve_column(n_inputs, SIZE_MAX);
+    for (size_t i = 0; i < n_inputs; ++i) {
+        const std::string name =
+            i < input_names.size() ? input_names[i] : "tag_" + std::to_string(i);
+        if (is_curve[i]) {
+            curve_column[i] = input_data.face_tag_names.size();
+            input_data.face_tag_names.push_back(name);
+        } else {
+            region_column[i] = input_data.tag_names.size();
+            input_data.tag_names.push_back(name);
+        }
+    }
+    std::vector<size_t> input_bit(n_inputs);
+    for (size_t i = 0; i < n_inputs; ++i) {
+        input_bit[i] =
+            is_curve[i] ? curve_column[i] : input_data.face_tag_names.size() + region_column[i];
+    }
 
     double tol_rel = -1;
     double tol_abs = -1;
@@ -431,41 +494,107 @@ InputData read_curves(
         curves.write_curves_obj(output_filename + "_input.obj");
     }
 
-    if (!preserve_topology && !skip_simplify) {
+    // The scale and the simplification's eps, as in 3D: the curves' own box, the input points
+    // included.
+    {
+        auto [lo, hi] = curves.bbox_curves_minmax();
+        if (features) {
+            for (const Vector3d& p : features->points) {
+                lo = lo.cwiseMin(p.head<2>());
+                hi = hi.cwiseMax(p.head<2>());
+            }
+        }
+        input_data.diag = (hi - lo).norm();
+    }
+    if (eps_simplify <= 0) eps_simplify = epsr_simplify * input_data.diag;
+
+    // As in 3D: around the input the envelope is the curves as read.
+    const bool envelope_around_input = json_params["envelope_reference"] == "input";
+    MatrixXd V_read;
+    MatrixXi E_read;
+    std::vector<size_t> E_read_input;
+    if (!preserve_topology && simplify) {
         // Same condition the 3D route uses: simplification can change the topology of the
         // input, so it only runs when the caller has said that is acceptable.
-        const auto [bbox_min, bbox_max] = curves.bbox_curves_minmax();
-        const double diag = (bbox_max - bbox_min).norm();
-        if (epsr_simplify > 0) {
-            eps_simplify = diag * epsr_simplify;
+        if (envelope_around_input) {
+            V_read = curves.V_curves();
+            E_read = curves.E_curves();
+            E_read_input = curves.E_input();
         }
         curves.simplify_curves(
             eps_simplify,
             !json_params["simplify_use_sample_envelope"],
-            NUM_THREADS);
+            NUM_THREADS,
+            json_params["per_input_envelopes"]);
+        input_data.simplified_before_insertion = true;
 
         if (debug_output) {
             curves.write_curves_obj(output_filename + "_input_simplified.obj");
         }
     }
 
-    // The envelope is built from the SIMPLIFIED input curves, taken here -- after
-    // simplification, before the arrangement -- exactly as read_mesh does in 3D.
-    input_data.V_envelope = curves.V_curves();
-    input_data.F_envelope = curves.E_curves();
+    // The envelope is built from the input curves as read (envelope_reference "input"), or from
+    // the SIMPLIFIED ones, taken here -- after simplification, before the arrangement -- exactly
+    // as read_mesh does in 3D.
+    const bool envelope_is_read = E_read.size() != 0;
+    input_data.V_envelope = envelope_is_read ? V_read : curves.V_curves();
+    input_data.F_envelope = envelope_is_read ? E_read : curves.E_curves();
+    const std::vector<size_t>& E_input = envelope_is_read ? E_read_input : curves.E_input();
+    // Each envelope row's label bit (input_bit). Only where every row's input is known; else
+    // the mesh's edges serve.
+    if (E_input.size() == size_t(input_data.F_envelope.rows())) {
+        input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
+        for (Eigen::Index r = 0; r < input_data.F_envelope.rows(); ++r) {
+            const size_t in = E_input[r];
+            if (in < n_inputs && input_bit[in] < size_t(SurfaceTagAttributes::max_inputs)) {
+                input_data.F_envelope_labels[r] = InputSet(1) << input_bit[in];
+            }
+        }
+    }
 
-    const bool all_rounded = curves.embed_curves(json_params["tag_from_winding_number"]);
+    // A curve input's edges are read off the arrangement's segment provenance.
+    // The input points in the plane: x and y, as the curves are read.
+    std::vector<Vector2d> points;
+    if (features) {
+        for (const Vector3d& p : features->points) points.emplace_back(p[0], p[1]);
+    }
+    const bool all_rounded = curves.embed_curves(tag_from_winding_number, has_curve, points);
     curves.consolidate();
+    input_data.input_point_vids = curves.point_vids();
 
     input_data.V_input = curves.V_emb();
     if (!all_rounded) {
         input_data.V_input_r = curves.V_emb_r();
     }
     input_data.T_input = curves.F_emb();
-    input_data.T_input_tag = curves.F_tags();
-    for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
-        input_data.tag_names.push_back(
-            i < int(input_names.size()) ? input_names[i] : "tag_" + std::to_string(i));
+    if (!has_curve) {
+        input_data.T_input_tag = curves.F_tags();
+    } else {
+        // A region input keeps its column of triangle tags; a curve input's column (its winding
+        // number means nothing for an open curve) is dropped, and the constrained edges it tiles
+        // get its name as an edge tag instead.
+        const MatrixSi& F_tags = curves.F_tags();
+        input_data.T_input_tag.resize(F_tags.rows(), input_data.tag_names.size());
+        for (int k = 0; k < F_tags.outerSize(); ++k)
+            for (MatrixSi::InnerIterator it(F_tags, k); it; ++it)
+                if (it.value() != 0 && region_column[it.col()] != SIZE_MAX)
+                    input_data.T_input_tag.coeffRef(it.row(), region_column[it.col()]) = 1;
+        const MatrixXi& E = curves.E_constrained();
+        const auto& tiles = curves.E_constrained_inputs();
+        std::vector<int> rows;
+        for (int r = 0; r < E.rows(); ++r)
+            for (const size_t in : tiles[r])
+                if (is_curve[in]) {
+                    rows.push_back(r);
+                    break;
+                }
+        input_data.F_tagged.resize(rows.size(), 2);
+        input_data.F_tags.resize(rows.size(), input_data.face_tag_names.size());
+        for (size_t k = 0; k < rows.size(); ++k) {
+            input_data.F_tagged.row(k) = E.row(rows[k]);
+            for (const size_t in : tiles[rows[k]])
+                if (is_curve[in]) input_data.F_tags.coeffRef(k, curve_column[in]) = 1;
+        }
     }
 
     wmtk::logger().info("======= finish curve-triangle conversion =========");
