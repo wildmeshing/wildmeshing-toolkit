@@ -209,6 +209,30 @@ public:
         double eps,
         bool exact);
 
+    /**
+     * @name A reference held to
+     *
+     * The 2D twin of TetOptimizerMesh's, which states the guarantee: an `envelope` input that is
+     * a labelled reference, the first component's input, held to by the run it is given to,
+     * simwild's and triwild's tagged routes alike -- m_envelope and m_input_envelopes built around
+     * its segments of this mesh's labels (io::held_rows()), the curve-end anchors around its
+     * curve points (set_input_curve_points()), never around the mesh received. Moved here from
+     * SimWildMeshTri (2026-11) for triwild's tagged route, unchanged.
+     * @{
+     */
+    /// Set by the application before init, with the envelopes built around the reference.
+    bool m_has_reference = false;
+    /// The label of bit `bit` of an edge's input set, as the output names it; the application's,
+    /// for the reference checks to name a label by.
+    virtual std::string label_name(size_t bit) const;
+    /// Throws for the labels the held edges carry that none of `reference_labels` (one per
+    /// segment of the reference held to) has, naming them.
+    void require_reference_edge_labels(const std::vector<InputSet>& reference_labels) const;
+    /// Before an optimization: throws unless every held edge lies in the envelopes of its labels,
+    /// naming each label with edges outside, their number, and the eps (m_envelope_eps).
+    void check_reference_containment() const;
+    /** @} */
+
     /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
     /// distance) on a comparable footing.
     double m_s_amips = -1;

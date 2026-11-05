@@ -53,18 +53,19 @@ The 719 input vertices (716 segments) are simplified to 297, the arrangement ins
 triangulation of the bounding box, and the optimization ends with 265 to 289 vertices and 407 to
 455 triangles over seven runs (see [threads](#threads-and-reproducibility)), the largest energy
 between 6.1 and 8.8 for a target of 10. A run takes a fraction of a second. The Python and C++
-examples then print, for each name, the number of triangles inside that curve:
+examples then print, for each name, the number of tracked edges on that curve (one run with 4
+threads):
 
 ```text
-blob1: 157 triangles
-blob2: 143 triangles
-circle: 62 triangles
-ellipse: 19 triangles
-rectangle: 110 triangles
+blob1: 71 edges
+blob2: 62 edges
+circle: 38 edges
+ellipse: 19 edges
+rectangle: 24 edges
 ```
 
-The counts add up to more than the total: where the curves overlap, a triangle lies inside
-several of them.
+The curves are the mesh's edge tags; the triangles carry none but `ambient`, as triwild writes no
+regions (until 2026-11 each name also labelled the triangles inside its curve).
 
 <div>
 <wmtk-viewer example="triwild"></wmtk-viewer>
@@ -89,11 +90,26 @@ and each tracked edge is held to the envelope of the inputs it lies on. Vertices
 exactly are merged when a file is read; a vertex of a curve file that no segment uses is kept as a
 [feature point](#feature-points-input_points).
 [`input_names`](../reference/triwild.md#input_names) gives the inputs names, in the same order:
-they label the tag columns of the output (`tag_0`, `tag_1`, ... without them).
+they label the tag columns of the output (`tag_0`, `tag_1`, ... without them) and each input's
+winding-number field on the triangles, `wn_<name>` in the VTU file and the memory outputs (`wn_0`,
+`wn_1`, ... in the `.msh` and without names).
 [`output`](../reference/triwild.md#output) is the file name without extension.
 
 In memory, `input` names entries of the meshes dictionary, and the input names can be the same
 strings.
+
+A triangle mesh as the input, alone, takes the tagged route: on files a `.msh` with triangles, in
+memory a mesh with a `triangle` block. triwild continues from it as it is -- no simplification, no
+arrangement, the triangles kept -- holding its edge block's tags as tracked curves, named as the
+mesh names them, and its point block as input points. No regions: a mesh whose triangles carry a
+tag other than `ambient` is refused, as it is simwild's to remesh; triwild writes none, so its own
+output goes back in as it is. The mesh must fill its bounding box, as an output with
+`filter: "none"` does: a filtered mesh, whose boundary is its tracked edges, is refused, and its
+curves go in as inputs instead. With
+[`envelope`](../reference/triwild.md#envelope), the reference an earlier run returned, it holds the
+curves to that rather than to the mesh received, so a chain stays within one eps of the first
+input. [`filter_inputs`](../reference/triwild.md#filter_inputs) names the inputs that bound the
+domain a filter keeps.
 
 ### The envelope: `eps_rel`
 
@@ -214,13 +230,13 @@ to 455 triangles. On inputs of this size a run takes a fraction of a second eith
 On files, `output` names:
 
 - `shapes.msh`: the triangles, with the vertices in 3D (z = 0). Each triangle has its `quality`
-  (its energy) and `tags`: one column per input, labelled by `input_names`, 1 where the triangle is
-  inside that input. When the filter keeps triangles that are inside no input, an `ambient` column
-  marks them. The tracked curves are its edges, with `tags` too, one column per input under the
-  same labels: each edge under every input it lies on, oriented as its input. simwild reads them
-  back as edge tags.
-- `shapes.vtu`: the same triangles for ParaView, with a field `tag_<i>` per input, `quality`, and
-  `flood_fill` (the regions the curves separate) when the flood fill ran
+  (its energy), one `wn_<i>` per input (that input's winding number at its centroid) and `tags`
+  with a single column, `ambient`: triwild writes no regions, which are simwild's (until 2026-11
+  one column per input, 1 where the triangle is inside that input). The
+  tracked curves are its edges, with `tags`, one column per input labelled by `input_names`: each
+  edge under every input it lies on, oriented as its input. simwild reads them back as edge tags.
+- `shapes.vtu`: the same triangles for ParaView, with `quality`, the winding numbers (`wn_<name>`
+  with `input_names`), and `flood_fill` (the regions the curves separate) when the flood fill ran
   ([`compute_flood_fill`](../reference/triwild.md#compute_flood_fill)).
 - `shapes_surf.vtu`: the tracked curves, the edges of the mesh that lie on the input.
 - `shapes_features.obj`: with feature points only, the tracked curves (`l`) and the anchored
@@ -231,8 +247,14 @@ On files, `output` names:
   `coverage` (input to output); with `DEBUG_feature_retention`, `features_retained` and
   `features_total`. A value of -1 means not measured.
 
-In memory, the outputs are `mesh` (as in the `.msh`), `surface` (the tracked curves, as edges),
-`features` (with feature points) and `envelope` (the input curves the envelope is built around).
+The winding-number fields let a `filter` `none` run be split afterwards, as tetwild's do: a triangle
+is inside an input where its `wn_<i>` is above 1/2.
+[`skip_winding_number`](../reference/triwild.md#skip_winding_number) leaves them out when no filter
+needs them.
+
+In memory, the outputs are `mesh` (as in the `.msh`, the winding numbers named as in the VTU
+file), `surface` (the tracked curves, as edges), `features` (with feature points) and `envelope`
+(the input curves the envelope is built around).
 The report holds the same keys as the file.
 
 [`history_output`](../reference/triwild.md#history_output) records every change to the tracked

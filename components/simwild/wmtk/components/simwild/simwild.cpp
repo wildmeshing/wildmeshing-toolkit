@@ -218,8 +218,10 @@ namespace {
  *    input, so this route only runs where the caller has said that is acceptable.
  *  - AFTER insertion, SimWildMesh::simplify() from run_3D, when
  *    `preserve_topology && simplify && operation == "remeshing"`. It collapses at
- *    eps_simplify with the quality check off and then REBUILDS the envelope around the
- *    result, so it displaces the envelope geometry exactly as the pre-insertion route does.
+ *    eps_simplify with the quality check on (EdgeCollapsing.cpp says why), and then, with
+ *    envelope_reference "simplified", REBUILDS the envelope around the result, so it
+ *    displaces the envelope geometry exactly as the pre-insertion route does; with "input"
+ *    it restores the envelope around the input.
  *
  * The 2D route has no post-insertion counterpart -- SimWildMeshTri has no simplify() -- so
  * under preserve_topology nothing simplifies there.
@@ -279,54 +281,6 @@ void check_reference_options(const Parameters& params)
     }
 }
 
-/// The rows of the reference (V_envelope, F_envelope: triangles in 3D, segments in 2D) that
-/// carry a label of this mesh, on vertices of their own, with their labels.
-struct HeldRows
-{
-    MatrixXd V;
-    MatrixXi F;
-    std::vector<InputSet> labels;
-};
-/**
- * @brief What a run given a reference holds to: its rows of the labels of the mesh. A row of a
- * label the mesh lacks -- an input a filter upstream removed -- stays out of the union, which
- * holds every face with one label, or without per_input_envelopes, so that no face is held to
- * geometry of a label it does not carry. A reference none of whose rows does throws.
- */
-HeldRows held_rows(const InputData& in)
-{
-    HeldRows out;
-    std::vector<Eigen::Index> rows;
-    for (Eigen::Index r = 0; r < in.F_envelope.rows(); ++r) {
-        if (in.F_envelope_labels[r] != 0) rows.push_back(r);
-    }
-    if (rows.empty()) {
-        log_and_throw_error(
-            "envelope: none of its {} cells carries a label of this mesh",
-            in.F_envelope.rows());
-    }
-    std::vector<int> remap(in.V_envelope.rows(), -1);
-    for (const Eigen::Index r : rows)
-        for (Eigen::Index k = 0; k < in.F_envelope.cols(); ++k) remap[in.F_envelope(r, k)] = 0;
-    int n = 0;
-    for (int& v : remap)
-        if (v == 0) v = n++;
-    out.V.resize(n, in.V_envelope.cols());
-    for (Eigen::Index v = 0; v < in.V_envelope.rows(); ++v)
-        if (remap[v] >= 0) out.V.row(remap[v]) = in.V_envelope.row(v);
-    out.F.resize(rows.size(), in.F_envelope.cols());
-    for (size_t i = 0; i < rows.size(); ++i) {
-        for (Eigen::Index k = 0; k < in.F_envelope.cols(); ++k)
-            out.F(i, k) = remap[in.F_envelope(rows[i], k)];
-        out.labels.push_back(in.F_envelope_labels[rows[i]]);
-    }
-    logger().info(
-        "envelope: a reference, {} of its {} cells of this mesh's labels held to",
-        rows.size(),
-        in.F_envelope.rows());
-    return out;
-}
-
 } // namespace
 
 void run_3D(const nlohmann::json& json_params, InputData& input_data, io::ComponentIO& component_io)
@@ -348,10 +302,13 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     // A reference, the first component's labelled input: every envelope, tube and anchor around
     // it, never around the mesh received (SimWildMesh::m_has_reference).
     const bool reference = input_data.envelope_reference.has_value();
-    std::optional<HeldRows> held;
+    std::optional<io::HeldRows> held;
     if (reference) {
         check_reference_options(params);
-        held = held_rows(input_data);
+        held = io::held_rows(
+            input_data.V_envelope,
+            input_data.F_envelope,
+            input_data.F_envelope_labels);
         mesh.init_envelope(held->V, held->F);
         mesh.m_F_envelope_labels = held->labels;
         mesh.m_has_reference = true;
@@ -610,10 +567,13 @@ void run_2D(
         params.NUM_THREADS);
     // A reference, held to as in 3D (SimWildMeshTri::m_has_reference).
     const bool reference = input_data.envelope_reference.has_value();
-    std::optional<HeldRows> held;
+    std::optional<io::HeldRows> held;
     if (reference) {
         check_reference_options(params);
-        held = held_rows(input_data);
+        held = io::held_rows(
+            input_data.V_envelope,
+            input_data.F_envelope,
+            input_data.F_envelope_labels);
         mesh.init_envelope(held->V, held->F);
         mesh.m_E_envelope_labels = held->labels;
         mesh.m_has_reference = true;
@@ -816,14 +776,28 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 route);
         }
     };
+    // A tagged mesh is the run's one input, as on tetwild's and triwild's tagged routes: the route
+    // reads input[0] only, and until 2026-11 dropped any other input without a word.
+    const auto only_input = [&](const char* route) {
+        if (input_paths.size() > 1) {
+            log_and_throw_error(
+                "{} is simwild's only input: got {} inputs, and the route reads the first alone. "
+                "Remesh the tagged mesh by itself, or give every input as a surface (2D: a curve "
+                "network) to insert",
+                route,
+                input_paths.size());
+        }
+    };
     if (component_io.memory() && dimension == 0) {
         no_features("a tagged mesh");
+        only_input("a tagged mesh");
         // Label images become regions here as on the file route (read_image_msh).
         MeshData input = component_io.mesh(input_paths.at(0));
         tags_from_label_images(input, input_paths.at(0));
         input_data = read_mesh_data(input, envelope);
     } else if (!component_io.memory() && extension == ".msh") {
         no_features("a .msh input");
+        only_input("a .msh input");
         input_data = read_image_msh(input_paths[0], envelope);
     } else if (dimension == 2) {
         if (!json_params["input_edges"].empty()) {

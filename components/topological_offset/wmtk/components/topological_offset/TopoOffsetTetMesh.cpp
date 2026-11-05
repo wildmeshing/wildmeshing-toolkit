@@ -1,3 +1,4 @@
+#include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
 
 #include <wmtk/utils/Logger.hpp>
@@ -2419,10 +2420,10 @@ void TopoOffsetTetMesh::write_input_complex(const std::string& path)
     writer.write_mesh(path + ".vtu", V, cells);
 }
 
-void TopoOffsetTetMesh::write_vtu(const std::string& path, MeshMap* output)
+void TopoOffsetTetMesh::write_vtu(const std::string& path, MeshMap* output, const bool result)
 {
     if (!m_params.output_enabled && !output) return;
-    write_vtu_frame(gather_vtu_frame(path), output);
+    write_vtu_frame(gather_vtu_frame(path), output, result);
 }
 
 TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::string& path)
@@ -3006,12 +3007,27 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     return fr;
 }
 
-void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
+void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output, const bool result)
 {
     // What each field is: gather_vtu_frame().
+    // A result -- the final mesh, on either route: collect_memory_output(), save_vtu -- carries
+    // the tags (here a field per tag, and offset_tag; on the memory route collect_tags() makes
+    // them `tags`), the data fields components read (io::ComponentIO::data_fields: vid, labels,
+    // offset_tag) and two annotations, amips and distance_over_target; no stencil file. A debug
+    // frame carries every field, for watching a run in ParaView. Until 2026-11 the result carried
+    // every frame field -- on the mesh eleven besides the tags and the data fields -- and every
+    // reader of it had to list them.
+    const std::set<std::string> tag_fields(fr.tag_names.begin(), fr.tag_names.end());
+    std::function<bool(const std::string&)> kept;
+    if (result) {
+        kept = [&tag_fields](const std::string& name) {
+            return tag_fields.count(name) || io::ComponentIO::data_fields.count(name) ||
+                   name == "amips" || name == "distance_over_target";
+        };
+    }
     const std::string& path = fr.path;
     {
-        io::DataWriter writer(output);
+        io::DataWriter writer(output, kept);
         writer.add_cell_field("amips", fr.amips);
         writer.add_cell_field("tet_energy", fr.tet_e);
         writer.add_cell_field("amips_term", fr.amips_term);
@@ -3034,7 +3050,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
 
     // surface
     {
-        io::DataWriter surf_writer(output);
+        io::DataWriter surf_writer(output, kept);
         surf_writer.add_field("order", fr.order);
         surf_writer.add_field("vid", fr.vid);
         surf_writer.add_field("sizing_scalar", fr.sizing);
@@ -3043,7 +3059,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
 
     // offset faces
     {
-        io::DataWriter off_writer(output);
+        io::DataWriter off_writer(output, kept);
         off_writer.add_cell_field("front_err_ratio", fr.f_err);
         off_writer.add_cell_field("settle_inside_bars", fr.f_inside);
         off_writer.add_cell_field("settle_outside_bars", fr.f_outside);
@@ -3064,15 +3080,15 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
 
     // edges
     {
-        io::DataWriter edge_writer(output);
+        io::DataWriter edge_writer(output, kept);
         edge_writer.add_field("order", fr.order);
         edge_writer.add_field("vid", fr.vid);
         edge_writer.add_field("sizing_scalar", fr.sizing);
         edge_writer.write_mesh(path + "_edge.vtu", fr.V, fr.E, paraviewo::CellType::Line);
     }
 
-    // stencil points
-    if (fr.S.rows() > 0) {
+    // stencil points: a debug frame's only (see above)
+    if (!result && fr.S.rows() > 0) {
         io::DataWriter stencil_writer(output);
         stencil_writer.add_field("stencil_error", fr.s_err);
         stencil_writer.add_field("error_over_bound", fr.s_over);

@@ -204,8 +204,17 @@ TEST_CASE("Named input selection is strict and ordered", "[mesh_data][io]")
     REQUIRE(V.topRows(3) == b.V);
     REQUIRE(source == std::vector<int>{0, 1});
     REQUIRE_THROWS(context.triangles("missing", V, F));
+    // A field no reader reads is an annotation, dropped (ComponentIO::data_fields): the input
+    // reads as without it. Until 2026-11 it was refused.
+    MatrixXd V_bare;
+    MatrixXi F_bare;
+    context.triangles("a", V_bare, F_bare);
     inputs.at("a").vertex_attributes["unexpected"].values = DataMatrix<double>::Zero(3, 1).eval();
-    REQUIRE_THROWS(context.triangles("a", V, F));
+    inputs.at("a").cells.at(CellType::Triangle).attributes["unexpected"].values =
+        DataMatrix<double>::Zero(1, 1).eval();
+    context.triangles("a", V, F);
+    REQUIRE(V == V_bare);
+    REQUIRE(F == F_bare);
 }
 TEST_CASE("Several memory inputs are cleaned like several files", "[mesh_data][io]")
 {

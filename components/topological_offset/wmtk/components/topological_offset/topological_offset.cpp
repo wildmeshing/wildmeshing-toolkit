@@ -401,8 +401,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         hand_on_envelope();
-        if (mesh.m_offset_params.save_vtu) { // write .vtu
-            mesh.write_vtu(output_filename.string());
+        if (mesh.m_offset_params.save_vtu) { // write .vtu: the result, as the .msh
+            mesh.write_vtu(output_filename.string(), nullptr, /*result=*/true);
         }
 
         wmtk::logger().info("======= finish =========");
@@ -681,8 +681,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         hand_on_envelope();
-        if (mesh.m_offset_params.save_vtu) { // write .vtu
-            mesh.write_vtu(output_filename.string());
+        if (mesh.m_offset_params.save_vtu) { // write .vtu: the result, as the .msh
+            mesh.write_vtu(output_filename.string(), nullptr, /*result=*/true);
         }
 
         wmtk::logger().info("======= finish =========");

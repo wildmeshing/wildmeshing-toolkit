@@ -2,9 +2,13 @@
 #include <wmtk/SurfaceTagAttributes.h>
 #include <algorithm>
 #include <array>
+#include <functional>
+#include <map>
 #include <set>
+#include <variant>
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 namespace wmtk::io {
 inline MeshData geometry_data(const MatrixXd& V, const MatrixXi& C, CellType type)
@@ -121,6 +125,168 @@ inline bool is_labelled_envelope(const MeshData& envelope, const bool is_3d)
 {
     const auto it = envelope.cells.find(is_3d ? CellType::Triangle : CellType::Edge);
     return it != envelope.cells.end() && it->second.attributes.count("tags");
+}
+/// `mesh` with its tags only: every vertex field and every cell field but `tags` dropped.
+inline MeshData tags_only(MeshData mesh)
+{
+    mesh.vertex_attributes.clear();
+    for (auto& entry : mesh.cells) {
+        auto& attributes = entry.second.attributes;
+        for (auto it = attributes.begin(); it != attributes.end();)
+            it = it->first == "tags" ? std::next(it) : attributes.erase(it);
+    }
+    return mesh;
+}
+/// A labelled reference (append_envelope_block()) as a receiving mesh reads it
+/// (read_labelled_envelope()): its triangles (2D: segments) on vertices of their own (`dim`
+/// columns), each with the bits of the receiver's labels it names, 0 for a row of labels the
+/// receiver lacks; in 3D its feature curves of the receiver's feature labels, an input edge per
+/// edge and label, edge_input that label's feature input.
+struct LabelledReference
+{
+    MatrixXd V;
+    MatrixXi F;
+    std::vector<InputSet> F_labels;
+    utils::FeatureInputs curves;
+};
+/**
+ * @brief Read `envelope`, a labelled reference (is_labelled_envelope()), for a receiving mesh of
+ * dimension `dim`: its triangles (2D: segments) and, in 3D, feature curves, each row with its
+ * labels, which name the receiver's tags; its points, which no tag of a mesh marks, are only
+ * handed on. Matched to the receiver by name: `bits_named(name)` is the receiver's bits a label
+ * names (several where its tags share a name), `feature_names` its feature labels, bit i the
+ * i-th. Throws on cells a labelled reference does not have, and drops every field but `tags`
+ * (ComponentIO::dropped_fields()). simwild's and tetwild's
+ * tagged routes read their `envelope` so; moved here from simwild's reader (2026-11), unchanged.
+ */
+inline LabelledReference read_labelled_envelope(
+    const MeshData& envelope,
+    const int dim,
+    const std::function<InputSet(const std::string&)>& bits_named,
+    const std::vector<std::string>& feature_names)
+{
+    envelope.validate();
+    std::set<std::string> dropped = ComponentIO::dropped_fields(envelope.vertex_attributes, {});
+    const auto t = dim == 3 ? CellType::Triangle : CellType::Edge;
+    for (const auto& [ct, c] : envelope.cells) {
+        if (ct != t && ct != CellType::Point && !(dim == 3 && ct == CellType::Edge))
+            throw std::runtime_error("Incompatible envelope topology");
+        dropped.merge(ComponentIO::dropped_fields(c.attributes, {"tags"}));
+    }
+    ComponentIO::log_dropped("envelope", dropped);
+    const auto labelled = [](const CellData& cells) -> const MeshAttribute& {
+        const auto it = cells.attributes.find("tags");
+        if (it == cells.attributes.end())
+            throw std::runtime_error("A labelled envelope needs tags on each of its blocks");
+        const MeshAttribute& field = it->second;
+        if (!std::holds_alternative<DataMatrix<uint8_t>>(field.values) ||
+            field.labels.size() != size_t(field.cols()))
+            throw std::runtime_error("tags must be a UInt8 membership matrix with column labels");
+        if ((std::get<DataMatrix<uint8_t>>(field.values).array() > 1).any())
+            throw std::runtime_error("tags must be binary");
+        return field;
+    };
+    LabelledReference out;
+    // The rows of `cells` on vertices of their own, renumbered in order.
+    const auto own_vertices = [&](const DataMatrix<int64_t>& cells, MatrixXd& V, MatrixXi& C) {
+        std::vector<int> row_of(envelope.V.rows(), -1);
+        for (Eigen::Index i = 0; i < cells.size(); ++i) row_of[cells.data()[i]] = 0;
+        int n = 0;
+        for (auto& r : row_of)
+            if (r == 0) r = n++;
+        V.resize(n, dim);
+        for (Eigen::Index v = 0; v < envelope.V.rows(); ++v)
+            if (row_of[v] >= 0) V.row(row_of[v]) = envelope.V.row(v).head(dim);
+        C = ComponentIO::indices(cells);
+        for (Eigen::Index i = 0; i < C.size(); ++i) C.data()[i] = row_of[C.data()[i]];
+    };
+    const CellData& rows = envelope.cell(t);
+    const MeshAttribute& row_tags = labelled(rows);
+    const auto& member = std::get<DataMatrix<uint8_t>>(row_tags.values);
+    own_vertices(rows.connectivity, out.V, out.F);
+    out.F_labels.assign(out.F.rows(), 0);
+    for (size_t j = 0; j < row_tags.labels.size(); ++j) {
+        const InputSet bits = bits_named(row_tags.labels[j]);
+        for (Eigen::Index r = 0; r < member.rows(); ++r)
+            if (member(r, Eigen::Index(j))) out.F_labels[r] |= bits;
+    }
+    // The feature curves of the labels the receiver's feature curves have (feature_names), one
+    // input edge per edge and label, as a tagged mesh's own are read.
+    const auto curve_block = envelope.cells.find(CellType::Edge);
+    if (dim == 3 && curve_block != envelope.cells.end()) {
+        const MeshAttribute& curve_tags = labelled(curve_block->second);
+        const auto& on = std::get<DataMatrix<uint8_t>>(curve_tags.values);
+        const auto& E = curve_block->second.connectivity;
+        std::map<int64_t, size_t> vertex_of; // envelope row -> curves.edge_vertices
+        const auto vertex = [&](const int64_t v) {
+            const auto [it, added] = vertex_of.emplace(v, out.curves.edge_vertices.size());
+            if (added)
+                out.curves.edge_vertices.emplace_back(
+                    envelope.V(v, 0),
+                    envelope.V(v, 1),
+                    envelope.V(v, 2));
+            return it->second;
+        };
+        for (size_t j = 0; j < curve_tags.labels.size(); ++j) {
+            const auto k =
+                std::find(feature_names.begin(), feature_names.end(), curve_tags.labels[j]);
+            if (k == feature_names.end()) continue;
+            for (Eigen::Index r = 0; r < E.rows(); ++r) {
+                if (!on(r, Eigen::Index(j))) continue;
+                out.curves.edges.push_back({{vertex(E(r, 0)), vertex(E(r, 1))}});
+                out.curves.edge_input.push_back(int(k - feature_names.begin()));
+            }
+        }
+    }
+    return out;
+}
+/// The rows of a reference (V, F: triangles in 3D, segments in 2D, each with its `labels`, a
+/// receiver's bits) that carry a label of the receiver, on vertices of their own, with their
+/// labels: what a run given a reference holds to.
+struct HeldRows
+{
+    MatrixXd V;
+    MatrixXi F;
+    std::vector<InputSet> labels;
+};
+/**
+ * @brief What a run given a reference holds to: its rows of the labels of the mesh. A row of a
+ * label the mesh lacks -- an input a filter upstream removed -- stays out of the union, which
+ * holds every face with one label, or without per_input_envelopes, so that no face is held to
+ * geometry of a label it does not carry. A reference none of whose rows does throws. Moved here
+ * from simwild (2026-11), unchanged.
+ */
+inline HeldRows held_rows(const MatrixXd& V, const MatrixXi& F, const std::vector<InputSet>& labels)
+{
+    HeldRows out;
+    std::vector<Eigen::Index> rows;
+    for (Eigen::Index r = 0; r < F.rows(); ++r) {
+        if (labels[r] != 0) rows.push_back(r);
+    }
+    if (rows.empty()) {
+        log_and_throw_error(
+            "envelope: none of its {} cells carries a label of this mesh",
+            F.rows());
+    }
+    std::vector<int> remap(V.rows(), -1);
+    for (const Eigen::Index r : rows)
+        for (Eigen::Index k = 0; k < F.cols(); ++k) remap[F(r, k)] = 0;
+    int n = 0;
+    for (int& v : remap)
+        if (v == 0) v = n++;
+    out.V.resize(n, V.cols());
+    for (Eigen::Index v = 0; v < V.rows(); ++v)
+        if (remap[v] >= 0) out.V.row(remap[v]) = V.row(v);
+    out.F.resize(rows.size(), F.cols());
+    for (size_t i = 0; i < rows.size(); ++i) {
+        for (Eigen::Index k = 0; k < F.cols(); ++k) out.F(i, k) = remap[F(rows[i], k)];
+        out.labels.push_back(labels[rows[i]]);
+    }
+    logger().info(
+        "envelope: a reference, {} of its {} cells of this mesh's labels held to",
+        rows.size(),
+        F.rows());
+    return out;
 }
 // The labels of tags 0 to count - 1, named by `names` (id -> name): a tag's name, or tag_<id>
 // without one, unless that name is taken, in which case '_' is appended as SimWildMesh::write_msh

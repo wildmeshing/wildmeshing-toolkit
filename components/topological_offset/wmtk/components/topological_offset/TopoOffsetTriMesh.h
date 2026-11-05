@@ -2390,7 +2390,8 @@ public:
     void write_phi_grid(const std::string& path, int n) const;
 
     void write_input_complex(const std::string& path);
-    void write_vtu(const std::string& path, MeshMap* output = nullptr);
+    /// `result`: the final mesh, its annotations trimmed; otherwise a debug frame, every field.
+    void write_vtu(const std::string& path, MeshMap* output = nullptr, bool result = false);
     // void write_msh(const std::string& file);
     //// output stuff
 

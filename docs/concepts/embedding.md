@@ -106,13 +106,14 @@ fractional near holes
 ([`WindingNumber.hpp`](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/src/wmtk/utils/WindingNumber.hpp)).
 `input` judges each cell by the input rather than by the surface the mesh conforms to, so it can
 misclassify cells along the surface and leave it wrinkled; `tracked` judges by the tracked surface
-itself. The winding numbers are also written to the output as fields (tetwild writes one per
-input, `wn_<name>`); [`skip_winding_number`](../reference/tetwild.md#skip_winding_number) leaves
-them out when no filter needs them.
+itself. The winding numbers are also written to the output as fields (tetwild and triwild write
+one per input, `wn_<name>`); [`skip_winding_number`](../reference/tetwild.md#skip_winding_number)
+leaves them out when no filter needs them.
 
-triwild uses the per-input winding numbers to give each triangle the [regions](regions.md) of the
-inputs it lies inside. simwild has no filter: it keeps the whole box and tags every cell with the
-inputs that contain it (see [Regions](regions.md)).
+triwild writes the per-input winding numbers as fields of the triangles, as tetwild does on its
+tets, and not as [regions](regions.md): its triangles carry no region tags. simwild has no
+filter: it keeps the whole box and tags every cell with the inputs that contain it (see
+[Regions](regions.md)).
 
 With [`history_output`](../reference/tetwild.md#history_output), the whole sequence above is
 recorded, from the files as read to the output: the weld, the simplification, the insertion, the
