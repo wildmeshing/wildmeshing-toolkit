@@ -11,7 +11,7 @@
     },
     "input": {
       "type": "array",
-      "description": "List of input files. A .msh is an already-tagged mesh and is used as-is. Anything else is inserted by VolumeRemesher: a triangular surface mesh in 3D, or an OBJ curve network ('v'/'l' polylines) in 2D. See /dimension. A tagged mesh's lower blocks are tags too, on both routes: in 3D its triangles are face tags and its edges feature curves, one feature input per label, held as /input_edges are; in 2D its edges are edge tags, as curve inputs give them (see /input_type). Their rows labelled EnvelopeSurface, and in 2D an edge block without tags, are the envelope. simwild writes its tags back the same way, and reads tetwild's and triwild's outputs as such tagged meshes.",
+      "description": "List of input files. A .msh is an already-tagged mesh and is used as-is. Anything else is inserted by VolumeRemesher: a triangular surface mesh in 3D, or an OBJ curve network ('v'/'l' polylines) in 2D. See /dimension. A tagged mesh's lower blocks are tags too, on both routes: in 3D its triangles are face tags and its edges feature curves, one feature input per label, held as /input_edges are; in 2D its edges are edge tags, as curve inputs give them (see /input_type). Their rows labelled EnvelopeSurface, and in 2D an edge block without tags, are the envelope. simwild writes its tags back the same way, and reads tetwild's and triwild's outputs as such tagged meshes. A tagged mesh is the only input, refused with any other. Its tracked faces (in 2D edges) must lie inside it: a filtered mesh, whose boundary is its tracked faces, is refused, and its surfaces go in as inputs instead.",
       "minimum": 1,
       "items": {
         "type": "string",

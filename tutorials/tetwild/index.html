@@ -3767,6 +3767,19 @@ envelope of its own input. Each input gets a winding-number field on the tets: <
 and the memory outputs. <a href="../../reference/tetwild/#output"><code>output</code></a>
 is the file name without extension (default <code>out</code>).</p>
 <p>In memory, <code>input</code> names entries of the meshes dictionary.</p>
+<p>A tet mesh as the input, alone, takes the tagged route: on files a <code>.msh</code> with tets, in memory a
+mesh with a <code>tetrahedron</code> block. tetwild continues from it as it is -- no simplification, no
+insertion, the tets kept -- so a chain of components can go on through tetwild, and tetwild's own
+<code>mesh</code> (or <code>_final.msh</code>) goes back in as it is. It holds what the mesh tags on its lower blocks,
+named as the mesh names them: the triangle block's tags are tracked faces, one input per label,
+each row oriented by its vertex order; the edge block's are feature curves; the point block is
+input points. No volumes: a mesh whose tets carry a tag other than <code>ambient</code> is refused, as it is
+simwild's to remesh. The mesh must fill its bounding box, as an output with <code>filter: "none"</code> does:
+its boundary faces are the wall, untracked and in the box's planes. A filtered mesh, whose boundary
+is its tracked faces, is refused; its surfaces go in as inputs instead. <code>eps_rel</code> and <code>length_rel</code> are of that box's diagonal. With
+<a href="../../reference/tetwild/#envelope"><code>envelope</code></a>, the reference an earlier component returned, it
+holds the faces to that rather than to the mesh received, as simwild does, so a chain stays
+within one eps of the first input.</p>
 <h3 id="the-envelope-eps_rel">The envelope: <code>eps_rel</code><a class="headerlink" href="#the-envelope-eps_rel" title="Permanent link">&para;</a></h3>
 <p><a href="../../reference/tetwild/#eps_rel"><code>eps_rel</code></a> (default 0.001) is the distance the output's surface
 may be from the input, relative to the bounding box diagonal. The input is first simplified within
@@ -3968,6 +3981,11 @@ winding number would call outside.</p>
 inputs whose orientation cannot be trusted; <code>input</code> for open inputs, as in the
 <a href="../tracking/">tracking tutorial</a>. The winding numbers are written to the output in any case (see
 <a href="#outputs">outputs</a>), so a <code>none</code> run can be filtered afterwards.</p>
+<p><a href="../../reference/tetwild/#filter_inputs"><code>filter_inputs</code></a> names the inputs that bound the domain
+kept; the others -- an open sheet through a solid, a second solid outside it -- are kept as
+tracked faces wherever they lie, without cutting or adding to it. By default every input bounds
+it. On a tagged mesh input the names are its face-tag labels, and <code>input</code> is refused: there is no
+input surface.</p>
 <h3 id="feature-curves-and-points-input_edges-input_points">Feature curves and points: <code>input_edges</code>, <code>input_points</code><a class="headerlink" href="#feature-curves-and-points-input_edges-input_points" title="Permanent link">&para;</a></h3>
 <p><a href="../../reference/tetwild/#input_edges"><code>input_edges</code></a> lists edge meshes whose edges are inserted as
 chains of tet edges, and <a href="../../reference/tetwild/#input_points"><code>input_points</code></a> files whose

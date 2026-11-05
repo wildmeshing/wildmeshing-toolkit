@@ -1550,6 +1550,26 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>anchor_feature_point<
 <tr class="memitem:a9962f638e709c197ab507642117da249" id="r_a9962f638e709c197ab507642117da249"><td class="memItemLeft" align="right" valign="top">std::pair&lt; size_t, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9962f638e709c197ab507642117da249">feature_retention</a> (double *worst_ratio=nullptr) const</td></tr>
 <tr class="separator:a9962f638e709c197ab507642117da249"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">A reference held to</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p>An <code>envelope</code> input that is a labelled reference (io::read_labelled_envelope()), the first component's input, held to by the run it is given to, simwild's and tetwild's tagged routes alike: m_envelope and m_input_envelopes are built around its triangles of this mesh's labels (io::held_rows()), the order-2 tubes and curve-end anchors around its curves (m_input_curves, <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#afa1e3f2c721362a4c4b36ac037393c86" title="Set m_input_curves from the input surface V, F, each face with its input set (F_inputs),...">set_input_curves()</a>), the feature tubes around its feature curves (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab69ea937589eced2cd948e500ceae2d9">init_reference_feature_tubes()</a>), never around the mesh received. So the output is within this run's eps of the first component's input however many components came before; rebuilt from what each receives, the bound would grow by one eps per stage. Before an optimization, which holds the mesh to it, what was received must already lie in it (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a256af05afda07b7dea7bfd56baa4b2df">check_reference_containment()</a>). Moved here from SimWildMesh (2026-11) for tetwild's tagged route, unchanged. </p>
+</td></tr>
+<tr class="memitem:a3997a6f28793e9d8570b1aa034d4f90c" id="r_a3997a6f28793e9d8570b1aa034d4f90c"><td class="memItemLeft" align="right" valign="top"><a id="a3997a6f28793e9d8570b1aa034d4f90c" name="a3997a6f28793e9d8570b1aa034d4f90c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_reference</b> = false</td></tr>
+<tr class="memdesc:a3997a6f28793e9d8570b1aa034d4f90c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set by the application before init, with the envelopes built around the reference. <br /></td></tr>
+<tr class="separator:a3997a6f28793e9d8570b1aa034d4f90c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af69621794426e8fea7ae6fd6ccab7790" id="r_af69621794426e8fea7ae6fd6ccab7790"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#af69621794426e8fea7ae6fd6ccab7790">m_reference_curves</a></td></tr>
+<tr class="separator:af69621794426e8fea7ae6fd6ccab7790"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5b9232026c159bbdb146e3c9683dbde" id="r_ac5b9232026c159bbdb146e3c9683dbde"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac5b9232026c159bbdb146e3c9683dbde">m_feature_edge_names</a></td></tr>
+<tr class="separator:ac5b9232026c159bbdb146e3c9683dbde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90d9a32e3a5f49a39a52797eff5c11ee" id="r_a90d9a32e3a5f49a39a52797eff5c11ee"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a90d9a32e3a5f49a39a52797eff5c11ee">label_name</a> (size_t bit) const</td></tr>
+<tr class="separator:a90d9a32e3a5f49a39a52797eff5c11ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9c8eb225c4ef94f2cd434f7296fd3cf" id="r_af9c8eb225c4ef94f2cd434f7296fd3cf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#af9c8eb225c4ef94f2cd434f7296fd3cf">require_reference_face_labels</a> (const std::vector&lt; InputSet &gt; &amp;reference_labels) const</td></tr>
+<tr class="separator:af9c8eb225c4ef94f2cd434f7296fd3cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab69ea937589eced2cd948e500ceae2d9" id="r_ab69ea937589eced2cd948e500ceae2d9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab69ea937589eced2cd948e500ceae2d9">init_reference_feature_tubes</a> (double eps, bool exact)</td></tr>
+<tr class="separator:ab69ea937589eced2cd948e500ceae2d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a256af05afda07b7dea7bfd56baa4b2df" id="r_a256af05afda07b7dea7bfd56baa4b2df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a256af05afda07b7dea7bfd56baa4b2df">check_reference_containment</a> (double eps) const</td></tr>
+<tr class="separator:a256af05afda07b7dea7bfd56baa4b2df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_static_attribs_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_static_attribs_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Static Protected Attributes inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
@@ -1819,6 +1839,25 @@ Additional Inherited Members</h2></td></tr>
 <p>The cell attribute types differ between the applications, so the base reaches the one field it shares through these. Both are AMIPS^3; see MAX_ENERGY. Topological operations and smoothing use the accessors so the shared algorithms remain independent of each application's cell-attribute type. </p>
 
 <p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9a3a80d8bddab28faed3d55a0db905b0">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ae074662c9b4173952aad6e0c2689dc59">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af91813232c2e7ecdf843bdc224c25cc5">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a256af05afda07b7dea7bfd56baa4b2df" name="a256af05afda07b7dea7bfd56baa4b2df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a256af05afda07b7dea7bfd56baa4b2df">&#9670;&#160;</a></span>check_reference_containment()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetOptimizerMesh::check_reference_containment </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Before an optimization: throws unless every held face lies in the envelopes of its labels and every feature edge in the tubes of its labels, naming each label with simplices outside, their number, and <code>eps</code>, the run's. </p>
 
 </div>
 </div>
@@ -2681,6 +2720,35 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 
 </div>
 </div>
+<a id="ab69ea937589eced2cd948e500ceae2d9" name="ab69ea937589eced2cd948e500ceae2d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab69ea937589eced2cd948e500ceae2d9">&#9670;&#160;</a></span>init_reference_feature_tubes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetOptimizerMesh::init_reference_feature_tubes </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>exact</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>After <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a716605a0df02c615568f104e594efd5a" title="Tag every tet edge tiling an input feature edge (placed, from the insertion) with the feature kind an...">tag_feature_edges()</a>: the feature tubes rebuilt around m_reference_curves, at <code>eps</code> and with predicate <code>exact</code>, as <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a716605a0df02c615568f104e594efd5a" title="Tag every tet edge tiling an input feature edge (placed, from the insertion) with the feature kind an...">tag_feature_edges()</a> builds them around the curves as read &ndash; one around all, one per input where it built those &ndash; after throwing for a label a feature edge carries that the reference's curves lack. </p>
+
+</div>
+</div>
 <a id="a31171ed25ca89a6dcbdeeabcc6924cb1" name="a31171ed25ca89a6dcbdeeabcc6924cb1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a31171ed25ca89a6dcbdeeabcc6924cb1">&#9670;&#160;</a></span>init_tagged_edge_input_envelopes()</h2>
 
@@ -2818,6 +2886,35 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 <p>The faces with m_is_surface_fs, for a surface history (<a class="el" href="classwmtk_1_1_tet_mesh.html#a73f685d1885ed401be6bb1722538ba9d" title="Record every change to the tracked surface from now on (see wmtk/history/TrackedRecorder....">TetMesh::start_surface_history</a>). </p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#af5b5d3caa37e2b22f3a48714d2b748a0">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a90d9a32e3a5f49a39a52797eff5c11ee" name="a90d9a32e3a5f49a39a52797eff5c11ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90d9a32e3a5f49a39a52797eff5c11ee">&#9670;&#160;</a></span>label_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string wmtk::TetOptimizerMesh::label_name </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>bit</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The label of bit <code>bit</code> of a face's input set, as the output names it; the application's, for the reference checks to name a label by. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a5372e95775f315beaf6f81446e4789d3">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ac667e3da5edd1e9bc4c4a5d719502fdf">wmtk::components::tetwild::TetWildMesh</a>.</p>
 
 </div>
 </div>
@@ -3340,6 +3437,25 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 </table>
 </div><div class="memdoc">
 <p>The cached tags with <code>v_old</code> renamed to <code>v_new</code>, the edges a collapse welds into one merged (<a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes.html#ab09e3967ec893d138c1a7f314dff44c3" title="Add the tags of o: what one edge carries where a collapse welds two into it.">FeatureEdgeAttributes::merge()</a>), the collapsed edge itself dropped: what the edges around the survivor carry after the collapse. </p>
+
+</div>
+</div>
+<a id="af9c8eb225c4ef94f2cd434f7296fd3cf" name="af9c8eb225c4ef94f2cd434f7296fd3cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9c8eb225c4ef94f2cd434f7296fd3cf">&#9670;&#160;</a></span>require_reference_face_labels()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetOptimizerMesh::require_reference_face_labels </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; InputSet &gt; &amp;&#160;</td>
+          <td class="paramname"><em>reference_labels</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Throws for the labels the held faces carry that none of <code>reference_labels</code> (one per triangle of the reference held to) has, naming them. </p>
 
 </div>
 </div>
@@ -5410,6 +5526,21 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 
 </div>
 </div>
+<a id="ac5b9232026c159bbdb146e3c9683dbde" name="ac5b9232026c159bbdb146e3c9683dbde"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5b9232026c159bbdb146e3c9683dbde">&#9670;&#160;</a></span>m_feature_edge_names</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::string&gt; wmtk::TetOptimizerMesh::m_feature_edge_names</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Names of the feature curves' inputs: bit i of a feature edge's input set (FeatureEdgeAttributes::inputs(feature)) is m_feature_edge_names[i], the output's edge tag (io::collect_feature_edge_tags()). Set by the application: feature_<em> for input_edges file i, or the edge tags of a tagged mesh input. </em></p>
+
+</div>
+</div>
 <a id="a59caca6953b90a9aa3160a67156e9b4c" name="a59caca6953b90a9aa3160a67156e9b4c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a59caca6953b90a9aa3160a67156e9b4c">&#9670;&#160;</a></span>m_feature_envelope</h2>
 
@@ -5637,6 +5768,21 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
       </table>
 </div><div class="memdoc">
 <p>The volume being recorded, kept past <a class="el" href="classwmtk_1_1_tet_mesh.html#a97115b045e1bde0743de96bf2dd7c656" title="Stop recording. The recorder keeps what it has.">stop_surface_history()</a> until finished; the offset of the recorded surface edits in the surface history <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a744a05776628775a577b24c200ecc3ff" title="Bring the recorded surface up to date with the tracked faces, stop recording, log what the history ho...">finish_surface_history()</a> returned, and that history's key, which the volume history keeps. </p>
+
+</div>
+</div>
+<a id="af69621794426e8fea7ae6fd6ccab7790" name="af69621794426e8fea7ae6fd6ccab7790"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af69621794426e8fea7ae6fd6ccab7790">&#9670;&#160;</a></span>m_reference_curves</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> wmtk::TetOptimizerMesh::m_reference_curves</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The reference's feature curves: an input edge per edge and label, edge_input the feature input of the label (m_feature_edge_names). </p>
 
 </div>
 </div>

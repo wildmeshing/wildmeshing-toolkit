@@ -3525,17 +3525,28 @@ rollback buffers, and mesh objects are not part of MeshData.</p>
 <p>Selectors retain their component-specific JSON fields. A single selector is a dictionary key;
 ordered selector arrays preserve input order and existing <code>input_names</code> / transform semantics.
 Unselected dictionary entries are not validated. Missing keys and incompatible inputs throw
-<code>std::runtime_error</code> before computation. Unknown attributes are rejected; this interface does
-not transfer arbitrary user attributes through topology changes. Geometry-only inputs ("no
-attributes" below) ignore the fields <code>io::read_mesh</code> attaches to plain geometry files: vertex
-<code>vid</code>, and triangle <code>uv</code> and <code>normal</code>. A component may accept, and ignore, a field of its own
-results as well, so that a result can be the next call's input as it is: isotropic_remeshing's
-<code>vertex_id</code>, whose fixed vertices come from <code>features</code> alone. isotropic_remeshing also takes the
-triangle fields its <code>feature_fields</code> names, as on the <code>.msh</code> route: the per-face ones it keeps as
-labels through the remeshing and returns on <code>mesh</code>, each in the type it was given in, with its
-labels (an Int64 one within 2^53 in magnitude, which Float64 holds exactly); <code>uv</code> and <code>normal</code>,
-per corner (6 and 9 columns), it neither carries nor returns: their seams are curves, in <code>edges</code>.
-So <code>mesh</code> goes back in with the same per-face fields named again.</p>
+<code>std::runtime_error</code> before computation; this interface does not transfer arbitrary user
+attributes through topology changes.</p>
+<p>Mesh fields come in two kinds. <strong>Data</strong> is what a component reads: <code>tags</code>, the label columns of a
+cell block, on every route; the <code>envelope</code> mesh; and a short list of named fields
+(<code>io::ComponentIO::data_fields</code>), each read by a component: vertex <code>vid</code> and <code>corr_input_vid</code>,
+an offset's correspondence (simwild, so topological_offset carries it, and prismatic_mesh);
+vertex <code>labels</code> and tet <code>offset_tag</code> and <code>tag_0</code> (prismatic_mesh); vertex <code>is_cone</code> and triangle
+<code>dofs</code> (c1_simplification); <code>edge_id</code> and <code>vertex_id</code> (isotropic_remeshing's <code>features</code>); and
+triangle <code>uv</code> and <code>normal</code>, per corner (isotropic_remeshing's <code>feature_fields</code>, tracking).
+Besides them, simwild reads 2D label images, cell fields <code>tag_&lt;k&gt;</code>; isotropic_remeshing the
+triangle fields its <code>feature_fields</code> names; tracking's transfer every triangle field. Every other
+field is an <strong>annotation</strong>, written for people -- tetwild's <code>energy</code>, triwild's <code>quality</code>, the
+inputs' winding numbers <code>wn_&lt;name&gt;</code>, the offset's diagnostics: every reader drops it, on both
+routes, and names the fields it dropped once per read, at info. So a result goes into the next
+component as it is. A field a component requires (c1's <code>dofs</code>) is still an error when missing.
+Until 2026-11 each reader refused, with <code>Unknown mesh attribute</code>, every field it did not list.</p>
+<p>isotropic_remeshing takes the triangle fields its <code>feature_fields</code> names, as on the <code>.msh</code> route:
+the per-face ones it keeps as labels through the remeshing and returns on <code>mesh</code>, each in the type
+it was given in, with its labels (an Int64 one within 2^53 in magnitude, which Float64 holds
+exactly); <code>uv</code> and <code>normal</code>, per corner (6 and 9 columns), it neither carries nor returns: their
+seams are curves, in <code>edges</code>. So <code>mesh</code> goes back in with the same per-face fields named again;
+not named, they are dropped, and with them their curves.</p>
 <table>
 <thead>
 <tr>
@@ -3558,17 +3569,17 @@ So <code>mesh</code> goes back in with the same per-face fields named again.</p>
 <tr>
 <td><code>isotropic_remeshing</code></td>
 <td><code>input</code>; optional <code>features</code></td>
-<td>Triangle geometry, no attributes but its own <code>vertex_id</code>, ignored, and the triangle fields <code>feature_fields</code> names; <code>features</code> on the rows of <code>input</code>: edges with Int64 <code>edge_id</code>, points with Int64 <code>vertex_id</code>, or Int64 vertex <code>vertex_id</code> (-1 for none)</td>
+<td>Triangle geometry and the triangle fields <code>feature_fields</code> names; <code>features</code> on the rows of <code>input</code>: edges with Int64 <code>edge_id</code>, points with Int64 <code>vertex_id</code>, or Int64 vertex <code>vertex_id</code> (-1 for none)</td>
 </tr>
 <tr>
 <td><code>tetwild</code></td>
-<td><code>input</code>; <code>input_edges</code>, <code>input_points</code></td>
-<td>Triangle surfaces; optional curve/point geometry, no attributes</td>
+<td><code>input</code>; <code>input_edges</code>, <code>input_points</code>; optional <code>envelope</code> for tagged input</td>
+<td>Triangle surfaces; optional curve/point geometry, no attributes. Or one tagged tet mesh, continued from as it is: tagged faces, feature curves and points, no tet tags but <code>ambient</code></td>
 </tr>
 <tr>
 <td><code>triwild</code></td>
-<td><code>input</code>; <code>input_points</code></td>
-<td>Curve geometry, optional free points, no attributes</td>
+<td><code>input</code>; <code>input_points</code>; optional <code>envelope</code> for tagged input</td>
+<td>Curve geometry, optional free points, no attributes. Or one tagged triangle mesh, continued from as it is: tracked curves and points, no triangle tags but <code>ambient</code></td>
 </tr>
 <tr>
 <td><code>simwild</code></td>
@@ -3598,20 +3609,24 @@ So <code>mesh</code> goes back in with the same per-face fields named again.</p>
 <tr>
 <td><code>tracking</code></td>
 <td>none for <code>info</code> and <code>features</code>; <code>transfer</code>: <code>input</code>, optional <code>tet_mesh</code>; <code>volume</code>: optional <code>tet_mesh</code> and <code>output_tet_mesh</code></td>
-<td>The history as bytes (option <code>history</code>, not a mesh), and for <code>volume</code> the volume history as bytes (option <code>volume_history</code>). <code>transfer</code>: the triangle surface the history starts from, whose triangle attributes it carries (<code>uv</code>, <code>normal</code> per corner, any other per face), no vertex attributes; the tet mesh the history ends at. <code>volume</code>: the tet meshes the volume history starts and ends at, with their <code>tags</code> if they have them</td>
+<td>The history as bytes (option <code>history</code>, not a mesh), and for <code>volume</code> the volume history as bytes (option <code>volume_history</code>). <code>transfer</code>: the triangle surface the history starts from, whose triangle attributes it carries (<code>uv</code>, <code>normal</code> per corner, any other per face), its vertex attributes dropped; the tet mesh the history ends at. <code>volume</code>: the tet meshes the volume history starts and ends at, with their <code>tags</code> if they have them</td>
 </tr>
 </tbody>
 </table>
 <p>For tagged inputs, <code>tags</code> on the top-dimensional cells names their regions, such as <code>tag_0</code>. A
 column labelled <code>ambient</code> is the background, as is a cell without a tag; a mesh without a <code>tags</code>
 field is all background. Tagged results label their background <code>ambient</code> explicitly; the shared
-readers and writers infer nothing from an untagged row. Existing exported diagnostics have fixed allowed
-names in the adapters and may be supplied again. Extra unrelated fields are errors. As on the
-<code>.msh</code> route, the lower-dimensional blocks are tags, one <code>tags</code> column per input: in a tet mesh,
+readers and writers infer nothing from an untagged row. As on the <code>.msh</code> route, the lower-dimensional blocks are tags, one <code>tags</code> column per input: in a tet mesh,
 triangles are tagged faces (an input surface, each row oriented as its input) and edges tagged
 feature curves (an <code>input_edges</code> file, <code>feature_&lt;i&gt;</code>); in a triangle mesh, edges are tagged curves
 (an input curve, each row oriented as its input). simwild, tetwild and triwild write them so, and
-simwild reads them back as the tags it holds. Rows labelled <code>EnvelopeSurface</code> (in a triangle mesh,
+simwild, tetwild and triwild read them back as the tags they hold. tetwild takes a tet mesh as its
+only input on the tagged route, its tets kept: no simplification, no insertion, no input winding
+numbers. It holds no volumes, so a mesh whose tets carry a tag other than <code>ambient</code> is refused
+(simwild remeshes those), and its point block is input points, anchored where they are. triwild
+takes a triangle mesh the same way, holding its tracked curves and points and no regions: a mesh
+whose triangles carry a tag other than <code>ambient</code> is refused. tetwild writes no tet tags and triwild
+no triangle tags but <code>ambient</code>: regions are simwild's. Rows labelled <code>EnvelopeSurface</code> (in a triangle mesh,
 an edge block without <code>tags</code> too) are the envelope instead, which cannot be combined with an
 <code>envelope</code> input. Other lower-dimensional blocks are rejected.</p>
 <p>The <code>envelope</code> input is a mesh of the call on the memory route and the path of a mesh file on the
@@ -3622,13 +3637,13 @@ simwild, given it with a tagged mesh, builds every envelope, tube and anchor aro
 eps, matching the envelope's labels to the mesh's face tags (2D: edge tags), regions and feature
 curves by name; it throws for a label the mesh holds that the envelope lacks, and, before a
 remeshing, unless every held face and feature edge received lies, exactly, in the envelopes of its
-labels -- the error names the labels, the number outside and the eps. topological_offset and
+labels -- the error names the labels, the number outside and the eps. tetwild's and triwild's tagged
+routes hold to it the same way, by the same code, before every run. topological_offset and
 manifold_extraction carry it, not yet holding to it. Each returns it unchanged as its own
 <code>envelope</code>. An <code>envelope</code> without labels -- bare geometry -- is held to as a whole, as before.</p>
 <p>The prismatic adapter accepts scalar <code>tag_0</code> and <code>offset_tag</code>, or the corresponding columns of
 <code>tags</code>. <code>vid</code> defaults to vertex row IDs; absent <code>labels</code> are derived from input-volume cells and
-correspondence. <code>corr_input_vid</code> names a source <code>vid</code>, with -1 for no correspondence. Existing
-construction diagnostics are accepted. Enable <code>save_offset_correspondence</code> and disable offset
+correspondence. <code>corr_input_vid</code> names a source <code>vid</code>, with -1 for no correspondence. Enable <code>save_offset_correspondence</code> and disable offset
 optimization to obtain construction correspondence for the offset-to-prismatic workflow.</p>
 <p>C1's 36 DOF columns flatten its 12-by-3 face matrix in row order. UV vertices use <code>V</code>'s first two
 columns; UV faces correspond to surface face rows. Its unfinished tetrahedral mapping route is
@@ -3670,6 +3685,12 @@ reference are kept.
 This is deliberate -- it maps a boundary vertex to its volume vertex without a search -- at the
 cost of one vertex array per output. <code>envelope</code>, <code>features</code>, manifold extraction's <code>surface</code> and
 prismatic's offset faces have vertices of their own.</p>
+<p>topological_offset's result -- <code>mesh</code>, the <code>.msh</code>, and the <code>save_vtu</code> file -- carries the tags,
+the data fields (<code>vid</code>, <code>labels</code>, <code>offset_tag</code>; in <code>mesh</code> and the <code>.msh</code>, with
+<code>save_offset_correspondence</code>, <code>corr_input_vid</code>) and two annotations, <code>amips</code> per tet and
+<code>distance_over_target</code> per vertex; <code>surface</code>, <code>edges</code> and <code>offset</code> carry <code>vid</code>, and <code>offset</code>
+<code>distance_over_target</code>. Its <code>DEBUG_output</code> frames carry every diagnostic field.
+manifold_extraction, which returns its mesh through the offset's writer, returns it so too.</p>
 <p>The exporters' legacy file names map to these keys through one explicit table
 (<code>io::default_output_keys</code>); an unmapped export or two exports with one key is an error, never
 a silently dropped output. Reports contain the existing

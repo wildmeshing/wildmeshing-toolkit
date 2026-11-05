@@ -967,6 +967,20 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>anchor_feature_point<
 <tr class="memdesc:ac7e23ae58a24a84075a808f192480d84"><td class="mdescLeft">&#160;</td><td class="mdescRight">{feature points still represented within their radius, total feature points}.  <br /></td></tr>
 <tr class="separator:ac7e23ae58a24a84075a808f192480d84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">A reference held to</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p>The 2D twin of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a>'s, which states the guarantee: an <code>envelope</code> input that is a labelled reference, the first component's input, held to by the run it is given to, simwild's and triwild's tagged routes alike &ndash; m_envelope and m_input_envelopes built around its segments of this mesh's labels (io::held_rows()), the curve-end anchors around its curve points (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a1753c8f081ce6acb3913d120f552a0a2" title="Set m_input_curve_points from the input curves V, E, coincident vertices merged.">set_input_curve_points()</a>), never around the mesh received. Moved here from SimWildMeshTri (2026-11) for triwild's tagged route, unchanged. </p>
+</td></tr>
+<tr class="memitem:aaece29a89faafb225c8c8a89c05654b8" id="r_aaece29a89faafb225c8c8a89c05654b8"><td class="memItemLeft" align="right" valign="top"><a id="aaece29a89faafb225c8c8a89c05654b8" name="aaece29a89faafb225c8c8a89c05654b8"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_reference</b> = false</td></tr>
+<tr class="memdesc:aaece29a89faafb225c8c8a89c05654b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set by the application before init, with the envelopes built around the reference. <br /></td></tr>
+<tr class="separator:aaece29a89faafb225c8c8a89c05654b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7731bcada52524979cdcc528bdfb79db" id="r_a7731bcada52524979cdcc528bdfb79db"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7731bcada52524979cdcc528bdfb79db">label_name</a> (size_t bit) const</td></tr>
+<tr class="separator:a7731bcada52524979cdcc528bdfb79db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3020569cd787c0dc589299767afe3bf6" id="r_a3020569cd787c0dc589299767afe3bf6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a3020569cd787c0dc589299767afe3bf6">require_reference_edge_labels</a> (const std::vector&lt; InputSet &gt; &amp;reference_labels) const</td></tr>
+<tr class="separator:a3020569cd787c0dc589299767afe3bf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a8a51a0ab5ece5229ea9e589438f615" id="r_a7a8a51a0ab5ece5229ea9e589438f615"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7a8a51a0ab5ece5229ea9e589438f615">check_reference_containment</a> () const</td></tr>
+<tr class="separator:a7a8a51a0ab5ece5229ea9e589438f615"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pub_static_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
@@ -1090,6 +1104,24 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 <p>Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a4baa005cbad4dd53a10067018e2d850b" title="Does the application anchor a vertex with n_segments tracked segments?">holds_order2_vertex()</a> holds, in a ball of <code>order2_radius</code>, and every vertex of <code>input_point_vids</code>, in a ball of <code>feature_radius</code> (the smaller one for a vertex that is both). Turns feature-point tracking on when there is something to anchor, so a run without any pays no per-operation cost. At init only, as in 3D, whose <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abecbaaf0adadbffe79e697c57593cb87" title="Anchor the 0-dimensional features, after the tracked curves are final: every order-2 vertex holds_ord...">anchor_feature_points()</a> says why an end a collapse makes needs no anchor. Returns the number of anchors made. </p>
 <p>With m_input_curve_points set, an order-2 vertex is anchored only if one of the input's own curve points lies in its ball, and the ball is centred on the nearest one. </p>
+
+</div>
+</div>
+<a id="a7a8a51a0ab5ece5229ea9e589438f615" name="a7a8a51a0ab5ece5229ea9e589438f615"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a8a51a0ab5ece5229ea9e589438f615">&#9670;&#160;</a></span>check_reference_containment()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriOptimizerMesh::check_reference_containment </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Before an optimization: throws unless every held edge lies in the envelopes of its labels, naming each label with edges outside, their number, and the eps (m_envelope_eps). </p>
 
 </div>
 </div>
@@ -1624,6 +1656,35 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a7731bcada52524979cdcc528bdfb79db" name="a7731bcada52524979cdcc528bdfb79db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7731bcada52524979cdcc528bdfb79db">&#9670;&#160;</a></span>label_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string wmtk::TriOptimizerMesh::label_name </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>bit</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The label of bit <code>bit</code> of an edge's input set, as the output names it; the application's, for the reference checks to name a label by. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a77467d685a1767cfa18851af5f35245e">wmtk::components::simwild::tri::SimWildMeshTri</a>, and <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#abd28eb6925d664bd103e5ca0ec577a95">wmtk::components::triwild::TriWildMesh</a>.</p>
+
+</div>
+</div>
 <a id="a0c652c3d2fdff9e8b0ecf0a88658065a" name="a0c652c3d2fdff9e8b0ecf0a88658065a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0c652c3d2fdff9e8b0ecf0a88658065a">&#9670;&#160;</a></span>on_slot_storage_grown()</h2>
 
@@ -1913,6 +1974,25 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </table>
 </div><div class="memdoc">
 <p>Worst relative quality (quality_rel) over the faces incident to any vertex of <code>vids</code>. </p>
+
+</div>
+</div>
+<a id="a3020569cd787c0dc589299767afe3bf6" name="a3020569cd787c0dc589299767afe3bf6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3020569cd787c0dc589299767afe3bf6">&#9670;&#160;</a></span>require_reference_edge_labels()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriOptimizerMesh::require_reference_edge_labels </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; InputSet &gt; &amp;&#160;</td>
+          <td class="paramname"><em>reference_labels</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Throws for the labels the held edges carry that none of <code>reference_labels</code> (one per segment of the reference held to) has, naming them. </p>
 
 </div>
 </div>

@@ -3655,10 +3655,10 @@ among them (see <a href="#outputs">outputs</a>), are written to the working dire
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">triangles</span> <span class="o">=</span> <span class="n">mesh</span><span class="p">[</span><span class="s2">"cells"</span><span class="p">][</span><span class="s2">"triangle"</span><span class="p">]</span>
 <a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="p">[</span><span class="s2">"V"</span><span class="p">]),</span> <span class="s2">"vertices,"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">triangles</span><span class="p">[</span><span class="s2">"connectivity"</span><span class="p">]),</span> <span class="s2">"triangles,"</span><span class="p">,</span>
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>      <span class="sa">f</span><span class="s2">"max energy </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'max_energy'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># One column per input: 1 where the triangle lies inside that curve.</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">tags</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="s2">"attributes"</span><span class="p">][</span><span class="s2">"tags"</span><span class="p">]</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># The tracked curves, one column per input: 1 where the edge lies on that curve.</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">tags</span> <span class="o">=</span> <span class="n">mesh</span><span class="p">[</span><span class="s2">"cells"</span><span class="p">][</span><span class="s2">"edge"</span><span class="p">][</span><span class="s2">"attributes"</span><span class="p">][</span><span class="s2">"tags"</span><span class="p">]</span>
 <a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s2">"values"</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)):</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> triangles"</span><span class="p">)</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> edges"</span><span class="p">)</span>
 </code></pre></div>
 <p>On files instead, with the same options as the JSON file:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">wm</span><span class="o">.</span><span class="n">triwild</span><span class="p">({</span>
@@ -3689,11 +3689,11 @@ among them (see <a href="#outputs">outputs</a>), are written to the working dire
 <a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="k">const</span><span class="w"> </span><span class="n">wmtk</span><span class="o">::</span><span class="n">CellData</span><span class="o">&amp;</span><span class="w"> </span><span class="n">triangles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mesh</span><span class="p">.</span><span class="n">cell</span><span class="p">(</span><span class="n">wmtk</span><span class="o">::</span><span class="n">CellType</span><span class="o">::</span><span class="n">Triangle</span><span class="p">);</span>
 <a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">mesh</span><span class="p">.</span><span class="n">V</span><span class="p">.</span><span class="n">rows</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">" vertices, "</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">triangles</span><span class="p">.</span><span class="n">connectivity</span><span class="p">.</span><span class="n">rows</span><span class="p">()</span>
 <a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">          </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">" triangles, max energy "</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">report</span><span class="p">[</span><span class="s">"max_energy"</span><span class="p">].</span><span class="n">get</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1">// One column per input: 1 where the triangle lies inside that curve.</span>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="k">const</span><span class="w"> </span><span class="n">wmtk</span><span class="o">::</span><span class="n">MeshAttribute</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">triangles</span><span class="p">.</span><span class="n">attributes</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="s">"tags"</span><span class="p">);</span>
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="k">const</span><span class="w"> </span><span class="n">wmtk</span><span class="o">::</span><span class="n">DataMatrix</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">inside</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tags</span><span class="p">.</span><span class="n">integers</span><span class="p">();</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1">// The tracked curves, one column per input: 1 where the edge lies on that curve.</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="k">const</span><span class="w"> </span><span class="n">wmtk</span><span class="o">::</span><span class="n">MeshAttribute</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mesh</span><span class="p">.</span><span class="n">cell</span><span class="p">(</span><span class="n">wmtk</span><span class="o">::</span><span class="n">CellType</span><span class="o">::</span><span class="n">Edge</span><span class="p">).</span><span class="n">attributes</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="s">"tags"</span><span class="p">);</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="k">const</span><span class="w"> </span><span class="n">wmtk</span><span class="o">::</span><span class="n">DataMatrix</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tags</span><span class="p">.</span><span class="n">integers</span><span class="p">();</span>
 <a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tags</span><span class="p">.</span><span class="n">labels</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w"> </span><span class="o">++</span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">"  "</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">tags</span><span class="p">.</span><span class="n">labels</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">": "</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">inside</span><span class="p">.</span><span class="n">col</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">sum</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">" triangles</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">"  "</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">tags</span><span class="p">.</span><span class="n">labels</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">": "</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">on</span><span class="p">.</span><span class="n">col</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">sum</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">" edges</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
 <a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="p">}</span>
 <a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="n">wmtk</span><span class="o">::</span><span class="n">io</span><span class="o">::</span><span class="n">write_mesh</span><span class="p">(</span><span class="s">"shapes.msh"</span><span class="p">,</span><span class="w"> </span><span class="n">mesh</span><span class="p">);</span>
 </code></pre></div>
@@ -3705,15 +3705,16 @@ among them (see <a href="#outputs">outputs</a>), are written to the working dire
 triangulation of the bounding box, and the optimization ends with 265 to 289 vertices and 407 to
 455 triangles over seven runs (see <a href="#threads-and-reproducibility">threads</a>), the largest energy
 between 6.1 and 8.8 for a target of 10. A run takes a fraction of a second. The Python and C++
-examples then print, for each name, the number of triangles inside that curve:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>blob1: 157 triangles
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>blob2: 143 triangles
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>circle: 62 triangles
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>ellipse: 19 triangles
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>rectangle: 110 triangles
+examples then print, for each name, the number of tracked edges on that curve (one run with 4
+threads):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>blob1: 71 edges
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>blob2: 62 edges
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>circle: 38 edges
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>ellipse: 19 edges
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>rectangle: 24 edges
 </code></pre></div>
-<p>The counts add up to more than the total: where the curves overlap, a triangle lies inside
-several of them.</p>
+<p>The curves are the mesh's edge tags; the triangles carry none but <code>ambient</code>, as triwild writes no
+regions (until 2026-11 each name also labelled the triangles inside its curve).</p>
 <div>
 <wmtk-viewer example="triwild"></wmtk-viewer>
 </div>
@@ -3742,10 +3743,24 @@ and each tracked edge is held to the envelope of the inputs it lies on. Vertices
 exactly are merged when a file is read; a vertex of a curve file that no segment uses is kept as a
 <a href="#feature-points-input_points">feature point</a>.
 <a href="../../reference/triwild/#input_names"><code>input_names</code></a> gives the inputs names, in the same order:
-they label the tag columns of the output (<code>tag_0</code>, <code>tag_1</code>, ... without them).
+they label the tag columns of the output (<code>tag_0</code>, <code>tag_1</code>, ... without them) and each input's
+winding-number field on the triangles, <code>wn_&lt;name&gt;</code> in the VTU file and the memory outputs (<code>wn_0</code>,
+<code>wn_1</code>, ... in the <code>.msh</code> and without names).
 <a href="../../reference/triwild/#output"><code>output</code></a> is the file name without extension.</p>
 <p>In memory, <code>input</code> names entries of the meshes dictionary, and the input names can be the same
 strings.</p>
+<p>A triangle mesh as the input, alone, takes the tagged route: on files a <code>.msh</code> with triangles, in
+memory a mesh with a <code>triangle</code> block. triwild continues from it as it is -- no simplification, no
+arrangement, the triangles kept -- holding its edge block's tags as tracked curves, named as the
+mesh names them, and its point block as input points. No regions: a mesh whose triangles carry a
+tag other than <code>ambient</code> is refused, as it is simwild's to remesh; triwild writes none, so its own
+output goes back in as it is. The mesh must fill its bounding box, as an output with
+<code>filter: "none"</code> does: a filtered mesh, whose boundary is its tracked edges, is refused, and its
+curves go in as inputs instead. With
+<a href="../../reference/triwild/#envelope"><code>envelope</code></a>, the reference an earlier run returned, it holds the
+curves to that rather than to the mesh received, so a chain stays within one eps of the first
+input. <a href="../../reference/triwild/#filter_inputs"><code>filter_inputs</code></a> names the inputs that bound the
+domain a filter keeps.</p>
 <h3 id="the-envelope-eps_rel">The envelope: <code>eps_rel</code><a class="headerlink" href="#the-envelope-eps_rel" title="Permanent link">&para;</a></h3>
 <p><a href="../../reference/triwild/#eps_rel"><code>eps_rel</code></a> (default 0.001) is the distance the output's curves
 may be from the input, relative to the bounding box diagonal. The input is simplified within
@@ -3959,13 +3974,13 @@ to 455 triangles. On inputs of this size a run takes a fraction of a second eith
 <p>On files, <code>output</code> names:</p>
 <ul>
 <li><code>shapes.msh</code>: the triangles, with the vertices in 3D (z = 0). Each triangle has its <code>quality</code>
-  (its energy) and <code>tags</code>: one column per input, labelled by <code>input_names</code>, 1 where the triangle is
-  inside that input. When the filter keeps triangles that are inside no input, an <code>ambient</code> column
-  marks them. The tracked curves are its edges, with <code>tags</code> too, one column per input under the
-  same labels: each edge under every input it lies on, oriented as its input. simwild reads them
-  back as edge tags.</li>
-<li><code>shapes.vtu</code>: the same triangles for ParaView, with a field <code>tag_&lt;i&gt;</code> per input, <code>quality</code>, and
-  <code>flood_fill</code> (the regions the curves separate) when the flood fill ran
+  (its energy), one <code>wn_&lt;i&gt;</code> per input (that input's winding number at its centroid) and <code>tags</code>
+  with a single column, <code>ambient</code>: triwild writes no regions, which are simwild's (until 2026-11
+  one column per input, 1 where the triangle is inside that input). The
+  tracked curves are its edges, with <code>tags</code>, one column per input labelled by <code>input_names</code>: each
+  edge under every input it lies on, oriented as its input. simwild reads them back as edge tags.</li>
+<li><code>shapes.vtu</code>: the same triangles for ParaView, with <code>quality</code>, the winding numbers (<code>wn_&lt;name&gt;</code>
+  with <code>input_names</code>), and <code>flood_fill</code> (the regions the curves separate) when the flood fill ran
   (<a href="../../reference/triwild/#compute_flood_fill"><code>compute_flood_fill</code></a>).</li>
 <li><code>shapes_surf.vtu</code>: the tracked curves, the edges of the mesh that lie on the input.</li>
 <li><code>shapes_features.obj</code>: with feature points only, the tracked curves (<code>l</code>) and the anchored
@@ -3976,8 +3991,13 @@ to 455 triangles. On inputs of this size a run takes a fraction of a second eith
   <code>coverage</code> (input to output); with <code>DEBUG_feature_retention</code>, <code>features_retained</code> and
   <code>features_total</code>. A value of -1 means not measured.</li>
 </ul>
-<p>In memory, the outputs are <code>mesh</code> (as in the <code>.msh</code>), <code>surface</code> (the tracked curves, as edges),
-<code>features</code> (with feature points) and <code>envelope</code> (the input curves the envelope is built around).
+<p>The winding-number fields let a <code>filter</code> <code>none</code> run be split afterwards, as tetwild's do: a triangle
+is inside an input where its <code>wn_&lt;i&gt;</code> is above 1/2.
+<a href="../../reference/triwild/#skip_winding_number"><code>skip_winding_number</code></a> leaves them out when no filter
+needs them.</p>
+<p>In memory, the outputs are <code>mesh</code> (as in the <code>.msh</code>, the winding numbers named as in the VTU
+file), <code>surface</code> (the tracked curves, as edges), <code>features</code> (with feature points) and <code>envelope</code>
+(the input curves the envelope is built around).
 The report holds the same keys as the file.</p>
 <p><a href="../../reference/triwild/#history_output"><code>history_output</code></a> records every change to the tracked
 curves, from the input files to the output, and <a href="../tracking/">tracking</a> maps points between the

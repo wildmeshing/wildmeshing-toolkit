@@ -3533,12 +3533,13 @@ fractional near holes
 (<a href="https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/src/wmtk/utils/WindingNumber.hpp"><code>WindingNumber.hpp</code></a>).
 <code>input</code> judges each cell by the input rather than by the surface the mesh conforms to, so it can
 misclassify cells along the surface and leave it wrinkled; <code>tracked</code> judges by the tracked surface
-itself. The winding numbers are also written to the output as fields (tetwild writes one per
-input, <code>wn_&lt;name&gt;</code>); <a href="../../reference/tetwild/#skip_winding_number"><code>skip_winding_number</code></a> leaves
-them out when no filter needs them.</p>
-<p>triwild uses the per-input winding numbers to give each triangle the <a href="../regions/">regions</a> of the
-inputs it lies inside. simwild has no filter: it keeps the whole box and tags every cell with the
-inputs that contain it (see <a href="../regions/">Regions</a>).</p>
+itself. The winding numbers are also written to the output as fields (tetwild and triwild write
+one per input, <code>wn_&lt;name&gt;</code>); <a href="../../reference/tetwild/#skip_winding_number"><code>skip_winding_number</code></a>
+leaves them out when no filter needs them.</p>
+<p>triwild writes the per-input winding numbers as fields of the triangles, as tetwild does on its
+tets, and not as <a href="../regions/">regions</a>: its triangles carry no region tags. simwild has no
+filter: it keeps the whole box and tags every cell with the inputs that contain it (see
+<a href="../regions/">Regions</a>).</p>
 <p>With <a href="../../reference/tetwild/#history_output"><code>history_output</code></a>, the whole sequence above is
 recorded, from the files as read to the output: the weld, the simplification, the insertion, the
 optimization and the filter (see <a href="../histories/">Histories</a>).</p>

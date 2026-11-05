@@ -129,14 +129,10 @@ template&lt;typename T &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a2318cc6f1bffd4af9279cce99822c605" id="r_a2318cc6f1bffd4af9279cce99822c605"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a2318cc6f1bffd4af9279cce99822c605">label_name</a> (size_t bit) const</td></tr>
-<tr class="separator:a2318cc6f1bffd4af9279cce99822c605"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77467d685a1767cfa18851af5f35245e" id="r_a77467d685a1767cfa18851af5f35245e"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a77467d685a1767cfa18851af5f35245e">label_name</a> (size_t bit) const override</td></tr>
+<tr class="separator:a77467d685a1767cfa18851af5f35245e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63a14313fac2057a65c5b0f8d6ac1ed1" id="r_a63a14313fac2057a65c5b0f8d6ac1ed1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_mesh_data.html">MeshData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a63a14313fac2057a65c5b0f8d6ac1ed1">envelope_data</a> (const std::vector&lt; Vector2d &gt; &amp;points) const</td></tr>
 <tr class="separator:a63a14313fac2057a65c5b0f8d6ac1ed1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a05abf746b459a9546262f1175f5be853" id="r_a05abf746b459a9546262f1175f5be853"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a05abf746b459a9546262f1175f5be853">require_reference_edge_labels</a> () const</td></tr>
-<tr class="separator:a05abf746b459a9546262f1175f5be853"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade3a3e0b615ada6c08506b2e752cdc4b" id="r_ade3a3e0b615ada6c08506b2e752cdc4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ade3a3e0b615ada6c08506b2e752cdc4b">check_reference_containment</a> () const</td></tr>
-<tr class="separator:ade3a3e0b615ada6c08506b2e752cdc4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2303adb455ea343740d95ced3c68b498" id="r_a2303adb455ea343740d95ced3c68b498"><td class="memItemLeft" align="right" valign="top"><a id="a2303adb455ea343740d95ced3c68b498" name="a2303adb455ea343740d95ced3c68b498"></a>
 InputSet&#160;</td><td class="memItemRight" valign="bottom"><b>edge_tag_mask</b> () const</td></tr>
 <tr class="memdesc:a2303adb455ea343740d95ced3c68b498"><td class="mdescLeft">&#160;</td><td class="mdescRight">The edge-tag bits of an input set: those below the number of edge tags. <br /></td></tr>
@@ -467,6 +463,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>anchor_feature_point<
 <tr class="memitem:ac7e23ae58a24a84075a808f192480d84 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ac7e23ae58a24a84075a808f192480d84"><td class="memItemLeft" align="right" valign="top">std::pair&lt; size_t, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac7e23ae58a24a84075a808f192480d84">feature_retention</a> (double *worst_ratio=nullptr) const</td></tr>
 <tr class="memdesc:ac7e23ae58a24a84075a808f192480d84 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">{feature points still represented within their radius, total feature points}.  <br /></td></tr>
 <tr class="separator:ac7e23ae58a24a84075a808f192480d84 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3020569cd787c0dc589299767afe3bf6 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a3020569cd787c0dc589299767afe3bf6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a3020569cd787c0dc589299767afe3bf6">require_reference_edge_labels</a> (const std::vector&lt; InputSet &gt; &amp;reference_labels) const</td></tr>
+<tr class="separator:a3020569cd787c0dc589299767afe3bf6 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a8a51a0ab5ece5229ea9e589438f615 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a7a8a51a0ab5ece5229ea9e589438f615"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7a8a51a0ab5ece5229ea9e589438f615">check_reference_containment</a> () const</td></tr>
+<tr class="separator:a7a8a51a0ab5ece5229ea9e589438f615 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a8b73b58387664feb724e992e2395d3cc inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a8b73b58387664feb724e992e2395d3cc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris)</td></tr>
 <tr class="separator:a8b73b58387664feb724e992e2395d3cc inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -808,8 +808,6 @@ std::vector&lt; Vector2i &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="separator:ac2b45deac66a39f695208c7852ddde27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa394b2c85c6e0aa0929468acf182e3b6" id="r_aa394b2c85c6e0aa0929468acf182e3b6"><td class="memItemLeft" align="right" valign="top">std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#aa394b2c85c6e0aa0929468acf182e3b6">m_E_envelope_edge_sets</a></td></tr>
 <tr class="separator:aa394b2c85c6e0aa0929468acf182e3b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab5ae33a5df65d1f77edccb0be990c53b" id="r_ab5ae33a5df65d1f77edccb0be990c53b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ab5ae33a5df65d1f77edccb0be990c53b">m_has_reference</a> = false</td></tr>
-<tr class="separator:ab5ae33a5df65d1f77edccb0be990c53b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3b7f6b0a15a10e2c4402c31c47f2744" id="r_ad3b7f6b0a15a10e2c4402c31c47f2744"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ad3b7f6b0a15a10e2c4402c31c47f2744">m_input_point_vids</a></td></tr>
 <tr class="separator:ad3b7f6b0a15a10e2c4402c31c47f2744"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfc50833c1b8f558938643c2734691b5" id="r_abfc50833c1b8f558938643c2734691b5"><td class="memItemLeft" align="right" valign="top"><a id="abfc50833c1b8f558938643c2734691b5" name="abfc50833c1b8f558938643c2734691b5"></a>
@@ -941,6 +939,10 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_order_wait_
 <tr class="memitem:a959bfbaff57cc1ed3e9c9b647d3e034e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a959bfbaff57cc1ed3e9c9b647d3e034e"><td class="memItemLeft" align="right" valign="top">std::optional&lt; std::vector&lt; Vector2d &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a959bfbaff57cc1ed3e9c9b647d3e034e">m_input_curve_points</a></td></tr>
 <tr class="memdesc:a959bfbaff57cc1ed3e9c9b647d3e034e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Where the input's own curves end or three or more meet, as <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a4baa005cbad4dd53a10067018e2d850b" title="Does the application anchor a vertex with n_segments tracked segments?">holds_order2_vertex()</a> holds them: set when the envelopes are built around the input (envelope_reference "input") and the curves inserted are not the input &ndash; a simplification ran, and without preserve_topology it merges junctions and curves passing within its envelope.  <br /></td></tr>
 <tr class="separator:a959bfbaff57cc1ed3e9c9b647d3e034e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaece29a89faafb225c8c8a89c05654b8 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aaece29a89faafb225c8c8a89c05654b8"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_reference</b> = false</td></tr>
+<tr class="memdesc:aaece29a89faafb225c8c8a89c05654b8 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set by the application before init, with the envelopes built around the reference. <br /></td></tr>
+<tr class="separator:aaece29a89faafb225c8c8a89c05654b8 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a0ab2ef76d0893ba8694c7a9c554fa76f inherit pub_attribs_classwmtk_1_1_tri_mesh" id="r_a0ab2ef76d0893ba8694c7a9c554fa76f"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
@@ -1131,24 +1133,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if every interface edge is tagged and no tagged edge sits between like tags. </dd></dl>
-
-</div>
-</div>
-<a id="ade3a3e0b615ada6c08506b2e752cdc4b" name="ade3a3e0b615ada6c08506b2e752cdc4b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade3a3e0b615ada6c08506b2e752cdc4b">&#9670;&#160;</a></span>check_reference_containment()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::simwild::tri::SimWildMeshTri::check_reference_containment </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>With a reference, before a remeshing: throws unless every held edge lies in the envelopes of its labels, naming each label with edges outside, their number, and the eps. </p>
 
 </div>
 </div>
@@ -1530,11 +1514,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="a2318cc6f1bffd4af9279cce99822c605" name="a2318cc6f1bffd4af9279cce99822c605"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2318cc6f1bffd4af9279cce99822c605">&#9670;&#160;</a></span>label_name()</h2>
+<a id="a77467d685a1767cfa18851af5f35245e" name="a77467d685a1767cfa18851af5f35245e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77467d685a1767cfa18851af5f35245e">&#9670;&#160;</a></span>label_name()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">std::string wmtk::components::simwild::tri::SimWildMeshTri::label_name </td>
@@ -1544,8 +1531,15 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
           <td> const</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 <p>The label of bit <code>bit</code> of an edge's input set, as the output names it: an edge tag's name, a triangle tag's label (io::collect_tags()). </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7731bcada52524979cdcc528bdfb79db">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -1706,24 +1700,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <p>Finds the m_params.stuck_refine_num_worst tets with the highest energy, gathers all vertices within m_params.stuck_refine_rings graph rings of them, and multiplies each such vertex's m_sizing_scalar by m_params.stuck_refine_factor (clamped at m_params.stuck_refine_min_scalar). Then runs gradation_smooth_sizing so the refined region blends smoothly into the surrounding resolution. Replaces the old global adjust_sizing_field mechanism. Returns the number of vertices refined. </p>
 
 <p>Implements <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a>.</p>
-
-</div>
-</div>
-<a id="a05abf746b459a9546262f1175f5be853" name="a05abf746b459a9546262f1175f5be853"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a05abf746b459a9546262f1175f5be853">&#9670;&#160;</a></span>require_reference_edge_labels()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::simwild::tri::SimWildMeshTri::require_reference_edge_labels </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>With a reference: throws for the labels the held edges carry that no row of m_E_envelope has, naming them. </p>
 
 </div>
 </div>
@@ -2150,21 +2126,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
       </table>
 </div><div class="memdoc">
 <p>Per row of m_E_envelope: its label bits, when m_E_envelope is the input curves (<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#abb756344817dcf785378af2152cd2ebd">InputData::F_envelope_labels</a>); empty once m_E_envelope is rebuilt from the mesh. </p>
-
-</div>
-</div>
-<a id="ab5ae33a5df65d1f77edccb0be990c53b" name="ab5ae33a5df65d1f77edccb0be990c53b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab5ae33a5df65d1f77edccb0be990c53b">&#9670;&#160;</a></span>m_has_reference</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::simwild::tri::SimWildMeshTri::m_has_reference = false</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Whether the envelope is a reference an <code>envelope</code> input gave, held to as given: the 2D twin of <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aa0e6d8ca5142d02e90857e852c4f3448" title="Whether the envelope is a reference an envelope input gave (InputData::envelope_reference),...">SimWildMesh::m_has_reference</a>, which states the guarantee. Set by the driver before init, with m_V_envelope, m_E_envelope and m_E_envelope_labels its segments of this mesh's labels, and m_input_curve_points its curve ends and junctions. </p>
 
 </div>
 </div>

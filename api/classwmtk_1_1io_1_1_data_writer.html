@@ -83,9 +83,9 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a032a4813c9d0b0339708c3198e37cc33" id="r_a032a4813c9d0b0339708c3198e37cc33"><td class="memItemLeft" align="right" valign="top"><a id="a032a4813c9d0b0339708c3198e37cc33" name="a032a4813c9d0b0339708c3198e37cc33"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>DataWriter</b> (MeshMap *meshes=nullptr)</td></tr>
-<tr class="separator:a032a4813c9d0b0339708c3198e37cc33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ca0012cc625e475e8c8c823240b96b3" id="r_a9ca0012cc625e475e8c8c823240b96b3"><td class="memItemLeft" align="right" valign="top"><a id="a9ca0012cc625e475e8c8c823240b96b3" name="a9ca0012cc625e475e8c8c823240b96b3"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>DataWriter</b> (MeshMap *meshes=nullptr, std::function&lt; bool(const std::string &amp;)&gt; kept_fields={})</td></tr>
+<tr class="separator:a9ca0012cc625e475e8c8c823240b96b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7be60c71ff2a1befc74483208793bc2" id="r_ad7be60c71ff2a1befc74483208793bc2"><td class="memItemLeft" align="right" valign="top"><a id="ad7be60c71ff2a1befc74483208793bc2" name="ad7be60c71ff2a1befc74483208793bc2"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>add_field</b> (const std::string &amp;name, const Eigen::MatrixXd &amp;data)</td></tr>
 <tr class="separator:ad7be60c71ff2a1befc74483208793bc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -122,6 +122,9 @@ MeshAttributes&#160;</td><td class="memItemRight" valign="bottom"><b>points</b><
 <tr class="memitem:a039a002b636218e98d4119ecff4b3d8b" id="r_a039a002b636218e98d4119ecff4b3d8b"><td class="memItemLeft" align="right" valign="top"><a id="a039a002b636218e98d4119ecff4b3d8b" name="a039a002b636218e98d4119ecff4b3d8b"></a>
 MeshAttributes&#160;</td><td class="memItemRight" valign="bottom"><b>fields</b></td></tr>
 <tr class="separator:a039a002b636218e98d4119ecff4b3d8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc3775195c26e4aadc4d546cc9325770" id="r_adc3775195c26e4aadc4d546cc9325770"><td class="memItemLeft" align="right" valign="top"><a id="adc3775195c26e4aadc4d546cc9325770" name="adc3775195c26e4aadc4d546cc9325770"></a>
+std::function&lt; bool(const std::string &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>kept</b></td></tr>
+<tr class="separator:adc3775195c26e4aadc4d546cc9325770"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>src/wmtk/io/<a class="el" href="_data_writer_8hpp_source.html">DataWriter.hpp</a></li>

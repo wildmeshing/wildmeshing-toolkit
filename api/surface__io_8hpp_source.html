@@ -116,35 +116,35 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="keywordtype">bool</span> is_corner_field(<span class="keyword">const</span> std::string&amp; name);</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a> surface_from_mesh(<span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1_mesh_data.html">MeshData</a>&amp; mesh, <span class="keyword">const</span> std::string&amp; what, <span class="keywordtype">bool</span> strict);</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><a class="code hl_struct" href="structwmtk_1_1_mesh_data.html">MeshData</a> mesh_from_surface(<span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s);</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a> read_surface_msh(<span class="keyword">const</span> std::string&amp; path);</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a> read_surface(<span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; paths);</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span> </div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="keywordtype">void</span> write_surface_msh(<span class="keyword">const</span> std::string&amp; path, <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s);</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><span class="keywordtype">void</span> add_surface(</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <a class="code hl_struct" href="structwmtk_1_1_mesh_data.html">MeshData</a>&amp; mesh,</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s,</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    <span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; rows,</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <span class="keyword">const</span> std::string&amp; what);</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span> </div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span><span class="keywordtype">void</span> write_surface_into_msh(</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    <span class="keyword">const</span> std::string&amp; tet_mesh,</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keyword">const</span> std::string&amp; path,</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s,</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; rows);</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span> </div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="keywordtype">void</span> write_surface_obj(</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    <span class="keyword">const</span> std::string&amp; path,</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s,</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    <span class="keyword">const</span> std::string&amp; uv_field,</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    <span class="keyword">const</span> std::string&amp; texture);</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>} <span class="comment">// namespace wmtk::components::tracking</span></div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a> surface_from_mesh(<span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1_mesh_data.html">MeshData</a>&amp; mesh, <span class="keyword">const</span> std::string&amp; what, <span class="keywordtype">bool</span> strict);</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><a class="code hl_struct" href="structwmtk_1_1_mesh_data.html">MeshData</a> mesh_from_surface(<span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s);</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a> read_surface_msh(<span class="keyword">const</span> std::string&amp; path);</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span> </div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a> read_surface(<span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; paths);</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><span class="keywordtype">void</span> write_surface_msh(<span class="keyword">const</span> std::string&amp; path, <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s);</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span> </div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span><span class="keywordtype">void</span> add_surface(</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <a class="code hl_struct" href="structwmtk_1_1_mesh_data.html">MeshData</a>&amp; mesh,</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s,</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; rows,</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    <span class="keyword">const</span> std::string&amp; what);</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span> </div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span><span class="keywordtype">void</span> write_surface_into_msh(</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    <span class="keyword">const</span> std::string&amp; tet_mesh,</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    <span class="keyword">const</span> std::string&amp; path,</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s,</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    <span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; rows);</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span> </div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span><span class="keywordtype">void</span> write_surface_obj(</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    <span class="keyword">const</span> std::string&amp; path,</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">SurfaceData</a>&amp; s,</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    <span class="keyword">const</span> std::string&amp; uv_field,</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    <span class="keyword">const</span> std::string&amp; texture);</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span> </div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>} <span class="comment">// namespace wmtk::components::tracking</span></div>
 <div class="ttc" id="astructwmtk_1_1_mesh_data_html"><div class="ttname"><a href="structwmtk_1_1_mesh_data.html">wmtk::MeshData</a></div><div class="ttdef"><b>Definition</b> MeshData.hpp:48</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tracking_1_1_surface_data_1_1_field_type_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tracking_1_1_surface_data_1_1_field_type.html">wmtk::components::tracking::SurfaceData::FieldType</a></div><div class="ttdef"><b>Definition</b> surface_io.hpp:32</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tracking_1_1_surface_data_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tracking_1_1_surface_data.html">wmtk::components::tracking::SurfaceData</a></div><div class="ttdoc">A triangle surface and named per-face fields, as read from or written to a mesh.</div><div class="ttdef"><b>Definition</b> surface_io.hpp:17</div></div>

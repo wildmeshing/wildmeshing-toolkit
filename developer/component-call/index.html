@@ -3640,8 +3640,9 @@ is the only place that knows which route a call is on (<code>memory()</code>); t
 asks it for inputs and hands it outputs. On the memory route:</p>
 <ul>
 <li>A selector (<code>"input": "surface"</code>) names an entry of the <code>MeshMap</code>. A missing one throws
-  <code>Unknown input mesh</code>; every one is <code>validate()</code>d; an attribute the component does not accept
-  throws <code>Unknown mesh attribute</code>.</li>
+  <code>Unknown input mesh</code>; every one is <code>validate()</code>d; a field the component does not read is
+  dropped and named in the log, at info (<code>ComponentIO::dropped_fields()</code>, <code>log_dropped()</code>; the
+  rule, data and annotations, is in <a href="../../in-memory-io/#input-contracts">component I/O</a>).</li>
 <li>Nothing is written. A recorded history goes into the report as bytes (<code>save_history</code>, then
   <code>take_result()</code> puts it under <code>"history"</code>, and a volume history under <code>"volume_history"</code>).</li>
 <li>The component logs to a console logger of its own, not to a file logger the caller set up.</li>

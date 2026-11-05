@@ -3912,7 +3912,7 @@ with the same bar end at 100,131 tets, still not converged (worst vertex 4.9 tim
 of the optimized runs made for this page converged.</p>
 <p>With <code>optimize_offset</code> false, the run stops after the march: the front's vertices are at the
 target (or at half the maximum marchable distance), the report has no convergence fields, and the
-mesh's diagnostic fields (<code>input_distance</code> and others) are NaN.</p>
+mesh's <code>distance_over_target</code> is NaN.</p>
 <h3 id="the-checks-check_manifoldness">The checks: <code>check_manifoldness</code><a class="headerlink" href="#the-checks-check_manifoldness" title="Permanent link">&para;</a></h3>
 <p>With <a href="../../reference/topological_offset/#check_manifoldness"><code>check_manifoldness</code></a> (default true),
 the region made of the complex and the band must be manifold after the construction, or the run
@@ -3925,8 +3925,11 @@ counted before and after the construction, and a change stops the run
 <li>The mesh: <code>output</code> on the command line (default <code>out</code>, written as <code>out.msh</code>), <code>outputs["mesh"]</code>
   in memory. Its tags are the input's, with the output tags on the band (and an empty
   <code>EnvelopeSurface</code> column when the input has that group). The vertex field <code>labels</code> is 1 on the
-  complex, 2 on the vertices the march added, 0 elsewhere: in the first run, 157, 592 and 195. The
-  other fields are diagnostics of the optimization.</li>
+  complex, 2 on the vertices the march added, 0 elsewhere: in the first run, 157, 592 and 195.
+  Besides them, the fields other components read (<code>vid</code>, the tet field <code>offset_tag</code>, 1 on the
+  band) and two annotations: <code>amips</code>, each tet's quality, and <code>distance_over_target</code>, each
+  vertex's distance to the complex over <code>target_distance</code>. The diagnostics of the optimization
+  are in the <code>DEBUG_output</code> frames only.</li>
 <li>In memory, <code>outputs["offset"]</code>: the front, as triangles on the mesh's vertices, after the
   optimization (2,462 triangles in one five-turn run); a construction-only run returns it
   without triangles. <code>outputs["envelope"]</code> is the input's <code>EnvelopeSurface</code> group, passed on, or the
@@ -3936,7 +3939,8 @@ counted before and after the construction, and a change stops the run
   threads and the run time; after the optimization also <code>converged</code> and <code>optimization_metrics</code>,
   whose <code>avg_l2_dist_err</code> and <code>max_l2_dist_err</code> are the front's distance error. In memory, the
   report is the second return value.</li>
-<li>With <a href="../../reference/topological_offset/#save_vtu"><code>save_vtu</code></a>, <code>.vtu</code> files for ParaView.</li>
+<li>With <a href="../../reference/topological_offset/#save_vtu"><code>save_vtu</code></a>, <code>.vtu</code> files for ParaView, with
+  the mesh's fields.</li>
 </ul>
 <h2 id="recipes-and-pitfalls">Recipes and pitfalls<a class="headerlink" href="#recipes-and-pitfalls" title="Permanent link">&para;</a></h2>
 <ul>

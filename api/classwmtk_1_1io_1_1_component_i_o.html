@@ -114,15 +114,15 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>path</b> (cons
 <tr class="memitem:a21dc2702879c8b54fd8ee7ad74da7ec2" id="r_a21dc2702879c8b54fd8ee7ad74da7ec2"><td class="memItemLeft" align="right" valign="top"><a id="a21dc2702879c8b54fd8ee7ad74da7ec2" name="a21dc2702879c8b54fd8ee7ad74da7ec2"></a>
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>paths</b> (const std::filesystem::path &amp;root, const nlohmann::json &amp;selectors) const</td></tr>
 <tr class="separator:a21dc2702879c8b54fd8ee7ad74da7ec2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f53e7712cf0e2bf1a43bcd0d53f8c88" id="r_a6f53e7712cf0e2bf1a43bcd0d53f8c88"><td class="memItemLeft" align="right" valign="top"><a id="a6f53e7712cf0e2bf1a43bcd0d53f8c88" name="a6f53e7712cf0e2bf1a43bcd0d53f8c88"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>raw_triangles</b> (const std::string &amp;name, MatrixXd &amp;V, MatrixXi &amp;F, const std::set&lt; std::string &gt; &amp;vertex_attributes=reader_vertex_attributes, const std::set&lt; std::string &gt; &amp;triangle_attributes={}) const</td></tr>
-<tr class="separator:a6f53e7712cf0e2bf1a43bcd0d53f8c88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d82a5fc8c364aa8881a003eae567e0a" id="r_a9d82a5fc8c364aa8881a003eae567e0a"><td class="memItemLeft" align="right" valign="top"><a id="a9d82a5fc8c364aa8881a003eae567e0a" name="a9d82a5fc8c364aa8881a003eae567e0a"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>raw_triangles</b> (const std::string &amp;name, MatrixXd &amp;V, MatrixXi &amp;F, const std::set&lt; std::string &gt; &amp;triangle_attributes={}) const</td></tr>
+<tr class="separator:a9d82a5fc8c364aa8881a003eae567e0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a735e91f82c3a2e0cb7b03e6bdcc23d32" id="r_a735e91f82c3a2e0cb7b03e6bdcc23d32"><td class="memItemLeft" align="right" valign="top"><a id="a735e91f82c3a2e0cb7b03e6bdcc23d32" name="a735e91f82c3a2e0cb7b03e6bdcc23d32"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>triangles</b> (const std::string &amp;name, MatrixXd &amp;V, MatrixXi &amp;F, double rel=-1, double abs=-1) const</td></tr>
 <tr class="separator:a735e91f82c3a2e0cb7b03e6bdcc23d32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44890b7f6a1581b66919cfa74f14771e" id="r_a44890b7f6a1581b66919cfa74f14771e"><td class="memItemLeft" align="right" valign="top"><a id="a44890b7f6a1581b66919cfa74f14771e" name="a44890b7f6a1581b66919cfa74f14771e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>triangles</b> (const std::vector&lt; std::string &gt; &amp;names, MatrixXd &amp;V, MatrixXi &amp;F, double rel, double abs, std::vector&lt; int &gt; *provenance=nullptr, <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">ReadProvenance</a> *read=nullptr, const std::set&lt; std::string &gt; &amp;vertex_attributes=reader_vertex_attributes, const std::set&lt; std::string &gt; &amp;triangle_attributes={}) const</td></tr>
-<tr class="separator:a44890b7f6a1581b66919cfa74f14771e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac56f2caa84e164604fa5332e75c5fb00" id="r_ac56f2caa84e164604fa5332e75c5fb00"><td class="memItemLeft" align="right" valign="top"><a id="ac56f2caa84e164604fa5332e75c5fb00" name="ac56f2caa84e164604fa5332e75c5fb00"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>triangles</b> (const std::vector&lt; std::string &gt; &amp;names, MatrixXd &amp;V, MatrixXi &amp;F, double rel, double abs, std::vector&lt; int &gt; *provenance=nullptr, <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">ReadProvenance</a> *read=nullptr, const std::set&lt; std::string &gt; &amp;triangle_attributes={}) const</td></tr>
+<tr class="separator:ac56f2caa84e164604fa5332e75c5fb00"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb32574b9d6ae9e8666f1716599d1913" id="r_afb32574b9d6ae9e8666f1716599d1913"><td class="memItemLeft" align="right" valign="top"><a id="afb32574b9d6ae9e8666f1716599d1913" name="afb32574b9d6ae9e8666f1716599d1913"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>edges</b> (const std::string &amp;name, MatrixXd &amp;V, MatrixXi &amp;E, double rel=-1, double abs=-1, <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">ReadProvenance</a> *read=nullptr) const</td></tr>
 <tr class="separator:afb32574b9d6ae9e8666f1716599d1913"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,9 +132,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>prepare</b> (nlohmann
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:aa43c7cfa2e6e96508ceb6aa34919a16e" id="r_aa43c7cfa2e6e96508ceb6aa34919a16e"><td class="memItemLeft" align="right" valign="top"><a id="aa43c7cfa2e6e96508ceb6aa34919a16e" name="aa43c7cfa2e6e96508ceb6aa34919a16e"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>attributes</b> (const MeshAttributes &amp;a, const std::set&lt; std::string &gt; &amp;allowed, const std::set&lt; std::string &gt; &amp;required={})</td></tr>
-<tr class="separator:aa43c7cfa2e6e96508ceb6aa34919a16e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85eac9376a84fae02be4c994363d354b" id="r_a85eac9376a84fae02be4c994363d354b"><td class="memItemLeft" align="right" valign="top">static std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_component_i_o.html#a85eac9376a84fae02be4c994363d354b">dropped_fields</a> (const MeshAttributes &amp;a, const std::set&lt; std::string &gt; &amp;read, const std::set&lt; std::string &gt; &amp;required={})</td></tr>
+<tr class="separator:a85eac9376a84fae02be4c994363d354b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a394c71c7a49081ca655f70657026574f" id="r_a394c71c7a49081ca655f70657026574f"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_component_i_o.html#a394c71c7a49081ca655f70657026574f">log_dropped</a> (const std::string &amp;what, const std::set&lt; std::string &gt; &amp;dropped)</td></tr>
+<tr class="separator:a394c71c7a49081ca655f70657026574f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fcbb0a9da474687e47d4dbd53729b8b" id="r_a5fcbb0a9da474687e47d4dbd53729b8b"><td class="memItemLeft" align="right" valign="top"><a id="a5fcbb0a9da474687e47d4dbd53729b8b" name="a5fcbb0a9da474687e47d4dbd53729b8b"></a>
 static MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>indices</b> (const DataMatrix&lt; int64_t &gt; &amp;c)</td></tr>
 <tr class="separator:a5fcbb0a9da474687e47d4dbd53729b8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -150,9 +151,8 @@ ComponentResult&#160;</td><td class="memItemRight" valign="bottom"><b>result</b>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a3d98f1456d14322e75eaa46d0841b1d0" id="r_a3d98f1456d14322e75eaa46d0841b1d0"><td class="memItemLeft" align="right" valign="top"><a id="a3d98f1456d14322e75eaa46d0841b1d0" name="a3d98f1456d14322e75eaa46d0841b1d0"></a>
-static const std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>reader_vertex_attributes</b> = {&quot;vid&quot;}</td></tr>
-<tr class="separator:a3d98f1456d14322e75eaa46d0841b1d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c5f6dbdc86ff2301c7e3c010870605b" id="r_a7c5f6dbdc86ff2301c7e3c010870605b"><td class="memItemLeft" align="right" valign="top">static const std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_component_i_o.html#a7c5f6dbdc86ff2301c7e3c010870605b">data_fields</a></td></tr>
+<tr class="separator:a7c5f6dbdc86ff2301c7e3c010870605b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76d569409d8055bfe2e8856ee98be3ce" id="r_a76d569409d8055bfe2e8856ee98be3ce"><td class="memItemLeft" align="right" valign="top"><a id="a76d569409d8055bfe2e8856ee98be3ce" name="a76d569409d8055bfe2e8856ee98be3ce"></a>
 static const std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>reader_corner_attributes</b> = {&quot;uv&quot;, &quot;normal&quot;}</td></tr>
 <tr class="separator:a76d569409d8055bfe2e8856ee98be3ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -169,6 +169,123 @@ std::optional&lt; std::vector&lt; uint8_t &gt; &gt;&#160;</td><td class="memItem
 std::optional&lt; std::vector&lt; uint8_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>recorded_volume_history</b></td></tr>
 <tr class="separator:a5ab74e8c6e23f9239335e7a4df523f55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a85eac9376a84fae02be4c994363d354b" name="a85eac9376a84fae02be4c994363d354b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85eac9376a84fae02be4c994363d354b">&#9670;&#160;</a></span>dropped_fields()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static std::set&lt; std::string &gt; wmtk::io::ComponentIO::dropped_fields </td>
+          <td>(</td>
+          <td class="paramtype">const MeshAttributes &amp;&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::set&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>read</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::set&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>required</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The fields of <code>a</code> a reader drops: every one but those it reads, <code>read</code>. It throws for one of <code>required</code> that <code>a</code> lacks. </p>
+
+</div>
+</div>
+<a id="a394c71c7a49081ca655f70657026574f" name="a394c71c7a49081ca655f70657026574f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a394c71c7a49081ca655f70657026574f">&#9670;&#160;</a></span>log_dropped()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void wmtk::io::ComponentIO::log_dropped </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>what</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::set&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>dropped</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The fields a read dropped (<a class="el" href="classwmtk_1_1io_1_1_component_i_o.html#a85eac9376a84fae02be4c994363d354b">dropped_fields()</a>), named once, at info: dropping an annotation is no defect. <code>what</code> names the mesh. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a7c5f6dbdc86ff2301c7e3c010870605b" name="a7c5f6dbdc86ff2301c7e3c010870605b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c5f6dbdc86ff2301c7e3c010870605b">&#9670;&#160;</a></span>data_fields</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::set&lt;std::string&gt; wmtk::io::ComponentIO::data_fields</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">= {</div>
+<div class="line">        <span class="stringliteral">&quot;vid&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;corr_input_vid&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;labels&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;is_cone&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;vertex_id&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;offset_tag&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;tag_0&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;edge_id&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;dofs&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;uv&quot;</span>, </div>
+<div class="line">        <span class="stringliteral">&quot;normal&quot;</span>, </div>
+<div class="line">    }</div>
+</div><!-- fragment -->
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>src/wmtk/io/<a class="el" href="_component_i_o_8hpp_source.html">ComponentIO.hpp</a></li>
 </ul>

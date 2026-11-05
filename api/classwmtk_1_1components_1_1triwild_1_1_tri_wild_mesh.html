@@ -77,6 +77,7 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::components::triwild::TriWildMesh Class Reference</div></div>
 </div><!--header-->
@@ -95,6 +96,8 @@ Inheritance diagram for wmtk::components::triwild::TriWildMesh:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:abd28eb6925d664bd103e5ca0ec577a95" id="r_abd28eb6925d664bd103e5ca0ec577a95"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#abd28eb6925d664bd103e5ca0ec577a95">label_name</a> (size_t bit) const override</td></tr>
+<tr class="separator:abd28eb6925d664bd103e5ca0ec577a95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af227e6a92da574bbbe2e26b52c986d42" id="r_af227e6a92da574bbbe2e26b52c986d42"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#af227e6a92da574bbbe2e26b52c986d42">holds_order2_vertex</a> (const size_t n_segments) const override</td></tr>
 <tr class="separator:af227e6a92da574bbbe2e26b52c986d42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7cdd3374bab4310909003eb79004eb76" id="r_a7cdd3374bab4310909003eb79004eb76"><td class="memItemLeft" align="right" valign="top"><a id="a7cdd3374bab4310909003eb79004eb76" name="a7cdd3374bab4310909003eb79004eb76"></a>
@@ -116,15 +119,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init_envelope</b> (co
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_vtu</b> (const std::string &amp;path, MeshMap *output=nullptr) const</td></tr>
 <tr class="separator:a52a2e47df296fc028b1be35a3ffac674"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a104870ccc1fa4f601d17495692f9a039" id="r_a104870ccc1fa4f601d17495692f9a039"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a104870ccc1fa4f601d17495692f9a039">compute_winding_numbers</a> (const std::vector&lt; MatrixXd &gt; &amp;Vs, const std::vector&lt; MatrixXi &gt; &amp;Es)</td></tr>
-<tr class="memdesc:a104870ccc1fa4f601d17495692f9a039"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tag every face with the inputs it lies inside, by winding number.  <br /></td></tr>
+<tr class="memdesc:a104870ccc1fa4f601d17495692f9a039"><td class="mdescLeft">&#160;</td><td class="mdescRight">Each input's winding number at every face's centroid, kept as FaceFinalizeAttributes::m_winding_number_per_input (the wn_ output fields), and every face tagged with the inputs it lies inside (above 1/2), which filter "input" reads.  <br /></td></tr>
 <tr class="separator:a104870ccc1fa4f601d17495692f9a039"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a15c0d2dad408b33701e850c0950531df" id="r_a15c0d2dad408b33701e850c0950531df"><td class="memItemLeft" align="right" valign="top"><a id="a15c0d2dad408b33701e850c0950531df" name="a15c0d2dad408b33701e850c0950531df"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_input_winding_number</b> ()</td></tr>
-<tr class="memdesc:a15c0d2dad408b33701e850c0950531df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove the faces that lie inside no input (needs compute_winding_numbers). <br /></td></tr>
-<tr class="separator:a15c0d2dad408b33701e850c0950531df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6691e1bbc3830d546cfb7c23a5acd43" id="r_ae6691e1bbc3830d546cfb7c23a5acd43"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae6691e1bbc3830d546cfb7c23a5acd43">compute_tracked_winding_number</a> ()</td></tr>
-<tr class="memdesc:ae6691e1bbc3830d546cfb7c23a5acd43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Winding number of every face's centroid w.r.t. the tracked curves, oriented as the input was (m_tracks_orientation must be set), into FaceAttributes::m_winding_number.  <br /></td></tr>
-<tr class="separator:ae6691e1bbc3830d546cfb7c23a5acd43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2dbd731469f24245a62df8e6619a7b2" id="r_ac2dbd731469f24245a62df8e6619a7b2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ac2dbd731469f24245a62df8e6619a7b2">filter_with_input_winding_number</a> (InputSet bounding=~InputSet(0))</td></tr>
+<tr class="separator:ac2dbd731469f24245a62df8e6619a7b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06f03a81803b6bb33968699d8ffc9950" id="r_a06f03a81803b6bb33968699d8ffc9950"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a06f03a81803b6bb33968699d8ffc9950">compute_tracked_winding_number</a> (InputSet bounding=~InputSet(0))</td></tr>
+<tr class="memdesc:a06f03a81803b6bb33968699d8ffc9950"><td class="mdescLeft">&#160;</td><td class="mdescRight">Winding number of every face's centroid w.r.t. the tracked curves, oriented as the input was (m_tracks_orientation must be set), into FaceAttributes::m_winding_number.  <br /></td></tr>
+<tr class="separator:a06f03a81803b6bb33968699d8ffc9950"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ecaa414acd9116f9ded3c41673af7e6" id="r_a6ecaa414acd9116f9ded3c41673af7e6"><td class="memItemLeft" align="right" valign="top"><a id="a6ecaa414acd9116f9ded3c41673af7e6" name="a6ecaa414acd9116f9ded3c41673af7e6"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_tracked_winding_number</b> ()</td></tr>
 <tr class="memdesc:a6ecaa414acd9116f9ded3c41673af7e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove the faces whose tracked winding number is at most 1/2. <br /></td></tr>
@@ -133,9 +134,20 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_tracked_w
 void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_flood_fill</b> ()</td></tr>
 <tr class="memdesc:ac204d7c09ae32f7d23762531c9e4cd56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove the flood-fill region that dominates the mesh boundary (needs flood_fill). <br /></td></tr>
 <tr class="separator:ac204d7c09ae32f7d23762531c9e4cd56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae07c555a593bbcd2f504f3f9db9a7f82" id="r_ae07c555a593bbcd2f504f3f9db9a7f82"><td class="memItemLeft" align="right" valign="top"><a id="ae07c555a593bbcd2f504f3f9db9a7f82" name="ae07c555a593bbcd2f504f3f9db9a7f82"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>flood_fill</b> ()</td></tr>
-<tr class="separator:ae07c555a593bbcd2f504f3f9db9a7f82"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae510d7dcfecac726a591948f0e4183c3" id="r_ae510d7dcfecac726a591948f0e4183c3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae510d7dcfecac726a591948f0e4183c3">flood_fill</a> (InputSet bounding=~InputSet(0))</td></tr>
+<tr class="separator:ae510d7dcfecac726a591948f0e4183c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Finalization attributes</div></td></tr>
+<tr><td colspan="2"><div class="groupText"><p>As tetwild's: empty until enable_finalize_attributes() registers the collection with m_face_attr_group; from then on it is resized and moved with the rest of the face storage. The const accessor registers nothing: before registration every face reads as default-constructed, no winding numbers, which is what the writers then leave out. </p>
+</div></td></tr>
+<tr class="memitem:aff362446ba87d7d9857591e6acbaaa9e" id="r_aff362446ba87d7d9857591e6acbaaa9e"><td class="memItemLeft" align="right" valign="top"><a id="aff362446ba87d7d9857591e6acbaaa9e" name="aff362446ba87d7d9857591e6acbaaa9e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>enable_finalize_attributes</b> ()</td></tr>
+<tr class="separator:aff362446ba87d7d9857591e6acbaaa9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69135bd7d050d0c962fe6a2e29c92443" id="r_a69135bd7d050d0c962fe6a2e29c92443"><td class="memItemLeft" align="right" valign="top"><a id="a69135bd7d050d0c962fe6a2e29c92443" name="a69135bd7d050d0c962fe6a2e29c92443"></a>
+<a class="el" href="classwmtk_1_1components_1_1triwild_1_1_face_finalize_attributes.html">FaceFinalizeAttributes</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>face_finalize</b> (const size_t fid)</td></tr>
+<tr class="separator:a69135bd7d050d0c962fe6a2e29c92443"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adce60078a4960bf86be8b650f5e32316" id="r_adce60078a4960bf86be8b650f5e32316"><td class="memItemLeft" align="right" valign="top"><a id="adce60078a4960bf86be8b650f5e32316" name="adce60078a4960bf86be8b650f5e32316"></a>
+const <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_face_finalize_attributes.html">FaceFinalizeAttributes</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>face_finalize</b> (const size_t fid) const</td></tr>
+<tr class="separator:adce60078a4960bf86be8b650f5e32316"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
 <tr class="memitem:a761c8a3800a616af7b9ad9fcde162d45 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a761c8a3800a616af7b9ad9fcde162d45"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a761c8a3800a616af7b9ad9fcde162d45">oriented_tracked_edges</a> () const</td></tr>
 <tr class="separator:a761c8a3800a616af7b9ad9fcde162d45 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -354,6 +366,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>anchor_feature_point<
 <tr class="memitem:ac7e23ae58a24a84075a808f192480d84 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ac7e23ae58a24a84075a808f192480d84"><td class="memItemLeft" align="right" valign="top">std::pair&lt; size_t, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac7e23ae58a24a84075a808f192480d84">feature_retention</a> (double *worst_ratio=nullptr) const</td></tr>
 <tr class="memdesc:ac7e23ae58a24a84075a808f192480d84 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">{feature points still represented within their radius, total feature points}.  <br /></td></tr>
 <tr class="separator:ac7e23ae58a24a84075a808f192480d84 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3020569cd787c0dc589299767afe3bf6 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a3020569cd787c0dc589299767afe3bf6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a3020569cd787c0dc589299767afe3bf6">require_reference_edge_labels</a> (const std::vector&lt; InputSet &gt; &amp;reference_labels) const</td></tr>
+<tr class="separator:a3020569cd787c0dc589299767afe3bf6 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a8a51a0ab5ece5229ea9e589438f615 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a7a8a51a0ab5ece5229ea9e589438f615"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7a8a51a0ab5ece5229ea9e589438f615">check_reference_containment</a> () const</td></tr>
+<tr class="separator:a7a8a51a0ab5ece5229ea9e589438f615 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a8b73b58387664feb724e992e2395d3cc inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a8b73b58387664feb724e992e2395d3cc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris)</td></tr>
 <tr class="separator:a8b73b58387664feb724e992e2395d3cc inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -691,6 +707,10 @@ std::vector&lt; Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:a7875bd7c782836d0ed17f607d13e2eb2" id="r_a7875bd7c782836d0ed17f607d13e2eb2"><td class="memItemLeft" align="right" valign="top"><a id="a7875bd7c782836d0ed17f607d13e2eb2" name="a7875bd7c782836d0ed17f607d13e2eb2"></a>
 std::vector&lt; Vector2i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_E_envelope</b></td></tr>
 <tr class="separator:a7875bd7c782836d0ed17f607d13e2eb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7db0504072991f39b841a63d56072f89" id="r_a7db0504072991f39b841a63d56072f89"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a7db0504072991f39b841a63d56072f89">m_input_names</a></td></tr>
+<tr class="separator:a7db0504072991f39b841a63d56072f89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acadf7e7022e542fb5cb1a89f91e7c1b5" id="r_acadf7e7022e542fb5cb1a89f91e7c1b5"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#acadf7e7022e542fb5cb1a89f91e7c1b5">m_edge_tag_names</a></td></tr>
+<tr class="separator:acadf7e7022e542fb5cb1a89f91e7c1b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3cc4cae283bcbfdfb016be2947e94fd3" id="r_a3cc4cae283bcbfdfb016be2947e94fd3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a3cc4cae283bcbfdfb016be2947e94fd3">m_has_parts</a> = false</td></tr>
 <tr class="separator:a3cc4cae283bcbfdfb016be2947e94fd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
@@ -803,6 +823,10 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_order_wait_
 <tr class="memitem:a959bfbaff57cc1ed3e9c9b647d3e034e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a959bfbaff57cc1ed3e9c9b647d3e034e"><td class="memItemLeft" align="right" valign="top">std::optional&lt; std::vector&lt; Vector2d &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a959bfbaff57cc1ed3e9c9b647d3e034e">m_input_curve_points</a></td></tr>
 <tr class="memdesc:a959bfbaff57cc1ed3e9c9b647d3e034e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Where the input's own curves end or three or more meet, as <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a4baa005cbad4dd53a10067018e2d850b" title="Does the application anchor a vertex with n_segments tracked segments?">holds_order2_vertex()</a> holds them: set when the envelopes are built around the input (envelope_reference "input") and the curves inserted are not the input &ndash; a simplification ran, and without preserve_topology it merges junctions and curves passing within its envelope.  <br /></td></tr>
 <tr class="separator:a959bfbaff57cc1ed3e9c9b647d3e034e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaece29a89faafb225c8c8a89c05654b8 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aaece29a89faafb225c8c8a89c05654b8"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_reference</b> = false</td></tr>
+<tr class="memdesc:aaece29a89faafb225c8c8a89c05654b8 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set by the application before init, with the envelopes built around the reference. <br /></td></tr>
+<tr class="separator:aaece29a89faafb225c8c8a89c05654b8 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a0ab2ef76d0893ba8694c7a9c554fa76f inherit pub_attribs_classwmtk_1_1_tri_mesh" id="r_a0ab2ef76d0893ba8694c7a9c554fa76f"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
@@ -882,6 +906,15 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>split_after_v
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (size_t v)</td></tr>
 <tr class="separator:ae1fa52701ce0be73479b416da52fd77e inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:af03153e0ccdfeb3c8d7fe346b3f27c4d" id="r_af03153e0ccdfeb3c8d7fe346b3f27c4d"><td class="memItemLeft" align="right" valign="top"><a id="af03153e0ccdfeb3c8d7fe346b3f27c4d" name="af03153e0ccdfeb3c8d7fe346b3f27c4d"></a>
+<a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_face_finalize_attributes.html">FaceFinalizeAttributes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_finalize</b></td></tr>
+<tr class="separator:af03153e0ccdfeb3c8d7fe346b3f27c4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd7ef6ddea752878ae0f3af5109a6d06" id="r_abd7ef6ddea752878ae0f3af5109a6d06"><td class="memItemLeft" align="right" valign="top"><a id="abd7ef6ddea752878ae0f3af5109a6d06" name="abd7ef6ddea752878ae0f3af5109a6d06"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_finalize_enabled</b> = false</td></tr>
+<tr class="separator:abd7ef6ddea752878ae0f3af5109a6d06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pub_types_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
@@ -948,8 +981,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <tr class="separator:ac89b9d5493d872c2e5b0aef93c5f30ed inherit pro_attribs_classwmtk_1_1_rational_positions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ae6691e1bbc3830d546cfb7c23a5acd43" name="ae6691e1bbc3830d546cfb7c23a5acd43"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6691e1bbc3830d546cfb7c23a5acd43">&#9670;&#160;</a></span>compute_tracked_winding_number()</h2>
+<a id="a06f03a81803b6bb33968699d8ffc9950" name="a06f03a81803b6bb33968699d8ffc9950"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06f03a81803b6bb33968699d8ffc9950">&#9670;&#160;</a></span>compute_tracked_winding_number()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -957,14 +990,15 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         <tr>
           <td class="memname">void wmtk::components::triwild::TriWildMesh::compute_tracked_winding_number </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">InputSet&#160;</td>
+          <td class="paramname"><em>bounding</em> = <code>~InputSet(0)</code></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Winding number of every face's centroid w.r.t. the tracked curves, oriented as the input was (m_tracks_orientation must be set), into FaceAttributes::m_winding_number. </p>
-<p>The tracked counterpart of compute_winding_numbers: evaluated on the curves the mesh actually conforms to rather than on the input, and over all inputs at once &ndash; coincident curves add up, opposite ones cancel. Like the input winding number, a result with nothing inside is taken as an inside-out input and flipped. </p>
+<p>The tracked counterpart of compute_winding_numbers: evaluated on the curves the mesh actually conforms to rather than on the input, and over all inputs at once &ndash; coincident curves add up, opposite ones cancel. Like the input winding number, a result with nothing inside is taken as an inside-out input and flipped. <code>bounding</code> (filter_inputs): of the tracked edges whose input set meets it only. All bits, the default: every tracked edge. </p>
 
 </div>
 </div>
@@ -994,8 +1028,46 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
       </table>
 </div><div class="memdoc">
 
-<p>Tag every face with the inputs it lies inside, by winding number. </p>
+<p>Each input's winding number at every face's centroid, kept as FaceFinalizeAttributes::m_winding_number_per_input (the wn_ output fields), and every face tagged with the inputs it lies inside (above 1/2), which filter "input" reads. </p>
 <p><code>Vs</code>/<code>Es</code> are the per-input meshes as read when the initial mesh was built (2D, x/y only) &ndash; they are passed in rather than re-read from disk. </p>
+
+</div>
+</div>
+<a id="ac2dbd731469f24245a62df8e6619a7b2" name="ac2dbd731469f24245a62df8e6619a7b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2dbd731469f24245a62df8e6619a7b2">&#9670;&#160;</a></span>filter_with_input_winding_number()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::triwild::TriWildMesh::filter_with_input_winding_number </td>
+          <td>(</td>
+          <td class="paramtype">InputSet&#160;</td>
+          <td class="paramname"><em>bounding</em> = <code>~InputSet(0)</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Remove the faces that lie inside no input (needs compute_winding_numbers). <code>bounding</code> (filter_inputs): faces inside none of its inputs are dropped. All bits, the default: every input, as before the key. </p>
+
+</div>
+</div>
+<a id="ae510d7dcfecac726a591948f0e4183c3" name="ae510d7dcfecac726a591948f0e4183c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae510d7dcfecac726a591948f0e4183c3">&#9670;&#160;</a></span>flood_fill()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::triwild::TriWildMesh::flood_fill </td>
+          <td>(</td>
+          <td class="paramtype">InputSet&#160;</td>
+          <td class="paramname"><em>bounding</em> = <code>~InputSet(0)</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><code>bounding</code> (filter_inputs): only the tracked edges whose input set meets it separate; the others are crossed. All bits, the default: every tracked edge. </p>
 
 </div>
 </div>
@@ -1127,6 +1199,35 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="abd28eb6925d664bd103e5ca0ec577a95" name="abd28eb6925d664bd103e5ca0ec577a95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd28eb6925d664bd103e5ca0ec577a95">&#9670;&#160;</a></span>label_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string wmtk::components::triwild::TriWildMesh::label_name </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>bit</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The label of bit <code>bit</code> of an edge's input set, as the output names it; the application's, for the reference checks to name a label by. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7731bcada52524979cdcc528bdfb79db">wmtk::TriOptimizerMesh</a>.</p>
+
+</div>
+</div>
 <a id="ae3aad9e86a2d496f8328fe8ba391769c" name="ae3aad9e86a2d496f8328fe8ba391769c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae3aad9e86a2d496f8328fe8ba391769c">&#9670;&#160;</a></span>refine_sizing_around_worst()</h2>
 
@@ -1189,6 +1290,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="acadf7e7022e542fb5cb1a89f91e7c1b5" name="acadf7e7022e542fb5cb1a89f91e7c1b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acadf7e7022e542fb5cb1a89f91e7c1b5">&#9670;&#160;</a></span>m_edge_tag_names</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::string&gt; wmtk::components::triwild::TriWildMesh::m_edge_tag_names</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The labels of the tracked edges' input sets, bit i the i-th (input_names, else tag_<em>; a tagged mesh input's edge tags), for the reference checks to name a label by. </em></p>
+
+</div>
+</div>
 <a id="a3cc4cae283bcbfdfb016be2947e94fd3" name="a3cc4cae283bcbfdfb016be2947e94fd3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3cc4cae283bcbfdfb016be2947e94fd3">&#9670;&#160;</a></span>m_has_parts</h2>
 
@@ -1201,6 +1317,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
       </table>
 </div><div class="memdoc">
 <p>Whether flood_fill ran, so that the writers leave the part ids out rather than writing their defaults as if they were parts. </p>
+
+</div>
+</div>
+<a id="a7db0504072991f39b841a63d56072f89" name="a7db0504072991f39b841a63d56072f89"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7db0504072991f39b841a63d56072f89">&#9670;&#160;</a></span>m_input_names</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::string&gt; wmtk::components::triwild::TriWildMesh::m_input_names</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Optional per-input names (JSON "input_names"), used to label the per-input winding-number output fields, wn_&lt;name&gt; (empty =&gt; the fields are numbered, wn_<em>), as tetwild's TetWildMesh::m_input_names. </em></p>
 
 </div>
 </div>

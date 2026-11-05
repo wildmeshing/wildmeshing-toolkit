@@ -2273,6 +2273,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#envelope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        envelope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#max_iterations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2354,6 +2365,17 @@
     <span class="md-ellipsis">
       
         use_sample_envelope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter_inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        filter_inputs
       
     </span>
   </a>
@@ -4138,6 +4160,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#envelope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        envelope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#max_iterations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4219,6 +4252,17 @@
     <span class="md-ellipsis">
       
         use_sample_envelope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter_inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        filter_inputs
       
     </span>
   </a>
@@ -4714,12 +4758,12 @@
 <p>Application name must be triwild.</p>
 <h3 id="input"><code>input</code><a class="headerlink" href="#input" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · required · min <code>1</code></p>
-<p>List of input curve networks: OBJ files of polylines ('v' and 'l' lines).</p>
+<p>List of input curve networks: OBJ files of polylines ('v' and 'l' lines). Or one tagged triangle mesh -- on the memory route a named mesh with a triangle block, on the file route a .msh with triangles -- which takes the tagged route: triwild continues from it as it is, its triangles kept, so that a chain of components can go on through triwild. Its edge block's tags are the tracked curves, one input per label, each row oriented by its vertex order, named as the mesh names them; its point block input points, anchored where they are -- as simwild reads a tagged triangle mesh. triwild holds no regions and writes none, so its own output goes back in as it is; triangles tagged other than ambient are refused (a mesh with region tags is simwild's to remesh). It must fill its bounding box, as the arrangement's padded box does: its boundary edges are the wall, held by the box rule, each untracked and on a line of the box. A tracked boundary edge -- a filtered mesh's boundary -- is refused (give a filtered mesh's curves as inputs), and so is an untracked one on no line. Skipped on this route: the simplification, the arrangement and the input winding numbers (wn_&lt;i&gt;); eps_rel and length_rel are of the mesh's bounding box diagonal. Refused with it: any other input, input_points, input_names and filter "input".</p>
 <p>Each entry: One curve network: an OBJ file of polylines ('v' and 'l' lines).</p>
 <h2 id="key-options">Key options<a class="headerlink" href="#key-options" title="Permanent link">&para;</a></h2>
 <h3 id="input_names"><code>input_names</code><a class="headerlink" href="#input_names" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>[]</code></p>
-<p>List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc. Each name labels the input twice in the output mesh, on both routes: its region, the triangles its winding number puts inside, and its curves, the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags.</p>
+<p>List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc. Each name labels the input's curves in the output mesh, on both routes: the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags. It also names the input's winding-number field on the triangles, wn_&lt;name&gt;, in the VTU output and on the memory route; the .msh output numbers them, wn_0, wn_1, ..., and so does everything without names. triwild writes no regions: its triangles carry no label but ambient (until 2026-11 each name also labelled the triangles its winding number puts inside).</p>
 <p>Each entry: Name for one input mesh.</p>
 <h3 id="output"><code>output</code><a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"out"</code></p>
@@ -4735,7 +4779,7 @@
 <p>Target energy. If all triangles have an energy below this, triwild will stop. Held numerically equal to tetwild's for parity, but note the two numbers are not the same quantity: this is the raw AMIPS2D energy, whose floor (an equilateral triangle) is 2, while tetwild compares the cube root of AMIPS3D, whose floor is 3. So 100 is 50x the floor here against ~33x there, i.e. a looser target in 2D than the same number buys in 3D. Making the two comparable would mean normalizing both energies by their dimension, which would change every logged figure and break comparison with existing runs; parity of the knob was chosen over parity of the target. At 100 a 300-model trial finished with a median max energy of 88.9 and a median iteration count of 1, i.e. one pass and stop; the 19686-model sweep converged 100% with a median max energy of 19.8 because most of it ran at the older target of 20.</p>
 <h3 id="filter"><code>filter</code><a class="headerlink" href="#filter" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"none"</code> · one of <code>flood</code>, <code>input</code>, <code>tracked</code>, <code>none</code></p>
-<p>Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'tracked': winding number w.r.t. the tracked curves, oriented as the input was -- the curves the mesh conforms to rather than the input, all inputs at once (coincident curves add up, opposite ones cancel); faces at most 1/2 are dropped. 'none': Do not filter. All three filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary.</p>
+<p>Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'tracked': winding number w.r.t. the tracked curves, oriented as the input was -- the curves the mesh conforms to rather than the input, all inputs at once (coincident curves add up, opposite ones cancel); faces at most 1/2 are dropped. 'none': Do not filter. All three filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary. With filter_inputs, only those inputs bound the domain kept. On a tagged mesh input (see /input), 'tracked' and 'flood' use its tracked edges, and 'input' is refused: there are no input curves.</p>
 <h3 id="input_points"><code>input_points</code><a class="headerlink" href="#input_points" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>[]</code></p>
 <p>List of input POINT files: every vertex of each file is a feature point to preserve, whether or not the file also has edges (they are ignored). Each point is inserted as a vertex of the triangulation and anchored like a polyline endpoint: some output vertex stays within eps of it, collapses that would break that are refused, and smoothing may move the carrying vertex only within the eps ball. Free points can also be supplied inline: a vertex of an /input curve file with no incident edge is anchored the same way. A point lying in a region the /filter discards leaves the triangle mesh with that region, but survives in the &lt;output&gt;_features.obj feature output, and DEBUG_feature_retention reports the PRE-filter state -- a feature preserved through the optimization is never reported lost because extraction discarded its region.</p>
@@ -4744,6 +4788,9 @@
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Preserve the topology of the input curve network. This forces remove_duplicate_eps to merge only exactly coincident vertices, stops the input simplification from merging two junctions or endpoints, and enables the substructure link condition during optimization. When unset, all three are relaxed and the topology may change.</p>
 <h2 id="other-options">Other options<a class="headerlink" href="#other-options" title="Permanent link">&para;</a></h2>
+<h3 id="envelope"><code>envelope</code><a class="headerlink" href="#envelope" title="Permanent link">&para;</a></h3>
+<p><strong>string</strong> · default <code>""</code></p>
+<p>The envelope of a tagged mesh input (see /input): on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope triwild and simwild return (outputs["envelope"]) and write (&lt;output&gt;_envelope.msh), an edge block labelled by the tags it holds. It is the reference the first component of a chain held its curves to, and the run holds to it as simwild does, by the same code: the curve envelope and the per-label envelopes are built around it, label by label, at this run's eps, its labels matched to the mesh's edge tags by name, and the curve-end anchors are centred on its curve ends and junctions, so that the output is within this run's eps of the first component's input. A label of a tracked edge that the envelope lacks throws, and so does a tracked edge received outside the envelopes of its labels, checked exactly before the optimization. The run returns it unchanged as its envelope (on the file route &lt;output&gt;_envelope.msh). Not with use_sample_envelope, nor bare geometry without labels. Empty, the default: the envelopes are built around the curves as received, and those are the envelope returned.</p>
 <h3 id="max_iterations"><code>max_iterations</code><a class="headerlink" href="#max_iterations" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>80</code></p>
 <p>Maximum iterations before stopping.</p>
@@ -4768,9 +4815,13 @@
 <h3 id="use_sample_envelope"><code>use_sample_envelope</code><a class="headerlink" href="#use_sample_envelope" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Use the sampled envelope instead of the exact one. Both describe the same envelope -- the eps-neighbourhood of the input -- and both are given the same eps; neither is wider than the other. They differ in how much of that eps they can use. The sampled test places points along a query and asks whether each is within some radius of the input; since it cannot see what happens between two samples, it shrinks that radius to stay conservative, and so rejects some geometry that is genuinely inside. The exact one decides coverage by the union of the input's eps-neighbourhoods directly and spends almost nothing on conservatism. The difference that matters in practice: a segment bridging a gap between two input curves is rejected by the exact envelope and accepted by the sampled one whenever the gap falls between samples.</p>
+<h3 id="filter_inputs"><code>filter_inputs</code><a class="headerlink" href="#filter_inputs" title="Permanent link">&para;</a></h3>
+<p><strong>list of string</strong> · default <code>[]</code></p>
+<p>The inputs that bound the domain a filter keeps, by their labels: the names of input_names (tag_&lt;i&gt; without one), or a tagged mesh's edge-tag labels. Empty, the default: every input, as before the key. With 'input' the faces inside one of those inputs are kept; with 'tracked' the winding number is of the tracked edges carrying one of them only; with 'flood' the fill crosses every tracked edge of the other inputs. So an input that is not named -- an open curve across a region, a second region outside it -- does not cut or add to the domain kept, and stays in the output as tracked edges, its edge tag. Under 'tracked' a tracked edge carrying a named input and another input (two regions touching edge to edge) is refused before the filter: an edge's orientation is one count for all its inputs, not one per input, so the named inputs' winding number cannot be computed there; 'flood' needs no orientation, and is exact for inputs that do not overlap themselves. A name that is not an input throws, and so does the key with filter 'none'.</p>
+<p>Each entry: The label of one input that bounds the domain.</p>
 <h3 id="skip_winding_number"><code>skip_winding_number</code><a class="headerlink" href="#skip_winding_number" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
-<p>Skip the finalize-phase winding numbers of the inputs. They are needed to filter the outside region (filter != 'none') and to tag the faces per input, which is what the MSH groups are built from -- so skipping them also empties the output groups. Ignored (with a warning) when filter != 'none', which requires them.</p>
+<p>Skip the finalize-phase winding numbers of the inputs, each input's (wn_&lt;i&gt;). Filter 'input' keeps the faces by them, and they are otherwise written only as output annotation fields, which are then left out: fields of the triangles, not tags, so no regions (until 2026-11 they tagged the faces per input). Ignored (with a warning) when filter != 'none', which computes them.</p>
 <h3 id="compute_flood_fill"><code>compute_flood_fill</code><a class="headerlink" href="#compute_flood_fill" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Compute the flood-fill parts -- the regions the tracked curves separate -- and write them (the VTU field flood_fill) even when filter is not 'flood', which computes them anyway. A serial pass over every face; left out of the output otherwise.</p>

@@ -2300,6 +2300,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#envelope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        envelope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#write_vtu" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2414,6 +2425,17 @@
     <span class="md-ellipsis">
       
         use_legacy_code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter_inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        filter_inputs
       
     </span>
   </a>
@@ -4281,6 +4303,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#envelope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        envelope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#write_vtu" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4395,6 +4428,17 @@
     <span class="md-ellipsis">
       
         use_legacy_code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter_inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        filter_inputs
       
     </span>
   </a>
@@ -4890,8 +4934,8 @@
 <p>Application name must be tetwild.</p>
 <h3 id="input"><code>input</code><a class="headerlink" href="#input" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · required · min <code>1</code></p>
-<p>List of triangular input meshes.</p>
-<p>Each entry: Triangular input mesh.</p>
+<p>List of input meshes: triangle surfaces, or one tagged tet mesh. Surfaces (OBJ, STL, OFF, a .msh of triangles, ...) are simplified, inserted into a background mesh and tracked, each its own input. A tet mesh -- on the memory route a named mesh with a tetrahedron block, on the file route a .msh with tets -- takes the tagged route: tetwild continues from it as it is, its tets kept, so that a chain of components can go on through tetwild (tetwild -&gt; topological_offset -&gt; ... -&gt; tetwild). Its triangle block's tags are the tracked faces, one input per label, each row oriented by its vertex order, named as the mesh names them; its edge block's tags the feature curves, one feature input per label; its point block input points, anchored where they are -- as simwild reads a tagged mesh, and as tetwild writes its own output, which can go back in as it is. tetwild holds no volumes: tets tagged other than ambient are refused (a mesh with volume tags is simwild's to remesh). It must fill its bounding box, as the insertion's background box does: its boundary faces are the wall, held by the box rule, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary -- is refused (give a filtered mesh's surfaces as inputs), and so is an untracked one in no plane. Skipped on this route: the simplification, the insertion and the input winding numbers (wn_&lt;i&gt;); eps_rel and length_rel are of the mesh's bounding box diagonal. Refused with it: any other input, input_edges, input_points, input_names, use_legacy_code, and filter "input". Until 2026-11 a tet mesh threw on the memory route, and on the file route its triangles became one input surface, its tets and tags dropped.</p>
+<p>Each entry: An input mesh: a triangle surface, or one tagged tet mesh (see /input).</p>
 <h2 id="key-options">Key options<a class="headerlink" href="#key-options" title="Permanent link">&para;</a></h2>
 <h3 id="input_names"><code>input_names</code><a class="headerlink" href="#input_names" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>[]</code></p>
@@ -4911,7 +4955,7 @@
 <p>Target energy. If all tets have an energy below this, tetwild will stop.</p>
 <h3 id="filter"><code>filter</code><a class="headerlink" href="#filter" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"none"</code> · one of <code>flood</code>, <code>input</code>, <code>tracked</code>, <code>none</code></p>
-<p>Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed.</p>
+<p>Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed. With filter_inputs, only those inputs bound the domain kept. On a tagged mesh input (see /input), 'tracked' and 'flood' use its tracked faces as on surface inputs, and 'input' is refused: there is no input surface.</p>
 <h3 id="max_iterations"><code>max_iterations</code><a class="headerlink" href="#max_iterations" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>80</code></p>
 <p>Maximum iterations before stopping.</p>
@@ -4936,6 +4980,9 @@
 <h3 id="feature_envelope_ratio"><code>feature_envelope_ratio</code><a class="headerlink" href="#feature_envelope_ratio" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>1.0</code></p>
 <p>Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- and the radius of the feature-point anchors, as a fraction of the surface envelope's eps. The default 1 holds them to the same eps as the surface: the tube is built around the input feature curves themselves, which the simplification does not move. See order2_envelope_ratio for the sweep behind the default. The anchors are the 0-dimensional features: every /input_points point, and every vertex where a feature curve or an open boundary ends or three or more of them meet. Each stays within its radius of where it was when the optimization began -- where the input put it for input points and feature curves, which the simplification does not move, and where the simplification left it for open boundaries (see order2_envelope_ratio) -- with radius feature_envelope_ratio x eps for input points and feature curves, order2_envelope_ratio x eps for open boundaries, the smaller of the two for a point on both: some output vertex stays within that ball of each anchor, collapses that would break this are refused, and smoothing may move an anchor-carrying vertex only inside its ball. Always on, as the tubes and the surface envelope are. Without the anchors an open feature curve erodes from its own tips: every eroding collapse keeps the surviving chain inside the tube, so no containment test can see it.</p>
+<h3 id="envelope"><code>envelope</code><a class="headerlink" href="#envelope" title="Permanent link">&para;</a></h3>
+<p><strong>string</strong> · default <code>""</code></p>
+<p>The envelope of a tagged mesh input (see /input): on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs["envelope"]) and write (&lt;output&gt;_envelope.msh), labelled by the tags it holds. It is the reference the first component of a chain held its tags to, and the run holds to it as simwild does: the surface envelope, the per-label envelopes, the order-2 and feature tubes and the curve-end anchors are built around it, label by label, at this run's eps, its labels matched to the mesh's face tags and feature curves by name, so that the output is within this run's eps of the first component's input however many components came before. A label of a tagged face or feature curve of the mesh that the envelope lacks throws, and so does a tagged face or feature edge received outside the envelopes of its labels, checked exactly before the optimization: the sender held it to a wider envelope. The run returns it unchanged as its envelope (on the file route &lt;output&gt;_envelope.msh). Not with use_sample_envelope, nor bare geometry without labels. Empty, the default: the envelopes are built around the tagged faces and curves as received, and those are the envelope returned.</p>
 <h3 id="write_vtu"><code>write_vtu</code><a class="headerlink" href="#write_vtu" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
 <p>Write the VTU output next to the MSH.</p>
@@ -4969,6 +5016,10 @@
 <h3 id="use_legacy_code"><code>use_legacy_code</code><a class="headerlink" href="#use_legacy_code" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Use the original TetWild code for the mesh improvement. This only works with 'use_sample_envelope'!</p>
+<h3 id="filter_inputs"><code>filter_inputs</code><a class="headerlink" href="#filter_inputs" title="Permanent link">&para;</a></h3>
+<p><strong>list of string</strong> · default <code>[]</code></p>
+<p>The inputs that bound the domain a filter keeps, by their labels: the names of input_names (tag_&lt;i&gt; without one), or a tagged mesh's face-tag labels. Empty, the default: every input, as before the key. With 'input' the winding number of those inputs only; with 'tracked' that of the tracked faces carrying one of them only; with 'flood' the fill crosses every tracked face of the other inputs. So an input that is not named -- an open sheet through a solid, a second solid outside it -- does not cut or add to the domain kept, and stays in the output as tracked faces, its face tag, inside the domain or on its boundary. The field the filter reads (winding_number_input, winding_number_tracked or part) is then of those inputs; the others stay of every input. Under 'tracked' a tracked face carrying a named input and another input (two solids touching face to face) is refused before the filter: a face's orientation is one count for all its inputs, not one per input, so the named inputs' winding number cannot be computed there; 'flood' needs no orientation, and is exact for inputs that do not overlap themselves. A name that is not an input throws, and so does the key with filter 'none'.</p>
+<p>Each entry: The label of one input that bounds the domain.</p>
 <h3 id="skip_winding_number"><code>skip_winding_number</code><a class="headerlink" href="#skip_winding_number" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Skip the finalize-phase winding numbers of the input: the whole input's (winding_number_input) and each input's (wn_&lt;i&gt;). They are needed to filter the outside region (filter != 'none') and are otherwise written only as output annotation fields, which are then left out. Ignored (with a warning) when filter != 'none', which requires them.</p>
