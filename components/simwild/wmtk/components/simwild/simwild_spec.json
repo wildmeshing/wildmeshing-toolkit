@@ -218,7 +218,7 @@
     "pointer": "/simplify",
     "type": "bool",
     "default": true,
-    "doc": "If true, the input is simplified. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified."
+    "doc": "If true, the input is simplified: a surface or curve input before insertion when preserve_topology is false; in 3D, the tet mesh after insertion when preserve_topology is true and the operation is remeshing -- a tagged mesh input included, whose envelope is then the mesh's tracked faces as read (see envelope_reference). The 2D route has no simplification after insertion."
   },
   {
     "pointer": "/tag_from_winding_number",
