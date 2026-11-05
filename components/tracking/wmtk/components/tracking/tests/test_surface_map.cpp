@@ -695,6 +695,52 @@ TEST_CASE("surface-map-collapse-removes-a-side", "[tracking][surfaces]")
     }
 }
 
+TEST_CASE("surface-map-boundary-vertex-into-one-inside", "[tracking][surfaces]")
+{
+    // An open patch's boundary vertex r collapsed into its neighbour k inside: k stands for r on
+    // the outline after. With k of three faces -- the triangle (a, b, r) split at k -- the face
+    // (a, b, k) survives, and its side (a, b) was there before; splitting it for r's place cut
+    // the outline, and the map counted not_a_disk (tetwild on the open bunny, 2026-11). With k of
+    // four faces, the control, no such side exists.
+    const auto check = [](const std::vector<Eigen::Vector3d>& V,
+                          const std::vector<std::array<uint64_t, 3>>& F,
+                          const uint64_t r,
+                          const uint64_t k) {
+        history::SurfaceHistory h;
+        h.vertices = V;
+        h.vertex_alive.assign(V.size(), 1);
+        h.faces = F;
+        h.face_alive.assign(F.size(), 1);
+        h.edits.push_back({history::EditKind::collapse_edge, {r, k}, {}, {}});
+        const SurfaceMap map(h);
+        CHECK(map.build_warnings().total() == 0);
+        size_t warnings = 0;
+        CHECK(round_trip(map, sample(map.input_face_alive(), 10, 5), true, warnings) < kRoundTrip);
+        CHECK(warnings == 0);
+        CHECK(
+            round_trip(map, sample(map.output_face_alive(), 10, 6), false, warnings) < kRoundTrip);
+        CHECK(warnings == 0);
+    };
+    SECTION("survivor of three faces")
+    {
+        // a, b, r, k
+        check(
+            {{0, 0, 0}, {1, 0, 0}, {0.5, 1, 0}, {0.5, 0.3, 0}},
+            {{{0, 1, 3}}, {{1, 2, 3}}, {{2, 0, 3}}},
+            2,
+            3);
+    }
+    SECTION("survivor of four faces")
+    {
+        // a, r, b, c, k
+        check(
+            {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {0.5, 0.5, 0}},
+            {{{0, 1, 4}}, {{1, 2, 4}}, {{2, 3, 4}}, {{3, 0, 4}}},
+            1,
+            4);
+    }
+}
+
 TEST_CASE("surface-map-embed-on-a-sliver", "[tracking][surfaces]")
 {
     // An input triangle and, embedded on it, three faces, one of them a sliver of aspect 1e5
