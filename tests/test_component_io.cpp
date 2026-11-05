@@ -2067,6 +2067,44 @@ TEST_CASE(
     for (const auto& [name, data] : remeshed.first) REQUIRE_NOTHROW(data.validate());
     CHECK(same_data(remeshed.first.at("envelope"), handed));
 }
+TEST_CASE(
+    "The offset of a region hands on its band's whole boundary, which simwild holds",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    // simwild -> topological_offset -> simwild. simwild meshes a and b as regions, so the band
+    // `off` grown around a is bounded by the offset surface and by a's surface, and simwild labels
+    // a face between a and off with both. The offset hands on the band's whole boundary under
+    // `off`, as every other label's envelope covers its region's boundary; with the offset surface
+    // alone, simwild found the faces between a and off outside off's envelope (650, 2026-11-05).
+    WorkingDirectory cwd;
+    const auto meshed = simwild::simwild(
+        {{"input", {"a", "b"}},
+         {"input_names", {"a", "b"}},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"a", tet_surface(0)}, {"b", tet_surface(3)}});
+    check(meshed);
+    const double eps = meshed.second.at("eps");
+    auto options = offset_of_a;
+    options["envelope_size"] = eps * (1 + 1e-9);
+    const auto offset = topological_offset::topological_offset(
+        options,
+        {{"m", tags_only(meshed.first.at("mesh"))}, {"e", meshed.first.at("envelope")}});
+    check(offset);
+    const MeshData& mesh = offset.first.at("mesh");
+    const MeshData& handed = offset.first.at("envelope");
+    CHECK(
+        unoriented(labelled_rows(handed, CellType::Triangle, "off")) ==
+        unoriented(region_boundary(mesh, "off")));
+    const auto remeshed = simwild::simwild(
+        {{"input", "m"},
+         {"envelope", "e"},
+         {"eps", eps},
+         {"max_iterations", 2},
+         {"num_threads", 1}},
+        {{"m", tags_only(mesh)}, {"e", handed}});
+    for (const auto& [name, data] : remeshed.first) REQUIRE_NOTHROW(data.validate());
+}
 #endif
 #if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_simwild)
 TEST_CASE(

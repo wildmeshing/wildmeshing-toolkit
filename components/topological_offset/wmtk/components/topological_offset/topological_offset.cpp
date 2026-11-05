@@ -40,7 +40,7 @@ void check_envelope_leash(const Parameters& params)
     }
 }
 
-/// The offset surface as rows to hand on with a reference: its triangles on vertices of their
+/// The band's boundary as rows to hand on with a reference: its triangles on vertices of their
 /// own, and the labels the output gives the band they bound (offset_output_tags).
 struct OffsetRows
 {
@@ -49,9 +49,13 @@ struct OffsetRows
     std::vector<std::string> names;
 };
 
-/// The final offset surface's triangles -- the faces between a band cell and a cell neither band
-/// nor input complex (face_is_offset_surface_live()), the domain wall's excepted -- named by the
-/// band's tags as the output labels them (io::tag_labels()). None when no tag is the band's own.
+/// The band's boundary -- every face between a band cell and a cell outside the band, the domain
+/// wall's excepted: the final offset surface and, where the band wraps a region, its interface
+/// with the input complex -- named by the band's tags as the output labels them
+/// (io::tag_labels()). The whole boundary, as every other label's envelope covers its region's: a
+/// face between the input complex and the band carries both labels and is held to both. With the
+/// offset surface alone, simwild found the faces between a region and its band outside the band's
+/// envelope (72 on a unit tet, 2026-11-05). None when no tag is the band's own.
 OffsetRows offset_rows(const TopoOffsetTetMesh& mesh)
 {
     OffsetRows out;
@@ -64,7 +68,10 @@ OffsetRows offset_rows(const TopoOffsetTetMesh& mesh)
     std::vector<Vector3d> V;
     std::vector<std::array<int, 3>> F;
     for (const TetMesh::Tuple& f : mesh.get_faces()) {
-        if (!f.switch_tetrahedron(mesh) || !mesh.face_is_offset_surface_live(f)) continue;
+        const auto opp = f.switch_tetrahedron(mesh);
+        if (!opp ||
+            mesh.cell_is_offset_band(f.tid(mesh)) == mesh.cell_is_offset_band(opp->tid(mesh)))
+            continue;
         std::array<int, 3> r;
         const auto vs = mesh.get_face_vids(f);
         for (int k = 0; k < 3; ++k) {
@@ -268,11 +275,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     InputData input_data = component_io.memory()
                                ? read_mesh_data(component_io.mesh(input_path), envelope)
                                : read_image_msh(input_path, envelope);
-    // After the output: a labelled reference goes on with `offset`, the offset surface's
-    // triangles under the band's labels, added (with_offset_surface()), so that a chain keeps
-    // passing the first component's input -- the offset surface is new, so it is its own
-    // reference; unchanged where there is none (2D, an empty input complex). On the file route as
-    // <output>_envelope.msh.
+    // After the output: a labelled reference goes on with `offset`, the band's boundary under the
+    // band's labels, added (with_offset_surface()), so that a chain keeps passing the first
+    // component's input -- the offset surface is new, so it is its own reference, and the band's
+    // interface with the input complex is held to the complex's labels too; unchanged where there
+    // is none (2D, an empty input complex). On the file route as <output>_envelope.msh.
     const auto hand_on_envelope = [&](const OffsetRows& offset = OffsetRows()) {
         auto& outputs = component_io.result.first;
         if (input_data.envelope_reference) {
