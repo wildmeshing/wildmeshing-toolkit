@@ -4719,11 +4719,11 @@
 <h2 id="key-options">Key options<a class="headerlink" href="#key-options" title="Permanent link">&para;</a></h2>
 <h3 id="input_names"><code>input_names</code><a class="headerlink" href="#input_names" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>[]</code></p>
-<p>List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.</p>
+<p>List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc. Each name labels the input twice in the output mesh, on both routes: its region, the triangles its winding number puts inside, and its curves, the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags.</p>
 <p>Each entry: Name for one input mesh.</p>
 <h3 id="output"><code>output</code><a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"out"</code></p>
-<p>Output file name (without extension).</p>
+<p>Output file name (without extension): the mesh is &lt;output&gt;.msh. Next to it &lt;output&gt;_envelope.msh, the memory route's outputs["envelope"]: the reference the curves were held to -- the input, or the simplified input under envelope_reference "simplified" -- an edge block labelled as the mesh labels the curves, one column per input, and the free points, the <code>envelope</code> a later simwild, manifold_extraction or topological_offset takes. It holds no eps: the receiver builds its own envelopes around it, so a chain stays within one eps of this input.</p>
 <h3 id="eps_rel"><code>eps_rel</code><a class="headerlink" href="#eps_rel" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>0.001</code></p>
 <p>Envelope thickness relative to the bounding box diagonal.</p>

@@ -3961,7 +3961,9 @@ to 455 triangles. On inputs of this size a run takes a fraction of a second eith
 <li><code>shapes.msh</code>: the triangles, with the vertices in 3D (z = 0). Each triangle has its <code>quality</code>
   (its energy) and <code>tags</code>: one column per input, labelled by <code>input_names</code>, 1 where the triangle is
   inside that input. When the filter keeps triangles that are inside no input, an <code>ambient</code> column
-  marks them.</li>
+  marks them. The tracked curves are its edges, with <code>tags</code> too, one column per input under the
+  same labels: each edge under every input it lies on, oriented as its input. simwild reads them
+  back as edge tags.</li>
 <li><code>shapes.vtu</code>: the same triangles for ParaView, with a field <code>tag_&lt;i&gt;</code> per input, <code>quality</code>, and
   <code>flood_fill</code> (the regions the curves separate) when the flood fill ran
   (<a href="../../reference/triwild/#compute_flood_fill"><code>compute_flood_fill</code></a>).</li>

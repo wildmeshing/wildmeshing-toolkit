@@ -3607,9 +3607,24 @@ column labelled <code>ambient</code> is the background, as is a cell without a t
 field is all background. Tagged results label their background <code>ambient</code> explicitly; the shared
 readers and writers infer nothing from an untagged row. Existing exported diagnostics have fixed allowed
 names in the adapters and may be supplied again. Extra unrelated fields are errors. As on the
-<code>.msh</code> route, a lower-dimensional block of the envelope's type (triangles in a tet mesh, edges in
-a triangle mesh) is the envelope, e.g. simwild's <code>EnvelopeSurface</code>; it cannot be combined with an
+<code>.msh</code> route, the lower-dimensional blocks are tags, one <code>tags</code> column per input: in a tet mesh,
+triangles are tagged faces (an input surface, each row oriented as its input) and edges tagged
+feature curves (an <code>input_edges</code> file, <code>feature_&lt;i&gt;</code>); in a triangle mesh, edges are tagged curves
+(an input curve, each row oriented as its input). simwild, tetwild and triwild write them so, and
+simwild reads them back as the tags it holds. Rows labelled <code>EnvelopeSurface</code> (in a triangle mesh,
+an edge block without <code>tags</code> too) are the envelope instead, which cannot be combined with an
 <code>envelope</code> input. Other lower-dimensional blocks are rejected.</p>
+<p>The <code>envelope</code> input is a mesh of the call on the memory route and the path of a mesh file on the
+file route (relative to <code>input_dir</code>): the <code>envelope</code> a producer returns or writes (below). It is the
+reference the first component held its tags to, its input, labelled as its mesh labels them, so a
+chain stays within one eps of that input instead of drifting one eps further at every stage.
+simwild, given it with a tagged mesh, builds every envelope, tube and anchor around it at its own
+eps, matching the envelope's labels to the mesh's face tags (2D: edge tags), regions and feature
+curves by name; it throws for a label the mesh holds that the envelope lacks, and, before a
+remeshing, unless every held face and feature edge received lies, exactly, in the envelopes of its
+labels -- the error names the labels, the number outside and the eps. topological_offset and
+manifold_extraction carry it, not yet holding to it. Each returns it unchanged as its own
+<code>envelope</code>. An <code>envelope</code> without labels -- bare geometry -- is held to as a whole, as before.</p>
 <p>The prismatic adapter accepts scalar <code>tag_0</code> and <code>offset_tag</code>, or the corresponding columns of
 <code>tags</code>. <code>vid</code> defaults to vertex row IDs; absent <code>labels</code> are derived from input-volume cells and
 correspondence. <code>corr_input_vid</code> names a source <code>vid</code>, with -1 for no correspondence. Existing
@@ -3629,7 +3644,14 @@ geometry under fixed keys:</p>
   in the types they were given in, with their labels -- are what its <code>.vtu</code> output holds, an
   edge block of none where there are none), which can be the next call's <code>features</code>.</li>
 <li><code>offset</code>: the offset surface or front; prismatic's classified offset faces.</li>
-<li><code>envelope</code>, <code>features</code>, <code>uv</code>, and manifold extraction's 3D input-complex preview <code>input_complex</code>.</li>
+<li><code>envelope</code>: what tetwild, triwild and simwild held their tags to, the reference -- the input,
+  or the simplified input under <code>envelope_reference</code> "simplified" -- labelled as <code>mesh</code> labels the
+  tags: in 3D a triangle block with one <code>tags</code> column per input surface's face tag or region, and
+  an edge block of the feature curves (<code>feature_&lt;i&gt;</code>); in 2D an edge block, one column per input
+  curve's edge tag or region; the input points as a point block without tags, as <code>mesh</code> writes
+  nothing for them. No eps: a receiver brings its own. A component given an <code>envelope</code> returns that
+  one, unchanged; simwild's tag operations return none.</li>
+<li><code>features</code>, <code>uv</code>, and manifold extraction's 3D input-complex preview <code>input_complex</code>.</li>
 <li>Prismatic <code>export_input_and_shell</code> adds <code>input_and_shell</code> and its classified offset faces as
   <code>input_and_shell_offset</code>; with <code>prism_dominant</code>, the report adds that export's
   <code>input_and_shell_hybrid</code> report, as in its <code>_hybrid.json</code> file.</li>
@@ -3657,8 +3679,9 @@ smoothing/remeshing reports. Report values are available without a report filena
 <p>The file-oriented entry points retain existing configurations, relative-path conventions,
 output filenames, intermediate exports, and report files. The tagged components (simwild, triwild,
 topological_offset, manifold_extraction) build the same result on both routes: the file route
-writes its <code>mesh</code> (the envelope stays out of the file) through <code>io::write_mesh</code>, and
-reads its <code>.msh</code> input through <code>io::read_mesh</code>. An explicit per-call output policy
+writes its <code>mesh</code> through <code>io::write_mesh</code> and its <code>envelope</code>, when it has one, as a file of its
+own, <code>&lt;output&gt;_envelope.msh</code> (the mesh file holds the mesh, which gmsh and polyfem read), and
+reads its <code>.msh</code> input, and an <code>envelope</code> file, through <code>io::read_mesh</code>. An explicit per-call output policy
 turns off their file observers for memory calls. Component entry points serialize their use of
 the legacy process-wide loggers, temporarily using console sinks during memory calls and restoring
 the previous logger afterward.</p>

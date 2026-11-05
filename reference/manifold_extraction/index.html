@@ -3745,7 +3745,7 @@
 <p>Application name must be manifold_extraction.</p>
 <h3 id="input"><code>input</code><a class="headerlink" href="#input" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · required</p>
-<p>Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh.</p>
+<p>Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh. Tagged faces (2D: tagged edges) and feature curves are refused: they are not carried yet.</p>
 <h2 id="key-options">Key options<a class="headerlink" href="#key-options" title="Permanent link">&para;</a></h2>
 <h3 id="output"><code>output</code><a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"out"</code></p>
@@ -3772,7 +3772,7 @@
 <p>Save .vtu of output mesh</p>
 <h3 id="envelope"><code>envelope</code><a class="headerlink" href="#envelope" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>
-<p>Memory route only: the name of the input mesh that holds the envelope surface of a tagged mesh input -- the <code>envelope</code> mesh simwild returns with its result. On the file route, the .msh input's own EnvelopeSurface group plays this role, and this option is ignored.</p>
+<p>The envelope of a tagged mesh input: on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs["envelope"]) and write (&lt;output&gt;_envelope.msh), labelled by the tags it holds. Carried, not yet held to: the run returns it unchanged as its envelope (on the file route &lt;output&gt;_envelope.msh), so that a chain keeps passing the first component's input on to the components after it, while the extraction builds its envelopes around the mesh it receives. Its triangles (2D: segments) stand for the input's EnvelopeSurface group, which it cannot be combined with.</p>
 <h2 id="run-control">Run control<a class="headerlink" href="#run-control" title="Permanent link">&para;</a></h2>
 <h3 id="input_dir"><code>input_dir</code><a class="headerlink" href="#input_dir" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>

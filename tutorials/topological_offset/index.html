@@ -3929,7 +3929,9 @@ counted before and after the construction, and a change stops the run
   other fields are diagnostics of the optimization.</li>
 <li>In memory, <code>outputs["offset"]</code>: the front, as triangles on the mesh's vertices, after the
   optimization (2,462 triangles in one five-turn run); a construction-only run returns it
-  without triangles. <code>outputs["envelope"]</code> is the input's <code>EnvelopeSurface</code> group, passed on.</li>
+  without triangles. <code>outputs["envelope"]</code> is the input's <code>EnvelopeSurface</code> group, passed on, or the
+  <a href="../../reference/topological_offset/#envelope"><code>envelope</code></a> given, unchanged (on the command line
+  also <code>&lt;output&gt;_envelope.msh</code>): carried for the next run, not yet held to.</li>
 <li>With <code>report</code>, a JSON file with the vertex, edge, face and tet counts before and after, the
   threads and the run time; after the optimization also <code>converged</code> and <code>optimization_metrics</code>,
   whose <code>avg_l2_dist_err</code> and <code>max_l2_dist_err</code> are the front's distance error. In memory, the

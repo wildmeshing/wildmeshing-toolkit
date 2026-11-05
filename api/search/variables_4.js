@@ -17,10 +17,11 @@ var searchData=
   ['envelope_14',['envelope',['../structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a1d785e4d12bdfdfa9f5bfaae8613eac7',1,'wmtk::optimization::SmoothRejectCounters']]],
   ['envelope_5faround_5fsimplified_15',['envelope_around_simplified',['../structwmtk_1_1_optimizer_parameters.html#acd8ce98aaa41806ea279699fdb937187',1,'wmtk::OptimizerParameters']]],
   ['envelope_5fname_16',['envelope_name',['../structwmtk_1_1components_1_1simwild_1_1_input_data.html#a649f89853b470fa73d7aec9104709264',1,'wmtk::components::simwild::InputData']]],
-  ['eps2_17',['eps2',['../classwmtk_1_1_envelope.html#a6c242e84f2c28ecaae122147c31b4e47',1,'wmtk::Envelope']]],
-  ['eps2_5fedge_18',['eps2_edge',['../classwmtk_1_1_envelope.html#ad98dac6e590cbeb35b394d4cf12fd44d',1,'wmtk::Envelope']]],
-  ['exact_5fenvelope_19',['exact_envelope',['../classwmtk_1_1_envelope.html#a3b819a394e4be36ecf52a900d8a79a9b',1,'wmtk::Envelope']]],
-  ['exact_5fenvelope_5f2d_20',['exact_envelope_2d',['../classwmtk_1_1_envelope.html#a424353c86fb2be23fea23f15d02c5aa3',1,'wmtk::Envelope']]],
-  ['exact_5fvol_21',['exact_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#ad5408649dc1116c8ff8d6e6b6d20e60a',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
-  ['exit_5fno_5ffolds_22',['exit_no_folds',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af6b06579e164d7960a0061e1c7597b3c',1,'wmtk::components::topological_offset::Parameters']]]
+  ['envelope_5freference_17',['envelope_reference',['../structwmtk_1_1components_1_1simwild_1_1_input_data.html#a56221274547d849266955e5275230fea',1,'wmtk::components::simwild::InputData']]],
+  ['eps2_18',['eps2',['../classwmtk_1_1_envelope.html#a6c242e84f2c28ecaae122147c31b4e47',1,'wmtk::Envelope']]],
+  ['eps2_5fedge_19',['eps2_edge',['../classwmtk_1_1_envelope.html#ad98dac6e590cbeb35b394d4cf12fd44d',1,'wmtk::Envelope']]],
+  ['exact_5fenvelope_20',['exact_envelope',['../classwmtk_1_1_envelope.html#a3b819a394e4be36ecf52a900d8a79a9b',1,'wmtk::Envelope']]],
+  ['exact_5fenvelope_5f2d_21',['exact_envelope_2d',['../classwmtk_1_1_envelope.html#a424353c86fb2be23fea23f15d02c5aa3',1,'wmtk::Envelope']]],
+  ['exact_5fvol_22',['exact_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#ad5408649dc1116c8ff8d6e6b6d20e60a',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
+  ['exit_5fno_5ffolds_23',['exit_no_folds',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af6b06579e164d7960a0061e1c7597b3c',1,'wmtk::components::topological_offset::Parameters']]]
 ];

@@ -4398,8 +4398,8 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   - Every output face also gets <code>input_face</code> (Int64), the input face it maps to, -1 for none.
   - <code>add_surface</code> / <code>write_surface_into_msh</code> write the result onto a copy of a tet mesh
     (<code>tet_mesh</code> / <code>output_tet_mesh</code>): its vertices are the tet mesh's by <code>output_vertex_ids</code>
-    (<code>output_rows</code>), a tracked face already in the triangle block (a simwild face tag) takes
-    the fields on its row, and any other is a row added after them.
+    (<code>output_rows</code>), a tracked face already in the triangle block (a face tag, simwild's or
+    tetwild's) takes the fields on its row, and any other is a row added after them.
 - <strong>The app</strong> (<code>app.cpp</code>, spec <code>tracking_spec.json</code>; <code>tracking.hpp</code> declares it):
   - <code>info</code>: what the map holds, its warnings, the output centroids' round trip -- for curves,
     the output segments' midpoints' -- and how far they lie from their preimages (<code>drift</code>):

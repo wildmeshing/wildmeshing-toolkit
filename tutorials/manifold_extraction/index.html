@@ -3863,8 +3863,11 @@ passed.</code> (in 2D, <code>Curve manifoldness check passed.</code>), or a warn
   outside of the mesh as one more cell; the log warns <code>Vertex of offset input complex lies on mesh
   boundary</code>, and the final check may report a non-manifold surface, which it attributes to that.
   Keep the selection inside the domain, with background cells around it.</li>
-<li><strong>Face tags are refused.</strong> A mesh with tagged faces (simwild's <code>input_type</code> <code>surface</code>) stops
-  with <code>manifold_extraction does not take tagged faces yet</code>.</li>
+<li><strong>Face tags, edge tags and feature curves are refused.</strong> A mesh with tagged faces (simwild's
+  <code>input_type</code> <code>surface</code>, tetwild's output) or, in 2D, tagged edges (simwild's <code>input_type</code> <code>curve</code>,
+  triwild's output) stops with <code>manifold_extraction does not take tagged faces (2D: edges) yet</code>; one
+  with feature curves (a tet mesh's edge block) with <code>manifold_extraction does not take feature
+  curves yet</code>.</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
