@@ -1588,6 +1588,193 @@ size_t TetOptimizerMesh::init_input_envelopes(
     return n;
 }
 
+std::string TetOptimizerMesh::label_name(const size_t bit) const
+{
+    return fmt::format("label bit {}", bit);
+}
+
+namespace {
+/// The names of the bits of `set`, ", "-separated, by `name`.
+template <typename Name>
+std::string bit_names(const InputSet set, Name name)
+{
+    std::string out;
+    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
+        if (((set >> b) & 1) == 0) continue;
+        out += (out.empty() ? "" : ", ") + name(b);
+    }
+    return out;
+}
+/// "name (count)" for each bit with simplices outside, ", "-separated.
+template <typename Name>
+std::string counts_by_name(const std::vector<size_t>& outside, Name name)
+{
+    std::string out;
+    for (size_t b = 0; b < outside.size(); ++b) {
+        if (outside[b] == 0) continue;
+        out += fmt::format("{}{} ({})", out.empty() ? "" : ", ", name(b), outside[b]);
+    }
+    return out;
+}
+} // namespace
+
+void TetOptimizerMesh::require_reference_face_labels(
+    const std::vector<InputSet>& reference_labels) const
+{
+    InputSet held = 0, given = 0;
+    for (const Tuple& f : get_faces()) {
+        const auto& attr = m_face_attribute[f.fid(*this)];
+        if (attr.m_is_surface_fs) held |= attr.input_set();
+    }
+    for (const InputSet s : reference_labels) given |= s;
+    if (const InputSet missing = held & ~given) {
+        log_and_throw_error(
+            "envelope: no triangle of it is labelled {}, which this mesh's faces carry; an "
+            "envelope must carry every label of the mesh it comes with",
+            bit_names(missing, [&](size_t b) { return label_name(b); }));
+    }
+}
+
+void TetOptimizerMesh::init_reference_feature_tubes(const double eps, const bool exact)
+{
+    using EdgeTags = FeatureEdgeAttributes;
+    InputSet held = 0, given = 0;
+    if (m_track_feature_edges) {
+        for (const Tuple& e : get_edges()) {
+            const auto& attr = m_feature_edge_attribute[e.eid(*this)];
+            if (attr.has(EdgeTags::feature)) held |= attr.inputs(EdgeTags::feature);
+        }
+    }
+    const utils::FeatureInputs& c = m_reference_curves;
+    for (const int k : c.edge_input) {
+        if (k >= 0 && k < SurfaceTagAttributes::max_inputs) given |= InputSet(1) << k;
+    }
+    const auto name = [&](size_t b) {
+        return b < m_feature_edge_names.size() ? m_feature_edge_names[b]
+                                               : fmt::format("feature input {}", b);
+    };
+    if (const InputSet missing = held & ~given) {
+        log_and_throw_error(
+            "envelope: no edge of it is labelled {}, which this mesh's feature curves carry; an "
+            "envelope must carry every label of the mesh it comes with",
+            bit_names(missing, name));
+    }
+    if (held == 0) return;
+    std::vector<Eigen::Vector2i> all;
+    for (const auto& e : c.edges) all.emplace_back(int(e[0]), int(e[1]));
+    m_feature_envelope = std::make_shared<Envelope>(exact);
+    m_feature_envelope->init(c.edge_vertices, all, eps);
+    // Per input where tag_feature_edges() built them, over the same inputs.
+    if (!m_feature_input_envelopes.empty()) {
+        std::vector<std::shared_ptr<Envelope>> members;
+        for (size_t i = 0; i < m_feature_input_envelopes.size(); ++i) {
+            std::vector<Eigen::Vector2i> own;
+            for (size_t s = 0; s < c.edges.size(); ++s) {
+                if (size_t(c.edge_input[s]) == i) own.push_back(all[s]);
+            }
+            if (own.empty()) {
+                members.push_back(nullptr); // no curve of the label, so no edge carries it
+                continue;
+            }
+            auto env = std::make_shared<Envelope>(exact);
+            env->init(c.edge_vertices, own, eps);
+            members.push_back(std::move(env));
+        }
+        m_feature_input_envelopes.set(std::move(members));
+    }
+    logger().info(
+        "envelope: feature tubes around the reference's {} curve segments (eps {:.6})",
+        c.edges.size(),
+        eps);
+}
+
+void TetOptimizerMesh::check_reference_containment(const double eps) const
+{
+    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
+    // Per label bit, the held faces outside its envelope; a face outside any of its labels' is
+    // one face outside. Each member asked on its own: inside their intersection is inside each.
+    std::vector<size_t> faces_outside(max_bits, 0);
+    size_t n_faces = 0;
+    for (const Tuple& f : get_faces()) {
+        const auto& attr = m_face_attribute[f.fid(*this)];
+        if (!attr.m_is_surface_fs) continue;
+        const auto vs = get_face_vids(f);
+        const std::array<Vector3d, 3> tri = {
+            {m_vertex_attribute[vs[0]].m_posf,
+             m_vertex_attribute[vs[1]].m_posf,
+             m_vertex_attribute[vs[2]].m_posf}};
+        bool outside = false;
+        for (size_t b = 0; b < max_bits; ++b) {
+            if (((attr.input_set() >> b) & 1) == 0) continue;
+            const Envelope* env = m_input_envelopes.empty()      ? m_envelope.get()
+                                  : b < m_input_envelopes.size() ? m_input_envelopes.member(b).get()
+                                                                 : nullptr;
+            if (env && !env->is_outside(tri)) continue;
+            ++faces_outside[b];
+            outside = true;
+        }
+        n_faces += outside;
+    }
+    // The feature edges, in the tubes of their feature inputs, as tagged_edge_leaves_tube()
+    // holds them.
+    using EdgeTags = FeatureEdgeAttributes;
+    std::vector<size_t> edges_outside(max_bits, 0);
+    size_t n_edges = 0;
+    if (m_track_feature_edges) {
+        for (const Tuple& e : get_edges()) {
+            const auto& attr = m_feature_edge_attribute[e.eid(*this)];
+            if (!attr.has(EdgeTags::feature)) continue;
+            const std::array<Vector3d, 2> segment = {
+                {m_vertex_attribute[e.vid(*this)].m_posf,
+                 m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_posf}};
+            bool outside = false;
+            for (size_t b = 0; b < max_bits; ++b) {
+                if (((attr.inputs(EdgeTags::feature) >> b) & 1) == 0) continue;
+                const Envelope* env = m_feature_input_envelopes.empty() ? m_feature_envelope.get()
+                                      : b < m_feature_input_envelopes.size()
+                                          ? m_feature_input_envelopes.member(b).get()
+                                          : nullptr;
+                if (env && !env->is_outside(segment)) continue;
+                ++edges_outside[b];
+                outside = true;
+            }
+            n_edges += outside;
+        }
+    }
+    if (n_faces == 0 && n_edges == 0) {
+        logger().info(
+            "envelope: every held face and feature edge received lies in the reference's "
+            "envelopes of its labels (eps {:.6})",
+            eps);
+        return;
+    }
+    const auto feature_name = [&](size_t b) {
+        return b < m_feature_edge_names.size() ? m_feature_edge_names[b]
+                                               : fmt::format("feature input {}", b);
+    };
+    std::string what;
+    if (n_faces > 0) {
+        what = fmt::format(
+            "{} held faces outside the envelopes of their labels: {}",
+            n_faces,
+            counts_by_name(faces_outside, [&](size_t b) { return label_name(b); }));
+    }
+    if (n_edges > 0) {
+        what += fmt::format(
+            "{}{} feature edges outside the tubes of their labels: {}",
+            what.empty() ? "" : "; ",
+            n_edges,
+            counts_by_name(edges_outside, feature_name));
+    }
+    log_and_throw_error(
+        "envelope: the mesh received does not lie in the reference at this run's eps {:.6g} "
+        "(feature tubes {:.6g}): {}. The sender held them to a wider envelope; give this run an "
+        "eps at least the sender's, or no envelope",
+        eps,
+        m_feature_envelope ? m_feature_envelope->eps() : eps,
+        what);
+}
+
 void TetOptimizerMesh::init_tagged_edge_input_envelopes(
     const FeatureEdgeAttributes::Kind k,
     const std::vector<size_t>& eids,
@@ -1685,11 +1872,27 @@ size_t TetOptimizerMesh::substructure_order_of_vertex(const size_t vid) const
 {
     size_t order = TetMesh::substructure_order_of_vertex(vid);
     if (order < 3 && m_track_feature_edges) {
+        // The tagged edges at vid, read from vid's own fan alone. The link condition asks this
+        // of the link vertices of the collapsing edge, whose neighbours u lie two steps from it,
+        // outside the collapse's lock: tuple_from_edge({vid, u}) and eid() read fan(u), which
+        // another collapse, or its rollback, may be rewriting. Measured 2026-11-05, double_sphere
+        // at 8 threads: ThreadSanitizer flagged this read, and on the mac-mini (libc++'s move
+        // assignment empties the fan first) 6 runs in 25 threw "empty tet vector"; read from
+        // vid's fan, 0 in 25. Same answer: an edge's slot is its lowest tet's tid * 6 + local
+        // index, and the fan is sorted ascending (eid() relies on it too), so the first tet of
+        // vid's fan holding u is that tet.
         size_t n_tagged = 0;
-        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-            const Tuple e = tuple_from_edge({{vid, u}});
-            if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].is_tagged()) {
-                ++n_tagged;
+        std::vector<size_t> seen;
+        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+            for (int j = 0; j < 6; ++j) {
+                const Tuple e = tuple_from_edge(tid, j);
+                const size_t a = e.vid(*this);
+                const size_t b = e.switch_vertex(*this).vid(*this);
+                if (a != vid && b != vid) continue;
+                const size_t u = a == vid ? b : a;
+                if (std::find(seen.begin(), seen.end(), u) != seen.end()) continue;
+                seen.push_back(u);
+                if (m_feature_edge_attribute[tid * 6 + j].is_tagged()) ++n_tagged;
             }
         }
         if (n_tagged == 2) {

@@ -7,6 +7,7 @@
 
 #include <array>
 #include <filesystem>
+#include <string>
 #include <vector>
 
 namespace wmtk::io {
@@ -79,5 +80,13 @@ EmbedFeaturesInput embed_features_input(
 /// The output vertex of each input point, in input order. Each input point is the output vertex
 /// exactly equal to it; one the insertion dropped is a contract violation, and throws.
 std::vector<size_t> placed_point_vertices(const EmbedFeaturesResult& placed);
+
+/// The label of input_edges file `i` in an output mesh: its column of the edge block's tags
+/// (io::collect_feature_edge_tags()), the bit i of a feature edge's input set. feature_<i>, as an
+/// input without a name is tag_<i>: the files have no names of their own.
+inline std::string feature_input_name(const size_t i)
+{
+    return "feature_" + std::to_string(i);
+}
 
 } // namespace wmtk::utils

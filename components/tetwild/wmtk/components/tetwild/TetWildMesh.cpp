@@ -1,4 +1,5 @@
 #include <wmtk/io/DataWriter.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 
 #include "TetWildMesh.h"
 
@@ -471,8 +472,15 @@ void TetWildMesh::compute_winding_number(
     const std::vector<Tuple>& tets,
     const Eigen::MatrixXd& barycenters,
     const std::vector<Vector3d>& vertices,
-    const std::vector<std::array<size_t, 3>>& faces)
+    const std::vector<std::array<size_t, 3>>& faces,
+    const InputSet bounding)
 {
+    // With filter_inputs, the tracked faces of those inputs only; all of them otherwise, by the
+    // code that ran before the key.
+    const bool all_inputs = bounding == ~InputSet(0);
+    const auto bounds = [&](const FaceAttributes& f) {
+        return all_inputs || (f.input_set() & bounding) != 0;
+    };
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     if (!vertices.empty()) {
@@ -499,7 +507,39 @@ void TetWildMesh::compute_winding_number(
                 "may be inconsistent and the winding number not an integer near them",
                 n);
         }
-        const auto outface = oriented_tracked_faces();
+        std::vector<std::array<size_t, 3>> outface;
+        if (all_inputs) {
+            outface = oriented_tracked_faces();
+        } else {
+            // oriented_tracked_faces(), of the faces bounds() keeps. A face's orientation is one
+            // count for all its inputs (SurfaceTagAttributes::m_orientation), not one per input:
+            // on a face where a kept input coincides with another the count is of both, and the
+            // kept inputs' own is not known. Refused there rather than guessed.
+            size_t n_shared = 0;
+            for (const auto& f : get_faces()) {
+                const auto& attr = m_face_attribute[f.fid(*this)];
+                const InputSet set = attr.input_set();
+                if (attr.m_is_surface_fs && (set & bounding) != 0 && (set & (set - 1)) != 0) {
+                    ++n_shared;
+                }
+            }
+            if (n_shared > 0) {
+                log_and_throw_error(
+                    "filter \"tracked\" with filter_inputs: {} tracked faces carry a named input "
+                    "and another input. The orientation is stored per face, not per input, so the "
+                    "named inputs' winding number cannot be computed there; use filter \"flood\", "
+                    "exact without orientation for inputs that do not overlap themselves",
+                    n_shared);
+            }
+            for (const auto& f : get_faces()) {
+                const auto& attr = m_face_attribute[f.fid(*this)];
+                if (!attr.m_is_surface_fs || attr.m_orientation == 0 || !bounds(attr)) continue;
+                std::array<size_t, 3> v = get_face_vids(f);
+                std::sort(v.begin(), v.end());
+                if (attr.m_orientation < 0) std::swap(v[1], v[2]);
+                for (int k = 0; k < std::abs(attr.m_orientation); ++k) outface.push_back(v);
+            }
+        }
         V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
         for (auto v : get_vertices()) {
             auto vid = v.vid(*this);
@@ -510,7 +550,8 @@ void TetWildMesh::compute_winding_number(
             F.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
         }
     } else { // use track to filter, orientation unknown: guess it per patch
-        auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        auto outface =
+            get_faces_by_condition([&](auto& f) { return f.m_is_surface_fs && bounds(f); });
         V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
         for (auto v : get_vertices()) {
             auto vid = v.vid(*this);
@@ -561,7 +602,8 @@ void TetWildMesh::compute_input_winding_numbers(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     const std::vector<int>& face_input,
-    const int n_inputs)
+    const int n_inputs,
+    const InputSet bounding)
 {
     assert(faces.size() == face_input.size());
     Eigen::MatrixXd V(vertices.size(), 3);
@@ -581,7 +623,18 @@ void TetWildMesh::compute_input_winding_numbers(
         barycenters,
         W_per_input,
         NUM_THREADS);
-    Eigen::VectorXd W = W_per_input.rowwise().sum();
+    // With filter_inputs, the sum over those inputs only: the others do not bound the domain.
+    Eigen::VectorXd W;
+    if (bounding == ~InputSet(0)) {
+        W = W_per_input.rowwise().sum();
+    } else {
+        W = Eigen::VectorXd::Zero(W_per_input.rows());
+        for (int p = 0; p < n_inputs; ++p) {
+            if (p < SurfaceTagAttributes::max_inputs && ((bounding >> p) & 1)) {
+                W += W_per_input.col(p);
+            }
+        }
+    }
 
     for (int p = 0; p < n_inputs; ++p) {
         Eigen::VectorXd w = W_per_input.col(p);
@@ -685,7 +738,10 @@ void TetWildMesh::filter_with_flood_fill()
 }
 
 
-void TetWildMesh::output_mesh(std::string file)
+void TetWildMesh::output_mesh(
+    std::string file,
+    const std::vector<std::string>& face_tags,
+    const std::vector<std::string>& feature_tags)
 {
     if (!m_params.output_enabled) return;
     consolidate_mesh();
@@ -745,6 +801,43 @@ void TetWildMesh::output_mesh(std::string file)
         }
     }
 
+    // The tags, as the memory route's mesh carries them: a block of the tet vertices (the vertex
+    // block MshData leaves empty) per tag, its physical group named after it. A cell with
+    // several tags is in several blocks, and the shared reader (io::read_mesh) reads it back as
+    // one row with each tag; the blocks give it the same row, so the orientation survives.
+    MeshMap tagged{{"mesh", MeshData()}};
+    io::collect_input_set_tags<CellType::Triangle>(*this, tagged, face_tags);
+    io::collect_feature_edge_tags(*this, tagged, feature_tags);
+    for (const auto& entry : tagged.at("mesh").cells) {
+        const CellType type = entry.first;
+        const CellData& block = entry.second;
+        const MeshAttribute& tags = block.attributes.at("tags");
+        const DataMatrix<int64_t> member = tags.integers();
+        for (size_t j = 0; j < tags.labels.size(); ++j) {
+            std::vector<Eigen::Index> rows;
+            for (Eigen::Index r = 0; r < member.rows(); ++r) {
+                if (member(r, Eigen::Index(j)) != 0) rows.push_back(r);
+            }
+            if (rows.empty()) continue;
+            if (type == CellType::Triangle) {
+                msh.add_face_vertices();
+                msh.add_faces(rows.size(), [&](size_t k) {
+                    std::array<size_t, 3> f;
+                    for (int c = 0; c < 3; ++c) f[c] = size_t(block.connectivity(rows[k], c));
+                    return f;
+                });
+            } else {
+                msh.add_edge_vertices();
+                msh.add_edges(rows.size(), [&](size_t k) {
+                    std::array<size_t, 2> e;
+                    for (int c = 0; c < 2; ++c) e[c] = size_t(block.connectivity(rows[k], c));
+                    return e;
+                });
+            }
+            msh.add_physical_group(tags.labels[j]);
+        }
+    }
+
     msh.save(file, true);
 }
 
@@ -784,8 +877,14 @@ void TetWildMesh::init_vertex_order()
         NUM_THREADS);
 }
 
-int TetWildMesh::flood_fill()
+int TetWildMesh::flood_fill(const InputSet bounding)
 {
+    // A face the fill crosses: not tracked, or, with filter_inputs, tracked for other inputs only.
+    const bool all_inputs = bounding == ~InputSet(0);
+    const auto crossed = [&](const Tuple& f) {
+        const auto& attr = m_face_attribute[f.fid(*this)];
+        return !attr.m_is_surface_fs || (!all_inputs && (attr.input_set() & bounding) == 0);
+    };
     int current_id = 0;
     auto tets = get_tets();
     std::vector<char> visited(tet_capacity(), 0);
@@ -807,28 +906,28 @@ int TetWildMesh::flood_fill()
 
         std::queue<Tuple> bfs_queue;
 
-        if (!m_face_attribute[f1.fid(*this)].m_is_surface_fs) {
+        if (crossed(f1)) {
             // std::cout << "in 1" << std::endl;
             auto oppo_t = f1.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
-        if (!m_face_attribute[f2.fid(*this)].m_is_surface_fs) {
+        if (crossed(f2)) {
             // std::cout << "in 2" << std::endl;
             auto oppo_t = f2.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
-        if (!m_face_attribute[f3.fid(*this)].m_is_surface_fs) {
+        if (crossed(f3)) {
             // std::cout << "in 3" << std::endl;
             auto oppo_t = f3.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
-        if (!m_face_attribute[f4.fid(*this)].m_is_surface_fs) {
+        if (crossed(f4)) {
             // std::cout << "in 4" << std::endl;
             auto oppo_t = f4.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
@@ -854,25 +953,25 @@ int TetWildMesh::flood_fill()
             auto f_tmp3 = tmp.switch_edge(*this).switch_face(*this);
             auto f_tmp4 = tmp.switch_vertex(*this).switch_edge(*this).switch_face(*this);
 
-            if (!m_face_attribute[f_tmp1.fid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp1)) {
                 auto oppo_t = f_tmp1.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
                     if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
-            if (!m_face_attribute[f_tmp2.fid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp2)) {
                 auto oppo_t = f_tmp2.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
                     if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
-            if (!m_face_attribute[f_tmp3.fid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp3)) {
                 auto oppo_t = f_tmp3.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
                     if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
-            if (!m_face_attribute[f_tmp4.fid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp4)) {
                 auto oppo_t = f_tmp4.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
                     if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);

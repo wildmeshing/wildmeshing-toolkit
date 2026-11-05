@@ -291,14 +291,18 @@ above show.
 ## The envelope a run returns
 
 A run that optimizes also returns the surface it held the interfaces to: `outputs["envelope"]` in
-Python, `outputs.at("envelope")` in C++, a triangle mesh in 3D and a set of segments in 2D. It is
-the inputs as simwild simplified them, within
-[`eps_simplify_rel`](../reference/simwild.md#eps_simplify_rel): in 3D, by default, the interfaces
-right after the simplification that follows the insertion; with
-[`simplify`](../reference/simwild.md#simplify) false, the inputs themselves; in 2D, the input
-curves (simplified when `preserve_topology` is off).
+Python, `outputs.at("envelope")` in C++, `<output>_envelope.msh` on the command line, a triangle
+mesh in 3D and a set of segments in 2D. It is the inputs as read -- as simwild simplified them under
+[`envelope_reference`](../reference/simwild.md#envelope_reference) "simplified" -- each triangle
+(segment) labelled with the region or face tag of its input, as the mesh's `tags` name them, with the
+feature curves and the input points. It holds no eps.
 
-A later `remeshing` of the same mesh takes it as the `envelope` input:
+A later `remeshing` of the same mesh takes it as the [`envelope`](../reference/simwild.md#envelope)
+input and builds its envelopes around it, label by label, at its own eps: however many runs come in
+between, the result is within that eps of the original inputs, where envelopes rebuilt from each
+mesh received would let it drift one eps further every run. The run checks first that the mesh it
+is given lies in them, and refuses it otherwise -- a mesh held to a wider eps before -- and returns
+the same envelope, to pass on again:
 
 ```python
 --8<-- "docs/examples/python/simwild.py:envelope"
@@ -307,11 +311,11 @@ A later `remeshing` of the same mesh takes it as the `envelope` input:
 The finer remeshing gives 38,609 tets in one run. With the envelope, a remeshing holds the
 interfaces to it; without it, simwild builds an envelope from the interfaces of the mesh it is
 given, wherever the previous run left them. Pass it on when you remesh a mesh whose regions have
-not changed since the run that returned it. In 3D, the remeshing first
+not changed since the run that returned it. The remeshing first
 simplifies the mesh within `eps_simplify_rel` of that envelope (unless
 [`simplify`](../reference/simwild.md#simplify) is false) and then holds the optimization to the
 simplified interfaces, so the envelope bounds how far the simplification moves them; with
-`simplify` false, and in 2D, it bounds the whole run.
+`simplify` false, it bounds the whole run.
 
 Do not pass it after a region edit. The edits change which faces are interfaces, so they return no
 envelope, and an old one does not cover the new interfaces: simwild finds faces outside it, warns

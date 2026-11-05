@@ -68,6 +68,9 @@ public:
     std::map<std::string, int64_t> m_tag_name_to_id;
     /// Names of the face tags: bit i of a face's input set is m_face_tag_names[i].
     std::vector<std::string> m_face_tag_names;
+    // The names of the feature curves' inputs are the base's m_feature_edge_names, set by the
+    // driver: feature_<i> for input_edges file i, or the edge tags of a tagged mesh input
+    // (InputData::feature_edge_names).
 
     /**
      * @brief (Re)build the base's m_input_envelopes: one envelope per label, and each surface
@@ -104,8 +107,41 @@ public:
     }
 
     /// Per row of m_F_envelope: its label bits, when m_F_envelope is the inputs' triangles
-    /// (InputData::F_envelope_labels); empty once m_F_envelope is rebuilt from the mesh.
+    /// (InputData::F_envelope_labels) or the mesh's own surface faces at load
+    /// (init_surfaces_and_boundaries(): each face's input set); empty once simplify() rebuilds
+    /// m_F_envelope around the simplified faces. init_label_envelopes() reads an empty one as
+    /// "around the mesh's faces as they are then": at load that left the per-label envelopes to
+    /// follow the faces, so after the simplification under envelope_reference "input" they were
+    /// rebuilt around the simplified faces while the union was rebuilt around the input.
     std::vector<InputSet> m_F_envelope_labels;
+    /// Per row of m_F_envelope, when it was built from the mesh's own surface faces
+    /// (init_surfaces_and_boundaries(), simplify()): that face's input set; empty otherwise. What
+    /// envelope_data() labels the rows by where m_F_envelope_labels is empty (after simplify()).
+    std::vector<InputSet> m_F_envelope_face_sets;
+
+    // A reference an `envelope` input gave (InputData::envelope_reference), the first
+    // component's labelled input, is the base's (TetOptimizerMesh::m_has_reference, which states
+    // the guarantee): set by the driver before init, with m_V_envelope, m_F_envelope and
+    // m_F_envelope_labels its triangles of this mesh's labels, m_reference_curves its feature
+    // curves, and m_input_curves set from both. init_surfaces_and_boundaries() then throws for a
+    // label a held face or feature edge carries that the reference lacks, and, for a remeshing,
+    // which holds the mesh to it, for a held face or feature edge received outside its labels'
+    // envelopes (check_reference_containment()): nothing is rebuilt around the mesh, as the
+    // envelope check without a reference does.
+
+    /// The label of bit `bit` of a face's input set, as the output names it: a face tag's name, a
+    /// tet tag's label (io::collect_tags()).
+    std::string label_name(size_t bit) const override;
+    /**
+     * @brief The envelope the run hands on (io::append_envelope_block()), when it built its own:
+     * m_F_envelope's rows labelled by m_F_envelope_labels, else by m_F_envelope_face_sets, with
+     * the feature curves of `curves` (edge_input: the bit of `curve_names`) and its points.
+     * Unlabelled, and without curves and points, where the rows' labels are not known: a bare
+     * `envelope` given, or the EnvelopeSurface group of a .msh.
+     */
+    MeshData envelope_data(
+        const utils::FeatureInputs& curves,
+        const std::vector<std::string>& curve_names) const;
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// simwild-only fields (tags, quality/sizing fields, the operation name).

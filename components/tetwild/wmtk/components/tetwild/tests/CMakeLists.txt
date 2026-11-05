@@ -21,6 +21,7 @@ set(SRC_FILES
     test_input_sets.cpp
     test_runner.cpp
     test_surface_folds.cpp
+    test_tagged_input.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

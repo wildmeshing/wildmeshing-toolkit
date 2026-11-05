@@ -83,18 +83,9 @@ bool is_corner_field(const std::string& name)
 SurfaceData surface_from_mesh(const MeshData& mesh, const std::string& what, const bool strict)
 {
     mesh.validate();
-    for (const auto& [name, a] : mesh.vertex_attributes) {
-        if (io::ComponentIO::reader_vertex_attributes.count(name)) continue;
-        if (strict) {
-            throw std::runtime_error(
-                "tracking: " + what + " has the vertex field " + name +
-                ", which a transfer does not carry: it carries the fields of the triangles");
-        }
-        logger().warn(
-            "{}: the vertex field {} is not carried, only fields of the triangles",
-            what,
-            name);
-    }
+    // A transfer carries the fields of the triangles; vertex fields are dropped, on both routes
+    // (io::ComponentIO::data_fields).
+    io::ComponentIO::log_dropped(what, io::ComponentIO::dropped_fields(mesh.vertex_attributes, {}));
     for (const auto& [type, c] : mesh.cells) {
         if (type == CellType::Triangle || c.connectivity.rows() == 0) continue;
         if (strict) {

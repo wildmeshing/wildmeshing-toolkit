@@ -14,6 +14,7 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 #include <wmtk/utils/SurfaceTopology.hpp>
 
 #include <igl/Timer.h>
@@ -759,6 +760,49 @@ public:
         const std::vector<InputSet>& F_sets,
         double eps,
         bool exact);
+
+    /**
+     * @name A reference held to
+     *
+     * An `envelope` input that is a labelled reference (io::read_labelled_envelope()), the first
+     * component's input, held to by the run it is given to, simwild's and tetwild's tagged routes
+     * alike: m_envelope and m_input_envelopes are built around its triangles of this mesh's
+     * labels (io::held_rows()), the order-2 tubes and curve-end anchors around its curves
+     * (m_input_curves, set_input_curves()), the feature tubes around its feature curves
+     * (init_reference_feature_tubes()), never around the mesh received. So the output is within
+     * this run's eps of the first component's input however many components came before; rebuilt
+     * from what each receives, the bound would grow by one eps per stage. Before an optimization,
+     * which holds the mesh to it, what was received must already lie in it
+     * (check_reference_containment()). Moved here from SimWildMesh (2026-11) for tetwild's tagged
+     * route, unchanged.
+     * @{
+     */
+    /// Set by the application before init, with the envelopes built around the reference.
+    bool m_has_reference = false;
+    /// The reference's feature curves: an input edge per edge and label, edge_input the feature
+    /// input of the label (m_feature_edge_names).
+    utils::FeatureInputs m_reference_curves;
+    /// Names of the feature curves' inputs: bit i of a feature edge's input set
+    /// (FeatureEdgeAttributes::inputs(feature)) is m_feature_edge_names[i], the output's edge tag
+    /// (io::collect_feature_edge_tags()). Set by the application: feature_<i> for input_edges
+    /// file i, or the edge tags of a tagged mesh input.
+    std::vector<std::string> m_feature_edge_names;
+    /// The label of bit `bit` of a face's input set, as the output names it; the application's,
+    /// for the reference checks to name a label by.
+    virtual std::string label_name(size_t bit) const;
+    /// Throws for the labels the held faces carry that none of `reference_labels` (one per
+    /// triangle of the reference held to) has, naming them.
+    void require_reference_face_labels(const std::vector<InputSet>& reference_labels) const;
+    /// After tag_feature_edges(): the feature tubes rebuilt around m_reference_curves, at `eps`
+    /// and with predicate `exact`, as tag_feature_edges() builds them around the curves as read --
+    /// one around all, one per input where it built those -- after throwing for a label a feature
+    /// edge carries that the reference's curves lack.
+    void init_reference_feature_tubes(double eps, bool exact);
+    /// Before an optimization: throws unless every held face lies in the envelopes of its labels
+    /// and every feature edge in the tubes of its labels, naming each label with simplices
+    /// outside, their number, and `eps`, the run's.
+    void check_reference_containment(double eps) const;
+    /** @} */
 
     /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
     /// distance) on a comparable footing.

@@ -16,6 +16,7 @@
 #include <wmtk/threading/parallel_for.hpp>
 
 #include "Parameters.h"
+#include "read_tagged_mesh.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -85,8 +86,15 @@ public:
     // always was. The containment is the base's default.
 
     /// Optional per-input names (JSON "input_names"), used to label the per-input
-    /// winding-number output fields. Empty => the fields are numbered.
+    /// winding-number output fields (empty => the fields are numbered) and the face tags, tag_<i>
+    /// without a name (io::input_labels()).
     std::vector<std::string> m_input_names;
+    /// The label of bit `bit` of a tracked face's input set, for the reference checks: the
+    /// input's name, tag_<i> without one, as the output's face tags name it.
+    std::string label_name(size_t bit) const override
+    {
+        return bit < m_input_names.size() ? m_input_names[bit] : "tag_" + std::to_string(bit);
+    }
 
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
     TetAttCol m_tet_attribute;
@@ -204,7 +212,14 @@ public:
 
     ////// Attributes related
 
-    void output_mesh(std::string file);
+    /// With `face_tags`, also the tracked faces, one physical group per input
+    /// (io::collect_input_set_tags()), and with `feature_tags` the tet edges tiling the feature
+    /// curves, one per input_edges file (io::collect_feature_edge_tags()): the tags the memory
+    /// route returns on its mesh, which the shared reader reads back as those blocks.
+    void output_mesh(
+        std::string file,
+        const std::vector<std::string>& face_tags = {},
+        const std::vector<std::string>& feature_tags = {});
     /// The tets and their vertices as output_mesh() writes them -- consolidated first, a row per
     /// vertex at m_posf and a row per tet, oriented, in the file's order -- without the fields:
     /// the memory route's counterpart of the file, for the meshes a volume history starts and
@@ -230,12 +245,16 @@ public:
      *
      * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
      * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
+     *
+     * `bounding` (filter_inputs): the tracked surface of the faces whose input set meets it
+     * only. All bits, the default: every tracked face, as before the key.
      */
     void compute_winding_number(
         const std::vector<Tuple>& tets,
         const Eigen::MatrixXd& barycenters,
         const std::vector<Vector3d>& vertices = {},
-        const std::vector<std::array<size_t, 3>>& faces = {});
+        const std::vector<std::array<size_t, 3>>& faces = {},
+        InputSet bounding = ~InputSet(0));
 
     /**
      * @brief The winding numbers of the input: with respect to each input surface
@@ -251,6 +270,9 @@ public:
      * winding number negated. The whole input's is the sum of the per-input ones AS GIVEN,
      * oriented as a whole the same way -- an input that is a cavity of another, oriented inward,
      * still subtracts.
+     *
+     * `bounding` (filter_inputs): the whole input's is the sum over the inputs of its bits only,
+     * the inputs that bound the domain filter "input" keeps. All bits, the default: every input.
      */
     void compute_input_winding_numbers(
         const std::vector<Tuple>& tets,
@@ -258,7 +280,8 @@ public:
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
         const std::vector<int>& face_input,
-        int n_inputs);
+        int n_inputs,
+        InputSet bounding = ~InputSet(0));
 
     /// Which of the finalization's per-tet fields were computed, so that the writers leave
     /// out the ones that were not rather than writing their defaults as if they were values.
@@ -345,6 +368,22 @@ public:
         const std::vector<InputSet>* facet_input_set = nullptr,
         const utils::FeatureInputs* feature_input = nullptr);
 
+    /**
+     * @brief The tagged route: initialize from a tagged tet mesh (read_tagged_mesh()), its tets
+     * kept, instead of from an insertion.
+     *
+     * What init_from_Volumeremesher() does with the insertion's output, done with the mesh's:
+     * every vertex a direct point (its double is exact), so rounded; the tagged faces tracked,
+     * each with its labels as its input set and the orientation of its rows; the feature curves
+     * and points tagged and anchored, the tubes around them as received. The wall: the box rule's
+     * flags on the boundary faces, each in a plane of the mesh's own bounding box, the domain's
+     * box (m_tet_params.box_min/box_max). Throws on a tagged face or edge the tets do not have, on
+     * a tracked boundary face (a filtered mesh's boundary: the operations hold a tracked face from
+     * the tet across it), and on an untracked boundary face in no plane of the box: such a face
+     * would be held by nothing.
+     */
+    void init_from_tagged_mesh(const TaggedMesh& mesh);
+
     void init_from_file(std::string input_dir);
 
 
@@ -372,7 +411,10 @@ public:
 
 public:
     // for boolean operations
-    int flood_fill();
+    /// The parts the tracked faces separate. `bounding` (filter_inputs): only the faces whose
+    /// input set meets it separate; the others are crossed. All bits, the default: every tracked
+    /// face, as before the key.
+    int flood_fill(InputSet bounding = ~InputSet(0));
 
     void save_paraview(const std::string& path, const bool use_hdf5, MeshMap* output = nullptr);
     void write_optimization_debug_output(const std::string& path) override

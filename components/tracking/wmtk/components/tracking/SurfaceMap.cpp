@@ -603,10 +603,15 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
             const size_t n = loop->size();
             return std::make_pair((*loop)[(i + n - 1) % n], (*loop)[(i + 1) % n]);
         };
-        // The outline keeps the removed vertex; after the edit a virtual vertex takes its place,
-        // on the edge (prev, next) at its parameter along the two edges it replaced. Where no
-        // edge replaces them, the survivor came out onto the outline in its place -- a boundary
-        // vertex collapsed into one inside -- and stands for it there.
+        // The outline keeps the removed vertex. Where the survivor was inside -- a boundary vertex
+        // collapsed into one inside -- the survivor comes out onto the outline in its place and
+        // stands for it there, and that is decided first: every edge the collapse makes holds
+        // the survivor, so an edge (prev, next) the patch has after was there before, the third
+        // side of the face that survives a survivor of three faces, and splitting it would cut
+        // the outline. Tried the other way round, that case was refused as not a disk: 20 of 20
+        // not_a_disk warnings of tetwild on the open bunny (2026-11), python_tracking_
+        // correspondences' intermittent CI failure. Otherwise a virtual vertex takes its place,
+        // on the edge (prev, next) at its parameter along the two edges it replaced.
         const bool kept_inside = std::none_of(loop->begin(), loop->end(), [&](uint64_t v) {
             return ids.vertex_of(v) == kept;
         });
@@ -616,11 +621,11 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
             const double a = length(prev, (*loop)[i]), b = length((*loop)[i], next);
             const double tau = std::clamp(a + b > 0 ? a / (a + b) : 0.5, 0.01, 0.99);
             const uint64_t w = ids.fresh(removed);
-            if (after.split(prev, next, tau, w)) {
-                slots[i].second = w;
-            } else if (kept_inside && !kept_placed) {
+            if (kept_inside && !kept_placed) {
                 slots[i].second = kept;
                 kept_placed = true;
+            } else if (after.split(prev, next, tau, w)) {
+                slots[i].second = w;
             } else {
                 split_all = false;
             }

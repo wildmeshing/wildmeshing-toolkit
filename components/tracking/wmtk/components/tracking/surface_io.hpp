@@ -44,9 +44,8 @@ bool is_corner_field(const std::string& name);
 /**
  * @brief The triangles of `mesh`, in row order, with every field on them: a per-corner one
  * (is_corner_field) as a corner field, every other as a face field. `what` names the mesh in
- * messages. Vertex fields are not carried, other than `vid` (io::read_mesh's source ids); with
- * `strict`, one is refused, as the memory route refuses an attribute it does not use, and
- * otherwise only warned about, as a file reader ignores what it does not read.
+ * messages. Vertex fields are not carried: they are dropped, and named in the log. With
+ * `strict`, cells other than triangles are refused, and otherwise only warned about.
  */
 SurfaceData surface_from_mesh(const MeshData& mesh, const std::string& what, bool strict);
 

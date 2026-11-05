@@ -1,5 +1,6 @@
 #include "tetwild.hpp"
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 
@@ -15,10 +16,15 @@
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
+#include <algorithm>
+#include <cctype>
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
+#include <set>
 #include <vector>
+#include <wmtk/components/shortest_edge_collapse/Embedding.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 #include <wmtk/utils/resolve_path.hpp>
@@ -136,9 +142,52 @@ std::vector<int> curve_euler_characteristics(const std::vector<std::array<size_t
     return ecs;
 }
 
+/**
+ * @brief The tagged route's input (read_tagged_mesh()), when `input` is a tet mesh: on the memory
+ * route a named mesh with tets, on the file route a .msh with tets, read by the shared reader. Its
+ * fields but the tags are dropped, as every reader drops them. Without one, nullopt: the inputs
+ * are surfaces. A tet mesh is the only input: with any other, it throws.
+ */
+static std::optional<TaggedMesh> read_tagged_input(
+    const io::ComponentIO& component_io,
+    const std::vector<std::string>& input_paths)
+{
+    std::optional<TaggedMesh> tagged;
+    for (const std::string& path : input_paths) {
+        if (component_io.memory()) {
+            const MeshData& mesh = component_io.mesh(path);
+            if (!is_tet_mesh(mesh)) continue;
+            if (input_paths.size() > 1) {
+                log_and_throw_error(
+                    "{}: a tagged tet mesh is tetwild's only input, not one of {}",
+                    path,
+                    input_paths.size());
+            }
+            tagged = read_tagged_mesh(mesh, path);
+            continue;
+        }
+        std::string extension = std::filesystem::path(path).extension().string();
+        for (char& c : extension) c = char(std::tolower(static_cast<unsigned char>(c)));
+        if (extension != ".msh") continue;
+        MeshData mesh = io::read_mesh(path);
+        if (!is_tet_mesh(mesh)) continue;
+        if (input_paths.size() > 1) {
+            log_and_throw_error(
+                "{}: a tagged tet mesh is tetwild's only input, not one of {}",
+                path,
+                input_paths.size());
+        }
+        tagged = read_tagged_mesh(mesh, path);
+    }
+    return tagged;
+}
+
 static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
     component_io.prepare(json_params, "tetwild");
+    // The `envelope` input names a mesh of the call on the memory route, as simwild's does.
+    const auto envelope_selector = json_params.value("envelope", nlohmann::json());
+    if (component_io.memory()) json_params.erase("envelope");
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
@@ -243,6 +292,115 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 "the volume history does not see the vertices a coarsening collapse smooths");
         }
     }
+
+    // The tagged route: a tet mesh as the input -- on the memory route a named mesh with tets, on
+    // the file route a .msh with tets -- continued from as it is, its tets kept, instead of a
+    // background mesh built and cut by the insertion, so that a chain of components can go on
+    // through tetwild. tetwild holds the mesh's tagged faces, feature curves and points
+    // (read_tagged_mesh()), and no volumes: it carries no tet tags through its operations.
+    // Skipped on it: the reading and cleaning of surfaces, the simplification, the insertion and
+    // the input winding numbers, which are of input surfaces (wn_<i>). Until 2026-11 a tet mesh
+    // threw on the memory route ("Expected triangle input"), and on the file route every
+    // triangle of the .msh became one input surface, its tets and tags dropped.
+    std::optional<TaggedMesh> tagged_mesh = read_tagged_input(component_io, input_paths);
+    const bool tagged = tagged_mesh.has_value();
+    if (tagged) {
+        // What the route has no use for, refused rather than ignored.
+        if (!json_params["input_edges"].empty() || !json_params["input_points"].empty()) {
+            log_and_throw_error(
+                "input_edges and input_points: not with a tagged mesh input, whose edge and point "
+                "blocks are its feature curves and points");
+        }
+        if (!json_params["input_names"].empty()) {
+            log_and_throw_error("input_names: a tagged mesh input names its labels itself");
+        }
+        if (filter_option == "input") {
+            log_and_throw_error(
+                "filter \"input\": a tagged mesh input has no input surface to take the winding "
+                "number of; \"tracked\" and \"flood\" use its tagged faces");
+        }
+        if (json_params["use_legacy_code"]) {
+            log_and_throw_error(
+                "use_legacy_code: not with a tagged mesh input, whose labels the legacy "
+                "optimizer does not keep");
+        }
+        if (tagged_mesh->F.empty()) {
+            log_and_throw_error(
+                "a tagged mesh input without tagged faces: tetwild holds a tracked surface, and "
+                "the mesh has none");
+        }
+    }
+    // The `envelope` input: a mesh of the call on the memory route, a mesh file on the file route
+    // (relative to input_dir), read by the shared reader, as simwild's. The reference the first
+    // component of a chain held its tags to, for this run to hold its own to.
+    const std::string envelope_path =
+        component_io.memory() ? "" : json_params["envelope"].get<std::string>();
+    std::optional<MeshData> envelope_given;
+    if (!envelope_selector.is_null() || !envelope_path.empty()) {
+        if (!tagged) log_and_throw_error("`envelope` applies to a tagged mesh input only");
+        envelope_given = envelope_path.empty()
+                             ? component_io.mesh(envelope_selector.get<std::string>())
+                             : io::read_mesh(resolve_path(root, envelope_path));
+        // Held to as given, label by label, as simwild holds one (TetOptimizerMesh's reference):
+        // checked exactly, so not with the sampled envelope; envelope_reference "simplified" has
+        // no simplification to build around on this route and is refused below.
+        if (!io::is_labelled_envelope(*envelope_given, /*is_3d=*/true)) {
+            log_and_throw_error(
+                "`envelope`: a tagged mesh input is held to a labelled reference, as tetwild, "
+                "triwild and simwild hand theirs on, not to bare geometry");
+        }
+        if (use_sample_envelope) {
+            log_and_throw_error(
+                "`envelope`: a reference is held to and checked against exactly, not with "
+                "use_sample_envelope");
+        }
+    }
+    // The labels of the output's tags, the same on both routes. Of the surface route: the tracked
+    // faces of each input surface, named as triwild's and simwild's tags name an input
+    // (input_names, else tag_<i>; tetwild names nothing else after them but the wn_ fields), and
+    // the tet edges tiling each input_edges file, feature_<i>. Of the tagged route: the mesh's
+    // own labels, so that they leave as they came.
+    const std::vector<std::string> face_tags =
+        tagged ? tagged_mesh->face_names
+               : io::input_labels(
+                     json_params["input_names"].get<std::vector<std::string>>(),
+                     input_paths.size());
+    std::vector<std::string> feature_tags;
+    if (tagged) {
+        feature_tags = tagged_mesh->feature_names;
+    } else {
+        for (size_t i = 0; i < json_params["input_edges"].size(); ++i) {
+            feature_tags.push_back(utils::feature_input_name(i));
+        }
+    }
+    // filter_inputs: the inputs that bound the domain a filter keeps, by their labels (bit i:
+    // face_tags[i]). Every input by default, as before the key.
+    InputSet bounding = ~InputSet(0);
+    const auto filter_inputs = json_params["filter_inputs"].get<std::vector<std::string>>();
+    if (!filter_inputs.empty()) {
+        if (filter_option == "none") {
+            log_and_throw_error("filter_inputs: with filter \"none\" nothing is filtered");
+        }
+        if (json_params["use_legacy_code"] && filter_option != "input") {
+            log_and_throw_error(
+                "filter_inputs: filter \"{}\" not with use_legacy_code, which keeps no face's "
+                "inputs",
+                filter_option);
+        }
+        bounding = 0;
+        for (const std::string& name : filter_inputs) {
+            const auto it = std::find(face_tags.begin(), face_tags.end(), name);
+            if (it == face_tags.end()) {
+                log_and_throw_error(
+                    "filter_inputs: {} is not an input (the inputs: {})",
+                    name,
+                    face_tags);
+            }
+            bounding |= InputSet(1) << (it - face_tags.begin());
+        }
+        logger().info("filter \"{}\": the domain bounded by {} only", filter_option, filter_inputs);
+    }
+
     history::SurfaceHistory input_history; // the files as read, welded, simplified
 
     std::vector<Eigen::Vector3d> verts;
@@ -254,76 +412,806 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     igl::Timer phase_timer;
     double t_load = 0, t_simplify = 0, t_optimize = 0, t_finalize = 0, t_output = 0;
     phase_timer.start();
-    {
-        // Merging vertices that are merely *close* is a topology change: it welds sheets
-        // of the surface that pass near each other and so removes handles and tunnels.
-        // Under preserve_topology only exactly coincident vertices may be merged, which is
-        // a pure de-duplication of the file and leaves the topology alone. simwild makes
-        // the same distinction (see read_image_msh.cpp).
-        const double remove_duplicate_eps =
-            params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
-        MatrixXd V;
-        MatrixXi F;
-        io::ReadProvenance read;
-        component_io.triangles(
-            input_paths,
-            V,
-            F,
-            remove_duplicate_eps,
-            -1,
-            &tri_input,
-            record_history ? &read : nullptr);
-        // Each tracked face records the inputs it covers in max_inputs bits (see
-        // SurfaceTagAttributes::input_set()), so a run with more cannot hold every face to its
-        // own inputs. Refused here, before any work, rather than answered by the union.
-        if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
-            log_and_throw_error(
-                "{} input surfaces; at most {} are supported",
-                input_paths.size(),
-                SurfaceTagAttributes::max_inputs);
-        }
-        box_minmax.first = V.colwise().minCoeff();
-        box_minmax.second = V.colwise().maxCoeff();
-        VF_to_vectors(V, F, verts, tris);
-        if (record_history) {
-            // The files as they are, then the weld: each vertex renamed to the one it became.
-            auto& h = input_history;
-            for (Eigen::Index v = 0; v < read.V.rows(); ++v) {
-                h.vertices.push_back(read.V.row(v).transpose());
-            }
-            h.vertex_alive.assign(h.vertices.size(), 1);
-            for (Eigen::Index f = 0; f < read.cells.rows(); ++f) {
-                h.faces.push_back(
-                    {{uint64_t(read.cells(f, 0)),
-                      uint64_t(read.cells(f, 1)),
-                      uint64_t(read.cells(f, 2))}});
-            }
-            h.face_alive.assign(h.faces.size(), 1);
-            history::Edit weld{history::EditKind::relabel, {}, {}, {}};
-            for (const int n : read.vertex_map) {
-                weld.v.push_back(n < 0 ? history::kNoVertex : uint64_t(n));
-            }
-            for (uint64_t v = 0; v < verts.size(); ++v) weld.moves.push_back({v, verts[v]});
-            h.edits.push_back(std::move(weld));
-        }
-    }
-    // Feature inputs: an edge mesh to force into the tetrahedralization as tet edges, and
-    // points to force in as tet vertices. Both join the bounding box BEFORE eps and the
-    // background box derive from it -- they are input geometry, and a feature outside the
-    // surface's box must still land inside the triangulated domain.
-    // Read and grown over by the shared code simwild uses too (utils::read_feature_inputs()).
-    const utils::FeatureInputs features = utils::read_feature_inputs(
-        component_io,
-        root,
-        json_params["input_edges"],
-        json_params["input_points"]);
-    features.extend_bbox(box_minmax.first, box_minmax.second);
+    // What both routes leave to the optimization and the output: the feature curves and points
+    // held, the reference handed on (`envelope`), the mesh, the chain boundary of the oriented
+    // surface it starts with (see log_orientation_check below), and the time from the insertion
+    // or the initialization from a tagged mesh on.
+    utils::FeatureInputs features;
     const std::vector<Vector3d>& feature_edge_vertices = features.edge_vertices;
     const std::vector<std::array<size_t, 2>>& feature_edges = features.edges;
     const std::vector<Vector3d>& feature_points = features.points;
+    MeshData envelope_out;
+    std::unique_ptr<tetwild::TetWildMesh> mesh_owner;
+    size_t inserted_boundary = 0;
+    double insertion_time = 0;
+    igl::Timer timer;
+    // The surface handed to the insertion, checked under preserve_topology below; -1: not checked
+    // (a tagged mesh input is not inserted).
+    int64_t inserted_crossing_pairs = -1, inserted_degenerate_triangles = -1;
+    if (!tagged) {
+        {
+            // Merging vertices that are merely *close* is a topology change: it welds sheets
+            // of the surface that pass near each other and so removes handles and tunnels.
+            // Under preserve_topology only exactly coincident vertices may be merged, which is
+            // a pure de-duplication of the file and leaves the topology alone. simwild makes
+            // the same distinction (see read_image_msh.cpp).
+            const double remove_duplicate_eps =
+                params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
+            MatrixXd V;
+            MatrixXi F;
+            io::ReadProvenance read;
+            component_io.triangles(
+                input_paths,
+                V,
+                F,
+                remove_duplicate_eps,
+                -1,
+                &tri_input,
+                record_history ? &read : nullptr);
+            // Each tracked face records the inputs it covers in max_inputs bits (see
+            // SurfaceTagAttributes::input_set()), so a run with more cannot hold every face to its
+            // own inputs. Refused here, before any work, rather than answered by the union.
+            if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+                log_and_throw_error(
+                    "{} input surfaces; at most {} are supported",
+                    input_paths.size(),
+                    SurfaceTagAttributes::max_inputs);
+            }
+            box_minmax.first = V.colwise().minCoeff();
+            box_minmax.second = V.colwise().maxCoeff();
+            VF_to_vectors(V, F, verts, tris);
+            if (record_history) {
+                // The files as they are, then the weld: each vertex renamed to the one it became.
+                auto& h = input_history;
+                for (Eigen::Index v = 0; v < read.V.rows(); ++v) {
+                    h.vertices.push_back(read.V.row(v).transpose());
+                }
+                h.vertex_alive.assign(h.vertices.size(), 1);
+                for (Eigen::Index f = 0; f < read.cells.rows(); ++f) {
+                    h.faces.push_back(
+                        {{uint64_t(read.cells(f, 0)),
+                          uint64_t(read.cells(f, 1)),
+                          uint64_t(read.cells(f, 2))}});
+                }
+                h.face_alive.assign(h.faces.size(), 1);
+                history::Edit weld{history::EditKind::relabel, {}, {}, {}};
+                for (const int n : read.vertex_map) {
+                    weld.v.push_back(n < 0 ? history::kNoVertex : uint64_t(n));
+                }
+                for (uint64_t v = 0; v < verts.size(); ++v) weld.moves.push_back({v, verts[v]});
+                h.edits.push_back(std::move(weld));
+            }
+        }
+        // Feature inputs: an edge mesh to force into the tetrahedralization as tet edges, and
+        // points to force in as tet vertices. Both join the bounding box BEFORE eps and the
+        // background box derive from it -- they are input geometry, and a feature outside the
+        // surface's box must still land inside the triangulated domain.
+        // Read and grown over by the shared code simwild uses too (utils::read_feature_inputs()).
+        features = utils::read_feature_inputs(
+            component_io,
+            root,
+            json_params["input_edges"],
+            json_params["input_points"]);
+        features.extend_bbox(box_minmax.first, box_minmax.second);
 
-    t_load = phase_timer.getElapsedTime();
-    phase_timer.start(); // surface simplification begins
+        t_load = phase_timer.getElapsedTime();
+        phase_timer.start(); // surface simplification begins
+
+        double diag = (box_minmax.first - box_minmax.second).norm();
+        const double envelope_size = params.epsr * diag;
+        // Held by pointer so it can be dropped once vsimp/fsimp are extracted below: it is a full
+        // TriMesh over the input, with its own envelope and preallocated slots, and nothing reads
+        // it after the extraction -- but as a plain local it would outlive the whole optimization.
+        auto surf_mesh_owner = std::make_unique<shortest_edge_collapse::ShortestEdgeCollapse>(
+            verts,
+            NUM_THREADS,
+            !use_sample_envelope);
+        auto& surf_mesh = *surf_mesh_owner;
+        surf_mesh.set_use_link_condition(simplify_use_link_condition);
+        // The simplification and the tetrahedralisation used to share one envelope object at
+        // the same eps, which leaves the optimizer no room: a simplification free to place a
+        // vertex right at the limit hands the optimizer a mesh where almost every move is
+        // already outside. Measured on crown.obj, a third of the simplified vertices sat
+        // outside the envelope before the tet phase began, and ~94% of smoothing attempts were
+        // then vetoed.
+        //
+        // Simplifying inside a fraction of the envelope reserves the rest as headroom.
+        //
+        // The tetrahedralisation gets the WHOLE eps, not half of it. This used to be
+        // envelope_size / 2, which left the optimizer working inside half the tolerance its
+        // result is judged against -- the Hausdorff check below uses params.eps == epsr * diag.
+        // Half the caller's tolerance was simply unreachable, and the headroom argument above
+        // does not justify it: reserving headroom for the optimizer is what the simplification's
+        // own, smaller eps does (simplify_envelope_ratio 0.5 then), so the two halvings compounded
+        // and the simplification ran at eps/4.
+        //
+        // Measured on the 15 Thingi10K models that exhausted max_iterations = 80 at
+        // stop_energy 10: 14 of 14 run converge, in 10-24 iterations (101954: 80 iterations
+        // ending at a degenerate 4.64e16 and 69884 tets -> 13 iterations at 9.83 and 28198
+        // tets). Every measured Hausdorff distance stays under eps, the largest at 92% of it,
+        // so the contract the envelope exists to enforce is unchanged -- it is now the same
+        // number the acceptance check uses.
+        const double tet_eps = envelope_size;
+        // The simplification's eps is a length of its own, not a fraction of tet_eps: eps_simplify
+        // when positive, else eps_simplify_rel of the same diagonal as tet_eps -- the two keys and
+        // the rule of simwild's Parameters::init(), now in all three apps. The default, 5e-4 of the
+        // diagonal, is 0.5 tet_eps at the default eps_rel, as simplify_envelope_ratio 0.5 was until
+        // 2026-11. It does not follow eps_rel: under envelope_reference "input" one at or above
+        // tet_eps is refused just below.
+        const double simplify_eps = eps_simplify > 0 ? eps_simplify : eps_simplify_rel * diag;
+        logger().info(
+            "envelope eps: simplification {:.6} ({:.0f}% of tetrahedralisation {:.6})",
+            simplify_eps,
+            100 * simplify_eps / tet_eps,
+            tet_eps);
+        // Which geometry every envelope, tube and anchor is built around: the input, or the
+        // simplified surface (see below, where they are built). Refused here, before any work:
+        // around the input, a simplification that may leave the envelope, since the simplified
+        // surface would start outside what it is held to; around the simplified surface, no
+        // simplification.
+        const bool env_around_simplified = json_params["envelope_reference"] == "simplified";
+        wmtk::utils::check_envelope_reference(
+            tet_eps,
+            simplify_eps,
+            env_around_simplified,
+            /*simplification_ran=*/simplify);
+
+        // The open boundary. Frozen, the simplification cannot touch anything enclosed by boundary
+        // loops packed too tightly to leave a free vertex between them, and on Thingi10K 55928 that
+        // is a 0.02-wide crumpled knot holding every boundary edge of the model: it survives as a
+        // non-manifold tangle, the arrangement cuts it into ~460 sealed cells, and the optimizer --
+        // refusing 5.3M collapses there in its first pass, on inversion and quality alone --
+        // leaves ~570 tets with edges under 0.2% of the target length in one spot.
+        //
+        // With the envelope the boundary may move as long as it stays within a tube around the
+        // input's boundary edges, the simplification counterpart of the optimizer's order-2
+        // envelope and scaled the same way: order2_envelope_ratio of the simplification's eps,
+        // where the optimizer's is of the surface eps, for the same headroom reason as above. The
+        // optimizer's tube is built around the input's own boundary at order2_envelope_ratio * eps,
+        // so a boundary of the input drifts at most that from it; under envelope_reference
+        // "simplified" around the simplified one at the same radius. Until 2026-10 it was built
+        // around the simplified boundary at the full eps: order2_envelope_ratio * (eps +
+        // simplify_eps), 1.5 eps at the defaults.
+        //
+        // Not under preserve_topology: a hole narrower than the tube closes.
+        const double simplify_boundary_eps = simplify_boundary_envelope && !params.preserve_topology
+                                                 ? simplify_eps * params.order2_envelope_ratio
+                                                 : 0.0;
+        if (simplify_boundary_eps > 0) {
+            logger().info("simplification boundary envelope eps {:.6}", simplify_boundary_eps);
+        } else {
+            logger().info("simplification freezes the open boundary");
+        }
+
+        surf_mesh.create_mesh(
+            verts.size(),
+            tris,
+            modified_nonmanifold_v,
+            simplify_eps,
+            simplify_boundary_eps,
+            tri_input,
+            params.per_input_envelopes);
+        assert(surf_mesh.check_mesh_connectivity_validity());
+
+        if (simplify) {
+            logger().info("input {} simplification", input_paths);
+            {
+                size_t nm_e = 0;
+                for (const auto& e : surf_mesh.get_edges()) {
+                    if (surf_mesh.edge_valence(e) > 2) {
+                        ++nm_e;
+                    }
+                }
+                size_t nm_v = 0;
+                for (const auto& t : surf_mesh.get_vertices()) {
+                    if (!surf_mesh.is_manifold_vertex(t.vid(surf_mesh))) {
+                        ++nm_v;
+                    }
+                }
+                logger().info(
+                    "simplification input non-manifold: {} edges, {} vertices. Link condition {}.",
+                    nm_e,
+                    nm_v,
+                    simplify_use_link_condition ? "on" : "off");
+            }
+            // Envelope::init builds both the exact structure and the sampled BVH, and
+            // is_outside picks between them per query, so switching predicates for the
+            // simplification alone is a flag flip with nothing to rebuild. Restoring it
+            // afterwards no longer matters to the tet phase -- that now gets its own
+            // envelope object at the full eps, built below -- but surf_mesh outlives this
+            // block and is written out, so leave it as the caller asked for.
+            const bool saved_use_exact = surf_mesh.m_envelope.use_exact;
+            if (simplify_use_sample_envelope) {
+                logger().info("simplification uses the sampled envelope; tet phase unaffected");
+                surf_mesh.m_envelope.use_exact = false;
+            }
+
+            // Without preserve_topology the simplification is free to change the topology: with the
+            // link condition off it can create non-manifold edges and vertices, and with the
+            // boundary envelope it closes holes and slits narrower than the tube. (This used to
+            // warn that it "still preserves topology", which neither has been true of.)
+            if (!params.preserve_topology) {
+                logger().info(
+                    "simplification may change the surface topology (link condition off, open "
+                    "boundary {})",
+                    simplify_boundary_eps > 0 ? "in a tube" : "frozen");
+            }
+            std::shared_ptr<history::Recorder> simplification;
+            if (record_history) {
+                simplification = surf_mesh.start_history(
+                    [&surf_mesh](size_t v) { return surf_mesh.vertex_attrs.at(v).pos; });
+            }
+            surf_mesh.collapse_shortest(0);
+
+            surf_mesh.m_envelope.use_exact = saved_use_exact;
+            surf_mesh.consolidate_mesh();
+            if (simplification) {
+                surf_mesh.stop_history();
+                if (!history::append(input_history, simplification->history())) {
+                    log_and_throw_error(
+                        "history_output: the simplification does not start at the input");
+                }
+            }
+            if (!surf_mesh.check_mesh_connectivity_validity()) {
+                log_and_throw_error("Simplification produced an invalid mesh connectivity.");
+            }
+            logger().info(
+                "simplified: #v = {}, #f = {}",
+                surf_mesh.get_vertices().size(),
+                surf_mesh.get_faces().size());
+        } else {
+            logger().info("no simplification (simplify false)");
+        }
+        if (!component_io.memory())
+            surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
+
+
+        //// get the simplified input
+        std::vector<Eigen::Vector3d> vsimp(surf_mesh.vert_capacity());
+        std::vector<std::array<size_t, 3>> fsimp(surf_mesh.tri_capacity());
+        for (auto& t : surf_mesh.get_vertices()) {
+            auto i = t.vid(surf_mesh);
+            vsimp[i] = surf_mesh.vertex_attrs[i].pos;
+        }
+
+        // Which input each simplified face came from: the arrangement's provenance names input
+        // triangles, and the tracked faces it tiles them with are held to their inputs' envelopes.
+        // -1 for a slot no face fills.
+        std::vector<int> fsimp_input(fsimp.size(), -1);
+        for (auto& t : surf_mesh.get_faces()) {
+            auto i = t.fid(surf_mesh);
+            auto vs = surf_mesh.oriented_tri_vertices(t);
+            for (int j = 0; j < 3; j++) {
+                fsimp[i][j] = vs[j].vid(surf_mesh);
+            }
+            fsimp_input[i] = surf_mesh.face_attrs[i].input;
+        }
+        surf_mesh_owner.reset(); // `surf_mesh` dangles from here on; nothing below may use it
+
+        // Under preserve_topology, one exact check of the surface handed to the insertion: does it
+        // cross itself? The link condition keeps the simplification's connectivity only, and the
+        // envelope admits a fold of the surface through itself; the insertion then cuts the
+        // crossing triangles along their intersection, which changes the topology. Not prevented,
+        // warned about. Measured (2026-11) on the Octocat at 8 threads: about 1 run in 3 to 5 ended
+        // with the Euler characteristic [2] -> [3], [3] right after the insertion already, and in 4
+        // of 4 such runs the simplified surface had 2 to 5 crossing pairs in one fold; 0 in 7 of 7
+        // runs that kept [2], and in the input. With this check, 10 more runs: 2 with 3 crossing
+        // pairs, both [3]; 8 with 0, all [2]. It costs 3 ms on the Octocat's 7.8k simplified
+        // triangles at 8 threads (12 ms serial) and 15 ms on the bunny's 32k (62 ms), against 4 s
+        // and 12 s of simplification.
+        if (params.preserve_topology) {
+            logger().info("preserve_topology: checking the surface handed to the insertion");
+            const auto crossings =
+                shortest_edge_collapse::count_crossings(vsimp, fsimp, NUM_THREADS);
+            inserted_crossing_pairs = crossings.pairs;
+            inserted_degenerate_triangles = crossings.degenerate;
+            if (crossings.pairs > 0 || crossings.degenerate > 0) {
+                logger().warn(
+                    "preserve_topology: the surface handed to the insertion crosses itself: {} "
+                    "pairs of triangles meet outside their shared vertices and edges, and {} "
+                    "triangles are degenerate. The output's topology may then differ from the "
+                    "input's.",
+                    crossings.pairs,
+                    crossings.degenerate);
+            } else {
+                logger().info(
+                    "preserve_topology: the surface handed to the insertion does not cross itself");
+            }
+        }
+        t_simplify = phase_timer.getElapsedTime(); // surface simplification done
+
+
+        // /////////
+        // // Prepare Envelope and parameter for TetWild
+        // /////////
+
+
+        params.init(box_minmax.first, box_minmax.second);
+
+        // The surface handed to the arrangement is taken as the simplification left it.
+        //
+        // This used to run wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * diag_l) here, which
+        // merged vertices wrongly. It is not a proximity merge: it forwards to
+        // igl::remove_duplicate_vertices, which SNAPS coordinates to an epsilon grid and
+        // takes unique rows, so whether two vertices merge depends on which side of a cell
+        // boundary they fall on rather than on how far apart they are. Two vertices 2*eps
+        // apart merge when they land in the same cell; two a tenth of eps apart survive when
+        // a boundary runs between them.
+        //
+        // Nothing here needs it. collapse_shortest() is followed by consolidate_mesh(), so
+        // the ids are already contiguous, vert_capacity()/tri_capacity() are the live counts,
+        // and vsimp/fsimp are exactly sized with no stale slots. The simplification also
+        // maintains a valid manifold connectivity -- checked immediately above by
+        // check_mesh_connectivity_validity() -- so there are no coincident vertices or
+        // duplicated faces for it to find.
+
+        // Which surface is the optimizer's envelope built around, and at what radius?
+        //
+        // envelope_reference "input", the default: the ORIGINAL input at the full tet eps, like the
+        // simplification one but wider.
+        //
+        // envelope_reference "simplified": the SIMPLIFIED surface, which replaces the input, at the
+        // full tet eps too: the output is within tet_eps of it, so within simplify_eps + tet_eps of
+        // the input. The geometry starts at the CENTRE of the envelope it is judged against rather
+        // than somewhere inside it. That matters because the envelope is a hard veto, not a
+        // penalty: a surface handed over already close to the boundary has most of its moves
+        // refused, and deliberately starving that headroom (a simplification at 0.95 eps,
+        // simplify_envelope_ratio 0.95 until 2026-11) was enough to turn a converging run into a
+        // diverging one on 1368052. Until 2026-11 it was built at the remaining tolerance,
+        // tet_eps - simplify_eps, keeping the output within tet_eps of the input.
+
+        // The reference handed on (io::append_envelope_block()): that surface, each triangle with
+        // its input's face tag; the feature curves, which every tube is built around as read, each
+        // segment with its file's tag; the input points.
+        auto tet_envelope = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
+        {
+            std::vector<Eigen::Vector3d> env_V;
+            std::vector<Eigen::Vector3i> env_F;
+            if (env_around_simplified) {
+                env_V.resize(vsimp.size());
+                env_F.resize(fsimp.size());
+                for (size_t i = 0; i < vsimp.size(); ++i) env_V[i] = vsimp[i];
+                for (size_t i = 0; i < fsimp.size(); ++i) {
+                    env_F[i] << (int)fsimp[i][0], (int)fsimp[i][1], (int)fsimp[i][2];
+                }
+            } else {
+                env_V.resize(verts.size());
+                env_F.resize(tris.size());
+                for (size_t i = 0; i < verts.size(); ++i) env_V[i] = verts[i];
+                for (size_t i = 0; i < tris.size(); ++i) {
+                    env_F[i] << (int)tris[i][0], (int)tris[i][1], (int)tris[i][2];
+                }
+            }
+            tet_envelope->init(env_V, env_F, tet_eps);
+            const std::vector<int>& env_input = env_around_simplified ? fsimp_input : tri_input;
+            std::vector<InputSet> F_sets(env_F.size(), 0);
+            for (size_t i = 0; i < env_F.size() && i < env_input.size(); ++i) {
+                if (env_input[i] >= 0) F_sets[i] = InputSet(1) << env_input[i];
+            }
+            io::append_envelope_block(
+                envelope_out,
+                io::geometry_data(env_V, env_F, CellType::Triangle),
+                CellType::Triangle,
+                F_sets,
+                io::input_labels(
+                    json_params["input_names"].get<std::vector<std::string>>(),
+                    input_paths.size()));
+            std::vector<InputSet> E_sets;
+            for (const int file : features.edge_input) {
+                E_sets.push_back(file < SurfaceTagAttributes::max_inputs ? InputSet(1) << file : 0);
+            }
+            std::vector<std::string> E_names;
+            for (size_t i = 0; i < json_params["input_edges"].size(); ++i) {
+                E_names.push_back(utils::feature_input_name(i));
+            }
+            io::append_envelope_block(
+                envelope_out,
+                io::geometry_data(features.edge_vertices, features.edges, CellType::Edge),
+                CellType::Edge,
+                E_sets,
+                E_names);
+            io::append_envelope_points(envelope_out, features.points);
+        }
+
+        // One envelope per input, around the same surface as tet_envelope and at the same eps, with
+        // the same predicate: what each tracked face is held to, through its input set
+        // (TetOptimizerMesh::surface_envelope_for_face). tet_envelope stays the union for the uses
+        // that need one -- the collapse's point prefilter, the order-2 and feature fallbacks, the
+        // finalization. With one input the member would BE tet_envelope, so none is built and every
+        // face is held to tet_envelope exactly as before.
+        std::vector<std::shared_ptr<wmtk::Envelope>> input_envelopes;
+        if (input_paths.size() > 1 && params.per_input_envelopes) {
+            const std::vector<Eigen::Vector3d>& src_V = env_around_simplified ? vsimp : verts;
+            const std::vector<std::array<size_t, 3>>& src_F = env_around_simplified ? fsimp : tris;
+            const std::vector<int>& src_input = env_around_simplified ? fsimp_input : tri_input;
+            for (size_t k = 0; k < input_paths.size(); ++k) {
+                // This input's triangles over its own vertices only: an envelope keeps a copy of
+                // the vertices it is given.
+                std::vector<int64_t> local(src_V.size(), -1);
+                std::vector<Eigen::Vector3d> V_k;
+                std::vector<Eigen::Vector3i> F_k;
+                for (size_t i = 0; i < src_F.size(); ++i) {
+                    if (src_input[i] != int(k)) continue;
+                    Eigen::Vector3i f;
+                    for (int j = 0; j < 3; ++j) {
+                        int64_t& l = local[src_F[i][j]];
+                        if (l < 0) {
+                            l = int64_t(V_k.size());
+                            V_k.push_back(src_V[src_F[i][j]]);
+                        }
+                        f[j] = int(l);
+                    }
+                    F_k.push_back(f);
+                }
+                if (F_k.empty()) {
+                    input_envelopes.push_back(nullptr); // no triangle, so no face to hold
+                    continue;
+                }
+                auto env = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
+                env->init(V_k, F_k, tet_eps);
+                input_envelopes.push_back(std::move(env));
+            }
+            logger().info(
+                "per-input envelopes: {} inputs, each tracked face held to the envelopes of its "
+                "own",
+                input_envelopes.size());
+        }
+
+        logger().info(
+            "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
+            tet_envelope->use_exact ? "EXACT" : "sampled",
+            tet_envelope->eps(), // until 2026-11 sqrt(eps2), the sampled path's 0.42 eps
+            env_around_simplified ? "SIMPLIFIED surface" : "input");
+
+        if (json_params["DEBUG_disable_envelope"]) {
+            logger().warn(
+                "DEBUG_disable_envelope: envelope checks are OFF for the tetrahedralisation. "
+                "The output has no containment guarantee and is for diagnosis only.");
+            tet_envelope->disabled = true;
+            for (const auto& env : input_envelopes) {
+                if (env) env->disabled = true;
+            }
+        }
+
+        // The background mesh exists only to be cut by the insertion; held by pointer so it can be
+        // dropped as soon as the insertion has produced its output (see below).
+        auto background_owner =
+            std::make_unique<tetwild::TetWildMesh>(params, tet_envelope, NUM_THREADS);
+        auto& mesh = *background_owner;
+
+        /////////////////////////////////////////////////////
+
+        timer.start();
+        std::vector<size_t> partition_id(vsimp.size());
+        wmtk::partition_vertex_morton(
+            vsimp.size(),
+            [&vsimp](auto i) { return vsimp[i]; },
+            std::max(NUM_THREADS, 1),
+            partition_id);
+
+
+        // triangle insertion with volumeremesher on the simplified mesh
+        // std::vector<vol_rem::bigrational> embedded_vertices;
+        // std::vector<uint32_t> embedded_facets;
+        // std::vector<uint32_t> embedded_cells;
+        // std::vector<uint32_t> embedded_facets_on_input;
+        std::vector<Vector3r> v_rational;
+        std::vector<std::array<size_t, 3>> facets;
+        std::vector<bool> is_v_on_input;
+        std::vector<std::array<size_t, 4>> tets;
+        std::vector<bool> tet_face_on_input_surface;
+        // The input's orientation on the tracked faces, so the tracked-surface winding number
+        // (filter "tracked", and the winding_number_tracked output field) is the input's own
+        // rather than a guess. See SurfaceTagAttributes::m_orientation.
+        std::vector<int8_t> tet_face_orientation;
+
+        logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
+
+        // The chain boundary of the surface handed to the insertion, for the orientation check
+        // below: edges whose incident triangles do not cancel -- open, non-manifold or folded. The
+        // tracked surface reproduces it, so it may have boundary exactly where this does. A closed
+        // input can still get some here: a simplification that does not preserve topology can open
+        // the surface or make it non-manifold.
+        if (params.perform_sanity_checks) {
+            std::map<std::array<size_t, 2>, int> net;
+            for (const auto& f : fsimp) {
+                for (int j = 0; j < 3; ++j) {
+                    const size_t a = f[j], b = f[(j + 1) % 3];
+                    if (a != b) net[{{std::min(a, b), std::max(a, b)}}] += a < b ? 1 : -1;
+                }
+            }
+            for (const auto& [e, sum] : net) inserted_boundary += sum != 0;
+        }
+
+        igl::Timer insertion_timer;
+        insertion_timer.start();
+
+        // Exact arrangement of the simplified surface against a Delaunay background
+        // mesh; the remesher's own tets are used directly, so no Steiner points.
+        utils::EmbedFeaturesResult features_out;
+        // With several inputs, each tracked face's inputs are taken from the arrangement whether or
+        // not each is held to its own envelopes (per_input_envelopes): they are also the output's
+        // face tags, one per input. As triwild takes its segments'. Until 2026-11 only with
+        // per_input_envelopes, and without it every tracked face was input 0's.
+        const bool per_input = input_paths.size() > 1;
+        std::vector<InputSet> facet_input_set; // per facet, with several inputs only
+        std::vector<std::vector<uint32_t>> facet_sources;
+        mesh.insertion_by_volumeremesher(
+            vsimp,
+            fsimp,
+            v_rational,
+            facets,
+            is_v_on_input,
+            tets,
+            tet_face_on_input_surface,
+            &tet_face_orientation,
+            feature_edge_vertices,
+            feature_edges,
+            feature_points,
+            &features_out,
+            per_input ? &fsimp_input : nullptr,
+            per_input ? &facet_input_set : nullptr,
+            record_history ? &facet_sources : nullptr);
+
+        if (!feature_edges.empty() || !feature_points.empty()) {
+            size_t tiling_edges = 0;
+            for (const auto& t : features_out.edge_tiling) {
+                tiling_edges += t.size();
+            }
+            size_t points_found = 0;
+            for (const int64_t v : features_out.point_vertex) {
+                points_found += v >= 0 ? 1 : 0;
+            }
+            logger().info(
+                "features after insertion: {} edges tiled by {} tet edges, {}/{} points are "
+                "output vertices",
+                features_out.edge_tiling.size(),
+                tiling_edges,
+                points_found,
+                features_out.point_vertex.size());
+        }
+
+        logger().info("=== finished insertion");
+        background_owner.reset(); // `mesh` dangles from here on; nothing below may use it
+
+        // generate new mesh
+        mesh_owner = std::make_unique<tetwild::TetWildMesh>(params, tet_envelope, NUM_THREADS);
+        auto& mesh_new = *mesh_owner;
+        // Where each facet on the input lies there, by the positions its corners will have.
+        for (size_t i = 0; i < facet_sources.size(); ++i) {
+            if (facet_sources[i].empty()) continue;
+            const auto& f = facets[i];
+            mesh_new.m_insertion_sources.emplace_back(
+                TetWildMesh::position_key(
+                    to_double(v_rational[f[0]]),
+                    to_double(v_rational[f[1]]),
+                    to_double(v_rational[f[2]])),
+                std::move(facet_sources[i]));
+        }
+        facet_sources = {};
+        mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
+
+        // Around the input after a simplification, the input's own curves: the tubes and anchors
+        // are built around them, and an order-2 edge or curve end the simplification made is held
+        // around itself (TetOptimizerMesh::InputCurves). The input surface as the envelope has it,
+        // each triangle with its input.
+        if (!env_around_simplified && simplify) {
+            assert(tri_input.size() == tris.size());
+            std::vector<InputSet> tri_sets(tris.size());
+            for (size_t i = 0; i < tris.size(); ++i) tri_sets[i] = InputSet(1) << tri_input[i];
+            mesh_new.set_input_curves(verts, tris, tri_sets, &features);
+        }
+
+        const bool has_features = !feature_edges.empty() || !feature_points.empty();
+        // The feature-curve tubes -- what the collapse guard checks tagged edges against, and what
+        // curve-vertex smoothing is pulled toward -- are built with the tags, around the input
+        // feature edges and one per input_edges file (TetOptimizerMesh::tag_feature_edges()),
+        // following the surface envelope's choice of predicate.
+        mesh_new.init_from_Volumeremesher(
+            v_rational,
+            facets,
+            is_v_on_input,
+            tets,
+            tet_face_on_input_surface,
+            &tet_face_orientation,
+            has_features ? &features_out : nullptr,
+            per_input ? &facet_input_set : nullptr,
+            &features);
+        mesh_new.m_input_envelopes.set(std::move(input_envelopes));
+
+        // The insertion's output now lives in mesh_new. These are function locals, so without this
+        // they -- the rational coordinates above all -- would be held through the optimization,
+        // which is where the run peaks.
+        std::vector<Vector3r>().swap(v_rational);
+        std::vector<std::array<size_t, 3>>().swap(facets);
+        std::vector<bool>().swap(is_v_on_input);
+        std::vector<std::array<size_t, 4>>().swap(tets);
+        std::vector<bool>().swap(tet_face_on_input_surface);
+        std::vector<int8_t>().swap(tet_face_orientation);
+        std::vector<InputSet>().swap(facet_input_set);
+        std::vector<Eigen::Vector3d>().swap(vsimp);
+        std::vector<std::array<size_t, 3>>().swap(fsimp);
+        std::vector<int>().swap(fsimp_input);
+
+        insertion_time = insertion_timer.getElapsedTime();
+
+
+        // mesh_new.output_faces(output_path + "after_insertion_surface.obj", [](auto& f) {
+        //     return f.m_is_surface_fs;
+        // });
+
+
+        wmtk::logger().info("volume remesher insertion time: {:.4}s", insertion_time);
+
+        // mesh_new.output_tetrahedralized_embedded_mesh(
+        //     "tetrahedralized_embedded_mesh.txt",
+        //     v_rational,
+        //     facets,
+        //     tets,
+        //     tet_face_on_input_surface);
+
+        // mesh_new.output_init_tetmesh("tetmesh_before_opt.txt");
+    } else {
+        // The tagged route (read_tagged_input() above): the mesh is the input as it is.
+        const TaggedMesh& in = *tagged_mesh;
+        features = in.features;
+        box_minmax = {in.V[0], in.V[0]};
+        for (const Vector3d& p : in.V) {
+            box_minmax.first = box_minmax.first.cwiseMin(p);
+            box_minmax.second = box_minmax.second.cwiseMax(p);
+        }
+        // An `envelope` given: the reference held to, its triangles of the mesh's face labels
+        // (io::held_rows()), each with its labels, and its feature curves of the mesh's feature
+        // labels, matched by name.
+        std::optional<io::HeldRows> held;
+        utils::FeatureInputs reference_curves;
+        if (envelope_given) {
+            const auto bits_named = [&](const std::string& name) {
+                InputSet bits = 0;
+                for (size_t i = 0; i < face_tags.size(); ++i)
+                    if (face_tags[i] == name) bits |= InputSet(1) << i;
+                return bits;
+            };
+            io::LabelledReference reference =
+                io::read_labelled_envelope(*envelope_given, 3, bits_named, feature_tags);
+            held = io::held_rows(reference.V, reference.F, reference.F_labels);
+            reference_curves = std::move(reference.curves);
+        }
+        // The input, as the surface route's is its input files: the reference when one is
+        // given, else the tracked surface as received, on vertices of its own. What the envelopes
+        // are built around, and what the output is measured against (DEBUG_hausdorff, the Euler
+        // characteristics); F_sets, each triangle's labels.
+        std::vector<InputSet> F_sets;
+        if (held) {
+            for (Eigen::Index v = 0; v < held->V.rows(); ++v) {
+                verts.push_back(held->V.row(v).transpose());
+            }
+            for (Eigen::Index r = 0; r < held->F.rows(); ++r) {
+                tris.push_back(
+                    {{size_t(held->F(r, 0)), size_t(held->F(r, 1)), size_t(held->F(r, 2))}});
+            }
+            F_sets = held->labels;
+            // The curves the output's are measured against: the reference's.
+            features.edge_vertices = reference_curves.edge_vertices;
+            features.edges = reference_curves.edges;
+            features.edge_input = reference_curves.edge_input;
+        } else {
+            std::vector<int64_t> local(in.V.size(), -1);
+            for (const auto& f : in.F) {
+                std::array<size_t, 3> g;
+                for (int k = 0; k < 3; ++k) {
+                    int64_t& l = local[f[k]];
+                    if (l < 0) {
+                        l = int64_t(verts.size());
+                        verts.push_back(in.V[f[k]]);
+                    }
+                    g[k] = size_t(l);
+                }
+                tris.push_back(g);
+            }
+            F_sets = in.F_sets;
+        }
+        t_load = phase_timer.getElapsedTime();
+        logger().info("tagged mesh input: its tets kept, no simplification and no insertion");
+
+        // eps_rel and length_rel are of the mesh's bounding box diagonal, its domain's, as
+        // simwild's are of a tagged mesh's.
+        params.init(box_minmax.first, box_minmax.second);
+        const double tet_eps = params.eps;
+        const double feature_eps = params.epsr * params.diag_l * params.feature_envelope_ratio;
+        wmtk::utils::check_envelope_reference(
+            tet_eps,
+            0,
+            json_params["envelope_reference"] == "simplified",
+            /*simplification_ran=*/false);
+        std::vector<Eigen::Vector3i> env_F(tris.size());
+        for (size_t i = 0; i < tris.size(); ++i) {
+            env_F[i] << int(tris[i][0]), int(tris[i][1]), int(tris[i][2]);
+        }
+        auto tet_envelope = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
+        tet_envelope->init(verts, env_F, tet_eps);
+        // The reference handed on: an `envelope` given, unchanged, so that a chain keeps passing
+        // the first component's input; else the tracked surface as received, each triangle with
+        // its labels, and the feature curves and points, as the surface route hands on its input.
+        if (envelope_given) {
+            envelope_out = std::move(*envelope_given);
+        } else {
+            io::append_envelope_block(
+                envelope_out,
+                io::geometry_data(verts, env_F, CellType::Triangle),
+                CellType::Triangle,
+                F_sets,
+                face_tags);
+            std::vector<InputSet> E_sets;
+            for (const int j : features.edge_input) E_sets.push_back(InputSet(1) << j);
+            io::append_envelope_block(
+                envelope_out,
+                io::geometry_data(features.edge_vertices, features.edges, CellType::Edge),
+                CellType::Edge,
+                E_sets,
+                feature_tags);
+            io::append_envelope_points(envelope_out, features.points);
+        }
+        logger().info(
+            "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
+            tet_envelope->use_exact ? "EXACT" : "sampled",
+            tet_envelope->eps(),
+            held ? "reference given (`envelope`)" : "tagged faces as received");
+
+        mesh_owner = std::make_unique<tetwild::TetWildMesh>(params, tet_envelope, NUM_THREADS);
+        auto& mesh_new = *mesh_owner;
+        mesh_new.m_input_names = face_tags;
+        mesh_new.m_feature_edge_names = feature_tags;
+        // With a reference, as simwild holds one (TetOptimizerMesh::m_has_reference): the order-2
+        // tubes and the curve-end anchors around its curves, an edge on none held around itself
+        // (TetOptimizerMesh::InputCurves), set before the initialization builds them.
+        if (held) {
+            mesh_new.m_has_reference = true;
+            mesh_new.m_reference_curves = reference_curves;
+            mesh_new.set_input_curves(verts, tris, F_sets, &reference_curves);
+        }
+        timer.start();
+        igl::Timer init_timer;
+        init_timer.start();
+        mesh_new.init_from_tagged_mesh(in);
+        if (held) mesh_new.require_reference_face_labels(F_sets);
+        // One envelope per label, around its triangles, at the same eps and with the same
+        // predicate: what each tracked face is held to through its input set, as each input
+        // file's on the surface route. With one label the member would be tet_envelope, so none is
+        // built.
+        if (face_tags.size() > 1) {
+            const size_t n =
+                mesh_new.init_input_envelopes(verts, env_F, F_sets, tet_eps, !use_sample_envelope);
+            if (n > 0) {
+                logger().info(
+                    "per-label envelopes: {} labels, each tracked face held to the envelopes of "
+                    "its own",
+                    n);
+            }
+        }
+        // With a reference, the feature tubes around its curves rather than the edges received,
+        // and, before the optimization holds the mesh to it, what was received must already lie
+        // in it: the exact check simwild's remeshing runs.
+        if (held) {
+            mesh_new.init_reference_feature_tubes(feature_eps, tet_envelope->use_exact);
+            mesh_new.check_reference_containment(tet_eps);
+        }
+        if (json_params["DEBUG_disable_envelope"]) {
+            logger().warn(
+                "DEBUG_disable_envelope: envelope checks are OFF for the tetrahedralisation. "
+                "The output has no containment guarantee and is for diagnosis only.");
+            tet_envelope->disabled = true;
+            for (size_t i = 0; i < mesh_new.m_input_envelopes.size(); ++i) {
+                if (const auto& env = mesh_new.m_input_envelopes.member(i)) env->disabled = true;
+            }
+        }
+        if (params.perform_sanity_checks && mesh_new.m_tracks_orientation) {
+            inserted_boundary = mesh_new.tracked_surface_boundary().size();
+        }
+        insertion_time = init_timer.getElapsedTime();
+        tagged_mesh.reset(); // its arrays now live in mesh_new
+    }
+    auto& mesh_new = *mesh_owner;
 
     // Informational input-topology report; gated behind DEBUG_euler because the
     // Euler-characteristic computation is expensive on meshes with many components.
@@ -341,463 +1229,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         ecs_input = compute_euler_characteristics(F);
         logger().info("Input euler characteristic: {}", ecs_input);
     }
-
-    double diag = (box_minmax.first - box_minmax.second).norm();
-    const double envelope_size = params.epsr * diag;
-    // Held by pointer so it can be dropped once vsimp/fsimp are extracted below: it is a full
-    // TriMesh over the input, with its own envelope and preallocated slots, and nothing reads it
-    // after the extraction -- but as a plain local it would outlive the whole optimization.
-    auto surf_mesh_owner = std::make_unique<shortest_edge_collapse::ShortestEdgeCollapse>(
-        verts,
-        NUM_THREADS,
-        !use_sample_envelope);
-    auto& surf_mesh = *surf_mesh_owner;
-    surf_mesh.set_use_link_condition(simplify_use_link_condition);
-    // The simplification and the tetrahedralisation used to share one envelope object at
-    // the same eps, which leaves the optimizer no room: a simplification free to place a
-    // vertex right at the limit hands the optimizer a mesh where almost every move is
-    // already outside. Measured on crown.obj, a third of the simplified vertices sat
-    // outside the envelope before the tet phase began, and ~94% of smoothing attempts were
-    // then vetoed.
-    //
-    // Simplifying inside a fraction of the envelope reserves the rest as headroom.
-    //
-    // The tetrahedralisation gets the WHOLE eps, not half of it. This used to be
-    // envelope_size / 2, which left the optimizer working inside half the tolerance its
-    // result is judged against -- the Hausdorff check below uses params.eps == epsr * diag.
-    // Half the caller's tolerance was simply unreachable, and the headroom argument above
-    // does not justify it: reserving headroom for the optimizer is what the simplification's
-    // own, smaller eps does (simplify_envelope_ratio 0.5 then), so the two halvings compounded
-    // and the simplification ran at eps/4.
-    //
-    // Measured on the 15 Thingi10K models that exhausted max_iterations = 80 at
-    // stop_energy 10: 14 of 14 run converge, in 10-24 iterations (101954: 80 iterations
-    // ending at a degenerate 4.64e16 and 69884 tets -> 13 iterations at 9.83 and 28198
-    // tets). Every measured Hausdorff distance stays under eps, the largest at 92% of it,
-    // so the contract the envelope exists to enforce is unchanged -- it is now the same
-    // number the acceptance check uses.
-    const double tet_eps = envelope_size;
-    // The simplification's eps is a length of its own, not a fraction of tet_eps: eps_simplify
-    // when positive, else eps_simplify_rel of the same diagonal as tet_eps -- the two keys and
-    // the rule of simwild's Parameters::init(), now in all three apps. The default, 5e-4 of the
-    // diagonal, is 0.5 tet_eps at the default eps_rel, as simplify_envelope_ratio 0.5 was until
-    // 2026-11. It does not follow eps_rel: under envelope_reference "input" one at or above
-    // tet_eps is refused just below.
-    const double simplify_eps = eps_simplify > 0 ? eps_simplify : eps_simplify_rel * diag;
-    logger().info(
-        "envelope eps: simplification {:.6} ({:.0f}% of tetrahedralisation {:.6})",
-        simplify_eps,
-        100 * simplify_eps / tet_eps,
-        tet_eps);
-    // Which geometry every envelope, tube and anchor is built around: the input, or the
-    // simplified surface (see below, where they are built). Refused here, before any work: around
-    // the input, a simplification that may leave the envelope, since the simplified surface would
-    // start outside what it is held to; around the simplified surface, no simplification.
-    const bool env_around_simplified = json_params["envelope_reference"] == "simplified";
-    wmtk::utils::check_envelope_reference(
-        tet_eps,
-        simplify_eps,
-        env_around_simplified,
-        /*simplification_ran=*/simplify);
-
-    // The open boundary. Frozen, the simplification cannot touch anything enclosed by boundary
-    // loops packed too tightly to leave a free vertex between them, and on Thingi10K 55928 that
-    // is a 0.02-wide crumpled knot holding every boundary edge of the model: it survives as a
-    // non-manifold tangle, the arrangement cuts it into ~460 sealed cells, and the optimizer --
-    // refusing 5.3M collapses there in its first pass, on inversion and quality alone --
-    // leaves ~570 tets with edges under 0.2% of the target length in one spot.
-    //
-    // With the envelope the boundary may move as long as it stays within a tube around the
-    // input's boundary edges, the simplification counterpart of the optimizer's order-2
-    // envelope and scaled the same way: order2_envelope_ratio of the simplification's eps, where
-    // the optimizer's is of the surface eps, for the same headroom reason as above. The
-    // optimizer's tube is built around the input's own boundary at order2_envelope_ratio * eps,
-    // so a boundary of the input drifts at most that from it; under envelope_reference
-    // "simplified" around the simplified one at the same radius. Until 2026-10 it was built
-    // around the simplified boundary at the full eps: order2_envelope_ratio * (eps +
-    // simplify_eps), 1.5 eps at the defaults.
-    //
-    // Not under preserve_topology: a hole narrower than the tube closes.
-    const double simplify_boundary_eps = simplify_boundary_envelope && !params.preserve_topology
-                                             ? simplify_eps * params.order2_envelope_ratio
-                                             : 0.0;
-    if (simplify_boundary_eps > 0) {
-        logger().info("simplification boundary envelope eps {:.6}", simplify_boundary_eps);
-    } else {
-        logger().info("simplification freezes the open boundary");
-    }
-
-    surf_mesh.create_mesh(
-        verts.size(),
-        tris,
-        modified_nonmanifold_v,
-        simplify_eps,
-        simplify_boundary_eps,
-        tri_input,
-        params.per_input_envelopes);
-    assert(surf_mesh.check_mesh_connectivity_validity());
-
-    if (simplify) {
-        logger().info("input {} simplification", input_paths);
-        {
-            size_t nm_e = 0;
-            for (const auto& e : surf_mesh.get_edges()) {
-                if (surf_mesh.edge_valence(e) > 2) {
-                    ++nm_e;
-                }
-            }
-            size_t nm_v = 0;
-            for (const auto& t : surf_mesh.get_vertices()) {
-                if (!surf_mesh.is_manifold_vertex(t.vid(surf_mesh))) {
-                    ++nm_v;
-                }
-            }
-            logger().info(
-                "simplification input non-manifold: {} edges, {} vertices. Link condition {}.",
-                nm_e,
-                nm_v,
-                simplify_use_link_condition ? "on" : "off");
-        }
-        // Envelope::init builds both the exact structure and the sampled BVH, and
-        // is_outside picks between them per query, so switching predicates for the
-        // simplification alone is a flag flip with nothing to rebuild. Restoring it
-        // afterwards no longer matters to the tet phase -- that now gets its own
-        // envelope object at the full eps, built below -- but surf_mesh outlives this
-        // block and is written out, so leave it as the caller asked for.
-        const bool saved_use_exact = surf_mesh.m_envelope.use_exact;
-        if (simplify_use_sample_envelope) {
-            logger().info("simplification uses the sampled envelope; tet phase unaffected");
-            surf_mesh.m_envelope.use_exact = false;
-        }
-
-        // Without preserve_topology the simplification is free to change the topology: with the
-        // link condition off it can create non-manifold edges and vertices, and with the
-        // boundary envelope it closes holes and slits narrower than the tube. (This used to
-        // warn that it "still preserves topology", which neither has been true of.)
-        if (!params.preserve_topology) {
-            logger().info(
-                "simplification may change the surface topology (link condition off, open "
-                "boundary {})",
-                simplify_boundary_eps > 0 ? "in a tube" : "frozen");
-        }
-        std::shared_ptr<history::Recorder> simplification;
-        if (record_history) {
-            simplification = surf_mesh.start_history(
-                [&surf_mesh](size_t v) { return surf_mesh.vertex_attrs.at(v).pos; });
-        }
-        surf_mesh.collapse_shortest(0);
-
-        surf_mesh.m_envelope.use_exact = saved_use_exact;
-        surf_mesh.consolidate_mesh();
-        if (simplification) {
-            surf_mesh.stop_history();
-            if (!history::append(input_history, simplification->history())) {
-                log_and_throw_error(
-                    "history_output: the simplification does not start at the input");
-            }
-        }
-        if (!surf_mesh.check_mesh_connectivity_validity()) {
-            log_and_throw_error("Simplification produced an invalid mesh connectivity.");
-        }
-        logger().info(
-            "simplified: #v = {}, #f = {}",
-            surf_mesh.get_vertices().size(),
-            surf_mesh.get_faces().size());
-    } else {
-        logger().info("no simplification (simplify false)");
-    }
-    if (!component_io.memory())
-        surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
-
-
-    //// get the simplified input
-    std::vector<Eigen::Vector3d> vsimp(surf_mesh.vert_capacity());
-    std::vector<std::array<size_t, 3>> fsimp(surf_mesh.tri_capacity());
-    for (auto& t : surf_mesh.get_vertices()) {
-        auto i = t.vid(surf_mesh);
-        vsimp[i] = surf_mesh.vertex_attrs[i].pos;
-    }
-
-    // Which input each simplified face came from: the arrangement's provenance names input
-    // triangles, and the tracked faces it tiles them with are held to their inputs' envelopes.
-    // -1 for a slot no face fills.
-    std::vector<int> fsimp_input(fsimp.size(), -1);
-    for (auto& t : surf_mesh.get_faces()) {
-        auto i = t.fid(surf_mesh);
-        auto vs = surf_mesh.oriented_tri_vertices(t);
-        for (int j = 0; j < 3; j++) {
-            fsimp[i][j] = vs[j].vid(surf_mesh);
-        }
-        fsimp_input[i] = surf_mesh.face_attrs[i].input;
-    }
-    surf_mesh_owner.reset(); // `surf_mesh` dangles from here on; nothing below may use it
-    t_simplify = phase_timer.getElapsedTime(); // surface simplification done
-
-
-    // /////////
-    // // Prepare Envelope and parameter for TetWild
-    // /////////
-
-
-    params.init(box_minmax.first, box_minmax.second);
-
-    // The surface handed to the arrangement is taken as the simplification left it.
-    //
-    // This used to run wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * diag_l) here, which
-    // merged vertices wrongly. It is not a proximity merge: it forwards to
-    // igl::remove_duplicate_vertices, which SNAPS coordinates to an epsilon grid and
-    // takes unique rows, so whether two vertices merge depends on which side of a cell
-    // boundary they fall on rather than on how far apart they are. Two vertices 2*eps
-    // apart merge when they land in the same cell; two a tenth of eps apart survive when
-    // a boundary runs between them.
-    //
-    // Nothing here needs it. collapse_shortest() is followed by consolidate_mesh(), so
-    // the ids are already contiguous, vert_capacity()/tri_capacity() are the live counts,
-    // and vsimp/fsimp are exactly sized with no stale slots. The simplification also
-    // maintains a valid manifold connectivity -- checked immediately above by
-    // check_mesh_connectivity_validity() -- so there are no coincident vertices or
-    // duplicated faces for it to find.
-
-    // Which surface is the optimizer's envelope built around, and at what radius?
-    //
-    // envelope_reference "input", the default: the ORIGINAL input at the full tet eps, like the
-    // simplification one but wider.
-    //
-    // envelope_reference "simplified": the SIMPLIFIED surface, which replaces the input, at the
-    // full tet eps too: the output is within tet_eps of it, so within simplify_eps + tet_eps of
-    // the input. The geometry starts at the CENTRE of the envelope it is judged against rather
-    // than somewhere inside it. That matters because the envelope is a hard veto, not a penalty:
-    // a surface handed over already close to the boundary has most of its moves refused, and
-    // deliberately starving that headroom (a simplification at 0.95 eps, simplify_envelope_ratio
-    // 0.95 until 2026-11) was enough to turn a converging run into a diverging one on 1368052.
-    // Until 2026-11 it was built at the remaining tolerance, tet_eps - simplify_eps, keeping the
-    // output within tet_eps of the input.
-
-    MeshData memory_envelope;
-    auto tet_envelope = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
-    {
-        std::vector<Eigen::Vector3d> env_V;
-        std::vector<Eigen::Vector3i> env_F;
-        if (env_around_simplified) {
-            env_V.resize(vsimp.size());
-            env_F.resize(fsimp.size());
-            for (size_t i = 0; i < vsimp.size(); ++i) env_V[i] = vsimp[i];
-            for (size_t i = 0; i < fsimp.size(); ++i) {
-                env_F[i] << (int)fsimp[i][0], (int)fsimp[i][1], (int)fsimp[i][2];
-            }
-        } else {
-            env_V.resize(verts.size());
-            env_F.resize(tris.size());
-            for (size_t i = 0; i < verts.size(); ++i) env_V[i] = verts[i];
-            for (size_t i = 0; i < tris.size(); ++i) {
-                env_F[i] << (int)tris[i][0], (int)tris[i][1], (int)tris[i][2];
-            }
-        }
-        tet_envelope->init(env_V, env_F, tet_eps);
-        if (component_io.memory())
-            memory_envelope = io::geometry_data(env_V, env_F, CellType::Triangle);
-    }
-
-    // One envelope per input, around the same surface as tet_envelope and at the same eps, with
-    // the same predicate: what each tracked face is held to, through its input set
-    // (TetOptimizerMesh::surface_envelope_for_face). tet_envelope stays the union for the uses
-    // that need one -- the collapse's point prefilter, the order-2 and feature fallbacks, the
-    // finalization. With one input the member would BE tet_envelope, so none is built and every
-    // face is held to tet_envelope exactly as before.
-    std::vector<std::shared_ptr<wmtk::Envelope>> input_envelopes;
-    if (input_paths.size() > 1 && params.per_input_envelopes) {
-        const std::vector<Eigen::Vector3d>& src_V = env_around_simplified ? vsimp : verts;
-        const std::vector<std::array<size_t, 3>>& src_F = env_around_simplified ? fsimp : tris;
-        const std::vector<int>& src_input = env_around_simplified ? fsimp_input : tri_input;
-        for (size_t k = 0; k < input_paths.size(); ++k) {
-            // This input's triangles over its own vertices only: an envelope keeps a copy of
-            // the vertices it is given.
-            std::vector<int64_t> local(src_V.size(), -1);
-            std::vector<Eigen::Vector3d> V_k;
-            std::vector<Eigen::Vector3i> F_k;
-            for (size_t i = 0; i < src_F.size(); ++i) {
-                if (src_input[i] != int(k)) continue;
-                Eigen::Vector3i f;
-                for (int j = 0; j < 3; ++j) {
-                    int64_t& l = local[src_F[i][j]];
-                    if (l < 0) {
-                        l = int64_t(V_k.size());
-                        V_k.push_back(src_V[src_F[i][j]]);
-                    }
-                    f[j] = int(l);
-                }
-                F_k.push_back(f);
-            }
-            if (F_k.empty()) {
-                input_envelopes.push_back(nullptr); // no triangle, so no face to hold
-                continue;
-            }
-            auto env = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
-            env->init(V_k, F_k, tet_eps);
-            input_envelopes.push_back(std::move(env));
-        }
-        logger().info(
-            "per-input envelopes: {} inputs, each tracked face held to the envelopes of its own",
-            input_envelopes.size());
-    }
-
-    logger().info(
-        "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
-        tet_envelope->use_exact ? "EXACT" : "sampled",
-        tet_envelope->eps(), // until 2026-11 sqrt(eps2), the sampled path's 0.42 eps
-        env_around_simplified ? "SIMPLIFIED surface" : "input");
-
-    if (json_params["DEBUG_disable_envelope"]) {
-        logger().warn(
-            "DEBUG_disable_envelope: envelope checks are OFF for the tetrahedralisation. "
-            "The output has no containment guarantee and is for diagnosis only.");
-        tet_envelope->disabled = true;
-        for (const auto& env : input_envelopes) {
-            if (env) env->disabled = true;
-        }
-    }
-
-    // The background mesh exists only to be cut by the insertion; held by pointer so it can be
-    // dropped as soon as the insertion has produced its output (see below).
-    auto background_owner =
-        std::make_unique<tetwild::TetWildMesh>(params, tet_envelope, NUM_THREADS);
-    auto& mesh = *background_owner;
-
-    /////////////////////////////////////////////////////
-
-    igl::Timer timer;
-    timer.start();
-    std::vector<size_t> partition_id(vsimp.size());
-    wmtk::partition_vertex_morton(
-        vsimp.size(),
-        [&vsimp](auto i) { return vsimp[i]; },
-        std::max(NUM_THREADS, 1),
-        partition_id);
-
-
-    // triangle insertion with volumeremesher on the simplified mesh
-    // std::vector<vol_rem::bigrational> embedded_vertices;
-    // std::vector<uint32_t> embedded_facets;
-    // std::vector<uint32_t> embedded_cells;
-    // std::vector<uint32_t> embedded_facets_on_input;
-    std::vector<Vector3r> v_rational;
-    std::vector<std::array<size_t, 3>> facets;
-    std::vector<bool> is_v_on_input;
-    std::vector<std::array<size_t, 4>> tets;
-    std::vector<bool> tet_face_on_input_surface;
-    // The input's orientation on the tracked faces, so the tracked-surface winding number
-    // (filter "tracked", and the winding_number_tracked output field) is the input's own
-    // rather than a guess. See SurfaceTagAttributes::m_orientation.
-    std::vector<int8_t> tet_face_orientation;
-
-    logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
-
-    // The chain boundary of the surface handed to the insertion, for the orientation check
-    // below: edges whose incident triangles do not cancel -- open, non-manifold or folded. The
-    // tracked surface reproduces it, so it may have boundary exactly where this does. A closed
-    // input can still get some here: a simplification that does not preserve topology can open
-    // the surface or make it non-manifold.
-    size_t inserted_boundary = 0;
-    if (params.perform_sanity_checks) {
-        std::map<std::array<size_t, 2>, int> net;
-        for (const auto& f : fsimp) {
-            for (int j = 0; j < 3; ++j) {
-                const size_t a = f[j], b = f[(j + 1) % 3];
-                if (a != b) net[{{std::min(a, b), std::max(a, b)}}] += a < b ? 1 : -1;
-            }
-        }
-        for (const auto& [e, sum] : net) inserted_boundary += sum != 0;
-    }
-
-    igl::Timer insertion_timer;
-    insertion_timer.start();
-
-    // Exact arrangement of the simplified surface against a Delaunay background
-    // mesh; the remesher's own tets are used directly, so no Steiner points.
-    utils::EmbedFeaturesResult features_out;
-    std::vector<InputSet> facet_input_set; // per facet, with several inputs only
-    std::vector<std::vector<uint32_t>> facet_sources;
-    mesh.insertion_by_volumeremesher(
-        vsimp,
-        fsimp,
-        v_rational,
-        facets,
-        is_v_on_input,
-        tets,
-        tet_face_on_input_surface,
-        &tet_face_orientation,
-        feature_edge_vertices,
-        feature_edges,
-        feature_points,
-        &features_out,
-        input_envelopes.empty() ? nullptr : &fsimp_input,
-        input_envelopes.empty() ? nullptr : &facet_input_set,
-        record_history ? &facet_sources : nullptr);
-
-    if (!feature_edges.empty() || !feature_points.empty()) {
-        size_t tiling_edges = 0;
-        for (const auto& t : features_out.edge_tiling) {
-            tiling_edges += t.size();
-        }
-        size_t points_found = 0;
-        for (const int64_t v : features_out.point_vertex) {
-            points_found += v >= 0 ? 1 : 0;
-        }
-        logger().info(
-            "features after insertion: {} edges tiled by {} tet edges, {}/{} points are "
-            "output vertices",
-            features_out.edge_tiling.size(),
-            tiling_edges,
-            points_found,
-            features_out.point_vertex.size());
-    }
-
-    logger().info("=== finished insertion");
-    background_owner.reset(); // `mesh` dangles from here on; nothing below may use it
-
-    // generate new mesh
-    tetwild::TetWildMesh mesh_new(params, tet_envelope, NUM_THREADS);
-    // Where each facet on the input lies there, by the positions its corners will have.
-    for (size_t i = 0; i < facet_sources.size(); ++i) {
-        if (facet_sources[i].empty()) continue;
-        const auto& f = facets[i];
-        mesh_new.m_insertion_sources.emplace_back(
-            TetWildMesh::position_key(
-                to_double(v_rational[f[0]]),
-                to_double(v_rational[f[1]]),
-                to_double(v_rational[f[2]])),
-            std::move(facet_sources[i]));
-    }
-    facet_sources = {};
-    mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
-
-    // Around the input after a simplification, the input's own curves: the tubes and anchors
-    // are built around them, and an order-2 edge or curve end the simplification made is held
-    // around itself (TetOptimizerMesh::InputCurves). The input surface as the envelope has it,
-    // each triangle with its input.
-    if (!env_around_simplified && simplify) {
-        assert(tri_input.size() == tris.size());
-        std::vector<InputSet> tri_sets(tris.size());
-        for (size_t i = 0; i < tris.size(); ++i) tri_sets[i] = InputSet(1) << tri_input[i];
-        mesh_new.set_input_curves(verts, tris, tri_sets, &features);
-    }
-
-    const bool has_features = !feature_edges.empty() || !feature_points.empty();
-    // The feature-curve tubes -- what the collapse guard checks tagged edges against, and what
-    // curve-vertex smoothing is pulled toward -- are built with the tags, around the input
-    // feature edges and one per input_edges file (TetOptimizerMesh::tag_feature_edges()),
-    // following the surface envelope's choice of predicate.
-    mesh_new.init_from_Volumeremesher(
-        v_rational,
-        facets,
-        is_v_on_input,
-        tets,
-        tet_face_on_input_surface,
-        &tet_face_orientation,
-        has_features ? &features_out : nullptr,
-        input_envelopes.empty() ? nullptr : &facet_input_set,
-        &features);
-    mesh_new.m_input_envelopes.set(std::move(input_envelopes));
 
     // The oriented tracked surface is an integer 2-chain whose boundary the operations preserve:
     // empty for a closed input, on the input's open boundary otherwise. Cheap to state, and the
@@ -823,42 +1254,28 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 inserted_boundary);
         }
     };
-    log_orientation_check("after insertion");
-
-    // The insertion's output now lives in mesh_new. These are function locals, so without this
-    // they -- the rational coordinates above all -- would be held through the optimization,
-    // which is where the run peaks.
-    std::vector<Vector3r>().swap(v_rational);
-    std::vector<std::array<size_t, 3>>().swap(facets);
-    std::vector<bool>().swap(is_v_on_input);
-    std::vector<std::array<size_t, 4>>().swap(tets);
-    std::vector<bool>().swap(tet_face_on_input_surface);
-    std::vector<int8_t>().swap(tet_face_orientation);
-    std::vector<InputSet>().swap(facet_input_set);
-    std::vector<Eigen::Vector3d>().swap(vsimp);
-    std::vector<std::array<size_t, 3>>().swap(fsimp);
-    std::vector<int>().swap(fsimp_input);
-
-    double insertion_time = insertion_timer.getElapsedTime();
-
-
-    // mesh_new.output_faces(output_path + "after_insertion_surface.obj", [](auto& f) {
-    //     return f.m_is_surface_fs;
-    // });
-
-
-    wmtk::logger().info("volume remesher insertion time: {:.4}s", insertion_time);
-
-    // mesh_new.output_tetrahedralized_embedded_mesh(
-    //     "tetrahedralized_embedded_mesh.txt",
-    //     v_rational,
-    //     facets,
-    //     tets,
-    //     tet_face_on_input_surface);
-
-    // mesh_new.output_init_tetmesh("tetmesh_before_opt.txt");
+    log_orientation_check(tagged ? "as received" : "after insertion");
 
     mesh_new.consolidate_mesh();
+
+    // The tracked surface's topology right after the insertion, by the rule of the input's and
+    // the output's: what the optimization keeps, so with filter "none" the output's.
+    std::vector<int> ecs_inserted;
+    if (compute_euler) {
+        std::vector<Eigen::Vector3i> tracked;
+        for (const auto& f : mesh_new.get_faces()) {
+            if (!mesh_new.m_face_attribute[f.fid(mesh_new)].m_is_surface_fs) continue;
+            const auto vs = mesh_new.get_face_vertices(f);
+            tracked.emplace_back(
+                int(vs[0].vid(mesh_new)),
+                int(vs[1].vid(mesh_new)),
+                int(vs[2].vid(mesh_new)));
+        }
+        Eigen::MatrixXi F(tracked.size(), 3);
+        for (size_t i = 0; i < tracked.size(); ++i) F.row(i) = tracked[i];
+        ecs_inserted = compute_euler_characteristics(F);
+        logger().info("Inserted euler characteristic: {}", ecs_inserted);
+    }
 
     // From here on the tracked surface is recorded, starting where the insertion left it.
     if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
@@ -961,9 +1378,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     //   flood-fill parts       filter "flood", or compute_flood_fill. A serial BFS over every
     //                          tet: ~1-2 min on 765k tets / 6600 parts.
     //
-    // The two last ones used to run on every call just to fill their output fields.
-    const bool skip_winding = json_params["skip_winding_number"] && filter_option == "none";
-    if (json_params["skip_winding_number"] && filter_option != "none") {
+    // The two last ones used to run on every call just to fill their output fields. A tagged
+    // mesh input has no input surfaces, so no input winding numbers.
+    //
+    // With filter_inputs, the one the filter reads -- winding_number_input under "input",
+    // winding_number_tracked under "tracked", part under "flood" -- is of those inputs only, so
+    // that the others do not bound what it keeps; the others are of every input.
+    const bool skip_winding =
+        tagged || (json_params["skip_winding_number"] && filter_option == "none");
+    if (!tagged && json_params["skip_winding_number"] && filter_option != "none") {
         logger().warn(
             "skip_winding_number is set but filter='{}' requires the winding number; "
             "computing it anyway.",
@@ -990,22 +1413,31 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 verts,
                 tris,
                 tri_input,
-                int(input_paths.size()));
+                int(input_paths.size()),
+                filter_option == "input" ? bounding : ~InputSet(0));
             logger().info(
                 "finalize: input winding numbers ({} inputs) {:.4}s",
                 input_paths.size(),
                 step_timer.getElapsedTime());
         } else {
-            logger().info("Skipping the input winding numbers (skip_winding_number)");
+            logger().info(
+                "Skipping the input winding numbers ({})",
+                tagged ? "a tagged mesh input has no input surfaces" : "skip_winding_number");
         }
         if (need_tracked) {
             step_timer.start();
-            mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
+            mesh_new.compute_winding_number(
+                finalize_tets,
+                finalize_barycenters,
+                {},
+                {},
+                filter_option == "tracked" ? bounding : ~InputSet(0));
             logger().info("finalize: tracked winding number {:.4}s", step_timer.getElapsedTime());
         }
         if (need_parts) {
             step_timer.start();
-            const int num_parts = mesh_new.flood_fill();
+            const int num_parts =
+                mesh_new.flood_fill(filter_option == "flood" ? bounding : ~InputSet(0));
             logger().info(
                 "finalize: flood fill, {} parts {:.4}s",
                 num_parts,
@@ -1034,8 +1466,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
     }
     mesh_new.consolidate_mesh();
-    // A filter removes the tracked faces of the tets it drops, which no operation maps.
-    if (const auto h = mesh_new.finish_surface_history(&input_history)) {
+    // A filter removes the tracked faces of the tets it drops, which no operation maps. A tagged
+    // mesh input's history starts at the mesh as received.
+    if (const auto h = mesh_new.finish_surface_history(tagged ? nullptr : &input_history)) {
         component_io.save_history(*h, history_output);
     }
     if (const auto vh = mesh_new.finish_volume_history()) {
@@ -1286,7 +1719,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 }
                 tagged_pairs.push_back(pair);
             }
-            ecs_curves_in = curve_euler_characteristics(feature_edges);
+            // A tagged mesh's curves are an input edge per edge and label (read_tagged_mesh()):
+            // an edge of two labels is one edge of the network.
+            std::set<std::array<size_t, 2>> network;
+            for (const auto& e : feature_edges) {
+                network.insert({{std::min(e[0], e[1]), std::max(e[0], e[1])}});
+            }
+            ecs_curves_in = curve_euler_characteristics(
+                tagged ? std::vector<std::array<size_t, 2>>(network.begin(), network.end())
+                       : feature_edges);
             ecs_curves_out = curve_euler_characteristics(tagged_pairs);
             logger().info(
                 "Euler characteristic, feature curves: input {} | tagged output {}",
@@ -1348,7 +1789,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         report["coverage"] = coverage_distance;
         report["all_rounded"] = all_rounded;
         report["input_euler_characteristic"] = ecs_input;
+        report["inserted_euler_characteristic"] = ecs_inserted;
         report["output_euler_characteristic"] = ecs_output;
+        report["inserted_crossing_pairs"] = inserted_crossing_pairs;
+        report["inserted_degenerate_triangles"] = inserted_degenerate_triangles;
         report["insertion_and_preprocessing"] = insertion_time;
         component_io.result.second = report;
         if (!component_io.memory()) {
@@ -1397,7 +1841,12 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.save_paraview(output_path, false);
     }
 
-    mesh_new.output_mesh(output_path + "_final.msh");
+    // The output's tags (face_tags, feature_tags, above), the same on both routes, each with its
+    // input set, the faces oriented as their input.
+    mesh_new.output_mesh(output_path + "_final.msh", face_tags, feature_tags);
+    // The reference the tags were held to, for the next component (the memory route's
+    // outputs["envelope"]), in a file of its own: _final.msh is read as a mesh by gmsh and polyfem.
+    if (!component_io.memory()) io::write_mesh(output_path + "_envelope.msh", envelope_out);
 
     if (!component_io.memory()) igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
 
@@ -1439,11 +1888,18 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.save_paraview("mesh", false, &raw);
         io::compact_slot_outputs(mesh_new, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
+        // The tags _final.msh holds on the file route (output_mesh()), as the triangle and edge
+        // blocks of the mesh.
+        io::collect_input_set_tags<CellType::Triangle>(
+            mesh_new,
+            component_io.result.first,
+            face_tags);
+        io::collect_feature_edge_tags(mesh_new, component_io.result.first, feature_tags);
         component_io.result.first.merge(io::named_outputs(std::move(history_meshes)));
         if (features_present)
             component_io.result.first["features"] =
                 io::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
-        component_io.result.first["envelope"] = std::move(memory_envelope);
+        component_io.result.first["envelope"] = std::move(envelope_out);
         return {}; // the memory overload returns component_io.result instead
     }
     return mesh_new.export_mesh_data();

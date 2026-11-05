@@ -236,7 +236,7 @@ of the optimized runs made for this page converged.
 
 With `optimize_offset` false, the run stops after the march: the front's vertices are at the
 target (or at half the maximum marchable distance), the report has no convergence fields, and the
-mesh's diagnostic fields (`input_distance` and others) are NaN.
+mesh's `distance_over_target` is NaN.
 
 ### The checks: `check_manifoldness`
 
@@ -252,16 +252,22 @@ counted before and after the construction, and a change stops the run
 - The mesh: `output` on the command line (default `out`, written as `out.msh`), `outputs["mesh"]`
   in memory. Its tags are the input's, with the output tags on the band (and an empty
   `EnvelopeSurface` column when the input has that group). The vertex field `labels` is 1 on the
-  complex, 2 on the vertices the march added, 0 elsewhere: in the first run, 157, 592 and 195. The
-  other fields are diagnostics of the optimization.
+  complex, 2 on the vertices the march added, 0 elsewhere: in the first run, 157, 592 and 195.
+  Besides them, the fields other components read (`vid`, the tet field `offset_tag`, 1 on the
+  band) and two annotations: `amips`, each tet's quality, and `distance_over_target`, each
+  vertex's distance to the complex over `target_distance`. The diagnostics of the optimization
+  are in the `DEBUG_output` frames only.
 - In memory, `outputs["offset"]`: the front, as triangles on the mesh's vertices, after the
   optimization (2,462 triangles in one five-turn run); a construction-only run returns it
-  without triangles. `outputs["envelope"]` is the input's `EnvelopeSurface` group, passed on.
+  without triangles. `outputs["envelope"]` is the input's `EnvelopeSurface` group, passed on, or the
+  [`envelope`](../reference/topological_offset.md#envelope) given, unchanged (on the command line
+  also `<output>_envelope.msh`): carried for the next run, not yet held to.
 - With `report`, a JSON file with the vertex, edge, face and tet counts before and after, the
   threads and the run time; after the optimization also `converged` and `optimization_metrics`,
   whose `avg_l2_dist_err` and `max_l2_dist_err` are the front's distance error. In memory, the
   report is the second return value.
-- With [`save_vtu`](../reference/topological_offset.md#save_vtu), `.vtu` files for ParaView.
+- With [`save_vtu`](../reference/topological_offset.md#save_vtu), `.vtu` files for ParaView, with
+  the mesh's fields.
 
 ## Recipes and pitfalls
 

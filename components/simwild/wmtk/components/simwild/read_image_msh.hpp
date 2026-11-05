@@ -3,6 +3,7 @@
 #include <wmtk/io/ComponentIO.hpp>
 
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
 #include <wmtk/Types.hpp>
 #include <wmtk/history/History.hpp>
@@ -20,7 +21,8 @@ struct InputData
 
     /// Tagged faces of a tet mesh: rows of V_input, with one 0/1 column per face_tag_names
     /// entry. Empty when the mesh has no triangle block. In 2D, the tagged edges (two columns)
-    /// of the curve inputs, and face_tag_names their edge tags' names.
+    /// of the curve inputs or of a tagged mesh's edge block, and face_tag_names their edge tags'
+    /// names. A row's vertex order is its orientation.
     MatrixXi F_tagged;
     MatrixSi F_tags;
     std::vector<std::string> face_tag_names;
@@ -33,6 +35,17 @@ struct InputData
     std::vector<uint64_t> F_envelope_labels;
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;
+    /// An `envelope` input that is a labelled reference (io::is_labelled_envelope()), as tetwild,
+    /// triwild and simwild hand theirs on: as given, for the run to hand on in turn while it holds
+    /// to it. Its triangles (2D: segments) are then V_envelope and F_envelope, every row, and
+    /// F_envelope_labels their labels' bits by name: a label is every bit of the mesh named as it
+    /// (a face tag's, 2D an edge tag's, i; a region's, the face tags' count + j), 0 for a label the
+    /// mesh does not have. Empty without one, and for an `envelope` without labels, held to as a
+    /// whole as before the labels.
+    std::optional<MeshData> envelope_reference;
+    /// Its feature curves (3D, its edge block) of the labels the mesh's feature curves have: an
+    /// input edge per edge and label, edge_input that label's feature input (feature_edge_names).
+    utils::FeatureInputs reference_curves;
     /// Whether the input was simplified before the insertion (preserve_topology off). Around the
     /// input (envelope_reference "input") V_envelope is then the input as read, not what was
     /// inserted, and the mesh holds the input's own curves and curve points around the input
@@ -46,8 +59,8 @@ struct InputData
     /// simwild_double_sphere_notop_3d, 1.42x on simwild_curves_2d.
     double diag = -1;
 
-    /// The topological offset's correspondence handed on from an earlier offset (memory route,
-    /// vertex field corr_input_vid): per row of V_input, the V_input row of the input-complex
+    /// The topological offset's correspondence handed on from an earlier offset (vertex field
+    /// corr_input_vid, on both routes): per row of V_input, the V_input row of the input-complex
     /// vertex it was split off from, -1 for none. Empty when the mesh has no such field. Only the
     /// offset reads it, and only with save_offset_correspondence (see its spec).
     std::vector<int64_t> corr_input_vid;
@@ -61,9 +74,14 @@ struct InputData
         facet_sources;
 
     /// A surface input with feature curves or points (input_edges, input_points): them as read,
-    /// and where the insertion put them, in V_input's numbering. Empty otherwise.
+    /// and where the insertion put them, in V_input's numbering. A tagged tet mesh with an edge
+    /// block: its feature edges, one input edge per edge and tag (edge_input the tag's column),
+    /// each placed on itself. Empty otherwise.
     utils::FeatureInputs features;
     utils::EmbedFeaturesResult features_placed;
+    /// The name of each feature input, bit i of a feature edge's input set: feature_<i> for
+    /// input_edges file i, a tagged tet mesh's edge tags. Empty without feature curves.
+    std::vector<std::string> feature_edge_names;
     /// A 2D curve input with input points (input_points): the row of V_input each became, in
     /// input order. Empty otherwise.
     std::vector<size_t> input_point_vids;
@@ -76,7 +94,8 @@ struct InputData
 /// as its region field, tags, when it has none: in place, both routes. `what` names the input in
 /// errors.
 void tags_from_label_images(MeshData& mesh, const std::string& what);
-InputData read_image_msh(const std::string& path);
+/// `envelope`, optional: an `envelope` input, on both routes read_mesh_data()'s.
+InputData read_image_msh(const std::string& path, const MeshData* envelope = nullptr);
 InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope = nullptr);
 
 /**

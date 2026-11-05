@@ -1,4 +1,5 @@
 #include <wmtk/io/DataWriter.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 
 #include "SimWildMesh.h"
 
@@ -523,6 +524,45 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
         m_envelope_eps);
 }
 
+std::string SimWildMesh::label_name(const size_t bit) const
+{
+    if (bit < m_face_tag_names.size()) return m_face_tag_names[bit];
+    const size_t j = bit - m_face_tag_names.size();
+    const std::vector<std::string> labels = io::tag_labels(m_tag_id_to_name, m_tags_count);
+    return j < labels.size() ? labels[j] : fmt::format("label bit {}", bit);
+}
+
+MeshData SimWildMesh::envelope_data(
+    const utils::FeatureInputs& curves,
+    const std::vector<std::string>& curve_names) const
+{
+    const std::vector<InputSet>& sets = m_F_envelope_labels.size() == m_F_envelope.size()
+                                            ? m_F_envelope_labels
+                                            : m_F_envelope_face_sets;
+    MeshData out;
+    const MeshData faces = io::geometry_data(m_V_envelope, m_F_envelope, CellType::Triangle);
+    if (sets.size() != m_F_envelope.size()) {
+        io::append_envelope_block(out, faces, CellType::Triangle, {}, {});
+        return out;
+    }
+    std::vector<std::string> names = m_face_tag_names;
+    const std::vector<std::string> tet_labels = io::tag_labels(m_tag_id_to_name, m_tags_count);
+    names.insert(names.end(), tet_labels.begin(), tet_labels.end());
+    names.resize(std::min(names.size(), size_t(SurfaceTagAttributes::max_inputs)));
+    io::append_envelope_block(out, faces, CellType::Triangle, sets, names);
+    std::vector<InputSet> curve_sets;
+    for (const int k : curves.edge_input) {
+        curve_sets.push_back(k >= 0 && k < SurfaceTagAttributes::max_inputs ? InputSet(1) << k : 0);
+    }
+    io::append_envelope_block(
+        out,
+        io::geometry_data(curves.edge_vertices, curves.edges, CellType::Edge),
+        CellType::Edge,
+        curve_sets,
+        curve_names);
+    io::append_envelope_points(out, curves.points);
+    return out;
+}
 
 bool SimWildMesh::all_rounded() const
 {

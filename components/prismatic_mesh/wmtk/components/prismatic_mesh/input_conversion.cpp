@@ -23,47 +23,21 @@ PrismaticMeshInput load_prismatic_data(const MeshData& data)
     data.validate();
     const auto& block = data.cell(CellType::Tetrahedron);
     require(block.connectivity.rows() > 0, "expected tetrahedra");
-    io::ComponentIO::attributes(
+    // Fields: the regions (tag_0 and offset_tag, or columns of tags), the vertex labels and the
+    // correspondence (vid, corr_input_vid) are read; every other is dropped
+    // (io::ComponentIO::data_fields).
+    std::set<std::string> dropped = io::ComponentIO::dropped_fields(
         data.vertex_attributes,
-        {"labels",
-         "vid",
-         "corr_input_vid",
-         "component_id",
-         "singular_component",
-         "optimal_normal",
-         "target_position",
-         "sizing_scalar",
-         "sizing_field",
-         "input_distance",
-         "distance_over_target",
-         "front_error_bars",
-         "band_force_n",
-         "amips_force_n",
-         "offset_foldover",
-         "front_last_change"},
+        {"labels", "vid", "corr_input_vid"},
         {"corr_input_vid"});
     for (const auto& [type, b] : data.cells) {
         require(
             type == CellType::Tetrahedron || type == CellType::Triangle || type == CellType::Edge,
             "expected a tetrahedral construction mesh");
-        io::ComponentIO::attributes(
-            b.attributes,
-            {"tags",
-             "tag_0",
-             "offset_tag",
-             "offset",
-             "tau22",
-             "amips",
-             "tet_energy",
-             "amips_term",
-             "band_term",
-             "band_gap_bars",
-             "plastic"});
+        dropped.merge(
+            io::ComponentIO::dropped_fields(b.attributes, {"tags", "tag_0", "offset_tag"}));
     }
-    for (const auto& [name, a] : data.vertex_attributes) {
-        const int width = (name == "optimal_normal" || name == "target_position") ? 3 : 1;
-        require(a.cols() == width, "invalid attribute width for " + name);
-    }
+    io::ComponentIO::log_dropped("construction mesh", dropped);
     const int n = int(data.V.rows()), m = int(block.connectivity.rows());
     auto column =
         [&](const MeshAttributes& fields, const std::string& key, int count, int64_t fallback) {

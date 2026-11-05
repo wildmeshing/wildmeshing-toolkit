@@ -3150,8 +3150,9 @@ public:
     void write_phi_grid(const std::string& path, int n) const;
 
     void write_input_complex(const std::string& path);
-    /// <path>{,_surf,_off,_edge}.vtu, now: write_vtu_frame(gather_vtu_frame(path)).
-    void write_vtu(const std::string& path, MeshMap* output = nullptr);
+    /// <path>{,_surf,_off,_edge}.vtu, now: write_vtu_frame(gather_vtu_frame(path)). `result`:
+    /// the final mesh, its annotations trimmed (write_vtu_frame()); otherwise a debug frame.
+    void write_vtu(const std::string& path, MeshMap* output = nullptr, bool result = false);
     /**
      * @brief Everything write_vtu() writes, as arrays: the mesh is read once, by
      * gather_vtu_frame(), and write_vtu_frame() reads this and nothing else -- so a debug frame's
@@ -3184,8 +3185,10 @@ public:
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
     /// Does not change the mesh (the band-region map it re-derives is put back).
     VtuFrame gather_vtu_frame(const std::string& path);
-    /// The files' part: paraviewo encodes and writes `frame`, nothing else is read.
-    static void write_vtu_frame(const VtuFrame& frame, MeshMap* output = nullptr);
+    /// The files' part: paraviewo encodes and writes `frame`, nothing else is read. A debug
+    /// frame carries every field; a `result` only the tags, the data fields and two annotations.
+    static void
+    write_vtu_frame(const VtuFrame& frame, MeshMap* output = nullptr, bool result = false);
     //// output stuff
 
 private:
