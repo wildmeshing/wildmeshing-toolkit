@@ -126,6 +126,17 @@ inline bool is_labelled_envelope(const MeshData& envelope, const bool is_3d)
     const auto it = envelope.cells.find(is_3d ? CellType::Triangle : CellType::Edge);
     return it != envelope.cells.end() && it->second.attributes.count("tags");
 }
+/// `mesh` with its tags only: every vertex field and every cell field but `tags` dropped.
+inline MeshData tags_only(MeshData mesh)
+{
+    mesh.vertex_attributes.clear();
+    for (auto& entry : mesh.cells) {
+        auto& attributes = entry.second.attributes;
+        for (auto it = attributes.begin(); it != attributes.end();)
+            it = it->first == "tags" ? std::next(it) : attributes.erase(it);
+    }
+    return mesh;
+}
 /// A labelled reference (append_envelope_block()) as a receiving mesh reads it
 /// (read_labelled_envelope()): its triangles (2D: segments) on vertices of their own (`dim`
 /// columns), each with the bits of the receiver's labels it names, 0 for a row of labels the

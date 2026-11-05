@@ -16,6 +16,7 @@
 #include <wmtk/threading/parallel_for.hpp>
 
 #include "Parameters.h"
+#include "read_tagged_mesh.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -88,6 +89,12 @@ public:
     /// winding-number output fields (empty => the fields are numbered) and the face tags, tag_<i>
     /// without a name (io::input_labels()).
     std::vector<std::string> m_input_names;
+    /// The label of bit `bit` of a tracked face's input set, for the reference checks: the
+    /// input's name, tag_<i> without one, as the output's face tags name it.
+    std::string label_name(size_t bit) const override
+    {
+        return bit < m_input_names.size() ? m_input_names[bit] : "tag_" + std::to_string(bit);
+    }
 
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
     TetAttCol m_tet_attribute;
@@ -352,6 +359,22 @@ public:
         const utils::EmbedFeaturesResult* features = nullptr,
         const std::vector<InputSet>* facet_input_set = nullptr,
         const utils::FeatureInputs* feature_input = nullptr);
+
+    /**
+     * @brief The tagged route: initialize from a tagged tet mesh (read_tagged_mesh()), its tets
+     * kept, instead of from an insertion.
+     *
+     * What init_from_Volumeremesher() does with the insertion's output, done with the mesh's:
+     * every vertex a direct point (its double is exact), so rounded; the tagged faces tracked,
+     * each with its labels as its input set and the orientation of its rows; the feature curves
+     * and points tagged and anchored, the tubes around them as received. The wall: the box rule's
+     * flags on the boundary faces, each in a plane of the mesh's own bounding box, the domain's
+     * box (m_tet_params.box_min/box_max). Throws on a tagged face or edge the tets do not have, on
+     * a tracked boundary face (a filtered mesh's boundary: the operations hold a tracked face from
+     * the tet across it), and on an untracked boundary face in no plane of the box: such a face
+     * would be held by nothing.
+     */
+    void init_from_tagged_mesh(const TaggedMesh& mesh);
 
     void init_from_file(std::string input_dir);
 

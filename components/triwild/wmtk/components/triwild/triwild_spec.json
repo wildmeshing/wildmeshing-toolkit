@@ -8,6 +8,7 @@
       "output",
       "input_points",
       "input_names",
+      "envelope",
       "input_dir",
       "num_threads",
       "max_iterations",
@@ -78,7 +79,7 @@
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of input curve networks: OBJ files of polylines ('v' and 'l' lines).",
+    "doc": "List of input curve networks: OBJ files of polylines ('v' and 'l' lines). Or one tagged triangle mesh -- on the memory route a named mesh with a triangle block, on the file route a .msh with triangles -- which takes the tagged route: triwild continues from it as it is, its triangles kept, so that a chain of components can go on through triwild. Its edge block's tags are the tracked curves, one input per label, each row oriented by its vertex order, named as the mesh names them; its point block input points, anchored where they are -- as simwild reads a tagged triangle mesh. triwild holds no regions: triangles tagged other than ambient are refused (a mesh with region tags is simwild's to remesh). It must fill its bounding box, as the arrangement's padded box does: its boundary edges are the wall, held by the box rule, each untracked and on a line of the box. A tracked boundary edge -- a filtered mesh's boundary -- is refused (give a filtered mesh's curves as inputs), and so is an untracked one on no line. Skipped on this route: the simplification, the arrangement and the input winding numbers; eps_rel and length_rel are of the mesh's bounding box diagonal. Refused with it: any other input, input_points, input_names and filter \"input\".",
     "min": 1
   },
   {
@@ -113,6 +114,12 @@
     "pointer": "/input_names/*",
     "type": "string",
     "doc": "Name for one input mesh."
+  },
+  {
+    "pointer": "/envelope",
+    "type": "string",
+    "default": "",
+    "doc": "The envelope of a tagged mesh input (see /input): on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope triwild and simwild return (outputs[\"envelope\"]) and write (<output>_envelope.msh), an edge block labelled by the tags it holds. It is the reference the first component of a chain held its curves to, and the run holds to it as simwild does, by the same code: the curve envelope and the per-label envelopes are built around it, label by label, at this run's eps, its labels matched to the mesh's edge tags by name, and the curve-end anchors are centred on its curve ends and junctions, so that the output is within this run's eps of the first component's input. A label of a tracked edge that the envelope lacks throws, and so does a tracked edge received outside the envelopes of its labels, checked exactly before the optimization. The run returns it unchanged as its envelope (on the file route <output>_envelope.msh). Not with use_sample_envelope, nor bare geometry without labels. Empty, the default: the envelopes are built around the curves as received, and those are the envelope returned."
   },
   {
     "pointer": "/input_dir",
@@ -180,7 +187,7 @@
     "type": "string",
     "options": ["flood", "input", "tracked", "none"],
     "default": "none",
-    "doc": "Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'tracked': winding number w.r.t. the tracked curves, oriented as the input was -- the curves the mesh conforms to rather than the input, all inputs at once (coincident curves add up, opposite ones cancel); faces at most 1/2 are dropped. 'none': Do not filter. All three filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary."
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'tracked': winding number w.r.t. the tracked curves, oriented as the input was -- the curves the mesh conforms to rather than the input, all inputs at once (coincident curves add up, opposite ones cancel); faces at most 1/2 are dropped. 'none': Do not filter. All three filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary. On a tagged mesh input (see /input), 'tracked' and 'flood' use its tracked edges, and 'input' is refused: there are no input curves."
   },
   {
     "pointer": "/skip_winding_number",

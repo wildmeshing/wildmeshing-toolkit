@@ -46,6 +46,14 @@ public:
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
 
+    /// The labels of the tracked edges' input sets, bit i the i-th (input_names, else tag_<i>; a
+    /// tagged mesh input's edge tags), for the reference checks to name a label by.
+    std::vector<std::string> m_edge_tag_names;
+    std::string label_name(size_t bit) const override
+    {
+        return bit < m_edge_tag_names.size() ? m_edge_tag_names[bit] : "tag_" + std::to_string(bit);
+    }
+
     // One envelope per input curve file, when there are several: the base's m_input_envelopes,
     // built by init_mesh around the same curves as m_envelope, at the same eps and predicate,
     // one input per file. Empty with one input, and then every segment is held to m_envelope

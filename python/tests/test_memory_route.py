@@ -313,3 +313,43 @@ def test_many_regions_are_read_by_the_polyfem_reader(work):
     wm.write_mesh(path, m)
     assert list(TaggedMesh(path).prim_tags.values()) == [frozenset(labels)]
     assert exact_diff(m, wm.read_mesh(path)) == []
+
+
+def _face_tags(m):
+    """Each tagged face of a tet mesh as (label, its corners' coordinates turned to start at the
+    smallest, its orientation kept), sorted: independent of vertex and row order."""
+    c = m["cells"].get("triangle")
+    if c is None:
+        return []
+    tags = c["attributes"]["tags"]
+    out = []
+    for row, member in zip(c["connectivity"], tags["values"]):
+        corners = [tuple(m["V"][v]) for v in row]
+        k = corners.index(min(corners))
+        corners = tuple(corners[k:] + corners[:k])
+        out += [(label, corners) for label, b in zip(tags["labels"], member) if b]
+    return sorted(out)
+
+
+def test_tetwild_tagged_route_same_as_file_route(boxes, m1, work):
+    """tetwild continues from its own output, a tagged tet mesh, its tets kept, with one result
+    on both routes. It reads every tagged face exactly: the envelope it hands on, built from the
+    faces received, is the input's rows with their labels. (Not the output: the optimization's
+    bare collapse and swap passes run at max_iterations 0 too.) A mesh with volume tags --
+    simwild's regions -- is refused, naming simwild."""
+    options = {"input_names": ["a", "b"], "eps_rel": 1e-2, "simplify": False,
+               "max_iterations": 0, "num_threads": 1}
+    wm.tetwild({"input": boxes, "output": str(work / "tt"), "input_dir": str(work), **options})
+    first = str(work / "tt_final.msh")
+    again = {"max_iterations": 0, "num_threads": 1}
+    wm.tetwild({"input": [first], "output": str(work / "tt2"), "input_dir": str(work), **again})
+    out, _ = wm.tetwild({"input": ["m"], **again}, {"m": wm.read_mesh(first)})
+    back = wm.read_mesh(str(work / "tt2_final.msh"))
+    assert _face_tags(out["mesh"]) == _face_tags(back)
+    received = _face_tags(wm.read_mesh(first))
+    assert _face_tags(out["envelope"]) == received
+    assert _face_tags(wm.read_mesh(str(work / "tt2_envelope.msh"))) == received
+    assert out["mesh"]["cells"]["triangle"]["attributes"]["tags"]["labels"] == ["a", "b"]
+    assert "tags" not in out["mesh"]["cells"]["tetrahedron"].get("attributes", {})
+    with pytest.raises(RuntimeError, match="simwild"):
+        wm.tetwild({"input": ["m"], **again}, {"m": wm.read_mesh(m1)})

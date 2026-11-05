@@ -95,6 +95,18 @@ they label the tag columns of the output (`tag_0`, `tag_1`, ... without them).
 In memory, `input` names entries of the meshes dictionary, and the input names can be the same
 strings.
 
+A triangle mesh as the input, alone, takes the tagged route: on files a `.msh` with triangles, in
+memory a mesh with a `triangle` block. triwild continues from it as it is -- no simplification, no
+arrangement, the triangles kept -- holding its edge block's tags as tracked curves, named as the
+mesh names them, and its point block as input points. No regions: a mesh whose triangles carry a
+tag other than `ambient` is refused, as it is simwild's to remesh.
+The mesh must fill its bounding box, as an output with
+`filter: "none"` does: a filtered mesh, whose boundary is its tracked edges, is refused, and its
+curves go in as inputs instead. With
+[`envelope`](../reference/triwild.md#envelope), the reference an earlier run returned, it holds the
+curves to that rather than to the mesh received, so a chain stays within one eps of the first
+input.
+
 ### The envelope: `eps_rel`
 
 [`eps_rel`](../reference/triwild.md#eps_rel) (default 0.001) is the distance the output's curves

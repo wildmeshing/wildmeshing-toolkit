@@ -130,8 +130,8 @@ So `mesh` goes back in with the same per-face fields named again.
 | `qslim` | `input` | Triangle geometry, no attributes |
 | `shortest_edge_collapse` | `input` | Triangle geometry, no attributes |
 | `isotropic_remeshing` | `input`; optional `features` | Triangle geometry, no attributes but its own `vertex_id`, ignored, and the triangle fields `feature_fields` names; `features` on the rows of `input`: edges with Int64 `edge_id`, points with Int64 `vertex_id`, or Int64 vertex `vertex_id` (-1 for none) |
-| `tetwild` | `input`; `input_edges`, `input_points` | Triangle surfaces; optional curve/point geometry, no attributes |
-| `triwild` | `input`; `input_points` | Curve geometry, optional free points, no attributes |
+| `tetwild` | `input`; `input_edges`, `input_points`; optional `envelope` for tagged input | Triangle surfaces; optional curve/point geometry, no attributes. Or one tagged tet mesh, continued from as it is: tagged faces, feature curves and points, no tet tags but `ambient` |
+| `triwild` | `input`; `input_points`; optional `envelope` for tagged input | Curve geometry, optional free points, no attributes. Or one tagged triangle mesh, continued from as it is: tracked curves and points, no triangle tags but `ambient` |
 | `simwild` | `input`; optional `envelope` for tagged input | Surface/curve geometry, or tagged triangle/tet mesh |
 | `topological_offset` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `manifold_extraction` | `input`; optional `envelope` | Tagged triangle/tet mesh |
@@ -148,7 +148,12 @@ names in the adapters and may be supplied again. Extra unrelated fields are erro
 triangles are tagged faces (an input surface, each row oriented as its input) and edges tagged
 feature curves (an `input_edges` file, `feature_<i>`); in a triangle mesh, edges are tagged curves
 (an input curve, each row oriented as its input). simwild, tetwild and triwild write them so, and
-simwild reads them back as the tags it holds. Rows labelled `EnvelopeSurface` (in a triangle mesh,
+simwild, tetwild and triwild read them back as the tags they hold. tetwild takes a tet mesh as its
+only input on the tagged route, its tets kept: no simplification, no insertion, no input winding
+numbers. It holds no volumes, so a mesh whose tets carry a tag other than `ambient` is refused
+(simwild remeshes those), and its point block is input points, anchored where they are. triwild
+takes a triangle mesh the same way, holding its tracked curves and points and no regions: a mesh
+whose triangles carry a tag other than `ambient` is refused. Rows labelled `EnvelopeSurface` (in a triangle mesh,
 an edge block without `tags` too) are the envelope instead, which cannot be combined with an
 `envelope` input. Other lower-dimensional blocks are rejected.
 
@@ -160,7 +165,8 @@ simwild, given it with a tagged mesh, builds every envelope, tube and anchor aro
 eps, matching the envelope's labels to the mesh's face tags (2D: edge tags), regions and feature
 curves by name; it throws for a label the mesh holds that the envelope lacks, and, before a
 remeshing, unless every held face and feature edge received lies, exactly, in the envelopes of its
-labels -- the error names the labels, the number outside and the eps. topological_offset and
+labels -- the error names the labels, the number outside and the eps. tetwild's and triwild's tagged
+routes hold to it the same way, by the same code, before every run. topological_offset and
 manifold_extraction carry it, not yet holding to it. Each returns it unchanged as its own
 `envelope`. An `envelope` without labels -- bare geometry -- is held to as a whole, as before.
 
