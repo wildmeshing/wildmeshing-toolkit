@@ -356,7 +356,7 @@
     "pointer": "/preserve_topology",
     "type": "bool",
     "default": false,
-    "doc": "Preserve the topology of the input surface. This forces remove_duplicate_eps to merge only exactly coincident vertices, keeps the link condition enabled during the input simplification, enables the substructure link condition during optimization, and makes the run fail if the output Euler characteristic differs from the input. When unset, all four are relaxed and the topology may change."
+    "doc": "Preserve the topology of the input surface where the phases can. This forces remove_duplicate_eps to merge only exactly coincident vertices, keeps the link condition enabled during the input simplification, and enables the substructure link condition during optimization; when unset, all three are relaxed and the topology may change. Even so, the surface simplification before the insertion may change the topology: the link condition checks connectivity only, and the envelope admits a fold of the surface through itself. The insertion keeps the topology of the surface it receives when that surface does not cross itself, and cuts crossing triangles along their intersection otherwise; that surface is checked once, exactly, and a warning names its crossing pairs of triangles and its degenerate triangles (report: inserted_crossing_pairs, inserted_degenerate_triangles). The optimization after the insertion keeps the topology of the inserted surface. The run reports the Euler characteristics of the input surface, of the tracked surface right after the insertion and of the output surface, and warns when the input's and the output's differ (an error with throw_on_fail)."
   },
   {
     "pointer": "/remove_duplicate_eps",

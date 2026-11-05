@@ -8,6 +8,8 @@ endif()
 set(SRC_FILES
     ShortestEdgeCollapse.cpp
 	ShortestEdgeCollapse.h
+	Embedding.cpp
+	Embedding.hpp
 
 	shortest_edge_collapse.hpp
 	shortest_edge_collapse.cpp

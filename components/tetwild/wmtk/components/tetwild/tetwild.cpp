@@ -24,6 +24,7 @@
 #include <optional>
 #include <set>
 #include <vector>
+#include <wmtk/components/shortest_edge_collapse/Embedding.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 #include <wmtk/utils/resolve_path.hpp>
@@ -424,6 +425,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     size_t inserted_boundary = 0;
     double insertion_time = 0;
     igl::Timer timer;
+    // The surface handed to the insertion, checked under preserve_topology below; -1: not checked
+    // (a tagged mesh input is not inserted).
+    int64_t inserted_crossing_pairs = -1, inserted_degenerate_triangles = -1;
     if (!tagged) {
         {
             // Merging vertices that are merely *close* is a topology change: it welds sheets
@@ -683,6 +687,37 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             fsimp_input[i] = surf_mesh.face_attrs[i].input;
         }
         surf_mesh_owner.reset(); // `surf_mesh` dangles from here on; nothing below may use it
+
+        // Under preserve_topology, one exact check of the surface handed to the insertion: does it
+        // cross itself? The link condition keeps the simplification's connectivity only, and the
+        // envelope admits a fold of the surface through itself; the insertion then cuts the
+        // crossing triangles along their intersection, which changes the topology. Not prevented,
+        // warned about. Measured (2026-11) on the Octocat at 8 threads: about 1 run in 3 to 5 ended
+        // with the Euler characteristic [2] -> [3], [3] right after the insertion already, and in 4
+        // of 4 such runs the simplified surface had 2 to 5 crossing pairs in one fold; 0 in 7 of 7
+        // runs that kept [2], and in the input. With this check, 10 more runs: 2 with 3 crossing
+        // pairs, both [3]; 8 with 0, all [2]. It costs 3 ms on the Octocat's 7.8k simplified
+        // triangles at 8 threads (12 ms serial) and 15 ms on the bunny's 32k (62 ms), against 4 s
+        // and 12 s of simplification.
+        if (params.preserve_topology) {
+            logger().info("preserve_topology: checking the surface handed to the insertion");
+            const auto crossings =
+                shortest_edge_collapse::count_crossings(vsimp, fsimp, NUM_THREADS);
+            inserted_crossing_pairs = crossings.pairs;
+            inserted_degenerate_triangles = crossings.degenerate;
+            if (crossings.pairs > 0 || crossings.degenerate > 0) {
+                logger().warn(
+                    "preserve_topology: the surface handed to the insertion crosses itself: {} "
+                    "pairs of triangles meet outside their shared vertices and edges, and {} "
+                    "triangles are degenerate. The output's topology may then differ from the "
+                    "input's.",
+                    crossings.pairs,
+                    crossings.degenerate);
+            } else {
+                logger().info(
+                    "preserve_topology: the surface handed to the insertion does not cross itself");
+            }
+        }
         t_simplify = phase_timer.getElapsedTime(); // surface simplification done
 
 
@@ -1223,6 +1258,25 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     mesh_new.consolidate_mesh();
 
+    // The tracked surface's topology right after the insertion, by the rule of the input's and
+    // the output's: what the optimization keeps, so with filter "none" the output's.
+    std::vector<int> ecs_inserted;
+    if (compute_euler) {
+        std::vector<Eigen::Vector3i> tracked;
+        for (const auto& f : mesh_new.get_faces()) {
+            if (!mesh_new.m_face_attribute[f.fid(mesh_new)].m_is_surface_fs) continue;
+            const auto vs = mesh_new.get_face_vertices(f);
+            tracked.emplace_back(
+                int(vs[0].vid(mesh_new)),
+                int(vs[1].vid(mesh_new)),
+                int(vs[2].vid(mesh_new)));
+        }
+        Eigen::MatrixXi F(tracked.size(), 3);
+        for (size_t i = 0; i < tracked.size(); ++i) F.row(i) = tracked[i];
+        ecs_inserted = compute_euler_characteristics(F);
+        logger().info("Inserted euler characteristic: {}", ecs_inserted);
+    }
+
     // From here on the tracked surface is recorded, starting where the insertion left it.
     if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
     // The whole volume around it too, if asked: the map of the volume starts at the tet mesh
@@ -1735,7 +1789,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         report["coverage"] = coverage_distance;
         report["all_rounded"] = all_rounded;
         report["input_euler_characteristic"] = ecs_input;
+        report["inserted_euler_characteristic"] = ecs_inserted;
         report["output_euler_characteristic"] = ecs_output;
+        report["inserted_crossing_pairs"] = inserted_crossing_pairs;
+        report["inserted_degenerate_triangles"] = inserted_degenerate_triangles;
         report["insertion_and_preprocessing"] = insertion_time;
         component_io.result.second = report;
         if (!component_io.memory()) {

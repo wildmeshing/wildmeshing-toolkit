@@ -28,12 +28,16 @@ envelope of its own:
   \(\cdot\,\text{diag}\), or [`eps_simplify`](../reference/tetwild.md#eps_simplify) if given
   (half of \(\varepsilon\) at the default `eps_rel`). The link condition applies only with
   [`preserve_topology`](../reference/tetwild.md#preserve_topology), so by default the
-  simplification may change the topology of the surface. The open boundary may move within a tube
+  simplification may change the topology of the surface. With it, the simplification may still
+  fold the surface through itself, which the link condition (connectivity only) does not see and
+  the envelope admits, and the insertion then cuts the crossing triangles; tetwild checks the
+  simplified surface for this and warns. The open boundary may move within a tube
   around the input's boundary ([`simplify_boundary_envelope`](../reference/tetwild.md#simplify_boundary_envelope)).
   simwild does the same, except under `preserve_topology`, where it simplifies after the
   insertion instead.
 - In 2D, triwild collapses the shortest segments of the curves while they stay inside the
-  simplification envelope.
+  simplification envelope. simwild does the same, except under `preserve_topology`, where it
+  simplifies after the insertion instead, as in 3D.
 
 The tighter envelope leaves the optimizer room: the simplified surface is within half of
 \(\varepsilon\) of the input (by default), and the optimizer, which is held to the full

@@ -1872,11 +1872,27 @@ size_t TetOptimizerMesh::substructure_order_of_vertex(const size_t vid) const
 {
     size_t order = TetMesh::substructure_order_of_vertex(vid);
     if (order < 3 && m_track_feature_edges) {
+        // The tagged edges at vid, read from vid's own fan alone. The link condition asks this
+        // of the link vertices of the collapsing edge, whose neighbours u lie two steps from it,
+        // outside the collapse's lock: tuple_from_edge({vid, u}) and eid() read fan(u), which
+        // another collapse, or its rollback, may be rewriting. Measured 2026-11-05, double_sphere
+        // at 8 threads: ThreadSanitizer flagged this read, and on the mac-mini (libc++'s move
+        // assignment empties the fan first) 6 runs in 25 threw "empty tet vector"; read from
+        // vid's fan, 0 in 25. Same answer: an edge's slot is its lowest tet's tid * 6 + local
+        // index, and the fan is sorted ascending (eid() relies on it too), so the first tet of
+        // vid's fan holding u is that tet.
         size_t n_tagged = 0;
-        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-            const Tuple e = tuple_from_edge({{vid, u}});
-            if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].is_tagged()) {
-                ++n_tagged;
+        std::vector<size_t> seen;
+        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+            for (int j = 0; j < 6; ++j) {
+                const Tuple e = tuple_from_edge(tid, j);
+                const size_t a = e.vid(*this);
+                const size_t b = e.switch_vertex(*this).vid(*this);
+                if (a != vid && b != vid) continue;
+                const size_t u = a == vid ? b : a;
+                if (std::find(seen.begin(), seen.end(), u) != seen.end()) continue;
+                seen.push_back(u);
+                if (m_feature_edge_attribute[tid * 6 + j].is_tagged()) ++n_tagged;
             }
         }
         if (n_tagged == 2) {

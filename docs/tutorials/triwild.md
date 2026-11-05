@@ -213,10 +213,14 @@ By default the simplification and the optimization may change the curves' topolo
 narrower than \(\varepsilon\), merge two junctions, remove a loop smaller than \(\varepsilon\).
 [`DEBUG_euler`](../reference/triwild.md#DEBUG_euler) logs the Euler characteristic of each
 connected curve at each stage, which shows such changes.
-[`preserve_topology`](../reference/triwild.md#preserve_topology) forbids it: only exactly
+[`preserve_topology`](../reference/triwild.md#preserve_topology) forbids these: only exactly
 coincident vertices are merged, the simplification does not merge junctions or endpoints, and the
-operations check the link condition. Set it when the curves' connectivity matters, after making
-sure the input has no gaps far below \(\varepsilon\) (see the [pitfalls](#pitfalls)).
+operations check the link condition. The simplification before the insertion may still change
+the topology: it can move a curve across another, or across itself, within its envelope, which
+nothing checks. The insertion keeps the topology of the curves it receives where they do not
+cross, and the optimization keeps that of the inserted curves. Set it when the curves'
+connectivity matters, after making sure the input has no gaps far below \(\varepsilon\) (see the
+[pitfalls](#pitfalls)).
 
 ### Threads and reproducibility
 

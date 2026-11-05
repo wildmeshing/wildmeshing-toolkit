@@ -441,7 +441,7 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
         return size_t(-1);
     }
 
-    const size_t v_new = m_last_split_vertex;
+    const size_t v_new = m_last_split_vertex.local();
     for (const size_t fid : parents) {
         faces.erase(fid);
     }

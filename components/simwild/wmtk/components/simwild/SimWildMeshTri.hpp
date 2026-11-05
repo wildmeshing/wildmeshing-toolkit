@@ -96,12 +96,15 @@ public:
      *
      * Member b is built around the same curves as m_envelope, restricted to label b -- the
      * input curves of that label in generation, else the mesh's surface edges carrying it
-     * (TriOptimizerMesh::init_input_envelopes()) -- at m_envelope_eps and with the predicate
-     * m_envelope has. m_envelope stays the union, for the engine's direct uses of it. A surface
-     * edge carrying no label throws, as in triwild (the base's surface_envelope_for_edge()). At
-     * most 64 edge tags and triangle tags together: a mesh with more throws.
+     * (TriOptimizerMesh::init_input_envelopes()) -- at `eps` and with the predicate `exact`, the
+     * ones m_envelope has at the time, and follows it: at eps_simplify while the simplification
+     * after the insertion runs (simplify()), around the simplified curves after it under
+     * envelope_reference "simplified". m_envelope stays the union, for the engine's direct uses
+     * of it. A surface edge carrying no label throws, as in triwild (the base's
+     * surface_envelope_for_edge()). At most 64 edge tags and triangle tags together: a mesh with
+     * more throws.
      */
-    void init_label_envelopes();
+    void init_label_envelopes(double eps, bool exact);
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
     std::vector<std::tuple<ExprPtr, double>> m_quality_field;
@@ -172,6 +175,14 @@ public:
         const std::vector<std::string>& edge_tag_names);
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
+
+    /**
+     * @brief Simplify after the insertion: collapse every edge with the curve envelopes at
+     * eps_simplify, under preserve_topology (the exact inversion check and the substructure link
+     * condition), then hold the optimization to the envelopes envelope_reference names. The 2D
+     * twin of SimWildMesh::simplify(); run_2D calls it where run_3D calls that one.
+     */
+    void simplify();
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
@@ -363,7 +374,12 @@ private:
     // Negative = stays on v1 side, positive = stays on v2 side.
     // Set before split_edge(), cleared immediately after.
     std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
-    size_t m_last_split_vertex = 0;
+    // The vertex the calling thread's last split made, per thread as 3D's
+    // SplitTagCache::v_new: every thread of the parallel split pass writes it, and the serial
+    // callers (AnnotationsTri.cpp, TightSealGeom.cpp) read their own split's. One shared size_t
+    // was a write-write race, reported by ThreadSanitizer in 3 of 3 simwild 2D remeshing runs at
+    // 8 threads (2026-11-05).
+    wmtk::threading::enumerable_thread_specific<size_t> m_last_split_vertex;
 
     // tight_seal_geom's helpers that need the mesh, defined in TightSealGeom.cpp
     /// BVH of the boundary of the faces of `fids` for which in_set holds: their interfaces with
@@ -413,7 +429,7 @@ protected:
 
     bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max) const override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
-    void split_after_vertex(size_t v_new) override { m_last_split_vertex = v_new; }
+    void split_after_vertex(size_t v_new) override { m_last_split_vertex.local() = v_new; }
 };
 
 } // namespace wmtk::components::simwild::tri
