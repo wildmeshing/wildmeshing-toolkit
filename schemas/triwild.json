@@ -236,7 +236,7 @@
     },
     "preserve_topology": {
       "type": "boolean",
-      "description": "Preserve the topology of the input curve network. This forces remove_duplicate_eps to merge only exactly coincident vertices, stops the input simplification from merging two junctions or endpoints, and enables the substructure link condition during optimization. When unset, all three are relaxed and the topology may change.",
+      "description": "Preserve the topology of the input curve network where the phases can. This forces remove_duplicate_eps to merge only exactly coincident vertices, stops the input simplification from merging two junctions or endpoints, and enables the substructure link condition during optimization; when unset, all three are relaxed and the topology may change. Even so, the simplification before the insertion may change the topology: it can move a curve across another, or across itself, within its envelope, which nothing checks. The insertion keeps the topology of the curves it receives where they do not cross; a crossing becomes a vertex, as for input curves that cross. The optimization after the insertion keeps the topology of the inserted curves.",
       "default": false
     },
     "throw_on_fail": {

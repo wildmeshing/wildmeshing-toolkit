@@ -3995,12 +3995,20 @@ check what was kept.</p>
 <h3 id="topology-preserve_topology">Topology: <code>preserve_topology</code><a class="headerlink" href="#topology-preserve_topology" title="Permanent link">&para;</a></h3>
 <p>By default the simplification and the optimization may change the surface's topology: close holes
 and slits narrower than the envelope, and make the surface non-manifold.
-<a href="../../reference/tetwild/#preserve_topology"><code>preserve_topology</code></a> forbids it: only exactly
+<a href="../../reference/tetwild/#preserve_topology"><code>preserve_topology</code></a> forbids these: only exactly
 coincident vertices are merged, the simplification and the operations check the link condition,
 and the run compares the Euler characteristics of the input surface and the output's surface at
 the end, logging a warning when they differ (an error with <code>throw_on_fail</code>). With a filter, the
 output's surface is the boundary of the kept tets, which is closed, so the check only makes sense
 for closed inputs.</p>
+<p>What it keeps depends on the phase. The surface simplification before the insertion may still
+change the topology: the link condition checks connectivity only, and the envelope admits a fold
+of the surface through itself. The insertion keeps the topology of the surface it receives when
+that surface does not cross itself, and cuts crossing triangles along their intersection
+otherwise; the run checks that surface once, exactly, and warns. The optimization keeps the
+topology of the inserted surface. On the Octocat at 8 threads, about 1 run in 3 to 5 folds the
+simplified surface (2 to 5 crossing pairs of triangles), and the Euler characteristic goes from 2
+to 3 at the insertion.</p>
 <p>Use it on clean inputs whose topology matters. On the Octocat (one closed surface, Euler
 characteristic 2), with <code>filter</code> <code>tracked</code> and <code>stop_energy</code> 10, it takes 13 iterations and
 10,095 tets where the same run without it takes 7 and 8,122; the Euler characteristic is 2 in
@@ -4074,9 +4082,12 @@ back, the sequential run took about 2.3 times as long as one with 4 threads.</p>
   anchored points (<code>p</code>).</li>
 <li>With <a href="../../reference/tetwild/#report"><code>report</code></a>, a JSON file with the vertex and tet counts
   (<code>#v</code>, <code>#t</code>), <code>max_energy</code>, <code>avg_energy</code>, <code>#iterations</code>, <code>eps</code>, the coarsening statistics, and
-  <code>hausdorff</code> and <code>coverage</code> with <code>DEBUG_hausdorff</code>, <code>input_euler_characteristic</code> and
-  <code>output_euler_characteristic</code> with <code>DEBUG_euler</code> or <code>preserve_topology</code> (-1 or empty when not
-  measured), and <code>time</code>, the seconds from the insertion to the filter.</li>
+  <code>hausdorff</code> and <code>coverage</code> with <code>DEBUG_hausdorff</code>, <code>input_euler_characteristic</code>,
+  <code>inserted_euler_characteristic</code> (the tracked surface right after the insertion) and
+  <code>output_euler_characteristic</code> with <code>DEBUG_euler</code> or <code>preserve_topology</code>,
+  <code>inserted_crossing_pairs</code> and <code>inserted_degenerate_triangles</code> (of the surface handed to the
+  insertion) with <code>preserve_topology</code> (-1 or empty when not measured), and <code>time</code>, the seconds
+  from the insertion to the filter.</li>
 </ul>
 <p>The winding-number fields let a <code>filter</code> <code>none</code> run be split afterwards: a tet is inside an input
 where its <code>wn_&lt;i&gt;</code> is above 1/2.

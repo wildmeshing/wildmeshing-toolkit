@@ -4786,7 +4786,7 @@
 <p>Each entry: One input point file (any edge-mesh format; only the vertices are used).</p>
 <h3 id="preserve_topology"><code>preserve_topology</code><a class="headerlink" href="#preserve_topology" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
-<p>Preserve the topology of the input curve network. This forces remove_duplicate_eps to merge only exactly coincident vertices, stops the input simplification from merging two junctions or endpoints, and enables the substructure link condition during optimization. When unset, all three are relaxed and the topology may change.</p>
+<p>Preserve the topology of the input curve network where the phases can. This forces remove_duplicate_eps to merge only exactly coincident vertices, stops the input simplification from merging two junctions or endpoints, and enables the substructure link condition during optimization; when unset, all three are relaxed and the topology may change. Even so, the simplification before the insertion may change the topology: it can move a curve across another, or across itself, within its envelope, which nothing checks. The insertion keeps the topology of the curves it receives where they do not cross; a crossing becomes a vertex, as for input curves that cross. The optimization after the insertion keeps the topology of the inserted curves.</p>
 <h2 id="other-options">Other options<a class="headerlink" href="#other-options" title="Permanent link">&para;</a></h2>
 <h3 id="envelope"><code>envelope</code><a class="headerlink" href="#envelope" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>

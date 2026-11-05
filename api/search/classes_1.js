@@ -9,5 +9,6 @@ var searchData=
   ['bandvolumeenergy3d_6',['BandVolumeEnergy3D',['../classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html',1,'wmtk::components::topological_offset']]],
   ['basicrecorder_7',['BasicRecorder',['../classwmtk_1_1history_1_1_basic_recorder.html',1,'wmtk::history']]],
   ['basicreplay_8',['BasicReplay',['../classwmtk_1_1history_1_1_basic_replay.html',1,'wmtk::history']]],
-  ['boundaryenvelope_9',['BoundaryEnvelope',['../classwmtk_1_1_boundary_envelope.html',1,'wmtk']]]
+  ['boundaryenvelope_9',['BoundaryEnvelope',['../classwmtk_1_1_boundary_envelope.html',1,'wmtk']]],
+  ['boxtree_10',['BoxTree',['../classwmtk_1_1components_1_1shortest__edge__collapse_1_1_box_tree.html',1,'wmtk::components::shortest_edge_collapse']]]
 ];

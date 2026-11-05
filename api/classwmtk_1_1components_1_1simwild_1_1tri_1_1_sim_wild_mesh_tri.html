@@ -137,9 +137,9 @@ Public Member Functions</h2></td></tr>
 InputSet&#160;</td><td class="memItemRight" valign="bottom"><b>edge_tag_mask</b> () const</td></tr>
 <tr class="memdesc:a2303adb455ea343740d95ced3c68b498"><td class="mdescLeft">&#160;</td><td class="mdescRight">The edge-tag bits of an input set: those below the number of edge tags. <br /></td></tr>
 <tr class="separator:a2303adb455ea343740d95ced3c68b498"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ecc4ed5752b2517ee3e4fba1d9e2a4c" id="r_a5ecc4ed5752b2517ee3e4fba1d9e2a4c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a5ecc4ed5752b2517ee3e4fba1d9e2a4c">init_label_envelopes</a> ()</td></tr>
-<tr class="memdesc:a5ecc4ed5752b2517ee3e4fba1d9e2a4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The labels, one envelope each (the base's m_input_envelopes), and each surface edge held by those of the labels it lies on: bit i &lt; C of an edge's input set is edge tag i (m_edge_tag_names, C of them), bit C + j the boundary of triangle tag j's region. An edge tag carries its own bit. A border between triangle tag sets S and S' carries the bits of the tags in one and not the other; ambient is the empty set, so a border of region X with ambient is held by X's envelope, one between X and Y by both. The 2D twin of <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a19187c82a62adb534757f6edf46ac597" title="(Re)build the base&#39;s m_input_envelopes: one envelope per label, and each surface face held by those o...">SimWildMesh::init_label_envelopes()</a>.  <br /></td></tr>
-<tr class="separator:a5ecc4ed5752b2517ee3e4fba1d9e2a4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bf0fe64bc9794840bb7bec403dcb3f3" id="r_a1bf0fe64bc9794840bb7bec403dcb3f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a1bf0fe64bc9794840bb7bec403dcb3f3">init_label_envelopes</a> (double eps, bool exact)</td></tr>
+<tr class="memdesc:a1bf0fe64bc9794840bb7bec403dcb3f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">The labels, one envelope each (the base's m_input_envelopes), and each surface edge held by those of the labels it lies on: bit i &lt; C of an edge's input set is edge tag i (m_edge_tag_names, C of them), bit C + j the boundary of triangle tag j's region. An edge tag carries its own bit. A border between triangle tag sets S and S' carries the bits of the tags in one and not the other; ambient is the empty set, so a border of region X with ambient is held by X's envelope, one between X and Y by both. The 2D twin of <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a19187c82a62adb534757f6edf46ac597" title="(Re)build the base&#39;s m_input_envelopes: one envelope per label, and each surface face held by those o...">SimWildMesh::init_label_envelopes()</a>.  <br /></td></tr>
+<tr class="separator:a1bf0fe64bc9794840bb7bec403dcb3f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5adc6b0b5a287d604de6eb6466098a29" id="r_a5adc6b0b5a287d604de6eb6466098a29"><td class="memItemLeft" align="right" valign="top"><a id="a5adc6b0b5a287d604de6eb6466098a29" name="a5adc6b0b5a287d604de6eb6466098a29"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>SimWildMeshTri</b> (<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html">Parameters</a> &amp;_m_params, double envelope_eps, int _num_threads=0)</td></tr>
 <tr class="separator:a5adc6b0b5a287d604de6eb6466098a29"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -157,6 +157,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_bou
 <tr class="memitem:a2a8f6fb121abc3727a9918427496c88f" id="r_a2a8f6fb121abc3727a9918427496c88f"><td class="memItemLeft" align="right" valign="top"><a id="a2a8f6fb121abc3727a9918427496c88f" name="a2a8f6fb121abc3727a9918427496c88f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_envelope</b> (const MatrixXd &amp;V, const MatrixXi &amp;F)</td></tr>
 <tr class="separator:a2a8f6fb121abc3727a9918427496c88f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc90e3083868d69b5daa5b0ab117d05c" id="r_acc90e3083868d69b5daa5b0ab117d05c"><td class="memItemLeft" align="right" valign="top"><a id="acc90e3083868d69b5daa5b0ab117d05c" name="acc90e3083868d69b5daa5b0ab117d05c"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>simplify</b> ()</td></tr>
+<tr class="memdesc:acc90e3083868d69b5daa5b0ab117d05c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify after the insertion: collapse every edge with the curve envelopes at eps_simplify, under preserve_topology (the exact inversion check and the substructure link condition), then hold the optimization to the envelopes envelope_reference names. The 2D twin of <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ae1e683f32589e3f37c3f2fc4361cd75b">SimWildMesh::simplify()</a>; run_2D calls it where run_3D calls that one. <br /></td></tr>
+<tr class="separator:acc90e3083868d69b5daa5b0ab117d05c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab70b379c1b2762311097b5d7cb067483" id="r_ab70b379c1b2762311097b5d7cb067483"><td class="memItemLeft" align="right" valign="top"><a id="ab70b379c1b2762311097b5d7cb067483" name="ab70b379c1b2762311097b5d7cb067483"></a>
 CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>string_set_to_cell_tag</b> (const std::set&lt; std::string &gt; &amp;str_set)</td></tr>
 <tr class="separator:ab70b379c1b2762311097b5d7cb067483"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1035,9 +1039,9 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a1981fb35327f577cb8d136ced9734998" id="r_a1981fb35327f577cb8d136ced9734998"><td class="memItemLeft" align="right" valign="top"><a id="a1981fb35327f577cb8d136ced9734998" name="a1981fb35327f577cb8d136ced9734998"></a>
 std::function&lt; double(const Vector2d &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_voronoi_split_fn</b> = nullptr</td></tr>
 <tr class="separator:a1981fb35327f577cb8d136ced9734998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9b8d3ed8ae403ece0f9b2511841b5bec" id="r_a9b8d3ed8ae403ece0f9b2511841b5bec"><td class="memItemLeft" align="right" valign="top"><a id="a9b8d3ed8ae403ece0f9b2511841b5bec" name="a9b8d3ed8ae403ece0f9b2511841b5bec"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_last_split_vertex</b> = 0</td></tr>
-<tr class="separator:a9b8d3ed8ae403ece0f9b2511841b5bec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae38ac257f2e4cadbc4afeb633d8d8c9e" id="r_ae38ac257f2e4cadbc4afeb633d8d8c9e"><td class="memItemLeft" align="right" valign="top"><a id="ae38ac257f2e4cadbc4afeb633d8d8c9e" name="ae38ac257f2e4cadbc4afeb633d8d8c9e"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_last_split_vertex</b></td></tr>
+<tr class="separator:ae38ac257f2e4cadbc4afeb633d8d8c9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -1457,8 +1461,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="a5ecc4ed5752b2517ee3e4fba1d9e2a4c" name="a5ecc4ed5752b2517ee3e4fba1d9e2a4c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ecc4ed5752b2517ee3e4fba1d9e2a4c">&#9670;&#160;</a></span>init_label_envelopes()</h2>
+<a id="a1bf0fe64bc9794840bb7bec403dcb3f3" name="a1bf0fe64bc9794840bb7bec403dcb3f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1bf0fe64bc9794840bb7bec403dcb3f3">&#9670;&#160;</a></span>init_label_envelopes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1466,14 +1470,25 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         <tr>
           <td class="memname">void wmtk::components::simwild::tri::SimWildMeshTri::init_label_envelopes </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>exact</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>The labels, one envelope each (the base's m_input_envelopes), and each surface edge held by those of the labels it lies on: bit i &lt; C of an edge's input set is edge tag i (m_edge_tag_names, C of them), bit C + j the boundary of triangle tag j's region. An edge tag carries its own bit. A border between triangle tag sets S and S' carries the bits of the tags in one and not the other; ambient is the empty set, so a border of region X with ambient is held by X's envelope, one between X and Y by both. The 2D twin of <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a19187c82a62adb534757f6edf46ac597" title="(Re)build the base&#39;s m_input_envelopes: one envelope per label, and each surface face held by those o...">SimWildMesh::init_label_envelopes()</a>. </p>
-<p>Member b is built around the same curves as m_envelope, restricted to label b &ndash; the input curves of that label in generation, else the mesh's surface edges carrying it (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af6ac8da9c40fe2bd3d3ef6ee91670dfb" title="(Re)build m_input_envelopes, at eps and with predicate exact: member i around the rows of the curves ...">TriOptimizerMesh::init_input_envelopes()</a>) &ndash; at m_envelope_eps and with the predicate m_envelope has. m_envelope stays the union, for the engine's direct uses of it. A surface edge carrying no label throws, as in triwild (the base's <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac232b143240a6d4b4d788c9fb4faf560" title="Envelope the tracked-surface segment vids must stay inside, given the attributes attr it carries – or...">surface_envelope_for_edge()</a>). At most 64 edge tags and triangle tags together: a mesh with more throws. </p>
+<p>Member b is built around the same curves as m_envelope, restricted to label b &ndash; the input curves of that label in generation, else the mesh's surface edges carrying it (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af6ac8da9c40fe2bd3d3ef6ee91670dfb" title="(Re)build m_input_envelopes, at eps and with predicate exact: member i around the rows of the curves ...">TriOptimizerMesh::init_input_envelopes()</a>) &ndash; at <code>eps</code> and with the predicate <code>exact</code>, the ones m_envelope has at the time, and follows it: at eps_simplify while the simplification after the insertion runs (<a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#acc90e3083868d69b5daa5b0ab117d05c" title="Simplify after the insertion: collapse every edge with the curve envelopes at eps_simplify,...">simplify()</a>), around the simplified curves after it under envelope_reference "simplified". m_envelope stays the union, for the engine's direct uses of it. A surface edge carrying no label throws, as in triwild (the base's <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac232b143240a6d4b4d788c9fb4faf560" title="Envelope the tracked-surface segment vids must stay inside, given the attributes attr it carries – or...">surface_envelope_for_edge()</a>). At most 64 edge tags and triangle tags together: a mesh with more throws. </p>
 
 </div>
 </div>
