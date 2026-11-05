@@ -373,8 +373,16 @@ public:
     /// themselves, of half-width order2_envelope_ratio x envelope_size, one per label, and the
     /// curve ends and junctions anchored at that radius. After build_envelopes() and before the
     /// march, so the front, which the march makes, is never among them. Until 2026-11 the offset
-    /// held no curve and no point; the surface envelope alone held them.
+    /// held no curve and no point; the surface envelope alone held them. An input complex of
+    /// segments and points (a curve offset's) is held as tetwild holds its feature curves: its
+    /// edges tagged with the feature kind and held in the tube around the input's segments, of
+    /// half-width feature_envelope_ratio x envelope_size, its curve ends, junctions and points
+    /// anchored at that radius (construct_offset() checks the tags survive the march).
     void hold_curves_and_points();
+    /// After the loop, for a curve offset's input: what hold_curves_and_points() set up, measured
+    /// rather than assumed -- feature-tagged edges outside their tube, edges of the input complex
+    /// without the tag, anchors with no vertex in their ball. A warning iff there is one.
+    void audit_input_curves() const;
     /// The final pass's envelopes: the offset surface's envelope (build_offset_envelope()), and
     /// m_envelope swapped for one that also holds every other region boundary, at its position as
     /// the loop left it, beside the surfaces build_envelopes() captured (held where they were
@@ -2308,13 +2316,20 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
-    /// A held vertex is pulled by the base's rule, toward the labels of its faces (the member it
-    /// is farthest from), as in tetwild and simwild. In a TetWild pass a front vertex no other
+    /// A vertex on a feature-tagged edge (the input complex's own curves) is pulled toward
+    /// their tube, and a held vertex by the base's rule, toward the labels of its faces (the
+    /// member it is farthest from), as in tetwild and simwild. In a TetWild pass a front vertex no other
     /// envelope holds is pulled to the front's own envelope, m_offset_envelope. Any other vertex,
     /// and the front in the loop, is pulled by nothing. Until 2026-11 a held vertex was pulled to
     /// the one union envelope, so onto another label's surface as readily as its own.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
     {
+        // A vertex on the input complex's own curves (hold_curves_and_points()) is pulled toward
+        // their tube by the base's rule (tagged_edge_pull_envelope(), the feature kind first),
+        // whether or not a held face reaches it: a curve offset's input has no face at all.
+        if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::feature)) {
+            return tagged_edge_pull_envelope(vid);
+        }
         if (vertex_is_held(vid)) return TetOptimizerMesh::smoothing_energy_envelope(vid);
         if (m_tetwild_pass && m_vertex_extra[vid].m_is_on_offset) return m_offset_envelope;
         return nullptr;
@@ -3178,6 +3193,10 @@ private:
 
         // cache tet attributes
         std::map<simplex::Edge, TetAttributes> tets;
+
+        // the feature and order-2 edge tags (marching_split_edge_before())
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> feature_edges;
+        FeatureEdgeAttributes split_edge_tags;
     };
     wmtk::threading::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
 

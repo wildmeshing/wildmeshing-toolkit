@@ -23,6 +23,7 @@
       "envelope_size_rel",
       "per_input_envelopes",
       "order2_envelope_ratio",
+      "feature_envelope_ratio",
       "offset_field",
       "offset_dhat_factor",
       "front_conv",
@@ -218,6 +219,12 @@
     "type": "float",
     "default": 1.0,
     "doc": "Thickness of the tube that holds the order-2 edges of the held surfaces -- their rims and the non-manifold edges where labelled regions meet -- as a fraction of envelope_size, and the radius of the anchors where those curves end or three or more meet. Tagged once before the march, so the front is never among them, and held in a tube around themselves, one per label, as tetwild's and simwild's key of the same name."
+  },
+  {
+    "pointer": "/feature_envelope_ratio",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Thickness of the tube that holds the input complex's own curves -- the segments of a curve offset's input (an offset_selection without triangles: a rod, a curve network) -- as a fraction of envelope_size, and the radius of the anchors where those curves end or three or more meet and of the complex's isolated points. Tagged once before the march, around the input's segments as they were extracted, and held as tetwild holds its feature curves: a tagged edge never leaves the tube (collapses and smoothing moves that would take it out are refused, swaps never remove it) and an anchor keeps a vertex within its radius. Where an anchor is on a curve of both kinds it takes the smaller of this radius and order2_envelope_ratio's. 1, as tetwild's and simwild's key of the same name."
   },
   {
     "pointer": "/envelope_size",

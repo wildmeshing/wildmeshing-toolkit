@@ -48,6 +48,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// non-manifold edges -- as a fraction of envelope_size, and the radius of the anchors where
     /// those curves end or three or more meet. 1, as tetwild's and simwild's key of the same name.
     double order2_envelope_ratio = 1.0;
+    /// Half-width of the tube that holds the input complex's own curves -- a curve offset's
+    /// segments (TopoOffsetTetMesh::hold_curves_and_points()) -- as a fraction of envelope_size,
+    /// and the radius of the anchors where they end or three or more meet, and of its points. 1,
+    /// as tetwild's and simwild's key of the same name.
+    double feature_envelope_ratio = 1.0;
 
     // ---- the smooth offset potential ----
     // Support radius of the potential, as a multiple of target_distance. Must be > 1: the offset
@@ -389,6 +394,7 @@ struct Parameters : public wmtk::OptimizerParameters
         envelope_size_rel = json_params["envelope_size_rel"];
         per_input_envelopes = json_params["per_input_envelopes"];
         order2_envelope_ratio = json_params["order2_envelope_ratio"];
+        feature_envelope_ratio = json_params["feature_envelope_ratio"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
         front_conv = json_params["front_conv"];

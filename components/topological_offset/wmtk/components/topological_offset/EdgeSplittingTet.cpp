@@ -112,6 +112,17 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
 
     size_t e_id = t.eid(*this);
 
+    // The feature and order-2 edge tags, cached as TetOptimizerMesh::split_edge_before() caches
+    // them: they are stored by edge slot, and the march runs after hold_curves_and_points() tagged
+    // the order-2 edges, so a split that does not rewrite them leaves each on whatever edge takes
+    // over its slot. MEASURED (2026-11-05, an open sheet offset with the optimization): at the
+    // loop's start none of the sheet's 16 open edges was tagged and 16 tagged edges lay outside
+    // their tube; the construction pass then cut the sheet's boundary, 11% of its area.
+    if (m_track_feature_edges) {
+        feature_edges_cache(get_incident_tids_for_edge(t), cache.feature_edges);
+        cache.split_edge_tags = m_feature_edge_attribute[e_id];
+    }
+
     const auto& VA = m_vertex_attribute;
 
     // vertices
@@ -389,6 +400,18 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
         m_edge_attribute[glob_eid] = cache.internal_e[opp_vid];
         m_edge_attribute[glob_eid1] = cache.external_e[simplex::Edge(v1_id, opp_vid)];
         m_edge_attribute[glob_eid2] = cache.external_e[simplex::Edge(v2_id, opp_vid)];
+    }
+
+    // The edge tags, as TetOptimizerMesh::split_edge_after() restores them: every edge of the new
+    // cells from the cache, the split edge's two halves inheriting its tags.
+    if (m_track_feature_edges) {
+        feature_edges_restore_region(locs, cache.feature_edges);
+        if (cache.split_edge_tags.is_tagged()) {
+            m_feature_edge_attribute[tuple_from_edge({{v1_id, v_id}}).eid(*this)] =
+                cache.split_edge_tags;
+            m_feature_edge_attribute[tuple_from_edge({{v2_id, v_id}}).eid(*this)] =
+                cache.split_edge_tags;
+        }
     }
 
     return true;

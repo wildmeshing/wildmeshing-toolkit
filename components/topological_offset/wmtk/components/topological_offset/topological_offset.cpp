@@ -576,6 +576,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
             mesh.optimize_offset(output_filename);
+            mesh.audit_input_curves();
 
             // The manifoldness check above ran on the offset as constructed. Optimization then
             // re-triangulates it -- splits, collapses and four kinds of swap all touch the

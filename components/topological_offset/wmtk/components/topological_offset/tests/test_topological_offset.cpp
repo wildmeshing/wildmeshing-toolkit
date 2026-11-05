@@ -5113,3 +5113,121 @@ TEST_CASE("memory-output-with-offset-front", "[offset][3d][io]")
     }
     CHECK(size_t(out.at("mesh").V.rows()) == mesh->get_vertices().size());
 }
+
+namespace {
+/// A rod where three blocks meet: [-1, 1]^3 in 4^3 cubes of edge 0.5, six tets each, the cubes
+/// in -0.5 <= z <= 0.5 tagged by quadrant around the z axis -- tag_0 x > 0 and y > 0, tag_1
+/// x < 0, tag_2 x > 0 and y < 0 -- the rest ambient. "tag_0 & tag_1 & tag_2" is the segment
+/// x = y = 0, -0.5 <= z <= 0.5, two grid edges with both ends inside the domain: the rod of the
+/// 2026-10-16 rod fixture (rod.msh), on the grid.
+MeshData rod_grid()
+{
+    const int n = 4;
+    const double h = 0.5;
+    const auto vid = [&](int i, int j, int k) { return i + (n + 1) * (j + (n + 1) * k); };
+    Eigen::MatrixXd V((n + 1) * (n + 1) * (n + 1), 3);
+    for (int k = 0; k <= n; ++k) {
+        for (int j = 0; j <= n; ++j) {
+            for (int i = 0; i <= n; ++i) V.row(vid(i, j, k)) << i * h - 1, j * h - 1, k * h - 1;
+        }
+    }
+    std::vector<std::array<int, 4>> T;
+    std::vector<int> block; // -1 ambient, else the tag
+    const std::array<std::array<int, 3>, 6> perms = {
+        {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
+    for (int k = 0; k < n; ++k) {
+        for (int j = 0; j < n; ++j) {
+            for (int i = 0; i < n; ++i) {
+                const double cx = (i + 0.5) * h - 1, cy = (j + 0.5) * h - 1, cz = (k + 0.5) * h - 1;
+                const int b = std::abs(cz) > 0.5 ? -1 : cx < 0 ? 1 : cy > 0 ? 0 : 2;
+                for (const auto& pm : perms) { // the cube's 6 tets around its main diagonal
+                    std::array<int, 3> c = {{i, j, k}};
+                    std::array<int, 4> t;
+                    t[0] = vid(c[0], c[1], c[2]);
+                    for (int s = 0; s < 3; ++s) {
+                        ++c[size_t(pm[size_t(s)])];
+                        t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
+                    }
+                    T.push_back(positive(V, t));
+                    block.push_back(b);
+                }
+            }
+        }
+    }
+    Eigen::MatrixXi Tm(int(T.size()), 4);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(T.size(), 4);
+    for (size_t i = 0; i < T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = T[i][size_t(j)];
+        tags(i, block[i] < 0 ? 3 : block[i]) = 1;
+    }
+    MeshData m = io::geometry_data(V, Tm, CellType::Tetrahedron);
+    m.cells.at(CellType::Tetrahedron).attributes["tags"] = {
+        tags,
+        {"tag_0", "tag_1", "tag_2", "ambient"}};
+    return m;
+}
+} // namespace
+
+TEST_CASE("curve-offset-rod-held", "[offset][3d]" + release_only)
+{
+    // A curve offset (an input complex of segments): the band integral over segments, and the rod
+    // held as tetwild holds its feature curves (hold_curves_and_points()). The run must not throw
+    // -- construct_offset() checks that the rod's edges keep their feature tags through the march
+    // -- and the input complex in the result must lie in the tube around the input segment, its
+    // two ends still there. MEASURED (the rod fixture, exact rule, 7 turns): before the hold, the
+    // rod's vertices 0.43 target_distance off the input, none of its edges tagged; before the
+    // march carried the tags (EdgeSplittingTet), neither of its 2 edges tagged after it; with
+    // both, every vertex on the input to 3e-16.
+    // One turn: every operation -- split, collapse, swap, smoothing -- runs over the tags.
+    const MeshData input = rod_grid();
+    for (const std::string rule : {"exact", "exact_swept", "corner_bound"}) {
+        INFO("EXPERIMENTAL_band_volume_rule " << rule);
+        nlohmann::json j = {
+            {"input", "m"},
+            {"offset_selection", "tag_0 & tag_1 & tag_2"},
+            {"target_distance", 0.2},
+            {"EXPERIMENTAL_band_volume_rule", rule},
+            {"max_rounds", 1},
+            {"num_threads", 1},
+            {"throw_on_nonconvergence", false}};
+        // the default clean-up reads the exact integral, which "corner_bound" does not build
+        if (rule == "corner_bound") j["EXPERIMENTAL_label_cleanup"] = "off";
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(j, {{"m", input}}));
+        const MeshData& out = res.first.at("mesh");
+        const auto labels = out.vertex_attributes.at("labels").doubles();
+        // the tube's half-width: feature_envelope_ratio 1 x envelope_size, envelope_size_rel
+        // 1e-3 of the box's diagonal
+        const double eps = 1e-3 * 2. * std::sqrt(3.);
+        size_t n_rod = 0;
+        bool end_lo = false, end_hi = false;
+        for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+            if (labels(v, 0) != 1.) continue;
+            ++n_rod;
+            const Vector3d p = out.V.row(v).transpose();
+            const double z = std::clamp(p[2], -0.5, 0.5);
+            CHECK((p - Vector3d(0, 0, z)).norm() <= eps);
+            end_lo = end_lo || (p - Vector3d(0, 0, -0.5)).norm() <= eps;
+            end_hi = end_hi || (p - Vector3d(0, 0, 0.5)).norm() <= eps;
+        }
+        CHECK(n_rod >= 3);
+        CHECK(end_lo);
+        CHECK(end_hi);
+    }
+}
+
+TEST_CASE("curve-offset-refuses-offset-in", "[offset][3d]")
+{
+    // A curve encloses no volume (init_input_complex_bvh()).
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "tag_0 & tag_1 & tag_2"},
+        {"target_distance", 0.2},
+        {"offset_in", true},
+        {"offset_out", false},
+        {"num_threads", 1}};
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(j, {{"m", rod_grid()}}),
+        Catch::Matchers::ContainsSubstring("enclose no volume"));
+}
