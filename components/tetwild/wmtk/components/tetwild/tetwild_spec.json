@@ -9,6 +9,7 @@
       "input_edges",
       "input_points",
       "input_names",
+      "envelope",
       "input_dir",
       "write_vtu",
       "simplify",
@@ -27,6 +28,7 @@
       "max_iterations",
       "max_expected_iterations",
       "filter",
+      "filter_inputs",
       "eps_rel",
       "length_rel",
       "stop_energy",
@@ -85,13 +87,13 @@
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of triangular input meshes.",
+    "doc": "List of input meshes: triangle surfaces, or one tagged tet mesh. Surfaces (OBJ, STL, OFF, a .msh of triangles, ...) are simplified, inserted into a background mesh and tracked, each its own input. A tet mesh -- on the memory route a named mesh with a tetrahedron block, on the file route a .msh with tets -- takes the tagged route: tetwild continues from it as it is, its tets kept, so that a chain of components can go on through tetwild (tetwild -> topological_offset -> ... -> tetwild). Its triangle block's tags are the tracked faces, one input per label, each row oriented by its vertex order, named as the mesh names them; its edge block's tags the feature curves, one feature input per label; its point block input points, anchored where they are -- as simwild reads a tagged mesh, and as tetwild writes its own output, which can go back in as it is. tetwild holds no volumes: tets tagged other than ambient are refused (a mesh with volume tags is simwild's to remesh). It must fill its bounding box, as the insertion's background box does: its boundary faces are the wall, held by the box rule, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary -- is refused (give a filtered mesh's surfaces as inputs), and so is an untracked one in no plane. Skipped on this route: the simplification, the insertion and the input winding numbers (wn_<i>); eps_rel and length_rel are of the mesh's bounding box diagonal. Refused with it: any other input, input_edges, input_points, input_names, use_legacy_code, and filter \"input\". Until 2026-11 a tet mesh threw on the memory route, and on the file route its triangles became one input surface, its tets and tags dropped.",
     "min": 1
   },
   {
     "pointer": "/input/*",
     "type": "string",
-    "doc": "Triangular input mesh."
+    "doc": "An input mesh: a triangle surface, or one tagged tet mesh (see /input)."
   },
   {
     "pointer": "/input_edges",
@@ -143,6 +145,12 @@
     "pointer": "/input_names/*",
     "type": "string",
     "doc": "Name for one input mesh."
+  },
+  {
+    "pointer": "/envelope",
+    "type": "string",
+    "default": "",
+    "doc": "The envelope of a tagged mesh input (see /input): on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs[\"envelope\"]) and write (<output>_envelope.msh), labelled by the tags it holds. It is the reference the first component of a chain held its tags to, and the run holds to it as simwild does: the surface envelope, the per-label envelopes, the order-2 and feature tubes and the curve-end anchors are built around it, label by label, at this run's eps, its labels matched to the mesh's face tags and feature curves by name, so that the output is within this run's eps of the first component's input however many components came before. A label of a tagged face or feature curve of the mesh that the envelope lacks throws, and so does a tagged face or feature edge received outside the envelopes of its labels, checked exactly before the optimization: the sender held it to a wider envelope. The run returns it unchanged as its envelope (on the file route <output>_envelope.msh). Not with use_sample_envelope, nor bare geometry without labels. Empty, the default: the envelopes are built around the tagged faces and curves as received, and those are the envelope returned."
   },
   {
     "pointer": "/input_dir",
@@ -234,7 +242,18 @@
     "type": "string",
     "options": ["flood", "input", "tracked", "none"],
     "default": "none",
-    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed."
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed. With filter_inputs, only those inputs bound the domain kept. On a tagged mesh input (see /input), 'tracked' and 'flood' use its tracked faces as on surface inputs, and 'input' is refused: there is no input surface."
+  },
+  {
+    "pointer": "/filter_inputs",
+    "type": "list",
+    "default": [],
+    "doc": "The inputs that bound the domain a filter keeps, by their labels: the names of input_names (tag_<i> without one), or a tagged mesh's face-tag labels. Empty, the default: every input, as before the key. With 'input' the winding number of those inputs only; with 'tracked' that of the tracked faces carrying one of them only; with 'flood' the fill crosses every tracked face of the other inputs. So an input that is not named -- an open sheet through a solid, a second solid outside it -- does not cut or add to the domain kept, and stays in the output as tracked faces, its face tag, inside the domain or on its boundary. The field the filter reads (winding_number_input, winding_number_tracked or part) is then of those inputs; the others stay of every input. Under 'tracked' a tracked face carrying a named input and another input (two solids touching face to face) is refused before the filter: a face's orientation is one count for all its inputs, not one per input, so the named inputs' winding number cannot be computed there; 'flood' needs no orientation, and is exact for inputs that do not overlap themselves. A name that is not an input throws, and so does the key with filter 'none'."
+  },
+  {
+    "pointer": "/filter_inputs/*",
+    "type": "string",
+    "doc": "The label of one input that bounds the domain."
   },
   {
     "pointer": "/skip_winding_number",

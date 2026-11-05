@@ -723,7 +723,7 @@ def triwild(options: dict, meshes: dict) -> tuple:
       simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects.
       use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one.
       filter (string, default "none"): Remove the outside region based on different criteria.
-      skip_winding_number (bool, default false): Skip the finalize-phase winding numbers of the inputs.
+      skip_winding_number (bool, default false): Skip the finalize-phase winding numbers of the inputs, each input's (wn_<i>).
       compute_flood_fill (bool, default false): Compute the flood-fill parts -- the regions the tracked curves separate -- and write them (the VTU field flood_fill) even when filter is not 'flood', which computes them anyway.
       eps_rel (float, default 0.001): Envelope thickness relative to the bounding box diagonal.
       remove_duplicate_eps (float, default 0): Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated.

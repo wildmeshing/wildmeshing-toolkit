@@ -91,6 +91,20 @@ is the file name without extension (default `out`).
 
 In memory, `input` names entries of the meshes dictionary.
 
+A tet mesh as the input, alone, takes the tagged route: on files a `.msh` with tets, in memory a
+mesh with a `tetrahedron` block. tetwild continues from it as it is -- no simplification, no
+insertion, the tets kept -- so a chain of components can go on through tetwild, and tetwild's own
+`mesh` (or `_final.msh`) goes back in as it is. It holds what the mesh tags on its lower blocks,
+named as the mesh names them: the triangle block's tags are tracked faces, one input per label,
+each row oriented by its vertex order; the edge block's are feature curves; the point block is
+input points. No volumes: a mesh whose tets carry a tag other than `ambient` is refused, as it is
+simwild's to remesh. The mesh must fill its bounding box, as an output with `filter: "none"` does:
+its boundary faces are the wall, untracked and in the box's planes. A filtered mesh, whose boundary
+is its tracked faces, is refused; its surfaces go in as inputs instead. `eps_rel` and `length_rel` are of that box's diagonal. With
+[`envelope`](../reference/tetwild.md#envelope), the reference an earlier component returned, it
+holds the faces to that rather than to the mesh received, as simwild does, so a chain stays
+within one eps of the first input.
+
 ### The envelope: `eps_rel`
 
 [`eps_rel`](../reference/tetwild.md#eps_rel) (default 0.001) is the distance the output's surface
@@ -199,6 +213,12 @@ In short: `tracked` for consistently oriented inputs, closed or nearly so; `floo
 inputs whose orientation cannot be trusted; `input` for open inputs, as in the
 [tracking tutorial](tracking.md). The winding numbers are written to the output in any case (see
 [outputs](#outputs)), so a `none` run can be filtered afterwards.
+
+[`filter_inputs`](../reference/tetwild.md#filter_inputs) names the inputs that bound the domain
+kept; the others -- an open sheet through a solid, a second solid outside it -- are kept as
+tracked faces wherever they lie, without cutting or adding to it. By default every input bounds
+it. On a tagged mesh input the names are its face-tag labels, and `input` is refused: there is no
+input surface.
 
 ### Feature curves and points: `input_edges`, `input_points`
 

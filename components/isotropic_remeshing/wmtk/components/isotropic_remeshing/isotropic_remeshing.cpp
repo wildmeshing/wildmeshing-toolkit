@@ -234,15 +234,6 @@ Features read_features(const std::string& path, const size_t n_vertices)
     return out;
 }
 
-/// The vertex fields a memory input may carry: those of io::read_mesh, and the vertex_id of a
-/// result, so that a result can be passed back in.
-std::set<std::string> with_vertex_id()
-{
-    std::set<std::string> names = io::ComponentIO::reader_vertex_attributes;
-    names.insert("vertex_id");
-    return names;
-}
-
 /// The memory route's features: the mesh `name`, `data`, on the vertex rows of the input as given
 /// (`n_vertices` of them) as the edges result is on mesh's, so that one call's result can be the
 /// next one's features. Its edges are the curves, with the Int64 cell field edge_id or without;
@@ -253,16 +244,19 @@ Features read_features(const MeshData& data, const std::string& name, const size
     const auto refuse = [&name](const std::string& what) {
         log_and_throw_error("features: the mesh {} {}", name, what);
     };
-    io::ComponentIO::attributes(data.vertex_attributes, with_vertex_id());
+    std::set<std::string> dropped =
+        io::ComponentIO::dropped_fields(data.vertex_attributes, {"vertex_id"});
     for (const auto& [type, c] : data.cells) {
         if (type == CellType::Edge) {
-            io::ComponentIO::attributes(c.attributes, {"edge_id"});
+            dropped.merge(io::ComponentIO::dropped_fields(c.attributes, {"edge_id"}));
         } else if (type == CellType::Point) {
-            io::ComponentIO::attributes(c.attributes, {"vertex_id"}, {"vertex_id"});
+            dropped.merge(
+                io::ComponentIO::dropped_fields(c.attributes, {"vertex_id"}, {"vertex_id"}));
         } else {
             refuse("has cells other than edges and points");
         }
     }
+    io::ComponentIO::log_dropped("features " + name, dropped);
     if (size_t(data.V.rows()) != n_vertices) {
         refuse(
             fmt::format(
@@ -596,9 +590,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             nullptr,
             history_output.empty() && features_input.empty() && feature_fields.empty() ? nullptr
                                                                                        : &read,
-            // Ignored: the fixed vertices come from features.
-            with_vertex_id(),
-            // Read below, by field_boundaries.
+            // Read below, by field_boundaries; every other field is dropped.
             std::set<std::string>(feature_fields.begin(), feature_fields.end()));
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();

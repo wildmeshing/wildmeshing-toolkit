@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <paraviewo/VTUWriter.hpp>
 #include <set>
 #include <stdexcept>
@@ -12,13 +13,20 @@ class DataWriter
     MeshMap* output;
     paraviewo::VTUWriter file;
     MeshAttributes points, fields;
+    // The fields written, by name; the others are left out. Empty: every field. A result trims
+    // its annotations so (topological_offset's), its debug frames not.
+    std::function<bool(const std::string&)> kept;
 
 public:
-    explicit DataWriter(MeshMap* meshes = nullptr)
+    explicit DataWriter(
+        MeshMap* meshes = nullptr,
+        std::function<bool(const std::string&)> kept_fields = {})
         : output(meshes)
+        , kept(std::move(kept_fields))
     {}
     void add_field(const std::string& name, const Eigen::MatrixXd& data)
     {
+        if (kept && !kept(name)) return;
         if (output)
             points[name].values = DataMatrix<double>(data);
         else
@@ -26,6 +34,7 @@ public:
     }
     void add_integer_field(const std::string& name, const DataMatrix<int64_t>& values)
     {
+        if (kept && !kept(name)) return;
         if (output)
             points[name].values = values;
         else {
@@ -36,6 +45,7 @@ public:
     }
     void add_cell_field(const std::string& name, const Eigen::MatrixXd& data)
     {
+        if (kept && !kept(name)) return;
         if (output)
             fields[name].values = DataMatrix<double>(data);
         else
@@ -43,6 +53,7 @@ public:
     }
     void add_integer_cell_field(const std::string& name, const DataMatrix<int64_t>& values)
     {
+        if (kept && !kept(name)) return;
         if (output)
             fields[name].values = values;
         else {
@@ -55,6 +66,7 @@ public:
     // file, as every field there, has Float64 and no labels.
     void add_cell_field(const std::string& name, const MeshAttribute& field)
     {
+        if (kept && !kept(name)) return;
         if (output)
             fields[name] = field;
         else

@@ -426,7 +426,7 @@ void SimWildMesh::init_surfaces_and_boundaries(
         }
     }
 
-    if (m_has_reference) require_reference_face_labels();
+    if (m_has_reference) require_reference_face_labels(m_F_envelope_labels);
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
 
     // track bounding box
@@ -463,6 +463,27 @@ void SimWildMesh::init_surfaces_and_boundaries(
 
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
+
+    // No tracked face on the mesh's boundary, as on tetwild's tagged route: a filtered mesh's
+    // boundary is its tracked faces, and the operations hold a tracked face from the tet across
+    // it (collapse_edge_before() checks a merged tracked face in the tet beyond it), which a
+    // boundary face has none of. The insertion's padded background box puts none there. An
+    // untracked boundary face in no plane of the box is taken as before: simwild remeshes an
+    // object's tet mesh, its regions inside (held by nothing there: smooth_before() freezes only
+    // the vertices on the box's planes).
+    size_t n_tracked = 0;
+    for (const Tuple& f : faces) {
+        if (!f.switch_tetrahedron(*this) && m_face_attribute[f.fid(*this)].m_is_surface_fs) {
+            ++n_tracked;
+        }
+    }
+    if (n_tracked > 0) {
+        log_and_throw_error(
+            "{} tracked faces of the tagged mesh lie on its boundary, as a filtered mesh's do: "
+            "simwild takes a mesh with its tracked faces inside (from tetwild, an output with "
+            "filter \"none\"); give a filtered mesh's surfaces as inputs",
+            n_tracked);
+    }
 
     // The order-2 edges (open boundaries, non-manifold edges) are tagged and held by the base's
     // tube, with or without preserve_topology: keeping them in place is a geometric guarantee,
@@ -502,7 +523,9 @@ void SimWildMesh::init_surfaces_and_boundaries(
     if (m_has_reference) init_reference_feature_tubes(feature_eps, m_envelope->use_exact);
     // Before a remeshing, which holds the mesh to the reference: what was received must already
     // lie in it. The tag operations hold nothing to it, and drop it.
-    if (m_has_reference && m_sim_params.operation == "remeshing") check_reference_containment();
+    if (m_has_reference && m_sim_params.operation == "remeshing") {
+        check_reference_containment(m_envelope_eps);
+    }
 
     // Where a tagged curve ends or three or more meet, and at every input point (input_points),
     // the vertex is anchored (anchor_feature_points()), held like the curves: always. The radius

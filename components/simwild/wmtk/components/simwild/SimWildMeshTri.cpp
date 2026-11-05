@@ -313,7 +313,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         }
     }
 
-    if (m_has_reference) require_reference_edge_labels();
+    if (m_has_reference) require_reference_edge_labels(m_E_envelope_labels);
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
     // Before a remeshing, which holds the mesh to the reference: what was received must already
     // lie in it. The tag operations hold nothing to it, and drop it.
@@ -362,6 +362,20 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
+
+    // No tracked edge on the mesh's boundary, as in 3D
+    // (SimWildMesh::init_surfaces_and_boundaries()).
+    size_t n_tracked = 0;
+    for (const Tuple& e : edges) {
+        if (!e.switch_face(*this) && m_edge_attribute[e.eid(*this)].m_is_surface_fs) ++n_tracked;
+    }
+    if (n_tracked > 0) {
+        log_and_throw_error(
+            "{} tracked edges of the tagged mesh lie on its boundary, as a filtered mesh's do: "
+            "simwild takes a mesh with its tracked edges inside (from triwild, an output with "
+            "filter \"none\"); give a filtered mesh's curves as inputs",
+            n_tracked);
+    }
 }
 
 void SimWildMeshTri::init_edge_tags(
@@ -473,72 +487,6 @@ MeshData SimWildMeshTri::envelope_data(const std::vector<Vector2d>& points) cons
     io::append_envelope_block(out, edges, CellType::Edge, sets, names);
     io::append_envelope_points(out, points);
     return out;
-}
-
-void SimWildMeshTri::require_reference_edge_labels() const
-{
-    InputSet held = 0, given = 0;
-    for (const Tuple& e : get_edges()) {
-        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
-        if (attr.m_is_surface_fs) held |= attr.input_set();
-    }
-    for (const InputSet s : m_E_envelope_labels) given |= s;
-    const InputSet missing = held & ~given;
-    if (missing == 0) return;
-    std::string names;
-    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
-        if ((missing >> b) & 1) names += (names.empty() ? "" : ", ") + label_name(b);
-    }
-    log_and_throw_error(
-        "envelope: no segment of it is labelled {}, which this mesh's edges carry; an envelope "
-        "must carry every label of the mesh it comes with",
-        names);
-}
-
-void SimWildMeshTri::check_reference_containment() const
-{
-    // Per label bit, the held edges outside its envelope; an edge outside any of its labels' is
-    // one edge outside. Each member asked on its own: inside their intersection is inside each.
-    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
-    std::vector<size_t> outside(max_bits, 0);
-    size_t n = 0;
-    for (const Tuple& e : get_edges()) {
-        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
-        if (!attr.m_is_surface_fs) continue;
-        const auto vids = get_edge_vids(e);
-        const std::array<Vector2d, 2> segment = {
-            {m_vertex_attribute[vids[0]].m_posf, m_vertex_attribute[vids[1]].m_posf}};
-        bool out = false;
-        for (size_t b = 0; b < max_bits; ++b) {
-            if (((attr.input_set() >> b) & 1) == 0) continue;
-            const Envelope* env = m_input_envelopes.empty()      ? m_envelope.get()
-                                  : b < m_input_envelopes.size() ? m_input_envelopes.member(b).get()
-                                                                 : nullptr;
-            if (env && !env->is_outside(segment)) continue;
-            ++outside[b];
-            out = true;
-        }
-        n += out;
-    }
-    if (n == 0) {
-        logger().info(
-            "envelope: every held edge received lies in the reference's envelopes of its labels "
-            "(eps {:.6})",
-            m_envelope_eps);
-        return;
-    }
-    std::string counts;
-    for (size_t b = 0; b < max_bits; ++b) {
-        if (outside[b] == 0) continue;
-        counts += fmt::format("{}{} ({})", counts.empty() ? "" : ", ", label_name(b), outside[b]);
-    }
-    log_and_throw_error(
-        "envelope: the mesh received does not lie in the reference at this run's eps {:.6g}: {} "
-        "held edges outside the envelopes of their labels: {}. The sender held them to a wider "
-        "envelope; give this run an eps at least the sender's, or no envelope",
-        m_envelope_eps,
-        n,
-        counts);
 }
 
 CellTag SimWildMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_set)

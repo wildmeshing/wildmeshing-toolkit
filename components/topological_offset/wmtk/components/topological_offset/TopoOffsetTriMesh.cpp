@@ -4,6 +4,7 @@
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
 #include <utility>
+#include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -1742,10 +1743,24 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
 }
 
 
-void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output)
+void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, const bool result)
 {
     if (!m_params.output_enabled && !output) return;
     logger().info("Write {}.vtu (tag for offset is included)", path);
+    // A result -- the final mesh, on either route -- carries the tags (here a field per tag, and
+    // offset_tag; on the memory route collect_tags() makes them `tags`), the data fields
+    // components read (io::ComponentIO::data_fields: vid, labels, offset_tag) and the
+    // annotations amips and distance_over_target, which 2D does not write; a debug frame every
+    // field. As 3D (TopoOffsetTetMesh::write_vtu_frame()).
+    std::set<std::string> tag_fields;
+    for (int64_t i = 0; i < m_tags_count; i++) tag_fields.insert(m_tag_id_to_name[i]);
+    std::function<bool(const std::string&)> kept;
+    if (result) {
+        kept = [&tag_fields](const std::string& name) {
+            return tag_fields.count(name) || io::ComponentIO::data_fields.count(name) ||
+                   name == "amips" || name == "distance_over_target";
+        };
+    }
 
     // Writing debug output must not change the mesh: consolidate_mesh() compacts the slot arrays
     // and renumbers every vertex and cell, and under kPartition threading get_partition_id() is
@@ -1907,7 +1922,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output)
     }
 
     std::shared_ptr<io::DataWriter> writer;
-    writer = std::make_shared<io::DataWriter>(output);
+    writer = std::make_shared<io::DataWriter>(output, kept);
     writer->add_cell_field("amips", amips);
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
@@ -1993,7 +2008,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output)
                                  : std::numeric_limits<double>::quiet_NaN();
             }
             const std::string front_path = path + "_front.vtu";
-            std::shared_ptr<io::DataWriter> front_writer = std::make_shared<io::DataWriter>(output);
+            std::shared_ptr<io::DataWriter> front_writer =
+                std::make_shared<io::DataWriter>(output, kept);
             front_writer->add_cell_field("front_err_ratio", ERR);
             front_writer->add_cell_field("chord_length", LEN);
             front_writer->add_field("vid", VID);
