@@ -2477,6 +2477,53 @@ TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
     }
 }
 
+TEST_CASE("swap-face-keeps-edge-tags", "[offset][3d]")
+{
+    // The loop's face swap (TopoOffsetTetMesh::swap_face_before(), the loop's copy of the base's)
+    // caches the two cells' edge tags, which the base's swap_face_after() restores on the three
+    // new cells. The swap of swap-face-gate-on-energy that the gate admits ("corner_bound", both
+    // cells band), with the edge (a,d) tagged order-2 as hold_curves_and_points() tags a curve:
+    // after the 2-3 swap the edge keeps its tag and its input, and no other edge has one. Until
+    // 2026-11-05 the copy cached no edge tag, and the after hook restored whatever the previous
+    // operation on the thread had left in the cache.
+    using EdgeTags = TetOptimizerMesh::FeatureEdgeAttributes;
+    const auto pot = plane_field();
+    const double L = 0.4, h = L * std::sqrt(2. / 3.), R = L / std::sqrt(3.);
+    const Vector3d m = kApex + Vector3d(0., 0.6, 0.);
+    Eigen::MatrixXd V(5, 3);
+    for (int i = 0; i < 3; ++i) {
+        const double t = 2. * M_PI * i / 3.;
+        V.row(i) = (m + Vector3d(R * std::cos(t), 0., R * std::sin(t))).transpose();
+    }
+    V.row(3) = (m + Vector3d(0., h, 0.)).transpose();
+    V.row(4) = (m - Vector3d(0., h, 0.)).transpose();
+    const size_t a = 0, b = 1, c = 2, d = 3, e = 4;
+    const std::vector<std::array<int, 4>> TA = {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}};
+    Parameters pa;
+    pa.band_volume_rule = "corner_bound";
+    auto A = energy_mesh(pa, V, TA, {2, 2}, pot);
+    A->enable_feature_edge_tracking();
+    const auto tags = [&](const size_t p, const size_t q) -> EdgeTags& {
+        return A->m_feature_edge_attribute[A->tuple_from_edge({{p, q}}).eid(*A)];
+    };
+    tags(a, d).add(EdgeTags::order2);
+    tags(a, d).inputs(EdgeTags::order2) = 1;
+
+    std::vector<TopoOffsetTetMesh::Tuple> new_tets;
+    const auto [face, fid] = A->tuple_from_face(std::array<size_t, 3>{{a, b, c}});
+    (void)fid;
+    REQUIRE(A->swap_face(face, new_tets));
+    REQUIRE(new_tets.size() == 3);
+    CHECK(tags(a, d).has(EdgeTags::order2));
+    CHECK(tags(a, d).inputs(EdgeTags::order2) == 1);
+    size_t n_tagged = 0;
+    for (const auto& edge : A->get_edges()) {
+        n_tagged += A->m_feature_edge_attribute[edge.eid(*A)].is_tagged();
+    }
+    CHECK(n_tagged == 1);
+    CHECK(!tags(d, e).is_tagged());
+}
+
 TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
 {
     // The 4-4 case search (TetMesh::swap_edge_44()) scores the sum of the energy through
