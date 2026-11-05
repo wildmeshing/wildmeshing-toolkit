@@ -298,6 +298,23 @@ TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
     check(result);
     REQUIRE(result.first.at("mesh").cells.begin()->second.attributes.count("tags"));
 }
+TEST_CASE(
+    "SimWild remeshes a tagged mesh with nothing tracked and no envelope",
+    "[component_io][tagged]")
+{
+    // One region filling the box: no interface, so no tracked face (2D: edge), and no envelope
+    // given, so the one built from the tracked faces is empty. Until 2026-11-05 2D crashed
+    // building it (Envelope::init on no edges).
+    WorkingDirectory cwd;
+    const bool is_3d = GENERATE(false, true);
+    INFO((is_3d ? "3D" : "2D"));
+    MeshData data = is_3d ? cube_tets() : square_triangles();
+    add_tags(data, is_3d ? CellType::Tetrahedron : CellType::Triangle);
+    check(
+        simwild::simwild(
+            {{"input", "tagged"}, {"max_iterations", 0}, {"num_threads", 1}},
+            {{"tagged", data}}));
+}
 TEST_CASE("SimWild refuses a tagged mesh that does not fill its box", "[component_io][tagged]")
 {
     // One tagged tet (2D: triangle) with its boundary as the envelope, as "SimWild accepts tagged
