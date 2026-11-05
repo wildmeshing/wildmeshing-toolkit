@@ -175,12 +175,13 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 TEST_CASE("held_faces_and_their_envelopes", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
-    // boundary, every outer face a domain-wall face. Every one of them is a tracked face; the
-    // HELD ones are every tracked face but the wall and the offset surface, in the loop as in a
-    // TetWild pass, read live off the cells -- every tracked surface held, as in tetwild and
-    // simwild (2026-11-04; until then the loop held the input complex's boundary alone). The wall
-    // never is: the box rule holds it, as in tetwild and simwild. A held face is held to the
-    // envelopes of its labels, here the tags of the two regions it bounds.
+    // boundary, every outer face a domain-wall face. Only the shared face is tracked: the wall
+    // never is, the box rule holding it, as in tetwild and simwild (until 2026-11-05 it was
+    // tracked, and face_is_held() exempted it). The HELD faces are every tracked face but the
+    // offset surface, in the loop as in a TetWild pass, read live off the cells -- every tracked
+    // surface held, as in tetwild and simwild (2026-11-04; until then the loop held the input
+    // complex's boundary alone). A held face is held to the envelopes of its labels, here the
+    // tags of the two regions it bounds.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -207,16 +208,17 @@ TEST_CASE("held_faces_and_their_envelopes", "[3d][envelope]")
             mesh.m_face_attribute[face(a, b, c).fid(mesh)]);
     };
     for (const auto& f : mesh.get_faces()) {
-        REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
+        REQUIRE(
+            mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs ==
+            f.switch_tetrahedron(mesh).has_value());
     }
 
     // In the loop, no input complex: the a/b boundary is a region boundary off the input
-    // complex, and held all the same, to its labels' envelopes; the wall is not.
+    // complex, and held all the same, to its labels' envelopes.
     REQUIRE(!mesh.m_tetwild_pass);
     REQUIRE(mesh.m_tet_attribute[0].label == 0);
     REQUIRE(mesh.m_tet_attribute[1].label == 0);
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(!mesh.face_is_held(face(0, 1, 2)));
     mesh.build_envelopes();
     const auto loop_env = mesh.m_envelope;
     REQUIRE(loop_env != nullptr);
@@ -225,7 +227,6 @@ TEST_CASE("held_faces_and_their_envelopes", "[3d][envelope]")
     REQUIRE(shared_env != nullptr);
     REQUIRE(!shared_env->is_outside(on_shared));
     REQUIRE(shared_env->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
-    REQUIRE(envelope_of(0, 1, 2) == nullptr);
     // The shared face is on both tags, so held to the intersection of their envelopes, which the
     // containment audit must read through its members: it once asked the composite itself.
     REQUIRE(dynamic_cast<const wmtk::IntersectionEnvelope*>(shared_env.get()) != nullptr);
@@ -233,7 +234,7 @@ TEST_CASE("held_faces_and_their_envelopes", "[3d][envelope]")
     REQUIRE(!mesh.surface_triangle_is_outside(1, 2, 3, shared_attr));
     REQUIRE_NOTHROW(mesh.audit_surface_containment("loop"));
     for (size_t v = 1; v < 4; ++v) REQUIRE(mesh.vertex_is_held(v));
-    REQUIRE(!mesh.vertex_is_held(0)); // on wall faces only
+    REQUIRE(!mesh.vertex_is_held(0)); // on wall faces only, none tracked
     REQUIRE(!mesh.vertex_is_held(4));
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
     REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
@@ -250,10 +251,8 @@ TEST_CASE("held_faces_and_their_envelopes", "[3d][envelope]")
     mesh.build_final_envelopes();
     mesh.m_tetwild_pass = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(!mesh.face_is_held(face(0, 1, 2)));
     REQUIRE(mesh.m_envelope == loop_env);
     REQUIRE(envelope_of(1, 2, 3) == shared_env);
-    REQUIRE(envelope_of(0, 1, 2) == nullptr);
     REQUIRE_NOTHROW(mesh.audit_surface_containment("final pass"));
     mesh.m_tetwild_pass = false;
 

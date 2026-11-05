@@ -155,10 +155,11 @@ public:
  * marching tets, growing the band) is entirely its own, and the optimization phase that follows
  * is wmtk::TetOptimizerMesh's, with the offset supplying only policy through the hooks.
  *
- * Two surfaces are tracked. Every tag-region boundary (input complex and domain wall included)
- * keeps the primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which
- * the incident tet labels differ. Which class-0 faces an envelope holds is face_is_held()'s;
- * only the offset surface is driven toward target_distance.
+ * Two surfaces are tracked. Every tag-region boundary (the input complex's included) keeps the
+ * primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which the
+ * incident tet labels differ. The domain wall is not tracked: the box rule holds it, as in
+ * tetwild and simwild. Which class-0 faces an envelope holds is face_is_held()'s; only the
+ * offset surface is driven toward target_distance.
  */
 class TopoOffsetTetMesh : public wmtk::TetOptimizerMesh
 {
@@ -341,12 +342,13 @@ public:
      * to m_offset_envelope (build_final_envelopes()).
      *
      * Which faces are held, asked live of the mesh (the operations carry the cell labels it
-     * reads), never stored: every tracked face but the domain wall and the offset surface, in the
-     * loop as in a TetWild pass -- the input complex's boundary and every other region boundary
-     * (another body, another tag's surface). The domain wall is not: the box rule holds it, as in
-     * tetwild and simwild (a wall vertex is not smoothed, collapses only along its walls, and a
-     * split of a wall edge stays on it). Until 2026-11 one envelope held every held face, the wall
-     * included, its vertices smoothed inside it; see smooth_before() for why the wall was held so.
+     * reads), never stored: every tracked face but the offset surface, in the loop as in a TetWild
+     * pass -- the input complex's boundary and every other region boundary (another body, another
+     * tag's surface). The domain wall is no tracked face (face_is_tag_boundary()): the box rule
+     * holds it, as in tetwild and simwild (a wall vertex is not smoothed, collapses only along its
+     * walls, and a split of a wall edge stays on it). Until 2026-11 one envelope held every held
+     * face, the wall included, its vertices smoothed inside it; see smooth_before() for why the
+     * wall was held so. From then until 2026-11-05 the wall stayed tracked, and this exempted it.
      *
      * Every tracked surface held, as tetwild and simwild hold theirs (Uday, 2026-11-04). From
      * 1c247b2267 (2026-10-13) until then the loop held only the input complex's boundary: every
@@ -361,10 +363,10 @@ public:
     /// Build m_envelope and the label envelopes from the held faces. Called once, from
     /// construct_offset(), after the simplicial embedding and before the march: the labels are
     /// read off the cells' tags (assign_face_labels()), which the band replaces in the cells it
-    /// covers, and with no front yet every tracked face off the wall is captured, so every face
-    /// held later has its labels' envelopes.
+    /// covers, and with no front yet every tracked face is captured, so every face held later has
+    /// its labels' envelopes.
     void build_envelopes();
-    /// Give every tracked face off the wall its labels, as input-set bits beside its face tags:
+    /// Give every tracked face its labels, as input-set bits beside its face tags:
     /// bit F + t - 1 (F face tags) for each tet tag t in the tag set of exactly one of its two
     /// tets, ambient (0) carrying none -- simwild's labels (SimWildMesh::init_label_envelopes()) --
     /// and the envelope surface group's tag (m_sheet_tag) on a face of it.
@@ -666,10 +668,10 @@ public:
      * @brief SurfaceTagAttributes::m_surface_class: which of the two tracked surfaces a face
      * belongs to. Same scheme as 2D.
      *
-     * OFFSET is the surface the optimization places at target_distance. Everything else -- the
-     * input complex, another body's boundary, the domain wall -- keeps the primary class 0 and
-     * is envelope-checked by the shared operations exactly as in tetwild and simwild, when it is
-     * held (face_is_held()).
+     * OFFSET is the surface the optimization places at target_distance. Every other tracked
+     * face -- the input complex, another body's boundary -- keeps the primary class 0 and is
+     * envelope-checked by the shared operations exactly as in tetwild and simwild, when it is
+     * held (face_is_held()). The domain wall is no tracked face: the box rule holds it.
      */
     static constexpr int INPUT_SURFACE_CLASS = 0;
     static constexpr int OFFSET_SURFACE_CLASS = 1;
@@ -1813,10 +1815,9 @@ public:
     /**
      * @brief Identification only -- no operation refuses the domain wall through these.
      *
-     * The wall is a tracked region boundary like every other one: init_surfaces_and_boundaries()
-     * tags its faces m_is_surface_fs and face_is_held() always holds them, so refinement,
-     * coarsening, flips and smoothing are governed by the same containment, merge rules and link
-     * conditions that govern the input complex.
+     * The wall is no tracked face (face_is_tag_boundary()): the box rule holds it, as in tetwild
+     * and simwild -- a vertex on it is not smoothed (smooth_before()), collapses only along its
+     * planes, and a split of an edge on it stays on the planes both ends share.
      */
     bool vertex_is_on_domain_boundary(const size_t vid) const
     {
@@ -1824,18 +1825,21 @@ public:
     }
 
     /**
-     * @brief Classify every region boundary and tag the domain wall -- once, from the input mesh,
+     * @brief Classify every region boundary and flag the domain wall -- once, from the input mesh,
      * before offset construction runs. A region boundary is a face whose two incident tets carry
-     * different tag sets, a sheet-group face, or a face with one incident tet (the domain wall);
-     * each becomes a tracked face (m_is_surface_fs). Which of them an envelope holds is
-     * face_is_held()'s, and the envelope is build_envelopes()'s.
+     * different tag sets, a sheet-group face, or a face with a face tag; each becomes a tracked
+     * face (m_is_surface_fs). Which of them an envelope holds is face_is_held()'s, and the envelope
+     * is build_envelopes()'s. The wall's faces, in the box's planes, get m_is_bbox_fs and their
+     * vertices on_bbox_faces, the box rule's flags; they are not tracked.
      */
     void init_surfaces_and_boundaries();
-    /// The tracking rule, asked of the mesh as it stands: a wall face (no opposite tet), a face
-    /// whose two tets carry different tag sets, a face on the sheet group (on_sheet), or a face
-    /// with a face tag (an input-set bit of the face tags'). init_surfaces_and_boundaries()
-    /// tracks the faces it holds of at load; untrack_covered_boundaries() asks it again after the
-    /// band's retagging.
+    /// The tracking rule, asked of the mesh as it stands: a face whose two tets carry different
+    /// tag sets, a face on the sheet group (on_sheet), or a face with a face tag (an input-set bit
+    /// of the face tags'). A wall face (no opposite tet) bounds no second region, so only a face
+    /// tag or the sheet tracks it -- a filtered mesh's boundary, which the driver refuses
+    /// (require_box_boundary()). Until 2026-11-05 every wall face was tracked, and face_is_held()
+    /// exempted it from the envelopes. init_surfaces_and_boundaries() tracks the faces it holds
+    /// of at load; untrack_covered_boundaries() asks it again after the band's retagging.
     bool face_is_tag_boundary(const Tuple& f) const;
 
     /// Whether edge `loc` lies on a region boundary / on the offset surface, by the cached face
@@ -2219,7 +2223,7 @@ public:
      * @brief The containment of a tracked face an operation has just made (the base asks only
      * after the fact). The offset surface: nothing in the loop, m_offset_envelope in a TetWild
      * pass. A held face (face_is_held()): the base's rule, the envelopes of its labels. Any other
-     * tracked face, the domain wall among them (the box rule holds it): nothing.
+     * tracked face: nothing.
      */
     std::shared_ptr<Envelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids,
@@ -2488,8 +2492,8 @@ public:
             // of band cells clear of the input's bisectors tiles the star of vid, so the term is a
             // constant, and its cells' exact integrals would add only work and their rounding to
             // every Newton step. The veto's own test (cancels_before in smooth_nonfront_vertex()).
-            // Constant wherever the move can end, not only here: vid is not held, so not on the
-            // domain wall (face_is_held()), and its ring closes around it; the engine keeps no
+            // Constant wherever the move can end, not only here: vid is smoothed, so not on the
+            // domain wall (smooth_before()), and its ring closes around it; the engine keeps no
             // position that inverts a ring cell, so vid stays inside the convex hull of its link;
             // and the test reads the points only through their box, their least side of each
             // bisector polytope's planes, and min_P max d_P (d_P convex), none of which a point

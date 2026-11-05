@@ -92,6 +92,15 @@ MeshData tet()
     T << 0, 1, 2, 3;
     return io::geometry_data(V, T, CellType::Tetrahedron);
 }
+// The unit cube as its six tets around the main diagonal: a tet mesh that fills its box.
+[[maybe_unused]] MeshData cube_tets()
+{
+    MatrixXd V(8, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1;
+    MatrixXi T(6, 4);
+    T << 0, 1, 3, 7, 0, 1, 7, 5, 0, 2, 7, 3, 0, 2, 6, 7, 0, 4, 5, 7, 0, 4, 7, 6;
+    return io::geometry_data(V, T, CellType::Tetrahedron);
+}
 void add_tags(MeshData& data, CellType type)
 {
     auto& c = data.cells.at(type);
@@ -787,8 +796,10 @@ TEST_CASE(
 #ifdef WMTK_TEST_topological_offset
 TEST_CASE("Offset accepts named tagged meshes", "[component_io]")
 {
+    // A mesh that fills its box: the offset refuses one that does not (require_box_boundary()),
+    // as a single tet does, its fourth face in no plane of the box.
     WorkingDirectory cwd;
-    auto data = tet();
+    auto data = cube_tets();
     add_tags(data, CellType::Tetrahedron);
     check(
         topological_offset::topological_offset(

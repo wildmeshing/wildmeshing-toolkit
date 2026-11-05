@@ -235,8 +235,9 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
     logger().info("F = {}", faces.size());
 
     // Which faces are tracked region boundaries (face_is_tag_boundary()): an interior face whose
-    // two tets carry different tag sets, a face on the sheet group or with a face tag, or a wall
-    // face (no opposite tet: the ambient region against the unmeshed outside). These flags are
+    // two tets carry different tag sets, or a face on the sheet group or with a face tag. Not the
+    // wall (no opposite tet): the box rule holds it, as in tetwild and simwild, and the driver
+    // refuses a mesh whose boundary is not the box's (require_box_boundary()). These flags are
     // topology the operations maintain. Which of them an envelope holds is face_is_held()'s, and
     // the envelope is build_envelopes()'s.
     size_t n_faces_tracked = 0;
@@ -244,20 +245,19 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         if (!face_is_tag_boundary(f)) continue;
         SmartTuple ff(*this, f);
         const size_t fid = ff.fid();
-        const auto t_opp = ff.switch_tetrahedron();
         m_face_attribute[fid].m_is_surface_fs = true;
         ++n_faces_tracked;
         const size_t v1 = ff.vid();
         const size_t v2 = ff.switch_vertex().vid();
         const size_t v3 = ff.switch_edge().switch_vertex().vid();
-        if (t_opp) {
-            for (const size_t v : {v1, v2, v3}) m_vertex_extra[v].m_is_on_region = true;
-        }
+        // Every tracked face is a region boundary now, the wall being none: until 2026-11-05 a
+        // wall face was tracked too, and its vertices were kept off m_is_on_region here.
+        for (const size_t v : {v1, v2, v3}) m_vertex_extra[v].m_is_on_region = true;
         m_vertex_attribute[v1].m_is_on_surface = true;
         m_vertex_attribute[v2].m_is_on_surface = true;
         m_vertex_attribute[v3].m_is_on_surface = true;
     }
-    logger().info("\tTracked faces (region boundaries, sheet, domain wall): {}", n_faces_tracked);
+    logger().info("\tTracked faces (region boundaries, sheet, face tags): {}", n_faces_tracked);
 
     // track bounding box. box_min/box_max are only set by Parameters::init(), which plenty of
     // unit tests never call -- skip rather than index out of bounds.
@@ -303,8 +303,9 @@ bool TopoOffsetTetMesh::face_is_tag_boundary(const Tuple& f) const
     // See the declaration.
     const size_t fid = f.fid(*this);
     const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
-    if (!opp) return true; // the domain wall
-    if (m_tet_attribute[f.tid(*this)].tag != m_tet_attribute[opp->tid(*this)].tag) return true;
+    // The wall (no opposite tet) bounds no second region: the box rule holds it.
+    if (opp && m_tet_attribute[f.tid(*this)].tag != m_tet_attribute[opp->tid(*this)].tag)
+        return true;
     if (m_face_extra[fid].on_sheet) return true;
     // The face tags' bits only: from build_envelopes() on, the input set also carries the labels
     // assign_face_labels() gives every tracked face, which say it WAS tracked, not why.
@@ -343,7 +344,6 @@ bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
 {
     // See the declaration. The caller has a tracked face (m_is_surface_fs); the offset surface
     // is surface_envelope_for_face()'s to answer, and is excluded here for vertex_is_held().
-    if (!f.switch_tetrahedron(*this)) return false; // the domain wall: the box rule holds it
     // Every region boundary, the input complex's included, in the loop as in a TetWild pass.
     return !face_is_offset_surface_live(f);
 }
@@ -384,10 +384,9 @@ void TopoOffsetTetMesh::build_envelopes()
     // does not read it.
     m_s_envelope = 1. / (m_envelope_eps * m_envelope_eps);
     assign_face_labels();
-    // No front yet (the march makes it), so this is every tracked face off the wall. A face held
-    // later is one of these or one the operations made from them, carrying their labels: after
-    // this the tracked flag is raised anew only on the front (label_offset_boundary(), the label
-    // flip).
+    // No front yet (the march makes it), so this is every tracked face. A face held later is one
+    // of these or one the operations made from them, carrying their labels: after this the
+    // tracked flag is raised anew only on the front (label_offset_boundary(), the label flip).
     std::vector<Eigen::Vector3i> tris;
     std::vector<InputSet> sets;
     size_t n_tracked = 0;
@@ -411,7 +410,7 @@ void TopoOffsetTetMesh::build_envelopes()
     }
     logger().info(
         "\t[envelope] {} of {} tracked faces held (every region boundary, the input complex's "
-        "included; the domain wall is the box rule's), {} label envelopes, eps {:.6g}, EXACT",
+        "included), {} label envelopes, eps {:.6g}, EXACT",
         tris.size(),
         n_tracked,
         m_input_envelopes.size(),
@@ -443,7 +442,7 @@ void TopoOffsetTetMesh::assign_face_labels()
         const size_t fid = f.fid(*this);
         if (!m_face_attribute[fid].m_is_surface_fs) continue;
         const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
-        if (!opp) continue; // the domain wall
+        if (!opp) continue; // a face-tagged boundary face, which the driver refuses
         const CellTag& a = m_tet_attribute[f.tid(*this)].tag;
         const CellTag& b = m_tet_attribute[opp->tid(*this)].tag;
         InputSet bits = 0;

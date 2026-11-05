@@ -57,8 +57,8 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         split_off_longest() = off_longest;
         // Nothing is frozen against splits: refining a surface is not moving it, so the midpoint
         // is checked against its tags' boundary envelopes like any other tracked geometry -- the
-        // input complex and the domain wall alike, the wall being a region boundary like any
-        // other.
+        // input complex and every other region boundary alike. A midpoint on the domain wall
+        // stays on the planes both ends share (the base's split_edge_after()), the box rule.
         //
         // Only the Optimization mode is guarded at all: the marching path below is how the offset
         // is constructed, and it has to be able to cut through anything.
@@ -332,10 +332,11 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
             s = (s1 + s2) / 2;
         }
     }
-    // on_bbox_faces is written after the base set m_is_on_surface, so a midpoint landing on the
-    // domain wall can arrive here unflagged. Re-derive it once both halves of
-    // vertex_is_on_region() are known: every containment check is gated on this flag.
-    if (vertex_is_on_region(v_id)) {
+    // The base's union flag, which every containment check is gated on: raised for a midpoint on
+    // a region boundary. Not for one on the domain wall alone, which is no tracked face (the box
+    // rule holds it, through on_bbox_faces), as no wall vertex carries it at load. Until 2026-11
+    // the wall was tracked, and this raised it for the wall too (vertex_is_on_region()).
+    if (m_vertex_extra[v_id].m_is_on_region) {
         m_vertex_attribute[v_id].m_is_on_surface = true;
     }
 
@@ -513,14 +514,15 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
         3;
     // On the split face's surfaces, as the edge split's new vertex is on its edge's
     // (marching_split_edge_after()): a region boundary's, the walls all three corners share, and
-    // then the base's union flag, which every containment check is gated on.
+    // then, for a region boundary, the base's union flag, which every containment check is gated
+    // on (not for the wall, which is no tracked face).
     m_vertex_extra[v_id].m_is_on_region = cache.splitf_on_region;
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
         wmtk::set_intersection(
             m_vertex_attribute[v1_id].on_bbox_faces,
             m_vertex_attribute[v2_id].on_bbox_faces),
         m_vertex_attribute[v3_id].on_bbox_faces);
-    if (vertex_is_on_region(v_id)) {
+    if (m_vertex_extra[v_id].m_is_on_region) {
         m_vertex_attribute[v_id].m_is_on_surface = true;
     }
 

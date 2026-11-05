@@ -429,6 +429,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.F_tagged,
             input_data.F_tags,
             input_data.face_tag_names);
+        // The domain is the mesh's box, its wall held by the box rule as in tetwild and simwild
+        // and never tracked: a mesh that does not fill its box -- a filtered tetwild output, its
+        // boundary its tracked faces -- is refused (require_box_boundary()).
+        mesh.require_box_boundary("topological_offset");
 
         // label input complex
         mesh.m_offset_params.offset_selection =

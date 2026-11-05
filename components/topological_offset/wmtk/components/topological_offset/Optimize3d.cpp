@@ -118,9 +118,12 @@ bool TopoOffsetTetMesh::is_edge_on_offset(const Tuple& loc)
 
 bool TopoOffsetTetMesh::vertex_is_on_surface(const size_t vid) const
 {
-    // The domain wall must count here, or it drifts: the smoother's containment check walks
-    // exactly the collection this decides.
-    return vertex_is_on_region(vid) || m_vertex_extra.at(vid).m_is_on_offset;
+    // On a tracked face: a region boundary or the offset surface. Not the domain wall, which is
+    // no tracked face (the box rule holds it): the substructure queries walk the tracked faces
+    // this admits a vertex to (TetMesh::compute_vertex_order() throws for a vertex it admits that
+    // has none). Until 2026-11-05 the wall was tracked and counted here, through
+    // vertex_is_on_region().
+    return m_vertex_extra.at(vid).m_is_on_region || m_vertex_extra.at(vid).m_is_on_offset;
 }
 
 bool TopoOffsetTetMesh::face_is_on_surface(const size_t fid) const
@@ -148,8 +151,8 @@ void TopoOffsetTetMesh::label_offset_boundary()
         const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
         if (!opp) {
             // The band ran into the domain wall. With no second tet this cannot be classified
-            // as offset surface -- and must not be, or the wall face would lose the per-tag
-            // containment that keeps the box a box.
+            // as offset surface -- and must not be: the wall is no tracked face, and the box rule
+            // keeps the box a box.
             ++n_wall_band;
             continue;
         }
@@ -5789,9 +5792,9 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     // AMIPS term would read the label), and of the one tag of its label there (the flipped cell
     // takes the other label's, `tag`). And no corner of t is on anything else: the input complex
     // (vertex label 1, which also catches a sheet, wire or point complex without cells), another
-    // tracked surface (vertex_is_on_region(): a tag boundary or the box), or the mesh boundary (a
-    // face through it with no cell beyond) -- which implies that no face of t is on the mesh
-    // boundary. The corner conditions are there because the test below reads cells only: at a
+    // tracked surface or the box (vertex_is_on_region(): a tag boundary or the wall), or the mesh
+    // boundary (a face through it with no cell beyond) -- which implies that no face of t is on the
+    // mesh boundary. The corner conditions are there because the test below reads cells only: at a
     // corner on the wall, a flip the test allows can still join the front to the wall at that one
     // vertex.
     const auto eligible = [&](const size_t tid, CellTag& tag) {
