@@ -776,14 +776,28 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 route);
         }
     };
+    // A tagged mesh is the run's one input, as on tetwild's and triwild's tagged routes: the route
+    // reads input[0] only, and until 2026-11 dropped any other input without a word.
+    const auto only_input = [&](const char* route) {
+        if (input_paths.size() > 1) {
+            log_and_throw_error(
+                "{} is simwild's only input: got {} inputs, and the route reads the first alone. "
+                "Remesh the tagged mesh by itself, or give every input as a surface (2D: a curve "
+                "network) to insert",
+                route,
+                input_paths.size());
+        }
+    };
     if (component_io.memory() && dimension == 0) {
         no_features("a tagged mesh");
+        only_input("a tagged mesh");
         // Label images become regions here as on the file route (read_image_msh).
         MeshData input = component_io.mesh(input_paths.at(0));
         tags_from_label_images(input, input_paths.at(0));
         input_data = read_mesh_data(input, envelope);
     } else if (!component_io.memory() && extension == ".msh") {
         no_features("a .msh input");
+        only_input("a .msh input");
         input_data = read_image_msh(input_paths[0], envelope);
     } else if (dimension == 2) {
         if (!json_params["input_edges"].empty()) {

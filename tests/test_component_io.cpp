@@ -469,8 +469,9 @@ TEST_CASE("Tagged mesh files carry an earlier offset's correspondence", "[compon
 }
 TEST_CASE("SimWild keeps a tagged mesh's curves on both routes", "[component_io][io]")
 {
-    // Two cells, the first tagged, so that the face (2D: edge) between them is an interface: in
-    // 2D two triangles, the edge (1, 0) of the first tagged `curve`; in 3D two tets, the edge
+    // The first cell tagged, so that the face (2D: edge) between it and the next is an interface:
+    // in 2D the unit square of two triangles and the two below it, the edge (1, 0) of the first
+    // tagged `curve` -- inside the mesh, as simwild takes a tracked edge; in 3D two tets, the edge
     // (1, 0) of the first tagged `feature_0`. Through simwild, the curve comes back on its edge
     // block, under its label, held on its segment, the 2D curve in its direction.
     WorkingDirectory cwd;
@@ -484,14 +485,17 @@ TEST_CASE("SimWild keeps a tagged mesh's curves on both routes", "[component_io]
         T << 0, 1, 2, 3, 0, 2, 1, 4;
         data = io::geometry_data(V, T, CellType::Tetrahedron);
     } else {
-        MatrixXd V(4, 3);
-        V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0;
-        MatrixXi F(2, 3);
-        F << 0, 1, 2, 1, 3, 2;
+        MatrixXd V(6, 3);
+        V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, -1, 0, 1, -1, 0;
+        MatrixXi F(4, 3);
+        F << 0, 1, 2, 1, 3, 2, 0, 4, 1, 1, 4, 5;
         data = io::geometry_data(V, F, CellType::Triangle);
     }
     auto& cells = data.cells.at(is_3d ? CellType::Tetrahedron : CellType::Triangle);
-    cells.attributes["tags"] = {(DataMatrix<uint8_t>(2, 1) << 1, 0).finished(), {"tag_0"}};
+    const Eigen::Index n_cells = cells.connectivity.rows();
+    DataMatrix<uint8_t> first = DataMatrix<uint8_t>::Zero(n_cells, 1);
+    first(0, 0) = 1;
+    cells.attributes["tags"] = {first, {"tag_0"}};
     const std::string label = is_3d ? "feature_0" : "curve";
     auto& edges = data.cells[CellType::Edge];
     edges.connectivity.resize(1, 2);
@@ -539,6 +543,12 @@ TEST_CASE("SimWild checks a forced dimension against memory inputs", "[component
             {{"input", input}, {"dimension", dimension}, {"max_iterations", 0}, {"num_threads", 1}},
             inputs);
     };
+    // A tagged mesh with another input: refused, rather than the other dropped.
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(
+            {{"input", {"tagged", "surface"}}, {"max_iterations", 0}, {"num_threads", 1}},
+            inputs),
+        Catch::Matchers::ContainsSubstring("only input"));
     REQUIRE_THROWS_WITH(run("surface", "2"), Catch::Matchers::ContainsSubstring("dimension"));
     REQUIRE_THROWS_WITH(run("curves", "3"), Catch::Matchers::ContainsSubstring("dimension"));
     REQUIRE_THROWS_WITH(run("tagged", "2"), Catch::Matchers::ContainsSubstring("dimension"));
@@ -1272,7 +1282,6 @@ TEST_CASE(
         {"input_names", {"a", "b"}},
         {"eps_rel", 1e-2},
         {"eps_simplify_rel", 5e-3},
-        {"filter", "input"},
         {"max_iterations", 2},
         {"num_threads", 1}};
     auto memory_options = tetwild_options;

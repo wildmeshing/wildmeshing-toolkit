@@ -216,7 +216,7 @@ def test_envelope_is_handed_along_a_chain(boxes, work):
     simwild, given it with tetwild's mesh, holds the mesh to it at its own eps and hands
     it on unchanged, with one result on both routes. It refuses a mesh outside it, and an
     envelope that lacks a label of the mesh."""
-    options = {"input_names": ["a", "b"], "eps_rel": 1e-2, "filter": "input",
+    options = {"input_names": ["a", "b"], "eps_rel": 1e-2,
                "max_iterations": 2, "num_threads": 1}
     wm.tetwild({"input": boxes, "output": str(work / "tw"), "input_dir": str(work), **options})
     envelope = wm.read_mesh(str(work / "tw_envelope.msh"))
