@@ -212,12 +212,21 @@ check what was kept.
 
 By default the simplification and the optimization may change the surface's topology: close holes
 and slits narrower than the envelope, and make the surface non-manifold.
-[`preserve_topology`](../reference/tetwild.md#preserve_topology) forbids it: only exactly
+[`preserve_topology`](../reference/tetwild.md#preserve_topology) forbids these: only exactly
 coincident vertices are merged, the simplification and the operations check the link condition,
 and the run compares the Euler characteristics of the input surface and the output's surface at
 the end, logging a warning when they differ (an error with `throw_on_fail`). With a filter, the
 output's surface is the boundary of the kept tets, which is closed, so the check only makes sense
 for closed inputs.
+
+What it keeps depends on the phase. The surface simplification before the insertion may still
+change the topology: the link condition checks connectivity only, and the envelope admits a fold
+of the surface through itself. The insertion keeps the topology of the surface it receives when
+that surface does not cross itself, and cuts crossing triangles along their intersection
+otherwise; the run checks that surface once, exactly, and warns. The optimization keeps the
+topology of the inserted surface. On the Octocat at 8 threads, about 1 run in 3 to 5 folds the
+simplified surface (2 to 5 crossing pairs of triangles), and the Euler characteristic goes from 2
+to 3 at the insertion.
 
 Use it on clean inputs whose topology matters. On the Octocat (one closed surface, Euler
 characteristic 2), with `filter` `tracked` and `stop_energy` 10, it takes 13 iterations and
@@ -278,9 +287,12 @@ On files, `output` names:
   anchored points (`p`).
 - With [`report`](../reference/tetwild.md#report), a JSON file with the vertex and tet counts
   (`#v`, `#t`), `max_energy`, `avg_energy`, `#iterations`, `eps`, the coarsening statistics, and
-  `hausdorff` and `coverage` with `DEBUG_hausdorff`, `input_euler_characteristic` and
-  `output_euler_characteristic` with `DEBUG_euler` or `preserve_topology` (-1 or empty when not
-  measured), and `time`, the seconds from the insertion to the filter.
+  `hausdorff` and `coverage` with `DEBUG_hausdorff`, `input_euler_characteristic`,
+  `inserted_euler_characteristic` (the tracked surface right after the insertion) and
+  `output_euler_characteristic` with `DEBUG_euler` or `preserve_topology`,
+  `inserted_crossing_pairs` and `inserted_degenerate_triangles` (of the surface handed to the
+  insertion) with `preserve_topology` (-1 or empty when not measured), and `time`, the seconds
+  from the insertion to the filter.
 
 The winding-number fields let a `filter` `none` run be split afterwards: a tet is inside an input
 where its `wn_<i>` is above 1/2.
