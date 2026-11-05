@@ -40,6 +40,136 @@ void check_envelope_leash(const Parameters& params)
     }
 }
 
+/// The offset surface as rows to hand on with a reference: its triangles on vertices of their
+/// own, and the labels the output gives the band they bound (offset_output_tags).
+struct OffsetRows
+{
+    MatrixXd V = MatrixXd(0, 3);
+    MatrixXi F = MatrixXi(0, 3);
+    std::vector<std::string> names;
+};
+
+/// The final offset surface's triangles -- the faces between a band cell and a cell neither band
+/// nor input complex (face_is_offset_surface_live()), the domain wall's excepted -- named by the
+/// band's tags as the output labels them (io::tag_labels()). None when no tag is the band's own.
+OffsetRows offset_rows(const TopoOffsetTetMesh& mesh)
+{
+    OffsetRows out;
+    const std::vector<std::string> labels =
+        io::tag_labels(mesh.m_tag_id_to_name, mesh.m_tags_count);
+    for (const int64_t id : mesh.m_offset_output_tag_ids)
+        if (id > 0 && size_t(id) < labels.size()) out.names.push_back(labels[size_t(id)]);
+    if (out.names.empty()) return out;
+    std::vector<int> row(mesh.vert_capacity(), -1);
+    std::vector<Vector3d> V;
+    std::vector<std::array<int, 3>> F;
+    for (const TetMesh::Tuple& f : mesh.get_faces()) {
+        if (!f.switch_tetrahedron(mesh) || !mesh.face_is_offset_surface_live(f)) continue;
+        std::array<int, 3> r;
+        const auto vs = mesh.get_face_vids(f);
+        for (int k = 0; k < 3; ++k) {
+            int& v = row[vs[k]];
+            if (v < 0) {
+                v = int(V.size());
+                V.push_back(mesh.m_vertex_attribute[vs[k]].m_posf);
+            }
+            r[k] = v;
+        }
+        F.push_back(r);
+    }
+    out.V.resize(Eigen::Index(V.size()), 3);
+    for (size_t i = 0; i < V.size(); ++i) out.V.row(Eigen::Index(i)) = V[i].transpose();
+    out.F.resize(Eigen::Index(F.size()), 3);
+    for (size_t i = 0; i < F.size(); ++i)
+        for (int k = 0; k < 3; ++k) out.F(Eigen::Index(i), k) = F[i][k];
+    return out;
+}
+
+/// `reference`, a labelled reference as given, with `offset`'s triangles added to its triangle
+/// block, each labelled by every name of offset.names, its own rows keeping theirs: built anew
+/// with the io helpers the producers build theirs with (io::append_envelope_block(),
+/// io::append_envelope_points()), each block on vertices of its own.
+MeshData with_offset_surface(const MeshData& reference, const OffsetRows& offset)
+{
+    struct Block
+    {
+        MatrixXd V = MatrixXd(0, 3);
+        MatrixXi C;
+        std::vector<InputSet> sets;
+        std::vector<std::string> names;
+    };
+    // The `type` rows of the reference on vertices of their own, in first use, with their labels.
+    const auto block = [&](const CellType type) {
+        Block b;
+        const auto it = reference.cells.find(type);
+        if (it == reference.cells.end()) return b;
+        const auto& C = it->second.connectivity;
+        std::vector<int> row(size_t(reference.V.rows()), -1);
+        std::vector<Eigen::Index> used;
+        b.C.resize(C.rows(), C.cols());
+        for (Eigen::Index r = 0; r < C.rows(); ++r) {
+            for (Eigen::Index k = 0; k < C.cols(); ++k) {
+                int& v = row[size_t(C(r, k))];
+                if (v < 0) {
+                    v = int(used.size());
+                    used.push_back(Eigen::Index(C(r, k)));
+                }
+                b.C(r, k) = v;
+            }
+        }
+        b.V.resize(Eigen::Index(used.size()), 3);
+        for (size_t i = 0; i < used.size(); ++i)
+            b.V.row(Eigen::Index(i)) = reference.V.row(used[i]);
+        const auto tags = it->second.attributes.find("tags");
+        if (tags == it->second.attributes.end()) return b;
+        b.names = tags->second.labels;
+        const auto member = tags->second.integers();
+        b.sets.assign(size_t(C.rows()), 0);
+        for (Eigen::Index r = 0; r < C.rows(); ++r) {
+            for (size_t j = 0; j < b.names.size() && j < size_t(SurfaceTagAttributes::max_inputs);
+                 ++j) {
+                if (member(r, Eigen::Index(j))) b.sets[size_t(r)] |= InputSet(1) << j;
+            }
+        }
+        return b;
+    };
+    Block tri = block(CellType::Triangle);
+    InputSet own = 0;
+    for (const std::string& name : offset.names) {
+        auto k = std::find(tri.names.begin(), tri.names.end(), name);
+        if (k == tri.names.end()) k = tri.names.insert(tri.names.end(), name);
+        const size_t j = size_t(k - tri.names.begin());
+        if (j < size_t(SurfaceTagAttributes::max_inputs)) own |= InputSet(1) << j;
+    }
+    const Eigen::Index nv = tri.V.rows(), nf = tri.C.rows();
+    tri.V.conservativeResize(nv + offset.V.rows(), 3);
+    tri.V.bottomRows(offset.V.rows()) = offset.V;
+    tri.C.conservativeResize(nf + offset.F.rows(), 3);
+    tri.C.bottomRows(offset.F.rows()) = (offset.F.array() + int(nv)).matrix();
+    tri.sets.resize(size_t(tri.C.rows()), own);
+    MeshData out;
+    io::append_envelope_block(
+        out,
+        io::geometry_data(tri.V, tri.C, CellType::Triangle),
+        CellType::Triangle,
+        tri.sets,
+        tri.names);
+    const Block curves = block(CellType::Edge);
+    if (curves.C.rows() > 0) {
+        io::append_envelope_block(
+            out,
+            io::geometry_data(curves.V, curves.C, CellType::Edge),
+            CellType::Edge,
+            curves.sets,
+            curves.names);
+    }
+    const Block points = block(CellType::Point);
+    std::vector<Vector3d> P(size_t(points.V.rows()));
+    for (size_t i = 0; i < P.size(); ++i) P[i] = points.V.row(Eigen::Index(i)).transpose();
+    io::append_envelope_points(out, P);
+    return out;
+}
+
 /// The star of each vertex in `vids`: its tets, each by its corners sorted, in sorted order.
 std::vector<std::vector<std::array<size_t, 4>>> carried_stars(
     const TopoOffsetTetMesh& mesh,
@@ -122,8 +252,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     // The `envelope` input: a mesh of the call on the memory route, a mesh file on the file
-    // route (relative to input_dir). Carried, not yet held to: handed on unchanged
-    // (hand_on_envelope()), while the offset builds its envelopes around the mesh it receives.
+    // route (relative to input_dir). A labelled reference (InputData::envelope_reference) is held
+    // to in 3D, as simwild holds one (below); one without labels is the input's envelope surface
+    // group, as a .msh's.
     const std::string envelope_path =
         component_io.memory() ? "" : json_params["envelope"].get<std::string>();
     std::optional<MeshData> envelope_file;
@@ -137,12 +268,18 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     InputData input_data = component_io.memory()
                                ? read_mesh_data(component_io.mesh(input_path), envelope)
                                : read_image_msh(input_path, envelope);
-    // After the output: the envelope given goes on as given (a labelled reference unchanged, so
-    // that a chain keeps passing the first component's input), on the file route as
+    // After the output: a labelled reference goes on with `offset`, the offset surface's
+    // triangles under the band's labels, added (with_offset_surface()), so that a chain keeps
+    // passing the first component's input -- the offset surface is new, so it is its own
+    // reference; unchanged where there is none (2D, an empty input complex). On the file route as
     // <output>_envelope.msh.
-    const auto hand_on_envelope = [&]() {
+    const auto hand_on_envelope = [&](const OffsetRows& offset = OffsetRows()) {
         auto& outputs = component_io.result.first;
-        if (input_data.envelope_reference) outputs["envelope"] = *input_data.envelope_reference;
+        if (input_data.envelope_reference) {
+            outputs["envelope"] = offset.F.rows() > 0
+                                      ? with_offset_surface(*input_data.envelope_reference, offset)
+                                      : *input_data.envelope_reference;
+        }
         if (!component_io.memory() && envelope && outputs.count("envelope"))
             io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
     };
@@ -416,14 +553,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 "euclidean distance to the input, and this field has no band term yet",
                 params.offset_field);
         }
-        // initialize mesh
+        // initialize mesh. A labelled reference is held to (below), not the envelope surface
+        // group: its triangles are the first component's input, not a sheet of this mesh.
+        const bool reference = input_data.envelope_reference.has_value();
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.V_envelope,
-            input_data.F_envelope,
+            reference ? MatrixXd() : input_data.V_envelope,
+            reference ? MatrixXi() : input_data.F_envelope,
             input_data.tag_names,
             input_data.envelope_name,
             input_data.F_tagged,
@@ -433,6 +572,30 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // and never tracked: a mesh that does not fill its box -- a filtered tetwild output, its
         // boundary its tracked faces -- is refused (require_box_boundary()).
         mesh.require_box_boundary("topological_offset");
+        // A reference, the first component's labelled input, held to as simwild holds one
+        // (simwild.cpp's run_3D): the envelopes around its triangles of this mesh's labels
+        // (io::held_rows(); TopoOffsetTetMesh::build_envelopes() builds them and runs the two
+        // start checks), the order-2 tubes and the curve-end anchors around its curves, never
+        // around the mesh received. No feature tube: the offset takes no feature curve (refused
+        // above), so the reference's (init_reference_feature_tubes()) would hold nothing.
+        if (reference) {
+            const io::HeldRows held = io::held_rows(
+                input_data.V_envelope,
+                input_data.F_envelope,
+                input_data.F_envelope_labels);
+            mesh.m_has_reference = true;
+            mesh.m_reference_V = held.V;
+            mesh.m_reference_F = held.F;
+            mesh.m_reference_labels = held.labels;
+            mesh.m_reference_curves = input_data.reference_curves;
+            std::vector<Eigen::Vector3d> V(size_t(held.V.rows()));
+            for (size_t i = 0; i < V.size(); ++i) V[i] = held.V.row(Eigen::Index(i)).transpose();
+            std::vector<std::array<size_t, 3>> F(size_t(held.F.rows()));
+            for (size_t i = 0; i < F.size(); ++i) {
+                for (int j = 0; j < 3; ++j) F[i][j] = size_t(held.F(Eigen::Index(i), j));
+            }
+            mesh.set_input_curves(V, F, held.labels, &input_data.reference_curves);
+        }
 
         // label input complex
         mesh.m_offset_params.offset_selection =
@@ -684,7 +847,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         topological_offset::collect_memory_output(mesh, component_io);
         if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
-        hand_on_envelope();
+        hand_on_envelope(offset_rows(mesh));
         if (mesh.m_offset_params.save_vtu) { // write .vtu: the result, as the .msh
             mesh.write_vtu(output_filename.string(), nullptr, /*result=*/true);
         }

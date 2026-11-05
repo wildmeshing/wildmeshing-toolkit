@@ -355,11 +355,31 @@ public:
      * other region boundary stayed a tracked face -- the operations kept its topology -- that
      * nothing held, so the band pushed it aside, and only a TetWild pass held it, where the loop
      * had left it.
+     *
+     * With a reference (the base's m_has_reference: an `envelope` input that is a labelled
+     * reference, the first component's input), held to as simwild holds one: m_envelope and the
+     * label envelopes are built around its triangles of this mesh's labels (m_reference_V,
+     * m_reference_F, m_reference_labels), not around the held faces, after a held face's label
+     * the reference lacks has thrown (require_reference_face_labels()), and a held face outside
+     * its labels' envelopes throws before anything moves (check_reference_containment()). So the
+     * held surfaces stay within envelope_size of the first component's input however many
+     * components came before; built around what each receives, the bound would grow by one
+     * envelope per stage. Until 2026-11-05 the offset carried a reference without holding to it.
      */
     bool face_is_held(const Tuple& f) const;
     /// A vertex is held when one of its tracked faces is (face_is_held()): the smoother then
     /// pulls it to and contains it in m_envelope. Asked of the mesh, like face_is_held().
     bool vertex_is_held(size_t vid) const;
+    /// With a reference (m_has_reference): its triangles of this mesh's labels on vertices of
+    /// their own, each with its labels' bits (io::held_rows()), set by the driver before the
+    /// construction; what build_envelopes() builds the envelopes around. Empty otherwise.
+    MatrixXd m_reference_V;
+    MatrixXi m_reference_F;
+    std::vector<InputSet> m_reference_labels;
+    /// The label of bit `bit` of a face's input set (assign_face_labels()), as the output names
+    /// it: a face tag's name, else tet tag t's label (io::collect_tags()) for bit F + t - 1, F the
+    /// face tags' count. What the reference checks name a label by.
+    std::string label_name(size_t bit) const override;
     /// Build m_envelope and the label envelopes from the held faces. Called once, from
     /// construct_offset(), after the simplicial embedding and before the march: the labels are
     /// read off the cells' tags (assign_face_labels()), which the band replaces in the cells it
@@ -378,7 +398,10 @@ public:
     /// themselves, of half-width order2_envelope_ratio x envelope_size, one per label, and the
     /// curve ends and junctions anchored at that radius. After build_envelopes() and before the
     /// march, so the front, which the march makes, is never among them. Until 2026-11 the offset
-    /// held no curve and no point; the surface envelope alone held them.
+    /// held no curve and no point; the surface envelope alone held them. With a reference, around
+    /// its curves, as simwild's: the driver sets them (the base's set_input_curves()), an order-2
+    /// edge in their tubes is held there, a curve end in reach of one of their ends anchored
+    /// there, and an edge on none held around itself (TetOptimizerMesh::InputCurves).
     void hold_curves_and_points();
     /// A TetWild pass's envelopes: the offset surface's envelope (build_offset_envelope()), all it
     /// adds. Every other tracked surface it holds is held in the loop's envelopes, where

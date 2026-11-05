@@ -1,5 +1,6 @@
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
@@ -398,7 +399,21 @@ void TopoOffsetTetMesh::build_envelopes()
         tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
         sets.push_back(m_face_attribute[f.fid(*this)].input_set());
     }
-    if (tris.empty()) {
+    if (m_has_reference) {
+        // As simwild's reference route (SimWildMesh::init_surfaces_and_boundaries()): every label
+        // the held faces carry in the reference, the envelopes around its rows of this mesh's
+        // labels, and every held face received inside its labels' envelopes, exactly, before
+        // anything moves. The labels are read here, so the checks are too.
+        require_reference_face_labels(m_reference_labels);
+        std::vector<Eigen::Vector3d> V(size_t(m_reference_V.rows()));
+        for (size_t i = 0; i < V.size(); ++i) V[i] = m_reference_V.row(Eigen::Index(i)).transpose();
+        std::vector<Eigen::Vector3i> F(size_t(m_reference_F.rows()));
+        for (size_t i = 0; i < F.size(); ++i) F[i] = m_reference_F.row(Eigen::Index(i)).transpose();
+        m_envelope = std::make_shared<Envelope>(/*exact=*/true);
+        m_envelope->init(V, F, m_envelope_eps);
+        init_input_envelopes(V, F, m_reference_labels, m_envelope_eps, /*exact=*/true);
+        check_reference_containment(m_envelope_eps);
+    } else if (tris.empty()) {
         m_envelope = nullptr;
         m_input_envelopes.set({});
     } else {
@@ -410,11 +425,23 @@ void TopoOffsetTetMesh::build_envelopes()
     }
     logger().info(
         "\t[envelope] {} of {} tracked faces held (every region boundary, the input complex's "
-        "included), {} label envelopes, eps {:.6g}, EXACT",
+        "included), around {}, {} label envelopes, eps {:.6g}, EXACT",
         tris.size(),
         n_tracked,
+        m_has_reference ? fmt::format("the reference's {} triangles", m_reference_F.rows())
+                        : std::string("themselves"),
         m_input_envelopes.size(),
         m_envelope_eps);
+}
+
+std::string TopoOffsetTetMesh::label_name(const size_t bit) const
+{
+    // See the declaration: assign_face_labels()'s bits, named as the output names them.
+    const size_t F = m_face_tag_names.size();
+    if (bit < F) return m_face_tag_names[bit];
+    const std::vector<std::string> labels = io::tag_labels(m_tag_id_to_name, m_tags_count);
+    const size_t t = bit - F + 1;
+    return t < labels.size() ? labels[t] : fmt::format("label bit {}", bit);
 }
 
 void TopoOffsetTetMesh::hold_curves_and_points()
