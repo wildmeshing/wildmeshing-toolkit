@@ -1618,6 +1618,31 @@ std::string counts_by_name(const std::vector<size_t>& outside, Name name)
 }
 } // namespace
 
+void TetOptimizerMesh::require_box_boundary(const std::string& who) const
+{
+    // See the declaration.
+    size_t n_tracked = 0, n_free = 0;
+    for (const Tuple& f : get_faces()) {
+        if (f.switch_tetrahedron(*this)) continue;
+        const auto& attr = m_face_attribute[f.fid(*this)];
+        if (attr.m_is_surface_fs) {
+            ++n_tracked;
+        } else if (attr.m_is_bbox_fs < 0) {
+            ++n_free;
+        }
+    }
+    if (n_tracked == 0 && n_free == 0) return;
+    log_and_throw_error(
+        "{} tracked faces of the tagged mesh lie on its boundary, as a filtered mesh's do, and {} "
+        "untracked boundary faces in no plane of its bounding box: {} takes a mesh that fills its "
+        "box (an output with filter \"none\"), its tracked faces inside, and holds the domain's "
+        "wall by the box rule, a box's faces only; give a filtered mesh's surfaces to tetwild as "
+        "inputs",
+        n_tracked,
+        n_free,
+        who);
+}
+
 void TetOptimizerMesh::require_reference_face_labels(
     const std::vector<InputSet>& reference_labels) const
 {

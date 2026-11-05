@@ -913,35 +913,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             &in.E_sets);
         // The wall, as tetwild's: the boundary edges, untracked, each on a line of the box, which
         // init_mesh() flagged as it flags every edge on one -- the mesh fills its box, as the
-        // arrangement's padded box does. Refused: an untracked boundary edge on no line, which
-        // would be held by nothing; and a tracked boundary edge, as a filtered mesh's boundary
-        // is, which the operations hold from the triangle across it (collapse_edge_before()
-        // checks a merged tracked edge in the triangle beyond it; measured on two filtered unit
-        // squares held by their envelopes: a collapse left an edge 0.5 off its square).
-        size_t n_free = 0, n_tracked = 0;
-        for (const auto& e : mesh.get_edges()) {
-            if (e.switch_face(mesh)) continue;
-            const auto& attr = mesh.m_edge_attribute[e.eid(mesh)];
-            if (attr.m_is_surface_fs) {
-                ++n_tracked;
-            } else if (attr.m_is_bbox_fs < 0) {
-                ++n_free;
-            }
-        }
-        if (n_tracked > 0) {
-            log_and_throw_error(
-                "{} tracked edges of the tagged mesh lie on its boundary, as a filtered mesh's "
-                "do: triwild's tagged route takes a mesh that fills its box (an output with "
-                "filter \"none\"), its tracked edges inside; give a filtered mesh's curves as "
-                "inputs",
-                n_tracked);
-        }
-        if (n_free > 0) {
-            log_and_throw_error(
-                "{} untracked boundary edges of the tagged mesh lie on no line of its bounding "
-                "box: triwild holds its domain's wall by the box rule, a box's edges only",
-                n_free);
-        }
+        // arrangement's padded box does (require_box_boundary() says why).
+        mesh.require_box_boundary("triwild's tagged route");
         // With a reference: every label of the mesh in it, and, before the optimization holds
         // the mesh to it, what was received already in it -- the checks simwild's remeshing runs.
         if (held) {

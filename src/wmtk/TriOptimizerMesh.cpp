@@ -1112,6 +1112,31 @@ void TriOptimizerMesh::init_input_envelopes(
     m_input_envelopes.set(std::move(members));
 }
 
+void TriOptimizerMesh::require_box_boundary(const std::string& who) const
+{
+    // See the declaration.
+    size_t n_tracked = 0, n_free = 0;
+    for (const Tuple& e : get_edges()) {
+        if (e.switch_face(*this)) continue;
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) {
+            ++n_tracked;
+        } else if (attr.m_is_bbox_fs < 0) {
+            ++n_free;
+        }
+    }
+    if (n_tracked == 0 && n_free == 0) return;
+    log_and_throw_error(
+        "{} tracked edges of the tagged mesh lie on its boundary, as a filtered mesh's do, and {} "
+        "untracked boundary edges on no line of its bounding box: {} takes a mesh that fills its "
+        "box (an output with filter \"none\"), its tracked edges inside, and holds the domain's "
+        "wall by the box rule, a box's edges only; give a filtered mesh's curves to triwild as "
+        "inputs",
+        n_tracked,
+        n_free,
+        who);
+}
+
 std::string TriOptimizerMesh::label_name(const size_t bit) const
 {
     return fmt::format("label bit {}", bit);
