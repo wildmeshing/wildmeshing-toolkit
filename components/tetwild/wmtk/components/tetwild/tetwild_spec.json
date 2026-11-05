@@ -97,7 +97,7 @@
     "pointer": "/input_edges",
     "type": "list",
     "default": [],
-    "doc": "List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the input bounding box is grown over them automatically. The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in, and the anchors' radius)."
+    "doc": "List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the input bounding box is grown over them automatically. The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in, and the anchors' radius). The output mesh holds them on both routes as its edge block: the tet edges tiling them, one tag per file, feature_<i> for the i-th, which simwild reads back from a tagged tet mesh as feature curves and holds as it holds its own input_edges."
   },
   {
     "pointer": "/input_edges/*",
@@ -131,12 +131,12 @@
     "pointer": "/output",
     "type": "string",
     "default": "out",
-    "doc": "Output file name (without extension)."
+    "doc": "Output file name (without extension): the tet mesh is <output>_final.msh. Next to it <output>_envelope.msh, the memory route's outputs[\"envelope\"]: the reference the tags were held to -- the input, or the simplified input under envelope_reference \"simplified\" -- labelled as the mesh labels them (a triangle block, one column per input; an edge block of the feature curves, feature_<i>; the input points), the `envelope` a later simwild, manifold_extraction or topological_offset takes. It holds no eps: the receiver builds its own envelopes around it, so a chain stays within one eps of this input."
   },
   {
     "pointer": "/input_names",
     "type": "list",
-    "doc": "Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route. The .msh output numbers them, wn_0, wn_1, ..., and so does everything without names.",
+    "doc": "Names for the inputs, used for each input's face tag and its winding-number field. The face tag, on both routes, is a column of the tags of the output mesh's triangle block (<output>_final.msh, the memory route's mesh): the tracked faces on the input, each under every input it lies on and oriented as its input, which simwild and topological_offset read back as face tags. An input without a name is tag_<i>, as simwild and triwild name one. The winding-number field is wn_<name> in the VTU output and on the memory route; the .msh output numbers them, wn_0, wn_1, ..., and so does everything without names.",
     "default": []
   },
   {
@@ -197,7 +197,7 @@
     "pointer": "/per_input_envelopes",
     "type": "bool",
     "default": true,
-    "doc": "Hold each input to its own envelopes. With two or more input files: one surface envelope per input, one order-2 and one feature tube per input, and the input simplification's envelope per input likewise, so a face or curve of one input cannot end up on another. false: one shared envelope of each kind for all inputs, faster where inputs come within eps of each other (the simplification measured 3% to 20% faster shared, 2026-11), but an input may then end up on another within eps. Anchors are per point either way."
+    "doc": "Hold each input to its own envelopes. With two or more input files: one surface envelope per input, one order-2 and one feature tube per input, and the input simplification's envelope per input likewise, so a face or curve of one input cannot end up on another. false: one shared envelope of each kind for all inputs, faster where inputs come within eps of each other (the simplification measured 3% to 20% faster shared, 2026-11), but an input may then end up on another within eps. Anchors are per point either way, and either way each tracked face records the inputs it lies on, the output's face tags (see input_names); until 2026-11 false gave every face input 0's."
   },
   {
     "pointer": "/order2_envelope_ratio",

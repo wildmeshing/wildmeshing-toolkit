@@ -1,5 +1,6 @@
 #include "SimWildMeshTri.hpp"
 #include <wmtk/io/DataWriter.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 
 #include "QualityStats.hpp"
 
@@ -215,6 +216,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
     // tag surface edges and vertices
     std::vector<Vector2i> tempE;
+    std::vector<InputSet> tempE_sets; // their input sets, for the envelope handed on
     for (const Tuple& e : edges) {
         SmartTuple ee(*this, e);
 
@@ -258,6 +260,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         m_vertex_attribute[v2].m_is_on_surface = true;
 
         tempE.emplace_back(v1, v2);
+        tempE_sets.push_back(m_edge_attribute[ee.eid()].input_set());
     }
 
     auto env_from_face_tags = [&]() {
@@ -271,6 +274,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         m_V_envelope = tempV;
         m_E_envelope = tempE;
         m_E_envelope_labels.clear();
+        m_E_envelope_edge_sets = tempE_sets;
         m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
         m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
         logger().info(
@@ -281,6 +285,9 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
     if (!m_envelope) {
         env_from_face_tags();
+    } else if (m_has_reference) {
+        // A reference is held to as given (m_has_reference): checked below, label by label, and
+        // never rebuilt from the mesh, which would hold it to the sender's output instead.
     } else if (m_sim_params.operation == "remeshing") {
         // All surface edges must be inside the envelope. This check is NOT OPTIONAL. As the tracked
         // surface is created from tags, the input surface might be a different one. In that case,
@@ -306,7 +313,11 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         }
     }
 
+    if (m_has_reference) require_reference_edge_labels();
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
+    // Before a remeshing, which holds the mesh to the reference: what was received must already
+    // lie in it. The tag operations hold nothing to it, and drop it.
+    if (m_has_reference && m_sim_params.operation == "remeshing") check_reference_containment();
 
     // Where a tracked curve ends or three or more meet, the vertex is anchored in a ball of
     // order2_envelope_ratio x eps (anchor_feature_points()); the 2D twin of the 3D order-2
@@ -434,6 +445,100 @@ void SimWildMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
         "Envelope: {} (eps {:.6})",
         m_envelope->use_exact ? "EXACT" : "sampled",
         m_envelope_eps);
+}
+
+std::string SimWildMeshTri::label_name(const size_t bit) const
+{
+    if (bit < m_edge_tag_names.size()) return m_edge_tag_names[bit];
+    const size_t j = bit - m_edge_tag_names.size();
+    const std::vector<std::string> labels = io::tag_labels(m_tag_id_to_name, m_tags_count);
+    return j < labels.size() ? labels[j] : fmt::format("label bit {}", bit);
+}
+
+MeshData SimWildMeshTri::envelope_data(const std::vector<Vector2d>& points) const
+{
+    const std::vector<InputSet>& sets = m_E_envelope_labels.size() == m_E_envelope.size()
+                                            ? m_E_envelope_labels
+                                            : m_E_envelope_edge_sets;
+    MeshData out;
+    const MeshData edges = io::geometry_data(m_V_envelope, m_E_envelope, CellType::Edge);
+    if (sets.size() != m_E_envelope.size()) {
+        io::append_envelope_block(out, edges, CellType::Edge, {}, {});
+        return out;
+    }
+    std::vector<std::string> names = m_edge_tag_names;
+    const std::vector<std::string> face_labels = io::tag_labels(m_tag_id_to_name, m_tags_count);
+    names.insert(names.end(), face_labels.begin(), face_labels.end());
+    names.resize(std::min(names.size(), size_t(SurfaceTagAttributes::max_inputs)));
+    io::append_envelope_block(out, edges, CellType::Edge, sets, names);
+    io::append_envelope_points(out, points);
+    return out;
+}
+
+void SimWildMeshTri::require_reference_edge_labels() const
+{
+    InputSet held = 0, given = 0;
+    for (const Tuple& e : get_edges()) {
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) held |= attr.input_set();
+    }
+    for (const InputSet s : m_E_envelope_labels) given |= s;
+    const InputSet missing = held & ~given;
+    if (missing == 0) return;
+    std::string names;
+    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
+        if ((missing >> b) & 1) names += (names.empty() ? "" : ", ") + label_name(b);
+    }
+    log_and_throw_error(
+        "envelope: no segment of it is labelled {}, which this mesh's edges carry; an envelope "
+        "must carry every label of the mesh it comes with",
+        names);
+}
+
+void SimWildMeshTri::check_reference_containment() const
+{
+    // Per label bit, the held edges outside its envelope; an edge outside any of its labels' is
+    // one edge outside. Each member asked on its own: inside their intersection is inside each.
+    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
+    std::vector<size_t> outside(max_bits, 0);
+    size_t n = 0;
+    for (const Tuple& e : get_edges()) {
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (!attr.m_is_surface_fs) continue;
+        const auto vids = get_edge_vids(e);
+        const std::array<Vector2d, 2> segment = {
+            {m_vertex_attribute[vids[0]].m_posf, m_vertex_attribute[vids[1]].m_posf}};
+        bool out = false;
+        for (size_t b = 0; b < max_bits; ++b) {
+            if (((attr.input_set() >> b) & 1) == 0) continue;
+            const Envelope* env = m_input_envelopes.empty()      ? m_envelope.get()
+                                  : b < m_input_envelopes.size() ? m_input_envelopes.member(b).get()
+                                                                 : nullptr;
+            if (env && !env->is_outside(segment)) continue;
+            ++outside[b];
+            out = true;
+        }
+        n += out;
+    }
+    if (n == 0) {
+        logger().info(
+            "envelope: every held edge received lies in the reference's envelopes of its labels "
+            "(eps {:.6})",
+            m_envelope_eps);
+        return;
+    }
+    std::string counts;
+    for (size_t b = 0; b < max_bits; ++b) {
+        if (outside[b] == 0) continue;
+        counts += fmt::format("{}{} ({})", counts.empty() ? "" : ", ", label_name(b), outside[b]);
+    }
+    log_and_throw_error(
+        "envelope: the mesh received does not lie in the reference at this run's eps {:.6g}: {} "
+        "held edges outside the envelopes of their labels: {}. The sender held them to a wider "
+        "envelope; give this run an eps at least the sender's, or no envelope",
+        m_envelope_eps,
+        n,
+        counts);
 }
 
 CellTag SimWildMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_set)

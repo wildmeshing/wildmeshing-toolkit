@@ -101,12 +101,12 @@
     "pointer": "/output",
     "type": "string",
     "default": "out",
-    "doc": "Output file name (without extension)."
+    "doc": "Output file name (without extension): the mesh is <output>.msh. Next to it <output>_envelope.msh, the memory route's outputs[\"envelope\"]: the reference the curves were held to -- the input, or the simplified input under envelope_reference \"simplified\" -- an edge block labelled as the mesh labels the curves, one column per input, and the free points, the `envelope` a later simwild, manifold_extraction or topological_offset takes. It holds no eps: the receiver builds its own envelopes around it, so a chain stays within one eps of this input."
   },
   {
     "pointer": "/input_names",
     "type": "list",
-    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc. Each name labels the input twice in the output mesh, on both routes: its region, the triangles its winding number puts inside, and its curves, the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags.",
     "default": []
   },
   {

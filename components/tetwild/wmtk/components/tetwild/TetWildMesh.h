@@ -85,7 +85,8 @@ public:
     // always was. The containment is the base's default.
 
     /// Optional per-input names (JSON "input_names"), used to label the per-input
-    /// winding-number output fields. Empty => the fields are numbered.
+    /// winding-number output fields (empty => the fields are numbered) and the face tags, tag_<i>
+    /// without a name (io::input_labels()).
     std::vector<std::string> m_input_names;
 
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
@@ -204,7 +205,14 @@ public:
 
     ////// Attributes related
 
-    void output_mesh(std::string file);
+    /// With `face_tags`, also the tracked faces, one physical group per input
+    /// (io::collect_input_set_tags()), and with `feature_tags` the tet edges tiling the feature
+    /// curves, one per input_edges file (io::collect_feature_edge_tags()): the tags the memory
+    /// route returns on its mesh, which the shared reader reads back as those blocks.
+    void output_mesh(
+        std::string file,
+        const std::vector<std::string>& face_tags = {},
+        const std::vector<std::string>& feature_tags = {});
     /// The tets and their vertices as output_mesh() writes them -- consolidated first, a row per
     /// vertex at m_posf and a row per tet, oriented, in the file's order -- without the fields:
     /// the memory route's counterpart of the file, for the meshes a volume history starts and

@@ -479,7 +479,7 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       DEBUG_feature_retention (bool, default false): Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius.
       feature_envelope_ratio (float, default 1.0): Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- and the radius of the feature-point anchors, as a fraction of the surface envelope's eps.
       output (string, default "out"): Output file name (without extension).
-      input_names (list, default []): Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route.
+      input_names (list, default []): Names for the inputs, used for each input's face tag and its winding-number field.
       input_dir (string, default ""): Directory where the input files are located.
       write_vtu (bool, default true): Write the VTU output next to the MSH.
       simplify (bool, default true): If true, the input surface is simplified first.

@@ -275,7 +275,11 @@ On files, `output` names:
 - `snowman_final.msh`: the tet mesh. Each tet has its energy (`energy`), `winding_number_input`
   (the winding number of all inputs together at its centroid), one `wn_<i>` per input, and, when
   they were computed, `winding_number_tracked` and the flood-fill region `part`. The vertex field
-  `sizing` holds the sizing scalar of the optimization.
+  `sizing` holds the sizing scalar of the optimization. The tracked faces are tagged, one physical
+  group per input named after it (`input_names`, `tag_<i>` without), each face under every input it
+  lies on and oriented as its input, and with feature curves the tet edges tiling them are, one
+  group per `input_edges` file (`feature_<i>`): the triangle and edge blocks simwild reads back as
+  face tags and feature curves. The memory route's `mesh` carries the same blocks.
 - `snowman.vtu`: the same tets for ParaView, with `t_energy`, the winding numbers (`wn_<name>`
   with `input_names`) and the vertex fields `sizing_field`, `is_rounded`, `on_surface`,
   `on_open_boundary` and `order`.

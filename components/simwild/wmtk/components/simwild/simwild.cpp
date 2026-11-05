@@ -6,6 +6,7 @@
 
 
 #include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -262,6 +263,74 @@ double envelope_eps_and_check(const Parameters& params, const InputData& input_d
     return params.eps;
 }
 
+/**
+ * @brief An `envelope` that is a labelled reference (InputData::envelope_reference) is held to
+ * as given, so refused with the options that would not: the sampled envelope, since every check
+ * against the reference is exact; envelope_reference "simplified", which rebuilds the envelopes
+ * around this run's simplification (and without one is refused anyway).
+ */
+void check_reference_options(const Parameters& params)
+{
+    if (params.use_sample_envelope) {
+        log_and_throw_error(
+            "`envelope`: a reference is held to and checked against exactly, not with "
+            "use_sample_envelope");
+    }
+    if (params.envelope_around_simplified) {
+        log_and_throw_error(
+            "`envelope`: a reference is held to as given, not with envelope_reference "
+            "\"simplified\", which builds the envelopes around this run's simplification");
+    }
+}
+
+/// The rows of the reference (V_envelope, F_envelope: triangles in 3D, segments in 2D) that
+/// carry a label of this mesh, on vertices of their own, with their labels.
+struct HeldRows
+{
+    MatrixXd V;
+    MatrixXi F;
+    std::vector<InputSet> labels;
+};
+/**
+ * @brief What a run given a reference holds to: its rows of the labels of the mesh. A row of a
+ * label the mesh lacks -- an input a filter upstream removed -- stays out of the union, which
+ * holds every face with one label, or without per_input_envelopes, so that no face is held to
+ * geometry of a label it does not carry. A reference none of whose rows does throws.
+ */
+HeldRows held_rows(const InputData& in)
+{
+    HeldRows out;
+    std::vector<Eigen::Index> rows;
+    for (Eigen::Index r = 0; r < in.F_envelope.rows(); ++r) {
+        if (in.F_envelope_labels[r] != 0) rows.push_back(r);
+    }
+    if (rows.empty()) {
+        log_and_throw_error(
+            "envelope: none of its {} cells carries a label of this mesh",
+            in.F_envelope.rows());
+    }
+    std::vector<int> remap(in.V_envelope.rows(), -1);
+    for (const Eigen::Index r : rows)
+        for (Eigen::Index k = 0; k < in.F_envelope.cols(); ++k) remap[in.F_envelope(r, k)] = 0;
+    int n = 0;
+    for (int& v : remap)
+        if (v == 0) v = n++;
+    out.V.resize(n, in.V_envelope.cols());
+    for (Eigen::Index v = 0; v < in.V_envelope.rows(); ++v)
+        if (remap[v] >= 0) out.V.row(remap[v]) = in.V_envelope.row(v);
+    out.F.resize(rows.size(), in.F_envelope.cols());
+    for (size_t i = 0; i < rows.size(); ++i) {
+        for (Eigen::Index k = 0; k < in.F_envelope.cols(); ++k)
+            out.F(i, k) = remap[in.F_envelope(rows[i], k)];
+        out.labels.push_back(in.F_envelope_labels[rows[i]]);
+    }
+    logger().info(
+        "envelope: a reference, {} of its {} cells of this mesh's labels held to",
+        rows.size(),
+        in.F_envelope.rows());
+    return out;
+}
+
 } // namespace
 
 void run_3D(const nlohmann::json& json_params, InputData& input_data, io::ComponentIO& component_io)
@@ -280,11 +349,24 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         params,
         envelope_eps_and_check(params, input_data),
         params.NUM_THREADS);
-    // first init envelope
-    if (input_data.V_envelope.size() != 0) {
+    // A reference, the first component's labelled input: every envelope, tube and anchor around
+    // it, never around the mesh received (SimWildMesh::m_has_reference).
+    const bool reference = input_data.envelope_reference.has_value();
+    std::optional<HeldRows> held;
+    if (reference) {
+        check_reference_options(params);
+        held = held_rows(input_data);
+        mesh.init_envelope(held->V, held->F);
+        mesh.m_F_envelope_labels = held->labels;
+        mesh.m_has_reference = true;
+        mesh.m_reference_curves = input_data.reference_curves;
+    } else if (input_data.V_envelope.size() != 0) {
+        // first init envelope
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
         mesh.m_F_envelope_labels = input_data.F_envelope_labels;
     }
+    // Before init_from_image(): its reference checks name the feature curves' labels by these.
+    mesh.m_feature_edge_names = input_data.feature_edge_names;
     // Around the input after a simplification before the insertion, the input's own curves: the
     // order-2 tubes and the curve anchors are built around them, and a rim, non-manifold edge or
     // curve end the simplification made is held around itself (TetOptimizerMesh::InputCurves).
@@ -308,6 +390,18 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
                 "envelope_reference \"input\": the input triangles' labels are not known, so "
                 "the order-2 tubes and curve anchors are built around the simplified surface");
         }
+    } else if (reference) {
+        // The reference's own curves, as after a simplification the input's: an order-2 edge in
+        // their tubes is held there, a curve end in reach of one of their ends anchored there.
+        // An edge on none -- where inputs meet, or a curve the reference does not have -- is held
+        // around itself, by the same rule (TetOptimizerMesh::InputCurves).
+        std::vector<Eigen::Vector3d> V(held->V.rows());
+        for (size_t i = 0; i < V.size(); ++i) V[i] = held->V.row(i).transpose();
+        std::vector<std::array<size_t, 3>> F(held->F.rows());
+        for (size_t i = 0; i < F.size(); ++i) {
+            for (int j = 0; j < 3; ++j) F[i][j] = size_t(held->F(i, j));
+        }
+        mesh.set_input_curves(V, F, held->labels, &input_data.reference_curves);
     }
     if (input_data.V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");
@@ -346,7 +440,8 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
 
     write_unique_vtu();
 
-    // The tagged tet mesh as the output .msh holds it: tets, their tags, the face tags.
+    // The tagged tet mesh as the output .msh holds it: tets, their tags, the face tags, the
+    // feature curves' edge tags (named by m_feature_edge_names, set before the initialization).
     auto tagged_outputs = [&mesh]() {
         MeshMap raw;
         mesh.write_vtu("mesh", &raw);
@@ -359,6 +454,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             mesh.get_tets(),
             [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
         io::collect_input_set_tags<CellType::Triangle>(mesh, outputs, mesh.m_face_tag_names);
+        io::collect_feature_edge_tags(mesh, outputs, mesh.m_feature_edge_names);
         return outputs;
     };
 
@@ -467,11 +563,23 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
                 component_io.save_volume_history(*vh, volume_history_output);
             }
         }
-        if (!mesh.m_V_envelope.empty())
+        // The envelope handed on, while the run holds to one (the tag operations drop it): a
+        // reference given, unchanged, so that a chain keeps passing the first component's input;
+        // else the run's own, labelled (SimWildMesh::envelope_data()). On the file route in a file
+        // of its own, as the mesh file holds the mesh.
+        if (!mesh.m_V_envelope.empty()) {
             component_io.result.first["envelope"] =
-                io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);
-        if (!component_io.memory())
+                reference ? *input_data.envelope_reference
+                          : mesh.envelope_data(input_data.features, input_data.feature_edge_names);
+        }
+        if (!component_io.memory()) {
             io::write_mesh(params.output_path + ".msh", component_io.result.first.at("mesh"));
+            if (component_io.result.first.count("envelope")) {
+                io::write_mesh(
+                    params.output_path + "_envelope.msh",
+                    component_io.result.first.at("envelope"));
+            }
+        }
     }
     write_unique_vtu();
     if (params.write_vtu) {
@@ -504,15 +612,27 @@ void run_2D(
         params,
         envelope_eps_and_check(params, input_data),
         params.NUM_THREADS);
-    // first init envelope
-    if (input_data.V_envelope.size() != 0) {
+    // A reference, held to as in 3D (SimWildMeshTri::m_has_reference).
+    const bool reference = input_data.envelope_reference.has_value();
+    std::optional<HeldRows> held;
+    if (reference) {
+        check_reference_options(params);
+        held = held_rows(input_data);
+        mesh.init_envelope(held->V, held->F);
+        mesh.m_E_envelope_labels = held->labels;
+        mesh.m_has_reference = true;
+    } else if (input_data.V_envelope.size() != 0) {
+        // first init envelope
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
         mesh.m_E_envelope_labels = input_data.F_envelope_labels;
     }
     // Around the input after a simplification, the input's own curve ends and junctions: the
-    // anchors are centred on them (TriOptimizerMesh::m_input_curve_points), as in 3D.
+    // anchors are centred on them (TriOptimizerMesh::m_input_curve_points), as in 3D. With a
+    // reference, its own.
     if (!params.envelope_around_simplified && input_data.simplified_before_insertion) {
         mesh.set_input_curve_points(input_data.V_envelope, input_data.F_envelope);
+    } else if (reference) {
+        mesh.set_input_curve_points(held->V, held->F);
     }
     mesh.m_input_point_vids = input_data.input_point_vids;
     if (input_data.V_input_r.size() == 0) {
@@ -611,11 +731,23 @@ void run_2D(
             mesh,
             component_io.result.first,
             mesh.m_edge_tag_names);
-        if (!mesh.m_V_envelope.empty())
+        // The envelope handed on, as in 3D, with the input points.
+        if (!mesh.m_V_envelope.empty()) {
+            std::vector<Vector2d> points;
+            for (const size_t v : input_data.input_point_vids) {
+                points.emplace_back(input_data.V_input(v, 0), input_data.V_input(v, 1));
+            }
             component_io.result.first["envelope"] =
-                io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
-        if (!component_io.memory())
+                reference ? *input_data.envelope_reference : mesh.envelope_data(points);
+        }
+        if (!component_io.memory()) {
             io::write_mesh(params.output_path + ".msh", component_io.result.first.at("mesh"));
+            if (component_io.result.first.count("envelope")) {
+                io::write_mesh(
+                    params.output_path + "_envelope.msh",
+                    component_io.result.first.at("envelope"));
+            }
+        }
     }
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     write_unique_vtu();
@@ -668,10 +800,20 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         input_paths,
         json_params,
         component_io.memory() ? &component_io : nullptr);
-    // Surface and curve inputs build their envelope from the input itself.
-    if (dimension != 0 && !envelope_selector.is_null()) {
+    // The `envelope` input: a mesh of the call on the memory route, a mesh file on the file
+    // route (relative to input_dir), read by the shared reader. Surface and curve inputs build
+    // their envelope from the input itself.
+    const std::string envelope_path =
+        component_io.memory() ? "" : json_params["envelope"].get<std::string>();
+    if (dimension != 0 && (!envelope_selector.is_null() || !envelope_path.empty())) {
         log_and_throw_error("`envelope` applies to tagged mesh inputs only");
     }
+    std::optional<MeshData> envelope_file;
+    if (!envelope_path.empty()) envelope_file = io::read_mesh(resolve_path(root, envelope_path));
+    const MeshData* envelope = envelope_file ? &*envelope_file
+                               : !envelope_selector.is_null()
+                                   ? &component_io.mesh(envelope_selector)
+                                   : nullptr;
     // The feature curves and points (input_edges, input_points) are forced into the mesh by the
     // insertion: curves and points by the 3D surface insertion, points by the 2D curve
     // arrangement. The other routes refuse them rather than drop them.
@@ -690,12 +832,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // Label images become regions here as on the file route (read_image_msh).
         MeshData input = component_io.mesh(input_paths.at(0));
         tags_from_label_images(input, input_paths.at(0));
-        input_data = read_mesh_data(
-            input,
-            !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr);
+        input_data = read_mesh_data(input, envelope);
     } else if (!component_io.memory() && extension == ".msh") {
         no_features("a .msh input");
-        input_data = read_image_msh(input_paths[0]);
+        input_data = read_image_msh(input_paths[0], envelope);
     } else if (dimension == 2) {
         if (!json_params["input_edges"].empty()) {
             log_and_throw_error("input_edges apply to 3D surface inputs only, not to a 2D input");

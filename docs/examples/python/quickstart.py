@@ -12,5 +12,5 @@ import wildmeshing as wm
 bunny = wm.read_mesh(str(DATA / "bunny.obj"))
 outputs, report = wm.tetwild({"input": ["bunny"], "num_threads": 4}, {"bunny": bunny})
 print(report["#t"], "tets, max energy", report["max_energy"])
-wm.write_mesh("bunny_tets.vtu", outputs["mesh"])
+wm.write_mesh("bunny_tets.msh", outputs["mesh"])
 # --8<-- [end:quickstart]

@@ -3,6 +3,7 @@
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
 #include <algorithm>
+#include <optional>
 #include <topological_offset_spec.hpp>
 #include <vector>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
@@ -120,13 +121,37 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         log_and_throw_error("Input must be a .msh file.");
     }
 
+    // The `envelope` input: a mesh of the call on the memory route, a mesh file on the file
+    // route (relative to input_dir). Carried, not yet held to: handed on unchanged
+    // (hand_on_envelope()), while the offset builds its envelopes around the mesh it receives.
+    const std::string envelope_path =
+        component_io.memory() ? "" : json_params["envelope"].get<std::string>();
+    std::optional<MeshData> envelope_file;
+    if (!envelope_path.empty()) envelope_file = io::read_mesh(resolve_path(root, envelope_path));
+    const MeshData* envelope = envelope_file ? &*envelope_file
+                               : !envelope_selector.is_null()
+                                   ? &component_io.mesh(envelope_selector)
+                                   : nullptr;
+
     // read input data, init params from bounding box
-    InputData input_data =
-        component_io.memory()
-            ? read_mesh_data(
-                  component_io.mesh(input_path),
-                  !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr)
-            : read_image_msh(input_path);
+    InputData input_data = component_io.memory()
+                               ? read_mesh_data(component_io.mesh(input_path), envelope)
+                               : read_image_msh(input_path, envelope);
+    // After the output: the envelope given goes on as given (a labelled reference unchanged, so
+    // that a chain keeps passing the first component's input), on the file route as
+    // <output>_envelope.msh.
+    const auto hand_on_envelope = [&]() {
+        auto& outputs = component_io.result.first;
+        if (input_data.envelope_reference) outputs["envelope"] = *input_data.envelope_reference;
+        if (!component_io.memory() && envelope && outputs.count("envelope"))
+            io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
+    };
+    // Feature curves (a tet mesh's tagged edges, as tetwild and simwild write them) would be
+    // dropped silently: the offset holds the held surfaces' own curves only. Refused until carried.
+    if (!input_data.features.empty()) {
+        log_and_throw_error(
+            "topological_offset does not take feature curves (an edge block in a tet mesh) yet");
+    }
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (params.debug_output) {
         logger().info("====== input parameters =======");
@@ -180,6 +205,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 io::write_mesh(
                     output_filename.string() + ".msh",
                     component_io.result.first.at("mesh"));
+            hand_on_envelope();
             return;
         }
 
@@ -374,6 +400,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         topological_offset::collect_memory_output(mesh, component_io);
         if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
+        hand_on_envelope();
         if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
@@ -427,6 +454,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 io::write_mesh(
                     output_filename.string() + ".msh",
                     component_io.result.first.at("mesh"));
+            hand_on_envelope();
             return;
         }
 
@@ -652,6 +680,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         topological_offset::collect_memory_output(mesh, component_io);
         if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
+        hand_on_envelope();
         if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }

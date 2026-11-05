@@ -1051,10 +1051,34 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             CellType::Triangle,
             mesh.get_faces(),
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
-        component_io.result.first["envelope"] =
-            io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
-        if (!component_io.memory())
+        // The tracked curves, one edge tag per input, named as its triangle tag (input_names, else
+        // tag_<i>), each edge with its input set and oriented as its input: the edge block of the
+        // mesh, as simwild writes its curve inputs.
+        io::collect_input_set_tags<CellType::Edge>(
+            mesh,
+            component_io.result.first,
+            io::input_labels(tag_names, input_paths.size()));
+        // The reference the curves were held to, handed on (io::append_envelope_block()): the
+        // curves the envelope was built around, each segment with its input's edge tag, and the
+        // free points. On the file route in a file of its own, as the mesh file holds the mesh.
+        MeshData envelope_out;
+        std::vector<InputSet> E_sets(E_env.rows(), 0);
+        for (Eigen::Index i = 0; i < E_env.rows(); ++i) {
+            const int in = E_env_input[i];
+            if (in >= 0 && in < SurfaceTagAttributes::max_inputs) E_sets[i] = InputSet(1) << in;
+        }
+        io::append_envelope_block(
+            envelope_out,
+            io::geometry_data(V_env, E_env, CellType::Edge),
+            CellType::Edge,
+            E_sets,
+            io::input_labels(tag_names, input_paths.size()));
+        io::append_envelope_points(envelope_out, free_points);
+        if (!component_io.memory()) {
             io::write_mesh(output_path + ".msh", component_io.result.first.at("mesh"));
+            io::write_mesh(output_path + "_envelope.msh", envelope_out);
+        }
+        component_io.result.first["envelope"] = std::move(envelope_out);
     }
     // After the output, whose vertex rows -- the mesh's vertices in order, consolidated -- the
     // history's output ids are.

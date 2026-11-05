@@ -211,8 +211,8 @@ TEST_CASE(
     "[tetwild][history]" + release_only)
 {
     // Per-face labels on the input, carried to the tracked surface of the output and written into
-    // the tet mesh tetwild wrote: its triangles on the tet mesh's own nodes, each with the label
-    // of the input face it maps to.
+    // the tet mesh tetwild wrote: onto its triangles, its face tags on the tet mesh's own nodes,
+    // each with the label of the input face it maps to.
     const fs::path dir = fs::current_path() / "tetwild_history_test";
     fs::create_directories(dir);
     Eigen::MatrixXd SV;
@@ -255,22 +255,31 @@ TEST_CASE(
     const MeshData msh = io::read_mesh(with_labels);
     CHECK(msh.cell(CellType::Tetrahedron).connectivity.rows() == exported.T.rows());
     const CellData& triangles = msh.cell(CellType::Triangle);
+    // tetwild writes its tracked faces, its face tags, as the triangle block: each face of the
+    // surface lands on the row of its own face, and no row is added.
     REQUIRE(size_t(triangles.connectivity.rows()) == transferred.faces.size());
     // Its vertices are the tet mesh's, where the surface has its vertices.
+    std::set<Key> rows;
+    for (Eigen::Index r = 0; r < triangles.connectivity.rows(); ++r) {
+        const auto corner = [&](int k) -> Eigen::Vector3d {
+            return msh.V.row(triangles.connectivity(r, k)).transpose();
+        };
+        rows.insert(key_of(corner(0), corner(1), corner(2)));
+    }
     size_t misplaced = 0, mislabelled = 0;
-    for (size_t i = 0; i < transferred.faces.size(); ++i) {
-        for (int k = 0; k < 3; ++k) {
-            misplaced += msh.V.row(triangles.connectivity(i, k)).transpose() !=
-                         transferred.vertices[transferred.faces[i][k]];
-        }
+    for (const auto& f : transferred.faces) {
+        misplaced += rows.count(key_of(
+                         transferred.vertices[f[0]],
+                         transferred.vertices[f[1]],
+                         transferred.vertices[f[2]])) == 0;
     }
     const bool found = triangles.attributes.count("label") > 0;
     if (found) {
         const auto labels = triangles.attributes.at("label").doubles();
         const auto sources = triangles.attributes.at("input_face").integers();
-        for (size_t i = 0; i < transferred.faces.size(); ++i) {
-            REQUIRE(sources(i, 0) >= 0);
-            mislabelled += labels(i, 0) != label[size_t(sources(i, 0))][0];
+        for (Eigen::Index r = 0; r < triangles.connectivity.rows(); ++r) {
+            REQUIRE(sources(r, 0) >= 0);
+            mislabelled += labels(r, 0) != label[size_t(sources(r, 0))][0];
         }
     }
     CHECK(found);
