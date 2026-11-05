@@ -488,8 +488,11 @@ TEST_CASE("tracking-example-simwild-volume", "[simwild][tracking]" + release_onl
     }
     CHECK(moved > pts.size() / 10);
     // Rounding, through local maps whose rays can graze a face of a sliver: more than the
-    // surface's, far less than any map that is not a bijection would miss by.
-    CHECK(round_trip < 1e-6);
+    // surface's, far less than any map that is not a bijection would miss by (a tet, 1e-2 and up
+    // here). The worst point leaves one operation's patch through a face 3e-6 as high as it is
+    // long, at a grazing angle, which magnifies the rounding before it about 6e5 times: 3.5e-7
+    // with Eigen 3.4, 1.3e-6 (Apple clang) and 1.9e-6 (GCC) with Eigen 5.0.1 on arm64.
+    CHECK(round_trip < 1e-5);
     // A round trip the identity passes too: the points that move keep their orientation.
     const auto [moving, kept_orientation] = orientation_kept(tracking, pts);
     CHECK(moving > 0);

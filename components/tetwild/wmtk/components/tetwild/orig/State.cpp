@@ -9,6 +9,11 @@
 // Created by Jeremie Dumas on 09/04/18.
 //
 
+// The pinned libigl's mat_max.cpp/mat_min.cpp (included by bounding_box_diagonal.h in its
+// header-only mode) call assert() without including <cassert>; Eigen 3.4 happened to include
+// it for them, Eigen 5 does not. Its own block, so that include sorting keeps it first.
+#include <cassert>
+
 #include <igl/bounding_box_diagonal.h>
 
 #include "Args.h"
