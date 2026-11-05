@@ -106,7 +106,10 @@ void TopoOffsetTetMesh::init_from_image(
     const std::string& sheet_name,
     const MatrixXi& F_tagged,
     const MatrixSi& F_tags,
-    const std::vector<std::string>& face_tag_names)
+    const std::vector<std::string>& face_tag_names,
+    const std::vector<std::string>& edge_tag_names,
+    const utils::FeatureInputs* features,
+    const utils::EmbedFeaturesResult* features_placed)
 {
     // assert dimensions
     assert(V.cols() == 3);
@@ -193,6 +196,49 @@ void TopoOffsetTetMesh::init_from_image(
         auto& attr = m_face_attribute[std::get<1>(*face)];
         attr.set_input_set(attr.input_set() | set);
         attr.set_orientation_along(vids, 1);
+    }
+
+    // Edge tags, the feature curves of a tet mesh's edge block, as the face tags: selectable by
+    // name (alone, label_input_complex()), ids past every other tag, each edge tiling one
+    // carrying its bit (EdgeAttributes::feature_inputs) until hold_curves_and_points() holds
+    // them. Until 2026-11 an edge block was refused: the offset held no feature curve, and they
+    // would have been dropped.
+    m_feature_edge_names = edge_tag_names;
+    for (size_t j = 0; j < edge_tag_names.size(); ++j) {
+        if (m_tag_name_to_id.count(edge_tag_names[j]))
+            log_and_throw_error("Edge tag {} is also a tet or face tag", edge_tag_names[j]);
+        const int64_t id = int64_t(m_tag_id_to_name.size());
+        m_tag_id_to_name[id] = edge_tag_names[j];
+        m_tag_name_to_id[edge_tag_names[j]] = id;
+        m_edge_tag_bit[id] = int(j);
+    }
+    if (features != nullptr && features_placed != nullptr) {
+        // The points of an edge block's file, or of input_points, have no tag in a tet mesh
+        // (tagged_mesh_data.hpp), so nothing marks their vertices here: refused, not dropped.
+        if (!features->points.empty()) {
+            log_and_throw_error(
+                "topological_offset does not take feature points ({} given) yet",
+                features->points.size());
+        }
+        m_input_features = *features;
+        for (size_t e = 0; e < features_placed->edge_tiling.size(); ++e) {
+            const int bit = features->edge_input[e];
+            if (bit < 0 || bit >= int(SurfaceTagAttributes::max_inputs)) {
+                log_and_throw_error(
+                    "Edge tag {}: an edge records its tags in {} bits",
+                    bit,
+                    SurfaceTagAttributes::max_inputs);
+            }
+            for (const auto& seg : features_placed->edge_tiling[e]) {
+                const Tuple t = tuple_from_edge({{seg[0], seg[1]}});
+                if (!t.is_valid(*this))
+                    log_and_throw_error(
+                        "Tagged edge ({}, {}) is not an edge of the tet mesh",
+                        seg[0],
+                        seg[1]);
+                m_edge_attribute[t.eid(*this)].feature_inputs |= InputSet(1) << bit;
+            }
+        }
     }
 
     // collect int ids for offset output
@@ -403,63 +449,101 @@ void TopoOffsetTetMesh::hold_curves_and_points()
     const double order2_eps = m_envelope_eps * m_offset_params.order2_envelope_ratio;
     const size_t n_order2 = tag_order2_edges(order2_eps, /*exact=*/true);
 
-    // A complex of segments and points (a curve offset's input) has no face to derive an order-2
-    // edge from, and nothing else holds it: the band integral does not change when a vertex
-    // inside the band moves. MEASURED (rod.msh, the rod where three blocks meet, exact rule, 7
-    // turns, before this): none of the rod's 6 to 9 edges tagged at any turn, its vertices 0.43
-    // target_distance off the input by the end, moved by the smoothing passes. Held as tetwild
-    // holds its input_edges: the edges tiling each input segment are tagged with the feature kind
-    // (input 0, the one selection) and held in the tube around the segments as extracted
-    // (init_input_complex_bvh()), the engine's tag_feature_edges(); the curve ends and junctions,
-    // and the isolated points, anchored below.
+    // The feature curves, held as tetwild holds its input_edges (the engine's
+    // tag_feature_edges()): the edges tiling each input curve tagged with the feature kind, held
+    // in the tube around the curve as read, one tube per input; their ends and junctions anchored
+    // below. The inputs: every edge tag (bit j, m_feature_edge_names[j], around its curves as
+    // read, m_input_features), selected or not; and a complex of segments a tag expression
+    // selected (bit after them, around its segments as extracted, init_input_complex_bvh()),
+    // which has no face to derive an order-2 edge from. Nothing else holds a curve: the band
+    // integral does not change when a vertex inside the band moves. MEASURED (rod.msh, the rod
+    // where three blocks meet, exact rule, 7 turns, before this): none of the rod's 6 to 9 edges
+    // tagged at any turn, its vertices 0.43 target_distance off the input by the end, moved by
+    // the smoothing passes.
     const double feature_eps = m_envelope_eps * m_offset_params.feature_envelope_ratio;
     size_t n_feature = 0;
     std::vector<size_t> point_vids;
-    if (m_phi_F.rows() == 0) {
-        utils::FeatureInputs input;
-        for (int i = 0; i < m_phi_V.rows(); ++i) {
-            input.edge_vertices.push_back(m_phi_V.row(i).head<3>().transpose());
+    utils::FeatureInputs input = m_input_features;
+    input.points.clear();
+    const int n_tags = int(m_feature_edge_names.size());
+    const bool expression_curve = m_phi_F.rows() == 0 && m_phi_E.rows() > 0 &&
+                                  !(m_singlebody && m_edge_tag_bit.count(m_single_tag));
+    if (expression_curve) {
+        std::map<int, size_t> vertex_of; // m_phi_V row -> input.edge_vertices
+        const auto vertex = [&](const int v) {
+            const auto [it, added] = vertex_of.emplace(v, input.edge_vertices.size());
+            if (added) input.edge_vertices.push_back(m_phi_V.row(v).head<3>().transpose());
+            return it->second;
+        };
+        for (int k = 0; k < m_phi_E.rows(); ++k) {
+            input.edges.push_back({{vertex(m_phi_E(k, 0)), vertex(m_phi_E(k, 1))}});
+            input.edge_input.push_back(n_tags);
         }
-        for (int s = 0; s < m_phi_E.rows(); ++s) {
-            input.edges.push_back({{size_t(m_phi_E(s, 0)), size_t(m_phi_E(s, 1))}});
-            input.edge_input.push_back(0);
-        }
-        // Each edge of the complex on the input segment it lies on: the construction keeps the
-        // complex where the input put it, so the nearest segment's distance is a rounding one;
-        // beyond the tube is a broken assumption, not a property of the input.
-        utils::EmbedFeaturesResult placed;
-        placed.edge_tiling.resize(input.edges.size());
-        const auto seg_dist = [&](const Vector3d& x, const int s) {
-            const Vector3d a = m_phi_V.row(m_phi_E(s, 0)).head<3>().transpose();
-            const Vector3d b = m_phi_V.row(m_phi_E(s, 1)).head<3>().transpose();
+    }
+    if (!input.edges.empty()) {
+        // Each edge on the input segment it lies on, of each input it tiles: the construction
+        // keeps the curves where the input put them (its splits are midpoints of their edges),
+        // so the nearest segment's distance is a rounding one; beyond the tube is a broken
+        // assumption, not a property of the input. The candidates by a box query on the
+        // segments.
+        std::vector<Eigen::Vector2i> segs;
+        for (const auto& e : input.edges) segs.emplace_back(int(e[0]), int(e[1]));
+        Envelope boxes(/*exact=*/true);
+        boxes.init(input.edge_vertices, segs, 0.);
+        const auto seg_dist = [&](const Vector3d& x, const size_t k) {
+            const Vector3d& a = input.edge_vertices[input.edges[k][0]];
+            const Vector3d& b = input.edge_vertices[input.edges[k][1]];
             const double t = std::clamp((x - a).dot(b - a) / (b - a).squaredNorm(), 0., 1.);
             return (x - a - t * (b - a)).norm();
         };
+        utils::EmbedFeaturesResult placed;
+        placed.edge_tiling.resize(input.edges.size());
+        std::vector<int64_t> ids;
+        for (const Tuple& e : get_edges()) {
+            const size_t eid = e.eid(*this);
+            InputSet bits = m_edge_attribute[eid].feature_inputs;
+            if (expression_curve && m_edge_attribute[eid].label == 1) bits |= InputSet(1) << n_tags;
+            if (bits == 0) continue;
+            const size_t u = e.vid(*this), v = e.switch_vertex(*this).vid(*this);
+            const Vector3d& pu = m_vertex_attribute[u].m_posf;
+            const Vector3d& pv = m_vertex_attribute[v].m_posf;
+            boxes.primitives_in_box(
+                Vector3d(pu.cwiseMin(pv).array() - feature_eps),
+                Vector3d(pu.cwiseMax(pv).array() + feature_eps),
+                ids);
+            for (int bit = 0; bit <= n_tags; ++bit) {
+                if (((bits >> bit) & 1) == 0) continue;
+                int64_t best = -1;
+                double bd = std::numeric_limits<double>::infinity();
+                for (const int64_t k : ids) {
+                    if (input.edge_input[size_t(k)] != bit) continue;
+                    const double d = std::max(seg_dist(pu, size_t(k)), seg_dist(pv, size_t(k)));
+                    if (d < bd) bd = d, best = k;
+                }
+                if (!(bd <= feature_eps)) {
+                    log_and_throw_error(
+                        "hold_curves_and_points: the edge ({}, {}) of feature input {} is {} from "
+                        "its every segment, beyond the tube's half-width {}",
+                        u,
+                        v,
+                        bit,
+                        bd,
+                        feature_eps);
+                }
+                placed.edge_tiling[size_t(best)].push_back({{u, v}});
+            }
+            m_edge_attribute[eid].feature_inputs = 0; // the engine's tags from here on
+        }
+        n_feature = tag_feature_edges(placed, &input, feature_eps, /*exact=*/true);
+    }
+    m_edge_tags_held = true;
+    if (m_phi_F.rows() == 0) {
+        // A complex's isolated points: its vertices on none of its edges.
         std::vector<char> on_edge(vert_capacity(), 0);
         for (const Tuple& e : get_edges()) {
             if (m_edge_attribute[e.eid(*this)].label != 1) continue;
-            const size_t u = e.vid(*this), v = e.switch_vertex(*this).vid(*this);
-            on_edge[u] = on_edge[v] = 1;
-            int best = -1;
-            double bd = std::numeric_limits<double>::infinity();
-            for (int s = 0; s < m_phi_E.rows(); ++s) {
-                const double d = std::max(
-                    seg_dist(m_vertex_attribute[u].m_posf, s),
-                    seg_dist(m_vertex_attribute[v].m_posf, s));
-                if (d < bd) bd = d, best = s;
-            }
-            if (!(bd <= feature_eps)) {
-                log_and_throw_error(
-                    "hold_curves_and_points: the input complex's edge ({}, {}) is {} from every "
-                    "input segment, beyond the tube's half-width {}",
-                    u,
-                    v,
-                    bd,
-                    feature_eps);
-            }
-            placed.edge_tiling[size_t(best)].push_back({{u, v}});
+            on_edge[e.vid(*this)] = on_edge[e.switch_vertex(*this).vid(*this)] = 1;
         }
-        n_feature = tag_feature_edges(placed, &input, feature_eps, /*exact=*/true);
         for (const Tuple& t : get_vertices()) {
             const size_t vid = t.vid(*this);
             if (m_vertex_extra[vid].label == 1 && !on_edge[vid]) point_vids.push_back(vid);
@@ -470,7 +554,7 @@ void TopoOffsetTetMesh::hold_curves_and_points()
     // and the complex's points, each at the smaller radius of its kinds.
     const size_t n_anchors = anchor_feature_points(point_vids, order2_eps, feature_eps);
     logger().info(
-        "\t[curves] {} order-2 edges tagged (eps {:.6g}), {} input-complex edges tagged (eps "
+        "\t[curves] {} order-2 edges tagged (eps {:.6g}), {} feature-curve edges tagged (eps "
         "{:.6g}), {} curve ends, junctions and points anchored",
         n_order2,
         order2_eps,
@@ -479,41 +563,49 @@ void TopoOffsetTetMesh::hold_curves_and_points()
         n_anchors);
 }
 
-void TopoOffsetTetMesh::audit_input_curves() const
+TopoOffsetTetMesh::InputCurveCounts TopoOffsetTetMesh::input_curve_counts() const
 {
     // See the declaration.
-    if (m_phi_F.rows() > 0 || !m_track_feature_edges) return;
-    size_t n_tagged = 0, n_outside = 0, n_complex = 0, n_untagged = 0;
+    InputCurveCounts c;
     for (const Tuple& e : get_edges()) {
         const size_t eid = e.eid(*this);
-        const FeatureEdgeAttributes& tags = m_feature_edge_attribute[eid];
-        const bool feature = tags.has(FeatureEdgeAttributes::feature);
-        if (m_edge_attribute[eid].label == 1) {
-            ++n_complex;
-            n_untagged += !feature;
+        const bool feature = m_track_feature_edges &&
+                             m_feature_edge_attribute[eid].has(FeatureEdgeAttributes::feature);
+        if (m_phi_F.rows() == 0 && m_edge_attribute[eid].label == 1) {
+            ++c.complex;
+            c.complex_untagged += !feature;
         }
         if (!feature) continue;
-        ++n_tagged;
+        ++c.tagged;
         FeatureEdgeAttributes only; // the feature kind alone, in its own tubes
         only.add(FeatureEdgeAttributes::feature);
-        only.inputs(FeatureEdgeAttributes::feature) = tags.inputs(FeatureEdgeAttributes::feature);
-        n_outside += tagged_edge_leaves_tube(
+        only.inputs(FeatureEdgeAttributes::feature) =
+            m_feature_edge_attribute[eid].inputs(FeatureEdgeAttributes::feature);
+        c.outside += tagged_edge_leaves_tube(
                          only,
                          m_vertex_attribute[e.vid(*this)].m_posf,
                          m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_posf) != 0;
     }
+    return c;
+}
+
+void TopoOffsetTetMesh::audit_input_curves() const
+{
+    // See the declaration.
+    if (!m_track_feature_edges) return;
+    const InputCurveCounts c = input_curve_counts();
     double worst = 0.;
     const auto [kept, total] = feature_retention(&worst);
-    const bool defect = n_outside > 0 || n_untagged > 0 || kept < total;
+    const bool defect = c.outside > 0 || c.complex_untagged > 0 || kept < total;
     logger().log(
         defect ? spdlog::level::warn : spdlog::level::info,
         "\t[curves] after the loop: {} feature-tagged edges, {} outside their tube; {} of the "
         "input complex's {} edges untagged; {} of {} anchors with a vertex in their ball (worst "
         "{:.3g} radii)",
-        n_tagged,
-        n_outside,
-        n_untagged,
-        n_complex,
+        c.tagged,
+        c.outside,
+        c.complex_untagged,
+        c.complex,
         kept,
         total,
         worst);
@@ -688,6 +780,15 @@ void TopoOffsetTetMesh::classify_sheet_faces()
         eps);
 }
 
+bool TopoOffsetTetMesh::edge_has_tag(const size_t eid, const int bit) const
+{
+    // See the declaration.
+    if (!m_edge_tags_held) return (m_edge_attribute[eid].feature_inputs >> bit) & 1;
+    const FeatureEdgeAttributes& tags = m_feature_edge_attribute[eid];
+    return m_track_feature_edges && tags.has(FeatureEdgeAttributes::feature) &&
+           ((tags.inputs(FeatureEdgeAttributes::feature) >> bit) & 1);
+}
+
 void TopoOffsetTetMesh::label_input_complex()
 {
     classify_sheet_faces(); // the mesh may have been refined since the last call
@@ -705,9 +806,42 @@ void TopoOffsetTetMesh::label_input_complex()
     bool single_body = (tags_involved.size() == 1) && expr->contains_only_or() &&
                        expr->contains_only_and() && expr->contains_only_not();
 
+    // An edge tag is a curve, offset one tag at a time: an expression over cells has no meaning
+    // for it.
+    for (const int64_t& tag : tags_involved) {
+        if (m_edge_tag_bit.count(tag) && !single_body) {
+            log_and_throw_error(
+                "offset_selection: the edge tag {} is selected alone",
+                m_tag_id_to_name[tag]);
+        }
+    }
+
     if (single_body) {
         m_singlebody = true;
         m_single_tag = *tags_involved.begin();
+        if (const auto bit = m_edge_tag_bit.find(m_single_tag); bit != m_edge_tag_bit.end()) {
+            // An edge tag: its edges exactly, and their vertices -- a curve offset's input. The
+            // band grows all around it.
+            size_t n = 0;
+            for (const Tuple& e : get_edges()) {
+                const size_t eid = e.eid(*this);
+                if (!edge_has_tag(eid, bit->second)) continue;
+                m_edge_attribute[eid].label = 1;
+                m_vertex_extra[e.vid(*this)].label = 1;
+                m_vertex_extra[e.switch_vertex(*this).vid(*this)].label = 1;
+                ++n;
+            }
+            logger().info(
+                "Using the edge tag '{}' as the complex: {} edges",
+                m_tag_id_to_name[m_single_tag],
+                n);
+            if (n == 0)
+                log_and_throw_error(
+                    "offset_selection names the edge tag {} but no mesh edge carries it",
+                    m_tag_id_to_name[m_single_tag]);
+            mark_input_complex_vertices();
+            return;
+        }
         if (is_sheet_tag(m_single_tag)) {
             // The sheet is the complex: its faces, their edges and vertices, no tets. The band
             // then grows on both sides of it. offset_in / offset_out have no meaning for it.
@@ -1687,26 +1821,20 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
         write_debug_frame("offset_tagged");
     }
 
-    // A curve complex's edges keep the feature tags hold_curves_and_points() gave them before
-    // the march: the march splits only edges that cross the level set, through
-    // EdgeSplittingTet, which carries no tags, and an edge of the complex, at distance 0, crosses
-    // none. Checked rather than assumed.
-    if (m_phi_F.rows() == 0) {
-        size_t untagged = 0, n = 0;
-        for (const Tuple& e : get_edges()) {
-            const size_t eid = e.eid(*this);
-            if (m_edge_attribute[eid].label != 1) continue;
-            ++n;
-            untagged +=
-                !(m_track_feature_edges &&
-                  m_feature_edge_attribute[eid].has(FeatureEdgeAttributes::feature));
-        }
-        if (untagged > 0) {
+    // The feature curves keep the tags hold_curves_and_points() gave them before the march, and
+    // their edges stay in their tubes: the march splits an edge where it crosses the level set,
+    // its halves inheriting its tags (marching_split_edge_after()), its new vertex on it. Checked
+    // rather than assumed.
+    {
+        const InputCurveCounts c = input_curve_counts();
+        if (c.outside > 0 || c.complex_untagged > 0) {
             log_and_throw_error(
-                "construct_offset: {} of the input complex's {} edges lost their feature tag in "
-                "the construction",
-                untagged,
-                n);
+                "construct_offset: of the {} feature-tagged edges {} left their tube, and {} of "
+                "the input complex's {} edges lost their feature tag, in the construction",
+                c.tagged,
+                c.outside,
+                c.complex_untagged,
+                c.complex);
         }
     }
 

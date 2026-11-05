@@ -25,6 +25,7 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/dynamic_parallel_for.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 #include "ExactBandIntegral.hpp"
 #include "OffsetPotential.hpp"
 #include "Parameters.h"
@@ -104,6 +105,11 @@ class EdgeAttributes
 {
 public:
     int label = 0; // label: 0=default, 1=input, 2=offset
+    /// The input's edge tags this edge tiles, bit j for TopoOffsetTetMesh::m_feature_edge_names[j]:
+    /// set at load (init_from_image()), carried by the construction's own splits, which copy
+    /// this whole, and cleared by hold_curves_and_points(), from which on the engine's feature
+    /// tags carry the curves through every operation (TopoOffsetTetMesh::edge_has_tag()).
+    InputSet feature_inputs = 0;
 };
 
 
@@ -186,6 +192,18 @@ public:
     std::map<int64_t, int> m_face_tag_bit;
     /// Whether `tag` names an open sheet: the envelope surface group or a face tag.
     bool is_sheet_tag(int64_t tag) const { return tag == m_sheet_tag || m_face_tag_bit.count(tag); }
+    /// Edge tags, the feature curves tetwild and simwild write (a tet mesh's edge block): bit j is
+    /// m_feature_edge_names[j], each name a tag id offset_selection can name alone
+    /// (m_edge_tag_bit: id -> bit), past the face tags. Their curves as read, the geometry their
+    /// tubes are built around (hold_curves_and_points()), are m_input_features.
+    std::vector<std::string> m_feature_edge_names;
+    std::map<int64_t, int> m_edge_tag_bit;
+    utils::FeatureInputs m_input_features;
+    /// Whether edge `eid` tiles edge tag `bit`: by EdgeAttributes::feature_inputs until
+    /// hold_curves_and_points() tags the curves, by the engine's feature tags after.
+    bool edge_has_tag(size_t eid, int bit) const;
+    /// Set by hold_curves_and_points(): the engine's feature tags hold the edge tags.
+    bool m_edge_tags_held = false;
     /// The surface group as loaded, kept because the classification below is redone on demand.
     MatrixXd m_sheet_V;
     MatrixXi m_sheet_F;
@@ -379,9 +397,17 @@ public:
     /// half-width feature_envelope_ratio x envelope_size, its curve ends, junctions and points
     /// anchored at that radius (construct_offset() checks the tags survive the march).
     void hold_curves_and_points();
-    /// After the loop, for a curve offset's input: what hold_curves_and_points() set up, measured
-    /// rather than assumed -- feature-tagged edges outside their tube, edges of the input complex
-    /// without the tag, anchors with no vertex in their ball. A warning iff there is one.
+    /// The feature curves as the operations left them (hold_curves_and_points()): the
+    /// feature-tagged edges, those of them outside their tube, and, for a complex of segments, its
+    /// edges and those of them without the feature tag.
+    struct InputCurveCounts
+    {
+        size_t tagged = 0, outside = 0, complex = 0, complex_untagged = 0;
+    };
+    InputCurveCounts input_curve_counts() const;
+    /// After the loop: what hold_curves_and_points() set up, measured rather than assumed --
+    /// input_curve_counts(), and anchors with no vertex in their ball. A warning iff there is a
+    /// defect.
     void audit_input_curves() const;
     /// The final pass's envelopes: the offset surface's envelope (build_offset_envelope()), and
     /// m_envelope swapped for one that also holds every other region boundary, at its position as
@@ -3028,7 +3054,10 @@ public:
         const std::string& sheet_name = "",
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const std::vector<std::string>& edge_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
 
     /// check that the ambient tag does not overlap with any other tags
     bool ambient_assert();

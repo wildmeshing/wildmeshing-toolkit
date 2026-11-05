@@ -5231,3 +5231,97 @@ TEST_CASE("curve-offset-refuses-offset-in", "[offset][3d]")
         components::topological_offset::topological_offset(j, {{"m", rod_grid()}}),
         Catch::Matchers::ContainsSubstring("enclose no volume"));
 }
+
+namespace {
+/// rod_grid() with every tet ambient and two edge tags, the edge block tetwild and simwild write:
+/// "curve", the segment x = y = 0, -0.5 <= z <= 0.5 (rod_grid()'s rod, without the blocks), and
+/// "other", the segment x = y = 0.5, -0.5 <= z <= 0.5, 0.71 from it and out of the band.
+MeshData rod_edge_grid()
+{
+    MeshData m = rod_grid();
+    auto& tets = m.cells.at(CellType::Tetrahedron);
+    const DataMatrix<uint8_t> ambient = DataMatrix<uint8_t>::Ones(tets.connectivity.rows(), 1);
+    tets.attributes["tags"] = {ambient, {"ambient"}};
+    const auto vid = [](int i, int j, int k) { return i + 5 * (j + 5 * k); }; // rod_grid()'s
+    auto& edges = m.cells[CellType::Edge];
+    edges.connectivity.resize(4, 2);
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(4, 2);
+    for (int k = 1; k <= 2; ++k) {
+        edges.connectivity(k - 1, 0) = vid(2, 2, k);
+        edges.connectivity(k - 1, 1) = vid(2, 2, k + 1);
+        member(k - 1, 0) = 1;
+        edges.connectivity(k + 1, 0) = vid(3, 3, k);
+        edges.connectivity(k + 1, 1) = vid(3, 3, k + 1);
+        member(k + 1, 1) = 1;
+    }
+    edges.attributes["tags"] = {member, {"curve", "other"}};
+    return m;
+}
+} // namespace
+
+TEST_CASE("curve-offset-edge-tag", "[offset][3d]" + release_only)
+{
+    // An edge tag selected (label_input_complex()): the curve offset of a tetwild or simwild
+    // feature curve, with no region around it. Every edge tag is held, selected or not
+    // (hold_curves_and_points()), and written back as the result's edge block: each tag's edges
+    // in the tube around its segment, the selected curve's ends kept.
+    const MeshData input = rod_edge_grid();
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "curve"},
+        {"target_distance", 0.2},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    const double eps = 1e-3 * 2. * std::sqrt(3.); // feature_envelope_ratio 1 x envelope_size
+    REQUIRE(out.cells.count(CellType::Edge) == 1);
+    const auto& block = out.cells.at(CellType::Edge);
+    const auto& tags = block.attributes.at("tags");
+    REQUIRE(tags.labels == std::vector<std::string>{"curve", "other"});
+    const auto member = tags.integers();
+    const auto dist = [](const Vector3d& p, const double x, const double y) {
+        const double z = std::clamp(p[2], -0.5, 0.5);
+        return (p - Vector3d(x, y, z)).norm();
+    };
+    double zlo[2] = {1., 1.}, zhi[2] = {-1., -1.};
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (int t = 0; t < 2; ++t) {
+            if (member(r, t) == 0) continue;
+            for (int c = 0; c < 2; ++c) {
+                const Vector3d p = out.V.row(block.connectivity(r, c)).transpose();
+                CHECK(dist(p, t == 0 ? 0. : 0.5, t == 0 ? 0. : 0.5) <= eps);
+                zlo[t] = std::min(zlo[t], p[2]);
+                zhi[t] = std::max(zhi[t], p[2]);
+            }
+        }
+    }
+    for (int t = 0; t < 2; ++t) { // each curve whole, end to end
+        INFO("edge tag " << tags.labels[size_t(t)]);
+        CHECK(std::abs(zlo[t] + 0.5) <= eps);
+        CHECK(std::abs(zhi[t] - 0.5) <= eps);
+    }
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    size_t n_rod = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (labels(v, 0) != 1.) continue;
+        ++n_rod;
+        CHECK(dist(out.V.row(v).transpose(), 0., 0.) <= eps);
+    }
+    CHECK(n_rod >= 3);
+}
+
+TEST_CASE("curve-offset-edge-tag-alone", "[offset][3d]")
+{
+    // An edge tag is a curve, offset one tag at a time.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "curve | other"},
+        {"target_distance", 0.2},
+        {"num_threads", 1}};
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(j, {{"m", rod_edge_grid()}}),
+        Catch::Matchers::ContainsSubstring("is selected alone"));
+}
