@@ -347,7 +347,12 @@ private:
     // Negative = stays on v1 side, positive = stays on v2 side.
     // Set before split_edge(), cleared immediately after.
     std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
-    size_t m_last_split_vertex = 0;
+    // The vertex the calling thread's last split made, per thread as 3D's
+    // SplitTagCache::v_new: every thread of the parallel split pass writes it, and the serial
+    // callers (AnnotationsTri.cpp, TightSealGeom.cpp) read their own split's. One shared size_t
+    // was a write-write race, reported by ThreadSanitizer in 3 of 3 simwild 2D remeshing runs at
+    // 8 threads (2026-11-05).
+    wmtk::threading::enumerable_thread_specific<size_t> m_last_split_vertex;
 
     // tight_seal_geom's helpers that need the mesh, defined in TightSealGeom.cpp
     /// BVH of the boundary of the faces of `fids` for which in_set holds: their interfaces with
@@ -397,7 +402,7 @@ protected:
 
     bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max) const override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
-    void split_after_vertex(size_t v_new) override { m_last_split_vertex = v_new; }
+    void split_after_vertex(size_t v_new) override { m_last_split_vertex.local() = v_new; }
 };
 
 } // namespace wmtk::components::simwild::tri

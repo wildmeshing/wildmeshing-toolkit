@@ -381,7 +381,7 @@ void SimWildMeshTri::seal_connected_components(
                 continue;
             }
 
-            const size_t v_new = m_last_split_vertex;
+            const size_t v_new = m_last_split_vertex.local();
             std::vector<size_t> fids = get_one_ring_fids_for_vertex(v_new);
 
             new_vertices.insert(v_new);
