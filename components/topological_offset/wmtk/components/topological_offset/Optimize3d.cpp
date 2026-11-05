@@ -1236,6 +1236,14 @@ bool TopoOffsetTetMesh::swap_face_before(const Tuple& t)
     rec.scored_energy = scored;
 
     face_attribute_tracker(*this, twotets, m_face_attribute, cache.changed_faces);
+    // The two cells' edge tags, as the base caches them: swap_face_after(), the base's (the
+    // offset has none of its own), restores the three new cells' edges from this cache, so
+    // without it they took whatever the thread's previous operation had left there, or nothing.
+    // MEASURED on the rod branch (33548e2f26, the same copy): 2 tagged edges when the loop
+    // started, at its end 8 rod edges of which 1 still tagged; test swap-face-keeps-edge-tags.
+    if (m_track_feature_edges) {
+        feature_edges_cache(twotets, cache.changed_edges);
+    }
     return true;
 }
 
