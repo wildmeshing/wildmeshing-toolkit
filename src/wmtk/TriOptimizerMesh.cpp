@@ -1112,4 +1112,77 @@ void TriOptimizerMesh::init_input_envelopes(
     m_input_envelopes.set(std::move(members));
 }
 
+std::string TriOptimizerMesh::label_name(const size_t bit) const
+{
+    return fmt::format("label bit {}", bit);
+}
+
+void TriOptimizerMesh::require_reference_edge_labels(
+    const std::vector<InputSet>& reference_labels) const
+{
+    InputSet held = 0, given = 0;
+    for (const Tuple& e : get_edges()) {
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) held |= attr.input_set();
+    }
+    for (const InputSet s : reference_labels) given |= s;
+    const InputSet missing = held & ~given;
+    if (missing == 0) return;
+    std::string names;
+    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
+        if ((missing >> b) & 1) names += (names.empty() ? "" : ", ") + label_name(b);
+    }
+    log_and_throw_error(
+        "envelope: no segment of it is labelled {}, which this mesh's edges carry; an envelope "
+        "must carry every label of the mesh it comes with",
+        names);
+}
+
+void TriOptimizerMesh::check_reference_containment() const
+{
+    // Per label bit, the held edges outside its envelope; an edge outside any of its labels' is
+    // one edge outside. Each member asked on its own: inside their intersection is inside each.
+    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
+    std::vector<size_t> outside(max_bits, 0);
+    size_t n = 0;
+    for (const Tuple& e : get_edges()) {
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (!attr.m_is_surface_fs) continue;
+        const auto vids = get_edge_vids(e);
+        const std::array<Vector2d, 2> segment = {
+            {m_vertex_attribute[vids[0]].m_posf, m_vertex_attribute[vids[1]].m_posf}};
+        bool out = false;
+        for (size_t b = 0; b < max_bits; ++b) {
+            if (((attr.input_set() >> b) & 1) == 0) continue;
+            const Envelope* env = m_input_envelopes.empty()      ? m_envelope.get()
+                                  : b < m_input_envelopes.size() ? m_input_envelopes.member(b).get()
+                                                                 : nullptr;
+            if (env && !env->is_outside(segment)) continue;
+            ++outside[b];
+            out = true;
+        }
+        n += out;
+    }
+    if (n == 0) {
+        logger().info(
+            "envelope: every held edge received lies in the reference's envelopes of its labels "
+            "(eps {:.6})",
+            m_envelope_eps);
+        return;
+    }
+    std::string counts;
+    for (size_t b = 0; b < max_bits; ++b) {
+        if (outside[b] == 0) continue;
+        counts += fmt::format("{}{} ({})", counts.empty() ? "" : ", ", label_name(b), outside[b]);
+    }
+    log_and_throw_error(
+        "envelope: the mesh received does not lie in the reference at this run's eps {:.6g}: {} "
+        "held edges outside the envelopes of their labels: {}. The sender held them to a wider "
+        "envelope; give this run an eps at least the sender's, or no envelope",
+        m_envelope_eps,
+        n,
+        counts);
+}
+
+
 } // namespace wmtk

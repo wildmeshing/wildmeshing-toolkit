@@ -59,23 +59,17 @@ public:
     /// envelope_data() labels the rows by where m_E_envelope_labels is empty. The 2D twin of
     /// SimWildMesh::m_F_envelope_face_sets.
     std::vector<InputSet> m_E_envelope_edge_sets;
-    /// Whether the envelope is a reference an `envelope` input gave, held to as given: the 2D twin
-    /// of SimWildMesh::m_has_reference, which states the guarantee. Set by the driver before init,
-    /// with m_V_envelope, m_E_envelope and m_E_envelope_labels its segments of this mesh's labels,
-    /// and m_input_curve_points its curve ends and junctions.
-    bool m_has_reference = false;
+    // A reference an `envelope` input gave, held to as given, is the base's
+    // (TriOptimizerMesh::m_has_reference): set by the driver before init, with m_V_envelope,
+    // m_E_envelope and m_E_envelope_labels its segments of this mesh's labels, and
+    // m_input_curve_points its curve ends and junctions.
+
     /// The label of bit `bit` of an edge's input set, as the output names it: an edge tag's name,
     /// a triangle tag's label (io::collect_tags()).
-    std::string label_name(size_t bit) const;
+    std::string label_name(size_t bit) const override;
     /// The envelope the run hands on, when it built its own: the 2D twin of
     /// SimWildMesh::envelope_data(), with the input `points`.
     MeshData envelope_data(const std::vector<Vector2d>& points) const;
-    /// With a reference: throws for the labels the held edges carry that no row of m_E_envelope
-    /// has, naming them.
-    void require_reference_edge_labels() const;
-    /// With a reference, before a remeshing: throws unless every held edge lies in the envelopes
-    /// of its labels, naming each label with edges outside, their number, and the eps.
-    void check_reference_containment() const;
     /// The vertices of the input points (input_points), set before init: anchored there, in a
     /// ball of feature_envelope_ratio x eps (TriOptimizerMesh::anchor_feature_points()).
     std::vector<size_t> m_input_point_vids;

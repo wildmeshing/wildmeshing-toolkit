@@ -279,54 +279,6 @@ void check_reference_options(const Parameters& params)
     }
 }
 
-/// The rows of the reference (V_envelope, F_envelope: triangles in 3D, segments in 2D) that
-/// carry a label of this mesh, on vertices of their own, with their labels.
-struct HeldRows
-{
-    MatrixXd V;
-    MatrixXi F;
-    std::vector<InputSet> labels;
-};
-/**
- * @brief What a run given a reference holds to: its rows of the labels of the mesh. A row of a
- * label the mesh lacks -- an input a filter upstream removed -- stays out of the union, which
- * holds every face with one label, or without per_input_envelopes, so that no face is held to
- * geometry of a label it does not carry. A reference none of whose rows does throws.
- */
-HeldRows held_rows(const InputData& in)
-{
-    HeldRows out;
-    std::vector<Eigen::Index> rows;
-    for (Eigen::Index r = 0; r < in.F_envelope.rows(); ++r) {
-        if (in.F_envelope_labels[r] != 0) rows.push_back(r);
-    }
-    if (rows.empty()) {
-        log_and_throw_error(
-            "envelope: none of its {} cells carries a label of this mesh",
-            in.F_envelope.rows());
-    }
-    std::vector<int> remap(in.V_envelope.rows(), -1);
-    for (const Eigen::Index r : rows)
-        for (Eigen::Index k = 0; k < in.F_envelope.cols(); ++k) remap[in.F_envelope(r, k)] = 0;
-    int n = 0;
-    for (int& v : remap)
-        if (v == 0) v = n++;
-    out.V.resize(n, in.V_envelope.cols());
-    for (Eigen::Index v = 0; v < in.V_envelope.rows(); ++v)
-        if (remap[v] >= 0) out.V.row(remap[v]) = in.V_envelope.row(v);
-    out.F.resize(rows.size(), in.F_envelope.cols());
-    for (size_t i = 0; i < rows.size(); ++i) {
-        for (Eigen::Index k = 0; k < in.F_envelope.cols(); ++k)
-            out.F(i, k) = remap[in.F_envelope(rows[i], k)];
-        out.labels.push_back(in.F_envelope_labels[rows[i]]);
-    }
-    logger().info(
-        "envelope: a reference, {} of its {} cells of this mesh's labels held to",
-        rows.size(),
-        in.F_envelope.rows());
-    return out;
-}
-
 } // namespace
 
 void run_3D(const nlohmann::json& json_params, InputData& input_data, io::ComponentIO& component_io)
@@ -348,10 +300,13 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     // A reference, the first component's labelled input: every envelope, tube and anchor around
     // it, never around the mesh received (SimWildMesh::m_has_reference).
     const bool reference = input_data.envelope_reference.has_value();
-    std::optional<HeldRows> held;
+    std::optional<io::HeldRows> held;
     if (reference) {
         check_reference_options(params);
-        held = held_rows(input_data);
+        held = io::held_rows(
+            input_data.V_envelope,
+            input_data.F_envelope,
+            input_data.F_envelope_labels);
         mesh.init_envelope(held->V, held->F);
         mesh.m_F_envelope_labels = held->labels;
         mesh.m_has_reference = true;
@@ -610,10 +565,13 @@ void run_2D(
         params.NUM_THREADS);
     // A reference, held to as in 3D (SimWildMeshTri::m_has_reference).
     const bool reference = input_data.envelope_reference.has_value();
-    std::optional<HeldRows> held;
+    std::optional<io::HeldRows> held;
     if (reference) {
         check_reference_options(params);
-        held = held_rows(input_data);
+        held = io::held_rows(
+            input_data.V_envelope,
+            input_data.F_envelope,
+            input_data.F_envelope_labels);
         mesh.init_envelope(held->V, held->F);
         mesh.m_E_envelope_labels = held->labels;
         mesh.m_has_reference = true;

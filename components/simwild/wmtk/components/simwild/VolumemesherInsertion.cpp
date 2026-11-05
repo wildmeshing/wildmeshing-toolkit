@@ -422,7 +422,7 @@ void SimWildMesh::init_surfaces_and_boundaries(
         }
     }
 
-    if (m_has_reference) require_reference_face_labels();
+    if (m_has_reference) require_reference_face_labels(m_F_envelope_labels);
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
 
     // track bounding box
@@ -498,7 +498,9 @@ void SimWildMesh::init_surfaces_and_boundaries(
     if (m_has_reference) init_reference_feature_tubes(feature_eps, m_envelope->use_exact);
     // Before a remeshing, which holds the mesh to the reference: what was received must already
     // lie in it. The tag operations hold nothing to it, and drop it.
-    if (m_has_reference && m_sim_params.operation == "remeshing") check_reference_containment();
+    if (m_has_reference && m_sim_params.operation == "remeshing") {
+        check_reference_containment(m_envelope_eps);
+    }
 
     // Where a tagged curve ends or three or more meet, and at every input point (input_points),
     // the vertex is anchored (anchor_feature_points()), held like the curves: always. The radius
