@@ -17,6 +17,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -41,6 +42,13 @@ using namespace wmtk::components::topological_offset;
  *  3. stored band cells of five offset runs against integrate_mesh on the full input;
  *  4. flat cells are 0.
  * Units: I = int_t d dV = value(t, 0); relative errors |I - I_ref| / I_ref.
+ *
+ * One departure from the Python (ExactBandIntegral.hpp, step 2): a piece whose members are all
+ * edges is split exactly by their planar bisectors, where the Python takes rule (a). On a cell
+ * with such pieces (Stats::edge_split_pieces) the Python's value is an upper bound, and its
+ * rule-(a) volume is this port's plus the split pieces' (the partition is the same); exactness is
+ * checked there without the Python: additivity over the red children, and the front form
+ * (test_exact_band_front.cpp, oint + D = J).
  */
 
 namespace {
@@ -168,8 +176,8 @@ TEST_CASE("exact-band-integral-real-cells", "[offset][exact_band]")
     int64_t n_closed = 0;
     for (const auto& c : exact_band_data::real_cases) {
         const ExactBandIntegral eb = of_case(c);
-        double worst = 0., worst_add = 0.;
-        int n_add = 0, n_rule_a = 0;
+        double worst = 0., worst_add = 0., worst_drop = 0.;
+        int n_add = 0, n_rule_a = 0, n_split = 0;
         std::vector<double> J(size_t(c.ncells));
         for (int i = 0; i < c.ncells; ++i) {
             const auto& cell = c.cells[i];
@@ -181,16 +189,25 @@ TEST_CASE("exact-band-integral-real-cells", "[offset][exact_band]")
             INFO(c.name << " cell " << i << " (" << cell.cat << ")");
             CHECK(st.open_results == 0);
             n_closed += st.closed_checked;
-            CHECK(rel(I, cell.I) <= 1e-12);
-            // J = I - delta vol cancels in the band; its error is measured against I
-            CHECK(std::abs(J[size_t(i)] - (cell.I - c.delta * cell.vol)) <= 1e-12 * cell.I);
-            // Rule-(a) volume up to rounding slivers (test_exact_mesh.py's SLIVER = 1e-12 vol). The
-            // branch counts are NOT compared: a piece face parallel to an input edge line up to
-            // rounding (e.n ~ 1e-18) has Euler weight h at _through()'s tolerance, and rounding
-            // decides whether it is skipped (measured: t100026 cell 2, 4 line faces here, 6 in the
-            // Python, the two extra with |e.n| < 2e-18); its term is rounding noise either way.
-            CHECK(std::abs(st.rule_a_vol - cell.rule_a_vol) <= 1e-12 * cell.vol);
-            worst = std::max(worst, rel(I, cell.I));
+            // Rule-(a) volume up to rounding slivers (test_exact_mesh.py's SLIVER = 1e-12 vol),
+            // the split pieces' with this port's (file doc). The branch counts are NOT compared: a
+            // piece face parallel to an input edge line up to rounding (e.n ~ 1e-18) has Euler
+            // weight h at _through()'s tolerance, and rounding decides whether it is skipped
+            // (measured: t100026 cell 2, 4 line faces here, 6 in the Python, the two extra with
+            // |e.n| < 2e-18); its term is rounding noise either way.
+            CHECK(
+                std::abs(st.rule_a_vol + st.edge_split_vol - cell.rule_a_vol) <= 1e-12 * cell.vol);
+            if (st.edge_split_pieces == 0) {
+                CHECK(rel(I, cell.I) <= 1e-12);
+                // J = I - delta vol cancels in the band; its error is measured against I
+                CHECK(std::abs(J[size_t(i)] - (cell.I - c.delta * cell.vol)) <= 1e-12 * cell.I);
+                worst = std::max(worst, rel(I, cell.I));
+            } else { // the Python's value bounds this one (file doc)
+                ++n_split;
+                CHECK(I <= cell.I * (1. + 1e-12));
+                CHECK(std::abs(J[size_t(i)] - (I - c.delta * cell.vol)) <= 1e-12 * cell.I);
+                worst_drop = std::max(worst_drop, (cell.I - I) / cell.I);
+            }
             n_rule_a += cell.rule_a_vol > 0.;
             if (st.rule_a_vol > 0.) continue;
             // additivity, exact families only
@@ -210,11 +227,13 @@ TEST_CASE("exact-band-integral-real-cells", "[offset][exact_band]")
             ++n_add;
         }
         std::printf(
-            "  %-13s %2d cells (%d with rule (a)): max %.1e; additivity on %d exact families: max "
-            "%.1e\n",
+            "  %-13s %2d cells (%d with rule (a) in the Python, %d of them split exactly here, "
+            "below it by at most %.1e): max %.1e; additivity on %d exact families: max %.1e\n",
             c.name,
             c.ncells,
             n_rule_a,
+            n_split,
+            worst_drop,
             worst,
             n_add,
             worst_add);
@@ -290,10 +309,20 @@ std::array<double, 3> deriv_parity(
             Eigen::Map<const Eigen::VectorXd>(Eigen::Matrix3d(Hr).data(), 9))};
 }
 
-/// test_exact_mesh_derivs.fd(): relative errors of the gradient and Hessian against central
+/// test_exact_mesh_derivs.fd(): the errors of the gradient and Hessian against central
 /// differences (gradient from value(), Hessian from value_grad_hess()) at each step h L,
 /// h = 1e-3 .. 1e-7, L the longest edge; and at h = 1e-5 the kink measure |H_fwd - H_bwd| / |H|
 /// with the one-sided error of H d along the inward direction d at h = 1e-5 and 1e-6.
+///
+/// Units of the errors (not of the kink measure, a jump of H against H's own size): the cell's
+/// own, S / L for the gradient and S / L^2 for the Hessian, S = I + delta vol,
+/// I = int_t d dV. J = I - delta vol is the difference of these two non-negative terms, so its
+/// rounding is of the size of S, and a central difference divides that rounding by h whatever the
+/// size of the derivative; delta vol alone undercounts S where d >> delta, the far-away cells.
+/// Until 2026-11 each error was relative to |G| or |H|, which a derivative near 0 reads as a
+/// failure. MEASURED (slot cell 7, corner 1, a piece of two edges split exactly since 2026-11):
+/// |G| L = 3e-3 S; the gradient's error relative to |G| was 1.1e-5, 2.9e-6, 2.7e-7 at h = 1e-7,
+/// 1e-6, 1e-5 (rounding of 5e-24 = 3e-15 S in J, divided by h) and 1.7e-7 at 1e-4 (truncation).
 struct FD
 {
     std::array<std::array<double, 2>, 5> rows; // per h: gradient, Hessian
@@ -306,6 +335,9 @@ FD fd(const ExactBandIntegral& eb, const Tet& T, const int kv, const double delt
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < i; ++j) L = std::max(L, (T[size_t(i)] - T[size_t(j)]).norm());
     }
+    const double vol = std::abs((T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]))) / 6.;
+    const double S = eb.value(T, 0.) + delta * vol;
+    const double ug = S / L, uh = S / (L * L);
     Vec3 G;
     Eigen::Matrix3d H;
     eb.value_grad_hess(T, kv, delta, G, H);
@@ -329,7 +361,7 @@ FD fd(const ExactBandIntegral& eb, const Tet& T, const int kv, const double delt
             Hf.col(i) = (gv[0] - G) / hh;
             Hb.col(i) = (G - gv[1]) / hh;
         }
-        out.rows[size_t(ih)] = {(Gfd - G).norm() / G.norm(), (Hfd - H).norm() / H.norm()};
+        out.rows[size_t(ih)] = {(Gfd - G).norm() / ug, (Hfd - H).norm() / uh};
         if (ih == 2) {
             out.kink = (Hf - Hb).norm() / H.norm();
             Vec3 d = Vec3::Zero();
@@ -343,7 +375,7 @@ FD fd(const ExactBandIntegral& eb, const Tet& T, const int kv, const double delt
                 Vec3 G2;
                 Eigen::Matrix3d H2;
                 eb.value_grad_hess(T2, kv, delta, G2, H2);
-                const double err = ((G2 - G) / (hd * L) - H * d).norm() / H.norm();
+                const double err = ((G2 - G) / (hd * L) - H * d).norm() / uh;
                 (hd == 1e-5 ? out.inward5 : out.inward6) = err;
             }
         }
@@ -378,11 +410,13 @@ struct FDSummary
 
 TEST_CASE("exact-band-integral-derivatives", "[offset][exact_band]" + release_only)
 {
-    // Parity with exact_mesh.value_grad_hess (one corner per cell), and finite differences at every
-    // corner as test_exact_mesh_derivs.py does. Python's own finite-difference numbers on the
-    // stored cases (2026-10-12, smooth corners, min over h, max): gradient 4.8e-8, Hessian 2.1e-6;
-    // kink corners, inward one-sided error at h = 1e-6: max 5.3e-3. The bounds below have margin
-    // over those and over this port's measured numbers (printed).
+    // Parity with exact_mesh.value_grad_hess (one corner per cell; not on a cell with pieces split
+    // exactly by edge bisectors, where the Python's derivatives are its bound's, file doc), and
+    // finite differences at every corner as test_exact_mesh_derivs.py does. Python's own
+    // finite-difference numbers on the stored cases (2026-10-12, smooth corners, min over h, max;
+    // relative to |G| and |H|, not in fd()'s units): gradient 4.8e-8, Hessian 2.1e-6; kink
+    // corners, inward one-sided error at h = 1e-6: max 5.3e-3. The bounds below have margin over
+    // those and over this port's measured numbers (printed).
     std::printf("exact-band-integral-derivatives\n");
     {
         std::array<double, 3> worst = {0., 0., 0.}, worst_far = {0., 0., 0.};
@@ -440,9 +474,16 @@ TEST_CASE("exact-band-integral-derivatives", "[offset][exact_band]" + release_on
     for (const auto& c : exact_band_data::real_cases) {
         const ExactBandIntegral eb = of_case(c);
         std::array<double, 3> worst = {0., 0., 0.};
+        int n_split = 0;
         for (int i = 0; i < c.nderivs; ++i) {
             const auto& r = c.derivs[i];
             const auto& cell = c.cells[r.cell];
+            ExactBandIntegral::Stats st;
+            eb.value(tet_of(cell.T), c.delta, &st);
+            if (st.edge_split_pieces > 0) {
+                ++n_split;
+                continue;
+            }
             const auto e = deriv_parity(eb, tet_of(cell.T), r, c.delta, cell.vol);
             INFO(c.name << " cell " << r.cell << " kv " << r.kv);
             CHECK(e[0] <= 1e-12);
@@ -455,10 +496,11 @@ TEST_CASE("exact-band-integral-derivatives", "[offset][exact_band]" + release_on
             for (int kv = 0; kv < 4; ++kv) fs.add(fd(eb, tet_of(c.cells[i].T), kv, c.delta));
         }
         std::printf(
-            "  %-13s parity (%d cells) J %.1e G %.1e H %.1e | FD, %d smooth corners: gradient %.1e "
-            "Hessian %.1e; %d kink corners: inward %.1e\n",
+            "  %-13s parity (%d cells, %d with split pieces skipped) J %.1e G %.1e H %.1e | FD, %d "
+            "smooth corners: gradient %.1e Hessian %.1e; %d kink corners: inward %.1e\n",
             c.name,
-            c.nderivs,
+            c.nderivs - n_split,
+            n_split,
             worst[0],
             worst[1],
             worst[2],
@@ -937,19 +979,22 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]" + release_only)
         ExactBandIntegral::Stats st;
         st.check_closed = true;
         double e_J = 0., e_dJ = 0., e_G = 0., e_H = 0., fd_g = 0., fd_h = 0.;
-        int n_clipped = 0, n_bits = 0, n_unclipped = 0, n_fd = 0, n_D_cells = 0;
+        int n_clipped = 0, n_bits = 0, n_unclipped = 0, n_fd = 0, n_D_cells = 0, n_split_cells = 0;
         for (int k = 0; k < c.ncells; ++k) {
             const SCell& sc = c.cells[k];
             const Tet T = tet_of(sc.T);
             INFO(c.name << " cell " << k);
             const double vol = std::abs((T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]))) / 6.;
             const double unit = sc.delta * vol; // J is of size delta vol
-            const int64_t D_before = st.side_D;
+            const int64_t D_before = st.side_D, split_before = st.edge_split_pieces;
             const double J = eb.value(T, sc.delta, &st);
-            // a part where the members' planes disagree: the Python's J is the former D bound
+            // a part where the members' planes disagree: the Python's J is the former D bound; a
+            // piece split exactly by edge bisectors: its rule (a)'s (file doc). Either bounds J.
             const bool has_D = st.side_D > D_before;
+            const bool split = st.edge_split_pieces > split_before;
             n_D_cells += has_D;
-            if (has_D) {
+            n_split_cells += split;
+            if (has_D || split) {
                 CHECK(J <= sc.J + 1e-12 * unit);
             } else {
                 CHECK(std::abs(J - sc.J) <= 1e-12 * unit);
@@ -971,7 +1016,7 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]" + release_only)
             const double eg = (G - Gr).norm() / std::max(Gr.norm(), 1e-300);
             const double eh =
                 (H - Eigen::Matrix3d(Hr)).norm() / std::max(Eigen::Matrix3d(Hr).norm(), 1e-300);
-            if (has_D) {
+            if (has_D || split) {
                 CHECK(std::abs(Jd - J) <= 1e-12 * unit);
             } else {
                 CHECK(std::abs(Jd - sc.Jd) <= 1e-12 * unit);
@@ -1023,8 +1068,8 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]" + release_only)
         }
         CHECK(st.open_results == 0);
         std::printf(
-            "  %-13s %2d cells (%d clipped; D parts %lld, %lld kept, in %d cells): J vs the Python "
-            "%.1e (delta vol);"
+            "  %-13s %2d cells (%d clipped; D parts %lld, %lld kept, in %d cells; %d cells with "
+            "split pieces): J vs the Python %.1e (delta vol);"
             " unclipped bit for bit %d/%d; derivatives J %.1e G %.1e H %.1e; central differences "
             "on %d"
             " clipped cells G %.1e H %.1e; %lld clip results closed, %lld open\n",
@@ -1034,6 +1079,7 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]" + release_only)
             (long long)st.side_D,
             (long long)st.side_D_pos,
             n_D_cells,
+            n_split_cells,
             e_J,
             n_bits,
             n_unclipped,
@@ -1317,7 +1363,9 @@ double ref_distance(const Vec3& x, const Eigen::MatrixXd& V, const Eigen::Matrix
  * faces of max cube_out turn 28) and against dense sampling on the embedded input subset (every
  * face's candidates and the faces their regions are built from: every point of f has its nearest
  * triangle there). Units: eps (|x| + delta), the rounding unit of a distance at coordinates |x|.
- *  - parity: the max, U and the partition's counts equal the Python's;
+ *  - parity: the max, U and the partition's counts equal the Python's; on a face with pieces
+ *    split exactly by edge bisectors, the Python's rule-(a) pieces are this port's and the split
+ *    ones, and the Python's max bounds this max where it came from a rule-(a) piece (file doc);
  *  - upper bound: d on a 24-per-side barycentric grid never exceeds the max;
  *  - exact: d at the returned point equals the max, where it does not come from a rule-(a) piece;
  *  - cube8: the former settle bound (U = min_max_corner_distance()) marked all 8
@@ -1339,7 +1387,7 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
         const double pad = input_pad(V);
         double w_par = 0., w_U = 0., w_at = 0., w_ub = -std::numeric_limits<double>::infinity(),
                w_eq = 0.;
-        int n_ra = 0;
+        int n_ra = 0, n_split = 0;
         const bool cube8 = std::string(c.name) == "cube8";
         if (cube8)
             std::printf("  cube8, bars: face  former (U - delta)/eps  exact (max - delta)/eps\n");
@@ -1356,17 +1404,29 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
             const double unit = EPS * (xs + c.delta);
             INFO(c.name << " face " << k << " (" << mf.label << ")");
             const double par = std::abs(m - mf.dmax) / unit;
-            CHECK(par <= 64.);
             CHECK(std::abs(info.U - mf.U) <= 64. * unit);
-            CHECK(info.rule_a == bool(mf.rule_a));
             CHECK(info.pieces == mf.pieces);
             CHECK(info.candidates == mf.candidates);
-            CHECK(info.rule_a_pieces == mf.rule_a_pieces);
-            w_par = std::max(w_par, par);
+            // the pieces split exactly by edge bisectors were rule-(a) pieces in the Python, on the
+            // same partition (file doc). Where the Python's max came from one, it bounds this max;
+            // where it did not, it is this max, from the same exact piece.
+            CHECK(info.rule_a_pieces + info.edge_split_pieces == mf.rule_a_pieces);
+            n_split += info.edge_split_pieces > 0;
+            if (info.edge_split_pieces > 0 && mf.rule_a) {
+                CHECK(m <= mf.dmax + 64. * unit);
+                CHECK(info.rule_a <= bool(mf.rule_a));
+            } else {
+                CHECK(par <= 64.);
+                CHECK(info.rule_a == bool(mf.rule_a));
+                w_par = std::max(w_par, par);
+            }
             w_U = std::max(w_U, std::abs(info.U - mf.U) / unit);
-            w_at = std::max(
-                w_at,
-                (info.at - Vec3(mf.at[0], mf.at[1], mf.at[2])).cwiseAbs().maxCoeff() / (EPS * xs));
+            if (!(info.edge_split_pieces > 0 && mf.rule_a)) { // the Python's argmax is this one's
+                w_at = std::max(
+                    w_at,
+                    (info.at - Vec3(mf.at[0], mf.at[1], mf.at[2])).cwiseAbs().maxCoeff() /
+                        (EPS * xs));
+            }
             constexpr int N = 24;
             double smax = 0.;
             for (int i = 0; i <= N; ++i) {
@@ -1397,12 +1457,13 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
             }
         }
         std::printf(
-            "  %-13s %2d faces (%d rule-(a) maxima): parity max %.2f, U %.2f, at %.2f (eps units); "
-            "grid -"
-            " max %+.2f; |d(at) - max| %.2f\n",
+            "  %-13s %2d faces (%d rule-(a) maxima, %d faces with split pieces): parity max %.2f, "
+            "U "
+            "%.2f, at %.2f (eps units); grid - max %+.2f; |d(at) - max| %.2f\n",
             c.name,
             c.nfaces,
             n_ra,
+            n_split,
             w_par,
             w_U,
             w_at,
@@ -2187,4 +2248,456 @@ TEST_CASE("exact-band-hessian-states", "[.hess_states]")
         sorted.empty() ? 0. : sorted.back(),
         over);
     CHECK(over == 0);
+}
+
+// ------------------------------------------------------------------------------------------------
+// Segments and points: a curve offset's input (ExactBandIntegral.hpp). The Python has no such
+// input, so nothing here is parity; every reference is independent of the code it checks:
+//  - the fence: below a curve in z = 0, the triangles {p - t z : p on the curve, 0 <= t <= 10}.
+//    For x with x_z >= 0 and p - t z on it, |x - p + t z|^2 = |x - p|^2 + 2 t x_z + t^2 >=
+//    |x - p|^2, so the fence's distance is the curve's there, and a cell above the plane has one
+//    value for both inputs: the curve's from the segments' features, the fence's from the
+//    triangles' (the Python-checked path above);
+//  - quadrature: d by brute force (ref_curve_distance()) at the 4-point degree-2 rule on the
+//    cell's red children, refined 5 times (32768 children). Its error does not fall
+//    monotonically with the refinement: the input's line and the bisector planes cut the
+//    children at shifting places. MEASURED (polyline_3d, the cell inside its bend at
+//    (2.5, 2.5, 0.5)): (q - I) / S at 2..6 refinements -9.1e-7, -1.6e-5, +3.1e-6, -4.4e-7,
+//    -8.5e-9. So one refinement is compared with the closed form, at a bound over its own
+//    error (exact-band-integral-segments-quadrature);
+//  - additivity over the red children, and the front form (oint G.n + D_t = J,
+//    test_exact_band_front.cpp), which labels the pieces by resolve() on its own partition.
+// ------------------------------------------------------------------------------------------------
+
+namespace {
+
+/// One input: vertices, segments (rows of V), points (rows of V); planar: in z = 0 (the fence).
+struct CurveInput
+{
+    std::string name;
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi E;
+    std::vector<int> P;
+    bool planar = false;
+};
+
+std::vector<CurveInput> curve_inputs()
+{
+    const auto make = [](const std::string& name,
+                         const std::vector<Vec3>& pts,
+                         const std::vector<std::array<int, 2>>& segs,
+                         const std::vector<int>& P) {
+        CurveInput c;
+        c.name = name;
+        c.V.resize(Eigen::Index(pts.size()), 3);
+        for (size_t i = 0; i < pts.size(); ++i) c.V.row(Eigen::Index(i)) = pts[i].transpose();
+        c.E.resize(Eigen::Index(segs.size()), 2);
+        for (size_t i = 0; i < segs.size(); ++i) c.E.row(Eigen::Index(i)) << segs[i][0], segs[i][1];
+        c.P = P;
+        c.planar = true;
+        for (const Vec3& p : pts) c.planar = c.planar && p[2] == 0.;
+        return c;
+    };
+    return {
+        make("straight", {Vec3(0, 0, 0), Vec3(1, 0, 0)}, {{0, 1}}, {}),
+        // turning by 53 degrees, and an acute corner (39 degrees between the segments): the
+        // segments' slabs overlap inside the bend, where their bisector is a plane through it
+        make("bend", {Vec3(0, 0, 0), Vec3(1, 0, 0), Vec3(1.6, 0.8, 0)}, {{0, 1}, {1, 2}}, {}),
+        make("acute", {Vec3(0, 0, 0), Vec3(1.5, 0, 0), Vec3(0.4, 0.9, 0)}, {{0, 1}, {1, 2}}, {}),
+        make(
+            "junction",
+            {Vec3(0, 0, 0), Vec3(1.2, 0, 0), Vec3(-0.6, 1.0, 0), Vec3(-0.5, -1.1, 0)},
+            {{0, 1}, {0, 2}, {0, 3}},
+            {}),
+        make(
+            "junction_3d",
+            {Vec3(0, 0, 0), Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)},
+            {{0, 1}, {0, 2}, {0, 3}},
+            {}),
+        // non-planar, its non-adjacent features 2.5 apart: out of reach of every cell below
+        make(
+            "polyline_3d",
+            {Vec3(0, 0, 0), Vec3(2.5, 0, 0), Vec3(2.5, 2.5, 0.5), Vec3(0, 2.5, 2), Vec3(0, 0, 2.5)},
+            {{0, 1}, {1, 2}, {2, 3}, {3, 4}},
+            {}),
+        make("points", {Vec3(0, 0, 0), Vec3(0.7, 0.3, 0.1)}, {}, {0, 1}),
+    };
+}
+
+ExactBandIntegral curve_integral(const CurveInput& c)
+{
+    return ExactBandIntegral(c.V, Eigen::MatrixXi(0, 3), c.E, c.P, {}, 0);
+}
+
+/// The fence below a planar input (section doc), two triangles per segment.
+ExactBandIntegral fence_integral(const CurveInput& c)
+{
+    const Eigen::Index n = c.V.rows();
+    Eigen::MatrixXd V(2 * n, 3);
+    V.topRows(n) = c.V;
+    V.bottomRows(n) = c.V;
+    V.bottomRows(n).col(2).array() -= 10.;
+    Eigen::MatrixXi F(2 * c.E.rows(), 3);
+    for (Eigen::Index s = 0; s < c.E.rows(); ++s) {
+        const int a = c.E(s, 0), b = c.E(s, 1);
+        F.row(2 * s) << a, b, b + int(n);
+        F.row(2 * s + 1) << a, b + int(n), a + int(n);
+    }
+    return ExactBandIntegral(V, F);
+}
+
+/// d(x) by brute force: the min over the segments and the points of the distance to one.
+double ref_curve_distance(const Vec3& x, const CurveInput& c)
+{
+    double d = std::numeric_limits<double>::infinity();
+    for (Eigen::Index s = 0; s < c.E.rows(); ++s) {
+        const Vec3 a = c.V.row(c.E(s, 0)).transpose(), b = c.V.row(c.E(s, 1)).transpose();
+        const double t = std::clamp((x - a).dot(b - a) / (b - a).squaredNorm(), 0., 1.);
+        d = std::min(d, (x - a - t * (b - a)).norm());
+    }
+    for (const int p : c.P) d = std::min(d, (x - c.V.row(p).transpose()).norm());
+    return d;
+}
+
+/// The bound on |q - I| / S at 32768 children (exact-band-integral-segments-quadrature), over the
+/// quadrature's own error: MEASURED at most 7.7e-7 on the cells below (junction_3d). It resolves
+/// what the exact split changes: rule (a) on a bend's inner cell, the smaller integral of one
+/// segment's line distance over it, lies 1.1e-2 to 3.4e-2 S above I (MEASURED, bend, acute,
+/// junction_3d, polyline_3d, the same quadrature).
+constexpr double QUAD_BOUND = 1e-5;
+
+double tet_volume(const Tet& T)
+{
+    return std::abs((T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]))) / 6.;
+}
+
+/// int_t d dV by quadrature, t refined `depth` times (red_children()), the 4-point degree-2 rule
+/// on each child.
+double quad_I(const Tet& T, const int depth, const CurveInput& c)
+{
+    if (depth > 0) {
+        double s = 0.;
+        for (const Tet& k : red_children(T)) s += quad_I(k, depth - 1, c);
+        return s;
+    }
+    constexpr double a = 0.5854101966249685, b = 0.1381966011250105;
+    const Vec3 sum = T[0] + T[1] + T[2] + T[3];
+    double s = 0.;
+    for (const Vec3& p : T) s += ref_curve_distance(b * sum + (a - b) * p, c);
+    return tet_volume(T) * s / 4.;
+}
+
+/// oint_dt G.n dA over t's four faces, each ordered with its normal out of t
+/// (test_exact_band_front.cpp).
+double cell_boundary_flux(const ExactBandIntegral& eb, const Tet& T, const double delta)
+{
+    double tot = 0.;
+    for (int i = 0; i < 4; ++i) {
+        std::array<Vec3, 3> f;
+        int c = 0;
+        for (int j = 0; j < 4; ++j) {
+            if (j != i) f[size_t(c++)] = T[size_t(j)];
+        }
+        if ((f[1] - f[0]).cross(f[2] - f[0]).dot(f[0] - T[size_t(i)]) < 0.) std::swap(f[1], f[2]);
+        tot += eb.front_face(f, delta);
+    }
+    return tot;
+}
+
+/// splitmix64: the same numbers on every platform, which the standard distributions are not.
+struct Rng
+{
+    uint64_t s;
+    double next() // in [0, 1)
+    {
+        uint64_t z = (s += 0x9E3779B97F4A7C15ull);
+        z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+        z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+        return double((z ^ (z >> 31)) >> 11) * 0x1.0p-53;
+    }
+    double in(const double lo, const double hi) { return lo + (hi - lo) * next(); }
+    Vec3 unit()
+    {
+        const double z = in(-1., 1.), t = in(0., 2. * std::acos(-1.)), r = std::sqrt(1. - z * z);
+        return Vec3(r * std::cos(t), r * std::sin(t), z);
+    }
+};
+
+/// A cell of size s centred at c: a regular tet of edge s, each corner moved by up to s / 4.
+Tet cell_at(const Vec3& c, const double s, Rng& rng)
+{
+    const double k = s / (2. * std::sqrt(2.));
+    const std::array<Vec3, 4> reg = {
+        {Vec3(1, 1, 1), Vec3(1, -1, -1), Vec3(-1, 1, -1), Vec3(-1, -1, 1)}};
+    Tet T;
+    for (int i = 0; i < 4; ++i) {
+        T[size_t(i)] =
+            c + k * reg[size_t(i)] + Vec3(rng.in(-1, 1), rng.in(-1, 1), rng.in(-1, 1)) * (s / 4.);
+    }
+    return T;
+}
+
+/// The band's cells around an input, delta 0.2: random ones, their centres within 2 delta of the
+/// input, of sizes 0.05, 0.12 and 0.25; and, kept apart as `inner`, cells at every vertex of
+/// two or more segments, on the bisector of each pair of its segments, where their slabs overlap.
+void curve_cells(const CurveInput& c, Rng& rng, std::vector<Tet>& cells, std::vector<Tet>& inner)
+{
+    const double delta = 0.2;
+    const int nprim = int(c.E.rows()) + int(c.P.size());
+    const double sizes[3] = {0.05, 0.12, 0.25};
+    for (int i = 0; i < 30; ++i) {
+        const int p = std::min(int(rng.in(0., double(nprim))), nprim - 1);
+        Vec3 q;
+        if (p < c.E.rows()) {
+            const Vec3 a = c.V.row(c.E(p, 0)).transpose(), b = c.V.row(c.E(p, 1)).transpose();
+            q = a + rng.next() * (b - a);
+        } else {
+            q = c.V.row(c.P[size_t(p - c.E.rows())]).transpose();
+        }
+        cells.push_back(cell_at(q + rng.in(0., 2. * delta) * rng.unit(), sizes[i % 3], rng));
+    }
+    std::vector<std::vector<Vec3>> dirs(size_t(c.V.rows()));
+    for (Eigen::Index s = 0; s < c.E.rows(); ++s) {
+        for (int e = 0; e < 2; ++e) {
+            const int v = c.E(s, e), w = c.E(s, 1 - e);
+            dirs[size_t(v)].push_back((c.V.row(w) - c.V.row(v)).transpose().normalized());
+        }
+    }
+    for (size_t v = 0; v < dirs.size(); ++v) {
+        const Vec3 x = c.V.row(Eigen::Index(v)).transpose();
+        for (size_t i = 0; i < dirs[v].size(); ++i) {
+            for (size_t j = i + 1; j < dirs[v].size(); ++j) {
+                const Vec3 m = (dirs[v][i] + dirs[v][j]).normalized();
+                inner.push_back(cell_at(x + 0.6 * delta * m, 0.12, rng));
+            }
+        }
+    }
+}
+
+} // namespace
+
+TEST_CASE("exact-band-integral-segments", "[offset][exact_band]")
+{
+    std::printf("exact-band-integral-segments: segments and points (delta 0.2)\n");
+    const double delta = 0.2;
+    for (const CurveInput& c : curve_inputs()) {
+        const ExactBandIntegral eb = curve_integral(c);
+        std::optional<ExactBandIntegral> fence;
+        if (c.planar && c.E.rows() > 0) fence.emplace(fence_integral(c));
+        Rng rng{0x5eed0000ull + uint64_t(c.name.size())};
+        std::vector<Tet> cells, inner;
+        curve_cells(c, rng, cells, inner);
+        const size_t n_random = cells.size();
+        cells.insert(cells.end(), inner.begin(), inner.end());
+        int n_rule_a = 0, n_split = 0, n_add = 0, n_fence = 0, n_front = 0;
+        double w_add = 0., w_fence = 0., w_front = 0.;
+        int64_t n_closed = 0;
+        for (size_t i = 0; i < cells.size(); ++i) {
+            // a cell above the plane for the fence: the same cell moved up out of it
+            Tet T = cells[i];
+            INFO(c.name << " cell " << i);
+            ExactBandIntegral::Stats st;
+            st.check_closed = true;
+            const double I = eb.value(T, 0., &st);
+            const double vol = tet_volume(T), S = I + delta * vol;
+            CHECK(st.open_results == 0);
+            n_closed += st.closed_checked;
+            CHECK(std::abs(eb.value(T, delta) - (I - delta * vol)) <= 1e-12 * S);
+            n_split += st.edge_split_pieces > 0;
+            const bool is_inner = i >= n_random;
+            if (is_inner) {
+                // the bend's or junction's two slabs overlap here: split exactly, no rule (a)
+                CHECK(st.edge_split_pieces > 0);
+                CHECK(st.rule_a_vol == 0.);
+            }
+            if (st.rule_a_vol > 0.) {
+                ++n_rule_a;
+            } else {
+                double sum = 0.;
+                for (const Tet& k : red_children(T)) sum += eb.value(k, 0.);
+                CHECK(std::abs(sum - I) <= 1e-12 * S);
+                w_add = std::max(w_add, std::abs(sum - I) / S);
+                ++n_add;
+                const double F = cell_boundary_flux(eb, T, delta), D = eb.bisector_jump(T, delta);
+                const double J = eb.value(T, delta);
+                CHECK(std::abs(F + D - J) <= 1e-11 * delta * vol);
+                w_front = std::max(w_front, std::abs(F + D - J) / (delta * vol));
+                ++n_front;
+            }
+            if (fence) {
+                double zmin = std::numeric_limits<double>::infinity();
+                for (const Vec3& p : T) zmin = std::min(zmin, p[2]);
+                if (zmin < 0.) {
+                    for (Vec3& p : T) p[2] -= zmin;
+                }
+                const double Ic = eb.value(T, 0.), If = fence->value(T, 0.);
+                CHECK(std::abs(Ic - If) <= 1e-12 * (Ic + delta * tet_volume(T)));
+                w_fence = std::max(w_fence, std::abs(Ic - If) / (Ic + delta * tet_volume(T)));
+                ++n_fence;
+            }
+        }
+        std::printf(
+            "  %-12s %2zu cells (%zu inner, %d with split pieces, %d with rule (a)): additivity on "
+            "%d "
+            "%.1e (S); front form on %d %.1e (delta vol); fence on %d %.1e (S); %lld clip results "
+            "closed\n",
+            c.name.c_str(),
+            cells.size(),
+            inner.size(),
+            n_split,
+            n_rule_a,
+            n_add,
+            w_add,
+            n_front,
+            w_front,
+            n_fence,
+            w_fence,
+            (long long)n_closed);
+    }
+}
+
+TEST_CASE("exact-band-integral-segments-quadrature", "[offset][exact_band]" + release_only)
+{
+    // the closed form against quadrature at 32768 children (section doc), in S = I + delta vol
+    std::printf("exact-band-integral-segments-quadrature: |q - I| / S at 32768 children\n");
+    const double delta = 0.2;
+    for (const CurveInput& c : curve_inputs()) {
+        const ExactBandIntegral eb = curve_integral(c);
+        Rng rng{0x5eed0000ull + uint64_t(c.name.size())};
+        std::vector<Tet> cells, inner;
+        curve_cells(c, rng, cells, inner);
+        cells.insert(cells.end(), inner.begin(), inner.end());
+        double worst = 0.;
+        for (size_t i = 0; i < cells.size(); ++i) {
+            const Tet& T = cells[i];
+            const double I = eb.value(T, 0.);
+            const double e = std::abs(quad_I(T, 5, c) - I) / (I + delta * tet_volume(T));
+            INFO(c.name << " cell " << i);
+            CHECK(e <= QUAD_BOUND);
+            worst = std::max(worst, e);
+        }
+        std::printf("  %-12s %2zu cells: max %.1e\n", c.name.c_str(), cells.size(), worst);
+    }
+}
+
+TEST_CASE("exact-band-integral-segment-derivatives", "[offset][exact_band]" + release_only)
+{
+    // finite differences at every corner of the cells above (fd(), its units and bounds), and the
+    // elementary-piece cache on them, split pieces included (exact-band-grad-hess-cache)
+    std::printf("exact-band-integral-segment-derivatives\n");
+    const double delta = 0.2;
+    for (const CurveInput& c : curve_inputs()) {
+        const ExactBandIntegral eb = curve_integral(c);
+        Rng rng{0x5eed0000ull + uint64_t(c.name.size())};
+        std::vector<Tet> cells, inner;
+        curve_cells(c, rng, cells, inner);
+        cells.insert(cells.end(), inner.begin(), inner.end());
+        FDSummary fs;
+        for (size_t i = 0; i < cells.size(); ++i) {
+            const Tet& T = cells[i];
+            INFO(c.name << " cell " << i);
+            for (int kv = 0; kv < 4; ++kv) {
+                fs.add(fd(eb, T, kv, delta));
+                ExactBandIntegral::Partition keep;
+                CHECK(eb.value(T, delta, keep) == eb.value(T, delta));
+                Vec3 G0, G1;
+                Eigen::Matrix3d H0, H1;
+                eb.value_grad_hess(T, kv, delta, G0, H0);
+                eb.grad_hess(T, kv, delta, G1, H1, keep);
+                CHECK(G1 == G0);
+                CHECK(H1 == H0);
+            }
+        }
+        std::printf(
+            "  %-12s %d smooth corners: gradient %.1e Hessian %.1e; %d kink corners: inward "
+            "%.1e\n",
+            c.name.c_str(),
+            fs.smooth,
+            fs.grad,
+            fs.hess,
+            fs.kinks,
+            fs.inward);
+        CHECK(fs.grad <= 1e-7);
+        CHECK(fs.hess <= 1e-4);
+        CHECK(fs.inward <= 2e-2);
+    }
+}
+
+TEST_CASE("exact-band-max-distance-segments", "[offset][exact_band]")
+{
+    // max_distance() on the cells' faces: d on a 24-per-side grid never above the max, and d at
+    // the returned point equal to it where it is not from a rule-(a) piece
+    // (exact-band-max-distance)
+    std::printf("exact-band-max-distance-segments\n");
+    constexpr double EPS = std::numeric_limits<double>::epsilon();
+    const double delta = 0.2;
+    for (const CurveInput& c : curve_inputs()) {
+        const ExactBandIntegral eb = curve_integral(c);
+        Rng rng{0x5eed0000ull + uint64_t(c.name.size())};
+        std::vector<Tet> cells, inner;
+        curve_cells(c, rng, cells, inner);
+        cells.insert(cells.end(), inner.begin(), inner.end());
+        int n_faces = 0, n_ra = 0, n_split = 0;
+        double w_ub = -std::numeric_limits<double>::infinity(), w_eq = 0.;
+        for (const Tet& T : cells) {
+            for (int i = 0; i < 4; ++i) {
+                std::array<Vec3, 3> P;
+                int k = 0;
+                for (int j = 0; j < 4; ++j) {
+                    if (j != i) P[size_t(k++)] = T[size_t(j)];
+                }
+                ExactBandIntegral::MaxInfo info;
+                const double m = eb.max_distance(P, &info);
+                double xs = 0.;
+                for (const Vec3& p : P) xs = std::max(xs, p.cwiseAbs().maxCoeff());
+                const double unit = EPS * (xs + delta);
+                constexpr int N = 24;
+                double smax = 0.;
+                for (int a = 0; a <= N; ++a) {
+                    for (int b = 0; a + b <= N; ++b) {
+                        const Vec3 x = P[0] + (double(a) / N) * (P[1] - P[0]) +
+                                       (double(b) / N) * (P[2] - P[0]);
+                        smax = std::max(smax, ref_curve_distance(x, c));
+                    }
+                }
+                INFO(c.name << " face " << n_faces);
+                CHECK(smax - m <= 64. * unit);
+                w_ub = std::max(w_ub, (smax - m) / unit);
+                if (info.rule_a) {
+                    ++n_ra;
+                } else {
+                    const double e = std::abs(ref_curve_distance(info.at, c) - m) / unit;
+                    CHECK(e <= 64.);
+                    w_eq = std::max(w_eq, e);
+                }
+                n_split += info.edge_split_pieces > 0;
+                ++n_faces;
+            }
+        }
+        std::printf(
+            "  %-12s %d faces (%d rule-(a) maxima, %d with split pieces): grid - max %+.2f, "
+            "|d(at) - max| %.2f (eps units)\n",
+            c.name.c_str(),
+            n_faces,
+            n_ra,
+            n_split,
+            w_ub,
+            w_eq);
+    }
+}
+
+TEST_CASE("exact-band-integral-one-kind", "[offset][exact_band]")
+{
+    // triangles with segments or points: one envelope holds one kind, refused
+    Eigen::MatrixXd V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi F(1, 3), E(1, 2);
+    F << 0, 1, 2;
+    E << 0, 3;
+    CHECK_THROWS(ExactBandIntegral(V, F, E, {}, {}, 0));
+    CHECK_THROWS(ExactBandIntegral(V, F, Eigen::MatrixXi(0, 2), {3}, {}, 0));
+    // an envelope of the other kind
+    auto tri_env = std::make_shared<wmtk::Envelope>(true);
+    tri_env->init(V, F, 0.);
+    CHECK_THROWS(ExactBandIntegral(V, Eigen::MatrixXi(0, 3), E, {}, {}, 0, 0, tri_env));
 }
