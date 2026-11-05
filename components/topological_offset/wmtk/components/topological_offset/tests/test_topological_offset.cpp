@@ -6,6 +6,7 @@
 #include <wmtk/components/topological_offset/TopoOffsetTriMesh.h>
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstring>
 #include <filesystem>
@@ -5537,4 +5538,34 @@ TEST_CASE("memory-output-with-offset-front", "[offset][3d][io]")
              key == "envelope"));
     }
     CHECK(size_t(out.at("mesh").V.rows()) == mesh->get_vertices().size());
+}
+
+TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
+{
+    // Hidden until the junction is fixed: neither variant converges reliably without it, so it
+    // would fail every CI run; the hidden runs record it until then, and it moves back into CI
+    // (release_only) once it passes.
+    // double_sphere, offset of tag_0 at 0.05 with the other region, tag_1, held (every region
+    // boundary is held since 2026-11-04) or protected: the front meets tag_1's surface along a
+    // junction curve, a T-junction when held (the band takes tag_1's cells) and an X-junction
+    // when protected (the band overlaps them). The run must converge -- EXPERIMENTAL_exit_no_folds
+    // holds the exit while a fold remains -- at 4 threads, which is nondeterministic, as the
+    // batches run. MEASURED (2026-11-04, 15 turns, 4 threads, one run each): neither converged,
+    // held with 13 folds left, protected with 3; main, which held only the input complex and
+    // let the band push tag_1's surface aside, converged in 2 turns. Fails until the junction is
+    // fixed.
+    const MeshData input = io::read_mesh(
+        (std::filesystem::path(WMTK_DATA_DIR) / "models" / "double_sphere.msh").string());
+    const bool protect = GENERATE(false, true);
+    INFO((protect ? "tag_1 protected" : "tag_1 held"));
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "tag_0"},
+        {"target_distance", 0.05},
+        {"optimize_offset", true},
+        {"max_rounds", 15},
+        {"num_threads", 4},
+        {"throw_on_nonconvergence", true}};
+    if (protect) j["protected_tags"] = {"tag_1"};
+    REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
 }
