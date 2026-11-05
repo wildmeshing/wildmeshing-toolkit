@@ -2,8 +2,8 @@
 
 - On the same input, every op gives the file route's result (compared
   independently of cell order).
-- A .msh output holds the mesh only; the envelope is an entry of the memory
-  result, passed on to the next call only when the caller does so.
+- A .msh output holds the mesh and its tags only; the envelope is an entry of
+  the memory result, passed on to the next call only when the caller does so.
 - save/load checkpoints round-trip exactly, and the PolyFEM ops' reader
   (gmsh) reads them with every cell, the background included.
 
@@ -129,7 +129,13 @@ def _same_as_file(memory_result, file_msh):
     back = wm.read_mesh(file_msh)
     assert canonical(memory_result["mesh"]) == canonical(back)
     envelope_type = "triangle" if _top(back) == "tetrahedron" else "edge"
-    assert envelope_type not in back["cells"]   # files hold the mesh only
+    # files hold the mesh and its tags only: a block of the envelope's type is the inputs'
+    # tagged curves or faces, and a reader takes its EnvelopeSurface rows (or a block without
+    # tags) as an envelope
+    low = back["cells"].get(envelope_type)
+    if low is not None:
+        tags = low.get("attributes", {}).get("tags")
+        assert tags is not None and "EnvelopeSurface" not in tags["labels"]
 
 
 @pytest.mark.parametrize("op", sorted(OPS))
@@ -192,6 +198,52 @@ def test_envelope_is_passed_on_only_by_the_caller(boxes):
                         "resolve_overlaps_tags": [["a", "b"]]},
                        {"m": r1["mesh"], "e": r1["envelope"]})
     assert "envelope" not in r4
+
+
+def _tags_only(m):
+    """The mesh with its tags only, as the file route reads a .msh: a memory input takes
+    no fields it does not know."""
+    cells = {}
+    for t, c in m["cells"].items():
+        cells[t] = {"connectivity": c["connectivity"]}
+        if "tags" in c.get("attributes", {}):
+            cells[t]["attributes"] = {"tags": c["attributes"]["tags"]}
+    return {"V": m["V"], "cells": cells}
+
+
+def test_envelope_is_handed_along_a_chain(boxes, work):
+    """tetwild hands on the input it held its faces to, labelled by input, on both routes;
+    simwild, given it with tetwild's mesh, holds the mesh to it at its own eps and hands
+    it on unchanged, with one result on both routes. It refuses a mesh outside it, and an
+    envelope that lacks a label of the mesh."""
+    options = {"input_names": ["a", "b"], "eps_rel": 1e-2, "filter": "input",
+               "max_iterations": 2, "num_threads": 1}
+    wm.tetwild({"input": boxes, "output": str(work / "tw"), "input_dir": str(work), **options})
+    envelope = wm.read_mesh(str(work / "tw_envelope.msh"))
+    t, report = wm.tetwild({"input": ["a", "b"], **options},
+                           {"a": wm.read_mesh(boxes[0]), "b": wm.read_mesh(boxes[1])})
+    for e in (t["envelope"], envelope):
+        assert e["cells"]["triangle"]["attributes"]["tags"]["labels"] == ["a", "b"]
+        assert e["cells"]["triangle"]["attributes"]["tags"]["values"].sum(axis=0).tolist() \
+            == [12, 12]
+    simwild = {"eps": report["eps"], "max_iterations": 2, "num_threads": 1}
+    mesh = _tags_only(wm.read_mesh(str(work / "tw_final.msh")))
+    out, _ = wm.simwild({"input": ["m"], "envelope": "e", **simwild}, {"m": mesh, "e": envelope})
+    wm.simwild({"input": [str(work / "tw_final.msh")], "envelope": "tw_envelope.msh",
+                "output": str(work / "sw"), "input_dir": str(work), **simwild})
+    _same_as_file(out, str(work / "sw.msh"))
+    assert exact_diff(out["envelope"], envelope) == []
+    assert exact_diff(wm.read_mesh(str(work / "sw_envelope.msh")), envelope) == []
+    # the input moved by 0.1 > eps: the faces received lie outside it
+    moved = dict(envelope, V=envelope["V"] + np.array([0.1, 0, 0]))
+    with pytest.raises(RuntimeError, match="held faces outside"):
+        wm.simwild({"input": ["m"], "envelope": "e", **simwild}, {"m": mesh, "e": moved})
+    tags = envelope["cells"]["triangle"]["attributes"]["tags"]
+    renamed = {"V": envelope["V"], "cells": {"triangle": {
+        "connectivity": envelope["cells"]["triangle"]["connectivity"],
+        "attributes": {"tags": {"values": tags["values"], "labels": ["a", "c"]}}}}}
+    with pytest.raises(RuntimeError, match="labelled b"):
+        wm.simwild({"input": ["m"], "envelope": "e", **simwild}, {"m": mesh, "e": renamed})
 
 
 def test_checkpoint_round_trip(boxes, work):

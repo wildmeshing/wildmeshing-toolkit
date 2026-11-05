@@ -3,6 +3,7 @@
 #include <jse/jse.h>
 #include <wmtk/components/topological_offset/Parameters.h>
 #include <manifold_extraction_spec.hpp>
+#include <optional>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/topological_offset/output_conversion.hpp>
@@ -70,16 +71,38 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         log_and_throw_error("Input must be a .msh file.");
     }
 
+    // The `envelope` input: a mesh of the call on the memory route, a mesh file on the file
+    // route (relative to input_dir). Carried, not held to: handed on unchanged
+    // (hand_on_envelope()), while the extraction holds the offset's envelopes, built around the
+    // mesh it receives (TopoOffsetTetMesh::build_envelopes()).
+    const std::string envelope_path =
+        component_io.memory() ? "" : json_params["envelope"].get<std::string>();
+    std::optional<MeshData> envelope_file;
+    if (!envelope_path.empty()) envelope_file = io::read_mesh(resolve_path(root, envelope_path));
+    const MeshData* envelope = envelope_file ? &*envelope_file
+                               : !envelope_selector.is_null()
+                                   ? &component_io.mesh(envelope_selector)
+                                   : nullptr;
+
     // read image / MSH
-    InputData input_data =
-        component_io.memory()
-            ? read_mesh_data(
-                  component_io.mesh(input_path),
-                  !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr)
-            : read_image_msh(input_path);
-    // Tagged faces would be dropped silently; refuse them until they are carried.
+    InputData input_data = component_io.memory()
+                               ? read_mesh_data(component_io.mesh(input_path), envelope)
+                               : read_image_msh(input_path, envelope);
+    // After the output: the envelope given goes on as given (a labelled reference unchanged, so
+    // that a chain keeps passing the first component's input), on the file route as
+    // <output>_envelope.msh.
+    const auto hand_on_envelope = [&]() {
+        auto& outputs = component_io.result.first;
+        if (input_data.envelope_reference) outputs["envelope"] = *input_data.envelope_reference;
+        if (!component_io.memory() && envelope && outputs.count("envelope"))
+            io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
+    };
+    // Tagged faces (2D: tagged edges) and feature curves would be dropped silently; refuse them
+    // until they are carried.
     if (input_data.F_tagged.rows())
-        log_and_throw_error("manifold_extraction does not take tagged faces yet");
+        log_and_throw_error("manifold_extraction does not take tagged faces (2D: edges) yet");
+    if (!input_data.features.empty())
+        log_and_throw_error("manifold_extraction does not take feature curves yet");
     man_params.init(
         input_data.V_input.colwise().minCoeff(),
         input_data.V_input.colwise().maxCoeff());
@@ -171,6 +194,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             mesh.write_curve("", &component_io.result.first);
         else
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
+        hand_on_envelope();
         if (mesh.m_man_params.save_vtu) {
             mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         }
@@ -262,6 +286,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             mesh.write_surface("", &component_io.result.first);
         else
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
+        hand_on_envelope();
         if (mesh.m_man_params.save_vtu) {
             mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         }

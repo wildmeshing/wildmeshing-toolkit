@@ -28,7 +28,7 @@
   {
     "pointer": "/input",
     "type": "string",
-    "doc": "Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh."
+    "doc": "Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh. Tagged faces (2D: tagged edges) and feature curves are refused: they are not carried yet."
   },
   {
     "pointer": "/output",
@@ -105,6 +105,6 @@
     "pointer": "/envelope",
     "type": "string",
     "default": "",
-    "doc": "Memory route only: the name of the input mesh that holds the envelope surface of a tagged mesh input -- the `envelope` mesh simwild returns with its result. On the file route, the .msh input's own EnvelopeSurface group plays this role, and this option is ignored."
+    "doc": "The envelope of a tagged mesh input: on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs[\"envelope\"]) and write (<output>_envelope.msh), labelled by the tags it holds. Carried, not yet held to: the run returns it unchanged as its envelope (on the file route <output>_envelope.msh), so that a chain keeps passing the first component's input on to the components after it, while the extraction builds its envelopes around the mesh it receives. Its triangles (2D: segments) stand for the input's EnvelopeSurface group, which it cannot be combined with."
   }
 ]

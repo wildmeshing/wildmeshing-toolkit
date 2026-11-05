@@ -102,7 +102,7 @@
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of input files. A .msh is an already-tagged mesh and is used as-is. Anything else is inserted by VolumeRemesher: a triangular surface mesh in 3D, or an OBJ curve network ('v'/'l' polylines) in 2D. See /dimension.",
+    "doc": "List of input files. A .msh is an already-tagged mesh and is used as-is. Anything else is inserted by VolumeRemesher: a triangular surface mesh in 3D, or an OBJ curve network ('v'/'l' polylines) in 2D. See /dimension. A tagged mesh's lower blocks are tags too, on both routes: in 3D its triangles are face tags and its edges feature curves, one feature input per label, held as /input_edges are; in 2D its edges are edge tags, as curve inputs give them (see /input_type). Their rows labelled EnvelopeSurface, and in 2D an edge block without tags, are the envelope. simwild writes its tags back the same way, and reads tetwild's and triwild's outputs as such tagged meshes.",
     "min": 1
   },
   {
@@ -160,7 +160,7 @@
     "pointer": "/output",
     "type": "string",
     "default": "out",
-    "doc": "Output file name (without extension)."
+    "doc": "Output file name (without extension): the mesh is <output>.msh. While the run holds the mesh to an envelope (the operations that change the tags drop it), next to it <output>_envelope.msh, the memory route's outputs[\"envelope\"]: an envelope given (see /envelope), unchanged; else the reference this run held its tags to, labelled as the mesh labels them (triangles, 2D segments, one column per face tag, edge tag or region; the feature curves; the input points), the `envelope` a later run takes. It holds no eps: the receiver builds its own envelopes around it."
   },
   {
     "pointer": "/input_transform",
@@ -196,7 +196,7 @@
     "pointer": "/input_edges",
     "type": "list",
     "default": [],
-    "doc": "List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). input_transform does not apply to them. The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the box is grown over them automatically, and with it the bounding box eps and the lengths are relative to. The optimization preserves them: the tet edges tiling them stay inside a tube of feature_envelope_ratio x eps around the input edges, and every vertex where they end or three or more meet is anchored within that radius. Read and held by the same code as tetwild's input_edges."
+    "doc": "List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). input_transform does not apply to them. The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the box is grown over them automatically, and with it the bounding box eps and the lengths are relative to. The optimization preserves them: the tet edges tiling them stay inside a tube of feature_envelope_ratio x eps around the input edges, and every vertex where they end or three or more meet is anchored within that radius. Read and held by the same code as tetwild's input_edges. The output mesh holds them on both routes as its edge block, one tag per file, feature_<i> for the i-th, as tetwild writes them, and a tagged tet mesh input's edge block is read back as such curves (see /input)."
   },
   {
     "pointer": "/input_edges/*",
@@ -218,7 +218,7 @@
     "pointer": "/simplify",
     "type": "bool",
     "default": true,
-    "doc": "If true, the input is simplified. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified."
+    "doc": "If true, the input is simplified: a surface or curve input before insertion when preserve_topology is false; in 3D, the tet mesh after insertion when preserve_topology is true and the operation is remeshing -- a tagged mesh input included, whose envelope is then the mesh's tracked faces as read (see envelope_reference). The 2D route has no simplification after insertion."
   },
   {
     "pointer": "/tag_from_winding_number",
@@ -782,6 +782,6 @@
     "pointer": "/envelope",
     "type": "string",
     "default": "",
-    "doc": "Memory route only: the name of the input mesh that holds the envelope surface of a tagged mesh input -- the `envelope` mesh simwild returns with its result. On the file route, the .msh input's own EnvelopeSurface group plays this role, and this option is ignored."
+    "doc": "The envelope of a tagged mesh input: on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the inputs are -- the envelope tetwild, triwild and simwild return (outputs[\"envelope\"]) and write (<output>_envelope.msh). Labelled, as theirs are, it is the reference the first component held its tags to, its input: every envelope, order-2 and feature tube and anchor is built around it, label by label, at this run's own eps, its labels naming the mesh's face tags (2D: edge tags), regions and feature curves. The output is then within this run's eps of the original input however many components came before; built around the mesh received, the bound would grow by one eps per stage. A label of a held face, edge or feature curve of the mesh that the envelope lacks throws. A remeshing first checks, exactly, that every held face (2D: edge) and feature edge received lies in the envelopes of its labels, and throws otherwise, naming the labels, the number outside and the eps: the sender held them to a wider envelope. Nothing is rebuilt around the mesh. Not with use_sample_envelope, nor with envelope_reference \"simplified\", which builds the envelopes around this run's simplification. The run returns it unchanged as its envelope (on the file route <output>_envelope.msh), so that a chain keeps passing it; the operations that change the tags return none. Without labels, as bare geometry, it is held to as a whole, as before the labels, and rebuilt from the mesh when a face starts outside it. Not with a .msh input that has an EnvelopeSurface group, which otherwise plays this role."
   }
 ]

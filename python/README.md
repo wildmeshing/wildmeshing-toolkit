@@ -68,7 +68,9 @@ background `ambient`. Options select regions by expression: `"a & b"` (overlap),
 ### Envelopes
 
 simwild returns `outputs["envelope"]`, the surface the mesh must stay close to, when it has
-one. Pass it on explicitly; without one, simwild derives an envelope from the regions.
+one: the inputs it held the regions to, labelled by region, as tetwild and triwild return theirs.
+Pass it on explicitly; the next run holds the mesh to it at its own eps, so a chain stays within
+one eps of the original inputs. Without one, simwild derives an envelope from the regions.
 
 ```python
 m2, _ = wm.simwild({"operation": "remeshing", "input": ["m"], "envelope": "e"},

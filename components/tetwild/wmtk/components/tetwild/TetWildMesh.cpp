@@ -1,4 +1,5 @@
 #include <wmtk/io/DataWriter.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 
 #include "TetWildMesh.h"
 
@@ -685,7 +686,10 @@ void TetWildMesh::filter_with_flood_fill()
 }
 
 
-void TetWildMesh::output_mesh(std::string file)
+void TetWildMesh::output_mesh(
+    std::string file,
+    const std::vector<std::string>& face_tags,
+    const std::vector<std::string>& feature_tags)
 {
     if (!m_params.output_enabled) return;
     consolidate_mesh();
@@ -742,6 +746,43 @@ void TetWildMesh::output_mesh(std::string file)
             msh.add_tet_attribute<1>(fmt::format("wn_{}", j), [&](size_t i) {
                 return tet_finalize(i).m_winding_number_per_input[j];
             });
+        }
+    }
+
+    // The tags, as the memory route's mesh carries them: a block of the tet vertices (the vertex
+    // block MshData leaves empty) per tag, its physical group named after it. A cell with
+    // several tags is in several blocks, and the shared reader (io::read_mesh) reads it back as
+    // one row with each tag; the blocks give it the same row, so the orientation survives.
+    MeshMap tagged{{"mesh", MeshData()}};
+    io::collect_input_set_tags<CellType::Triangle>(*this, tagged, face_tags);
+    io::collect_feature_edge_tags(*this, tagged, feature_tags);
+    for (const auto& entry : tagged.at("mesh").cells) {
+        const CellType type = entry.first;
+        const CellData& block = entry.second;
+        const MeshAttribute& tags = block.attributes.at("tags");
+        const DataMatrix<int64_t> member = tags.integers();
+        for (size_t j = 0; j < tags.labels.size(); ++j) {
+            std::vector<Eigen::Index> rows;
+            for (Eigen::Index r = 0; r < member.rows(); ++r) {
+                if (member(r, Eigen::Index(j)) != 0) rows.push_back(r);
+            }
+            if (rows.empty()) continue;
+            if (type == CellType::Triangle) {
+                msh.add_face_vertices();
+                msh.add_faces(rows.size(), [&](size_t k) {
+                    std::array<size_t, 3> f;
+                    for (int c = 0; c < 3; ++c) f[c] = size_t(block.connectivity(rows[k], c));
+                    return f;
+                });
+            } else {
+                msh.add_edge_vertices();
+                msh.add_edges(rows.size(), [&](size_t k) {
+                    std::array<size_t, 2> e;
+                    for (int c = 0; c < 2; ++c) e[c] = size_t(block.connectivity(rows[k], c));
+                    return e;
+                });
+            }
+            msh.add_physical_group(tags.labels[j]);
         }
     }
 

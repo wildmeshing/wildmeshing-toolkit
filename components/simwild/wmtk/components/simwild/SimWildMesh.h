@@ -68,6 +68,11 @@ public:
     std::map<std::string, int64_t> m_tag_name_to_id;
     /// Names of the face tags: bit i of a face's input set is m_face_tag_names[i].
     std::vector<std::string> m_face_tag_names;
+    /// Names of the feature curves' inputs: bit i of a feature edge's input set
+    /// (FeatureEdgeAttributes::inputs(feature)) is m_feature_edge_names[i], the output's edge tag
+    /// (io::collect_feature_edge_tags()). Set by the driver: feature_<i> for input_edges file i,
+    /// or the edge tags of a tagged mesh input (InputData::feature_edge_names).
+    std::vector<std::string> m_feature_edge_names;
 
     /**
      * @brief (Re)build the base's m_input_envelopes: one envelope per label, and each surface
@@ -104,8 +109,50 @@ public:
     }
 
     /// Per row of m_F_envelope: its label bits, when m_F_envelope is the inputs' triangles
-    /// (InputData::F_envelope_labels); empty once m_F_envelope is rebuilt from the mesh.
+    /// (InputData::F_envelope_labels) or the mesh's own surface faces at load
+    /// (init_surfaces_and_boundaries(): each face's input set); empty once simplify() rebuilds
+    /// m_F_envelope around the simplified faces. init_label_envelopes() reads an empty one as
+    /// "around the mesh's faces as they are then": at load that left the per-label envelopes to
+    /// follow the faces, so after the simplification under envelope_reference "input" they were
+    /// rebuilt around the simplified faces while the union was rebuilt around the input.
     std::vector<InputSet> m_F_envelope_labels;
+    /// Per row of m_F_envelope, when it was built from the mesh's own surface faces
+    /// (init_surfaces_and_boundaries(), simplify()): that face's input set; empty otherwise. What
+    /// envelope_data() labels the rows by where m_F_envelope_labels is empty (after simplify()).
+    std::vector<InputSet> m_F_envelope_face_sets;
+
+    /**
+     * @brief Whether the envelope is a reference an `envelope` input gave
+     * (InputData::envelope_reference), the first component's labelled input: set by the driver
+     * before init, with m_V_envelope, m_F_envelope and m_F_envelope_labels its triangles of this
+     * mesh's labels, m_reference_curves its feature curves, and m_input_curves set from both.
+     *
+     * Every envelope, tube and anchor is then built around the reference at this run's eps, label
+     * by label, never around the mesh received, so the output is within this run's eps of the
+     * first component's input however many components came before; rebuilt from what each
+     * receives, the bound would grow by one eps per stage. init_surfaces_and_boundaries() throws
+     * for a label a held face or feature edge carries that the reference lacks, and, for a
+     * remeshing, which holds the mesh to it, for a held face or feature edge received outside its
+     * labels' envelopes (check_reference_containment()): nothing is rebuilt around the mesh, as
+     * the envelope check without a reference does.
+     */
+    bool m_has_reference = false;
+    /// The reference's feature curves: an input edge per edge and label, edge_input the feature
+    /// input of the label (m_feature_edge_names).
+    utils::FeatureInputs m_reference_curves;
+    /// The label of bit `bit` of a face's input set, as the output names it: a face tag's name, a
+    /// tet tag's label (io::collect_tags()).
+    std::string label_name(size_t bit) const;
+    /**
+     * @brief The envelope the run hands on (io::append_envelope_block()), when it built its own:
+     * m_F_envelope's rows labelled by m_F_envelope_labels, else by m_F_envelope_face_sets, with
+     * the feature curves of `curves` (edge_input: the bit of `curve_names`) and its points.
+     * Unlabelled, and without curves and points, where the rows' labels are not known: a bare
+     * `envelope` given, or the EnvelopeSurface group of a .msh.
+     */
+    MeshData envelope_data(
+        const utils::FeatureInputs& curves,
+        const std::vector<std::string>& curve_names) const;
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// simwild-only fields (tags, quality/sizing fields, the operation name).
@@ -368,6 +415,18 @@ public:
     void init_surfaces_and_boundaries(
         const utils::FeatureInputs* features = nullptr,
         const utils::EmbedFeaturesResult* features_placed = nullptr);
+    /// With a reference (m_has_reference): throws for the labels the held faces carry that no
+    /// row of m_F_envelope has, naming them.
+    void require_reference_face_labels() const;
+    /// With a reference, after tag_feature_edges(): its feature tubes rebuilt around the
+    /// reference's curves, at `eps` and with predicate `exact`, as tag_feature_edges() builds them
+    /// around the curves as read -- one around all, one per input where it built those -- after
+    /// throwing for a label a feature edge carries that the reference's curves lack.
+    void init_reference_feature_tubes(double eps, bool exact);
+    /// With a reference, before a remeshing: throws unless every held face lies in the envelopes
+    /// of its labels and every feature edge in the tubes of its labels, naming each label with
+    /// simplices outside, their number, and the eps.
+    void check_reference_containment() const;
     /// Tracks the faces F_tagged (rows of T's vertices, as read_mesh_data gives them) as surface,
     /// with input set bit j where F_tags has a 1 in column j. Throws on a row that is no face.
     void init_face_tags(
