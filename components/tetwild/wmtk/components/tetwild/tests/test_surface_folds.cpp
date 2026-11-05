@@ -114,9 +114,13 @@ size_t star_folds(const history::Replay& r)
 }
 
 /// Runs tetwild on `model` and returns the folds of its tracked surface right after the
-/// insertion and at the end, from its surface history.
-std::pair<size_t, size_t>
-folds_of_run(const std::string& model, const bool check, const int threads)
+/// insertion and at the end, from its surface history. `sampled` simplifies the input inside
+/// the sampled envelope instead of the exact one.
+std::pair<size_t, size_t> folds_of_run(
+    const std::string& model,
+    const bool check,
+    const int threads,
+    const bool sampled = false)
 {
     const fs::path dir = fs::current_path() / "tetwild_surface_folds_test";
     fs::create_directories(dir);
@@ -131,6 +135,7 @@ folds_of_run(const std::string& model, const bool check, const int threads)
         {"num_threads", threads},
         {"max_iterations", 10},
         {"write_vtu", false},
+        {"simplify_use_sample_envelope", sampled},
     });
     const auto h = history::SurfaceHistory::load(hist.string());
     history::Replay r(h);
@@ -201,7 +206,10 @@ TEST_CASE("tetwild-surface-folds-none-made", "[tetwild][folds]" + release_only)
 
 TEST_CASE("tetwild-surface-folds-compare", "[.folds-compare]")
 {
-    // With the check off and on, on a few models (WMTK_FOLDS_MODELS for one).
+    // With the check off and on, on a few models (WMTK_FOLDS_MODELS for one). The simplification
+    // uses the sampled envelope, as data2's tetwild_crown config does: with the exact one, the
+    // default since #1118, crown.obj's simplification alone took 34 min (2054 s, 2026-11-05),
+    // and this case runs it twice.
     std::vector<std::string> models = {
         "sphere.obj",
         "bunny.obj",
@@ -212,8 +220,8 @@ TEST_CASE("tetwild-surface-folds-compare", "[.folds-compare]")
     if (const char* m = std::getenv("WMTK_FOLDS_MODELS")) models = {m};
     for (const std::string& model : models) {
         if (!fs::exists(fs::path(WMTK_DATA_DIR) / "models" / model)) continue;
-        const auto off = folds_of_run(model, false, 8);
-        const auto on = folds_of_run(model, true, 8);
+        const auto off = folds_of_run(model, false, 8, true);
+        const auto on = folds_of_run(model, true, 8, true);
         fmt::print(
             "{}: check off {} -> {}, check on {} -> {}\n",
             model,
