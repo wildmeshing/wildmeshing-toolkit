@@ -218,8 +218,10 @@ namespace {
  *    input, so this route only runs where the caller has said that is acceptable.
  *  - AFTER insertion, SimWildMesh::simplify() from run_3D, when
  *    `preserve_topology && simplify && operation == "remeshing"`. It collapses at
- *    eps_simplify with the quality check off and then REBUILDS the envelope around the
- *    result, so it displaces the envelope geometry exactly as the pre-insertion route does.
+ *    eps_simplify with the quality check on (EdgeCollapsing.cpp says why), and then, with
+ *    envelope_reference "simplified", REBUILDS the envelope around the result, so it
+ *    displaces the envelope geometry exactly as the pre-insertion route does; with "input"
+ *    it restores the envelope around the input.
  *
  * The 2D route has no post-insertion counterpart -- SimWildMeshTri has no simplify() -- so
  * under preserve_topology nothing simplifies there.
