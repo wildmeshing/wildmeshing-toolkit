@@ -1121,6 +1121,13 @@ void SimWildMeshTri::simplify()
     m_V_envelope.clear();
     m_E_envelope.clear();
     m_E_envelope_labels.clear();
+    // The edges' input sets, in get_edges_by_condition()'s order: the labels of the envelope
+    // handed on (envelope_data()), as 3D's m_F_envelope_face_sets.
+    m_E_envelope_edge_sets.clear();
+    for (const Tuple& e : get_edges()) {
+        const auto& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) m_E_envelope_edge_sets.push_back(attr.input_set());
+    }
     if (V.size() > 0 && E.size() > 0) {
         init_envelope(V, E);
     } else {
