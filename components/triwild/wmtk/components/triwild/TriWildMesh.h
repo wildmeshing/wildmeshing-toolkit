@@ -36,6 +36,19 @@ using VertexAttributes = wmtk::TriOptimizerMesh::VertexAttributes;
 using EdgeAttributes = wmtk::TriOptimizerMesh::EdgeAttributes;
 using FaceAttributes = wmtk::TriOptimizerMesh::FaceAttributes;
 
+/**
+ * @brief Per-face data that only the finalization writes: each input's winding number, the wn_
+ * output fields. The 2D twin of tetwild's TetFinalizeAttributes, registered the same way and for
+ * the same reason (enable_finalize_attributes()): the face slots do not carry it through the
+ * optimization. The base's FaceAttributes, which the shared operations copy, keeps the tracked
+ * winding number and the flood-fill part.
+ */
+class FaceFinalizeAttributes
+{
+public:
+    std::vector<double> m_winding_number_per_input;
+};
+
 class TriWildMesh : public wmtk::TriOptimizerMesh
 {
 public:
@@ -46,6 +59,44 @@ public:
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
 
+    /// Optional per-input names (JSON "input_names"), used to label the per-input
+    /// winding-number output fields, wn_<name> (empty => the fields are numbered, wn_<i>), as
+    /// tetwild's TetWildMesh::m_input_names.
+    std::vector<std::string> m_input_names;
+
+    /**
+     * @name Finalization attributes
+     *
+     * As tetwild's: empty until enable_finalize_attributes() registers the collection with
+     * m_face_attr_group; from then on it is resized and moved with the rest of the face storage.
+     * The const accessor registers nothing: before registration every face reads as
+     * default-constructed, no winding numbers, which is what the writers then leave out.
+     * @{
+     */
+    void enable_finalize_attributes()
+    {
+        if (m_face_finalize_enabled) return;
+        m_face_finalize.resize(m_face_attribute.size());
+        m_face_attr_group.add(&m_face_finalize);
+        m_face_finalize_enabled = true;
+    }
+    FaceFinalizeAttributes& face_finalize(const size_t fid)
+    {
+        enable_finalize_attributes();
+        return m_face_finalize[fid];
+    }
+    const FaceFinalizeAttributes& face_finalize(const size_t fid) const
+    {
+        static const FaceFinalizeAttributes defaults;
+        return m_face_finalize_enabled ? m_face_finalize[fid] : defaults;
+    }
+    /** @} */
+
+private:
+    wmtk::AttributeCollection<FaceFinalizeAttributes> m_face_finalize;
+    bool m_face_finalize_enabled = false;
+
+public:
     /// The labels of the tracked edges' input sets, bit i the i-th (input_names, else tag_<i>; a
     /// tagged mesh input's edge tags), for the reference checks to name a label by.
     std::vector<std::string> m_edge_tag_names;
@@ -178,7 +229,9 @@ public:
 
 public:
     /**
-     * @brief Tag every face with the inputs it lies inside, by winding number.
+     * @brief Each input's winding number at every face's centroid, kept as
+     * FaceFinalizeAttributes::m_winding_number_per_input (the wn_ output fields), and every face
+     * tagged with the inputs it lies inside (above 1/2), which filter "input" reads.
      *
      * `Vs`/`Es` are the per-input meshes as read when the initial mesh was built (2D, x/y
      * only) -- they are passed in rather than re-read from disk.

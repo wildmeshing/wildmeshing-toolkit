@@ -144,7 +144,7 @@ std::vector<int> curve_euler_characteristics(const std::vector<std::array<size_t
 /**
  * @brief The tagged route's input (read_tagged_mesh()), when `input` is a tet mesh: on the memory
  * route a named mesh with tets, on the file route a .msh with tets, read by the shared reader. Its
- * fields but the tags are dropped. Without one, nullopt: the inputs
+ * fields but the tags are dropped, as every reader drops them. Without one, nullopt: the inputs
  * are surfaces. A tet mesh is the only input: with any other, it throws.
  */
 static std::optional<TaggedMesh> read_tagged_input(

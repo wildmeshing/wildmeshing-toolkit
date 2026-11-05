@@ -155,8 +155,8 @@ struct LabelledReference
  * labels, which name the receiver's tags; its points, which no tag of a mesh marks, are only
  * handed on. Matched to the receiver by name: `bits_named(name)` is the receiver's bits a label
  * names (several where its tags share a name), `feature_names` its feature labels, bit i the
- * i-th. Throws on cells a labelled reference does not have, and on any field but `tags`
- * (ComponentIO::attributes()). simwild's and tetwild's
+ * i-th. Throws on cells a labelled reference does not have, and drops every field but `tags`
+ * (ComponentIO::dropped_fields()). simwild's and tetwild's
  * tagged routes read their `envelope` so; moved here from simwild's reader (2026-11), unchanged.
  */
 inline LabelledReference read_labelled_envelope(
@@ -166,13 +166,14 @@ inline LabelledReference read_labelled_envelope(
     const std::vector<std::string>& feature_names)
 {
     envelope.validate();
-    ComponentIO::attributes(envelope.vertex_attributes, {});
+    std::set<std::string> dropped = ComponentIO::dropped_fields(envelope.vertex_attributes, {});
     const auto t = dim == 3 ? CellType::Triangle : CellType::Edge;
     for (const auto& [ct, c] : envelope.cells) {
         if (ct != t && ct != CellType::Point && !(dim == 3 && ct == CellType::Edge))
             throw std::runtime_error("Incompatible envelope topology");
-        ComponentIO::attributes(c.attributes, {"tags"});
+        dropped.merge(ComponentIO::dropped_fields(c.attributes, {"tags"}));
     }
+    ComponentIO::log_dropped("envelope", dropped);
     const auto labelled = [](const CellData& cells) -> const MeshAttribute& {
         const auto it = cells.attributes.find("tags");
         if (it == cells.attributes.end())

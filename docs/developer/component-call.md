@@ -157,8 +157,9 @@ is the only place that knows which route a call is on (`memory()`); the rest of 
 asks it for inputs and hands it outputs. On the memory route:
 
 - A selector (`"input": "surface"`) names an entry of the `MeshMap`. A missing one throws
-  `Unknown input mesh`; every one is `validate()`d; an attribute the component does not accept
-  throws `Unknown mesh attribute`.
+  `Unknown input mesh`; every one is `validate()`d; a field the component does not read is
+  dropped and named in the log, at info (`ComponentIO::dropped_fields()`, `log_dropped()`; the
+  rule, data and annotations, is in [component I/O](../in-memory-io.md#input-contracts)).
 - Nothing is written. A recorded history goes into the report as bytes (`save_history`, then
   `take_result()` puts it under `"history"`, and a volume history under `"volume_history"`).
 - The component logs to a console logger of its own, not to a file logger the caller set up.

@@ -91,21 +91,56 @@ public:
         it->second.validate();
         return it->second;
     }
-    // Fields io::read_mesh attaches to plain geometry files: MSH source IDs and OBJ per-corner
-    // UVs/normals. Geometry-only inputs carry no attributes through the algorithm, so these are
-    // ignored, as the file readers ignore them; any other attribute is still rejected.
-    inline static const std::set<std::string> reader_vertex_attributes = {"vid"};
+    // Mesh fields come in two kinds. DATA is what a component reads: `tags`, the label columns of
+    // a cell block, on every route; the envelope mesh; and the named fields of data_fields. Every
+    // other field is an ANNOTATION, written for people -- tetwild's energy, triwild's quality,
+    // the inputs' winding numbers wn_<name>, the offset's diagnostics -- and every reader drops
+    // it: leaves it unread and names it once per read, at info (dropped_fields(), log_dropped()).
+    // Until 2026-11 each reader listed the fields it took and threw `Unknown mesh attribute` on
+    // any other, so a new field had to be added to every list or a chain broke: triwild's
+    // wn_<name> broke triwild -> simwild on the memory route.
+    //
+    // The named data fields, each with who reads it; a writer that trims its result to data
+    // (topological_offset's) keeps them. Besides them, a call may name fields it reads
+    // (isotropic_remeshing's feature_fields), tracking's transfer carries every triangle field,
+    // and simwild reads 2D label images, cell fields tag_<k> (tags_from_label_images()).
+    inline static const std::set<std::string> data_fields = {
+        "vid", // vertex: the ids corr_input_vid names: simwild, prismatic_mesh
+        "corr_input_vid", // vertex: an offset's correspondence: simwild, prismatic_mesh
+        "labels", // vertex: the offset's vertex labels: prismatic_mesh
+        "is_cone", // vertex: c1_simplification
+        "vertex_id", // vertex and point: isotropic_remeshing's features
+        "offset_tag", // tet: the offset's band: prismatic_mesh
+        "tag_0", // tet: the input region as a field: prismatic_mesh
+        "edge_id", // edge: isotropic_remeshing's features
+        "dofs", // triangle: c1_simplification
+        "uv", // triangle, per corner: isotropic_remeshing's feature_fields, tracking
+        "normal", // triangle, per corner: as uv
+    };
+    // The fields io::read_mesh attaches to an OBJ's triangles, UVs and normals: a value per
+    // corner, as tracking's transfer and isotropic_remeshing's feature_fields read them.
     inline static const std::set<std::string> reader_corner_attributes = {"uv", "normal"};
-    static void attributes(
+    /// The fields of `a` a reader drops: every one but those it reads, `read`. It throws for one
+    /// of `required` that `a` lacks.
+    [[nodiscard]] static std::set<std::string> dropped_fields(
         const MeshAttributes& a,
-        const std::set<std::string>& allowed,
+        const std::set<std::string>& read,
         const std::set<std::string>& required = {})
     {
         for (const auto& name : required)
             if (!a.count(name))
                 throw std::runtime_error("Missing required mesh attribute: " + name);
+        std::set<std::string> dropped;
         for (const auto& [name, field] : a)
-            if (!allowed.count(name)) throw std::runtime_error("Unknown mesh attribute: " + name);
+            if (!read.count(name)) dropped.insert(name);
+        return dropped;
+    }
+    /// The fields a read dropped (dropped_fields()), named once, at info: dropping an annotation
+    /// is no defect. `what` names the mesh.
+    static void log_dropped(const std::string& what, const std::set<std::string>& dropped)
+    {
+        if (dropped.empty()) return;
+        logger().info("{}: fields not read, dropped: {}", what, fmt::join(dropped, ", "));
     }
     std::string path(const std::filesystem::path& root, const nlohmann::json& selector) const
     {
@@ -121,26 +156,23 @@ public:
         for (const auto& v : selectors) out.push_back(path(root, v));
         return out;
     }
-    // One named input, uncleaned: the memory twin of reading one file. `vertex_attributes`: the
-    // ones it may carry, and that are ignored. `triangle_attributes`: the ones its triangles may
-    // carry besides the reader's per-corner ones, which the component reads itself
+    // One named input, uncleaned: the memory twin of reading one file. Its fields are dropped
+    // (dropped_fields()) but `triangle_attributes`, which the component reads itself
     // (isotropic_remeshing's feature_fields).
     void raw_triangles(
         const std::string& name,
         MatrixXd& V,
         MatrixXi& F,
-        const std::set<std::string>& vertex_attributes = reader_vertex_attributes,
         const std::set<std::string>& triangle_attributes = {}) const
     {
         const auto& data = mesh(name);
-        attributes(data.vertex_attributes, vertex_attributes);
-        std::set<std::string> allowed = reader_corner_attributes;
-        allowed.insert(triangle_attributes.begin(), triangle_attributes.end());
+        std::set<std::string> dropped = dropped_fields(data.vertex_attributes, {});
         for (const auto& [type, c] : data.cells) {
             if (type != CellType::Triangle)
                 throw std::runtime_error("Expected triangle input: " + name);
-            attributes(c.attributes, allowed);
+            dropped.merge(dropped_fields(c.attributes, triangle_attributes));
         }
+        log_dropped("input " + name, dropped);
         V = data.V;
         F = indices(data.cell(CellType::Triangle).connectivity);
         if (!F.rows()) throw std::runtime_error("Empty triangle input: " + name);
@@ -163,8 +195,7 @@ public:
     // Like read_triangle_mesh(paths): concatenate the raw inputs, then clean them once, so
     // vertex merging sees the same vertices (isolated ones included) in the same order.
     // `read`, as there: the inputs as given, concatenated, and where their vertices and faces
-    // went. `vertex_attributes` and `triangle_attributes`, as in raw_triangles: a component's own
-    // output fields, say, so that a result can be the next call's input.
+    // went. `triangle_attributes`, as in raw_triangles.
     void triangles(
         const std::vector<std::string>& names,
         MatrixXd& V,
@@ -173,7 +204,6 @@ public:
         double abs,
         std::vector<int>* provenance = nullptr,
         ReadProvenance* read = nullptr,
-        const std::set<std::string>& vertex_attributes = reader_vertex_attributes,
         const std::set<std::string>& triangle_attributes = {}) const
     {
         if (!memory()) {
@@ -186,7 +216,7 @@ public:
         for (size_t i = 0; i < names.size(); ++i) {
             MatrixXd v;
             MatrixXi f;
-            raw_triangles(names[i], v, f, vertex_attributes, triangle_attributes);
+            raw_triangles(names[i], v, f, triangle_attributes);
             const auto nv = V.rows(), nf = F.rows();
             f.array() += nv;
             V.conservativeResize(nv + v.rows(), 3);
@@ -213,12 +243,13 @@ public:
             return;
         }
         const auto& data = mesh(name);
-        attributes(data.vertex_attributes, reader_vertex_attributes);
+        std::set<std::string> dropped = dropped_fields(data.vertex_attributes, {});
         for (const auto& [type, c] : data.cells) {
             if (type != CellType::Edge && type != CellType::Point)
                 throw std::runtime_error("Expected curves or points: " + name);
-            attributes(c.attributes, {});
+            dropped.merge(dropped_fields(c.attributes, {}));
         }
+        log_dropped("input " + name, dropped);
         V = data.V;
         E.resize(0, 2);
         auto it = data.cells.find(CellType::Edge);

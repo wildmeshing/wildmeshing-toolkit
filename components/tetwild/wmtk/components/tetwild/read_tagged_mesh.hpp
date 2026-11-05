@@ -53,7 +53,7 @@ bool is_tet_mesh(const MeshData& mesh);
  * SurfaceTagAttributes::max_inputs, a row on a vertex no tet has. `what` names the input in the
  * errors.
  *
- * Fields: `tags` is read, and every other field dropped, on both
+ * Fields: `tags` is read, and every other field dropped (io::ComponentIO::data_fields), on both
  * routes: a result, tetwild's own fields and all, goes back in as it is.
  */
 TaggedMesh read_tagged_mesh(const MeshData& mesh, const std::string& what);

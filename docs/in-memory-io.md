@@ -113,23 +113,36 @@ rollback buffers, and mesh objects are not part of MeshData.
 Selectors retain their component-specific JSON fields. A single selector is a dictionary key;
 ordered selector arrays preserve input order and existing `input_names` / transform semantics.
 Unselected dictionary entries are not validated. Missing keys and incompatible inputs throw
-`std::runtime_error` before computation. Unknown attributes are rejected; this interface does
-not transfer arbitrary user attributes through topology changes. Geometry-only inputs ("no
-attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry files: vertex
-`vid`, and triangle `uv` and `normal`. A component may accept, and ignore, a field of its own
-results as well, so that a result can be the next call's input as it is: isotropic_remeshing's
-`vertex_id`, whose fixed vertices come from `features` alone. isotropic_remeshing also takes the
-triangle fields its `feature_fields` names, as on the `.msh` route: the per-face ones it keeps as
-labels through the remeshing and returns on `mesh`, each in the type it was given in, with its
-labels (an Int64 one within 2^53 in magnitude, which Float64 holds exactly); `uv` and `normal`,
-per corner (6 and 9 columns), it neither carries nor returns: their seams are curves, in `edges`.
-So `mesh` goes back in with the same per-face fields named again.
+`std::runtime_error` before computation; this interface does not transfer arbitrary user
+attributes through topology changes.
+
+Mesh fields come in two kinds. **Data** is what a component reads: `tags`, the label columns of a
+cell block, on every route; the `envelope` mesh; and a short list of named fields
+(`io::ComponentIO::data_fields`), each read by a component: vertex `vid` and `corr_input_vid`,
+an offset's correspondence (simwild, so topological_offset carries it, and prismatic_mesh);
+vertex `labels` and tet `offset_tag` and `tag_0` (prismatic_mesh); vertex `is_cone` and triangle
+`dofs` (c1_simplification); `edge_id` and `vertex_id` (isotropic_remeshing's `features`); and
+triangle `uv` and `normal`, per corner (isotropic_remeshing's `feature_fields`, tracking).
+Besides them, simwild reads 2D label images, cell fields `tag_<k>`; isotropic_remeshing the
+triangle fields its `feature_fields` names; tracking's transfer every triangle field. Every other
+field is an **annotation**, written for people -- tetwild's `energy`, triwild's `quality`, the
+inputs' winding numbers `wn_<name>`, the offset's diagnostics: every reader drops it, on both
+routes, and names the fields it dropped once per read, at info. So a result goes into the next
+component as it is. A field a component requires (c1's `dofs`) is still an error when missing.
+Until 2026-11 each reader refused, with `Unknown mesh attribute`, every field it did not list.
+
+isotropic_remeshing takes the triangle fields its `feature_fields` names, as on the `.msh` route:
+the per-face ones it keeps as labels through the remeshing and returns on `mesh`, each in the type
+it was given in, with its labels (an Int64 one within 2^53 in magnitude, which Float64 holds
+exactly); `uv` and `normal`, per corner (6 and 9 columns), it neither carries nor returns: their
+seams are curves, in `edges`. So `mesh` goes back in with the same per-face fields named again;
+not named, they are dropped, and with them their curves.
 
 | Component | Mesh selectors | Required data |
 | --- | --- | --- |
 | `qslim` | `input` | Triangle geometry, no attributes |
 | `shortest_edge_collapse` | `input` | Triangle geometry, no attributes |
-| `isotropic_remeshing` | `input`; optional `features` | Triangle geometry, no attributes but its own `vertex_id`, ignored, and the triangle fields `feature_fields` names; `features` on the rows of `input`: edges with Int64 `edge_id`, points with Int64 `vertex_id`, or Int64 vertex `vertex_id` (-1 for none) |
+| `isotropic_remeshing` | `input`; optional `features` | Triangle geometry and the triangle fields `feature_fields` names; `features` on the rows of `input`: edges with Int64 `edge_id`, points with Int64 `vertex_id`, or Int64 vertex `vertex_id` (-1 for none) |
 | `tetwild` | `input`; `input_edges`, `input_points`; optional `envelope` for tagged input | Triangle surfaces; optional curve/point geometry, no attributes. Or one tagged tet mesh, continued from as it is: tagged faces, feature curves and points, no tet tags but `ambient` |
 | `triwild` | `input`; `input_points`; optional `envelope` for tagged input | Curve geometry, optional free points, no attributes. Or one tagged triangle mesh, continued from as it is: tracked curves and points, no triangle tags but `ambient` |
 | `simwild` | `input`; optional `envelope` for tagged input | Surface/curve geometry, or tagged triangle/tet mesh |
@@ -137,14 +150,12 @@ So `mesh` goes back in with the same per-face fields named again.
 | `manifold_extraction` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `prismatic_mesh` | `input` | Tet construction mesh with `corr_input_vid` and cell region memberships |
 | `c1_simplification` | `surface_mesh`, `uv_mesh` | Surface triangle `dofs` (Float64, 36 columns), vertex `is_cone` (UInt8, 1 column); UV triangle geometry |
-| `tracking` | none for `info` and `features`; `transfer`: `input`, optional `tet_mesh`; `volume`: optional `tet_mesh` and `output_tet_mesh` | The history as bytes (option `history`, not a mesh), and for `volume` the volume history as bytes (option `volume_history`). `transfer`: the triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), no vertex attributes; the tet mesh the history ends at. `volume`: the tet meshes the volume history starts and ends at, with their `tags` if they have them |
+| `tracking` | none for `info` and `features`; `transfer`: `input`, optional `tet_mesh`; `volume`: optional `tet_mesh` and `output_tet_mesh` | The history as bytes (option `history`, not a mesh), and for `volume` the volume history as bytes (option `volume_history`). `transfer`: the triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), its vertex attributes dropped; the tet mesh the history ends at. `volume`: the tet meshes the volume history starts and ends at, with their `tags` if they have them |
 
 For tagged inputs, `tags` on the top-dimensional cells names their regions, such as `tag_0`. A
 column labelled `ambient` is the background, as is a cell without a tag; a mesh without a `tags`
 field is all background. Tagged results label their background `ambient` explicitly; the shared
-readers and writers infer nothing from an untagged row. Existing exported diagnostics have fixed allowed
-names in the adapters and may be supplied again. Extra unrelated fields are errors. As on the
-`.msh` route, the lower-dimensional blocks are tags, one `tags` column per input: in a tet mesh,
+readers and writers infer nothing from an untagged row. As on the `.msh` route, the lower-dimensional blocks are tags, one `tags` column per input: in a tet mesh,
 triangles are tagged faces (an input surface, each row oriented as its input) and edges tagged
 feature curves (an `input_edges` file, `feature_<i>`); in a triangle mesh, edges are tagged curves
 (an input curve, each row oriented as its input). simwild, tetwild and triwild write them so, and
@@ -153,7 +164,8 @@ only input on the tagged route, its tets kept: no simplification, no insertion, 
 numbers. It holds no volumes, so a mesh whose tets carry a tag other than `ambient` is refused
 (simwild remeshes those), and its point block is input points, anchored where they are. triwild
 takes a triangle mesh the same way, holding its tracked curves and points and no regions: a mesh
-whose triangles carry a tag other than `ambient` is refused. Rows labelled `EnvelopeSurface` (in a triangle mesh,
+whose triangles carry a tag other than `ambient` is refused. tetwild writes no tet tags and triwild
+no triangle tags but `ambient`: regions are simwild's. Rows labelled `EnvelopeSurface` (in a triangle mesh,
 an edge block without `tags` too) are the envelope instead, which cannot be combined with an
 `envelope` input. Other lower-dimensional blocks are rejected.
 
@@ -172,8 +184,7 @@ manifold_extraction carry it, not yet holding to it. Each returns it unchanged a
 
 The prismatic adapter accepts scalar `tag_0` and `offset_tag`, or the corresponding columns of
 `tags`. `vid` defaults to vertex row IDs; absent `labels` are derived from input-volume cells and
-correspondence. `corr_input_vid` names a source `vid`, with -1 for no correspondence. Existing
-construction diagnostics are accepted. Enable `save_offset_correspondence` and disable offset
+correspondence. `corr_input_vid` names a source `vid`, with -1 for no correspondence. Enable `save_offset_correspondence` and disable offset
 optimization to obtain construction correspondence for the offset-to-prismatic workflow.
 
 C1's 36 DOF columns flatten its 12-by-3 face matrix in row order. UV vertices use `V`'s first two
@@ -218,6 +229,13 @@ reference are kept.
 This is deliberate -- it maps a boundary vertex to its volume vertex without a search -- at the
 cost of one vertex array per output. `envelope`, `features`, manifold extraction's `surface` and
 prismatic's offset faces have vertices of their own.
+
+topological_offset's result -- `mesh`, the `.msh`, and the `save_vtu` file -- carries the tags,
+the data fields (`vid`, `labels`, `offset_tag`; in `mesh` and the `.msh`, with
+`save_offset_correspondence`, `corr_input_vid`) and two annotations, `amips` per tet and
+`distance_over_target` per vertex; `surface`, `edges` and `offset` carry `vid`, and `offset`
+`distance_over_target`. Its `DEBUG_output` frames carry every diagnostic field.
+manifold_extraction, which returns its mesh through the offset's writer, returns it so too.
 
 The exporters' legacy file names map to these keys through one explicit table
 (`io::default_output_keys`); an unmapped export or two exports with one key is an error, never

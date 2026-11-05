@@ -434,6 +434,9 @@ void TriWildMesh::compute_winding_numbers(
     }
 
     m_tags_count = Vs.size();
+    for (const Tuple& f : faces) {
+        face_finalize(f.fid(*this)).m_winding_number_per_input.assign(Vs.size(), 0);
+    }
     for (int64_t input_idx = 0; input_idx < static_cast<int64_t>(Vs.size()); ++input_idx) {
         // The inputs were already read (and their x,y extracted) when the initial mesh was
         // built; reuse them instead of parsing every file a second time.
@@ -453,9 +456,11 @@ void TriWildMesh::compute_winding_numbers(
             logger().warn("No winding number above 0.5 for input {}", input_idx);
         }
 
-        // store winding number in mesh
+        // The value, as oriented, for the wn_ fields, as tetwild keeps it; the inside bit, as the
+        // face's tag, for filter "input".
         for (int i = 0; i < faces.size(); ++i) {
             const size_t fid = faces[i].fid(*this);
+            face_finalize(fid).m_winding_number_per_input[input_idx] = W(i);
             if (utils::winding_number_inside(W(i))) {
                 m_face_attribute[fid].tags.insert(input_idx);
             }
@@ -746,6 +751,13 @@ void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
     amips.setZero();
     MatrixXd flood_fill(tri_capacity(), 1);
     flood_fill.setZero();
+    // Each input's winding number, when the finalization computed them (none otherwise).
+    std::vector<MatrixXd> wn_per_input;
+    if (!faces.empty()) {
+        wn_per_input.assign(
+            face_finalize(faces[0].fid(*this)).m_winding_number_per_input.size(),
+            MatrixXd::Zero(tri_capacity(), 1));
+    }
 
     int index = 0;
     for (const Tuple& t : faces) {
@@ -755,6 +767,9 @@ void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
             tags[j](index, 0) = m_face_attribute[fid].tags.count(j) ? 1 : 0;
         }
         flood_fill(index, 0) = m_face_attribute[fid].part_id;
+        for (size_t j = 0; j < wn_per_input.size(); ++j) {
+            wn_per_input[j](index, 0) = face_finalize(fid).m_winding_number_per_input[j];
+        }
 
         const auto vs = oriented_tri_vids(t);
         for (size_t j = 0; j < 3; j++) {
@@ -783,6 +798,14 @@ void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
     }
     writer.add_cell_field("quality", amips);
     if (m_has_parts) writer.add_cell_field("flood_fill", flood_fill);
+    for (size_t j = 0; j < wn_per_input.size(); ++j) {
+        // Named after the input when the caller supplied input_names, else numbered, as
+        // tetwild's save_paraview(); the .msh numbers them all (triwild.cpp), as its output_mesh().
+        writer.add_cell_field(
+            j < m_input_names.size() ? fmt::format("wn_{}", m_input_names[j])
+                                     : fmt::format("wn_{}", j),
+            wn_per_input[j]);
+    }
     writer.add_field("sizing_field", v_sizing_field);
     writer.write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 

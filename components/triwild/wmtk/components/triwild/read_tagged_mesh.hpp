@@ -12,8 +12,9 @@ namespace wmtk::components::triwild {
 /**
  * @brief A tagged triangle mesh as triwild's tagged route takes it, the 2D twin of tetwild's
  * TaggedMesh: the triangles, and what triwild holds on them -- tracked curves and points. No
- * regions: triwild tracks curves through its operations, not regions, so a mesh whose
- * triangles carry a label other than ambient is refused (read_tagged_mesh()).
+ * regions: triwild tracks curves through its operations and writes no region tags (the inputs'
+ * winding numbers, computed at the end, are fields, wn_<name>), so a mesh whose triangles carry
+ * a label other than ambient is refused (read_tagged_mesh()).
  *
  * The edge block is read as simwild's read_mesh_data() reads a triangle mesh's: each label one
  * input, every row oriented by its vertex order. Rows of one edge are merged: their labels

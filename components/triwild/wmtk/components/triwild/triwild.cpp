@@ -237,7 +237,7 @@ std::shared_ptr<Envelope> envelope_over(const MatrixXd& V, const MatrixXi& E)
 /**
  * @brief The tagged route's input (read_tagged_mesh()), when `input` is a triangle mesh: on the
  * memory route a named mesh with triangles, on the file route a .msh with triangles, read by the
- * shared reader. Its fields but the tags are dropped. Without one,
+ * shared reader. Its fields but the tags are dropped, as every reader drops them. Without one,
  * nullopt: the inputs are curves. A triangle mesh is the only input: with any other, it throws.
  * tetwild's read_tagged_input(), in 2D.
  */
@@ -302,9 +302,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // route a named mesh with triangles, on the file route a .msh with triangles -- continued
     // from as it is, its triangles kept, instead of an arrangement of curves, so that a chain of
     // components can go on through triwild. triwild holds the mesh's tracked curves and points
-    // (read_tagged_mesh()), and no regions, which are simwild's: a mesh with them is refused.
-    // Skipped on it: the reading of curves, the simplification, the arrangement and the input
-    // winding numbers.
+    // (read_tagged_mesh()), and no regions: its inputs' winding numbers, computed at the end, are
+    // fields (wn_<name>), not regions, and a tagged mesh has none. Skipped on it: the reading of
+    // curves, the simplification, the arrangement and the input winding numbers.
     std::optional<TaggedTriMesh> tagged_mesh = read_tagged_input(component_io, input_paths);
     const bool tagged = tagged_mesh.has_value();
     if (tagged) {
@@ -763,6 +763,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
         mesh_owner = std::make_unique<TriWildMesh>(params, envelope_eps, NUM_THREADS);
         auto& mesh = *mesh_owner;
+        mesh.m_input_names = tag_names;
         // Around the input after a simplification, the input's own curve ends and junctions: the
         // anchors are centred on them, and an end the simplification made is anchored where it is
         // (TriOptimizerMesh::m_input_curve_points).
@@ -987,10 +988,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     // The finalization's per-face annotations, each computed only when something uses it:
     //
-    //   per-input winding-number tags  filter "input", and the MSH groups. Always, unless
-    //                                  skip_winding_number opts out where no filter needs them
-    //                                  -- at the cost of the output groups, since without the
-    //                                  tags every face lands in the untagged group.
+    //   per-input winding numbers      each input's (the wn_<i> output fields), and the inputs
+    //                                  each face is inside, as its tags, which filter "input"
+    //                                  reads. Always, unless skip_winding_number opts out where
+    //                                  no filter needs them, as in tetwild.
     //   tracked winding number         filter "tracked" (below).
     //   flood-fill parts               filter "flood", or compute_flood_fill (the VTU field).
     //
@@ -1017,7 +1018,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 step_timer.getElapsedTime());
         } else {
             logger().info(
-                "Skipping the input winding numbers ({}). The output groups will be empty.",
+                "Skipping the input winding numbers ({})",
                 tagged ? "a tagged mesh input has no input curves" : "skip_winding_number");
         }
         if (filter_option == "flood" || json_params["compute_flood_fill"]) {
@@ -1074,6 +1075,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (mesh.tri_capacity() == 0) {
         log_and_throw_error("Empty Output after Filter!");
     }
+    // triwild writes no region tags: regions are simwild's, as tetwild writes no volumes. The
+    // inputs' winding numbers above leave as fields (wn_<name>, write_vtu()), as tetwild's do;
+    // held as the triangles' tags they decided filter "input" only. The curves leave as the edge
+    // tags. So its output goes back in on the tagged route as it is. Until 2026-11 each input's
+    // region was a triangle tag, named as its curve.
+    mesh.m_tags_count = 0;
+    mesh.m_tag_id_to_name.clear();
+    mesh.m_tag_name_to_id.clear();
+    for (const auto& f : mesh.get_faces()) mesh.m_face_attribute[f.fid(mesh)].tags.clear();
 
     // double time = timer.getElapsedTime();
     // logger().info("total time {:.4}s", time);
@@ -1340,7 +1350,21 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // The reference the curves were held to (envelope_out, above), handed on: on the file
         // route in a file of its own, as the mesh file holds the mesh.
         if (!component_io.memory()) {
-            io::write_mesh(output_path + ".msh", component_io.result.first.at("mesh"));
+            // The .msh numbers each input's winding-number field, wn_0, wn_1, ..., as tetwild's
+            // _final.msh (TetWildMesh::output_mesh()) does; the memory route and the VTU name it
+            // after the input (write_vtu()). All taken out before any is put back, so that a name
+            // which is a number cannot overwrite another input's field.
+            MeshData msh = component_io.result.first.at("mesh");
+            auto& fields = msh.cells.at(CellType::Triangle).attributes;
+            std::vector<std::pair<std::string, MeshAttribute>> numbered;
+            for (size_t i = 0; i < mesh.m_input_names.size(); ++i) {
+                auto field = fields.extract("wn_" + mesh.m_input_names[i]);
+                if (field) {
+                    numbered.emplace_back("wn_" + std::to_string(i), std::move(field.mapped()));
+                }
+            }
+            for (auto& [name, field] : numbered) fields[name] = std::move(field);
+            io::write_mesh(output_path + ".msh", msh);
             io::write_mesh(output_path + "_envelope.msh", envelope_out);
         }
         component_io.result.first["envelope"] = std::move(envelope_out);

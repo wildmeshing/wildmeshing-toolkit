@@ -80,7 +80,7 @@
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of input curve networks: OBJ files of polylines ('v' and 'l' lines). Or one tagged triangle mesh -- on the memory route a named mesh with a triangle block, on the file route a .msh with triangles -- which takes the tagged route: triwild continues from it as it is, its triangles kept, so that a chain of components can go on through triwild. Its edge block's tags are the tracked curves, one input per label, each row oriented by its vertex order, named as the mesh names them; its point block input points, anchored where they are -- as simwild reads a tagged triangle mesh. triwild holds no regions: triangles tagged other than ambient are refused (a mesh with region tags is simwild's to remesh). It must fill its bounding box, as the arrangement's padded box does: its boundary edges are the wall, held by the box rule, each untracked and on a line of the box. A tracked boundary edge -- a filtered mesh's boundary -- is refused (give a filtered mesh's curves as inputs), and so is an untracked one on no line. Skipped on this route: the simplification, the arrangement and the input winding numbers; eps_rel and length_rel are of the mesh's bounding box diagonal. Refused with it: any other input, input_points, input_names and filter \"input\".",
+    "doc": "List of input curve networks: OBJ files of polylines ('v' and 'l' lines). Or one tagged triangle mesh -- on the memory route a named mesh with a triangle block, on the file route a .msh with triangles -- which takes the tagged route: triwild continues from it as it is, its triangles kept, so that a chain of components can go on through triwild. Its edge block's tags are the tracked curves, one input per label, each row oriented by its vertex order, named as the mesh names them; its point block input points, anchored where they are -- as simwild reads a tagged triangle mesh. triwild holds no regions and writes none, so its own output goes back in as it is; triangles tagged other than ambient are refused (a mesh with region tags is simwild's to remesh). It must fill its bounding box, as the arrangement's padded box does: its boundary edges are the wall, held by the box rule, each untracked and on a line of the box. A tracked boundary edge -- a filtered mesh's boundary -- is refused (give a filtered mesh's curves as inputs), and so is an untracked one on no line. Skipped on this route: the simplification, the arrangement and the input winding numbers (wn_<i>); eps_rel and length_rel are of the mesh's bounding box diagonal. Refused with it: any other input, input_points, input_names and filter \"input\".",
     "min": 1
   },
   {
@@ -108,7 +108,7 @@
   {
     "pointer": "/input_names",
     "type": "list",
-    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc. Each name labels the input twice in the output mesh, on both routes: its region, the triangles its winding number puts inside, and its curves, the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags.",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc. Each name labels the input's curves in the output mesh, on both routes: the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags. It also names the input's winding-number field on the triangles, wn_<name>, in the VTU output and on the memory route; the .msh output numbers them, wn_0, wn_1, ..., and so does everything without names. triwild writes no regions: its triangles carry no label but ambient (until 2026-11 each name also labelled the triangles its winding number puts inside).",
     "default": []
   },
   {
@@ -205,7 +205,7 @@
     "pointer": "/skip_winding_number",
     "type": "bool",
     "default": false,
-    "doc": "Skip the finalize-phase winding numbers of the inputs. They are needed to filter the outside region (filter != 'none') and to tag the faces per input, which is what the MSH groups are built from -- so skipping them also empties the output groups. Ignored (with a warning) when filter != 'none', which requires them."
+    "doc": "Skip the finalize-phase winding numbers of the inputs, each input's (wn_<i>). Filter 'input' keeps the faces by them, and they are otherwise written only as output annotation fields, which are then left out: fields of the triangles, not tags, so no regions (until 2026-11 they tagged the faces per input). Ignored (with a warning) when filter != 'none', which computes them."
   },
   {
     "pointer": "/compute_flood_fill",

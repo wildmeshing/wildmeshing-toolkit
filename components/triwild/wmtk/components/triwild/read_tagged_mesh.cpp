@@ -55,16 +55,21 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
                 regions);
         }
     }
-    // Fields: tags are read, every other is dropped.
-    for (const auto& entry : mesh.cells) {
-        const CellType type = entry.first;
-        if (type != CellType::Triangle && type != CellType::Edge && type != CellType::Point) {
+    // Fields: tags are read, every other is dropped (io::ComponentIO::data_fields).
+    std::set<std::string> dropped = io::ComponentIO::dropped_fields(mesh.vertex_attributes, {});
+    for (const auto& [type, cells] : mesh.cells) {
+        if (type == CellType::Triangle || type == CellType::Edge) {
+            dropped.merge(io::ComponentIO::dropped_fields(cells.attributes, {"tags"}));
+        } else if (type == CellType::Point) {
+            dropped.merge(io::ComponentIO::dropped_fields(cells.attributes, {}));
+        } else {
             log_and_throw_error(
                 "{}: a tagged mesh for triwild has triangles and, besides them, edges (tracked "
                 "curves) and points only",
                 what);
         }
     }
+    io::ComponentIO::log_dropped(what, dropped);
 
     TaggedTriMesh out;
     std::vector<int64_t> row(mesh.V.rows(), -1);

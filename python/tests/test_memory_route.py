@@ -201,8 +201,7 @@ def test_envelope_is_passed_on_only_by_the_caller(boxes):
 
 
 def _tags_only(m):
-    """The mesh with its tags only, as the file route reads a .msh: a memory input takes
-    no fields it does not know."""
+    """The mesh with its tags only, as a reader takes a .msh: it drops every other field."""
     cells = {}
     for t, c in m["cells"].items():
         cells[t] = {"connectivity": c["connectivity"]}

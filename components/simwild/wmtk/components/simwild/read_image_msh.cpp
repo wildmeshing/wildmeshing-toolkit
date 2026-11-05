@@ -164,20 +164,13 @@ InputData read_image_msh(const std::string& path, const MeshData* envelope)
     if (!std::filesystem::exists(path)) {
         log_and_throw_error("File {} does not exist.", path);
     }
-    // The .msh route reads through the shared reader, so a file and the mesh it holds give the
-    // components the same input. It takes the geometry, the tags, and the correspondence an
-    // earlier offset hands on (corr_input_vid, with the vid it names vertices by), which the
-    // memory route reads too; other fields in a file (diagnostics, older per-tag scalars such as
-    // tag_0) are not inputs. Until 2026-11 it dropped the correspondence, which the memory route
-    // carried from one offset to the next.
+    // The .msh route reads through the shared reader, and then as the memory route reads, so a
+    // file and the mesh it holds give the components the same input: the geometry, the tags, and
+    // the correspondence an earlier offset hands on (corr_input_vid, with the vid it names
+    // vertices by); every other field is dropped (read_mesh_data()). Until 2026-11 it dropped the
+    // correspondence, which the memory route carried from one offset to the next.
     MeshData mesh = io::read_mesh(path);
     tags_from_label_images(mesh, path);
-    for (auto it = mesh.vertex_attributes.begin(); it != mesh.vertex_attributes.end();)
-        it = it->first == "corr_input_vid" || it->first == "vid" ? std::next(it)
-                                                                 : mesh.vertex_attributes.erase(it);
-    for (auto& [type, cells] : mesh.cells)
-        for (auto it = cells.attributes.begin(); it != cells.attributes.end();)
-            it = it->first == "tags" ? std::next(it) : cells.attributes.erase(it);
     return read_mesh_data(mesh, envelope);
 }
 
@@ -726,41 +719,10 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         mesh.cells.count(CellType::Tetrahedron) ? CellType::Tetrahedron : CellType::Triangle;
     const auto& block = mesh.cell(type);
     if (!block.connectivity.rows()) throw std::runtime_error("Empty tagged mesh");
-    io::ComponentIO::attributes(
-        mesh.vertex_attributes,
-        {"sizing_field",
-         "sizing_scalar",
-         "vid",
-         "labels",
-         "is_rounded",
-         "is_false_surface",
-         "order",
-         "input_distance",
-         "distance_over_target",
-         "front_error_bars",
-         "band_force_n",
-         "amips_force_n",
-         "offset_foldover",
-         "front_last_change",
-         "corr_input_vid",
-         "front_ring_ratio"});
-    const std::set<std::string> fields = {
-        "tags",
-        "quality",
-        "quality_target",
-        "quality_rel",
-        "offset_tag",
-        "amips",
-        "tet_energy",
-        "amips_term",
-        "band_term",
-        "band_gap_bars",
-        "plastic",
-        "face_energy",
-        "front_err_ratio",
-        "settle_inside_bars",
-        "settle_outside_bars",
-        "chord_length"};
+    // Fields: the tags, and an earlier offset's correspondence (corr_input_vid, with the vid it
+    // names vertices by) are read; every other is dropped (io::ComponentIO::data_fields).
+    std::set<std::string> dropped =
+        io::ComponentIO::dropped_fields(mesh.vertex_attributes, {"vid", "corr_input_vid"});
     // The lower-dimensional blocks allowed next to the top cells: in a tet mesh, triangles,
     // which are tagged faces, and edges, which are tagged feature curves; in a triangle mesh,
     // edges, which are tagged curves. Rows labelled EnvelopeSurface are the envelope instead
@@ -769,8 +731,9 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
     for (const auto& [t, c] : mesh.cells) {
         if (t != type && t != lower_type && !(type == CellType::Tetrahedron && t == CellType::Edge))
             throw std::runtime_error("Incompatible tagged mesh topology");
-        io::ComponentIO::attributes(c.attributes, fields, std::set<std::string>{});
+        dropped.merge(io::ComponentIO::dropped_fields(c.attributes, {"tags"}));
     }
+    io::ComponentIO::log_dropped("tagged mesh", dropped);
     const auto lower = mesh.cells.find(lower_type);
     const bool has_lower = lower != mesh.cells.end() && lower->second.connectivity.rows();
     const auto curves =
@@ -994,12 +957,14 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
     }
     if (envelope && !io::is_labelled_envelope(*envelope, dim == 3)) {
         envelope->validate();
-        io::ComponentIO::attributes(envelope->vertex_attributes, {});
+        std::set<std::string> dropped_envelope =
+            io::ComponentIO::dropped_fields(envelope->vertex_attributes, {});
         const auto t = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
         for (const auto& [ct, c] : envelope->cells) {
             if (ct != t) throw std::runtime_error("Incompatible envelope topology");
-            io::ComponentIO::attributes(c.attributes, {});
+            dropped_envelope.merge(io::ComponentIO::dropped_fields(c.attributes, {}));
         }
+        io::ComponentIO::log_dropped("envelope", dropped_envelope);
         out.V_envelope = envelope->V.leftCols(type == CellType::Tetrahedron ? 3 : 2);
         out.F_envelope = io::ComponentIO::indices(envelope->cell(t).connectivity);
         out.envelope_name = "EnvelopeSurface";
