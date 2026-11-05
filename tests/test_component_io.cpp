@@ -1900,6 +1900,174 @@ TEST_CASE(
         Catch::Matchers::ContainsSubstring("off") && Catch::Matchers::ContainsSubstring("simwild"));
 }
 #endif
+#if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset)
+namespace {
+// The offset of `a`'s surface in two_tets_meshed()'s mesh, without feature curves (the offset
+// takes none), its band tagged `off`, held to the envelope `e`.
+const nlohmann::json offset_of_a = {
+    {"input", "m"},
+    {"envelope", "e"},
+    {"offset_selection", "a"},
+    {"target_distance", 0.05},
+    {"offset_output_tags", {"off"}},
+    {"optimize_offset", false},
+    {"num_threads", 1}};
+} // namespace
+TEST_CASE(
+    "The offset refuses a reference it does not lie in, or one without a label of its mesh",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    // tetwild's envelope moved by 10 of its eps, which the offset holds to: every face of a and b
+    // is outside, named by label; and with b renamed c, b is missing from it. The checks
+    // simwild's and tetwild's tagged routes run, by the same code (TetOptimizerMesh).
+    WorkingDirectory cwd;
+    using Catch::Matchers::ContainsSubstring;
+    const auto meshed = two_tets_meshed({{"input_edges", nlohmann::json::array()}});
+    const MeshData mesh_in = tags_only(meshed.first.at("mesh"));
+    const MeshData& envelope = meshed.first.at("envelope");
+    const double eps = meshed.second.at("eps");
+    auto options = offset_of_a;
+    options["envelope_size"] = eps * (1 + 1e-9);
+    MeshData moved = envelope;
+    moved.V.col(0).array() += 10 * eps;
+    REQUIRE_THROWS_WITH(
+        topological_offset::topological_offset(options, {{"m", mesh_in}, {"e", moved}}),
+        ContainsSubstring("held faces outside the envelopes of their labels") &&
+            ContainsSubstring("a (") && ContainsSubstring("b ("));
+    MeshData renamed = envelope;
+    renamed.cells.at(CellType::Triangle).attributes.at("tags").labels = {"a", "c"};
+    REQUIRE_THROWS_WITH(
+        topological_offset::topological_offset(options, {{"m", mesh_in}, {"e", renamed}}),
+        ContainsSubstring("labelled b"));
+}
+TEST_CASE(
+    "The offset refuses a filtered tetwild output, its boundary its tracked faces",
+    "[component_io][tagged]" + release_only)
+{
+    // The two tets filtered to their insides: the mesh's boundary is the faces of a and b. The
+    // offset holds its domain's wall by the box rule, so it takes a mesh that fills its box
+    // (require_box_boundary()), as tetwild's tagged route does.
+    WorkingDirectory cwd;
+    const auto filtered =
+        two_tets_meshed({{"input_edges", nlohmann::json::array()}, {"filter", "tracked"}});
+    auto options = offset_of_a;
+    options.erase("envelope");
+    REQUIRE_THROWS_WITH(
+        topological_offset::topological_offset(
+            options,
+            {{"m", tags_only(filtered.first.at("mesh"))}}),
+        Catch::Matchers::Matches(
+            "[1-9][0-9]* tracked faces of the tagged mesh lie on its boundary.*") &&
+            Catch::Matchers::ContainsSubstring("filter \"none\""));
+}
+#endif
+#if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset) && \
+    defined(WMTK_TEST_simwild)
+namespace {
+// `rows` (labelled_rows()) with each row's corners sorted, the rows sorted: equal for the same
+// triangles in any order and orientation.
+std::vector<std::vector<std::array<double, 3>>> unoriented(
+    const std::vector<std::vector<Vector3d>>& rows)
+{
+    auto out = canonical(rows);
+    for (auto& r : out) std::sort(r.begin(), r.end());
+    std::sort(out.begin(), out.end());
+    return out;
+}
+// The faces between a tet of `mesh` tagged `name` and a tet that is not, as labelled_rows() gives
+// rows: the boundary of a region inside the mesh.
+std::vector<std::vector<Vector3d>> region_boundary(const MeshData& mesh, const std::string& name)
+{
+    const auto& cells = mesh.cell(CellType::Tetrahedron);
+    const auto& tags = cells.attributes.at("tags");
+    const auto column = std::find(tags.labels.begin(), tags.labels.end(), name);
+    REQUIRE(column != tags.labels.end());
+    const auto member = tags.integers();
+    std::map<std::array<int64_t, 3>, std::vector<bool>> sides;
+    const auto& T = cells.connectivity;
+    for (Eigen::Index t = 0; t < T.rows(); ++t) {
+        for (int skip = 0; skip < 4; ++skip) {
+            std::array<int64_t, 3> f;
+            for (int c = 0, k = 0; c < 4; ++c)
+                if (c != skip) f[size_t(k++)] = T(t, c);
+            std::sort(f.begin(), f.end());
+            sides[f].push_back(member(t, column - tags.labels.begin()) != 0);
+        }
+    }
+    std::vector<std::vector<Vector3d>> rows;
+    for (const auto& [f, in] : sides) {
+        if (in.size() != 2 || in[0] == in[1]) continue;
+        rows.emplace_back();
+        for (const int64_t v : f)
+            rows.back().emplace_back(mesh.V(v, 0), mesh.V(v, 1), mesh.V(v, 2));
+    }
+    return rows;
+}
+} // namespace
+TEST_CASE(
+    "The offset holds tetwild's envelope and hands it on with its offset surface, which simwild "
+    "holds",
+    "[component_io][io][envelope][tagged]" + release_only)
+{
+    // tetwild -> topological_offset -> simwild, each given the envelope the one before returned.
+    // The offset grows the band `off` around a's surface held to tetwild's reference at tetwild's
+    // eps, and returns that reference with the offset surface added under `off` -- exactly the
+    // faces between the band and the rest, the offset surface being its own reference -- on both
+    // routes. simwild then holds the offset's mesh to it: a and b to tetwild's input, the offset
+    // surface to itself.
+    WorkingDirectory cwd;
+    const auto meshed = two_tets_meshed({{"input_edges", nlohmann::json::array()}});
+    const MeshData mesh_in = tags_only(meshed.first.at("mesh"));
+    const MeshData& envelope = meshed.first.at("envelope");
+    const double eps = meshed.second.at("eps");
+    auto options = offset_of_a;
+    options["envelope_size"] = eps * (1 + 1e-9);
+    const auto offset =
+        topological_offset::topological_offset(options, {{"m", mesh_in}, {"e", envelope}});
+    check(offset);
+    REQUIRE(offset.first.count("envelope"));
+    const MeshData& handed = offset.first.at("envelope");
+    CHECK(
+        handed.cell(CellType::Triangle).attributes.at("tags").labels ==
+        std::vector<std::string>{"a", "b", "off"});
+    for (const std::string name : {"a", "b"}) {
+        CHECK(
+            canonical(labelled_rows(handed, CellType::Triangle, name)) ==
+            canonical(labelled_rows(envelope, CellType::Triangle, name)));
+    }
+    const MeshData& mesh = offset.first.at("mesh");
+    const auto front = region_boundary(mesh, "off");
+    REQUIRE(!front.empty());
+    CHECK(unoriented(labelled_rows(handed, CellType::Triangle, "off")) == unoriented(front));
+
+    // The file route writes it as <output>_envelope.msh.
+    io::write_mesh("m.msh", mesh_in);
+    io::write_mesh("e.msh", envelope);
+    auto file_options = options;
+    file_options["application"] = "topological_offset";
+    file_options["input"] = here("m.msh");
+    file_options["input_dir"] = std::filesystem::current_path().string();
+    file_options["envelope"] = "e.msh";
+    file_options["output"] = "o";
+    topological_offset::topological_offset(file_options);
+    const MeshData file_envelope = io::read_mesh("o_envelope.msh");
+    for (const std::string name : {"a", "b", "off"}) {
+        CHECK(
+            unoriented(labelled_rows(file_envelope, CellType::Triangle, name)) ==
+            unoriented(labelled_rows(handed, CellType::Triangle, name)));
+    }
+
+    const auto remeshed = simwild::simwild(
+        {{"input", "m"},
+         {"envelope", "e"},
+         {"eps", eps},
+         {"max_iterations", 2},
+         {"num_threads", 1}},
+        {{"m", tags_only(mesh)}, {"e", handed}});
+    for (const auto& [name, data] : remeshed.first) REQUIRE_NOTHROW(data.validate());
+    CHECK(same_data(remeshed.first.at("envelope"), handed));
+}
+#endif
 #if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_simwild)
 TEST_CASE(
     "TetWild holds a tagged mesh to the envelope it is given, on both routes",
