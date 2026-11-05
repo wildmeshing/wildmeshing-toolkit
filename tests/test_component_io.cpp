@@ -101,6 +101,15 @@ MeshData tet()
     T << 0, 1, 3, 7, 0, 1, 7, 5, 0, 2, 7, 3, 0, 2, 6, 7, 0, 4, 5, 7, 0, 4, 7, 6;
     return io::geometry_data(V, T, CellType::Tetrahedron);
 }
+// The unit square as two triangles: a triangle mesh that fills its box.
+[[maybe_unused]] MeshData square_triangles()
+{
+    MatrixXd V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0;
+    MatrixXi F(2, 3);
+    F << 0, 1, 3, 0, 3, 2;
+    return io::geometry_data(V, F, CellType::Triangle);
+}
 void add_tags(MeshData& data, CellType type)
 {
     auto& c = data.cells.at(type);
@@ -254,26 +263,29 @@ TEST_CASE("Surface components operate on named meshes without files", "[componen
 #ifdef WMTK_TEST_simwild
 TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
 {
+    // A mesh that fills its box, as simwild takes a tagged mesh (require_box_boundary()), every
+    // cell tagged, and its boundary as the envelope, oriented out of it.
     WorkingDirectory cwd;
     MeshData data;
     SECTION("2D")
     {
-        data = triangle();
+        data = square_triangles();
         add_tags(data, CellType::Triangle);
     }
     SECTION("3D")
     {
-        data = tet();
+        data = cube_tets();
         add_tags(data, CellType::Tetrahedron);
     }
     MeshData envelope;
     envelope.V = data.V;
     if (data.cells.count(CellType::Tetrahedron)) {
-        envelope.cells[CellType::Triangle].connectivity.resize(4, 3);
-        envelope.cells[CellType::Triangle].connectivity << 1, 2, 3, 0, 3, 2, 0, 1, 3, 0, 2, 1;
+        envelope.cells[CellType::Triangle].connectivity.resize(12, 3);
+        envelope.cells[CellType::Triangle].connectivity << 0, 3, 1, 0, 2, 3, 1, 3, 7, 1, 7, 5, 0, 1,
+            5, 0, 5, 4, 2, 7, 3, 2, 6, 7, 0, 6, 2, 0, 4, 6, 4, 5, 7, 4, 7, 6;
     } else {
-        envelope.cells[CellType::Edge].connectivity.resize(3, 2);
-        envelope.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 0;
+        envelope.cells[CellType::Edge].connectivity.resize(4, 2);
+        envelope.cells[CellType::Edge].connectivity << 0, 1, 1, 3, 3, 2, 2, 0;
     }
     nlohmann::json options = {
         {"input", "tagged"},
@@ -285,6 +297,36 @@ TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
     auto result = simwild::simwild(options, {{"tagged", data}, {"boundary", envelope}});
     check(result);
     REQUIRE(result.first.at("mesh").cells.begin()->second.attributes.count("tags"));
+}
+TEST_CASE("SimWild refuses a tagged mesh that does not fill its box", "[component_io][tagged]")
+{
+    // One tagged tet (2D: triangle) with its boundary as the envelope, as "SimWild accepts tagged
+    // arrays in both dimensions" took it until 2026-11-05: its slanted face (edge) is a boundary
+    // face in no plane of the box, which nothing would hold (require_box_boundary()).
+    WorkingDirectory cwd;
+    const bool is_3d = GENERATE(false, true);
+    INFO((is_3d ? "3D" : "2D"));
+    MeshData data = is_3d ? tet() : triangle();
+    add_tags(data, is_3d ? CellType::Tetrahedron : CellType::Triangle);
+    MeshData envelope;
+    envelope.V = data.V;
+    if (is_3d) {
+        envelope.cells[CellType::Triangle].connectivity.resize(4, 3);
+        envelope.cells[CellType::Triangle].connectivity << 1, 2, 3, 0, 3, 2, 0, 1, 3, 0, 2, 1;
+    } else {
+        envelope.cells[CellType::Edge].connectivity.resize(3, 2);
+        envelope.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 0;
+    }
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(
+            {{"input", "tagged"},
+             {"envelope", "boundary"},
+             {"max_iterations", 0},
+             {"num_threads", 1}},
+            {{"tagged", data}, {"boundary", envelope}}),
+        Catch::Matchers::ContainsSubstring(
+            is_3d ? "1 untracked boundary faces in no plane of its bounding box"
+                  : "1 untracked boundary edges on no line of its bounding box"));
 }
 TEST_CASE("Tagged meshes read a triangle block as tagged faces", "[component_io]")
 {
@@ -480,21 +522,20 @@ TEST_CASE("Tagged mesh files carry an earlier offset's correspondence", "[compon
 }
 TEST_CASE("SimWild keeps a tagged mesh's curves on both routes", "[component_io][io]")
 {
-    // The first cell tagged, so that the face (2D: edge) between it and the next is an interface:
-    // in 2D the unit square of two triangles and the two below it, the edge (1, 0) of the first
-    // tagged `curve` -- inside the mesh, as simwild takes a tracked edge; in 3D two tets, the edge
-    // (1, 0) of the first tagged `feature_0`. Through simwild, the curve comes back on its edge
-    // block, under its label, held on its segment, the 2D curve in its direction.
+    // The first cell tagged, so that the face (2D: edge) between it and the next is an interface,
+    // in a mesh that fills its box, as simwild takes a tagged mesh: in 2D the unit square of two
+    // triangles and the two below it, the edge (1, 0) of the first tagged `curve` -- inside the
+    // mesh, as simwild takes a tracked edge; in 3D the unit cube's six tets (cube_tets()), the
+    // main diagonal (7, 0), an edge of the first and inside the mesh, tagged `feature_0`. Until
+    // 2026-11-05 the 3D mesh was two tets, which do not fill their box. Through simwild, the curve
+    // comes back on its edge block, under its label, held on its segment, the 2D curve in its
+    // direction.
     WorkingDirectory cwd;
     const bool is_3d = GENERATE(false, true);
     INFO((is_3d ? "3D" : "2D"));
     MeshData data;
     if (is_3d) {
-        MatrixXd V(5, 3);
-        V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1;
-        MatrixXi T(2, 4);
-        T << 0, 1, 2, 3, 0, 2, 1, 4;
-        data = io::geometry_data(V, T, CellType::Tetrahedron);
+        data = cube_tets();
     } else {
         MatrixXd V(6, 3);
         V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, -1, 0, 1, -1, 0;
@@ -510,7 +551,11 @@ TEST_CASE("SimWild keeps a tagged mesh's curves on both routes", "[component_io]
     const std::string label = is_3d ? "feature_0" : "curve";
     auto& edges = data.cells[CellType::Edge];
     edges.connectivity.resize(1, 2);
-    edges.connectivity << 1, 0;
+    if (is_3d) {
+        edges.connectivity << 7, 0;
+    } else {
+        edges.connectivity << 1, 0;
+    }
     edges.attributes["tags"] = {DataMatrix<uint8_t>::Ones(1, 1).eval(), {label}};
     const nlohmann::json options = {{"max_iterations", 0}, {"simplify", false}, {"num_threads", 1}};
     auto memory_options = options;
@@ -529,7 +574,12 @@ TEST_CASE("SimWild keeps a tagged mesh's curves on both routes", "[component_io]
         const auto rows = labelled_rows(*mesh, CellType::Edge, label);
         REQUIRE(!rows.empty());
         for (const auto& row : rows) {
-            for (const Vector3d& p : row) CHECK(std::abs(p.y()) + std::abs(p.z()) < 1e-12);
+            // On its segment: the x axis in 2D, the main diagonal in 3D.
+            for (const Vector3d& p : row) {
+                CHECK(
+                    (is_3d ? std::abs(p.x() - p.y()) + std::abs(p.y() - p.z())
+                           : std::abs(p.y()) + std::abs(p.z())) < 1e-12);
+            }
             // In 3D a curve has no direction, and the row is in ascending vertex order.
             if (!is_3d) CHECK(row[1].x() < row[0].x());
         }
@@ -2816,17 +2866,13 @@ TEST_CASE(
 TEST_CASE("SimWild drops a field it does not read, on both routes", "[component_io][io][tagged]")
 {
     // The meshes of "SimWild keeps a tagged mesh's curves on both routes": in 2D four triangles,
-    // in 3D two tets, the first cell tagged, an edge tagged.
+    // in 3D the unit cube's six tets, the first cell tagged, an edge tagged.
     WorkingDirectory cwd;
     const bool is_3d = GENERATE(false, true);
     INFO((is_3d ? "3D" : "2D"));
     MeshData data;
     if (is_3d) {
-        MatrixXd V(5, 3);
-        V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1;
-        MatrixXi T(2, 4);
-        T << 0, 1, 2, 3, 0, 2, 1, 4;
-        data = io::geometry_data(V, T, CellType::Tetrahedron);
+        data = cube_tets();
     } else {
         MatrixXd V(6, 3);
         V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, -1, 0, 1, -1, 0;
@@ -2841,7 +2887,11 @@ TEST_CASE("SimWild drops a field it does not read, on both routes", "[component_
     cells.attributes["tags"] = {first, {"tag_0"}};
     auto& edges = data.cells[CellType::Edge];
     edges.connectivity.resize(1, 2);
-    edges.connectivity << 1, 0;
+    if (is_3d) {
+        edges.connectivity << 7, 0;
+    } else {
+        edges.connectivity << 1, 0;
+    }
     edges.attributes["tags"] = {
         DataMatrix<uint8_t>::Ones(1, 1).eval(),
         {is_3d ? "feature_0" : "curve"}};

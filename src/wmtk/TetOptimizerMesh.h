@@ -777,8 +777,9 @@ public:
      * corner collapses left faces 25 eps off it. tetwild's tagged route and the topological
      * offset take a mesh so; a filtered mesh goes back in as its surfaces. Until 2026-11 tetwild
      * kept its own copy (TetWildMesh::init_from_tagged_mesh()). The 2D twin is
-     * TriOptimizerMesh::require_box_boundary(). simwild checks only the tracked kind: it remeshes
-     * an object's tet mesh too, its boundary in no plane of a box.
+     * TriOptimizerMesh::require_box_boundary(). simwild takes a mesh so too since 2026-11-05;
+     * until then it checked only the tracked kind and took an object's tet mesh, its boundary in
+     * no plane of a box and held by nothing.
      */
     void require_box_boundary(const std::string& who) const;
 
