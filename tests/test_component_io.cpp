@@ -1903,14 +1903,14 @@ TEST_CASE(
 #if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset)
 namespace {
 // The offset of `a`'s surface in two_tets_meshed()'s mesh, without feature curves (the offset
-// takes none), its band tagged `off`, held to the envelope `e`.
+// takes none), its band tagged `off`, held to the envelope `e`, optimized as users run it.
 const nlohmann::json offset_of_a = {
     {"input", "m"},
     {"envelope", "e"},
     {"offset_selection", "a"},
     {"target_distance", 0.05},
     {"offset_output_tags", {"off"}},
-    {"optimize_offset", false},
+    {"throw_on_nonconvergence", true},
     {"num_threads", 1}};
 } // namespace
 TEST_CASE(

@@ -3251,6 +3251,10 @@ private:
 
         // cache tet attributes
         std::map<simplex::Edge, TetAttributes> tets;
+
+        // the feature and order-2 edge tags (marching_split_edge_before())
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> feature_edges;
+        FeatureEdgeAttributes split_edge_tags;
     };
     wmtk::threading::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
 

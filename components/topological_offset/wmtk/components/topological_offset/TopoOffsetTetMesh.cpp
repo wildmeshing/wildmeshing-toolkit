@@ -604,12 +604,9 @@ void TopoOffsetTetMesh::label_input_complex()
             // then grows on both sides of it. offset_in / offset_out have no meaning for it.
             const auto bit = m_face_tag_bit.find(m_single_tag);
             if (bit != m_face_tag_bit.end()) {
-                // A face tag: its faces exactly, by their input set.
-                if (m_offset_params.optimize_offset)
-                    log_and_throw_error(
-                        "Offsetting the face tag {} needs optimize_offset false; the "
-                        "optimization does not hold face tags yet",
-                        m_tag_id_to_name[m_single_tag]);
+                // A face tag: its faces exactly, by their input set. The optimization holds it
+                // as it holds every tracked surface (until 2026-11-05 refused with
+                // optimize_offset, from before the loop held face tags).
                 for (const Tuple& f : get_faces())
                     m_face_extra[f.fid(*this)].on_sheet =
                         (m_face_attribute[f.fid(*this)].input_set() >> bit->second) & 1;
