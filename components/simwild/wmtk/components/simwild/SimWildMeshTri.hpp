@@ -80,12 +80,15 @@ public:
      *
      * Member b is built around the same curves as m_envelope, restricted to label b -- the
      * input curves of that label in generation, else the mesh's surface edges carrying it
-     * (TriOptimizerMesh::init_input_envelopes()) -- at m_envelope_eps and with the predicate
-     * m_envelope has. m_envelope stays the union, for the engine's direct uses of it. A surface
-     * edge carrying no label throws, as in triwild (the base's surface_envelope_for_edge()). At
-     * most 64 edge tags and triangle tags together: a mesh with more throws.
+     * (TriOptimizerMesh::init_input_envelopes()) -- at `eps` and with the predicate `exact`, the
+     * ones m_envelope has at the time, and follows it: at eps_simplify while the simplification
+     * after the insertion runs (simplify()), around the simplified curves after it under
+     * envelope_reference "simplified". m_envelope stays the union, for the engine's direct uses
+     * of it. A surface edge carrying no label throws, as in triwild (the base's
+     * surface_envelope_for_edge()). At most 64 edge tags and triangle tags together: a mesh with
+     * more throws.
      */
-    void init_label_envelopes();
+    void init_label_envelopes(double eps, bool exact);
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
     std::vector<std::tuple<ExprPtr, double>> m_quality_field;
@@ -156,6 +159,14 @@ public:
         const std::vector<std::string>& edge_tag_names);
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
+
+    /**
+     * @brief Simplify after the insertion: collapse every edge with the curve envelopes at
+     * eps_simplify, under preserve_topology (the exact inversion check and the substructure link
+     * condition), then hold the optimization to the envelopes envelope_reference names. The 2D
+     * twin of SimWildMesh::simplify(); run_2D calls it where run_3D calls that one.
+     */
+    void simplify();
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 

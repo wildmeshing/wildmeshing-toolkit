@@ -36,7 +36,8 @@ envelope of its own:
   simwild does the same, except under `preserve_topology`, where it simplifies after the
   insertion instead.
 - In 2D, triwild collapses the shortest segments of the curves while they stay inside the
-  simplification envelope.
+  simplification envelope. simwild does the same, except under `preserve_topology`, where it
+  simplifies after the insertion instead, as in 3D.
 
 The tighter envelope leaves the optimizer room: the simplified surface is within half of
 \(\varepsilon\) of the input (by default), and the optimizer, which is held to the full

@@ -49,6 +49,54 @@ double nearest_vertex(const MeshData& m, const Eigen::Vector3d& p)
     return d;
 }
 
+/// The 2D inputs of triwild's tracking example: a circle of n segments (a region), an open wave
+/// of m segments crossing it (a curve), and two points, one in the circle, one outside it.
+MeshData circle_2d(const int n)
+{
+    MeshData c;
+    c.V.resize(n, 3);
+    auto& E = c.cells[CellType::Edge].connectivity;
+    E.resize(n, 2);
+    for (int i = 0; i < n; ++i) {
+        const double a = 2 * std::acos(-1.0) * i / n;
+        c.V.row(i) << std::cos(a), std::sin(a), 0;
+        E.row(i) << i, (i + 1) % n;
+    }
+    return c;
+}
+
+MeshData wave_2d(const int m)
+{
+    MeshData w;
+    w.V.resize(m + 1, 3);
+    auto& E = w.cells[CellType::Edge].connectivity;
+    E.resize(m, 2);
+    for (int i = 0; i <= m; ++i) {
+        const double x = -1.6 + 3.2 * i / m;
+        w.V.row(i) << x, 0.3 * std::sin(6 * x) + 0.1, 0;
+        if (i > 0) E.row(i - 1) << i - 1, i;
+    }
+    return w;
+}
+
+MeshData points_2d()
+{
+    MeshData p;
+    p.V.resize(2, 3);
+    p.V << 0.25, -0.5, 0, -0.7, 0.9, 0;
+    p.cells[CellType::Point].connectivity.resize(2, 1);
+    p.cells[CellType::Point].connectivity << 0, 1;
+    return p;
+}
+
+double nearest_vertex_2d(const MeshData& m, const Eigen::Vector2d& p)
+{
+    double d = std::numeric_limits<double>::infinity();
+    for (Eigen::Index v = 0; v < m.V.rows(); ++v)
+        d = std::min(d, (m.V.row(v).head<2>().transpose() - p).norm());
+    return d;
+}
+
 } // namespace
 
 TEST_CASE("simwild-holds-input-feature-points", "[simwild][features]" + release_only)
@@ -77,6 +125,47 @@ TEST_CASE("simwild-holds-input-feature-points", "[simwild][features]" + release_
             for (const int v : {0, 2, 3, 4}) {
                 CAPTURE(v);
                 CHECK(nearest_vertex(m, f.V.row(v).transpose()) <= eps * (1 + 1e-9));
+            }
+        }
+    }
+}
+
+TEST_CASE("simwild-2d-holds-input-feature-points", "[simwild][features]" + release_only)
+{
+    // The 2D twin of the case above. The open curve's two ends and the two input points are
+    // anchored in a ball of eps (order2_envelope_ratio and feature_envelope_ratio, 1 at the
+    // default), and stay in it through the simplification after the insertion that
+    // preserve_topology runs (SimWildMeshTri::simplify()), under either envelope_reference: in
+    // 2D the anchors hold these points alone, and are not centred again around the simplified
+    // curves. Until 2026-11 nothing simplified in 2D under preserve_topology, and "simplified"
+    // was refused there. The whole eps range, not the default alone.
+    const MeshData wave = wave_2d(100), points = points_2d();
+    const std::vector<Eigen::Vector2d> held = {
+        wave.V.row(0).head<2>().transpose(),
+        wave.V.row(wave.V.rows() - 1).head<2>().transpose(),
+        points.V.row(0).head<2>().transpose(),
+        points.V.row(1).head<2>().transpose()};
+    for (const double eps_rel : {1e-3, 2e-3, 1e-2}) {
+        for (const bool preserve_topology : {true, false}) {
+            for (const std::string reference : {"input", "simplified"}) {
+                CAPTURE(eps_rel, preserve_topology, reference);
+                const auto result = components::simwild::simwild(
+                    {{"input", {"circle", "wave"}},
+                     {"input_type", {"volume", "curve"}},
+                     {"input_points", {"points"}},
+                     {"eps_rel", eps_rel},
+                     {"preserve_topology", preserve_topology},
+                     {"envelope_reference", reference},
+                     {"length_rel", 0.05},
+                     {"max_iterations", 10},
+                     {"num_threads", 1}},
+                    {{"circle", circle_2d(300)}, {"wave", wave}, {"points", points}});
+                const MeshData& m = result.first.at("mesh");
+                const double eps = result.second.at("eps").get<double>();
+                for (size_t i = 0; i < held.size(); ++i) {
+                    CAPTURE(i);
+                    CHECK(nearest_vertex_2d(m, held[i]) <= eps * (1 + 1e-9));
+                }
             }
         }
     }

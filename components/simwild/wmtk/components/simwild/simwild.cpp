@@ -217,17 +217,20 @@ namespace {
  *    input, so this route only runs where the caller has said that is acceptable.
  *  - AFTER insertion, SimWildMesh::simplify() from run_3D, when
  *    `preserve_topology && simplify && operation == "remeshing"`. It collapses at
- *    eps_simplify with the quality check off and then REBUILDS the envelope around the
- *    result, so it displaces the envelope geometry exactly as the pre-insertion route does.
+ *    eps_simplify with the quality check on (EdgeCollapsing.cpp says why), and then, with
+ *    envelope_reference "simplified", REBUILDS the envelope around the result, so it
+ *    displaces the envelope geometry exactly as the pre-insertion route does; with "input"
+ *    it restores the envelope around the input.
  *
- * The 2D route has no post-insertion counterpart -- SimWildMeshTri has no simplify() -- so
- * under preserve_topology nothing simplifies there.
+ * Both routes run in both dimensions: run_2D calls SimWildMeshTri::simplify(), the 2D twin,
+ * under the same condition. Until 2026-11 the 2D route had no post-insertion counterpart, and under
+ * preserve_topology nothing simplified there.
  */
-bool simplification_runs(const Parameters& params, bool is_3d)
+bool simplification_runs(const Parameters& params)
 {
     if (!params.simplify) return false;
-    if (!params.preserve_topology) return true; // pre-insertion, both dimensions
-    return is_3d && params.operation == "remeshing"; // post-insertion, 3D only
+    if (!params.preserve_topology) return true; // pre-insertion
+    return params.operation == "remeshing"; // post-insertion
 }
 
 /**
@@ -235,9 +238,10 @@ bool simplification_runs(const Parameters& params, bool is_3d)
  * envelope_reference the run cannot honour (utils::check_envelope_reference()).
  *
  * envelope_reference "input", the default: the envelope is around the input as read -- read_mesh
- * in 3D and the curve pipeline in 2D hand it over, and SimWildMesh::simplify() puts it back after
- * simplifying. "simplified": around the simplified geometry, which replaces the input. Both at
- * the full eps; until 2026-11 "simplified" took what the simplification left of it.
+ * in 3D and the curve pipeline in 2D hand it over, and SimWildMesh::simplify() (2D:
+ * SimWildMeshTri's) puts it back after simplifying. "simplified": around the simplified
+ * geometry, which replaces the input. Both at the full eps; until 2026-11 "simplified" took what
+ * the simplification left of it.
  *
  * Until 2026-10 SimWild built it around the simplified geometry whatever the flag said, and
  * charged the simplification only with the flag on: without it the envelope used the full eps
@@ -247,9 +251,9 @@ bool simplification_runs(const Parameters& params, bool is_3d)
  * Both simplifications run at Parameters::eps_simplify: read_mesh derives it from the same
  * diagonal (InputData::diag).
  */
-double envelope_eps_and_check(const Parameters& params, bool is_3d, const InputData& input_data)
+double envelope_eps_and_check(const Parameters& params, const InputData& input_data)
 {
-    const bool after_insertion = params.preserve_topology && simplification_runs(params, is_3d);
+    const bool after_insertion = params.preserve_topology && simplification_runs(params);
     wmtk::utils::check_envelope_reference(
         params.eps,
         params.eps_simplify,
@@ -274,7 +278,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
 
     simwild::SimWildMesh mesh(
         params,
-        envelope_eps_and_check(params, /*is_3d=*/true, input_data),
+        envelope_eps_and_check(params, input_data),
         params.NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
@@ -498,7 +502,7 @@ void run_2D(
 
     simwild::tri::SimWildMeshTri mesh(
         params,
-        envelope_eps_and_check(params, /*is_3d=*/false, input_data),
+        envelope_eps_and_check(params, input_data),
         params.NUM_THREADS);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
@@ -541,6 +545,13 @@ void run_2D(
 
     mesh.consolidate_mesh();
     write_unique_vtu();
+
+    // As in run_3D: under preserve_topology the curves are simplified here, after the
+    // insertion, rather than before it in read_curves.
+    if (params.operation == "remeshing" && params.preserve_topology && params.simplify) {
+        logger().info("Simplify after insertion");
+        mesh.simplify();
+    }
 
     // /////////apply operation
     apply_operation(mesh, json_params);
