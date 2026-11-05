@@ -245,12 +245,16 @@ public:
      *
      * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
      * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
+     *
+     * `bounding` (filter_inputs): the tracked surface of the faces whose input set meets it
+     * only. All bits, the default: every tracked face, as before the key.
      */
     void compute_winding_number(
         const std::vector<Tuple>& tets,
         const Eigen::MatrixXd& barycenters,
         const std::vector<Vector3d>& vertices = {},
-        const std::vector<std::array<size_t, 3>>& faces = {});
+        const std::vector<std::array<size_t, 3>>& faces = {},
+        InputSet bounding = ~InputSet(0));
 
     /**
      * @brief The winding numbers of the input: with respect to each input surface
@@ -266,6 +270,9 @@ public:
      * winding number negated. The whole input's is the sum of the per-input ones AS GIVEN,
      * oriented as a whole the same way -- an input that is a cavity of another, oriented inward,
      * still subtracts.
+     *
+     * `bounding` (filter_inputs): the whole input's is the sum over the inputs of its bits only,
+     * the inputs that bound the domain filter "input" keeps. All bits, the default: every input.
      */
     void compute_input_winding_numbers(
         const std::vector<Tuple>& tets,
@@ -273,7 +280,8 @@ public:
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
         const std::vector<int>& face_input,
-        int n_inputs);
+        int n_inputs,
+        InputSet bounding = ~InputSet(0));
 
     /// Which of the finalization's per-tet fields were computed, so that the writers leave
     /// out the ones that were not rather than writing their defaults as if they were values.
@@ -403,7 +411,10 @@ public:
 
 public:
     // for boolean operations
-    int flood_fill();
+    /// The parts the tracked faces separate. `bounding` (filter_inputs): only the faces whose
+    /// input set meets it separate; the others are crossed. All bits, the default: every tracked
+    /// face, as before the key.
+    int flood_fill(InputSet bounding = ~InputSet(0));
 
     void save_paraview(const std::string& path, const bool use_hdf5, MeshMap* output = nullptr);
     void write_optimization_debug_output(const std::string& path) override

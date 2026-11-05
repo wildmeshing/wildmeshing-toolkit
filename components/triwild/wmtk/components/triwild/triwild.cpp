@@ -357,6 +357,27 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                : io::input_labels(
                      json_params["input_names"].get<std::vector<std::string>>(),
                      input_paths.size());
+    // filter_inputs: the inputs that bound the domain a filter keeps, by their labels (bit i:
+    // edge_tags[i]). Every input by default, as before the key.
+    InputSet bounding = ~InputSet(0);
+    const auto filter_inputs = json_params["filter_inputs"].get<std::vector<std::string>>();
+    if (!filter_inputs.empty()) {
+        if (filter_option == "none") {
+            log_and_throw_error("filter_inputs: with filter \"none\" nothing is filtered");
+        }
+        bounding = 0;
+        for (const std::string& name : filter_inputs) {
+            const auto it = std::find(edge_tags.begin(), edge_tags.end(), name);
+            if (it == edge_tags.end()) {
+                log_and_throw_error(
+                    "filter_inputs: {} is not an input (the inputs: {})",
+                    name,
+                    edge_tags);
+            }
+            bounding |= InputSet(1) << (it - edge_tags.begin());
+        }
+        logger().info("filter \"{}\": the domain bounded by {} only", filter_option, filter_inputs);
+    }
     // Read the inputs. Vs/Es keep them per input, as read, so the winding-number pass below
     // does not have to parse every file a second time; V_in/E_in is their union, which is
     // what gets simplified and arranged.
@@ -975,6 +996,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     //
     // As in tetwild, the flood fill used to run on every call just to fill its output field.
     // A tagged mesh input has no input curves, so no input winding numbers, and no region tags.
+    // With filter_inputs, what the filter reads -- the region tags under "input", the tracked
+    // winding number under "tracked", the parts under "flood" -- is of those inputs only.
     const bool skip_winding =
         tagged || (json_params["skip_winding_number"] && filter_option == "none");
     if (!tagged && json_params["skip_winding_number"] && filter_option != "none") {
@@ -999,7 +1022,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
         if (filter_option == "flood" || json_params["compute_flood_fill"]) {
             step_timer.start();
-            const int num_parts = mesh.flood_fill();
+            const int num_parts =
+                mesh.flood_fill(filter_option == "flood" ? bounding : ~InputSet(0));
             logger().info(
                 "finalize: flood fill, {} parts {:.4}s",
                 num_parts,
@@ -1034,10 +1058,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     if (filter_option == "input") {
-        mesh.filter_with_input_winding_number();
+        mesh.filter_with_input_winding_number(bounding);
         mesh.consolidate_mesh();
     } else if (filter_option == "tracked") {
-        mesh.compute_tracked_winding_number();
+        mesh.compute_tracked_winding_number(bounding);
         mesh.filter_with_tracked_winding_number();
         mesh.consolidate_mesh();
     } else if (filter_option == "flood") {

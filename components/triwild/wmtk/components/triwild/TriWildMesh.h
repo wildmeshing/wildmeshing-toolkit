@@ -186,7 +186,9 @@ public:
     void compute_winding_numbers(const std::vector<MatrixXd>& Vs, const std::vector<MatrixXi>& Es);
 
     /// Remove the faces that lie inside no input (needs compute_winding_numbers).
-    void filter_with_input_winding_number();
+    /// `bounding` (filter_inputs): faces inside none of its inputs are dropped. All bits, the
+    /// default: every input, as before the key.
+    void filter_with_input_winding_number(InputSet bounding = ~InputSet(0));
 
     /**
      * @brief Winding number of every face's centroid w.r.t. the tracked curves, oriented as the
@@ -197,13 +199,17 @@ public:
      * curves add up, opposite ones cancel. Like the input winding number, a result with nothing
      * inside is taken as an inside-out input and flipped.
      */
-    void compute_tracked_winding_number();
+    /// `bounding` (filter_inputs): of the tracked edges whose input set meets it only. All bits,
+    /// the default: every tracked edge.
+    void compute_tracked_winding_number(InputSet bounding = ~InputSet(0));
     /// Remove the faces whose tracked winding number is at most 1/2.
     void filter_with_tracked_winding_number();
     /// Remove the flood-fill region that dominates the mesh boundary (needs flood_fill).
     void filter_with_flood_fill();
 
-    int flood_fill();
+    /// `bounding` (filter_inputs): only the tracked edges whose input set meets it separate; the
+    /// others are crossed. All bits, the default: every tracked edge.
+    int flood_fill(InputSet bounding = ~InputSet(0));
     /// Whether flood_fill ran, so that the writers leave the part ids out rather than writing
     /// their defaults as if they were parts.
     bool m_has_parts = false;

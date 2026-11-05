@@ -21,6 +21,7 @@
       "simplify_use_sample_envelope",
       "use_sample_envelope",
       "filter",
+      "filter_inputs",
       "skip_winding_number",
       "compute_flood_fill",
       "eps_rel",
@@ -187,7 +188,18 @@
     "type": "string",
     "options": ["flood", "input", "tracked", "none"],
     "default": "none",
-    "doc": "Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'tracked': winding number w.r.t. the tracked curves, oriented as the input was -- the curves the mesh conforms to rather than the input, all inputs at once (coincident curves add up, opposite ones cancel); faces at most 1/2 are dropped. 'none': Do not filter. All three filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary. On a tagged mesh input (see /input), 'tracked' and 'flood' use its tracked edges, and 'input' is refused: there are no input curves."
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'tracked': winding number w.r.t. the tracked curves, oriented as the input was -- the curves the mesh conforms to rather than the input, all inputs at once (coincident curves add up, opposite ones cancel); faces at most 1/2 are dropped. 'none': Do not filter. All three filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary. With filter_inputs, only those inputs bound the domain kept. On a tagged mesh input (see /input), 'tracked' and 'flood' use its tracked edges, and 'input' is refused: there are no input curves."
+  },
+  {
+    "pointer": "/filter_inputs",
+    "type": "list",
+    "default": [],
+    "doc": "The inputs that bound the domain a filter keeps, by their labels: the names of input_names (tag_<i> without one), or a tagged mesh's edge-tag labels. Empty, the default: every input, as before the key. With 'input' the faces inside one of those inputs are kept; with 'tracked' the winding number is of the tracked edges carrying one of them only; with 'flood' the fill crosses every tracked edge of the other inputs. So an input that is not named -- an open curve across a region, a second region outside it -- does not cut or add to the domain kept, and stays in the output as tracked edges, its edge tag. Under 'tracked' a tracked edge carrying a named input and another input (two regions touching edge to edge) is refused before the filter: an edge's orientation is one count for all its inputs, not one per input, so the named inputs' winding number cannot be computed there; 'flood' needs no orientation, and is exact for inputs that do not overlap themselves. A name that is not an input throws, and so does the key with filter 'none'."
+  },
+  {
+    "pointer": "/filter_inputs/*",
+    "type": "string",
+    "doc": "The label of one input that bounds the domain."
   },
   {
     "pointer": "/skip_winding_number",

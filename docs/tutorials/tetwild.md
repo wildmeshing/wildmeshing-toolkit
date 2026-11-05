@@ -214,6 +214,12 @@ inputs whose orientation cannot be trusted; `input` for open inputs, as in the
 [tracking tutorial](tracking.md). The winding numbers are written to the output in any case (see
 [outputs](#outputs)), so a `none` run can be filtered afterwards.
 
+[`filter_inputs`](../reference/tetwild.md#filter_inputs) names the inputs that bound the domain
+kept; the others -- an open sheet through a solid, a second solid outside it -- are kept as
+tracked faces wherever they lie, without cutting or adding to it. By default every input bounds
+it. On a tagged mesh input the names are its face-tag labels, and `input` is refused: there is no
+input surface.
+
 ### Feature curves and points: `input_edges`, `input_points`
 
 [`input_edges`](../reference/tetwild.md#input_edges) lists edge meshes whose edges are inserted as

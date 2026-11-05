@@ -105,7 +105,8 @@ The mesh must fill its bounding box, as an output with
 curves go in as inputs instead. With
 [`envelope`](../reference/triwild.md#envelope), the reference an earlier run returned, it holds the
 curves to that rather than to the mesh received, so a chain stays within one eps of the first
-input.
+input. [`filter_inputs`](../reference/triwild.md#filter_inputs) names the inputs that bound the
+domain a filter keeps.
 
 ### The envelope: `eps_rel`
 

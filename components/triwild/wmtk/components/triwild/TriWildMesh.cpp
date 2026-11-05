@@ -463,7 +463,7 @@ void TriWildMesh::compute_winding_numbers(
     }
 }
 
-void TriWildMesh::compute_tracked_winding_number()
+void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
 {
     if (!m_tracks_orientation) {
         log_and_throw_error(
@@ -481,7 +481,41 @@ void TriWildMesh::compute_tracked_winding_number()
     for (const Tuple& v : get_vertices()) {
         V.row(v.vid(*this)) = m_vertex_attribute[v.vid(*this)].m_posf;
     }
-    const auto oriented = oriented_tracked_edges();
+    // With filter_inputs, the tracked edges of those inputs only, oriented as
+    // oriented_tracked_edges() orients them; all of them otherwise, by the code that ran before
+    // the key. An edge's orientation is one count for all its inputs, not one per input: on an
+    // edge where a kept input coincides with another the kept inputs' own is not known, and it
+    // is refused there rather than guessed, as in 3D.
+    std::vector<std::array<size_t, 2>> oriented;
+    if (bounding == ~InputSet(0)) {
+        oriented = oriented_tracked_edges();
+    } else {
+        size_t n_shared = 0;
+        for (const Tuple& e : get_edges()) {
+            const auto& attr = m_edge_attribute[e.eid(*this)];
+            const InputSet set = attr.input_set();
+            if (attr.m_is_surface_fs && (set & bounding) != 0 && (set & (set - 1)) != 0) {
+                ++n_shared;
+            }
+        }
+        if (n_shared > 0) {
+            log_and_throw_error(
+                "filter \"tracked\" with filter_inputs: {} tracked edges carry a named input and "
+                "another input. The orientation is stored per edge, not per input, so the named "
+                "inputs' winding number cannot be computed there; use filter \"flood\", exact "
+                "without orientation for inputs that do not overlap themselves",
+                n_shared);
+        }
+        for (const Tuple& e : get_edges()) {
+            const auto& attr = m_edge_attribute[e.eid(*this)];
+            if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+            if ((attr.input_set() & bounding) == 0) continue;
+            size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            if (a > b) std::swap(a, b);
+            if (attr.m_orientation < 0) std::swap(a, b);
+            for (int k = 0; k < std::abs(attr.m_orientation); ++k) oriented.push_back({{a, b}});
+        }
+    }
     MatrixXi E(oriented.size(), 2);
     for (size_t i = 0; i < oriented.size(); ++i) {
         E(i, 0) = int(oriented[i][0]);
@@ -514,13 +548,22 @@ void TriWildMesh::filter_with_tracked_winding_number()
     remove_tris_by_ids(rm_fids);
 }
 
-void TriWildMesh::filter_with_input_winding_number()
+void TriWildMesh::filter_with_input_winding_number(const InputSet bounding)
 {
-    // A face is inside when it is inside at least one input, i.e. when it carries a tag.
+    // A face is inside when it is inside at least one input, i.e. when it carries a tag; with
+    // filter_inputs, a tag of one of those inputs.
+    const auto inside = [&](const size_t fid) {
+        if (bounding == ~InputSet(0)) return !m_face_attribute[fid].tags.empty();
+        for (const auto tag : m_face_attribute[fid].tags) {
+            if (tag >= 0 && tag < SurfaceTagAttributes::max_inputs && ((bounding >> tag) & 1))
+                return true;
+        }
+        return false;
+    };
     std::vector<size_t> rm_fids;
     for (const Tuple& t : get_faces()) {
         const size_t fid = t.fid(*this);
-        if (m_face_attribute[fid].tags.empty()) {
+        if (!inside(fid)) {
             rm_fids.emplace_back(fid);
         }
     }
@@ -572,8 +615,15 @@ void TriWildMesh::filter_with_flood_fill()
     remove_tris_by_ids(rm_fids);
 }
 
-int TriWildMesh::flood_fill()
+int TriWildMesh::flood_fill(const InputSet bounding)
 {
+    // An edge the fill crosses: not tracked, or, with filter_inputs, tracked for other inputs
+    // only.
+    const bool all_inputs = bounding == ~InputSet(0);
+    const auto crossed = [&](const Tuple& e) {
+        const auto& attr = m_edge_attribute[e.eid(*this)];
+        return !attr.m_is_surface_fs || (!all_inputs && (attr.input_set() & bounding) == 0);
+    };
     int current_id = 0;
     const auto faces = get_faces();
     // Indexed by fid, not a std::map: this is a BFS over every face, so the per-lookup
@@ -596,7 +646,7 @@ int TriWildMesh::flood_fill()
 
         std::queue<Tuple> bfs_queue;
 
-        if (!m_edge_attribute[f1.eid(*this)].m_is_surface_fs) {
+        if (crossed(f1)) {
             auto oppo_t = f1.switch_face(*this);
             if (oppo_t.has_value()) {
                 if (!seen((*oppo_t).fid(*this))) {
@@ -604,7 +654,7 @@ int TriWildMesh::flood_fill()
                 }
             }
         }
-        if (!m_edge_attribute[f2.eid(*this)].m_is_surface_fs) {
+        if (crossed(f2)) {
             auto oppo_t = f2.switch_face(*this);
             if (oppo_t.has_value()) {
                 if (!seen((*oppo_t).fid(*this))) {
@@ -612,7 +662,7 @@ int TriWildMesh::flood_fill()
                 }
             }
         }
-        if (!m_edge_attribute[f3.eid(*this)].m_is_surface_fs) {
+        if (crossed(f3)) {
             auto oppo_t = f3.switch_face(*this);
             if (oppo_t.has_value()) {
                 if (!seen((*oppo_t).fid(*this))) {
@@ -635,7 +685,7 @@ int TriWildMesh::flood_fill()
             const Tuple f_tmp2 = tmp.switch_edge(*this);
             const Tuple f_tmp3 = tmp.switch_vertex(*this).switch_edge(*this);
 
-            if (!m_edge_attribute[f_tmp1.eid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp1)) {
                 auto oppo_t = f_tmp1.switch_face(*this);
                 if (oppo_t.has_value()) {
                     if (!seen((*oppo_t).fid(*this))) {
@@ -643,7 +693,7 @@ int TriWildMesh::flood_fill()
                     }
                 }
             }
-            if (!m_edge_attribute[f_tmp2.eid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp2)) {
                 auto oppo_t = f_tmp2.switch_face(*this);
                 if (oppo_t.has_value()) {
                     if (!seen((*oppo_t).fid(*this))) {
@@ -651,7 +701,7 @@ int TriWildMesh::flood_fill()
                     }
                 }
             }
-            if (!m_edge_attribute[f_tmp3.eid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp3)) {
                 auto oppo_t = f_tmp3.switch_face(*this);
                 if (oppo_t.has_value()) {
                     if (!seen((*oppo_t).fid(*this))) {

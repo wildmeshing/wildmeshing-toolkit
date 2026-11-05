@@ -1605,6 +1605,19 @@ ComponentResult two_tets_meshed(const nlohmann::json& extra = nlohmann::json::ob
         options,
         {{"a", tet_surface(0)}, {"b", tet_surface(3)}, {"curve", inner_segment()}});
 }
+// The volume of `mesh`'s tets, and the largest x of their centroids.
+std::pair<double, double> volume_and_max_x(const MeshData& mesh)
+{
+    const auto& T = mesh.cell(CellType::Tetrahedron).connectivity;
+    double volume = 0, max_x = -std::numeric_limits<double>::infinity();
+    for (Eigen::Index t = 0; t < T.rows(); ++t) {
+        std::array<Vector3d, 4> p;
+        for (int k = 0; k < 4; ++k) p[k] = mesh.V.row(T(t, k)).transpose();
+        volume += std::abs((p[1] - p[0]).cross(p[2] - p[0]).dot(p[3] - p[0])) / 6;
+        max_x = std::max(max_x, (p[0] + p[1] + p[2] + p[3]).x() / 4);
+    }
+    return {volume, max_x};
+}
 // Each face of `mesh` tagged `name` on its unit tet (`a` at x 0, `b` at x 3) and facing out of it.
 void check_on_own_input_facing_out(const MeshData& mesh, const std::string& name)
 {
@@ -1782,10 +1795,45 @@ TEST_CASE(
     REQUIRE_THROWS_WITH(run({{"filter", "input"}}), ContainsSubstring("filter \"input\""));
     REQUIRE_THROWS_WITH(run({{"input_edges", {"curve"}}}), ContainsSubstring("input_edges"));
     REQUIRE_THROWS_WITH(run({{"input_names", {"x"}}}), ContainsSubstring("input_names"));
+    REQUIRE_THROWS_WITH(
+        run({{"filter", "flood"}, {"filter_inputs", {"c"}}}),
+        ContainsSubstring("c is not an input"));
+    REQUIRE_THROWS_WITH(run({{"filter_inputs", {"a"}}}), ContainsSubstring("nothing is filtered"));
     // A surface input takes no envelope.
     REQUIRE_THROWS_WITH(
         run({{"input", "s"}, {"envelope", "m"}}),
         ContainsSubstring("tagged mesh input only"));
+}
+TEST_CASE(
+    "TetWild filter_inputs: only the inputs named bound the domain kept",
+    "[component_io][tagged]" + release_only)
+{
+    // Two unit tets 3 apart, `a` and `b`: every filter keeps both by default, and with
+    // filter_inputs a only a, its volume 1/6 exactly as inserted, b's faces left in the part
+    // removed. On the tagged route too, by a's face-tag label, except "input", refused there.
+    WorkingDirectory cwd;
+    const std::string filter = GENERATE("input", "tracked", "flood");
+    INFO("filter " << filter);
+    const auto both = volume_and_max_x(two_tets_meshed({{"filter", filter}}).first.at("mesh"));
+    CHECK(std::abs(both.first - 2. / 6) < 1e-9);
+    CHECK(both.second > 2);
+    const auto only_a = volume_and_max_x(
+        two_tets_meshed({{"filter", filter}, {"filter_inputs", {"a"}}}).first.at("mesh"));
+    CHECK(std::abs(only_a.first - 1. / 6) < 1e-9);
+    CHECK(only_a.second < 1);
+    if (filter == "input") return;
+    const MeshData tagged = two_tets_meshed().first.at("mesh");
+    const auto tagged_a = volume_and_max_x(
+        tetwild::tetwild(
+            {{"input", "m"},
+             {"filter", filter},
+             {"filter_inputs", {"a"}},
+             {"max_iterations", 0},
+             {"num_threads", 1}},
+            {{"m", tagged}})
+            .first.at("mesh"));
+    CHECK(std::abs(tagged_a.first - 1. / 6) < 1e-9);
+    CHECK(tagged_a.second < 1);
 }
 #endif
 #if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset)
@@ -1953,6 +2001,19 @@ ComponentResult two_squares_meshed(const nlohmann::json& extra = nlohmann::json:
     options.update(extra);
     return triwild::triwild(options, {{"a", square_curve(0)}, {"b", square_curve(3)}});
 }
+// The area of `mesh`'s triangles, and the largest x of their centroids.
+std::pair<double, double> area_and_max_x(const MeshData& mesh)
+{
+    const auto& F = mesh.cell(CellType::Triangle).connectivity;
+    double area = 0, max_x = -std::numeric_limits<double>::infinity();
+    for (Eigen::Index t = 0; t < F.rows(); ++t) {
+        std::array<Vector3d, 3> p;
+        for (int k = 0; k < 3; ++k) p[k] = mesh.V.row(F(t, k)).transpose();
+        area += std::abs((p[1] - p[0]).cross(p[2] - p[0]).z()) / 2;
+        max_x = std::max(max_x, (p[0] + p[1] + p[2]).x() / 3);
+    }
+    return {area, max_x};
+}
 } // namespace
 TEST_CASE(
     "TriWild continues from a tagged triangle mesh, its triangles kept, on both routes",
@@ -2045,8 +2106,42 @@ TEST_CASE("TriWild refuses what its tagged route has no input for", "[component_
     REQUIRE_THROWS_WITH(run({{"filter", "input"}}), ContainsSubstring("filter \"input\""));
     REQUIRE_THROWS_WITH(run({{"input_points", {"s"}}}), ContainsSubstring("input_points"));
     REQUIRE_THROWS_WITH(
+        run({{"filter", "flood"}, {"filter_inputs", {"c"}}}),
+        ContainsSubstring("c is not an input"));
+    REQUIRE_THROWS_WITH(
         run({{"input", "s"}, {"envelope", "m"}}),
         ContainsSubstring("tagged mesh input only"));
+}
+TEST_CASE(
+    "TriWild filter_inputs: only the inputs named bound the domain kept",
+    "[component_io][tagged]")
+{
+    // Two unit squares 3 apart, `a` and `b`: every filter keeps both by default, and with
+    // filter_inputs a only a, its area 1. On the tagged route too, by a's edge-tag label.
+    WorkingDirectory cwd;
+    const std::string filter = GENERATE("input", "tracked", "flood");
+    INFO("filter " << filter);
+    const nlohmann::json winding = {{"skip_winding_number", false}, {"filter", filter}};
+    const auto both = area_and_max_x(two_squares_meshed(winding).first.at("mesh"));
+    CHECK(std::abs(both.first - 2) < 1e-9);
+    CHECK(both.second > 2);
+    auto only = winding;
+    only["filter_inputs"] = {"a"};
+    const auto only_a = area_and_max_x(two_squares_meshed(only).first.at("mesh"));
+    CHECK(std::abs(only_a.first - 1) < 1e-9);
+    CHECK(only_a.second < 1);
+    if (filter == "input") return;
+    const auto tagged_a = area_and_max_x(
+        triwild::triwild(
+            {{"input", "m"},
+             {"filter", filter},
+             {"filter_inputs", {"a"}},
+             {"max_iterations", 0},
+             {"num_threads", 1}},
+            {{"m", two_squares_meshed().first.at("mesh")}})
+            .first.at("mesh"));
+    CHECK(std::abs(tagged_a.first - 1) < 1e-9);
+    CHECK(tagged_a.second < 1);
 }
 TEST_CASE(
     "TriWild holds a tagged mesh to the envelope it is given, on both routes",
@@ -2135,7 +2230,95 @@ TEST_CASE(
         Catch::Matchers::ContainsSubstring("labelled b"));
 }
 #endif
+#ifdef WMTK_TEST_tetwild
+namespace {
+// The boundary of the box [lo, hi], its triangles facing out.
+MeshData box_surface(const Vector3d& lo, const Vector3d& hi)
+{
+    MeshData data;
+    data.V.resize(8, 3);
+    for (int i = 0; i < 8; ++i) {
+        const bool x = i == 1 || i == 2 || i == 5 || i == 6;
+        const bool y = i == 2 || i == 3 || i == 6 || i == 7;
+        data.V.row(i) << (x ? hi : lo).x(), (y ? hi : lo).y(), (i >= 4 ? hi : lo).z();
+    }
+    auto& F = data.cells[CellType::Triangle].connectivity;
+    F.resize(12, 3);
+    F << 0, 3, 2, 0, 2, 1, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 3, 7, 6, 3, 6, 2, 0, 4, 7, 0, 7, 3,
+        1, 2, 6, 1, 6, 5;
+    return data;
+}
+} // namespace
+TEST_CASE(
+    "TetWild filter_inputs: tracked refuses the faces a named input shares, flood keeps it",
+    "[component_io][tagged]" + release_only)
+{
+    // Two unit boxes touching face to face, filter_inputs a: on the faces between them the
+    // orientation counts both boxes (one count per face), so "tracked" cannot take a's winding
+    // number and throws, naming flood; "flood" keeps a alone, its volume 1. On both input routes.
+    WorkingDirectory cwd;
+    using Catch::Matchers::ContainsSubstring;
+    const MeshMap boxes{
+        {"a", box_surface(Vector3d(0, 0, 0), Vector3d(1, 1, 1))},
+        {"b", box_surface(Vector3d(1, 0, 0), Vector3d(2, 1, 1))}};
+    nlohmann::json options = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1},
+        {"filter_inputs", {"a"}}};
+    options["filter"] = "tracked";
+    REQUIRE_THROWS_WITH(
+        tetwild::tetwild(options, boxes),
+        ContainsSubstring("per face") && ContainsSubstring("flood"));
+    options["filter"] = "flood";
+    const auto a = volume_and_max_x(tetwild::tetwild(options, boxes).first.at("mesh"));
+    CHECK(std::abs(a.first - 1) < 1e-9);
+    CHECK(a.second < 1);
+
+    auto unfiltered = options;
+    unfiltered.erase("filter_inputs");
+    unfiltered["filter"] = "none";
+    const MeshMap tagged{{"m", tetwild::tetwild(unfiltered, boxes).first.at("mesh")}};
+    nlohmann::json again = {
+        {"input", "m"},
+        {"filter", "tracked"},
+        {"filter_inputs", {"a"}},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    REQUIRE_THROWS_WITH(tetwild::tetwild(again, tagged), ContainsSubstring("per face"));
+    again["filter"] = "flood";
+    const auto tagged_a = volume_and_max_x(tetwild::tetwild(again, tagged).first.at("mesh"));
+    CHECK(std::abs(tagged_a.first - 1) < 1e-9);
+    CHECK(tagged_a.second < 1);
+}
+#endif
 #ifdef WMTK_TEST_triwild
+TEST_CASE(
+    "TriWild filter_inputs: tracked refuses the edges a named input shares, flood keeps it",
+    "[component_io][tagged]")
+{
+    // Two unit squares touching edge to edge, filter_inputs a: the 2D twin of tetwild's.
+    WorkingDirectory cwd;
+    using Catch::Matchers::ContainsSubstring;
+    const MeshMap squares{{"a", square_curve(0)}, {"b", square_curve(1)}};
+    nlohmann::json options = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1},
+        {"filter_inputs", {"a"}}};
+    options["filter"] = "tracked";
+    REQUIRE_THROWS_WITH(
+        triwild::triwild(options, squares),
+        ContainsSubstring("per edge") && ContainsSubstring("flood"));
+    options["filter"] = "flood";
+    const auto a = area_and_max_x(triwild::triwild(options, squares).first.at("mesh"));
+    CHECK(std::abs(a.first - 1) < 1e-9);
+    CHECK(a.second < 1);
+}
 TEST_CASE("TriWild refuses a filtered mesh, its tracked boundary", "[component_io][tagged]")
 {
     // Two unit squares filtered to their insides: the mesh's boundary is its tracked edges.

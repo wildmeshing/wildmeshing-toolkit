@@ -372,6 +372,33 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             feature_tags.push_back(utils::feature_input_name(i));
         }
     }
+    // filter_inputs: the inputs that bound the domain a filter keeps, by their labels (bit i:
+    // face_tags[i]). Every input by default, as before the key.
+    InputSet bounding = ~InputSet(0);
+    const auto filter_inputs = json_params["filter_inputs"].get<std::vector<std::string>>();
+    if (!filter_inputs.empty()) {
+        if (filter_option == "none") {
+            log_and_throw_error("filter_inputs: with filter \"none\" nothing is filtered");
+        }
+        if (json_params["use_legacy_code"] && filter_option != "input") {
+            log_and_throw_error(
+                "filter_inputs: filter \"{}\" not with use_legacy_code, which keeps no face's "
+                "inputs",
+                filter_option);
+        }
+        bounding = 0;
+        for (const std::string& name : filter_inputs) {
+            const auto it = std::find(face_tags.begin(), face_tags.end(), name);
+            if (it == face_tags.end()) {
+                log_and_throw_error(
+                    "filter_inputs: {} is not an input (the inputs: {})",
+                    name,
+                    face_tags);
+            }
+            bounding |= InputSet(1) << (it - face_tags.begin());
+        }
+        logger().info("filter \"{}\": the domain bounded by {} only", filter_option, filter_inputs);
+    }
 
     history::SurfaceHistory input_history; // the files as read, welded, simplified
 
@@ -1299,6 +1326,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     //
     // The two last ones used to run on every call just to fill their output fields. A tagged
     // mesh input has no input surfaces, so no input winding numbers.
+    //
+    // With filter_inputs, the one the filter reads -- winding_number_input under "input",
+    // winding_number_tracked under "tracked", part under "flood" -- is of those inputs only, so
+    // that the others do not bound what it keeps; the others are of every input.
     const bool skip_winding =
         tagged || (json_params["skip_winding_number"] && filter_option == "none");
     if (!tagged && json_params["skip_winding_number"] && filter_option != "none") {
@@ -1328,7 +1359,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 verts,
                 tris,
                 tri_input,
-                int(input_paths.size()));
+                int(input_paths.size()),
+                filter_option == "input" ? bounding : ~InputSet(0));
             logger().info(
                 "finalize: input winding numbers ({} inputs) {:.4}s",
                 input_paths.size(),
@@ -1340,12 +1372,18 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         }
         if (need_tracked) {
             step_timer.start();
-            mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
+            mesh_new.compute_winding_number(
+                finalize_tets,
+                finalize_barycenters,
+                {},
+                {},
+                filter_option == "tracked" ? bounding : ~InputSet(0));
             logger().info("finalize: tracked winding number {:.4}s", step_timer.getElapsedTime());
         }
         if (need_parts) {
             step_timer.start();
-            const int num_parts = mesh_new.flood_fill();
+            const int num_parts =
+                mesh_new.flood_fill(filter_option == "flood" ? bounding : ~InputSet(0));
             logger().info(
                 "finalize: flood fill, {} parts {:.4}s",
                 num_parts,
