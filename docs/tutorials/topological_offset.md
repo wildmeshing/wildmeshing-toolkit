@@ -260,8 +260,10 @@ counted before and after the construction, and a change stops the run
 - In memory, `outputs["offset"]`: the front, as triangles on the mesh's vertices, after the
   optimization (2,462 triangles in one five-turn run); a construction-only run returns it
   without triangles. `outputs["envelope"]` is the input's `EnvelopeSurface` group, passed on, or the
-  [`envelope`](../reference/topological_offset.md#envelope) given, unchanged (on the command line
-  also `<output>_envelope.msh`): carried for the next run, not yet held to.
+  [`envelope`](../reference/topological_offset.md#envelope) given, a labelled reference, which the
+  run holds to and returns with the band's boundary added under the band's tags (on the command
+  line also `<output>_envelope.msh`): the front, which is new and so its own reference, and, where
+  the band wraps a region, its interface with that region.
 - With `report`, a JSON file with the vertex, edge, face and tet counts before and after, the
   threads and the run time; after the optimization also `converged` and `optimization_metrics`,
   whose `avg_l2_dist_err` and `max_l2_dist_err` are the front's distance error. In memory, the

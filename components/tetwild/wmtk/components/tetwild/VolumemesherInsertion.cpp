@@ -665,36 +665,8 @@ void TetWildMesh::init_from_tagged_mesh(const TaggedMesh& mesh)
 
     // The wall: the boundary faces, untracked, each in a plane of the box, which
     // init_from_Volumeremesher() flagged as it flags every face in one -- the mesh fills its box,
-    // as the insertion's background box does. Refused: an untracked boundary face in no plane,
-    // which would be held by nothing, and the domain would move with it; and a tracked boundary
-    // face, as a filtered mesh's boundary is. No insertion puts a tracked face there (the
-    // background box is padded past the input), and the operations hold a tracked face from the
-    // tet across it: collapse_edge_before() checks a merged tracked face in the tet beyond it,
-    // and a boundary face has none (measured on a filtered unit cube held by its envelopes:
-    // corner collapses left faces 25 eps off it). A filtered mesh goes back in as its surfaces.
-    size_t n_free = 0, n_tracked = 0;
-    for (const Tuple& f : get_faces()) {
-        if (f.switch_tetrahedron(*this)) continue;
-        const auto& attr = m_face_attribute[f.fid(*this)];
-        if (attr.m_is_surface_fs) {
-            ++n_tracked;
-        } else if (attr.m_is_bbox_fs < 0) {
-            ++n_free;
-        }
-    }
-    if (n_tracked > 0) {
-        log_and_throw_error(
-            "{} tracked faces of the tagged mesh lie on its boundary, as a filtered mesh's do: "
-            "tetwild's tagged route takes a mesh that fills its box (an output with filter "
-            "\"none\"), its tracked faces inside; give a filtered mesh's surfaces as inputs",
-            n_tracked);
-    }
-    if (n_free > 0) {
-        log_and_throw_error(
-            "{} untracked boundary faces of the tagged mesh lie in no plane of its bounding box: "
-            "tetwild holds its domain's wall by the box rule, a box's faces only",
-            n_free);
-    }
+    // as the insertion's background box does (require_box_boundary() says why).
+    require_box_boundary("tetwild's tagged route");
 }
 
 // After having called the following:

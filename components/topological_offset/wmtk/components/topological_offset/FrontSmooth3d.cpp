@@ -43,6 +43,11 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     // here. solve_3d() vetoes on the energy instead.
     opts.quality_veto = false;
     opts.max_step = damping_step(vid); // EXPERIMENTAL_damping; infinity when off
+    // "exact_swept": the vertex smoothed, for smoothing_ring_energy(), as smooth_nonfront_vertex()
+    // records it. A front vertex held on a region boundary (every one is held since 2026-11-04)
+    // takes the engine's projected step, which reads it; before, it read the last non-front
+    // vertex's and threw (double_sphere, one round).
+    if (swept_rule()) m_swept_stored.local().first = vid;
     const Vector3d x0 = std::as_const(m_vertex_attribute)[vid].m_posf;
     auto& solver =
         m_solver.local(); // the thread's shared solver, criteria set by smoothing_solver()

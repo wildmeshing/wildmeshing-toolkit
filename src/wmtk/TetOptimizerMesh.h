@@ -762,6 +762,28 @@ public:
         bool exact);
 
     /**
+     * @brief Throws unless the mesh fills its box: every boundary face (no tet across) a face of
+     * the box (m_is_bbox_fs >= 0) and untracked, naming the count of each kind found otherwise --
+     * the tracked boundary faces, and the untracked ones in no plane of the box. `who` names the
+     * run in the message. Call after init, with the tracked faces and the box flags set.
+     *
+     * The box rule holds the wall (a box vertex is not smoothed, collapses only along its planes,
+     * a split stays on the planes both ends share), and only the box's faces. An untracked
+     * boundary face in no plane would be held by nothing, and the domain would move with it. A
+     * tracked boundary face is a filtered mesh's boundary: no insertion puts one there (the
+     * background box is padded past the input), and the operations hold a tracked face from the
+     * tet across it -- collapse_edge_before() checks a merged tracked face in the tet beyond it,
+     * and a boundary face has none. Measured on a filtered unit cube held by its envelopes:
+     * corner collapses left faces 25 eps off it. tetwild's tagged route and the topological
+     * offset take a mesh so; a filtered mesh goes back in as its surfaces. Until 2026-11 tetwild
+     * kept its own copy (TetWildMesh::init_from_tagged_mesh()). The 2D twin is
+     * TriOptimizerMesh::require_box_boundary(). simwild takes a mesh so too since 2026-11-05;
+     * until then it checked only the tracked kind and took an object's tet mesh, its boundary in
+     * no plane of a box and held by nothing.
+     */
+    void require_box_boundary(const std::string& who) const;
+
+    /**
      * @name A reference held to
      *
      * An `envelope` input that is a labelled reference (io::read_labelled_envelope()), the first

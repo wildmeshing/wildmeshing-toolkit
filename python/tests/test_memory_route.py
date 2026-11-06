@@ -181,15 +181,17 @@ def test_manifold_extraction_same_as_file_route(work):
 
 
 def test_envelope_is_passed_on_only_by_the_caller(boxes):
-    r1, _ = wm.simwild({"input": ["a", "b"], "input_names": ["a", "b"], **S2T},
-                       {"a": wm.read_mesh(boxes[0]), "b": wm.read_mesh(boxes[1])})
+    r1, report = wm.simwild({"input": ["a", "b"], "input_names": ["a", "b"], **S2T},
+                            {"a": wm.read_mesh(boxes[0]), "b": wm.read_mesh(boxes[1])})
     assert "envelope" in r1
-    # passed on explicitly: the offset receives it and returns it
-    r2, _ = wm.topological_offset({"input": "m", "envelope": "e", **OFFSET},
+    # passed on explicitly: the offset receives it, holds to it -- at simwild's eps at least, or it
+    # refuses the faces simwild moved within it -- and returns it
+    offset = {**OFFSET, "envelope_size": report["eps"]}
+    r2, _ = wm.topological_offset({"input": "m", "envelope": "e", **offset},
                                   {"m": r1["mesh"], "e": r1["envelope"]})
     assert "envelope" in r2
     # not passed on: the offset has none
-    r3, _ = wm.topological_offset({"input": "m", **OFFSET}, {"m": r1["mesh"]})
+    r3, _ = wm.topological_offset({"input": "m", **offset}, {"m": r1["mesh"]})
     assert "envelope" not in r3
     # and without its optimization the offset does not depend on it
     assert canonical(r2["mesh"]) == canonical(r3["mesh"])

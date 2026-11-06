@@ -108,6 +108,8 @@ void SimWildMeshTri::init_from_image(
 
     init_edge_tags(E_tagged, E_tags, edge_tag_names);
     init_surfaces_and_boundaries();
+    // The tagged mesh fills its box, as in 3D (SimWildMesh::init_from_image()).
+    require_box_boundary("simwild");
 }
 
 void SimWildMeshTri::init_from_image(
@@ -207,6 +209,7 @@ void SimWildMeshTri::init_from_image(
 
     init_edge_tags(E_tagged, E_tags, edge_tag_names);
     init_surfaces_and_boundaries();
+    require_box_boundary("simwild"); // as in the overload above
 }
 
 void SimWildMeshTri::init_surfaces_and_boundaries()
@@ -362,20 +365,6 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
-
-    // No tracked edge on the mesh's boundary, as in 3D
-    // (SimWildMesh::init_surfaces_and_boundaries()).
-    size_t n_tracked = 0;
-    for (const Tuple& e : edges) {
-        if (!e.switch_face(*this) && m_edge_attribute[e.eid(*this)].m_is_surface_fs) ++n_tracked;
-    }
-    if (n_tracked > 0) {
-        log_and_throw_error(
-            "{} tracked edges of the tagged mesh lie on its boundary, as a filtered mesh's do: "
-            "simwild takes a mesh with its tracked edges inside (from triwild, an output with "
-            "filter \"none\"); give a filtered mesh's curves as inputs",
-            n_tracked);
-    }
 }
 
 void SimWildMeshTri::init_edge_tags(

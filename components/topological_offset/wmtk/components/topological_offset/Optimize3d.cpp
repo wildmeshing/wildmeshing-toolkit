@@ -118,9 +118,12 @@ bool TopoOffsetTetMesh::is_edge_on_offset(const Tuple& loc)
 
 bool TopoOffsetTetMesh::vertex_is_on_surface(const size_t vid) const
 {
-    // The domain wall must count here, or it drifts: the smoother's containment check walks
-    // exactly the collection this decides.
-    return vertex_is_on_region(vid) || m_vertex_extra.at(vid).m_is_on_offset;
+    // On a tracked face: a region boundary or the offset surface. Not the domain wall, which is
+    // no tracked face (the box rule holds it): the substructure queries walk the tracked faces
+    // this admits a vertex to (TetMesh::compute_vertex_order() throws for a vertex it admits that
+    // has none). Until 2026-11-05 the wall was tracked and counted here, through
+    // vertex_is_on_region().
+    return m_vertex_extra.at(vid).m_is_on_region || m_vertex_extra.at(vid).m_is_on_offset;
 }
 
 bool TopoOffsetTetMesh::face_is_on_surface(const size_t fid) const
@@ -148,8 +151,8 @@ void TopoOffsetTetMesh::label_offset_boundary()
         const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
         if (!opp) {
             // The band ran into the domain wall. With no second tet this cannot be classified
-            // as offset surface -- and must not be, or the wall face would lose the per-tag
-            // containment that keeps the box a box.
+            // as offset surface -- and must not be: the wall is no tracked face, and the box rule
+            // keeps the box a box.
             ++n_wall_band;
             continue;
         }
@@ -1236,6 +1239,14 @@ bool TopoOffsetTetMesh::swap_face_before(const Tuple& t)
     rec.scored_energy = scored;
 
     face_attribute_tracker(*this, twotets, m_face_attribute, cache.changed_faces);
+    // The two cells' edge tags, as the base caches them: swap_face_after(), the base's (the
+    // offset has none of its own), restores the three new cells' edges from this cache, so
+    // without it they took whatever the thread's previous operation had left there, or nothing.
+    // MEASURED on the rod branch (33548e2f26, the same copy): 2 tagged edges when the loop
+    // started, at its end 8 rod edges of which 1 still tagged; test swap-face-keeps-edge-tags.
+    if (m_track_feature_edges) {
+        feature_edges_cache(twotets, cache.changed_edges);
+    }
     return true;
 }
 
@@ -5789,9 +5800,9 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     // AMIPS term would read the label), and of the one tag of its label there (the flipped cell
     // takes the other label's, `tag`). And no corner of t is on anything else: the input complex
     // (vertex label 1, which also catches a sheet, wire or point complex without cells), another
-    // tracked surface (vertex_is_on_region(): a tag boundary or the box), or the mesh boundary (a
-    // face through it with no cell beyond) -- which implies that no face of t is on the mesh
-    // boundary. The corner conditions are there because the test below reads cells only: at a
+    // tracked surface or the box (vertex_is_on_region(): a tag boundary or the wall), or the mesh
+    // boundary (a face through it with no cell beyond) -- which implies that no face of t is on the
+    // mesh boundary. The corner conditions are there because the test below reads cells only: at a
     // corner on the wall, a flip the test allows can still join the front to the wall at that one
     // vertex.
     const auto eligible = [&](const size_t tid, CellTag& tag) {
@@ -6716,10 +6727,11 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
 
 double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, const bool coarsen)
 {
-    // The final envelopes -- the front's envelope, and m_envelope widened to every region boundary
-    // as placement left them (build_final_envelopes()). TetWild's own rules (m_op_rules: the
-    // smoother's raw AMIPS sum, the operations' max of AMIPS^3), no band term, no plastic medium
-    // (AMIPS against the regular tet); the front smoothed inside its envelope like any held vertex.
+    // The final envelopes -- the front's envelope (build_final_envelopes()); every other tracked
+    // surface stays in the loop's envelopes, where build_envelopes() captured it. TetWild's own
+    // rules (m_op_rules: the smoother's raw AMIPS sum, the operations' max of AMIPS^3), no band
+    // term, no plastic medium (AMIPS against the regular tet); the front smoothed inside its
+    // envelope like any held vertex.
     build_final_envelopes();
     m_tetwild_pass = true;
     // TetWild's own rules for the operations and the smoother (m_op_rules).
@@ -6782,7 +6794,6 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, cons
     m_plastic_active = plastic_was;
     m_op_rules = rules_was;
     m_tetwild_pass = false;
-    release_final_envelopes();
     assign_band_regions();
     return std::get<0>(optimization_quality_stats());
 }
