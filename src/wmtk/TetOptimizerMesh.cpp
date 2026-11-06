@@ -2020,6 +2020,15 @@ size_t TetOptimizerMesh::substructure_order_of_edge(const std::array<size_t, 2>&
 size_t TetOptimizerMesh::substructure_order_of_vertex(const size_t vid) const
 {
     size_t order = TetMesh::substructure_order_of_vertex(vid);
+    // An anchor is a point of the substructure, on a curve or not: two anchors, or an anchor and
+    // a curve, never merge under the condition. vid's own attribute, so fan-local as below.
+    // Until 2026-11 an input point off the curves was order 0 or 1, and a collapse merged it
+    // into another input point or a curve's end in its ball
+    // (input-points-stay-apart-under-preserve-topology).
+    if (order < 3 && m_track_feature_points &&
+        m_feature_point_attribute[vid].m_feature_point_id != NO_FEATURE_POINT) {
+        return 3;
+    }
     if (order < 3 && m_track_feature_edges) {
         // The tagged edges at vid, read from vid's own fan alone. The link condition asks this
         // of the link vertices of the collapsing edge, whose neighbours u lie two steps from it,

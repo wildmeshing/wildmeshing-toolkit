@@ -402,13 +402,16 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     }
 
     // A collapse can change the substructure's topology only when both ends are on it: the
-    // tracked surface, or a tagged curve, which the link condition counts wherever it lies
-    // (substructure_order_of_vertex()). One end off it only moves the substructure, as in 2D,
-    // which asks this of the curve vertices. Until 2026-11 the condition was asked of surface
-    // vertices only, which no vertex of a curve off the surface is: two interior curves in each
-    // other's tubes welded into one (feature-curves-keep-their-topology-under-preserve-topology).
+    // tracked surface, a tagged curve, which the link condition counts wherever it lies, or an
+    // anchor, a point of it (substructure_order_of_vertex()). One end off it only moves the
+    // substructure, as in 2D, which asks this of the curve vertices and the anchors. Until 2026-11
+    // the condition was asked of surface vertices only, which no vertex of a curve off the surface
+    // is: two interior curves in each other's tubes welded into one
+    // (feature-curves-keep-their-topology-under-preserve-topology).
     const auto on_substructure = [&](const size_t v) {
-        return VA[v].m_is_on_surface || (m_track_feature_edges && vertex_has_tagged_edge(v));
+        return VA[v].m_is_on_surface || (m_track_feature_edges && vertex_has_tagged_edge(v)) ||
+               (m_track_feature_points &&
+                m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT);
     };
     if (m_params.preserve_topology && on_substructure(v1_id) && on_substructure(v2_id)) {
         if (!substructure_link_condition(loc)) {

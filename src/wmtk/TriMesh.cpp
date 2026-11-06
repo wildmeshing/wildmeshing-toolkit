@@ -3190,8 +3190,8 @@ bool TriMesh::substructure_link_condition(const Tuple& e_tuple) const
     using namespace simplex;
 
     const size_t edge_order = get_order_of_edge({{u_id, v_id}});
-    const size_t u_order = get_order_of_vertex(u_id);
-    const size_t v_order = get_order_of_vertex(v_id);
+    const size_t u_order = substructure_order_of_vertex(u_id);
+    const size_t v_order = substructure_order_of_vertex(v_id);
 
     // If the edge is lower order than both vertices, we know for sure that this edge must not
     // be collapsed. Example: edge in space (order 0) connecting two surfaces (order 1).

@@ -571,8 +571,8 @@ public:
 
     // Substructure widening for the link condition (preserve_topology): a tagged edge, of any
     // kind, is order-2 substructure, a vertex with two incident tagged edges is on a curve
-    // (order 2), with one or three-plus it is a curve endpoint or junction (order 3). The
-    // meaning of get_order_of_* is untouched.
+    // (order 2), with one or three-plus it is a curve endpoint or junction (order 3), and an
+    // anchor is a point (order 3). The meaning of get_order_of_* is untouched.
     size_t substructure_order_of_edge(const std::array<size_t, 2>& vids) const override;
     size_t substructure_order_of_vertex(size_t vid) const override;
     void substructure_feature_neighbors(size_t vid, std::vector<size_t>& out) const override;

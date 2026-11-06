@@ -52,12 +52,14 @@ struct FeatureScene
     std::shared_ptr<components::shortest_edge_collapse::ShortestEdgeCollapse> surf;
 };
 
-/// `fe_verts`, `fe`: the feature curves; `edge_input`: per edge, its curve input.
+/// `fe_verts`, `fe`: the feature curves; `edge_input`: per edge, its curve input; `points`: the
+/// input points.
 FeatureScene build_scene(
     const std::vector<Vector3d>& fe_verts = {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
     const std::vector<std::array<size_t, 2>>& fe = {{{0, 1}}, {{1, 2}}},
     const std::vector<int>& edge_input = {0, 1},
-    const bool preserve_topology = false)
+    const bool preserve_topology = false,
+    const std::vector<Vector3d>& points = {})
 {
     FeatureScene sc;
     sc.params.preserve_topology = preserve_topology;
@@ -105,13 +107,14 @@ FeatureScene build_scene(
             /*tet_face_orientation=*/nullptr,
             sc.fe_verts,
             sc.fe,
-            {},
+            points,
             &features_out);
     }
     sc.mesh = std::make_shared<TetWildMesh>(sc.params, env, 0);
     // By default each segment its own curve input, so each tagged edge carries the input of
     // the segment it tiles and is held in that input's tube, of radius 0.05 as the union's. The
-    // init anchors the chain's endpoints, its tagged edges' ends, in a ball of the tube's radius.
+    // init anchors the chain's endpoints, its tagged edges' ends, and the input points in a ball
+    // of the tube's radius.
     utils::FeatureInputs input;
     input.edge_vertices = sc.fe_verts;
     input.edges = sc.fe;
@@ -686,6 +689,54 @@ TEST_CASE(
     CHECK(max_degree <= 2);
     // Two open chains: a tree each, so two fewer edges than vertices.
     CHECK(edges.size() + 2 == degree.size());
+}
+
+TEST_CASE(
+    "input-points-stay-apart-under-preserve-topology",
+    "[tetwild_operation][features]" + release_only)
+{
+    // Two input points 0.03 apart, off the surface and off every curve, in anchor balls of 0.05:
+    // each ball holds the other point, so a collapse of the edge between them passes the anchor
+    // test and merges the two. Without preserve_topology it does. Under it the substructure link
+    // condition refuses it, an anchor being a point of the substructure
+    // (substructure_order_of_vertex()). Until 2026-11 the condition was not asked: neither end
+    // is on the surface or has a tagged edge.
+    for (const bool preserve_topology : {false, true}) {
+        CAPTURE(preserve_topology);
+        FeatureScene sc = build_scene(
+            {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
+            {{{0, 1}}, {{1, 2}}},
+            {0, 1},
+            preserve_topology,
+            {{1.5, 0.5, 0.5}, {1.53, 0.5, 0.5}});
+        TetWildMesh& m = *sc.mesh;
+        REQUIRE(m.tracked_feature_points().size() == 4);
+        m.mesh_improvement(3);
+        CHECK(m.tracked_feature_points().size() == (preserve_topology ? 4 : 3));
+    }
+}
+
+TEST_CASE(
+    "input-point-and-curve-end-stay-apart-under-preserve-topology",
+    "[tetwild_operation][features]" + release_only)
+{
+    // An input point 0.03 from the chain's end (1.5, 1, 1.5), off the surface and off the curve,
+    // in balls of 0.05, the tube's radius: the same merge, of a point into a curve's end, and the
+    // same refusal under preserve_topology. Until 2026-11 the condition was not asked: the point
+    // is not on the substructure.
+    for (const bool preserve_topology : {false, true}) {
+        CAPTURE(preserve_topology);
+        FeatureScene sc = build_scene(
+            {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
+            {{{0, 1}}, {{1, 2}}},
+            {0, 1},
+            preserve_topology,
+            {{1.5, 1.03, 1.5}});
+        TetWildMesh& m = *sc.mesh;
+        REQUIRE(m.tracked_feature_points().size() == 3);
+        m.mesh_improvement(3);
+        CHECK(m.tracked_feature_points().size() == (preserve_topology ? 3 : 2));
+    }
 }
 
 TEST_CASE(

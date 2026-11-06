@@ -476,6 +476,16 @@ preserved") and stayed [1, 1, 1, 1] after. Without feature curves off the surfac
 changes: on `tetwild_features.json` (one interior chain) 0 refusals and 13609 collapses both
 ways.
 
+**preserve_topology and input points.** The link condition's points are the anchors: an anchor
+is order 3 (`TetOptimizerMesh::substructure_order_of_vertex()`; 2D: order 2, in
+`TriOptimizerMesh`), and the gate takes it. So no collapse merges two anchors, or an anchor with
+a curve or the surface it is not on. Until 2026-11 an input point off the curves and the surface
+was not on the substructure, and a collapse merged it into another input point or a curve's end
+in its ball (`input-points-stay-apart-under-preserve-topology`: 4 anchors left 3; 2D
+`free-points-stay-apart-under-preserve-topology`). On `tetwild_features.json` and
+`triwild_free_points.json` under `preserve_topology` the condition refused 0 collapses before
+and after, and the outputs are byte-identical.
+
 ## From the input files: the chain
 
 The tet histories, and isotropic's, start at the input files as read, so that a user's

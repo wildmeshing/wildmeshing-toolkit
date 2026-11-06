@@ -330,8 +330,14 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         const bool v2_surf = VA[v2_id].m_is_on_surface;
         const bool v1_bbox = !VA[v1_id].on_bbox_faces.empty();
         const bool v2_bbox = !VA[v2_id].on_bbox_faces.empty();
+        // An anchor is a point of the substructure (substructure_order_of_vertex()), a free point
+        // too, which no curve marks.
+        const auto is_anchor = [&](const size_t v) {
+            return m_track_feature_points &&
+                   m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT;
+        };
 
-        if ((v1_surf || v1_bbox) && (v2_surf || v2_bbox)) {
+        if ((v1_surf || v1_bbox || is_anchor(v1_id)) && (v2_surf || v2_bbox || is_anchor(v2_id))) {
             if (!substructure_link_condition(loc)) {
                 return false;
             }
