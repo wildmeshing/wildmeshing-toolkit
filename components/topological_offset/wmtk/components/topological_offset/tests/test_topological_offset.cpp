@@ -5615,3 +5615,22 @@ TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
     if (protect) j["protected_tags"] = {"tag_1"};
     REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
 }
+
+TEST_CASE("exact-swept-front-vertex-held-on-another-region", "[offset][3d]" + release_only)
+{
+    // double_sphere, offset of tag_0 with exact_swept: the loop holds every region boundary
+    // (since 2026-11-04), so a front vertex on tag_1's surface is held and takes the engine's
+    // projected step, whose energy (smoothing_ring_energy()) reads the vertex smoothed. Only
+    // smooth_nonfront_vertex() recorded it: one round threw "exact_swept: the projected step's
+    // ring is not vertex N's" (2026-11-05).
+    const MeshData input = io::read_mesh(
+        (std::filesystem::path(WMTK_DATA_DIR) / "models" / "double_sphere.msh").string());
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "tag_0"},
+        {"target_distance", 0.05},
+        {"EXPERIMENTAL_band_volume_rule", "exact_swept"},
+        {"max_rounds", 1},
+        {"num_threads", 1}};
+    REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
+}
