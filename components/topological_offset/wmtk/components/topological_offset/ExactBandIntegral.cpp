@@ -1472,6 +1472,16 @@ double point_tri_dist(const Vec3& p, const Vec3& A, const Vec3& B, const Vec3& C
     return best;
 }
 
+/// The distance from p to the segment [A, B] (a point where A = B), as point_tri_dist() takes it
+/// to each side of a triangle.
+double point_seg_dist(const Vec3& p, const Vec3& A, const Vec3& B)
+{
+    const Vec3 d = B - A;
+    const double dd = d.dot(d);
+    const double s = dd > 0. ? std::clamp((p - A).dot(d) / dd, 0., 1.) : 0.;
+    return (p - A - s * d).norm();
+}
+
 /// box_dist: distance between the box [lo, hi] and t's box [tlo, thi].
 double box_dist(const Vec3& lo, const Vec3& hi, const Vec3& tlo, const Vec3& thi)
 {
@@ -3046,6 +3056,35 @@ void labeled(
     }
 }
 
+/// The parts of R, a piece whose members S are all edges, each labelled with its nearest edge:
+/// resolve() splits R by the bisectors of the pairs whose distances cross on it, planes for edges
+/// meeting at a point or parallel (bisector_planes()), as the front form labels a face's piece, so
+/// that a cell's value and its faces' labels cut alike. false, `cells` emptied, where a crossing
+/// pair is skew (its bisector curved) or members still cross after the split: rule (a) then.
+template <typename Ops>
+bool edges_min_cells(
+    const typename Ops::Set& R,
+    const std::vector<int>& S,
+    const std::vector<Loc>& loc,
+    const Ops& ops,
+    const double scale,
+    std::vector<std::pair<typename Ops::Set, int>>& cells)
+{
+    struct Unresolved
+    {
+    };
+    cells.clear();
+    try {
+        resolve(R, S, loc, ops, scale, 0, cells, [](int, int, const std::vector<Vec3>&, bool) {
+            throw Unresolved();
+        });
+    } catch (const Unresolved&) {
+        cells.clear();
+        return false;
+    }
+    return true;
+}
+
 /// box_polytope (d_vertex.py): the axis box [lo, hi] as a polytope, faces outward.
 void box_polytope(const Vec3& lo, const Vec3& hi, Poly& out)
 {
@@ -3090,6 +3129,8 @@ const char* kind_name(const int kind)
 ExactBandIntegral::ExactBandIntegral(
     const Eigen::MatrixXd& Vin,
     const Eigen::MatrixXi& Fin,
+    const Eigen::MatrixXi& Ein,
+    const std::vector<int>& Pin,
     const std::vector<int8_t>& face_side,
     const int sigma,
     const size_t value_slots,
@@ -3103,13 +3144,27 @@ ExactBandIntegral::ExactBandIntegral(
         m_values.resize(n);
         m_value_locks = std::make_unique<std::mutex[]>(kValueStripes);
     }
-    // Mesh.__init__: np.unique(V[F], axis=0) -- the referenced vertices, merged by exact
-    // coordinates and sorted lexicographically.
     const int nf = int(Fin.rows());
-    std::vector<Vec3> corner(size_t(3 * nf));
+    const int ns = int(Ein.rows()), np = int(Pin.size());
+    if (nf > 0 && ns + np > 0) {
+        log_and_throw_error(
+            "ExactBandIntegral: {} triangles with {} segments and {} points; the input is one kind",
+            nf,
+            ns,
+            np);
+    }
+    // Mesh.__init__: np.unique(V[F], axis=0) -- the referenced vertices, merged by exact
+    // coordinates and sorted lexicographically; the segments' ends and the points after the
+    // triangles' corners (there are none of those then).
+    std::vector<Vec3> corner(size_t(3 * nf + 2 * ns + np));
     for (int f = 0; f < nf; ++f) {
         for (int c = 0; c < 3; ++c) corner[size_t(3 * f + c)] = Vin.row(Fin(f, c)).head<3>();
     }
+    const size_t seg0 = size_t(3 * nf), pt0 = seg0 + size_t(2 * ns);
+    for (int s = 0; s < ns; ++s) {
+        for (int c = 0; c < 2; ++c) corner[seg0 + size_t(2 * s + c)] = Vin.row(Ein(s, c)).head<3>();
+    }
+    for (int p = 0; p < np; ++p) corner[pt0 + size_t(p)] = Vin.row(Pin[size_t(p)]).head<3>();
     std::vector<int> ord(corner.size());
     std::iota(ord.begin(), ord.end(), 0);
     const auto lex = [&](int a, int b) {
@@ -3152,6 +3207,33 @@ ExactBandIntegral::ExactBandIntegral(
             m_face_feats[size_t(f)][size_t(3 + k)] = a;
         }
     }
+    // The segments' edges, each with no incident face, and per primitive (segments, then points:
+    // the envelope's order) its features, as edge and vertex numbers until the offsets below. A
+    // segment whose ends merged is a point.
+    m_seg_feats.reserve(size_t(ns + np));
+    for (int s = 0; s < ns; ++s) {
+        const int a = inv[seg0 + size_t(2 * s)], b = inv[seg0 + size_t(2 * s + 1)];
+        m_SA.push_back(V[size_t(a)]);
+        m_SB.push_back(V[size_t(b)]);
+        if (a == b) {
+            m_seg_feats.push_back({{-1, a, -1}});
+            continue;
+        }
+        const std::pair<int, int> key{std::min(a, b), std::max(a, b)};
+        auto it = eid.find(key);
+        if (it == eid.end()) {
+            it = eid.emplace(key, int(E.size())).first;
+            E.push_back(key);
+            E_faces.emplace_back();
+        }
+        m_seg_feats.push_back({{it->second, a, b}});
+    }
+    for (int p = 0; p < np; ++p) {
+        const int a = inv[pt0 + size_t(p)];
+        m_SA.push_back(V[size_t(a)]);
+        m_SB.push_back(V[size_t(a)]);
+        m_seg_feats.push_back({{-1, a, -1}});
+    }
     std::vector<std::vector<int>> vedges(V.size());
     for (const auto& [a, b] : E) {
         vedges[size_t(a)].push_back(b);
@@ -3162,6 +3244,12 @@ ExactBandIntegral::ExactBandIntegral(
     for (auto& ff : m_face_feats) {
         for (int k = 0; k < 3; ++k) ff[size_t(k)] += m_nF;
         for (int k = 3; k < 6; ++k) ff[size_t(k)] += m_nF + m_nE;
+    }
+    for (auto& sf : m_seg_feats) {
+        if (sf[0] >= 0) sf[0] += m_nF;
+        for (int k = 1; k < 3; ++k) {
+            if (sf[size_t(k)] >= 0) sf[size_t(k)] += m_nF + m_nE;
+        }
     }
 
     // features: (kind, data, half-spaces); region = {x : g.(x - q) <= 0 for all (g, q)}
@@ -3289,21 +3377,41 @@ ExactBandIntegral::ExactBandIntegral(
         }
     }
 
-    // The triangles' box queries (m_env): the caller's envelope, or one built here over the same
-    // triangles, face f its primitive f (eps 0: its BVH and its copies of the input, no
-    // containment structure, which nothing here asks for).
-    if (nf == 0) return;
+    // The primitives' box queries (m_env): the caller's envelope, or one built here over the same
+    // triangles, face f its primitive f, or over the same segments and points, in the order of
+    // m_seg_feats (eps 0: its BVH and its copies of the input, no containment structure, which
+    // nothing here asks for). The box of every feature is in the box of its primitive.
+    if (nf == 0 && m_seg_feats.empty()) return;
     Vec3 lo = Vec3::Constant(std::numeric_limits<double>::infinity()), hi = -lo;
-    for (int f = 0; f < nf; ++f) {
-        lo = lo.cwiseMin(m_feat[size_t(f)].lo);
-        hi = hi.cwiseMax(m_feat[size_t(f)].hi);
+    for (const Feature& ft : m_feat) {
+        lo = lo.cwiseMin(ft.lo);
+        hi = hi.cwiseMax(ft.hi);
     }
     m_pad = 1e-9 * std::max((hi - lo).norm(), 1e-300);
+    const auto kind = nf > 0 ? wmtk::Envelope::Kind::Triangles3d : wmtk::Envelope::Kind::Edges3d;
     if (envelope) {
-        if (envelope->kind() != wmtk::Envelope::Kind::Triangles3d) {
-            log_and_throw_error("ExactBandIntegral: the envelope given does not hold triangles");
+        if (envelope->kind() != kind) {
+            log_and_throw_error(
+                "ExactBandIntegral: the envelope given does not hold {}",
+                nf > 0 ? "triangles" : "segments");
         }
         m_env = std::move(envelope);
+    } else if (nf == 0) {
+        std::vector<Vec3> ends;
+        std::vector<Eigen::Vector2i> segs;
+        for (size_t i = 0; i < m_SA.size(); ++i) {
+            const int a = int(ends.size());
+            ends.push_back(m_SA[i]);
+            if (m_SB[i] != m_SA[i]) {
+                ends.push_back(m_SB[i]);
+                segs.emplace_back(a, a + 1);
+            } else {
+                segs.emplace_back(a, a); // a point, as euclidean_query_envelope() holds one
+            }
+        }
+        auto env = std::make_shared<wmtk::Envelope>(true);
+        env->init(ends, segs, 0.);
+        m_env = std::move(env);
     } else {
         std::vector<Vec3> corners;
         std::vector<Eigen::Vector3i> faces;
@@ -3323,17 +3431,21 @@ ExactBandIntegral::ExactBandIntegral(
 
 double ExactBandIntegral::upper_bound(const Eigen::Vector3d* t, const int n) const
 {
-    // A start, then one box query. The triangles at t[0]'s foot on the input (the envelope's
-    // nearest point) give a bound m on the min. A triangle P with max over the corners of d_P at
+    // A start, then one box query. The primitives at t[0]'s foot on the input (the envelope's
+    // nearest point) give a bound m on the min. A primitive P with max over the corners of d_P at
     // most m has t[0] within m, so its box meets t[0]'s box grown by m (and m_pad, for rounding):
-    // the min over the triangles listed there is the exact minimum.
+    // the min over the primitives listed there is the exact minimum.
     double m = std::numeric_limits<double>::infinity();
-    if (m_nF == 0) return m;
+    if (m_nF == 0 && m_seg_feats.empty()) return m;
+    const auto d_P = [&](const int64_t f, const Vec3& x) {
+        if (m_nF > 0) return point_tri_dist(x, m_A[size_t(f)], m_B[size_t(f)], m_C[size_t(f)]);
+        return point_seg_dist(x, m_SA[size_t(f)], m_SB[size_t(f)]);
+    };
     const auto offer = [&](const int64_t f) {
         double s = 0.;
         for (int i = 0; i < n; ++i) {
-            s = std::max(s, point_tri_dist(t[i], m_A[size_t(f)], m_B[size_t(f)], m_C[size_t(f)]));
-            if (s >= m) break; // this triangle cannot lower the min: the result is unchanged
+            s = std::max(s, d_P(f, t[i]));
+            if (s >= m) break; // this primitive cannot lower the min: the result is unchanged
         }
         m = std::min(m, s);
     };
@@ -3359,20 +3471,28 @@ void ExactBandIntegral::candidates(
     // m_pad, for the rounding of the grown box); the test on its own box below decides, as it
     // did on the tree's leaves. A face's box contains its edges' and vertices' boxes, so its box
     // distance is never larger: every edge or vertex within r has an incident face within r
-    // (exactly so in floating point: the per-axis gaps are monotone).
+    // (exactly so in floating point: the per-axis gaps are monotone). Segments and points: the
+    // same from each primitive's own features (m_seg_feats), its box the box of its edge.
     out.clear();
-    if (m_nF == 0) return;
+    if (m_nF == 0 && m_seg_feats.empty()) return;
     std::vector<int64_t> ids;
     const double g = r + m_pad;
     m_env->primitives_in_box(Vec3(tlo.array() - g), Vec3(thi.array() + g), ids);
+    const auto near = [&](const int h) {
+        return box_dist(m_feat[size_t(h)].lo, m_feat[size_t(h)].hi, tlo, thi) <= r;
+    };
     for (const int64_t fi : ids) {
+        if (m_nF == 0) {
+            for (const int h : m_seg_feats[size_t(fi)]) {
+                if (h >= 0 && near(h)) out.push_back(h);
+            }
+            continue;
+        }
         const int f = int(fi);
-        if (box_dist(m_feat[size_t(f)].lo, m_feat[size_t(f)].hi, tlo, thi) > r) continue;
+        if (!near(f)) continue;
         out.push_back(f);
         for (const int h : m_face_feats[size_t(f)]) {
-            if (box_dist(m_feat[size_t(h)].lo, m_feat[size_t(h)].hi, tlo, thi) <= r) {
-                out.push_back(h);
-            }
+            if (near(h)) out.push_back(h);
         }
     }
     std::sort(out.begin(), out.end());
@@ -3650,19 +3770,25 @@ double ExactBandIntegral::max_distance(const std::array<Eigen::Vector3d, 3>& f, 
     double best = -std::numeric_limits<double>::infinity();
     Vec3 at = Vec3::Zero();
     bool ra_best = false;
-    int rule_a_pieces = 0;
+    int rule_a_pieces = 0, edge_split_pieces = 0;
     std::vector<int> S;
     std::vector<const Loc*> members;
+    // the all-edge pieces' split (edges_min_cells()) cuts rings in f's plane
+    const Vec3 nf = (w.V0[1] - w.V0[0]).cross(w.V0[2] - w.V0[0]);
+    const bool ring_plane = nf.norm() > 0.;
+    const RingOps rops{ring_plane ? Vec3(nf / nf.norm()) : Vec3::Zero(), &cx};
+    std::vector<std::pair<Ring, int>> ecells;
     for (const RingPiece& pc : w.pieces) {
         if (pc.S.empty()) continue;
         S = pc.S;
         if (S.size() > 1) S = prune_points(pc.R, S, loc);
-        bool all_faces = true, all_verts = true;
+        bool all_faces = true, all_verts = true, all_edges = true;
         members.clear();
         for (const int k : S) {
             members.push_back(&loc[size_t(k)]);
             all_faces = all_faces && loc[size_t(k)].kind == 0;
             all_verts = all_verts && loc[size_t(k)].kind == 2;
+            all_edges = all_edges && loc[size_t(k)].kind == 1;
         }
         // the max over a ring's vertices of a convex function (first maximiser, as np.argmax)
         double val = -std::numeric_limits<double>::infinity();
@@ -3691,6 +3817,13 @@ double ExactBandIntegral::max_distance(const std::array<Eigen::Vector3d, 3>& f, 
             pvertices_min_pieces(pc.R, members, cx, [&](const Ring& Rs, const Vec3& v) {
                 take(Rs, [&](const Vec3& p) { return (p - v).norm(); });
             });
+        } else if (
+            all_edges && ring_plane && edges_min_cells(pc.R, S, loc, rops, w.scale, ecells)) {
+            for (const auto& cl : ecells) {
+                const Loc& g = loc[size_t(cl.second)];
+                take(cl.first, [&](const Vec3& p) { return d_feat(g, p); });
+            }
+            ++edge_split_pieces;
         } else { // rule (a): min over g of max over the piece of d_g >= max over the piece of d
             double vmin = std::numeric_limits<double>::infinity();
             Vec3 xmin = Vec3::Zero();
@@ -3721,6 +3854,7 @@ double ExactBandIntegral::max_distance(const std::array<Eigen::Vector3d, 3>& f, 
         info->candidates = int(loc.size());
         info->pieces = int(w.pieces.size());
         info->rule_a_pieces = rule_a_pieces;
+        info->edge_split_pieces = edge_split_pieces;
     }
     return best;
 }
@@ -3846,8 +3980,9 @@ double ExactBandIntegral::evaluate(
     };
 
     // steps 2-4: integrate each piece
-    double total = 0., vol_sum = 0., empty_vol = 0., exact_vol = 0., rule_a_vol = 0.;
-    int64_t rule_a_pieces = 0;
+    double total = 0., vol_sum = 0., empty_vol = 0., exact_vol = 0., rule_a_vol = 0.,
+           edge_split_vol = 0.;
+    int64_t rule_a_pieces = 0, edge_split_pieces = 0;
     std::vector<int> S;
     std::vector<const Loc*> members;
     // The offset side (class doc; exact_mesh.band_integral): total_c sums each piece's kept part,
@@ -3866,6 +4001,7 @@ double ExactBandIntegral::evaluate(
     int64_t n_split = 0, n_D = 0, n_D_pos = 0;
     std::vector<SidePlane> planes;
     std::vector<SidePart> parts;
+    std::vector<std::pair<Poly, int>> ecells;
     Poly Rc;
     for (const Piece& pc : pieces) {
         const double vol = volume_centroid(pc.Q).first;
@@ -3876,13 +4012,14 @@ double ExactBandIntegral::evaluate(
         }
         S = pc.S;
         if (S.size() > 1) S = prune_members(pc.Q, S, loc);
-        bool all_faces = true, all_verts = true;
+        bool all_faces = true, all_verts = true, all_edges = true;
         members.clear();
         planes.clear();
         for (const int k : S) {
             members.push_back(&loc[size_t(k)]);
             all_faces = all_faces && loc[size_t(k)].kind == 0;
             all_verts = all_verts && loc[size_t(k)].kind == 2;
+            all_edges = all_edges && loc[size_t(k)].kind == 1;
             if (side) planes.push_back(side_plane(k));
         }
         double val, vc = 0.;
@@ -4042,6 +4179,39 @@ double ExactBandIntegral::evaluate(
                     });
             }
             exact_vol += vol;
+        } else if (all_edges && edges_min_cells(pc.Q, S, loc, PolyOps{&cx}, w.scale, ecells)) {
+            // each part one line distance, its nearest edge's, kept as a one-member piece of that
+            // edge is: clipped by the edge's side plane, which gives the side of a point whose
+            // nearest feature the edge is (class doc, the offset side)
+            val = 0.;
+            for (const auto& [C, k] : ecells) {
+                const Loc& g = loc[size_t(k)];
+                const double vk = vol_line(C, g.p, g.dir, cx);
+                val += vk;
+                const Cut ck = side ? side_clip(C, side_plane(k), m_sigma, Rc, cx) : Cut::Same;
+                if (ce) { // capture: the build's add() for an edge member, ck / Rc reused
+                    if (ck != Cut::Same) cap_clipped = true;
+                    if (ck != Cut::None) {
+                        Elem e;
+                        e.Q = ck == Cut::New ? Rc : C;
+                        e.kind = 1;
+                        e.p = g.p;
+                        e.dir = g.dir;
+                        ce->push_back(std::move(e));
+                    }
+                }
+                if (!side) continue;
+                if (ck == Cut::Same) {
+                    vc += vk - delta * volume_centroid(C).first;
+                } else {
+                    clipped = true;
+                    if (ck == Cut::New)
+                        vc += vol_line(Rc, g.p, g.dir, cx) - delta * volume_centroid(Rc).first;
+                }
+            }
+            exact_vol += vol;
+            edge_split_vol += vol;
+            ++edge_split_pieces;
         } else { // rule (a): min over g of int d_g >= int min_g d_g, an upper bound
             val = std::numeric_limits<double>::infinity();
             int bk0 = -1; // the argmin: the build's winner on the whole piece (lowest on a tie)
@@ -4129,9 +4299,11 @@ double ExactBandIntegral::evaluate(
         ++stats->cells;
         stats->pieces += int64_t(pieces.size());
         stats->rule_a_pieces += rule_a_pieces;
+        stats->edge_split_pieces += edge_split_pieces;
         stats->vol += v0;
         stats->exact_vol += exact_vol;
         stats->rule_a_vol += rule_a_vol;
+        stats->edge_split_vol += edge_split_vol;
         stats->empty_vol += empty_vol;
     }
     check_cell_pieces(T, delta, w, vol_sum, empty_vol);
@@ -4288,10 +4460,11 @@ double ExactBandIntegral::value_grad_hess_impl(
         std::vector<const Loc*> members;
         std::vector<SidePlane> planes;
         std::vector<SidePart> parts;
+        std::vector<std::pair<Poly, int>> ecells;
         for (const Piece& pc : w.pieces) {
             if (pc.S.empty()) continue;
             const std::vector<int> S = pc.S.size() > 1 ? prune_members(pc.Q, pc.S, loc) : pc.S;
-            bool all_faces = true, all_verts = true;
+            bool all_faces = true, all_verts = true, all_edges = true;
             members.clear();
             planes.clear();
             for (const int k : S) {
@@ -4299,6 +4472,7 @@ double ExactBandIntegral::value_grad_hess_impl(
                 planes.push_back(side_plane(k));
                 all_faces = all_faces && loc[size_t(k)].kind == 0;
                 all_verts = all_verts && loc[size_t(k)].kind == 2;
+                all_edges = all_edges && loc[size_t(k)].kind == 1;
             }
             if (S.size() == 1) {
                 add(pc.Q, loc[size_t(S[0])], false, planes[0]);
@@ -4345,6 +4519,8 @@ double ExactBandIntegral::value_grad_hess_impl(
                         e.p = v;
                         pieces.push_back(std::move(e));
                     });
+            } else if (all_edges && edges_min_cells(pc.Q, S, loc, PolyOps{&cx}, w.scale, ecells)) {
+                for (const auto& [C, k] : ecells) add(C, loc[size_t(k)], false, side_plane(k));
             } else {
                 if (side) {
                     side_split(pc.Q, planes, m_sigma, parts, cx);
