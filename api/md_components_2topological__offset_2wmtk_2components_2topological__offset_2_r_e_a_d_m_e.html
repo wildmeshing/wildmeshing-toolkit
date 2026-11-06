@@ -82,7 +82,7 @@ Defining input</h1>
 </ul>
 <h1><a class="anchor" id="autotoc_md10"></a>
 Offset region tags</h1>
-<p>Once the offset is created, two parameters control what tags exist in the offset region: <code>offset_output_tags</code>, and <code>protected_tags</code>. The tags in <code>offset_output_tags</code> (e.g. <code>["tag_0", "tag_3"]</code>) are assigned to all elements in the created offset. All existing tags are overwritten, except for those in <code>protected_tags</code> (e.g. <code>["tag_1", "tag_2"]</code>), which are never overwritten. To write the <code>'ambient'</code> tag, set <code>offset_output_tags=[]</code>. The <code>'ambient'</code> tag itself cannot be protected, it is always overwritten.</p>
+<p>Once the offset is created, two parameters control what tags exist in the offset region: <code>offset_output_tags</code>, and <code>protected_tags</code>. The tags in <code>offset_output_tags</code> (e.g. <code>["tag_0", "tag_3"]</code>) are assigned to all elements in the created offset. All existing tags are overwritten. The march leaves cells carrying a tet tag in <code>protected_tags</code> (e.g. <code>["tag_1", "tag_2"]</code>) as they are: it neither splits them nor takes them into its band. To write the <code>'ambient'</code> tag, set <code>offset_output_tags=[]</code>. The <code>'ambient'</code> tag itself cannot be protected, it is always overwritten.</p>
 <h1><a class="anchor" id="autotoc_md11"></a>
 Respected topologies</h1>
 <p>Once the input simplicial complex is initialized, the offset is initialized around it. The topology of the offset region is <em>always</em> respected during offset growth toward the target distance.</p>

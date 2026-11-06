@@ -312,12 +312,12 @@ const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_off
 <tr class="memdesc:a664197dd42ffe565c318a843972d3cbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">The field of the band cell a live offset face belongs to. <br /></td></tr>
 <tr class="separator:a664197dd42ffe565c318a843972d3cbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59fda2963e3ce48edb6a8c482784bf4c" id="r_a59fda2963e3ce48edb6a8c482784bf4c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c">face_is_held</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
-<tr class="memdesc:a59fda2963e3ce48edb6a8c482784bf4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">THE ENVELOPES, as in tetwild and simwild. m_envelope (the base's pointer): an <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> of half-width envelope_size around every HELD face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>), and the base's m_input_envelopes, one per label over the held faces carrying it, each held face held to those of its labels (the base's <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a76efae98632335b8c970869964f26235" title="The containment of a tracked face an operation has just made (the base asks only after the fact)....">surface_envelope_for_face()</a>; the union with one label or without per_input_envelopes). A face's labels are its face tags and the tet tags of the regions it bounds (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac201fb46150e9c4b66ccdb2496f74650">assign_face_labels()</a>), as simwild's. Built by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> before anything moves &ndash; after the simplicial embedding, before the repulsion and the march &ndash; and swapped for wider ones only for a TetWild pass (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a>). The offset surface is held by nothing in the loop; only a TetWild pass holds it, to m_offset_envelope.  <br /></td></tr>
+<tr class="memdesc:a59fda2963e3ce48edb6a8c482784bf4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">THE ENVELOPES, as in tetwild and simwild. m_envelope (the base's pointer): an <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> of half-width envelope_size around every HELD face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>), and the base's m_input_envelopes, one per label over the held faces carrying it, each held face held to those of its labels (the base's <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a76efae98632335b8c970869964f26235" title="The containment of a tracked face an operation has just made (the base asks only after the fact)....">surface_envelope_for_face()</a>; the union with one label or without per_input_envelopes). A face's labels are its face tags and the tet tags of the regions it bounds (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac201fb46150e9c4b66ccdb2496f74650">assign_face_labels()</a>), as simwild's. Built once by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> before anything moves &ndash; after the simplicial embedding, before the repulsion and the march &ndash; and never rebuilt: what they hold is held where it was then, in the loop and in a TetWild pass alike. The offset surface is held by nothing in the loop; only a TetWild pass holds it, to m_offset_envelope (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a>).  <br /></td></tr>
 <tr class="separator:a59fda2963e3ce48edb6a8c482784bf4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ff51ab72cc1d6dc9bc97d03db8fe887" id="r_a4ff51ab72cc1d6dc9bc97d03db8fe887"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4ff51ab72cc1d6dc9bc97d03db8fe887">vertex_is_held</a> (size_t vid) const</td></tr>
 <tr class="separator:a4ff51ab72cc1d6dc9bc97d03db8fe887"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac07f99d0f9e68ea7faa820ffce250106" id="r_ac07f99d0f9e68ea7faa820ffce250106"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac07f99d0f9e68ea7faa820ffce250106">face_is_complex_boundary</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
-<tr class="separator:ac07f99d0f9e68ea7faa820ffce250106"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf1014359a03c9528484689a6920ffec" id="r_acf1014359a03c9528484689a6920ffec"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acf1014359a03c9528484689a6920ffec">label_name</a> (size_t bit) const override</td></tr>
+<tr class="separator:acf1014359a03c9528484689a6920ffec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59431ba8a452b5f2784fed374efa9381" id="r_a59431ba8a452b5f2784fed374efa9381"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes</a> ()</td></tr>
 <tr class="separator:a59431ba8a452b5f2784fed374efa9381"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac201fb46150e9c4b66ccdb2496f74650" id="r_ac201fb46150e9c4b66ccdb2496f74650"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac201fb46150e9c4b66ccdb2496f74650">assign_face_labels</a> ()</td></tr>
@@ -326,9 +326,6 @@ const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_off
 <tr class="separator:aec65bccae1d0a29e21d1c177fc4d2b11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43a5922857a7b4517da0d3e2d7fdfe00" id="r_a43a5922857a7b4517da0d3e2d7fdfe00"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes</a> ()</td></tr>
 <tr class="separator:a43a5922857a7b4517da0d3e2d7fdfe00"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add4d9dcdd66bed826e9913a3f480e617" id="r_add4d9dcdd66bed826e9913a3f480e617"><td class="memItemLeft" align="right" valign="top"><a id="add4d9dcdd66bed826e9913a3f480e617" name="add4d9dcdd66bed826e9913a3f480e617"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>release_final_envelopes</b> ()</td></tr>
-<tr class="separator:add4d9dcdd66bed826e9913a3f480e617"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4efec724e91f5b033e40218744dabbb9" id="r_a4efec724e91f5b033e40218744dabbb9"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4efec724e91f5b033e40218744dabbb9">tetwild_pass</a> (const char *what, int max_its, bool coarsen=false)</td></tr>
 <tr class="separator:a4efec724e91f5b033e40218744dabbb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79a6fa9c595ff7d08a2c5c0e8a9cfca5" id="r_a79a6fa9c595ff7d08a2c5c0e8a9cfca5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a79a6fa9c595ff7d08a2c5c0e8a9cfca5">optimize_construction_pass</a> ()</td></tr>
@@ -606,8 +603,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_sphere_tra
 <tr class="separator:a09ec58b0f505f9b4349b40de78494a65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af73224d67c178a003138208607dd62be" id="r_af73224d67c178a003138208607dd62be"><td class="memItemLeft" align="right" valign="top"><a id="af73224d67c178a003138208607dd62be" name="af73224d67c178a003138208607dd62be"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_boundaries</b> ()</td></tr>
-<tr class="memdesc:af73224d67c178a003138208607dd62be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Classify every region boundary and tag the domain wall &ndash; once, from the input mesh, before offset construction runs. A region boundary is a face whose two incident tets carry different tag sets, a sheet-group face, or a face with one incident tet (the domain wall); each becomes a tracked face (m_is_surface_fs). Which of them an envelope holds is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>'s, and the envelope is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a>'s. <br /></td></tr>
+<tr class="memdesc:af73224d67c178a003138208607dd62be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Classify every region boundary and flag the domain wall &ndash; once, from the input mesh, before offset construction runs. A region boundary is a face whose two incident tets carry different tag sets, a sheet-group face, or a face with a face tag; each becomes a tracked face (m_is_surface_fs). Which of them an envelope holds is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>'s, and the envelope is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a>'s. The wall's faces, in the box's planes, get m_is_bbox_fs and their vertices on_bbox_faces, the box rule's flags; they are not tracked. <br /></td></tr>
 <tr class="separator:af73224d67c178a003138208607dd62be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40eb6a59343aa75d7b7ef31a772a79be" id="r_a40eb6a59343aa75d7b7ef31a772a79be"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a40eb6a59343aa75d7b7ef31a772a79be">face_is_tag_boundary</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
+<tr class="separator:a40eb6a59343aa75d7b7ef31a772a79be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80a495adc59ffb61e404dcde756884fc" id="r_a80a495adc59ffb61e404dcde756884fc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a80a495adc59ffb61e404dcde756884fc">is_edge_on_region</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;loc)</td></tr>
 <tr class="separator:a80a495adc59ffb61e404dcde756884fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa172d775441a60691bd862a9dd171ed" id="r_afa172d775441a60691bd862a9dd171ed"><td class="memItemLeft" align="right" valign="top"><a id="afa172d775441a60691bd862a9dd171ed" name="afa172d775441a60691bd862a9dd171ed"></a>
@@ -692,7 +691,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>log_smooth_trace</b> 
 <tr class="memitem:ad5e911115e883825c397b75ff1afbca3" id="r_ad5e911115e883825c397b75ff1afbca3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad5e911115e883825c397b75ff1afbca3">vertex_is_on_region</a> (const size_t vid) const</td></tr>
 <tr class="separator:ad5e911115e883825c397b75ff1afbca3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76efae98632335b8c970869964f26235" id="r_a76efae98632335b8c970869964f26235"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a76efae98632335b8c970869964f26235">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;attr) const override</td></tr>
-<tr class="memdesc:a76efae98632335b8c970869964f26235"><td class="mdescLeft">&#160;</td><td class="mdescRight">The containment of a tracked face an operation has just made (the base asks only after the fact). The offset surface: nothing in the loop, m_offset_envelope in a TetWild pass. A held face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>): the base's rule, the envelopes of its labels. Any other tracked face, the domain wall among them (the box rule holds it): nothing.  <br /></td></tr>
+<tr class="memdesc:a76efae98632335b8c970869964f26235"><td class="mdescLeft">&#160;</td><td class="mdescRight">The containment of a tracked face an operation has just made (the base asks only after the fact). The offset surface: nothing in the loop, m_offset_envelope in a TetWild pass. A held face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>): the base's rule, the envelopes of its labels. Any other tracked face: nothing.  <br /></td></tr>
 <tr class="separator:a76efae98632335b8c970869964f26235"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70d46a5502c6801d1ed7a25d3459cde0" id="r_a70d46a5502c6801d1ed7a25d3459cde0"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a70d46a5502c6801d1ed7a25d3459cde0">collapsing_edge_envelope</a> (size_t v1, size_t v2) const override</td></tr>
 <tr class="separator:a70d46a5502c6801d1ed7a25d3459cde0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -763,6 +762,8 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>front_vertex_norm
 <tr class="separator:af85ea65b6409e9edbada6a2a9f207710"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93a09ab7c852218819ab26a46a981a62" id="r_a93a09ab7c852218819ab26a46a981a62"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a93a09ab7c852218819ab26a46a981a62">front_objective</a> (size_t vid) const</td></tr>
 <tr class="separator:a93a09ab7c852218819ab26a46a981a62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6eb8c04f16534f7fd8ff3c325358aa7" id="r_af6eb8c04f16534f7fd8ff3c325358aa7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af6eb8c04f16534f7fd8ff3c325358aa7">vertex_is_held_on_input</a> (const size_t vid) const</td></tr>
+<tr class="separator:af6eb8c04f16534f7fd8ff3c325358aa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7718f7fafb09684eed74bbc931443b8e" id="r_a7718f7fafb09684eed74bbc931443b8e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7718f7fafb09684eed74bbc931443b8e">vertex_carries_offset_term</a> (const size_t vid) const</td></tr>
 <tr class="separator:a7718f7fafb09684eed74bbc931443b8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b1e4f65e525e666dcb52d1101097355" id="r_a8b1e4f65e525e666dcb52d1101097355"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8b1e4f65e525e666dcb52d1101097355">smoothing_extra_energy</a> (const size_t vid) const override</td></tr>
@@ -958,10 +959,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>tet_is_simp_emb</b> (
 <tr class="memitem:a9688ebac1bedbe9dca10fe215e67362b" id="r_a9688ebac1bedbe9dca10fe215e67362b"><td class="memItemLeft" align="right" valign="top"><a id="a9688ebac1bedbe9dca10fe215e67362b" name="a9688ebac1bedbe9dca10fe215e67362b"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>simplicial_embedding</b> ()</td></tr>
 <tr class="separator:a9688ebac1bedbe9dca10fe215e67362b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b23409ad659285c4687b18215074546" id="r_a4b23409ad659285c4687b18215074546"><td class="memItemLeft" align="right" valign="top"><a id="a4b23409ad659285c4687b18215074546" name="a4b23409ad659285c4687b18215074546"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_offset_tet_tags</b> ()</td></tr>
-<tr class="memdesc:a4b23409ad659285c4687b18215074546"><td class="mdescLeft">&#160;</td><td class="mdescRight">update 'tags' data for tets in the offset region (tets labelled 2) <br /></td></tr>
+<tr class="memitem:a4b23409ad659285c4687b18215074546" id="r_a4b23409ad659285c4687b18215074546"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b23409ad659285c4687b18215074546">set_offset_tet_tags</a> ()</td></tr>
 <tr class="separator:a4b23409ad659285c4687b18215074546"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8193b9a479d2d24e73eef9d4983e9738" id="r_a8193b9a479d2d24e73eef9d4983e9738"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8193b9a479d2d24e73eef9d4983e9738">untrack_covered_boundaries</a> ()</td></tr>
+<tr class="memdesc:a8193b9a479d2d24e73eef9d4983e9738"><td class="mdescLeft">&#160;</td><td class="mdescRight">After <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b23409ad659285c4687b18215074546">set_offset_tet_tags()</a>: a tracked face stays tracked iff it still passes the load-time rule (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a40eb6a59343aa75d7b7ef31a772a79be">face_is_tag_boundary()</a>) or is the input complex's (below); any other is untracked as a face that never was (SurfaceTagAttributes::reset()): no flag, and none of the labels <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac201fb46150e9c4b66ccdb2496f74650">assign_face_labels()</a> gave it, which a collapse would unite into the tracked face it merges it with (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30">SurfaceTagAttributes::merge()</a> takes the union, tracked or not).  <br /></td></tr>
+<tr class="separator:a8193b9a479d2d24e73eef9d4983e9738"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d9859872eee73b99d0f762cc4acdd5d" id="r_a6d9859872eee73b99d0f762cc4acdd5d"><td class="memItemLeft" align="right" valign="top"><a id="a6d9859872eee73b99d0f762cc4acdd5d" name="a6d9859872eee73b99d0f762cc4acdd5d"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_is_manifold</b> ()</td></tr>
 <tr class="memdesc:a6d9859872eee73b99d0f762cc4acdd5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">verify that the closed offset region (simplices labelled 1 or 2) form a manifold region. <br /></td></tr>
@@ -1071,6 +1073,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_curves</b> 
 <tr class="memitem:ab128d68ee048ae077f7bf9d3951ea77c inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ab128d68ee048ae077f7bf9d3951ea77c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab128d68ee048ae077f7bf9d3951ea77c">init_input_envelopes</a> (const std::vector&lt; Eigen::Vector3d &gt; &amp;V, const std::vector&lt; Eigen::Vector3i &gt; &amp;F, const std::vector&lt; InputSet &gt; &amp;F_sets, double eps, bool exact)</td></tr>
 <tr class="memdesc:ab128d68ee048ae077f7bf9d3951ea77c inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member b around the triangles (V, F) whose F_sets entry has bit b, else &ndash; for an input no row carries, or for every input when F_sets is not one entry per row of F &ndash; around the mesh's faces carrying bit b. Null for an input neither has. Shared, empty, without per_input_envelopes. Returns the number of members.  <br /></td></tr>
 <tr class="separator:ab128d68ee048ae077f7bf9d3951ea77c inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad92aaf1035e1879d5e069463c399f84 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aad92aaf1035e1879d5e069463c399f84"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aad92aaf1035e1879d5e069463c399f84">require_box_boundary</a> (const std::string &amp;who) const</td></tr>
+<tr class="memdesc:aad92aaf1035e1879d5e069463c399f84 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Throws unless the mesh fills its box: every boundary face (no tet across) a face of the box (m_is_bbox_fs &gt;= 0) and untracked, naming the count of each kind found otherwise &ndash; the tracked boundary faces, and the untracked ones in no plane of the box. <code>who</code> names the run in the message. Call after init, with the tracked faces and the box flags set.  <br /></td></tr>
+<tr class="separator:aad92aaf1035e1879d5e069463c399f84 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b0ec9196be8d44927cc358afb618cf6 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a0b0ec9196be8d44927cc358afb618cf6"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (const size_t v1, const size_t v2) const</td></tr>
 <tr class="separator:a0b0ec9196be8d44927cc358afb618cf6 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1284,8 +1289,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>anchor_feature_point<
 <tr class="separator:aae7258bf6338f518b2beb08e9eb81302 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9962f638e709c197ab507642117da249 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a9962f638e709c197ab507642117da249"><td class="memItemLeft" align="right" valign="top">std::pair&lt; size_t, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9962f638e709c197ab507642117da249">feature_retention</a> (double *worst_ratio=nullptr) const</td></tr>
 <tr class="separator:a9962f638e709c197ab507642117da249 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90d9a32e3a5f49a39a52797eff5c11ee inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a90d9a32e3a5f49a39a52797eff5c11ee"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a90d9a32e3a5f49a39a52797eff5c11ee">label_name</a> (size_t bit) const</td></tr>
-<tr class="separator:a90d9a32e3a5f49a39a52797eff5c11ee inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9c8eb225c4ef94f2cd434f7296fd3cf inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_af9c8eb225c4ef94f2cd434f7296fd3cf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#af9c8eb225c4ef94f2cd434f7296fd3cf">require_reference_face_labels</a> (const std::vector&lt; InputSet &gt; &amp;reference_labels) const</td></tr>
 <tr class="separator:af9c8eb225c4ef94f2cd434f7296fd3cf inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab69ea937589eced2cd948e500ceae2d9 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ab69ea937589eced2cd948e500ceae2d9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab69ea937589eced2cd948e500ceae2d9">init_reference_feature_tubes</a> (double eps, bool exact)</td></tr>
@@ -1780,27 +1783,16 @@ std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m
 std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_region</b></td></tr>
 <tr class="memdesc:a91ba89ce50dfb7486abf9dbcc2b21240"><td class="mdescLeft">&#160;</td><td class="mdescRight">per vertex: region of its band cells, -1 / -2 as above <br /></td></tr>
 <tr class="separator:a91ba89ce50dfb7486abf9dbcc2b21240"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb4175e058b1526ff104cb8d31d911b8" id="r_afb4175e058b1526ff104cb8d31d911b8"><td class="memItemLeft" align="right" valign="top">MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afb4175e058b1526ff104cb8d31d911b8">m_reference_V</a></td></tr>
+<tr class="separator:afb4175e058b1526ff104cb8d31d911b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49f3f863eee955cb65fc1dc11619188a" id="r_a49f3f863eee955cb65fc1dc11619188a"><td class="memItemLeft" align="right" valign="top"><a id="a49f3f863eee955cb65fc1dc11619188a" name="a49f3f863eee955cb65fc1dc11619188a"></a>
+MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_reference_F</b></td></tr>
+<tr class="separator:a49f3f863eee955cb65fc1dc11619188a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a315f19b454c998af9426297d36b0a980" id="r_a315f19b454c998af9426297d36b0a980"><td class="memItemLeft" align="right" valign="top"><a id="a315f19b454c998af9426297d36b0a980" name="a315f19b454c998af9426297d36b0a980"></a>
+std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_reference_labels</b></td></tr>
+<tr class="separator:a315f19b454c998af9426297d36b0a980"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a0f1611a99cd0eeb9e76ef3eb8080fd" id="r_a3a0f1611a99cd0eeb9e76ef3eb8080fd"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3a0f1611a99cd0eeb9e76ef3eb8080fd">m_construction_envelope_eps</a> = 0.</td></tr>
 <tr class="separator:a3a0f1611a99cd0eeb9e76ef3eb8080fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91f57a824cd9c5c46a7f7fff22dae33d" id="r_a91f57a824cd9c5c46a7f7fff22dae33d"><td class="memItemLeft" align="right" valign="top"><a id="a91f57a824cd9c5c46a7f7fff22dae33d" name="a91f57a824cd9c5c46a7f7fff22dae33d"></a>
-std::vector&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_held_verts</b></td></tr>
-<tr class="memdesc:a91f57a824cd9c5c46a7f7fff22dae33d"><td class="mdescLeft">&#160;</td><td class="mdescRight">The held triangle soup as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> captured it, for <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a>. <br /></td></tr>
-<tr class="separator:a91f57a824cd9c5c46a7f7fff22dae33d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8a3106e80ae18b0ac16bb433341b4a4" id="r_ac8a3106e80ae18b0ac16bb433341b4a4"><td class="memItemLeft" align="right" valign="top"><a id="ac8a3106e80ae18b0ac16bb433341b4a4" name="ac8a3106e80ae18b0ac16bb433341b4a4"></a>
-std::vector&lt; Eigen::Vector3i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_held_tris</b></td></tr>
-<tr class="separator:ac8a3106e80ae18b0ac16bb433341b4a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aedc5e7593168707d9a64ab4858db5ccf" id="r_aedc5e7593168707d9a64ab4858db5ccf"><td class="memItemLeft" align="right" valign="top">std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aedc5e7593168707d9a64ab4858db5ccf">m_held_sets</a></td></tr>
-<tr class="separator:aedc5e7593168707d9a64ab4858db5ccf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe88b78cf3984f41b36f5ed020ee1fb0" id="r_abe88b78cf3984f41b36f5ed020ee1fb0"><td class="memItemLeft" align="right" valign="top"><a id="abe88b78cf3984f41b36f5ed020ee1fb0" name="abe88b78cf3984f41b36f5ed020ee1fb0"></a>
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_loop_envelope</b></td></tr>
-<tr class="memdesc:abe88b78cf3984f41b36f5ed020ee1fb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">The loop's m_envelope and m_input_envelopes while the final pass holds its own. <br /></td></tr>
-<tr class="separator:abe88b78cf3984f41b36f5ed020ee1fb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af124b89555efd793b1b5a98399d86803" id="r_af124b89555efd793b1b5a98399d86803"><td class="memItemLeft" align="right" valign="top"><a id="af124b89555efd793b1b5a98399d86803" name="af124b89555efd793b1b5a98399d86803"></a>
-std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_loop_input_members</b></td></tr>
-<tr class="memdesc:af124b89555efd793b1b5a98399d86803"><td class="mdescLeft">&#160;</td><td class="mdescRight">m_input_envelopes' members, kept by copy: <a class="el" href="classwmtk_1_1_input_envelopes.html" title="One envelope per input, and the containment and the pull of an INPUT SET (bit i = input i; see Surfac...">InputEnvelopes</a> itself is not copyable. <br /></td></tr>
-<tr class="separator:af124b89555efd793b1b5a98399d86803"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a48f7162907e112dc6af9cc00b47fc8de" id="r_a48f7162907e112dc6af9cc00b47fc8de"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a48f7162907e112dc6af9cc00b47fc8de">m_final_envelopes</a> = false</td></tr>
-<tr class="separator:a48f7162907e112dc6af9cc00b47fc8de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67d28b9fe46aa2fea2959a8f4c0df754" id="r_a67d28b9fe46aa2fea2959a8f4c0df754"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a67d28b9fe46aa2fea2959a8f4c0df754">m_tetwild_pass</a> = false</td></tr>
 <tr class="separator:a67d28b9fe46aa2fea2959a8f4c0df754"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae25cbcad6868e48d3d09cf8f0cc5c98f" id="r_ae25cbcad6868e48d3d09cf8f0cc5c98f"><td class="memItemLeft" align="right" valign="top"><a id="ae25cbcad6868e48d3d09cf8f0cc5c98f" name="ae25cbcad6868e48d3d09cf8f0cc5c98f"></a>
@@ -2480,7 +2472,7 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m
 <tr><td class="ititle" colspan="2"><p>Carried exactly as the base carries m_face_attribute (TetOptimizerMeshSplit.cpp, TetOptimizerMeshCollapse.cpp, TetOptimizerMeshSwaps.cpp), at the canonical face id, which is where every reader looks:</p><ul>
 <li>split: a face of the parents is captured by its sorted vertices (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#adb7f5ca90fe375c8b6cad5deef8460fe" title="Split policy that is the offset&#39;s own: which region tag the two child tets inherit,...">split_before_cells()</a>); afterwards a child face that is a parent face keeps its value, the two halves of a parent face containing the edge take that face's, and the new faces between a link edge and the midpoint are reset (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a407fe8b92fcaaf4a18da43a9c3aea1c9" title="Restore application cell data on the children made by a split.">split_after_cells()</a>).</li>
 <li>collapse: (v1,l1,l2) and (v2,l1,l2) around the edge are merged (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html#a8c692bb6bde89b7c47032a8ad4cd37a7">FaceExtra::merge()</a>) onto (v2,l1,l2) (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90b1522f1d7a2516ddd1eeb90d92ecf8">collapse_before_vertex()</a> / collapse_after_vertex()); the other faces are renamed in place and keep their slots.</li>
-<li>swap: the old cells' faces are captured (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aac6753a2f5c74382b0181132c6049004" title="Which tag the tets a swap creates should carry, and the topology half of the surface-flip refusal (cl...">swap_before_interior()</a> / swap_before_surface()); a new cell's face that was one of them keeps its value, every other face of the new cells is reset (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151" title="Propagate application data to the cells made by a successful topological swap.">swap_after_cells()</a>). <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac07f99d0f9e68ea7faa820ffce250106">face_is_complex_boundary()</a> reads the label live, which is why it has to be carried.</li>
+<li>swap: the old cells' faces are captured (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aac6753a2f5c74382b0181132c6049004" title="Which tag the tets a swap creates should carry, and the topology half of the surface-flip refusal (cl...">swap_before_interior()</a> / swap_before_surface()); a new cell's face that was one of them keeps its value, every other face of the new cells is reset (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151" title="Propagate application data to the cells made by a successful topological swap.">swap_after_cells()</a>). <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9aa83102392d98170a7c2440800af5e7">close_labels()</a> and the label flip read the label live &ndash; a face of a sheet complex has no complex cell beside it, so only the carry keeps its 1 &ndash; which is why it has to be carried.</li>
 </ul>
 <p>The edge label is carried the same way (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abfa0b2785706f00f3b2364ec4221e75c">edge_label_capture()</a> / <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9790f7c0351824a015d9edd3897edcc5" title="Every edge of tids: its captured label when it was captured, else 0.">edge_label_assign()</a>): an edge's slot is its lowest incident tet's, so an operation that changes the tets around an edge moves it to a slot holding another edge's value or a dead one's. After that, every operation closes the labels over the cells it made (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9aa83102392d98170a7c2440800af5e7">close_labels()</a>). </p>
 </td></tr>
@@ -2827,7 +2819,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The offset's tet mesh, on the shared 3D optimizer. </p>
 <p>Mirrors <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html" title="The offset&#39;s 2D mesh, on the shared 2D optimizer.">TopoOffsetTriMesh</a> one dimension up: the construction phase (simplicial embedding, marching tets, growing the band) is entirely its own, and the optimization phase that follows is <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>'s, with the offset supplying only policy through the hooks.</p>
-<p>Two surfaces are tracked. Every tag-region boundary (input complex and domain wall included) keeps the primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which the incident tet labels differ. Which class-0 faces an envelope holds, and when, is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>'s; only the offset surface is driven toward target_distance. </p>
+<p>Two surfaces are tracked. Every tag-region boundary (the input complex's included) keeps the primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which the incident tet labels differ. The domain wall is not tracked: the box rule holds it, as in tetwild and simwild. Which class-0 faces an envelope holds is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>'s; only the offset surface is driven toward target_distance. </p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="aaed714d99fe6cb040cfe5fafba6b56b2" name="aaed714d99fe6cb040cfe5fafba6b56b2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaed714d99fe6cb040cfe5fafba6b56b2">&#9670;&#160;</a></span>FoldTest</h2>
@@ -2959,7 +2951,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Give every tracked face off the wall its labels, as input-set bits beside its face tags: bit F + t - 1 (F face tags) for each tet tag t in the tag set of exactly one of its two tets, ambient (0) carrying none &ndash; simwild's labels (SimWildMesh::init_label_envelopes()) &ndash; and the envelope surface group's tag (m_sheet_tag) on a face of it. Called by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a>, before the march; the operations carry the bits after. Not written: the output takes only the face-tag bits (io::collect_input_set_tags()). </p>
+<p>Give every tracked face its labels, as input-set bits beside its face tags: bit F + t - 1 (F face tags) for each tet tag t in the tag set of exactly one of its two tets, ambient (0) carrying none &ndash; simwild's labels (SimWildMesh::init_label_envelopes()) &ndash; and the envelope surface group's tag (m_sheet_tag) on a face of it. Called by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a>, before the march; the operations carry the bits after. Not written: the output takes only the face-tag bits (io::collect_input_set_tags()). </p>
 
 </div>
 </div>
@@ -3247,7 +3239,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Whether vid is a band vertex the optimizer could still place at target_distance. An envelope-held offset vertex is pinned, as is one on the domain boundary. Same rule as 2D. </p>
+<p>Whether vid is a band vertex the optimizer could still place at target_distance. An offset vertex held on the input complex is pinned (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af6eb8c04f16534f7fd8ff3c325358aa7">vertex_is_held_on_input()</a>), as is one on the domain boundary; one held by another region's boundary slides along it. 2D still pins every held one. </p>
 
 </div>
 </div>
@@ -3284,7 +3276,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Build m_envelope from the held faces. Called once, from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afed322b62cb7a70307e3e90ed31be0fc">construct_offset()</a>, after the simplicial embedding: the complex has to be labelled for <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>, and it has to precede the march, whose band replaces the tags of the cells it covers. </p>
+<p>Build m_envelope and the label envelopes from the held faces. Called once, from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afed322b62cb7a70307e3e90ed31be0fc">construct_offset()</a>, after the simplicial embedding and before the march: the labels are read off the cells' tags (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac201fb46150e9c4b66ccdb2496f74650">assign_face_labels()</a>), which the band replaces in the cells it covers, and with no front yet every tracked face is captured, so every face held later has its labels' envelopes. </p>
 
 </div>
 </div>
@@ -3302,7 +3294,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The final pass's envelopes: the offset surface's envelope (build_offset_envelope()), and m_envelope swapped for one that also holds every other region boundary, at its position as the loop left it, beside the surfaces <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> captured (held where they were then). release_final_envelopes() puts the loop's envelope back. </p>
+<p>A TetWild pass's envelopes: the offset surface's envelope (build_offset_envelope()), all it adds. Every other tracked surface it holds is held in the loop's envelopes, where <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> captured it. Until 2026-11-04 it also swapped m_envelope for one that held every other region boundary where the loop had left it (and release_final_envelopes() put the loop's back). </p>
 
 </div>
 </div>
@@ -4157,25 +4149,6 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
-<a id="ac07f99d0f9e68ea7faa820ffce250106" name="ac07f99d0f9e68ea7faa820ffce250106"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac07f99d0f9e68ea7faa820ffce250106">&#9670;&#160;</a></span>face_is_complex_boundary()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::face_is_complex_boundary </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>f</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Whether this face lies on the boundary of the input complex: exactly one incident tet carries label 1, or the face itself does while neither tet does (a sheet or face piece). </p>
-
-</div>
-</div>
 <a id="a59fda2963e3ce48edb6a8c482784bf4c" name="a59fda2963e3ce48edb6a8c482784bf4c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a59fda2963e3ce48edb6a8c482784bf4c">&#9670;&#160;</a></span>face_is_held()</h2>
 
@@ -4192,11 +4165,10 @@ template&lt;typename F &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>THE ENVELOPES, as in tetwild and simwild. m_envelope (the base's pointer): an <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> of half-width envelope_size around every HELD face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>), and the base's m_input_envelopes, one per label over the held faces carrying it, each held face held to those of its labels (the base's <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a76efae98632335b8c970869964f26235" title="The containment of a tracked face an operation has just made (the base asks only after the fact)....">surface_envelope_for_face()</a>; the union with one label or without per_input_envelopes). A face's labels are its face tags and the tet tags of the regions it bounds (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac201fb46150e9c4b66ccdb2496f74650">assign_face_labels()</a>), as simwild's. Built by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> before anything moves &ndash; after the simplicial embedding, before the repulsion and the march &ndash; and swapped for wider ones only for a TetWild pass (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a>). The offset surface is held by nothing in the loop; only a TetWild pass holds it, to m_offset_envelope. </p>
-<p>Which faces are held, asked live of the mesh (the operations carry the cell tags and labels it reads), never stored:</p><ul>
-<li>the input complex's boundary (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac07f99d0f9e68ea7faa820ffce250106">face_is_complex_boundary()</a>), always;</li>
-<li>every other region boundary, only in a TetWild pass (m_tetwild_pass), where <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a> adds them at their position then. In the loop they stay tracked faces &ndash; the operations preserve their topology &ndash; but nothing holds them. The domain wall is not: the box rule holds it, as in tetwild and simwild (a wall vertex is not smoothed, collapses only along its walls, and a split of a wall edge stays on it). Until 2026-11 one envelope held every held face, the wall included, its vertices smoothed inside it; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4915c29c2d3722b663c50bf84b9e9653" title="The smoothing hooks. A derived class overriding them – or invariants(), which a smooth also runs – mu...">smooth_before()</a> for why the wall was held so. </li>
-</ul>
+<p>THE ENVELOPES, as in tetwild and simwild. m_envelope (the base's pointer): an <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> of half-width envelope_size around every HELD face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>), and the base's m_input_envelopes, one per label over the held faces carrying it, each held face held to those of its labels (the base's <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a76efae98632335b8c970869964f26235" title="The containment of a tracked face an operation has just made (the base asks only after the fact)....">surface_envelope_for_face()</a>; the union with one label or without per_input_envelopes). A face's labels are its face tags and the tet tags of the regions it bounds (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac201fb46150e9c4b66ccdb2496f74650">assign_face_labels()</a>), as simwild's. Built once by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> before anything moves &ndash; after the simplicial embedding, before the repulsion and the march &ndash; and never rebuilt: what they hold is held where it was then, in the loop and in a TetWild pass alike. The offset surface is held by nothing in the loop; only a TetWild pass holds it, to m_offset_envelope (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a>). </p>
+<p>Which faces are held, asked live of the mesh (the operations carry the cell labels it reads), never stored: every tracked face but the offset surface, in the loop as in a TetWild pass &ndash; the input complex's boundary and every other region boundary (another body, another tag's surface). The domain wall is no tracked face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a40eb6a59343aa75d7b7ef31a772a79be">face_is_tag_boundary()</a>): the box rule holds it, as in tetwild and simwild (a wall vertex is not smoothed, collapses only along its walls, and a split of a wall edge stays on it). Until 2026-11 one envelope held every held face, the wall included, its vertices smoothed inside it; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4915c29c2d3722b663c50bf84b9e9653" title="The smoothing hooks. A derived class overriding them – or invariants(), which a smooth also runs – mu...">smooth_before()</a> for why the wall was held so. From then until 2026-11-05 the wall stayed tracked, and this exempted it.</p>
+<p>Every tracked surface held, as tetwild and simwild hold theirs (Uday, 2026-11-04). From 1c247b2267 (2026-10-13) until then the loop held only the input complex's boundary: every other region boundary stayed a tracked face &ndash; the operations kept its topology &ndash; that nothing held, so the band pushed it aside, and only a TetWild pass held it, where the loop had left it.</p>
+<p>With a reference (the base's m_has_reference: an <code>envelope</code> input that is a labelled reference, the first component's input), held to as simwild holds one: m_envelope and the label envelopes are built around its triangles of this mesh's labels (m_reference_V, m_reference_F, m_reference_labels), not around the held faces, after a held face's label the reference lacks has thrown (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#af9c8eb225c4ef94f2cd434f7296fd3cf">require_reference_face_labels()</a>), and a held face outside its labels' envelopes throws before anything moves (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a256af05afda07b7dea7bfd56baa4b2df">check_reference_containment()</a>). So the held surfaces stay within envelope_size of the first component's input however many components came before; built around what each receives, the bound would grow by one envelope per stage. Until 2026-11-05 the offset carried a reference without holding to it. </p>
 
 </div>
 </div>
@@ -4281,6 +4253,25 @@ template&lt;typename F &gt; </div>
 </dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#afec96f98e92be934c95c018e1356f120">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a40eb6a59343aa75d7b7ef31a772a79be" name="a40eb6a59343aa75d7b7ef31a772a79be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40eb6a59343aa75d7b7ef31a772a79be">&#9670;&#160;</a></span>face_is_tag_boundary()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::face_is_tag_boundary </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>f</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The tracking rule, asked of the mesh as it stands: a face whose two tets carry different tag sets, a face on the sheet group (on_sheet), or a face with a face tag (an input-set bit of the face tags'). A wall face (no opposite tet) bounds no second region, so only a face tag or the sheet tracks it &ndash; a filtered mesh's boundary, which the driver refuses (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aad92aaf1035e1879d5e069463c399f84" title="Throws unless the mesh fills its box: every boundary face (no tet across) a face of the box (m_is_bbo...">require_box_boundary()</a>). Until 2026-11-05 every wall face was tracked, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a> exempted it from the envelopes. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af73224d67c178a003138208607dd62be" title="Classify every region boundary and flag the domain wall – once, from the input mesh,...">init_surfaces_and_boundaries()</a> tracks the faces it holds of at load; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8193b9a479d2d24e73eef9d4983e9738" title="After set_offset_tet_tags(): a tracked face stays tracked iff it still passes the load-time rule (fac...">untrack_covered_boundaries()</a> asks it again after the band's retagging. </p>
 
 </div>
 </div>
@@ -5122,7 +5113,7 @@ template&lt;typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The held surfaces' curves and points, as tetwild and simwild hold theirs: the order-2 edges (rims, non-manifold edges where labelled regions meet) tagged and held in tubes around themselves, of half-width order2_envelope_ratio x envelope_size, one per label, and the curve ends and junctions anchored at that radius. After <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> and before the march, so the front, which the march makes, is never among them. Until 2026-11 the offset held no curve and no point; the surface envelope alone held them. </p>
+<p>The held surfaces' curves and points, as tetwild and simwild hold theirs: the order-2 edges (rims, non-manifold edges where labelled regions meet) tagged and held in tubes around themselves, of half-width order2_envelope_ratio x envelope_size, one per label, and the curve ends and junctions anchored at that radius. After <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> and before the march, so the front, which the march makes, is never among them. Until 2026-11 the offset held no curve and no point; the surface envelope alone held them. With a reference, around its curves, as simwild's: the driver sets them (the base's <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#afa1e3f2c721362a4c4b36ac037393c86" title="Set m_input_curves from the input surface V, F, each face with its input set (F_inputs),...">set_input_curves()</a>), an order-2 edge in their tubes is held there, a curve end in reach of one of their ends anchored there, and an edge on none held around itself (<a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_input_curves.html" title="The input&#39;s own curves, when the envelopes are built around the input (envelope_reference &quot;input&quot;) an...">TetOptimizerMesh::InputCurves</a>). </p>
 
 </div>
 </div>
@@ -5393,6 +5384,35 @@ template&lt;typename F &gt; </div>
       </table>
 </div><div class="memdoc">
 <p>EXPERIMENTAL_band_volume_rule "surface": how much the face term changes if cell tid's label flips (band &lt;-&gt; background): + its faces shared with a cell of its own label (they become front faces), - its faces shared with a cell of the other label (they stop being front faces); a face on an input-complex cell or on the domain boundary counts neither way. What <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa44c3073e240b9e46d0c6719dc90fff9" title="EXPERIMENTAL_label_cleanup (see the spec). The one exception to labels being fixed after construction...">label_cleanup()</a>'s surface flips compare against 0. </p>
+
+</div>
+</div>
+<a id="acf1014359a03c9528484689a6920ffec" name="acf1014359a03c9528484689a6920ffec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf1014359a03c9528484689a6920ffec">&#9670;&#160;</a></span>label_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string wmtk::components::topological_offset::TopoOffsetTetMesh::label_name </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>bit</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The label of bit <code>bit</code> of a face's input set (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac201fb46150e9c4b66ccdb2496f74650">assign_face_labels()</a>), as the output names it: a face tag's name, else tet tag t's label (io::collect_tags()) for bit F + t - 1, F the face tags' count. What the reference checks name a label by. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a90d9a32e3a5f49a39a52797eff5c11ee">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -6294,6 +6314,24 @@ template&lt;typename F &gt; </div>
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a4b23409ad659285c4687b18215074546" name="a4b23409ad659285c4687b18215074546"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b23409ad659285c4687b18215074546">&#9670;&#160;</a></span>set_offset_tet_tags()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::set_offset_tet_tags </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>update 'tags' data for tets in the offset region (tets labelled 2), and on the faces it covers (both tets band, the input complex's own faces excepted) the face tags and the sheet group, by the same rule: each gives way unless protected_tags names it. </p>
 
 </div>
 </div>
@@ -7301,7 +7339,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>The containment of a tracked face an operation has just made (the base asks only after the fact). The offset surface: nothing in the loop, m_offset_envelope in a TetWild pass. A held face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>): the base's rule, the envelopes of its labels. Any other tracked face, the domain wall among them (the box rule holds it): nothing. </p>
+<p>The containment of a tracked face an operation has just made (the base asks only after the fact). The offset surface: nothing in the loop, m_offset_envelope in a TetWild pass. A held face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>): the base's rule, the envelopes of its labels. Any other tracked face: nothing. </p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3739c2160bf9fab80cbeebf2506f6cb6">wmtk::TetOptimizerMesh</a>.</p>
 
@@ -8002,6 +8040,27 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
+<a id="a8193b9a479d2d24e73eef9d4983e9738" name="a8193b9a479d2d24e73eef9d4983e9738"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8193b9a479d2d24e73eef9d4983e9738">&#9670;&#160;</a></span>untrack_covered_boundaries()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::untrack_covered_boundaries </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>After <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b23409ad659285c4687b18215074546">set_offset_tet_tags()</a>: a tracked face stays tracked iff it still passes the load-time rule (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a40eb6a59343aa75d7b7ef31a772a79be">face_is_tag_boundary()</a>) or is the input complex's (below); any other is untracked as a face that never was (SurfaceTagAttributes::reset()): no flag, and none of the labels <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac201fb46150e9c4b66ccdb2496f74650">assign_face_labels()</a> gave it, which a collapse would unite into the tracked face it merges it with (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30">SurfaceTagAttributes::merge()</a> takes the union, tracked or not). </p>
+<p>The retagging writes tags, not tracking flags, so a region boundary the band covers &ndash; another region's surface with band cells on both sides, one tag set now, as tag_1's surface next to the complex where the band takes tag_1's cells, or a face-tagged surface whose tag gave way there &ndash; kept its flag: a surface inside the band that bounds nothing, which the operations would keep and the loop would hold where it was, every tracked face being held (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>). A protected tet tag's cells are never the band's (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458">marching_tets()</a>); with a protected face tag or sheet group the band's faces keep it, so such a boundary still carries its input and stays tracked. A face of the input complex (label 1) is never untracked, as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b23409ad659285c4687b18215074546">set_offset_tet_tags()</a> never clears one: with offset_output_tags naming the selection's own tag the complex and the band carry one tag set, and the complex's boundary stays tracked and held.</p>
+<p>Only clears. The front, whose two sides can carry one tag set (offset_output_tags naming a tag already beyond it, or none), is tracked again from the cell labels by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a471bd494ce6922396d691062e5a08606" title="Tag the two tracked surfaces for the optimization phase.">label_offset_boundary()</a>. The envelopes built before the march (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a>) still hold the untracked faces' geometry, which does no harm: an envelope refuses only what leaves it, so the extra triangles only let a held face of those labels within eps of where the covered part was. The 2D twin has no such step: its final pass rebuilds its tubes from the tags (build_boundary_envelopes()). </p>
+
+</div>
+</div>
 <a id="a8c6568d1fe34d5361dc4c697e6b5ddf2" name="a8c6568d1fe34d5361dc4c697e6b5ddf2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8c6568d1fe34d5361dc4c697e6b5ddf2">&#9670;&#160;</a></span>update_attributes()</h2>
 
@@ -8053,7 +8112,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Whether the smoother places vid against the offset term: a front vertex, outside a TetWild pass, that no envelope also holds (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4ff51ab72cc1d6dc9bc97d03db8fe887">vertex_is_held()</a>). </p>
+<p>Whether the smoother places vid against the offset term: a front vertex, outside a TetWild pass, not held on the input complex (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af6eb8c04f16534f7fd8ff3c325358aa7">vertex_is_held_on_input()</a>). </p>
 
 </div>
 </div>
@@ -8095,6 +8154,33 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
+<a id="af6eb8c04f16534f7fd8ff3c325358aa7" name="af6eb8c04f16534f7fd8ff3c325358aa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6eb8c04f16534f7fd8ff3c325358aa7">&#9670;&#160;</a></span>vertex_is_held_on_input()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::vertex_is_held_on_input </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether vid is held on the input complex. There d = 0 and has a kink, so the band term is left out of vid's objective (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8b1e4f65e525e666dcb52d1101097355">smoothing_extra_energy()</a>) and a front vertex there cannot be placed at target_distance. A vertex held only by another region's boundary has neither: d is smooth there, so it carries the term and slides along that boundary to the level set. Until 2026-11-04 the loop held only the input complex's boundary, so "held" meant this; with every region boundary held, a front vertex where the front meets another region lost its term and the front could not settle there (double_sphere, offset tag_0: no convergence in 5 turns, against main's in 63 s). </p>
+
+</div>
+</div>
 <a id="a09ec58b0f505f9b4349b40de78494a65" name="a09ec58b0f505f9b4349b40de78494a65"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a09ec58b0f505f9b4349b40de78494a65">&#9670;&#160;</a></span>vertex_is_on_domain_boundary()</h2>
 
@@ -8120,7 +8206,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 </div><div class="memdoc">
 
 <p>Identification only &ndash; no operation refuses the domain wall through these. </p>
-<p>The wall is a tracked region boundary like every other one: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af73224d67c178a003138208607dd62be" title="Classify every region boundary and tag the domain wall – once, from the input mesh,...">init_surfaces_and_boundaries()</a> tags its faces m_is_surface_fs and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a> always holds them, so refinement, coarsening, flips and smoothing are governed by the same containment, merge rules and link conditions that govern the input complex. </p>
+<p>The wall is no tracked face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a40eb6a59343aa75d7b7ef31a772a79be">face_is_tag_boundary()</a>): the box rule holds it, as in tetwild and simwild &ndash; a vertex on it is not smoothed (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4915c29c2d3722b663c50bf84b9e9653" title="The smoothing hooks. A derived class overriding them – or invariants(), which a smooth also runs – mu...">smooth_before()</a>), collapses only along its planes, and a split of an edge on it stays on the planes both ends share. </p>
 
 </div>
 </div>
@@ -8531,7 +8617,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 </div><div class="memdoc">
 
 <p><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>: which of the two tracked surfaces a face belongs to. Same scheme as 2D. </p>
-<p>OFFSET is the surface the optimization places at target_distance. Everything else &ndash; the input complex, another body's boundary, the domain wall &ndash; keeps the primary class 0 and is envelope-checked by the shared operations exactly as in tetwild and simwild, when it is held (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>). </p>
+<p>OFFSET is the surface the optimization places at target_distance. Every other tracked face &ndash; the input complex, another body's boundary &ndash; keeps the primary class 0 and is envelope-checked by the shared operations exactly as in tetwild and simwild, when it is held (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES, as in tetwild and simwild. m_envelope (the base&#39;s pointer): an Envelope of half-width ...">face_is_held()</a>). The domain wall is no tracked face: the box rule holds it. </p>
 
 </div>
 </div>
@@ -8919,21 +9005,6 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
-<a id="a48f7162907e112dc6af9cc00b47fc8de" name="a48f7162907e112dc6af9cc00b47fc8de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a48f7162907e112dc6af9cc00b47fc8de">&#9670;&#160;</a></span>m_final_envelopes</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::m_final_envelopes = false</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Whether <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a> set the two above. The loop's envelope may be none: an input complex of curves or points holds no face, and the wall is the box rule's. </p>
-
-</div>
-</div>
 <a id="a0afbabe05b343fedfe00de75764269fc" name="a0afbabe05b343fedfe00de75764269fc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0afbabe05b343fedfe00de75764269fc">&#9670;&#160;</a></span>m_frame_prefix</h2>
 
@@ -8976,21 +9047,6 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
       </table>
 </div><div class="memdoc">
 <p>growth_mode "linear" / "smart": d_0, the distance the march traced the front to when that is below target_distance (m_construction_distance, half the maximum marchable distance). Set by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458">marching_tets()</a> with growth on and optimize_offset true; 0 otherwise, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad38dcc49b6fae22d2cef0f82f66f890c" title="The 3D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a> then runs the loop once, at target_distance. </p>
-
-</div>
-</div>
-<a id="aedc5e7593168707d9a64ab4858db5ccf" name="aedc5e7593168707d9a64ab4858db5ccf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aedc5e7593168707d9a64ab4858db5ccf">&#9670;&#160;</a></span>m_held_sets</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt;InputSet&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_held_sets</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>per m_held_tris row: the face's labels </p>
 
 </div>
 </div>
@@ -9266,6 +9322,21 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
       </table>
 </div><div class="memdoc">
 <p>The finishing-pass half of the verdict: max AMIPS &lt; stop_energy once the front is resolved, after the final pass when one ran. True when no pass was needed; false when the pass ended still over. m_quality_max_amips is the value it was judged on. </p>
+
+</div>
+</div>
+<a id="afb4175e058b1526ff104cb8d31d911b8" name="afb4175e058b1526ff104cb8d31d911b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb4175e058b1526ff104cb8d31d911b8">&#9670;&#160;</a></span>m_reference_V</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">MatrixXd wmtk::components::topological_offset::TopoOffsetTetMesh::m_reference_V</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>With a reference (m_has_reference): its triangles of this mesh's labels on vertices of their own, each with its labels' bits (io::held_rows()), set by the driver before the construction; what <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> builds the envelopes around. Empty otherwise. </p>
 
 </div>
 </div>

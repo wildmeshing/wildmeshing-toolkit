@@ -163,6 +163,9 @@ std::vector&lt; std::pair&lt; size_t, int &gt; &gt;&#160;</td><td class="memItem
 <tr class="memitem:af6ac8da9c40fe2bd3d3ef6ee91670dfb" id="r_af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af6ac8da9c40fe2bd3d3ef6ee91670dfb">init_input_envelopes</a> (const std::vector&lt; Vector2d &gt; &amp;V, const std::vector&lt; Vector2i &gt; &amp;E, const std::vector&lt; InputSet &gt; &amp;E_sets, double eps, bool exact)</td></tr>
 <tr class="memdesc:af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member i around the rows of the curves (V, E) whose E_sets entry has bit i, else &ndash; for an input no row carries, or for every input when E_sets is not one entry per row of E &ndash; around the tracked segments carrying bit i. Null for an input neither has.  <br /></td></tr>
 <tr class="separator:af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0d0fc9ce3697c0a1b8407c7a4e45693" id="r_ab0d0fc9ce3697c0a1b8407c7a4e45693"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ab0d0fc9ce3697c0a1b8407c7a4e45693">require_box_boundary</a> (const std::string &amp;who) const</td></tr>
+<tr class="memdesc:ab0d0fc9ce3697c0a1b8407c7a4e45693"><td class="mdescLeft">&#160;</td><td class="mdescRight">Throws unless the mesh fills its box: every boundary edge (no triangle across) an edge of the box (m_is_bbox_fs &gt;= 0) and untracked, naming the count of each kind found otherwise. <code>who</code> names the run in the message. Call after init, with the tracked edges and the box flags set.  <br /></td></tr>
+<tr class="separator:ab0d0fc9ce3697c0a1b8407c7a4e45693"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82979ee23eb94c2488543dcfd827ac4a" id="r_a82979ee23eb94c2488543dcfd827ac4a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a82979ee23eb94c2488543dcfd827ac4a">TriOptimizerMesh</a> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params)</td></tr>
 <tr class="separator:a82979ee23eb94c2488543dcfd827ac4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3f31270434c883de9661b1983f0e916" id="r_af3f31270434c883de9661b1983f0e916"><td class="memItemLeft" align="right" valign="top"><a id="af3f31270434c883de9661b1983f0e916" name="af3f31270434c883de9661b1983f0e916"></a>
@@ -1974,6 +1977,27 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </table>
 </div><div class="memdoc">
 <p>Worst relative quality (quality_rel) over the faces incident to any vertex of <code>vids</code>. </p>
+
+</div>
+</div>
+<a id="ab0d0fc9ce3697c0a1b8407c7a4e45693" name="ab0d0fc9ce3697c0a1b8407c7a4e45693"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0d0fc9ce3697c0a1b8407c7a4e45693">&#9670;&#160;</a></span>require_box_boundary()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriOptimizerMesh::require_box_boundary </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>who</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Throws unless the mesh fills its box: every boundary edge (no triangle across) an edge of the box (m_is_bbox_fs &gt;= 0) and untracked, naming the count of each kind found otherwise. <code>who</code> names the run in the message. Call after init, with the tracked edges and the box flags set. </p>
+<p>The 2D twin of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aad92aaf1035e1879d5e069463c399f84" title="Throws unless the mesh fills its box: every boundary face (no tet across) a face of the box (m_is_bbo...">TetOptimizerMesh::require_box_boundary()</a>, which states the rule. Measured here on two filtered unit squares held by their envelopes: a collapse left an edge 0.5 off its square (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aeb199d4e0cf5bd0bedc5cb4e78d8ef55" title="User specified preparations and desideratas for an edge collapse including the link check as collapse...">collapse_edge_before()</a> checks a merged tracked edge in the triangle beyond it, and a boundary edge has none). Until 2026-11 triwild's tagged route kept its own copy. </p>
 
 </div>
 </div>

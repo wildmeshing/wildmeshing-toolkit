@@ -280,6 +280,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_curves</b> 
 <tr class="memitem:ab128d68ee048ae077f7bf9d3951ea77c" id="r_ab128d68ee048ae077f7bf9d3951ea77c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab128d68ee048ae077f7bf9d3951ea77c">init_input_envelopes</a> (const std::vector&lt; Eigen::Vector3d &gt; &amp;V, const std::vector&lt; Eigen::Vector3i &gt; &amp;F, const std::vector&lt; InputSet &gt; &amp;F_sets, double eps, bool exact)</td></tr>
 <tr class="memdesc:ab128d68ee048ae077f7bf9d3951ea77c"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member b around the triangles (V, F) whose F_sets entry has bit b, else &ndash; for an input no row carries, or for every input when F_sets is not one entry per row of F &ndash; around the mesh's faces carrying bit b. Null for an input neither has. Shared, empty, without per_input_envelopes. Returns the number of members.  <br /></td></tr>
 <tr class="separator:ab128d68ee048ae077f7bf9d3951ea77c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad92aaf1035e1879d5e069463c399f84" id="r_aad92aaf1035e1879d5e069463c399f84"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aad92aaf1035e1879d5e069463c399f84">require_box_boundary</a> (const std::string &amp;who) const</td></tr>
+<tr class="memdesc:aad92aaf1035e1879d5e069463c399f84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Throws unless the mesh fills its box: every boundary face (no tet across) a face of the box (m_is_bbox_fs &gt;= 0) and untracked, naming the count of each kind found otherwise &ndash; the tracked boundary faces, and the untracked ones in no plane of the box. <code>who</code> names the run in the message. Call after init, with the tracked faces and the box flags set.  <br /></td></tr>
+<tr class="separator:aad92aaf1035e1879d5e069463c399f84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b0ec9196be8d44927cc358afb618cf6" id="r_a0b0ec9196be8d44927cc358afb618cf6"><td class="memItemLeft" align="right" valign="top"><a id="a0b0ec9196be8d44927cc358afb618cf6" name="a0b0ec9196be8d44927cc358afb618cf6"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (const size_t v1, const size_t v2) const</td></tr>
 <tr class="separator:a0b0ec9196be8d44927cc358afb618cf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2914,7 +2917,7 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 </div><div class="memdoc">
 <p>The label of bit <code>bit</code> of a face's input set, as the output names it; the application's, for the reference checks to name a label by. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a5372e95775f315beaf6f81446e4789d3">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ac667e3da5edd1e9bc4c4a5d719502fdf">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a5372e95775f315beaf6f81446e4789d3">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ac667e3da5edd1e9bc4c4a5d719502fdf">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acf1014359a03c9528484689a6920ffec">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -3437,6 +3440,27 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 </table>
 </div><div class="memdoc">
 <p>The cached tags with <code>v_old</code> renamed to <code>v_new</code>, the edges a collapse welds into one merged (<a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes.html#ab09e3967ec893d138c1a7f314dff44c3" title="Add the tags of o: what one edge carries where a collapse welds two into it.">FeatureEdgeAttributes::merge()</a>), the collapsed edge itself dropped: what the edges around the survivor carry after the collapse. </p>
+
+</div>
+</div>
+<a id="aad92aaf1035e1879d5e069463c399f84" name="aad92aaf1035e1879d5e069463c399f84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad92aaf1035e1879d5e069463c399f84">&#9670;&#160;</a></span>require_box_boundary()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetOptimizerMesh::require_box_boundary </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>who</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Throws unless the mesh fills its box: every boundary face (no tet across) a face of the box (m_is_bbox_fs &gt;= 0) and untracked, naming the count of each kind found otherwise &ndash; the tracked boundary faces, and the untracked ones in no plane of the box. <code>who</code> names the run in the message. Call after init, with the tracked faces and the box flags set. </p>
+<p>The box rule holds the wall (a box vertex is not smoothed, collapses only along its planes, a split stays on the planes both ends share), and only the box's faces. An untracked boundary face in no plane would be held by nothing, and the domain would move with it. A tracked boundary face is a filtered mesh's boundary: no insertion puts one there (the background box is padded past the input), and the operations hold a tracked face from the tet across it &ndash; <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a7194dcfd836776b479f3fc9076073d96" title="User specified preparations and desideratas for an edge collapse before changing the connectivity.">collapse_edge_before()</a> checks a merged tracked face in the tet beyond it, and a boundary face has none. Measured on a filtered unit cube held by its envelopes: corner collapses left faces 25 eps off it. tetwild's tagged route and the topological offset take a mesh so; a filtered mesh goes back in as its surfaces. Until 2026-11 tetwild kept its own copy (TetWildMesh::init_from_tagged_mesh()). The 2D twin is <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ab0d0fc9ce3697c0a1b8407c7a4e45693" title="Throws unless the mesh fills its box: every boundary edge (no triangle across) an edge of the box (m_...">TriOptimizerMesh::require_box_boundary()</a>. simwild takes a mesh so too since 2026-11-05; until then it checked only the tracked kind and took an object's tet mesh, its boundary in no plane of a box and held by nothing. </p>
 
 </div>
 </div>

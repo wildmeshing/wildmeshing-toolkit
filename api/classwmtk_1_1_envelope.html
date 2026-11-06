@@ -112,6 +112,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a42d1e1a8f2ab19816ca52ad1f3862720" id="r_a42d1e1a8f2ab19816ca52ad1f3862720"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a42d1e1a8f2ab19816ca52ad1f3862720">set_max_threads</a> (int n)</td></tr>
 <tr class="memdesc:a42d1e1a8f2ab19816ca52ad1f3862720"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many threads one triangle query may use. 1, the default: every sample is checked on the calling thread.  <br /></td></tr>
 <tr class="separator:a42d1e1a8f2ab19816ca52ad1f3862720"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf6f999aae51bfdc64c7711a4b138734" id="r_adf6f999aae51bfdc64c7711a4b138734"><td class="memItemLeft" align="right" valign="top"><a id="adf6f999aae51bfdc64c7711a4b138734" name="adf6f999aae51bfdc64c7711a4b138734"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>empty</b> () const</td></tr>
+<tr class="memdesc:adf6f999aae51bfdc64c7711a4b138734"><td class="mdescLeft">&#160;</td><td class="mdescRight">No primitives: init() was given none &ndash; simwild with nothing tracked, a tagged mesh of one region and no envelope given. Such an envelope contains nothing, so every <a class="el" href="classwmtk_1_1_envelope.html#ac104bbd60fa4355f303e543ba624e22b">is_outside()</a> answers true, and it has no nearest point, which the nearest-point and distance queries refuse. Until 2026-11-05 init() crashed on it (SimpleBVH::BVH::init). <br /></td></tr>
+<tr class="separator:adf6f999aae51bfdc64c7711a4b138734"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4fbbb54adbbbd6c23d6e772da36cdd37" id="r_a4fbbb54adbbbd6c23d6e772da36cdd37"><td class="memItemLeft" align="right" valign="top"><a id="a4fbbb54adbbbd6c23d6e772da36cdd37" name="a4fbbb54adbbbd6c23d6e772da36cdd37"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::vector&lt; Eigen::Vector3d &gt; &amp;m_ver, const std::vector&lt; Eigen::Vector3i &gt; &amp;m_faces, const double)</td></tr>
 <tr class="separator:a4fbbb54adbbbd6c23d6e772da36cdd37"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -196,7 +200,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>use_exact</b> = true<
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:ac429072a6850fbd03155871fbeaee302" id="r_ac429072a6850fbd03155871fbeaee302"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#ac429072a6850fbd03155871fbeaee302">require_primitive_query</a> (int dim, const char *query) const</td></tr>
+<tr class="memitem:a02889c98c85082d0c92b6329f3cc1255" id="r_a02889c98c85082d0c92b6329f3cc1255"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a02889c98c85082d0c92b6329f3cc1255">require_primitives</a> (const char *query) const</td></tr>
+<tr class="separator:a02889c98c85082d0c92b6329f3cc1255"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac429072a6850fbd03155871fbeaee302" id="r_ac429072a6850fbd03155871fbeaee302"><td class="memItemLeft" align="right" valign="top"><a id="ac429072a6850fbd03155871fbeaee302" name="ac429072a6850fbd03155871fbeaee302"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>require_primitive_query</b> (int dim, const char *query) const</td></tr>
 <tr class="separator:ac429072a6850fbd03155871fbeaee302"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4e28c875018de5b233d458d318366e4" id="r_ab4e28c875018de5b233d458d318366e4"><td class="memItemLeft" align="right" valign="top"><a id="ab4e28c875018de5b233d458d318366e4" name="ab4e28c875018de5b233d458d318366e4"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>require_primitive</b> (int64_t id, int dim, const char *query) const</td></tr>
@@ -799,8 +806,8 @@ feature change". </p>
 
 </div>
 </div>
-<a id="ac429072a6850fbd03155871fbeaee302" name="ac429072a6850fbd03155871fbeaee302"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac429072a6850fbd03155871fbeaee302">&#9670;&#160;</a></span>require_primitive_query()</h2>
+<a id="a02889c98c85082d0c92b6329f3cc1255" name="a02889c98c85082d0c92b6329f3cc1255"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02889c98c85082d0c92b6329f3cc1255">&#9670;&#160;</a></span>require_primitives()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -809,21 +816,11 @@ feature change". </p>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void wmtk::Envelope::require_primitive_query </td>
+          <td class="memname">void wmtk::Envelope::require_primitives </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>dim</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>query</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
+          <td class="paramname"><em>query</em></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
   </td>

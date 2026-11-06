@@ -734,6 +734,9 @@ std::vector&lt; std::pair&lt; size_t, int &gt; &gt;&#160;</td><td class="memItem
 <tr class="memitem:af6ac8da9c40fe2bd3d3ef6ee91670dfb inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af6ac8da9c40fe2bd3d3ef6ee91670dfb">init_input_envelopes</a> (const std::vector&lt; Vector2d &gt; &amp;V, const std::vector&lt; Vector2i &gt; &amp;E, const std::vector&lt; InputSet &gt; &amp;E_sets, double eps, bool exact)</td></tr>
 <tr class="memdesc:af6ac8da9c40fe2bd3d3ef6ee91670dfb inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member i around the rows of the curves (V, E) whose E_sets entry has bit i, else &ndash; for an input no row carries, or for every input when E_sets is not one entry per row of E &ndash; around the tracked segments carrying bit i. Null for an input neither has.  <br /></td></tr>
 <tr class="separator:af6ac8da9c40fe2bd3d3ef6ee91670dfb inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0d0fc9ce3697c0a1b8407c7a4e45693 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ab0d0fc9ce3697c0a1b8407c7a4e45693"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ab0d0fc9ce3697c0a1b8407c7a4e45693">require_box_boundary</a> (const std::string &amp;who) const</td></tr>
+<tr class="memdesc:ab0d0fc9ce3697c0a1b8407c7a4e45693 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Throws unless the mesh fills its box: every boundary edge (no triangle across) an edge of the box (m_is_bbox_fs &gt;= 0) and untracked, naming the count of each kind found otherwise. <code>who</code> names the run in the message. Call after init, with the tracked edges and the box flags set.  <br /></td></tr>
+<tr class="separator:ab0d0fc9ce3697c0a1b8407c7a4e45693 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82979ee23eb94c2488543dcfd827ac4a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a82979ee23eb94c2488543dcfd827ac4a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a82979ee23eb94c2488543dcfd827ac4a">TriOptimizerMesh</a> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params)</td></tr>
 <tr class="separator:a82979ee23eb94c2488543dcfd827ac4a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3f31270434c883de9661b1983f0e916 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_af3f31270434c883de9661b1983f0e916"><td class="memItemLeft" align="right" valign="top">
@@ -3219,8 +3222,8 @@ template&lt;typename Visit &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">V</td><td>V by 2 vertex matrix </td></tr>
-    <tr><td class="paramname">F</td><td>#F by 3 face matrix </td></tr>
-    <tr><td class="paramname">F_tags</td><td>#F by physical groups tag matrix </td></tr>
+    <tr><td class="paramname">F</td><td>F by 3 face matrix </td></tr>
+    <tr><td class="paramname">F_tags</td><td>F by physical groups tag matrix </td></tr>
     <tr><td class="paramname">V_env</td><td>V_env by 2 EnvelopeSurface vertex matrix </td></tr>
     <tr><td class="paramname">F_env</td><td>F_env by 2 EnvelopeSurface edge matrix </td></tr>
   </table>
@@ -3285,7 +3288,7 @@ template&lt;typename Visit &gt; </div>
 </div><div class="memdoc">
 
 <p>Classify every region boundary, build the per-tag containment envelopes, and tag the domain wall &ndash; once, from the input mesh, before offset construction runs. </p>
-<p>The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af73224d67c178a003138208607dd62be" title="Classify every region boundary and tag the domain wall – once, from the input mesh,...">TopoOffsetTetMesh::init_surfaces_and_boundaries()</a>, called from the same place for the same reason: the band's tags replace a face's own rather than joining them, so an envelope built afterwards would be a tube around a curve truncated at the band.</p>
+<p>The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af73224d67c178a003138208607dd62be" title="Classify every region boundary and flag the domain wall – once, from the input mesh,...">TopoOffsetTetMesh::init_surfaces_and_boundaries()</a>, called from the same place for the same reason: the band's tags replace a face's own rather than joining them, so an envelope built afterwards would be a tube around a curve truncated at the band.</p>
 <p>A region boundary is an edge whose two incident faces carry different tag sets; it enters the bucket of every tag on exactly one side (the symmetric difference). An edge with only one incident face is the domain wall and enters its single face's tags' buckets, which is how ambient's envelope comes to hold the box. Requires the face tags to be set, which <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a80af96dc1d64f478c466915ed596edc3" title="initialize TriMesh from vertex, face, tag data">init_from_image()</a> does just above the call. </p>
 
 </div>
