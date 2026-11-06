@@ -102,6 +102,19 @@ public:
      * optimizer cannot move at all".
      */
     bool disabled = false;
+    /**
+     * @brief No primitives: init() was given none -- simwild with nothing tracked, a tagged mesh
+     * of one region and no envelope given. Such an envelope contains nothing, so every
+     * is_outside() answers true, and it has no nearest point, which the nearest-point and
+     * distance queries refuse. Until 2026-11-05 init() crashed on it (SimpleBVH::BVH::init).
+     */
+    bool empty() const
+    {
+        return m_kind == Kind::Triangles3d ? m_f3.empty()
+               : m_kind == Kind::Edges3d   ? m_e3.empty()
+               : m_kind == Kind::Edges2d   ? m_e2.empty()
+                                           : false;
+    }
     virtual void init(
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector3i>& m_faces,
@@ -280,6 +293,7 @@ public:
 private:
     /// The checks of the per-primitive queries: an initialized envelope of dimension `dim`, and
     /// for the second an id in range.
+    void require_primitives(const char* query) const;
     void require_primitive_query(int dim, const char* query) const;
     void require_primitive(int64_t id, int dim, const char* query) const;
     void require_exact_kind(Kind expected, const char* query) const;

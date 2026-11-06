@@ -116,14 +116,15 @@ TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging
 }
 
 /**
- * The topological_offset cases: nine 2D, three apiece on three simple shapes, and nine 3D on the
- * cube.
+ * The topological_offset cases: seven 3D on the cube. Nine 2D cases, three apiece on three simple
+ * shapes, are parked in the manifest's _commented_out key (data2 e085b8f) while the offset refuses
+ * 2D input (f8a38aee26, 2026-10-12): they threw, so the group failed on every run.
  *
  * Hidden ([.]) so it is never registered with ctest and cannot run in CI. Run it explicitly:
  *
  *     ./wmtk_integration_tests "[offset]"
  *
- * What the manifest (data2 integration_tests/topological_offset_models.json) lists: for each of
+ * The parked 2D cases (data2 integration_tests/topological_offset_models.json): for each of
  * circle_2d / square_2d / triangle_2d, a "large" case at target_distance_rel 5e-2, a "medium" one
  * at 1e-2 and a "small" one at 1e-3, every one otherwise at the defaults -- euclidean field,
  * tag_0 selected -- with front_conv_criterion "residual_error". That criterion measures the
@@ -146,24 +147,22 @@ TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging
  *
  * The 3D cases (data2 8cc07f7) are the same idea one dimension up, on models/cube_3d.msh: the
  * 3x3 grid the offset work has been swept on, target_distance_rel 5e-2 / 1e-2 / 1e-3 against
- * front_conv_rel 0.5 / 0.1 / 0.025, named cube_{large,medium,small}_offset_conv{0.5,0.1,0.025}.
- * Each is defaults apart from those two keys plus envelope_size_rel 1e-4 and min_sizing_scalar
- * 1e-3, so they exercise the shipping defaults over that grid -- NOT the sweep's parameters,
- * which also set front_alignment_energy false and both EXPERIMENTAL_ keys true.
+ * front_conv_rel 0.5 / 0.1 / 0.025, named cube_{large,medium,small}_offset_conv{0.5,0.1,0.025},
+ * less the two tightest: cube_small_offset_conv0.1 (13 min, 1.0M tets) and
+ * cube_small_offset_conv0.025 (32 min, 2.85M tets) were 91% of the group's 49 min (macOS arm64,
+ * 2026-11-05), and were deleted in data2 e085b8f. Each is defaults apart from those two keys plus
+ * envelope_size_rel 1e-4 and min_sizing_scalar 1e-3, so they exercise the shipping defaults over
+ * that grid -- NOT the sweep's parameters, which also set front_alignment_energy false and both
+ * EXPERIMENTAL_ keys true.
  *
- * All nine set throw_on_nonconvergence, as every integration test does and as all nine 2D cases
- * do, so a case that fails to place the front fails the test.
+ * All seven set throw_on_nonconvergence, as every integration test does and as all nine 2D cases
+ * do, so a case that fails to place the front fails the test. All seven converge, in 4.3 min
+ * together (2026-11-05).
  *
- * TWO THINGS TO KNOW BEFORE TRUSTING THEM. None has been run -- every 2D case was run before it
- * was added, these were not. And target_distance_rel 1e-3 with front_conv_rel 0.025 is a KNOWN
- * STALL on this model: the placement criterion freezes with the sag criterion solved and
- * refinement exhausted, so that case burns max_rounds and is EXPECTED TO FAIL until the stall is
- * fixed. That is the key doing its job, not a reason to drop it from that case.
- *
- * Time the group before registering any of it near CI. That is what retired the previous 3D
- * cases: topological_offset_3d.json and its two siblings (on double_sphere and 127891) sat in
- * the manifest's _commented_out key, unrun, after becoming expensive enough for one of them to
- * exceed the suite's 7200 s budget on the A/B loop. They and models/127891.msh were deleted in
+ * Time a case before registering it here, and keep the group to minutes. That is what retired the
+ * previous 3D cases: topological_offset_3d.json and its two siblings (on double_sphere and 127891)
+ * sat in the manifest's _commented_out key, unrun, after becoming expensive enough for one of them
+ * to exceed the suite's 7200 s budget on the A/B loop. They and models/127891.msh were deleted in
  * data2 596be38; double_sphere.msh stays, three simwild 3D cases read it.
  *
  * An empty "integration_tests" list is a pass, not a failure.

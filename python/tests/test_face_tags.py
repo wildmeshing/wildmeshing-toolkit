@@ -487,12 +487,21 @@ def test_reader_refuses_more_face_tags_than_input_set_bits():
         wm.simwild({"operation": "remeshing", "input": ["m"], "max_iterations": 0}, {"m": m})
 
 
-def test_offset_refuses_a_face_tag_with_optimize_offset():
-    """The optimization does not hold face tags yet, so it refuses rather than losing them."""
-    with pytest.raises(Exception, match="needs optimize_offset false"):
-        wm.topological_offset({"input": "m", "offset_selection": "yellow",
-                               "offset_output_tags": ["shell"], "target_distance": 0.1,
-                               "optimize_offset": True}, {"m": tagged_grid()})
+def test_offset_optimizes_around_a_tagged_sheet():
+    """With optimize_offset, the loop holds the face tags as it holds every tracked surface: the
+    run converges, and yellow (the input complex), blue and red's surface each stay within the
+    offset's envelope (envelope_size_rel's default) of where they were. Refused until 2026-11-05;
+    before the march carried the edge tags, yellow's open boundary moved up to 0.087 here."""
+    r = wm.topological_offset({"input": "m", "offset_selection": "yellow", "offset_output_tags": ["shell"],
+                               "target_distance": 0.1, "throw_on_nonconvergence": True},
+                              {"m": tagged_grid()})[0]["mesh"]
+    eps = 1e-3 * np.linalg.norm([2, 2, 2])
+    V = r["V"]
+    assert len(rows(r, "tetrahedron", "shell")), "no shell"
+    for label, rect in [("yellow", SHEET), ("blue", BLUE)]:
+        assert_hausdorff(V, rows(r, "triangle", label), lambda P: to_rect(P, rect), rect_samples(rect), eps)
+    T = rows(r, "tetrahedron", "red")
+    assert_hausdorff(V, boundary(T), lambda P: to_box_surface(P, *RED), box_samples(*RED), eps)
 
 
 def test_manifold_extraction_refuses_tagged_faces():

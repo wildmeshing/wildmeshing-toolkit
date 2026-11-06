@@ -223,17 +223,26 @@ bool TopoOffsetTriMesh::marching_split_edge_after(const Tuple& t)
     m_vertex_extra[v_id] = cache.new_v_extra;
     set_vertex_position(v_id, cache.new_v_pos);
 
-    // split edge attributes
+    // split edge attributes: (v1, v2) -> (v1, v) + (v, v2), each half carrying the parent's
+    // direction, its orientation converted as the engine's split converts it
+    // (TriOptimizerMesh::split_edge_after()): it is stored against the ascending order of an
+    // edge's own ids, so restored as is a half was right only when v sorted into the replaced
+    // end's place. As in 3D (marching_split_edge_after()).
+    const int o =
+        cache.split_eattr.tags.orientation_along(std::array<size_t, 2>{{cache.v1_id, cache.v2_id}});
+    EdgeSnapshot2d half1 = cache.split_eattr, half2 = cache.split_eattr;
+    half1.tags.set_orientation_along(std::array<size_t, 2>{{cache.v1_id, v_id}}, o);
+    half2.tags.set_orientation_along(std::array<size_t, 2>{{v_id, cache.v2_id}}, o);
     for (const auto& pair : cache.opp_v_fattr) {
         size_t opp_v_id = pair.first;
 
         Tuple ftup_1 = tuple_from_simplex(simplex::Face(cache.v1_id, v_id, opp_v_id));
         size_t f1_id = ftup_1.fid(*this);
-        restore_edge(tuple_from_edge(cache.v1_id, v_id, f1_id).eid(*this), cache.split_eattr);
+        restore_edge(tuple_from_edge(cache.v1_id, v_id, f1_id).eid(*this), half1);
 
         Tuple ftup_2 = tuple_from_simplex(simplex::Face(cache.v2_id, v_id, opp_v_id));
         size_t f2_id = ftup_2.fid(*this);
-        restore_edge(tuple_from_edge(cache.v2_id, v_id, f2_id).eid(*this), cache.split_eattr);
+        restore_edge(tuple_from_edge(cache.v2_id, v_id, f2_id).eid(*this), half2);
 
         break;
     }
