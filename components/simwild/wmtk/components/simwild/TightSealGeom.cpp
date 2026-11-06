@@ -428,6 +428,24 @@ size_t SimWildMeshTri::tight_seal_split_face_tracked(
     return v_new;
 }
 
+size_t SimWildMeshTri::tight_seal_cells_on_boundary(const std::vector<size_t>& fids) const
+{
+    std::vector<char> on_boundary(vert_capacity(), 0);
+    for (const Tuple& t : get_faces()) {
+        for (int j = 0; j < 3; ++j) {
+            const Tuple e = tuple_from_edge(t.fid(*this), j);
+            if (!e.switch_face(*this)) {
+                on_boundary[e.vid(*this)] = 1;
+                on_boundary[e.switch_vertex(*this).vid(*this)] = 1;
+            }
+        }
+    }
+    return std::count_if(fids.begin(), fids.end(), [&](const size_t fid) {
+        const auto vs = oriented_tri_vids(fid);
+        return std::any_of(vs.begin(), vs.end(), [&](const size_t v) { return on_boundary[v]; });
+    });
+}
+
 void SimWildMeshTri::tight_seal_topology_fill(
     const std::vector<ConnectedComponent>& components,
     const std::vector<std::vector<size_t>>& components_regions,
@@ -773,6 +791,25 @@ size_t SimWildMesh::tight_seal_split_face_tracked(
         }
     }
     return v_new;
+}
+
+size_t SimWildMesh::tight_seal_cells_on_boundary(const std::vector<size_t>& tids) const
+{
+    std::vector<char> on_boundary(vert_capacity(), 0);
+    for (const Tuple& t : get_tets()) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(t.tid(*this), j);
+            if (!f.switch_tetrahedron(*this)) {
+                for (const size_t v : get_face_vids(f)) {
+                    on_boundary[v] = 1;
+                }
+            }
+        }
+    }
+    return std::count_if(tids.begin(), tids.end(), [&](const size_t tid) {
+        const auto vs = oriented_tet_vids(tid);
+        return std::any_of(vs.begin(), vs.end(), [&](const size_t v) { return on_boundary[v]; });
+    });
 }
 
 void SimWildMesh::tight_seal_topology_fill(

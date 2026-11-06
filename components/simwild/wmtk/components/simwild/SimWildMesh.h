@@ -360,6 +360,8 @@ private:
         SimpleBVH::BVH& bvh,
         size_t& n_traced,
         size_t& n_failed) const;
+    /// How many of `tids` have a vertex on the mesh's boundary, a face with no tet beyond it.
+    size_t tight_seal_cells_on_boundary(const std::vector<size_t>& tids) const;
     /// tight_seal_geom's "fill" mode: labels the cells of `components` and grows each region over
     /// them, keeping its topology (tight_seal::topology_fill). Throws if a tet is left.
     void tight_seal_topology_fill(
@@ -591,6 +593,8 @@ public:
      *     (to within trace_rel_tol x distance/2; not split if the inside end is already that
      *     close or closer), and J is the processed tets whose vertices are all inside.
      *  3. The connected components of J (through faces) are kept by the rule of `selection`.
+     * The operation throws if a tet of J has a vertex on the mesh's boundary, in any component,
+     * filled or not. Regions more than distance/2 from the boundary keep J off it.
      * Each component (connected through faces, so two touching at an edge or a vertex are filled
      * separately) is then filled with the Voronoi diagram of its regions, by enumeration
      * (MultiVoronoiEnumeration.hpp): every vertex gets the set of regions nearest to it; each

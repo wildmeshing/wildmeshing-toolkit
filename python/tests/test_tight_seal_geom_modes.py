@@ -2,7 +2,8 @@
 
 "voronoi" (the default) refuses four listed tags and four as min_regions, and leaves a part
 bordering four regions alone. "fill" takes all of those, splits no cell of the part, labels it
-with the nearest tags, keeps each tag's topology, and throws if a cell cannot join.
+with the nearest tags, keeps each tag's topology, and throws if a cell cannot join. Both throw if
+the join region touches the mesh boundary, even at a vertex.
 
 Needs the wildmeshing bindings; no external data."""
 import numpy as np
@@ -11,17 +12,19 @@ import pytest
 import wildmeshing as wm
 
 
-def _grid_mesh(n, tag_of):
-    """[0, n]^2 in unit squares, each cut in two. tag_of(x, y), at a square's centre, gives the
-    name of the square's tag, or None for ambient."""
-    ids = np.arange((n + 1) ** 2).reshape(n + 1, n + 1)
-    V = np.array([(i, j, 0) for j in range(n + 1) for i in range(n + 1)], dtype=float)
-    tris, names = [], []
-    for j in range(n):
-        for i in range(n):
+def _grid_mesh(nx, ny, tag_of):
+    """[0, nx] x [0, ny] in unit squares, each cut in two along a diagonal that alternates from
+    square to square. tag_of(x, y), at a face's centroid, gives the name of its tag, or None for
+    ambient."""
+    ids = np.arange((nx + 1) * (ny + 1)).reshape(ny + 1, nx + 1)
+    V = np.array([(i, j, 0) for j in range(ny + 1) for i in range(nx + 1)], dtype=float)
+    tris = []
+    for j in range(ny):
+        for i in range(nx):
             a, b, c, d = ids[j, i], ids[j, i + 1], ids[j + 1, i + 1], ids[j + 1, i]
-            tris += [(a, b, c), (a, c, d)]
-            names += [tag_of(i + 0.5, j + 0.5)] * 2
+            tris += [(a, b, c), (a, c, d)] if (i + j) % 2 == 0 else [(a, b, d), (b, c, d)]
+    tris = np.array(tris, dtype=int)
+    names = [tag_of(*c) for c in V[tris][:, :, :2].mean(axis=1).tolist()]
     labels = ["ambient"] + sorted({t for t in names if t})
     values = np.zeros((len(tris), len(labels)), dtype=np.uint8)
     for f, t in enumerate(names):
@@ -29,32 +32,51 @@ def _grid_mesh(n, tag_of):
     return {
         "V": V,
         "cells": {"triangle": {
-            "connectivity": np.array(tris, dtype=int),
+            "connectivity": tris,
             "attributes": {"tags": {"values": values, "labels": labels}},
         }},
     }
 
 
 def _four_bodies():
-    """Four bodies in the corners of [0, 16]^2 around a cross-shaped gap two cells wide."""
+    """Four bars in a pinwheel around a square hole, two cells of ambient around them."""
     def tag_of(x, y):
-        if 7 < x < 9 or 7 < y < 9:
+        if 3 < x < 5 and 3 < y < 5 or not (2 < x < 6 and 2 < y < 6):
             return None
-        return ("a" if y < 8 else "c") if x < 8 else ("b" if y < 8 else "d")
-    return _grid_mesh(16, tag_of)
+        if y > 5 and x < 5:
+            return "a"
+        if x > 5 and y > 3:
+            return "b"
+        return "c" if y < 3 else "d"
+    return _grid_mesh(8, 8, tag_of)
 
 
 def _slot():
-    """Tag a in two bars, with a slot between them that tag b closes at the right."""
+    """Two bars of tag a over a slot that tag b closes at both ends, ambient around them."""
     def tag_of(x, y):
-        if x > 12:
-            return "b"
-        return None if 4 < y < 6 else "a"
-    return _grid_mesh(16, tag_of)
+        if not (2 < x < 8 and 2 < y < 6):
+            return None
+        if 3 < y < 5:
+            return None if 3 < x < 7 else "b"
+        return "a"
+    return _grid_mesh(10, 8, tag_of)
+
+
+def _gap_to_the_boundary():
+    """Two bodies with a gap between them that runs across the whole mesh."""
+    return _grid_mesh(8, 8, lambda x, y: "a" if x < 3 else ("b" if x > 5 else None))
+
+
+def _diamond_on_the_boundary():
+    """Tags a and b fill the mesh but for a diamond, which reaches its boundary at one vertex."""
+    return _grid_mesh(
+        16,
+        8,
+        lambda x, y: None if abs(x - 8) + abs(y - 2) < 2 else ("a" if x < 8 else "b"))
 
 
 def _seal(mesh, mode=None, **options):
-    opts = {"operation": "tight_seal_geom", "input": ["m"], "tight_seal_geom_distance": 4.0,
+    opts = {"operation": "tight_seal_geom", "input": ["m"], "tight_seal_geom_distance": 2.5,
             "tight_seal_geom_sanity": True}
     if mode:
         opts["tight_seal_geom_EXPERIMENTAL_mode"] = mode
@@ -129,10 +151,9 @@ def test_unknown_mode_refused():
 def test_fill_has_no_limit_of_three_regions(options):
     mesh = _four_bodies()
     out = _seal(mesh, mode="fill", **options)
-    # the whole cross goes, each quarter of it to its nearest body
-    assert sum(_area(out, tag) for tag in TAGS) == pytest.approx(16 ** 2)
+    # the whole hole goes, each side of it to the bar beside it
     for tag in TAGS:
-        assert _area(out, tag) == pytest.approx(16 ** 2 / 4)
+        assert _area(out, tag) == pytest.approx(_area(mesh, tag) + 1)
         assert _components_and_euler(_cells(out, tag)) == (1, 1)
 
 
@@ -155,6 +176,23 @@ def test_fill_throws_when_a_cell_would_change_the_topology():
     # filling the slot would join the two bars of tag a
     with pytest.raises(Exception, match="the fill left"):
         _seal(_slot(), mode="fill", tags=["a", "b"])
+
+
+@pytest.mark.parametrize("mode", ["voronoi", "fill"])
+@pytest.mark.parametrize("mesh", [_gap_to_the_boundary, _diamond_on_the_boundary])
+def test_join_region_on_the_mesh_boundary_throws(mesh, mode):
+    with pytest.raises(Exception, match="touches the mesh boundary"):
+        _seal(mesh(), mode=mode, selection="detected", distance=4.0)
+
+
+def test_part_left_alone_on_the_mesh_boundary_throws_too():
+    # a body one cell from the wall: the strip between borders one region and would not be filled
+    def tag_of(x, y):
+        if 2 < y < 6:
+            return "a" if 1 < x < 4 else ("b" if 8 < x < 14 else None)
+        return None
+    with pytest.raises(Exception, match=r"touches the mesh boundary.* 0 of them in parts to fill"):
+        _seal(_grid_mesh(16, 8, tag_of), selection="detected")
 
 
 def test_voronoi_is_still_the_default():

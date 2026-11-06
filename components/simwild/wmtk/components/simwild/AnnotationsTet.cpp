@@ -1022,6 +1022,23 @@ void SimWildMesh::tight_seal_geom(
                      : std::string("all tags"),
             tags,
             n_too_many);
+
+        // J may not touch the mesh's boundary at all, not even at a vertex, in any component: the
+        // topology of a region that reaches the boundary is much harder to reason about.
+        const size_t n_on_boundary = tight_seal_cells_on_boundary(J_tets);
+        if (n_on_boundary > 0) {
+            size_t n_to_fill = 0;
+            for (const ConnectedComponent& comp : components_seal) {
+                n_to_fill += tight_seal_cells_on_boundary(comp.cells);
+            }
+            log_and_throw_error(
+                "tight_seal_geom: the join region touches the mesh boundary: {} of its {} tets "
+                "have a vertex on it, {} of them in parts to fill. Keep the regions more than "
+                "distance / 2 from the boundary",
+                n_on_boundary,
+                J_tets.size(),
+                n_to_fill);
+        }
     }
 
     // Each component is filled by tight_seal_topology_fill in "fill" mode (no split), otherwise by
