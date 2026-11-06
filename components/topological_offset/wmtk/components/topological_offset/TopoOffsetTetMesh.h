@@ -25,6 +25,7 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/dynamic_parallel_for.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 #include "ExactBandIntegral.hpp"
 #include "OffsetPotential.hpp"
 #include "Parameters.h"
@@ -108,6 +109,11 @@ class EdgeAttributes
 {
 public:
     int label = 0; // label: 0=default, 1=input, 2=offset
+    /// The input's edge tags this edge tiles, bit j for TopoOffsetTetMesh::m_feature_edge_names[j]:
+    /// set at load (init_from_image()), carried by the construction's own splits, which copy
+    /// this whole, and cleared by hold_curves_and_points(), from which on the engine's feature
+    /// tags carry the curves through every operation (TopoOffsetTetMesh::edge_has_tag()).
+    InputSet feature_inputs = 0;
 };
 
 
@@ -191,6 +197,18 @@ public:
     std::map<int64_t, int> m_face_tag_bit;
     /// Whether `tag` names an open sheet: the envelope surface group or a face tag.
     bool is_sheet_tag(int64_t tag) const { return tag == m_sheet_tag || m_face_tag_bit.count(tag); }
+    /// Edge tags, the feature curves tetwild and simwild write (a tet mesh's edge block): bit j is
+    /// the base's m_feature_edge_names[j], each name a tag id offset_selection can name alone
+    /// (m_edge_tag_bit: id -> bit), past the face tags. Their curves as read, the geometry their
+    /// tubes are built around (hold_curves_and_points()) without a reference, are
+    /// m_input_features.
+    std::map<int64_t, int> m_edge_tag_bit;
+    utils::FeatureInputs m_input_features;
+    /// Whether edge `eid` tiles edge tag `bit`: by EdgeAttributes::feature_inputs until
+    /// hold_curves_and_points() tags the curves, by the engine's feature tags after.
+    bool edge_has_tag(size_t eid, int bit) const;
+    /// Set by hold_curves_and_points(): the engine's feature tags hold the edge tags.
+    bool m_edge_tags_held = false;
     /// The surface group as loaded, kept because the classification below is redone on demand.
     MatrixXd m_sheet_V;
     MatrixXi m_sheet_F;
@@ -405,8 +423,24 @@ public:
     /// held no curve and no point; the surface envelope alone held them. With a reference, around
     /// its curves, as simwild's: the driver sets them (the base's set_input_curves()), an order-2
     /// edge in their tubes is held there, a curve end in reach of one of their ends anchored
-    /// there, and an edge on none held around itself (TetOptimizerMesh::InputCurves).
+    /// there, and an edge on none held around itself (TetOptimizerMesh::InputCurves). An input
+    /// complex of segments and points (a curve offset's) is held as tetwild holds its feature
+    /// curves: its edges tagged with the feature kind and held in the tube around the input's
+    /// segments, of half-width feature_envelope_ratio x envelope_size, its curve ends, junctions
+    /// and points anchored at that radius (construct_offset() checks the tags survive the march).
     void hold_curves_and_points();
+    /// The feature curves as the operations left them (hold_curves_and_points()): the
+    /// feature-tagged edges, those of them outside their tube, and, for a complex of segments, its
+    /// edges and those of them without the feature tag.
+    struct InputCurveCounts
+    {
+        size_t tagged = 0, outside = 0, complex = 0, complex_untagged = 0;
+    };
+    InputCurveCounts input_curve_counts() const;
+    /// After the loop: what hold_curves_and_points() set up, measured rather than assumed --
+    /// input_curve_counts(), and anchors with no vertex in their ball. A warning iff there is a
+    /// defect.
+    void audit_input_curves() const;
     /// A TetWild pass's envelopes: the offset surface's envelope (build_offset_envelope()), all it
     /// adds. Every other tracked surface it holds is held in the loop's envelopes, where
     /// build_envelopes() captured it. Until 2026-11-04 it also swapped m_envelope for one that
@@ -2338,13 +2372,20 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
-    /// A held vertex is pulled by the base's rule, toward the labels of its faces (the member it
-    /// is farthest from), as in tetwild and simwild. In a TetWild pass a front vertex no other
+    /// A vertex on a feature-tagged edge (the input complex's own curves) is pulled toward
+    /// their tube, and a held vertex by the base's rule, toward the labels of its faces (the
+    /// member it is farthest from), as in tetwild and simwild. In a TetWild pass a front vertex no other
     /// envelope holds is pulled to the front's own envelope, m_offset_envelope. Any other vertex,
     /// and the front in the loop, is pulled by nothing. Until 2026-11 a held vertex was pulled to
     /// the one union envelope, so onto another label's surface as readily as its own.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
     {
+        // A vertex on the input complex's own curves (hold_curves_and_points()) is pulled toward
+        // their tube by the base's rule (tagged_edge_pull_envelope(), the feature kind first),
+        // whether or not a held face reaches it: a curve offset's input has no face at all.
+        if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::feature)) {
+            return tagged_edge_pull_envelope(vid);
+        }
         if (vertex_is_held(vid)) return TetOptimizerMesh::smoothing_energy_envelope(vid);
         if (m_tetwild_pass && m_vertex_extra[vid].m_is_on_offset) return m_offset_envelope;
         return nullptr;
@@ -3058,7 +3099,10 @@ public:
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
         const std::vector<std::string>& face_tag_names = {},
-        const MatrixSi& F_orientation = MatrixSi());
+        const MatrixSi& F_orientation = MatrixSi(),
+        const std::vector<std::string>& edge_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
 
     /// check that the ambient tag does not overlap with any other tags
     bool ambient_assert();
@@ -3163,13 +3207,14 @@ public:
      * selection's own tag the complex and the band carry one tag set, and the complex's boundary
      * stays tracked and held.
      *
-     * Only clears. The front, whose two sides can carry one tag set (offset_output_tags naming a
-     * tag already beyond it, or none), is tracked again from the cell labels by
-     * label_offset_boundary(). The envelopes built before the march (build_envelopes()) still hold
-     * the untracked faces' geometry, which does no harm: an envelope refuses only what leaves it,
-     * so the extra triangles only let a held face of those labels within eps of where the covered
-     * part was. The 2D twin has no such step: its final pass rebuilds its tubes from the tags
-     * (build_boundary_envelopes()).
+     * Only clears: the faces' flags and labels, and m_is_on_region of a corner left on no tracked
+     * face (a vertex of a curve complex the band surrounds). The front, whose two sides can carry
+     * one tag set (offset_output_tags naming a tag already beyond it, or none), is tracked again
+     * from the cell labels by label_offset_boundary(). The envelopes built before the march
+     * (build_envelopes()) still hold the untracked faces' geometry, which does no harm: an envelope
+     * refuses only what leaves it, so the extra triangles only let a held face of those labels
+     * within eps of where the covered part was. The 2D twin has no such step: its final pass
+     * rebuilds its tubes from the tags (build_boundary_envelopes()).
      */
     void untrack_covered_boundaries();
 

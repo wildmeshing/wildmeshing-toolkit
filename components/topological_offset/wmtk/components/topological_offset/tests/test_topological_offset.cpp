@@ -5614,6 +5614,359 @@ TEST_CASE("memory-output-with-offset-front", "[offset][3d][io]")
     CHECK(size_t(out.at("mesh").V.rows()) == mesh->get_vertices().size());
 }
 
+namespace {
+/// [-n h / 2, n h / 2]^3 in n^3 cubes of edge h, six tets each around the cube's main diagonal:
+/// the vertices, vertex (i, j, k) row i + (n + 1) (j + (n + 1) k); the tets, positively
+/// oriented; per tet its cube (i, j, k).
+struct CubeGrid
+{
+    Eigen::MatrixXd V;
+    std::vector<std::array<int, 4>> T;
+    std::vector<std::array<int, 3>> cube;
+};
+CubeGrid cube_grid(const int n, const double h)
+{
+    const auto vid = [&](int i, int j, int k) { return i + (n + 1) * (j + (n + 1) * k); };
+    CubeGrid g;
+    g.V.resize((n + 1) * (n + 1) * (n + 1), 3);
+    for (int k = 0; k <= n; ++k) {
+        for (int j = 0; j <= n; ++j) {
+            for (int i = 0; i <= n; ++i) {
+                g.V.row(vid(i, j, k)) << (i - 0.5 * n) * h, (j - 0.5 * n) * h, (k - 0.5 * n) * h;
+            }
+        }
+    }
+    const std::array<std::array<int, 3>, 6> perms = {
+        {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
+    for (int k = 0; k < n; ++k) {
+        for (int j = 0; j < n; ++j) {
+            for (int i = 0; i < n; ++i) {
+                for (const auto& pm : perms) {
+                    std::array<int, 3> c = {{i, j, k}};
+                    std::array<int, 4> t;
+                    t[0] = vid(c[0], c[1], c[2]);
+                    for (int s = 0; s < 3; ++s) {
+                        ++c[size_t(pm[size_t(s)])];
+                        t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
+                    }
+                    g.T.push_back(positive(g.V, t));
+                    g.cube.push_back({{i, j, k}});
+                }
+            }
+        }
+    }
+    return g;
+}
+
+/// A rod where three blocks meet: [-1, 1]^3 in 4^3 cubes of edge 0.5 (cube_grid()), the cubes
+/// in -0.5 <= z <= 0.5 tagged by quadrant around the z axis -- tag_0 x > 0 and y > 0, tag_1
+/// x < 0, tag_2 x > 0 and y < 0 -- the rest ambient. "tag_0 & tag_1 & tag_2" is the segment
+/// x = y = 0, -0.5 <= z <= 0.5, two grid edges with both ends inside the domain: the rod of the
+/// 2026-10-16 rod fixture (rod.msh), on the grid.
+MeshData rod_grid()
+{
+    const int n = 4;
+    const double h = 0.5;
+    const CubeGrid g = cube_grid(n, h);
+    Eigen::MatrixXi Tm(int(g.T.size()), 4);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(g.T.size(), 4);
+    for (size_t i = 0; i < g.T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = g.T[i][size_t(j)];
+        const double cx = (g.cube[i][0] + 0.5) * h - 1, cy = (g.cube[i][1] + 0.5) * h - 1,
+                     cz = (g.cube[i][2] + 0.5) * h - 1;
+        const int b = std::abs(cz) > 0.5 ? 3 : cx < 0 ? 1 : cy > 0 ? 0 : 2; // 3: ambient
+        tags(i, b) = 1;
+    }
+    MeshData m = io::geometry_data(g.V, Tm, CellType::Tetrahedron);
+    m.cells.at(CellType::Tetrahedron).attributes["tags"] = {
+        tags,
+        {"tag_0", "tag_1", "tag_2", "ambient"}};
+    return m;
+}
+} // namespace
+
+TEST_CASE("curve-offset-rod-held", "[offset][3d]" + release_only)
+{
+    // A curve offset (an input complex of segments): the band integral over segments, and the rod
+    // held as tetwild holds its feature curves (hold_curves_and_points()). The run must not throw
+    // -- construct_offset() checks that the rod's edges keep their feature tags through the march
+    // -- and the input complex in the result must lie in the tube around the input segment, its
+    // two ends still there. MEASURED (the rod fixture, exact rule, 7 turns): before the hold, the
+    // rod's vertices 0.43 target_distance off the input, none of its edges tagged; before the
+    // march carried the tags (EdgeSplittingTet), neither of its 2 edges tagged after it; with
+    // both, every vertex on the input to 3e-16.
+    // One turn: every operation -- split, collapse, swap, smoothing -- runs over the tags.
+    const MeshData input = rod_grid();
+    for (const std::string rule : {"exact", "exact_swept", "corner_bound"}) {
+        INFO("EXPERIMENTAL_band_volume_rule " << rule);
+        nlohmann::json j = {
+            {"input", "m"},
+            {"offset_selection", "tag_0 & tag_1 & tag_2"},
+            {"target_distance", 0.2},
+            {"EXPERIMENTAL_band_volume_rule", rule},
+            {"max_rounds", 1},
+            {"num_threads", 1},
+            {"throw_on_nonconvergence", false}};
+        // the default clean-up reads the exact integral, which "corner_bound" does not build
+        if (rule == "corner_bound") j["EXPERIMENTAL_label_cleanup"] = "off";
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(j, {{"m", input}}));
+        const MeshData& out = res.first.at("mesh");
+        const auto labels = out.vertex_attributes.at("labels").doubles();
+        // the tube's half-width: feature_envelope_ratio 1 x envelope_size, envelope_size_rel
+        // 1e-3 of the box's diagonal
+        const double eps = 1e-3 * 2. * std::sqrt(3.);
+        size_t n_rod = 0;
+        bool end_lo = false, end_hi = false;
+        for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+            if (labels(v, 0) != 1.) continue;
+            ++n_rod;
+            const Vector3d p = out.V.row(v).transpose();
+            const double z = std::clamp(p[2], -0.5, 0.5);
+            CHECK((p - Vector3d(0, 0, z)).norm() <= eps);
+            end_lo = end_lo || (p - Vector3d(0, 0, -0.5)).norm() <= eps;
+            end_hi = end_hi || (p - Vector3d(0, 0, 0.5)).norm() <= eps;
+        }
+        CHECK(n_rod >= 3);
+        CHECK(end_lo);
+        CHECK(end_hi);
+    }
+}
+
+TEST_CASE("curve-offset-refuses-offset-in", "[offset][3d]")
+{
+    // A curve encloses no volume (init_input_complex_bvh()).
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "tag_0 & tag_1 & tag_2"},
+        {"target_distance", 0.2},
+        {"offset_in", true},
+        {"offset_out", false},
+        {"num_threads", 1}};
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(j, {{"m", rod_grid()}}),
+        Catch::Matchers::ContainsSubstring("enclose no volume"));
+}
+
+namespace {
+/// rod_grid() with every tet ambient and two edge tags, the edge block tetwild and simwild write:
+/// "curve", the segment x = y = 0, -0.5 <= z <= 0.5 (rod_grid()'s rod, without the blocks), and
+/// "other", the segment x = y = 0.5, -0.5 <= z <= 0.5, 0.71 from it and out of the band.
+MeshData rod_edge_grid()
+{
+    MeshData m = rod_grid();
+    auto& tets = m.cells.at(CellType::Tetrahedron);
+    const DataMatrix<uint8_t> ambient = DataMatrix<uint8_t>::Ones(tets.connectivity.rows(), 1);
+    tets.attributes["tags"] = {ambient, {"ambient"}};
+    const auto vid = [](int i, int j, int k) { return i + 5 * (j + 5 * k); }; // rod_grid()'s
+    auto& edges = m.cells[CellType::Edge];
+    edges.connectivity.resize(4, 2);
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(4, 2);
+    for (int k = 1; k <= 2; ++k) {
+        edges.connectivity(k - 1, 0) = vid(2, 2, k);
+        edges.connectivity(k - 1, 1) = vid(2, 2, k + 1);
+        member(k - 1, 0) = 1;
+        edges.connectivity(k + 1, 0) = vid(3, 3, k);
+        edges.connectivity(k + 1, 1) = vid(3, 3, k + 1);
+        member(k + 1, 1) = 1;
+    }
+    edges.attributes["tags"] = {member, {"curve", "other"}};
+    return m;
+}
+} // namespace
+
+TEST_CASE("curve-offset-edge-tag", "[offset][3d]" + release_only)
+{
+    // An edge tag selected (label_input_complex()): the curve offset of a tetwild or simwild
+    // feature curve, with no region around it. Every edge tag is held, selected or not
+    // (hold_curves_and_points()), and written back as the result's edge block: each tag's edges
+    // in the tube around its segment, the selected curve's ends kept.
+    const MeshData input = rod_edge_grid();
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "curve"},
+        {"target_distance", 0.2},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    const double eps = 1e-3 * 2. * std::sqrt(3.); // feature_envelope_ratio 1 x envelope_size
+    REQUIRE(out.cells.count(CellType::Edge) == 1);
+    const auto& block = out.cells.at(CellType::Edge);
+    const auto& tags = block.attributes.at("tags");
+    REQUIRE(tags.labels == std::vector<std::string>{"curve", "other"});
+    const auto member = tags.integers();
+    const auto dist = [](const Vector3d& p, const double x, const double y) {
+        const double z = std::clamp(p[2], -0.5, 0.5);
+        return (p - Vector3d(x, y, z)).norm();
+    };
+    double zlo[2] = {1., 1.}, zhi[2] = {-1., -1.};
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (int t = 0; t < 2; ++t) {
+            if (member(r, t) == 0) continue;
+            for (int c = 0; c < 2; ++c) {
+                const Vector3d p = out.V.row(block.connectivity(r, c)).transpose();
+                CHECK(dist(p, t == 0 ? 0. : 0.5, t == 0 ? 0. : 0.5) <= eps);
+                zlo[t] = std::min(zlo[t], p[2]);
+                zhi[t] = std::max(zhi[t], p[2]);
+            }
+        }
+    }
+    for (int t = 0; t < 2; ++t) { // each curve whole, end to end
+        INFO("edge tag " << tags.labels[size_t(t)]);
+        CHECK(std::abs(zlo[t] + 0.5) <= eps);
+        CHECK(std::abs(zhi[t] - 0.5) <= eps);
+    }
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    size_t n_rod = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (labels(v, 0) != 1.) continue;
+        ++n_rod;
+        CHECK(dist(out.V.row(v).transpose(), 0., 0.) <= eps);
+    }
+    CHECK(n_rod >= 3);
+}
+
+TEST_CASE("curve-offset-edge-tag-alone", "[offset][3d]")
+{
+    // An edge tag is a curve, offset one tag at a time.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "curve | other"},
+        {"target_distance", 0.2},
+        {"num_threads", 1}};
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(j, {{"m", rod_edge_grid()}}),
+        Catch::Matchers::ContainsSubstring("is selected alone"));
+}
+
+namespace {
+/// A curve as grid points (i, j, k) of curve_grid(), consecutive ones on one grid line.
+using GridPolyline = std::vector<std::array<int, 3>>;
+/// [-1, 1]^3 in 8^3 cubes of edge 0.25 (cube_grid()), every tet ambient, and an edge block: each
+/// (name, polyline), every grid edge between consecutive points tagged with the name (a name given
+/// twice tags both polylines), as tetwild and simwild write their feature curves.
+MeshData curve_grid(const std::vector<std::pair<std::string, GridPolyline>>& curves)
+{
+    const int n = 8;
+    const CubeGrid g = cube_grid(n, 0.25);
+    const auto vid = [&](int i, int j, int k) { return i + (n + 1) * (j + (n + 1) * k); };
+    Eigen::MatrixXi Tm(int(g.T.size()), 4);
+    for (size_t i = 0; i < g.T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = g.T[i][size_t(j)];
+    }
+    MeshData m = io::geometry_data(g.V, Tm, CellType::Tetrahedron);
+    const DataMatrix<uint8_t> ambient = DataMatrix<uint8_t>::Ones(g.T.size(), 1);
+    m.cells.at(CellType::Tetrahedron).attributes["tags"] = {ambient, {"ambient"}};
+    std::vector<std::string> names;
+    std::vector<std::pair<std::array<int, 2>, size_t>> edges; // grid edge, its name's column
+    for (const auto& [name, poly] : curves) {
+        auto it = std::find(names.begin(), names.end(), name);
+        if (it == names.end()) it = names.insert(names.end(), name);
+        const size_t col = size_t(it - names.begin());
+        for (size_t p = 0; p + 1 < poly.size(); ++p) {
+            std::array<int, 3> c = poly[p];
+            while (c != poly[p + 1]) {
+                const int a = vid(c[0], c[1], c[2]);
+                for (int d = 0; d < 3; ++d)
+                    c[size_t(d)] += (poly[p + 1][size_t(d)] > c[size_t(d)]) -
+                                    (poly[p + 1][size_t(d)] < c[size_t(d)]);
+                edges.push_back({{{a, vid(c[0], c[1], c[2])}}, col});
+            }
+        }
+    }
+    auto& block = m.cells[CellType::Edge];
+    block.connectivity.resize(Eigen::Index(edges.size()), 2);
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(edges.size(), names.size());
+    for (size_t r = 0; r < edges.size(); ++r) {
+        block.connectivity(Eigen::Index(r), 0) = edges[r].first[0];
+        block.connectivity(Eigen::Index(r), 1) = edges[r].first[1];
+        member(r, edges[r].second) = 1;
+    }
+    block.attributes["tags"] = {member, names};
+    return m;
+}
+
+/// The distance from p to the polyline of grid points (curve_grid()'s coordinates).
+double grid_polyline_distance(const Vector3d& p, const GridPolyline& poly)
+{
+    const auto x = [](const std::array<int, 3>& c) {
+        return Vector3d(c[0] * 0.25 - 1, c[1] * 0.25 - 1, c[2] * 0.25 - 1);
+    };
+    double d = std::numeric_limits<double>::infinity();
+    for (size_t k = 0; k + 1 < poly.size(); ++k) {
+        const Vector3d a = x(poly[k]), b = x(poly[k + 1]);
+        const double t = std::clamp((p - a).dot(b - a) / (b - a).squaredNorm(), 0., 1.);
+        d = std::min(d, (p - a - t * (b - a)).norm());
+    }
+    return d;
+}
+} // namespace
+
+TEST_CASE("curve-offset-converges", "[offset][3d][.]")
+{
+    // Hidden, for the runs before a merge: a curve offset run to convergence (the settle exit,
+    // throw_on_nonconvergence) on three curves no region surrounds -- a corner, three arms
+    // meeting out of a plane, and a line with a second edge tag held inside its band -- and every
+    // edge tag in its tube in the result. MEASURED (2026-11-05, exact rule, 1 thread, Release,
+    // laptop): resolved at turns 6, 5 and 11, 22 s, 21 s and 47 s.
+    struct Case
+    {
+        std::string name;
+        std::vector<std::pair<std::string, GridPolyline>> curves;
+        double delta;
+    };
+    const std::vector<Case> cases = {
+        {"corner", {{"curve", {{{2, 4, 4}}, {{4, 4, 4}}, {{4, 6, 4}}}}}, 0.2},
+        {"junction",
+         {{"curve", {{{4, 4, 4}}, {{6, 4, 4}}}},
+          {"curve", {{{4, 4, 4}}, {{4, 6, 4}}}},
+          {"curve", {{{4, 4, 4}}, {{4, 4, 6}}}}},
+         0.2},
+        // the second line 0.25 from the first, inside its band at 0.3
+        {"held-inside-the-band",
+         {{"curve", {{{4, 4, 2}}, {{4, 4, 6}}}}, {"other", {{{5, 4, 2}}, {{5, 4, 6}}}}},
+         0.3},
+    };
+    for (const Case& c : cases) {
+        INFO(c.name);
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offset_selection", "curve"},
+            {"target_distance", c.delta},
+            {"max_rounds", 15},
+            {"num_threads", 1},
+            {"throw_on_nonconvergence", true}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", curve_grid(c.curves)}}));
+        const MeshData& out = res.first.at("mesh");
+        const auto& block = out.cells.at(CellType::Edge);
+        const auto& tags = block.attributes.at("tags");
+        const auto member = tags.integers();
+        const double eps = 1e-3 * 2. * std::sqrt(3.);
+        for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+            for (size_t t = 0; t < tags.labels.size(); ++t) {
+                if (member(r, Eigen::Index(t)) == 0) continue;
+                for (int e = 0; e < 2; ++e) {
+                    const Vector3d p = out.V.row(block.connectivity(r, e)).transpose();
+                    double d = std::numeric_limits<double>::infinity();
+                    for (const auto& [name, poly] : c.curves) {
+                        if (name == tags.labels[t])
+                            d = std::min(d, grid_polyline_distance(p, poly));
+                    }
+                    CHECK(d <= eps);
+                }
+            }
+        }
+    }
+}
+
 TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
 {
     // Hidden until the junction is fixed: neither variant converges reliably without it, so it

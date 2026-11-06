@@ -137,13 +137,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!component_io.memory() && envelope && outputs.count("envelope"))
             io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
     };
-    // Feature curves and input points (a tet mesh's tagged edges and a tagged mesh's point block,
-    // as tetwild and simwild write them) would be dropped silently: the offset holds the held
-    // surfaces' own curves only, and no points. Refused until carried.
-    if (!input_data.features.empty() || !input_data.input_point_vids.empty()) {
-        log_and_throw_error(
-            "topological_offset does not take feature curves or points (an edge block in a tet "
-            "mesh, a point block) yet");
+    // Input points (a tagged mesh's point block, as tetwild, triwild and simwild write it) would be
+    // dropped silently: the offset holds no point. Refused until carried. Feature curves (a tet
+    // mesh's edge block) are held (TopoOffsetTetMesh::hold_curves_and_points()).
+    if (!input_data.features.points.empty() || !input_data.input_point_vids.empty()) {
+        log_and_throw_error("topological_offset does not take input points (a point block) yet");
     }
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (params.debug_output) {
@@ -424,7 +422,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.F_tagged,
             input_data.F_tags,
             input_data.face_tag_names,
-            input_data.F_orientation);
+            input_data.F_orientation,
+            input_data.feature_edge_names,
+            &input_data.features,
+            &input_data.features_placed);
         // The domain is the mesh's box, its wall held by the box rule as in tetwild and simwild
         // and never tracked: a mesh that does not fill its box -- a filtered tetwild output, its
         // boundary its tracked faces -- is refused (require_box_boundary()).
@@ -433,8 +434,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // (simwild.cpp's run_3D): the envelopes around its triangles of this mesh's labels
         // (io::held_rows(); TopoOffsetTetMesh::build_envelopes() builds them and runs the two
         // start checks), the order-2 tubes and the curve-end anchors around its curves, never
-        // around the mesh received. No feature tube: the offset takes no feature curve (refused
-        // above), so the reference's (init_reference_feature_tubes()) would hold nothing.
+        // around the mesh received, and the feature tubes around its feature curves
+        // (init_reference_feature_tubes(), from hold_curves_and_points()).
         if (reference) {
             const io::HeldRows held = io::held_rows(
                 input_data.V_envelope,
@@ -582,6 +583,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
             mesh.optimize_offset(output_filename);
+            mesh.audit_input_curves();
 
             // The manifoldness check above ran on the offset as constructed. Optimization then
             // re-triangulates it -- splits, collapses and four kinds of swap all touch the
