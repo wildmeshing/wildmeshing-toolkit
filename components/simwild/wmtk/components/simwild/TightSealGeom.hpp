@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ConnectedComponent.hpp"
+
 #include <SimpleBVH/BVH.hpp>
 #include <wmtk/Types.hpp>
 
@@ -76,6 +78,45 @@ inline constexpr std::array<std::array<int, 2>, 6> tet_edges = {
 /// Appends the convex polygon `poly`, fanned from its first corner, to `triangles` (consecutive
 /// triples of points).
 void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& triangles);
+
+/// What topology_fill needs of the mesh, by cell id (faces in 2D, tets in 3D).
+struct TopologyFillMesh
+{
+    /// The nearest of `regions`, indices into the tags, to the cell's centroid.
+    std::function<size_t(size_t cell, const std::vector<size_t>& regions)> nearest_region;
+    /// Whether adding the cell to the region keeps the region's topology
+    /// (wmtk/utils/ConsistentTopology.hpp).
+    std::function<bool(size_t cell, const std::function<bool(size_t)>& in_region)>
+        consistent_topology;
+    /// The cells sharing an edge (2D) or a face (3D) with the cell.
+    std::function<std::vector<size_t>(size_t cell)> neighbours;
+    std::function<CellTag&(size_t cell)> tags;
+};
+
+/**
+ * @brief The fill of tight_seal_geom's EXPERIMENTAL "fill" mode; no cell is split.
+ *
+ * Each cell of a component gets the nearest of the regions the component borders. Then, for each
+ * of those regions, a breadth-first search grows the region's tag over the cells that got it: a
+ * cell joins if it passes the topology test against the tag's cells, and a cell refused is asked
+ * again when a neighbour joins (only that can change the answer: more of the region around the
+ * cell without another shared facet leaves it refused). Until labelled, a cell of a component
+ * counts as in no region, whatever tags it came with; labelling it replaces its tags of the
+ * component's regions, as the Voronoi fill does.
+ *
+ * components_regions[c] holds the regions of components[c], as indices into `tags`. filled[cell]
+ * is set for each cell labelled. after_component is called after each component.
+ *
+ * Throws, after trying every component, if a cell fails the test with its nearest region; the
+ * warnings before it name the components and tags.
+ */
+void topology_fill(
+    const std::vector<ConnectedComponent>& components,
+    const std::vector<std::vector<size_t>>& components_regions,
+    const std::vector<int64_t>& tags,
+    const TopologyFillMesh& mesh,
+    std::vector<char>& filled,
+    const std::function<void()>& after_component);
 
 /// Sets `fn` to nullptr when it goes out of scope: m_voronoi_split_fn must not outlive the
 /// operation that set it.

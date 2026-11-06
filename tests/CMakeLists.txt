@@ -36,6 +36,7 @@ set(TEST_SOURCES
     test_tracked_curves.cpp
     test_ball_refinement.cpp
     test_simplicial_embedding.cpp
+    test_consistent_topology.cpp
 )
 
 add_executable(wmtk_tests ${TEST_SOURCES})

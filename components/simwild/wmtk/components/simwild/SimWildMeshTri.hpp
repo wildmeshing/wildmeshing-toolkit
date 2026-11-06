@@ -291,6 +291,12 @@ public:
      * them is filled with those it borders. A part bordering four or more is left alone, with a
      * warning: the fill handles at most three regions.
      *
+     * `mode` is EXPERIMENTAL. "voronoi": as above. "fill": the limit of three regions goes: any
+     * number of `tags` from two up, any `min_regions` from two up, and a component may border any
+     * number of regions. Its faces are not split: each takes the nearest of the regions the
+     * component borders, and each region grows over those that took it, as long as that keeps
+     * its topology (tight_seal::topology_fill). A face left out throws.
+     *
      * `sanity`: afterwards, throw if a face is inverted, a filled face carries other than one
      * region's tag, or a part of the filled faces borders fewer than two regions (a concave
      * feature of one body, filled).
@@ -301,7 +307,8 @@ public:
         double trace_rel_tol = 0.01,
         const std::string& selection = "explicit",
         int64_t min_regions = 2,
-        bool sanity = false);
+        bool sanity = false,
+        const std::string& mode = "voronoi");
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 
@@ -372,6 +379,14 @@ private:
         SimpleBVH::BVH& bvh,
         size_t& n_traced,
         size_t& n_failed) const;
+    /// tight_seal_geom's "fill" mode: labels the cells of `components` and grows each region over
+    /// them, keeping its topology (tight_seal::topology_fill). Throws if a face is left.
+    void tight_seal_topology_fill(
+        const std::vector<ConnectedComponent>& components,
+        const std::vector<std::vector<size_t>>& components_regions,
+        const std::vector<int64_t>& tags,
+        const std::vector<SimpleBVH::BVH>& region_bvhs,
+        std::vector<char>& filled);
     /// tight_seal_geom's `sanity` checks, on the output: throws if a face is inverted, a filled
     /// face (filled[id] set) carries other than exactly one of `tags`, or a part of the filled
     /// faces, connected through edges, borders fewer than two of them.

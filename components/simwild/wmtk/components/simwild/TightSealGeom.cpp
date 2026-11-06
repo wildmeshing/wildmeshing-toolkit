@@ -3,11 +3,14 @@
 #include "SimWildMesh.h"
 #include "SimWildMeshTri.hpp"
 
+#include <wmtk/utils/ConsistentTopology.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <algorithm>
 #include <cmath>
+#include <deque>
 #include <limits>
+#include <map>
 #include <tuple>
 #include <unordered_set>
 
@@ -150,6 +153,102 @@ size_t nearest_region(
     const std::vector<size_t>& regions)
 {
     return nearest_region_impl(bvhs, p, regions);
+}
+
+void topology_fill(
+    const std::vector<ConnectedComponent>& components,
+    const std::vector<std::vector<size_t>>& components_regions,
+    const std::vector<int64_t>& tags,
+    const TopologyFillMesh& mesh,
+    std::vector<char>& filled,
+    const std::function<void()>& after_component)
+{
+    std::vector<char> pending(filled.size(), 0); // a cell of a component, not labelled yet
+    size_t n_cells = 0;
+    for (const ConnectedComponent& comp : components) {
+        n_cells += comp.cells.size();
+        for (const size_t cell : comp.cells) {
+            pending[cell] = 1;
+        }
+    }
+
+    size_t n_left = 0;
+    size_t n_left_reached = 0; // of them, sharing a facet with their tag's cells
+    for (size_t c = 0; c < components.size(); ++c) {
+        const std::vector<size_t>& regions = components_regions[c];
+        std::map<size_t, std::vector<size_t>> cells_of_region;
+        for (const size_t cell : components[c].cells) {
+            cells_of_region[mesh.nearest_region(cell, regions)].push_back(cell);
+        }
+
+        for (const auto& [i, cells] : cells_of_region) {
+            const int64_t tag = tags[i];
+            const std::function<bool(size_t)> in_region = [&](const size_t cell) {
+                return !pending[cell] && mesh.tags(cell).count(tag) > 0;
+            };
+            std::unordered_set<size_t> left(cells.begin(), cells.end());
+            std::unordered_set<size_t> queued(cells.begin(), cells.end());
+            std::deque<size_t> queue(cells.begin(), cells.end());
+            while (!queue.empty()) {
+                const size_t cell = queue.front();
+                queue.pop_front();
+                queued.erase(cell);
+                if (!mesh.consistent_topology(cell, in_region)) {
+                    continue;
+                }
+                CellTag& cell_tags = mesh.tags(cell);
+                for (const size_t j : regions) {
+                    cell_tags.erase(tags[j]);
+                }
+                cell_tags.insert(tag);
+                pending[cell] = 0;
+                filled[cell] = 1;
+                left.erase(cell);
+                for (const size_t nbr : mesh.neighbours(cell)) {
+                    if (left.count(nbr) > 0 && queued.insert(nbr).second) {
+                        queue.push_back(nbr);
+                    }
+                }
+            }
+
+            if (!left.empty()) {
+                size_t n_reached = 0;
+                for (const size_t cell : left) {
+                    const std::vector<size_t> nbrs = mesh.neighbours(cell);
+                    n_reached += std::any_of(nbrs.begin(), nbrs.end(), in_region);
+                }
+                logger().warn(
+                    "tight_seal_geom: fill of component {} ({} cells): {} of the {} cells nearest "
+                    "tag {} are left: {} share a facet with it, {} do not",
+                    c,
+                    components[c].cells.size(),
+                    left.size(),
+                    cells.size(),
+                    tag,
+                    n_reached,
+                    left.size() - n_reached);
+                n_left += left.size();
+                n_left_reached += n_reached;
+            }
+        }
+        after_component();
+    }
+
+    if (n_left > 0) {
+        log_and_throw_error(
+            "tight_seal_geom: the fill left {} of the {} cells of the join regions unlabelled: "
+            "each fails the topology test with its nearest tag. {} share a facet with that tag, "
+            "{} do not",
+            n_left,
+            n_cells,
+            n_left_reached,
+            n_left - n_left_reached);
+    }
+    logger().info(
+        "tight_seal_geom: fill of {} components: {} cells labelled, each with its nearest tag, "
+        "every tag's topology kept",
+        components.size(),
+        n_cells);
 }
 
 void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& triangles)
@@ -327,6 +426,41 @@ size_t SimWildMeshTri::tight_seal_split_face_tracked(
         }
     }
     return v_new;
+}
+
+void SimWildMeshTri::tight_seal_topology_fill(
+    const std::vector<ConnectedComponent>& components,
+    const std::vector<std::vector<size_t>>& components_regions,
+    const std::vector<int64_t>& tags,
+    const std::vector<SimpleBVH::BVH>& region_bvhs,
+    std::vector<char>& filled)
+{
+    tight_seal::TopologyFillMesh view;
+    view.nearest_region = [&](const size_t fid, const std::vector<size_t>& regions) {
+        Vector2d centroid = Vector2d::Zero();
+        for (const size_t v : oriented_tri_vids(fid)) {
+            centroid += m_vertex_attribute[v].m_posf / 3.;
+        }
+        return tight_seal::nearest_region(region_bvhs, centroid, regions);
+    };
+    view.consistent_topology = [&](const size_t fid, const std::function<bool(size_t)>& in_region) {
+        return wmtk::utils::tri_consistent_topology(*this, fid, in_region);
+    };
+    view.neighbours = [&](const size_t fid) {
+        std::vector<size_t> nbrs;
+        for (int j = 0; j < 3; ++j) {
+            if (const auto opp = tuple_from_edge(fid, j).switch_face(*this)) {
+                nbrs.push_back(opp->fid(*this));
+            }
+        }
+        return nbrs;
+    };
+    view.tags = [&](const size_t fid) -> CellTag& { return m_face_attribute[fid].tags; };
+    tight_seal::topology_fill(components, components_regions, tags, view, filled, [&]() {
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+    });
 }
 
 void SimWildMeshTri::tight_seal_geom_sanity(
@@ -639,6 +773,41 @@ size_t SimWildMesh::tight_seal_split_face_tracked(
         }
     }
     return v_new;
+}
+
+void SimWildMesh::tight_seal_topology_fill(
+    const std::vector<ConnectedComponent>& components,
+    const std::vector<std::vector<size_t>>& components_regions,
+    const std::vector<int64_t>& tags,
+    const std::vector<SimpleBVH::BVH>& region_bvhs,
+    std::vector<char>& filled)
+{
+    tight_seal::TopologyFillMesh view;
+    view.nearest_region = [&](const size_t tid, const std::vector<size_t>& regions) {
+        Vector3d centroid = Vector3d::Zero();
+        for (const size_t v : oriented_tet_vids(tid)) {
+            centroid += m_vertex_attribute[v].m_posf / 4.;
+        }
+        return tight_seal::nearest_region(region_bvhs, centroid, regions);
+    };
+    view.consistent_topology = [&](const size_t tid, const std::function<bool(size_t)>& in_region) {
+        return wmtk::utils::tet_consistent_topology(*this, tid, in_region);
+    };
+    view.neighbours = [&](const size_t tid) {
+        std::vector<size_t> nbrs;
+        for (int j = 0; j < 4; ++j) {
+            if (const auto opp = tuple_from_face(tid, j).switch_tetrahedron(*this)) {
+                nbrs.push_back(opp->tid(*this));
+            }
+        }
+        return nbrs;
+    };
+    view.tags = [&](const size_t tid) -> CellTag& { return m_tet_attribute[tid].tags; };
+    tight_seal::topology_fill(components, components_regions, tags, view, filled, [&]() {
+        if (m_params.debug_output) {
+            write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+    });
 }
 
 void SimWildMesh::tight_seal_geom_sanity(

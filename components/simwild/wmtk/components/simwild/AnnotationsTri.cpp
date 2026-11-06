@@ -585,17 +585,25 @@ void SimWildMeshTri::tight_seal_geom(
     const double trace_rel_tol,
     const std::string& selection,
     const int64_t min_regions,
-    const bool sanity)
+    const bool sanity,
+    const std::string& mode)
 {
+    const bool fill_mode = mode == "fill";
+    if (!fill_mode && mode != "voronoi") {
+        log_and_throw_error(
+            "tight_seal_geom: mode must be \"voronoi\" or \"fill\". Input was {}",
+            mode);
+    }
     const bool detected = selection == "detected";
     if (!detected && selection != "explicit") {
         log_and_throw_error(
             "tight_seal_geom: selection must be \"explicit\" or \"detected\". Input was {}",
             selection);
     }
-    if (detected && (min_regions < 2 || min_regions > 3)) {
+    if (detected && (min_regions < 2 || (!fill_mode && min_regions > 3))) {
         log_and_throw_error(
-            "tight_seal_geom: min_regions must be 2 or 3. Input was {}",
+            "tight_seal_geom: min_regions must be {}. Input was {}",
+            fill_mode ? "at least 2" : "2 or 3",
             min_regions);
     }
     if (!detected && min_regions != 2) {
@@ -622,8 +630,11 @@ void SimWildMeshTri::tight_seal_geom(
         tags.assign(found.begin(), found.end());
     } else {
         tags = listed_tags;
-        if (tags.size() < 2 || tags.size() > 3) {
-            log_and_throw_error("tight_seal_geom needs two or three tags. Input was {}", tags);
+        if (tags.size() < 2 || (!fill_mode && tags.size() > 3)) {
+            log_and_throw_error(
+                "tight_seal_geom needs {} tags. Input was {}",
+                fill_mode ? "two or more" : "two or three",
+                tags);
         }
         if (CellTag(tags.begin(), tags.end()).size() != tags.size()) {
             log_and_throw_error("tight_seal_geom needs distinct tags. Input was {}", tags);
@@ -954,9 +965,9 @@ void SimWildMeshTri::tight_seal_geom(
                     comp_regions.push_back(i);
                 }
             }
-            // The fill handles two or three regions per component: one bordering more
+            // The Voronoi fill handles two or three regions per component: one bordering more
             // (only detected tags can give that; at most three are listed) is left alone.
-            if (comp_regions.size() > 3) {
+            if (!fill_mode && comp_regions.size() > 3) {
                 std::vector<std::string> names;
                 for (const size_t i : comp_regions) {
                     const auto it = m_tag_id_to_name.find(tags[i]);
@@ -994,13 +1005,17 @@ void SimWildMeshTri::tight_seal_geom(
             "than three and are not filled",
             n_components,
             components_seal.size(),
-            detected ? fmt::format("{}{} of the detected tags", needed, needed < 3 ? " to 3" : "")
+            detected ? fmt::format(
+                           "{}{} of the detected tags",
+                           needed,
+                           fill_mode ? " or more" : (needed < 3 ? " to 3" : ""))
                      : std::string("all tags"),
             tags,
             n_too_many);
     }
 
-    // Voronoi fill of each component with its regions, by enumeration
+    // Each component is filled by tight_seal_topology_fill in "fill" mode (no split), otherwise by
+    // the Voronoi fill of each component with its regions, by enumeration
     // (MultiVoronoiEnumeration.hpp): each vertex gets the set of the component's regions nearest to
     // it (those it touches, for a vertex on a region), and each face is split as its corners' sets
     // require and labelled with the region they share. The components are connected through edges,
@@ -1096,52 +1111,61 @@ void SimWildMeshTri::tight_seal_geom(
         }
     };
 
-    multi_voronoi::FillStats2D fill_stats;
-    for (size_t c = 0; c < components_seal.size(); ++c) {
-        const std::vector<size_t>& regions = components_regions[c];
-        if (regions.size() > size_t(multi_voronoi::max_labels)) {
-            log_and_throw_error(
-                "tight_seal_geom: a component borders {} regions, more than the fill's {}",
-                regions.size(),
-                multi_voronoi::max_labels);
+    if (fill_mode) {
+        tight_seal_topology_fill(components_seal, components_regions, tags, region_bvhs, filled);
+    } else {
+        multi_voronoi::FillStats2D fill_stats;
+        for (size_t c = 0; c < components_seal.size(); ++c) {
+            const std::vector<size_t>& regions = components_regions[c];
+            if (regions.size() > size_t(multi_voronoi::max_labels)) {
+                log_and_throw_error(
+                    "tight_seal_geom: a component borders {} regions, more than the fill's {}",
+                    regions.size(),
+                    multi_voronoi::max_labels);
+            }
+            const multi_voronoi::LabelSet all =
+                regions.size() == size_t(multi_voronoi::max_labels)
+                    ? ~multi_voronoi::LabelSet(0)
+                    : multi_voronoi::label_bit(int(regions.size())) - 1;
+            std::unordered_set<size_t> comp_faces(
+                components_seal[c].cells.begin(),
+                components_seal[c].cells.end());
+            FillAdapter
+                adapter{*this, comp_faces, filled, regions, region_bvhs, tags, all, tie_eps};
+            fill_stats +=
+                multi_voronoi::fill_component_2d(adapter, components_seal[c].cells, all, tie_eps);
+            if (m_params.debug_output) {
+                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+            }
         }
-        const multi_voronoi::LabelSet all = regions.size() == size_t(multi_voronoi::max_labels)
-                                                ? ~multi_voronoi::LabelSet(0)
-                                                : multi_voronoi::label_bit(int(regions.size())) - 1;
-        std::unordered_set<size_t> comp_faces(
-            components_seal[c].cells.begin(),
-            components_seal[c].cells.end());
-        FillAdapter adapter{*this, comp_faces, filled, regions, region_bvhs, tags, all, tie_eps};
-        fill_stats +=
-            multi_voronoi::fill_component_2d(adapter, components_seal[c].cells, all, tie_eps);
-        if (m_params.debug_output) {
-            write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-        }
-    }
-    if (!components_seal.empty()) {
-        logger().info(
-            "tight_seal_geom: Voronoi fill of {} components: faces planned as {} chord, {} strip, "
-            "{} triple point, {} triple point at a corner, {} other; {} edges crossed twice; {} "
-            "face splits, {} edge splits; {} faces revisited",
-            components_seal.size(),
-            fill_stats.chord,
-            fill_stats.strip,
-            fill_stats.triple,
-            fill_stats.triple_at_corner,
-            fill_stats.other,
-            fill_stats.fake_edges,
-            fill_stats.face_splits,
-            fill_stats.edge_splits,
-            fill_stats.visits);
-        if (fill_stats.other > 0 || fill_stats.refused_splits > 0 ||
-            fill_stats.fallback_labels > 0 || fill_stats.gave_up) {
-            logger().warn(
-                "tight_seal_geom: Voronoi fill: {} faces of no known case, {} splits refused, {} "
-                "faces labelled by their centroid's nearest region{}",
+        if (!components_seal.empty()) {
+            logger().info(
+                "tight_seal_geom: Voronoi fill of {} components: faces planned as {} chord, {} "
+                "strip, "
+                "{} triple point, {} triple point at a corner, {} other; {} edges crossed twice; "
+                "{} "
+                "face splits, {} edge splits; {} faces revisited",
+                components_seal.size(),
+                fill_stats.chord,
+                fill_stats.strip,
+                fill_stats.triple,
+                fill_stats.triple_at_corner,
                 fill_stats.other,
-                fill_stats.refused_splits,
-                fill_stats.fallback_labels,
-                fill_stats.gave_up ? ", the visit cap was reached" : "");
+                fill_stats.fake_edges,
+                fill_stats.face_splits,
+                fill_stats.edge_splits,
+                fill_stats.visits);
+            if (fill_stats.other > 0 || fill_stats.refused_splits > 0 ||
+                fill_stats.fallback_labels > 0 || fill_stats.gave_up) {
+                logger().warn(
+                    "tight_seal_geom: Voronoi fill: {} faces of no known case, {} splits refused, "
+                    "{} "
+                    "faces labelled by their centroid's nearest region{}",
+                    fill_stats.other,
+                    fill_stats.refused_splits,
+                    fill_stats.fallback_labels,
+                    fill_stats.gave_up ? ", the visit cap was reached" : "");
+            }
         }
     }
 
