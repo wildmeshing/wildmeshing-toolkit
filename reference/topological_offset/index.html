@@ -2558,6 +2558,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#feature_envelope_ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        feature_envelope_ratio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#envelope_size" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4556,6 +4567,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#feature_envelope_ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        feature_envelope_ratio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#envelope_size" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5352,14 +5374,14 @@
 <p>Application name must be topological_offset.</p>
 <h3 id="input"><code>input</code><a class="headerlink" href="#input" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · required</p>
-<p>Input mesh, .msh: a tetrahedral mesh (a triangle mesh is refused for now: the 2D offset is being brought up to date). The two pipelines are the same algorithm one dimension apart and read every key below the same way. Its triangle block is face tags; an edge block, the feature curves tetwild and simwild write, is refused: the offset does not hold them yet. It must fill its bounding box, as tetwild's and simwild's meshes do (an output with filter "none"): its boundary faces are the domain wall, held by the box rule and never tracked, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary, its face tags -- is refused, and so is an untracked one in no plane (since 2026-11-05; until then every boundary face was tracked).</p>
+<p>Input mesh, .msh: a tetrahedral mesh (a triangle mesh is refused for now: the 2D offset is being brought up to date). The two pipelines are the same algorithm one dimension apart and read every key below the same way. Its triangle block is face tags; its edge block is edge tags, the feature curves tetwild and simwild write: each selectable alone by offset_selection (a curve offset), and every one held, selected or not, as tetwild holds its feature curves (see feature_envelope_ratio), and written back as the result's edge block. Input points (a point block, tetwild's and simwild's point inputs) are refused for now: the offset holds no point yet. It must fill its bounding box, as tetwild's and simwild's meshes do (an output with filter "none"): its boundary faces are the domain wall, held by the box rule and never tracked, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary, its face tags -- is refused, and so is an untracked one in no plane (since 2026-11-05; until then every boundary face was tracked).</p>
 <h2 id="key-options">Key options<a class="headerlink" href="#key-options" title="Permanent link">&para;</a></h2>
 <h3 id="output"><code>output</code><a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"out"</code></p>
 <p>Output file name (without extension).</p>
 <h3 id="offset_selection"><code>offset_selection</code><a class="headerlink" href="#offset_selection" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"!_"</code></p>
-<p>Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used.</p>
+<p>Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used. A face tag or an edge tag of the input is selected alone: the complex is then that sheet or that curve, the band growing on every side of it.</p>
 <h3 id="offset_output_tags"><code>offset_output_tags</code><a class="headerlink" href="#offset_output_tags" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>["newtag"]</code></p>
 <p>Tags to add to elements in the resulting offset region.</p>
@@ -5408,6 +5430,9 @@
 <h3 id="order2_envelope_ratio"><code>order2_envelope_ratio</code><a class="headerlink" href="#order2_envelope_ratio" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>1.0</code></p>
 <p>Thickness of the tube that holds the order-2 edges of the held surfaces -- their rims and the non-manifold edges where labelled regions meet -- as a fraction of envelope_size, and the radius of the anchors where those curves end or three or more meet. Tagged once before the march, so the front is never among them, and held in a tube around themselves, one per label, as tetwild's and simwild's key of the same name.</p>
+<h3 id="feature_envelope_ratio"><code>feature_envelope_ratio</code><a class="headerlink" href="#feature_envelope_ratio" title="Permanent link">&para;</a></h3>
+<p><strong>float</strong> · default <code>1.0</code></p>
+<p>Thickness of the tube that holds the input complex's own curves -- the segments of a curve offset's input (an offset_selection without triangles: a rod, a curve network) -- as a fraction of envelope_size, and the radius of the anchors where those curves end or three or more meet and of the complex's isolated points. Tagged once before the march, around the input's segments as they were extracted, and held as tetwild holds its feature curves: a tagged edge never leaves the tube (collapses and smoothing moves that would take it out are refused, swaps never remove it) and an anchor keeps a vertex within its radius. Where an anchor is on a curve of both kinds it takes the smaller of this radius and order2_envelope_ratio's. 1, as tetwild's and simwild's key of the same name.</p>
 <h3 id="envelope_size"><code>envelope_size</code><a class="headerlink" href="#envelope_size" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>-1.0</code></p>
 <p>Absolute half-width of the envelope that holds the held surfaces (see envelope_size_rel). If &lt;= 0 (the default -1): derived from envelope_size_rel.</p>
@@ -5590,7 +5615,7 @@
 <p>3D. Which AMIPS the energy (see offset_amips_weight) uses for the cells outside the offset band and the input complex during the loop; the band and the complex are always measured against the regular tet. true: the plastic medium -- each such cell's AMIPS term is vol A^3 with A its AMIPS against its rest shape, stamped when the loop starts, after every smoothing pass (between passes and after the last, not before the first), and, in the operations, on every cell a split or a swap creates or a collapse changes, before that operation's energy rule reads it; so every rule reads up-to-date rests, and a smoothing pass resists only what it moves itself. When an operation's cells before and after are all plastic (no band or input-complex cell), its energy is exactly the same before and after (A = 3 everywhere, one total volume), which floating point does not reproduce (TopoOffsetTetMesh::plastic_tie()). The equality is taken instead: such a swap is refused outright, and such a collapse is not gated by the energy, only by the length gate, the inversion test and the other refusals. Logged per group as [plastic tie]. The rules (tet_energy()), the swap candidates and the smoother all read the same term. false (the default): the regular tet for every cell. Off in the final pass either way. Envelopes, either way: every region boundary, the input complex's included, is held (envelope_size) in the loop as in a TetWild pass, where it was before the march; the domain wall by the box rule. Until 2026-11-04 the loop held only the input complex's boundary: every other region boundary was a tracked face nothing held, pushed aside by the band, and held, where the loop had left it, only in a TetWild pass. Replaces deform_others (removed 2026-10-13; 2D hard-wires its old default, false, until the 2D port).</p>
 <h3 id="envelope"><code>envelope</code><a class="headerlink" href="#envelope" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>
-<p>The envelope of a tagged mesh input: on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs["envelope"]) and write (&lt;output&gt;_envelope.msh), labelled by the tags it holds. A labelled envelope is a reference, the first component's input, held to as simwild holds one (3D): the envelopes (envelope_size; one per label with per_input_envelopes) are built around its triangles of this mesh's labels instead of the faces received, and the order-2 tubes and curve-end anchors around its curves. The run throws for a label the held faces carry that it lacks, and for a held face received outside its labels' envelopes (envelope_size below the eps the sender held it to). It is returned with the band's boundary added, labelled by the band's tags (offset_output_tags): the final offset surface, which is new and so its own reference, and, where the band wraps a region, its interface with that region, whose faces carry that region's label too (on the file route &lt;output&gt;_envelope.msh). So a chain keeps passing the first component's input on to the components after it. Until 2026-11-05 a reference was carried unchanged and not held to. An envelope without labels stands for the input's EnvelopeSurface group, which it cannot be combined with, and is returned as given.</p>
+<p>The envelope of a tagged mesh input: on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs["envelope"]) and write (&lt;output&gt;_envelope.msh), labelled by the tags it holds. A labelled envelope is a reference, the first component's input, held to as simwild holds one (3D): the envelopes (envelope_size; one per label with per_input_envelopes) are built around its triangles of this mesh's labels instead of the faces received, the order-2 tubes and curve-end anchors around its curves, and the feature tubes (feature_envelope_ratio) around its feature curves, those of the edge tags (a curve a tag expression selects is this mesh's, its tube around it as extracted). The run throws for a label the held faces or feature edges carry that it lacks, and for a held face or feature edge received outside its labels' envelopes or tubes (envelope_size below the eps the sender held it to). It is returned with the band's boundary added, labelled by the band's tags (offset_output_tags), its curves and points passed on as received: the final offset surface, which is new and so its own reference, and, where the band wraps a region, its interface with that region, whose faces carry that region's label too (on the file route &lt;output&gt;_envelope.msh). So a chain keeps passing the first component's input on to the components after it. Until 2026-11-05 a reference was carried unchanged and not held to. An envelope without labels stands for the input's EnvelopeSurface group, which it cannot be combined with, and is returned as given.</p>
 <h2 id="run-control">Run control<a class="headerlink" href="#run-control" title="Permanent link">&para;</a></h2>
 <h3 id="input_dir"><code>input_dir</code><a class="headerlink" href="#input_dir" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>

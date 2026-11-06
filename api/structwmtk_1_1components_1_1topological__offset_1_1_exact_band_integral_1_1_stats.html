@@ -99,6 +99,8 @@ int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>pieces</b> = 0</td
 <tr class="memitem:ac28bfe6dd84205ea6e265e5d4f35ff3e" id="r_ac28bfe6dd84205ea6e265e5d4f35ff3e"><td class="memItemLeft" align="right" valign="top"><a id="ac28bfe6dd84205ea6e265e5d4f35ff3e" name="ac28bfe6dd84205ea6e265e5d4f35ff3e"></a>
 int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>rule_a_pieces</b> = 0</td></tr>
 <tr class="separator:ac28bfe6dd84205ea6e265e5d4f35ff3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabea4728eb7d0f37da95cdaaa6789d68" id="r_aabea4728eb7d0f37da95cdaaa6789d68"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#aabea4728eb7d0f37da95cdaaa6789d68">edge_split_pieces</a> = 0</td></tr>
+<tr class="separator:aabea4728eb7d0f37da95cdaaa6789d68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a275b8b745c414139d057e9bcd72960d7" id="r_a275b8b745c414139d057e9bcd72960d7"><td class="memItemLeft" align="right" valign="top"><a id="a275b8b745c414139d057e9bcd72960d7" name="a275b8b745c414139d057e9bcd72960d7"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>vol</b> = 0.</td></tr>
 <tr class="memdesc:a275b8b745c414139d057e9bcd72960d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">cell volume <br /></td></tr>
@@ -111,6 +113,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>exact_vol</b> = 0.<
 double&#160;</td><td class="memItemRight" valign="bottom"><b>rule_a_vol</b> = 0.</td></tr>
 <tr class="memdesc:a4098ff5e8a458bb5b2f1a12459b98623"><td class="mdescLeft">&#160;</td><td class="mdescRight">volume of rule-(a) pieces (upper bound) <br /></td></tr>
 <tr class="separator:a4098ff5e8a458bb5b2f1a12459b98623"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf42358e722cc31add136f881711ac61" id="r_acf42358e722cc31add136f881711ac61"><td class="memItemLeft" align="right" valign="top"><a id="acf42358e722cc31add136f881711ac61" name="acf42358e722cc31add136f881711ac61"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_vol</b> = 0.</td></tr>
+<tr class="memdesc:acf42358e722cc31add136f881711ac61"><td class="mdescLeft">&#160;</td><td class="mdescRight">volume of the edge_split_pieces (in exact_vol) <br /></td></tr>
+<tr class="separator:acf42358e722cc31add136f881711ac61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20c7fd49f143b6dc709e4f4f9e3b71f6" id="r_a20c7fd49f143b6dc709e4f4f9e3b71f6"><td class="memItemLeft" align="right" valign="top"><a id="a20c7fd49f143b6dc709e4f4f9e3b71f6" name="a20c7fd49f143b6dc709e4f4f9e3b71f6"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>empty_vol</b> = 0.</td></tr>
 <tr class="memdesc:a20c7fd49f143b6dc709e4f4f9e3b71f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">volume of pieces with no member (must be rounding) <br /></td></tr>
@@ -218,6 +224,21 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>t_series</b> = 0.</
       </table>
 </div><div class="memdoc">
 <p>When set, every clip result is checked to be a closed surface: each directed edge once, its reverse once (closed_checked results, open_results of them failing). </p>
+
+</div>
+</div>
+<a id="aabea4728eb7d0f37da95cdaaa6789d68" name="aabea4728eb7d0f37da95cdaaa6789d68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aabea4728eb7d0f37da95cdaaa6789d68">&#9670;&#160;</a></span>edge_split_pieces</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t wmtk::components::topological_offset::ExactBandIntegral::Stats::edge_split_pieces = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>pieces whose members are all edges, split exactly by their planar bisectors (class doc, step 2); before 2026-11 each was a rule-(a) piece </p>
 
 </div>
 </div>

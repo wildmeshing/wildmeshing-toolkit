@@ -124,10 +124,10 @@ std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"
 std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>protected_tags</b></td></tr>
 <tr class="separator:add0b769de8f8c31eda4b842ee4db154b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab7a5173bf5383c7fb969b6114f8ab35c" id="r_ab7a5173bf5383c7fb969b6114f8ab35c"><td class="memItemLeft" align="right" valign="top"><a id="ab7a5173bf5383c7fb969b6114f8ab35c" name="ab7a5173bf5383c7fb969b6114f8ab35c"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_in</b></td></tr>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_in</b> = false</td></tr>
 <tr class="separator:ab7a5173bf5383c7fb969b6114f8ab35c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9914df786a6c43976ed1a8f02727c63b" id="r_a9914df786a6c43976ed1a8f02727c63b"><td class="memItemLeft" align="right" valign="top"><a id="a9914df786a6c43976ed1a8f02727c63b" name="a9914df786a6c43976ed1a8f02727c63b"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_out</b></td></tr>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_out</b> = true</td></tr>
 <tr class="separator:a9914df786a6c43976ed1a8f02727c63b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8aa491cd4ee6d61f8487f9ac0668742d" id="r_a8aa491cd4ee6d61f8487f9ac0668742d"><td class="memItemLeft" align="right" valign="top"><a id="a8aa491cd4ee6d61f8487f9ac0668742d" name="a8aa491cd4ee6d61f8487f9ac0668742d"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>target_distance</b></td></tr>
@@ -148,6 +148,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>envelope_size_rel</
 <tr class="separator:ad5ea119b1aa98b11fbbff3928285bc35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37e8636365e01ef4b0e4a3e7b2676344" id="r_a37e8636365e01ef4b0e4a3e7b2676344"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a37e8636365e01ef4b0e4a3e7b2676344">order2_envelope_ratio</a> = 1.0</td></tr>
 <tr class="separator:a37e8636365e01ef4b0e4a3e7b2676344"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d87497b69e73449127f5ae0c8f1459e" id="r_a8d87497b69e73449127f5ae0c8f1459e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a8d87497b69e73449127f5ae0c8f1459e">feature_envelope_ratio</a> = 1.0</td></tr>
+<tr class="separator:a8d87497b69e73449127f5ae0c8f1459e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f687fca19047b12f16067848c158ea1" id="r_a1f687fca19047b12f16067848c158ea1"><td class="memItemLeft" align="right" valign="top"><a id="a1f687fca19047b12f16067848c158ea1" name="a1f687fca19047b12f16067848c158ea1"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>offset_dhat_factor</b></td></tr>
 <tr class="separator:a1f687fca19047b12f16067848c158ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -590,6 +592,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a fold (TopoOffsetTetMesh::fold_test()) remains. </p>
+
+</div>
+</div>
+<a id="a8d87497b69e73449127f5ae0c8f1459e" name="a8d87497b69e73449127f5ae0c8f1459e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d87497b69e73449127f5ae0c8f1459e">&#9670;&#160;</a></span>feature_envelope_ratio</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::Parameters::feature_envelope_ratio = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Half-width of the tube that holds the input complex's own curves &ndash; a curve offset's segments (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aec65bccae1d0a29e21d1c177fc4d2b11">TopoOffsetTetMesh::hold_curves_and_points()</a>) &ndash; as a fraction of envelope_size, and the radius of the anchors where they end or three or more meet, and of its points. 1, as tetwild's and simwild's key of the same name. </p>
 
 </div>
 </div>
