@@ -119,7 +119,7 @@ class Tracking(unittest.TestCase):
             "isotropic_remeshing": dict(REMESH),
             "qslim": {"target_rel": 0.5, "num_threads": 1},
             "shortest_edge_collapse": {"target_rel": 0.5, "num_threads": 1},
-            "tetwild": {"skip_simplify": True, "max_iterations": 1, "num_threads": 1},
+            "tetwild": {"simplify": False, "max_iterations": 1, "num_threads": 1},
         }
         for name, options in runs.items():
             with self.subTest(component=name):
@@ -290,7 +290,7 @@ class Tracking(unittest.TestCase):
     def test_transfer_onto_a_tet_mesh_in_memory(self):
         tracking = getattr(wm, TRACKING)
         meshed, report = wm.tetwild(
-            {"input": "in", "skip_simplify": True, "max_iterations": 1, "num_threads": 1,
+            {"input": "in", "simplify": False, "max_iterations": 1, "num_threads": 1,
              "history_output": "x"}, {"in": sphere()})
         outputs, _ = tracking(
             {"history": report["history"], "operation": "transfer", "input": "in",
@@ -304,11 +304,15 @@ class Tracking(unittest.TestCase):
         # The tracked surface on the tet mesh's own vertices, every face where it came from.
         surface = outputs["mesh"]["cells"]["triangle"]
         triangles = tet["cells"]["triangle"]
-        # tetwild writes no triangles of its own: each tracked face is a row, in the surface's
-        # order, its corners at the surface's corners.
-        np.testing.assert_array_equal(
-            tet["V"][triangles["connectivity"]],
-            outputs["mesh"]["V"][surface["connectivity"]])
+        # tetwild writes its tracked faces as its face tags, in its own order: each face of the
+        # surface is on the row with its corners, and no row is added, nor left without one.
+        corners = lambda V, F: [tuple(sorted(map(tuple, V[f]))) for f in F]
+        self.assertEqual(
+            len(triangles["connectivity"]),
+            len(meshed["mesh"]["cells"]["triangle"]["connectivity"]))
+        self.assertEqual(
+            sorted(corners(tet["V"], triangles["connectivity"])),
+            sorted(corners(outputs["mesh"]["V"], surface["connectivity"])))
         self.assertTrue((triangles["attributes"]["input_face"]["values"] >= 0).all())
         np.testing.assert_array_equal(
             triangles["attributes"]["label"]["values"][:, 0],
@@ -362,7 +366,7 @@ class Classes(unittest.TestCase):
             {**REMESH, "input": "in", "history_output": "x"}, {"in": sphere()})
         cls.surface = report["history"]
         cls.tets, report = wm.tetwild(
-            {"input": "in", "skip_simplify": True, "max_iterations": 1, "num_threads": 1,
+            {"input": "in", "simplify": False, "max_iterations": 1, "num_threads": 1,
              "history_output": "x"}, {"in": sphere()})
         cls.tet = report["history"]
         cls.curves_out, report = wm.triwild({**TRIWILD, "history_output": "x"}, curves())

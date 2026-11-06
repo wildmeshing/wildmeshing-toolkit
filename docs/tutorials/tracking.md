@@ -100,7 +100,7 @@ concatenated.
 
 The options that keep this map a bijection:
 
-- [`skip_simplify`](../reference/tetwild.md#skip_simplify): the surface is already as coarse as
+- [`simplify`](../reference/tetwild.md#simplify) false: the surface is already as coarse as
   wanted, so TetWild does not simplify it again.
 - [`preserve_topology`](../reference/tetwild.md#preserve_topology) and
   [`check_surface_folds`](../reference/tetwild.md#check_surface_folds): the tracked surface keeps

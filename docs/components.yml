@@ -55,7 +55,7 @@ components:
     title: TriWild
     group: meshing
     tutorial: tutorials/triwild.md
-    key_options: [input, input_names, output, eps_rel, length_rel, stop_energy, filter, input_points, preserve_feature_points, preserve_topology]
+    key_options: [input, input_names, output, eps_rel, length_rel, stop_energy, filter, input_points, preserve_topology]
     papers:
       - "[Hu et al. 2019, TriWild: Robust Triangulation with Curve Constraints](https://cims.nyu.edu/gcl/papers/2019-TriWild.pdf)"
 
@@ -63,7 +63,7 @@ components:
     title: SimWild
     group: regions
     tutorial: tutorials/simwild.md
-    key_options: [input, input_names, input_type, operation, dimension, output, input_transform, eps_rel, length_rel, sizing_field, quality_field, stop_energy, preserve_topology, skip_simplify, num_threads]
+    key_options: [input, input_names, input_type, operation, dimension, output, input_transform, eps_rel, length_rel, sizing_field, quality_field, stop_energy, preserve_topology, simplify, num_threads]
 
   topological_offset:
     title: Topological offset

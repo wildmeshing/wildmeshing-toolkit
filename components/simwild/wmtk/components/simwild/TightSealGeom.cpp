@@ -369,7 +369,7 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
         return size_t(-1);
     }
 
-    const size_t v_new = m_last_split_vertex;
+    const size_t v_new = m_last_split_vertex.local();
     for (const size_t fid : parents) {
         faces.erase(fid);
     }
@@ -416,7 +416,7 @@ size_t SimWildMeshTri::tight_seal_split_face_tracked(
     if (!ok) {
         return size_t(-1);
     }
-    const size_t v_new = m_last_split_vertex;
+    const size_t v_new = m_last_split_vertex.local();
     faces.erase(fid);
     filled.resize(tri_capacity(), 0);
     for (const size_t f : get_one_ring_fids_for_vertex(v_new)) {

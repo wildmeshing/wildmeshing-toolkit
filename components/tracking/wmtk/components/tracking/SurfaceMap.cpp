@@ -253,6 +253,9 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
     , m_in_face_alive(h.face_alive)
 {
     Replay r(h);
+    // While a collapse of a vertex on a curve into one on none tries the removed vertex's star
+    // alone (CollapsePatch::removed_star).
+    bool curve_into_sheet_try = false;
     const auto layout = [](const Tri& t, const UV& uv) {
         return std::array<Eigen::Vector2d, 3>{{uv.at(t[0]), uv.at(t[1]), uv.at(t[2])}};
     };
@@ -600,10 +603,15 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
             const size_t n = loop->size();
             return std::make_pair((*loop)[(i + n - 1) % n], (*loop)[(i + 1) % n]);
         };
-        // The outline keeps the removed vertex; after the edit a virtual vertex takes its place,
-        // on the edge (prev, next) at its parameter along the two edges it replaced. Where no
-        // edge replaces them, the survivor came out onto the outline in its place -- a boundary
-        // vertex collapsed into one inside -- and stands for it there.
+        // The outline keeps the removed vertex. Where the survivor was inside -- a boundary vertex
+        // collapsed into one inside -- the survivor comes out onto the outline in its place and
+        // stands for it there, and that is decided first: every edge the collapse makes holds
+        // the survivor, so an edge (prev, next) the patch has after was there before, the third
+        // side of the face that survives a survivor of three faces, and splitting it would cut
+        // the outline. Tried the other way round, that case was refused as not a disk: 20 of 20
+        // not_a_disk warnings of tetwild on the open bunny (2026-11), python_tracking_
+        // correspondences' intermittent CI failure. Otherwise a virtual vertex takes its place,
+        // on the edge (prev, next) at its parameter along the two edges it replaced.
         const bool kept_inside = std::none_of(loop->begin(), loop->end(), [&](uint64_t v) {
             return ids.vertex_of(v) == kept;
         });
@@ -613,17 +621,21 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
             const double a = length(prev, (*loop)[i]), b = length((*loop)[i], next);
             const double tau = std::clamp(a + b > 0 ? a / (a + b) : 0.5, 0.01, 0.99);
             const uint64_t w = ids.fresh(removed);
-            if (after.split(prev, next, tau, w)) {
-                slots[i].second = w;
-            } else if (kept_inside && !kept_placed) {
+            if (kept_inside && !kept_placed) {
                 slots[i].second = kept;
                 kept_placed = true;
+            } else if (after.split(prev, next, tau, w)) {
+                slots[i].second = w;
             } else {
                 split_all = false;
             }
         }
         if (split_all) return joint(before, after, slots, cell);
         if (on_outline.size() > 1 || !ids.names.empty()) return false;
+        // The removed star of a curve vertex collapsed into a vertex of a sheet that is on its
+        // outline: the faces after do not cover the outline before, and the chord layout below
+        // would not be a bijection. Both stars map it.
+        if (curve_into_sheet_try) return false;
         const size_t i_rm = on_outline.front();
         const auto [prev, next] = neighbours(i_rm);
         const double a = length(prev, removed), b = length(removed, next);
@@ -877,6 +889,21 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
                     ++n_spanning;
                 }
             }
+            // On a curve of the complex: on an edge of one face, of three or more, or a feature
+            // edge -- the edges sides_of() cuts at. Read before the replay applies the collapse,
+            // which puts the survivor on the removed vertex's curves.
+            const auto on_curve = [&r](const uint64_t v) {
+                std::map<uint64_t, int> n;
+                for (const uint64_t f : r.faces_of(v)) {
+                    for (const uint64_t x : r.faces()[f]) {
+                        if (x != v) ++n[x];
+                    }
+                }
+                return std::any_of(n.begin(), n.end(), [&](const auto& xn) {
+                    return xn.second != 2 || r.is_feature({{v, xn.first}});
+                });
+            };
+            const bool curve_into_sheet = star && on_curve(removed) && !on_curve(kept);
             r.apply(e);
             const std::vector<uint64_t> after_f = r.faces_of(kept);
             if (after_f.size() + n_spanning < both.f.size()) {
@@ -936,7 +963,10 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
                 const MapWarnings warnings = m_build_warnings;
                 const size_t curve_collapses = m_curve_collapses, folded = m_folded_cells;
                 Step tried{e.kind, {}, {}, {}, {}};
-                if (map_sides(*star, tried)) {
+                curve_into_sheet_try = curve_into_sheet;
+                const bool star_ok = map_sides(*star, tried);
+                curve_into_sheet_try = false;
+                if (star_ok) {
                     step = std::move(tried);
                     break;
                 }

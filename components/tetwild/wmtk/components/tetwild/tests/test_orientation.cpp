@@ -204,7 +204,18 @@ TEST_CASE("orientation-configurations", "[tetwild][orientation]" + release_only)
             tet_face_on_input_surface,
             &tet_face_orientation);
     }
-    TetWildMesh mesh(params, env, 0);
+    // Reads the collapse refusals, to see the collapsing edge's own test refuse the collapses
+    // that would move a surface vertex through a solid onto another surface of the input.
+    struct Mesh : TetWildMesh
+    {
+        using CollapseReject = TetWildMesh::CollapseReject; // protected there
+        using TetWildMesh::TetWildMesh;
+        long collapse_refusals(CollapseReject r) const
+        {
+            return m_collapse_reject[size_t(r)].load();
+        }
+    };
+    Mesh mesh(params, env, 0);
     mesh.init_from_Volumeremesher(
         v_rational,
         facets,
@@ -258,6 +269,9 @@ TEST_CASE("orientation-configurations", "[tetwild][orientation]" + release_only)
     // within eps of the input rather than on it -- still encloses the same solids.
     mesh.mesh_improvement(2);
     CHECK(mesh.tracked_surface_boundary().empty());
+    // 1956 such collapses were tried here when 3D had no such test (2026-11), every one
+    // refused by the quality gate, the inversion test or the faces' check alone.
+    CHECK(mesh.collapse_refusals(Mesh::CollapseReject::edge_leaves_envelope) > 0);
     compute_both_winding_numbers(mesh, s);
     for (const auto& r : regions) {
         const double vt = volume_where(mesh, true, r.x0, r.x1);

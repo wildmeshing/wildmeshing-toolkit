@@ -34,10 +34,10 @@ mesh = outputs["mesh"]
 triangles = mesh["cells"]["triangle"]
 print(len(mesh["V"]), "vertices,", len(triangles["connectivity"]), "triangles,",
       f"max energy {report['max_energy']:.2f}")
-# One column per input: 1 where the triangle lies inside that curve.
-tags = triangles["attributes"]["tags"]
+# The tracked curves, one column per input: 1 where the edge lies on that curve.
+tags = mesh["cells"]["edge"]["attributes"]["tags"]
 for label, count in zip(tags["labels"], np.asarray(tags["values"]).sum(axis=0)):
-    print(f"  {label}: {count} triangles")
+    print(f"  {label}: {count} edges")
 # --8<-- [end:memory]
 
 
@@ -48,10 +48,12 @@ def triangulate(options, meshes=curves, inputs=NAMES):
 
 
 # --8<-- [start:sweep]
-# One option at a time against the first run (filter input, stop_energy 10).
+# One option at a time against the first run (filter input, stop_energy 10); eps_rel with the
+# simplification at half of it, as at the default.
 base = {"filter": "input", "stop_energy": 10}
 for change in [{}, {"stop_energy": 100}, {"stop_energy": 5}, {"stop_energy": 3},
-               {"eps_rel": 0.0002}, {"eps_rel": 0.005},
+               {"eps_rel": 0.0002, "eps_simplify_rel": 0.0001},
+               {"eps_rel": 0.005, "eps_simplify_rel": 0.0025},
                {"length_rel": 0.02}, {"length_rel": 0.01},
                {"coarsen_pass": True}]:
     outputs, report = triangulate({**base, **change, "DEBUG_hausdorff": True})
@@ -64,17 +66,14 @@ for change in [{}, {"stop_energy": 100}, {"stop_energy": 5}, {"stop_energy": 3},
 # A closed curve and twelve points to keep as vertices: nine inside, three outside.
 star = {"curve": wm.read_mesh(str(DATA / "triwild_free_points_curve.obj")),
         "points": wm.read_mesh(str(DATA / "triwild_free_points_points.obj"))}
-for preserve in [True, False]:
-    outputs, report = triangulate(
-        {"input_points": ["points"], "preserve_feature_points": preserve, "stop_energy": 10,
-         "DEBUG_feature_retention": True},
-        star, ["curve"])
-    V = outputs["mesh"]["V"]
-    # How far each input point is from the nearest vertex of the output.
-    worst = max(np.linalg.norm(V - p, axis=1).min() for p in star["points"]["V"])
-    print(f"preserve_feature_points {preserve}: {report['features_retained']} of "
-          f"{report['features_total']} points kept, the worst {worst:.3f} from a vertex "
-          f"(eps {report['eps']:.3f})")
+outputs, report = triangulate(
+    {"input_points": ["points"], "stop_energy": 10, "DEBUG_feature_retention": True},
+    star, ["curve"])
+V = outputs["mesh"]["V"]
+# How far each input point is from the nearest vertex of the output.
+worst = max(np.linalg.norm(V - p, axis=1).min() for p in star["points"]["V"])
+print(f"{report['features_retained']} of {report['features_total']} points kept, the worst "
+      f"{worst:.3f} from a vertex (eps {report['eps']:.3f})")
 # --8<-- [end:points]
 
 # --8<-- [start:open]

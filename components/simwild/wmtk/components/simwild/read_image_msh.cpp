@@ -9,6 +9,7 @@
 #include <wmtk/components/simwild/EmbedCurves.hpp>
 #include <wmtk/components/simwild/EmbedSurface.hpp>
 #include <wmtk/io/mesh_io.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -158,29 +159,27 @@ void tags_from_label_images(MeshData& mesh, const std::string& what)
     }
 }
 
-InputData read_image_msh(const std::string& path)
+InputData read_image_msh(const std::string& path, const MeshData* envelope)
 {
     if (!std::filesystem::exists(path)) {
         log_and_throw_error("File {} does not exist.", path);
     }
-    // The .msh route reads through the shared reader, so a file and the mesh it holds give the
-    // components the same input. As it always has, it takes the geometry and the region
-    // membership only: other fields in a file (diagnostics, older per-tag scalars such as
-    // tag_0) are not inputs.
+    // The .msh route reads through the shared reader, and then as the memory route reads, so a
+    // file and the mesh it holds give the components the same input: the geometry, the tags, and
+    // the correspondence an earlier offset hands on (corr_input_vid, with the vid it names
+    // vertices by); every other field is dropped (read_mesh_data()). Until 2026-11 it dropped the
+    // correspondence, which the memory route carried from one offset to the next.
     MeshData mesh = io::read_mesh(path);
     tags_from_label_images(mesh, path);
-    mesh.vertex_attributes.clear();
-    for (auto& [type, cells] : mesh.cells)
-        for (auto it = cells.attributes.begin(); it != cells.attributes.end();)
-            it = it->first == "tags" ? std::next(it) : cells.attributes.erase(it);
-    return read_mesh_data(mesh);
+    return read_mesh_data(mesh, envelope);
 }
 
 InputData read_mesh(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io)
+    const io::ComponentIO* component_io,
+    const utils::FeatureInputs* features)
 {
     InputData input_data;
 
@@ -193,7 +192,7 @@ InputData read_mesh(
     const bool debug_output = !component_io && bool(json_params["DEBUG_output"]);
     const bool perform_sanity_checks = json_params["DEBUG_sanity_checks"];
     const bool preserve_topology = json_params["preserve_topology"];
-    const bool skip_simplify = json_params["skip_simplify"];
+    const bool simplify = json_params["simplify"];
     const bool tag_from_winding_number = json_params["tag_from_winding_number"];
     const bool split_connected_components = json_params["split_connected_components"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
@@ -212,6 +211,8 @@ InputData read_mesh(
                 input_paths.size());
         for (size_t i = 0; i < input_type.size(); ++i) is_volume[i] = input_type[i] == "volume";
     }
+    if (std::count(input_type.begin(), input_type.end(), "curve"))
+        log_and_throw_error("Curve inputs (input_type curve) are 2D only");
     const bool has_surface = std::count(is_volume.begin(), is_volume.end(), false) > 0;
     if (has_surface && split_connected_components)
         log_and_throw_error(
@@ -241,17 +242,29 @@ InputData read_mesh(
         image_mesh.write_surf_off(output_filename + "_input.off");
     }
 
-    if (!preserve_topology && !skip_simplify) {
+    // The scale (InputData::diag), taken before any simplification moves the surface, and the
+    // simplification's eps from it as Parameters::init() derives it -- the absolute eps_simplify
+    // if given, else eps_simplify_rel of the diagonal -- so the simplifications before and after
+    // the insertion run at the same eps.
+    {
+        auto [lo, hi] = image_mesh.bbox_surf_minmax();
+        if (features != nullptr) features->extend_bbox(lo, hi);
+        input_data.diag = (hi - lo).norm();
+    }
+    if (eps_simplify <= 0) eps_simplify = epsr_simplify * input_data.diag;
+
+    // Around the input (envelope_reference "input") the envelope is the surface as read, and the
+    // labels below follow it; around the simplified surface, what the simplification leaves.
+    const bool envelope_around_input = json_params["envelope_reference"] == "input";
+    MatrixXd V_read;
+    MatrixXi F_read;
+    std::vector<size_t> F_read_input;
+    if (!preserve_topology && simplify) {
         /**
          * Simplify the input surface only if topology preservation is not required, since
          * simplification can change the topology. If topology preservation is required,
          * simplification is performed after insertion.
          */
-        auto [bbox_min, bbox_max] = image_mesh.bbox_surf_minmax();
-        double diag = (bbox_max - bbox_min).norm();
-        if (epsr_simplify > 0) {
-            eps_simplify = diag * epsr_simplify;
-        }
         logger().info("Simplify before insertion with eps = {:.4}", eps_simplify);
 
         // The open boundary. Frozen, the simplification cannot touch anything enclosed by
@@ -273,23 +286,39 @@ InputData read_mesh(
             logger().info("simplification freezes the open boundary");
         }
 
+        if (envelope_around_input) {
+            V_read = image_mesh.V_surface();
+            F_read = image_mesh.F_surface();
+            F_read_input = image_mesh.F_input();
+        }
         image_mesh.simplify_surface(
             eps_simplify,
             !json_params["simplify_use_sample_envelope"],
             NUM_THREADS,
-            boundary_eps);
+            boundary_eps,
+            json_params["per_input_envelopes"]);
+        input_data.simplified_before_insertion = true;
 
         if (debug_output) {
             image_mesh.write_surf_off(output_filename + "_input_simplified.off");
         }
     }
 
-    input_data.V_envelope = image_mesh.V_surface();
-    input_data.F_envelope = image_mesh.F_surface();
+    const bool envelope_is_read = F_read.size() != 0;
+    input_data.V_envelope = envelope_is_read ? V_read : image_mesh.V_surface();
+    input_data.F_envelope = envelope_is_read ? F_read : image_mesh.F_surface();
 
     const bool all_rounded =
-        image_mesh.embed_surface(preserve_topology, tag_from_winding_number, has_surface);
+        image_mesh.embed_surface(preserve_topology, tag_from_winding_number, has_surface, features);
     image_mesh.consolidate();
+    if (features != nullptr && !features->empty()) {
+        input_data.features = *features;
+        input_data.features_placed = image_mesh.features_placed();
+        // One per input_edges file, as tetwild names them in its output.
+        for (size_t i = 0; i < json_params["input_edges"].size(); ++i) {
+            input_data.feature_edge_names.push_back(utils::feature_input_name(i));
+        }
+    }
 
     if (debug_output) {
         image_mesh.write_emb_surf_off(output_filename + "_input_emb.off");
@@ -372,7 +401,7 @@ InputData read_mesh(
     }
 
     {
-        const auto& F_input = image_mesh.F_input();
+        const auto& F_input = envelope_is_read ? F_read_input : image_mesh.F_input();
         // Only where every envelope triangle's input is known; else the mesh's faces serve.
         if (F_input.size() == size_t(input_data.F_envelope.rows())) {
             input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
@@ -395,13 +424,28 @@ InputData read_curves(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
     const nlohmann::json& json_params,
-    const io::ComponentIO* component_io)
+    const io::ComponentIO* component_io,
+    const utils::FeatureInputs* features)
 {
-    {
-        const std::vector<std::string> input_type = json_params["input_type"];
-        if (std::count(input_type.begin(), input_type.end(), "surface"))
-            log_and_throw_error("Surface inputs (input_type surface) are 3D only");
+    // Which inputs enclose a region (triangle tags) and which stay curves (edge tags).
+    const std::vector<std::string> input_type = json_params["input_type"];
+    if (std::count(input_type.begin(), input_type.end(), "surface"))
+        log_and_throw_error("Surface inputs (input_type surface) are 3D only");
+    std::vector<bool> is_curve(input_paths.size(), false);
+    if (!input_type.empty()) {
+        if (input_type.size() != input_paths.size())
+            log_and_throw_error(
+                "input_type needs one entry per input: {} entries for {} inputs",
+                input_type.size(),
+                input_paths.size());
+        for (size_t i = 0; i < input_type.size(); ++i) is_curve[i] = input_type[i] == "curve";
     }
+    const bool has_curve = std::count(is_curve.begin(), is_curve.end(), true) > 0;
+    const bool tag_from_winding_number = json_params["tag_from_winding_number"];
+    // An open curve encloses nothing, so the provenance tagging, which needs every input closed,
+    // cannot run with one.
+    if (has_curve && !tag_from_winding_number)
+        log_and_throw_error("Curve inputs (input_type curve) need tag_from_winding_number");
     InputData input_data;
 
     std::vector<Matrix3d> input_transforms(input_paths.size());
@@ -412,10 +456,31 @@ InputData read_curves(
     const int NUM_THREADS = json_params["num_threads"];
     const bool debug_output = !component_io && bool(json_params["DEBUG_output"]);
     const bool preserve_topology = json_params["preserve_topology"];
-    const bool skip_simplify = json_params["skip_simplify"];
+    const bool simplify = json_params["simplify"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
     double eps_simplify = json_params["eps_simplify"];
     const std::vector<std::string> input_names = json_params["input_names"];
+    // Each input's name, and its label bit as the mesh's edges will carry it: a curve input's
+    // edge-tag column, a region input's triangle tag after the edge tags. Without curve inputs,
+    // input i is triangle tag i, as before.
+    const size_t n_inputs = input_paths.size();
+    std::vector<size_t> region_column(n_inputs, SIZE_MAX), curve_column(n_inputs, SIZE_MAX);
+    for (size_t i = 0; i < n_inputs; ++i) {
+        const std::string name =
+            i < input_names.size() ? input_names[i] : "tag_" + std::to_string(i);
+        if (is_curve[i]) {
+            curve_column[i] = input_data.face_tag_names.size();
+            input_data.face_tag_names.push_back(name);
+        } else {
+            region_column[i] = input_data.tag_names.size();
+            input_data.tag_names.push_back(name);
+        }
+    }
+    std::vector<size_t> input_bit(n_inputs);
+    for (size_t i = 0; i < n_inputs; ++i) {
+        input_bit[i] =
+            is_curve[i] ? curve_column[i] : input_data.face_tag_names.size() + region_column[i];
+    }
 
     double tol_rel = -1;
     double tol_abs = -1;
@@ -431,41 +496,107 @@ InputData read_curves(
         curves.write_curves_obj(output_filename + "_input.obj");
     }
 
-    if (!preserve_topology && !skip_simplify) {
+    // The scale and the simplification's eps, as in 3D: the curves' own box, the input points
+    // included.
+    {
+        auto [lo, hi] = curves.bbox_curves_minmax();
+        if (features) {
+            for (const Vector3d& p : features->points) {
+                lo = lo.cwiseMin(p.head<2>());
+                hi = hi.cwiseMax(p.head<2>());
+            }
+        }
+        input_data.diag = (hi - lo).norm();
+    }
+    if (eps_simplify <= 0) eps_simplify = epsr_simplify * input_data.diag;
+
+    // As in 3D: around the input the envelope is the curves as read.
+    const bool envelope_around_input = json_params["envelope_reference"] == "input";
+    MatrixXd V_read;
+    MatrixXi E_read;
+    std::vector<size_t> E_read_input;
+    if (!preserve_topology && simplify) {
         // Same condition the 3D route uses: simplification can change the topology of the
         // input, so it only runs when the caller has said that is acceptable.
-        const auto [bbox_min, bbox_max] = curves.bbox_curves_minmax();
-        const double diag = (bbox_max - bbox_min).norm();
-        if (epsr_simplify > 0) {
-            eps_simplify = diag * epsr_simplify;
+        if (envelope_around_input) {
+            V_read = curves.V_curves();
+            E_read = curves.E_curves();
+            E_read_input = curves.E_input();
         }
         curves.simplify_curves(
             eps_simplify,
             !json_params["simplify_use_sample_envelope"],
-            NUM_THREADS);
+            NUM_THREADS,
+            json_params["per_input_envelopes"]);
+        input_data.simplified_before_insertion = true;
 
         if (debug_output) {
             curves.write_curves_obj(output_filename + "_input_simplified.obj");
         }
     }
 
-    // The envelope is built from the SIMPLIFIED input curves, taken here -- after
-    // simplification, before the arrangement -- exactly as read_mesh does in 3D.
-    input_data.V_envelope = curves.V_curves();
-    input_data.F_envelope = curves.E_curves();
+    // The envelope is built from the input curves as read (envelope_reference "input"), or from
+    // the SIMPLIFIED ones, taken here -- after simplification, before the arrangement -- exactly
+    // as read_mesh does in 3D.
+    const bool envelope_is_read = E_read.size() != 0;
+    input_data.V_envelope = envelope_is_read ? V_read : curves.V_curves();
+    input_data.F_envelope = envelope_is_read ? E_read : curves.E_curves();
+    const std::vector<size_t>& E_input = envelope_is_read ? E_read_input : curves.E_input();
+    // Each envelope row's label bit (input_bit). Only where every row's input is known; else
+    // the mesh's edges serve.
+    if (E_input.size() == size_t(input_data.F_envelope.rows())) {
+        input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
+        for (Eigen::Index r = 0; r < input_data.F_envelope.rows(); ++r) {
+            const size_t in = E_input[r];
+            if (in < n_inputs && input_bit[in] < size_t(SurfaceTagAttributes::max_inputs)) {
+                input_data.F_envelope_labels[r] = InputSet(1) << input_bit[in];
+            }
+        }
+    }
 
-    const bool all_rounded = curves.embed_curves(json_params["tag_from_winding_number"]);
+    // A curve input's edges are read off the arrangement's segment provenance.
+    // The input points in the plane: x and y, as the curves are read.
+    std::vector<Vector2d> points;
+    if (features) {
+        for (const Vector3d& p : features->points) points.emplace_back(p[0], p[1]);
+    }
+    const bool all_rounded = curves.embed_curves(tag_from_winding_number, has_curve, points);
     curves.consolidate();
+    input_data.input_point_vids = curves.point_vids();
 
     input_data.V_input = curves.V_emb();
     if (!all_rounded) {
         input_data.V_input_r = curves.V_emb_r();
     }
     input_data.T_input = curves.F_emb();
-    input_data.T_input_tag = curves.F_tags();
-    for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
-        input_data.tag_names.push_back(
-            i < int(input_names.size()) ? input_names[i] : "tag_" + std::to_string(i));
+    if (!has_curve) {
+        input_data.T_input_tag = curves.F_tags();
+    } else {
+        // A region input keeps its column of triangle tags; a curve input's column (its winding
+        // number means nothing for an open curve) is dropped, and the constrained edges it tiles
+        // get its name as an edge tag instead.
+        const MatrixSi& F_tags = curves.F_tags();
+        input_data.T_input_tag.resize(F_tags.rows(), input_data.tag_names.size());
+        for (int k = 0; k < F_tags.outerSize(); ++k)
+            for (MatrixSi::InnerIterator it(F_tags, k); it; ++it)
+                if (it.value() != 0 && region_column[it.col()] != SIZE_MAX)
+                    input_data.T_input_tag.coeffRef(it.row(), region_column[it.col()]) = 1;
+        const MatrixXi& E = curves.E_constrained();
+        const auto& tiles = curves.E_constrained_inputs();
+        std::vector<int> rows;
+        for (int r = 0; r < E.rows(); ++r)
+            for (const size_t in : tiles[r])
+                if (is_curve[in]) {
+                    rows.push_back(r);
+                    break;
+                }
+        input_data.F_tagged.resize(rows.size(), 2);
+        input_data.F_tags.resize(rows.size(), input_data.face_tag_names.size());
+        for (size_t k = 0; k < rows.size(); ++k) {
+            input_data.F_tagged.row(k) = E.row(rows[k]);
+            for (const size_t in : tiles[rows[k]])
+                if (is_curve[in]) input_data.F_tags.coeffRef(k, curve_column[in]) = 1;
+        }
     }
 
     wmtk::logger().info("======= finish curve-triangle conversion =========");
@@ -588,55 +719,26 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         mesh.cells.count(CellType::Tetrahedron) ? CellType::Tetrahedron : CellType::Triangle;
     const auto& block = mesh.cell(type);
     if (!block.connectivity.rows()) throw std::runtime_error("Empty tagged mesh");
-    io::ComponentIO::attributes(
-        mesh.vertex_attributes,
-        {"sizing_field",
-         "sizing_scalar",
-         "vid",
-         "labels",
-         "is_rounded",
-         "is_false_surface",
-         "order",
-         "input_distance",
-         "distance_over_target",
-         "front_error_bars",
-         "band_force_n",
-         "amips_force_n",
-         "offset_foldover",
-         "front_last_change",
-         "corr_input_vid",
-         "front_ring_ratio"});
-    const std::set<std::string> fields = {
-        "tags",
-        "quality",
-        "quality_target",
-        "quality_rel",
-        "offset_tag",
-        "amips",
-        "tet_energy",
-        "amips_term",
-        "band_term",
-        "band_gap_bars",
-        "plastic",
-        "face_energy",
-        "front_err_ratio",
-        "settle_inside_bars",
-        "settle_outside_bars",
-        "chord_length"};
-    // The one lower-dimensional block allowed next to the top cells: in a tet mesh, triangles,
-    // which are tagged faces; in a triangle mesh, edges, which are an embedded envelope, as a
-    // lower physical group is on the .msh route.
-    const auto envelope_type = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
+    // Fields: the tags, and an earlier offset's correspondence (corr_input_vid, with the vid it
+    // names vertices by) are read; every other is dropped (io::ComponentIO::data_fields).
+    std::set<std::string> dropped =
+        io::ComponentIO::dropped_fields(mesh.vertex_attributes, {"vid", "corr_input_vid"});
+    // The lower-dimensional blocks allowed next to the top cells: in a tet mesh, triangles,
+    // which are tagged faces, and edges, which are tagged feature curves; in a triangle mesh,
+    // edges, which are tagged curves. Rows labelled EnvelopeSurface are the envelope instead
+    // (lower_tags below).
+    const auto lower_type = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
     for (const auto& [t, c] : mesh.cells) {
-        if (t != type && t != envelope_type)
+        if (t != type && t != lower_type && !(type == CellType::Tetrahedron && t == CellType::Edge))
             throw std::runtime_error("Incompatible tagged mesh topology");
-        io::ComponentIO::attributes(c.attributes, fields, std::set<std::string>{});
+        dropped.merge(io::ComponentIO::dropped_fields(c.attributes, {"tags"}));
     }
-    const auto lower = mesh.cells.find(envelope_type);
+    io::ComponentIO::log_dropped("tagged mesh", dropped);
+    const auto lower = mesh.cells.find(lower_type);
     const bool has_lower = lower != mesh.cells.end() && lower->second.connectivity.rows();
-    const bool has_embedded = has_lower && type == CellType::Triangle;
-    if (has_embedded && envelope)
-        throw std::runtime_error("Tagged mesh has an embedded envelope and an `envelope` input");
+    const auto curves =
+        type == CellType::Tetrahedron ? mesh.cells.find(CellType::Edge) : mesh.cells.end();
+    const bool has_curves = curves != mesh.cells.end() && curves->second.connectivity.rows();
     // Cells without a tag are the background; a mesh without a tags field is all background.
     const auto found = block.attributes.find("tags");
     const bool tagged = found != block.attributes.end();
@@ -704,92 +806,197 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
     for (int i = 0; i < tags.rows(); ++i)
         for (size_t j = 0; j < columns.size(); ++j)
             if (tags(i, columns[j])) out.T_input_tag.coeffRef(i, j) = 1;
-    if (has_lower && type == CellType::Tetrahedron) {
-        // The triangle block. Rows labelled EnvelopeSurface, simwild's envelope group (a reserved
-        // name, like ambient), are the envelope; every other label is a face tag. A face tag is
-        // one bit of a face's input set, so at most max_inputs, and a label names a volume (tets)
-        // or a surface (faces), never both.
-        const auto& faces = lower->second;
-        const auto ft_it = faces.attributes.find("tags");
-        if (ft_it == faces.attributes.end())
-            throw std::runtime_error(
-                "A triangle block in a tet mesh holds tagged faces; it needs tags");
-        const auto& fa = ft_it->second;
+    // A lower block's tags. The column labelled EnvelopeSurface, simwild's envelope group (a
+    // reserved name, like ambient), marks the envelope's rows; every other label is a tag, one bit
+    // of a row's input set, so at most max_inputs. Every row needs a label. `what` names the rows.
+    struct LowerTags
+    {
+        DataMatrix<uint8_t> member;
+        std::vector<int> columns; // the tags' columns of member
+        std::vector<std::string> names;
+        std::vector<Eigen::Index> envelope_rows, tagged_rows;
+    };
+    const auto lower_tags = [](const CellData& cells, const std::string& what) {
+        const auto it = cells.attributes.find("tags");
+        if (it == cells.attributes.end())
+            throw std::runtime_error("A block of " + what + "s in a tagged mesh needs tags");
+        const auto& fa = it->second;
         if (!std::holds_alternative<DataMatrix<uint8_t>>(fa.values) ||
             fa.labels.size() != size_t(fa.cols()))
             throw std::runtime_error("tags must be a UInt8 membership matrix with column labels");
-        const auto& ft = std::get<DataMatrix<uint8_t>>(fa.values);
-        if ((ft.array() > 1).any()) throw std::runtime_error("tags must be binary");
-        if ((ft.cast<int>().rowwise().sum().array() == 0).any())
-            throw std::runtime_error("Every tagged face needs a tag");
-        std::vector<int> face_columns;
+        LowerTags lt;
+        lt.member = std::get<DataMatrix<uint8_t>>(fa.values);
+        if ((lt.member.array() > 1).any()) throw std::runtime_error("tags must be binary");
+        if ((lt.member.cast<int>().rowwise().sum().array() == 0).any())
+            throw std::runtime_error("Every tagged " + what + " needs a tag");
         int envelope_column = -1;
-        for (int j = 0; j < ft.cols(); ++j) {
+        for (int j = 0; j < lt.member.cols(); ++j) {
             if (fa.labels[j] == "EnvelopeSurface") {
                 envelope_column = j;
                 continue;
             }
-            if (std::count(a.labels.begin(), a.labels.end(), fa.labels[j]))
-                throw std::runtime_error("Tag " + fa.labels[j] + " names both tets and faces");
-            face_columns.push_back(j);
-            out.face_tag_names.push_back(fa.labels[j]);
+            lt.columns.push_back(j);
+            lt.names.push_back(fa.labels[j]);
         }
-        if (face_columns.size() > size_t(SurfaceTagAttributes::max_inputs))
+        if (lt.columns.size() > size_t(SurfaceTagAttributes::max_inputs))
             throw std::runtime_error(
                 fmt::format(
-                    "At most {} face tags, not {}",
+                    "At most {} {} tags, not {}",
                     SurfaceTagAttributes::max_inputs,
-                    face_columns.size()));
-        std::vector<Eigen::Index> envelope_rows, face_rows;
-        for (Eigen::Index i = 0; i < ft.rows(); ++i) {
-            if (envelope_column >= 0 && ft(i, envelope_column)) envelope_rows.push_back(i);
-            for (const int j : face_columns)
-                if (ft(i, j)) {
-                    face_rows.push_back(i);
+                    what,
+                    lt.columns.size()));
+        for (Eigen::Index i = 0; i < lt.member.rows(); ++i) {
+            if (envelope_column >= 0 && lt.member(i, envelope_column))
+                lt.envelope_rows.push_back(i);
+            for (const int j : lt.columns)
+                if (lt.member(i, j)) {
+                    lt.tagged_rows.push_back(i);
                     break;
                 }
         }
-        if (!envelope_rows.empty()) {
-            if (envelope)
-                throw std::runtime_error(
-                    "Tagged mesh has an embedded envelope and an `envelope` input");
-            DataMatrix<int64_t> cells(envelope_rows.size(), 3);
-            for (size_t k = 0; k < envelope_rows.size(); ++k)
-                cells.row(k) = faces.connectivity.row(envelope_rows[k]);
-            referenced(cells, out.V_envelope, out.F_envelope);
-            out.envelope_name = "EnvelopeSurface";
-        }
-        out.F_tagged.resize(face_rows.size(), 3);
-        out.F_tags.resize(face_rows.size(), face_columns.size());
-        for (size_t k = 0; k < face_rows.size(); ++k) {
-            for (int c = 0; c < 3; ++c) {
-                const int v = remap[faces.connectivity(face_rows[k], c)];
-                if (v < 0) throw std::runtime_error("A tagged face has a vertex no tet has");
-                out.F_tagged(k, c) = v;
+        return lt;
+    };
+    // Rows of a lower block as the envelope, on vertices of their own.
+    const auto envelope_from = [&](const CellData& cells, const std::vector<Eigen::Index>& rows) {
+        if (envelope)
+            throw std::runtime_error(
+                "Tagged mesh has an embedded envelope and an `envelope` input");
+        DataMatrix<int64_t> c(rows.size(), cells.connectivity.cols());
+        for (size_t k = 0; k < rows.size(); ++k) c.row(k) = cells.connectivity.row(rows[k]);
+        referenced(c, out.V_envelope, out.F_envelope);
+        out.envelope_name = "EnvelopeSurface";
+    };
+    // The tagged rows of a lower block on V_input's rows, in the block's vertex order, which is
+    // their orientation, each with its tags' columns.
+    const auto place_tagged = [&](const CellData& cells,
+                                  const LowerTags& lt,
+                                  MatrixXi& C,
+                                  MatrixSi& C_tags,
+                                  const std::string& what) {
+        C.resize(lt.tagged_rows.size(), cells.connectivity.cols());
+        C_tags.resize(lt.tagged_rows.size(), lt.columns.size());
+        for (size_t k = 0; k < lt.tagged_rows.size(); ++k) {
+            for (Eigen::Index c = 0; c < C.cols(); ++c) {
+                const int v = remap[cells.connectivity(lt.tagged_rows[k], c)];
+                if (v < 0)
+                    throw std::runtime_error(
+                        "A tagged " + what + " has a vertex no " + (dim == 3 ? "tet" : "triangle") +
+                        " has");
+                C(k, c) = v;
             }
-            for (size_t j = 0; j < face_columns.size(); ++j)
-                if (ft(face_rows[k], face_columns[j])) out.F_tags.coeffRef(k, j) = 1;
+            for (size_t j = 0; j < lt.columns.size(); ++j)
+                if (lt.member(lt.tagged_rows[k], lt.columns[j])) C_tags.coeffRef(k, j) = 1;
+        }
+    };
+    if (has_lower && type == CellType::Tetrahedron) {
+        // The triangle block: tagged faces. A label names a volume (tets) or a surface (faces),
+        // never both.
+        const auto& faces = lower->second;
+        const LowerTags ft = lower_tags(faces, "face");
+        for (const auto& name : ft.names)
+            if (std::count(a.labels.begin(), a.labels.end(), name))
+                throw std::runtime_error("Tag " + name + " names both tets and faces");
+        out.face_tag_names = ft.names;
+        if (!ft.envelope_rows.empty()) envelope_from(faces, ft.envelope_rows);
+        place_tagged(faces, ft, out.F_tagged, out.F_tags, "face");
+    }
+    if (has_curves) {
+        // The edge block of a tet mesh: the feature curves, each label one feature input, bit j
+        // of an edge's set (FeatureEdgeAttributes::inputs(feature)). They are held as the curves
+        // of input_edges are: an input edge per edge and label, placed on itself, the tubes
+        // around the edges as read (TetOptimizerMesh::tag_feature_edges()). A tet mesh's
+        // envelope is triangles. Until 2026-11 tetwild and simwild did not write their feature
+        // curves, and an edge block in a tet mesh was refused.
+        const auto& edges = curves->second;
+        const LowerTags et = lower_tags(edges, "edge");
+        if (!et.envelope_rows.empty())
+            throw std::runtime_error("EnvelopeSurface labels triangles in a tet mesh, not edges");
+        MatrixXi E;
+        MatrixSi E_tags;
+        place_tagged(edges, et, E, E_tags, "edge");
+        out.feature_edge_names = et.names;
+        std::map<int, size_t> vertex_of; // V_input row -> features.edge_vertices
+        const auto vertex = [&](const int v) {
+            const auto [it, added] = vertex_of.emplace(v, out.features.edge_vertices.size());
+            if (added)
+                out.features.edge_vertices.emplace_back(
+                    out.V_input(v, 0),
+                    out.V_input(v, 1),
+                    out.V_input(v, 2));
+            return it->second;
+        };
+        for (Eigen::Index k = 0; k < E.rows(); ++k) {
+            for (Eigen::Index j = 0; j < E_tags.cols(); ++j) {
+                if (E_tags.coeff(k, j) == 0) continue;
+                out.features.edges.push_back({{vertex(E(k, 0)), vertex(E(k, 1))}});
+                out.features.edge_input.push_back(int(j));
+                out.features_placed.edge_tiling.push_back(
+                    {std::array<size_t, 2>{{size_t(E(k, 0)), size_t(E(k, 1))}}});
+            }
         }
     }
-    if (envelope) {
+    if (has_lower && type == CellType::Triangle) {
+        // The edge block of a triangle mesh: tagged curves, each label an edge tag, as the curve
+        // inputs give them (read_curves()). Its rows labelled EnvelopeSurface are the envelope,
+        // and so is a block without tags, as a lower physical group was on the .msh route. Unlike
+        // a face label in 3D, a label may also name triangles: triwild names an input's region
+        // (its winding number) and its curve alike, and the mesh keeps the edge tags' names apart
+        // (SimWildMeshTri::m_edge_tag_names). Until 2026-11 every row was the envelope, so curves
+        // came back from a round trip as one envelope, no longer tracked.
+        const auto& edges = lower->second;
+        if (!edges.attributes.count("tags")) {
+            std::vector<Eigen::Index> rows(edges.connectivity.rows());
+            for (size_t k = 0; k < rows.size(); ++k) rows[k] = Eigen::Index(k);
+            envelope_from(edges, rows);
+        } else {
+            const LowerTags et = lower_tags(edges, "edge");
+            out.face_tag_names = et.names;
+            if (!et.envelope_rows.empty()) envelope_from(edges, et.envelope_rows);
+            place_tagged(edges, et, out.F_tagged, out.F_tags, "edge");
+        }
+    }
+    if (envelope && !io::is_labelled_envelope(*envelope, dim == 3)) {
         envelope->validate();
-        io::ComponentIO::attributes(envelope->vertex_attributes, {});
+        std::set<std::string> dropped_envelope =
+            io::ComponentIO::dropped_fields(envelope->vertex_attributes, {});
         const auto t = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
         for (const auto& [ct, c] : envelope->cells) {
             if (ct != t) throw std::runtime_error("Incompatible envelope topology");
-            io::ComponentIO::attributes(c.attributes, {});
+            dropped_envelope.merge(io::ComponentIO::dropped_fields(c.attributes, {}));
         }
+        io::ComponentIO::log_dropped("envelope", dropped_envelope);
         out.V_envelope = envelope->V.leftCols(type == CellType::Tetrahedron ? 3 : 2);
         out.F_envelope = io::ComponentIO::indices(envelope->cell(t).connectivity);
         out.envelope_name = "EnvelopeSurface";
-    }
-    if (has_embedded) {
-        referenced(lower->second.connectivity, out.V_envelope, out.F_envelope);
-        const auto tag = lower->second.attributes.find("tags");
-        out.envelope_name = tag != lower->second.attributes.end() && tag->second.cols() == 1 &&
-                                    tag->second.labels.size() == 1
-                                ? tag->second.labels[0]
-                                : "EnvelopeSurface";
+    } else if (envelope) {
+        // A labelled reference (io::append_envelope_block()): its triangles (2D: segments) and,
+        // in 3D, feature curves, each row with its labels, which name the mesh's tags; its points,
+        // which no tag of a mesh marks, are only handed on. Matched to the mesh by name, after
+        // the mesh's own labels are read above (io::read_labelled_envelope(), which tetwild's
+        // tagged route reads its `envelope` with too).
+        // The mesh's bits named `name`: a face tag's (2D: an edge tag's), a region's after them.
+        // In 2D a curve and a region may share a name, as triwild names them, and the segments
+        // then hold both: the curve is the region's boundary.
+        const auto bits_named = [&](const std::string& name) {
+            InputSet bits = 0;
+            const size_t F = out.face_tag_names.size();
+            for (size_t i = 0; i < F && i < size_t(SurfaceTagAttributes::max_inputs); ++i)
+                if (out.face_tag_names[i] == name) bits |= InputSet(1) << i;
+            for (size_t j = 0; j < out.tag_names.size(); ++j)
+                if (out.tag_names[j] == name && F + j < size_t(SurfaceTagAttributes::max_inputs))
+                    bits |= InputSet(1) << (F + j);
+            return bits;
+        };
+        io::LabelledReference reference =
+            io::read_labelled_envelope(*envelope, dim, bits_named, out.feature_edge_names);
+        out.V_envelope = std::move(reference.V);
+        out.F_envelope = std::move(reference.F);
+        out.F_envelope_labels = std::move(reference.F_labels);
+        out.envelope_name = "EnvelopeSurface";
+        // The feature curves of the labels the mesh's feature curves have (feature_edge_names),
+        // one input edge per edge and label, as the mesh's own are read above.
+        out.reference_curves = std::move(reference.curves);
+        out.envelope_reference = *envelope;
     }
     return out;
 }

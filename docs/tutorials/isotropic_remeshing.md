@@ -314,10 +314,10 @@ in `topo_annots_remeshed.vtu`, and 92 feature edges in `topo_annots_remeshed_edg
   triangles under a given angle at the end of every iteration.
 - **The features are lost.** Only a `.vtu` output holds the feature edges, their ids and the
   per-face fields; an `.obj` holds the triangles, and the run warns.
-- **A labelled result refused as the next input.** In memory, `outputs["mesh"]` carries the
-  per-face fields of `feature_fields`, and an input may carry no triangle field that
-  `feature_fields` does not name (`Unknown mesh attribute`): pass the same per-face fields again.
-  The result holds no `uv` or `normal`, only their seams, in `edges`.
+- **A labelled result loses its labels as the next input.** In memory, `outputs["mesh"]` carries
+  the per-face fields of `feature_fields`, and a triangle field that `feature_fields` does not
+  name is dropped (the log names it), and with it its curves: pass the same per-face fields
+  again. The result holds no `uv` or `normal`, only their seams, in `edges`.
 - **Inconsistently oriented input.** The fold check
   ([`check_inversions`](../reference/isotropic_remeshing.md#check_inversions)) counts every flip
   of orientation inside a region of the feature curves as a fold -- not one along a curve between

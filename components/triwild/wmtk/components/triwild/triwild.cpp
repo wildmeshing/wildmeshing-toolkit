@@ -19,12 +19,16 @@
 
 #include "Parameters.h"
 #include "TriWildMesh.h"
+#include "read_tagged_mesh.hpp"
 
 #include <triwild_spec.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <map>
+#include <memory>
 #include <numeric>
+#include <optional>
 #include <tuple>
 #include <vector>
 
@@ -230,24 +234,53 @@ std::shared_ptr<Envelope> envelope_over(const MatrixXd& V, const MatrixXi& E)
 
 } // namespace
 
+/**
+ * @brief The tagged route's input (read_tagged_mesh()), when `input` is a triangle mesh: on the
+ * memory route a named mesh with triangles, on the file route a .msh with triangles, read by the
+ * shared reader. Its fields but the tags are dropped, as every reader drops them. Without one,
+ * nullopt: the inputs are curves. A triangle mesh is the only input: with any other, it throws.
+ * tetwild's read_tagged_input(), in 2D.
+ */
+static std::optional<TaggedTriMesh> read_tagged_input(
+    const io::ComponentIO& component_io,
+    const std::vector<std::string>& input_paths)
+{
+    std::optional<TaggedTriMesh> tagged;
+    for (const std::string& path : input_paths) {
+        std::optional<MeshData> read;
+        const MeshData* mesh = nullptr;
+        if (component_io.memory()) {
+            mesh = &component_io.mesh(path);
+        } else {
+            std::string extension = std::filesystem::path(path).extension().string();
+            for (char& c : extension) c = char(std::tolower(static_cast<unsigned char>(c)));
+            if (extension != ".msh") continue;
+            read = io::read_mesh(path);
+            mesh = &*read;
+        }
+        if (!is_triangle_mesh(*mesh)) continue;
+        if (input_paths.size() > 1) {
+            log_and_throw_error(
+                "{}: a tagged triangle mesh is triwild's only input, not one of {}",
+                path,
+                input_paths.size());
+        }
+        tagged = read_tagged_mesh(*mesh, path);
+    }
+    return tagged;
+}
+
 static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
     component_io.prepare(json_params, "triwild");
+    // The `envelope` input names a mesh of the call on the memory route, as simwild's does.
+    const auto envelope_selector = json_params.value("envelope", nlohmann::json());
+    if (component_io.memory()) json_params.erase("envelope");
     using wmtk::utils::resolve_path;
 
-    // Recording anchors junctions unless allow_junction_cleanup is given: a junction the
-    // operations slide along a curve drags the curve map with it, stretched by large factors.
-    // Without preserve_feature_points nothing is anchored, junctions or not, so nothing changes.
-    const bool junction_cleanup_given = json_params.contains("allow_junction_cleanup");
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
-        jse::embed::wmtk_triwild_spec::triwild_spec::spec(),
-        false);
-    if (!junction_cleanup_given && json_params["preserve_feature_points"] &&
-        !json_params["history_output"].get<std::string>().empty()) {
-        json_params["allow_junction_cleanup"] = false;
-        logger().info("history_output: junctions anchored (allow_junction_cleanup false)");
-    }
+        jse::embed::wmtk_triwild_spec::triwild_spec::spec());
     const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     triwild::Parameters params(json_params);
@@ -265,6 +298,86 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const bool record_history = !history_output.empty();
     io::ReadProvenance read; // the files as read, then where they went
 
+    // The tagged route, the 2D twin of tetwild's: a triangle mesh as the input -- on the memory
+    // route a named mesh with triangles, on the file route a .msh with triangles -- continued
+    // from as it is, its triangles kept, instead of an arrangement of curves, so that a chain of
+    // components can go on through triwild. triwild holds the mesh's tracked curves and points
+    // (read_tagged_mesh()), and no regions: its inputs' winding numbers, computed at the end, are
+    // fields (wn_<name>), not regions, and a tagged mesh has none. Skipped on it: the reading of
+    // curves, the simplification, the arrangement and the input winding numbers.
+    std::optional<TaggedTriMesh> tagged_mesh = read_tagged_input(component_io, input_paths);
+    const bool tagged = tagged_mesh.has_value();
+    if (tagged) {
+        // What the route has no use for, refused rather than ignored.
+        if (!json_params["input_points"].empty()) {
+            log_and_throw_error(
+                "input_points: not with a tagged mesh input, whose point block is its points");
+        }
+        if (!json_params["input_names"].empty()) {
+            log_and_throw_error("input_names: a tagged mesh input names its labels itself");
+        }
+        if (filter_option == "input") {
+            log_and_throw_error(
+                "filter \"input\": a tagged mesh input has no input curves to take the winding "
+                "number of; \"tracked\" and \"flood\" use its tracked edges");
+        }
+        if (tagged_mesh->E.rows() == 0) {
+            log_and_throw_error(
+                "a tagged mesh input without tracked edges: triwild holds tracked curves, and "
+                "the mesh has none");
+        }
+    }
+    // The `envelope` input: a mesh of the call on the memory route, a mesh file on the file route
+    // (relative to input_dir), as tetwild's and simwild's. Held to as simwild holds one, by the
+    // same code (TriOptimizerMesh's reference): exactly, so not with the sampled envelope, and
+    // labelled.
+    const std::string envelope_path =
+        component_io.memory() ? "" : json_params["envelope"].get<std::string>();
+    std::optional<MeshData> envelope_given;
+    if (!envelope_selector.is_null() || !envelope_path.empty()) {
+        if (!tagged) log_and_throw_error("`envelope` applies to a tagged mesh input only");
+        envelope_given = envelope_path.empty()
+                             ? component_io.mesh(envelope_selector.get<std::string>())
+                             : io::read_mesh(resolve_path(root, envelope_path));
+        if (!io::is_labelled_envelope(*envelope_given, /*is_3d=*/false)) {
+            log_and_throw_error(
+                "`envelope`: a tagged mesh input is held to a labelled reference, as tetwild, "
+                "triwild and simwild hand theirs on, not to bare geometry");
+        }
+        if (json_params["use_sample_envelope"]) {
+            log_and_throw_error(
+                "`envelope`: a reference is held to and checked against exactly, not with "
+                "use_sample_envelope");
+        }
+    }
+    // The labels of the output's edge tags, the same on both routes: an input curve's
+    // (input_names, else tag_<i>), or a tagged mesh's own.
+    const std::vector<std::string> edge_tags =
+        tagged ? tagged_mesh->edge_names
+               : io::input_labels(
+                     json_params["input_names"].get<std::vector<std::string>>(),
+                     input_paths.size());
+    // filter_inputs: the inputs that bound the domain a filter keeps, by their labels (bit i:
+    // edge_tags[i]). Every input by default, as before the key.
+    InputSet bounding = ~InputSet(0);
+    const auto filter_inputs = json_params["filter_inputs"].get<std::vector<std::string>>();
+    if (!filter_inputs.empty()) {
+        if (filter_option == "none") {
+            log_and_throw_error("filter_inputs: with filter \"none\" nothing is filtered");
+        }
+        bounding = 0;
+        for (const std::string& name : filter_inputs) {
+            const auto it = std::find(edge_tags.begin(), edge_tags.end(), name);
+            if (it == edge_tags.end()) {
+                log_and_throw_error(
+                    "filter_inputs: {} is not an input (the inputs: {})",
+                    name,
+                    edge_tags);
+            }
+            bounding |= InputSet(1) << (it - edge_tags.begin());
+        }
+        logger().info("filter \"{}\": the domain bounded by {} only", filter_option, filter_inputs);
+    }
     // Read the inputs. Vs/Es keep them per input, as read, so the winding-number pass below
     // does not have to parse every file a second time; V_in/E_in is their union, which is
     // what gets simplified and arranged.
@@ -272,413 +385,547 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     MatrixXi E_in;
     std::vector<MatrixXd> Vs;
     std::vector<MatrixXi> Es;
-    // Merging vertices that are merely *close* is a topology change: it welds curves
-    // that pass near each other and so removes loops and junctions. Under
-    // preserve_topology only exactly coincident vertices may be merged, which is a pure
-    // de-duplication of the file and leaves the topology alone. Same rule as tetwild.
-    const double remove_duplicate_eps =
-        params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
-    wmtk::utils::read_input_curves(
-        input_paths,
-        remove_duplicate_eps,
-        V_in,
-        E_in,
-        Vs,
-        Es,
-        component_io.memory() ? &component_io : nullptr,
-        record_history ? &read : nullptr);
-    // Which input each segment of the union came from (read_input_curves concatenates them in
-    // order), carried through the simplification and the arrangement so each tracked segment
-    // is held to its own inputs' envelopes. max_inputs inputs at most: see
-    // SurfaceTagAttributes::input_set().
-    if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
-        log_and_throw_error(
-            "{} input curve files; at most {} are supported",
-            input_paths.size(),
-            SurfaceTagAttributes::max_inputs);
-    }
-    const bool per_input = input_paths.size() > 1;
-    std::vector<int> E_in_input;
-    for (size_t k = 0; k < Es.size(); ++k) {
-        E_in_input.insert(E_in_input.end(), Es[k].rows(), int(k));
-    }
-    assert(E_in_input.size() == size_t(E_in.rows()));
-
-    // Input point files: every vertex is a feature point, appended to V_in as an isolated
-    // vertex (referenced by no segment). Appended BEFORE the bounding box is taken, so a
-    // point outside the curves' box still ends up inside the triangulated domain. Not added
-    // to Vs/Es: points carry no winding number.
-    {
-        std::vector<std::string> point_paths = json_params["input_points"];
-        for (std::string& p : point_paths) {
-            p = component_io.path(root, p);
+    // What both routes leave to the optimization and the output: the free points, the Euler
+    // characteristics compared at the end, the mesh, the curve history before it, and the
+    // reference handed on (`envelope`).
+    std::vector<Vector2d> free_points;
+    const bool debug_euler = json_params["DEBUG_euler"];
+    std::vector<int> ecs_input, ecs_arrangement;
+    std::unique_ptr<TriWildMesh> mesh_owner;
+    history::CurveHistory input_history;
+    MeshData envelope_out;
+    if (!tagged) {
+        // Merging vertices that are merely *close* is a topology change: it welds curves
+        // that pass near each other and so removes loops and junctions. Under
+        // preserve_topology only exactly coincident vertices may be merged, which is a pure
+        // de-duplication of the file and leaves the topology alone. Same rule as tetwild.
+        const double remove_duplicate_eps =
+            params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
+        wmtk::utils::read_input_curves(
+            input_paths,
+            remove_duplicate_eps,
+            V_in,
+            E_in,
+            Vs,
+            Es,
+            component_io.memory() ? &component_io : nullptr,
+            record_history ? &read : nullptr);
+        // Which input each segment of the union came from (read_input_curves concatenates them in
+        // order), carried through the simplification and the arrangement so each tracked segment
+        // is held to its own inputs' envelopes. max_inputs inputs at most: see
+        // SurfaceTagAttributes::input_set().
+        if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+            log_and_throw_error(
+                "{} input curve files; at most {} are supported",
+                input_paths.size(),
+                SurfaceTagAttributes::max_inputs);
         }
-        for (const std::string& path : point_paths) {
-            MatrixXd Vp;
-            MatrixXi Ep;
-            io::ReadProvenance read_points;
-            component_io.edges(
-                path,
-                Vp,
-                Ep,
-                remove_duplicate_eps,
-                -1,
-                record_history ? &read_points : nullptr);
-            if (Ep.rows() > 0) {
-                logger().warn(
-                    "input_points file {} has {} edges; only its {} vertices are used",
-                    path,
-                    Ep.rows(),
-                    Vp.rows());
+        const bool per_input = input_paths.size() > 1;
+        std::vector<int> E_in_input;
+        for (size_t k = 0; k < Es.size(); ++k) {
+            E_in_input.insert(E_in_input.end(), Es[k].rows(), int(k));
+        }
+        assert(E_in_input.size() == size_t(E_in.rows()));
+
+        // Input point files: every vertex is a feature point, appended to V_in as an isolated
+        // vertex (referenced by no segment). Appended BEFORE the bounding box is taken, so a
+        // point outside the curves' box still ends up inside the triangulated domain. Not added
+        // to Vs/Es: points carry no winding number.
+        {
+            std::vector<std::string> point_paths = json_params["input_points"];
+            for (std::string& p : point_paths) {
+                p = component_io.path(root, p);
             }
-            logger().info("Read point file {}: #P = {}", path, Vp.rows());
-            const int base = V_in.rows();
-            V_in.conservativeResize(base + Vp.rows(), 2);
-            V_in.block(base, 0, Vp.rows(), 2) = Vp.block(0, 0, Vp.rows(), 2);
-            if (record_history) {
-                // The points after the curves, as the files hold them; their edges are not input.
-                const Eigen::Index raw = read.V.rows();
-                read.V.conservativeResize(raw + read_points.V.rows(), 2);
-                read.V.bottomRows(read_points.V.rows()) = read_points.V.leftCols(2);
-                for (const int v : read_points.vertex_map) {
-                    read.vertex_map.push_back(v < 0 ? -1 : base + v);
+            for (const std::string& path : point_paths) {
+                MatrixXd Vp;
+                MatrixXi Ep;
+                io::ReadProvenance read_points;
+                component_io.edges(
+                    path,
+                    Vp,
+                    Ep,
+                    remove_duplicate_eps,
+                    -1,
+                    record_history ? &read_points : nullptr);
+                if (Ep.rows() > 0) {
+                    logger().warn(
+                        "input_points file {} has {} edges; only its {} vertices are used",
+                        path,
+                        Ep.rows(),
+                        Vp.rows());
+                }
+                logger().info("Read point file {}: #P = {}", path, Vp.rows());
+                const int base = V_in.rows();
+                V_in.conservativeResize(base + Vp.rows(), 2);
+                V_in.block(base, 0, Vp.rows(), 2) = Vp.block(0, 0, Vp.rows(), 2);
+                if (record_history) {
+                    // The points after the curves, as the files hold them; their edges are not
+                    // input.
+                    const Eigen::Index raw = read.V.rows();
+                    read.V.conservativeResize(raw + read_points.V.rows(), 2);
+                    read.V.bottomRows(read_points.V.rows()) = read_points.V.leftCols(2);
+                    for (const int v : read_points.vertex_map) {
+                        read.vertex_map.push_back(v < 0 ? -1 : base + v);
+                    }
                 }
             }
         }
-    }
 
-    // Free points to preserve: every vertex of V_in with no incident segment -- the point
-    // files above, plus any isolated vertex the curve files contained (read_edge_mesh keeps
-    // them for exactly this). Detected on the ORIGINAL input, not the simplified network: a
-    // sub-eps loop can degenerate to an isolated vertex during simplification, and such a
-    // remnant is the simplification doing its job, not an input point to pin.
-    std::vector<Vector2d> free_points;
-    {
-        std::vector<int> valence(V_in.rows(), 0);
-        for (int i = 0; i < E_in.rows(); ++i) {
-            ++valence[E_in(i, 0)];
-            ++valence[E_in(i, 1)];
-        }
-        for (int v = 0; v < V_in.rows(); ++v) {
-            if (valence[v] == 0) {
-                free_points.emplace_back(V_in.row(v));
+        // Free points to preserve: every vertex of V_in with no incident segment -- the point
+        // files above, plus any isolated vertex the curve files contained (read_edge_mesh keeps
+        // them for exactly this). Detected on the ORIGINAL input, not the simplified network: a
+        // sub-eps loop can degenerate to an isolated vertex during simplification, and such a
+        // remnant is the simplification doing its job, not an input point to pin.
+        {
+            std::vector<int> valence(V_in.rows(), 0);
+            for (int i = 0; i < E_in.rows(); ++i) {
+                ++valence[E_in(i, 0)];
+                ++valence[E_in(i, 1)];
+            }
+            for (int v = 0; v < V_in.rows(); ++v) {
+                if (valence[v] == 0) {
+                    free_points.emplace_back(V_in.row(v));
+                }
+            }
+            if (!free_points.empty()) {
+                logger().info("input free points: {}", free_points.size());
             }
         }
-        if (!free_points.empty()) {
-            logger().info("input free points: {}", free_points.size());
+
+        // Informational input-topology report; gated behind DEBUG_euler because it is only
+        // meaningful next to the matching computations later in the run.
+        if (debug_euler) {
+            ecs_input = compute_euler_characteristics(E_in);
+            logger().info("Euler characteristic, input curves: {}", ecs_input);
         }
-    }
 
-    // Informational input-topology report; gated behind DEBUG_euler because it is only
-    // meaningful next to the matching computations later in the run.
-    const bool debug_euler = json_params["DEBUG_euler"];
-    std::vector<int> ecs_input;
-    if (debug_euler) {
-        ecs_input = compute_euler_characteristics(E_in);
-        logger().info("Euler characteristic, input curves: {}", ecs_input);
-    }
+        // The bounding box comes from the input curves, as in tetwild -- eps has to be known
+        // before the arrangement runs, because the simplification happens first. (It used to be
+        // taken from the arrangement output, which includes the background grid and is about
+        // 13% larger.)
+        params.init(V_in.colwise().minCoeff(), V_in.colwise().maxCoeff());
 
-    // The bounding box comes from the input curves, as in tetwild -- eps has to be known
-    // before the arrangement runs, because the simplification happens first. (It used to be
-    // taken from the arrangement output, which includes the background grid and is about
-    // 13% larger.)
-    params.init(V_in.colwise().minCoeff(), V_in.colwise().maxCoeff());
-
-    // The whole eps around the original input, as in tetwild. This used to be params.eps / 2
-    // on the grounds that "the arrangement gets the other half, which is what leaves room for
-    // the optimizer to move" -- but reserving that room is what simplify_envelope_ratio does,
-    // immediately below, so the two compounded and the simplification ran at eps/4 while the
-    // optimizer was held to half the tolerance its result is judged against.
-    const double envelope_eps = params.eps;
-    // The simplification and the triangulation used to share one envelope object at the same
-    // eps, which leaves the optimizer no room: a simplification free to place a vertex right
-    // at the limit hands the optimizer a mesh where almost every move is already outside.
-    // Simplifying inside a fraction of the envelope reserves the rest as headroom. Measured
-    // in 3D, where sharing one envelope put a third of the simplified vertices outside before
-    // the tet phase began and had ~94% of smoothing attempts vetoed.
-    // preserve_topology holds the input simplification to the link condition as well.
-    const bool simplify_use_link_condition = params.preserve_topology;
-    if (json_params.contains("simplify_use_link_condition")) {
-        logger().warn(
-            "simplify_use_link_condition is gone: preserve_topology ({}) now sets the link "
-            "condition of the input simplification",
-            params.preserve_topology);
-    }
-    const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
-    const double simplify_eps = envelope_eps * simplify_envelope_ratio;
-    logger().info(
-        "envelope eps: simplification {:.6} ({:.0f}% of triangulation {:.6})",
-        simplify_eps,
-        100 * simplify_envelope_ratio,
-        envelope_eps);
-    const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
-    // The only ratio that is wrong independently of how the envelope is implemented. Above 1
-    // the simplification is allowed to move geometry further than the triangulation's own
-    // envelope permits, so the optimizer starts from a mesh that is already outside it and
-    // every operation near those curves is vetoed.
-    //
-    // There used to be a warning at 0.5 here. That number was the sampled backend's internal
-    // compensation showing through -- its edge test accepts a segment only within eps/2,
-    // because its sampling guarantees the other eps/2 -- and both backends guarantee the same
-    // thing to their caller: everything they accept is within eps. A caller reasoning about
-    // eps/2 is reasoning about an implementation detail it should not be able to see.
-    if (simplify_envelope_ratio > 1.0) {
-        logger().warn(
-            "simplify_envelope_ratio {} exceeds 1; the simplification may move curves further "
-            "than the triangulation's envelope allows, leaving the mesh outside it at init.",
-            simplify_envelope_ratio);
-    }
-
-    MatrixXd V_simp = V_in;
-    MatrixXi E_simp = E_in;
-    std::vector<int> E_simp_input = E_in_input;
-    std::vector<history::Edit> collapses;
-    std::vector<int> surviving_vertices;
-    const bool skip_simplify = json_params["skip_simplify"];
-    if (skip_simplify) {
-        logger().info("skip simplification");
-    } else {
-        Envelope simplify_envelope(!simplify_use_sample_envelope);
-        simplify_envelope.init(V_in, E_in, simplify_eps);
-        std::vector<int> surviving;
-        const size_t removed = wmtk::utils::simplify_segments(
-            V_simp,
-            E_simp,
-            simplify_envelope,
-            simplify_use_link_condition,
-            &surviving,
-            record_history ? &collapses : nullptr,
-            record_history ? &surviving_vertices : nullptr);
-        E_simp_input.resize(surviving.size());
-        for (size_t i = 0; i < surviving.size(); ++i) E_simp_input[i] = E_in_input[surviving[i]];
+        // The whole eps around the original input, as in tetwild. This used to be params.eps / 2
+        // on the grounds that "the arrangement gets the other half, which is what leaves room for
+        // the optimizer to move" -- but reserving that room is what the simplification's own,
+        // smaller eps does (simplify_envelope_ratio 0.5 then), so the two compounded and the
+        // simplification ran at eps/4 while the optimizer was held to half the tolerance its result
+        // is judged against.
+        const double envelope_eps = params.eps;
+        // The simplification and the triangulation used to share one envelope object at the same
+        // eps, which leaves the optimizer no room: a simplification free to place a vertex right
+        // at the limit hands the optimizer a mesh where almost every move is already outside.
+        // Simplifying inside a fraction of the envelope reserves the rest as headroom. Measured
+        // in 3D, where sharing one envelope put a third of the simplified vertices outside before
+        // the tet phase began and had ~94% of smoothing attempts vetoed.
+        // preserve_topology holds the input simplification to the link condition as well.
+        const bool simplify_use_link_condition = params.preserve_topology;
+        // The simplification's eps is a length of its own, not a fraction of envelope_eps:
+        // eps_simplify when positive, else eps_simplify_rel of the same diagonal as envelope_eps --
+        // the two keys and the rule of simwild's Parameters::init(), now in all three apps. The
+        // default, 5e-4 of the diagonal, is 0.5 envelope_eps at the default eps_rel, as
+        // simplify_envelope_ratio 0.5 was until 2026-11. It does not follow eps_rel: under
+        // envelope_reference "input" one at or above envelope_eps is refused just below.
+        const double eps_simplify_rel = json_params["eps_simplify_rel"];
+        const double eps_simplify = json_params["eps_simplify"];
+        const double simplify_eps =
+            eps_simplify > 0 ? eps_simplify : eps_simplify_rel * params.diag_l;
         logger().info(
-            "input simplification: #V {} -> {}, #E {} -> {} ({} vertices removed). Link "
-            "condition {}.",
-            V_in.rows(),
-            V_simp.rows(),
-            E_in.rows(),
-            E_simp.rows(),
-            removed,
-            simplify_use_link_condition ? "on" : "off");
-    }
+            "envelope eps: simplification {:.6} ({:.0f}% of triangulation {:.6})",
+            simplify_eps,
+            100 * simplify_eps / envelope_eps,
+            envelope_eps);
+        const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
+        // Which geometry every envelope and anchor is built around: the input, or the simplified
+        // curves (see below, where they are built).
+        const bool env_around_simplified = json_params["envelope_reference"] == "simplified";
+        // The only simplification eps that is wrong independently of how the envelope is
+        // implemented. At eps and above, around the input, the simplification is allowed to move
+        // geometry as far as or further than the triangulation's own envelope permits, so the
+        // optimizer starts from a mesh that is outside it or on its boundary, and every operation
+        // near those curves is vetoed. Refused, before any work; until 2026-10 a warning above eps.
+        // Around the simplified curves, which replace the input, any simplification eps is allowed,
+        // and no simplification is refused.
+        //
+        // There used to be a warning at eps/2 here. That number was the sampled backend's internal
+        // compensation showing through -- its edge test accepts a segment only within eps/2,
+        // because its sampling guarantees the other eps/2 -- and both backends guarantee the same
+        // thing to their caller: everything they accept is within eps. A caller reasoning about
+        // eps/2 is reasoning about an implementation detail it should not be able to see.
+        const bool simplify = json_params["simplify"];
+        wmtk::utils::check_envelope_reference(
+            envelope_eps,
+            simplify_eps,
+            env_around_simplified,
+            /*simplification_ran=*/simplify);
 
-    // The simplification is the one stage whose topology is genuinely optional: without
-    // preserve_topology it may merge junctions and separate curves. Compare
-    // here, while the curves are still the same kind of object.
-    std::vector<int> ecs_simplified;
-    if (debug_euler) {
-        ecs_simplified = compute_euler_characteristics(E_simp);
-        if (ecs_simplified != ecs_input) {
-            logger().warn(
-                "Euler characteristic, after simplification: {} -- changed from the input "
-                "{}. Expected without preserve_topology, which allows junctions and "
-                "separate curves to merge.",
-                ecs_simplified,
-                ecs_input);
+        MatrixXd V_simp = V_in;
+        MatrixXi E_simp = E_in;
+        std::vector<int> E_simp_input = E_in_input;
+        std::vector<history::Edit> collapses;
+        std::vector<int> surviving_vertices;
+        if (!simplify) {
+            logger().info("no simplification (simplify false)");
         } else {
-            logger().info("Euler characteristic, after simplification: unchanged.");
-        }
-    }
-
-    // Exact arrangement of the (simplified) segment network.
-    MatrixXd V;
-    std::vector<Vector2r> V_rational; // the same vertices, exact
-    MatrixXi F;
-    MatrixXi E; // constraint edges in the arrangement
-    std::vector<int> point_map;
-    // The input's direction on each constraint edge, so the tracked curves can be oriented as
-    // the input was (filter "tracked"). See SurfaceTagAttributes::m_orientation.
-    std::vector<int> E_orientation;
-    // The simplified segments each of E lies on: for the input sets, with several inputs, and
-    // for the history.
-    std::vector<std::vector<int>> E_sources;
-    wmtk::utils::embed_segments(
-        V_simp,
-        E_simp,
-        V,
-        V_rational,
-        F,
-        E,
-        per_input || record_history ? &E_sources : nullptr,
-        &E_orientation,
-        free_points.empty() ? nullptr : &point_map,
-        per_input ? &E_simp_input : nullptr); // the orientation repair keeps to one input
-    // Each constraint edge's input set: the inputs of the segments it tiles. Several only where
-    // segments of different inputs overlap -- the 2D counterpart of a coplanar group spanning
-    // several inputs in 3D -- and then the edge is held to all of them. Counted.
-    std::vector<InputSet> E_input_set;
-    if (per_input) {
-        E_input_set.assign(E.rows(), 0);
-        size_t n_several = 0;
-        for (int i = 0; i < E.rows(); ++i) {
-            for (const int src : E_sources[i]) {
-                E_input_set[i] |= InputSet(1) << E_simp_input[src];
+            Envelope simplify_envelope(!simplify_use_sample_envelope);
+            simplify_envelope.init(V_in, E_in, simplify_eps);
+            // With several input files, each segment held to its own file's envelope, as the
+            // optimizer holds it after (m_input_envelopes); shared without per_input_envelopes.
+            const auto segment_envelopes = params.per_input_envelopes
+                                               ? wmtk::utils::input_segment_envelopes(
+                                                     V_in,
+                                                     E_in,
+                                                     E_in_input,
+                                                     simplify_eps,
+                                                     !simplify_use_sample_envelope)
+                                               : std::vector<std::shared_ptr<wmtk::Envelope>>{};
+            std::vector<int> surviving;
+            const size_t removed = wmtk::utils::simplify_segments(
+                V_simp,
+                E_simp,
+                simplify_envelope,
+                simplify_use_link_condition,
+                &surviving,
+                record_history ? &collapses : nullptr,
+                record_history ? &surviving_vertices : nullptr,
+                &segment_envelopes);
+            E_simp_input.resize(surviving.size());
+            for (size_t i = 0; i < surviving.size(); ++i) {
+                E_simp_input[i] = E_in_input[surviving[i]];
             }
-            const InputSet set = E_input_set[i];
-            if ((set & (set - 1)) != 0) ++n_several;
+            logger().info(
+                "input simplification: #V {} -> {}, #E {} -> {} ({} vertices removed). Link "
+                "condition {}.",
+                V_in.rows(),
+                V_simp.rows(),
+                E_in.rows(),
+                E_simp.rows(),
+                removed,
+                simplify_use_link_condition ? "on" : "off");
         }
-        logger().info(
-            "input sets: {} constraint edges, {} with several inputs",
-            E.rows(),
-            n_several);
-        // Done with, unless the history keys the tracked edges by them (below).
-        if (!record_history) std::vector<std::vector<int>>().swap(E_sources);
-    }
 
-    // Find each free point's vertex in the arrangement. By POSITION, not by index: the
-    // simplification compacts V, so input row ids do not survive it -- but an isolated
-    // vertex has no incident segment, so no collapse ever moves it and its coordinates in
-    // V_simp are bit-identical to the input's. The arrangement's point provenance then maps
-    // that row to the output vertex.
-    std::vector<size_t> free_point_vids;
-    if (!free_points.empty()) {
-        std::map<std::pair<double, double>, int> simp_row_of;
-        for (int v = 0; v < V_simp.rows(); ++v) {
-            simp_row_of.emplace(std::make_pair(V_simp(v, 0), V_simp(v, 1)), v);
-        }
-        for (const Vector2d& p : free_points) {
-            const auto it = simp_row_of.find({p[0], p[1]});
-            if (it == simp_row_of.end()) {
-                log_and_throw_error(
-                    "Input free point ({}, {}) not found after simplification; isolated "
-                    "vertices must survive it unmoved",
-                    p[0],
-                    p[1]);
+        // The simplification is the one stage whose topology is genuinely optional: without
+        // preserve_topology it may merge junctions and separate curves. Compare
+        // here, while the curves are still the same kind of object.
+        std::vector<int> ecs_simplified;
+        if (debug_euler) {
+            ecs_simplified = compute_euler_characteristics(E_simp);
+            if (ecs_simplified != ecs_input) {
+                logger().warn(
+                    "Euler characteristic, after simplification: {} -- changed from the input "
+                    "{}. Expected without preserve_topology, which allows junctions and "
+                    "separate curves to merge.",
+                    ecs_simplified,
+                    ecs_input);
+            } else {
+                logger().info("Euler characteristic, after simplification: unchanged.");
             }
-            const int vid = point_map[it->second];
-            if (vid < 0) {
-                log_and_throw_error(
-                    "Input free point ({}, {}) was dropped by the arrangement",
-                    p[0],
-                    p[1]);
-            }
-            free_point_vids.push_back(size_t(vid));
         }
-    }
 
-    // The arrangement is the baseline for everything after it. It is EXPECTED to differ
-    // from the input: resolving a crossing inserts a vertex shared by both curves, which
-    // merges two components into one and adds a cycle. That is the arrangement doing its
-    // job, not a defect -- so this is reported, never warned about.
-    std::vector<int> ecs_arrangement;
-    if (debug_euler) {
-        ecs_arrangement = compute_euler_characteristics(E);
-        logger().info(
-            "Euler characteristic, arrangement constraints: {} ({} constrained edges)",
-            ecs_arrangement,
-            E.rows());
-    }
-
-    if (params.output_enabled && params.debug_output) {
-        MatrixXd V3(V.rows(), 3);
-        V3.setZero();
-        V3.block(0, 0, V.rows(), 2) = V;
-        igl::write_triangle_mesh(output_path + "_initial_delaunay.obj", V3, F);
-
-        // write edges
-        std::ofstream edge_out(output_path + "_initial_edges.obj");
-        for (int i = 0; i < E.rows(); i++) {
-            edge_out << "v " << V(E(i, 0), 0) << " " << V(E(i, 0), 1) << " 0\n";
-            edge_out << "v " << V(E(i, 1), 0) << " " << V(E(i, 1), 1) << " 0\n";
-            edge_out << "l " << 2 * i + 1 << " " << 2 * i + 2 << "\n";
-        }
-        edge_out.close();
-
-        // and the simplified input, the counterpart of tetwild's _simplified_input.obj
-        std::ofstream simp_out(output_path + "_simplified_input.obj");
-        for (int i = 0; i < V_simp.rows(); i++) {
-            simp_out << "v " << V_simp(i, 0) << " " << V_simp(i, 1) << " 0\n";
-        }
-        for (int i = 0; i < E_simp.rows(); i++) {
-            simp_out << "l " << E_simp(i, 0) + 1 << " " << E_simp(i, 1) + 1 << "\n";
-        }
-        simp_out.close();
-    }
-
-    const std::vector<std::string> tag_names = json_params["input_names"];
-
-    // Which curves is the optimizer's envelope built around, and at what radius?
-    //
-    // Default: the ORIGINAL input curves at the full eps.
-    //
-    // With optimize_envelope_around_simplified: the SIMPLIFIED curves at the REMAINING
-    // tolerance, envelope_eps - simplify_eps. The deviation budget is unchanged by the
-    // triangle inequality -- the simplification is already within simplify_eps of the input,
-    // so anything within (envelope_eps - simplify_eps) of it is within envelope_eps of the
-    // input -- but the geometry now starts at the CENTRE of the envelope it is judged against
-    // rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a
-    // mesh handed over close to the boundary has most of its moves refused. See the tetwild
-    // driver for the measurements.
-    //
-    // The narrowing is charged for the simplification's deviation, so it applies only when a
-    // simplification actually ran. Under skip_simplify the "simplified" curves ARE the input,
-    // there is nothing to charge, and subtracting anyway would confine the optimizer to a
-    // fraction of the tolerance its result is judged against -- for no gain, since the
-    // geometry already starts centred in the full envelope.
-    const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
-    const bool charge_simplify = env_around_simplified && !skip_simplify;
-    const double opt_eps = wmtk::utils::optimization_envelope_eps(
-        envelope_eps,
-        simplify_eps,
-        env_around_simplified,
-        /*simplification_ran=*/!skip_simplify);
-    const MatrixXd& V_env = env_around_simplified ? V_simp : V_in;
-    const MatrixXi& E_env = env_around_simplified ? E_simp : E_in;
-    const std::vector<int>& E_env_input = env_around_simplified ? E_simp_input : E_in_input;
-    if (env_around_simplified) {
-        logger().info(
-            "optimization envelope: eps {:.6} ({}) around the {} curves (#V {}, #E {})",
-            opt_eps,
-            charge_simplify ? "full eps minus the simplification's share" : "the full eps",
-            charge_simplify ? "SIMPLIFIED" : "input, un-simplified,",
-            V_env.rows(),
-            E_env.rows());
-    }
-
-    TriWildMesh mesh(params, opt_eps, NUM_THREADS);
-    mesh.init_mesh(
-        V,
-        V_rational,
-        F,
-        E,
-        tag_names,
-        V_env,
-        E_env,
-        &E_orientation,
-        free_point_vids,
-        per_input ? &E_env_input : nullptr,
-        per_input ? &E_input_set : nullptr);
-    history::CurveHistory input_history;
-    if (record_history) {
-        input_history = history::curves_from_input(
-            read,
-            V_in,
-            E_in,
-            collapses,
+        // Exact arrangement of the (simplified) segment network.
+        MatrixXd V;
+        std::vector<Vector2r> V_rational; // the same vertices, exact
+        MatrixXi F;
+        MatrixXi E; // constraint edges in the arrangement
+        std::vector<int> point_map;
+        // The input's direction on each constraint edge, so the tracked curves can be oriented as
+        // the input was (filter "tracked"). See SurfaceTagAttributes::m_orientation.
+        std::vector<int> E_orientation;
+        // The simplified segments each of E lies on: for the input sets, with several inputs, and
+        // for the history.
+        std::vector<std::vector<int>> E_sources;
+        wmtk::utils::embed_segments(
             V_simp,
             E_simp,
-            surviving_vertices);
-        // The mesh's vertices are the arrangement's rows, so E names its tracked edges.
-        TriWildMesh::CurveSources sources;
-        for (Eigen::Index i = 0; i < E.rows(); ++i) {
-            const size_t a = size_t(std::min(E(i, 0), E(i, 1)));
-            const size_t b = size_t(std::max(E(i, 0), E(i, 1)));
-            auto& s = sources[{{a, b}}];
-            for (const int e : E_sources[i]) s.push_back(uint64_t(e));
+            V,
+            V_rational,
+            F,
+            E,
+            per_input || record_history ? &E_sources : nullptr,
+            &E_orientation,
+            free_points.empty() ? nullptr : &point_map,
+            per_input ? &E_simp_input : nullptr); // the orientation repair keeps to one input
+        // Each constraint edge's input set: the inputs of the segments it tiles. Several only where
+        // segments of different inputs overlap -- the 2D counterpart of a coplanar group spanning
+        // several inputs in 3D -- and then the edge is held to all of them. Counted.
+        std::vector<InputSet> E_input_set;
+        if (per_input) {
+            E_input_set.assign(E.rows(), 0);
+            size_t n_several = 0;
+            for (int i = 0; i < E.rows(); ++i) {
+                for (const int src : E_sources[i]) {
+                    E_input_set[i] |= InputSet(1) << E_simp_input[src];
+                }
+                const InputSet set = E_input_set[i];
+                if ((set & (set - 1)) != 0) ++n_several;
+            }
+            logger().info(
+                "input sets: {} constraint edges, {} with several inputs",
+                E.rows(),
+                n_several);
+            // Done with, unless the history keys the tracked edges by them (below).
+            if (!record_history) std::vector<std::vector<int>>().swap(E_sources);
         }
-        mesh.record_curve_history(component_io.history_metadata(json_params), sources);
-    }
-    // The arrangement now lives in `mesh`. These are function locals, so without this they --
-    // the exact coordinates above all -- would be held through the optimization, which is where
-    // the run peaks.
-    V.resize(0, 0);
-    F.resize(0, 0);
-    E.resize(0, 0);
-    std::vector<Vector2r>().swap(V_rational);
-    std::vector<int>().swap(E_orientation);
-    std::vector<InputSet>().swap(E_input_set);
-    std::vector<std::vector<int>>().swap(E_sources);
 
+        // Find each free point's vertex in the arrangement. By POSITION, not by index: the
+        // simplification compacts V, so input row ids do not survive it -- but an isolated
+        // vertex has no incident segment, so no collapse ever moves it and its coordinates in
+        // V_simp are bit-identical to the input's. The arrangement's point provenance then maps
+        // that row to the output vertex.
+        std::vector<size_t> free_point_vids;
+        if (!free_points.empty()) {
+            std::map<std::pair<double, double>, int> simp_row_of;
+            for (int v = 0; v < V_simp.rows(); ++v) {
+                simp_row_of.emplace(std::make_pair(V_simp(v, 0), V_simp(v, 1)), v);
+            }
+            for (const Vector2d& p : free_points) {
+                const auto it = simp_row_of.find({p[0], p[1]});
+                if (it == simp_row_of.end()) {
+                    log_and_throw_error(
+                        "Input free point ({}, {}) not found after simplification; isolated "
+                        "vertices must survive it unmoved",
+                        p[0],
+                        p[1]);
+                }
+                const int vid = point_map[it->second];
+                if (vid < 0) {
+                    log_and_throw_error(
+                        "Input free point ({}, {}) was dropped by the arrangement",
+                        p[0],
+                        p[1]);
+                }
+                free_point_vids.push_back(size_t(vid));
+            }
+        }
+
+        // The arrangement is the baseline for everything after it. It is EXPECTED to differ
+        // from the input: resolving a crossing inserts a vertex shared by both curves, which
+        // merges two components into one and adds a cycle. That is the arrangement doing its
+        // job, not a defect -- so this is reported, never warned about.
+        if (debug_euler) {
+            ecs_arrangement = compute_euler_characteristics(E);
+            logger().info(
+                "Euler characteristic, arrangement constraints: {} ({} constrained edges)",
+                ecs_arrangement,
+                E.rows());
+        }
+
+        if (params.output_enabled && params.debug_output) {
+            MatrixXd V3(V.rows(), 3);
+            V3.setZero();
+            V3.block(0, 0, V.rows(), 2) = V;
+            igl::write_triangle_mesh(output_path + "_initial_delaunay.obj", V3, F);
+
+            // write edges
+            std::ofstream edge_out(output_path + "_initial_edges.obj");
+            for (int i = 0; i < E.rows(); i++) {
+                edge_out << "v " << V(E(i, 0), 0) << " " << V(E(i, 0), 1) << " 0\n";
+                edge_out << "v " << V(E(i, 1), 0) << " " << V(E(i, 1), 1) << " 0\n";
+                edge_out << "l " << 2 * i + 1 << " " << 2 * i + 2 << "\n";
+            }
+            edge_out.close();
+
+            // and the simplified input, the counterpart of tetwild's _simplified_input.obj
+            std::ofstream simp_out(output_path + "_simplified_input.obj");
+            for (int i = 0; i < V_simp.rows(); i++) {
+                simp_out << "v " << V_simp(i, 0) << " " << V_simp(i, 1) << " 0\n";
+            }
+            for (int i = 0; i < E_simp.rows(); i++) {
+                simp_out << "l " << E_simp(i, 0) + 1 << " " << E_simp(i, 1) + 1 << "\n";
+            }
+            simp_out.close();
+        }
+
+        const std::vector<std::string> tag_names = json_params["input_names"];
+
+        // Which curves is the optimizer's envelope built around, and at what radius?
+        //
+        // envelope_reference "input", the default: the ORIGINAL input curves at the full eps.
+        //
+        // envelope_reference "simplified": the SIMPLIFIED curves, which replace the input, at the
+        // full eps too: the output is within envelope_eps of them, so within simplify_eps +
+        // envelope_eps of the input. The geometry starts at the CENTRE of the envelope it is judged
+        // against rather than somewhere inside it. The envelope is a hard veto rather than a
+        // penalty, so a mesh handed over close to the boundary has most of its moves refused. See
+        // the tetwild driver for the measurements. Until 2026-11 they were built at the remaining
+        // tolerance, envelope_eps - simplify_eps, keeping the output within envelope_eps of the
+        // input.
+        const MatrixXd& V_env = env_around_simplified ? V_simp : V_in;
+        const MatrixXi& E_env = env_around_simplified ? E_simp : E_in;
+        const std::vector<int>& E_env_input = env_around_simplified ? E_simp_input : E_in_input;
+        if (env_around_simplified) {
+            logger().info(
+                "optimization envelope: eps {:.6} around the SIMPLIFIED curves (#V {}, #E {})",
+                envelope_eps,
+                V_env.rows(),
+                E_env.rows());
+        }
+
+        mesh_owner = std::make_unique<TriWildMesh>(params, envelope_eps, NUM_THREADS);
+        auto& mesh = *mesh_owner;
+        mesh.m_input_names = tag_names;
+        // Around the input after a simplification, the input's own curve ends and junctions: the
+        // anchors are centred on them, and an end the simplification made is anchored where it is
+        // (TriOptimizerMesh::m_input_curve_points).
+        if (!env_around_simplified && simplify) mesh.set_input_curve_points(V_in, E_in);
+        mesh.init_mesh(
+            V,
+            V_rational,
+            F,
+            E,
+            tag_names,
+            V_env,
+            E_env,
+            &E_orientation,
+            free_point_vids,
+            per_input ? &E_env_input : nullptr,
+            per_input ? &E_input_set : nullptr);
+        if (record_history) {
+            input_history = history::curves_from_input(
+                read,
+                V_in,
+                E_in,
+                collapses,
+                V_simp,
+                E_simp,
+                surviving_vertices);
+            // The mesh's vertices are the arrangement's rows, so E names its tracked edges.
+            TriWildMesh::CurveSources sources;
+            for (Eigen::Index i = 0; i < E.rows(); ++i) {
+                const size_t a = size_t(std::min(E(i, 0), E(i, 1)));
+                const size_t b = size_t(std::max(E(i, 0), E(i, 1)));
+                auto& s = sources[{{a, b}}];
+                for (const int e : E_sources[i]) s.push_back(uint64_t(e));
+            }
+            mesh.record_curve_history(component_io.history_metadata(json_params), sources);
+        }
+        // The arrangement now lives in `mesh`. These are function locals, so without this they --
+        // the exact coordinates above all -- would be held through the optimization, which is where
+        // the run peaks.
+        V.resize(0, 0);
+        F.resize(0, 0);
+        E.resize(0, 0);
+        std::vector<Vector2r>().swap(V_rational);
+        std::vector<int>().swap(E_orientation);
+        std::vector<InputSet>().swap(E_input_set);
+        std::vector<std::vector<int>>().swap(E_sources);
+
+        // The reference the curves were held to, handed on (io::append_envelope_block()): the
+        // curves the envelope was built around, each segment with its input's edge tag, and the
+        // free points. On the file route in a file of its own, as the mesh file holds the mesh.
+        {
+            std::vector<InputSet> E_sets(E_env.rows(), 0);
+            for (Eigen::Index i = 0; i < E_env.rows(); ++i) {
+                const int in = E_env_input[i];
+                if (in >= 0 && in < SurfaceTagAttributes::max_inputs) E_sets[i] = InputSet(1) << in;
+            }
+            io::append_envelope_block(
+                envelope_out,
+                io::geometry_data(V_env, E_env, CellType::Edge),
+                CellType::Edge,
+                E_sets,
+                edge_tags);
+            io::append_envelope_points(envelope_out, free_points);
+        }
+    } else {
+        // The tagged route (read_tagged_input() above): the mesh is the input as it is.
+        const TaggedTriMesh& in = *tagged_mesh;
+        // An `envelope` given: the reference held to, its segments of the mesh's edge labels
+        // (io::held_rows()), each with its labels, matched by name.
+        std::optional<io::HeldRows> held;
+        if (envelope_given) {
+            const auto bits_named = [&](const std::string& name) {
+                InputSet bits = 0;
+                for (size_t i = 0; i < edge_tags.size(); ++i)
+                    if (edge_tags[i] == name) bits |= InputSet(1) << i;
+                return bits;
+            };
+            io::LabelledReference reference =
+                io::read_labelled_envelope(*envelope_given, 2, bits_named, {});
+            held = io::held_rows(reference.V, reference.F, reference.F_labels);
+        }
+        // The input, as the curve route's is its curve files: the reference when one is given,
+        // else the curves as received. What the envelopes are built around, one row per label
+        // (init_mesh() takes one input per row), and what the output is measured against.
+        V_in = held ? held->V : in.V;
+        E_in = held ? held->F : in.E;
+        const std::vector<InputSet>& E_in_sets = held ? held->labels : in.E_sets;
+        MatrixXi E_env(0, 2);
+        std::vector<int> E_env_input;
+        for (Eigen::Index r = 0; r < E_in.rows(); ++r) {
+            for (int b = 0; b < SurfaceTagAttributes::max_inputs; ++b) {
+                if (((E_in_sets[r] >> b) & 1) == 0) continue;
+                E_env.conservativeResize(E_env.rows() + 1, 2);
+                E_env.row(E_env.rows() - 1) = E_in.row(r);
+                E_env_input.push_back(b);
+            }
+        }
+        for (const size_t v : in.point_vids) free_points.emplace_back(in.V(v, 0), in.V(v, 1));
+        logger().info("tagged mesh input: its triangles kept, no simplification, no arrangement");
+
+        // eps_rel and length_rel are of the mesh's bounding box diagonal, its domain's.
+        params.init(in.V.colwise().minCoeff(), in.V.colwise().maxCoeff());
+        const double envelope_eps = params.eps;
+        wmtk::utils::check_envelope_reference(
+            envelope_eps,
+            0,
+            json_params["envelope_reference"] == "simplified",
+            /*simplification_ran=*/false);
+        if (debug_euler) {
+            ecs_input = compute_euler_characteristics(E_in);
+            ecs_arrangement = compute_euler_characteristics(in.E);
+        }
+        // The reference handed on: an `envelope` given, unchanged, so that a chain keeps passing
+        // the first component's input; else the curves as received, each segment with its
+        // labels, and the points.
+        if (envelope_given) {
+            envelope_out = std::move(*envelope_given);
+        } else {
+            io::append_envelope_block(
+                envelope_out,
+                io::geometry_data(V_in, E_in, CellType::Edge),
+                CellType::Edge,
+                E_in_sets,
+                edge_tags);
+            io::append_envelope_points(envelope_out, free_points);
+        }
+
+        mesh_owner = std::make_unique<TriWildMesh>(params, envelope_eps, NUM_THREADS);
+        auto& mesh = *mesh_owner;
+        mesh.m_edge_tag_names = edge_tags;
+        // With a reference, the curve-end anchors around its curve ends and junctions, as
+        // simwild's (TriOptimizerMesh::m_input_curve_points), set before init_mesh() anchors.
+        if (held) {
+            mesh.m_has_reference = true;
+            mesh.set_input_curve_points(V_in, E_in);
+        }
+        mesh.init_mesh(
+            in.V,
+            {},
+            in.F,
+            in.E,
+            {},
+            V_in,
+            E_env,
+            &in.E_orientation,
+            in.point_vids,
+            edge_tags.size() > 1 ? &E_env_input : nullptr,
+            &in.E_sets);
+        // The wall, as tetwild's: the boundary edges, untracked, each on a line of the box, which
+        // init_mesh() flagged as it flags every edge on one -- the mesh fills its box, as the
+        // arrangement's padded box does (require_box_boundary() says why).
+        mesh.require_box_boundary("triwild's tagged route");
+        // With a reference: every label of the mesh in it, and, before the optimization holds
+        // the mesh to it, what was received already in it -- the checks simwild's remeshing runs.
+        if (held) {
+            mesh.require_reference_edge_labels(held->labels);
+            mesh.check_reference_containment();
+        }
+        // The curve history starts at the mesh as received.
+        if (record_history) mesh.record_curve_history(component_io.history_metadata(json_params));
+        tagged_mesh.reset(); // its arrays now live in mesh
+    }
+    auto& mesh = *mesh_owner;
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.
     if (json_params["DEBUG_disable_envelope"]) {
@@ -714,16 +961,20 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     // The finalization's per-face annotations, each computed only when something uses it:
     //
-    //   per-input winding-number tags  filter "input", and the MSH groups. Always, unless
-    //                                  skip_winding_number opts out where no filter needs them
-    //                                  -- at the cost of the output groups, since without the
-    //                                  tags every face lands in the untagged group.
+    //   per-input winding numbers      each input's (the wn_<i> output fields), and the inputs
+    //                                  each face is inside, as its tags, which filter "input"
+    //                                  reads. Always, unless skip_winding_number opts out where
+    //                                  no filter needs them, as in tetwild.
     //   tracked winding number         filter "tracked" (below).
     //   flood-fill parts               filter "flood", or compute_flood_fill (the VTU field).
     //
     // As in tetwild, the flood fill used to run on every call just to fill its output field.
-    const bool skip_winding = json_params["skip_winding_number"] && filter_option == "none";
-    if (json_params["skip_winding_number"] && filter_option != "none") {
+    // A tagged mesh input has no input curves, so no input winding numbers, and no region tags.
+    // With filter_inputs, what the filter reads -- the region tags under "input", the tracked
+    // winding number under "tracked", the parts under "flood" -- is of those inputs only.
+    const bool skip_winding =
+        tagged || (json_params["skip_winding_number"] && filter_option == "none");
+    if (!tagged && json_params["skip_winding_number"] && filter_option != "none") {
         logger().warn(
             "skip_winding_number is set but filter='{}' requires the winding number; "
             "computing it anyway.",
@@ -740,12 +991,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 step_timer.getElapsedTime());
         } else {
             logger().info(
-                "Skipping the input winding numbers (skip_winding_number). The output groups "
-                "will be empty.");
+                "Skipping the input winding numbers ({})",
+                tagged ? "a tagged mesh input has no input curves" : "skip_winding_number");
         }
         if (filter_option == "flood" || json_params["compute_flood_fill"]) {
             step_timer.start();
-            const int num_parts = mesh.flood_fill();
+            const int num_parts =
+                mesh.flood_fill(filter_option == "flood" ? bounding : ~InputSet(0));
             logger().info(
                 "finalize: flood fill, {} parts {:.4}s",
                 num_parts,
@@ -780,10 +1032,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     if (filter_option == "input") {
-        mesh.filter_with_input_winding_number();
+        mesh.filter_with_input_winding_number(bounding);
         mesh.consolidate_mesh();
     } else if (filter_option == "tracked") {
-        mesh.compute_tracked_winding_number();
+        mesh.compute_tracked_winding_number(bounding);
         mesh.filter_with_tracked_winding_number();
         mesh.consolidate_mesh();
     } else if (filter_option == "flood") {
@@ -796,6 +1048,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (mesh.tri_capacity() == 0) {
         log_and_throw_error("Empty Output after Filter!");
     }
+    // triwild writes no region tags: regions are simwild's, as tetwild writes no volumes. The
+    // inputs' winding numbers above leave as fields (wn_<name>, write_vtu()), as tetwild's do;
+    // held as the triangles' tags they decided filter "input" only. The curves leave as the edge
+    // tags. So its output goes back in on the tagged route as it is. Until 2026-11 each input's
+    // region was a triangle tag, named as its curve.
+    mesh.m_tags_count = 0;
+    mesh.m_tag_id_to_name.clear();
+    mesh.m_tag_name_to_id.clear();
+    for (const auto& f : mesh.get_faces()) mesh.m_face_attribute[f.fid(mesh)].tags.clear();
 
     // double time = timer.getElapsedTime();
     // logger().info("total time {:.4}s", time);
@@ -1055,14 +1316,35 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             CellType::Triangle,
             mesh.get_faces(),
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
-        component_io.result.first["envelope"] =
-            io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
-        if (!component_io.memory())
-            io::write_mesh(output_path + ".msh", component_io.result.first.at("mesh"));
+        // The tracked curves, one edge tag per input, named as its triangle tag (input_names, else
+        // tag_<i>), each edge with its input set and oriented as its input: the edge block of the
+        // mesh, as simwild writes its curve inputs.
+        io::collect_input_set_tags<CellType::Edge>(mesh, component_io.result.first, edge_tags);
+        // The reference the curves were held to (envelope_out, above), handed on: on the file
+        // route in a file of its own, as the mesh file holds the mesh.
+        if (!component_io.memory()) {
+            // The .msh numbers each input's winding-number field, wn_0, wn_1, ..., as tetwild's
+            // _final.msh (TetWildMesh::output_mesh()) does; the memory route and the VTU name it
+            // after the input (write_vtu()). All taken out before any is put back, so that a name
+            // which is a number cannot overwrite another input's field.
+            MeshData msh = component_io.result.first.at("mesh");
+            auto& fields = msh.cells.at(CellType::Triangle).attributes;
+            std::vector<std::pair<std::string, MeshAttribute>> numbered;
+            for (size_t i = 0; i < mesh.m_input_names.size(); ++i) {
+                auto field = fields.extract("wn_" + mesh.m_input_names[i]);
+                if (field) {
+                    numbered.emplace_back("wn_" + std::to_string(i), std::move(field.mapped()));
+                }
+            }
+            for (auto& [name, field] : numbered) fields[name] = std::move(field);
+            io::write_mesh(output_path + ".msh", msh);
+            io::write_mesh(output_path + "_envelope.msh", envelope_out);
+        }
+        component_io.result.first["envelope"] = std::move(envelope_out);
     }
     // After the output, whose vertex rows -- the mesh's vertices in order, consolidated -- the
     // history's output ids are.
-    if (const auto h = mesh.finish_curve_history(&input_history)) {
+    if (const auto h = mesh.finish_curve_history(tagged ? nullptr : &input_history)) {
         component_io.save_history(*h, history_output);
     }
     logger().info("======= finish =========");

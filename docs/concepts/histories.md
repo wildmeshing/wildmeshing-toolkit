@@ -44,9 +44,7 @@ edge split
 ```
 
 A refused operation records nothing, since it is rolled back before its commit point. Recording
-changes nothing the operations do, with one exception: triwild anchors curve junctions while it
-records, unless `allow_junction_cleanup` is given (see its
-[`history_output`](../reference/triwild.md#history_output)).
+changes nothing the operations do.
 
 The tracked surface of a tet mesh has no stable face ids, so the recorder gives it ids of its own
 and records each operation as the difference between the tracked faces around it before and

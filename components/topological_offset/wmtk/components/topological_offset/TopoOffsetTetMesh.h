@@ -85,6 +85,10 @@ public:
     /// into the output .msh by save_offset_correspondence; not maintained by the optimization.
     /// The 2D twin is VertexExtra2d::m_corr_input_vid.
     int64_t m_corr_input_vid = -1;
+    /// m_corr_input_vid came with the input, from an earlier offset (topological_offset.cpp), not
+    /// from this run's march. split_edge_before() throws rather than cut this vertex's edge to the
+    /// vertex it names.
+    bool m_corr_carried = false;
 
     /// Which split pass created this vertex, from wmtk::TetOptimizerMesh::m_op_epoch; 0 means not
     /// created by an optimization split. Read only by the needle diagnostics' per-vertex lines.
@@ -155,10 +159,11 @@ public:
  * marching tets, growing the band) is entirely its own, and the optimization phase that follows
  * is wmtk::TetOptimizerMesh's, with the offset supplying only policy through the hooks.
  *
- * Two surfaces are tracked. Every tag-region boundary (input complex and domain wall included)
- * keeps the primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which
- * the incident tet labels differ. Which class-0 faces an envelope holds, and when, is
- * face_is_held()'s; only the offset surface is driven toward target_distance.
+ * Two surfaces are tracked. Every tag-region boundary (the input complex's included) keeps the
+ * primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which the
+ * incident tet labels differ. The domain wall is not tracked: the box rule holds it, as in
+ * tetwild and simwild. Which class-0 faces an envelope holds is face_is_held()'s; only the
+ * offset surface is driven toward target_distance.
  */
 class TopoOffsetTetMesh : public wmtk::TetOptimizerMesh
 {
@@ -329,41 +334,85 @@ public:
     const OffsetPotential3D& potential_for_face(const Tuple& f) const;
 
     /**
-     * @brief THE ENVELOPES. One, m_envelope (the base's pointer): an Envelope of half-width
-     * envelope_size around every HELD face (face_is_held()), built by build_envelopes() before
-     * anything moves -- after the simplicial embedding, before the repulsion and the march --
-     * and swapped for a wider one only for a TetWild pass (build_final_envelopes()).
-     * The offset surface is held by nothing in the loop; only a TetWild pass holds it, to
-     * m_offset_envelope.
+     * @brief THE ENVELOPES, as in tetwild and simwild. m_envelope (the base's pointer): an
+     * Envelope of half-width envelope_size around every HELD face (face_is_held()), and the base's
+     * m_input_envelopes, one per label over the held faces carrying it, each held face held to
+     * those of its labels (the base's surface_envelope_for_face(); the union with one label or
+     * without per_input_envelopes). A face's labels are its face tags and the tet tags of the
+     * regions it bounds (assign_face_labels()), as simwild's. Built once by build_envelopes()
+     * before anything moves -- after the simplicial embedding, before the repulsion and the march
+     * -- and never rebuilt: what they hold is held where it was then, in the loop and in a TetWild
+     * pass alike. The offset surface is held by nothing in the loop; only a TetWild pass holds it,
+     * to m_offset_envelope (build_final_envelopes()).
      *
-     * Which faces are held, asked live of the mesh (the operations carry the cell tags and
-     * labels it reads), never stored:
-     * - a domain-wall face (no opposite tet), always;
-     * - the input complex's boundary (face_is_complex_boundary()), always;
-     * - every other region boundary, only in a TetWild pass (m_tetwild_pass), where
-     *   build_final_envelopes() adds them to m_envelope at their position then. In the loop they
-     *   stay tracked faces -- the operations preserve their topology -- but nothing holds them.
-     * One envelope for all of them, as TetWild's: where two held surfaces meet, a vertex is kept
-     * within eps of their union, not pinned to the junction curve. As archive/spenbert-offset had
-     * it (2026-10-13).
+     * Which faces are held, asked live of the mesh (the operations carry the cell labels it
+     * reads), never stored: every tracked face but the offset surface, in the loop as in a TetWild
+     * pass -- the input complex's boundary and every other region boundary (another body, another
+     * tag's surface). The domain wall is no tracked face (face_is_tag_boundary()): the box rule
+     * holds it, as in tetwild and simwild (a wall vertex is not smoothed, collapses only along its
+     * walls, and a split of a wall edge stays on it). Until 2026-11 one envelope held every held
+     * face, the wall included, its vertices smoothed inside it; see smooth_before() for why the
+     * wall was held so. From then until 2026-11-05 the wall stayed tracked, and this exempted it.
+     *
+     * Every tracked surface held, as tetwild and simwild hold theirs (Uday, 2026-11-04). From
+     * 1c247b2267 (2026-10-13) until then the loop held only the input complex's boundary: every
+     * other region boundary stayed a tracked face -- the operations kept its topology -- that
+     * nothing held, so the band pushed it aside, and only a TetWild pass held it, where the loop
+     * had left it.
+     *
+     * With a reference (the base's m_has_reference: an `envelope` input that is a labelled
+     * reference, the first component's input), held to as simwild holds one: m_envelope and the
+     * label envelopes are built around its triangles of this mesh's labels (m_reference_V,
+     * m_reference_F, m_reference_labels), not around the held faces, after a held face's label
+     * the reference lacks has thrown (require_reference_face_labels()), and a held face outside
+     * its labels' envelopes throws before anything moves (check_reference_containment()). So the
+     * held surfaces stay within envelope_size of the first component's input however many
+     * components came before; built around what each receives, the bound would grow by one
+     * envelope per stage. Until 2026-11-05 the offset carried a reference without holding to it.
      */
     bool face_is_held(const Tuple& f) const;
     /// A vertex is held when one of its tracked faces is (face_is_held()): the smoother then
     /// pulls it to and contains it in m_envelope. Asked of the mesh, like face_is_held().
     bool vertex_is_held(size_t vid) const;
-    /// Whether this face lies on the boundary of the input complex: exactly one incident tet
-    /// carries label 1, or the face itself does while neither tet does (a sheet or face piece).
-    bool face_is_complex_boundary(const Tuple& f) const;
-    /// Build m_envelope from the held faces. Called once, from construct_offset(), after the
-    /// simplicial embedding: the complex has to be labelled for face_is_held(), and it has to
-    /// precede the march, whose band replaces the tags of the cells it covers.
+    /// With a reference (m_has_reference): its triangles of this mesh's labels on vertices of
+    /// their own, each with its labels' bits (io::held_rows()), set by the driver before the
+    /// construction; what build_envelopes() builds the envelopes around. Empty otherwise.
+    MatrixXd m_reference_V;
+    MatrixXi m_reference_F;
+    std::vector<InputSet> m_reference_labels;
+    /// The label of bit `bit` of a face's input set (assign_face_labels()), as the output names
+    /// it: a face tag's name, else tet tag t's label (io::collect_tags()) for bit F + t - 1, F the
+    /// face tags' count. What the reference checks name a label by.
+    std::string label_name(size_t bit) const override;
+    /// Build m_envelope and the label envelopes from the held faces. Called once, from
+    /// construct_offset(), after the simplicial embedding and before the march: the labels are
+    /// read off the cells' tags (assign_face_labels()), which the band replaces in the cells it
+    /// covers, and with no front yet every tracked face is captured, so every face held later has
+    /// its labels' envelopes.
     void build_envelopes();
-    /// The final pass's envelopes: the offset surface's envelope (build_offset_envelope()), and
-    /// m_envelope swapped for one that also holds every other region boundary, at its position as
-    /// the loop left it, beside the surfaces build_envelopes() captured (held where they were
-    /// then). release_final_envelopes() puts the loop's envelope back.
+    /// Give every tracked face its labels, as input-set bits beside its face tags:
+    /// bit F + t - 1 (F face tags) for each tet tag t in the tag set of exactly one of its two
+    /// tets, ambient (0) carrying none -- simwild's labels (SimWildMesh::init_label_envelopes()) --
+    /// and the envelope surface group's tag (m_sheet_tag) on a face of it.
+    /// Called by build_envelopes(), before the march; the operations carry the bits after. Not
+    /// written: the output takes only the face-tag bits (io::collect_input_set_tags()).
+    void assign_face_labels();
+    /// The held surfaces' curves and points, as tetwild and simwild hold theirs: the order-2 edges
+    /// (rims, non-manifold edges where labelled regions meet) tagged and held in tubes around
+    /// themselves, of half-width order2_envelope_ratio x envelope_size, one per label, and the
+    /// curve ends and junctions anchored at that radius. After build_envelopes() and before the
+    /// march, so the front, which the march makes, is never among them. Until 2026-11 the offset
+    /// held no curve and no point; the surface envelope alone held them. With a reference, around
+    /// its curves, as simwild's: the driver sets them (the base's set_input_curves()), an order-2
+    /// edge in their tubes is held there, a curve end in reach of one of their ends anchored
+    /// there, and an edge on none held around itself (TetOptimizerMesh::InputCurves).
+    void hold_curves_and_points();
+    /// A TetWild pass's envelopes: the offset surface's envelope (build_offset_envelope()), all it
+    /// adds. Every other tracked surface it holds is held in the loop's envelopes, where
+    /// build_envelopes() captured it. Until 2026-11-04 it also swapped m_envelope for one that
+    /// held every other region boundary where the loop had left it (and
+    /// release_final_envelopes() put the loop's back).
     void build_final_envelopes();
-    void release_final_envelopes();
     /// A TetWild pass: every tracked surface held (the final envelopes; the front in its envelope,
     /// smoothed like any held vertex), TetWild's own rules for the operations and the smoother
     /// (m_tetwild_pass, m_op_rules), mesh_improvement(max_its), everything put back and the band regions
@@ -423,11 +472,6 @@ public:
     /// back, the band regions re-derived. Not restored: run counters, the debug-frame sequence.
     /// Between passes only.
     void restore_snapshot(const MeshSnapshot& s);
-    /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
-    std::vector<Eigen::Vector3d> m_held_verts;
-    std::vector<Eigen::Vector3i> m_held_tris;
-    /// The loop's m_envelope while the final pass holds its own.
-    std::shared_ptr<Envelope> m_loop_envelope;
 
     /// Inside tetwild_pass(): every tracked face is held, the offset surface to m_offset_envelope
     /// (surface_envelope_for_face(), face_is_held()); a front vertex is smoothed like every other
@@ -651,10 +695,10 @@ public:
      * @brief SurfaceTagAttributes::m_surface_class: which of the two tracked surfaces a face
      * belongs to. Same scheme as 2D.
      *
-     * OFFSET is the surface the optimization places at target_distance. Everything else -- the
-     * input complex, another body's boundary, the domain wall -- keeps the primary class 0 and
-     * is envelope-checked by the shared operations exactly as in tetwild and simwild, when it is
-     * held (face_is_held()).
+     * OFFSET is the surface the optimization places at target_distance. Every other tracked
+     * face -- the input complex, another body's boundary -- keeps the primary class 0 and is
+     * envelope-checked by the shared operations exactly as in tetwild and simwild, when it is
+     * held (face_is_held()). The domain wall is no tracked face: the box rule holds it.
      */
     static constexpr int INPUT_SURFACE_CLASS = 0;
     static constexpr int OFFSET_SURFACE_CLASS = 1;
@@ -689,7 +733,8 @@ public:
      *   - swap: the old cells' faces are captured (swap_before_interior() /
      *     swap_before_surface()); a new cell's face that was one of them keeps its value, every
      *     other face of the new cells is reset (swap_after_cells()).
-     * face_is_complex_boundary() reads the label live, which is why it has to be carried.
+     * close_labels() and the label flip read the label live -- a face of a sheet complex has no
+     * complex cell beside it, so only the carry keeps its 1 -- which is why it has to be carried.
      *
      * The edge label is carried the same way (edge_label_capture() / edge_label_assign()): an
      * edge's slot is its lowest incident tet's, so an operation that changes the tets around an
@@ -1797,10 +1842,9 @@ public:
     /**
      * @brief Identification only -- no operation refuses the domain wall through these.
      *
-     * The wall is a tracked region boundary like every other one: init_surfaces_and_boundaries()
-     * tags its faces m_is_surface_fs and face_is_held() always holds them, so refinement,
-     * coarsening, flips and smoothing are governed by the same containment, merge rules and link
-     * conditions that govern the input complex.
+     * The wall is no tracked face (face_is_tag_boundary()): the box rule holds it, as in tetwild
+     * and simwild -- a vertex on it is not smoothed (smooth_before()), collapses only along its
+     * planes, and a split of an edge on it stays on the planes both ends share.
      */
     bool vertex_is_on_domain_boundary(const size_t vid) const
     {
@@ -1808,13 +1852,22 @@ public:
     }
 
     /**
-     * @brief Classify every region boundary and tag the domain wall -- once, from the input mesh,
+     * @brief Classify every region boundary and flag the domain wall -- once, from the input mesh,
      * before offset construction runs. A region boundary is a face whose two incident tets carry
-     * different tag sets, a sheet-group face, or a face with one incident tet (the domain wall);
-     * each becomes a tracked face (m_is_surface_fs). Which of them an envelope holds is
-     * face_is_held()'s, and the envelope is build_envelopes()'s.
+     * different tag sets, a sheet-group face, or a face with a face tag; each becomes a tracked
+     * face (m_is_surface_fs). Which of them an envelope holds is face_is_held()'s, and the envelope
+     * is build_envelopes()'s. The wall's faces, in the box's planes, get m_is_bbox_fs and their
+     * vertices on_bbox_faces, the box rule's flags; they are not tracked.
      */
     void init_surfaces_and_boundaries();
+    /// The tracking rule, asked of the mesh as it stands: a face whose two tets carry different
+    /// tag sets, a face on the sheet group (on_sheet), or a face with a face tag (an input-set bit
+    /// of the face tags'). A wall face (no opposite tet) bounds no second region, so only a face
+    /// tag or the sheet tracks it -- a filtered mesh's boundary, which the driver refuses
+    /// (require_box_boundary()). Until 2026-11-05 every wall face was tracked, and face_is_held()
+    /// exempted it from the envelopes. init_surfaces_and_boundaries() tracks the faces it holds
+    /// of at load; untrack_covered_boundaries() asks it again after the band's retagging.
+    bool face_is_tag_boundary(const Tuple& f) const;
 
     /// Whether edge `loc` lies on a region boundary / on the offset surface, by the cached face
     /// classes.
@@ -2195,13 +2248,13 @@ public:
 
     /**
      * @brief The containment of a tracked face an operation has just made (the base asks only
-     * after the fact). A wall face: m_envelope, band or not -- nothing leaves the domain box.
-     * The offset surface: nothing in the loop, m_offset_envelope in a TetWild pass. Any other
-     * tracked face: m_envelope when it is held (face_is_held()), else nothing.
+     * after the fact). The offset surface: nothing in the loop, m_offset_envelope in a TetWild
+     * pass. A held face (face_is_held()): the base's rule, the envelopes of its labels. Any other
+     * tracked face: nothing.
      */
     std::shared_ptr<Envelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids,
-        const FaceAttributes& /*attr*/) const override
+        const FaceAttributes& attr) const override
     {
         const auto found = try_tuple_from_face(vids);
         if (!found) return m_envelope; // not reached: every caller asks about an existing face
@@ -2209,7 +2262,18 @@ public:
         if (f.switch_tetrahedron(*this) && face_is_offset_surface_live(f)) {
             return m_tetwild_pass ? m_offset_envelope : nullptr;
         }
-        return face_is_held(f) ? m_envelope : nullptr;
+        return face_is_held(f) ? TetOptimizerMesh::surface_envelope_for_face(vids, attr) : nullptr;
+    }
+
+    /// The collapsing edge's own test (TetOptimizerMesh::collapsing_edge_envelope()) where both
+    /// ends are on the held surfaces: the union of the held faces, m_envelope, so a vertex cannot
+    /// cross a solid of the input onto another of its surfaces. Not where an end is on the front,
+    /// which moves by design and lies outside m_envelope; an edge from the input complex to the
+    /// front is refused anyway (CollapseReject::app_both_surfaces).
+    std::shared_ptr<Envelope> collapsing_edge_envelope(size_t v1, size_t v2) const override
+    {
+        if (m_vertex_extra[v1].m_is_on_offset || m_vertex_extra[v2].m_is_on_offset) return nullptr;
+        return vertex_is_held(v1) && vertex_is_held(v2) ? m_envelope : nullptr;
     }
 
     /// Surface edges may be flipped, as a topology-preserving diagonal flip. Both tracked
@@ -2274,33 +2338,33 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
-    /// A held vertex is pulled to and contained in m_envelope -- a real Envelope, as the
-    /// pull requires. In a TetWild pass a front vertex no other envelope holds is pulled to and
-    /// contained in the front's own envelope, m_offset_envelope (one on another held surface too
-    /// keeps m_envelope, which its front faces are not in, so it stays where it is). Any other
-    /// vertex, and the front in the loop, is held by nothing.
+    /// A held vertex is pulled by the base's rule, toward the labels of its faces (the member it
+    /// is farthest from), as in tetwild and simwild. In a TetWild pass a front vertex no other
+    /// envelope holds is pulled to the front's own envelope, m_offset_envelope. Any other vertex,
+    /// and the front in the loop, is pulled by nothing. Until 2026-11 a held vertex was pulled to
+    /// the one union envelope, so onto another label's surface as readily as its own.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
     {
-        return smoothing_envelope(vid);
+        if (vertex_is_held(vid)) return TetOptimizerMesh::smoothing_energy_envelope(vid);
+        if (m_tetwild_pass && m_vertex_extra[vid].m_is_on_offset) return m_offset_envelope;
+        return nullptr;
     }
+    /// Whether anything holds this vertex: what FrontSmooth3d asks before reading its faces.
     std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const
-    {
-        return smoothing_envelope(vid);
-    }
-    std::shared_ptr<Envelope> smoothing_envelope(const size_t vid) const
     {
         if (vertex_is_held(vid)) return m_envelope;
         if (m_tetwild_pass && m_vertex_extra[vid].m_is_on_offset) return m_offset_envelope;
         return nullptr;
     }
-    /// The smoother holds every tracked face at a held vertex to that one envelope, whatever the
-    /// face: the per-vertex answer above, not the base's per-face one.
+    /// The smoother holds each tracked face at a vertex to its own containment, the base's
+    /// per-face answer (surface_envelope_for_face() above), as in tetwild and simwild. Until
+    /// 2026-11 every tracked face at a held vertex was held to the one union envelope.
     std::shared_ptr<Envelope> smoothing_containment_envelope(
-        const size_t vid,
-        const std::array<size_t, 3>& /*face*/,
-        const FaceAttributes& /*attr*/) const override
+        const size_t /*vid*/,
+        const std::array<size_t, 3>& face,
+        const FaceAttributes& attr) const override
     {
-        return smoothing_containment_envelope(vid);
+        return surface_envelope_for_face(face, attr);
     }
 
     /**
@@ -2397,12 +2461,24 @@ public:
     /// places against the offset term (smoothing_extra_energy()): the AMIPS term over the one-ring
     /// (amips3_energy()) and front_energy(). What front_vertex_normal_gradient() differentiates.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
+    /// Whether vid is held on the input complex. There d = 0 and has a kink, so the band term is
+    /// left out of vid's objective (smoothing_extra_energy()) and a front vertex there cannot be
+    /// placed at target_distance. A vertex held only by another region's boundary has neither:
+    /// d is smooth there, so it carries the term and slides along that boundary to the level set.
+    /// Until 2026-11-04 the loop held only the input complex's boundary, so "held" meant this;
+    /// with every region boundary held, a front vertex where the front meets another region lost
+    /// its term and the front could not settle there (double_sphere, offset tag_0: no
+    /// convergence in 5 turns, against main's in 63 s).
+    bool vertex_is_held_on_input(const size_t vid) const
+    {
+        return m_vertex_extra[vid].m_is_on_input && vertex_is_held(vid);
+    }
     /// Whether the smoother places vid against the offset term: a front vertex, outside a
-    /// TetWild pass, that no envelope also holds (vertex_is_held()).
+    /// TetWild pass, not held on the input complex (vertex_is_held_on_input()).
     bool vertex_carries_offset_term(const size_t vid) const
     {
         return !m_tetwild_pass && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
-               !vertex_is_held(vid);
+               !vertex_is_held_on_input(vid);
     }
     /// THE smoothing objective at vid, for every vertex the shared smoother places: vid's part of
     /// the energy E, the sum of tet_energy() over vid's ring up to the terms that do not move with
@@ -2429,7 +2505,7 @@ public:
         }
         if (vertex_carries_offset_term(vid)) {
             sum->add_energy(front_energy(vid));
-        } else if (!vertex_is_held(vid)) {
+        } else if (!vertex_is_held_on_input(vid)) {
             // E's band term moves with this vertex too -- except a vertex held on the input.
             // There d = 0 at the vertex and d has a kink: the term's slope along the input's
             // normal jumps across the surface, and its curvature there is 0 (or ~1e10 near an
@@ -2443,8 +2519,8 @@ public:
             // of band cells clear of the input's bisectors tiles the star of vid, so the term is a
             // constant, and its cells' exact integrals would add only work and their rounding to
             // every Newton step. The veto's own test (cancels_before in smooth_nonfront_vertex()).
-            // Constant wherever the move can end, not only here: vid is not held, so not on the
-            // domain wall (face_is_held()), and its ring closes around it; the engine keeps no
+            // Constant wherever the move can end, not only here: vid is smoothed, so not on the
+            // domain wall (smooth_before()), and its ring closes around it; the engine keeps no
             // position that inverts a ring cell, so vid stays inside the convex hull of its link;
             // and the test reads the points only through their box, their least side of each
             // bisector polytope's planes, and min_P max d_P (d_P convex), none of which a point
@@ -2797,10 +2873,12 @@ public:
     /// Turn a residual_split()'s outside-support tally into the hard error.
     void report_outside_support(const char* when, const DistanceSplit& s) const;
     /// Whether vid is a band vertex the optimizer could still place at target_distance. An
-    /// envelope-held offset vertex is pinned, as is one on the domain boundary. Same rule as 2D.
+    /// offset vertex held on the input complex is pinned (vertex_is_held_on_input()), as is one
+    /// on the domain boundary; one held by another region's boundary slides along it. 2D still
+    /// pins every held one.
     bool band_vertex_is_reachable(const size_t vid) const
     {
-        if (m_vertex_extra[vid].m_is_on_offset && vertex_is_held(vid)) return false;
+        if (m_vertex_extra[vid].m_is_on_offset && vertex_is_held_on_input(vid)) return false;
         return !vertex_is_on_domain_boundary(vid);
     }
 
@@ -3061,8 +3139,38 @@ public:
     void simplicial_embedding();
     //// simplicial embedding stuff
 
-    /// update 'tags' data for tets in the offset region (tets labelled 2)
+    /// update 'tags' data for tets in the offset region (tets labelled 2), and on the faces it
+    /// covers (both tets band, the input complex's own faces excepted) the face tags and the sheet
+    /// group, by the same rule: each gives way unless protected_tags names it.
     void set_offset_tet_tags();
+    /**
+     * @brief After set_offset_tet_tags(): a tracked face stays tracked iff it still passes the
+     * load-time rule (face_is_tag_boundary()) or is the input complex's (below); any other is
+     * untracked as a face that never was (SurfaceTagAttributes::reset()): no flag, and none of
+     * the labels assign_face_labels() gave it, which a collapse would unite into the tracked face
+     * it merges it with (SurfaceTagAttributes::merge() takes the union, tracked or not).
+     *
+     * The retagging writes tags, not tracking flags, so a region boundary the band covers --
+     * another region's surface with band cells on both sides, one tag set now, as tag_1's surface
+     * next to the complex where the band takes tag_1's cells, or a face-tagged surface whose tag
+     * gave way there -- kept its flag: a surface inside the band that bounds nothing, which the
+     * operations would keep and the loop would hold where it was, every tracked face being held
+     * (face_is_held()). A protected tet tag's cells are never the band's (marching_tets()); with a
+     * protected face tag or sheet group the band's faces keep it, so such a boundary still carries
+     * its input and stays tracked. A face of the input complex (label 1) is never
+     * untracked, as set_offset_tet_tags() never clears one: with offset_output_tags naming the
+     * selection's own tag the complex and the band carry one tag set, and the complex's boundary
+     * stays tracked and held.
+     *
+     * Only clears. The front, whose two sides can carry one tag set (offset_output_tags naming a
+     * tag already beyond it, or none), is tracked again from the cell labels by
+     * label_offset_boundary(). The envelopes built before the march (build_envelopes()) still hold
+     * the untracked faces' geometry, which does no harm: an envelope refuses only what leaves it,
+     * so the extra triangles only let a held face of those labels within eps of where the covered
+     * part was. The 2D twin has no such step: its final pass rebuilds its tubes from the tags
+     * (build_boundary_envelopes()).
+     */
+    void untrack_covered_boundaries();
 
     /// verify that the closed offset region (simplices labelled 1 or 2) form a manifold region.
     bool offset_is_manifold();
@@ -3073,8 +3181,9 @@ public:
     void write_phi_grid(const std::string& path, int n) const;
 
     void write_input_complex(const std::string& path);
-    /// <path>{,_surf,_off,_edge}.vtu, now: write_vtu_frame(gather_vtu_frame(path)).
-    void write_vtu(const std::string& path, MeshMap* output = nullptr);
+    /// <path>{,_surf,_off,_edge}.vtu, now: write_vtu_frame(gather_vtu_frame(path)). `result`:
+    /// the final mesh, its annotations trimmed (write_vtu_frame()); otherwise a debug frame.
+    void write_vtu(const std::string& path, MeshMap* output = nullptr, bool result = false);
     /**
      * @brief Everything write_vtu() writes, as arrays: the mesh is read once, by
      * gather_vtu_frame(), and write_vtu_frame() reads this and nothing else -- so a debug frame's
@@ -3107,8 +3216,10 @@ public:
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
     /// Does not change the mesh (the band-region map it re-derives is put back).
     VtuFrame gather_vtu_frame(const std::string& path);
-    /// The files' part: paraviewo encodes and writes `frame`, nothing else is read.
-    static void write_vtu_frame(const VtuFrame& frame, MeshMap* output = nullptr);
+    /// The files' part: paraviewo encodes and writes `frame`, nothing else is read. A debug
+    /// frame carries every field; a `result` only the tags, the data fields and two annotations.
+    static void
+    write_vtu_frame(const VtuFrame& frame, MeshMap* output = nullptr, bool result = false);
     //// output stuff
 
 private:
@@ -3144,6 +3255,10 @@ private:
 
         // cache tet attributes
         std::map<simplex::Edge, TetAttributes> tets;
+
+        // the feature and order-2 edge tags (marching_split_edge_before())
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> feature_edges;
+        FeatureEdgeAttributes split_edge_tags;
     };
     wmtk::threading::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
 
@@ -3155,6 +3270,8 @@ private:
         std::map<simplex::Edge, EdgeAttributes> existing_e;
         std::map<simplex::Face, FaceSnapshot> existing_f;
         int splitf_label;
+        FaceSnapshot split_f; ///< the split face, for its three pieces
+        bool splitf_on_region = false; ///< face_is_region() of the split face
         std::map<size_t, TetAttributes> tets;
     };
     wmtk::threading::enumerable_thread_specific<FaceSplitCache> face_split_cache;

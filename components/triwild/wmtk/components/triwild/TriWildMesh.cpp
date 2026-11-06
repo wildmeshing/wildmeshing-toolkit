@@ -193,80 +193,21 @@ void TriWildMesh::init_mesh(
     }
     if (E_orientation != nullptr) m_tracks_orientation = true;
 
-    // Feature points: the 0-dimensional features of the curve network, taken from the
-    // constrained edges E. Valence 1 is an open polyline's endpoint, valence >= 3 a junction;
-    // valence 2 is the interior of a curve and valence 0 is not on it at all.
+    // Feature points: the 0-dimensional features of the curve network, read off the tracked
+    // segments by the base -- the open polylines' endpoints (holds_order2_vertex()) -- and the
+    // input free points, which no segment marks: their valence is 0, the same as every
+    // background-grid vertex.
     //
     // Without these, the collapse pass deletes open polylines outright. A polyline erodes by
     // legal collapses of its interior into its tip until one segment is left, and that
-    // segment has a feature at BOTH ends -- which the existing order test permits, because it
-    // only refuses collapsing a feature into a non-feature. Measured on the 2D dataset:
+    // segment has a feature at BOTH ends -- which the order test of the time permitted, because
+    // it only refused collapsing a feature into a non-feature. Measured on the 2D dataset:
     // 215292 went from 28 open components after the arrangement to 0 in the output, and
     // 134005 from 18 to 15, entirely in the collapse passes.
-    {
-        std::vector<int> surf_valence(vert_capacity(), 0);
-        for (int i = 0; i < E.rows(); ++i) {
-            ++surf_valence[E(i, 0)];
-            ++surf_valence[E(i, 1)];
-        }
-        size_t n_endpoints = 0, n_junctions = 0;
-        for (size_t v = 0; v < vert_capacity(); ++v) {
-            const int val = surf_valence[v];
-            if (val == 0 || val == 2) {
-                continue;
-            }
-            if (val == 1) {
-                ++n_endpoints;
-            } else {
-                ++n_junctions;
-                // The erosion above is an ENDPOINT property. A junction cannot erode a curve
-                // away -- every curve through it stays constrained and inside the envelope --
-                // while anchoring it can freeze the whole mesh, because on a self-intersecting
-                // input almost every arrangement vertex is a crossing. See
-                // Parameters::allow_junction_cleanup.
-                if (m_tri_params.allow_junction_cleanup) {
-                    continue;
-                }
-            }
-            m_feature_point_attribute[v].m_feature_point_id = m_feature_points.size();
-            m_feature_points.push_back(m_vertex_attribute[v].m_posf);
-        }
-        if (n_endpoints + n_junctions > 0) {
-            logger().info(
-                "feature points: {} polyline endpoints, {} junctions; anchoring {} of them "
-                "within {:.6} of their input positions",
-                n_endpoints,
-                n_junctions,
-                m_feature_points.size(),
-                m_envelope_eps);
-        }
-
-        // Input free points: anchored unconditionally, junctions' cleanup exemption
-        // included. A junction is anchored (or not) by policy, because it is DERIVED from
-        // the curve network; a free point IS the input, so there is no policy question. A
-        // vertex that already carries a feature id (a free point coinciding with a polyline
-        // endpoint, merged by the arrangement's dedup) keeps the id it has -- one anchor at
-        // that position is enough, the retention audit is geometric.
-        size_t n_free = 0;
-        for (const size_t v : free_point_vids) {
-            if (v >= vert_capacity()) {
-                log_and_throw_error("Free-point vertex id {} out of range", v);
-            }
-            if (m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT) {
-                continue;
-            }
-            m_feature_point_attribute[v].m_feature_point_id = m_feature_points.size();
-            m_feature_points.push_back(m_vertex_attribute[v].m_posf);
-            ++n_free;
-        }
-        if (n_free > 0) {
-            logger().info(
-                "feature points: {} input free points anchored within {:.6} of their input "
-                "positions",
-                n_free,
-                m_envelope_eps);
-        }
-    }
+    anchor_feature_points(
+        free_point_vids,
+        m_envelope_eps * m_tri_params.order2_envelope_ratio,
+        m_envelope_eps * m_tri_params.feature_envelope_ratio);
 
     // init envelope
     if (m_envelope) {
@@ -299,36 +240,19 @@ void TriWildMesh::init_mesh(
     // member would BE m_envelope, so none is built.
     if (E_env_input != nullptr) {
         assert(E_env_input->size() == m_E_envelope.size());
-        const int n_inputs = 1 + *std::max_element(E_env_input->begin(), E_env_input->end());
-        std::vector<std::shared_ptr<Envelope>> members;
-        for (int k = 0; k < n_inputs; ++k) {
-            // This input's segments over its own vertices only: an envelope keeps a copy of
-            // the vertices it is given.
-            std::vector<int> local(m_V_envelope.size(), -1);
-            std::vector<Vector2d> V_k;
-            std::vector<Vector2i> E_k;
-            for (size_t i = 0; i < m_E_envelope.size(); ++i) {
-                if ((*E_env_input)[i] != k) continue;
-                Vector2i e;
-                for (int j = 0; j < 2; ++j) {
-                    int& l = local[m_E_envelope[i][j]];
-                    if (l < 0) {
-                        l = int(V_k.size());
-                        V_k.push_back(m_V_envelope[m_E_envelope[i][j]]);
-                    }
-                    e[j] = l;
-                }
-                E_k.push_back(e);
-            }
-            if (E_k.empty()) {
-                members.push_back(nullptr); // no segment, so no tracked segment to hold
-                continue;
-            }
-            auto env = std::make_shared<Envelope>(!m_tri_params.use_sample_envelope);
-            env->init(V_k, E_k, m_envelope_eps);
-            members.push_back(std::move(env));
+        // Input k is bit k. Every input with a tracked segment has rows here -- the tracked
+        // segments' inputs come from the same curves -- so the base's fallback to the tracked
+        // segments never builds one.
+        std::vector<InputSet> E_env_sets(E_env_input->size());
+        for (size_t i = 0; i < E_env_sets.size(); ++i) {
+            E_env_sets[i] = InputSet(1) << (*E_env_input)[i];
         }
-        m_input_envelopes.set(std::move(members));
+        init_input_envelopes(
+            m_V_envelope,
+            m_E_envelope,
+            E_env_sets,
+            m_envelope_eps,
+            !m_tri_params.use_sample_envelope);
         logger().info(
             "per-input envelopes: {} inputs, each tracked segment held to the envelopes of its "
             "own",
@@ -510,6 +434,9 @@ void TriWildMesh::compute_winding_numbers(
     }
 
     m_tags_count = Vs.size();
+    for (const Tuple& f : faces) {
+        face_finalize(f.fid(*this)).m_winding_number_per_input.assign(Vs.size(), 0);
+    }
     for (int64_t input_idx = 0; input_idx < static_cast<int64_t>(Vs.size()); ++input_idx) {
         // The inputs were already read (and their x,y extracted) when the initial mesh was
         // built; reuse them instead of parsing every file a second time.
@@ -529,9 +456,11 @@ void TriWildMesh::compute_winding_numbers(
             logger().warn("No winding number above 0.5 for input {}", input_idx);
         }
 
-        // store winding number in mesh
+        // The value, as oriented, for the wn_ fields, as tetwild keeps it; the inside bit, as the
+        // face's tag, for filter "input".
         for (int i = 0; i < faces.size(); ++i) {
             const size_t fid = faces[i].fid(*this);
+            face_finalize(fid).m_winding_number_per_input[input_idx] = W(i);
             if (utils::winding_number_inside(W(i))) {
                 m_face_attribute[fid].tags.insert(input_idx);
             }
@@ -539,7 +468,7 @@ void TriWildMesh::compute_winding_numbers(
     }
 }
 
-void TriWildMesh::compute_tracked_winding_number()
+void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
 {
     if (!m_tracks_orientation) {
         log_and_throw_error(
@@ -557,7 +486,41 @@ void TriWildMesh::compute_tracked_winding_number()
     for (const Tuple& v : get_vertices()) {
         V.row(v.vid(*this)) = m_vertex_attribute[v.vid(*this)].m_posf;
     }
-    const auto oriented = oriented_tracked_edges();
+    // With filter_inputs, the tracked edges of those inputs only, oriented as
+    // oriented_tracked_edges() orients them; all of them otherwise, by the code that ran before
+    // the key. An edge's orientation is one count for all its inputs, not one per input: on an
+    // edge where a kept input coincides with another the kept inputs' own is not known, and it
+    // is refused there rather than guessed, as in 3D.
+    std::vector<std::array<size_t, 2>> oriented;
+    if (bounding == ~InputSet(0)) {
+        oriented = oriented_tracked_edges();
+    } else {
+        size_t n_shared = 0;
+        for (const Tuple& e : get_edges()) {
+            const auto& attr = m_edge_attribute[e.eid(*this)];
+            const InputSet set = attr.input_set();
+            if (attr.m_is_surface_fs && (set & bounding) != 0 && (set & (set - 1)) != 0) {
+                ++n_shared;
+            }
+        }
+        if (n_shared > 0) {
+            log_and_throw_error(
+                "filter \"tracked\" with filter_inputs: {} tracked edges carry a named input and "
+                "another input. The orientation is stored per edge, not per input, so the named "
+                "inputs' winding number cannot be computed there; use filter \"flood\", exact "
+                "without orientation for inputs that do not overlap themselves",
+                n_shared);
+        }
+        for (const Tuple& e : get_edges()) {
+            const auto& attr = m_edge_attribute[e.eid(*this)];
+            if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+            if ((attr.input_set() & bounding) == 0) continue;
+            size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            if (a > b) std::swap(a, b);
+            if (attr.m_orientation < 0) std::swap(a, b);
+            for (int k = 0; k < std::abs(attr.m_orientation); ++k) oriented.push_back({{a, b}});
+        }
+    }
     MatrixXi E(oriented.size(), 2);
     for (size_t i = 0; i < oriented.size(); ++i) {
         E(i, 0) = int(oriented[i][0]);
@@ -590,13 +553,22 @@ void TriWildMesh::filter_with_tracked_winding_number()
     remove_tris_by_ids(rm_fids);
 }
 
-void TriWildMesh::filter_with_input_winding_number()
+void TriWildMesh::filter_with_input_winding_number(const InputSet bounding)
 {
-    // A face is inside when it is inside at least one input, i.e. when it carries a tag.
+    // A face is inside when it is inside at least one input, i.e. when it carries a tag; with
+    // filter_inputs, a tag of one of those inputs.
+    const auto inside = [&](const size_t fid) {
+        if (bounding == ~InputSet(0)) return !m_face_attribute[fid].tags.empty();
+        for (const auto tag : m_face_attribute[fid].tags) {
+            if (tag >= 0 && tag < SurfaceTagAttributes::max_inputs && ((bounding >> tag) & 1))
+                return true;
+        }
+        return false;
+    };
     std::vector<size_t> rm_fids;
     for (const Tuple& t : get_faces()) {
         const size_t fid = t.fid(*this);
-        if (m_face_attribute[fid].tags.empty()) {
+        if (!inside(fid)) {
             rm_fids.emplace_back(fid);
         }
     }
@@ -648,8 +620,15 @@ void TriWildMesh::filter_with_flood_fill()
     remove_tris_by_ids(rm_fids);
 }
 
-int TriWildMesh::flood_fill()
+int TriWildMesh::flood_fill(const InputSet bounding)
 {
+    // An edge the fill crosses: not tracked, or, with filter_inputs, tracked for other inputs
+    // only.
+    const bool all_inputs = bounding == ~InputSet(0);
+    const auto crossed = [&](const Tuple& e) {
+        const auto& attr = m_edge_attribute[e.eid(*this)];
+        return !attr.m_is_surface_fs || (!all_inputs && (attr.input_set() & bounding) == 0);
+    };
     int current_id = 0;
     const auto faces = get_faces();
     // Indexed by fid, not a std::map: this is a BFS over every face, so the per-lookup
@@ -672,7 +651,7 @@ int TriWildMesh::flood_fill()
 
         std::queue<Tuple> bfs_queue;
 
-        if (!m_edge_attribute[f1.eid(*this)].m_is_surface_fs) {
+        if (crossed(f1)) {
             auto oppo_t = f1.switch_face(*this);
             if (oppo_t.has_value()) {
                 if (!seen((*oppo_t).fid(*this))) {
@@ -680,7 +659,7 @@ int TriWildMesh::flood_fill()
                 }
             }
         }
-        if (!m_edge_attribute[f2.eid(*this)].m_is_surface_fs) {
+        if (crossed(f2)) {
             auto oppo_t = f2.switch_face(*this);
             if (oppo_t.has_value()) {
                 if (!seen((*oppo_t).fid(*this))) {
@@ -688,7 +667,7 @@ int TriWildMesh::flood_fill()
                 }
             }
         }
-        if (!m_edge_attribute[f3.eid(*this)].m_is_surface_fs) {
+        if (crossed(f3)) {
             auto oppo_t = f3.switch_face(*this);
             if (oppo_t.has_value()) {
                 if (!seen((*oppo_t).fid(*this))) {
@@ -711,7 +690,7 @@ int TriWildMesh::flood_fill()
             const Tuple f_tmp2 = tmp.switch_edge(*this);
             const Tuple f_tmp3 = tmp.switch_vertex(*this).switch_edge(*this);
 
-            if (!m_edge_attribute[f_tmp1.eid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp1)) {
                 auto oppo_t = f_tmp1.switch_face(*this);
                 if (oppo_t.has_value()) {
                     if (!seen((*oppo_t).fid(*this))) {
@@ -719,7 +698,7 @@ int TriWildMesh::flood_fill()
                     }
                 }
             }
-            if (!m_edge_attribute[f_tmp2.eid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp2)) {
                 auto oppo_t = f_tmp2.switch_face(*this);
                 if (oppo_t.has_value()) {
                     if (!seen((*oppo_t).fid(*this))) {
@@ -727,7 +706,7 @@ int TriWildMesh::flood_fill()
                     }
                 }
             }
-            if (!m_edge_attribute[f_tmp3.eid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp3)) {
                 auto oppo_t = f_tmp3.switch_face(*this);
                 if (oppo_t.has_value()) {
                     if (!seen((*oppo_t).fid(*this))) {
@@ -743,25 +722,6 @@ int TriWildMesh::flood_fill()
     return current_id;
 }
 
-
-std::shared_ptr<Envelope> TriWildMesh::smoothing_energy_envelope(const size_t vid) const
-{
-    if (!m_vertex_attribute.at(vid).m_is_on_surface) return nullptr;
-    if (m_input_envelopes.empty()) return m_envelope;
-    // A vertex flagged on the surface with no tracked segment left (a stale flag) has no
-    // inputs, and keeps the union's pull.
-    InputSet set = 0;
-    const auto& EA = std::as_const(m_edge_attribute);
-    // Named, not iterated as a temporary: edges() returns a reference into the collection, which
-    // a range-for over get_surface_edges_for_vertex(vid).edges() destroys before the first
-    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
-    const simplex::SimplexCollection surf = get_surface_edges_for_vertex(vid);
-    for (const simplex::Edge& e : surf.edges()) {
-        set |= EA[std::get<1>(tuple_from_edge(e.vertices()))].input_set();
-    }
-    if (set == 0) return m_envelope;
-    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
-}
 
 void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
 {
@@ -791,6 +751,13 @@ void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
     amips.setZero();
     MatrixXd flood_fill(tri_capacity(), 1);
     flood_fill.setZero();
+    // Each input's winding number, when the finalization computed them (none otherwise).
+    std::vector<MatrixXd> wn_per_input;
+    if (!faces.empty()) {
+        wn_per_input.assign(
+            face_finalize(faces[0].fid(*this)).m_winding_number_per_input.size(),
+            MatrixXd::Zero(tri_capacity(), 1));
+    }
 
     int index = 0;
     for (const Tuple& t : faces) {
@@ -800,6 +767,9 @@ void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
             tags[j](index, 0) = m_face_attribute[fid].tags.count(j) ? 1 : 0;
         }
         flood_fill(index, 0) = m_face_attribute[fid].part_id;
+        for (size_t j = 0; j < wn_per_input.size(); ++j) {
+            wn_per_input[j](index, 0) = face_finalize(fid).m_winding_number_per_input[j];
+        }
 
         const auto vs = oriented_tri_vids(t);
         for (size_t j = 0; j < 3; j++) {
@@ -828,6 +798,14 @@ void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
     }
     writer.add_cell_field("quality", amips);
     if (m_has_parts) writer.add_cell_field("flood_fill", flood_fill);
+    for (size_t j = 0; j < wn_per_input.size(); ++j) {
+        // Named after the input when the caller supplied input_names, else numbered, as
+        // tetwild's save_paraview(); the .msh numbers them all (triwild.cpp), as its output_mesh().
+        writer.add_cell_field(
+            j < m_input_names.size() ? fmt::format("wn_{}", m_input_names[j])
+                                     : fmt::format("wn_{}", j),
+            wn_per_input[j]);
+    }
     writer.add_field("sizing_field", v_sizing_field);
     writer.write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 

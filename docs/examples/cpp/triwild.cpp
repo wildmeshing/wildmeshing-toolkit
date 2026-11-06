@@ -33,11 +33,11 @@ int main()
     const wmtk::CellData& triangles = mesh.cell(wmtk::CellType::Triangle);
     std::cout << mesh.V.rows() << " vertices, " << triangles.connectivity.rows()
               << " triangles, max energy " << report["max_energy"].get<double>() << "\n";
-    // One column per input: 1 where the triangle lies inside that curve.
-    const wmtk::MeshAttribute& tags = triangles.attributes.at("tags");
-    const wmtk::DataMatrix<int64_t> inside = tags.integers();
+    // The tracked curves, one column per input: 1 where the edge lies on that curve.
+    const wmtk::MeshAttribute& tags = mesh.cell(wmtk::CellType::Edge).attributes.at("tags");
+    const wmtk::DataMatrix<int64_t> on = tags.integers();
     for (size_t j = 0; j < tags.labels.size(); ++j) {
-        std::cout << "  " << tags.labels[j] << ": " << inside.col(j).sum() << " triangles\n";
+        std::cout << "  " << tags.labels[j] << ": " << on.col(j).sum() << " edges\n";
     }
     wmtk::io::write_mesh("shapes.msh", mesh);
     // --8<-- [end:run]

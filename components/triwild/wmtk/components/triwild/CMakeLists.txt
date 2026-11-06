@@ -13,6 +13,9 @@ set(SRC_FILES
 
 	Parameters.h
 
+	read_tagged_mesh.hpp
+	read_tagged_mesh.cpp
+
 	triwild.hpp
 	triwild.cpp
 )

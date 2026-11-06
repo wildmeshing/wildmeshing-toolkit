@@ -25,12 +25,12 @@ message(STATUS "Third-party: creating target 'Eigen3::Eigen'")
 include(CPM)
 # From Google's mirror of the Eigen repository, not gitlab.com: GitLab refuses anonymous clones of
 # libeigen/eigen when it is under load ("GitLab is currently unable to handle this request due to
-# load"), which failed CI's configure step on every platform in October 2026. The mirror's 3.4.0 tag
-# is the same commit, 3147391d946bb4b6c68edd901f2add6ac1f31f8c.
+# load"), which failed CI's configure step on every platform in October 2026. The mirror's 5.0.1 tag
+# is the same commit as GitLab's, bc3b39870ecb690a623a3f49149a358b95c5781d.
 CPMAddPackage(
     NAME eigen
     GIT_REPOSITORY https://eigen.googlesource.com/mirror
-    GIT_TAG 3.4.0
+    GIT_TAG 5.0.1
     DOWNLOAD_ONLY TRUE
 )
 

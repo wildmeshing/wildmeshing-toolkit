@@ -16,6 +16,8 @@ set(SRC_FILES
 
 	DelaunayBoxMesh.cpp
 	VolumemesherInsertion.cpp
+	read_tagged_mesh.hpp
+	read_tagged_mesh.cpp
 
 	tetwild.hpp
 	tetwild.cpp

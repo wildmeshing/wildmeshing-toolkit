@@ -262,11 +262,11 @@ TEST_CASE("input-sets-2d-two-inputs-nothing-simplified", "[triwild][input_sets]"
         m.cells[CellType::Edge].connectivity << 0, 1;
         meshes.emplace(name, m);
     }
-    for (const bool around_simplified : {false, true}) {
-        INFO("optimize_envelope_around_simplified " << around_simplified);
+    for (const std::string reference : {"input", "simplified"}) {
+        INFO("envelope_reference " << reference);
         const ComponentResult r = components::triwild::triwild(
             {{"input", {"a", "b"}},
-             {"optimize_envelope_around_simplified", around_simplified},
+             {"envelope_reference", reference},
              {"length_rel", 0.1},
              {"max_iterations", 3}},
             meshes);

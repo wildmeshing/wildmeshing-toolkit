@@ -14,7 +14,9 @@ void SimWildMesh::init_from_image(
     const std::vector<std::string>& tag_names,
     const MatrixXi& F_tagged,
     const MatrixSi& F_tags,
-    const std::vector<std::string>& face_tag_names)
+    const std::vector<std::string>& face_tag_names,
+    const utils::FeatureInputs* features,
+    const utils::EmbedFeaturesResult* features_placed)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -62,7 +64,12 @@ void SimWildMesh::init_from_image(
     }
 
     init_face_tags(F_tagged, F_tags, face_tag_names);
-    init_surfaces_and_boundaries();
+    init_surfaces_and_boundaries(features, features_placed);
+    // The tagged mesh fills its box, as on tetwild's tagged route (require_box_boundary() says
+    // why). Until 2026-11-05 only tracked boundary faces were refused, and an object's tet mesh --
+    // its untracked boundary in no plane of the box -- was taken and held by nothing there:
+    // smooth_before() freezes only the vertices on the box's planes.
+    require_box_boundary("simwild");
 
     if (m_params.preserve_topology) {
         init_vertex_order();
@@ -209,7 +216,9 @@ void SimWildMesh::init_from_image(
     const std::vector<std::string>& tag_names,
     const MatrixXi& F_tagged,
     const MatrixSi& F_tags,
-    const std::vector<std::string>& face_tag_names)
+    const std::vector<std::string>& face_tag_names,
+    const utils::FeatureInputs* features,
+    const utils::EmbedFeaturesResult* features_placed)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -266,7 +275,8 @@ void SimWildMesh::init_from_image(
     }
 
     init_face_tags(F_tagged, F_tags, face_tag_names);
-    init_surfaces_and_boundaries();
+    init_surfaces_and_boundaries(features, features_placed);
+    require_box_boundary("simwild"); // as in the overload above
 
     if (m_params.preserve_topology) {
         init_vertex_order();
@@ -297,13 +307,16 @@ void SimWildMesh::init_face_tags(
     }
 }
 
-void SimWildMesh::init_surfaces_and_boundaries()
+void SimWildMesh::init_surfaces_and_boundaries(
+    const utils::FeatureInputs* features,
+    const utils::EmbedFeaturesResult* features_placed)
 {
     const auto faces = get_faces();
     logger().info("F = {}", faces.size());
 
     // tag surface faces and vertices
     std::vector<Eigen::Vector3i> tempF;
+    std::vector<InputSet> tempF_sets; // their input sets, for the envelope handed on
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
 
@@ -348,6 +361,7 @@ void SimWildMesh::init_surfaces_and_boundaries()
         m_vertex_attribute[v3].m_is_on_surface = true;
 
         tempF.emplace_back(v1, v2, v3);
+        tempF_sets.push_back(m_face_attribute[ff.fid()].input_set());
     }
 
     auto reinit_envelope = [&]() {
@@ -369,8 +383,16 @@ void SimWildMesh::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_F_envelope = tempF;
-        m_F_envelope_labels.clear();
+        // Each row's labels, so every per-label envelope is built from these rows, the faces as
+        // they are now, and not from the mesh's faces wherever they are when it is built: after
+        // the simplification, under envelope_reference "input", the per-label envelopes are
+        // rebuilt around the input as the union is (simplify()), not around the simplified faces.
+        m_F_envelope_labels = tempF_sets;
+        m_F_envelope_face_sets = tempF_sets;
         reinit_envelope();
+    } else if (m_has_reference) {
+        // A reference is held to as given (m_has_reference): checked below, label by label, and
+        // never rebuilt from the mesh, which would hold it to the sender's output instead.
     } else if (m_sim_params.operation == "remeshing") {
         // Deliberately NOT behind check_envelope_at_init, unlike triwild's: the answer is not an
         // assertion but a decision -- if any surface face starts outside, the envelope is rebuilt
@@ -404,11 +426,13 @@ void SimWildMesh::init_surfaces_and_boundaries()
             }
             m_V_envelope = tempV;
             m_F_envelope = tempF;
-            m_F_envelope_labels.clear();
+            m_F_envelope_labels = tempF_sets; // as above
+            m_F_envelope_face_sets = tempF_sets;
             reinit_envelope();
         }
     }
 
+    if (m_has_reference) require_reference_face_labels(m_F_envelope_labels);
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
 
     // track bounding box
@@ -446,59 +470,52 @@ void SimWildMesh::init_surfaces_and_boundaries()
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 
-    if (m_params.preserve_topology) {
-        // track open boundaries
-        find_order_2_edges();
-
-        int open_boundary_cnt = 0;
-        for (const Tuple& e : get_edges()) {
-            if (is_order_2_edge(e)) {
-                open_boundary_cnt++;
-            }
-        }
-        logger().info("#open boundary edges: {}", open_boundary_cnt);
-    }
-}
-
-void SimWildMesh::find_order_2_edges()
-{
-    // for open boundary envelope
-    std::vector<Eigen::Vector3d> v_posf(vert_capacity());
-    std::vector<Eigen::Vector2i> order_2_edges;
-
-    for (size_t i = 0; i < vert_capacity(); i++) {
-        v_posf[i] = m_vertex_attribute[i].m_posf;
-    }
-
-    const auto edges = get_edges();
-    for (const Tuple& e : edges) {
-        const size_t v1 = e.vid(*this);
-        const size_t v2 = e.switch_vertex(*this).vid(*this);
-        if (is_order_2_edge({{v1, v2}})) {
-            order_2_edges.emplace_back(v1, v2);
-        }
-    }
-
-    logger().info("order 2 edge num: {}", order_2_edges.size());
-
-    if (order_2_edges.size() == 0) {
-        return;
-    }
-
-    // init open boundary envelope
+    // The order-2 edges (open boundaries, non-manifold edges) are tagged and held by the base's
+    // tube, with or without preserve_topology: keeping them in place is a geometric guarantee,
+    // separate from the topological one (see tag_order2_edges()). Until 2026-10 they were held
+    // only under preserve_topology, and only in collapses: smoothing walked an open square's
+    // corners along its rim.
     //
-    // Follows the surface envelope's predicate: same input, same epsilon, so there is no
-    // reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
-    // curves. It was hard-wired to sampled only because the exact envelope could not be built
-    // from edges until fast-envelope #6.
-    m_order_2_edge_envelope = std::make_shared<Envelope>(m_envelope && m_envelope->use_exact);
-    // A FRACTION of eps here, deliberately, where the surface envelope uses all of it:
-    // widening a boundary-curve envelope buys no unblocking and costs elements. See
-    // /order2_envelope_ratio in the spec for the measurement.
-    m_order_2_edge_envelope->init(
-        v_posf,
-        order_2_edges,
-        m_params.epsr * m_params.diag_l * m_sim_params.order2_envelope_ratio);
+    // The tube follows the surface envelope's predicate: same input, same epsilon, so there is
+    // no reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
+    // curves. Its radius is order2_envelope_ratio x eps, 1 by default, around the order-2 edges as
+    // the insertion leaves them, after any simplification; see /order2_envelope_ratio in the spec
+    // for the bound against the input and the sweep. After a simplification before the insertion,
+    // under envelope_reference "input", around the input's own curves where they lie in them,
+    // else around themselves, where inputs meet too (InputCurves); under "simplified" around the
+    // simplified geometry, at the same radius (OptimizerParameters::order2_eps()).
+    const double order2_eps = m_params.order2_eps() * m_sim_params.order2_envelope_ratio;
+    const size_t n_order2 = tag_order2_edges(order2_eps, m_envelope && m_envelope->use_exact);
+    logger().info("order-2 edges tagged: {}", n_order2);
+
+    // The input feature curves (input_edges), held as tetwild holds them, by the same code: the
+    // tet edges tiling them are tagged with their input_edges file and kept in tubes of
+    // feature_envelope_ratio x eps -- around the input curves, and one per file
+    // (tag_feature_edges()) -- with the surface envelope's predicate, as the order-2 tubes.
+    const double feature_eps =
+        m_params.epsr * m_params.diag_l * m_sim_params.feature_envelope_ratio;
+    std::vector<size_t> input_points;
+    if (features != nullptr) {
+        assert(features_placed != nullptr);
+        tag_feature_edges(
+            *features_placed,
+            features,
+            feature_eps,
+            m_envelope && m_envelope->use_exact);
+        input_points = utils::placed_point_vertices(*features_placed);
+    }
+    // With a reference the tubes are around its curves, not around the edges received.
+    if (m_has_reference) init_reference_feature_tubes(feature_eps, m_envelope->use_exact);
+    // Before a remeshing, which holds the mesh to the reference: what was received must already
+    // lie in it. The tag operations hold nothing to it, and drop it.
+    if (m_has_reference && m_sim_params.operation == "remeshing") {
+        check_reference_containment(m_envelope_eps);
+    }
+
+    // Where a tagged curve ends or three or more meet, and at every input point (input_points),
+    // the vertex is anchored (anchor_feature_points()), held like the curves: always. The radius
+    // is the tube's of the kinds it is on, the smallest where it is on several.
+    anchor_feature_points(input_points, order2_eps, feature_eps);
 }
 
 bool SimWildMesh::is_order_2_edge(const Tuple& e) const

@@ -2,8 +2,8 @@
 
 - On the same input, every op gives the file route's result (compared
   independently of cell order).
-- A .msh output holds the mesh only; the envelope is an entry of the memory
-  result, passed on to the next call only when the caller does so.
+- A .msh output holds the mesh and its tags only; the envelope is an entry of
+  the memory result, passed on to the next call only when the caller does so.
 - save/load checkpoints round-trip exactly, and the PolyFEM ops' reader
   (gmsh) reads them with every cell, the background included.
 
@@ -35,7 +35,7 @@ def _square_obj(path, lo, hi):
     return str(path)
 
 
-S2T = {"eps_rel": 1e-2, "skip_simplify": True}
+S2T = {"eps_rel": 1e-2, "simplify": False}
 OFFSET = {"offset_selection": "a", "target_distance": 0.05, "offset_output_tags": ["off"],
           "optimize_offset": False}
 
@@ -129,7 +129,13 @@ def _same_as_file(memory_result, file_msh):
     back = wm.read_mesh(file_msh)
     assert canonical(memory_result["mesh"]) == canonical(back)
     envelope_type = "triangle" if _top(back) == "tetrahedron" else "edge"
-    assert envelope_type not in back["cells"]   # files hold the mesh only
+    # files hold the mesh and its tags only: a block of the envelope's type is the inputs'
+    # tagged curves or faces, and a reader takes its EnvelopeSurface rows (or a block without
+    # tags) as an envelope
+    low = back["cells"].get(envelope_type)
+    if low is not None:
+        tags = low.get("attributes", {}).get("tags")
+        assert tags is not None and "EnvelopeSurface" not in tags["labels"]
 
 
 @pytest.mark.parametrize("op", sorted(OPS))
@@ -152,7 +158,7 @@ def test_mesh_generation_same_as_file_route(m1, boxes):
 def test_triwild_same_as_file_route(work):
     objs = [_square_obj(work / "sa.obj", (0, 0), (1, 1)),
             _square_obj(work / "sb.obj", (0.5, 0.25), (1.5, 1.25))]
-    options = {"input_names": ["a", "b"], "eps_rel": 1e-2}
+    options = {"input_names": ["a", "b"], "eps_rel": 1e-2, "eps_simplify_rel": 5e-3}
     wm.triwild({"input": objs, "output": str(work / "t1"), "input_dir": str(work), **options})
     out, _ = wm.triwild({"input": ["a", "b"], **options},
                         {"a": wm.read_mesh(objs[0]), "b": wm.read_mesh(objs[1])})
@@ -175,15 +181,17 @@ def test_manifold_extraction_same_as_file_route(work):
 
 
 def test_envelope_is_passed_on_only_by_the_caller(boxes):
-    r1, _ = wm.simwild({"input": ["a", "b"], "input_names": ["a", "b"], **S2T},
-                       {"a": wm.read_mesh(boxes[0]), "b": wm.read_mesh(boxes[1])})
+    r1, report = wm.simwild({"input": ["a", "b"], "input_names": ["a", "b"], **S2T},
+                            {"a": wm.read_mesh(boxes[0]), "b": wm.read_mesh(boxes[1])})
     assert "envelope" in r1
-    # passed on explicitly: the offset receives it and returns it
-    r2, _ = wm.topological_offset({"input": "m", "envelope": "e", **OFFSET},
+    # passed on explicitly: the offset receives it, holds to it -- at simwild's eps at least, or it
+    # refuses the faces simwild moved within it -- and returns it
+    offset = {**OFFSET, "envelope_size": report["eps"]}
+    r2, _ = wm.topological_offset({"input": "m", "envelope": "e", **offset},
                                   {"m": r1["mesh"], "e": r1["envelope"]})
     assert "envelope" in r2
     # not passed on: the offset has none
-    r3, _ = wm.topological_offset({"input": "m", **OFFSET}, {"m": r1["mesh"]})
+    r3, _ = wm.topological_offset({"input": "m", **offset}, {"m": r1["mesh"]})
     assert "envelope" not in r3
     # and without its optimization the offset does not depend on it
     assert canonical(r2["mesh"]) == canonical(r3["mesh"])
@@ -192,6 +200,51 @@ def test_envelope_is_passed_on_only_by_the_caller(boxes):
                         "resolve_overlaps_tags": [["a", "b"]]},
                        {"m": r1["mesh"], "e": r1["envelope"]})
     assert "envelope" not in r4
+
+
+def _tags_only(m):
+    """The mesh with its tags only, as a reader takes a .msh: it drops every other field."""
+    cells = {}
+    for t, c in m["cells"].items():
+        cells[t] = {"connectivity": c["connectivity"]}
+        if "tags" in c.get("attributes", {}):
+            cells[t]["attributes"] = {"tags": c["attributes"]["tags"]}
+    return {"V": m["V"], "cells": cells}
+
+
+def test_envelope_is_handed_along_a_chain(boxes, work):
+    """tetwild hands on the input it held its faces to, labelled by input, on both routes;
+    simwild, given it with tetwild's mesh, holds the mesh to it at its own eps and hands
+    it on unchanged, with one result on both routes. It refuses a mesh outside it, and an
+    envelope that lacks a label of the mesh."""
+    options = {"input_names": ["a", "b"], "eps_rel": 1e-2,
+               "max_iterations": 2, "num_threads": 1}
+    wm.tetwild({"input": boxes, "output": str(work / "tw"), "input_dir": str(work), **options})
+    envelope = wm.read_mesh(str(work / "tw_envelope.msh"))
+    t, report = wm.tetwild({"input": ["a", "b"], **options},
+                           {"a": wm.read_mesh(boxes[0]), "b": wm.read_mesh(boxes[1])})
+    for e in (t["envelope"], envelope):
+        assert e["cells"]["triangle"]["attributes"]["tags"]["labels"] == ["a", "b"]
+        assert e["cells"]["triangle"]["attributes"]["tags"]["values"].sum(axis=0).tolist() \
+            == [12, 12]
+    simwild = {"eps": report["eps"], "max_iterations": 2, "num_threads": 1}
+    mesh = _tags_only(wm.read_mesh(str(work / "tw_final.msh")))
+    out, _ = wm.simwild({"input": ["m"], "envelope": "e", **simwild}, {"m": mesh, "e": envelope})
+    wm.simwild({"input": [str(work / "tw_final.msh")], "envelope": "tw_envelope.msh",
+                "output": str(work / "sw"), "input_dir": str(work), **simwild})
+    _same_as_file(out, str(work / "sw.msh"))
+    assert exact_diff(out["envelope"], envelope) == []
+    assert exact_diff(wm.read_mesh(str(work / "sw_envelope.msh")), envelope) == []
+    # the input moved by 0.1 > eps: the faces received lie outside it
+    moved = dict(envelope, V=envelope["V"] + np.array([0.1, 0, 0]))
+    with pytest.raises(RuntimeError, match="held faces outside"):
+        wm.simwild({"input": ["m"], "envelope": "e", **simwild}, {"m": mesh, "e": moved})
+    tags = envelope["cells"]["triangle"]["attributes"]["tags"]
+    renamed = {"V": envelope["V"], "cells": {"triangle": {
+        "connectivity": envelope["cells"]["triangle"]["connectivity"],
+        "attributes": {"tags": {"values": tags["values"], "labels": ["a", "c"]}}}}}
+    with pytest.raises(RuntimeError, match="labelled b"):
+        wm.simwild({"input": ["m"], "envelope": "e", **simwild}, {"m": mesh, "e": renamed})
 
 
 def test_checkpoint_round_trip(boxes, work):
@@ -261,3 +314,43 @@ def test_many_regions_are_read_by_the_polyfem_reader(work):
     wm.write_mesh(path, m)
     assert list(TaggedMesh(path).prim_tags.values()) == [frozenset(labels)]
     assert exact_diff(m, wm.read_mesh(path)) == []
+
+
+def _face_tags(m):
+    """Each tagged face of a tet mesh as (label, its corners' coordinates turned to start at the
+    smallest, its orientation kept), sorted: independent of vertex and row order."""
+    c = m["cells"].get("triangle")
+    if c is None:
+        return []
+    tags = c["attributes"]["tags"]
+    out = []
+    for row, member in zip(c["connectivity"], tags["values"]):
+        corners = [tuple(m["V"][v]) for v in row]
+        k = corners.index(min(corners))
+        corners = tuple(corners[k:] + corners[:k])
+        out += [(label, corners) for label, b in zip(tags["labels"], member) if b]
+    return sorted(out)
+
+
+def test_tetwild_tagged_route_same_as_file_route(boxes, m1, work):
+    """tetwild continues from its own output, a tagged tet mesh, its tets kept, with one result
+    on both routes. It reads every tagged face exactly: the envelope it hands on, built from the
+    faces received, is the input's rows with their labels. (Not the output: the optimization's
+    bare collapse and swap passes run at max_iterations 0 too.) A mesh with volume tags --
+    simwild's regions -- is refused, naming simwild."""
+    options = {"input_names": ["a", "b"], "eps_rel": 1e-2, "simplify": False,
+               "max_iterations": 0, "num_threads": 1}
+    wm.tetwild({"input": boxes, "output": str(work / "tt"), "input_dir": str(work), **options})
+    first = str(work / "tt_final.msh")
+    again = {"max_iterations": 0, "num_threads": 1}
+    wm.tetwild({"input": [first], "output": str(work / "tt2"), "input_dir": str(work), **again})
+    out, _ = wm.tetwild({"input": ["m"], **again}, {"m": wm.read_mesh(first)})
+    back = wm.read_mesh(str(work / "tt2_final.msh"))
+    assert _face_tags(out["mesh"]) == _face_tags(back)
+    received = _face_tags(wm.read_mesh(first))
+    assert _face_tags(out["envelope"]) == received
+    assert _face_tags(wm.read_mesh(str(work / "tt2_envelope.msh"))) == received
+    assert out["mesh"]["cells"]["triangle"]["attributes"]["tags"]["labels"] == ["a", "b"]
+    assert "tags" not in out["mesh"]["cells"]["tetrahedron"].get("attributes", {})
+    with pytest.raises(RuntimeError, match="simwild"):
+        wm.tetwild({"input": ["m"], **again}, {"m": wm.read_mesh(m1)})

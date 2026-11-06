@@ -38,31 +38,44 @@ struct OptimizerParameters
     bool preserve_topology = false;
 
     /**
-     * Build the optimizer's envelope around the SIMPLIFIED geometry at the REMAINING
-     * tolerance (eps - simplify_eps), instead of around the original input at the full eps.
+     * envelope_reference "simplified" (true) or "input" (false, the default): which geometry
+     * every envelope, tube and anchor is built around -- the surface or curve envelope, the
+     * order-2 and feature tubes, the anchors -- one choice for all of them.
      *
-     * The deviation budget is identical by the triangle inequality: the simplification is
-     * already within simplify_eps of the input, so anything within (eps - simplify_eps) of the
-     * simplification is within eps of the input. What changes is where the geometry STARTS.
-     * The envelope is a hard veto, not a penalty, so a surface handed to the optimizer close
-     * to the boundary has most of its moves refused; built this way it starts at the centre,
-     * with the whole radius available in every direction.
+     * "input": the original input, at eps times each one's ratio. What a simplification made
+     * and the input does not have (rims, non-manifold edges, curve ends) is held around itself
+     * as the insertion leaves it, since a free one erodes the input along its curve
+     * (TetOptimizerMesh::InputCurves).
      *
-     * That headroom is load-bearing: deliberately starving it on tetwild (simplify_envelope_
-     * ratio 0.95, which leaves the simplification free to use nearly the whole tolerance) was
-     * enough to turn a converging run into a diverging one on Thingi10K 1368052.
+     * "simplified": the SIMPLIFIED geometry, which replaces the input, at eps times each one's
+     * ratio: the output is within eps of the simplification, so within simplify_eps + eps of the
+     * input, and any simplify_eps is allowed -- a coarse simplification of a dense input
+     * included. The geometry starts at the centre of the envelope it is held to, where around
+     * the input it starts up to simplify_eps off it; the envelope is a hard veto, not a penalty,
+     * so a surface handed to the optimizer close to the boundary has most of its moves refused.
+     * Starving that headroom on tetwild (a simplification at 0.95 eps, simplify_envelope_ratio
+     * 0.95 until 2026-11: the simplification free to use nearly the whole tolerance) turned a
+     * converging run into a diverging one on Thingi10K 1368052.
      *
-     * The cost is elements. Holding the surface within eps/2 of the simplified geometry is
-     * stricter than eps of the input wherever the simplification smoothed detail away, so
-     * fewer coarsening collapses are allowed: measured on 106838 the output went from 200k to
-     * 560k tets and on 116060 from 133k to 267k, at unchanged final quality. Off by default
-     * for that reason.
-     *
-     * SimWild's 3D mesh already rebuilds its envelope around the simplified surface; there
-     * this flag only narrows the radius to the remaining budget, which is the part it was
-     * missing. SimWild's 2D mesh has no simplification stage, so the flag does not apply.
+     * Refused without a simplification, and "input" with simplify_eps at or above eps
+     * (utils::check_envelope_reference()). Until 2026-11 "simplified" built at eps -
+     * simplify_eps, keeping the output within eps of the input, and fell back to the full eps
+     * with a warning when nothing was left.
      */
-    bool optimize_envelope_around_simplified = false;
+    bool envelope_around_simplified = false;
+    /**
+     * per_input_envelopes (default true): with two or more inputs, each is held to its own --
+     * one surface (2D: curve) envelope per input, one order-2 and one feature tube per input,
+     * and the input simplification's envelope per input likewise -- rather than one shared
+     * envelope of each kind for all inputs. false shares them: an input may then end up on
+     * another within eps, for speed where inputs come within eps of each other (the
+     * simplification measured 3% to 20% faster shared, 2026-11). Anchors are per point either
+     * way. An input is an input file in tetwild and triwild, a label in simwild.
+     */
+    bool per_input_envelopes = true;
+    /// The eps the order-2 tubes and the curve anchors are built at, before their ratio: the
+    /// surface envelope's, eps, around whichever geometry envelope_around_simplified names.
+    double order2_eps() const { return epsr * diag_l; }
 
     /**
      * Incident-cell count above which a link vertex accepts only one valence-increasing split

@@ -118,9 +118,12 @@ bool TopoOffsetTetMesh::is_edge_on_offset(const Tuple& loc)
 
 bool TopoOffsetTetMesh::vertex_is_on_surface(const size_t vid) const
 {
-    // The domain wall must count here, or it drifts: the smoother's containment check walks
-    // exactly the collection this decides.
-    return vertex_is_on_region(vid) || m_vertex_extra.at(vid).m_is_on_offset;
+    // On a tracked face: a region boundary or the offset surface. Not the domain wall, which is
+    // no tracked face (the box rule holds it): the substructure queries walk the tracked faces
+    // this admits a vertex to (TetMesh::compute_vertex_order() throws for a vertex it admits that
+    // has none). Until 2026-11-05 the wall was tracked and counted here, through
+    // vertex_is_on_region().
+    return m_vertex_extra.at(vid).m_is_on_region || m_vertex_extra.at(vid).m_is_on_offset;
 }
 
 bool TopoOffsetTetMesh::face_is_on_surface(const size_t fid) const
@@ -148,8 +151,8 @@ void TopoOffsetTetMesh::label_offset_boundary()
         const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
         if (!opp) {
             // The band ran into the domain wall. With no second tet this cannot be classified
-            // as offset surface -- and must not be, or the wall face would lose the per-tag
-            // containment that keeps the box a box.
+            // as offset surface -- and must not be: the wall is no tracked face, and the box rule
+            // keeps the box a box.
             ++n_wall_band;
             continue;
         }
@@ -1236,6 +1239,14 @@ bool TopoOffsetTetMesh::swap_face_before(const Tuple& t)
     rec.scored_energy = scored;
 
     face_attribute_tracker(*this, twotets, m_face_attribute, cache.changed_faces);
+    // The two cells' edge tags, as the base caches them: swap_face_after(), the base's (the
+    // offset has none of its own), restores the three new cells' edges from this cache, so
+    // without it they took whatever the thread's previous operation had left there, or nothing.
+    // MEASURED on the rod branch (33548e2f26, the same copy): 2 tagged edges when the loop
+    // started, at its end 8 rod edges of which 1 still tagged; test swap-face-keeps-edge-tags.
+    if (m_track_feature_edges) {
+        feature_edges_cache(twotets, cache.changed_edges);
+    }
     return true;
 }
 
@@ -1913,15 +1924,19 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     pre = {ring_max_quality(vid), m_vertex_attribute[vid].m_posf};
     if (pre.first >= kNeedleQuality) ++m_needle_smooth_offered;
 
-    // The base's smooth_before minus its bounding-box refusal, which is why this does not call
-    // it: the base freezes every vertex on the domain wall. Here the wall is a region boundary
-    // held in ambient's tag envelope like any other, so its vertices are smoothed and the
-    // containment check decides whether the move survives. As in 2D.
-    //
-    // Rounding still has to happen, and its failure still refuses the move.
+    // The base's smooth_before, counted: rounding has to happen, and its failure refuses the
+    // move; a vertex on the domain wall is not smoothed, the box rule holding the wall as in
+    // tetwild and simwild. Until 2026-11 the wall was held in an envelope and its vertices
+    // smoothed inside it: with the wall frozen and its edges unsplittable, a tet resting on the box
+    // had bisected onto the plane, max AMIPS 6.9e21 against 364 held so (2026-08). Wall edges
+    // split now (the base's split_edge_after() keeps the new vertex on the walls both ends share).
     const bool rounded_now = round(t);
     if (!m_vertex_attribute[vid].m_is_rounded && !rounded_now) {
         ++m_smooth_trace.before_unrounded;
+        return false;
+    }
+    if (!m_vertex_attribute[vid].on_bbox_faces.empty()) {
+        ++m_smooth_trace.before_bbox;
         return false;
     }
 
@@ -2034,7 +2049,11 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     // dispatch the operations and the sanity check use, so this cannot disagree with them --
     // and, for the faces inside, how much room is left as a fraction of eps: `is_outside` is a
     // yes/no, and a face resting on the skin of its envelope is the one the next operation pushes
-    // out. Both envelopes are real Envelopes, so squared_distance() is safe on them.
+    // out. A face on two or more labels is held to the intersection of their envelopes
+    // (InputEnvelopes::containment()), a composite whose BVH is null and which must never be
+    // asked squared_distance() (CompositeEnvelopes.hpp): its members are asked instead, as the 2D
+    // audit asks its tag tubes, and the face's distance is the largest, since inside the
+    // intersection is inside each.
     struct Face
     {
         std::array<size_t, 3> v{{0, 0, 0}};
@@ -2057,6 +2076,16 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
         }
         return d;
     };
+    // The real envelopes behind a face's: an intersection's members, else the envelope itself.
+    const auto real_parts = [](const Envelope& env) {
+        std::vector<const Envelope*> out;
+        if (const auto* both = dynamic_cast<const IntersectionEnvelope*>(&env)) {
+            for (const auto& m : both->members()) out.push_back(m.get());
+        } else {
+            out.push_back(&env);
+        }
+        return out;
+    };
     for (const Tuple& f : get_faces()) {
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         ++n_tracked;
@@ -2070,12 +2099,20 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
              m_vertex_attribute[vids[1]].m_posf,
              m_vertex_attribute[vids[2]].m_posf}};
         const bool offset = env == m_offset_envelope;
+        const std::vector<const Envelope*> parts = real_parts(*env);
         if (env->is_outside(p)) {
-            bad.push_back({vids, offset, farthest(*env, p, 6)});
+            double d = 0.;
+            for (const Envelope* e : parts) d = std::max(d, farthest(*e, p, 6));
+            bad.push_back({vids, offset, d});
             continue;
         }
-        if (!(env->eps2 > 0.)) continue;
-        const double frac = farthest(*env, p, 2) / std::sqrt(env->eps2);
+        // In units of each envelope's own eps (Envelope::eps()). Until 2026-11 of sqrt(eps2), the
+        // sampled path's shrunk radius, 0.42 eps, so the margins read 2.37x too high.
+        double frac = -1.;
+        for (const Envelope* e : parts) {
+            if (e->eps() > 0.) frac = std::max(frac, farthest(*e, p, 2) / e->eps());
+        }
+        if (frac < 0.) continue;
         worst_frac = std::max(worst_frac, frac);
         ++band[frac < 0.5 ? 0 : frac < 0.9 ? 1 : frac < 0.99 ? 2 : frac < 1. ? 3 : 4];
         if (frac >= 0.9) snug.push_back({vids, offset, frac});
@@ -5763,9 +5800,9 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     // AMIPS term would read the label), and of the one tag of its label there (the flipped cell
     // takes the other label's, `tag`). And no corner of t is on anything else: the input complex
     // (vertex label 1, which also catches a sheet, wire or point complex without cells), another
-    // tracked surface (vertex_is_on_region(): a tag boundary or the box), or the mesh boundary (a
-    // face through it with no cell beyond) -- which implies that no face of t is on the mesh
-    // boundary. The corner conditions are there because the test below reads cells only: at a
+    // tracked surface or the box (vertex_is_on_region(): a tag boundary or the wall), or the mesh
+    // boundary (a face through it with no cell beyond) -- which implies that no face of t is on the
+    // mesh boundary. The corner conditions are there because the test below reads cells only: at a
     // corner on the wall, a flip the test allows can still join the front to the wall at that one
     // vertex.
     const auto eligible = [&](const size_t tid, CellTag& tag) {
@@ -6690,10 +6727,11 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
 
 double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, const bool coarsen)
 {
-    // The final envelopes -- the front's envelope, and m_envelope widened to every region boundary
-    // as placement left them (build_final_envelopes()). TetWild's own rules (m_op_rules: the
-    // smoother's raw AMIPS sum, the operations' max of AMIPS^3), no band term, no plastic medium
-    // (AMIPS against the regular tet); the front smoothed inside its envelope like any held vertex.
+    // The final envelopes -- the front's envelope (build_final_envelopes()); every other tracked
+    // surface stays in the loop's envelopes, where build_envelopes() captured it. TetWild's own
+    // rules (m_op_rules: the smoother's raw AMIPS sum, the operations' max of AMIPS^3), no band
+    // term, no plastic medium (AMIPS against the regular tet); the front smoothed inside its
+    // envelope like any held vertex.
     build_final_envelopes();
     m_tetwild_pass = true;
     // TetWild's own rules for the operations and the smoother (m_op_rules).
@@ -6756,7 +6794,6 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, cons
     m_plastic_active = plastic_was;
     m_op_rules = rules_was;
     m_tetwild_pass = false;
-    release_final_envelopes();
     assign_band_regions();
     return std::get<0>(optimization_quality_stats());
 }

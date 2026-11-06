@@ -1,5 +1,6 @@
 #include "SimWildMeshTri.hpp"
 #include <wmtk/io/DataWriter.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 
 #include "QualityStats.hpp"
 
@@ -42,7 +43,10 @@ void SimWildMeshTri::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
     const MatrixSi& T_tags,
-    const std::vector<std::string>& tag_names)
+    const std::vector<std::string>& tag_names,
+    const MatrixXi& E_tagged,
+    const MatrixSi& E_tags,
+    const std::vector<std::string>& edge_tag_names)
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
@@ -102,14 +106,20 @@ void SimWildMeshTri::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
+    init_edge_tags(E_tagged, E_tags, edge_tag_names);
     init_surfaces_and_boundaries();
+    // The tagged mesh fills its box, as in 3D (SimWildMesh::init_from_image()).
+    require_box_boundary("simwild");
 }
 
 void SimWildMeshTri::init_from_image(
     const MatrixXr& V,
     const MatrixXi& T,
     const MatrixSi& T_tags,
-    const std::vector<std::string>& tag_names)
+    const std::vector<std::string>& tag_names,
+    const MatrixXi& E_tagged,
+    const MatrixSi& E_tags,
+    const std::vector<std::string>& edge_tag_names)
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
@@ -197,7 +207,9 @@ void SimWildMeshTri::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
+    init_edge_tags(E_tagged, E_tags, edge_tag_names);
     init_surfaces_and_boundaries();
+    require_box_boundary("simwild"); // as in the overload above
 }
 
 void SimWildMeshTri::init_surfaces_and_boundaries()
@@ -207,23 +219,43 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
     // tag surface edges and vertices
     std::vector<Vector2i> tempE;
+    std::vector<InputSet> tempE_sets; // their input sets, for the envelope handed on
     for (const Tuple& e : edges) {
         SmartTuple ee(*this, e);
 
+        // A tagged edge is surface wherever it lies; any other edge only between unlike tags.
         const auto t_opp = ee.switch_face();
-        if (!t_opp) {
+        const bool border =
+            t_opp && m_face_attribute[ee.fid()].tags != m_face_attribute[t_opp.value().fid()].tags;
+        if ((m_edge_attribute[ee.eid()].input_set() & edge_tag_mask()) == 0 && !border) {
             continue;
         }
 
-        {
+        m_edge_attribute[ee.eid()].m_is_surface_fs = 1;
+        if (border) {
+            // The tags on one side and not the other: the regions this edge bounds.
             const auto& tag0 = m_face_attribute[ee.fid()].tags;
             const auto& tag1 = m_face_attribute[t_opp.value().fid()].tags;
-            if (tag0 == tag1) {
-                continue;
+            InputSet set = m_edge_attribute[ee.eid()].input_set();
+            for (const auto* tags : {&tag0, &tag1}) {
+                const auto* other = tags == &tag0 ? &tag1 : &tag0;
+                for (const int64_t t : *tags) {
+                    if (other->count(t)) continue;
+                    const size_t bit = m_edge_tag_names.size() + size_t(t);
+                    if (bit >= size_t(SurfaceTagAttributes::max_inputs)) {
+                        log_and_throw_error(
+                            "{} edge tags and triangle tag {}: each label is one bit of an "
+                            "edge's input set, so edge tags and triangle tags together are at "
+                            "most {}",
+                            m_edge_tag_names.size(),
+                            t,
+                            SurfaceTagAttributes::max_inputs);
+                    }
+                    set |= InputSet(1) << bit;
+                }
             }
+            m_edge_attribute[ee.eid()].set_input_set(set);
         }
-
-        m_edge_attribute[ee.eid()].m_is_surface_fs = 1;
 
         const size_t v1 = ee.vid();
         const size_t v2 = ee.switch_vertex().vid();
@@ -231,6 +263,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         m_vertex_attribute[v2].m_is_on_surface = true;
 
         tempE.emplace_back(v1, v2);
+        tempE_sets.push_back(m_edge_attribute[ee.eid()].input_set());
     }
 
     auto env_from_face_tags = [&]() {
@@ -243,6 +276,8 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_E_envelope = tempE;
+        m_E_envelope_labels.clear();
+        m_E_envelope_edge_sets = tempE_sets;
         m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
         m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
         logger().info(
@@ -253,6 +288,9 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
     if (!m_envelope) {
         env_from_face_tags();
+    } else if (m_has_reference) {
+        // A reference is held to as given (m_has_reference): checked below, label by label, and
+        // never rebuilt from the mesh, which would hold it to the sender's output instead.
     } else if (m_sim_params.operation == "remeshing") {
         // All surface edges must be inside the envelope. This check is NOT OPTIONAL. As the tracked
         // surface is created from tags, the input surface might be a different one. In that case,
@@ -277,6 +315,20 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
             env_from_face_tags();
         }
     }
+
+    if (m_has_reference) require_reference_edge_labels(m_E_envelope_labels);
+    init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
+    // Before a remeshing, which holds the mesh to the reference: what was received must already
+    // lie in it. The tag operations hold nothing to it, and drop it.
+    if (m_has_reference && m_sim_params.operation == "remeshing") check_reference_containment();
+
+    // Where a tracked curve ends or three or more meet, the vertex is anchored in a ball of
+    // order2_envelope_ratio x eps (anchor_feature_points()); the 2D twin of the 3D order-2
+    // curves' ends and junctions, held always. Every input point (input_points) is anchored in
+    // a ball of feature_envelope_ratio x eps, as in 3D; the smaller radius where it is both.
+    const double order2_eps = m_envelope_eps * m_sim_params.order2_envelope_ratio;
+    const double feature_eps = m_envelope_eps * m_sim_params.feature_envelope_ratio;
+    anchor_feature_points(m_input_point_vids, order2_eps, feature_eps);
 
     // track bounding box
     for (size_t i = 0; i < edges.size(); i++) {
@@ -315,6 +367,61 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 }
 
+void SimWildMeshTri::init_edge_tags(
+    const MatrixXi& E_tagged,
+    const MatrixSi& E_tags,
+    const std::vector<std::string>& edge_tag_names)
+{
+    if (edge_tag_names.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+        log_and_throw_error(
+            "{} edge tags: each is one bit of an edge's input set, so at most {}",
+            edge_tag_names.size(),
+            SurfaceTagAttributes::max_inputs);
+    }
+    // One column per name: a column past the names would set a bit of the region labels that
+    // follow them (see m_edge_tag_names), or shift past the set's width.
+    if (E_tagged.rows() > 0 && size_t(E_tags.cols()) != edge_tag_names.size()) {
+        log_and_throw_error(
+            "{} edge-tag columns for {} edge-tag names",
+            E_tags.cols(),
+            edge_tag_names.size());
+    }
+    m_edge_tag_names = edge_tag_names;
+    for (Eigen::Index r = 0; r < E_tagged.rows(); ++r) {
+        const std::array<size_t, 2> vids = {{size_t(E_tagged(r, 0)), size_t(E_tagged(r, 1))}};
+        const auto [e, eid] = tuple_from_edge(vids);
+        if (!e.is_valid(*this)) log_and_throw_error("Tagged edge {} is not an edge of the mesh", r);
+        InputSet set = 0;
+        for (Eigen::Index j = 0; j < E_tags.cols(); ++j)
+            if (E_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
+        auto& attr = m_edge_attribute[eid];
+        attr.set_input_set(attr.input_set() | set);
+        attr.set_orientation_along(vids, 1);
+    }
+}
+
+void SimWildMeshTri::init_label_envelopes(const double eps, const bool exact)
+{
+    // With one label the member would be m_envelope, so none is built, as triwild builds none
+    // for one input: the containment then answers with the union, as before the labels.
+    InputSet labels = 0;
+    for (const Tuple& e : get_edges()) {
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) labels |= attr.input_set();
+    }
+    if ((labels & (labels - 1)) == 0) {
+        m_input_envelopes.set({});
+        return;
+    }
+    init_input_envelopes(m_V_envelope, m_E_envelope, m_E_envelope_labels, eps, exact);
+    if (!m_input_envelopes.empty()) {
+        logger().info(
+            "label envelopes: {} labels, each surface edge held to its own (eps {:.6})",
+            m_input_envelopes.size(),
+            eps);
+    }
+}
+
 void SimWildMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
 {
     if (m_envelope) {
@@ -341,6 +448,34 @@ void SimWildMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
         "Envelope: {} (eps {:.6})",
         m_envelope->use_exact ? "EXACT" : "sampled",
         m_envelope_eps);
+}
+
+std::string SimWildMeshTri::label_name(const size_t bit) const
+{
+    if (bit < m_edge_tag_names.size()) return m_edge_tag_names[bit];
+    const size_t j = bit - m_edge_tag_names.size();
+    const std::vector<std::string> labels = io::tag_labels(m_tag_id_to_name, m_tags_count);
+    return j < labels.size() ? labels[j] : fmt::format("label bit {}", bit);
+}
+
+MeshData SimWildMeshTri::envelope_data(const std::vector<Vector2d>& points) const
+{
+    const std::vector<InputSet>& sets = m_E_envelope_labels.size() == m_E_envelope.size()
+                                            ? m_E_envelope_labels
+                                            : m_E_envelope_edge_sets;
+    MeshData out;
+    const MeshData edges = io::geometry_data(m_V_envelope, m_E_envelope, CellType::Edge);
+    if (sets.size() != m_E_envelope.size()) {
+        io::append_envelope_block(out, edges, CellType::Edge, {}, {});
+        return out;
+    }
+    std::vector<std::string> names = m_edge_tag_names;
+    const std::vector<std::string> face_labels = io::tag_labels(m_tag_id_to_name, m_tags_count);
+    names.insert(names.end(), face_labels.begin(), face_labels.end());
+    names.resize(std::min(names.size(), size_t(SurfaceTagAttributes::max_inputs)));
+    io::append_envelope_block(out, edges, CellType::Edge, sets, names);
+    io::append_envelope_points(out, points);
+    return out;
 }
 
 CellTag SimWildMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_set)
@@ -922,6 +1057,91 @@ bool SimWildMeshTri::collapse_quality_allowed(
            quality <= ring_max;
 }
 
+void SimWildMeshTri::simplify()
+{
+    partition_mesh_morton();
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+    logger().info("===== Simplify =====");
+
+    // As in 3D (SimWildMesh::simplify()): the sampled envelope for the simplification alone if
+    // simplify_use_sample_envelope asks, else the mode use_sample_envelope gave m_envelope;
+    // rebuilt below in that mode, around the input or around the result.
+    if (m_sim_params.simplify_use_sample_envelope) {
+        m_envelope->use_exact = false;
+    }
+    m_envelope->init(m_V_envelope, m_E_envelope, m_sim_params.eps_simplify);
+    init_label_envelopes(m_sim_params.eps_simplify, m_envelope->use_exact);
+
+    // Where 2D differs: nothing is tagged again. 3D tags its order-2 curves again under
+    // envelope_reference "simplified", tubes along the open boundaries and non-manifold edges.
+    // In 2D the order-2 features are points -- the curve ends and junctions
+    // (holds_order2_vertex()) -- and the base holds each by its anchor alone, as it holds the
+    // input points (anchor_feature_points(), at init only). Those anchors are the twin of 3D's
+    // curve anchors, which 3D keeps as they are under either reference, for the reason it
+    // gives: re-centring them would need to tell the input points' anchors apart from the
+    // curve ends', and the 2D anchors do not record that either. So an end or junction stays
+    // within order2_envelope_ratio x eps of its input position through the simplification and
+    // after it, also under "simplified", where 3D lets a curve's body move by
+    // order2_envelope_ratio x eps_simplify.
+    const bool around_simplified = m_sim_params.envelope_around_simplified;
+
+    // The quality check stays on, as in 3D, which says why (EdgeCollapsing.cpp). 2D has no
+    // switch for it: collapse_quality_allowed() always checks. preserve_topology keeps the exact
+    // inversion check and the substructure link condition in every collapse.
+    collapse_all_edges();
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+
+    if (!around_simplified) {
+        // Back to the envelopes around the input, at the optimizer's eps.
+        logger().info("Envelope around the input restored");
+        m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
+        m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+        init_label_envelopes(m_envelope_eps, m_envelope->use_exact);
+        logger().info("===== Simplification done =====");
+        return;
+    }
+
+    // Around the simplified curves: the surface edges as they are now, and each label's
+    // envelope around the edges carrying it (m_E_envelope_labels cleared), as in 3D.
+    logger().warn("Update envelope");
+    MatrixXd V(vert_capacity(), 2);
+    V.setZero();
+    for (size_t i = 0; i < vert_capacity(); ++i) {
+        if (tuple_from_vertex(i).is_valid(*this)) {
+            V.row(i) = m_vertex_attribute.at(i).m_posf;
+        }
+    }
+
+    const auto surf_edges = get_edges_by_condition([](auto& e) { return e.m_is_surface_fs; });
+    MatrixXi E(surf_edges.size(), 2);
+    for (size_t i = 0; i < surf_edges.size(); ++i) {
+        E.row(i) = Vector2i(int(surf_edges[i][0]), int(surf_edges[i][1]));
+    }
+
+    m_envelope = nullptr;
+    m_V_envelope.clear();
+    m_E_envelope.clear();
+    m_E_envelope_labels.clear();
+    // The edges' input sets, in get_edges_by_condition()'s order: the labels of the envelope
+    // handed on (envelope_data()), as 3D's m_F_envelope_face_sets.
+    m_E_envelope_edge_sets.clear();
+    for (const Tuple& e : get_edges()) {
+        const auto& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) m_E_envelope_edge_sets.push_back(attr.input_set());
+    }
+    if (V.size() > 0 && E.size() > 0) {
+        init_envelope(V, E);
+    } else {
+        logger().warn("No surface edges left after simplification, skip re-building envelope");
+    }
+    init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
+    logger().info("===== Simplification done =====");
+}
+
 bool SimWildMeshTri::check_interface_edges_tagged(const bool verbose) const
 {
     size_t num_interface = 0; // edges between unlike tags
@@ -936,6 +1156,11 @@ bool SimWildMeshTri::check_interface_edges_tagged(const bool verbose) const
         const size_t fid = edge.fid(*this);
         const size_t eid = edge.eid(*this);
         const bool marked = m_edge_attribute[eid].m_is_surface_fs;
+        // A tagged edge is surface by its tag, not by the triangles around it.
+        if (marked && (m_edge_attribute[eid].input_set() & edge_tag_mask()) != 0) {
+            num_surface++;
+            continue;
+        }
         const auto opposite = edge.switch_face(*this);
 
         if (!opposite.has_value()) {
@@ -1050,7 +1275,8 @@ void SimWildMeshTri::update_attributes()
             opposite.has_value() &&
             m_face_attribute[edge.fid(*this)].tags != m_face_attribute[opposite->fid(*this)].tags;
 
-        if (is_interface) {
+        // A tagged edge stays surface wherever it lies.
+        if (is_interface || (m_edge_attribute[eid].input_set() & edge_tag_mask()) != 0) {
             for (const size_t vid : get_edge_vids(edge)) {
                 m_vertex_attribute[vid].m_is_on_surface = true;
             }

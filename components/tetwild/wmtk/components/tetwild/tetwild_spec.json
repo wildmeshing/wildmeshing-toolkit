@@ -9,17 +9,18 @@
       "input_edges",
       "input_points",
       "input_names",
+      "envelope",
       "input_dir",
       "write_vtu",
-      "skip_simplify",
+      "simplify",
       "simplify_use_sample_envelope",
-      "simplify_envelope_ratio",
+      "eps_simplify_rel",
+      "eps_simplify",
       "simplify_boundary_envelope",
-      "optimize_envelope_around_simplified",
+      "envelope_reference",
+      "per_input_envelopes",
       "order2_envelope_ratio",
       "feature_envelope_ratio",
-      "preserve_feature_points",
-      "allow_junction_cleanup",
       "DEBUG_feature_retention",
       "use_sample_envelope",
       "use_legacy_code",
@@ -27,6 +28,7 @@
       "max_iterations",
       "max_expected_iterations",
       "filter",
+      "filter_inputs",
       "eps_rel",
       "length_rel",
       "stop_energy",
@@ -85,19 +87,19 @@
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of triangular input meshes.",
+    "doc": "List of input meshes: triangle surfaces, or one tagged tet mesh. Surfaces (OBJ, STL, OFF, a .msh of triangles, ...) are simplified, inserted into a background mesh and tracked, each its own input. A tet mesh -- on the memory route a named mesh with a tetrahedron block, on the file route a .msh with tets -- takes the tagged route: tetwild continues from it as it is, its tets kept, so that a chain of components can go on through tetwild (tetwild -> topological_offset -> ... -> tetwild). Its triangle block's tags are the tracked faces, one input per label, each row oriented by its vertex order, named as the mesh names them; its edge block's tags the feature curves, one feature input per label; its point block input points, anchored where they are -- as simwild reads a tagged mesh, and as tetwild writes its own output, which can go back in as it is. tetwild holds no volumes: tets tagged other than ambient are refused (a mesh with volume tags is simwild's to remesh). It must fill its bounding box, as the insertion's background box does: its boundary faces are the wall, held by the box rule, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary -- is refused (give a filtered mesh's surfaces as inputs), and so is an untracked one in no plane. Skipped on this route: the simplification, the insertion and the input winding numbers (wn_<i>); eps_rel and length_rel are of the mesh's bounding box diagonal. Refused with it: any other input, input_edges, input_points, input_names, use_legacy_code, and filter \"input\". Until 2026-11 a tet mesh threw on the memory route, and on the file route its triangles became one input surface, its tets and tags dropped.",
     "min": 1
   },
   {
     "pointer": "/input/*",
     "type": "string",
-    "doc": "Triangular input mesh."
+    "doc": "An input mesh: a triangle surface, or one tagged tet mesh (see /input)."
   },
   {
     "pointer": "/input_edges",
     "type": "list",
     "default": [],
-    "doc": "List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the input bounding box is grown over them automatically. The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in) and preserve_feature_points (the anchors)."
+    "doc": "List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the input bounding box is grown over them automatically. The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in, and the anchors' radius). The output mesh holds them on both routes as its edge block: the tet edges tiling them, one tag per file, feature_<i> for the i-th, which simwild reads back from a tagged tet mesh as feature curves and holds as it holds its own input_edges."
   },
   {
     "pointer": "/input_edges/*",
@@ -108,7 +110,7 @@
     "pointer": "/input_points",
     "type": "list",
     "default": [],
-    "doc": "List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning). The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in) and preserve_feature_points (the anchors)."
+    "doc": "List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning). The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in, and the anchors' radius)."
   },
   {
     "pointer": "/input_points/*",
@@ -116,45 +118,39 @@
     "doc": "One input feature point file (only the vertices are used)."
   },
   {
-    "pointer": "/preserve_feature_points",
-    "type": "bool",
-    "default": true,
-    "doc": "Keep the 0-dimensional features -- every /input_points point, and the endpoints of open feature curves (junctions too, when allow_junction_cleanup is off) -- within the feature tube radius of where the input put them. Some output vertex stays within that ball of each anchor, collapses that would break this are refused, and smoothing may move an anchor-carrying vertex only inside its ball. Without this an open feature curve erodes from its own tips: every eroding collapse keeps the surviving chain inside the tube, so no containment test can see it. Mirrors triwild's parameter of the same name."
-  },
-  {
-    "pointer": "/allow_junction_cleanup",
-    "type": "bool",
-    "default": true,
-    "doc": "Anchor only the endpoints of open feature curves, letting junctions (valence >= 3 in the feature network) merge and move within the tube. The erosion the anchor exists for is an ENDPOINT property -- a curve eats its own tip -- and does not apply to a junction, where every curve through it stays constrained. Mirrors triwild."
-  },
-  {
     "pointer": "/DEBUG_feature_retention",
     "type": "bool",
     "default": false,
-    "doc": "Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius. The invariant preserve_feature_points maintains, measured rather than assumed."
+    "doc": "Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius. The invariant the anchors maintain (see feature_envelope_ratio), measured rather than assumed."
   },
   {
     "pointer": "/feature_envelope_ratio",
     "type": "float",
-    "default": 0.5,
-    "doc": "Envelope thickness for the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- as a fraction of the surface envelope's eps. Kept below 1 for the same measured reason as order2_envelope_ratio: on a curve a wider envelope relieves no blockage, it is only freedom for the curve to wander, i.e. more geometry to resolve at the same final quality."
+    "default": 1.0,
+    "doc": "Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- and the radius of the feature-point anchors, as a fraction of the surface envelope's eps. The default 1 holds them to the same eps as the surface: the tube is built around the input feature curves themselves, which the simplification does not move. See order2_envelope_ratio for the sweep behind the default. The anchors are the 0-dimensional features: every /input_points point, and every vertex where a feature curve or an open boundary ends or three or more of them meet. Each stays within its radius of where it was when the optimization began -- where the input put it for input points and feature curves, which the simplification does not move, and where the simplification left it for open boundaries (see order2_envelope_ratio) -- with radius feature_envelope_ratio x eps for input points and feature curves, order2_envelope_ratio x eps for open boundaries, the smaller of the two for a point on both: some output vertex stays within that ball of each anchor, collapses that would break this are refused, and smoothing may move an anchor-carrying vertex only inside its ball. Always on, as the tubes and the surface envelope are. Without the anchors an open feature curve erodes from its own tips: every eroding collapse keeps the surviving chain inside the tube, so no containment test can see it."
   },
   {
     "pointer": "/output",
     "type": "string",
     "default": "out",
-    "doc": "Output file name (without extension)."
+    "doc": "Output file name (without extension): the tet mesh is <output>_final.msh. Next to it <output>_envelope.msh, the memory route's outputs[\"envelope\"]: the reference the tags were held to -- the input, or the simplified input under envelope_reference \"simplified\" -- labelled as the mesh labels them (a triangle block, one column per input; an edge block of the feature curves, feature_<i>; the input points), the `envelope` a later simwild, manifold_extraction or topological_offset takes. It holds no eps: the receiver builds its own envelopes around it, so a chain stays within one eps of this input."
   },
   {
     "pointer": "/input_names",
     "type": "list",
-    "doc": "Names for the inputs, used for each input's winding-number field: wn_<name> in the VTU output and on the memory route. The .msh output numbers them, wn_0, wn_1, ..., and so does everything without names.",
+    "doc": "Names for the inputs, used for each input's face tag and its winding-number field. The face tag, on both routes, is a column of the tags of the output mesh's triangle block (<output>_final.msh, the memory route's mesh): the tracked faces on the input, each under every input it lies on and oriented as its input, which simwild and topological_offset read back as face tags. An input without a name is tag_<i>, as simwild and triwild name one. The winding-number field is wn_<name> in the VTU output and on the memory route; the .msh output numbers them, wn_0, wn_1, ..., and so does everything without names.",
     "default": []
   },
   {
     "pointer": "/input_names/*",
     "type": "string",
     "doc": "Name for one input mesh."
+  },
+  {
+    "pointer": "/envelope",
+    "type": "string",
+    "default": "",
+    "doc": "The envelope of a tagged mesh input (see /input): on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs[\"envelope\"]) and write (<output>_envelope.msh), labelled by the tags it holds. It is the reference the first component of a chain held its tags to, and the run holds to it as simwild does: the surface envelope, the per-label envelopes, the order-2 and feature tubes and the curve-end anchors are built around it, label by label, at this run's eps, its labels matched to the mesh's face tags and feature curves by name, so that the output is within this run's eps of the first component's input however many components came before. A label of a tagged face or feature curve of the mesh that the envelope lacks throws, and so does a tagged face or feature edge received outside the envelopes of its labels, checked exactly before the optimization: the sender held it to a wider envelope. The run returns it unchanged as its envelope (on the file route <output>_envelope.msh). Not with use_sample_envelope, nor bare geometry without labels. Empty, the default: the envelopes are built around the tagged faces and curves as received, and those are the envelope returned."
   },
   {
     "pointer": "/input_dir",
@@ -169,10 +165,10 @@
     "doc": "Write the VTU output next to the MSH."
   },
   {
-    "pointer": "/skip_simplify",
+    "pointer": "/simplify",
     "type": "bool",
-    "default": false,
-    "doc": "If true, input simplification will be skipped."
+    "default": true,
+    "doc": "If true, the input surface is simplified first. False inserts it as it is."
   },
   {
     "pointer": "/simplify_use_sample_envelope",
@@ -181,28 +177,41 @@
     "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. On thin lattice geometry it has been observed to over-collapse badly."
   },
   {
-    "pointer": "/simplify_envelope_ratio",
+    "pointer": "/eps_simplify_rel",
     "type": "float",
-    "default": 0.5,
-    "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
+    "default": 5e-4,
+    "doc": "Envelope thickness used for the input simplification, relative to the same bounding box diagonal as eps_rel. Simplifying inside a tighter envelope than the tetrahedralisation's reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. The default is half of eps at the default eps_rel, and does not follow eps_rel: under envelope_reference \"input\" the simplification's eps must be below eps, else the run is refused, so an eps_rel at or below eps_simplify_rel needs it lowered too. Ignored if simplify is false or eps_simplify is positive. Until 2026-11 the key simplify_envelope_ratio, the simplification's eps as a fraction of eps (default 0.5)."
+  },
+  {
+    "pointer": "/eps_simplify",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute envelope thickness used for the input simplification. When positive it is used instead of eps_simplify_rel, as in simwild; otherwise eps_simplify_rel sets it. Ignored if simplify is false."
   },
   {
     "pointer": "/simplify_boundary_envelope",
     "type": "bool",
     "default": true,
-    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges. When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex: on Thingi10K 55928 a 0.02-wide knot holding all 130 boundary edges of the model survives the simplification as a non-manifold tangle and ends up as a cluster of tets three orders of magnitude below the target size. With the envelope, holes and slits narrower than the tube close (when the surface envelope admits the triangles that cover them). Boundary that the simplification opens away from the input's is not judged by the tube, as before. Ignored under preserve_topology, which keeps the boundary frozen."
+    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * the simplification's eps of the input's boundary edges. When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex: on Thingi10K 55928 a 0.02-wide knot holding all 130 boundary edges of the model survives the simplification as a non-manifold tangle and ends up as a cluster of tets three orders of magnitude below the target size. With the envelope, holes and slits narrower than the tube close (when the surface envelope admits the triangles that cover them). Boundary that the simplification opens away from the input's is not judged by the tube, as before. Ignored under preserve_topology, which keeps the boundary frozen."
   },
   {
-    "pointer": "/optimize_envelope_around_simplified",
+    "pointer": "/envelope_reference",
+    "type": "string",
+    "default": "input",
+    "options": ["input", "simplified"],
+    "doc": "Which geometry every envelope, tube and anchor is built around: the surface envelope, the order-2 (open boundary) and feature tubes, and the curve anchors, one choice for all. \"input\": the original input, at eps times each one's ratio; the output is within eps of it. An open boundary or curve end the simplification made is held around itself as the insertion leaves it, since a free one erodes the input along its curve (measured 2026-11: left free, 104509 239 -> 317 input samples farther than eps from the output, crown 554 -> 695), and one it removed is lost, as the topology change it may make without preserve_topology; measured on the integration configs (2026-10), 8 of them carried order-2 curves on no curve of the input. Needs the simplification's eps (eps_simplify_rel or eps_simplify) below eps, else refused: the simplified surface could start outside its envelope. \"simplified\": the SIMPLIFIED surface, which replaces the input, at eps times each one's ratio; the output is within eps of it, so within the simplification's eps plus eps of the input, and any simplification eps is allowed. Refused with simplify false. The geometry starts at the CENTRE of the envelope it is held to rather than somewhere inside it, which matters since the envelope is a hard veto rather than a penalty (starving that headroom, a simplification at 0.95 eps -- simplify_envelope_ratio 0.95, until 2026-11 -- turned a converging run on Thingi10K 1368052 into a diverging one). Until 2026-11 \"simplified\" built at eps minus the simplification's eps; until 2026-10 the key optimize_envelope_around_simplified, which moved the surface envelope only."
+  },
+  {
+    "pointer": "/per_input_envelopes",
     "type": "bool",
-    "default": false,
-    "doc": "EXPERIMENT. Build the optimizer's envelope around the SIMPLIFIED surface at the remaining tolerance (eps - simplify_eps) instead of around the original input at the full eps. The deviation budget is identical by the triangle inequality -- the simplification is already within simplify_eps of the input -- but the geometry now starts at the CENTRE of the envelope it is judged against rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a surface handed over close to the boundary has most of its moves refused; starving that headroom deliberately (simplify_envelope_ratio 0.95) was enough to turn a converging run into a diverging one on Thingi10K 1368052. Also narrows params.eps to match, so l_min and the smoothing energy scale agree with the veto; that makes DEBUG_hausdorff stricter than the input contract, so verify containment against the INPUT separately."
+    "default": true,
+    "doc": "Hold each input to its own envelopes. With two or more input files: one surface envelope per input, one order-2 and one feature tube per input, and the input simplification's envelope per input likewise, so a face or curve of one input cannot end up on another. false: one shared envelope of each kind for all inputs, faster where inputs come within eps of each other (the simplification measured 3% to 20% faster shared, 2026-11), but an input may then end up on another within eps. Anchors are per point either way, and either way each tracked face records the inputs it lies on, the output's face tags (see input_names); until 2026-11 false gave every face input 0's."
   },
   {
     "pointer": "/order2_envelope_ratio",
     "type": "float",
-    "default": 0.5,
-    "doc": "Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface. Kept below 1 deliberately, unlike the surface envelope which uses the full eps. The two are not symmetric: on the surface a wider envelope REMOVES a constraint that was blocking collapses, whereas a boundary curve has no such blockage to relieve, so the extra room is only freedom for the boundary to wander within eps -- more geometry to resolve at the same final quality. Measured on Thingi10K 36075 at stop_energy 5: 14 iterations and 31125 tets at 0.5, against 24 iterations and 41463 tets at 1.0, both converging to a max energy of about 4.95. 1.0 gives the boundary curves the full eps."
+    "default": 1.0,
+    "doc": "Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet (see feature_envelope_ratio). Under envelope_reference \"input\" the tube is built around the input's own open boundaries where the inserted ones lie in it, so such a boundary stays within order2_envelope_ratio x eps of the input's; one the simplification made is held in a tube around itself as inserted. Under \"simplified\", around the simplified boundaries. Until 2026-11 it was built around the simplified boundaries whatever envelope_reference said, and an open boundary could drift order2_envelope_ratio x (eps + the simplification's eps) from the input's, 1.5 eps at the defaults. A 2026-10 sweep (13 tetwild integration configs with open boundaries; ratio 0.25, 0.5, 0.75 and 1.0, each at eps x0.99, x1 and x1.01) found no advantage below 1: 7 configs give identical output at every ratio, Thingi10K 111388 gives the fewest tets at 1.0 (27-28k, against 30-31k at 0.5) and the most at 0.25 (28-44k), and the others differ by less than the 1% eps perturbation does. The earlier case for 0.5 (Thingi10K 36075, 14 against 24 iterations) does not reproduce: that model now gives identical output at every ratio."
   },
   {
     "pointer": "/use_sample_envelope",
@@ -233,7 +242,18 @@
     "type": "string",
     "options": ["flood", "input", "tracked", "none"],
     "default": "none",
-    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed."
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed. With filter_inputs, only those inputs bound the domain kept. On a tagged mesh input (see /input), 'tracked' and 'flood' use its tracked faces as on surface inputs, and 'input' is refused: there is no input surface."
+  },
+  {
+    "pointer": "/filter_inputs",
+    "type": "list",
+    "default": [],
+    "doc": "The inputs that bound the domain a filter keeps, by their labels: the names of input_names (tag_<i> without one), or a tagged mesh's face-tag labels. Empty, the default: every input, as before the key. With 'input' the winding number of those inputs only; with 'tracked' that of the tracked faces carrying one of them only; with 'flood' the fill crosses every tracked face of the other inputs. So an input that is not named -- an open sheet through a solid, a second solid outside it -- does not cut or add to the domain kept, and stays in the output as tracked faces, its face tag, inside the domain or on its boundary. The field the filter reads (winding_number_input, winding_number_tracked or part) is then of those inputs; the others stay of every input. Under 'tracked' a tracked face carrying a named input and another input (two solids touching face to face) is refused before the filter: a face's orientation is one count for all its inputs, not one per input, so the named inputs' winding number cannot be computed there; 'flood' needs no orientation, and is exact for inputs that do not overlap themselves. A name that is not an input throws, and so does the key with filter 'none'."
+  },
+  {
+    "pointer": "/filter_inputs/*",
+    "type": "string",
+    "doc": "The label of one input that bounds the domain."
   },
   {
     "pointer": "/skip_winding_number",
@@ -336,7 +356,7 @@
     "pointer": "/preserve_topology",
     "type": "bool",
     "default": false,
-    "doc": "Preserve the topology of the input surface. This forces remove_duplicate_eps to merge only exactly coincident vertices, keeps the link condition enabled during the input simplification, enables the substructure link condition during optimization, and makes the run fail if the output Euler characteristic differs from the input. When unset, all four are relaxed and the topology may change."
+    "doc": "Preserve the topology of the input surface where the phases can. This forces remove_duplicate_eps to merge only exactly coincident vertices, keeps the link condition enabled during the input simplification, and enables the substructure link condition during optimization; when unset, all three are relaxed and the topology may change. Even so, the surface simplification before the insertion may change the topology: the link condition checks connectivity only, and the envelope admits a fold of the surface through itself. The insertion keeps the topology of the surface it receives when that surface does not cross itself, and cuts crossing triangles along their intersection otherwise; that surface is checked once, exactly, and a warning names its crossing pairs of triangles and its degenerate triangles (report: inserted_crossing_pairs, inserted_degenerate_triangles). The optimization after the insertion keeps the topology of the inserted surface. The run reports the Euler characteristics of the input surface, of the tracked surface right after the insertion and of the output surface, and warns when the input's and the output's differ (an error with throw_on_fail)."
   },
   {
     "pointer": "/remove_duplicate_eps",

@@ -1,4 +1,5 @@
 #include <wmtk/io/DataWriter.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 
 #include "TetWildMesh.h"
 
@@ -43,62 +44,24 @@ namespace wmtk::components::tetwild {
 
 void TetWildMesh::optimization_sanity_checks_extra()
 {
-    // Boundary edges may temporarily leave the envelope during collapse to remove thin
-    // ribbons. Preserve TetWild's diagnostic for every other open surface edge.
-    std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
-    for (const Tuple& f : get_faces()) {
-        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
-        ++edge_on_open_boundary[f.eid(*this)];
-        ++edge_on_open_boundary[f.switch_edge(*this).eid(*this)];
-        ++edge_on_open_boundary[f.switch_vertex(*this).switch_edge(*this).eid(*this)];
-    }
-
+    // TetWild's open-boundary diagnostic, read from the tags: every edge still carrying the
+    // order2 tag must lie in its tube (tag_order2_edges()). Edges the operations made open
+    // carry no tag and are not checked.
+    if (!m_track_feature_edges || !m_order2_edge_envelope) return;
     for (const Tuple& e : get_edges()) {
-        if (edge_on_open_boundary[e.eid(*this)] != 1 || is_open_boundary_edge(e)) continue;
+        FeatureEdgeAttributes order2 = m_feature_edge_attribute[e.eid(*this)];
+        if (!order2.has(FeatureEdgeAttributes::order2)) continue;
+        order2.m_kinds = FeatureEdgeAttributes::order2; // its order-2 tubes only
         const size_t v1 = e.vid(*this);
         const size_t v2 = e.switch_vertex(*this).vid(*this);
-        if (!m_vertex_extra[v1].m_is_on_open_boundary ||
-            !m_vertex_extra[v2].m_is_on_open_boundary) {
-            continue;
+        if (tagged_edge_leaves_tube(
+                order2,
+                m_vertex_attribute[v1].m_posf,
+                m_vertex_attribute[v2].m_posf) != 0) {
+            logger().warn("Open-boundary edge ({},{}) is outside its tube.", v1, v2);
         }
-        logger().warn("Boundary edge ({},{}) is outside the envelope.", v1, v2);
     }
 }
-
-std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
-{
-    // A vertex on an input feature curve is pulled toward the feature tube. Checked FIRST:
-    // the feature is user-supplied where order 2 is derived, so where a vertex is both, the
-    // explicit constraint wins. Both are soft pulls; the hard vetoes (the collapse guard and
-    // the tagged-edge containment in smoothing) are unaffected by this order.
-    if (m_track_feature_edges && m_feature_envelope && vertex_has_feature_edge(vid)) {
-        return m_feature_envelope;
-    }
-    // Order 2 means the vertex is on a surface boundary or a non-manifold edge. This is
-    // broader than the old m_is_on_open_boundary flag, which covered only open boundaries.
-    if (get_order_of_vertex(vid) >= 2 && m_order2_envelope && m_order2_envelope->initialized()) {
-        return m_order2_envelope;
-    }
-    if (m_input_envelopes.empty()) return m_envelope;
-    // Several inputs: toward the inputs of the vertex's own faces, one real envelope at a time
-    // -- the member of their union of input sets the vertex is farthest from, as
-    // topological_offset pulls a junction vertex. The containment check holds every face to its
-    // own set, so a vertex where the solid's boundary meets a sheet is pulled to whichever it
-    // strays from most. A vertex flagged on the surface with no tracked face left (a stale
-    // flag) has no inputs, and keeps the union's pull.
-    InputSet set = 0;
-    const auto& FA = std::as_const(m_face_attribute);
-    // Named, not iterated as a temporary: faces() returns a reference into the collection, which
-    // a range-for over get_surface_faces_for_vertex(vid).faces() destroys before the first
-    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
-    const simplex::SimplexCollection surf = get_surface_faces_for_vertex(vid);
-    for (const simplex::Face& f : surf.faces()) {
-        set |= FA[std::get<1>(tuple_from_face(f.vertices()))].input_set();
-    }
-    if (set == 0) return m_envelope;
-    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
-}
-
 
 void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
@@ -124,7 +87,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         state.is_mesh_closed = true;
         for (const Tuple& v : get_vertices()) {
             const size_t vid = v.vid(*this);
-            if (m_vertex_extra[vid].m_is_on_open_boundary) {
+            if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
                 state.is_mesh_closed = false;
                 break;
             }
@@ -205,7 +168,6 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         legacy_tetwild.tet_vertices.resize(vert_capacity());
         for (size_t i = 0; i < vert_capacity(); ++i) {
             const auto& VA = m_vertex_attribute[i];
-            const auto& VX = m_vertex_extra[i];
             orig::TetVertex& v = legacy_tetwild.tet_vertices[i];
             v.pos = VA.pos();
             v.posf = VA.m_posf;
@@ -232,7 +194,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
                     log_and_throw_error("Vertex should not be on more than 3 bbox faces");
                 }
             }
-            v.is_on_boundary = VX.m_is_on_open_boundary;
+            v.is_on_boundary = vertex_has_edge_of_kind(i, FeatureEdgeAttributes::order2);
             v.is_on_surface = VA.m_is_on_surface;
             v.is_rounded = VA.m_is_rounded;
             for (const size_t tid : get_one_ring_tids_for_vertex(i)) {
@@ -275,7 +237,6 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         assert(verts.size() >= vert_capacity());
         for (size_t i = 0; i < vert_capacity(); ++i) {
             auto& VA = m_vertex_attribute[i];
-            auto& VX = m_vertex_extra[i];
             const orig::TetVertex& v = verts[i];
             VA.m_is_rounded = v.is_rounded;
             if (v.is_rounded) {
@@ -287,7 +248,6 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             }
             VA.m_sizing_scalar = v.adaptive_scale;
             VA.m_is_on_surface = v.is_on_surface;
-            VX.m_is_on_open_boundary = v.is_on_boundary;
             // logger().info("DEBUG on_bbox");
             if (v.is_on_bbox) {
                 VA.on_bbox_faces.clear();
@@ -328,6 +288,19 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             }
             ++tet_count;
         }
+
+        // init(T) left the edge slots holding the old mesh's tags, and the outputs read them
+        // (on_open_boundary, the feature curves). The legacy optimizer carries no curve tags:
+        // clear them, and tag the output's open boundaries again from its tracked faces. Until
+        // 2026-10 a per-vertex flag was written back from the legacy optimizer instead.
+        if (m_track_feature_edges) {
+            for (size_t i = 0; i < m_feature_edge_attribute.size(); ++i) {
+                m_feature_edge_attribute[i] = FeatureEdgeAttributes{};
+            }
+        }
+        tag_order2_edges(
+            m_tet_params.order2_eps() * m_tet_params.order2_envelope_ratio,
+            m_envelope && m_envelope->use_exact);
 
         for (const Tuple& t : get_tets()) {
             // This could be also transferred from legacy_tetwild but I wanted to do that here to
@@ -499,8 +472,15 @@ void TetWildMesh::compute_winding_number(
     const std::vector<Tuple>& tets,
     const Eigen::MatrixXd& barycenters,
     const std::vector<Vector3d>& vertices,
-    const std::vector<std::array<size_t, 3>>& faces)
+    const std::vector<std::array<size_t, 3>>& faces,
+    const InputSet bounding)
 {
+    // With filter_inputs, the tracked faces of those inputs only; all of them otherwise, by the
+    // code that ran before the key.
+    const bool all_inputs = bounding == ~InputSet(0);
+    const auto bounds = [&](const FaceAttributes& f) {
+        return all_inputs || (f.input_set() & bounding) != 0;
+    };
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     if (!vertices.empty()) {
@@ -527,7 +507,39 @@ void TetWildMesh::compute_winding_number(
                 "may be inconsistent and the winding number not an integer near them",
                 n);
         }
-        const auto outface = oriented_tracked_faces();
+        std::vector<std::array<size_t, 3>> outface;
+        if (all_inputs) {
+            outface = oriented_tracked_faces();
+        } else {
+            // oriented_tracked_faces(), of the faces bounds() keeps. A face's orientation is one
+            // count for all its inputs (SurfaceTagAttributes::m_orientation), not one per input:
+            // on a face where a kept input coincides with another the count is of both, and the
+            // kept inputs' own is not known. Refused there rather than guessed.
+            size_t n_shared = 0;
+            for (const auto& f : get_faces()) {
+                const auto& attr = m_face_attribute[f.fid(*this)];
+                const InputSet set = attr.input_set();
+                if (attr.m_is_surface_fs && (set & bounding) != 0 && (set & (set - 1)) != 0) {
+                    ++n_shared;
+                }
+            }
+            if (n_shared > 0) {
+                log_and_throw_error(
+                    "filter \"tracked\" with filter_inputs: {} tracked faces carry a named input "
+                    "and another input. The orientation is stored per face, not per input, so the "
+                    "named inputs' winding number cannot be computed there; use filter \"flood\", "
+                    "exact without orientation for inputs that do not overlap themselves",
+                    n_shared);
+            }
+            for (const auto& f : get_faces()) {
+                const auto& attr = m_face_attribute[f.fid(*this)];
+                if (!attr.m_is_surface_fs || attr.m_orientation == 0 || !bounds(attr)) continue;
+                std::array<size_t, 3> v = get_face_vids(f);
+                std::sort(v.begin(), v.end());
+                if (attr.m_orientation < 0) std::swap(v[1], v[2]);
+                for (int k = 0; k < std::abs(attr.m_orientation); ++k) outface.push_back(v);
+            }
+        }
         V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
         for (auto v : get_vertices()) {
             auto vid = v.vid(*this);
@@ -538,7 +550,8 @@ void TetWildMesh::compute_winding_number(
             F.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
         }
     } else { // use track to filter, orientation unknown: guess it per patch
-        auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        auto outface =
+            get_faces_by_condition([&](auto& f) { return f.m_is_surface_fs && bounds(f); });
         V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
         for (auto v : get_vertices()) {
             auto vid = v.vid(*this);
@@ -589,7 +602,8 @@ void TetWildMesh::compute_input_winding_numbers(
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
     const std::vector<int>& face_input,
-    const int n_inputs)
+    const int n_inputs,
+    const InputSet bounding)
 {
     assert(faces.size() == face_input.size());
     Eigen::MatrixXd V(vertices.size(), 3);
@@ -609,7 +623,18 @@ void TetWildMesh::compute_input_winding_numbers(
         barycenters,
         W_per_input,
         NUM_THREADS);
-    Eigen::VectorXd W = W_per_input.rowwise().sum();
+    // With filter_inputs, the sum over those inputs only: the others do not bound the domain.
+    Eigen::VectorXd W;
+    if (bounding == ~InputSet(0)) {
+        W = W_per_input.rowwise().sum();
+    } else {
+        W = Eigen::VectorXd::Zero(W_per_input.rows());
+        for (int p = 0; p < n_inputs; ++p) {
+            if (p < SurfaceTagAttributes::max_inputs && ((bounding >> p) & 1)) {
+                W += W_per_input.col(p);
+            }
+        }
+    }
 
     for (int p = 0; p < n_inputs; ++p) {
         Eigen::VectorXd w = W_per_input.col(p);
@@ -713,7 +738,10 @@ void TetWildMesh::filter_with_flood_fill()
 }
 
 
-void TetWildMesh::output_mesh(std::string file)
+void TetWildMesh::output_mesh(
+    std::string file,
+    const std::vector<std::string>& face_tags,
+    const std::vector<std::string>& feature_tags)
 {
     if (!m_params.output_enabled) return;
     consolidate_mesh();
@@ -773,6 +801,43 @@ void TetWildMesh::output_mesh(std::string file)
         }
     }
 
+    // The tags, as the memory route's mesh carries them: a block of the tet vertices (the vertex
+    // block MshData leaves empty) per tag, its physical group named after it. A cell with
+    // several tags is in several blocks, and the shared reader (io::read_mesh) reads it back as
+    // one row with each tag; the blocks give it the same row, so the orientation survives.
+    MeshMap tagged{{"mesh", MeshData()}};
+    io::collect_input_set_tags<CellType::Triangle>(*this, tagged, face_tags);
+    io::collect_feature_edge_tags(*this, tagged, feature_tags);
+    for (const auto& entry : tagged.at("mesh").cells) {
+        const CellType type = entry.first;
+        const CellData& block = entry.second;
+        const MeshAttribute& tags = block.attributes.at("tags");
+        const DataMatrix<int64_t> member = tags.integers();
+        for (size_t j = 0; j < tags.labels.size(); ++j) {
+            std::vector<Eigen::Index> rows;
+            for (Eigen::Index r = 0; r < member.rows(); ++r) {
+                if (member(r, Eigen::Index(j)) != 0) rows.push_back(r);
+            }
+            if (rows.empty()) continue;
+            if (type == CellType::Triangle) {
+                msh.add_face_vertices();
+                msh.add_faces(rows.size(), [&](size_t k) {
+                    std::array<size_t, 3> f;
+                    for (int c = 0; c < 3; ++c) f[c] = size_t(block.connectivity(rows[k], c));
+                    return f;
+                });
+            } else {
+                msh.add_edge_vertices();
+                msh.add_edges(rows.size(), [&](size_t k) {
+                    std::array<size_t, 2> e;
+                    for (int c = 0; c < 2; ++c) e[c] = size_t(block.connectivity(rows[k], c));
+                    return e;
+                });
+            }
+            msh.add_physical_group(tags.labels[j]);
+        }
+    }
+
     msh.save(file, true);
 }
 
@@ -795,61 +860,6 @@ MeshData TetWildMesh::tet_mesh_data()
     return m;
 }
 
-bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
-{
-    if (!m_vertex_extra.at(e0).m_is_on_open_boundary) {
-        return false;
-    }
-
-    const auto neigh_vids = get_one_ring_vids_for_vertex(e0);
-    const auto e0_tids = get_one_ring_tids_for_vertex(e0);
-
-    for (const size_t e1 : neigh_vids) {
-        if (!m_vertex_extra.at(e1).m_is_on_open_boundary) {
-            continue;
-        }
-        int cnt = 0;
-        for (size_t t_id : e0_tids) {
-            const auto vs = oriented_tet_vids(t_id);
-            std::array<int, 4> opp_js; // DZ: all vertices that are adjacent to e1 except for e2
-            int ii = 0;
-            for (int j = 0; j < 4; j++) {
-                if (vs[j] == e0 || vs[j] == e1) {
-                    continue;
-                }
-                opp_js[ii++] = j;
-            }
-            // DZ: if the tet contains e1 and e2, then ii == 2
-            if (ii != 2) {
-                continue;
-            }
-            // DZ: opp_js vertices form a tet together with v1,v2
-            if (m_vertex_attribute.at(vs[opp_js[0]]).m_is_on_surface) {
-                const auto [f0_tup, f0_id] = tuple_from_face({{e0, e1, vs[opp_js[0]]}});
-                if (m_face_attribute.at(f0_id).m_is_surface_fs) {
-                    cnt++;
-                }
-            }
-            if (m_vertex_attribute.at(vs[opp_js[1]]).m_is_on_surface) {
-                const auto [f1_tup, f1_id] = tuple_from_face({{e0, e1, vs[opp_js[1]]}});
-                if (m_face_attribute.at(f1_id).m_is_surface_fs) {
-                    cnt++;
-                }
-            }
-            if (cnt > 2) {
-                break;
-            }
-        }
-        // all faces are visited twice, so cnt == 2 means there is one boundary face
-        if (cnt == 2) {
-            // this is a boundary edge
-            return true;
-        }
-    }
-
-    return false;
-}
-
 
 void TetWildMesh::init_vertex_order()
 {
@@ -867,8 +877,14 @@ void TetWildMesh::init_vertex_order()
         NUM_THREADS);
 }
 
-int TetWildMesh::flood_fill()
+int TetWildMesh::flood_fill(const InputSet bounding)
 {
+    // A face the fill crosses: not tracked, or, with filter_inputs, tracked for other inputs only.
+    const bool all_inputs = bounding == ~InputSet(0);
+    const auto crossed = [&](const Tuple& f) {
+        const auto& attr = m_face_attribute[f.fid(*this)];
+        return !attr.m_is_surface_fs || (!all_inputs && (attr.input_set() & bounding) == 0);
+    };
     int current_id = 0;
     auto tets = get_tets();
     std::vector<char> visited(tet_capacity(), 0);
@@ -890,28 +906,28 @@ int TetWildMesh::flood_fill()
 
         std::queue<Tuple> bfs_queue;
 
-        if (!m_face_attribute[f1.fid(*this)].m_is_surface_fs) {
+        if (crossed(f1)) {
             // std::cout << "in 1" << std::endl;
             auto oppo_t = f1.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
-        if (!m_face_attribute[f2.fid(*this)].m_is_surface_fs) {
+        if (crossed(f2)) {
             // std::cout << "in 2" << std::endl;
             auto oppo_t = f2.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
-        if (!m_face_attribute[f3.fid(*this)].m_is_surface_fs) {
+        if (crossed(f3)) {
             // std::cout << "in 3" << std::endl;
             auto oppo_t = f3.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
                 if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
             }
         }
-        if (!m_face_attribute[f4.fid(*this)].m_is_surface_fs) {
+        if (crossed(f4)) {
             // std::cout << "in 4" << std::endl;
             auto oppo_t = f4.switch_tetrahedron(*this);
             if (oppo_t.has_value()) {
@@ -937,25 +953,25 @@ int TetWildMesh::flood_fill()
             auto f_tmp3 = tmp.switch_edge(*this).switch_face(*this);
             auto f_tmp4 = tmp.switch_vertex(*this).switch_edge(*this).switch_face(*this);
 
-            if (!m_face_attribute[f_tmp1.fid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp1)) {
                 auto oppo_t = f_tmp1.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
                     if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
-            if (!m_face_attribute[f_tmp2.fid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp2)) {
                 auto oppo_t = f_tmp2.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
                     if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
-            if (!m_face_attribute[f_tmp3.fid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp3)) {
                 auto oppo_t = f_tmp3.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
                     if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
                 }
             }
-            if (!m_face_attribute[f_tmp4.fid(*this)].m_is_surface_fs) {
+            if (crossed(f_tmp4)) {
                 auto oppo_t = f_tmp4.switch_tetrahedron(*this);
                 if (oppo_t.has_value()) {
                     if (!visited[(*oppo_t).tid(*this)]) bfs_queue.push(*oppo_t);
@@ -1049,7 +1065,8 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5, Me
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
         v_is_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1 : 0;
         v_is_on_surface[vid] = m_vertex_attribute[vid].m_is_on_surface ? 1 : 0;
-        v_is_on_open_boundary[vid] = m_vertex_extra[vid].m_is_on_open_boundary ? 1 : 0;
+        v_is_on_open_boundary[vid] =
+            vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2) ? 1 : 0;
         v_order[vid] = m_vertex_attribute[vid].m_order;
     }
 

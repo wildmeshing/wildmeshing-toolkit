@@ -4,6 +4,7 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
+#include <algorithm>
 #include <chrono>
 
 #include <Eigen/Core>
@@ -47,7 +48,8 @@ void ShortestEdgeCollapse::create_mesh(
     const std::vector<size_t>& frozen_verts,
     double eps,
     double boundary_eps,
-    const std::vector<int>& tri_input)
+    const std::vector<int>& tri_input,
+    const bool per_input_envelopes)
 {
     wmtk::TriMesh::init(n_vertices, tris);
     if (!tri_input.empty()) {
@@ -71,6 +73,42 @@ void ShortestEdgeCollapse::create_mesh(
         }
         m_envelope.init(V, F, eps);
         m_has_envelope = true;
+
+        const bool several_inputs = std::any_of(tri_input.begin(), tri_input.end(), [&](int in) {
+            return in != tri_input[0];
+        });
+        if (several_inputs && per_input_envelopes) {
+            const int n_inputs = *std::max_element(tri_input.begin(), tri_input.end()) + 1;
+            m_input_envelopes.assign(n_inputs, nullptr);
+            for (int k = 0; k < n_inputs; ++k) {
+                // This input's triangles over its own vertices only: an envelope keeps a copy
+                // of the vertices it is given.
+                std::vector<int> local(n_vertices, -1);
+                std::vector<Eigen::Vector3d> V_k;
+                std::vector<Eigen::Vector3i> F_k;
+                for (size_t i = 0; i < tris.size(); ++i) {
+                    if (tri_input[i] != k) continue;
+                    Eigen::Vector3i f;
+                    for (int j = 0; j < 3; ++j) {
+                        int& l = local[tris[i][j]];
+                        if (l < 0) {
+                            l = int(V_k.size());
+                            V_k.push_back(V[tris[i][j]]);
+                        }
+                        f[j] = l;
+                    }
+                    F_k.push_back(f);
+                }
+                if (F_k.empty()) continue; // no triangle, so no face to hold
+                auto env = std::make_shared<wmtk::Envelope>(m_envelope.use_exact);
+                env->set_max_threads(NUM_THREADS);
+                env->init(V_k, F_k, eps);
+                m_input_envelopes[k] = std::move(env);
+            }
+            logger().info(
+                "simplification: {} inputs, each face held to its own input's envelope",
+                n_inputs);
+        }
     }
     partition_mesh();
     for (size_t v : frozen_verts) {
@@ -115,7 +153,10 @@ bool ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
             for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
-            bool outside = m_envelope.is_outside(tris);
+            const wmtk::Envelope& envelope =
+                m_input_envelopes.empty() ? m_envelope
+                                          : *m_input_envelopes[face_attrs[t.fid(*this)].input];
+            bool outside = envelope.is_outside(tris);
             if (outside) return false;
         }
     }
@@ -258,10 +299,13 @@ std::vector<TriMesh::Tuple> ShortestEdgeCollapse::new_edges_after(
 
 bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
 {
-    // Answer boundary queries with the same predicate as surface ones. Callers choose it by
-    // setting m_envelope.use_exact between create_mesh() and here; the exact structure of
-    // the boundary envelope exists only if the flag was on when it was built.
+    // Answer boundary and per-input queries with the same predicate as surface ones. Callers
+    // choose it by setting m_envelope.use_exact between create_mesh() and here; the exact
+    // structure of the boundary envelope exists only if the flag was on when it was built.
     m_boundary_envelope.set_use_exact(m_envelope.use_exact);
+    for (const auto& env : m_input_envelopes) {
+        if (env) env->use_exact = m_envelope.use_exact;
+    }
 
     size_t initial_size = get_vertices().size();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();

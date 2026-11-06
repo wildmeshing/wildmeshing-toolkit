@@ -6,6 +6,7 @@
 #include <wmtk/components/topological_offset/TopoOffsetTriMesh.h>
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstring>
 #include <filesystem>
@@ -169,12 +170,16 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 }
 
 
-TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
+TEST_CASE("held_faces_and_their_envelopes", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
-    // boundary, every outer face a domain-wall face. Every one of them is a tracked face; which
-    // are HELD depends on the input complex and on whether the final pass is running, read live
-    // off the cells, and one envelope holds them all.
+    // boundary, every outer face a domain-wall face. Only the shared face is tracked: the wall
+    // never is, the box rule holding it, as in tetwild and simwild (until 2026-11-05 it was
+    // tracked, and face_is_held() exempted it). The HELD faces are every tracked face but the
+    // offset surface, in the loop as in a TetWild pass, read live off the cells -- every tracked
+    // surface held, as in tetwild and simwild (2026-11-04; until then the loop held the input
+    // complex's boundary alone). A held face is held to the envelopes of its labels, here the
+    // tags of the two regions it bounds.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -201,40 +206,56 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
             mesh.m_face_attribute[face(a, b, c).fid(mesh)]);
     };
     for (const auto& f : mesh.get_faces()) {
-        REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
+        REQUIRE(
+            mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs ==
+            f.switch_tetrahedron(mesh).has_value());
     }
 
-    // In the loop, no input complex: the a/b boundary stays a tracked face but nothing holds it;
-    // the wall is held.
-    REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
+    // In the loop, no input complex: the a/b boundary is a region boundary off the input
+    // complex, and held all the same, to its labels' envelopes.
+    REQUIRE(!mesh.m_tetwild_pass);
+    REQUIRE(mesh.m_tet_attribute[0].label == 0);
+    REQUIRE(mesh.m_tet_attribute[1].label == 0);
+    REQUIRE(mesh.face_is_held(face(1, 2, 3)));
     mesh.build_envelopes();
-    REQUIRE(mesh.m_envelope != nullptr);
-    REQUIRE(envelope_of(1, 2, 3) == nullptr);
-    REQUIRE(envelope_of(0, 1, 2) == mesh.m_envelope);
-    const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
-    REQUIRE(mesh.m_envelope->is_outside(on_shared)); // the shared face is not in the envelope
-    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
-
-    // The final pass: every region boundary is held too, in one envelope with the wall, and the
-    // loop's envelope comes back afterwards.
     const auto loop_env = mesh.m_envelope;
+    REQUIRE(loop_env != nullptr);
+    const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
+    const auto shared_env = envelope_of(1, 2, 3);
+    REQUIRE(shared_env != nullptr);
+    REQUIRE(!shared_env->is_outside(on_shared));
+    REQUIRE(shared_env->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
+    // The shared face is on both tags, so held to the intersection of their envelopes, which the
+    // containment audit must read through its members: it once asked the composite itself.
+    REQUIRE(dynamic_cast<const wmtk::IntersectionEnvelope*>(shared_env.get()) != nullptr);
+    const auto& shared_attr = mesh.m_face_attribute[face(1, 2, 3).fid(mesh)];
+    REQUIRE(!mesh.surface_triangle_is_outside(1, 2, 3, shared_attr));
+    REQUIRE_NOTHROW(mesh.audit_surface_containment("loop"));
+    for (size_t v = 1; v < 4; ++v) REQUIRE(mesh.vertex_is_held(v));
+    REQUIRE(!mesh.vertex_is_held(0)); // on wall faces only, none tracked
+    REQUIRE(!mesh.vertex_is_held(4));
+    REQUIRE(!mesh.m_envelope->is_outside(on_shared));
+    REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
+    // A corner pushed 10 eps off the face's plane takes the face out of its envelope, so the
+    // loop's operations and smoother refuse the move; until 2026-11-04 they took it.
+    const Eigen::Vector3d p1 = V.row(1).transpose();
+    mesh.set_vertex_position(1, p1 + 1e-2 * Eigen::Vector3d(1., 1., 1.).normalized());
+    REQUIRE(mesh.surface_triangle_is_outside(1, 2, 3, shared_attr));
+    mesh.set_vertex_position(1, p1);
+    REQUIRE(!mesh.surface_triangle_is_outside(1, 2, 3, shared_attr));
+
+    // A TetWild pass holds the same faces in the same envelopes: build_final_envelopes() adds
+    // only the offset surface's own (none here), and m_envelope stays the loop's.
     mesh.build_final_envelopes();
     mesh.m_tetwild_pass = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(envelope_of(1, 2, 3) == mesh.m_envelope);
-    for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
-    REQUIRE(!mesh.m_envelope->is_outside(on_shared));
-    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
-    REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
-    mesh.m_tetwild_pass = false;
-    mesh.release_final_envelopes();
     REQUIRE(mesh.m_envelope == loop_env);
-    REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
+    REQUIRE(envelope_of(1, 2, 3) == shared_env);
+    REQUIRE_NOTHROW(mesh.audit_surface_containment("final pass"));
+    mesh.m_tetwild_pass = false;
 
-    // ... and with tet 0 the input complex, the shared face is its boundary, so held again.
+    // ... and with tet 0 the input complex, the shared face is its boundary: held as before.
     mesh.m_tet_attribute[0].label = 1;
-    REQUIRE(mesh.face_is_complex_boundary(face(1, 2, 3)));
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
 }
 
@@ -2321,6 +2342,53 @@ TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
     }
 }
 
+TEST_CASE("swap-face-keeps-edge-tags", "[offset][3d]")
+{
+    // The loop's face swap (TopoOffsetTetMesh::swap_face_before(), the loop's copy of the base's)
+    // caches the two cells' edge tags, which the base's swap_face_after() restores on the three
+    // new cells. The swap of swap-face-gate-on-energy that the gate admits ("corner_bound", both
+    // cells band), with the edge (a,d) tagged order-2 as hold_curves_and_points() tags a curve:
+    // after the 2-3 swap the edge keeps its tag and its input, and no other edge has one. Until
+    // 2026-11-05 the copy cached no edge tag, and the after hook restored whatever the previous
+    // operation on the thread had left in the cache.
+    using EdgeTags = TetOptimizerMesh::FeatureEdgeAttributes;
+    const auto pot = plane_field();
+    const double L = 0.4, h = L * std::sqrt(2. / 3.), R = L / std::sqrt(3.);
+    const Vector3d m = kApex + Vector3d(0., 0.6, 0.);
+    Eigen::MatrixXd V(5, 3);
+    for (int i = 0; i < 3; ++i) {
+        const double t = 2. * M_PI * i / 3.;
+        V.row(i) = (m + Vector3d(R * std::cos(t), 0., R * std::sin(t))).transpose();
+    }
+    V.row(3) = (m + Vector3d(0., h, 0.)).transpose();
+    V.row(4) = (m - Vector3d(0., h, 0.)).transpose();
+    const size_t a = 0, b = 1, c = 2, d = 3, e = 4;
+    const std::vector<std::array<int, 4>> TA = {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}};
+    Parameters pa;
+    pa.band_volume_rule = "corner_bound";
+    auto A = energy_mesh(pa, V, TA, {2, 2}, pot);
+    A->enable_feature_edge_tracking();
+    const auto tags = [&](const size_t p, const size_t q) -> EdgeTags& {
+        return A->m_feature_edge_attribute[A->tuple_from_edge({{p, q}}).eid(*A)];
+    };
+    tags(a, d).add(EdgeTags::order2);
+    tags(a, d).inputs(EdgeTags::order2) = 1;
+
+    std::vector<TopoOffsetTetMesh::Tuple> new_tets;
+    const auto [face, fid] = A->tuple_from_face(std::array<size_t, 3>{{a, b, c}});
+    (void)fid;
+    REQUIRE(A->swap_face(face, new_tets));
+    REQUIRE(new_tets.size() == 3);
+    CHECK(tags(a, d).has(EdgeTags::order2));
+    CHECK(tags(a, d).inputs(EdgeTags::order2) == 1);
+    size_t n_tagged = 0;
+    for (const auto& edge : A->get_edges()) {
+        n_tagged += A->m_feature_edge_attribute[edge.eid(*A)].is_tagged();
+    }
+    CHECK(n_tagged == 1);
+    CHECK(!tags(d, e).is_tagged());
+}
+
 TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
 {
     // The 4-4 case search (TetMesh::swap_edge_44()) scores the sum of the energy through
@@ -2830,8 +2898,13 @@ MeshData two_sheet_grid(const double z_blue)
 }
 
 /// One construction-only offset of the face tag `sheet`, its band tagged `band`, the
-/// correspondence saved: the step a pipeline runs once per sheet before prismatic_mesh.
-MeshData offset_sheet(const MeshData& m, const std::string& sheet, const std::string& band)
+/// correspondence saved, the tags `protect` protected: the step a pipeline runs once per sheet
+/// before prismatic_mesh.
+MeshData offset_sheet(
+    const MeshData& m,
+    const std::string& sheet,
+    const std::string& band,
+    const std::vector<std::string>& protect = {})
 {
     return components::topological_offset::topological_offset(
                {{"input", "m"},
@@ -2840,6 +2913,7 @@ MeshData offset_sheet(const MeshData& m, const std::string& sheet, const std::st
                 {"target_distance", 0.1},
                 {"optimize_offset", false},
                 {"save_offset_correspondence", true},
+                {"protected_tags", protect},
                 {"num_threads", 1}},
                {{"m", m}})
         .first.at("mesh");
@@ -2881,12 +2955,39 @@ TEST_CASE("offset-carries-an-earlier-correspondence", "[offset][3d][corresponden
         CHECK(!to_blue.empty());
         for (const auto& p : to_blue) CHECK(p[5] == 0.25);
     }
-    SECTION("sheets one cube apart: blue's march splits yellow's band, and the run refuses")
+    SECTION("sheets one cube apart: blue's march cuts beside yellow's pairs, not them")
     {
+        // Blue's marched edges end at yellow's offset vertices, not at the input vertices they
+        // name, so no carried edge is cut and every carried value survives. Until 2026-11-06 the
+        // run compared whole stars and refused this.
         const auto first = offset_sheet(two_sheet_grid(0.75), "yellow", "band_yellow");
+        const auto second = offset_sheet(first, "blue", "band_blue");
+        const auto carried = correspondence_pairs(first);
+        REQUIRE(!carried.empty());
+        const auto pairs = correspondence_pairs(second);
+        CHECK(std::includes(pairs.begin(), pairs.end(), carried.begin(), carried.end()));
+    }
+    SECTION("yellow offset again: the march cuts yellow's carried edges, and the run throws")
+    {
+        // The second march's edges run from yellow's vertices out, among them each carried edge
+        // from an offset vertex to the yellow vertex it names.
+        const auto first = offset_sheet(two_sheet_grid(0.25), "yellow", "band_yellow");
         REQUIRE_THROWS_WITH(
-            offset_sheet(first, "blue", "band_blue"),
-            Catch::Matchers::ContainsSubstring("changed star"));
+            offset_sheet(first, "yellow", "band_yellow_2"),
+            Catch::Matchers::ContainsSubstring("protect the earlier band"));
+    }
+    SECTION("sheets one cube apart, yellow's band protected: blue's march leaves it")
+    {
+        // A protected cell is split by no march and taken by no band (marching_tets()), so
+        // every carried value survives.
+        const auto first = offset_sheet(two_sheet_grid(0.75), "yellow", "band_yellow");
+        const auto second = offset_sheet(first, "blue", "band_blue", {"band_yellow"});
+        const auto carried = correspondence_pairs(first);
+        REQUIRE(!carried.empty());
+        std::set<std::array<double, 6>> to_yellow;
+        for (const auto& p : correspondence_pairs(second))
+            if (carried.count(p)) to_yellow.insert(p);
+        CHECK(to_yellow == carried);
     }
 }
 
@@ -3004,7 +3105,419 @@ bool frames_identical(const TopoOffsetTetMesh::VtuFrame& a, const TopoOffsetTetM
     }
     return ok;
 }
+
+/// grid_offset_mesh() with the caller's tags -- tet tags (a column each, named tag_names), face-
+/// tagged triangles (F_tagged, a column of F_tags each, named face_tag_names), the complex
+/// `selection` -- and no field: constructed, the optimization's labels set.
+std::unique_ptr<TopoOffsetTetMesh> tagged_grid_offset_mesh(
+    const GridInput& g,
+    const MatrixSi& tags,
+    const std::vector<std::string>& tag_names,
+    const Eigen::MatrixXi& F_tagged,
+    const MatrixSi& F_tags,
+    const std::vector<std::string>& face_tag_names,
+    const std::string& selection,
+    Parameters& param,
+    const std::filesystem::path& out)
+{
+    auto mesh = std::make_unique<TopoOffsetTetMesh>(param, 0);
+    MatrixXd V_env;
+    MatrixXi F_env;
+    mesh->init_from_image(
+        g.V,
+        g.Tm,
+        tags,
+        V_env,
+        F_env,
+        tag_names,
+        "",
+        F_tagged,
+        F_tags,
+        face_tag_names);
+    mesh->m_offset_params.offset_selection = parse(selection, mesh->m_tag_name_to_id);
+    mesh->label_input_complex();
+    mesh->init_input_complex_bvh();
+    mesh->consolidate_mesh();
+    mesh->construct_offset(out);
+    mesh->label_offset_boundary();
+    return mesh;
+}
+
+/// The faces on the square `axis` = `value` (every corner exactly on the plane, the centroid's
+/// other two coordinates strictly between lo's and hi's), by the band's cells on their two sides:
+/// COVERED, both band; BEYOND, neither. The front, one of each, is left out.
+struct SquareFaces
+{
+    std::vector<TetMesh::Tuple> covered, beyond;
+};
+SquareFaces square_faces(
+    const TopoOffsetTetMesh& mesh,
+    const int axis,
+    const double value,
+    const Eigen::Vector3d& lo,
+    const Eigen::Vector3d& hi)
+{
+    SquareFaces out;
+    for (const auto& f : mesh.get_faces()) {
+        bool on = true;
+        Eigen::Vector3d c = Eigen::Vector3d::Zero();
+        for (const size_t v : mesh.get_face_vids(f)) {
+            const Eigen::Vector3d p = mesh.m_vertex_attribute[v].m_posf;
+            on = on && p[axis] == value;
+            c += p / 3.;
+        }
+        for (int k = 0; k < 3; ++k) {
+            if (k != axis) on = on && lo[k] < c[k] && c[k] < hi[k];
+        }
+        const auto opp = f.switch_tetrahedron(mesh);
+        if (!on || !opp) continue;
+        const bool a = mesh.cell_is_offset_band(f.tid(mesh));
+        const bool b = mesh.cell_is_offset_band(opp->tid(mesh));
+        if (a && b) out.covered.push_back(f);
+        if (!a && !b) out.beyond.push_back(f);
+    }
+    return out;
+}
 } // namespace
+
+TEST_CASE("band-covered-region-boundaries", "[offset][3d][envelope]")
+{
+    // The 5 x 5 x 5 grid (tag_0 the centre cube) with tag_1 the cube next to it along +x, both
+    // clear of the wall, constructed at target 0.2. The band takes tag_1's cells next to the
+    // complex, so near the shared face tag_1's four side squares lie between two band cells
+    // (COVERED), and farther out between two cells the band did not take (BEYOND). A covered face
+    // bounds nothing once the band's cells carry its tags: untracked, so not held
+    // (untrack_covered_boundaries()). With tag_1 protected the band takes none of its cells
+    // (marching_tets()), so none of its faces is covered. Beyond, tracked and held either way.
+    const GridInput g = grid_input(5);
+    MatrixSi tags(g.Tm.rows(), 2);
+    for (Eigen::Index t = 0; t < g.Tm.rows(); ++t) {
+        Eigen::Vector3d c = Eigen::Vector3d::Zero();
+        for (int j = 0; j < 4; ++j) c += g.V.row(g.Tm(t, j)).transpose() / 4.;
+        if (g.Tags.coeff(t, 0) != 0) tags.coeffRef(t, 0) = 1;
+        if (c[0] > 0.5 && c[0] < 1.5 && std::abs(c[1]) < 0.5 && std::abs(c[2]) < 0.5) {
+            tags.coeffRef(t, 1) = 1;
+        }
+    }
+    for (const bool protect : {false, true}) {
+        INFO("protected_tags " << (protect ? "[tag_1]" : "[]"));
+        nlohmann::json j = {
+            {"offset_selection", "tag_0"},
+            {"num_threads", 0},
+            {"target_distance", 0.2}};
+        if (protect) j["protected_tags"] = {"tag_1"};
+        Parameters param = construction_params(j, g.V);
+        const auto mesh = tagged_grid_offset_mesh(
+            g,
+            tags,
+            {"tag_0", "tag_1"},
+            Eigen::MatrixXi(),
+            MatrixSi(),
+            {},
+            "tag_0",
+            param,
+            std::filesystem::temp_directory_path() / "wmtk_offset_covered_regions");
+        const auto tracked = [&](const TetMesh::Tuple& f) {
+            return mesh->m_face_attribute[f.fid(*mesh)].m_is_surface_fs;
+        };
+        const auto held = [&](const TetMesh::Tuple& f) {
+            return tracked(f) && mesh->face_is_held(f);
+        };
+        size_t n_covered = 0, n_beyond = 0;
+        for (const auto& [axis, value] :
+             std::vector<std::pair<int, double>>{{1, 0.5}, {1, -0.5}, {2, 0.5}, {2, -0.5}}) {
+            const SquareFaces s = square_faces(
+                *mesh,
+                axis,
+                value,
+                Eigen::Vector3d(0.5, -0.5, -0.5),
+                Eigen::Vector3d(1.5, 0.5, 0.5));
+            for (const auto& f : s.covered) {
+                CHECK(!tracked(f));
+                CHECK(!held(f));
+            }
+            for (const auto& f : s.beyond) CHECK(held(f));
+            n_covered += s.covered.size();
+            n_beyond += s.beyond.size();
+        }
+        CHECK((n_covered == 0) == protect);
+        REQUIRE(n_beyond > 0);
+        REQUIRE_NOTHROW(mesh->audit_surface_containment("construction"));
+    }
+}
+
+TEST_CASE("band-covered-face-tags", "[offset][3d][envelope]")
+{
+    // The same grid with no second region and a face-tagged surface S instead: the square
+    // y = 0.5, 0.5 < x < 1.5, -0.5 < z < 0.5, one edge on the centre cube, so the band crosses it
+    // there. Inside the band (COVERED: both tets band cells) S's tag gives way as the cells' tags
+    // do (set_offset_tet_tags()), and the face, bounding nothing then, is untracked; BEYOND, S
+    // keeps tag, tracking and hold. With S protected the covered faces keep all three. With S the
+    // selection, its faces are the input complex, band cells on both sides, and keep theirs.
+    const GridInput g = grid_input(5);
+    std::set<std::array<int, 3>> seen;
+    std::vector<std::array<int, 3>> S;
+    for (Eigen::Index t = 0; t < g.Tm.rows(); ++t) {
+        for (int skip = 0; skip < 4; ++skip) {
+            std::array<int, 3> f{};
+            int n = 0;
+            for (int j = 0; j < 4; ++j) {
+                if (j != skip) f[size_t(n++)] = g.Tm(t, j);
+            }
+            bool on = true;
+            Eigen::Vector3d c = Eigen::Vector3d::Zero();
+            for (const int v : f) {
+                on = on && g.V(v, 1) == 0.5;
+                c += g.V.row(v).transpose() / 3.;
+            }
+            if (!on || !(c[0] > 0.5 && c[0] < 1.5 && std::abs(c[2]) < 0.5)) continue;
+            std::array<int, 3> key = f;
+            std::sort(key.begin(), key.end());
+            if (seen.insert(key).second) S.push_back(f);
+        }
+    }
+    REQUIRE(S.size() == 2);
+    Eigen::MatrixXi F_tagged(int(S.size()), 3);
+    MatrixSi F_tags(int(S.size()), 1);
+    for (size_t r = 0; r < S.size(); ++r) {
+        for (int k = 0; k < 3; ++k) F_tagged(int(r), k) = S[r][size_t(k)];
+        F_tags.coeffRef(int(r), 0) = 1;
+    }
+    struct Case
+    {
+        const char* name;
+        std::string selection;
+        bool protect;
+    };
+    for (const Case& c :
+         {Case{"S crossing the band", "tag_0", false},
+          Case{"S protected", "tag_0", true},
+          Case{"S the selection", "S", false}}) {
+        INFO(c.name);
+        nlohmann::json j = {
+            {"offset_selection", c.selection},
+            {"num_threads", 0},
+            {"target_distance", 0.2}};
+        if (c.protect) j["protected_tags"] = {"S"};
+        // The driver refuses a face-tag selection with the optimization, which holds no face
+        // tags yet; the construction alone is what this case checks.
+        if (c.selection == "S") j["optimize_offset"] = false;
+        Parameters param = construction_params(j, g.V);
+        const auto mesh = tagged_grid_offset_mesh(
+            g,
+            g.Tags,
+            {"tag_0"},
+            F_tagged,
+            F_tags,
+            {"S"},
+            c.selection,
+            param,
+            std::filesystem::temp_directory_path() / "wmtk_offset_covered_face_tags");
+        const auto tagged = [&](const TetMesh::Tuple& f) {
+            return (mesh->m_face_attribute[f.fid(*mesh)].input_set() & 1) != 0; // S is bit 0
+        };
+        const auto tracked = [&](const TetMesh::Tuple& f) {
+            return mesh->m_face_attribute[f.fid(*mesh)].m_is_surface_fs;
+        };
+        const auto held = [&](const TetMesh::Tuple& f) {
+            return tracked(f) && mesh->face_is_held(f);
+        };
+        const SquareFaces s = square_faces(
+            *mesh,
+            1,
+            0.5,
+            Eigen::Vector3d(0.5, -0.5, -0.5),
+            Eigen::Vector3d(1.5, 0.5, 0.5));
+        REQUIRE(!s.covered.empty());
+        const bool selected = c.selection == "S";
+        const bool keeps = c.protect || selected;
+        for (const auto& f : s.covered) {
+            CHECK(tagged(f) == keeps);
+            CHECK(tracked(f) == keeps);
+            CHECK(held(f) == keeps);
+            if (selected) CHECK(mesh->m_face_extra[f.fid(*mesh)].label == 1);
+        }
+        if (!selected) {
+            REQUIRE(!s.beyond.empty());
+            for (const auto& f : s.beyond) {
+                CHECK(tagged(f));
+                CHECK(held(f));
+            }
+        }
+        REQUIRE_NOTHROW(mesh->audit_surface_containment("construction"));
+    }
+}
+
+TEST_CASE("band-crossed-sheet-keeps-its-orientation", "[offset][3d][split_op]")
+{
+    // The square S of band-covered-face-tags, protected, so the march splits its faces both
+    // inside the band and beyond it and every half keeps the tag. S is given with its normal +y.
+    // A face tag's orientation is stored against the ascending order of the face's own ids, so a
+    // half of a split face, whose ids differ, has to have it converted
+    // (marching_split_edge_after()). After construction every tagged face of S, oriented as the
+    // output orients it (io::collect_input_set_tags(): ascending, the last two swapped when the
+    // orientation is negative), still faces +y.
+    const GridInput g = grid_input(5);
+    std::set<std::array<int, 3>> seen;
+    std::vector<std::array<int, 3>> S;
+    for (Eigen::Index t = 0; t < g.Tm.rows(); ++t) {
+        for (int skip = 0; skip < 4; ++skip) {
+            std::array<int, 3> f{};
+            int n = 0;
+            for (int j = 0; j < 4; ++j) {
+                if (j != skip) f[size_t(n++)] = g.Tm(t, j);
+            }
+            bool on = true;
+            Eigen::Vector3d c = Eigen::Vector3d::Zero();
+            for (const int v : f) {
+                on = on && g.V(v, 1) == 0.5;
+                c += g.V.row(v).transpose() / 3.;
+            }
+            if (!on || !(c[0] > 0.5 && c[0] < 1.5 && std::abs(c[2]) < 0.5)) continue;
+            std::array<int, 3> key = f;
+            std::sort(key.begin(), key.end());
+            if (!seen.insert(key).second) continue;
+            const Eigen::Vector3d a = g.V.row(f[0]).transpose();
+            const Eigen::Vector3d b = g.V.row(f[1]).transpose();
+            const Eigen::Vector3d d = g.V.row(f[2]).transpose();
+            if ((b - a).cross(d - a)[1] < 0.) std::swap(f[1], f[2]); // normal +y
+            S.push_back(f);
+        }
+    }
+    REQUIRE(S.size() == 2);
+    Eigen::MatrixXi F_tagged(int(S.size()), 3);
+    MatrixSi F_tags(int(S.size()), 1);
+    for (size_t r = 0; r < S.size(); ++r) {
+        for (int k = 0; k < 3; ++k) F_tagged(int(r), k) = S[r][size_t(k)];
+        F_tags.coeffRef(int(r), 0) = 1;
+    }
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"},
+         {"num_threads", 0},
+         {"target_distance", 0.2},
+         {"protected_tags", {"S"}}},
+        g.V);
+    const auto mesh = tagged_grid_offset_mesh(
+        g,
+        g.Tags,
+        {"tag_0"},
+        F_tagged,
+        F_tags,
+        {"S"},
+        "tag_0",
+        param,
+        std::filesystem::temp_directory_path() / "wmtk_offset_sheet_orientation");
+    const SquareFaces s = square_faces(
+        *mesh,
+        1,
+        0.5,
+        Eigen::Vector3d(0.5, -0.5, -0.5),
+        Eigen::Vector3d(1.5, 0.5, 0.5));
+    REQUIRE(!s.covered.empty()); // halves inside the band ...
+    REQUIRE(!s.beyond.empty()); // ... and beyond it
+    size_t n_tagged = 0;
+    for (const auto& f : mesh->get_faces()) {
+        const auto& attr = mesh->m_face_attribute[f.fid(*mesh)];
+        if (!attr.m_is_surface_fs || (attr.input_set() & 1) == 0) continue; // S is bit 0
+        std::array<size_t, 3> vs = mesh->get_face_vids(f);
+        std::sort(vs.begin(), vs.end());
+        const int o = attr.orientation_along(vs);
+        INFO("face (" << vs[0] << ", " << vs[1] << ", " << vs[2] << "), orientation " << o);
+        CHECK(o != 0);
+        if (o < 0) std::swap(vs[1], vs[2]);
+        const Eigen::Vector3d a = mesh->m_vertex_attribute[vs[0]].m_posf;
+        const Eigen::Vector3d b = mesh->m_vertex_attribute[vs[1]].m_posf;
+        const Eigen::Vector3d d = mesh->m_vertex_attribute[vs[2]].m_posf;
+        CHECK((b - a).cross(d - a)[1] > 0.);
+        ++n_tagged;
+    }
+    CHECK(n_tagged > S.size()); // S's faces were split
+}
+
+TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
+{
+    // The corner pocket. p is a vertex of the input complex C (tag_0, three tets) where three of
+    // C's boundary faces meet, their outer edges the loop (q, r, s); f = (q, r, s) is a face of
+    // another surface -- the boundary of tag_1, the tet beyond f, and a face-tagged input S --
+    // spanning the loop outside C. The tet (p, q, r, s) between them is not C's but its four
+    // corners are, so simplicial_embedding() splits f (its three edges are C's, it is not). The
+    // three pieces lie on f's surfaces: tracked, with f's input set and its orientation; the new
+    // vertex is on the surface; the faces new inside the two cells are on none.
+    Eigen::MatrixXd V(8, 3);
+    V << 0, 0, 0, // p
+        1, 0, 0, // q
+        0, 1, 0, // r
+        0, 0, 1, // s
+        0, 0, -1, // C's tet below (p, q, r)
+        -1, 0, 0, // ... beside (p, r, s)
+        0, -1, 0, // ... beside (p, s, q)
+        1, 1, 1; // tag_1's tet beyond f
+    const std::vector<std::array<int, 4>> cells =
+        {{{0, 1, 2, 3}}, {{0, 1, 2, 4}}, {{0, 2, 3, 5}}, {{0, 3, 1, 6}}, {{1, 2, 3, 7}}};
+    Eigen::MatrixXi T(int(cells.size()), 4);
+    for (size_t i = 0; i < cells.size(); ++i) {
+        const auto t = positive(V, cells[i]);
+        for (int j = 0; j < 4; ++j) T(int(i), j) = t[size_t(j)];
+    }
+    MatrixSi tags(int(cells.size()), 2);
+    for (const int i : {1, 2, 3}) tags.coeffRef(i, 0) = 1; // C
+    tags.coeffRef(4, 1) = 1; // tag_1, beyond f
+    Eigen::MatrixXi F_tagged(1, 3);
+    F_tagged << 1, 2, 3; // f, the face tag oriented along (q, r, s)
+    MatrixSi F_tags(1, 1);
+    F_tags.coeffRef(0, 0) = 1;
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        V);
+    TopoOffsetTetMesh mesh(param, 0);
+    MatrixXd V_env;
+    MatrixXi F_env;
+    mesh.init_from_image(V, T, tags, V_env, F_env, {"tag_0", "tag_1"}, "", F_tagged, F_tags, {"S"});
+    mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+    mesh.label_input_complex();
+
+    const auto fid_of = [&](size_t a, size_t b, size_t c) {
+        return std::get<1>(mesh.tuple_from_face({{a, b, c}}));
+    };
+    const auto f_attr = mesh.m_face_attribute[fid_of(1, 2, 3)]; // a copy: f goes
+    REQUIRE(f_attr.m_is_surface_fs);
+    REQUIRE(f_attr.input_set() == 1);
+    REQUIRE(f_attr.orientation_along(std::array<size_t, 3>{{1, 2, 3}}) == 1);
+    REQUIRE(!mesh.is_simplicially_embedded());
+    mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Midpoint;
+    mesh.simplicial_embedding();
+    REQUIRE(mesh.is_simplicially_embedded());
+    REQUIRE(!mesh.try_tuple_from_face({{1, 2, 3}})); // f was split
+
+    size_t v = size_t(-1); // the new vertex
+    for (const auto& t : mesh.get_vertices()) {
+        if (t.vid(mesh) < 8) continue;
+        REQUIRE(v == size_t(-1));
+        v = t.vid(mesh);
+    }
+    REQUIRE(v != size_t(-1));
+    CHECK((mesh.m_vertex_attribute[v].m_posf - Vector3d(1., 1., 1.) / 3.).norm() < 1e-12);
+    CHECK(mesh.m_vertex_extra[v].m_is_on_region);
+    CHECK(mesh.m_vertex_attribute[v].m_is_on_surface);
+    for (const auto& [a, b] : std::vector<std::pair<size_t, size_t>>{{1, 2}, {2, 3}, {3, 1}}) {
+        INFO("piece (" << a << ", " << b << ", v)");
+        const size_t fid = fid_of(a, b, v);
+        const auto& piece = mesh.m_face_attribute[fid];
+        CHECK(piece.m_is_surface_fs);
+        CHECK(piece.input_set() == f_attr.input_set());
+        CHECK(piece.orientation_along(std::array<size_t, 3>{{a, b, v}}) == 1);
+        CHECK(mesh.m_face_extra[fid].label == 0); // f's: not the complex's
+        CHECK(mesh.m_face_attribute[fid_of(0, a, b)].m_is_surface_fs); // C's boundary, as it was
+    }
+    for (const size_t u : {size_t(0), size_t(7)}) {
+        for (const size_t w : {size_t(1), size_t(2), size_t(3)}) {
+            INFO("interior face (v, " << w << ", " << u << ")");
+            const auto& inner = mesh.m_face_attribute[fid_of(v, w, u)];
+            CHECK(!inner.m_is_surface_fs);
+            CHECK(inner.input_set() == 0);
+        }
+    }
+}
 
 TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
 {
@@ -4968,4 +5481,53 @@ TEST_CASE("memory-output-with-offset-front", "[offset][3d][io]")
              key == "envelope"));
     }
     CHECK(size_t(out.at("mesh").V.rows()) == mesh->get_vertices().size());
+}
+
+TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
+{
+    // Hidden until the junction is fixed: neither variant converges reliably without it, so it
+    // would fail every CI run; the hidden runs record it until then, and it moves back into CI
+    // (release_only) once it passes.
+    // double_sphere, offset of tag_0 at 0.05 with the other region, tag_1, held (every region
+    // boundary is held since 2026-11-04) or protected: the front meets tag_1's surface along a
+    // junction curve, a T-junction when held (the band takes tag_1's cells) and an X-junction
+    // when protected (the band overlaps them). The run must converge -- EXPERIMENTAL_exit_no_folds
+    // holds the exit while a fold remains -- at 4 threads, which is nondeterministic, as the
+    // batches run. MEASURED (2026-11-04, 15 turns, 4 threads, one run each): neither converged,
+    // held with 13 folds left, protected with 3; main, which held only the input complex and
+    // let the band push tag_1's surface aside, converged in 2 turns. Fails until the junction is
+    // fixed.
+    const MeshData input = io::read_mesh(
+        (std::filesystem::path(WMTK_DATA_DIR) / "models" / "double_sphere.msh").string());
+    const bool protect = GENERATE(false, true);
+    INFO((protect ? "tag_1 protected" : "tag_1 held"));
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "tag_0"},
+        {"target_distance", 0.05},
+        {"optimize_offset", true},
+        {"max_rounds", 15},
+        {"num_threads", 4},
+        {"throw_on_nonconvergence", true}};
+    if (protect) j["protected_tags"] = {"tag_1"};
+    REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
+}
+
+TEST_CASE("exact-swept-front-vertex-held-on-another-region", "[offset][3d]" + release_only)
+{
+    // double_sphere, offset of tag_0 with exact_swept: the loop holds every region boundary
+    // (since 2026-11-04), so a front vertex on tag_1's surface is held and takes the engine's
+    // projected step, whose energy (smoothing_ring_energy()) reads the vertex smoothed. Only
+    // smooth_nonfront_vertex() recorded it: one round threw "exact_swept: the projected step's
+    // ring is not vertex N's" (2026-11-05).
+    const MeshData input = io::read_mesh(
+        (std::filesystem::path(WMTK_DATA_DIR) / "models" / "double_sphere.msh").string());
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "tag_0"},
+        {"target_distance", 0.05},
+        {"EXPERIMENTAL_band_volume_rule", "exact_swept"},
+        {"max_rounds", 1},
+        {"num_threads", 1}};
+    REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
 }

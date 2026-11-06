@@ -3,6 +3,7 @@
 #include <optional>
 
 #include <wmtk/MeshData.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 #include <igl/Timer.h>
 #include <wmtk/SurfaceTagAttributes.h>
@@ -69,9 +70,13 @@ public:
     std::map<std::string, int64_t> m_tag_name_to_id;
     /// Names of the face tags: bit i of a face's input set is m_face_tag_names[i].
     std::vector<std::string> m_face_tag_names;
+    // The names of the feature curves' inputs are the base's m_feature_edge_names, set by the
+    // driver: feature_<i> for input_edges file i, or the edge tags of a tagged mesh input
+    // (InputData::feature_edge_names).
 
     /**
-     * @brief One envelope per label, and each surface face held by those of the labels it lies on:
+     * @brief (Re)build the base's m_input_envelopes: one envelope per label, and each surface
+     * face held by those of the labels it lies on:
      * bit i < F of a face's input set is face tag i (m_face_tag_names, F of them), bit F + j the
      * boundary of tet tag j's region. A border between tet tag sets S and S' carries the bits
      * of the tags in one and not the other; ambient is the empty set, so a border of region X with
@@ -85,14 +90,15 @@ public:
      * it: at eps_simplify while the simplification runs, around the simplified surface after.
      * Built around the faces embedded on the inputs instead, the members cost +33 to +70% time;
      * around the input triangles, +2 to +6%. m_envelope stays the union, for the engine's direct
-     * uses of it and for a surface face carrying no label.
+     * uses of it. A surface face carrying no label throws, as in tetwild (the base's
+     * surface_envelope_for_face()).
      *
      * With one union envelope a collapse by the seam of two sheets side by side moved a face of
      * one 0.125 off it (eps 0.029), within eps of the other. Two volumes a fraction of eps apart
      * did not drift so with it (each region's boundary stayed within 0.7 eps of its own box,
      * the tets between them in the way); their labels' envelopes make that hold by construction.
      */
-    wmtk::InputEnvelopes m_input_envelopes;
+    void init_label_envelopes(double eps, bool exact);
 
     /// The face-tag bits of an input set: those below the number of face tags.
     InputSet face_tag_mask() const
@@ -103,22 +109,41 @@ public:
     }
 
     /// Per row of m_F_envelope: its label bits, when m_F_envelope is the inputs' triangles
-    /// (InputData::F_envelope_labels); empty once m_F_envelope is rebuilt from the mesh.
+    /// (InputData::F_envelope_labels) or the mesh's own surface faces at load
+    /// (init_surfaces_and_boundaries(): each face's input set); empty once simplify() rebuilds
+    /// m_F_envelope around the simplified faces. init_label_envelopes() reads an empty one as
+    /// "around the mesh's faces as they are then": at load that left the per-label envelopes to
+    /// follow the faces, so after the simplification under envelope_reference "input" they were
+    /// rebuilt around the simplified faces while the union was rebuilt around the input.
     std::vector<InputSet> m_F_envelope_labels;
+    /// Per row of m_F_envelope, when it was built from the mesh's own surface faces
+    /// (init_surfaces_and_boundaries(), simplify()): that face's input set; empty otherwise. What
+    /// envelope_data() labels the rows by where m_F_envelope_labels is empty (after simplify()).
+    std::vector<InputSet> m_F_envelope_face_sets;
 
-    /// (Re)build m_input_envelopes at `eps`, around the same surface as m_envelope: each label's
-    /// rows of m_F_envelope when m_F_envelope_labels says which, else the mesh's faces carrying
-    /// the label. The input triangles are far fewer than the faces embedded on them.
-    void init_label_envelopes(double eps, bool exact);
+    // A reference an `envelope` input gave (InputData::envelope_reference), the first
+    // component's labelled input, is the base's (TetOptimizerMesh::m_has_reference, which states
+    // the guarantee): set by the driver before init, with m_V_envelope, m_F_envelope and
+    // m_F_envelope_labels its triangles of this mesh's labels, m_reference_curves its feature
+    // curves, and m_input_curves set from both. init_surfaces_and_boundaries() then throws for a
+    // label a held face or feature edge carries that the reference lacks, and, for a remeshing,
+    // which holds the mesh to it, for a held face or feature edge received outside its labels'
+    // envelopes (check_reference_containment()): nothing is rebuilt around the mesh, as the
+    // envelope check without a reference does.
 
-    /// A tracked face's containment: its labels' envelopes if it has any, else m_envelope.
-    std::shared_ptr<Envelope> surface_envelope_for_face(
-        const std::array<size_t, 3>& vids,
-        const FaceAttributes& attr) const override
-    {
-        if (m_input_envelopes.empty() || attr.input_set() == 0) return m_envelope;
-        return m_input_envelopes.containment(attr.input_set());
-    }
+    /// The label of bit `bit` of a face's input set, as the output names it: a face tag's name, a
+    /// tet tag's label (io::collect_tags()).
+    std::string label_name(size_t bit) const override;
+    /**
+     * @brief The envelope the run hands on (io::append_envelope_block()), when it built its own:
+     * m_F_envelope's rows labelled by m_F_envelope_labels, else by m_F_envelope_face_sets, with
+     * the feature curves of `curves` (edge_input: the bit of `curve_names`) and its points.
+     * Unlabelled, and without curves and points, where the rows' labels are not known: a bare
+     * `envelope` given, or the EnvelopeSurface group of a .msh.
+     */
+    MeshData envelope_data(
+        const utils::FeatureInputs& curves,
+        const std::vector<std::string>& curve_names) const;
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// simwild-only fields (tags, quality/sizing fields, the operation name).
@@ -132,12 +157,6 @@ public:
 
     bool m_collapse_check_quality = true;
 
-    // for open boundary
-    /// Follows m_envelope's use_exact; see where it is built in VolumemesherInsertion.cpp.
-    std::shared_ptr<Envelope> m_order_2_edge_envelope;
-
-    /// Envelope a vertex is pulled toward while smoothing.
-    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
 
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.
@@ -280,13 +299,7 @@ protected:
     bool optimization_stop_at_float() const override { return m_sim_params.stop_at_float; }
     void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
 
-    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override;
     bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const override;
-    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override;
-    bool collapse_after_connectivity(
-        size_t v1,
-        size_t v2,
-        const std::vector<std::array<size_t, 2>>& boundary_edges) override;
 
     bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
@@ -440,7 +453,9 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
     void init_from_image(
         const MatrixXd& V,
         const MatrixXi& T,
@@ -448,9 +463,15 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
 
-    void init_surfaces_and_boundaries();
+    /// `features`, optional: the input feature curves and points, and where the insertion put
+    /// them (`features_placed`, in the vertex numbering of the mesh), tagged and anchored here.
+    void init_surfaces_and_boundaries(
+        const utils::FeatureInputs* features = nullptr,
+        const utils::EmbedFeaturesResult* features_placed = nullptr);
     /// Tracks the faces F_tagged (rows of T's vertices, as read_mesh_data gives them) as surface,
     /// with input set bit j where F_tags has a 1 in column j. Throws on a row that is no face.
     void init_face_tags(
@@ -474,16 +495,6 @@ public:
     size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
 
-    /**
-     * @brief Find open boundary edges of the embedded surface and initialize a BVH for the open
-     * boundary.
-     *
-     * The envelope for the open boundary uses a hack: A boundary edge is represented as a
-     * degenerate triangle, e.g., (v0,v1,v0). That way, the standard triangle envelope code can be
-     * used.
-     *
-     */
-    void find_order_2_edges();
     /**
      * @brief Checks if an edge COULD be an open boundary edge.
      *

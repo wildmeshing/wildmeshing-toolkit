@@ -47,6 +47,18 @@ class ShortestEdgeCollapse : public wmtk::TriMesh
 {
 public:
     wmtk::Envelope m_envelope;
+    /// With faces of two or more inputs (create_mesh()'s tri_input), one envelope per input,
+    /// around its own triangles alone at m_envelope's eps, and each face held to its own input's
+    /// (FaceAttributes::input) instead of m_envelope, the union. Null for an input with no
+    /// triangle; empty otherwise.
+    ///
+    /// The optimizer after the simplification holds each face to its own input, so a face the
+    /// simplification lets drift onto another input starts there outside: tetwild, a wave sheet
+    /// within 0.7 eps of a flat one (a simplification at 0.9 eps, simplify_envelope_ratio 0.9
+    /// until 2026-11), held to the union, had 735 faces outside their own input's envelope at
+    /// the optimizer's init and timed out at 1500 s; held to its own, 0, and 15 iterations in
+    /// 129 s.
+    std::vector<std::shared_ptr<wmtk::Envelope>> m_input_envelopes;
     bool m_has_envelope = false;
     /// Tube around the boundary edges of the mesh given to create_mesh(), used instead of
     /// freezing the boundary when create_mesh() gets a positive boundary_eps. See there.
@@ -76,7 +88,11 @@ public:
      *     is not judged, as with a frozen boundary: with the link condition off, simplifying a
      *     dense closed patch passes through such transient tears, and refusing them leaves it
      *     stuck as a non-manifold tangle (Thingi10K 55928, the second eye).
-     * @param tri_input    optional, per triangle: the input it came from, into face_attrs.
+     * @param tri_input    optional, per triangle: the input it came from, into face_attrs. With
+     *   two or more inputs and an envelope, each face is held to its own input's
+     *   (m_input_envelopes).
+     * @param per_input_envelopes  false: one envelope for all inputs whatever tri_input says,
+     *   which then only goes into face_attrs (OptimizerParameters::per_input_envelopes).
      */
     void create_mesh(
         size_t n_vertices,
@@ -84,7 +100,8 @@ public:
         const std::vector<size_t>& frozen_verts = {},
         double eps = 0,
         double boundary_eps = 0,
-        const std::vector<int>& tri_input = {});
+        const std::vector<int>& tri_input = {},
+        bool per_input_envelopes = true);
 
     ~ShortestEdgeCollapse() {}
 

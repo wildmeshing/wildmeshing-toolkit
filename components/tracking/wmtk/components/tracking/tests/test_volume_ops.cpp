@@ -5,6 +5,7 @@
 // (det J > 0), and back.
 
 #include <wmtk/components/tracking/VolumeMap.hpp>
+#include <wmtk/components/tracking/volume_complex.hpp>
 #include <wmtk/components/tracking/volume_geometry.hpp>
 #include <wmtk/history/TrackedRecorder.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
@@ -906,6 +907,83 @@ TEST_CASE("volume-ops-volume-only", "[volume_map]" + release_only)
     CHECK(c.moved > 0);
     CHECK(c.round_trip < 1e-9);
     CHECK(map.stats().region_changed > 0);
+}
+
+TEST_CASE("volume-ops-collapse-off-surface-no-cells", "[volume_map]")
+{
+    // The vertex where three tracked planes cross, collapsed into a vertex off them, one region
+    // all round as in tetwild. The survivor takes its place on the surface: the surface history
+    // records a move, which the surface map keeps barycentric -- a vertex on more than one curve
+    // has no cell -- so the tracked faces at it are in no cell. The volume map maps the collapse
+    // the other way round ("interior j->i", "move i") and leaves a point on such a face where it
+    // is in it, as the surface map does. It threw "cap point on a face no cell holds" there, and
+    // the points through the operation had no map (tetwild on Thingi10K 111388: 92 of 100000).
+    const int n = 4, c = 2;
+    const auto index = [n](const size_t v, const int k) {
+        const size_t m = size_t(n + 1);
+        return int(k == 0 ? v / (m * m) : k == 1 ? (v / m) % m : v % m);
+    };
+    bool found = false;
+    for (uint32_t seed = 1; seed <= 20 && !found; ++seed) {
+        CAPTURE(seed);
+        Scene sc = Scene::grid(n, c, seed);
+        sc.one_region = true;
+        sc.envelope = 2;
+        for (const MTet& t : sc.s.T) {
+            for (const MFace& f : faces_of(t)) {
+                for (const int k : {0, 1}) {
+                    if (index(f[0], k) == c && index(f[1], k) == c && index(f[2], k) == c)
+                        sc.tracked.insert(f);
+                }
+            }
+        }
+        sc.start();
+        const size_t v = sc.vertex(c, c, c);
+        std::set<size_t> ring;
+        for (const MTet& t : sc.s.T) {
+            if (has(t, v)) ring.insert(t.begin(), t.end());
+        }
+        for (const size_t j : ring) {
+            if (j != v && !sc.on_surface(j) && sc.collapse(v, j)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) continue;
+        const VolumeMap map(sc.surface_history(), sc.volume_history());
+        map.build_all();
+        CHECK(map.stats().failed == 0);
+        CHECK(kinds(map).count("move i") > 0);
+        check_all_points(sc, map, 500);
+        CHECK(map.stats().through_failed == 0);
+    }
+    REQUIRE(found);
+}
+
+TEST_CASE("volume-surface-link-condition", "[volume_map]")
+{
+    // Whether a collapse keeps the tracked surface's topology (volume::surface_link_condition()),
+    // which decides whether its map may keep the surface. The fan of 0 over the hexagon 1..6 is a
+    // disk; without its face (0, 6, 1), an open sheet whose boundary runs through 0.
+    using volume::Faces;
+    using volume::surface_link_condition;
+    using volume::Vid;
+    Faces disk, open;
+    for (Vid k = 1; k <= 6; ++k) {
+        const volume::Tri f = volume::sorted(volume::Tri{{0, k, Vid(k % 6 + 1)}});
+        disk.insert(f);
+        if (k < 6) open.insert(f);
+    }
+    CHECK(surface_link_condition(disk, 0, 1)); // an edge inside the disk
+    CHECK(surface_link_condition(disk, 1, 7)); // into a vertex off the surface: a move there
+    CHECK(surface_link_condition(open, 0, 1)); // along the boundary
+    CHECK(!surface_link_condition(open, 0, 3)); // inside, between two boundary vertices: a pinch
+    // A second sheet over the edge (2, 3): collapsing 0 into 1 makes (0, 2, 3) and (1, 2, 3) one
+    // face, a weld.
+    Faces two = disk;
+    two.insert(volume::sorted(volume::Tri{{1, 2, 3}}));
+    two.insert(volume::sorted(volume::Tri{{1, 3, 8}}));
+    CHECK(!surface_link_condition(two, 0, 1));
 }
 
 TEST_CASE("volume-ops-swap-decomposition", "[volume_map]")

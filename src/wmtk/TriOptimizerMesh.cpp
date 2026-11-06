@@ -24,6 +24,7 @@
 // clang-format on
 
 #include <queue>
+#include <tuple>
 
 namespace wmtk {
 
@@ -772,9 +773,151 @@ bool TriOptimizerMesh::is_edge_on_bbox(const std::array<size_t, 2>& vids) const
     return m_edge_attribute[eid].m_is_bbox_fs >= 0;
 }
 
+void TriOptimizerMesh::set_input_curve_points(const MatrixXd& V, const MatrixXi& E)
+{
+    // Vertices merged by exact position, so curves of different inputs meet, and each segment
+    // counted once.
+    std::map<std::array<double, 2>, size_t> id_of;
+    std::vector<Vector2d> P;
+    const auto id = [&](const Eigen::Index v) {
+        const Vector2d p = V.row(v).head<2>().transpose();
+        const auto [it, added] = id_of.emplace(std::array<double, 2>{{p[0], p[1]}}, P.size());
+        if (added) P.push_back(p);
+        return it->second;
+    };
+    std::set<std::array<size_t, 2>> segments;
+    for (Eigen::Index i = 0; i < E.rows(); ++i) {
+        const size_t a = id(E(i, 0)), b = id(E(i, 1));
+        if (a != b) segments.insert({{std::min(a, b), std::max(a, b)}});
+    }
+    std::vector<size_t> valence(P.size(), 0);
+    for (const auto& s : segments) {
+        ++valence[s[0]];
+        ++valence[s[1]];
+    }
+    std::vector<Vector2d> points;
+    for (size_t i = 0; i < P.size(); ++i) {
+        if (valence[i] != 2 && holds_order2_vertex(valence[i])) points.push_back(P[i]);
+    }
+    logger().info("input's own curves: {} curve ends and junctions", points.size());
+    m_input_curve_points = std::move(points);
+}
+
+bool TriOptimizerMesh::anchor_feature_point(const size_t vid, const double radius)
+{
+    return anchor_feature_point(vid, radius, m_vertex_attribute[vid].m_posf);
+}
+
+bool TriOptimizerMesh::anchor_feature_point(
+    const size_t vid,
+    const double radius,
+    const Vector2d& centre)
+{
+    assert(m_track_feature_points);
+    size_t& f = m_feature_point_attribute[vid].m_feature_point_id;
+    if (f != NO_FEATURE_POINT) {
+        m_feature_point_radius[f] = std::min(m_feature_point_radius[f], radius);
+        return false;
+    }
+    f = m_feature_points.size();
+    m_feature_points.push_back(centre);
+    m_feature_point_radius.push_back(radius);
+    return true;
+}
+
+size_t TriOptimizerMesh::anchor_feature_points(
+    const std::vector<size_t>& input_point_vids,
+    const double order2_radius,
+    const double feature_radius)
+{
+    // {vertex, radius, centre}: the order-2 vertices first, then the input points.
+    std::vector<std::tuple<size_t, double, Vector2d>> anchors;
+    size_t n_ends = 0, n_junctions = 0, n_free = 0;
+    // With the input's own curve points (m_input_curve_points), an order-2 vertex is the
+    // input's only where one of them is in its ball, which is then centred there, as in 3D; any
+    // other the simplification made, and its ball is centred where it is. An input point keeps
+    // its own position. The kd-tree is 3D: the points lifted to z = 0.
+    std::unique_ptr<KNN> input_curve_points;
+    std::vector<bool> is_input_point;
+    size_t n_not_input = 0;
+    if (m_input_curve_points) {
+        if (!m_input_curve_points->empty()) {
+            std::vector<Vector3d> lifted;
+            for (const Vector2d& p : *m_input_curve_points) lifted.emplace_back(p[0], p[1], 0);
+            input_curve_points = std::make_unique<KNN>(lifted);
+        }
+        is_input_point.assign(vert_capacity(), false);
+        for (const size_t vid : input_point_vids) {
+            if (vid < vert_capacity()) is_input_point[vid] = true;
+        }
+    }
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        size_t n_segments = 0;
+        for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+            n_segments += is_edge_on_surface(e);
+        }
+        if (n_segments == 0 || n_segments == 2) continue;
+        if (!holds_order2_vertex(n_segments)) {
+            ++n_free;
+            continue;
+        }
+        ++(n_segments == 1 ? n_ends : n_junctions);
+        const Vector2d& p = m_vertex_attribute[vid].m_posf;
+        if (m_input_curve_points && !is_input_point[vid]) {
+            // The nearest curve point, tested as the anchor will hold it
+            // (feature_point_ball_contains()).
+            uint32_t nearest = 0;
+            double sq = 0;
+            if (input_curve_points) {
+                input_curve_points->nearest_neighbor(Vector3d(p[0], p[1], 0), nearest, sq);
+            }
+            const double r = order2_radius;
+            if (!input_curve_points ||
+                (p - (*m_input_curve_points)[nearest]).squaredNorm() > r * r) {
+                // A curve end the simplification made: anchored where it is, as in 3D.
+                ++n_not_input;
+                anchors.emplace_back(vid, order2_radius, p);
+                continue;
+            }
+            anchors.emplace_back(vid, order2_radius, (*m_input_curve_points)[nearest]);
+            continue;
+        }
+        anchors.emplace_back(vid, order2_radius, p);
+    }
+    for (const size_t vid : input_point_vids) {
+        if (vid >= vert_capacity()) {
+            log_and_throw_error("Input point vertex id {} out of range", vid);
+        }
+        anchors.emplace_back(vid, feature_radius, m_vertex_attribute[vid].m_posf);
+    }
+    if (m_input_curve_points) {
+        logger().info(
+            "feature points: {} curve ends and junctions with no curve point of the input in "
+            "reach, anchored where they are",
+            n_not_input);
+    }
+    if (anchors.empty()) return 0;
+
+    enable_feature_point_tracking();
+    size_t n_anchored = 0;
+    for (const auto& [vid, r, centre] : anchors) {
+        n_anchored += anchor_feature_point(vid, r, centre);
+    }
+    logger().info(
+        "feature points: {} curve ends, {} junctions ({} more left free by the application's "
+        "rule), {} input points; {} anchored",
+        n_ends,
+        n_junctions,
+        n_free,
+        input_point_vids.size(),
+        n_anchored);
+    return n_anchored;
+}
+
 bool TriOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
 {
-    if (!m_preserve_feature_points) {
+    if (!m_track_feature_points) {
         return false;
     }
     // v1 disappears into v2, and v2 does not move. So the question is only whether the
@@ -791,24 +934,25 @@ bool TriOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const s
     // remove, and the max energy sat at 1e50 -- MAX_ENERGY -- for all 82 iterations instead
     // of converging to 4.99 in 3.
     //
-    // Two anchors further apart than eps are still protected, because then v2 -- sitting on
-    // one of them -- is more than eps from the other and fails this same test.
-    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
-           m_feature_eps * m_feature_eps;
+    // Two anchors further apart than the radius are still protected, because then v2 --
+    // sitting on one of them -- is more than the radius from the other and fails this test.
+    const double r = m_feature_point_radius[f1];
+    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() > r * r;
 }
 
 bool TriOptimizerMesh::feature_point_ball_contains(const size_t vid, const Vector2d& p) const
 {
-    if (!m_preserve_feature_points) {
+    if (!m_track_feature_points) {
         return true;
     }
     const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
     if (f == NO_FEATURE_POINT) {
         return true;
     }
-    // A ball, not a pin. The vertex may move anywhere within eps of the feature it stands
-    // for, which is exactly the guarantee the envelope gives everywhere else.
-    return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
+    // A ball, not a pin. The vertex may move anywhere within the radius of the feature it
+    // stands for, which is exactly the guarantee the envelope gives everywhere else.
+    const double r = m_feature_point_radius[f];
+    return (p - m_feature_points[f]).squaredNorm() <= r * r;
 }
 
 std::pair<size_t, size_t> TriOptimizerMesh::feature_retention(double* worst_ratio) const
@@ -840,23 +984,230 @@ std::pair<size_t, size_t> TriOptimizerMesh::feature_retention(double* worst_rati
     const KNN knn(pts);
 
     size_t kept = 0;
-    for (const Vector2d& anchor : m_feature_points) {
+    for (size_t f = 0; f < m_feature_points.size(); ++f) {
+        const Vector2d& anchor = m_feature_points[f];
+        const double r = m_feature_point_radius[f];
         uint32_t idx = 0;
         double sq = 0;
         knn.nearest_neighbor(Vector3d(anchor[0], anchor[1], 0), idx, sq);
         // Retention is geometric on purpose: the invariant is "some vertex is still within
-        // eps of this anchor", true whether or not that vertex carries the id. Ids drive the
+        // the radius of this anchor", true whether or not that vertex carries the id. Ids drive the
         // per-collapse policy because they are local and cheap; counting them here would
         // under-report the legitimate merge the policy allows.
-        if (sq <= m_feature_eps * m_feature_eps) {
+        if (sq <= r * r) {
             ++kept;
         } else if (worst_ratio) {
-            // How far the nearest vertex actually is, in units of eps -- what separates an
-            // anchor that drifted just past the ball from a curve that was deleted.
-            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
+            // How far the nearest vertex actually is, in units of the radius -- what separates
+            // an anchor that drifted just past the ball from a curve that was deleted.
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / r);
         }
     }
     return {kept, m_feature_points.size()};
 }
+
+std::shared_ptr<Envelope> TriOptimizerMesh::smoothing_energy_envelope(const size_t vid) const
+{
+    if (!m_vertex_attribute.at(vid).m_is_on_surface) return nullptr;
+    if (m_input_envelopes.empty()) return m_envelope;
+    // A vertex flagged on the surface with no tracked segment left (a stale flag) has no
+    // inputs, and keeps the union's pull.
+    InputSet set = 0;
+    const auto& EA = std::as_const(m_edge_attribute);
+    // Named, not iterated as a temporary: edges() returns a reference into the collection, which
+    // a range-for over get_surface_edges_for_vertex(vid).edges() destroys before the first
+    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
+    const simplex::SimplexCollection surf = get_surface_edges_for_vertex(vid);
+    for (const simplex::Edge& e : surf.edges()) {
+        set |= EA[std::get<1>(tuple_from_edge(e.vertices()))].input_set();
+    }
+    if (set == 0) return m_envelope;
+    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
+}
+
+void TriOptimizerMesh::init_input_envelopes(
+    const std::vector<Vector2d>& V,
+    const std::vector<Vector2i>& E,
+    const std::vector<InputSet>& E_sets,
+    const double eps,
+    const bool exact)
+{
+    if (!m_params.per_input_envelopes) {
+        m_input_envelopes.set({}); // shared: every segment held to the union, m_envelope
+        return;
+    }
+    // Each input from one source: its rows of (V, E) when E_sets says which and it has any,
+    // else the tracked segments carrying it.
+    InputSet from_rows = 0;
+    if (E_sets.size() == E.size()) {
+        for (const InputSet s : E_sets) from_rows |= s;
+    }
+    // The tracked segments carrying an input no row carries. Visited in place, each edge once
+    // at its own slot, as init does, rather than through a list of every edge.
+    std::vector<Vector2i> E_mesh;
+    std::vector<InputSet> E_mesh_sets;
+    for (size_t fid = 0; fid < tri_capacity(); ++fid) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
+        for (size_t j = 0; j < 3; ++j) {
+            const Tuple e = tuple_from_edge(fid, j);
+            if (e.eid(*this) != 3 * fid + j) continue;
+            const EdgeAttributes& attr = m_edge_attribute[3 * fid + j];
+            const InputSet set = attr.input_set() & ~from_rows;
+            if (!attr.m_is_surface_fs || set == 0) continue;
+            const auto vids = get_edge_vids(e);
+            E_mesh.emplace_back(int(vids[0]), int(vids[1]));
+            E_mesh_sets.push_back(set);
+        }
+    }
+    InputSet from_mesh = 0;
+    for (const InputSet s : E_mesh_sets) from_mesh |= s;
+    size_t n = 0;
+    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
+        if ((from_rows | from_mesh) & (InputSet(1) << b)) n = b + 1;
+    }
+
+    // One input's segments over its own vertices only: an envelope keeps a copy of the
+    // vertices it is given.
+    const auto build = [&](const InputSet bit,
+                           const std::vector<Vector2i>& edges,
+                           const std::vector<InputSet>& sets,
+                           const auto& position,
+                           const size_t n_vertices) {
+        std::vector<int> local(n_vertices, -1);
+        std::vector<Vector2d> V_b;
+        std::vector<Vector2i> E_b;
+        for (size_t i = 0; i < edges.size(); ++i) {
+            if (!(sets[i] & bit)) continue;
+            Vector2i e;
+            for (int j = 0; j < 2; ++j) {
+                int& l = local[edges[i][j]];
+                if (l < 0) {
+                    l = int(V_b.size());
+                    V_b.push_back(position(edges[i][j]));
+                }
+                e[j] = l;
+            }
+            E_b.push_back(e);
+        }
+        auto env = std::make_shared<Envelope>(exact);
+        env->init(V_b, E_b, eps);
+        return env;
+    };
+    std::vector<std::shared_ptr<Envelope>> members;
+    for (size_t b = 0; b < n; ++b) {
+        const InputSet bit = InputSet(1) << b;
+        if (from_rows & bit) {
+            members.push_back(
+                build(bit, E, E_sets, [&](int v) -> const Vector2d& { return V[v]; }, V.size()));
+        } else if (from_mesh & bit) {
+            members.push_back(build(
+                bit,
+                E_mesh,
+                E_mesh_sets,
+                [&](int v) -> const Vector2d& { return m_vertex_attribute[v].m_posf; },
+                vert_capacity()));
+        } else {
+            members.push_back(nullptr); // no segment, so no tracked segment to hold
+        }
+    }
+    m_input_envelopes.set(std::move(members));
+}
+
+void TriOptimizerMesh::require_box_boundary(const std::string& who) const
+{
+    // See the declaration.
+    size_t n_tracked = 0, n_free = 0;
+    for (const Tuple& e : get_edges()) {
+        if (e.switch_face(*this)) continue;
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) {
+            ++n_tracked;
+        } else if (attr.m_is_bbox_fs < 0) {
+            ++n_free;
+        }
+    }
+    if (n_tracked == 0 && n_free == 0) return;
+    log_and_throw_error(
+        "{} tracked edges of the tagged mesh lie on its boundary, as a filtered mesh's do, and {} "
+        "untracked boundary edges on no line of its bounding box: {} takes a mesh that fills its "
+        "box (an output with filter \"none\"), its tracked edges inside, and holds the domain's "
+        "wall by the box rule, a box's edges only; give a filtered mesh's curves to triwild as "
+        "inputs",
+        n_tracked,
+        n_free,
+        who);
+}
+
+std::string TriOptimizerMesh::label_name(const size_t bit) const
+{
+    return fmt::format("label bit {}", bit);
+}
+
+void TriOptimizerMesh::require_reference_edge_labels(
+    const std::vector<InputSet>& reference_labels) const
+{
+    InputSet held = 0, given = 0;
+    for (const Tuple& e : get_edges()) {
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) held |= attr.input_set();
+    }
+    for (const InputSet s : reference_labels) given |= s;
+    const InputSet missing = held & ~given;
+    if (missing == 0) return;
+    std::string names;
+    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
+        if ((missing >> b) & 1) names += (names.empty() ? "" : ", ") + label_name(b);
+    }
+    log_and_throw_error(
+        "envelope: no segment of it is labelled {}, which this mesh's edges carry; an envelope "
+        "must carry every label of the mesh it comes with",
+        names);
+}
+
+void TriOptimizerMesh::check_reference_containment() const
+{
+    // Per label bit, the held edges outside its envelope; an edge outside any of its labels' is
+    // one edge outside. Each member asked on its own: inside their intersection is inside each.
+    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
+    std::vector<size_t> outside(max_bits, 0);
+    size_t n = 0;
+    for (const Tuple& e : get_edges()) {
+        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+        if (!attr.m_is_surface_fs) continue;
+        const auto vids = get_edge_vids(e);
+        const std::array<Vector2d, 2> segment = {
+            {m_vertex_attribute[vids[0]].m_posf, m_vertex_attribute[vids[1]].m_posf}};
+        bool out = false;
+        for (size_t b = 0; b < max_bits; ++b) {
+            if (((attr.input_set() >> b) & 1) == 0) continue;
+            const Envelope* env = m_input_envelopes.empty()      ? m_envelope.get()
+                                  : b < m_input_envelopes.size() ? m_input_envelopes.member(b).get()
+                                                                 : nullptr;
+            if (env && !env->is_outside(segment)) continue;
+            ++outside[b];
+            out = true;
+        }
+        n += out;
+    }
+    if (n == 0) {
+        logger().info(
+            "envelope: every held edge received lies in the reference's envelopes of its labels "
+            "(eps {:.6})",
+            m_envelope_eps);
+        return;
+    }
+    std::string counts;
+    for (size_t b = 0; b < max_bits; ++b) {
+        if (outside[b] == 0) continue;
+        counts += fmt::format("{}{} ({})", counts.empty() ? "" : ", ", label_name(b), outside[b]);
+    }
+    log_and_throw_error(
+        "envelope: the mesh received does not lie in the reference at this run's eps {:.6g}: {} "
+        "held edges outside the envelopes of their labels: {}. The sender held them to a wider "
+        "envelope; give this run an eps at least the sender's, or no envelope",
+        m_envelope_eps,
+        n,
+        counts);
+}
+
 
 } // namespace wmtk

@@ -52,6 +52,60 @@ public:
 
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
+    /// Per row of m_E_envelope: its label bits, when m_E_envelope is the input curves
+    /// (InputData::F_envelope_labels); empty once m_E_envelope is rebuilt from the mesh.
+    std::vector<InputSet> m_E_envelope_labels;
+    /// Per row of m_E_envelope, when it was built from the mesh's own surface edges
+    /// (init_surfaces_and_boundaries()): that edge's input set; empty otherwise. What
+    /// envelope_data() labels the rows by where m_E_envelope_labels is empty. The 2D twin of
+    /// SimWildMesh::m_F_envelope_face_sets.
+    std::vector<InputSet> m_E_envelope_edge_sets;
+    // A reference an `envelope` input gave, held to as given, is the base's
+    // (TriOptimizerMesh::m_has_reference): set by the driver before init, with m_V_envelope,
+    // m_E_envelope and m_E_envelope_labels its segments of this mesh's labels, and
+    // m_input_curve_points its curve ends and junctions.
+
+    /// The label of bit `bit` of an edge's input set, as the output names it: an edge tag's name,
+    /// a triangle tag's label (io::collect_tags()).
+    std::string label_name(size_t bit) const override;
+    /// The envelope the run hands on, when it built its own: the 2D twin of
+    /// SimWildMesh::envelope_data(), with the input `points`.
+    MeshData envelope_data(const std::vector<Vector2d>& points) const;
+    /// The vertices of the input points (input_points), set before init: anchored there, in a
+    /// ball of feature_envelope_ratio x eps (TriOptimizerMesh::anchor_feature_points()).
+    std::vector<size_t> m_input_point_vids;
+
+    /// Names of the edge tags: bit i of an edge's input set is m_edge_tag_names[i].
+    std::vector<std::string> m_edge_tag_names;
+
+    /// The edge-tag bits of an input set: those below the number of edge tags.
+    InputSet edge_tag_mask() const
+    {
+        const size_t n = m_edge_tag_names.size();
+        return n >= size_t(SurfaceTagAttributes::max_inputs) ? ~InputSet(0)
+                                                             : (InputSet(1) << n) - 1;
+    }
+
+    /**
+     * @brief The labels, one envelope each (the base's m_input_envelopes), and each surface
+     * edge held by those of the labels it lies on: bit i < C of an edge's input set is edge tag
+     * i (m_edge_tag_names, C of them), bit C + j the boundary of triangle tag j's region. An
+     * edge tag carries its own bit. A border between triangle tag sets S and S' carries the bits
+     * of the tags in one and not the other; ambient is the empty set, so a border of region X
+     * with ambient is held by X's envelope, one between X and Y by both. The 2D twin of
+     * SimWildMesh::init_label_envelopes().
+     *
+     * Member b is built around the same curves as m_envelope, restricted to label b -- the
+     * input curves of that label in generation, else the mesh's surface edges carrying it
+     * (TriOptimizerMesh::init_input_envelopes()) -- at `eps` and with the predicate `exact`, the
+     * ones m_envelope has at the time, and follows it: at eps_simplify while the simplification
+     * after the insertion runs (simplify()), around the simplified curves after it under
+     * envelope_reference "simplified". m_envelope stays the union, for the engine's direct uses
+     * of it. A surface edge carrying no label throws, as in triwild (the base's
+     * surface_envelope_for_edge()). At most 64 edge tags and triangle tags together: a mesh with
+     * more throws.
+     */
+    void init_label_envelopes(double eps, bool exact);
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
     std::vector<std::tuple<ExprPtr, double>> m_quality_field;
@@ -59,13 +113,6 @@ public:
     bool m_collapse_check_link_condition = false; // classical link condition
     bool m_collapse_check_topology = false; // sanity check
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
-
-    /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
-    /// the envelope. See TriOptimizerMesh's feature-point anchors for the case that is.
-    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override
-    {
-        return true;
-    }
 
     SimWildMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : wmtk::TriOptimizerMesh(_m_params)
@@ -98,7 +145,10 @@ public:
         const MatrixXd& V,
         const MatrixXi& T,
         const MatrixSi& T_tags,
-        const std::vector<std::string>& tag_names);
+        const std::vector<std::string>& tag_names,
+        const MatrixXi& E_tagged = MatrixXi(),
+        const MatrixSi& E_tags = MatrixSi(),
+        const std::vector<std::string>& edge_tag_names = {});
 
     /**
      * @brief Same, from EXACT input positions.
@@ -111,11 +161,29 @@ public:
         const MatrixXr& V,
         const MatrixXi& T,
         const MatrixSi& T_tags,
-        const std::vector<std::string>& tag_names);
+        const std::vector<std::string>& tag_names,
+        const MatrixXi& E_tagged = MatrixXi(),
+        const MatrixSi& E_tags = MatrixSi(),
+        const std::vector<std::string>& edge_tag_names = {});
 
     void init_surfaces_and_boundaries();
+    /// Tracks the edges E_tagged (rows of T's vertices, as read_curves gives them) as surface,
+    /// with input set bit j where E_tags has a 1 in column j. Throws on a row that is no edge.
+    /// The 2D twin of SimWildMesh::init_face_tags.
+    void init_edge_tags(
+        const MatrixXi& E_tagged,
+        const MatrixSi& E_tags,
+        const std::vector<std::string>& edge_tag_names);
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
+
+    /**
+     * @brief Simplify after the insertion: collapse every edge with the curve envelopes at
+     * eps_simplify, under preserve_topology (the exact inversion check and the substructure link
+     * condition), then hold the optimization to the envelopes envelope_reference names. The 2D
+     * twin of SimWildMesh::simplify(); run_2D calls it where run_3D calls that one.
+     */
+    void simplify();
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
@@ -323,7 +391,12 @@ private:
     // Negative = stays on v1 side, positive = stays on v2 side.
     // Set before split_edge(), cleared immediately after.
     std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
-    size_t m_last_split_vertex = 0;
+    // The vertex the calling thread's last split made, per thread as 3D's
+    // SplitTagCache::v_new: every thread of the parallel split pass writes it, and the serial
+    // callers (AnnotationsTri.cpp, TightSealGeom.cpp) read their own split's. One shared size_t
+    // was a write-write race, reported by ThreadSanitizer in 3 of 3 simwild 2D remeshing runs at
+    // 8 threads (2026-11-05).
+    wmtk::threading::enumerable_thread_specific<size_t> m_last_split_vertex;
 
     // Where split_face() puts the new vertex; the face's centroid if unset. Set before
     // split_face(), cleared after.
@@ -406,7 +479,7 @@ protected:
 
     bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max) const override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
-    void split_after_vertex(size_t v_new) override { m_last_split_vertex = v_new; }
+    void split_after_vertex(size_t v_new) override { m_last_split_vertex.local() = v_new; }
     /// A face split puts the new vertex at m_face_split_position (the centroid if unset), in
     /// doubles, so every corner must be rounded. The three children take the face's attributes,
     /// the face's edges keep theirs, and the split is refused if a child is inverted.
