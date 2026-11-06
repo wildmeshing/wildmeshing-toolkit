@@ -25,8 +25,11 @@ struct Parameters : public wmtk::OptimizerParameters
     ExpressionPtr offset_selection;
     std::set<std::string> offset_output_tag;
     std::set<std::string> protected_tags;
-    bool offset_in;
-    bool offset_out;
+    // The spec's defaults, as envelope_size below: init_input_complex_bvh() refuses offset_in on a
+    // curve or a point, and a unit test that builds Parameters without init() and offsets a point
+    // (dist_to_tetmesh) read an uninitialized offset_in as true on the Linux and Windows Debug CI.
+    bool offset_in = false;
+    bool offset_out = true;
     double target_distance;
     double target_distance_rel;
     // Turn a non-converged run into a hard error instead of a warning. Off by default: a run that
