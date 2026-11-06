@@ -2025,6 +2025,27 @@ void TopoOffsetTetMesh::marching_tets()
     m_marching_midpoint_splits = 0;
     m_marching_trace_steps = 0;
     m_marching_trace_steps_max = 0;
+    // A protected cell (a tet tag of protected_tags) is not the offset's: the march splits no
+    // edge of it and the band takes none of it, so an earlier offset's band, protected, keeps its
+    // cells, and the stars of its offset vertices there, as they are. An edge out of the complex
+    // in a protected cell stays unsplit (blocked), and no cell around it joins the band: in that
+    // direction the offset is not made. Until 2026-11-05 the band took protected cells too, and
+    // they kept the protected tags beside its own, so a chain of offsets could not keep an earlier
+    // band: feature demo 4's wire, offset after the sheet it runs in, changed the stars of 482 of
+    // the sheet's offset vertices, which prismatic_mesh builds prisms from.
+    const auto is_protected = [&](const size_t tid) {
+        for (const int64_t t : m_tet_attribute[tid].tag) {
+            const auto name = m_tag_id_to_name.find(t);
+            if (name != m_tag_id_to_name.end() &&
+                m_offset_params.protected_tags.count(name->second))
+                return true;
+        }
+        return false;
+    };
+    const auto key = [](size_t a, size_t b) {
+        return std::array<size_t, 2>{{std::min(a, b), std::max(a, b)}};
+    };
+    std::set<std::array<size_t, 2>> blocked;
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
     auto edges = get_edges();
@@ -2034,8 +2055,27 @@ void TopoOffsetTetMesh::marching_tets()
 
         // if one background and other in input/offset
         if ((m_vertex_extra[v1].label == 0) != (m_vertex_extra[v2].label == 0)) {
-            e_to_split.emplace_back(v1, v2);
+            bool in_protected = false;
+            for (const size_t t : get_incident_tids_for_edge(e)) in_protected |= is_protected(t);
+            if (in_protected) {
+                blocked.insert(key(v1, v2));
+            } else {
+                e_to_split.emplace_back(v1, v2);
+            }
         }
+    }
+    const auto takes = [&](const size_t tid) {
+        if (is_protected(tid)) return false;
+        const auto vs = oriented_tet_vids(tid);
+        for (int i = 0; i < 4; ++i)
+            for (int j = i + 1; j < 4; ++j)
+                if (blocked.count(key(vs[i], vs[j]))) return false;
+        return true;
+    };
+    if (!blocked.empty()) {
+        logger().info(
+            "\t[construction] {} edges out of the complex lie in protected cells: not marched",
+            blocked.size());
     }
 
     // sort edges (split longest first), should give better output mesh quality
@@ -2223,7 +2263,7 @@ void TopoOffsetTetMesh::marching_tets()
     for (const size_t& v_id : frontier_verts) {
         auto t_ids = get_one_ring_tids_for_vertex(v_id);
         for (const size_t& t_id : t_ids) {
-            if (m_tet_attribute[t_id].label == 0) {
+            if (m_tet_attribute[t_id].label == 0 && takes(t_id)) {
                 m_tet_attribute[t_id].label = 2;
                 // propagate to children
                 for (int i = 0; i < 4; i++) {
@@ -2255,23 +2295,10 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
         if (m_tet_attribute[t_id].label == 2) {
+            // A band cell is never a protected one (marching_tets()), so it has no tag to keep.
             CellTag new_tag;
-
-            // add existing protected tags
-            for (const int64_t& existing_tag : m_tet_attribute[t_id].tag) {
-                if (std::find(
-                        m_offset_params.protected_tags.begin(),
-                        m_offset_params.protected_tags.end(),
-                        m_tag_id_to_name[existing_tag]) != m_offset_params.protected_tags.end()) {
-                    new_tag.insert(existing_tag);
-                }
-            }
-
-            // add actual offset tags
             if (m_offset_output_tag_ids.size() == 0) {
-                if (new_tag.size() == 0) { // no protected tags, write ambient
-                    new_tag.insert(0);
-                }
+                new_tag.insert(0); // write ambient
             } else {
                 for (const int64_t& tag : m_offset_output_tag_ids) {
                     new_tag.insert(tag);

@@ -3151,9 +3151,9 @@ public:
      * next to the complex where the band takes tag_1's cells, or a face-tagged surface whose tag
      * gave way there -- kept its flag: a surface inside the band that bounds nothing, which the
      * operations would keep and the loop would hold where it was, every tracked face being held
-     * (face_is_held()). With protected_tags the band's cells keep the protected tag and its faces
-     * the protected face tag or sheet group, so such a boundary still separates two tag sets, or
-     * still carries its input, and stays tracked. A face of the input complex (label 1) is never
+     * (face_is_held()). A protected tet tag's cells are never the band's (marching_tets()); with a
+     * protected face tag or sheet group the band's faces keep it, so such a boundary still carries
+     * its input and stays tracked. A face of the input complex (label 1) is never
      * untracked, as set_offset_tet_tags() never clears one: with offset_output_tags naming the
      * selection's own tag the complex and the band carry one tag set, and the complex's boundary
      * stays tracked and held.

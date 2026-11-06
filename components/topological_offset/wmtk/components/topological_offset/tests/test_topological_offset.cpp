@@ -3289,9 +3289,8 @@ TEST_CASE("band-covered-region-boundaries", "[offset][3d][envelope]")
     // complex, so near the shared face tag_1's four side squares lie between two band cells
     // (COVERED), and farther out between two cells the band did not take (BEYOND). A covered face
     // bounds nothing once the band's cells carry its tags: untracked, so not held
-    // (untrack_covered_boundaries()). With tag_1 protected the band's cells keep tag_1, so the
-    // covered faces still separate two tag sets: tracked and held. Beyond, tracked and held either
-    // way.
+    // (untrack_covered_boundaries()). With tag_1 protected the band takes none of its cells
+    // (marching_tets()), so none of its faces is covered. Beyond, tracked and held either way.
     const GridInput g = grid_input(5);
     MatrixSi tags(g.Tm.rows(), 2);
     for (Eigen::Index t = 0; t < g.Tm.rows(); ++t) {
@@ -3336,14 +3335,14 @@ TEST_CASE("band-covered-region-boundaries", "[offset][3d][envelope]")
                 Eigen::Vector3d(0.5, -0.5, -0.5),
                 Eigen::Vector3d(1.5, 0.5, 0.5));
             for (const auto& f : s.covered) {
-                CHECK(tracked(f) == protect);
-                CHECK(held(f) == protect);
+                CHECK(!tracked(f));
+                CHECK(!held(f));
             }
             for (const auto& f : s.beyond) CHECK(held(f));
             n_covered += s.covered.size();
             n_beyond += s.beyond.size();
         }
-        REQUIRE(n_covered > 0);
+        CHECK((n_covered == 0) == protect);
         REQUIRE(n_beyond > 0);
         REQUIRE_NOTHROW(mesh->audit_surface_containment("construction"));
     }
