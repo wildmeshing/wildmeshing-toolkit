@@ -2172,6 +2172,62 @@ TEST_CASE(
         {{"m", tags_only(mesh)}, {"e", handed}});
     for (const auto& [name, data] : remeshed.first) REQUIRE_NOTHROW(data.validate());
 }
+TEST_CASE(
+    "The offset of a sheet hands on the boundary its band moves into a region, which the next "
+    "offset holds",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    // simwild -> topological_offset -> topological_offset. The sheet s is attached to the region a
+    // along one of a's edges, so s's band, nothing protected, takes a's cells there and moves a's
+    // boundary into a. The offset hands on each face of its band's boundary under the tags that
+    // differ across it, so a face between a and the band under a too; under the band's alone, the
+    // next offset found a's moved boundary outside a's envelope (118 faces in feature demo 4's
+    // cube, 2026-11-05).
+    WorkingDirectory cwd;
+    MatrixXd V(3, 3);
+    V << 1, 0, 0, 0, 1, 0, 1, 1, -0.5;
+    MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    const auto meshed = simwild::simwild(
+        {{"input", {"a", "s"}},
+         {"input_names", {"a", "s"}},
+         {"input_type", {"volume", "surface"}},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"a", tet_surface(0)}, {"s", io::geometry_data(V, F, CellType::Triangle)}});
+    check(meshed);
+    const double eps = meshed.second.at("eps");
+    const auto offset_of = [&](const std::string& selection, const MeshData& m, const MeshData& e) {
+        return topological_offset::topological_offset(
+            {{"input", "m"},
+             {"envelope", "e"},
+             {"envelope_size", eps * (1 + 1e-9)},
+             {"offset_selection", selection},
+             {"target_distance", 0.05},
+             {"offset_output_tags", {selection + "_band"}},
+             {"optimize_offset", false},
+             {"num_threads", 1}},
+            {{"m", tags_only(m)}, {"e", e}});
+    };
+    const auto offset = offset_of("s", meshed.first.at("mesh"), meshed.first.at("envelope"));
+    check(offset);
+    const MeshData& mesh = offset.first.at("mesh");
+    const MeshData& handed = offset.first.at("envelope");
+    // The faces between a and the band: on both regions' boundaries, no cell carrying both.
+    const auto a_boundary = unoriented(region_boundary(mesh, "a"));
+    const auto band_boundary = unoriented(region_boundary(mesh, "s_band"));
+    std::vector<std::vector<std::array<double, 3>>> between;
+    std::set_intersection(
+        a_boundary.begin(),
+        a_boundary.end(),
+        band_boundary.begin(),
+        band_boundary.end(),
+        std::back_inserter(between));
+    REQUIRE(!between.empty());
+    const auto held_a = unoriented(labelled_rows(handed, CellType::Triangle, "a"));
+    CHECK(std::includes(held_a.begin(), held_a.end(), between.begin(), between.end()));
+    REQUIRE_NOTHROW(check(offset_of("a", mesh, handed)));
+}
 #endif
 #if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_simwild)
 TEST_CASE(

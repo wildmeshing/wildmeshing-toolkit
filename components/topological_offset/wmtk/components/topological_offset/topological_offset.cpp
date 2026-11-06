@@ -41,29 +41,28 @@ void check_envelope_leash(const Parameters& params)
 }
 
 /// The band's boundary as rows to hand on with a reference: its triangles on vertices of their
-/// own, and the labels the output gives the band they bound (offset_output_tags).
+/// own, and per row the labels the output gives the regions it separates.
 struct OffsetRows
 {
     MatrixXd V = MatrixXd(0, 3);
     MatrixXi F = MatrixXi(0, 3);
-    std::vector<std::string> names;
+    std::vector<std::vector<std::string>> names;
 };
 
 /// The band's boundary -- every face between a band cell and a cell outside the band, the domain
-/// wall's excepted: the final offset surface and, where the band wraps a region, its interface
-/// with the input complex -- named by the band's tags as the output labels them
-/// (io::tag_labels()). The whole boundary, as every other label's envelope covers its region's: a
-/// face between the input complex and the band carries both labels and is held to both. With the
-/// offset surface alone, simwild found the faces between a region and its band outside the band's
-/// envelope (72 on a unit tet, 2026-11-05). None when no tag is the band's own.
+/// wall's excepted: the final offset surface and, where the band wraps a region or takes its
+/// cells, its interface with that region -- each named by the tet tags that differ across it as
+/// the output labels them (io::tag_labels()), the labels the next component holds it under
+/// (TopoOffsetTetMesh::assign_face_labels(), simwild's alike). The whole boundary, as every other
+/// label's envelope covers its region's. With the offset surface alone, simwild found the faces
+/// between a region and its band outside the band's envelope (72 on a unit tet, 2026-11-05); with
+/// the band's labels alone, the next offset found the boundary a band moves into a region it takes
+/// cells of outside that region's envelope (118, feature demo 4's cube, 2026-11-05).
 OffsetRows offset_rows(const TopoOffsetTetMesh& mesh)
 {
     OffsetRows out;
     const std::vector<std::string> labels =
         io::tag_labels(mesh.m_tag_id_to_name, mesh.m_tags_count);
-    for (const int64_t id : mesh.m_offset_output_tag_ids)
-        if (id > 0 && size_t(id) < labels.size()) out.names.push_back(labels[size_t(id)]);
-    if (out.names.empty()) return out;
     std::vector<int> row(mesh.vert_capacity(), -1);
     std::vector<Vector3d> V;
     std::vector<std::array<int, 3>> F;
@@ -72,6 +71,16 @@ OffsetRows offset_rows(const TopoOffsetTetMesh& mesh)
         if (!opp ||
             mesh.cell_is_offset_band(f.tid(mesh)) == mesh.cell_is_offset_band(opp->tid(mesh)))
             continue;
+        const auto& a = mesh.m_tet_attribute[f.tid(mesh)].tag;
+        const auto& b = mesh.m_tet_attribute[opp->tid(mesh)].tag;
+        std::vector<std::string> names;
+        for (const auto& [x, y] : {std::pair(&a, &b), std::pair(&b, &a)}) {
+            for (const int64_t t : *x)
+                if (t > 0 && !y->count(t) && size_t(t) < labels.size())
+                    names.push_back(labels[size_t(t)]); // ambient carries no label
+        }
+        if (names.empty()) continue;
+        out.names.push_back(std::move(names));
         std::array<int, 3> r;
         const auto vs = mesh.get_face_vids(f);
         for (int k = 0; k < 3; ++k) {
@@ -93,7 +102,7 @@ OffsetRows offset_rows(const TopoOffsetTetMesh& mesh)
 }
 
 /// `reference`, a labelled reference as given, with `offset`'s triangles added to its triangle
-/// block, each labelled by every name of offset.names, its own rows keeping theirs: built anew
+/// block, each labelled by its names in offset.names, its own rows keeping theirs: built anew
 /// with the io helpers the producers build theirs with (io::append_envelope_block(),
 /// io::append_envelope_points()), each block on vertices of its own.
 MeshData with_offset_surface(const MeshData& reference, const OffsetRows& offset)
@@ -141,19 +150,22 @@ MeshData with_offset_surface(const MeshData& reference, const OffsetRows& offset
         return b;
     };
     Block tri = block(CellType::Triangle);
-    InputSet own = 0;
-    for (const std::string& name : offset.names) {
-        auto k = std::find(tri.names.begin(), tri.names.end(), name);
-        if (k == tri.names.end()) k = tri.names.insert(tri.names.end(), name);
-        const size_t j = size_t(k - tri.names.begin());
-        if (j < size_t(SurfaceTagAttributes::max_inputs)) own |= InputSet(1) << j;
+    tri.sets.resize(size_t(tri.C.rows()), 0);
+    for (const auto& names : offset.names) {
+        InputSet set = 0;
+        for (const std::string& name : names) {
+            auto k = std::find(tri.names.begin(), tri.names.end(), name);
+            if (k == tri.names.end()) k = tri.names.insert(tri.names.end(), name);
+            const size_t j = size_t(k - tri.names.begin());
+            if (j < size_t(SurfaceTagAttributes::max_inputs)) set |= InputSet(1) << j;
+        }
+        tri.sets.push_back(set);
     }
     const Eigen::Index nv = tri.V.rows(), nf = tri.C.rows();
     tri.V.conservativeResize(nv + offset.V.rows(), 3);
     tri.V.bottomRows(offset.V.rows()) = offset.V;
     tri.C.conservativeResize(nf + offset.F.rows(), 3);
     tri.C.bottomRows(offset.F.rows()) = (offset.F.array() + int(nv)).matrix();
-    tri.sets.resize(size_t(tri.C.rows()), own);
     MeshData out;
     io::append_envelope_block(
         out,
@@ -275,11 +287,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     InputData input_data = component_io.memory()
                                ? read_mesh_data(component_io.mesh(input_path), envelope)
                                : read_image_msh(input_path, envelope);
-    // After the output: a labelled reference goes on with `offset`, the band's boundary under the
-    // band's labels, added (with_offset_surface()), so that a chain keeps passing the first
-    // component's input -- the offset surface is new, so it is its own reference, and the band's
-    // interface with the input complex is held to the complex's labels too; unchanged where there
-    // is none (2D, an empty input complex). On the file route as <output>_envelope.msh.
+    // After the output: a labelled reference goes on with `offset`, the band's boundary, each face
+    // under the labels of the regions it separates, added (with_offset_surface()), so that a chain
+    // keeps passing the first component's input -- the band's boundary is new, so it is its own
+    // reference, a region's whose cells the band took included; unchanged where there is none
+    // (2D, an empty input complex). On the file route as <output>_envelope.msh.
     const auto hand_on_envelope = [&](const OffsetRows& offset = OffsetRows()) {
         auto& outputs = component_io.result.first;
         if (input_data.envelope_reference) {
