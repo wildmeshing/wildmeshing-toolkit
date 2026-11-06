@@ -73,7 +73,7 @@ class Tracking:
         """
 class CurveTracking:
     """
-    The map between a curve application's input curves and its output's (triwild), both ways, built from the history it recorded: the bytes of report['history'], or CurveTracking.load(path). Points on the input are named by segments of the input curve files -- the segments of all of them, in order, a polyline's consecutive vertex pairs -- and points on the output by the two vertices of a tracked edge of the output mesh (output_by_vertices). Mapping never changes the object.
+    The map between a curve application's input curves and its output's (triwild, and tetwild's and simwild's feature curves), both ways, built from the history it recorded: the bytes of report['history'] (tetwild's and simwild's report['curve_history']), or CurveTracking.load(path). Points on the input are named by segments of the input curve files -- the segments of all of them, in order, a polyline's consecutive vertex pairs -- and points on the output by the two vertices of a tracked edge of the output mesh (output_by_vertices). Mapping never changes the object.
     """
     @staticmethod
     def load(path: os.PathLike | str | bytes, smoothing: str = 'flatten') -> CurveTracking:
@@ -326,7 +326,7 @@ def qslim(options: dict) -> None:
     """
 def read_history(path: os.PathLike | str | bytes) -> bytes:
     """
-    Read a history file (a component's history_output, of a surface or of curves, or its volume_history_output) as the bytes a memory call returns in its report's 'history' ('volume_history') and takes as 'history' ('volume_history').
+    Read a history file (a component's history_output, of a surface or of curves, or its volume_history_output or curve_history_output) as the bytes a memory call returns in its report's 'history' ('volume_history', 'curve_history') and takes as 'history' ('volume_history').
     """
 def read_mesh(path: os.PathLike | str | bytes) -> dict:
     """
@@ -413,6 +413,7 @@ def simwild(options: dict, meshes: dict) -> tuple:
       report (string, default ""): A JSON file that stores information about the result and the method execution, e.g., runtime.
       history_output (string, default ""): 3D only: a 2D run refuses it.
       volume_history_output (string, default ""): 3D only, with history_output.
+      curve_history_output (string, default ""): 3D surface inputs only: a .msh input, a tagged mesh and a 2D input refuse it.
       DEBUG_output (bool, default false): Write the mesh as debug_{}.vtu after every operation.
       DEBUG_sanity_checks (bool, default false): Perform sanity checks after every operation.
       allow_surface_swap (bool, default true): Allow surface edge swapping.
@@ -516,6 +517,7 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       report (string, default ""): A JSON file that stores information about the result and the method execution, e.g., runtime.
       history_output (string, default ""): Record every change to the tracked surface, from the input as inserted to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it.
       volume_history_output (string, default ""): With history_output.
+      curve_history_output (string, default ""): Record every change to the feature curves -- the tet edges tiling the curve inputs, with the feature points: their ends and junctions, and the point inputs -- from the inputs as read to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it, as from triwild's history_output.
       DEBUG_output (bool, default false): Write the mesh as debug_{}.vtu after every operation.
       DEBUG_sanity_checks (bool, default false): Perform sanity checks after every operation.
       DEBUG_hausdorff (bool, default false): Sanity Check: Compute and report the Hausdorff distance of the output to the input.
@@ -670,7 +672,7 @@ def tracking(options: dict, meshes: dict) -> tuple:
     
     Options (every one, with its full description: https://wildmeshing.github.io/wildmeshing-toolkit/reference/tracking/):
       application (string, required): Application name must be tracking.
-      history (string, required): A history, recorded by an application's history_output, from which the map is rebuilt: a surface's (isotropic_remeshing, qslim, shortest_edge_collapse, tetwild, simwild) or curves' (triwild); the history says which.
+      history (string, required): A history, recorded by an application's history_output, from which the map is rebuilt: a surface's (isotropic_remeshing, qslim, shortest_edge_collapse, tetwild, simwild) or curves' (triwild; tetwild's and simwild's curve_history_output); the history says which.
       input (string, default ""): transfer: the surface the history starts from -- the same triangles in the same order: a gmsh file, as io::read_mesh (wm.read_mesh) reads it, whose triangle fields are carried onto the output -- per face (labels), or per corner (uv and normal, three values per corner, corner after corner: texture coordinates) -- or a triangle mesh of another format, as read, with none.
       output (string, default "out.msh"): transfer: the output surface, written as a gmsh file through io::write_mesh, the carried fields as attributes of its triangles: what wm.read_mesh reads.
       output_obj (string, default ""): transfer: also write the output as a textured Wavefront OBJ, with uv_field as its texture coordinates and a material mapping `texture`.
@@ -786,7 +788,7 @@ def wildmeshing(options: dict, meshes: dict) -> tuple:
     """
 def write_history(path: os.PathLike | str | bytes, history: bytes) -> None:
     """
-    Save the bytes of a history (a memory call's report['history'], or report['volume_history']) as the file the file route writes.
+    Save the bytes of a history (a memory call's report['history'], report['volume_history'] or report['curve_history']) as the file the file route writes.
     """
 def write_mesh(path: os.PathLike | str | bytes, mesh: dict) -> None:
     """

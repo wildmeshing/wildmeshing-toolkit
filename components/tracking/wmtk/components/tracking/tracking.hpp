@@ -158,15 +158,15 @@ struct InputCurvePoint
  * @brief A point on an application's output curves.
  *
  * An application whose output is the curves themselves would name it by a segment of its output
- * file. One whose tracked curves are edges of a triangle mesh (triwild), which are no element of
- * the file, names it by two vertices of the mesh -- the ends of a tracked edge -- and barycentric
- * coordinates in their order.
+ * file. One whose tracked curves are edges of a triangle mesh (triwild) or of a tet mesh (tetwild's
+ * and simwild's feature curves), which are no element of the file, names it by two vertices of the
+ * mesh -- the ends of a tracked edge -- and barycentric coordinates in their order.
  */
 struct OutputCurvePoint
 {
     /// Curve outputs: the output segment.
     uint64_t segment = kNoId;
-    /// Triangle mesh outputs: the output's vertices at the ends of the tracked edge holding it.
+    /// Mesh outputs: the output's vertices at the ends of the tracked edge holding it.
     std::array<uint64_t, 2> vertices = {{kNoId, kNoId}};
     Eigen::Vector2d bary = Eigen::Vector2d::Constant(0.5);
 };
@@ -182,8 +182,9 @@ struct FeaturePoint
 
 /**
  * @brief The map between a curve application's input curves and its output's, read from the
- * tracking file the application wrote (its history_output option), in the terms its files use:
- * Tracking's counterpart for curves (triwild).
+ * tracking file the application wrote (its history_output option; tetwild's and simwild's
+ * curve_history_output), in the terms its files use: Tracking's counterpart for curves (triwild,
+ * and tetwild's and simwild's feature curves).
  *
  * Built from the history alone; see CurveMap for how. A point that cannot be mapped comes back
  * with no segment and no vertices (kNoId), and the warnings of the call count it. Mapping never

@@ -303,6 +303,12 @@ ends at `mesh`). `read_history` and `write_history` take a volume history by its
 take the others; `history::VolumeHistory::from_bytes` loads it and `history::is_volume_history`
 says that bytes are one.
 
+tetwild and simwild in 3D record the history of their feature curves (their curve inputs,
+with the point inputs) with `curve_history_output`, a curve history in a file of its own, with or
+without `history_output`. The memory route returns it the same way, as `curve_history` in the
+report, the bytes of its file, and writes no file; `history::CurveHistory::from_bytes` loads it,
+as triwild's `history`.
+
 `tracking` takes the bytes as `history` on the memory route, where a string is refused, as
 every memory call refuses to take a name for a file. `info` returns its report, of a surface or
 of a curve history. `features`, on a curve history, returns its feature points in the report:

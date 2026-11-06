@@ -89,6 +89,20 @@ def curves(n=60, m=30):
     return {"circle": circle, "wave": wave}
 
 
+def cube_and_curves():
+    """The cube [0,1]^3, a bent chain of four segments inside it, and two vertices with no edge
+    -- feature points by the edge-file rule -- for tetwild's and simwild's feature curves."""
+    V = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1],
+                  [0, 1, 1]], dtype=np.float64)
+    F = np.array([[0, 3, 2], [0, 2, 1], [4, 5, 6], [4, 6, 7], [0, 1, 5], [0, 5, 4], [3, 7, 6],
+                  [3, 6, 2], [0, 4, 7], [0, 7, 3], [1, 2, 6], [1, 6, 5]], dtype=np.int64)
+    C = np.array([[0.2, 0.5, 0.5], [0.35, 0.5, 0.5], [0.5, 0.5, 0.5], [0.65, 0.65, 0.5],
+                  [0.8, 0.8, 0.5], [0.3, 0.3, 0.7], [0.5, 0.2, 0.3]], dtype=np.float64)
+    E = np.array([[0, 1], [1, 2], [2, 3], [3, 4]], dtype=np.int64)
+    return {"cube": {"V": V, "cells": {"triangle": {"connectivity": F}}},
+            "curves": {"V": C, "cells": {"edge": {"connectivity": E}}}}
+
+
 REMESH = {"length_rel": 0.2, "max_iterations": 2, "num_threads": 1}
 # A small tetwild run with a volume history: about a second.
 VOLUME = {"max_iterations": 3, "num_threads": 4, "write_vtu": False, "history_output": "x",
@@ -160,6 +174,42 @@ class Tracking(unittest.TestCase):
         self.assertEqual([p.name for p in Path.cwd().iterdir()], ["curves.wmtkhist"])
         with self.assertRaisesRegex(RuntimeError, "only info, transfer, features and volume"):
             getattr(wm, TRACKING)({"history": history, "operation": "map"}, {})
+
+    def test_tetwild_and_simwild_return_a_curve_history(self):
+        # The feature curves' own history (curve_history_output): a curve history, version 7,
+        # two corners a face, in the report as curve_history, beside no surface history, and in
+        # no file. It ends at the output's feature curves, the edge block of its mesh; under
+        # preserve_topology the map is a bijection, the chain's two ends and the two points each
+        # at an output vertex.
+        for app in (wm.tetwild, wm.simwild):
+            with self.subTest(app=app.__name__):
+                outputs, report = app(
+                    {"input": ["cube", "curves"], "preserve_topology": True,
+                     "max_iterations": 3, "num_threads": 1, "curve_history_output": "x"},
+                    cube_and_curves())
+                self.assertNotIn("history", report)
+                history = report["curve_history"]
+                self.assertEqual(history[:13], b"WMTKHIST\x07\x00\x00\x00\x02")
+                self.assertEqual(list(Path.cwd().iterdir()), [])
+                _, info = getattr(wm, TRACKING)({"history": history, "operation": "info"}, {})
+                self.assertEqual(info["build_warnings"]["total"], 0)
+                self.assertEqual(info["feature_points"], 4)
+                self.assertEqual(info["feature_points_at_output_vertex"], 4)
+                self.assertEqual(info["round_trip_lost"], 0)
+                self.assertLess(info["round_trip_max_displacement"], 1e-8)
+                t = wm.CurveTracking(history)
+                self.assertTrue(t.output_by_vertices)
+                self.assertEqual(t.input_segments.shape, (4, 2))
+                block = outputs["mesh"]["cells"]["edge"]["connectivity"]
+                self.assertEqual({tuple(sorted(e)) for e in t.output_segments.tolist()},
+                                 {tuple(sorted(e)) for e in block.tolist()})
+                rng, n = np.random.default_rng(5), 300
+                ids = rng.integers(0, len(t.input_segments), n)
+                bary = random_bary(rng, n, 2)
+                out_ids, out_bary = t.to_output(ids, bary)
+                back_ids, back_bary = t.to_input(out_ids, out_bary)
+                np.testing.assert_array_equal(back_ids, ids)
+                np.testing.assert_allclose(back_bary, bary, atol=1e-8)
 
     def test_write_and_read_history(self):
         _, report = wm.isotropic_remeshing(
