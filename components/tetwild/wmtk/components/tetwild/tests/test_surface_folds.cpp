@@ -83,7 +83,7 @@ void build_block(TetWildMesh& mesh)
             auto& fa = mesh.m_face_attribute[fid];
             fa.m_is_surface_fs = true;
             const Vector3d n = (pos(f[1]) - pos(f[0])).cross(pos(f[2]) - pos(f[0]));
-            fa.set_orientation_along(f, n.z() > 0 ? 1 : -1);
+            fa.set_orientation_along(InputSet(1), f, n.z() > 0 ? 1 : -1);
         }
     }
 }

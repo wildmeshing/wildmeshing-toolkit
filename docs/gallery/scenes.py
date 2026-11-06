@@ -105,5 +105,5 @@ def workflow_tetwild_features(data):
     # The curves alone: inside the cube, its surface would hide them.
     shown_input = inputs["curves"]
     tets = {"V": v["mesh"]["V"], "cells": {"tetrahedron": v["mesh"]["cells"]["tetrahedron"]}}
-    shown_output = merge(tets, {"V": v["features"]["V"], "cells": {"edge": v["features"]["cells"]["edge"]}})
+    shown_output = merge(tets, {"V": v["mesh"]["V"], "cells": {"edge": v["mesh"]["cells"]["edge"]}})
     return {"input": shown_input, "output": shown_output}, v["report"]

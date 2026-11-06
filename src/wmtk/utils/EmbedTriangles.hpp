@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/Types.hpp>
 
 #include <array>
@@ -58,6 +59,15 @@ struct EmbedTrianglesProvenance
     /// Per facet (indexing `polygon_faces`): the input triangles it lies in, exactly -- every one,
     /// where input triangles overlap; none for a facet off the input.
     std::vector<std::vector<uint32_t>> face_triangles;
+    /// Set, with `tet_face_orientation` and EmbedTrianglesOptions::triangle_input, to have
+    /// face_input_orientation filled.
+    bool want_input_orientation = false;
+    /// Per facet (indexing `polygon_faces`): each input's orientation on it, against the facet's
+    /// ascending vertex order -- as `tet_face_orientation`'s, with every coplanar group split by
+    /// input, so that inputs coinciding in one group count once each rather than once together,
+    /// and made consistent patch by patch within each input. For a mesh built with
+    /// WMTK_PER_INPUT_ORIENTATION (SurfaceTagAttributes::m_input_orientation).
+    std::vector<InputOrientations> face_input_orientation;
 };
 
 /**

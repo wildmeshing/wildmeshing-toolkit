@@ -1,4 +1,7 @@
 #pragma once
+#include <cctype>
+#include <filesystem>
+#include <fstream>
 #include <optional>
 #include <set>
 #include <wmtk/MeshData.hpp>
@@ -141,6 +144,44 @@ public:
     {
         if (dropped.empty()) return;
         logger().info("{}: fields not read, dropped: {}", what, fmt::join(dropped, ", "));
+    }
+    /// What an entry of an `input` list is (tetwild, triwild and simwild), read off the input
+    /// itself: triangles make a surface, segments a curve, bare vertices points. On the memory
+    /// route by the mesh's blocks -- triangles, else edges, else points (a point block, or the
+    /// vertices alone); on the file route an OBJ by its records -- an `f`, else an `l`, else
+    /// points -- and any other format a surface, which read_triangle_mesh() reads. Until 2026-11
+    /// curves and points came in lists of their own, input_edges and input_points.
+    enum class InputKind { surface, curve, points };
+    InputKind input_kind(const std::string& name) const
+    {
+        if (memory()) {
+            const auto& data = mesh(name);
+            const auto has = [&](const CellType type) {
+                const auto it = data.cells.find(type);
+                return it != data.cells.end() && it->second.connectivity.rows() > 0;
+            };
+            if (has(CellType::Triangle)) return InputKind::surface;
+            if (has(CellType::Edge)) return InputKind::curve;
+            return InputKind::points;
+        }
+        return file_input_kind(name);
+    }
+    /// input_kind() of a file.
+    static InputKind file_input_kind(const std::string& name)
+    {
+        std::string extension = std::filesystem::path(name).extension().string();
+        for (char& c : extension) c = char(std::tolower(static_cast<unsigned char>(c)));
+        if (extension != ".obj") return InputKind::surface;
+        std::ifstream in(name);
+        if (!in) log_and_throw_error("Could not open input file {}", name);
+        bool has_l = false;
+        std::string line;
+        while (std::getline(in, line)) {
+            if (line.size() < 2 || (line[1] != ' ' && line[1] != '\t')) continue;
+            if (line[0] == 'f') return InputKind::surface;
+            if (line[0] == 'l') has_l = true;
+        }
+        return has_l ? InputKind::curve : InputKind::points;
     }
     std::string path(const std::filesystem::path& root, const nlohmann::json& selector) const
     {

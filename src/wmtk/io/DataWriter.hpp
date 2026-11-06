@@ -166,19 +166,25 @@ void compact_slot_outputs(const Mesh& mesh, MeshMap& outputs)
 }
 // The result key of each memory export. The exporters keep their legacy file naming,
 // <stem><suffix>.vtu, and the memory calls use the stem "mesh". An empty key drops an export
-// that the caller returns in another form. The .msh among them are the meshes a history names
-// its points by: <output>_history_input.msh, simwild's and tetwild's, where the surface history
-// (and the volume history) starts, and tetwild's <output>_history_output.msh, the mesh before
-// its filter, where the volume history ends.
+// that the caller returns in another form or that the mesh already holds: the boundary
+// (`_surf`), the non-manifold or feature edges (`_edge`) and the offset's front (`_off`,
+// `_front`) are the mesh's tags -- its face and edge blocks, and the tet (2D: triangle) tags
+// that differ across a face -- and each was a second copy of the mesh's vertices. Until 2026-11
+// they were returned as `surface`, `edges` and `offset`; isotropic_remeshing, whose mesh has no
+// edge block, still returns its feature edges as `edges`, and prismatic_mesh its classified
+// offset faces as `offset`. The .msh among them are the meshes a history names its points by:
+// <output>_history_input.msh, simwild's and tetwild's, where the surface history (and the volume
+// history) starts, and tetwild's <output>_history_output.msh, the mesh before its filter, where
+// the volume history ends.
 using OutputKeys = std::map<std::string, std::string>;
 inline OutputKeys default_output_keys()
 {
     return {
         {"mesh.vtu", "mesh"},
-        {"mesh_surf.vtu", "surface"},
-        {"mesh_edge.vtu", "edges"},
-        {"mesh_off.vtu", "offset"},
-        {"mesh_front.vtu", "offset"},
+        {"mesh_surf.vtu", ""},
+        {"mesh_edge.vtu", ""},
+        {"mesh_off.vtu", ""},
+        {"mesh_front.vtu", ""},
         {"mesh_offset_faces.vtu", "offset"},
         {"mesh_history_input.msh", "history_input"},
         {"mesh_history_output.msh", "history_output"}};

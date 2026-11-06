@@ -50,7 +50,8 @@ void TriWildMesh::init_mesh(
     const std::vector<int>* E_orientation,
     const std::vector<size_t>& free_point_vids,
     const std::vector<int>* E_env_input,
-    const std::vector<InputSet>* E_input_set)
+    const std::vector<InputSet>* E_input_set,
+    const std::vector<InputOrientations>* E_input_orientation)
 {
     assert(V.cols() == 2);
     assert(F.cols() == 3);
@@ -184,10 +185,16 @@ void TriWildMesh::init_mesh(
             log_and_throw_error("Edge {} in E is not found in the mesh!", vids);
         }
         m_edge_attribute[eid].m_is_surface_fs = true;
-        m_edge_attribute[eid].set_input_set(E_input_set != nullptr ? (*E_input_set)[i] : 1);
-        if (E_orientation != nullptr) {
-            m_edge_attribute[eid].set_orientation_along(vids, (*E_orientation)[i]);
-        }
+        auto& attr = m_edge_attribute[eid];
+        attr.set_input_set(E_input_set != nullptr ? (*E_input_set)[i] : 1);
+        if (E_orientation != nullptr)
+            attr.set_orientation_along(attr.input_set(), vids, (*E_orientation)[i]);
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        if (E_input_orientation != nullptr)
+            attr.set_input_orientations_along(vids, (*E_input_orientation)[i]);
+#else
+        (void)E_input_orientation;
+#endif
         m_vertex_attribute[vids[0]].m_is_on_surface = true;
         m_vertex_attribute[vids[1]].m_is_on_surface = true;
     }
@@ -488,13 +495,15 @@ void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
     }
     // With filter_inputs, the tracked edges of those inputs only, oriented as
     // oriented_tracked_edges() orients them; all of them otherwise, by the code that ran before
-    // the key. An edge's orientation is one count for all its inputs, not one per input: on an
-    // edge where a kept input coincides with another the kept inputs' own is not known, and it
-    // is refused there rather than guessed, as in 3D.
+    // the key, each as often as the kept inputs' count on it. Without WMTK_PER_INPUT_ORIENTATION
+    // an edge's orientation is one count for all its inputs, not one per input: on an edge where
+    // a kept input coincides with another the kept inputs' own is not known, and it is refused
+    // there rather than guessed, as in 3D; with the option each input has its own.
     std::vector<std::array<size_t, 2>> oriented;
     if (bounding == ~InputSet(0)) {
         oriented = oriented_tracked_edges();
     } else {
+#ifndef WMTK_PER_INPUT_ORIENTATION
         size_t n_shared = 0;
         for (const Tuple& e : get_edges()) {
             const auto& attr = m_edge_attribute[e.eid(*this)];
@@ -511,14 +520,16 @@ void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
                 "without orientation for inputs that do not overlap themselves",
                 n_shared);
         }
+#endif
         for (const Tuple& e : get_edges()) {
             const auto& attr = m_edge_attribute[e.eid(*this)];
-            if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+            const int o = attr.orientation_of(bounding);
+            if (!attr.m_is_surface_fs || o == 0) continue;
             if ((attr.input_set() & bounding) == 0) continue;
             size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
             if (a > b) std::swap(a, b);
-            if (attr.m_orientation < 0) std::swap(a, b);
-            for (int k = 0; k < std::abs(attr.m_orientation); ++k) oriented.push_back({{a, b}});
+            if (o < 0) std::swap(a, b);
+            for (int k = 0; k < std::abs(o); ++k) oriented.push_back({{a, b}});
         }
     }
     MatrixXi E(oriented.size(), 2);

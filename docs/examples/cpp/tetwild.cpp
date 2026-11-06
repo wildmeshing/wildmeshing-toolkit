@@ -23,10 +23,10 @@ int main()
          {"num_threads", 4}},
         meshes);
     const wmtk::MeshData& mesh = outputs.at("mesh");
-    const wmtk::MeshData& surface = outputs.at("surface");
+    // The tracked surface: the mesh's triangle block, its face tags.
     std::cout << mesh.V.rows() << " vertices, "
               << mesh.cell(wmtk::CellType::Tetrahedron).connectivity.rows() << " tets, "
-              << surface.cell(wmtk::CellType::Triangle).connectivity.rows()
+              << mesh.cell(wmtk::CellType::Triangle).connectivity.rows()
               << " surface triangles, max energy " << report["max_energy"].get<double>() << "\n";
     wmtk::io::write_mesh("snowman.msh", mesh);
     // --8<-- [end:run]

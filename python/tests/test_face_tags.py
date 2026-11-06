@@ -330,24 +330,27 @@ def test_close_regions_keep_their_own_borders_2d(tmp_path, gap):
 
 @pytest.mark.parametrize("iterations", [0, 80])
 def test_input_point_is_kept_2d(tmp_path, iterations):
-    """An input point inside a square region is inserted as a vertex and anchored: some output
-    vertex stays within eps of it (feature_envelope_ratio 1)."""
+    """An input point inside a square region, a point input of the one input list, is inserted as
+    a vertex and anchored: some output vertex stays within eps of it (feature_envelope_ratio
+    1)."""
     point = np.array([0.3, 0.6])
     inputs = {"sq": write_obj(tmp_path / "sq.obj", [SQUARE_2D]),
               "pt": {"V": np.array([[point[0], point[1], 0.0]]),
                      "cells": {"point": {"connectivity": np.array([[0]], np.int64)}}}}
-    m = wm.simwild({"input": ["sq"], "input_points": ["pt"], "dimension": "2",
+    m = wm.simwild({"input": ["sq", "pt"], "dimension": "2",
                     "simplify": False, "eps_rel": EPS_REL, "max_iterations": iterations},
                    inputs)[0]["mesh"]
     V = np.asarray(m["V"])[:, :2]
     assert np.linalg.norm(V - point, axis=1).min() <= EPS_2D
 
 
-def test_input_edges_are_refused_in_2d(tmp_path):
+def test_input_edges_and_input_points_are_gone(tmp_path):
+    """Curves and points are entries of `input`; the lists of their own are unknown keys."""
     inputs = {"sq": write_obj(tmp_path / "sq.obj", [SQUARE_2D]),
               "path": write_obj(tmp_path / "path.obj", [PATH_2D])}
-    with pytest.raises(Exception, match="input_edges apply to 3D surface inputs only"):
-        wm.simwild({"input": ["sq"], "input_edges": ["path"], "dimension": "2"}, inputs)
+    for key in ("input_edges", "input_points"):
+        with pytest.raises(Exception):
+            wm.simwild({"input": ["sq"], key: ["path"], "dimension": "2"}, inputs)
 
 
 def normals(V, F):

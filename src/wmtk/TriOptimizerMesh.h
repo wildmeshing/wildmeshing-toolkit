@@ -235,6 +235,18 @@ public:
      */
     /// Set by the application before init, with the envelopes built around the reference.
     bool m_has_reference = false;
+    /// The reference's input points, each with the labels of this mesh's input points it carries
+    /// (bit j: m_point_names[j]): the 2D twin of TetOptimizerMesh::ReferencePoints, which says
+    /// what anchor_feature_points() does with them. Set by the application before init, by
+    /// set_reference_points().
+    struct ReferencePoints
+    {
+        std::vector<Vector2d> V;
+        std::vector<InputSet> labels;
+    };
+    std::optional<ReferencePoints> m_reference_points;
+    /// Set m_reference_points from the reference's points `P` (rows, x y) and their labels.
+    void set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels);
     /// The label of bit `bit` of an edge's input set, as the output names it; the application's,
     /// for the reference checks to name a label by.
     virtual std::string label_name(size_t bit) const;
@@ -329,6 +341,11 @@ public:
      * gate was the real cause.
      */
     std::vector<double> m_feature_point_radius;
+    /// The input points' labels: the 2D twin of TetOptimizerMesh::m_point_names,
+    /// m_input_point_labels and m_feature_point_inputs.
+    std::vector<std::string> m_point_names;
+    std::vector<int> m_input_point_labels;
+    std::vector<InputSet> m_feature_point_inputs;
     /// Whether the shared operations maintain and enforce the anchors
     /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
@@ -432,12 +449,16 @@ public:
      * of anchors made.
      *
      * With m_input_curve_points set, an order-2 vertex is anchored only if one of the input's
-     * own curve points lies in its ball, and the ball is centred on the nearest one.
+     * own curve points lies in its ball, and the ball is centred on the nearest one. With
+     * m_reference_points set, an input point's ball is centred on the nearest of the reference's
+     * points of its label in it, and a point with none throws, as in 3D.
      */
     size_t anchor_feature_points(
         const std::vector<size_t>& input_point_vids,
         double order2_radius,
         double feature_radius);
+    /// The 2D twin of TetOptimizerMesh::label_feature_points().
+    void label_feature_points(const std::vector<size_t>& input_point_vids);
 
     /// True iff collapsing v1 into v2 would drop or displace a feature point. False when
     /// tracking is off.
@@ -1008,7 +1029,7 @@ protected:
         std::vector<std::pair<std::array<size_t, 2>, EdgeAttributes>> surface_edges;
         /// Oriented edges (v1,y) the collapse renames in place to (v2,y), as {v2,y} with the
         /// orientation measured along that order -- see the 3D counterpart.
-        std::vector<std::pair<std::array<size_t, 2>, int>> renamed_orientations;
+        std::vector<std::pair<std::array<size_t, 2>, EdgeAttributes>> renamed_orientations;
         std::vector<size_t> changed_fids;
         std::vector<double> changed_energies;
         /// Coarsening pass only: the worst relative quality in the region the composite may

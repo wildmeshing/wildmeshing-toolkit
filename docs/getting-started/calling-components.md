@@ -21,7 +21,7 @@ differ (it groups cells by region). The full specification is in the
     `wm.<component>(options)` works on files and returns nothing;
     `wm.<component>(options, meshes)` works in memory and returns `(outputs, report)`.
     `outputs["mesh"]` is the result; some components return more meshes (TetWild also returns
-    `surface`, its tracked surface, and `envelope`). The component releases the Python GIL while
+    `envelope`, the input its tags were held to). The component releases the Python GIL while
     it runs; calls run one at a time per process.
 
 === "C++"

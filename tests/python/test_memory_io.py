@@ -271,7 +271,8 @@ class MemoryIO(unittest.TestCase):
         outputs, _ = self.run_memory("manifold_extraction", dict(input="tagged", tag_selection="tag_0",
                                                                num_threads=1),
                                      {"tagged": tagged(triangle(), "triangle")})
-        self.assertIn("surface", outputs)
+        # The mesh alone: the extracted boundary is its tags' boundary, not an output.
+        self.assertEqual(set(outputs), {"mesh"})
 
     def test_prismatic_exact_int64(self):
         mesh = tetrahedron()

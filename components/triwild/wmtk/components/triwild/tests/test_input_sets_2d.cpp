@@ -270,8 +270,8 @@ TEST_CASE("input-sets-2d-two-inputs-nothing-simplified", "[triwild][input_sets]"
              {"length_rel", 0.1},
              {"max_iterations", 3}},
             meshes);
-        // The crossing cuts both segments in two.
-        CHECK(r.first.at("surface").cell(CellType::Edge).connectivity.rows() >= 4);
+        // The crossing cuts both segments in two: the tracked curves, the mesh's edge block.
+        CHECK(r.first.at("mesh").cell(CellType::Edge).connectivity.rows() >= 4);
     }
 }
 
@@ -336,11 +336,11 @@ TEST_CASE("triwild-filter-keeps-tracked-edges", "[triwild][input_sets]" + releas
              {"num_threads", 1}},
             curves);
     };
-    // The edges the unfiltered run tracks, by their ends' positions.
+    // The edges the unfiltered run tracks, by their ends' positions: the mesh's edge block.
     std::set<Edge> tracked;
     {
         const auto r = run("none");
-        const MeshData& s = r.first.at("surface");
+        const MeshData& s = r.first.at("mesh");
         const auto& E = s.cell(CellType::Edge).connectivity;
         for (Eigen::Index i = 0; i < E.rows(); ++i) tracked.insert(edge_of(s, E(i, 0), E(i, 1)));
     }
@@ -357,9 +357,8 @@ TEST_CASE("triwild-filter-keeps-tracked-edges", "[triwild][input_sets]" + releas
                 if (tracked.count(e)) expected.insert(e);
             }
         }
-        const MeshData& s = r.first.at("surface");
-        const auto& E = s.cell(CellType::Edge).connectivity;
-        for (Eigen::Index i = 0; i < E.rows(); ++i) got.insert(edge_of(s, E(i, 0), E(i, 1)));
+        const auto& E = mesh.cell(CellType::Edge).connectivity;
+        for (Eigen::Index i = 0; i < E.rows(); ++i) got.insert(edge_of(mesh, E(i, 0), E(i, 1)));
         CHECK(!expected.empty());
         CHECK(expected.size() < tracked.size());
         CHECK(got == expected);

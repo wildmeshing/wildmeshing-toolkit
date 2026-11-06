@@ -803,10 +803,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 io::triangle_data(m, [&](size_t v) { return m.vertex_attrs[v].pos; });
         } else {
             // What the file route's .vtu output holds: the mesh with vertex_id and the per-face
-            // fields, and its feature edges on the same vertex rows, with edge_id.
+            // fields, and its feature edges on the same vertex rows, with edge_id, as `edges`:
+            // a triangle mesh holds no edge block, and they are the next call's `features`.
             MeshMap raw;
             write_vtu(m, "mesh.vtu", fields, &raw);
-            component_io.result.first = io::named_outputs(std::move(raw));
+            auto keys = io::default_output_keys();
+            keys["mesh_edge.vtu"] = "edges";
+            component_io.result.first = io::named_outputs(std::move(raw), keys);
         }
     }
 }

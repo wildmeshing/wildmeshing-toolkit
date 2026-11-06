@@ -138,6 +138,60 @@ jobs:
           limit-access-to-actor: true
         timeout-minutes: 30
 
+  # The Linux Release job built with WMTK_PER_INPUT_ORIENTATION (one orientation count per input on
+  # every tracked face, SurfaceTagAttributes::m_input_orientation), running the suites that touch
+  # the orientation: the option changes the face record, every operation that carries it, the
+  # insertion and the tagged-mesh IO, and no other job builds it.
+  LinuxPerInputOrientation:
+    name: Linux per-input orientation (Release)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 10
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -o Acquire::Retries=3 install ccache
+          echo 'CACHE_PATH=~/.cache/ccache' >> "$GITHUB_ENV"
+
+      - name: Cache Build
+        id: cache-build
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.CACHE_PATH }}
+          key: ${{ runner.os }}-${{ runner.arch }}-Release-orientation-cache-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-Release-orientation-cache
+
+      - name: Configure
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DWMTK_PER_INPUT_ORIENTATION=ON
+
+      - name: Build
+        run: |
+          cd build
+          make -j2 wmtk_tests wmtk_component_io_tests wmtk_test_tetwild wmtk_test_triwild \
+            wmtk_test_simwild wmtk_test_topological_offset
+          ccache --show-stats
+
+      - name: Tests
+        run: |
+          cd build
+          for t in wmtk_tests wmtk_component_io_tests wmtk_test_tetwild wmtk_test_triwild \
+            wmtk_test_simwild wmtk_test_topological_offset; do
+            bin=$(find . -type f -perm -u+x -name "$t" | head -1)
+            echo "::group::$t"
+            "$bin" --allow-running-no-tests
+            echo "::endgroup::"
+          done
+
   ####################
   # MacOS
   ####################

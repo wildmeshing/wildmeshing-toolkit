@@ -119,8 +119,11 @@ ExternalProject_Add(
     # At e085b8f (2026-11-05, data2 #14) the hidden [offset] group drops its two slowest cube
     # cases (cube_small_offset_conv0.1 and conv0.025, 45 of its 49 min) and parks its nine 2D
     # cases in _commented_out while the offset refuses 2D input.
+    # At b03a392 (2026-11-06, data2 #15) tetwild_features and triwild_free_points list their
+    # curve and point files in `input`: the toolkit reads every input from one list, and refuses
+    # input_edges and input_points as unknown keys.
     #
-    GIT_TAG e085b8fa1a0420d9a966a16b55bec5084dcc68d7
+    GIT_TAG b03a392adac532d3411b71794165e816fb7f45a4
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

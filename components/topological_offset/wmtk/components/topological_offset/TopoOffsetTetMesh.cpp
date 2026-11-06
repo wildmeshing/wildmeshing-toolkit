@@ -107,7 +107,8 @@ void TopoOffsetTetMesh::init_from_image(
     const std::string& sheet_name,
     const MatrixXi& F_tagged,
     const MatrixSi& F_tags,
-    const std::vector<std::string>& face_tag_names)
+    const std::vector<std::string>& face_tag_names,
+    const MatrixSi& F_orientation)
 {
     // assert dimensions
     assert(V.cols() == 3);
@@ -193,7 +194,7 @@ void TopoOffsetTetMesh::init_from_image(
             if (F_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
         auto& attr = m_face_attribute[std::get<1>(*face)];
         attr.set_input_set(attr.input_set() | set);
-        attr.set_orientation_along(vids, 1);
+        io::orient_tagged_row(attr, vids, set, F_orientation, r);
     }
 
     // collect int ids for offset output

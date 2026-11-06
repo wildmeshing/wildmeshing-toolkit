@@ -46,7 +46,8 @@ void SimWildMeshTri::init_from_image(
     const std::vector<std::string>& tag_names,
     const MatrixXi& E_tagged,
     const MatrixSi& E_tags,
-    const std::vector<std::string>& edge_tag_names)
+    const std::vector<std::string>& edge_tag_names,
+    const MatrixSi& E_orientation)
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
@@ -106,7 +107,7 @@ void SimWildMeshTri::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
-    init_edge_tags(E_tagged, E_tags, edge_tag_names);
+    init_edge_tags(E_tagged, E_tags, edge_tag_names, E_orientation);
     init_surfaces_and_boundaries();
     // The tagged mesh fills its box, as in 3D (SimWildMesh::init_from_image()).
     require_box_boundary("simwild");
@@ -119,7 +120,8 @@ void SimWildMeshTri::init_from_image(
     const std::vector<std::string>& tag_names,
     const MatrixXi& E_tagged,
     const MatrixSi& E_tags,
-    const std::vector<std::string>& edge_tag_names)
+    const std::vector<std::string>& edge_tag_names,
+    const MatrixSi& E_orientation)
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
@@ -207,7 +209,7 @@ void SimWildMeshTri::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
-    init_edge_tags(E_tagged, E_tags, edge_tag_names);
+    init_edge_tags(E_tagged, E_tags, edge_tag_names, E_orientation);
     init_surfaces_and_boundaries();
     require_box_boundary("simwild"); // as in the overload above
 }
@@ -319,12 +321,12 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
     if (m_has_reference) require_reference_edge_labels(m_E_envelope_labels);
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
     // Before a remeshing, which holds the mesh to the reference: what was received must already
-    // lie in it. The tag operations hold nothing to it, and drop it.
+    // lie in it. The tag operations are given none (simwild.cpp).
     if (m_has_reference && m_sim_params.operation == "remeshing") check_reference_containment();
 
     // Where a tracked curve ends or three or more meet, the vertex is anchored in a ball of
     // order2_envelope_ratio x eps (anchor_feature_points()); the 2D twin of the 3D order-2
-    // curves' ends and junctions, held always. Every input point (input_points) is anchored in
+    // curves' ends and junctions, held always. Every input point (a point input) is anchored in
     // a ball of feature_envelope_ratio x eps, as in 3D; the smaller radius where it is both.
     const double order2_eps = m_envelope_eps * m_sim_params.order2_envelope_ratio;
     const double feature_eps = m_envelope_eps * m_sim_params.feature_envelope_ratio;
@@ -370,7 +372,8 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 void SimWildMeshTri::init_edge_tags(
     const MatrixXi& E_tagged,
     const MatrixSi& E_tags,
-    const std::vector<std::string>& edge_tag_names)
+    const std::vector<std::string>& edge_tag_names,
+    const MatrixSi& E_orientation)
 {
     if (edge_tag_names.size() > size_t(SurfaceTagAttributes::max_inputs)) {
         log_and_throw_error(
@@ -396,7 +399,7 @@ void SimWildMeshTri::init_edge_tags(
             if (E_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
         auto& attr = m_edge_attribute[eid];
         attr.set_input_set(attr.input_set() | set);
-        attr.set_orientation_along(vids, 1);
+        io::orient_tagged_row(attr, vids, set, E_orientation, r);
     }
 }
 
@@ -474,8 +477,44 @@ MeshData SimWildMeshTri::envelope_data(const std::vector<Vector2d>& points) cons
     names.insert(names.end(), face_labels.begin(), face_labels.end());
     names.resize(std::min(names.size(), size_t(SurfaceTagAttributes::max_inputs)));
     io::append_envelope_block(out, edges, CellType::Edge, sets, names);
-    io::append_envelope_points(out, points);
+    io::append_envelope_points(out, points, m_input_point_labels, m_point_names);
     return out;
+}
+
+void SimWildMeshTri::set_envelope_around_tags()
+{
+    m_V_envelope.clear();
+    m_E_envelope.clear();
+    m_E_envelope_labels.clear();
+    m_E_envelope_edge_sets.clear();
+    std::vector<int> row(vert_capacity(), -1);
+    for (const Tuple& e : get_edges()) {
+        InputSet set = m_edge_attribute[e.eid(*this)].input_set() & edge_tag_mask();
+        if (const auto opp = e.switch_face(*this)) {
+            const auto& a = m_face_attribute[e.fid(*this)].tags;
+            const auto& b = m_face_attribute[opp->fid(*this)].tags;
+            for (const auto& [x, y] : {std::pair(&a, &b), std::pair(&b, &a)}) {
+                for (const int64_t t : *x) {
+                    const size_t bit = m_edge_tag_names.size() + size_t(t);
+                    if (!y->count(t) && bit < size_t(SurfaceTagAttributes::max_inputs))
+                        set |= InputSet(1) << bit;
+                }
+            }
+        }
+        if (set == 0) continue;
+        Vector2i r;
+        const std::array<size_t, 2> vids = {{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
+        for (int k = 0; k < 2; ++k) {
+            int& v = row[vids[k]];
+            if (v < 0) {
+                v = int(m_V_envelope.size());
+                m_V_envelope.push_back(m_vertex_attribute[vids[k]].m_posf);
+            }
+            r[k] = v;
+        }
+        m_E_envelope.push_back(r);
+        m_E_envelope_labels.push_back(set);
+    }
 }
 
 CellTag SimWildMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_set)

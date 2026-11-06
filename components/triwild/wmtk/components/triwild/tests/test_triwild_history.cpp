@@ -116,7 +116,8 @@ struct Mapped
  * @brief What every history triwild returns must hold, whatever its options: it starts at the
  * `n_segments` segments of the curves given, and ends at the mesh returned -- its last state's
  * segments, by output_vertex_ids, are edges of the mesh at the same positions, and exactly the
- * edges of the tracked curves ("surface"). Returns what the map does with points on the input.
+ * edges of the tracked curves (the mesh's edge block). Returns what the map does with points on
+ * the input.
  */
 Mapped check_history(const ComponentResult& r, const size_t n_segments)
 {
@@ -149,13 +150,8 @@ Mapped check_history(const ComponentResult& r, const size_t n_segments)
         CHECK(mesh_edges.count({{std::min(e[0], e[1]), std::max(e[0], e[1])}}) == 1);
         tracked.insert(ends_of(V(e[0]), V(e[1])));
     }
-    const MeshData& s = r.first.at("surface");
-    const auto& E = s.cell(CellType::Edge).connectivity;
-    for (Eigen::Index i = 0; i < E.rows(); ++i) {
-        surface.insert(ends_of(
-            Eigen::Vector3d(s.V(E(i, 0), 0), s.V(E(i, 0), 1), 0),
-            Eigen::Vector3d(s.V(E(i, 1), 0), s.V(E(i, 1), 1), 0)));
-    }
+    const auto& E = mesh.cell(CellType::Edge).connectivity;
+    for (Eigen::Index i = 0; i < E.rows(); ++i) surface.insert(ends_of(V(E(i, 0)), V(E(i, 1))));
     CHECK(tracked == surface);
 
     // Random points on the input, to the output and back.

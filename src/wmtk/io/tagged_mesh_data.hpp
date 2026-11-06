@@ -35,36 +35,6 @@ geometry_data(const std::vector<Vertex>& vertices, const std::vector<Cell>& cell
     data.validate();
     return data;
 }
-template <typename Point>
-MeshData feature_data(
-    const std::vector<std::array<Point, 2>>& segments,
-    const std::vector<Point>& anchors)
-{
-    std::map<std::array<double, 3>, int64_t> rows;
-    MeshData data;
-    std::vector<std::array<double, 3>> vertices;
-    auto vertex = [&](const Point& p) {
-        std::array<double, 3> key{{0, 0, 0}};
-        for (int i = 0; i < p.size(); ++i) key[i] = p[i];
-        auto [it, added] = rows.emplace(key, rows.size());
-        if (added) vertices.push_back(key);
-        return it->second;
-    };
-    auto& E = data.cells[CellType::Edge].connectivity;
-    E.resize(segments.size(), 2);
-    for (size_t i = 0; i < segments.size(); ++i) {
-        E(i, 0) = vertex(segments[i][0]);
-        E(i, 1) = vertex(segments[i][1]);
-    }
-    auto& P = data.cells[CellType::Point].connectivity;
-    P.resize(anchors.size(), 1);
-    for (size_t i = 0; i < anchors.size(); ++i) P(i, 0) = vertex(anchors[i]);
-    data.V.resize(vertices.size(), 3);
-    for (size_t i = 0; i < vertices.size(); ++i)
-        for (int j = 0; j < 3; ++j) data.V(i, j) = vertices[i][j];
-    data.validate();
-    return data;
-}
 // The envelope a component hands on -- outputs["envelope"] on the memory route,
 // <output>_envelope.msh on the file route -- is the REFERENCE it held its tags to: the geometry its
 // envelopes, tubes and anchors were built around (the input, or the simplified input, per
@@ -105,18 +75,30 @@ inline void append_envelope_block(
             member(r, j) = (sets[r] >> j) & 1;
     out.attributes["tags"] = {std::move(member), names};
 }
-// The reference's input points, as the envelope's point block, without tags.
+// The reference's input points, as the envelope's point block: point i labelled by the bit
+// labels[i] of names, as the mesh's point block labels it (collect_point_tags()); without labels,
+// untagged.
 template <typename Point>
-void append_envelope_points(MeshData& envelope, const std::vector<Point>& points)
+void append_envelope_points(
+    MeshData& envelope,
+    const std::vector<Point>& points,
+    const std::vector<int>& labels = {},
+    const std::vector<std::string>& names = {})
 {
     std::vector<std::array<int64_t, 1>> cells(points.size());
     for (size_t i = 0; i < points.size(); ++i) cells[i] = {{int64_t(i)}};
+    const bool labelled = !names.empty() && labels.size() == points.size();
+    std::vector<InputSet> sets;
+    if (labelled) {
+        for (const int l : labels)
+            sets.push_back(l >= 0 && l < SurfaceTagAttributes::max_inputs ? InputSet(1) << l : 0);
+    }
     append_envelope_block(
         envelope,
         geometry_data(points, cells, CellType::Point),
         CellType::Point,
-        {},
-        {});
+        sets,
+        labelled ? names : std::vector<std::string>());
 }
 // Whether `envelope` is a labelled reference (append_envelope_block()), as producers write it,
 // rather than bare geometry: its triangles (3D) or edges (2D) carry `tags`. Bare geometry, an
@@ -126,44 +108,102 @@ inline bool is_labelled_envelope(const MeshData& envelope, const bool is_3d)
     const auto it = envelope.cells.find(is_3d ? CellType::Triangle : CellType::Edge);
     return it != envelope.cells.end() && it->second.attributes.count("tags");
 }
-/// `mesh` with its tags only: every vertex field and every cell field but `tags` dropped.
+/// The fields a tagged mesh's reader reads on a cell block: `tags`, and in a build with
+/// WMTK_PER_INPUT_ORIENTATION `orientation`, the per-input counts collect_input_set_tags() writes
+/// beside them there (read_orientation()). A build without the option drops `orientation` as it
+/// drops every annotation (ComponentIO::dropped_fields()).
+inline const std::set<std::string>& tag_fields()
+{
+    static const std::set<std::string> fields = SurfaceTagAttributes::per_input_orientation
+                                                    ? std::set<std::string>{"tags", "orientation"}
+                                                    : std::set<std::string>{"tags"};
+    return fields;
+}
+/// `mesh` with its tags only: every vertex field and every cell field but tag_fields() dropped.
 inline MeshData tags_only(MeshData mesh)
 {
     mesh.vertex_attributes.clear();
     for (auto& entry : mesh.cells) {
         auto& attributes = entry.second.attributes;
         for (auto it = attributes.begin(); it != attributes.end();)
-            it = it->first == "tags" ? std::next(it) : attributes.erase(it);
+            it = tag_fields().count(it->first) ? std::next(it) : attributes.erase(it);
     }
     return mesh;
+}
+/**
+ * @brief A tagged mesh's lower block's `orientation` (collect_input_set_tags()), in a build with
+ * WMTK_PER_INPUT_ORIENTATION: per row and `tags` column, that input's count against the row's
+ * vertex order. 0 rows without the field -- each of a row's inputs then has +1 along the row,
+ * the meaning of a row without it -- and always in a build without the option, which does not
+ * read it. Throws on a field that does not match the block's `tags`: Int64, its column labels,
+ * and 0 wherever the row lacks that tag.
+ */
+inline DataMatrix<int64_t> read_orientation(const CellData& cells, const std::string& what)
+{
+    if (!SurfaceTagAttributes::per_input_orientation) return {};
+    const auto it = cells.attributes.find("orientation");
+    if (it == cells.attributes.end()) return {};
+    const auto tags = cells.attributes.find("tags");
+    if (tags == cells.attributes.end() || it->second.labels != tags->second.labels)
+        throw std::runtime_error(what + ": orientation needs the tags' column labels");
+    if (!std::holds_alternative<DataMatrix<int64_t>>(it->second.values))
+        throw std::runtime_error(what + ": orientation must be an Int64 matrix");
+    DataMatrix<int64_t> counts = std::get<DataMatrix<int64_t>>(it->second.values);
+    if (((tags->second.integers().array() == 0) && (counts.array() != 0)).any())
+        throw std::runtime_error(what + ": an orientation count where its row lacks the tag");
+    return counts;
+}
+/// Store a tagged row's orientation on its simplex's `attr`: `row` the row's vertices, `set` its
+/// tags' bits. Each tag of the row +1 along it -- or, with `counts` (per row and tag column, its
+/// count along the row, read_orientation()'s; 0 rows without), each its count r.
+template <size_t N>
+void orient_tagged_row(
+    SurfaceTagAttributes& attr,
+    const std::array<size_t, N>& row,
+    const InputSet set,
+    const MatrixSi& counts,
+    const Eigen::Index r)
+{
+    if (counts.rows() == 0) {
+        attr.set_orientation_along(set, row, 1);
+        return;
+    }
+    for (Eigen::Index j = 0; j < counts.cols() && j < SurfaceTagAttributes::max_inputs; ++j)
+        if ((set >> j) & 1) attr.set_orientation_along(InputSet(1) << j, row, counts.coeff(r, j));
 }
 /// A labelled reference (append_envelope_block()) as a receiving mesh reads it
 /// (read_labelled_envelope()): its triangles (2D: segments) on vertices of their own (`dim`
 /// columns), each with the bits of the receiver's labels it names, 0 for a row of labels the
 /// receiver lacks; in 3D its feature curves of the receiver's feature labels, an input edge per
-/// edge and label, edge_input that label's feature input.
+/// edge and label, edge_input that label's feature input; its points (`dim` columns), each with
+/// the bits of the receiver's point labels it carries, 0 for one of labels the receiver lacks.
 struct LabelledReference
 {
     MatrixXd V;
     MatrixXi F;
     std::vector<InputSet> F_labels;
     utils::FeatureInputs curves;
+    MatrixXd P;
+    std::vector<InputSet> P_labels;
 };
 /**
  * @brief Read `envelope`, a labelled reference (is_labelled_envelope()), for a receiving mesh of
  * dimension `dim`: its triangles (2D: segments) and, in 3D, feature curves, each row with its
- * labels, which name the receiver's tags; its points, which no tag of a mesh marks, are only
- * handed on. Matched to the receiver by name: `bits_named(name)` is the receiver's bits a label
- * names (several where its tags share a name), `feature_names` its feature labels, bit i the
- * i-th. Throws on cells a labelled reference does not have, and drops every field but `tags`
- * (ComponentIO::dropped_fields()). simwild's and tetwild's
- * tagged routes read their `envelope` so; moved here from simwild's reader (2026-11), unchanged.
+ * labels, which name the receiver's tags, and its points, each with its labels, which name the
+ * receiver's input points. Matched to the receiver by name: `bits_named(name)` is the
+ * receiver's bits a label names (several where its tags share a name), `feature_names` its
+ * feature labels and `point_names` its point labels, bit i the i-th. Throws on cells a labelled
+ * reference does not have, and drops every field but `tags` (ComponentIO::dropped_fields()).
+ * simwild's, tetwild's and triwild's tagged routes read their `envelope` so; moved here from
+ * simwild's reader (2026-11). Until 2026-11 the points were only handed on, and a received
+ * point was anchored where it arrived (TetOptimizerMesh::ReferencePoints).
  */
 inline LabelledReference read_labelled_envelope(
     const MeshData& envelope,
     const int dim,
     const std::function<InputSet(const std::string&)>& bits_named,
-    const std::vector<std::string>& feature_names)
+    const std::vector<std::string>& feature_names,
+    const std::vector<std::string>& point_names = {})
 {
     envelope.validate();
     std::set<std::string> dropped = ComponentIO::dropped_fields(envelope.vertex_attributes, {});
@@ -235,6 +275,28 @@ inline LabelledReference read_labelled_envelope(
                 if (!on(r, Eigen::Index(j))) continue;
                 out.curves.edges.push_back({{vertex(E(r, 0)), vertex(E(r, 1))}});
                 out.curves.edge_input.push_back(int(k - feature_names.begin()));
+            }
+        }
+    }
+    // The points (append_envelope_points()), each with the receiver's point labels it carries
+    // by name: none without tags, which an envelope built without point labels has.
+    if (const auto points = envelope.cells.find(CellType::Point); points != envelope.cells.end()) {
+        const auto& C = points->second.connectivity;
+        out.P.resize(C.rows(), dim);
+        out.P_labels.assign(size_t(C.rows()), 0);
+        for (Eigen::Index r = 0; r < C.rows(); ++r)
+            out.P.row(r) = envelope.V.row(C(r, 0)).head(dim);
+        if (points->second.attributes.count("tags")) {
+            const MeshAttribute& point_tags = labelled(points->second);
+            const auto& on = std::get<DataMatrix<uint8_t>>(point_tags.values);
+            for (size_t j = 0; j < point_tags.labels.size(); ++j) {
+                const auto k =
+                    std::find(point_names.begin(), point_names.end(), point_tags.labels[j]);
+                const size_t bit = size_t(k - point_names.begin());
+                if (k == point_names.end() || bit >= size_t(SurfaceTagAttributes::max_inputs))
+                    continue;
+                for (Eigen::Index r = 0; r < C.rows(); ++r)
+                    if (on(r, Eigen::Index(j))) out.P_labels[size_t(r)] |= InputSet(1) << bit;
             }
         }
     }
@@ -350,8 +412,10 @@ void collect_tags(Mesh& mesh, MeshMap& outputs, CellType type, const TupleRange&
 // The tracked simplices -- `type` Triangle: a tet mesh's faces; Edge: a triangle mesh's edges --
 // whose input set is not empty, as the `type` block of outputs["mesh"]: rows of its V (the
 // vertices in get_vertices() order, as compact_slot_outputs leaves them), one tags column per
-// name (bit j of the input set is names[j]), each row oriented as the simplex's input was.
-// Nothing is written without names.
+// name (bit j of the input set is names[j]), each row oriented as the simplex's input was. In a
+// build with WMTK_PER_INPUT_ORIENTATION, beside `tags` an `orientation` field with its columns:
+// per row and name, that input's count against the row's vertex order, 0 off the input
+// (read_orientation()). Nothing is written without names.
 template <CellType type, typename Mesh>
 void collect_input_set_tags(
     const Mesh& mesh,
@@ -366,6 +430,7 @@ void collect_input_set_tags(
     for (const auto& v : mesh.get_vertices()) row[v.vid(mesh)] = n++;
     std::vector<std::array<int64_t, N>> simplices;
     std::vector<InputSet> sets;
+    std::vector<int64_t> counts; // per row, names.size() of them: with WMTK_PER_INPUT_ORIENTATION
     const InputSet mask = names.size() >= size_t(SurfaceTagAttributes::max_inputs)
                               ? ~InputSet(0)
                               : (InputSet(1) << names.size()) - 1;
@@ -376,6 +441,10 @@ void collect_input_set_tags(
         if (set == 0) return;
         std::sort(vids.begin(), vids.end());
         if (attr.orientation_along(vids) < 0) std::swap(vids[N - 2], vids[N - 1]);
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        for (size_t j = 0; j < names.size(); ++j)
+            counts.push_back(((set >> j) & 1) ? attr.input_orientation_along(int(j), vids) : 0);
+#endif
         std::array<int64_t, N> r;
         for (size_t k = 0; k < N; ++k) r[k] = row[vids[k]];
         simplices.push_back(r);
@@ -396,11 +465,16 @@ void collect_input_set_tags(
         for (size_t j = 0; j < names.size(); ++j) member(i, j) = (sets[i] >> j) & 1;
     }
     block.attributes["tags"] = {std::move(member), names};
+    if (!SurfaceTagAttributes::per_input_orientation) return;
+    DataMatrix<int64_t> orientation(simplices.size(), names.size());
+    for (size_t i = 0; i < simplices.size(); ++i)
+        for (size_t j = 0; j < names.size(); ++j) orientation(i, j) = counts[i * names.size() + j];
+    block.attributes["orientation"] = {std::move(orientation), names};
 }
 // The tet edges tagged `feature` (TetOptimizerMesh::FeatureEdgeAttributes: the feature curves the
 // application was given) whose feature input set is not empty, as the Edge block of
 // outputs["mesh"], on the rows collect_input_set_tags() uses: one tags column per name (bit j of
-// the set is names[j], the input_edges file j). A curve carries no orientation, so a row is its
+// the set is names[j], the input curve j). A curve carries no orientation, so a row is its
 // edge's vertices in ascending order. The order2 kind is not written: a reader derives it again
 // from the faces (tag_order2_edges()). Nothing is written without names or edge tracking.
 template <typename Mesh>
@@ -436,5 +510,100 @@ void collect_feature_edge_tags(
         for (size_t j = 0; j < names.size(); ++j) member(i, j) = (sets[i] >> j) & 1;
     }
     block.attributes["tags"] = {std::move(member), names};
+}
+// The input points (TetOptimizerMesh / TriOptimizerMesh::m_feature_point_inputs, by their
+// anchors) as the Point block of outputs["mesh"], on the rows collect_input_set_tags() uses: one
+// tags column per name (bit j: names[j]), the input points' labels. Each at the vertex standing
+// for its anchor; one whose anchor a collapse merged into another's -- which the collapse allows
+// where each lies in the other's ball -- at the nearest vertex in its ball; one with neither, its
+// region filtered away, is not written. Several at one vertex are one row under all their labels.
+// Nothing is written without names or point tracking. Until 2026-11 no output marked the input
+// points: tetwild's and triwild's `features` listed them beside the mesh.
+template <typename Mesh>
+void collect_point_tags(const Mesh& mesh, MeshMap& outputs, const std::vector<std::string>& names)
+{
+    if (names.empty() || !mesh.m_track_feature_points) return;
+    const auto& inputs = mesh.m_feature_point_inputs;
+    std::vector<int64_t> row(mesh.vert_capacity(), -1);
+    std::vector<size_t> carrier(inputs.size(), size_t(-1)); // anchor -> its vertex
+    int64_t n = 0;
+    for (const auto& v : mesh.get_vertices()) {
+        const size_t vid = v.vid(mesh);
+        row[vid] = n++;
+        const size_t f = mesh.m_feature_point_attribute[vid].m_feature_point_id;
+        if (f < inputs.size()) carrier[f] = vid;
+    }
+    const InputSet mask = names.size() >= size_t(SurfaceTagAttributes::max_inputs)
+                              ? ~InputSet(0)
+                              : (InputSet(1) << names.size()) - 1;
+    std::map<int64_t, InputSet> sets; // output row -> labels
+    for (size_t f = 0; f < inputs.size(); ++f) {
+        if ((inputs[f] & mask) == 0) continue;
+        size_t vid = carrier[f];
+        if (vid == size_t(-1)) {
+            const double r = mesh.m_feature_point_radius[f];
+            double nearest = r * r;
+            for (const auto& v : mesh.get_vertices()) {
+                const double d =
+                    (mesh.m_vertex_attribute[v.vid(mesh)].m_posf - mesh.m_feature_points[f])
+                        .squaredNorm();
+                if (d <= nearest) {
+                    nearest = d;
+                    vid = v.vid(mesh);
+                }
+            }
+            if (vid == size_t(-1)) continue;
+        }
+        sets[row[vid]] |= inputs[f] & mask;
+    }
+    auto& block = outputs.at("mesh").cells[CellType::Point];
+    block.connectivity.resize(Eigen::Index(sets.size()), 1);
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(sets.size(), names.size());
+    Eigen::Index i = 0;
+    for (const auto& [r, set] : sets) {
+        block.connectivity(i, 0) = r;
+        for (size_t j = 0; j < names.size(); ++j) member(i, Eigen::Index(j)) = (set >> j) & 1;
+        ++i;
+    }
+    block.attributes["tags"] = {std::move(member), names};
+}
+// A tagged mesh's point block, as collect_point_tags() writes it: its labels, and one point per
+// row and label -- as an edge is read once per row and label -- with its row of mesh.V and its
+// label's column. None without a point block. A point block needs tags, every row a label, as
+// every other lower block of a tagged mesh.
+struct PointTags
+{
+    std::vector<std::string> names;
+    std::vector<int64_t> rows;
+    std::vector<int> labels;
+};
+inline PointTags read_point_tags(const MeshData& mesh, const std::string& what)
+{
+    PointTags out;
+    const auto it = mesh.cells.find(CellType::Point);
+    if (it == mesh.cells.end() || it->second.connectivity.rows() == 0) return out;
+    const auto tags = it->second.attributes.find("tags");
+    if (tags == it->second.attributes.end())
+        throw std::runtime_error(what + ": its points need tags, one column per label");
+    const MeshAttribute& field = tags->second;
+    if (!std::holds_alternative<DataMatrix<uint8_t>>(field.values) ||
+        field.labels.size() != size_t(field.cols()))
+        throw std::runtime_error("tags must be a UInt8 membership matrix with column labels");
+    const auto& member = std::get<DataMatrix<uint8_t>>(field.values);
+    if ((member.array() > 1).any()) throw std::runtime_error("tags must be binary");
+    if ((member.cast<int>().rowwise().sum().array() == 0).any())
+        throw std::runtime_error(what + ": every tagged point needs a tag");
+    if (field.labels.size() > size_t(SurfaceTagAttributes::max_inputs))
+        throw std::runtime_error(what + ": more point labels than an input set holds");
+    out.names = field.labels;
+    const auto& C = it->second.connectivity;
+    for (Eigen::Index r = 0; r < C.rows(); ++r) {
+        for (Eigen::Index j = 0; j < member.cols(); ++j) {
+            if (!member(r, j)) continue;
+            out.rows.push_back(C(r, 0));
+            out.labels.push_back(int(j));
+        }
+    }
+    return out;
 }
 } // namespace wmtk::io

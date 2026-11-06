@@ -70,7 +70,7 @@ public:
      * across the arrangement's own segment provenance. See tag_from_provenance.
      * @param collect_provenance Collect E_constrained_inputs() with the winding-number
      * tagging too: the curve inputs' edges are read off it.
-     * @param points input points (input_points), each inserted as a vertex of the arrangement,
+     * @param points input points (the point inputs), each inserted as a vertex of the arrangement,
      * exactly; point_vids() says which. They carry no winding number.
      * @return true when every arrangement vertex has an exact double representation.
      */

@@ -4,6 +4,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace wmtk {
 
@@ -20,6 +22,12 @@ namespace wmtk {
 /// limit (SurfaceTagAttributes::max_inputs) and the face record's size: change it here only.
 using InputSet = uint64_t;
 
+/// A simplex's orientation input by input, as insertion and the tagged-mesh readers hand it to a
+/// mesh in a build with WMTK_PER_INPUT_ORIENTATION: (input, count) pairs, inputs ascending, a
+/// count against the vertex order the producer names (SurfaceTagAttributes::m_orientation says
+/// what a count is). Inputs without a pair have count 0.
+using InputOrientations = std::vector<std::pair<int, int>>;
+
 class SurfaceTagAttributes
 {
     // Eleven bytes. The values are tiny -- a flag, a bbox side in [-1, 5], a class in {0, 1}, an
@@ -35,11 +43,14 @@ class SurfaceTagAttributes
     // face tag -- and hold every surface face to its own labels' envelopes: segmented images
     // carry more than 16 labels. That is 6 bytes more per face record: on the same
     // 46024, one input, serial, peak RSS 1001 MB on main (3 bytes) and 1007 MB here (11 bytes).
+    // With WMTK_PER_INPUT_ORIENTATION 43 bytes: see m_input_orientation.
 public:
     // Bitfields cannot take default member initializers before C++20.
     SurfaceTagAttributes()
         : m_surface_class(0)
+#ifndef WMTK_PER_INPUT_ORIENTATION
         , m_orientation(0)
+#endif
     {}
 
     /// Is this simplex part of the tracked surface.
@@ -86,15 +97,45 @@ public:
      * becoming the simplex's canonical one, and consolidate_mesh (which renumbers monotonically)
      * all leave it valid. Anything that moves a value onto a simplex with a DIFFERENT vertex set
      * -- the halves of a split, the faces a collapse merges or renames in place, the faces a
-     * surface flip creates -- must convert it, through orientation_along / set_orientation_along.
-     * merge() does not touch it for that reason: it cannot know the two vertex orders.
+     * surface flip creates -- must convert it, through set_orientation_from /
+     * add_orientation_from. merge() does not touch it for that reason: it cannot know the two
+     * vertex orders.
      *
      * Meaningful only on a mesh whose application set it at insertion
      * (TetOptimizerMesh / TriOptimizerMesh::m_tracks_orientation); 0 elsewhere. Writes clamp to
      * the range rather than wrap: a face would need 16 net coincident sheets to reach it.
+     *
+     * One count for all the inputs of the simplex: where two inputs coincide, it is of both, and
+     * neither input's own is known. The CMake option WMTK_PER_INPUT_ORIENTATION keeps one count
+     * per input instead (m_input_orientation), and the field is then not there: the total is the
+     * sum of the per-input counts, read through orientation(), so that there is one stored value
+     * and not two to keep equal. That saves no memory -- the 5 bits share a byte with the 3-bit
+     * class -- but leaves nothing to disagree. Every reader of the count goes through
+     * orientation() and orientation_along(), every writer through the setters below, in both
+     * builds; only the setters' meaning for several inputs differs (see set_orientation()).
      */
+#ifdef WMTK_PER_INPUT_ORIENTATION
+    static constexpr bool per_input_orientation = true;
+    /**
+     * @brief Per input i, its own orientation count on this simplex (as m_orientation's, of
+     * input i's sheets alone), 4-bit two's complement: input i in the low nibble of byte i / 2
+     * for even i, the high one for odd i. -8 to 7, clamped like m_orientation, so the total --
+     * their sum -- is exact while each input's count stays in range.
+     *
+     * Where two inputs' sheets coincide in one coplanar group the insertion counts each input
+     * once, so the total can exceed the one count of a build without the option, which counts
+     * the group once: two inputs facing alike on a face give 2 here and 1 there.
+     *
+     * 32 bytes more per record, 43 instead of 11: on Thingi10K 46024 (tetwild, one input,
+     * serial, two iterations), peak RSS 868 MB with the option off and 887 MB with it on (+2.2%).
+     */
+    uint8_t m_input_orientation[sizeof(InputSet) * 4] = {};
+#else
+    static constexpr bool per_input_orientation = false;
     int8_t m_orientation : 5;
-    static constexpr int max_orientation = 15;
+#endif
+    static constexpr int max_orientation = per_input_orientation ? 7 : 15;
+    static constexpr int min_orientation = per_input_orientation ? -8 : -15;
 
     /**
      * @brief The INPUT SET: which inputs this simplex covers, bit i for input i. At most
@@ -141,32 +182,180 @@ public:
         return (inversions % 2 == 0) ? 1 : -1;
     }
 
-    /// Store an orientation already measured against the ascending vertex order, clamped.
-    void set_orientation(int o)
+    /// The orientation against the ascending vertex order: the count (m_orientation), with
+    /// WMTK_PER_INPUT_ORIENTATION the sum of the per-input counts.
+    int orientation() const
     {
-        m_orientation = int8_t(std::clamp(o, -max_orientation, max_orientation));
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        int o = 0;
+        for (int i = 0; i < max_inputs; ++i) o += input_orientation(i);
+        return o;
+#else
+        return m_orientation;
+#endif
+    }
+
+    /// Whether any input's count is nonzero -- the count, without WMTK_PER_INPUT_ORIENTATION.
+    /// Not orientation() != 0: two inputs facing opposite ways sum to 0, and each still has one.
+    bool oriented() const
+    {
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        for (const uint8_t b : m_input_orientation)
+            if (b != 0) return true;
+        return false;
+#else
+        return m_orientation != 0;
+#endif
     }
 
     /// The orientation measured against the simplex ordered as `v` (which must be its vertices).
     template <size_t N>
     int orientation_along(const std::array<size_t, N>& v) const
     {
-        return m_orientation * ascending_parity(v);
+        return orientation() * ascending_parity(v);
     }
 
-    /// Store orientation `o`, measured against the simplex ordered as `v`.
-    template <size_t N>
-    void set_orientation_along(const std::array<size_t, N>& v, int o)
+    /// The orientation of the inputs in `inputs`, against the ascending vertex order: with
+    /// WMTK_PER_INPUT_ORIENTATION the sum of their counts; without, the one count if the simplex
+    /// is on any of them, else 0 -- theirs only where it is on no other input.
+    int orientation_of(InputSet inputs) const
     {
-        set_orientation(o * ascending_parity(v));
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        int o = 0;
+        for (int i = 0; i < max_inputs; ++i)
+            if ((inputs >> i) & 1) o += input_orientation(i);
+        return o;
+#else
+        return (input_set() & inputs) != 0 ? int(m_orientation) : 0;
+#endif
     }
+
+    /// Store orientation `o`, against the ascending vertex order, clamped, as the orientation of
+    /// each input in `inputs`: with WMTK_PER_INPUT_ORIENTATION each of their counts is `o`, the
+    /// other inputs' unchanged; without, the one count is `o`. How a producer that knows one
+    /// direction for a row of inputs -- a tagged row without per-input counts, the insertion of
+    /// a single input -- stores it.
+    void set_orientation(InputSet inputs, int o)
+    {
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        for (int i = 0; i < max_inputs; ++i)
+            if ((inputs >> i) & 1) set_input_orientation(i, o);
+#else
+        (void)inputs;
+        m_orientation = int8_t(std::clamp(o, min_orientation, max_orientation));
+#endif
+    }
+
+    /// set_orientation(), with `o` measured against the simplex ordered as `v`.
+    template <size_t N>
+    void set_orientation_along(InputSet inputs, const std::array<size_t, N>& v, int o)
+    {
+        set_orientation(inputs, o * ascending_parity(v));
+    }
+
+    /**
+     * @brief Take the orientation of `src`, simplex `from`, as this simplex's, `to` -- every
+     * input's count with WMTK_PER_INPUT_ORIENTATION. `from` and `to` are the two simplices'
+     * vertices in corresponding order (a split half, a renamed face): a count along `from` is the
+     * same count along `to`. `src` may be this record.
+     */
+    template <size_t N>
+    void set_orientation_from(
+        const SurfaceTagAttributes& src,
+        const std::array<size_t, N>& from,
+        const std::array<size_t, N>& to)
+    {
+        const int s = ascending_parity(from) * ascending_parity(to);
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        for (int i = 0; i < max_inputs; ++i) set_input_orientation(i, s * src.input_orientation(i));
+#else
+        m_orientation = int8_t(std::clamp(s * src.m_orientation, min_orientation, max_orientation));
+#endif
+    }
+
+    /// set_orientation_from(), adding to this simplex's orientation rather than replacing it:
+    /// the face a collapse merges two into covers what both covered.
+    template <size_t N>
+    void add_orientation_from(
+        const SurfaceTagAttributes& src,
+        const std::array<size_t, N>& from,
+        const std::array<size_t, N>& to)
+    {
+        const int s = ascending_parity(from) * ascending_parity(to);
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        for (int i = 0; i < max_inputs; ++i)
+            set_input_orientation(i, input_orientation(i) + s * src.input_orientation(i));
+#else
+        m_orientation = int8_t(
+            std::clamp(m_orientation + s * src.m_orientation, min_orientation, max_orientation));
+#endif
+    }
+
+    /// Whether this simplex, ordered as `v`, and `other`, ordered as `w`, carry the same
+    /// orientation along those orders -- every input's count with WMTK_PER_INPUT_ORIENTATION.
+    template <size_t N>
+    bool same_orientation(
+        const std::array<size_t, N>& v,
+        const SurfaceTagAttributes& other,
+        const std::array<size_t, N>& w) const
+    {
+        const int s = ascending_parity(v) * ascending_parity(w);
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        for (int i = 0; i < max_inputs; ++i)
+            if (input_orientation(i) != s * other.input_orientation(i)) return false;
+        return true;
+#else
+        return m_orientation == s * other.m_orientation;
+#endif
+    }
+
+#ifdef WMTK_PER_INPUT_ORIENTATION
+    /// Input i's count, against the ascending vertex order.
+    int input_orientation(int i) const
+    {
+        const int nibble = (m_input_orientation[i / 2] >> (4 * (i % 2))) & 0xF;
+        return nibble >= 8 ? nibble - 16 : nibble;
+    }
+    /// Input i's count, measured against the simplex ordered as `v`.
+    template <size_t N>
+    int input_orientation_along(int i, const std::array<size_t, N>& v) const
+    {
+        return input_orientation(i) * ascending_parity(v);
+    }
+    /// Store input i's count, against the ascending vertex order, clamped.
+    void set_input_orientation(int i, int o)
+    {
+        const int shift = 4 * (i % 2);
+        const uint8_t nibble = uint8_t(std::clamp(o, min_orientation, max_orientation)) & 0xF;
+        uint8_t& byte = m_input_orientation[i / 2];
+        byte = uint8_t((byte & ~(0xF << shift)) | (nibble << shift));
+    }
+    /// Store every input's count from `o`, against the ascending vertex order (times `sign`);
+    /// the inputs without a pair get 0.
+    void set_input_orientations(const InputOrientations& o, int sign = 1)
+    {
+        std::fill(std::begin(m_input_orientation), std::end(m_input_orientation), uint8_t(0));
+        for (const auto& [i, c] : o)
+            if (i >= 0 && i < max_inputs) set_input_orientation(i, sign * c);
+    }
+    /// set_input_orientations(), with `o` measured against the simplex ordered as `v`.
+    template <size_t N>
+    void set_input_orientations_along(const std::array<size_t, N>& v, const InputOrientations& o)
+    {
+        set_input_orientations(o, ascending_parity(v));
+    }
+#endif
 
     void reset()
     {
         m_is_surface_fs = false;
         m_is_bbox_fs = -1;
         m_surface_class = 0;
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        std::fill(std::begin(m_input_orientation), std::end(m_input_orientation), uint8_t(0));
+#else
         m_orientation = 0;
+#endif
         set_input_set(0);
     }
 
@@ -182,7 +371,10 @@ public:
 };
 
 static_assert(
-    sizeof(SurfaceTagAttributes) == 3 + sizeof(InputSet),
+    sizeof(SurfaceTagAttributes) == 3 + sizeof(InputSet) +
+                                        (SurfaceTagAttributes::per_input_orientation
+                                             ? SurfaceTagAttributes::max_inputs / 2
+                                             : 0),
     "keep the surface tags byte-sized");
 
 } // namespace wmtk

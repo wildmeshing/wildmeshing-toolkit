@@ -3057,7 +3057,8 @@ public:
         const std::string& sheet_name = "",
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
-        const std::vector<std::string>& face_tag_names = {});
+        const std::vector<std::string>& face_tag_names = {},
+        const MatrixSi& F_orientation = MatrixSi());
 
     /// check that the ambient tag does not overlap with any other tags
     bool ambient_assert();
