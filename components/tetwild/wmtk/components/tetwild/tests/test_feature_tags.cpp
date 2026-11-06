@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
+#include <map>
 #include <random>
 #include <set>
 
@@ -52,9 +54,11 @@ struct FeatureScene
 FeatureScene build_scene(
     const std::vector<Vector3d>& fe_verts = {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
     const std::vector<std::array<size_t, 2>>& fe = {{{0, 1}}, {{1, 2}}},
-    const std::vector<int>& edge_input = {0, 1})
+    const std::vector<int>& edge_input = {0, 1},
+    const bool preserve_topology = false)
 {
     FeatureScene sc;
+    sc.params.preserve_topology = preserve_topology;
     // Cube [0,2]^3 with an interior 2-segment feature chain.
     MatrixXd V(8, 3);
     V << 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 0, //
@@ -637,4 +641,47 @@ TEST_CASE("feature-curves-held-to-their-own-tubes", "[tetwild_operation][feature
     }
     CHECK(n_tagged > 0);
     CHECK(m.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::feature) == 0);
+}
+
+TEST_CASE(
+    "feature-curves-keep-their-topology-under-preserve-topology",
+    "[tetwild_operation][features]" + release_only)
+{
+    // Two parallel interior curves 0.03 apart, each its own curve input, in tubes of 0.05: each
+    // tube holds the other curve too, so the tubes let a collapse take a vertex of one onto
+    // the other, welding the two curves into one. preserve_topology refuses that by the
+    // substructure link condition, in which a tagged edge is 1D substructure wherever it lies.
+    // Until 2026-11 the condition was asked only of an edge with both ends on the tracked surface,
+    // which no vertex of an interior curve is. Checked after the whole optimization: the tagged
+    // edges still form two open chains, no vertex with three or more.
+    FeatureScene sc = build_scene(
+        {{0.5, 1.0, 1.0}, {1.5, 1.0, 1.0}, {0.5, 1.03, 1.0}, {1.5, 1.03, 1.0}},
+        {{{0, 1}}, {{2, 3}}},
+        {0, 1},
+        /*preserve_topology=*/true);
+    TetWildMesh& m = *sc.mesh;
+    m.mesh_improvement(3);
+
+    const auto edges = tagged_edges(m);
+    std::map<size_t, size_t> degree, parent;
+    const std::function<size_t(size_t)> root = [&](const size_t v) {
+        return parent[v] == v ? v : parent[v] = root(parent[v]);
+    };
+    for (const auto& e : edges) {
+        for (const size_t v : e) {
+            ++degree[v];
+            parent.emplace(v, v);
+        }
+    }
+    for (const auto& e : edges) parent[root(e[0])] = root(e[1]);
+    size_t components = 0, max_degree = 0;
+    for (const auto& [v, d] : degree) {
+        components += root(v) == v;
+        max_degree = std::max(max_degree, d);
+    }
+    CAPTURE(edges.size(), degree.size());
+    CHECK(components == 2);
+    CHECK(max_degree <= 2);
+    // Two open chains: a tree each, so two fewer edges than vertices.
+    CHECK(edges.size() + 2 == degree.size());
 }

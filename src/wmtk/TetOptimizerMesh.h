@@ -1656,7 +1656,7 @@ protected:
         inverted, // a cell the collapse reshapes would invert
         quality, // collapse_quality_allowed() said no
         edge_leaves_envelope, // both ends on the surface, the edge on none and outside the envelope
-        substructure_link, // preserve_topology, both ends on the surface: substructure link
+        substructure_link, // preserve_topology, both ends on the surface or a tagged curve
         feature_leaves_tube, // an edge tagged `feature` the collapse moves would leave its tube
         order2_leaves_tube, // an edge tagged `order2` the collapse moves would leave its tube
         feature_point, // v1 stands for a feature point and v2 is outside its ball
