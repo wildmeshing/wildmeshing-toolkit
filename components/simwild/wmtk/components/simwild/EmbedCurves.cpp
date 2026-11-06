@@ -159,7 +159,8 @@ void EmbedCurves::simplify_curves(
 bool EmbedCurves::embed_curves(
     const bool tag_from_winding_number,
     const bool collect_provenance,
-    const std::vector<Vector2d>& points)
+    const std::vector<Vector2d>& points,
+    const std::vector<bool>& is_curve)
 {
     const bool provenance = !tag_from_winding_number || collect_provenance;
     // The input points after the curves' vertices, as vertices no segment references: the
@@ -237,7 +238,7 @@ bool EmbedCurves::embed_curves(
     }
 
     if (tag_from_winding_number) {
-        this->tag_from_winding_number();
+        this->tag_from_winding_number(is_curve);
     } else {
         tag_from_provenance();
     }
@@ -386,7 +387,7 @@ void EmbedCurves::tag_from_provenance()
         tags.size());
 }
 
-void EmbedCurves::tag_from_winding_number()
+void EmbedCurves::tag_from_winding_number(const std::vector<bool>& is_curve)
 {
     MatrixXd C(m_F_emb.rows(), 2);
     for (int i = 0; i < m_F_emb.rows(); ++i) {
@@ -408,7 +409,9 @@ void EmbedCurves::tag_from_winding_number()
         if (utils::orient_winding_number(W)) {
             logger().info("Correcting winding number for input {}", input_idx);
         }
-        if (!utils::any_winding_number_inside(W)) {
+        // A curve input encloses nothing by its type, as a surface input in 3D.
+        const bool curve = input_idx < is_curve.size() && is_curve[input_idx];
+        if (!curve && !utils::any_winding_number_inside(W)) {
             logger().warn(
                 "No winding number above 0.5 for input {}: it tags no face. An open polyline "
                 "encloses nothing, so it cannot define a material.",

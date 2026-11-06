@@ -638,7 +638,8 @@ bool EmbedSurface::embed_surface(
     const bool flood_fill,
     const bool tag_from_winding_number,
     const bool provenance,
-    const utils::FeatureInputs* features)
+    const utils::FeatureInputs* features,
+    const std::vector<bool>& is_volume)
 {
     logger().info("Embed with VolumeInsertion");
 
@@ -880,7 +881,7 @@ bool EmbedSurface::embed_surface(
     }
     if (tag_from_winding_number) {
         logger().info("Tag tets from winding number");
-        this->tag_from_winding_number();
+        this->tag_from_winding_number(is_volume);
     } else {
         logger().info("Tag tets from provenance");
         tag_from_provenance();
@@ -1326,7 +1327,7 @@ void EmbedSurface::tag_from_provenance()
         m_tags.size());
 }
 
-void EmbedSurface::tag_from_winding_number()
+void EmbedSurface::tag_from_winding_number(const std::vector<bool>& is_volume)
 {
     m_T_tags.resize(m_T_emb.rows(), Fs.size());
     m_T_tags.setZero();
@@ -1352,7 +1353,11 @@ void EmbedSurface::tag_from_winding_number()
         if (utils::orient_winding_number(W)) {
             logger().info("Correcting winding number for input {}", i);
         }
-        if (!utils::any_winding_number_inside(W)) {
+        // A surface input encloses nothing by its type, so tagging no tet is no defect of it; its
+        // column is dropped (read_mesh()). Until 2026-11 every input warned
+        // (simwild-warns-only-for-an-input-meant-to-enclose).
+        const bool volume = i >= is_volume.size() || is_volume[i];
+        if (volume && !utils::any_winding_number_inside(W)) {
             logger().warn(
                 "No winding number above 0.5 for input {}: it tags no tet. An open surface "
                 "encloses nothing, so it cannot define a material.",

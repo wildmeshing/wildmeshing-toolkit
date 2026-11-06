@@ -155,12 +155,15 @@ public:
      * which the provenance tagging records anyway.
      * @param features Optional feature curves and points forced into the embedding with the
      * surface; the background box is grown over them. Where they went: features_placed().
+     * @param is_volume Per input, whether it is declared a volume, which must enclose a material
+     * (see tag_from_winding_number()); empty: every input is.
      */
     bool embed_surface(
         const bool flood_fill = false,
         const bool tag_from_winding_number = true,
         const bool provenance = false,
-        const utils::FeatureInputs* features = nullptr);
+        const utils::FeatureInputs* features = nullptr,
+        const std::vector<bool>& is_volume = {});
 
     /**
      * @brief Remove unreferenced vertices.
@@ -223,9 +226,10 @@ private:
     /**
      * @brief One binary tag column per input, set where that input's winding number at a tet
      * barycenter is at least 0.5. Auto-corrects an inside-out input and warns when an input
-     * claims nothing, as the 2D EmbedCurves::tag_from_winding_number does.
+     * declared a volume (`is_volume`, as embed_surface()) claims nothing, as the 2D
+     * EmbedCurves::tag_from_winding_number does.
      */
-    void tag_from_winding_number();
+    void tag_from_winding_number(const std::vector<bool>& is_volume);
 
     /**
      * @brief Decide the cell tags from the arrangement's surface provenance.
