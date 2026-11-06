@@ -70,6 +70,10 @@ public:
     /// The envelope the run hands on, when it built its own: the 2D twin of
     /// SimWildMesh::envelope_data(), with the input `points`.
     MeshData envelope_data(const std::vector<Vector2d>& points) const;
+    /// After a tag operation, the envelope it hands on, around its result: the 2D twin of
+    /// SimWildMesh::set_envelope_around_tags(), every edge the next component holds, labelled
+    /// by its edge tags and the triangle tags on one side of it and not the other.
+    void set_envelope_around_tags();
     /// The vertices of the input points (input_points), set before init: anchored there, in a
     /// ball of feature_envelope_ratio x eps (TriOptimizerMesh::anchor_feature_points()).
     std::vector<size_t> m_input_point_vids;

@@ -58,7 +58,8 @@ cells and leaves `b`, so `b` is the whole second sphere and `a` the first one mi
 ```
 
 No cell changes, only its regions: the mesh is the one of step 1, with the same quality. A region
-edit returns no envelope, so `regions/m2_envelope.msh` is not written. To split the overlap between
+edit returns an envelope built around its result, its interfaces each labelled by the regions it
+bounds, which `wm.save` writes as `regions/m2_envelope.msh`. To split the overlap between
 the two instead, see [below](#splitting-the-overlap-instead).
 
 ### 3. Carve the gap
@@ -91,7 +92,7 @@ largest energy (`amips` on the output's tets) is 160 to 172 in two runs.
 
 ### 4. Remesh
 
-The offset returns no envelope either. Without one, simwild builds the envelope from the
+The offset, given no envelope, returns none. Without one, simwild builds the envelope from the
 interfaces of the mesh it is given, which is what is wanted here: the gap's walls are new, and no
 earlier envelope contains them. `eps_rel` 0.001 (an envelope of 0.0032, a third of the gap) keeps
 them close to where the offset put them.

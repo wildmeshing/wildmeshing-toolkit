@@ -142,6 +142,16 @@ public:
     MeshData envelope_data(
         const utils::FeatureInputs& curves,
         const std::vector<std::string>& curve_names) const;
+    /**
+     * @brief After a tag operation, the envelope it hands on, around its result: m_F_envelope
+     * every face the next component holds, labelled (m_F_envelope_labels) as it labels it -- its
+     * face tags, and the tet tags on one side of it and not the other, the regions it bounds
+     * (init_surfaces_and_boundaries()) -- on its own vertices in m_V_envelope; none without such
+     * a face. A tag operation retags cells and splits edges, so the faces between regions after
+     * it are new geometry, which no envelope given covers: the driver does not read one, and the
+     * next component holds these faces to themselves.
+     */
+    void set_envelope_around_tags();
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// simwild-only fields (tags, quality/sizing fields, the operation name).

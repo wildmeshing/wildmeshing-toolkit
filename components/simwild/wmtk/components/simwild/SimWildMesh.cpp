@@ -564,6 +564,42 @@ MeshData SimWildMesh::envelope_data(
     return out;
 }
 
+void SimWildMesh::set_envelope_around_tags()
+{
+    m_V_envelope.clear();
+    m_F_envelope.clear();
+    m_F_envelope_labels.clear();
+    m_F_envelope_face_sets.clear();
+    std::vector<int> row(vert_capacity(), -1);
+    for (const Tuple& f : get_faces()) {
+        InputSet set = m_face_attribute[f.fid(*this)].input_set() & face_tag_mask();
+        if (const auto opp = f.switch_tetrahedron(*this)) {
+            const auto& a = m_tet_attribute[f.tid(*this)].tags;
+            const auto& b = m_tet_attribute[opp->tid(*this)].tags;
+            for (const auto& [x, y] : {std::pair(&a, &b), std::pair(&b, &a)}) {
+                for (const int64_t t : *x) {
+                    const size_t bit = m_face_tag_names.size() + size_t(t);
+                    if (!y->count(t) && bit < size_t(SurfaceTagAttributes::max_inputs))
+                        set |= InputSet(1) << bit;
+                }
+            }
+        }
+        if (set == 0) continue;
+        Vector3i r;
+        const auto vids = get_face_vids(f);
+        for (int k = 0; k < 3; ++k) {
+            int& v = row[vids[k]];
+            if (v < 0) {
+                v = int(m_V_envelope.size());
+                m_V_envelope.push_back(m_vertex_attribute[vids[k]].m_posf);
+            }
+            r[k] = v;
+        }
+        m_F_envelope.push_back(r);
+        m_F_envelope_labels.push_back(set);
+    }
+}
+
 bool SimWildMesh::all_rounded() const
 {
     size_t cnt_round = 0;

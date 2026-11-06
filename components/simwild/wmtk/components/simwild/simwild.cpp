@@ -450,6 +450,8 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     apply_operation(mesh, json_params);
 
     mesh.consolidate_mesh();
+    // A tag operation hands on an envelope around its result (set_envelope_around_tags()).
+    if (params.operation != "remeshing") mesh.set_envelope_around_tags();
     double time = timer.getElapsedTime();
     logger().info("total optimization time {}s", time);
 
@@ -518,10 +520,10 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
                 component_io.save_volume_history(*vh, volume_history_output);
             }
         }
-        // The envelope handed on, while the run holds to one (the tag operations drop it): a
-        // reference given, unchanged, so that a chain keeps passing the first component's input;
-        // else the run's own, labelled (SimWildMesh::envelope_data()). On the file route in a file
-        // of its own, as the mesh file holds the mesh.
+        // The envelope handed on: a reference given, unchanged, so that a chain keeps passing the
+        // first component's input; else the run's own, labelled (SimWildMesh::envelope_data()),
+        // after a tag operation the one around its result. On the file route in a file of its
+        // own, as the mesh file holds the mesh.
         if (!mesh.m_V_envelope.empty()) {
             component_io.result.first["envelope"] =
                 reference ? *input_data.envelope_reference
@@ -635,6 +637,8 @@ void run_2D(
     apply_operation(mesh, json_params);
 
     mesh.consolidate_mesh();
+    // As in 3D: a tag operation hands on an envelope around its result.
+    if (params.operation != "remeshing") mesh.set_envelope_around_tags();
     double time = timer.getElapsedTime();
     logger().info("total optimization time {}s", time);
 
@@ -763,13 +767,26 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // their envelope from the input itself.
     const std::string envelope_path =
         component_io.memory() ? "" : json_params["envelope"].get<std::string>();
-    if (dimension != 0 && (!envelope_selector.is_null() || !envelope_path.empty())) {
+    const bool envelope_given = !envelope_selector.is_null() || !envelope_path.empty();
+    if (dimension != 0 && envelope_given) {
         log_and_throw_error("`envelope` applies to tagged mesh inputs only");
     }
+    // A tag operation holds nothing to an envelope, and the boundaries it leaves are new geometry
+    // that the one given does not cover: it is not read, and the run hands on one around its
+    // result (SimWildMesh::set_envelope_around_tags()). Until 2026-11 it was read, a reference
+    // refused for a label the mesh holds that it lacked, and the run handed on none.
+    const bool tag_operation = json_params["operation"] != "remeshing";
+    if (tag_operation && envelope_given) {
+        logger().info(
+            "operation {}: the `envelope` given is not read; the envelope handed on is built "
+            "around the result",
+            json_params["operation"].get<std::string>());
+    }
     std::optional<MeshData> envelope_file;
-    if (!envelope_path.empty()) envelope_file = io::read_mesh(resolve_path(root, envelope_path));
+    if (!envelope_path.empty() && !tag_operation)
+        envelope_file = io::read_mesh(resolve_path(root, envelope_path));
     const MeshData* envelope = envelope_file ? &*envelope_file
-                               : !envelope_selector.is_null()
+                               : !envelope_selector.is_null() && !tag_operation
                                    ? &component_io.mesh(envelope_selector)
                                    : nullptr;
     // The feature curves and points (input_edges, input_points) are forced into the mesh by the

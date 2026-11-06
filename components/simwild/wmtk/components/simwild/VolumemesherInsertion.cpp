@@ -507,7 +507,7 @@ void SimWildMesh::init_surfaces_and_boundaries(
     // With a reference the tubes are around its curves, not around the edges received.
     if (m_has_reference) init_reference_feature_tubes(feature_eps, m_envelope->use_exact);
     // Before a remeshing, which holds the mesh to the reference: what was received must already
-    // lie in it. The tag operations hold nothing to it, and drop it.
+    // lie in it. The tag operations are given none (simwild.cpp).
     if (m_has_reference && m_sim_params.operation == "remeshing") {
         check_reference_containment(m_envelope_eps);
     }

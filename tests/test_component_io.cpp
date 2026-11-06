@@ -179,6 +179,48 @@ labelled_rows(const MeshData& mesh, CellType type, const std::string& name)
     std::sort(out.begin(), out.end());
     return out;
 }
+// `rows` (labelled_rows()) with each row's corners sorted, the rows sorted: equal for the same
+// cells in any order and orientation.
+[[maybe_unused]] std::vector<std::vector<std::array<double, 3>>> unoriented(
+    const std::vector<std::vector<Vector3d>>& rows)
+{
+    auto out = canonical(rows);
+    for (auto& r : out) std::sort(r.begin(), r.end());
+    std::sort(out.begin(), out.end());
+    return out;
+}
+// The faces (2D: edges) between a cell of `mesh` tagged `name` and a cell that is not, as
+// labelled_rows() gives rows: the boundary of a region inside the mesh.
+[[maybe_unused]] std::vector<std::vector<Vector3d>> region_boundary(
+    const MeshData& mesh,
+    const std::string& name)
+{
+    const bool is_3d = mesh.cells.count(CellType::Tetrahedron);
+    const auto& cells = mesh.cell(is_3d ? CellType::Tetrahedron : CellType::Triangle);
+    const auto& tags = cells.attributes.at("tags");
+    const auto column = std::find(tags.labels.begin(), tags.labels.end(), name);
+    REQUIRE(column != tags.labels.end());
+    const auto member = tags.integers();
+    std::map<std::vector<int64_t>, std::vector<bool>> sides;
+    const auto& T = cells.connectivity;
+    for (Eigen::Index t = 0; t < T.rows(); ++t) {
+        for (Eigen::Index skip = 0; skip < T.cols(); ++skip) {
+            std::vector<int64_t> f;
+            for (Eigen::Index c = 0; c < T.cols(); ++c)
+                if (c != skip) f.push_back(T(t, c));
+            std::sort(f.begin(), f.end());
+            sides[f].push_back(member(t, column - tags.labels.begin()) != 0);
+        }
+    }
+    std::vector<std::vector<Vector3d>> rows;
+    for (const auto& [f, in] : sides) {
+        if (in.size() != 2 || in[0] == in[1]) continue;
+        rows.emplace_back();
+        for (const int64_t v : f)
+            rows.back().emplace_back(mesh.V(v, 0), mesh.V(v, 1), mesh.V(v, 2));
+    }
+    return rows;
+}
 // A unit tet's boundary, `shift` along x, its triangles facing out.
 [[maybe_unused]] MeshData tet_surface(double shift)
 {
@@ -323,6 +365,82 @@ TEST_CASE(
         simwild::simwild(
             {{"input", "tagged"}, {"max_iterations", 0}, {"num_threads", 1}},
             {{"tagged", data}}));
+}
+TEST_CASE(
+    "SimWild's tag operations ignore the envelope given and hand on one around their result",
+    "[component_io][envelope][tagged]")
+{
+    // tag_0 and tag_1 overlap in one cell of a cycle of cells around a line -- in 3D the cube's
+    // six tets around its diagonal, in 2D the square's four triangles around its centre -- and one
+    // cell is in neither. tag_priority gives the overlap to tag_0 alone, so the face (2D: edge)
+    // between that cell and tag_1's next one comes to bound tag_1 too, 0.7 from tag_1's faces
+    // before: the envelope of the mesh before, which a remeshing returns, does not hold it.
+    WorkingDirectory cwd;
+    const bool is_3d = GENERATE(false, true);
+    INFO((is_3d ? "3D" : "2D"));
+    MeshData data;
+    std::vector<std::array<uint8_t, 2>> member; // per cell: in tag_0, in tag_1
+    if (is_3d) {
+        data = cube_tets(); // the cycle: tets 0, 1, 4, 5, 3, 2
+        member = {{1, 0}, {1, 0}, {0, 0}, {0, 1}, {1, 1}, {0, 1}};
+    } else {
+        data.V.resize(5, 3);
+        data.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0.5, 0.5, 0;
+        data.cells[CellType::Triangle].connectivity.resize(4, 3);
+        data.cells[CellType::Triangle].connectivity << 0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4;
+        member = {{1, 0}, {1, 1}, {0, 1}, {0, 0}};
+    }
+    const CellType top = is_3d ? CellType::Tetrahedron : CellType::Triangle;
+    const CellType face = is_3d ? CellType::Triangle : CellType::Edge;
+    DataMatrix<uint8_t> tags(member.size(), 2);
+    for (size_t i = 0; i < member.size(); ++i) tags.row(i) << member[i][0], member[i][1];
+    data.cells.at(top).attributes["tags"] = {tags, {"tag_0", "tag_1"}};
+
+    const nlohmann::json remeshing = {
+        {"input", "tagged"},
+        {"envelope", "envelope"},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    auto without_envelope = remeshing;
+    without_envelope.erase("envelope");
+    // The envelope of the mesh before: its faces between the regions, labelled by them.
+    const MeshData stale =
+        simwild::simwild(without_envelope, {{"tagged", data}}).first.at("envelope");
+    auto operation = remeshing;
+    operation["operation"] = "tag_priority";
+    operation["tag_priority"] = {"tag_0", "tag_1"};
+    const auto result = simwild::simwild(operation, {{"tagged", data}, {"envelope", stale}});
+    check(result);
+    const MeshData& mesh = result.first.at("mesh");
+
+    // The envelope handed on is the result's own boundaries, each under the regions it bounds.
+    REQUIRE(result.first.count("envelope"));
+    const MeshData& envelope = result.first.at("envelope");
+    for (const std::string label : {"tag_0", "tag_1"}) {
+        INFO(label);
+        CHECK(
+            unoriented(labelled_rows(envelope, face, label)) ==
+            unoriented(region_boundary(mesh, label)));
+    }
+    CHECK(
+        unoriented(labelled_rows(stale, face, "tag_1")) !=
+        unoriented(region_boundary(mesh, "tag_1")));
+    // A remeshing holds the result to it; to the envelope before, it refuses the result.
+    const MeshData tagged = tags_only(mesh);
+    CHECK_NOTHROW(simwild::simwild(remeshing, {{"tagged", tagged}, {"envelope", envelope}}));
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(remeshing, {{"tagged", tagged}, {"envelope", stale}}),
+        Catch::Matchers::ContainsSubstring(is_3d ? "held faces outside" : "held edges outside"));
+
+    // The envelope given is not read: one without a label of the mesh, which a remeshing
+    // refuses, does not stop the tag operation.
+    MeshData renamed = stale;
+    auto& labels = renamed.cells.at(face).attributes.at("tags").labels;
+    std::replace(labels.begin(), labels.end(), std::string("tag_1"), std::string("tag_2"));
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(remeshing, {{"tagged", data}, {"envelope", renamed}}),
+        Catch::Matchers::ContainsSubstring("labelled tag_1"));
+    CHECK_NOTHROW(simwild::simwild(operation, {{"tagged", data}, {"envelope", renamed}}));
 }
 TEST_CASE("SimWild refuses a tagged mesh that does not fill its box", "[component_io][tagged]")
 {
@@ -2047,47 +2165,6 @@ TEST_CASE(
 #endif
 #if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset) && \
     defined(WMTK_TEST_simwild)
-namespace {
-// `rows` (labelled_rows()) with each row's corners sorted, the rows sorted: equal for the same
-// triangles in any order and orientation.
-std::vector<std::vector<std::array<double, 3>>> unoriented(
-    const std::vector<std::vector<Vector3d>>& rows)
-{
-    auto out = canonical(rows);
-    for (auto& r : out) std::sort(r.begin(), r.end());
-    std::sort(out.begin(), out.end());
-    return out;
-}
-// The faces between a tet of `mesh` tagged `name` and a tet that is not, as labelled_rows() gives
-// rows: the boundary of a region inside the mesh.
-std::vector<std::vector<Vector3d>> region_boundary(const MeshData& mesh, const std::string& name)
-{
-    const auto& cells = mesh.cell(CellType::Tetrahedron);
-    const auto& tags = cells.attributes.at("tags");
-    const auto column = std::find(tags.labels.begin(), tags.labels.end(), name);
-    REQUIRE(column != tags.labels.end());
-    const auto member = tags.integers();
-    std::map<std::array<int64_t, 3>, std::vector<bool>> sides;
-    const auto& T = cells.connectivity;
-    for (Eigen::Index t = 0; t < T.rows(); ++t) {
-        for (int skip = 0; skip < 4; ++skip) {
-            std::array<int64_t, 3> f;
-            for (int c = 0, k = 0; c < 4; ++c)
-                if (c != skip) f[size_t(k++)] = T(t, c);
-            std::sort(f.begin(), f.end());
-            sides[f].push_back(member(t, column - tags.labels.begin()) != 0);
-        }
-    }
-    std::vector<std::vector<Vector3d>> rows;
-    for (const auto& [f, in] : sides) {
-        if (in.size() != 2 || in[0] == in[1]) continue;
-        rows.emplace_back();
-        for (const int64_t v : f)
-            rows.back().emplace_back(mesh.V(v, 0), mesh.V(v, 1), mesh.V(v, 2));
-    }
-    return rows;
-}
-} // namespace
 TEST_CASE(
     "The offset holds tetwild's envelope and hands it on with its offset surface, which simwild "
     "holds",

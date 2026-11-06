@@ -317,9 +317,10 @@ simplifies the mesh within `eps_simplify_rel` of that envelope (unless
 simplified interfaces, so the envelope bounds how far the simplification moves them; with
 `simplify` false, it bounds the whole run.
 
-Do not pass it after a region edit. The edits change which faces are interfaces, so they return no
-envelope, and an old one does not cover the new interfaces: simwild finds faces outside it, warns
-`Some surface faces are outside the envelope. Re-build envelope`, and builds one from the regions.
+A region edit (below) changes which faces are interfaces, and an earlier envelope does not cover the
+new ones. An edit therefore does not read the `envelope` input, and returns an envelope built
+around its result: every interface face of the edited mesh (2D: edge), labelled by the regions it
+bounds, with the feature curves. A later remeshing holds the interfaces to it.
 
 On files, the `.msh` simwild writes holds the mesh only.
 [`wm.save`](../python-api.md#meshes-and-files) writes the envelope next to it (`stem.msh` and

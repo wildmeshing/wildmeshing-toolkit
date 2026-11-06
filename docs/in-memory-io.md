@@ -212,7 +212,10 @@ front, the surface manifold_extraction extracts -- is where the cell tags differ
   an edge block of the feature curves (`feature_<i>`); in 2D an edge block, one column per input
   curve's edge tag or region; the input points as a point block without tags, as `mesh` writes
   nothing for them. No eps: a receiver brings its own. A component given an `envelope` returns that
-  one, unchanged; simwild's tag operations return none.
+  one, unchanged. simwild's tag operations hold nothing to one and do not read it: they move the
+  boundaries between regions, which no envelope given covers, and return one built around their
+  result, each face between regions (2D: edge) labelled by the regions it bounds and its face tags,
+  with the feature curves.
 - `features`: tetwild's and triwild's tracked curves and anchored points, with input points.
 - `uv`: c1_simplification's UV mesh.
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as

@@ -319,7 +319,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
     if (m_has_reference) require_reference_edge_labels(m_E_envelope_labels);
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
     // Before a remeshing, which holds the mesh to the reference: what was received must already
-    // lie in it. The tag operations hold nothing to it, and drop it.
+    // lie in it. The tag operations are given none (simwild.cpp).
     if (m_has_reference && m_sim_params.operation == "remeshing") check_reference_containment();
 
     // Where a tracked curve ends or three or more meet, the vertex is anchored in a ball of
@@ -476,6 +476,42 @@ MeshData SimWildMeshTri::envelope_data(const std::vector<Vector2d>& points) cons
     io::append_envelope_block(out, edges, CellType::Edge, sets, names);
     io::append_envelope_points(out, points);
     return out;
+}
+
+void SimWildMeshTri::set_envelope_around_tags()
+{
+    m_V_envelope.clear();
+    m_E_envelope.clear();
+    m_E_envelope_labels.clear();
+    m_E_envelope_edge_sets.clear();
+    std::vector<int> row(vert_capacity(), -1);
+    for (const Tuple& e : get_edges()) {
+        InputSet set = m_edge_attribute[e.eid(*this)].input_set() & edge_tag_mask();
+        if (const auto opp = e.switch_face(*this)) {
+            const auto& a = m_face_attribute[e.fid(*this)].tags;
+            const auto& b = m_face_attribute[opp->fid(*this)].tags;
+            for (const auto& [x, y] : {std::pair(&a, &b), std::pair(&b, &a)}) {
+                for (const int64_t t : *x) {
+                    const size_t bit = m_edge_tag_names.size() + size_t(t);
+                    if (!y->count(t) && bit < size_t(SurfaceTagAttributes::max_inputs))
+                        set |= InputSet(1) << bit;
+                }
+            }
+        }
+        if (set == 0) continue;
+        Vector2i r;
+        const std::array<size_t, 2> vids = {{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
+        for (int k = 0; k < 2; ++k) {
+            int& v = row[vids[k]];
+            if (v < 0) {
+                v = int(m_V_envelope.size());
+                m_V_envelope.push_back(m_vertex_attribute[vids[k]].m_posf);
+            }
+            r[k] = v;
+        }
+        m_E_envelope.push_back(r);
+        m_E_envelope_labels.push_back(set);
+    }
 }
 
 CellTag SimWildMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_set)

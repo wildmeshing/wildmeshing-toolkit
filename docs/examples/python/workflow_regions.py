@@ -42,7 +42,7 @@ m2, report = wm.simwild(
      "replace_tags_in": ["a & b"], "replace_tags_out": ["b"]},
     {"m": m1["mesh"]},
 )
-wm.save(m2, "regions/m2")  # no envelope: a region edit returns none
+wm.save(m2, "regions/m2")  # and regions/m2_envelope.msh, around the edited regions
 print("2. replace_tags:", regions(m2["mesh"]))
 # --8<-- [end:edit]
 
