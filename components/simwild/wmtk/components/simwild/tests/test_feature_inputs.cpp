@@ -113,8 +113,7 @@ TEST_CASE("simwild-holds-input-feature-points", "[simwild][features]" + release_
         for (const bool preserve_topology : {true, false}) {
             CAPTURE(eps_rel, preserve_topology);
             const auto result = components::simwild::simwild(
-                {{"input", {"cube"}},
-                 {"input_edges", {"features"}},
+                {{"input", {"cube", "features"}},
                  {"eps_rel", eps_rel},
                  {"preserve_topology", preserve_topology},
                  {"num_threads", 1}},
@@ -150,9 +149,8 @@ TEST_CASE("simwild-2d-holds-input-feature-points", "[simwild][features]" + relea
             for (const std::string reference : {"input", "simplified"}) {
                 CAPTURE(eps_rel, preserve_topology, reference);
                 const auto result = components::simwild::simwild(
-                    {{"input", {"circle", "wave"}},
-                     {"input_type", {"volume", "curve"}},
-                     {"input_points", {"points"}},
+                    {{"input", {"circle", "wave", "points"}},
+                     {"input_type", {"volume", "curve", "point"}},
                      {"eps_rel", eps_rel},
                      {"preserve_topology", preserve_topology},
                      {"envelope_reference", reference},
@@ -174,7 +172,7 @@ TEST_CASE("simwild-2d-holds-input-feature-points", "[simwild][features]" + relea
 TEST_CASE("simwild-refuses-features-without-insertion", "[simwild][features]")
 {
     // A tagged tet mesh is used as it is: nothing would force the features in, so they are
-    // refused rather than dropped.
+    // refused rather than dropped, as every other input with a tagged mesh.
     MatrixXd V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
     MatrixXi T(1, 4);
@@ -183,12 +181,10 @@ TEST_CASE("simwild-refuses-features-without-insertion", "[simwild][features]")
     std::string what;
     try {
         components::simwild::simwild(
-            {{"input", {"tets"}}, {"input_edges", {"features"}}, {"num_threads", 1}},
+            {{"input", {"tets", "features"}}, {"num_threads", 1}},
             {{"tets", tets}, {"features", curve_and_points()}});
     } catch (const std::exception& e) {
         what = e.what();
     }
-    CHECK(
-        what.find("input_edges and input_points apply to inserted inputs only") !=
-        std::string::npos);
+    CHECK(what.find("simwild's only input") != std::string::npos);
 }

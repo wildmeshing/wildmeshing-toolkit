@@ -21,9 +21,7 @@ int main()
         {"curves", wmtk::io::read_mesh(data / "tetwild_features_edges.obj")},
         {"points", wmtk::io::read_mesh(data / "tetwild_features_points.obj")}};
     auto [outputs, report] = wmtk::components::tetwild::tetwild(
-        {{"input", nlohmann::json::array({"cube"})},
-         {"input_edges", nlohmann::json::array({"curves"})},
-         {"input_points", nlohmann::json::array({"points"})},
+        {{"input", nlohmann::json::array({"cube", "curves", "points"})},
          {"filter", "tracked"},
          {"stop_energy", 10},
          {"num_threads", 0}},

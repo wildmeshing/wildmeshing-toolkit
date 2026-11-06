@@ -211,8 +211,6 @@ InputData read_mesh(
                 input_paths.size());
         for (size_t i = 0; i < input_type.size(); ++i) is_volume[i] = input_type[i] == "volume";
     }
-    if (std::count(input_type.begin(), input_type.end(), "curve"))
-        log_and_throw_error("Curve inputs (input_type curve) are 2D only");
     const bool has_surface = std::count(is_volume.begin(), is_volume.end(), false) > 0;
     if (has_surface && split_connected_components)
         log_and_throw_error(
@@ -314,10 +312,6 @@ InputData read_mesh(
     if (features != nullptr && !features->empty()) {
         input_data.features = *features;
         input_data.features_placed = image_mesh.features_placed();
-        // One per input_edges file, as tetwild names them in its output.
-        for (size_t i = 0; i < json_params["input_edges"].size(); ++i) {
-            input_data.feature_edge_names.push_back(utils::feature_input_name(i));
-        }
     }
 
     if (debug_output) {
@@ -429,8 +423,6 @@ InputData read_curves(
 {
     // Which inputs enclose a region (triangle tags) and which stay curves (edge tags).
     const std::vector<std::string> input_type = json_params["input_type"];
-    if (std::count(input_type.begin(), input_type.end(), "surface"))
-        log_and_throw_error("Surface inputs (input_type surface) are 3D only");
     std::vector<bool> is_curve(input_paths.size(), false);
     if (!input_type.empty()) {
         if (input_type.size() != input_paths.size())
@@ -625,7 +617,12 @@ int resolve_input_dimension(
         };
         const bool tagged =
             tets || (triangles && has_regions(data.cell(CellType::Triangle).attributes));
-        const int topology = tets || (triangles && !tagged) ? 3 : 2;
+        // Untagged, a surface among the inputs makes the run 3D (io::ComponentIO::input_kind()).
+        bool surface = false;
+        for (const std::string& path : input_paths)
+            surface =
+                surface || component_io->input_kind(path) == io::ComponentIO::InputKind::surface;
+        const int topology = tets || (surface && !tagged) ? 3 : 2;
         const std::string d = json_params.value("dimension", std::string("auto"));
         if (d != "auto") {
             const int forced = std::stoi(d);
@@ -641,7 +638,7 @@ int resolve_input_dimension(
                     topology,
                     tets        ? "tagged tetrahedra"
                     : tagged    ? "tagged triangles"
-                    : triangles ? "a triangle surface"
+                    : triangles ? "triangle surfaces"
                                 : "curves");
             }
         }
@@ -655,33 +652,17 @@ int resolve_input_dimension(
     int sniffed = 0;
     if (extension == ".msh") {
         sniffed = 0; // let the msh reader decide
-    } else if (extension == ".obj") {
-        // A curve network and a surface are both OBJ, so the extension cannot separate them.
-        // 'f' records mean a surface; 'l' records with no 'f' mean a curve network.
-        bool has_f = false, has_l = false;
-        std::ifstream in(input_paths[0]);
-        if (!in) {
-            log_and_throw_error("Could not open input file {}", input_paths[0]);
-        }
-        std::string line;
-        while (std::getline(in, line)) {
-            if (line.size() < 2 || line[1] != ' ') {
-                continue;
-            }
-            if (line[0] == 'f') {
-                has_f = true;
-                break; // a surface: no need to read further
-            }
-            if (line[0] == 'l') {
-                has_l = true;
-            }
-        }
-        sniffed = has_f ? 3 : (has_l ? 2 : 3);
     } else {
-        logger().warn(
-            "Cannot determine dimension from file with extension {}. Assuming 3D surface.",
-            extension);
-        sniffed = 3;
+        // A curve network and a surface are both OBJ, so the extension cannot separate them: each
+        // input's records do (io::ComponentIO::file_input_kind()). A surface among the inputs
+        // makes the run 3D, else curves make it 2D; points alone go with either.
+        bool surface = false, curve = false;
+        for (const std::string& path : input_paths) {
+            const auto kind = io::ComponentIO::file_input_kind(path);
+            surface = surface || kind == io::ComponentIO::InputKind::surface;
+            curve = curve || kind == io::ComponentIO::InputKind::curve;
+        }
+        sniffed = surface || !curve ? 3 : 2;
     }
 
     const std::string d = json_params.value("dimension", std::string("auto"));
@@ -700,12 +681,12 @@ int resolve_input_dimension(
         // Disagree loudly rather than proceeding: without the sniff, a curve network read as
         // a surface surfaces much later as an empty-face assertion inside EmbedSurface.
         log_and_throw_error(
-            "dimension is set to {} but {} looks like a {}D input ({}). Remove the dimension "
-            "key to accept the detected one.",
+            "dimension is set to {} but the inputs look like a {}D input ({}). Remove the "
+            "dimension key to accept the detected one.",
             forced,
-            input_paths[0],
             sniffed,
-            sniffed == 2 ? "OBJ with 'l' polylines and no 'f' faces" : "OBJ with 'f' faces");
+            sniffed == 2 ? "OBJ curves ('l' polylines) and no surface"
+                         : "a surface (OBJ 'f' faces, or another format) among them");
     }
     logger().info("dimension: {} (forced)", forced);
     return forced;
@@ -903,7 +884,7 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
     if (has_curves) {
         // The edge block of a tet mesh: the feature curves, each label one feature input, bit j
         // of an edge's set (FeatureEdgeAttributes::inputs(feature)). They are held as the curves
-        // of input_edges are: an input edge per edge and label, placed on itself, the tubes
+        // of the curve inputs are: an input edge per edge and label, placed on itself, the tubes
         // around the edges as read (TetOptimizerMesh::tag_feature_edges()). A tet mesh's
         // envelope is triangles. Until 2026-11 tetwild and simwild did not write their feature
         // curves, and an edge block in a tet mesh was refused.

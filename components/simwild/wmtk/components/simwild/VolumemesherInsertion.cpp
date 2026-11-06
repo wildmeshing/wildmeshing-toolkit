@@ -488,9 +488,9 @@ void SimWildMesh::init_surfaces_and_boundaries(
     const size_t n_order2 = tag_order2_edges(order2_eps, m_envelope && m_envelope->use_exact);
     logger().info("order-2 edges tagged: {}", n_order2);
 
-    // The input feature curves (input_edges), held as tetwild holds them, by the same code: the
-    // tet edges tiling them are tagged with their input_edges file and kept in tubes of
-    // feature_envelope_ratio x eps -- around the input curves, and one per file
+    // The input feature curves (the curve inputs), held as tetwild holds them, by the same code:
+    // the tet edges tiling them are tagged with their curve input and kept in tubes of
+    // feature_envelope_ratio x eps -- around the input curves, and one per input
     // (tag_feature_edges()) -- with the surface envelope's predicate, as the order-2 tubes.
     const double feature_eps =
         m_params.epsr * m_params.diag_l * m_sim_params.feature_envelope_ratio;
@@ -512,7 +512,7 @@ void SimWildMesh::init_surfaces_and_boundaries(
         check_reference_containment(m_envelope_eps);
     }
 
-    // Where a tagged curve ends or three or more meet, and at every input point (input_points),
+    // Where a tagged curve ends or three or more meet, and at every input point (a point input),
     // the vertex is anchored (anchor_feature_points()), held like the curves: always. The radius
     // is the tube's of the kinds it is on, the smallest where it is on several.
     anchor_feature_points(input_points, order2_eps, feature_eps);

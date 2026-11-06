@@ -418,13 +418,13 @@ TEST_CASE("tetwild-refuses-features-with-legacy-code", "[tetwild][features]")
     const fs::path dir = fs::current_path() / "tetwild_legacy_feature_refusal";
     fs::remove_all(dir);
     fs::create_directories(dir);
-    const std::string sphere = (fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj").string();
-    for (const char* key : {"input_points", "input_edges"}) {
-        CAPTURE(key);
+    const fs::path models = fs::path(WMTK_DATA_DIR) / "models";
+    const std::string sphere = (models / "sphere.obj").string();
+    for (const char* feature : {"tetwild_features_points.obj", "tetwild_features_edges.obj"}) {
+        CAPTURE(feature);
         const nlohmann::json j = {
             {"application", "tetwild"},
-            {"input", {sphere}},
-            {key, {sphere}},
+            {"input", {sphere, (models / feature).string()}},
             {"output", (dir / "out").string()},
             {"use_legacy_code", true},
             {"max_iterations", 1},

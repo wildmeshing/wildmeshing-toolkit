@@ -283,6 +283,107 @@ void check_reference_options(const Parameters& params)
     }
 }
 
+/// The inputs of a surface (3D) or curve (2D) run, by their content
+/// (io::ComponentIO::input_kind()).
+struct InputLists
+{
+    /// The inputs the arrangement inserts and tags -- in 3D the surfaces, in 2D the curves --
+    /// and json_params with their own input_names, input_type and input_transform, for the
+    /// readers (read_mesh(), read_curves()), which index those by insertion.
+    std::vector<std::string> inserted;
+    nlohmann::json params;
+    /// The selectors of the 3D curve inputs (feature curves), with their names, and of the point
+    /// inputs.
+    nlohmann::json curves = nlohmann::json::array(), points = nlohmann::json::array();
+    std::vector<std::string> curve_names;
+};
+
+/**
+ * @brief One input list: each entry what its content makes it, named by input_names at its
+ * position in the list (tag_<i> without a name), with an input_type, when given, per entry. A
+ * surface (3D) or a curve (2D) is inserted, input_type "volume" (the default) or "surface" (2D:
+ * "curve"); in 3D a curve is a feature curve, input_type "curve", and in both dimensions bare
+ * vertices are input points, input_type "point" -- their content leaves no choice. input_transform
+ * applies to the inserted inputs alone, as it did. Until 2026-11 curves and points came in lists
+ * of their own, input_edges and input_points, the curves named feature_<i>.
+ */
+InputLists split_inputs(
+    const io::ComponentIO& component_io,
+    const std::vector<std::string>& paths,
+    const nlohmann::json& json_params,
+    const int dimension)
+{
+    using Kind = io::ComponentIO::InputKind;
+    const std::vector<std::string> names = json_params["input_names"];
+    const nlohmann::json& types = json_params["input_type"];
+    const nlohmann::json& transforms = json_params["input_transform"];
+    if (!types.empty() && types.size() != paths.size()) {
+        log_and_throw_error(
+            "input_type needs one entry per input: {} entries for {} inputs",
+            types.size(),
+            paths.size());
+    }
+    InputLists out;
+    out.params = json_params;
+    out.params["input_names"] = nlohmann::json::array();
+    out.params["input_type"] = nlohmann::json::array();
+    out.params["input_transform"] = nlohmann::json::array();
+    const char* inserted_kind = dimension == 3 ? "surface" : "curve";
+    for (size_t i = 0; i < paths.size(); ++i) {
+        const Kind kind = component_io.input_kind(paths[i]);
+        const std::string name = i < names.size() ? names[i] : "tag_" + std::to_string(i);
+        const std::string type = types.empty() ? "" : types[i].get<std::string>();
+        if (kind == Kind::surface && dimension == 2) {
+            log_and_throw_error(
+                "{}: triangles in a 2D run, whose inputs are curves and points",
+                paths[i]);
+        }
+        if (kind == (dimension == 3 ? Kind::surface : Kind::curve)) {
+            if (!type.empty() && type != "volume" && type != inserted_kind) {
+                log_and_throw_error(
+                    "input_type \"{}\" for {}: a {} input is \"volume\" or \"{}\"{}",
+                    type,
+                    paths[i],
+                    inserted_kind,
+                    inserted_kind,
+                    type == "surface" ? " (\"surface\" is 3D only)" : "");
+            }
+            out.inserted.push_back(paths[i]);
+            out.params["input_names"].push_back(name);
+            if (!types.empty()) out.params["input_type"].push_back(type);
+            out.params["input_transform"].push_back(
+                i < transforms.size() ? transforms[i] : nlohmann::json::array());
+            continue;
+        }
+        const std::string own = kind == Kind::points ? "point" : "curve";
+        if (!type.empty() && type != own) {
+            log_and_throw_error(
+                "input_type \"{}\" for {}: its content makes it a {} input, input_type \"{}\"",
+                type,
+                paths[i],
+                own,
+                own);
+        }
+        if (i < transforms.size() && !transforms[i].empty()) {
+            log_and_throw_error(
+                "input_transform for {}: a transform applies to the {} inputs, not to {}",
+                paths[i],
+                inserted_kind,
+                kind == Kind::points ? "points" : "feature curves");
+        }
+        (kind == Kind::points ? out.points : out.curves).push_back(json_params["input"][i]);
+        if (kind == Kind::curve) out.curve_names.push_back(name);
+    }
+    if (out.inserted.empty()) {
+        log_and_throw_error(
+            "simwild needs a {} among its inputs: got {} curves and {} point inputs",
+            inserted_kind,
+            out.curves.size(),
+            out.points.size());
+    }
+    return out;
+}
+
 } // namespace
 
 void run_3D(const nlohmann::json& json_params, InputData& input_data, io::ComponentIO& component_io)
@@ -789,19 +890,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                                : !envelope_selector.is_null() && !tag_operation
                                    ? &component_io.mesh(envelope_selector)
                                    : nullptr;
-    // The feature curves and points (input_edges, input_points) are forced into the mesh by the
-    // insertion: curves and points by the 3D surface insertion, points by the 2D curve
-    // arrangement. The other routes refuse them rather than drop them.
-    const bool has_features =
-        !json_params["input_edges"].empty() || !json_params["input_points"].empty();
-    const auto no_features = [&](const char* route) {
-        if (has_features) {
-            log_and_throw_error(
-                "input_edges and input_points apply to inserted inputs only (input_edges to 3D "
-                "surface inputs, input_points to 3D surface and 2D curve inputs), not to {}",
-                route);
-        }
-    };
     // A tagged mesh is the run's one input, as on tetwild's and triwild's tagged routes: the route
     // reads input[0] only, and until 2026-11 dropped any other input without a word.
     const auto only_input = [&](const char* route) {
@@ -815,45 +903,37 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     };
     if (component_io.memory() && dimension == 0) {
-        no_features("a tagged mesh");
         only_input("a tagged mesh");
         // Label images become regions here as on the file route (read_image_msh).
         MeshData input = component_io.mesh(input_paths.at(0));
         tags_from_label_images(input, input_paths.at(0));
         input_data = read_mesh_data(input, envelope);
     } else if (!component_io.memory() && extension == ".msh") {
-        no_features("a .msh input");
         only_input("a .msh input");
         input_data = read_image_msh(input_paths[0], envelope);
     } else if (dimension == 2) {
-        if (!json_params["input_edges"].empty()) {
-            log_and_throw_error("input_edges apply to 3D surface inputs only, not to a 2D input");
-        }
+        const InputLists lists = split_inputs(component_io, input_paths, json_params, 2);
         // Read by the code the 3D route reads them with; only their x and y are used.
-        const utils::FeatureInputs features = utils::read_feature_inputs(
-            component_io,
-            root,
-            nlohmann::json::array(),
-            json_params["input_points"]);
+        const utils::FeatureInputs features =
+            utils::read_feature_inputs(component_io, root, nlohmann::json::array(), lists.points);
         input_data = read_curves(
-            input_paths,
+            lists.inserted,
             output_filename.string(),
-            json_params,
+            lists.params,
             component_io.memory() ? &component_io : nullptr,
             &features);
     } else {
+        const InputLists lists = split_inputs(component_io, input_paths, json_params, 3);
         // Read by the code tetwild reads them with.
-        const utils::FeatureInputs features = utils::read_feature_inputs(
-            component_io,
-            root,
-            json_params["input_edges"],
-            json_params["input_points"]);
+        const utils::FeatureInputs features =
+            utils::read_feature_inputs(component_io, root, lists.curves, lists.points);
         input_data = read_mesh(
-            input_paths,
+            lists.inserted,
             output_filename.string(),
-            json_params,
+            lists.params,
             component_io.memory() ? &component_io : nullptr,
             &features);
+        if (!input_data.features.empty()) input_data.feature_edge_names = lists.curve_names;
     }
 
     if (input_data.T_input.cols() == 4) {

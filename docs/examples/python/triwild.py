@@ -67,8 +67,7 @@ for change in [{}, {"stop_energy": 100}, {"stop_energy": 5}, {"stop_energy": 3},
 star = {"curve": wm.read_mesh(str(DATA / "triwild_free_points_curve.obj")),
         "points": wm.read_mesh(str(DATA / "triwild_free_points_points.obj"))}
 outputs, report = triangulate(
-    {"input_points": ["points"], "stop_energy": 10, "DEBUG_feature_retention": True},
-    star, ["curve"])
+    {"stop_energy": 10, "DEBUG_feature_retention": True}, star, ["curve", "points"])
 V = outputs["mesh"]["V"]
 # How far each input point is from the nearest vertex of the output.
 worst = max(np.linalg.norm(V - p, axis=1).min() for p in star["points"]["V"])

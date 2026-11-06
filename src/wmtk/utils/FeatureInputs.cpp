@@ -58,15 +58,8 @@ FeatureInputs read_feature_inputs(
     }
     for (const std::string& path : point_paths) {
         MatrixXd Vp;
-        MatrixXi Ep;
+        MatrixXi Ep; // none: a point input has no segments (ComponentIO::input_kind())
         component_io.edges(path, Vp, Ep);
-        if (Ep.rows() > 0) {
-            logger().warn(
-                "input_points file {} has {} edges; only its {} vertices are used",
-                path,
-                Ep.rows(),
-                Vp.rows());
-        }
         logger().info("Read feature point file {}: #P = {}", path, Vp.rows());
         for (int i = 0; i < Vp.rows(); ++i) {
             out.points.emplace_back(Vp.row(i));

@@ -16,8 +16,9 @@ inputs = {
     "curves": wm.read_mesh(str(DATA / "tetwild_features_edges.obj")),
     "points": wm.read_mesh(str(DATA / "tetwild_features_points.obj")),
 }
-options = {"input": ["cube"], "input_edges": ["curves"], "input_points": ["points"],
-           "filter": "tracked", "stop_energy": 10, "num_threads": 0}
+# One input list: the surface, the curve and the points, each what its content makes it.
+options = {"input": ["cube", "curves", "points"], "filter": "tracked", "stop_energy": 10,
+           "num_threads": 0}
 outputs, report = wm.tetwild(options, inputs)
 mesh, features = outputs["mesh"], outputs["features"]
 print(len(mesh["V"]), "vertices,", len(mesh["cells"]["tetrahedron"]["connectivity"]), "tets,",

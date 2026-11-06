@@ -221,6 +221,39 @@ labelled_rows(const MeshData& mesh, CellType type, const std::string& name)
     }
     return rows;
 }
+// One point, (x, y, z), as a point input: vertices without cells.
+[[maybe_unused]] MeshData point_input(double x, double y, double z)
+{
+    MeshData data;
+    data.V.resize(1, 3);
+    data.V << x, y, z;
+    return data;
+}
+// The segment from (x0, y0, z0) to (x1, y1, z1), as a curve input.
+[[maybe_unused]] MeshData
+segment_input(double x0, double y0, double z0, double x1, double y1, double z1)
+{
+    MeshData data;
+    data.V.resize(2, 3);
+    data.V << x0, y0, z0, x1, y1, z1;
+    data.cells[CellType::Edge].connectivity.resize(1, 2);
+    data.cells[CellType::Edge].connectivity << 0, 1;
+    return data;
+}
+// Whether `mesh` has a vertex exactly at `point`'s.
+[[maybe_unused]] bool has_vertex_at(const MeshData& mesh, const MeshData& point)
+{
+    for (Eigen::Index v = 0; v < mesh.V.rows(); ++v)
+        if (mesh.V.row(v) == point.V.row(0)) return true;
+    return false;
+}
+// The labels of `type`'s tags in `mesh`, none without them.
+[[maybe_unused]] std::vector<std::string> labels_of(const MeshData& mesh, CellType type)
+{
+    const auto it = mesh.cells.find(type);
+    if (it == mesh.cells.end() || !it->second.attributes.count("tags")) return {};
+    return it->second.attributes.at("tags").labels;
+}
 // A unit tet's boundary, `shift` along x, its triangles facing out.
 [[maybe_unused]] MeshData tet_surface(double shift)
 {
@@ -348,6 +381,72 @@ TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
     REQUIRE(result.first.at("mesh").cells.begin()->second.attributes.count("tags"));
     // The mesh and the envelope, nothing derived from the mesh.
     CHECK(output_names(result.first) == std::set<std::string>{"mesh", "envelope"});
+}
+TEST_CASE(
+    "SimWild takes one input list, each input what its content makes it",
+    "[component_io]" + release_only)
+{
+    // 3D: a unit tet, a segment inside it and a point inside it, the curve first, named by
+    // input_names at their positions: the tet a region `a`, the segment a feature curve `c`, the
+    // point a vertex of the output, exactly; input_type, when given, names every entry's kind, and
+    // one its content contradicts is refused, as is a transform of a curve. 2D: a square's
+    // boundary and a point inside it, the point first: the square region tag_1, the point a
+    // vertex. Until 2026-11 curves and points came in input_edges and input_points, now unknown
+    // keys, and the curves were named feature_<i>.
+    WorkingDirectory cwd;
+    const nlohmann::json base = {{"simplify", false}, {"max_iterations", 0}, {"num_threads", 1}};
+    {
+        INFO("3D");
+        const MeshData point = point_input(0.2, 0.15, 0.3);
+        const MeshMap meshes{
+            {"a", tet_surface(0)},
+            {"curve", segment_input(0.1, 0.1, 0.1, 0.3, 0.2, 0.1)},
+            {"point", point}};
+        auto options = base;
+        options["input"] = {"curve", "a", "point"};
+        options["input_names"] = {"c", "a", "p"};
+        const auto result = simwild::simwild(options, meshes);
+        check(result);
+        const MeshData& mesh = result.first.at("mesh");
+        const auto regions = labels_of(mesh, CellType::Tetrahedron);
+        CHECK(std::count(regions.begin(), regions.end(), "a") == 1);
+        CHECK(labels_of(mesh, CellType::Edge) == std::vector<std::string>{"c"});
+        CHECK(has_vertex_at(mesh, point));
+        auto typed = options;
+        typed["input_type"] = {"curve", "volume", "point"};
+        CHECK_NOTHROW(simwild::simwild(typed, meshes));
+        typed["input_type"] = {"volume", "volume", "point"};
+        REQUIRE_THROWS_WITH(
+            simwild::simwild(typed, meshes),
+            Catch::Matchers::ContainsSubstring("its content makes it a curve input"));
+        auto transformed = options;
+        transformed["input_transform"] = {
+            {{1, 0, 0, 0.1}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
+        REQUIRE_THROWS_WITH(
+            simwild::simwild(transformed, meshes),
+            Catch::Matchers::ContainsSubstring("a transform applies to the surface inputs"));
+        auto old = base;
+        old["input"] = {"a"};
+        old["input_edges"] = {"curve"};
+        CHECK_THROWS(simwild::simwild(old, meshes));
+    }
+    {
+        INFO("2D");
+        MeshData square;
+        square.V.resize(4, 3);
+        square.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0;
+        square.cells[CellType::Edge].connectivity.resize(4, 2);
+        square.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 3, 3, 0;
+        const MeshData point = point_input(0.3, 0.6, 0);
+        auto options = base;
+        options["input"] = {"point", "square"};
+        const auto result = simwild::simwild(options, {{"square", square}, {"point", point}});
+        check(result);
+        const MeshData& mesh = result.first.at("mesh");
+        const auto regions = labels_of(mesh, CellType::Triangle);
+        CHECK(std::count(regions.begin(), regions.end(), "tag_1") == 1);
+        CHECK(has_vertex_at(mesh, point));
+    }
 }
 TEST_CASE(
     "SimWild remeshes a tagged mesh with nothing tracked and no envelope",
@@ -765,6 +864,45 @@ TEST_CASE("SimWild checks a forced dimension against memory inputs", "[component
 }
 #endif
 #ifdef WMTK_TEST_triwild
+TEST_CASE("TriWild takes one input list: curves and points", "[component_io]")
+{
+    // A square's boundary and a point inside it, listed point first: each input is what its
+    // content makes it, named by its position, so the curve's edge tag is tag_1, and the point is
+    // a vertex of the output, exactly. Until 2026-11 points came in input_points, now an unknown
+    // key.
+    WorkingDirectory cwd;
+    MeshData square;
+    square.V.resize(4, 3);
+    square.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0;
+    square.cells[CellType::Edge].connectivity.resize(4, 2);
+    square.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 3, 3, 0;
+    const MeshData point = point_input(0.3, 0.6, 0);
+    const MeshMap meshes{{"square", square}, {"point", point}};
+    const nlohmann::json options = {
+        {"input", {"point", "square"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    const auto result = triwild::triwild(options, meshes);
+    check(result);
+    const MeshData& mesh = result.first.at("mesh");
+    CHECK(labels_of(mesh, CellType::Edge) == std::vector<std::string>{"tag_1"});
+    CHECK(has_vertex_at(mesh, point));
+    auto named = options;
+    named["input_names"] = {"p", "s"};
+    CHECK(
+        labels_of(triwild::triwild(named, meshes).first.at("mesh"), CellType::Edge) ==
+        std::vector<std::string>{"s"});
+    auto old = options;
+    old["input"] = {"square"};
+    old["input_points"] = {"point"};
+    CHECK_THROWS(triwild::triwild(old, meshes));
+    auto points_only = options;
+    points_only["input"] = {"point"};
+    REQUIRE_THROWS_WITH(
+        triwild::triwild(points_only, meshes),
+        Catch::Matchers::ContainsSubstring("needs a curve"));
+}
 TEST_CASE("TriWild embeds named curves in memory", "[component_io]")
 {
     WorkingDirectory cwd;
@@ -862,6 +1000,45 @@ TEST_CASE("TriWild writes each input's curve tags on both routes", "[component_i
 }
 #endif
 #ifdef WMTK_TEST_tetwild
+TEST_CASE(
+    "TetWild takes one input list: surfaces, curves and points",
+    "[component_io]" + release_only)
+{
+    // A unit tet, a segment inside it and a point inside it, listed curve first: each input is
+    // what its content makes it, named by its position, so the surface's face tag is tag_1 and the
+    // curve's edge tag tag_0, and the point is a vertex of the output, exactly. Until 2026-11
+    // curves and points came in input_edges and input_points, now unknown keys, and the curves
+    // were named feature_<i>.
+    WorkingDirectory cwd;
+    const MeshData curve = segment_input(0.1, 0.1, 0.1, 0.3, 0.2, 0.1);
+    const MeshData point = point_input(0.2, 0.15, 0.3);
+    const MeshMap meshes{{"a", tet_surface(0)}, {"curve", curve}, {"point", point}};
+    const nlohmann::json options = {
+        {"input", {"curve", "a", "point"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    const auto result = tetwild::tetwild(options, meshes);
+    check(result);
+    const MeshData& mesh = result.first.at("mesh");
+    CHECK(labels_of(mesh, CellType::Triangle) == std::vector<std::string>{"tag_1"});
+    CHECK(labels_of(mesh, CellType::Edge) == std::vector<std::string>{"tag_0"});
+    CHECK(has_vertex_at(mesh, point));
+    auto named = options;
+    named["input_names"] = {"c", "a", "p"};
+    const MeshData named_mesh = tetwild::tetwild(named, meshes).first.at("mesh");
+    CHECK(labels_of(named_mesh, CellType::Triangle) == std::vector<std::string>{"a"});
+    CHECK(labels_of(named_mesh, CellType::Edge) == std::vector<std::string>{"c"});
+    auto old = options;
+    old["input"] = {"a"};
+    old["input_edges"] = {"curve"};
+    CHECK_THROWS(tetwild::tetwild(old, meshes));
+    auto no_surface = options;
+    no_surface["input"] = {"curve", "point"};
+    REQUIRE_THROWS_WITH(
+        tetwild::tetwild(no_surface, meshes),
+        Catch::Matchers::ContainsSubstring("needs a surface"));
+}
 TEST_CASE("TetWild embeds a named surface in memory", "[component_io]" + release_only)
 {
     WorkingDirectory cwd;
@@ -885,11 +1062,11 @@ TEST_CASE(
     "TetWild writes each input's face tags and its feature curves on both routes",
     "[component_io][io]" + release_only)
 {
-    // Two unit tets 3 apart, named `a` and `b`, and a segment inside `a` as a feature file. The
-    // output's triangle block holds each tracked face under the inputs it lies on, facing as its
-    // input (out), and its edge block the tet edges tiling the segment, as feature_0. With and
-    // without per-input envelopes: the inputs are the tags either way. Until 2026-11 tetwild wrote
-    // no tags, and without per-input envelopes every tracked face was input 0's.
+    // Two unit tets 3 apart, named `a` and `b`, and a segment inside `a`, a curve input named `c`.
+    // The output's triangle block holds each tracked face under the inputs it lies on, facing as
+    // its input (out), and its edge block the tet edges tiling the segment, as c. With and without
+    // per-input envelopes: the inputs are the tags either way. Until 2026-11 tetwild wrote no tags,
+    // and without per-input envelopes every tracked face was input 0's.
     WorkingDirectory cwd;
     const bool per_input_envelopes = GENERATE(true, false);
     INFO("per_input_envelopes " << per_input_envelopes);
@@ -899,14 +1076,13 @@ TEST_CASE(
     curve.cells[CellType::Edge].connectivity.resize(1, 2);
     curve.cells[CellType::Edge].connectivity << 0, 1;
     const nlohmann::json options = {
-        {"input_names", {"a", "b"}},
+        {"input_names", {"a", "b", "c"}},
         {"simplify", false},
         {"max_iterations", 0},
         {"num_threads", 1},
         {"per_input_envelopes", per_input_envelopes}};
     auto memory_options = options;
-    memory_options["input"] = {"a", "b"};
-    memory_options["input_edges"] = {"curve"};
+    memory_options["input"] = {"a", "b", "curve"};
     const auto result = tetwild::tetwild(
         memory_options,
         {{"a", tet_surface(0)}, {"b", tet_surface(3)}, {"curve", curve}});
@@ -916,8 +1092,7 @@ TEST_CASE(
     write_obj("curve.obj", curve);
     auto file_options = options;
     file_options["application"] = "tetwild";
-    file_options["input"] = {here("a.obj"), here("b.obj")};
-    file_options["input_edges"] = {here("curve.obj")};
+    file_options["input"] = {here("a.obj"), here("b.obj"), here("curve.obj")};
     file_options["output"] = "out";
     file_options["write_vtu"] = false;
     tetwild::tetwild(file_options);
@@ -952,8 +1127,8 @@ TEST_CASE(
         // anchors' radius.
         REQUIRE(
             mesh->cell(CellType::Edge).attributes.at("tags").labels ==
-            std::vector<std::string>{"feature_0"});
-        const auto edges = labelled_rows(*mesh, CellType::Edge, "feature_0");
+            std::vector<std::string>{"c"});
+        const auto edges = labelled_rows(*mesh, CellType::Edge, "c");
         REQUIRE(!edges.empty());
         for (const Vector3d& end : {p, q}) {
             double nearest = std::numeric_limits<double>::infinity();
@@ -972,8 +1147,8 @@ TEST_CASE(
             canonical(labelled_rows(file, CellType::Triangle, name)));
     }
     CHECK(
-        canonical(labelled_rows(result.first.at("mesh"), CellType::Edge, "feature_0")) ==
-        canonical(labelled_rows(file, CellType::Edge, "feature_0")));
+        canonical(labelled_rows(result.first.at("mesh"), CellType::Edge, "c")) ==
+        canonical(labelled_rows(file, CellType::Edge, "c")));
 #ifdef WMTK_TEST_simwild
     // Read back as simwild and the offset read a tagged mesh: the face tags and the feature
     // curves. On the memory route once tetwild's fields, which it does not take, are dropped.
@@ -983,7 +1158,7 @@ TEST_CASE(
     for (const auto* input : {&from_memory, &from_file}) {
         CHECK(input->face_tag_names == std::vector<std::string>{"a", "b"});
         CHECK(input->F_tagged.rows() == mesh.cell(CellType::Triangle).connectivity.rows());
-        CHECK(input->feature_edge_names == std::vector<std::string>{"feature_0"});
+        CHECK(input->feature_edge_names == std::vector<std::string>{"c"});
         CHECK(
             input->features.edges.size() == size_t(mesh.cell(CellType::Edge).connectivity.rows()));
         CHECK(input->tag_names.empty());
@@ -1496,7 +1671,7 @@ TEST_CASE(
     "TetWild hands on its envelope and SimWild holds a tagged mesh to it on both routes",
     "[component_io][io][envelope]" + release_only)
 {
-    // Two spheres `a` and `b`, and a segment inside `a` as a feature file. tetwild simplifies
+    // Two spheres `a` and `b`, and a segment inside `a`, a curve input `c`. tetwild simplifies
     // them within half its eps, so the faces it hands on leave the spheres by up to that much:
     // a run at a tenth of its eps cannot hold them. simwild remeshes tetwild's mesh held to the
     // envelope tetwild returns, the spheres as given, at tetwild's eps, and must return a mesh
@@ -1510,14 +1685,13 @@ TEST_CASE(
     curve.cells[CellType::Edge].connectivity.resize(1, 2);
     curve.cells[CellType::Edge].connectivity << 0, 1;
     const nlohmann::json tetwild_options = {
-        {"input_names", {"a", "b"}},
+        {"input_names", {"a", "b", "c"}},
         {"eps_rel", 1e-2},
         {"eps_simplify_rel", 5e-3},
         {"max_iterations", 2},
         {"num_threads", 1}};
     auto memory_options = tetwild_options;
-    memory_options["input"] = {"a", "b"};
-    memory_options["input_edges"] = {"curve"};
+    memory_options["input"] = {"a", "b", "curve"};
     const auto meshed = tetwild::tetwild(memory_options, {{"a", a}, {"b", b}, {"curve", curve}});
     check(meshed);
     write_obj("a.obj", a);
@@ -1525,8 +1699,7 @@ TEST_CASE(
     write_obj("curve.obj", curve);
     auto file_options = tetwild_options;
     file_options["application"] = "tetwild";
-    file_options["input"] = {here("a.obj"), here("b.obj")};
-    file_options["input_edges"] = {here("curve.obj")};
+    file_options["input"] = {here("a.obj"), here("b.obj"), here("curve.obj")};
     file_options["output"] = "t";
     file_options["write_vtu"] = false;
     tetwild::tetwild(file_options);
@@ -1534,7 +1707,7 @@ TEST_CASE(
     const MeshData envelope = io::read_mesh("t_envelope.msh");
 
     // The envelope is the input, labelled as the mesh's tags: each sphere's triangles under its
-    // name, the segment as feature_0. The same on both routes.
+    // name, the segment as c. The same on both routes.
     REQUIRE(meshed.first.count("envelope"));
     const MeshData& memory_envelope = meshed.first.at("envelope");
     for (const MeshData* e : {&memory_envelope, &envelope}) {
@@ -1542,15 +1715,14 @@ TEST_CASE(
             e->cell(CellType::Triangle).attributes.at("tags").labels ==
             std::vector<std::string>{"a", "b"});
         REQUIRE(
-            e->cell(CellType::Edge).attributes.at("tags").labels ==
-            std::vector<std::string>{"feature_0"});
+            e->cell(CellType::Edge).attributes.at("tags").labels == std::vector<std::string>{"c"});
         CHECK(
             labelled_rows(*e, CellType::Triangle, "a").size() ==
             size_t(a.cell(CellType::Triangle).connectivity.rows()));
         CHECK(
             labelled_rows(*e, CellType::Triangle, "b").size() ==
             size_t(b.cell(CellType::Triangle).connectivity.rows()));
-        CHECK(labelled_rows(*e, CellType::Edge, "feature_0").size() == 1);
+        CHECK(labelled_rows(*e, CellType::Edge, "c").size() == 1);
     }
     for (const std::string name : {"a", "b"}) {
         CHECK(
@@ -1558,8 +1730,8 @@ TEST_CASE(
             canonical(labelled_rows(envelope, CellType::Triangle, name)));
     }
     CHECK(
-        canonical(labelled_rows(memory_envelope, CellType::Edge, "feature_0")) ==
-        canonical(labelled_rows(envelope, CellType::Edge, "feature_0")));
+        canonical(labelled_rows(memory_envelope, CellType::Edge, "c")) ==
+        canonical(labelled_rows(envelope, CellType::Edge, "c")));
 
     // simwild on tetwild's mesh, held to the envelope at tetwild's eps, on both routes: on the
     // file route the envelope is a path relative to input_dir.
@@ -1608,8 +1780,8 @@ TEST_CASE(
         return canonical(rows);
     };
     CHECK(
-        undirected(labelled_rows(memory, CellType::Edge, "feature_0")) ==
-        undirected(labelled_rows(file, CellType::Edge, "feature_0")));
+        undirected(labelled_rows(memory, CellType::Edge, "c")) ==
+        undirected(labelled_rows(file, CellType::Edge, "c")));
 
     // Every face within eps of its own sphere as given to tetwild, in its exact envelope and as
     // measured at its corners, edge midpoints and centroid; every feature edge within eps of the
@@ -1654,7 +1826,7 @@ TEST_CASE(
             CHECK(outside == 0);
             CHECK(farthest <= eps * (1 + 1e-9));
         }
-        const auto edges = labelled_rows(*mesh, CellType::Edge, "feature_0");
+        const auto edges = labelled_rows(*mesh, CellType::Edge, "c");
         REQUIRE(!edges.empty());
         for (const auto& e : edges)
             for (const Vector3d& x : e) CHECK(off_segment(x) <= eps * (1 + 1e-9));
@@ -1675,10 +1847,10 @@ TEST_CASE(
         simwild::simwild(simwild_memory, {{"tagged", tagged}, {"envelope", renamed}}),
         Catch::Matchers::ContainsSubstring("labelled b"));
     renamed = envelope;
-    renamed.cells.at(CellType::Edge).attributes.at("tags").labels = {"feature_1"};
+    renamed.cells.at(CellType::Edge).attributes.at("tags").labels = {"d"};
     REQUIRE_THROWS_WITH(
         simwild::simwild(simwild_memory, {{"tagged", tagged}, {"envelope", renamed}}),
-        Catch::Matchers::ContainsSubstring("labelled feature_0"));
+        Catch::Matchers::ContainsSubstring("labelled c"));
 }
 #endif
 #if defined(WMTK_TEST_triwild) && defined(WMTK_TEST_simwild)
@@ -1819,7 +1991,7 @@ TEST_CASE(
 #endif
 #ifdef WMTK_TEST_tetwild
 namespace {
-// A segment inside the unit tet, as a feature file.
+// A segment inside the unit tet, as a curve input.
 MeshData inner_segment()
 {
     MeshData curve;
@@ -1829,14 +2001,13 @@ MeshData inner_segment()
     curve.cells[CellType::Edge].connectivity << 0, 1;
     return curve;
 }
-// tetwild on two unit tets 3 apart, `a` and `b`, and inner_segment() as a feature file, without
+// tetwild on two unit tets 3 apart, `a` and `b`, and inner_segment(), a curve input `c`, without
 // an optimization: a tet mesh of the box around them with tagged faces and a feature curve.
 ComponentResult two_tets_meshed(const nlohmann::json& extra = nlohmann::json::object())
 {
     nlohmann::json options = {
-        {"input", {"a", "b"}},
-        {"input_names", {"a", "b"}},
-        {"input_edges", {"curve"}},
+        {"input", {"a", "b", "curve"}},
+        {"input_names", {"a", "b", "c"}},
         {"simplify", false},
         {"max_iterations", 0},
         {"num_threads", 1}};
@@ -1877,7 +2048,7 @@ TEST_CASE(
     "[component_io][io][tagged]" + release_only)
 {
     // tetwild's own tagged mesh with its fields dropped: a tet mesh with face tags `a` and `b`
-    // and a feature curve feature_0. The tagged route reads it exactly -- every tagged face and
+    // and a feature curve c. The tagged route reads it exactly -- every tagged face and
     // edge on its row, with its labels and its orientation: the reference it hands on, built from
     // what it received, is those rows -- and gives one result on both routes, with the labels
     // kept, no tet tags, and each face on its own input and facing out of it. Not the mesh as it
@@ -1912,7 +2083,7 @@ TEST_CASE(
             std::vector<std::string>{"a", "b"});
         REQUIRE(
             mesh->cell(CellType::Edge).attributes.at("tags").labels ==
-            std::vector<std::string>{"feature_0"});
+            std::vector<std::string>{"c"});
         CHECK(!mesh->cell(CellType::Tetrahedron).attributes.count("tags"));
         for (const std::string name : {"a", "b"}) check_on_own_input_facing_out(*mesh, name);
     }
@@ -1926,8 +2097,8 @@ TEST_CASE(
             canonical(labelled_rows(file, CellType::Triangle, name)));
     }
     CHECK(
-        canonical(labelled_rows(memory, CellType::Edge, "feature_0")) ==
-        canonical(labelled_rows(file, CellType::Edge, "feature_0")));
+        canonical(labelled_rows(memory, CellType::Edge, "c")) ==
+        canonical(labelled_rows(file, CellType::Edge, "c")));
     // The reference handed on, without an `envelope` given: the tagged faces and the curve as
     // received, exactly the input's rows, labelled as the mesh labels them, on both routes.
     const MeshData file_envelope = io::read_mesh("t_envelope.msh");
@@ -1938,8 +2109,8 @@ TEST_CASE(
                 canonical(labelled_rows(tagged, CellType::Triangle, name)));
         }
         CHECK(
-            canonical(labelled_rows(*envelope, CellType::Edge, "feature_0")) ==
-            canonical(labelled_rows(tagged, CellType::Edge, "feature_0")));
+            canonical(labelled_rows(*envelope, CellType::Edge, "c")) ==
+            canonical(labelled_rows(tagged, CellType::Edge, "c")));
     }
 
     const MeshData& mesh = optimized.first.at("mesh");
@@ -1947,7 +2118,7 @@ TEST_CASE(
         mesh.cell(CellType::Triangle).attributes.at("tags").labels ==
         std::vector<std::string>{"a", "b"});
     for (const std::string name : {"a", "b"}) check_on_own_input_facing_out(mesh, name);
-    CHECK(!labelled_rows(mesh, CellType::Edge, "feature_0").empty());
+    CHECK(!labelled_rows(mesh, CellType::Edge, "c").empty());
 }
 TEST_CASE(
     "TetWild takes its own output back in as it is, on both routes",
@@ -1968,9 +2139,8 @@ TEST_CASE(
     write_obj("curve.obj", inner_segment());
     tetwild::tetwild(
         {{"application", "tetwild"},
-         {"input", {here("a.obj"), here("b.obj")}},
-         {"input_names", {"a", "b"}},
-         {"input_edges", {here("curve.obj")}},
+         {"input", {here("a.obj"), here("b.obj"), here("curve.obj")}},
+         {"input_names", {"a", "b", "c"}},
          {"simplify", false},
          {"max_iterations", 2},
          {"num_threads", 1},
@@ -1990,7 +2160,7 @@ TEST_CASE(
             std::vector<std::string>{"a", "b"});
         REQUIRE(
             mesh->cell(CellType::Edge).attributes.at("tags").labels ==
-            std::vector<std::string>{"feature_0"});
+            std::vector<std::string>{"c"});
         for (const std::string name : {"a", "b"}) check_on_own_input_facing_out(*mesh, name);
     }
 }
@@ -2033,11 +2203,11 @@ TEST_CASE(
     REQUIRE_THROWS_WITH(run({{"input", {"m", "s"}}}), ContainsSubstring("only input"));
     REQUIRE_THROWS_WITH(run({{"input", {"s", "m"}}}), ContainsSubstring("only input"));
     REQUIRE_THROWS_WITH(run({{"filter", "input"}}), ContainsSubstring("filter \"input\""));
-    REQUIRE_THROWS_WITH(run({{"input_edges", {"curve"}}}), ContainsSubstring("input_edges"));
+    REQUIRE_THROWS_WITH(run({{"input", {"m", "curve"}}}), ContainsSubstring("only input"));
     REQUIRE_THROWS_WITH(run({{"input_names", {"x"}}}), ContainsSubstring("input_names"));
     REQUIRE_THROWS_WITH(
         run({{"filter", "flood"}, {"filter_inputs", {"c"}}}),
-        ContainsSubstring("c is not an input"));
+        ContainsSubstring("c is not a surface input"));
     REQUIRE_THROWS_WITH(run({{"filter_inputs", {"a"}}}), ContainsSubstring("nothing is filtered"));
     // A surface input takes no envelope.
     REQUIRE_THROWS_WITH(
@@ -2092,9 +2262,7 @@ TEST_CASE(
          {"offset_output_tags", {"off"}},
          {"optimize_offset", false},
          {"num_threads", 1}},
-        {{"m",
-          tags_only(
-              two_tets_meshed({{"input_edges", nlohmann::json::array()}}).first.at("mesh"))}});
+        {{"m", tags_only(two_tets_meshed({{"input", {"a", "b"}}}).first.at("mesh"))}});
     REQUIRE_THROWS_WITH(
         tetwild::tetwild(
             {{"input", "m"}, {"num_threads", 1}},
@@ -2124,7 +2292,7 @@ TEST_CASE(
     // simwild's and tetwild's tagged routes run, by the same code (TetOptimizerMesh).
     WorkingDirectory cwd;
     using Catch::Matchers::ContainsSubstring;
-    const auto meshed = two_tets_meshed({{"input_edges", nlohmann::json::array()}});
+    const auto meshed = two_tets_meshed({{"input", {"a", "b"}}});
     const MeshData mesh_in = tags_only(meshed.first.at("mesh"));
     const MeshData& envelope = meshed.first.at("envelope");
     const double eps = meshed.second.at("eps");
@@ -2150,8 +2318,7 @@ TEST_CASE(
     // offset holds its domain's wall by the box rule, so it takes a mesh that fills its box
     // (require_box_boundary()), as tetwild's tagged route does.
     WorkingDirectory cwd;
-    const auto filtered =
-        two_tets_meshed({{"input_edges", nlohmann::json::array()}, {"filter", "tracked"}});
+    const auto filtered = two_tets_meshed({{"input", {"a", "b"}}, {"filter", "tracked"}});
     auto options = offset_of_a;
     options.erase("envelope");
     REQUIRE_THROWS_WITH(
@@ -2177,7 +2344,7 @@ TEST_CASE(
     // routes. simwild then holds the offset's mesh to it: a and b to tetwild's input, the offset
     // surface to itself.
     WorkingDirectory cwd;
-    const auto meshed = two_tets_meshed({{"input_edges", nlohmann::json::array()}});
+    const auto meshed = two_tets_meshed({{"input", {"a", "b"}}});
     const MeshData mesh_in = tags_only(meshed.first.at("mesh"));
     const MeshData& envelope = meshed.first.at("envelope");
     const double eps = meshed.second.at("eps");
@@ -2328,7 +2495,7 @@ TEST_CASE(
     "TetWild holds a tagged mesh to the envelope it is given, on both routes",
     "[component_io][io][envelope][tagged]" + release_only)
 {
-    // Two spheres `a` and `b`, and a segment inside `a` as a feature file, meshed by tetwild,
+    // Two spheres `a` and `b`, and a segment inside `a`, a curve input `c`, meshed by tetwild,
     // which simplifies them within half its eps. tetwild's tagged route continues from its mesh
     // held to the envelope it returned, the spheres as given, at the same eps: each face within
     // that eps of its sphere -- of the original input, not of the mesh received -- the envelope
@@ -2344,22 +2511,20 @@ TEST_CASE(
     curve.cells[CellType::Edge].connectivity.resize(1, 2);
     curve.cells[CellType::Edge].connectivity << 0, 1;
     const nlohmann::json first_options = {
-        {"input_names", {"a", "b"}},
+        {"input_names", {"a", "b", "c"}},
         {"eps_rel", 1e-2},
         {"eps_simplify_rel", 5e-3},
         {"max_iterations", 2},
         {"num_threads", 1}};
     auto memory_first = first_options;
-    memory_first["input"] = {"a", "b"};
-    memory_first["input_edges"] = {"curve"};
+    memory_first["input"] = {"a", "b", "curve"};
     const auto meshed = tetwild::tetwild(memory_first, {{"a", a}, {"b", b}, {"curve", curve}});
     write_obj("a.obj", a);
     write_obj("b.obj", b);
     write_obj("curve.obj", curve);
     auto file_first = first_options;
     file_first["application"] = "tetwild";
-    file_first["input"] = {here("a.obj"), here("b.obj")};
-    file_first["input_edges"] = {here("curve.obj")};
+    file_first["input"] = {here("a.obj"), here("b.obj"), here("curve.obj")};
     file_first["output"] = "t";
     file_first["write_vtu"] = false;
     tetwild::tetwild(file_first);
@@ -2413,7 +2578,7 @@ TEST_CASE(
             INFO(name << ": " << rows.size() << " faces");
             CHECK(outside == 0);
         }
-        CHECK(!labelled_rows(*mesh, CellType::Edge, "feature_0").empty());
+        CHECK(!labelled_rows(*mesh, CellType::Edge, "c").empty());
     }
 
     auto narrow = memory_options;
@@ -2428,10 +2593,10 @@ TEST_CASE(
         tetwild::tetwild(memory_options, {{"m", mesh_in}, {"e", renamed}}),
         Catch::Matchers::ContainsSubstring("labelled b"));
     renamed = envelope;
-    renamed.cells.at(CellType::Edge).attributes.at("tags").labels = {"feature_1"};
+    renamed.cells.at(CellType::Edge).attributes.at("tags").labels = {"d"};
     REQUIRE_THROWS_WITH(
         tetwild::tetwild(memory_options, {{"m", mesh_in}, {"e", renamed}}),
-        Catch::Matchers::ContainsSubstring("labelled feature_0"));
+        Catch::Matchers::ContainsSubstring("labelled c"));
 }
 #endif
 #ifdef WMTK_TEST_triwild
@@ -2687,10 +2852,9 @@ TEST_CASE("TriWild refuses what its tagged route has no input for", "[component_
     using Catch::Matchers::ContainsSubstring;
     REQUIRE_THROWS_WITH(run({{"input", {"m", "s"}}}), ContainsSubstring("only input"));
     REQUIRE_THROWS_WITH(run({{"filter", "input"}}), ContainsSubstring("filter \"input\""));
-    REQUIRE_THROWS_WITH(run({{"input_points", {"s"}}}), ContainsSubstring("input_points"));
     REQUIRE_THROWS_WITH(
         run({{"filter", "flood"}, {"filter_inputs", {"c"}}}),
-        ContainsSubstring("c is not an input"));
+        ContainsSubstring("c is not a curve input"));
     REQUIRE_THROWS_WITH(
         run({{"input", "s"}, {"envelope", "m"}}),
         ContainsSubstring("tagged mesh input only"));
@@ -3117,8 +3281,7 @@ TEST_CASE(
     // distance_over_target; a DEBUG_output frame every diagnostic field too. The input as in
     // "TetWild refuses an offset's output, whose band is a volume".
     WorkingDirectory cwd;
-    const MeshData tagged =
-        tags_only(two_tets_meshed({{"input_edges", nlohmann::json::array()}}).first.at("mesh"));
+    const MeshData tagged = tags_only(two_tets_meshed({{"input", {"a", "b"}}}).first.at("mesh"));
     const nlohmann::json options = {
         {"offset_selection", "a"},
         {"target_distance", 0.05},

@@ -214,7 +214,7 @@ public:
 
     /// With `face_tags`, also the tracked faces, one physical group per input
     /// (io::collect_input_set_tags()), and with `feature_tags` the tet edges tiling the feature
-    /// curves, one per input_edges file (io::collect_feature_edge_tags()): the tags the memory
+    /// curves, one per input curve (io::collect_feature_edge_tags()): the tags the memory
     /// route returns on its mesh, which the shared reader reads back as those blocks.
     void output_mesh(
         std::string file,

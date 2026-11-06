@@ -6,7 +6,6 @@
     "required": ["application", "input"],
     "optional": [
       "output",
-      "input_points",
       "input_names",
       "envelope",
       "input_dir",
@@ -80,24 +79,13 @@
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of input curve networks: OBJ files of polylines ('v' and 'l' lines). Or one tagged triangle mesh -- on the memory route a named mesh with a triangle block, on the file route a .msh with triangles -- which takes the tagged route: triwild continues from it as it is, its triangles kept, so that a chain of components can go on through triwild. Its edge block's tags are the tracked curves, one input per label, each row oriented by its vertex order, named as the mesh names them; its point block input points, anchored where they are -- as simwild reads a tagged triangle mesh. triwild holds no regions and writes none, so its own output goes back in as it is; triangles tagged other than ambient are refused (a mesh with region tags is simwild's to remesh). It must fill its bounding box, as the arrangement's padded box does: its boundary edges are the wall, held by the box rule, each untracked and on a line of the box. A tracked boundary edge -- a filtered mesh's boundary -- is refused (give a filtered mesh's curves as inputs), and so is an untracked one on no line. Skipped on this route: the simplification, the arrangement and the input winding numbers (wn_<i>); eps_rel and length_rel are of the mesh's bounding box diagonal. Refused with it: any other input, input_points, input_names and filter \"input\".",
+    "doc": "List of inputs, each read for what it is: segments a curve network (an OBJ of 'v' and 'l' lines; on the memory route a mesh with an edge block), bare vertices points (an OBJ of 'v' records alone; a mesh without edges). Each curve is arranged and tracked, its own input, its edge tag named by input_names. Each point is inserted as a vertex of the triangulation and anchored like a polyline endpoint: some output vertex stays within eps of it, collapses that would break that are refused, and smoothing may move the carrying vertex only within the eps ball. A vertex of a curve with no incident edge is a point too. A point lying in a region the /filter discards leaves the triangle mesh with that region, but survives in the <output>_features.obj feature output, and DEBUG_feature_retention reports the PRE-filter state -- a feature preserved through the optimization is never reported lost because extraction discarded its region. At least one input is a curve. Until 2026-11 points came in a list of their own, input_points. Or one tagged triangle mesh -- on the memory route a named mesh with a triangle block, on the file route a .msh with triangles -- which takes the tagged route: triwild continues from it as it is, its triangles kept, so that a chain of components can go on through triwild. Its edge block's tags are the tracked curves, one input per label, each row oriented by its vertex order, named as the mesh names them; its point block input points, anchored where they are -- as simwild reads a tagged triangle mesh. triwild holds no regions and writes none, so its own output goes back in as it is; triangles tagged other than ambient are refused (a mesh with region tags is simwild's to remesh). It must fill its bounding box, as the arrangement's padded box does: its boundary edges are the wall, held by the box rule, each untracked and on a line of the box. A tracked boundary edge -- a filtered mesh's boundary -- is refused (give a filtered mesh's curves as inputs), and so is an untracked one on no line. Skipped on this route: the simplification, the arrangement and the input winding numbers (wn_<i>); eps_rel and length_rel are of the mesh's bounding box diagonal. Refused with it: any other input, input_names and filter \"input\".",
     "min": 1
   },
   {
     "pointer": "/input/*",
     "type": "string",
-    "doc": "One curve network: an OBJ file of polylines ('v' and 'l' lines)."
-  },
-  {
-    "pointer": "/input_points",
-    "type": "list",
-    "default": [],
-    "doc": "List of input POINT files: every vertex of each file is a feature point to preserve, whether or not the file also has edges (they are ignored). Each point is inserted as a vertex of the triangulation and anchored like a polyline endpoint: some output vertex stays within eps of it, collapses that would break that are refused, and smoothing may move the carrying vertex only within the eps ball. Free points can also be supplied inline: a vertex of an /input curve file with no incident edge is anchored the same way. A point lying in a region the /filter discards leaves the triangle mesh with that region, but survives in the <output>_features.obj feature output, and DEBUG_feature_retention reports the PRE-filter state -- a feature preserved through the optimization is never reported lost because extraction discarded its region."
-  },
-  {
-    "pointer": "/input_points/*",
-    "type": "string",
-    "doc": "One input point file (any edge-mesh format; only the vertices are used)."
+    "doc": "One input: a curve network or points, an OBJ file, or one tagged triangle mesh (see /input)."
   },
   {
     "pointer": "/output",
@@ -108,7 +96,7 @@
   {
     "pointer": "/input_names",
     "type": "list",
-    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc. Each name labels the input's curves in the output mesh, on both routes: the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags. It also names the input's winding-number field on the triangles, wn_<name>, in the VTU output and on the memory route; the .msh output numbers them, wn_0, wn_1, ..., and so does everything without names. triwild writes no regions: its triangles carry no label but ambient (until 2026-11 each name also labelled the triangles its winding number puts inside).",
+    "doc": "List of names for the inputs, one per entry of /input, at its position there. If no names are assigned, the inputs will be named tag_0, tag_1, etc., by their position. Each name labels the input's curves in the output mesh, on both routes: the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags. It also names the input's winding-number field on the triangles, wn_<name>, in the VTU output and on the memory route; the .msh output numbers them, wn_0, wn_1, ..., and so does everything without names. triwild writes no regions: its triangles carry no label but ambient (until 2026-11 each name also labelled the triangles its winding number puts inside).",
     "default": []
   },
   {
@@ -194,7 +182,7 @@
     "pointer": "/filter_inputs",
     "type": "list",
     "default": [],
-    "doc": "The inputs that bound the domain a filter keeps, by their labels: the names of input_names (tag_<i> without one), or a tagged mesh's edge-tag labels. Empty, the default: every input, as before the key. With 'input' the faces inside one of those inputs are kept; with 'tracked' the winding number is of the tracked edges carrying one of them only; with 'flood' the fill crosses every tracked edge of the other inputs. So an input that is not named -- an open curve across a region, a second region outside it -- does not cut or add to the domain kept, and stays in the output as tracked edges, its edge tag. Under 'tracked' a tracked edge carrying a named input and another input (two regions touching edge to edge) is refused before the filter: an edge's orientation is one count for all its inputs, not one per input, so the named inputs' winding number cannot be computed there; 'flood' needs no orientation, and is exact for inputs that do not overlap themselves. A name that is not an input throws, and so does the key with filter 'none'."
+    "doc": "The inputs that bound the domain a filter keeps, by their labels: the names of the curve inputs (input_names, tag_<i> without one), or a tagged mesh's edge-tag labels. Empty, the default: every input, as before the key. With 'input' the faces inside one of those inputs are kept; with 'tracked' the winding number is of the tracked edges carrying one of them only; with 'flood' the fill crosses every tracked edge of the other inputs. So an input that is not named -- an open curve across a region, a second region outside it -- does not cut or add to the domain kept, and stays in the output as tracked edges, its edge tag. Under 'tracked' a tracked edge carrying a named input and another input (two regions touching edge to edge) is refused before the filter: an edge's orientation is one count for all its inputs, not one per input, so the named inputs' winding number cannot be computed there; 'flood' needs no orientation, and is exact for inputs that do not overlap themselves. A name that is not an input throws, and so does the key with filter 'none'."
   },
   {
     "pointer": "/filter_inputs/*",

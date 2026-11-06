@@ -1230,11 +1230,11 @@ size_t TetOptimizerMesh::tag_feature_edges(
     size_t n_tagged = 0;
     std::vector<size_t> eids;
     for (size_t e = 0; e < placed.edge_tiling.size(); ++e) {
-        // The file the input edge came from: its input, as an input surface is a face's.
+        // The curve the input edge came from: its input, as an input surface is a face's.
         const size_t file = input != nullptr ? size_t(input->edge_input[e]) : 0;
         if (file >= size_t(SurfaceTagAttributes::max_inputs)) {
             log_and_throw_error(
-                "input_edges file {}: a tagged edge records its files in {} bits, so at most {} "
+                "input curve {}: a tagged edge records its curves in {} bits, so at most {} "
                 "are supported",
                 file,
                 SurfaceTagAttributes::max_inputs,

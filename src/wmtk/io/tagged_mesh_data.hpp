@@ -400,7 +400,7 @@ void collect_input_set_tags(
 // The tet edges tagged `feature` (TetOptimizerMesh::FeatureEdgeAttributes: the feature curves the
 // application was given) whose feature input set is not empty, as the Edge block of
 // outputs["mesh"], on the rows collect_input_set_tags() uses: one tags column per name (bit j of
-// the set is names[j], the input_edges file j). A curve carries no orientation, so a row is its
+// the set is names[j], the input curve j). A curve carries no orientation, so a row is its
 // edge's vertices in ascending order. The order2 kind is not written: a reader derives it again
 // from the faces (tag_order2_edges()). Nothing is written without names or edge tracking.
 template <typename Mesh>

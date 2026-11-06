@@ -73,16 +73,16 @@ struct InputData
     std::vector<std::pair<std::array<std::array<double, 3>, 3>, std::vector<uint32_t>>>
         facet_sources;
 
-    /// A surface input with feature curves or points (input_edges, input_points): them as read,
+    /// A surface input with curve or point inputs (feature curves and points): them as read,
     /// and where the insertion put them, in V_input's numbering. A tagged tet mesh with an edge
     /// block: its feature edges, one input edge per edge and tag (edge_input the tag's column),
     /// each placed on itself. Empty otherwise.
     utils::FeatureInputs features;
     utils::EmbedFeaturesResult features_placed;
-    /// The name of each feature input, bit i of a feature edge's input set: feature_<i> for
-    /// input_edges file i, a tagged tet mesh's edge tags. Empty without feature curves.
+    /// The name of each feature input, bit i of a feature edge's input set: the label of the i-th
+    /// curve input, a tagged tet mesh's edge tags. Empty without feature curves.
     std::vector<std::string> feature_edge_names;
-    /// A 2D curve input with input points (input_points): the row of V_input each became, in
+    /// A 2D curve input with point inputs: the row of V_input each point became, in
     /// input order. Empty otherwise.
     std::vector<size_t> input_point_vids;
 };
@@ -127,10 +127,12 @@ InputData read_curves(
 /**
  * @brief Decide whether an input is 2D or 3D.
  *
- * `dimension` is "auto" (the default), 2 or 3. Auto looks at the first input:
- *   - .msh                            -> 0, meaning "the msh reader decides from the content"
- *   - OBJ/OFF/STL with any 'f' record -> 3, a surface for EmbedSurface
- *   - OBJ with 'l' but no 'f'         -> 2, a curve network for EmbedCurves
+ * `dimension` is "auto" (the default), 2 or 3. Auto looks at the inputs:
+ *   - a first input .msh (memory: tets, or tagged triangles) -> 0, the tagged route, whose
+ *     reader decides from the content
+ *   - any surface (io::ComponentIO::input_kind(): triangles) -> 3, for EmbedSurface
+ *   - else curves                                           -> 2, for EmbedCurves
+ * Points alone go with either.
  *
  * An explicit 2 or 3 forces the route; it does not skip the sniff, it disagrees with it
  * loudly, because the failure otherwise surfaces as a confusing parse error much later.

@@ -74,7 +74,7 @@ public:
     /// SimWildMesh::set_envelope_around_tags(), every edge the next component holds, labelled
     /// by its edge tags and the triangle tags on one side of it and not the other.
     void set_envelope_around_tags();
-    /// The vertices of the input points (input_points), set before init: anchored there, in a
+    /// The vertices of the input points (the point inputs), set before init: anchored there, in a
     /// ball of feature_envelope_ratio x eps (TriOptimizerMesh::anchor_feature_points()).
     std::vector<size_t> m_input_point_vids;
 

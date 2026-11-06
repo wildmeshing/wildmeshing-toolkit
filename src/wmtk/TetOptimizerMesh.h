@@ -279,7 +279,7 @@ public:
         uint8_t m_kinds = 0;
         /// Per kind, the inputs whose curves of that kind this edge tiles, bit i for input i, as
         /// a tracked face carries the inputs it lies on (SurfaceTagAttributes::input_set()):
-        /// the input_edges file for `feature`, the inputs of the tracked faces at the edge for
+        /// the input curve for `feature`, the inputs of the tracked faces at the edge for
         /// `order2`. The edge is held to those inputs' tubes (tagged_edge_leaves_tube()); an
         /// empty set falls back to the kind's union tube.
         InputSet m_feature_inputs = 0;
@@ -523,7 +523,7 @@ public:
     size_t tag_order2_edges(double eps, bool exact);
     /**
      * @brief Tag every tet edge tiling an input feature edge (`placed`, from the insertion)
-     * with the feature kind and the input_edges file it comes from, and build the tubes, of
+     * with the feature kind and the input curve it comes from, and build the tubes, of
      * half-width `eps` with the exact predicate when `exact`. Returns the number of tet edges
      * tagged.
      *
@@ -806,8 +806,8 @@ public:
     utils::FeatureInputs m_reference_curves;
     /// Names of the feature curves' inputs: bit i of a feature edge's input set
     /// (FeatureEdgeAttributes::inputs(feature)) is m_feature_edge_names[i], the output's edge tag
-    /// (io::collect_feature_edge_tags()). Set by the application: feature_<i> for input_edges
-    /// file i, or the edge tags of a tagged mesh input.
+    /// (io::collect_feature_edge_tags()). Set by the application: the label of its i-th input
+    /// curve, or the edge tags of a tagged mesh input.
     std::vector<std::string> m_feature_edge_names;
     /// The label of bit `bit` of a face's input set, as the output names it; the application's,
     /// for the reference checks to name a label by.

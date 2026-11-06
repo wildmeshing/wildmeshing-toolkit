@@ -143,9 +143,9 @@ not named, they are dropped, and with them their curves.
 | `qslim` | `input` | Triangle geometry, no attributes |
 | `shortest_edge_collapse` | `input` | Triangle geometry, no attributes |
 | `isotropic_remeshing` | `input`; optional `features` | Triangle geometry and the triangle fields `feature_fields` names; `features` on the rows of `input`: edges with Int64 `edge_id`, points with Int64 `vertex_id`, or Int64 vertex `vertex_id` (-1 for none) |
-| `tetwild` | `input`; `input_edges`, `input_points`; optional `envelope` for tagged input | Triangle surfaces; optional curve/point geometry, no attributes. Or one tagged tet mesh, continued from as it is: tagged faces, feature curves and points, no tet tags but `ambient` |
-| `triwild` | `input`; `input_points`; optional `envelope` for tagged input | Curve geometry, optional free points, no attributes. Or one tagged triangle mesh, continued from as it is: tracked curves and points, no triangle tags but `ambient` |
-| `simwild` | `input`; optional `envelope` for tagged input | Surface/curve geometry, or tagged triangle/tet mesh |
+| `tetwild` | `input`; optional `envelope` for tagged input | Triangle surfaces, and optionally curves and points (each `input` entry what its blocks make it: triangles, else edges, else points), no attributes. Or one tagged tet mesh, continued from as it is: tagged faces, feature curves and points, no tet tags but `ambient` |
+| `triwild` | `input`; optional `envelope` for tagged input | Curves, and optionally points, no attributes. Or one tagged triangle mesh, continued from as it is: tracked curves and points, no triangle tags but `ambient` |
+| `simwild` | `input`; optional `envelope` for tagged input | Surfaces (3D) or curves (2D), and optionally 3D curves and points, or tagged triangle/tet mesh |
 | `topological_offset` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `manifold_extraction` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `prismatic_mesh` | `input` | Tet construction mesh with `corr_input_vid` and cell region memberships |
@@ -157,7 +157,7 @@ column labelled `ambient` is the background, as is a cell without a tag; a mesh 
 field is all background. Tagged results label their background `ambient` explicitly; the shared
 readers and writers infer nothing from an untagged row. As on the `.msh` route, the lower-dimensional blocks are tags, one `tags` column per input: in a tet mesh,
 triangles are tagged faces (an input surface, each row oriented as its input) and edges tagged
-feature curves (an `input_edges` file, `feature_<i>`); in a triangle mesh, edges are tagged curves
+feature curves (a curve input, named as every input is); in a triangle mesh, edges are tagged curves
 (an input curve, each row oriented as its input). simwild, tetwild and triwild write them so, and
 simwild, tetwild and triwild read them back as the tags they hold. tetwild takes a tet mesh as its
 only input on the tagged route, its tets kept: no simplification, no insertion, no input winding
@@ -209,7 +209,7 @@ front, the surface manifold_extraction extracts -- is where the cell tags differ
 - `envelope`: what tetwild, triwild and simwild held their tags to, the reference -- the input,
   or the simplified input under `envelope_reference` "simplified" -- labelled as `mesh` labels the
   tags: in 3D a triangle block with one `tags` column per input surface's face tag or region, and
-  an edge block of the feature curves (`feature_<i>`); in 2D an edge block, one column per input
+  an edge block of the feature curves, one column per curve input; in 2D an edge block, one column per input
   curve's edge tag or region; the input points as a point block without tags, as `mesh` writes
   nothing for them. No eps: a receiver brings its own. A component given an `envelope` returns that
   one, unchanged. simwild's tag operations hold nothing to one and do not read it: they move the

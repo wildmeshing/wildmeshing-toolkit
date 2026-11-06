@@ -373,7 +373,7 @@ void TetWildMesh::init_from_Volumeremesher(
     logger().info("#faces = {}", n_faces.load());
 
     // Feature tags: each tet edge tiling an input feature edge carries the feature kind and its
-    // input_edges file, and is held in that file's tube (tag_feature_edges()); the tags are the
+    // input curve, and is held in that curve's tube (tag_feature_edges()); the tags are the
     // only feature-curve state. Without feature_input the tags alone, no tube.
     if (features != nullptr) {
         tag_feature_edges(

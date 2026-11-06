@@ -69,7 +69,7 @@ public:
     /// Names of the face tags: bit i of a face's input set is m_face_tag_names[i].
     std::vector<std::string> m_face_tag_names;
     // The names of the feature curves' inputs are the base's m_feature_edge_names, set by the
-    // driver: feature_<i> for input_edges file i, or the edge tags of a tagged mesh input
+    // driver: the label of the i-th curve input, or the edge tags of a tagged mesh input
     // (InputData::feature_edge_names).
 
     /**

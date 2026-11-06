@@ -324,7 +324,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
     // Where a tracked curve ends or three or more meet, the vertex is anchored in a ball of
     // order2_envelope_ratio x eps (anchor_feature_points()); the 2D twin of the 3D order-2
-    // curves' ends and junctions, held always. Every input point (input_points) is anchored in
+    // curves' ends and junctions, held always. Every input point (a point input) is anchored in
     // a ball of feature_envelope_ratio x eps, as in 3D; the smaller radius where it is both.
     const double order2_eps = m_envelope_eps * m_sim_params.order2_envelope_ratio;
     const double feature_eps = m_envelope_eps * m_sim_params.feature_envelope_ratio;

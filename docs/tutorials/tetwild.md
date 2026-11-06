@@ -220,11 +220,13 @@ tracked faces wherever they lie, without cutting or adding to it. By default eve
 it. On a tagged mesh input the names are its face-tag labels, and `input` is refused: there is no
 input surface.
 
-### Feature curves and points: `input_edges`, `input_points`
+### Feature curves and points
 
-[`input_edges`](../reference/tetwild.md#input_edges) lists edge meshes whose edges are inserted as
-chains of tet edges, and [`input_points`](../reference/tetwild.md#input_points) files whose
-vertices are inserted as tet vertices; the optimization keeps both in place. The
+An entry of [`input`](../reference/tetwild.md#input) is what its content makes it: a surface
+(triangles), a curve (an OBJ of `l` polylines), whose edges are inserted as chains of tet edges,
+or points (an OBJ of `v` records alone), inserted as tet vertices; the optimization keeps curves
+and points in place. Each is named by `input_names` at its position in `input`, as surfaces are.
+Until 2026-11 they came in lists of their own, `input_edges` and `input_points`. The
 [TetWild with features](workflows/tetwild-features.md) workflow shows them on a cube, and how to
 check what was kept.
 
@@ -298,7 +300,7 @@ On files, `output` names:
   `sizing` holds the sizing scalar of the optimization. The tracked faces are tagged, one physical
   group per input named after it (`input_names`, `tag_<i>` without), each face under every input it
   lies on and oriented as its input, and with feature curves the tet edges tiling them are, one
-  group per `input_edges` file (`feature_<i>`): the triangle and edge blocks simwild reads back as
+  group per curve input, named alike: the triangle and edge blocks simwild reads back as
   face tags and feature curves. The memory route's `mesh` carries the same blocks.
 - `snowman.vtu`: the same tets for ParaView, with `t_energy`, the winding numbers (`wn_<name>`
   with `input_names`) and the vertex fields `sizing_field`, `is_rounded`, `on_surface`,

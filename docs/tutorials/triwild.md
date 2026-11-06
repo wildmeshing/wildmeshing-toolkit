@@ -85,10 +85,11 @@ time against the first run (with `num_threads` 0, so that they repeat exactly):
 ### The inputs: `input`, `input_names`, `output`
 
 [`input`](../reference/triwild.md#input) is a list of OBJ files of polylines (`v` and `l` lines),
-up to 64. Each file is one input: its curves are kept apart from the others' in the output tags,
-and each tracked edge is held to the envelope of the inputs it lies on. Vertices that coincide
-exactly are merged when a file is read; a vertex of a curve file that no segment uses is kept as a
-[feature point](#feature-points-input_points).
+up to 64, and of point files (`v` lines alone). Each curve file is one input: its curves are kept
+apart from the others' in the output tags, and each tracked edge is held to the envelope of the
+inputs it lies on. Vertices that coincide exactly are merged when a file is read; a vertex of a
+curve file that no segment uses is kept as a [feature point](#feature-points), as every vertex of a
+point file is.
 [`input_names`](../reference/triwild.md#input_names) gives the inputs names, in the same order:
 they label the tag columns of the output (`tag_0`, `tag_1`, ... without them) and each input's
 winding-number field on the triangles, `wn_<name>` in the VTU file and the memory outputs (`wn_0`,
@@ -186,10 +187,11 @@ inside a clockwise shape and 0 where one overlaps the rectangle, and only the pa
 rectangle that no other curve covers is kept. `input` orients each input on its own. Use it for
 several inputs. All three need closed curves (see the [pitfalls](#pitfalls)).
 
-### Feature points: `input_points`
+### Feature points
 
-[`input_points`](../reference/triwild.md#input_points) lists files whose vertices are inserted as
-vertices of the triangulation (their edges are ignored). The endpoints of open polylines are kept
+A point file in [`input`](../reference/triwild.md#input) (`v` lines alone) has its vertices
+inserted as vertices of the triangulation. Until 2026-11 such files came in a list of their own,
+`input_points`. The endpoints of open polylines are kept
 the same way. Each is anchored: some vertex stays within its radius of it --
 [`feature_envelope_ratio`](../reference/triwild.md#feature_envelope_ratio) \(\cdot\,\varepsilon\)
 for the points, [`order2_envelope_ratio`](../reference/triwild.md#order2_envelope_ratio)
