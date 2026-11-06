@@ -28,12 +28,16 @@ envelope of its own:
   \(\cdot\,\text{diag}\), or [`eps_simplify`](../reference/tetwild.md#eps_simplify) if given
   (half of \(\varepsilon\) at the default `eps_rel`). The link condition applies only with
   [`preserve_topology`](../reference/tetwild.md#preserve_topology), so by default the
-  simplification may change the topology of the surface. The open boundary may move within a tube
+  simplification may change the topology of the surface. With it, the simplification may still
+  fold the surface through itself, which the link condition (connectivity only) does not see and
+  the envelope admits, and the insertion then cuts the crossing triangles; tetwild checks the
+  simplified surface for this and warns. The open boundary may move within a tube
   around the input's boundary ([`simplify_boundary_envelope`](../reference/tetwild.md#simplify_boundary_envelope)).
   simwild does the same, except under `preserve_topology`, where it simplifies after the
   insertion instead.
 - In 2D, triwild collapses the shortest segments of the curves while they stay inside the
-  simplification envelope.
+  simplification envelope. simwild does the same, except under `preserve_topology`, where it
+  simplifies after the insertion instead, as in 3D.
 
 The tighter envelope leaves the optimizer room: the simplified surface is within half of
 \(\varepsilon\) of the input (by default), and the optimizer, which is held to the full
@@ -106,13 +110,14 @@ fractional near holes
 ([`WindingNumber.hpp`](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/src/wmtk/utils/WindingNumber.hpp)).
 `input` judges each cell by the input rather than by the surface the mesh conforms to, so it can
 misclassify cells along the surface and leave it wrinkled; `tracked` judges by the tracked surface
-itself. The winding numbers are also written to the output as fields (tetwild writes one per
-input, `wn_<name>`); [`skip_winding_number`](../reference/tetwild.md#skip_winding_number) leaves
-them out when no filter needs them.
+itself. The winding numbers are also written to the output as fields (tetwild and triwild write
+one per input, `wn_<name>`); [`skip_winding_number`](../reference/tetwild.md#skip_winding_number)
+leaves them out when no filter needs them.
 
-triwild uses the per-input winding numbers to give each triangle the [regions](regions.md) of the
-inputs it lies inside. simwild has no filter: it keeps the whole box and tags every cell with the
-inputs that contain it (see [Regions](regions.md)).
+triwild writes the per-input winding numbers as fields of the triangles, as tetwild does on its
+tets, and not as [regions](regions.md): its triangles carry no region tags. simwild has no
+filter: it keeps the whole box and tags every cell with the inputs that contain it (see
+[Regions](regions.md)).
 
 With [`history_output`](../reference/tetwild.md#history_output), the whole sequence above is
 recorded, from the files as read to the output: the weld, the simplification, the insertion, the

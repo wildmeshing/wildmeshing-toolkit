@@ -65,6 +65,11 @@ void SimWildMesh::init_from_image(
 
     init_face_tags(F_tagged, F_tags, face_tag_names);
     init_surfaces_and_boundaries(features, features_placed);
+    // The tagged mesh fills its box, as on tetwild's tagged route (require_box_boundary() says
+    // why). Until 2026-11-05 only tracked boundary faces were refused, and an object's tet mesh --
+    // its untracked boundary in no plane of the box -- was taken and held by nothing there:
+    // smooth_before() freezes only the vertices on the box's planes.
+    require_box_boundary("simwild");
 
     if (m_params.preserve_topology) {
         init_vertex_order();
@@ -271,6 +276,7 @@ void SimWildMesh::init_from_image(
 
     init_face_tags(F_tagged, F_tags, face_tag_names);
     init_surfaces_and_boundaries(features, features_placed);
+    require_box_boundary("simwild"); // as in the overload above
 
     if (m_params.preserve_topology) {
         init_vertex_order();
@@ -426,7 +432,7 @@ void SimWildMesh::init_surfaces_and_boundaries(
         }
     }
 
-    if (m_has_reference) require_reference_face_labels();
+    if (m_has_reference) require_reference_face_labels(m_F_envelope_labels);
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
 
     // track bounding box
@@ -502,7 +508,9 @@ void SimWildMesh::init_surfaces_and_boundaries(
     if (m_has_reference) init_reference_feature_tubes(feature_eps, m_envelope->use_exact);
     // Before a remeshing, which holds the mesh to the reference: what was received must already
     // lie in it. The tag operations hold nothing to it, and drop it.
-    if (m_has_reference && m_sim_params.operation == "remeshing") check_reference_containment();
+    if (m_has_reference && m_sim_params.operation == "remeshing") {
+        check_reference_containment(m_envelope_eps);
+    }
 
     // Where a tagged curve ends or three or more meet, and at every input point (input_points),
     // the vertex is anchored (anchor_feature_points()), held like the curves: always. The radius

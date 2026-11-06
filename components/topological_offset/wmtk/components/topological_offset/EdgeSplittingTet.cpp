@@ -12,6 +12,27 @@ namespace wmtk::components::topological_offset {
 
 bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
 {
+    // A correspondence carried from an earlier offset is the edge from its offset vertex to the
+    // input vertex it names; cutting that edge loses it, whichever step cuts (the simplicial
+    // embedding, the march). The march cuts no edge of a protected cell (marching_tets()), so an
+    // earlier band that is protected keeps every one. Until 2026-11-06 the run instead compared
+    // each carried vertex's star before and after construction, which also refused cuts beside
+    // the earlier band: feature demo 4, the wire's band protected, 258 of its 1886 stars.
+    {
+        const size_t a = t.vid(*this);
+        const size_t b = switch_vertex(t).vid(*this);
+        const auto names = [&](const size_t o, const size_t i) {
+            return m_vertex_extra[o].m_corr_carried &&
+                   m_vertex_extra[o].m_corr_input_vid == int64_t(i);
+        };
+        if (names(a, b) || names(b, a)) {
+            log_and_throw_error(
+                "the offset cuts the edge from an earlier offset's vertex to its input vertex "
+                "(corr_input_vid), vertices {} and {}: protect the earlier band (protected_tags)",
+                a,
+                b);
+        }
+    }
     // The optimization phase runs wmtk::TetOptimizerMesh's split; everything else here is the
     // marching-tets machinery, which places the new vertex on the offset's distance field and
     // carries per-simplex labels the shared engine knows nothing about.
@@ -57,8 +78,8 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         split_off_longest() = off_longest;
         // Nothing is frozen against splits: refining a surface is not moving it, so the midpoint
         // is checked against its tags' boundary envelopes like any other tracked geometry -- the
-        // input complex and the domain wall alike, the wall being a region boundary like any
-        // other.
+        // input complex and every other region boundary alike. A midpoint on the domain wall
+        // stays on the planes both ends share (the base's split_edge_after()), the box rule.
         //
         // Only the Optimization mode is guarded at all: the marching path below is how the offset
         // is constructed, and it has to be able to cut through anything.
@@ -343,10 +364,11 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
             s = (s1 + s2) / 2;
         }
     }
-    // on_bbox_faces is written after the base set m_is_on_surface, so a midpoint landing on the
-    // domain wall can arrive here unflagged. Re-derive it once both halves of
-    // vertex_is_on_region() are known: every containment check is gated on this flag.
-    if (vertex_is_on_region(v_id)) {
+    // The base's union flag, which every containment check is gated on: raised for a midpoint on
+    // a region boundary. Not for one on the domain wall alone, which is no tracked face (the box
+    // rule holds it, through on_bbox_faces), as no wall vertex carries it at load. Until 2026-11
+    // the wall was tracked, and this raised it for the wall too (vertex_is_on_region()).
+    if (m_vertex_extra[v_id].m_is_on_region) {
         m_vertex_attribute[v_id].m_is_on_surface = true;
     }
 
@@ -387,11 +409,24 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
     for (const auto& pair : cache.internal_e) { // for every oppo vertex
         size_t opp_vid = pair.first;
 
-        // face attributes
+        // face attributes: the two halves of the split face (v1, v2, opp) lie on its surfaces,
+        // each with its orientation converted as the engine's split converts it
+        // (TetOptimizerMeshSplit.cpp): (v1, v2, opp) -> (v1, v, opp) + (v, v2, opp), each half
+        // replacing one endpoint by v in place, so along those orders it carries the face's
+        // orientation along (v1, v2, opp). The orientation is stored against the ascending order
+        // of a face's own ids; until 2026-11 the snapshot was restored as is, right on a half only
+        // when v sorted into the replaced corner's place, so the output's face-tag triangles
+        // (io::collect_input_set_tags()) could come out turned over.
+        const FaceSnapshot& split_face = cache.split_f[opp_vid];
+        const int o =
+            split_face.tags.orientation_along(std::array<size_t, 3>{{v1_id, v2_id, opp_vid}});
+        FaceSnapshot half1 = split_face, half2 = split_face;
+        half1.tags.set_orientation_along(std::array<size_t, 3>{{v1_id, v_id, opp_vid}}, o);
+        half2.tags.set_orientation_along(std::array<size_t, 3>{{v_id, v2_id, opp_vid}}, o);
         auto [_1, glob_fid1] = tuple_from_face({{opp_vid, v1_id, v_id}});
         auto [_2, glob_fid2] = tuple_from_face({{opp_vid, v2_id, v_id}});
-        restore_face(glob_fid1, cache.split_f[opp_vid]);
-        restore_face(glob_fid2, cache.split_f[opp_vid]);
+        restore_face(glob_fid1, half1);
+        restore_face(glob_fid2, half2);
 
         // edge attributes
         size_t glob_eid = tuple_from_edge({{v_id, opp_vid}}).eid(*this);
@@ -428,6 +463,8 @@ bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
     // get split face tags (used a bunch later)
     size_t split_f_id = t.fid(*this);
     cache.splitf_label = m_face_extra[split_f_id].label;
+    cache.split_f = face_snapshot(split_f_id);
+    cache.splitf_on_region = face_is_region(split_f_id);
 
     // new vertex
     cache.v1_id = t.vid(*this);
@@ -519,12 +556,33 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
         (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar +
          m_vertex_attribute[v3_id].m_sizing_scalar) /
         3;
+    // On the split face's surfaces, as the edge split's new vertex is on its edge's
+    // (marching_split_edge_after()): a region boundary's, the walls all three corners share, and
+    // then, for a region boundary, the base's union flag, which every containment check is gated
+    // on (not for the wall, which is no tracked face).
+    m_vertex_extra[v_id].m_is_on_region = cache.splitf_on_region;
+    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+        wmtk::set_intersection(
+            m_vertex_attribute[v1_id].on_bbox_faces,
+            m_vertex_attribute[v2_id].on_bbox_faces),
+        m_vertex_attribute[v3_id].on_bbox_faces);
+    if (m_vertex_extra[v_id].m_is_on_region) {
+        m_vertex_attribute[v_id].m_is_on_surface = true;
+    }
 
     // new edges/faces on split face
     EdgeAttributes splitf_eattr;
     splitf_eattr.label = cache.splitf_label;
-    FaceSnapshot splitf_fattr;
-    splitf_fattr.extra.label = cache.splitf_label;
+    // THE SPLIT RULE, as the edge split, the tet split and the 2D edge split keep it: a piece of a
+    // split simplex lies on every surface the simplex was on; a simplex new inside one cell lies
+    // on none. So each piece takes the split face's snapshot -- tracking, wall side, class, input
+    // set, sheet, label -- with its orientation, which is stored against the ascending order of
+    // a face's own vertices, converted: the piece (v_i, v_i+1, v) replaces v_i+2 by v in place,
+    // so along that order it carries the face's orientation along (v_i, v_i+1, v_i+2), a cyclic
+    // turn of (v1, v2, v3). Until 2026-11 the pieces took a fresh snapshot with the label alone,
+    // so a tracked face split here lost its tracking: its surface got a hole -- its topology no
+    // longer kept, its face tags missing on the pieces, nothing holding them.
+    const int splitf_orientation = cache.split_f.tags.orientation_along(splitf_vids);
     for (int i = 0; i < 3; i++) {
         size_t curr_v1_id = splitf_vids[i];
         size_t curr_v2_id = splitf_vids[(i + 1) % 3];
@@ -532,8 +590,12 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
         size_t glob_eid = tuple_from_edge({{curr_v1_id, v_id}}).eid(*this); // new edge
         m_edge_attribute[glob_eid] = splitf_eattr;
 
+        FaceSnapshot piece = cache.split_f;
+        piece.tags.set_orientation_along(
+            std::array<size_t, 3>{{curr_v1_id, curr_v2_id, v_id}},
+            splitf_orientation);
         auto [_, glob_fid] = tuple_from_face({{curr_v1_id, curr_v2_id, v_id}}); // new face
-        restore_face(glob_fid, splitf_fattr);
+        restore_face(glob_fid, piece);
     }
 
     // existing edges on split face

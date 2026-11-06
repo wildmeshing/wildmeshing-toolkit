@@ -157,7 +157,7 @@ void Envelope::init_exact_edges(
     const double _eps)
 {
     m_exact_built = false;
-    if (!use_exact) {
+    if (!use_exact || F.empty()) {
         return;
     }
     if (!(_eps > 0)) {
@@ -192,7 +192,7 @@ void Envelope::init(
     // not a crash, just an optimization that silently cannot move. So skip the build and let
     // m_exact_built refuse the query instead.
     m_exact_built = false;
-    if (_eps > 0) {
+    if (_eps > 0 && !F.empty()) {
         exact_envelope.init(V, F, _eps);
         m_exact_built = true;
     }
@@ -235,6 +235,8 @@ void Envelope::init(
         FF.row(i) = F[i];
     }
 
+    m_bvh.reset();
+    if (F.empty()) return; // empty(): SimpleBVH::BVH::init crashes on no primitives
     m_bvh = std::make_shared<SimpleBVH::BVH>();
     m_bvh->init(VV, FF, 0);
 }
@@ -271,6 +273,8 @@ void Envelope::init(
         FF.row(i) = F[i];
     }
 
+    m_bvh.reset();
+    if (F.empty()) return; // empty(): SimpleBVH::BVH::init crashes on no primitives
     m_bvh = std::make_shared<SimpleBVH::BVH>();
     m_bvh->init(VV, FF, 0);
 }
@@ -306,6 +310,8 @@ void Envelope::init(
         FF.row(i) = F[i];
     }
 
+    m_bvh.reset();
+    if (F.empty()) return; // empty(): SimpleBVH::BVH::init crashes on no primitives
     m_bvh = std::make_shared<SimpleBVH::BVH>();
     m_bvh->init(VV, FF, 0);
 }
@@ -365,6 +371,7 @@ void Envelope::require_exact_built(const char* query) const
 bool Envelope::is_outside(const Eigen::Vector3d& pts) const
 {
     if (disabled) return false;
+    if (empty()) return true;
     if (use_exact) {
         // Points work against either 3D envelope, so both kinds are accepted here; only a 2D
         // one is wrong, and that is what the check catches.
@@ -378,6 +385,7 @@ bool Envelope::is_outside(const Eigen::Vector3d& pts) const
 
 bool Envelope::is_outside(const Eigen::Vector2d& pts) const
 {
+    if (!disabled && empty()) return true;
     // The 2D exact envelope is its own object, so this cannot go through the 3D overload the
     // way the sampled path does -- that would consult an exact_envelope no 2D init ever
     // filled in, and an empty FastEnvelope answers "outside" for every query.
@@ -434,6 +442,7 @@ bool Envelope::samples_outside_parallel(const std::vector<Vector3d>& ps) const
 bool Envelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 {
     if (disabled) return false;
+    if (empty()) return true;
     if (use_exact) {
         require_exact_kind(Kind::Triangles3d, "triangle");
         return exact_envelope.is_outside(tri);
@@ -499,6 +508,7 @@ bool Envelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 bool Envelope::is_outside(const std::array<Vector3d, 2>& edge) const
 {
     if (disabled) return false;
+    if (empty()) return true;
     if (use_exact) {
         // Exact for both 3D envelope kinds: a segment is inside when it is covered by the
         // union of the prisms (Triangles3d) or the hexahedra (Edges3d), which fast-envelope
@@ -537,6 +547,7 @@ bool Envelope::is_outside(const std::array<Vector3d, 2>& edge) const
 
 bool Envelope::is_outside(const std::array<Vector2d, 2>& edge) const
 {
+    if (!disabled && empty()) return true;
     if (!disabled && use_exact && m_kind == Kind::Edges2d) {
         require_exact_built("2D segment");
         return exact_envelope_2d.is_outside(edge[0], edge[1]);
@@ -551,12 +562,14 @@ bool Envelope::is_outside(const std::array<Vector2d, 2>& edge) const
 
 double Envelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const
 {
+    require_primitives("nearest point");
     double dist;
     m_bvh->nearest_facet(pts, result, dist);
     return dist;
 }
 double Envelope::nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const
 {
+    require_primitives("nearest point");
     double dist;
     m_bvh->nearest_facet(pts, result, dist);
     return dist;
@@ -570,6 +583,7 @@ double Envelope::nearest_point_feature(
     int& feature_id) const
 {
     assert(!m_v2.empty() && !m_e2.empty());
+    require_primitives("nearest feature point");
     // nearest_facet returns SimpleBVH's INTERNAL primitive index (only intersect_box maps
     // back to input ids), so the id cannot index the input arrays. Box-query the foot point
     // (intersect_box does map) and classify against the candidates, keeping the closest.
@@ -635,6 +649,7 @@ double Envelope::nearest_point_feature(
     long long& feature_id) const
 {
     assert(!m_v3.empty());
+    require_primitives("nearest feature point");
     Eigen::Vector3d nearest;
     double sq_dist;
     m_bvh->nearest_facet(p, nearest, sq_dist);
@@ -769,6 +784,7 @@ double Envelope::nearest_point_feature(
 
 double Envelope::squared_distance(const Eigen::Vector3d& p) const
 {
+    require_primitives("nearest point");
     double d2;
     SimpleBVH::Vector3d out;
     m_bvh->nearest_facet(p, out, d2);
@@ -777,6 +793,7 @@ double Envelope::squared_distance(const Eigen::Vector3d& p) const
 
 double Envelope::squared_distance(const Eigen::Vector2d& p) const
 {
+    require_primitives("nearest point");
     double d2;
     SimpleBVH::Vector2d out;
     m_bvh->nearest_facet(p, out, d2);
@@ -959,11 +976,18 @@ bool segments_cross(
 
 } // namespace
 
-void Envelope::require_primitive_query(const int dim, const char* query) const
+void Envelope::require_primitives(const char* query) const
 {
     if (!m_bvh) {
-        log_and_throw_error("{} on an envelope no init() has filled in.", query);
+        log_and_throw_error(
+            "{} query on an envelope with no primitives: init() was given none, or not called.",
+            query);
     }
+}
+
+void Envelope::require_primitive_query(const int dim, const char* query) const
+{
+    require_primitives(query);
     const bool built_2d = m_kind == Kind::Edges2d;
     if (dim == 3 && built_2d) {
         log_and_throw_error(

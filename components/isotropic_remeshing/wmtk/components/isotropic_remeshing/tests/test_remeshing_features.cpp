@@ -968,7 +968,8 @@ TEST_CASE("feature-fields-memory-route", "[test_remeshing][features]" + release_
     CHECK(memory_report == file_report);
 
     // A result goes back in as it is, with the same feature_fields, its labels with it; without
-    // them, its patch_id is an attribute the input may not carry.
+    // them, its patch_id is an annotation, dropped, and the result carries none. Until 2026-11 it
+    // was refused (io::ComponentIO::data_fields).
     nlohmann::json again = options;
     again["input"] = "mesh";
     again["features"] = "edges";
@@ -979,9 +980,10 @@ TEST_CASE("feature-fields-memory-route", "[test_remeshing][features]" + release_
     check_labels(chained.at("mesh"));
     nlohmann::json bare = again;
     bare["feature_fields"] = nlohmann::json::array();
-    CHECK_THROWS_WITH(
-        isotropic_remeshing(bare, meshes),
-        Catch::Matchers::ContainsSubstring("Unknown mesh attribute: patch_id"));
+    CHECK(!isotropic_remeshing(bare, meshes)
+               .first.at("mesh")
+               .cell(CellType::Triangle)
+               .attributes.count("patch_id"));
 
     // Without features: the label boundary is the only curve, of id -1. A Float64 field comes
     // back Float64.
@@ -999,12 +1001,14 @@ TEST_CASE("feature-fields-memory-route", "[test_remeshing][features]" + release_
     CHECK(edge_id.rows() >= 6);
     CHECK((edge_id.array() == -1).all());
 
-    // A field feature_fields does not name is still refused, as one it names but the input lacks.
+    // A field feature_fields does not name is dropped; one it names but the input lacks is
+    // refused.
     nlohmann::json unnamed = memory;
     unnamed["feature_fields"] = nlohmann::json::array();
-    CHECK_THROWS_WITH(
-        isotropic_remeshing(unnamed, MeshMap{{"surface", surface}, {"curves", curves}}),
-        Catch::Matchers::ContainsSubstring("Unknown mesh attribute: patch_id"));
+    CHECK(!isotropic_remeshing(unnamed, MeshMap{{"surface", surface}, {"curves", curves}})
+               .first.at("mesh")
+               .cell(CellType::Triangle)
+               .attributes.count("patch_id"));
     nlohmann::json missing = memory;
     missing["feature_fields"] = {"patch_id", "side"};
     CHECK_THROWS_WITH(

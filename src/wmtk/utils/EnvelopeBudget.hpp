@@ -27,7 +27,7 @@ namespace wmtk::utils {
  * @param simplification_ran        whether a simplification runs. Which config settings imply
  *                                  it is per-app: `simplify` in tetwild and triwild, and in
  *                                  simwild also `preserve_topology`, under which only the
- *                                  remeshing operation in 3D simplifies.
+ *                                  remeshing operation simplifies, after the insertion.
  */
 void check_envelope_reference(
     double eps,

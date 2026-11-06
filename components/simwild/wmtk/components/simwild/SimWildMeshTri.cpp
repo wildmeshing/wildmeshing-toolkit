@@ -108,6 +108,8 @@ void SimWildMeshTri::init_from_image(
 
     init_edge_tags(E_tagged, E_tags, edge_tag_names);
     init_surfaces_and_boundaries();
+    // The tagged mesh fills its box, as in 3D (SimWildMesh::init_from_image()).
+    require_box_boundary("simwild");
 }
 
 void SimWildMeshTri::init_from_image(
@@ -207,6 +209,7 @@ void SimWildMeshTri::init_from_image(
 
     init_edge_tags(E_tagged, E_tags, edge_tag_names);
     init_surfaces_and_boundaries();
+    require_box_boundary("simwild"); // as in the overload above
 }
 
 void SimWildMeshTri::init_surfaces_and_boundaries()
@@ -313,8 +316,8 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         }
     }
 
-    if (m_has_reference) require_reference_edge_labels();
-    init_label_envelopes();
+    if (m_has_reference) require_reference_edge_labels(m_E_envelope_labels);
+    init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
     // Before a remeshing, which holds the mesh to the reference: what was received must already
     // lie in it. The tag operations hold nothing to it, and drop it.
     if (m_has_reference && m_sim_params.operation == "remeshing") check_reference_containment();
@@ -397,7 +400,7 @@ void SimWildMeshTri::init_edge_tags(
     }
 }
 
-void SimWildMeshTri::init_label_envelopes()
+void SimWildMeshTri::init_label_envelopes(const double eps, const bool exact)
 {
     // With one label the member would be m_envelope, so none is built, as triwild builds none
     // for one input: the containment then answers with the union, as before the labels.
@@ -410,17 +413,12 @@ void SimWildMeshTri::init_label_envelopes()
         m_input_envelopes.set({});
         return;
     }
-    init_input_envelopes(
-        m_V_envelope,
-        m_E_envelope,
-        m_E_envelope_labels,
-        m_envelope_eps,
-        !m_sim_params.use_sample_envelope);
+    init_input_envelopes(m_V_envelope, m_E_envelope, m_E_envelope_labels, eps, exact);
     if (!m_input_envelopes.empty()) {
         logger().info(
             "label envelopes: {} labels, each surface edge held to its own (eps {:.6})",
             m_input_envelopes.size(),
-            m_envelope_eps);
+            eps);
     }
 }
 
@@ -478,72 +476,6 @@ MeshData SimWildMeshTri::envelope_data(const std::vector<Vector2d>& points) cons
     io::append_envelope_block(out, edges, CellType::Edge, sets, names);
     io::append_envelope_points(out, points);
     return out;
-}
-
-void SimWildMeshTri::require_reference_edge_labels() const
-{
-    InputSet held = 0, given = 0;
-    for (const Tuple& e : get_edges()) {
-        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
-        if (attr.m_is_surface_fs) held |= attr.input_set();
-    }
-    for (const InputSet s : m_E_envelope_labels) given |= s;
-    const InputSet missing = held & ~given;
-    if (missing == 0) return;
-    std::string names;
-    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
-        if ((missing >> b) & 1) names += (names.empty() ? "" : ", ") + label_name(b);
-    }
-    log_and_throw_error(
-        "envelope: no segment of it is labelled {}, which this mesh's edges carry; an envelope "
-        "must carry every label of the mesh it comes with",
-        names);
-}
-
-void SimWildMeshTri::check_reference_containment() const
-{
-    // Per label bit, the held edges outside its envelope; an edge outside any of its labels' is
-    // one edge outside. Each member asked on its own: inside their intersection is inside each.
-    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
-    std::vector<size_t> outside(max_bits, 0);
-    size_t n = 0;
-    for (const Tuple& e : get_edges()) {
-        const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
-        if (!attr.m_is_surface_fs) continue;
-        const auto vids = get_edge_vids(e);
-        const std::array<Vector2d, 2> segment = {
-            {m_vertex_attribute[vids[0]].m_posf, m_vertex_attribute[vids[1]].m_posf}};
-        bool out = false;
-        for (size_t b = 0; b < max_bits; ++b) {
-            if (((attr.input_set() >> b) & 1) == 0) continue;
-            const Envelope* env = m_input_envelopes.empty()      ? m_envelope.get()
-                                  : b < m_input_envelopes.size() ? m_input_envelopes.member(b).get()
-                                                                 : nullptr;
-            if (env && !env->is_outside(segment)) continue;
-            ++outside[b];
-            out = true;
-        }
-        n += out;
-    }
-    if (n == 0) {
-        logger().info(
-            "envelope: every held edge received lies in the reference's envelopes of its labels "
-            "(eps {:.6})",
-            m_envelope_eps);
-        return;
-    }
-    std::string counts;
-    for (size_t b = 0; b < max_bits; ++b) {
-        if (outside[b] == 0) continue;
-        counts += fmt::format("{}{} ({})", counts.empty() ? "" : ", ", label_name(b), outside[b]);
-    }
-    log_and_throw_error(
-        "envelope: the mesh received does not lie in the reference at this run's eps {:.6g}: {} "
-        "held edges outside the envelopes of their labels: {}. The sender held them to a wider "
-        "envelope; give this run an eps at least the sender's, or no envelope",
-        m_envelope_eps,
-        n,
-        counts);
 }
 
 CellTag SimWildMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_set)
@@ -1055,6 +987,91 @@ bool SimWildMeshTri::collapse_quality_allowed(
 {
     return !m_vertex_attribute.at(v1).m_is_rounded || quality <= target_quality(fid) ||
            quality <= ring_max;
+}
+
+void SimWildMeshTri::simplify()
+{
+    partition_mesh_morton();
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+    logger().info("===== Simplify =====");
+
+    // As in 3D (SimWildMesh::simplify()): the sampled envelope for the simplification alone if
+    // simplify_use_sample_envelope asks, else the mode use_sample_envelope gave m_envelope;
+    // rebuilt below in that mode, around the input or around the result.
+    if (m_sim_params.simplify_use_sample_envelope) {
+        m_envelope->use_exact = false;
+    }
+    m_envelope->init(m_V_envelope, m_E_envelope, m_sim_params.eps_simplify);
+    init_label_envelopes(m_sim_params.eps_simplify, m_envelope->use_exact);
+
+    // Where 2D differs: nothing is tagged again. 3D tags its order-2 curves again under
+    // envelope_reference "simplified", tubes along the open boundaries and non-manifold edges.
+    // In 2D the order-2 features are points -- the curve ends and junctions
+    // (holds_order2_vertex()) -- and the base holds each by its anchor alone, as it holds the
+    // input points (anchor_feature_points(), at init only). Those anchors are the twin of 3D's
+    // curve anchors, which 3D keeps as they are under either reference, for the reason it
+    // gives: re-centring them would need to tell the input points' anchors apart from the
+    // curve ends', and the 2D anchors do not record that either. So an end or junction stays
+    // within order2_envelope_ratio x eps of its input position through the simplification and
+    // after it, also under "simplified", where 3D lets a curve's body move by
+    // order2_envelope_ratio x eps_simplify.
+    const bool around_simplified = m_sim_params.envelope_around_simplified;
+
+    // The quality check stays on, as in 3D, which says why (EdgeCollapsing.cpp). 2D has no
+    // switch for it: collapse_quality_allowed() always checks. preserve_topology keeps the exact
+    // inversion check and the substructure link condition in every collapse.
+    collapse_all_edges();
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+
+    if (!around_simplified) {
+        // Back to the envelopes around the input, at the optimizer's eps.
+        logger().info("Envelope around the input restored");
+        m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
+        m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+        init_label_envelopes(m_envelope_eps, m_envelope->use_exact);
+        logger().info("===== Simplification done =====");
+        return;
+    }
+
+    // Around the simplified curves: the surface edges as they are now, and each label's
+    // envelope around the edges carrying it (m_E_envelope_labels cleared), as in 3D.
+    logger().warn("Update envelope");
+    MatrixXd V(vert_capacity(), 2);
+    V.setZero();
+    for (size_t i = 0; i < vert_capacity(); ++i) {
+        if (tuple_from_vertex(i).is_valid(*this)) {
+            V.row(i) = m_vertex_attribute.at(i).m_posf;
+        }
+    }
+
+    const auto surf_edges = get_edges_by_condition([](auto& e) { return e.m_is_surface_fs; });
+    MatrixXi E(surf_edges.size(), 2);
+    for (size_t i = 0; i < surf_edges.size(); ++i) {
+        E.row(i) = Vector2i(int(surf_edges[i][0]), int(surf_edges[i][1]));
+    }
+
+    m_envelope = nullptr;
+    m_V_envelope.clear();
+    m_E_envelope.clear();
+    m_E_envelope_labels.clear();
+    // The edges' input sets, in get_edges_by_condition()'s order: the labels of the envelope
+    // handed on (envelope_data()), as 3D's m_F_envelope_face_sets.
+    m_E_envelope_edge_sets.clear();
+    for (const Tuple& e : get_edges()) {
+        const auto& attr = m_edge_attribute[e.eid(*this)];
+        if (attr.m_is_surface_fs) m_E_envelope_edge_sets.push_back(attr.input_set());
+    }
+    if (V.size() > 0 && E.size() > 0) {
+        init_envelope(V, E);
+    } else {
+        logger().warn("No surface edges left after simplification, skip re-building envelope");
+    }
+    init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
+    logger().info("===== Simplification done =====");
 }
 
 bool SimWildMeshTri::check_interface_edges_tagged(const bool verbose) const

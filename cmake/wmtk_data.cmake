@@ -116,8 +116,11 @@ ExternalProject_Add(
     # renamed simplify and simwild refuses; it set the default, so the run is unchanged.
     # At 6dc625a (2026-11-03, data2 #13) both lines join: data2 main up to 8d3a193 (the explicit 2D
     # tight_seal_geom case seals tag_0, tag_1 and tag_4) and f5e1ddd.
+    # At e085b8f (2026-11-05, data2 #14) the hidden [offset] group drops its two slowest cube
+    # cases (cube_small_offset_conv0.1 and conv0.025, 45 of its 49 min) and parks its nine 2D
+    # cases in _commented_out while the offset refuses 2D input.
     #
-    GIT_TAG 6dc625ab455ee8b79fc2a9d5a9e07ecdd125b452
+    GIT_TAG e085b8fa1a0420d9a966a16b55bec5084dcc68d7
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

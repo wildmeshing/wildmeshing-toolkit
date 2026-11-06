@@ -311,11 +311,11 @@ the same envelope, to pass on again:
 The finer remeshing gives 38,609 tets in one run. With the envelope, a remeshing holds the
 interfaces to it; without it, simwild builds an envelope from the interfaces of the mesh it is
 given, wherever the previous run left them. Pass it on when you remesh a mesh whose regions have
-not changed since the run that returned it. In 3D, the remeshing first
+not changed since the run that returned it. The remeshing first
 simplifies the mesh within `eps_simplify_rel` of that envelope (unless
 [`simplify`](../reference/simwild.md#simplify) is false) and then holds the optimization to the
 simplified interfaces, so the envelope bounds how far the simplification moves them; with
-`simplify` false, and in 2D, it bounds the whole run.
+`simplify` false, it bounds the whole run.
 
 Do not pass it after a region edit. The edits change which faces are interfaces, so they return no
 envelope, and an old one does not cover the new interfaces: simwild finds faces outside it, warns

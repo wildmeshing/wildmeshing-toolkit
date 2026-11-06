@@ -572,6 +572,103 @@ void TetWildMesh::init_from_Volumeremesher(
         [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
 }
 
+void TetWildMesh::init_from_tagged_mesh(const TaggedMesh& mesh)
+{
+    // The domain's box is the mesh's own: the faces in its planes are the wall, as the
+    // insertion's background box gives them (init_from_Volumeremesher() compares against it).
+    m_tet_params.box_min = m_tet_params.box_max = mesh.V.at(0);
+    for (const Vector3d& p : mesh.V) {
+        m_tet_params.box_min = m_tet_params.box_min.cwiseMin(p);
+        m_tet_params.box_max = m_tet_params.box_max.cwiseMax(p);
+    }
+
+    // Every vertex is a double, so its exact position is that double: a direct point to
+    // init_from_Volumeremesher(), rounded and storing no rational, as the insertion leaves its
+    // direct points.
+    std::vector<Vector3r> v_rational(mesh.V.size());
+    for (size_t i = 0; i < mesh.V.size(); ++i) {
+        for (int j = 0; j < 3; ++j) v_rational[i][j] = wmtk::Rational(mesh.V[i][j]);
+    }
+
+    // The tracked faces, by vertex set: the union of their rows' labels, and their orientation,
+    // a signed count against the ascending vertex order (SurfaceTagAttributes::m_orientation).
+    // One count per face, not per label: rows of one face facing one way are one sheet, as
+    // coincident input triangles are at the insertion, and rows facing both ways cancel to 0.
+    struct Row
+    {
+        std::array<size_t, 3> key;
+        InputSet set;
+        int parity;
+    };
+    std::vector<Row> rows(mesh.F.size());
+    for (size_t r = 0; r < mesh.F.size(); ++r) {
+        rows[r].key = mesh.F[r];
+        std::sort(rows[r].key.begin(), rows[r].key.end());
+        rows[r].set = mesh.F_sets[r];
+        rows[r].parity = SurfaceTagAttributes::ascending_parity(mesh.F[r]);
+    }
+    std::sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) { return a.key < b.key; });
+    std::vector<std::array<size_t, 3>> facets;
+    std::vector<InputSet> facet_sets;
+    std::vector<int8_t> facet_orientation;
+    for (size_t r = 0; r < rows.size();) {
+        bool up = false, down = false;
+        InputSet set = 0;
+        size_t s = r;
+        for (; s < rows.size() && rows[s].key == rows[r].key; ++s) {
+            set |= rows[s].set;
+            (rows[s].parity > 0 ? up : down) = true;
+        }
+        facets.push_back(rows[r].key);
+        facet_sets.push_back(set);
+        facet_orientation.push_back(int8_t(int(up) - int(down)));
+        r = s;
+    }
+    std::vector<Row>().swap(rows);
+
+    // The per-slot flags init_from_Volumeremesher() takes: slot 4 t + j is tet t's local face j,
+    // in TetMesh's local face order (m_local_faces, private: (0,1,2), (0,2,3), (0,1,3), (1,2,3)),
+    // as utils::embed_triangles_in_tets() orders them.
+    constexpr std::array<std::array<int, 3>, 4> local_faces = {
+        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}};
+    std::vector<bool> on_surface(4 * mesh.T.size(), false);
+    std::vector<int8_t> orientation(4 * mesh.T.size(), 0);
+    std::vector<char> found(facets.size(), 0);
+    for (size_t t = 0; t < mesh.T.size(); ++t) {
+        for (int j = 0; j < 4; ++j) {
+            std::array<size_t, 3> key;
+            for (int k = 0; k < 3; ++k) key[k] = mesh.T[t][local_faces[j][k]];
+            std::sort(key.begin(), key.end());
+            const auto it = std::lower_bound(facets.begin(), facets.end(), key);
+            if (it == facets.end() || *it != key) continue;
+            const size_t f = size_t(it - facets.begin());
+            on_surface[4 * t + j] = true;
+            orientation[4 * t + j] = facet_orientation[f];
+            found[f] = 1;
+        }
+    }
+    for (size_t f = 0; f < facets.size(); ++f) {
+        if (!found[f]) log_and_throw_error("tagged face {} is not a face of the tets", facets[f]);
+    }
+
+    const bool has_features = !mesh.features.empty();
+    init_from_Volumeremesher(
+        v_rational,
+        facets,
+        std::vector<bool>(mesh.V.size(), false), // is_v_on_input: not read
+        mesh.T,
+        on_surface,
+        &orientation,
+        has_features ? &mesh.features_placed : nullptr,
+        &facet_sets,
+        has_features ? &mesh.features : nullptr);
+
+    // The wall: the boundary faces, untracked, each in a plane of the box, which
+    // init_from_Volumeremesher() flagged as it flags every face in one -- the mesh fills its box,
+    // as the insertion's background box does (require_box_boundary() says why).
+    require_box_boundary("tetwild's tagged route");
+}
+
 // After having called the following:
 // embed_tri_in_poly_mesh(
 //    tri_vrt_coords,

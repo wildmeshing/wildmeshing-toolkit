@@ -36,6 +36,19 @@ using VertexAttributes = wmtk::TriOptimizerMesh::VertexAttributes;
 using EdgeAttributes = wmtk::TriOptimizerMesh::EdgeAttributes;
 using FaceAttributes = wmtk::TriOptimizerMesh::FaceAttributes;
 
+/**
+ * @brief Per-face data that only the finalization writes: each input's winding number, the wn_
+ * output fields. The 2D twin of tetwild's TetFinalizeAttributes, registered the same way and for
+ * the same reason (enable_finalize_attributes()): the face slots do not carry it through the
+ * optimization. The base's FaceAttributes, which the shared operations copy, keeps the tracked
+ * winding number and the flood-fill part.
+ */
+class FaceFinalizeAttributes
+{
+public:
+    std::vector<double> m_winding_number_per_input;
+};
+
 class TriWildMesh : public wmtk::TriOptimizerMesh
 {
 public:
@@ -45,6 +58,52 @@ public:
 
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
+
+    /// Optional per-input names (JSON "input_names"), used to label the per-input
+    /// winding-number output fields, wn_<name> (empty => the fields are numbered, wn_<i>), as
+    /// tetwild's TetWildMesh::m_input_names.
+    std::vector<std::string> m_input_names;
+
+    /**
+     * @name Finalization attributes
+     *
+     * As tetwild's: empty until enable_finalize_attributes() registers the collection with
+     * m_face_attr_group; from then on it is resized and moved with the rest of the face storage.
+     * The const accessor registers nothing: before registration every face reads as
+     * default-constructed, no winding numbers, which is what the writers then leave out.
+     * @{
+     */
+    void enable_finalize_attributes()
+    {
+        if (m_face_finalize_enabled) return;
+        m_face_finalize.resize(m_face_attribute.size());
+        m_face_attr_group.add(&m_face_finalize);
+        m_face_finalize_enabled = true;
+    }
+    FaceFinalizeAttributes& face_finalize(const size_t fid)
+    {
+        enable_finalize_attributes();
+        return m_face_finalize[fid];
+    }
+    const FaceFinalizeAttributes& face_finalize(const size_t fid) const
+    {
+        static const FaceFinalizeAttributes defaults;
+        return m_face_finalize_enabled ? m_face_finalize[fid] : defaults;
+    }
+    /** @} */
+
+private:
+    wmtk::AttributeCollection<FaceFinalizeAttributes> m_face_finalize;
+    bool m_face_finalize_enabled = false;
+
+public:
+    /// The labels of the tracked edges' input sets, bit i the i-th (input_names, else tag_<i>; a
+    /// tagged mesh input's edge tags), for the reference checks to name a label by.
+    std::vector<std::string> m_edge_tag_names;
+    std::string label_name(size_t bit) const override
+    {
+        return bit < m_edge_tag_names.size() ? m_edge_tag_names[bit] : "tag_" + std::to_string(bit);
+    }
 
     // One envelope per input curve file, when there are several: the base's m_input_envelopes,
     // built by init_mesh around the same curves as m_envelope, at the same eps and predicate,
@@ -170,7 +229,9 @@ public:
 
 public:
     /**
-     * @brief Tag every face with the inputs it lies inside, by winding number.
+     * @brief Each input's winding number at every face's centroid, kept as
+     * FaceFinalizeAttributes::m_winding_number_per_input (the wn_ output fields), and every face
+     * tagged with the inputs it lies inside (above 1/2), which filter "input" reads.
      *
      * `Vs`/`Es` are the per-input meshes as read when the initial mesh was built (2D, x/y
      * only) -- they are passed in rather than re-read from disk.
@@ -178,7 +239,9 @@ public:
     void compute_winding_numbers(const std::vector<MatrixXd>& Vs, const std::vector<MatrixXi>& Es);
 
     /// Remove the faces that lie inside no input (needs compute_winding_numbers).
-    void filter_with_input_winding_number();
+    /// `bounding` (filter_inputs): faces inside none of its inputs are dropped. All bits, the
+    /// default: every input, as before the key.
+    void filter_with_input_winding_number(InputSet bounding = ~InputSet(0));
 
     /**
      * @brief Winding number of every face's centroid w.r.t. the tracked curves, oriented as the
@@ -189,13 +252,17 @@ public:
      * curves add up, opposite ones cancel. Like the input winding number, a result with nothing
      * inside is taken as an inside-out input and flipped.
      */
-    void compute_tracked_winding_number();
+    /// `bounding` (filter_inputs): of the tracked edges whose input set meets it only. All bits,
+    /// the default: every tracked edge.
+    void compute_tracked_winding_number(InputSet bounding = ~InputSet(0));
     /// Remove the faces whose tracked winding number is at most 1/2.
     void filter_with_tracked_winding_number();
     /// Remove the flood-fill region that dominates the mesh boundary (needs flood_fill).
     void filter_with_flood_fill();
 
-    int flood_fill();
+    /// `bounding` (filter_inputs): only the tracked edges whose input set meets it separate; the
+    /// others are crossed. All bits, the default: every tracked edge.
+    int flood_fill(InputSet bounding = ~InputSet(0));
     /// Whether flood_fill ran, so that the writers leave the part ids out rather than writing
     /// their defaults as if they were parts.
     bool m_has_parts = false;

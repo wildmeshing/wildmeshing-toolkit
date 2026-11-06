@@ -8,8 +8,10 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <limits>
 #include <map>
+#include <set>
 #include <utility>
 #include <wmtk/MeshData.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -89,6 +91,24 @@ MeshData tet()
     MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
     return io::geometry_data(V, T, CellType::Tetrahedron);
+}
+// The unit cube as its six tets around the main diagonal: a tet mesh that fills its box.
+[[maybe_unused]] MeshData cube_tets()
+{
+    MatrixXd V(8, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1;
+    MatrixXi T(6, 4);
+    T << 0, 1, 3, 7, 0, 1, 7, 5, 0, 2, 7, 3, 0, 2, 6, 7, 0, 4, 5, 7, 0, 4, 7, 6;
+    return io::geometry_data(V, T, CellType::Tetrahedron);
+}
+// The unit square as two triangles: a triangle mesh that fills its box.
+[[maybe_unused]] MeshData square_triangles()
+{
+    MatrixXd V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0;
+    MatrixXi F(2, 3);
+    F << 0, 1, 3, 0, 3, 2;
+    return io::geometry_data(V, F, CellType::Triangle);
 }
 void add_tags(MeshData& data, CellType type)
 {
@@ -243,26 +263,29 @@ TEST_CASE("Surface components operate on named meshes without files", "[componen
 #ifdef WMTK_TEST_simwild
 TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
 {
+    // A mesh that fills its box, as simwild takes a tagged mesh (require_box_boundary()), every
+    // cell tagged, and its boundary as the envelope, oriented out of it.
     WorkingDirectory cwd;
     MeshData data;
     SECTION("2D")
     {
-        data = triangle();
+        data = square_triangles();
         add_tags(data, CellType::Triangle);
     }
     SECTION("3D")
     {
-        data = tet();
+        data = cube_tets();
         add_tags(data, CellType::Tetrahedron);
     }
     MeshData envelope;
     envelope.V = data.V;
     if (data.cells.count(CellType::Tetrahedron)) {
-        envelope.cells[CellType::Triangle].connectivity.resize(4, 3);
-        envelope.cells[CellType::Triangle].connectivity << 1, 2, 3, 0, 3, 2, 0, 1, 3, 0, 2, 1;
+        envelope.cells[CellType::Triangle].connectivity.resize(12, 3);
+        envelope.cells[CellType::Triangle].connectivity << 0, 3, 1, 0, 2, 3, 1, 3, 7, 1, 7, 5, 0, 1,
+            5, 0, 5, 4, 2, 7, 3, 2, 6, 7, 0, 6, 2, 0, 4, 6, 4, 5, 7, 4, 7, 6;
     } else {
-        envelope.cells[CellType::Edge].connectivity.resize(3, 2);
-        envelope.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 0;
+        envelope.cells[CellType::Edge].connectivity.resize(4, 2);
+        envelope.cells[CellType::Edge].connectivity << 0, 1, 1, 3, 3, 2, 2, 0;
     }
     nlohmann::json options = {
         {"input", "tagged"},
@@ -274,6 +297,53 @@ TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
     auto result = simwild::simwild(options, {{"tagged", data}, {"boundary", envelope}});
     check(result);
     REQUIRE(result.first.at("mesh").cells.begin()->second.attributes.count("tags"));
+}
+TEST_CASE(
+    "SimWild remeshes a tagged mesh with nothing tracked and no envelope",
+    "[component_io][tagged]")
+{
+    // One region filling the box: no interface, so no tracked face (2D: edge), and no envelope
+    // given, so the one built from the tracked faces is empty. Until 2026-11-05 2D crashed
+    // building it (Envelope::init on no edges).
+    WorkingDirectory cwd;
+    const bool is_3d = GENERATE(false, true);
+    INFO((is_3d ? "3D" : "2D"));
+    MeshData data = is_3d ? cube_tets() : square_triangles();
+    add_tags(data, is_3d ? CellType::Tetrahedron : CellType::Triangle);
+    check(
+        simwild::simwild(
+            {{"input", "tagged"}, {"max_iterations", 0}, {"num_threads", 1}},
+            {{"tagged", data}}));
+}
+TEST_CASE("SimWild refuses a tagged mesh that does not fill its box", "[component_io][tagged]")
+{
+    // One tagged tet (2D: triangle) with its boundary as the envelope, as "SimWild accepts tagged
+    // arrays in both dimensions" took it until 2026-11-05: its slanted face (edge) is a boundary
+    // face in no plane of the box, which nothing would hold (require_box_boundary()).
+    WorkingDirectory cwd;
+    const bool is_3d = GENERATE(false, true);
+    INFO((is_3d ? "3D" : "2D"));
+    MeshData data = is_3d ? tet() : triangle();
+    add_tags(data, is_3d ? CellType::Tetrahedron : CellType::Triangle);
+    MeshData envelope;
+    envelope.V = data.V;
+    if (is_3d) {
+        envelope.cells[CellType::Triangle].connectivity.resize(4, 3);
+        envelope.cells[CellType::Triangle].connectivity << 1, 2, 3, 0, 3, 2, 0, 1, 3, 0, 2, 1;
+    } else {
+        envelope.cells[CellType::Edge].connectivity.resize(3, 2);
+        envelope.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 0;
+    }
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(
+            {{"input", "tagged"},
+             {"envelope", "boundary"},
+             {"max_iterations", 0},
+             {"num_threads", 1}},
+            {{"tagged", data}, {"boundary", envelope}}),
+        Catch::Matchers::ContainsSubstring(
+            is_3d ? "1 untracked boundary faces in no plane of its bounding box"
+                  : "1 untracked boundary edges on no line of its bounding box"));
 }
 TEST_CASE("Tagged meshes read a triangle block as tagged faces", "[component_io]")
 {
@@ -469,33 +539,40 @@ TEST_CASE("Tagged mesh files carry an earlier offset's correspondence", "[compon
 }
 TEST_CASE("SimWild keeps a tagged mesh's curves on both routes", "[component_io][io]")
 {
-    // Two cells, the first tagged, so that the face (2D: edge) between them is an interface: in
-    // 2D two triangles, the edge (1, 0) of the first tagged `curve`; in 3D two tets, the edge
-    // (1, 0) of the first tagged `feature_0`. Through simwild, the curve comes back on its edge
-    // block, under its label, held on its segment, the 2D curve in its direction.
+    // The first cell tagged, so that the face (2D: edge) between it and the next is an interface,
+    // in a mesh that fills its box, as simwild takes a tagged mesh: in 2D the unit square of two
+    // triangles and the two below it, the edge (1, 0) of the first tagged `curve` -- inside the
+    // mesh, as simwild takes a tracked edge; in 3D the unit cube's six tets (cube_tets()), the
+    // main diagonal (7, 0), an edge of the first and inside the mesh, tagged `feature_0`. Until
+    // 2026-11-05 the 3D mesh was two tets, which do not fill their box. Through simwild, the curve
+    // comes back on its edge block, under its label, held on its segment, the 2D curve in its
+    // direction.
     WorkingDirectory cwd;
     const bool is_3d = GENERATE(false, true);
     INFO((is_3d ? "3D" : "2D"));
     MeshData data;
     if (is_3d) {
-        MatrixXd V(5, 3);
-        V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1;
-        MatrixXi T(2, 4);
-        T << 0, 1, 2, 3, 0, 2, 1, 4;
-        data = io::geometry_data(V, T, CellType::Tetrahedron);
+        data = cube_tets();
     } else {
-        MatrixXd V(4, 3);
-        V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0;
-        MatrixXi F(2, 3);
-        F << 0, 1, 2, 1, 3, 2;
+        MatrixXd V(6, 3);
+        V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, -1, 0, 1, -1, 0;
+        MatrixXi F(4, 3);
+        F << 0, 1, 2, 1, 3, 2, 0, 4, 1, 1, 4, 5;
         data = io::geometry_data(V, F, CellType::Triangle);
     }
     auto& cells = data.cells.at(is_3d ? CellType::Tetrahedron : CellType::Triangle);
-    cells.attributes["tags"] = {(DataMatrix<uint8_t>(2, 1) << 1, 0).finished(), {"tag_0"}};
+    const Eigen::Index n_cells = cells.connectivity.rows();
+    DataMatrix<uint8_t> first = DataMatrix<uint8_t>::Zero(n_cells, 1);
+    first(0, 0) = 1;
+    cells.attributes["tags"] = {first, {"tag_0"}};
     const std::string label = is_3d ? "feature_0" : "curve";
     auto& edges = data.cells[CellType::Edge];
     edges.connectivity.resize(1, 2);
-    edges.connectivity << 1, 0;
+    if (is_3d) {
+        edges.connectivity << 7, 0;
+    } else {
+        edges.connectivity << 1, 0;
+    }
     edges.attributes["tags"] = {DataMatrix<uint8_t>::Ones(1, 1).eval(), {label}};
     const nlohmann::json options = {{"max_iterations", 0}, {"simplify", false}, {"num_threads", 1}};
     auto memory_options = options;
@@ -514,7 +591,12 @@ TEST_CASE("SimWild keeps a tagged mesh's curves on both routes", "[component_io]
         const auto rows = labelled_rows(*mesh, CellType::Edge, label);
         REQUIRE(!rows.empty());
         for (const auto& row : rows) {
-            for (const Vector3d& p : row) CHECK(std::abs(p.y()) + std::abs(p.z()) < 1e-12);
+            // On its segment: the x axis in 2D, the main diagonal in 3D.
+            for (const Vector3d& p : row) {
+                CHECK(
+                    (is_3d ? std::abs(p.x() - p.y()) + std::abs(p.y() - p.z())
+                           : std::abs(p.y()) + std::abs(p.z())) < 1e-12);
+            }
             // In 3D a curve has no direction, and the row is in ascending vertex order.
             if (!is_3d) CHECK(row[1].x() < row[0].x());
         }
@@ -539,6 +621,12 @@ TEST_CASE("SimWild checks a forced dimension against memory inputs", "[component
             {{"input", input}, {"dimension", dimension}, {"max_iterations", 0}, {"num_threads", 1}},
             inputs);
     };
+    // A tagged mesh with another input: refused, rather than the other dropped.
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(
+            {{"input", {"tagged", "surface"}}, {"max_iterations", 0}, {"num_threads", 1}},
+            inputs),
+        Catch::Matchers::ContainsSubstring("only input"));
     REQUIRE_THROWS_WITH(run("surface", "2"), Catch::Matchers::ContainsSubstring("dimension"));
     REQUIRE_THROWS_WITH(run("curves", "3"), Catch::Matchers::ContainsSubstring("dimension"));
     REQUIRE_THROWS_WITH(run("tagged", "2"), Catch::Matchers::ContainsSubstring("dimension"));
@@ -607,7 +695,8 @@ TEST_CASE("TriWild writes each input's curve tags on both routes", "[component_i
         size_t n = 0;
         for (const std::string name : {"a", "b"}) {
             INFO(name);
-            CHECK(!labelled_rows(*mesh, CellType::Triangle, name).empty());
+            // No region tags: regions are simwild's (until 2026-11 each input's was one).
+            CHECK(labelled_rows(*mesh, CellType::Triangle, name).empty());
             const Vector3d centre(name == "a" ? 0.5 : 3.5, 0.5, 0);
             const auto rows = labelled_rows(*mesh, CellType::Edge, name);
             CHECK(rows.size() >= 4);
@@ -638,7 +727,7 @@ TEST_CASE("TriWild writes each input's curve tags on both routes", "[component_i
             input->F_tagged.rows() ==
             result.first.at("mesh").cell(CellType::Edge).connectivity.rows());
         CHECK(input->V_envelope.rows() == 0);
-        CHECK(std::count(input->tag_names.begin(), input->tag_names.end(), "a") == 1);
+        CHECK(input->tag_names.empty());
     }
 #endif
 }
@@ -774,8 +863,10 @@ TEST_CASE(
 #ifdef WMTK_TEST_topological_offset
 TEST_CASE("Offset accepts named tagged meshes", "[component_io]")
 {
+    // A mesh that fills its box: the offset refuses one that does not (require_box_boundary()),
+    // as a single tet does, its fourth face in no plane of the box.
     WorkingDirectory cwd;
-    auto data = tet();
+    auto data = cube_tets();
     add_tags(data, CellType::Tetrahedron);
     check(
         topological_offset::topological_offset(
@@ -935,8 +1026,23 @@ TEST_CASE("Geometry inputs accept the fields read_mesh attaches", "[component_io
         {{"input", "source"}, {"target_abs", 4}, {"num_threads", 1}},
         {{"source", data}});
     check(result);
+    // Any other field too: an annotation, dropped (io::ComponentIO::data_fields), the result as
+    // without it. Until 2026-11 it was refused.
     data.vertex_attributes["unrelated"].values = DataMatrix<double>::Zero(4, 1).eval();
-    REQUIRE_THROWS(qslim::qslim({{"input", "source"}, {"num_threads", 1}}, {{"source", data}}));
+    data.cells.at(CellType::Triangle).attributes["unrelated"].values =
+        DataMatrix<double>::Zero(4, 1).eval();
+    const auto annotated = qslim::qslim(
+        {{"input", "source"}, {"target_abs", 4}, {"num_threads", 1}},
+        {{"source", data}});
+    check(annotated);
+    const auto& a = annotated.first.at("mesh");
+    const auto& b = result.first.at("mesh");
+    const auto& Fa = a.cell(CellType::Triangle).connectivity;
+    const auto& Fb = b.cell(CellType::Triangle).connectivity;
+    REQUIRE(a.V.rows() == b.V.rows());
+    REQUIRE(a.V == b.V);
+    REQUIRE(Fa.rows() == Fb.rows());
+    REQUIRE(Fa == Fb);
 }
 TEST_CASE("Memory inputs with degenerate cells are cleaned like files", "[component_io][io]")
 {
@@ -1272,7 +1378,6 @@ TEST_CASE(
         {"input_names", {"a", "b"}},
         {"eps_rel", 1e-2},
         {"eps_simplify_rel", 5e-3},
-        {"filter", "input"},
         {"max_iterations", 2},
         {"num_threads", 1}};
     auto memory_options = tetwild_options;
@@ -1575,5 +1680,1413 @@ TEST_CASE(
     REQUIRE_THROWS_WITH(
         simwild::simwild(simwild_memory, {{"tagged", tagged}, {"envelope", renamed}}),
         Catch::Matchers::ContainsSubstring("labelled b"));
+}
+#endif
+#ifdef WMTK_TEST_tetwild
+namespace {
+// A segment inside the unit tet, as a feature file.
+MeshData inner_segment()
+{
+    MeshData curve;
+    curve.V.resize(2, 3);
+    curve.V << 0.1, 0.1, 0.1, 0.3, 0.2, 0.1;
+    curve.cells[CellType::Edge].connectivity.resize(1, 2);
+    curve.cells[CellType::Edge].connectivity << 0, 1;
+    return curve;
+}
+// tetwild on two unit tets 3 apart, `a` and `b`, and inner_segment() as a feature file, without
+// an optimization: a tet mesh of the box around them with tagged faces and a feature curve.
+ComponentResult two_tets_meshed(const nlohmann::json& extra = nlohmann::json::object())
+{
+    nlohmann::json options = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"input_edges", {"curve"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    options.update(extra);
+    return tetwild::tetwild(
+        options,
+        {{"a", tet_surface(0)}, {"b", tet_surface(3)}, {"curve", inner_segment()}});
+}
+// The volume of `mesh`'s tets, and the largest x of their centroids.
+std::pair<double, double> volume_and_max_x(const MeshData& mesh)
+{
+    const auto& T = mesh.cell(CellType::Tetrahedron).connectivity;
+    double volume = 0, max_x = -std::numeric_limits<double>::infinity();
+    for (Eigen::Index t = 0; t < T.rows(); ++t) {
+        std::array<Vector3d, 4> p;
+        for (int k = 0; k < 4; ++k) p[k] = mesh.V.row(T(t, k)).transpose();
+        volume += std::abs((p[1] - p[0]).cross(p[2] - p[0]).dot(p[3] - p[0])) / 6;
+        max_x = std::max(max_x, (p[0] + p[1] + p[2] + p[3]).x() / 4);
+    }
+    return {volume, max_x};
+}
+// Each face of `mesh` tagged `name` on its unit tet (`a` at x 0, `b` at x 3) and facing out of it.
+void check_on_own_input_facing_out(const MeshData& mesh, const std::string& name)
+{
+    INFO(name);
+    const Vector3d centre(name == "a" ? 0.25 : 3.25, 0.25, 0.25);
+    const auto rows = labelled_rows(mesh, CellType::Triangle, name);
+    CHECK(rows.size() >= 4);
+    for (const auto& f : rows) {
+        const Vector3d c = (f[0] + f[1] + f[2]) / 3;
+        CHECK(std::abs(c.x() - centre.x()) < 1);
+        CHECK((f[1] - f[0]).cross(f[2] - f[0]).dot(c - centre) > 0);
+    }
+}
+} // namespace
+TEST_CASE(
+    "TetWild continues from a tagged tet mesh, its tets kept, on both routes",
+    "[component_io][io][tagged]" + release_only)
+{
+    // tetwild's own tagged mesh with its fields dropped: a tet mesh with face tags `a` and `b`
+    // and a feature curve feature_0. The tagged route reads it exactly -- every tagged face and
+    // edge on its row, with its labels and its orientation: the reference it hands on, built from
+    // what it received, is those rows -- and gives one result on both routes, with the labels
+    // kept, no tet tags, and each face on its own input and facing out of it. Not the mesh as it
+    // came at max_iterations 0: mesh_improvement() runs its bare collapse and swap passes before
+    // the first iteration and after the last on both routes (optimization_bare_coarsen_passes(),
+    // as after an insertion), whatever the count.
+    WorkingDirectory cwd;
+    const MeshData tagged = tags_only(two_tets_meshed().first.at("mesh"));
+    const nlohmann::json options = {{"max_iterations", 0}, {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = "m";
+    const auto result = tetwild::tetwild(memory_options, {{"m", tagged}});
+    check(result);
+    auto optimizing = memory_options;
+    optimizing["max_iterations"] = 3;
+    const auto optimized = tetwild::tetwild(optimizing, {{"m", tagged}});
+    check(optimized);
+
+    io::write_mesh("m.msh", tagged);
+    auto file_options = options;
+    file_options["application"] = "tetwild";
+    file_options["input"] = {here("m.msh")};
+    file_options["output"] = "t";
+    file_options["write_vtu"] = false;
+    tetwild::tetwild(file_options);
+    const MeshData file = io::read_mesh("t_final.msh");
+
+    const MeshData& memory = result.first.at("mesh");
+    for (const MeshData* mesh : {&memory, &file}) {
+        REQUIRE(
+            mesh->cell(CellType::Triangle).attributes.at("tags").labels ==
+            std::vector<std::string>{"a", "b"});
+        REQUIRE(
+            mesh->cell(CellType::Edge).attributes.at("tags").labels ==
+            std::vector<std::string>{"feature_0"});
+        CHECK(!mesh->cell(CellType::Tetrahedron).attributes.count("tags"));
+        for (const std::string name : {"a", "b"}) check_on_own_input_facing_out(*mesh, name);
+    }
+    // One result on both routes.
+    CHECK(
+        memory.cell(CellType::Tetrahedron).connectivity.rows() ==
+        file.cell(CellType::Tetrahedron).connectivity.rows());
+    for (const std::string name : {"a", "b"}) {
+        CHECK(
+            canonical(labelled_rows(memory, CellType::Triangle, name)) ==
+            canonical(labelled_rows(file, CellType::Triangle, name)));
+    }
+    CHECK(
+        canonical(labelled_rows(memory, CellType::Edge, "feature_0")) ==
+        canonical(labelled_rows(file, CellType::Edge, "feature_0")));
+    // The reference handed on, without an `envelope` given: the tagged faces and the curve as
+    // received, exactly the input's rows, labelled as the mesh labels them, on both routes.
+    const MeshData file_envelope = io::read_mesh("t_envelope.msh");
+    for (const MeshData* envelope : {&result.first.at("envelope"), &file_envelope}) {
+        for (const std::string name : {"a", "b"}) {
+            CHECK(
+                canonical(labelled_rows(*envelope, CellType::Triangle, name)) ==
+                canonical(labelled_rows(tagged, CellType::Triangle, name)));
+        }
+        CHECK(
+            canonical(labelled_rows(*envelope, CellType::Edge, "feature_0")) ==
+            canonical(labelled_rows(tagged, CellType::Edge, "feature_0")));
+    }
+
+    const MeshData& mesh = optimized.first.at("mesh");
+    REQUIRE(
+        mesh.cell(CellType::Triangle).attributes.at("tags").labels ==
+        std::vector<std::string>{"a", "b"});
+    for (const std::string name : {"a", "b"}) check_on_own_input_facing_out(mesh, name);
+    CHECK(!labelled_rows(mesh, CellType::Edge, "feature_0").empty());
+}
+TEST_CASE(
+    "TetWild takes its own output back in as it is, on both routes",
+    "[component_io][io][tagged]" + release_only)
+{
+    // tetwild -> tetwild: the memory route's mesh with every field tetwild writes, and the file
+    // route's _final.msh.
+    WorkingDirectory cwd;
+    const auto first = two_tets_meshed({{"max_iterations", 2}});
+    const nlohmann::json options = {{"max_iterations", 2}, {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = "m";
+    const auto again = tetwild::tetwild(memory_options, {{"m", first.first.at("mesh")}});
+    check(again);
+
+    write_obj("a.obj", tet_surface(0));
+    write_obj("b.obj", tet_surface(3));
+    write_obj("curve.obj", inner_segment());
+    tetwild::tetwild(
+        {{"application", "tetwild"},
+         {"input", {here("a.obj"), here("b.obj")}},
+         {"input_names", {"a", "b"}},
+         {"input_edges", {here("curve.obj")}},
+         {"simplify", false},
+         {"max_iterations", 2},
+         {"num_threads", 1},
+         {"output", "t1"},
+         {"write_vtu", false}});
+    auto file_options = options;
+    file_options["application"] = "tetwild";
+    file_options["input"] = {here("t1_final.msh")};
+    file_options["output"] = "t2";
+    file_options["write_vtu"] = false;
+    tetwild::tetwild(file_options);
+    const MeshData file = io::read_mesh("t2_final.msh");
+
+    for (const MeshData* mesh : {&again.first.at("mesh"), &file}) {
+        REQUIRE(
+            mesh->cell(CellType::Triangle).attributes.at("tags").labels ==
+            std::vector<std::string>{"a", "b"});
+        REQUIRE(
+            mesh->cell(CellType::Edge).attributes.at("tags").labels ==
+            std::vector<std::string>{"feature_0"});
+        for (const std::string name : {"a", "b"}) check_on_own_input_facing_out(*mesh, name);
+    }
+}
+TEST_CASE(
+    "TetWild refuses a tagged tet mesh with volume tags, naming them",
+    "[component_io][tagged]" + release_only)
+{
+    WorkingDirectory cwd;
+    auto volume = tet();
+    add_tags(volume, CellType::Tetrahedron);
+    REQUIRE_THROWS_WITH(
+        tetwild::tetwild({{"input", "m"}, {"num_threads", 1}}, {{"m", volume}}),
+        Catch::Matchers::ContainsSubstring("tag_0") &&
+            Catch::Matchers::ContainsSubstring("simwild"));
+    // ambient, and a label no tet carries, are no volumes.
+    MeshData tagged = tags_only(two_tets_meshed().first.at("mesh"));
+    auto& tets = tagged.cells.at(CellType::Tetrahedron);
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+    member.col(0).setOnes();
+    tets.attributes["tags"] = {member, {"ambient", "unused"}};
+    check(
+        tetwild::tetwild(
+            {{"input", "m"}, {"max_iterations", 0}, {"num_threads", 1}},
+            {{"m", tagged}}));
+}
+TEST_CASE(
+    "TetWild refuses what its tagged route has no input for",
+    "[component_io][tagged]" + release_only)
+{
+    WorkingDirectory cwd;
+    const MeshData tagged = tags_only(two_tets_meshed().first.at("mesh"));
+    const MeshMap meshes{{"m", tagged}, {"s", tet_surface(5)}, {"curve", inner_segment()}};
+    const auto run = [&](nlohmann::json options) {
+        if (!options.contains("input")) options["input"] = "m";
+        options["num_threads"] = 1;
+        options["max_iterations"] = 0;
+        return tetwild::tetwild(options, meshes);
+    };
+    using Catch::Matchers::ContainsSubstring;
+    REQUIRE_THROWS_WITH(run({{"input", {"m", "s"}}}), ContainsSubstring("only input"));
+    REQUIRE_THROWS_WITH(run({{"input", {"s", "m"}}}), ContainsSubstring("only input"));
+    REQUIRE_THROWS_WITH(run({{"filter", "input"}}), ContainsSubstring("filter \"input\""));
+    REQUIRE_THROWS_WITH(run({{"input_edges", {"curve"}}}), ContainsSubstring("input_edges"));
+    REQUIRE_THROWS_WITH(run({{"input_names", {"x"}}}), ContainsSubstring("input_names"));
+    REQUIRE_THROWS_WITH(
+        run({{"filter", "flood"}, {"filter_inputs", {"c"}}}),
+        ContainsSubstring("c is not an input"));
+    REQUIRE_THROWS_WITH(run({{"filter_inputs", {"a"}}}), ContainsSubstring("nothing is filtered"));
+    // A surface input takes no envelope.
+    REQUIRE_THROWS_WITH(
+        run({{"input", "s"}, {"envelope", "m"}}),
+        ContainsSubstring("tagged mesh input only"));
+}
+TEST_CASE(
+    "TetWild filter_inputs: only the inputs named bound the domain kept",
+    "[component_io][tagged]" + release_only)
+{
+    // Two unit tets 3 apart, `a` and `b`: every filter keeps both by default, and with
+    // filter_inputs a only a, its volume 1/6 exactly as inserted, b's faces left in the part
+    // removed. On the tagged route too, by a's face-tag label, except "input", refused there.
+    WorkingDirectory cwd;
+    const std::string filter = GENERATE("input", "tracked", "flood");
+    INFO("filter " << filter);
+    const auto both = volume_and_max_x(two_tets_meshed({{"filter", filter}}).first.at("mesh"));
+    CHECK(std::abs(both.first - 2. / 6) < 1e-9);
+    CHECK(both.second > 2);
+    const auto only_a = volume_and_max_x(
+        two_tets_meshed({{"filter", filter}, {"filter_inputs", {"a"}}}).first.at("mesh"));
+    CHECK(std::abs(only_a.first - 1. / 6) < 1e-9);
+    CHECK(only_a.second < 1);
+    if (filter == "input") return;
+    const MeshData tagged = two_tets_meshed().first.at("mesh");
+    const auto tagged_a = volume_and_max_x(
+        tetwild::tetwild(
+            {{"input", "m"},
+             {"filter", filter},
+             {"filter_inputs", {"a"}},
+             {"max_iterations", 0},
+             {"num_threads", 1}},
+            {{"m", tagged}})
+            .first.at("mesh"));
+    CHECK(std::abs(tagged_a.first - 1. / 6) < 1e-9);
+    CHECK(tagged_a.second < 1);
+}
+#endif
+#if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset)
+TEST_CASE(
+    "TetWild refuses an offset's output, whose band is a volume",
+    "[component_io][tagged]" + release_only)
+{
+    // tetwild -> topological_offset -> tetwild: the offset tags the band around `a` as tets,
+    // `off`, a volume tetwild does not hold. Without feature curves, which the offset does not
+    // take yet.
+    WorkingDirectory cwd;
+    const auto offset = topological_offset::topological_offset(
+        {{"input", "m"},
+         {"offset_selection", "a"},
+         {"target_distance", 0.05},
+         {"offset_output_tags", {"off"}},
+         {"optimize_offset", false},
+         {"num_threads", 1}},
+        {{"m",
+          tags_only(
+              two_tets_meshed({{"input_edges", nlohmann::json::array()}}).first.at("mesh"))}});
+    REQUIRE_THROWS_WITH(
+        tetwild::tetwild(
+            {{"input", "m"}, {"num_threads", 1}},
+            {{"m", tags_only(offset.first.at("mesh"))}}),
+        Catch::Matchers::ContainsSubstring("off") && Catch::Matchers::ContainsSubstring("simwild"));
+}
+#endif
+#if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset)
+namespace {
+// The offset of `a`'s surface in two_tets_meshed()'s mesh, without feature curves (the offset
+// takes none), its band tagged `off`, held to the envelope `e`, optimized as users run it.
+const nlohmann::json offset_of_a = {
+    {"input", "m"},
+    {"envelope", "e"},
+    {"offset_selection", "a"},
+    {"target_distance", 0.05},
+    {"offset_output_tags", {"off"}},
+    {"throw_on_nonconvergence", true},
+    {"num_threads", 1}};
+} // namespace
+TEST_CASE(
+    "The offset refuses a reference it does not lie in, or one without a label of its mesh",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    // tetwild's envelope moved by 10 of its eps, which the offset holds to: every face of a and b
+    // is outside, named by label; and with b renamed c, b is missing from it. The checks
+    // simwild's and tetwild's tagged routes run, by the same code (TetOptimizerMesh).
+    WorkingDirectory cwd;
+    using Catch::Matchers::ContainsSubstring;
+    const auto meshed = two_tets_meshed({{"input_edges", nlohmann::json::array()}});
+    const MeshData mesh_in = tags_only(meshed.first.at("mesh"));
+    const MeshData& envelope = meshed.first.at("envelope");
+    const double eps = meshed.second.at("eps");
+    auto options = offset_of_a;
+    options["envelope_size"] = eps * (1 + 1e-9);
+    MeshData moved = envelope;
+    moved.V.col(0).array() += 10 * eps;
+    REQUIRE_THROWS_WITH(
+        topological_offset::topological_offset(options, {{"m", mesh_in}, {"e", moved}}),
+        ContainsSubstring("held faces outside the envelopes of their labels") &&
+            ContainsSubstring("a (") && ContainsSubstring("b ("));
+    MeshData renamed = envelope;
+    renamed.cells.at(CellType::Triangle).attributes.at("tags").labels = {"a", "c"};
+    REQUIRE_THROWS_WITH(
+        topological_offset::topological_offset(options, {{"m", mesh_in}, {"e", renamed}}),
+        ContainsSubstring("labelled b"));
+}
+TEST_CASE(
+    "The offset refuses a filtered tetwild output, its boundary its tracked faces",
+    "[component_io][tagged]" + release_only)
+{
+    // The two tets filtered to their insides: the mesh's boundary is the faces of a and b. The
+    // offset holds its domain's wall by the box rule, so it takes a mesh that fills its box
+    // (require_box_boundary()), as tetwild's tagged route does.
+    WorkingDirectory cwd;
+    const auto filtered =
+        two_tets_meshed({{"input_edges", nlohmann::json::array()}, {"filter", "tracked"}});
+    auto options = offset_of_a;
+    options.erase("envelope");
+    REQUIRE_THROWS_WITH(
+        topological_offset::topological_offset(
+            options,
+            {{"m", tags_only(filtered.first.at("mesh"))}}),
+        Catch::Matchers::Matches(
+            "[1-9][0-9]* tracked faces of the tagged mesh lie on its boundary.*") &&
+            Catch::Matchers::ContainsSubstring("filter \"none\""));
+}
+#endif
+#if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset) && \
+    defined(WMTK_TEST_simwild)
+namespace {
+// `rows` (labelled_rows()) with each row's corners sorted, the rows sorted: equal for the same
+// triangles in any order and orientation.
+std::vector<std::vector<std::array<double, 3>>> unoriented(
+    const std::vector<std::vector<Vector3d>>& rows)
+{
+    auto out = canonical(rows);
+    for (auto& r : out) std::sort(r.begin(), r.end());
+    std::sort(out.begin(), out.end());
+    return out;
+}
+// The faces between a tet of `mesh` tagged `name` and a tet that is not, as labelled_rows() gives
+// rows: the boundary of a region inside the mesh.
+std::vector<std::vector<Vector3d>> region_boundary(const MeshData& mesh, const std::string& name)
+{
+    const auto& cells = mesh.cell(CellType::Tetrahedron);
+    const auto& tags = cells.attributes.at("tags");
+    const auto column = std::find(tags.labels.begin(), tags.labels.end(), name);
+    REQUIRE(column != tags.labels.end());
+    const auto member = tags.integers();
+    std::map<std::array<int64_t, 3>, std::vector<bool>> sides;
+    const auto& T = cells.connectivity;
+    for (Eigen::Index t = 0; t < T.rows(); ++t) {
+        for (int skip = 0; skip < 4; ++skip) {
+            std::array<int64_t, 3> f;
+            for (int c = 0, k = 0; c < 4; ++c)
+                if (c != skip) f[size_t(k++)] = T(t, c);
+            std::sort(f.begin(), f.end());
+            sides[f].push_back(member(t, column - tags.labels.begin()) != 0);
+        }
+    }
+    std::vector<std::vector<Vector3d>> rows;
+    for (const auto& [f, in] : sides) {
+        if (in.size() != 2 || in[0] == in[1]) continue;
+        rows.emplace_back();
+        for (const int64_t v : f)
+            rows.back().emplace_back(mesh.V(v, 0), mesh.V(v, 1), mesh.V(v, 2));
+    }
+    return rows;
+}
+} // namespace
+TEST_CASE(
+    "The offset holds tetwild's envelope and hands it on with its offset surface, which simwild "
+    "holds",
+    "[component_io][io][envelope][tagged]" + release_only)
+{
+    // tetwild -> topological_offset -> simwild, each given the envelope the one before returned.
+    // The offset grows the band `off` around a's surface held to tetwild's reference at tetwild's
+    // eps, and returns that reference with the offset surface added under `off` -- exactly the
+    // faces between the band and the rest, the offset surface being its own reference -- on both
+    // routes. simwild then holds the offset's mesh to it: a and b to tetwild's input, the offset
+    // surface to itself.
+    WorkingDirectory cwd;
+    const auto meshed = two_tets_meshed({{"input_edges", nlohmann::json::array()}});
+    const MeshData mesh_in = tags_only(meshed.first.at("mesh"));
+    const MeshData& envelope = meshed.first.at("envelope");
+    const double eps = meshed.second.at("eps");
+    auto options = offset_of_a;
+    options["envelope_size"] = eps * (1 + 1e-9);
+    const auto offset =
+        topological_offset::topological_offset(options, {{"m", mesh_in}, {"e", envelope}});
+    check(offset);
+    REQUIRE(offset.first.count("envelope"));
+    const MeshData& handed = offset.first.at("envelope");
+    CHECK(
+        handed.cell(CellType::Triangle).attributes.at("tags").labels ==
+        std::vector<std::string>{"a", "b", "off"});
+    for (const std::string name : {"a", "b"}) {
+        CHECK(
+            canonical(labelled_rows(handed, CellType::Triangle, name)) ==
+            canonical(labelled_rows(envelope, CellType::Triangle, name)));
+    }
+    const MeshData& mesh = offset.first.at("mesh");
+    const auto front = region_boundary(mesh, "off");
+    REQUIRE(!front.empty());
+    CHECK(unoriented(labelled_rows(handed, CellType::Triangle, "off")) == unoriented(front));
+
+    // The file route writes it as <output>_envelope.msh.
+    io::write_mesh("m.msh", mesh_in);
+    io::write_mesh("e.msh", envelope);
+    auto file_options = options;
+    file_options["application"] = "topological_offset";
+    file_options["input"] = here("m.msh");
+    file_options["input_dir"] = std::filesystem::current_path().string();
+    file_options["envelope"] = "e.msh";
+    file_options["output"] = "o";
+    topological_offset::topological_offset(file_options);
+    const MeshData file_envelope = io::read_mesh("o_envelope.msh");
+    for (const std::string name : {"a", "b", "off"}) {
+        CHECK(
+            unoriented(labelled_rows(file_envelope, CellType::Triangle, name)) ==
+            unoriented(labelled_rows(handed, CellType::Triangle, name)));
+    }
+
+    const auto remeshed = simwild::simwild(
+        {{"input", "m"},
+         {"envelope", "e"},
+         {"eps", eps},
+         {"max_iterations", 2},
+         {"num_threads", 1}},
+        {{"m", tags_only(mesh)}, {"e", handed}});
+    for (const auto& [name, data] : remeshed.first) REQUIRE_NOTHROW(data.validate());
+    CHECK(same_data(remeshed.first.at("envelope"), handed));
+}
+TEST_CASE(
+    "The offset of a region hands on its band's whole boundary, which simwild holds",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    // simwild -> topological_offset -> simwild. simwild meshes a and b as regions, so the band
+    // `off` grown around a is bounded by the offset surface and by a's surface, and simwild labels
+    // a face between a and off with both. The offset hands on the band's whole boundary under
+    // `off`, as every other label's envelope covers its region's boundary; with the offset surface
+    // alone, simwild found the faces between a and off outside off's envelope (650, 2026-11-05).
+    WorkingDirectory cwd;
+    const auto meshed = simwild::simwild(
+        {{"input", {"a", "b"}},
+         {"input_names", {"a", "b"}},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"a", tet_surface(0)}, {"b", tet_surface(3)}});
+    check(meshed);
+    const double eps = meshed.second.at("eps");
+    auto options = offset_of_a;
+    options["envelope_size"] = eps * (1 + 1e-9);
+    const auto offset = topological_offset::topological_offset(
+        options,
+        {{"m", tags_only(meshed.first.at("mesh"))}, {"e", meshed.first.at("envelope")}});
+    check(offset);
+    const MeshData& mesh = offset.first.at("mesh");
+    const MeshData& handed = offset.first.at("envelope");
+    CHECK(
+        unoriented(labelled_rows(handed, CellType::Triangle, "off")) ==
+        unoriented(region_boundary(mesh, "off")));
+    const auto remeshed = simwild::simwild(
+        {{"input", "m"},
+         {"envelope", "e"},
+         {"eps", eps},
+         {"max_iterations", 2},
+         {"num_threads", 1}},
+        {{"m", tags_only(mesh)}, {"e", handed}});
+    for (const auto& [name, data] : remeshed.first) REQUIRE_NOTHROW(data.validate());
+}
+TEST_CASE(
+    "The offset of a sheet hands on the boundary its band moves into a region, which the next "
+    "offset holds",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    // simwild -> topological_offset -> topological_offset. The sheet s is attached to the region a
+    // along one of a's edges, so s's band, nothing protected, takes a's cells there and moves a's
+    // boundary into a. The offset hands on each face of its band's boundary under the tags that
+    // differ across it, so a face between a and the band under a too; under the band's alone, the
+    // next offset found a's moved boundary outside a's envelope (118 faces in feature demo 4's
+    // cube, 2026-11-05).
+    WorkingDirectory cwd;
+    MatrixXd V(3, 3);
+    V << 1, 0, 0, 0, 1, 0, 1, 1, -0.5;
+    MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    const auto meshed = simwild::simwild(
+        {{"input", {"a", "s"}},
+         {"input_names", {"a", "s"}},
+         {"input_type", {"volume", "surface"}},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"a", tet_surface(0)}, {"s", io::geometry_data(V, F, CellType::Triangle)}});
+    check(meshed);
+    const double eps = meshed.second.at("eps");
+    const auto offset_of = [&](const std::string& selection, const MeshData& m, const MeshData& e) {
+        return topological_offset::topological_offset(
+            {{"input", "m"},
+             {"envelope", "e"},
+             {"envelope_size", eps * (1 + 1e-9)},
+             {"offset_selection", selection},
+             {"target_distance", 0.05},
+             {"offset_output_tags", {selection + "_band"}},
+             {"optimize_offset", false},
+             {"num_threads", 1}},
+            {{"m", tags_only(m)}, {"e", e}});
+    };
+    const auto offset = offset_of("s", meshed.first.at("mesh"), meshed.first.at("envelope"));
+    check(offset);
+    const MeshData& mesh = offset.first.at("mesh");
+    const MeshData& handed = offset.first.at("envelope");
+    // The faces between a and the band: on both regions' boundaries, no cell carrying both.
+    const auto a_boundary = unoriented(region_boundary(mesh, "a"));
+    const auto band_boundary = unoriented(region_boundary(mesh, "s_band"));
+    std::vector<std::vector<std::array<double, 3>>> between;
+    std::set_intersection(
+        a_boundary.begin(),
+        a_boundary.end(),
+        band_boundary.begin(),
+        band_boundary.end(),
+        std::back_inserter(between));
+    REQUIRE(!between.empty());
+    const auto held_a = unoriented(labelled_rows(handed, CellType::Triangle, "a"));
+    CHECK(std::includes(held_a.begin(), held_a.end(), between.begin(), between.end()));
+    REQUIRE_NOTHROW(check(offset_of("a", mesh, handed)));
+}
+#endif
+#if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_simwild)
+TEST_CASE(
+    "TetWild holds a tagged mesh to the envelope it is given, on both routes",
+    "[component_io][io][envelope][tagged]" + release_only)
+{
+    // Two spheres `a` and `b`, and a segment inside `a` as a feature file, meshed by tetwild,
+    // which simplifies them within half its eps. tetwild's tagged route continues from its mesh
+    // held to the envelope it returned, the spheres as given, at the same eps: each face within
+    // that eps of its sphere -- of the original input, not of the mesh received -- the envelope
+    // handed on unchanged, both routes alike. The faces received lie outside a tenth of that eps,
+    // and an envelope without a label of the mesh is refused, naming it: the reference checks
+    // are the ones simwild runs, by the same code (TetOptimizerMesh).
+    WorkingDirectory cwd;
+    const MeshData a = icosphere(3, 1, Vector3d::Zero());
+    const MeshData b = icosphere(3, 0.5, Vector3d(2.5, 0, 0));
+    MeshData curve;
+    curve.V.resize(2, 3);
+    curve.V << -0.5, 0.1, 0.1, 0.5, 0.2, 0.1;
+    curve.cells[CellType::Edge].connectivity.resize(1, 2);
+    curve.cells[CellType::Edge].connectivity << 0, 1;
+    const nlohmann::json first_options = {
+        {"input_names", {"a", "b"}},
+        {"eps_rel", 1e-2},
+        {"eps_simplify_rel", 5e-3},
+        {"max_iterations", 2},
+        {"num_threads", 1}};
+    auto memory_first = first_options;
+    memory_first["input"] = {"a", "b"};
+    memory_first["input_edges"] = {"curve"};
+    const auto meshed = tetwild::tetwild(memory_first, {{"a", a}, {"b", b}, {"curve", curve}});
+    write_obj("a.obj", a);
+    write_obj("b.obj", b);
+    write_obj("curve.obj", curve);
+    auto file_first = first_options;
+    file_first["application"] = "tetwild";
+    file_first["input"] = {here("a.obj"), here("b.obj")};
+    file_first["input_edges"] = {here("curve.obj")};
+    file_first["output"] = "t";
+    file_first["write_vtu"] = false;
+    tetwild::tetwild(file_first);
+    const double eps = meshed.second.at("eps");
+
+    // The tagged route's eps_rel is of the mesh's own box, the first run's padded one.
+    const MeshData& mesh_in = meshed.first.at("mesh");
+    const double diag = (mesh_in.V.colwise().maxCoeff() - mesh_in.V.colwise().minCoeff()).norm();
+    const MeshData& envelope = meshed.first.at("envelope");
+    const nlohmann::json options = {
+        {"eps_rel", eps * (1 + 1e-9) / diag},
+        {"max_iterations", 2},
+        {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = "m";
+    memory_options["envelope"] = "e";
+    const MeshMap inputs{{"m", mesh_in}, {"e", envelope}};
+    const auto result = tetwild::tetwild(memory_options, inputs);
+    for (const auto& [name, data] : result.first) REQUIRE_NOTHROW(data.validate());
+    auto file_options = options;
+    file_options["application"] = "tetwild";
+    file_options["input"] = {here("t_final.msh")};
+    file_options["input_dir"] = std::filesystem::current_path().string();
+    file_options["envelope"] = "t_envelope.msh";
+    file_options["output"] = "u";
+    file_options["write_vtu"] = false;
+    tetwild::tetwild(file_options);
+    const MeshData file = io::read_mesh("u_final.msh");
+
+    REQUIRE(result.first.count("envelope"));
+    CHECK(same_data(result.first.at("envelope"), envelope));
+    CHECK(same_data(io::read_mesh("u_envelope.msh"), io::read_mesh("t_envelope.msh")));
+    for (const MeshData* mesh : {&result.first.at("mesh"), &file}) {
+        const std::array<std::pair<std::string, const MeshData*>, 2> spheres = {
+            {{"a", &a}, {"b", &b}}};
+        for (const auto& [name, sphere] : spheres) {
+            std::vector<Vector3d> V;
+            std::vector<Vector3i> F;
+            for (Eigen::Index v = 0; v < sphere->V.rows(); ++v)
+                V.push_back(sphere->V.row(v).transpose());
+            const auto& C = sphere->cell(CellType::Triangle).connectivity;
+            for (Eigen::Index f = 0; f < C.rows(); ++f)
+                F.emplace_back(int(C(f, 0)), int(C(f, 1)), int(C(f, 2)));
+            Envelope exact(true);
+            exact.init(V, F, eps * (1 + 1e-8));
+            const auto rows = labelled_rows(*mesh, CellType::Triangle, name);
+            REQUIRE(!rows.empty());
+            size_t outside = 0;
+            for (const auto& f : rows)
+                outside += exact.is_outside(std::array<Vector3d, 3>{{f[0], f[1], f[2]}});
+            INFO(name << ": " << rows.size() << " faces");
+            CHECK(outside == 0);
+        }
+        CHECK(!labelled_rows(*mesh, CellType::Edge, "feature_0").empty());
+    }
+
+    auto narrow = memory_options;
+    narrow["eps_rel"] = eps / diag / 10;
+    REQUIRE_THROWS_WITH(
+        tetwild::tetwild(narrow, inputs),
+        Catch::Matchers::ContainsSubstring("held faces outside") &&
+            Catch::Matchers::ContainsSubstring("a ("));
+    MeshData renamed = envelope;
+    renamed.cells.at(CellType::Triangle).attributes.at("tags").labels = {"a", "c"};
+    REQUIRE_THROWS_WITH(
+        tetwild::tetwild(memory_options, {{"m", mesh_in}, {"e", renamed}}),
+        Catch::Matchers::ContainsSubstring("labelled b"));
+    renamed = envelope;
+    renamed.cells.at(CellType::Edge).attributes.at("tags").labels = {"feature_1"};
+    REQUIRE_THROWS_WITH(
+        tetwild::tetwild(memory_options, {{"m", mesh_in}, {"e", renamed}}),
+        Catch::Matchers::ContainsSubstring("labelled feature_0"));
+}
+#endif
+#ifdef WMTK_TEST_triwild
+namespace {
+// A counter-clockwise square of side `side` with its lower left corner at (x, 0), as a curve.
+MeshData square_curve(const double x, const double side = 1)
+{
+    MeshData data;
+    data.V.resize(4, 3);
+    data.V << 0, 0, 0, side, 0, 0, side, side, 0, 0, side, 0;
+    data.V.col(0).array() += x;
+    data.cells[CellType::Edge].connectivity.resize(4, 2);
+    data.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 3, 3, 0;
+    return data;
+}
+// triwild on two unit squares 3 apart, `a` and `b`, without an optimization and without the
+// inputs' winding numbers, which no filter here needs: a triangle mesh of the box around them with
+// tracked curves and, as every triwild output, no regions.
+ComponentResult two_squares_meshed(const nlohmann::json& extra = nlohmann::json::object())
+{
+    nlohmann::json options = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"simplify", false},
+        {"skip_winding_number", true},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    options.update(extra);
+    return triwild::triwild(options, {{"a", square_curve(0)}, {"b", square_curve(3)}});
+}
+// The area of `mesh`'s triangles, and the largest x of their centroids.
+std::pair<double, double> area_and_max_x(const MeshData& mesh)
+{
+    const auto& F = mesh.cell(CellType::Triangle).connectivity;
+    double area = 0, max_x = -std::numeric_limits<double>::infinity();
+    for (Eigen::Index t = 0; t < F.rows(); ++t) {
+        std::array<Vector3d, 3> p;
+        for (int k = 0; k < 3; ++k) p[k] = mesh.V.row(F(t, k)).transpose();
+        area += std::abs((p[1] - p[0]).cross(p[2] - p[0]).z()) / 2;
+        max_x = std::max(max_x, (p[0] + p[1] + p[2]).x() / 3);
+    }
+    return {area, max_x};
+}
+} // namespace
+TEST_CASE(
+    "TriWild continues from a tagged triangle mesh, its triangles kept, on both routes",
+    "[component_io][io][tagged]")
+{
+    // triwild's own mesh with its fields dropped: triangles with edge tags `a` and `b`. The
+    // tagged route reads it exactly -- the reference it hands on, built from what it received, is
+    // the input's edge rows, with their labels and orientation -- and gives one result on both
+    // routes, the labels kept, no regions, each edge on its own square. Not the mesh as it came
+    // at max_iterations 0: mesh_improvement() runs its bare collapse and swap passes whatever the
+    // count, as tetwild's does.
+    WorkingDirectory cwd;
+    const MeshData tagged = io::tags_only(two_squares_meshed().first.at("mesh"));
+    const nlohmann::json options = {{"max_iterations", 0}, {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = "m";
+    const auto result = triwild::triwild(memory_options, {{"m", tagged}});
+    check(result);
+    auto optimizing = memory_options;
+    optimizing["max_iterations"] = 3;
+    const auto optimized = triwild::triwild(optimizing, {{"m", tagged}});
+    check(optimized);
+
+    io::write_mesh("m.msh", tagged);
+    auto file_options = options;
+    file_options["application"] = "triwild";
+    file_options["input"] = {here("m.msh")};
+    file_options["output"] = "t";
+    file_options["write_vtu"] = false;
+    triwild::triwild(file_options);
+    const MeshData file = io::read_mesh("t.msh");
+
+    const MeshData& memory = result.first.at("mesh");
+    for (const MeshData* mesh : {&memory, &file}) {
+        REQUIRE(
+            mesh->cell(CellType::Edge).attributes.at("tags").labels ==
+            std::vector<std::string>{"a", "b"});
+        for (const std::string name : {"a", "b"}) {
+            CHECK(labelled_rows(*mesh, CellType::Triangle, name).empty());
+        }
+    }
+    CHECK(
+        memory.cell(CellType::Triangle).connectivity.rows() ==
+        file.cell(CellType::Triangle).connectivity.rows());
+    for (const std::string name : {"a", "b"}) {
+        CHECK(
+            canonical(labelled_rows(memory, CellType::Edge, name)) ==
+            canonical(labelled_rows(file, CellType::Edge, name)));
+    }
+    const MeshData file_envelope = io::read_mesh("t_envelope.msh");
+    for (const MeshData* envelope : {&result.first.at("envelope"), &file_envelope}) {
+        for (const std::string name : {"a", "b"}) {
+            CHECK(
+                canonical(labelled_rows(*envelope, CellType::Edge, name)) ==
+                canonical(labelled_rows(tagged, CellType::Edge, name)));
+        }
+    }
+    const MeshData& mesh = optimized.first.at("mesh");
+    for (const std::string name : {"a", "b"}) {
+        const auto rows = labelled_rows(mesh, CellType::Edge, name);
+        CHECK(rows.size() >= 4);
+        for (const auto& e : rows)
+            for (const Vector3d& x : e) CHECK(std::abs(x.x() - (name == "a" ? 0.5 : 3.5)) < 1);
+    }
+}
+TEST_CASE(
+    "TriWild refuses a tagged triangle mesh with regions, and takes its own output back in",
+    "[component_io][tagged]")
+{
+    // A region tag of the mesh: refused, pointing to simwild. triwild writes none -- its inputs'
+    // winding numbers are fields, wn_<name> (wn_<i> in the .msh), which the tagged route ignores
+    // -- so its output goes back in as it is, fields and all, on both routes.
+    WorkingDirectory cwd;
+    auto region = triangle();
+    add_tags(region, CellType::Triangle);
+    REQUIRE_THROWS_WITH(
+        triwild::triwild({{"input", "m"}, {"num_threads", 1}}, {{"m", region}}),
+        Catch::Matchers::ContainsSubstring("tag_0") &&
+            Catch::Matchers::ContainsSubstring("simwild"));
+    const auto with_winding = two_squares_meshed({{"skip_winding_number", false}});
+    REQUIRE(with_winding.first.at("mesh").cell(CellType::Triangle).attributes.count("wn_b"));
+    MeshData regions = with_winding.first.at("mesh");
+    auto& triangles = regions.cells.at(CellType::Triangle);
+    triangles.attributes["tags"] = {
+        DataMatrix<uint8_t>::Ones(triangles.connectivity.rows(), 1).eval(),
+        {"r"}};
+    REQUIRE_THROWS_WITH(
+        triwild::triwild({{"input", "m"}, {"num_threads", 1}}, {{"m", regions}}),
+        Catch::Matchers::ContainsSubstring("r") && Catch::Matchers::ContainsSubstring("simwild"));
+    const auto again = triwild::triwild(
+        {{"input", "m"}, {"max_iterations", 2}, {"num_threads", 1}},
+        {{"m", with_winding.first.at("mesh")}});
+    check(again);
+    write_obj("a.obj", square_curve(0));
+    write_obj("b.obj", square_curve(3));
+    triwild::triwild(
+        {{"application", "triwild"},
+         {"input", {here("a.obj"), here("b.obj")}},
+         {"input_names", {"a", "b"}},
+         {"simplify", false},
+         {"skip_winding_number", false},
+         {"max_iterations", 0},
+         {"num_threads", 1},
+         {"output", "t1"},
+         {"write_vtu", false}});
+    REQUIRE(io::read_mesh("t1.msh").cell(CellType::Triangle).attributes.count("wn_1"));
+    triwild::triwild(
+        {{"application", "triwild"},
+         {"input", {here("t1.msh")}},
+         {"max_iterations", 2},
+         {"num_threads", 1},
+         {"output", "t2"},
+         {"write_vtu", false}});
+    for (const MeshData* mesh : {&again.first.at("mesh")}) {
+        REQUIRE(
+            mesh->cell(CellType::Edge).attributes.at("tags").labels ==
+            std::vector<std::string>{"a", "b"});
+    }
+    CHECK(
+        io::read_mesh("t2.msh").cell(CellType::Edge).attributes.at("tags").labels ==
+        std::vector<std::string>{"a", "b"});
+}
+TEST_CASE(
+    "TriWild writes each input's winding number as a triangle field, as tetwild does",
+    "[component_io][io][tagged]")
+{
+    // Two unit squares 3 apart, a and b, filter none. Each triangle carries each input's winding
+    // number at its centroid, 1 inside that square and 0 outside -- fields, not tags, so no
+    // regions: wn_<name> on the memory route, wn_<i> in the .msh, as tetwild's on its tets. The
+    // winding number of a closed polygon off its boundary is exactly 0 or 1, so the tolerance only
+    // absorbs rounding. skip_winding_number leaves them out under filter none and is ignored
+    // under any other; the tagged route computes none.
+    WorkingDirectory cwd;
+    const auto check_fields = [](const MeshData& mesh, const std::array<std::string, 2>& names) {
+        const auto& triangles = mesh.cell(CellType::Triangle);
+        for (int k = 0; k < 2; ++k) {
+            INFO(names[k]);
+            REQUIRE(triangles.attributes.count(names[k]));
+            const DataMatrix<double> w = triangles.attributes.at(names[k]).doubles();
+            REQUIRE(w.rows() == triangles.connectivity.rows());
+            const double x0 = k == 0 ? 0 : 3;
+            size_t n_inside = 0;
+            for (Eigen::Index t = 0; t < w.rows(); ++t) {
+                Vector3d c = Vector3d::Zero();
+                for (int j = 0; j < 3; ++j) {
+                    c += mesh.V.row(triangles.connectivity(t, j)).transpose();
+                }
+                c /= 3;
+                const bool inside = c.x() > x0 && c.x() < x0 + 1 && c.y() > 0 && c.y() < 1;
+                CHECK(std::abs(w(t, 0) - (inside ? 1 : 0)) < 1e-6);
+                n_inside += inside;
+            }
+            CHECK(n_inside > 0);
+        }
+    };
+    const auto has_wn = [](const MeshData& mesh) {
+        for (const auto& entry : mesh.cell(CellType::Triangle).attributes)
+            if (entry.first.rfind("wn_", 0) == 0) return true;
+        return false;
+    };
+
+    const auto memory = two_squares_meshed({{"skip_winding_number", false}});
+    check_fields(memory.first.at("mesh"), {{"wn_a", "wn_b"}});
+    for (const std::string name : {"a", "b"}) {
+        CHECK(labelled_rows(memory.first.at("mesh"), CellType::Triangle, name).empty());
+    }
+
+    write_obj("a.obj", square_curve(0));
+    write_obj("b.obj", square_curve(3));
+    const nlohmann::json file_options = {
+        {"application", "triwild"},
+        {"input", {here("a.obj"), here("b.obj")}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1},
+        {"write_vtu", false}};
+    auto named = file_options;
+    named["input_names"] = {"a", "b"};
+    named["output"] = "named";
+    triwild::triwild(named);
+    const MeshData named_file = io::read_mesh("named.msh");
+    check_fields(named_file, {{"wn_0", "wn_1"}});
+    CHECK(!named_file.cell(CellType::Triangle).attributes.count("wn_a"));
+    auto unnamed = file_options;
+    unnamed["output"] = "unnamed";
+    triwild::triwild(unnamed);
+    check_fields(io::read_mesh("unnamed.msh"), {{"wn_0", "wn_1"}});
+
+    CHECK(!has_wn(two_squares_meshed({{"skip_winding_number", true}}).first.at("mesh")));
+    check_fields(
+        two_squares_meshed({{"skip_winding_number", true}, {"filter", "input"}}).first.at("mesh"),
+        {{"wn_a", "wn_b"}});
+
+    const auto again = triwild::triwild(
+        {{"input", "m"}, {"max_iterations", 0}, {"num_threads", 1}},
+        {{"m", memory.first.at("mesh")}});
+    CHECK(!has_wn(again.first.at("mesh")));
+}
+TEST_CASE("TriWild refuses what its tagged route has no input for", "[component_io][tagged]")
+{
+    WorkingDirectory cwd;
+    const MeshData tagged = io::tags_only(two_squares_meshed().first.at("mesh"));
+    const MeshMap meshes{{"m", tagged}, {"s", square_curve(5)}};
+    const auto run = [&](nlohmann::json options) {
+        if (!options.contains("input")) options["input"] = "m";
+        options["num_threads"] = 1;
+        options["max_iterations"] = 0;
+        return triwild::triwild(options, meshes);
+    };
+    using Catch::Matchers::ContainsSubstring;
+    REQUIRE_THROWS_WITH(run({{"input", {"m", "s"}}}), ContainsSubstring("only input"));
+    REQUIRE_THROWS_WITH(run({{"filter", "input"}}), ContainsSubstring("filter \"input\""));
+    REQUIRE_THROWS_WITH(run({{"input_points", {"s"}}}), ContainsSubstring("input_points"));
+    REQUIRE_THROWS_WITH(
+        run({{"filter", "flood"}, {"filter_inputs", {"c"}}}),
+        ContainsSubstring("c is not an input"));
+    REQUIRE_THROWS_WITH(
+        run({{"input", "s"}, {"envelope", "m"}}),
+        ContainsSubstring("tagged mesh input only"));
+}
+TEST_CASE(
+    "TriWild filter_inputs: only the inputs named bound the domain kept",
+    "[component_io][tagged]")
+{
+    // Two unit squares 3 apart, `a` and `b`: every filter keeps both by default, and with
+    // filter_inputs a only a, its area 1. On the tagged route too, by a's edge-tag label.
+    WorkingDirectory cwd;
+    const std::string filter = GENERATE("input", "tracked", "flood");
+    INFO("filter " << filter);
+    const nlohmann::json winding = {{"skip_winding_number", false}, {"filter", filter}};
+    const auto both = area_and_max_x(two_squares_meshed(winding).first.at("mesh"));
+    CHECK(std::abs(both.first - 2) < 1e-9);
+    CHECK(both.second > 2);
+    auto only = winding;
+    only["filter_inputs"] = {"a"};
+    const auto only_a = area_and_max_x(two_squares_meshed(only).first.at("mesh"));
+    CHECK(std::abs(only_a.first - 1) < 1e-9);
+    CHECK(only_a.second < 1);
+    if (filter == "input") return;
+    const auto tagged_a = area_and_max_x(
+        triwild::triwild(
+            {{"input", "m"},
+             {"filter", filter},
+             {"filter_inputs", {"a"}},
+             {"max_iterations", 0},
+             {"num_threads", 1}},
+            {{"m", two_squares_meshed().first.at("mesh")}})
+            .first.at("mesh"));
+    CHECK(std::abs(tagged_a.first - 1) < 1e-9);
+    CHECK(tagged_a.second < 1);
+}
+TEST_CASE(
+    "TriWild holds a tagged mesh to the envelope it is given, on both routes",
+    "[component_io][io][envelope][tagged]")
+{
+    // Two squares a and b, simplified by triwild within half its eps (a square has nothing to
+    // simplify, so a circle-like polygon stands for each): the tagged route continues held to the
+    // envelope triwild returned, at its eps, and hands it on unchanged; at a tenth of that eps the
+    // edges received lie outside, and an envelope without a label of the mesh is refused.
+    WorkingDirectory cwd;
+    const auto polygon = [](const double cx, const double r) {
+        const int n = 64;
+        MeshData data;
+        data.V.resize(n, 3);
+        data.cells[CellType::Edge].connectivity.resize(n, 2);
+        for (int i = 0; i < n; ++i) {
+            const double t = 2 * std::acos(-1.0) * i / n;
+            data.V.row(i) << cx + r * std::cos(t), r * std::sin(t), 0;
+            data.cells[CellType::Edge].connectivity.row(i) << i, (i + 1) % n;
+        }
+        return data;
+    };
+    const MeshMap curves{{"a", polygon(0, 1)}, {"b", polygon(3, 0.5)}};
+    const nlohmann::json first = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"eps_rel", 1e-2},
+        {"eps_simplify_rel", 5e-3},
+        {"skip_winding_number", true},
+        {"max_iterations", 2},
+        {"num_threads", 1}};
+    const auto meshed = triwild::triwild(first, curves);
+    const double eps = meshed.second.at("eps");
+    const MeshData& mesh_in = meshed.first.at("mesh");
+    const MeshData& envelope = meshed.first.at("envelope");
+    const double diag = (mesh_in.V.colwise().maxCoeff() - mesh_in.V.colwise().minCoeff()).norm();
+    const nlohmann::json options = {
+        {"input", "m"},
+        {"envelope", "e"},
+        {"eps_rel", eps * (1 + 1e-9) / diag},
+        {"max_iterations", 2},
+        {"num_threads", 1}};
+    const MeshMap inputs{{"m", mesh_in}, {"e", envelope}};
+    const auto result = triwild::triwild(options, inputs);
+    for (const auto& [name, data] : result.first) REQUIRE_NOTHROW(data.validate());
+    REQUIRE(result.first.count("envelope"));
+    {
+        // The envelope handed on unchanged, on the file route too.
+        const MeshData& out = result.first.at("envelope");
+        CHECK(out.V == envelope.V);
+        CHECK(out.cell(CellType::Edge).connectivity == envelope.cell(CellType::Edge).connectivity);
+    }
+    io::write_mesh("m.msh", io::tags_only(mesh_in));
+    io::write_mesh("e.msh", envelope);
+    triwild::triwild(
+        {{"application", "triwild"},
+         {"input", {here("m.msh")}},
+         {"input_dir", std::filesystem::current_path().string()},
+         {"envelope", "e.msh"},
+         {"eps_rel", eps * (1 + 1e-9) / diag},
+         {"max_iterations", 2},
+         {"num_threads", 1},
+         {"output", "u"},
+         {"write_vtu", false}});
+    CHECK(
+        canonical(labelled_rows(io::read_mesh("u_envelope.msh"), CellType::Edge, "a")) ==
+        canonical(labelled_rows(envelope, CellType::Edge, "a")));
+    for (const std::string name : {"a", "b"}) {
+        const double r = name == "a" ? 1 : 0.5, cx = name == "a" ? 0 : 3;
+        for (const auto& e : labelled_rows(result.first.at("mesh"), CellType::Edge, name)) {
+            // Within eps of the polygon, which is within its sagitta of the circle.
+            for (const Vector3d& x : e) {
+                CHECK(std::abs((x - Vector3d(cx, 0, 0)).norm() - r) <= eps * (1 + 1e-9) + 0.002);
+            }
+        }
+    }
+    auto narrow = options;
+    narrow["eps_rel"] = eps / diag / 10;
+    REQUIRE_THROWS_WITH(
+        triwild::triwild(narrow, inputs),
+        Catch::Matchers::ContainsSubstring("held edges outside"));
+    MeshData renamed = envelope;
+    renamed.cells.at(CellType::Edge).attributes.at("tags").labels = {"a", "c"};
+    REQUIRE_THROWS_WITH(
+        triwild::triwild(options, {{"m", mesh_in}, {"e", renamed}}),
+        Catch::Matchers::ContainsSubstring("labelled b"));
+}
+#endif
+#ifdef WMTK_TEST_tetwild
+namespace {
+// The boundary of the box [lo, hi], its triangles facing out.
+MeshData box_surface(const Vector3d& lo, const Vector3d& hi)
+{
+    MeshData data;
+    data.V.resize(8, 3);
+    for (int i = 0; i < 8; ++i) {
+        const bool x = i == 1 || i == 2 || i == 5 || i == 6;
+        const bool y = i == 2 || i == 3 || i == 6 || i == 7;
+        data.V.row(i) << (x ? hi : lo).x(), (y ? hi : lo).y(), (i >= 4 ? hi : lo).z();
+    }
+    auto& F = data.cells[CellType::Triangle].connectivity;
+    F.resize(12, 3);
+    F << 0, 3, 2, 0, 2, 1, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 3, 7, 6, 3, 6, 2, 0, 4, 7, 0, 7, 3,
+        1, 2, 6, 1, 6, 5;
+    return data;
+}
+} // namespace
+TEST_CASE(
+    "TetWild filter_inputs: tracked refuses the faces a named input shares, flood keeps it",
+    "[component_io][tagged]" + release_only)
+{
+    // Two unit boxes touching face to face, filter_inputs a: on the faces between them the
+    // orientation counts both boxes (one count per face), so "tracked" cannot take a's winding
+    // number and throws, naming flood; "flood" keeps a alone, its volume 1. On both input routes.
+    WorkingDirectory cwd;
+    using Catch::Matchers::ContainsSubstring;
+    const MeshMap boxes{
+        {"a", box_surface(Vector3d(0, 0, 0), Vector3d(1, 1, 1))},
+        {"b", box_surface(Vector3d(1, 0, 0), Vector3d(2, 1, 1))}};
+    nlohmann::json options = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1},
+        {"filter_inputs", {"a"}}};
+    options["filter"] = "tracked";
+    REQUIRE_THROWS_WITH(
+        tetwild::tetwild(options, boxes),
+        ContainsSubstring("per face") && ContainsSubstring("flood"));
+    options["filter"] = "flood";
+    const auto a = volume_and_max_x(tetwild::tetwild(options, boxes).first.at("mesh"));
+    CHECK(std::abs(a.first - 1) < 1e-9);
+    CHECK(a.second < 1);
+
+    auto unfiltered = options;
+    unfiltered.erase("filter_inputs");
+    unfiltered["filter"] = "none";
+    const MeshMap tagged{{"m", tetwild::tetwild(unfiltered, boxes).first.at("mesh")}};
+    nlohmann::json again = {
+        {"input", "m"},
+        {"filter", "tracked"},
+        {"filter_inputs", {"a"}},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    REQUIRE_THROWS_WITH(tetwild::tetwild(again, tagged), ContainsSubstring("per face"));
+    again["filter"] = "flood";
+    const auto tagged_a = volume_and_max_x(tetwild::tetwild(again, tagged).first.at("mesh"));
+    CHECK(std::abs(tagged_a.first - 1) < 1e-9);
+    CHECK(tagged_a.second < 1);
+}
+#endif
+#ifdef WMTK_TEST_triwild
+TEST_CASE(
+    "TriWild filter_inputs: tracked refuses the edges a named input shares, flood keeps it",
+    "[component_io][tagged]")
+{
+    // Two unit squares touching edge to edge, filter_inputs a: the 2D twin of tetwild's.
+    WorkingDirectory cwd;
+    using Catch::Matchers::ContainsSubstring;
+    const MeshMap squares{{"a", square_curve(0)}, {"b", square_curve(1)}};
+    nlohmann::json options = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1},
+        {"filter_inputs", {"a"}}};
+    options["filter"] = "tracked";
+    REQUIRE_THROWS_WITH(
+        triwild::triwild(options, squares),
+        ContainsSubstring("per edge") && ContainsSubstring("flood"));
+    options["filter"] = "flood";
+    const auto a = area_and_max_x(triwild::triwild(options, squares).first.at("mesh"));
+    CHECK(std::abs(a.first - 1) < 1e-9);
+    CHECK(a.second < 1);
+}
+TEST_CASE("TriWild refuses a filtered mesh, its tracked boundary", "[component_io][tagged]")
+{
+    // Two unit squares filtered to their insides: the mesh's boundary is its tracked edges.
+    // Refused: the tagged route takes a mesh that fills its box, its tracked edges inside.
+    WorkingDirectory cwd;
+    const auto filtered =
+        two_squares_meshed({{"skip_winding_number", false}, {"filter", "tracked"}});
+    REQUIRE_THROWS_WITH(
+        triwild::triwild(
+            {{"input", "m"}, {"max_iterations", 3}, {"num_threads", 1}},
+            {{"m", filtered.first.at("mesh")}}),
+        Catch::Matchers::ContainsSubstring("tracked edges of the tagged mesh lie on its boundary"));
+}
+#endif
+
+// Data and annotations (io::ComponentIO::data_fields): a reader reads the tags and the data
+// fields it consumes and drops every other field, on both routes, so that a result goes into the
+// next component as it is. Until 2026-11 each reader refused every field it did not list, and a
+// new field broke a chain until every list had it: triwild's wn_<name> broke triwild -> simwild.
+namespace {
+// `mesh` with a field no component writes or reads, `note`, on its vertices and its `top` cells.
+[[maybe_unused]] MeshData annotated(MeshData mesh, const CellType top)
+{
+    mesh.vertex_attributes["note"].values = DataMatrix<double>::Zero(mesh.V.rows(), 1).eval();
+    auto& cells = mesh.cells.at(top);
+    cells.attributes["note"].values = DataMatrix<double>::Ones(cells.connectivity.rows(), 1).eval();
+    return mesh;
+}
+// Whether `a` and `b` hold the same geometry and tags, exactly: the positions, every block's
+// connectivity, and its tags with their labels.
+[[maybe_unused]] bool same_geometry_and_tags(const MeshData& a, const MeshData& b)
+{
+    const auto same = [](const auto& x, const auto& y) {
+        return x.rows() == y.rows() && x.cols() == y.cols() && x == y;
+    };
+    if (!same(a.V, b.V) || a.cells.size() != b.cells.size()) return false;
+    for (const auto& [type, ca] : a.cells) {
+        const auto cb = b.cells.find(type);
+        if (cb == b.cells.end() || !same(ca.connectivity, cb->second.connectivity)) return false;
+        const auto ta = ca.attributes.find("tags");
+        const auto tb = cb->second.attributes.find("tags");
+        if ((ta == ca.attributes.end()) != (tb == cb->second.attributes.end())) return false;
+        if (ta != ca.attributes.end() && (ta->second.labels != tb->second.labels ||
+                                          !same(ta->second.integers(), tb->second.integers())))
+            return false;
+    }
+    return true;
+}
+// Whether a field `note` is anywhere in `meshes`.
+[[maybe_unused]] bool carries_note(const MeshMap& meshes)
+{
+    for (const auto& [key, mesh] : meshes) {
+        if (mesh.vertex_attributes.count("note")) return true;
+        for (const auto& [type, cells] : mesh.cells)
+            if (cells.attributes.count("note")) return true;
+    }
+    return false;
+}
+[[maybe_unused]] std::set<std::string> field_names(const MeshAttributes& attributes)
+{
+    std::set<std::string> names;
+    for (const auto& [name, field] : attributes) names.insert(name);
+    return names;
+}
+} // namespace
+#ifdef WMTK_TEST_tetwild
+TEST_CASE(
+    "TetWild's tagged route drops a field it does not read, on both routes",
+    "[component_io][io][tagged]" + release_only)
+{
+    WorkingDirectory cwd;
+    const MeshData tagged = tags_only(two_tets_meshed().first.at("mesh"));
+    const MeshData noted = annotated(tagged, CellType::Tetrahedron);
+    const nlohmann::json options = {{"max_iterations", 0}, {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = "m";
+    const auto bare = tetwild::tetwild(memory_options, {{"m", tagged}});
+    const auto with_note = tetwild::tetwild(memory_options, {{"m", noted}});
+    check(with_note);
+    CHECK(!carries_note(with_note.first));
+    CHECK(same_geometry_and_tags(with_note.first.at("mesh"), bare.first.at("mesh")));
+
+    io::write_mesh("bare.msh", tagged);
+    io::write_mesh("noted.msh", noted);
+    for (const std::string name : {"bare", "noted"}) {
+        auto file_options = options;
+        file_options["application"] = "tetwild";
+        file_options["input"] = {here(name + ".msh")};
+        file_options["output"] = name + "_out";
+        file_options["write_vtu"] = false;
+        tetwild::tetwild(file_options);
+    }
+    CHECK(same_geometry_and_tags(
+        io::read_mesh("noted_out_final.msh"),
+        io::read_mesh("bare_out_final.msh")));
+}
+#endif
+#ifdef WMTK_TEST_triwild
+TEST_CASE(
+    "TriWild's tagged route drops a field it does not read, on both routes",
+    "[component_io][io][tagged]")
+{
+    WorkingDirectory cwd;
+    const MeshData tagged = io::tags_only(two_squares_meshed().first.at("mesh"));
+    const MeshData noted = annotated(tagged, CellType::Triangle);
+    const nlohmann::json options = {{"max_iterations", 0}, {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = "m";
+    const auto bare = triwild::triwild(memory_options, {{"m", tagged}});
+    const auto with_note = triwild::triwild(memory_options, {{"m", noted}});
+    check(with_note);
+    CHECK(!carries_note(with_note.first));
+    CHECK(same_geometry_and_tags(with_note.first.at("mesh"), bare.first.at("mesh")));
+
+    io::write_mesh("bare.msh", tagged);
+    io::write_mesh("noted.msh", noted);
+    for (const std::string name : {"bare", "noted"}) {
+        auto file_options = options;
+        file_options["application"] = "triwild";
+        file_options["input"] = {here(name + ".msh")};
+        file_options["output"] = name + "_out";
+        file_options["write_vtu"] = false;
+        triwild::triwild(file_options);
+    }
+    CHECK(same_geometry_and_tags(io::read_mesh("noted_out.msh"), io::read_mesh("bare_out.msh")));
+}
+#endif
+#ifdef WMTK_TEST_simwild
+TEST_CASE("SimWild drops a field it does not read, on both routes", "[component_io][io][tagged]")
+{
+    // The meshes of "SimWild keeps a tagged mesh's curves on both routes": in 2D four triangles,
+    // in 3D the unit cube's six tets, the first cell tagged, an edge tagged.
+    WorkingDirectory cwd;
+    const bool is_3d = GENERATE(false, true);
+    INFO((is_3d ? "3D" : "2D"));
+    MeshData data;
+    if (is_3d) {
+        data = cube_tets();
+    } else {
+        MatrixXd V(6, 3);
+        V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, -1, 0, 1, -1, 0;
+        MatrixXi F(4, 3);
+        F << 0, 1, 2, 1, 3, 2, 0, 4, 1, 1, 4, 5;
+        data = io::geometry_data(V, F, CellType::Triangle);
+    }
+    const CellType top = is_3d ? CellType::Tetrahedron : CellType::Triangle;
+    auto& cells = data.cells.at(top);
+    DataMatrix<uint8_t> first = DataMatrix<uint8_t>::Zero(cells.connectivity.rows(), 1);
+    first(0, 0) = 1;
+    cells.attributes["tags"] = {first, {"tag_0"}};
+    auto& edges = data.cells[CellType::Edge];
+    edges.connectivity.resize(1, 2);
+    if (is_3d) {
+        edges.connectivity << 7, 0;
+    } else {
+        edges.connectivity << 1, 0;
+    }
+    edges.attributes["tags"] = {
+        DataMatrix<uint8_t>::Ones(1, 1).eval(),
+        {is_3d ? "feature_0" : "curve"}};
+    const MeshData noted = annotated(data, top);
+    const nlohmann::json options = {{"max_iterations", 0}, {"simplify", false}, {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = "m";
+    const auto bare = simwild::simwild(memory_options, {{"m", data}});
+    const auto with_note = simwild::simwild(memory_options, {{"m", noted}});
+    check(with_note);
+    CHECK(!carries_note(with_note.first));
+    CHECK(same_geometry_and_tags(with_note.first.at("mesh"), bare.first.at("mesh")));
+
+    // The file route reads a .msh as the memory route reads the mesh (read_image_msh()).
+    io::write_mesh("bare.msh", data);
+    io::write_mesh("noted.msh", noted);
+    for (const std::string name : {"bare", "noted"}) {
+        auto file_options = options;
+        file_options["application"] = "simwild";
+        file_options["input"] = {here(name + ".msh")};
+        file_options["output"] = name + "_out";
+        file_options["write_vtu"] = false;
+        simwild::simwild(file_options);
+    }
+    CHECK(same_geometry_and_tags(io::read_mesh("noted_out.msh"), io::read_mesh("bare_out.msh")));
+}
+#endif
+#if defined(WMTK_TEST_triwild) && defined(WMTK_TEST_simwild)
+TEST_CASE(
+    "TriWild's mesh goes into SimWild as it is, its annotations dropped",
+    "[component_io][tagged]")
+{
+    // triwild -> simwild on the memory route, triwild's mesh with every field it writes (wn_a,
+    // wn_b, quality, ...), which simwild refused until 2026-11 (wn_a). The result is simwild's on
+    // the mesh with its tags only, exactly, with triwild's curves.
+    WorkingDirectory cwd;
+    const auto meshed = two_squares_meshed({{"skip_winding_number", false}});
+    const MeshData& mesh = meshed.first.at("mesh");
+    REQUIRE(mesh.cell(CellType::Triangle).attributes.count("wn_a"));
+    const nlohmann::json options = {{"input", "m"}, {"max_iterations", 0}, {"num_threads", 1}};
+    const auto as_is = simwild::simwild(options, {{"m", mesh}});
+    check(as_is);
+    const auto bare = simwild::simwild(options, {{"m", io::tags_only(mesh)}});
+    CHECK(same_geometry_and_tags(as_is.first.at("mesh"), bare.first.at("mesh")));
+    for (const std::string name : {"a", "b"})
+        CHECK(!labelled_rows(as_is.first.at("mesh"), CellType::Edge, name).empty());
+}
+#endif
+#if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset)
+TEST_CASE(
+    "The offset's result carries tags, data fields and two annotations, its debug frames all",
+    "[component_io][io][tagged]" + release_only)
+{
+    // The result -- the memory route's meshes, the .msh, the save_vtu file -- carries the tags,
+    // the data fields components read (vid, labels, offset_tag) and amips and
+    // distance_over_target; a DEBUG_output frame every diagnostic field too. The input as in
+    // "TetWild refuses an offset's output, whose band is a volume".
+    WorkingDirectory cwd;
+    const MeshData tagged =
+        tags_only(two_tets_meshed({{"input_edges", nlohmann::json::array()}}).first.at("mesh"));
+    const nlohmann::json options = {
+        {"offset_selection", "a"},
+        {"target_distance", 0.05},
+        {"offset_output_tags", {"off"}},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = "m";
+    const auto result = topological_offset::topological_offset(memory_options, {{"m", tagged}});
+    check(result);
+    const std::set<std::string> vertex = {"vid", "labels", "distance_over_target"};
+    const std::set<std::string> tet = {"tags", "amips", "offset_tag"};
+    const MeshData& mesh = result.first.at("mesh");
+    CHECK(field_names(mesh.vertex_attributes) == vertex);
+    CHECK(field_names(mesh.cell(CellType::Tetrahedron).attributes) == tet);
+    for (const auto& [key, data] : result.first) {
+        INFO(key);
+        for (const auto& name : field_names(data.vertex_attributes)) CHECK(vertex.count(name));
+        for (const auto& [type, cells] : data.cells)
+            for (const auto& name : field_names(cells.attributes)) CHECK(tet.count(name));
+    }
+
+    io::write_mesh("m.msh", tagged);
+    auto file_options = options;
+    file_options["application"] = "topological_offset";
+    file_options["input"] = here("m.msh");
+    file_options["output"] = "o";
+    file_options["save_vtu"] = true;
+    file_options["DEBUG_output"] = true;
+    topological_offset::topological_offset(file_options);
+    const MeshData file = io::read_mesh("o.msh");
+    CHECK(field_names(file.vertex_attributes) == vertex);
+    CHECK(field_names(file.cell(CellType::Tetrahedron).attributes) == tet);
+    // The .vtu files by their DataArray names: the result's, and the first debug frame's.
+    const auto arrays = [](const std::string& path) {
+        REQUIRE(std::filesystem::exists(path));
+        std::ifstream in(path);
+        const std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        return [s](const std::string& name) {
+            return s.find("Name=\"" + name + "\"") != std::string::npos;
+        };
+    };
+    const auto vtu = arrays("o.vtu");
+    const auto frame = arrays("o_00000.vtu");
+    for (const std::string name :
+         {"amips", "distance_over_target", "vid", "labels", "offset_tag"}) {
+        INFO(name);
+        CHECK(vtu(name));
+        CHECK(frame(name));
+    }
+    for (const std::string name :
+         {"tet_energy", "amips_term", "band_term", "plastic", "sizing_scalar", "input_distance"}) {
+        INFO(name);
+        CHECK(!vtu(name));
+        CHECK(frame(name));
+    }
+    // The offset faces' file: its vertex fields (input_distance) and face fields (front_err_ratio)
+    // the frame's only.
+    const auto off = arrays("o_off.vtu");
+    CHECK(off("distance_over_target"));
+    CHECK(!off("input_distance"));
+    CHECK(!off("front_err_ratio"));
+    CHECK(arrays("o_00000_off.vtu")("input_distance"));
 }
 #endif

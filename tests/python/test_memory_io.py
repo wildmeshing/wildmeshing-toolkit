@@ -33,6 +33,37 @@ def surface():
     return mesh
 
 
+# A tagged mesh that fills its box, as simwild and the offset take one (require_box_boundary()):
+# the unit square in two triangles, the unit cube in six tets around its diagonal, and their
+# boundaries, oriented out of them.
+def square():
+    return {
+        "V": np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]], dtype=np.float64),
+        "cells": {"triangle": {"connectivity": np.array([[0, 1, 3], [0, 3, 2]], dtype=np.int64)}},
+    }
+
+
+def square_boundary():
+    return {"V": square()["V"], "cells": {"edge": {"connectivity": np.array(
+        [[0, 1], [1, 3], [3, 2], [2, 0]], dtype=np.int64)}}}
+
+
+def cube():
+    return {
+        "V": np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0],
+                       [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]], dtype=np.float64),
+        "cells": {"tetrahedron": {"connectivity": np.array(
+            [[0, 1, 3, 7], [0, 1, 7, 5], [0, 2, 7, 3], [0, 2, 6, 7], [0, 4, 5, 7], [0, 4, 7, 6]],
+            dtype=np.int64)}},
+    }
+
+
+def cube_boundary():
+    return {"V": cube()["V"], "cells": {"triangle": {"connectivity": np.array(
+        [[0, 3, 1], [0, 2, 3], [1, 3, 7], [1, 7, 5], [0, 1, 5], [0, 5, 4], [2, 7, 3], [2, 6, 7],
+         [0, 6, 2], [0, 4, 6], [4, 5, 7], [4, 7, 6]], dtype=np.int64)}}}
+
+
 def curves():
     return {
         "V": np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], dtype=np.float64),
@@ -42,8 +73,9 @@ def curves():
 
 
 def tagged(mesh, cell_type):
+    n = len(mesh["cells"][cell_type]["connectivity"])
     mesh["cells"][cell_type]["attributes"] = {
-        "tags": {"values": np.ones((1, 1), dtype=np.uint8), "labels": ["tag_0"]}}
+        "tags": {"values": np.ones((n, 1), dtype=np.uint8), "labels": ["tag_0"]}}
     return mesh
 
 
@@ -195,26 +227,26 @@ class MemoryIO(unittest.TestCase):
                 sides.setdefault(tuple(sorted((tri[k], tri[(k + 1) % 3]))), set()).add(patch[t, 0])
         for e, labels in sides.items():
             self.assertEqual(len(labels) == 2, e in curve)
-        # A Float64 field comes back Float64; a field feature_fields does not name is refused.
+        # A Float64 field comes back Float64; a field feature_fields does not name is dropped
+        # (until 2026-11 it was refused).
         floats = copy.deepcopy(grid)
         floats["cells"]["triangle"]["attributes"]["patch_id"] = label.astype(np.float64)
         outputs, _ = self.run_memory("isotropic_remeshing", options, {"grid": floats})
         self.assertEqual(
             outputs["mesh"]["cells"]["triangle"]["attributes"]["patch_id"]["values"].dtype,
             np.dtype("float64"))
-        with self.assertRaisesRegex(RuntimeError, "Unknown mesh attribute: patch_id"):
-            wm.isotropic_remeshing(dict(options, feature_fields=[]), {"grid": grid})
+        outputs, _ = wm.isotropic_remeshing(dict(options, feature_fields=[]), {"grid": grid})
+        self.assertNotIn("patch_id", outputs["mesh"]["cells"]["triangle"].get("attributes", {}))
 
     def test_simwild_tagged(self):
-        for cell_type, mesh in (("triangle", triangle()), ("tetrahedron", tetrahedron())):
+        # Until 2026-11-05 one triangle and one tet, which do not fill their box.
+        for cell_type, mesh, boundary in (("triangle", square(), square_boundary()),
+                                          ("tetrahedron", cube(), cube_boundary())):
             with self.subTest(cell_type=cell_type):
                 outputs, _ = self.run_memory(
                     "simwild", dict(input="tagged", envelope="boundary", max_iterations=0, num_threads=1,
                                     DEBUG_output=True, write_vtu=True),
-                    {"tagged": tagged(mesh, cell_type),
-                     "boundary": surface() if cell_type == "tetrahedron" else {
-                         "V": mesh["V"].copy(), "cells": {"edge": {"connectivity": np.array(
-                             [[0, 1], [1, 2], [2, 0]], dtype=np.int64)}}}})
+                    {"tagged": tagged(mesh, cell_type), "boundary": boundary})
                 field = outputs["mesh"]["cells"][cell_type]["attributes"]["tags"]
                 self.assertEqual(field["values"].dtype, np.dtype("uint8"))
                 self.assertIn("tag_0", field["labels"])
@@ -232,7 +264,7 @@ class MemoryIO(unittest.TestCase):
                         {"surface": surface()})
 
     def test_offset_and_manifold(self):
-        meshes = {"tagged": tagged(tetrahedron(), "tetrahedron")}
+        meshes = {"tagged": tagged(cube(), "tetrahedron")}  # one tet until 2026-11-05
         self.run_memory("topological_offset", dict(input="tagged", optimize_offset=False,
                                                   offset_selection="tag_0 & !tag_0",
                                                   check_manifoldness=False, num_threads=1), meshes)
@@ -337,9 +369,6 @@ class MemoryIO(unittest.TestCase):
             mesh["cells"]["triangle"]["connectivity"] = connectivity
             cases.append(mesh)
         mesh = triangle()
-        mesh["vertex_attributes"] = {"extra": np.ones((3, 1), dtype=np.float64)}
-        cases.append(mesh)
-        mesh = triangle()
         mesh["vertex_attributes"] = {"extra": np.ones((3, 1), dtype=np.float32)}
         cases.append(mesh)
         mesh = triangle()
@@ -353,6 +382,14 @@ class MemoryIO(unittest.TestCase):
                 wm.qslim({"input": "surface"}, {"surface": mesh})
         with self.assertRaisesRegex(RuntimeError, "corr_input_vid"):
             wm.prismatic_mesh({"input": "construction"}, {"construction": tetrahedron()})
+        # A field no reader reads is an annotation, dropped: the call runs as without it (until
+        # 2026-11 it was refused).
+        options = dict(input="surface", target_rel=1.0, eps_rel=0.0)
+        annotated = triangle()
+        annotated["vertex_attributes"] = {"extra": np.ones((3, 1), dtype=np.float64)}
+        outputs, _ = self.run_memory("qslim", options, {"surface": annotated})
+        bare, _ = self.run_memory("qslim", options, {"surface": triangle()})
+        np.testing.assert_array_equal(outputs["mesh"]["V"], bare["mesh"]["V"])
         self.assertEqual(list(Path.cwd().iterdir()), [])
 
     def test_msh_roundtrip(self):

@@ -34,10 +34,10 @@ mesh = outputs["mesh"]
 triangles = mesh["cells"]["triangle"]
 print(len(mesh["V"]), "vertices,", len(triangles["connectivity"]), "triangles,",
       f"max energy {report['max_energy']:.2f}")
-# One column per input: 1 where the triangle lies inside that curve.
-tags = triangles["attributes"]["tags"]
+# The tracked curves, one column per input: 1 where the edge lies on that curve.
+tags = mesh["cells"]["edge"]["attributes"]["tags"]
 for label, count in zip(tags["labels"], np.asarray(tags["values"]).sum(axis=0)):
-    print(f"  {label}: {count} triangles")
+    print(f"  {label}: {count} edges")
 # --8<-- [end:memory]
 
 

@@ -67,11 +67,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     Eigen::MatrixXi s_F, _FT, _FN;
     if (component_io.memory()) {
         const auto& data = component_io.mesh(surface_mesh_file);
-        io::ComponentIO::attributes(data.vertex_attributes, {"is_cone"}, {"is_cone"});
+        std::set<std::string> dropped =
+            io::ComponentIO::dropped_fields(data.vertex_attributes, {"is_cone"}, {"is_cone"});
         for (const auto& [type, c] : data.cells) {
             if (type != CellType::Triangle) throw std::runtime_error("C1 requires triangle meshes");
-            io::ComponentIO::attributes(c.attributes, {"dofs"}, {"dofs"});
+            dropped.merge(io::ComponentIO::dropped_fields(c.attributes, {"dofs"}, {"dofs"}));
         }
+        io::ComponentIO::log_dropped("surface_mesh " + surface_mesh_file, dropped);
         s_V = data.V;
         s_F = io::ComponentIO::indices(data.cell(CellType::Triangle).connectivity);
         if (!s_F.rows() || !s_V.rows()) throw std::runtime_error("C1 requires a nonempty surface");
@@ -89,11 +91,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     Eigen::MatrixXi _F, uv_F, FN;
     if (component_io.memory()) {
         const auto& data = component_io.mesh(uv_mesh_file);
-        io::ComponentIO::attributes(data.vertex_attributes, {});
+        std::set<std::string> dropped = io::ComponentIO::dropped_fields(data.vertex_attributes, {});
         for (const auto& [type, c] : data.cells) {
             if (type != CellType::Triangle) throw std::runtime_error("C1 requires UV triangles");
-            io::ComponentIO::attributes(c.attributes, {});
+            dropped.merge(io::ComponentIO::dropped_fields(c.attributes, {}));
         }
+        io::ComponentIO::log_dropped("uv_mesh " + uv_mesh_file, dropped);
         uv_V = data.V.leftCols(2);
         uv_F = io::ComponentIO::indices(data.cell(CellType::Triangle).connectivity);
         if (uv_F.rows() != s_F.rows())
