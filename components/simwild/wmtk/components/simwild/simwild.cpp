@@ -416,6 +416,8 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         mesh.m_F_envelope_labels = held->labels;
         mesh.m_has_reference = true;
         mesh.m_reference_curves = input_data.reference_curves;
+        // The input points' anchors on its points (TetOptimizerMesh::ReferencePoints).
+        mesh.set_reference_points(input_data.reference_points, input_data.reference_point_labels);
     } else if (input_data.V_envelope.size() != 0) {
         // first init envelope
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
@@ -688,6 +690,9 @@ void run_2D(
         mesh.init_envelope(held->V, held->F);
         mesh.m_E_envelope_labels = held->labels;
         mesh.m_has_reference = true;
+        mesh.set_reference_points(
+            input_data.reference_points,
+            input_data.reference_point_labels); // as in 3D
     } else if (input_data.V_envelope.size() != 0) {
         // first init envelope
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);

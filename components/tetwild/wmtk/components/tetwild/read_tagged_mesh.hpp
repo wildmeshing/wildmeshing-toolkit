@@ -21,7 +21,8 @@ namespace wmtk::components::tetwild {
  * The lower blocks are read as simwild's read_mesh_data() reads them, so a mesh means the same
  * to both: a triangle block is tagged faces, each label one input, every row oriented by its
  * vertex order; an edge block is feature curves, each label one feature input, every edge and
- * label an input edge placed on itself. A point block is input points, anchored where they are.
+ * label an input edge placed on itself. A point block is input points, anchored where they are --
+ * with an `envelope`, on its points (TetOptimizerMesh::ReferencePoints).
  */
 struct TaggedMesh
 {

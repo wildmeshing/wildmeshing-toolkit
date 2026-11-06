@@ -996,10 +996,10 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         out.envelope_name = "EnvelopeSurface";
     } else if (envelope) {
         // A labelled reference (io::append_envelope_block()): its triangles (2D: segments) and,
-        // in 3D, feature curves, each row with its labels, which name the mesh's tags; its points,
-        // which no tag of a mesh marks, are only handed on. Matched to the mesh by name, after
-        // the mesh's own labels are read above (io::read_labelled_envelope(), which tetwild's
-        // tagged route reads its `envelope` with too).
+        // in 3D, feature curves, each row with its labels, which name the mesh's tags, and its
+        // points, each with its labels, which name the mesh's points. Matched to the mesh by name,
+        // after the mesh's own labels are read above (io::read_labelled_envelope(), which
+        // tetwild's and triwild's tagged routes read their `envelope` with too).
         // The mesh's bits named `name`: a face tag's (2D: an edge tag's), a region's after them.
         // In 2D a curve and a region may share a name, as triwild names them, and the segments
         // then hold both: the curve is the region's boundary.
@@ -1013,8 +1013,12 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
                     bits |= InputSet(1) << (F + j);
             return bits;
         };
-        io::LabelledReference reference =
-            io::read_labelled_envelope(*envelope, dim, bits_named, out.feature_edge_names);
+        io::LabelledReference reference = io::read_labelled_envelope(
+            *envelope,
+            dim,
+            bits_named,
+            out.feature_edge_names,
+            out.point_names);
         out.V_envelope = std::move(reference.V);
         out.F_envelope = std::move(reference.F);
         out.F_envelope_labels = std::move(reference.F_labels);
@@ -1022,6 +1026,8 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         // The feature curves of the labels the mesh's feature curves have (feature_edge_names),
         // one input edge per edge and label, as the mesh's own are read above.
         out.reference_curves = std::move(reference.curves);
+        out.reference_points = std::move(reference.P);
+        out.reference_point_labels = std::move(reference.P_labels);
         out.envelope_reference = *envelope;
     }
     return out;

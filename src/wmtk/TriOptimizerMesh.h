@@ -235,6 +235,18 @@ public:
      */
     /// Set by the application before init, with the envelopes built around the reference.
     bool m_has_reference = false;
+    /// The reference's input points, each with the labels of this mesh's input points it carries
+    /// (bit j: m_point_names[j]): the 2D twin of TetOptimizerMesh::ReferencePoints, which says
+    /// what anchor_feature_points() does with them. Set by the application before init, by
+    /// set_reference_points().
+    struct ReferencePoints
+    {
+        std::vector<Vector2d> V;
+        std::vector<InputSet> labels;
+    };
+    std::optional<ReferencePoints> m_reference_points;
+    /// Set m_reference_points from the reference's points `P` (rows, x y) and their labels.
+    void set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels);
     /// The label of bit `bit` of an edge's input set, as the output names it; the application's,
     /// for the reference checks to name a label by.
     virtual std::string label_name(size_t bit) const;
@@ -437,7 +449,9 @@ public:
      * of anchors made.
      *
      * With m_input_curve_points set, an order-2 vertex is anchored only if one of the input's
-     * own curve points lies in its ball, and the ball is centred on the nearest one.
+     * own curve points lies in its ball, and the ball is centred on the nearest one. With
+     * m_reference_points set, an input point's ball is centred on the nearest of the reference's
+     * points of its label in it, and a point with none throws, as in 3D.
      */
     size_t anchor_feature_points(
         const std::vector<size_t>& input_point_vids,

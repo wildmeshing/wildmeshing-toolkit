@@ -3777,3 +3777,146 @@ TEST_CASE(
     CHECK(arrays("o_00000_off.vtu")("input_distance"));
 }
 #endif
+
+// A received input point and the reference (TetOptimizerMesh::ReferencePoints). `run` a receiving
+// component's call, `mesh` and `envelope` a producer's output and envelope, with an input point
+// labelled p; the anchor radius r is 10 eps, at which the receivers move a point in two
+// iterations (at the default, eps, these do not). Without an envelope given the point is held
+// around where it arrives, as before: it may move, within r of there. With the envelope, its
+// point p moved 0.9 r from the point, opposite to where the point moved without it, the point
+// ends within r of the envelope's: held around where it arrived, as until 2026-11, it ended its
+// move farther (measured: triwild 1.59 r, simwild 1.25 r in 2D and 1.34 r in 3D; tetwild did not
+// move it). Moved 1.1 r away, the run throws before anything runs, naming the count and label.
+namespace {
+[[maybe_unused]] Vector3d point_p(const MeshData& mesh)
+{
+    const auto rows = points_labelled(mesh, "p");
+    REQUIRE(rows.size() == 1);
+    return Vector3d(rows[0][0][0], rows[0][0][1], rows[0][0][2]);
+}
+// `envelope` with its point labelled p at `to`.
+[[maybe_unused]] MeshData with_point_p_at(MeshData envelope, const Vector3d& to)
+{
+    const CellData& points = envelope.cells.at(CellType::Point);
+    const MeshAttribute& tags = points.attributes.at("tags");
+    const auto j = std::find(tags.labels.begin(), tags.labels.end(), "p") - tags.labels.begin();
+    const auto member = tags.integers();
+    size_t n = 0;
+    for (Eigen::Index r = 0; r < points.connectivity.rows(); ++r) {
+        if (!member(r, j)) continue;
+        envelope.V.row(points.connectivity(r, 0)) = to.transpose();
+        ++n;
+    }
+    REQUIRE(n == 1);
+    return envelope;
+}
+template <typename Run>
+[[maybe_unused]] void check_received_point(
+    const Run& run,
+    const MeshData& mesh,
+    const MeshData& envelope,
+    nlohmann::json options)
+{
+    using Catch::Matchers::ContainsSubstring;
+    const double ratio = 10;
+    options["feature_envelope_ratio"] = ratio;
+    const Vector3d arrival = point_p(mesh);
+    const auto alone = run(options, MeshMap{{"m", mesh}});
+    check(alone);
+    const double r = ratio * alone.second.at("eps").template get<double>();
+    const Vector3d move = point_p(alone.first.at("mesh")) - arrival;
+    CHECK(move.norm() <= r * (1 + 1e-9));
+    options["envelope"] = "e";
+    const Vector3d away = move.norm() > 0.2 * r ? Vector3d(-move.normalized()) : Vector3d(-1, 0, 0);
+    const Vector3d original = arrival + 0.9 * r * away;
+    const auto held =
+        run(options, MeshMap{{"m", mesh}, {"e", with_point_p_at(envelope, original)}});
+    check(held);
+    const double from_original = (point_p(held.first.at("mesh")) - original).norm();
+    INFO(
+        "moved " << move.norm() / r << " r alone; " << from_original / r << " r from the original");
+    CHECK(from_original <= r * (1 + 1e-9));
+    Vector3d off = arrival;
+    off[0] += 1.1 * r;
+    REQUIRE_THROWS_WITH(
+        run(options, MeshMap{{"m", mesh}, {"e", with_point_p_at(envelope, off)}}),
+        ContainsSubstring("1 labelled p"));
+}
+} // namespace
+#ifdef WMTK_TEST_tetwild
+TEST_CASE(
+    "TetWild holds a received point to the envelope's point of its label",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    WorkingDirectory cwd;
+    const auto produced = tetwild::tetwild(
+        {{"input", {"a", "p"}},
+         {"input_names", {"a", "p"}},
+         {"simplify", false},
+         {"filter", "none"},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"a", box_surface(Vector3d(0, 0, 0), Vector3d(1, 1, 1))},
+         {"p", point_input(0.3, 0.4, 0.45)}});
+    check(produced);
+    check_received_point(
+        [](const nlohmann::json& o, const MeshMap& m) { return tetwild::tetwild(o, m); },
+        tags_only(produced.first.at("mesh")),
+        produced.first.at("envelope"),
+        {{"input", "m"}, {"filter", "none"}, {"max_iterations", 2}, {"num_threads", 1}});
+}
+#endif
+#ifdef WMTK_TEST_triwild
+TEST_CASE(
+    "TriWild holds a received point to the envelope's point of its label",
+    "[component_io][envelope][tagged]")
+{
+    WorkingDirectory cwd;
+    const auto produced = triwild::triwild(
+        {{"input", {"a", "p"}},
+         {"input_names", {"a", "p"}},
+         {"simplify", false},
+         {"filter", "none"},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"a", square_curve(0)}, {"p", point_input(0.3, 0.6, 0)}});
+    check(produced);
+    check_received_point(
+        [](const nlohmann::json& o, const MeshMap& m) { return triwild::triwild(o, m); },
+        tags_only(produced.first.at("mesh")),
+        produced.first.at("envelope"),
+        {{"input", "m"}, {"filter", "none"}, {"max_iterations", 2}, {"num_threads", 1}});
+}
+#endif
+#ifdef WMTK_TEST_simwild
+TEST_CASE(
+    "SimWild holds a received point to the envelope's point of its label",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    WorkingDirectory cwd;
+    const bool is_3d = GENERATE(false, true);
+    INFO((is_3d ? "3D" : "2D"));
+    MeshData region;
+    if (is_3d) {
+        region = tet_surface(0);
+    } else {
+        region.V.resize(4, 3);
+        region.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0;
+        region.cells[CellType::Edge].connectivity.resize(4, 2);
+        region.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 3, 3, 0;
+    }
+    const auto produced = simwild::simwild(
+        {{"input", {"a", "p"}},
+         {"input_names", {"a", "p"}},
+         {"simplify", false},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"a", region}, {"p", is_3d ? point_input(0.2, 0.15, 0.3) : point_input(0.3, 0.6, 0)}});
+    check(produced);
+    check_received_point(
+        [](const nlohmann::json& o, const MeshMap& m) { return simwild::simwild(o, m); },
+        tags_only(produced.first.at("mesh")),
+        produced.first.at("envelope"),
+        {{"input", "m"}, {"max_iterations", 2}, {"num_threads", 1}});
+}
+#endif

@@ -889,8 +889,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // The tagged route (read_tagged_input() above): the mesh is the input as it is.
         const TaggedTriMesh& in = *tagged_mesh;
         // An `envelope` given: the reference held to, its segments of the mesh's edge labels
-        // (io::held_rows()), each with its labels, matched by name.
+        // (io::held_rows()), each with its labels, and its points of the mesh's point labels,
+        // matched by name.
         std::optional<io::HeldRows> held;
+        MatrixXd reference_points;
+        std::vector<InputSet> reference_point_labels;
         if (envelope_given) {
             const auto bits_named = [&](const std::string& name) {
                 InputSet bits = 0;
@@ -899,8 +902,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 return bits;
             };
             io::LabelledReference reference =
-                io::read_labelled_envelope(*envelope_given, 2, bits_named, {});
+                io::read_labelled_envelope(*envelope_given, 2, bits_named, {}, in.point_names);
             held = io::held_rows(reference.V, reference.F, reference.F_labels);
+            reference_points = std::move(reference.P);
+            reference_point_labels = std::move(reference.P_labels);
         }
         // The input, as the curve route's is its curve files: the reference when one is given,
         // else the curves as received. What the envelopes are built around, one row per label
@@ -956,10 +961,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         mesh.m_point_names = point_names; // as on the curve route
         mesh.m_input_point_labels = free_point_labels;
         // With a reference, the curve-end anchors around its curve ends and junctions, as
-        // simwild's (TriOptimizerMesh::m_input_curve_points), set before init_mesh() anchors.
+        // simwild's (TriOptimizerMesh::m_input_curve_points), and the input points' on its points
+        // (TriOptimizerMesh::ReferencePoints), set before init_mesh() anchors.
         if (held) {
             mesh.m_has_reference = true;
             mesh.set_input_curve_points(V_in, E_in);
+            mesh.set_reference_points(reference_points, reference_point_labels);
         }
         mesh.init_mesh(
             in.V,

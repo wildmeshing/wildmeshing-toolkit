@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/io/ComponentIO.hpp>
 
 #include <nlohmann/json.hpp>
@@ -51,6 +52,10 @@ struct InputData
     /// Its feature curves (3D, its edge block) of the labels the mesh's feature curves have: an
     /// input edge per edge and label, edge_input that label's feature input (feature_edge_names).
     utils::FeatureInputs reference_curves;
+    /// Its points (x y z; 2D x y), each with the bits of point_names it carries: the received
+    /// input points' anchors are centred on them (TetOptimizerMesh::ReferencePoints).
+    MatrixXd reference_points;
+    std::vector<InputSet> reference_point_labels;
     /// Whether the input was simplified before the insertion (preserve_topology off). Around the
     /// input (envelope_reference "input") V_envelope is then the input as read, not what was
     /// inserted, and the mesh holds the input's own curves and curve points around the input

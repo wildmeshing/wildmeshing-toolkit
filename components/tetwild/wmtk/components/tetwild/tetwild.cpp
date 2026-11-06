@@ -1096,10 +1096,12 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             box_minmax.second = box_minmax.second.cwiseMax(p);
         }
         // An `envelope` given: the reference held to, its triangles of the mesh's face labels
-        // (io::held_rows()), each with its labels, and its feature curves of the mesh's feature
-        // labels, matched by name.
+        // (io::held_rows()), each with its labels, its feature curves of the mesh's feature
+        // labels and its points of the mesh's point labels, matched by name.
         std::optional<io::HeldRows> held;
         utils::FeatureInputs reference_curves;
+        MatrixXd reference_points;
+        std::vector<InputSet> reference_point_labels;
         if (envelope_given) {
             const auto bits_named = [&](const std::string& name) {
                 InputSet bits = 0;
@@ -1107,10 +1109,16 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                     if (face_tags[i] == name) bits |= InputSet(1) << i;
                 return bits;
             };
-            io::LabelledReference reference =
-                io::read_labelled_envelope(*envelope_given, 3, bits_named, feature_tags);
+            io::LabelledReference reference = io::read_labelled_envelope(
+                *envelope_given,
+                3,
+                bits_named,
+                feature_tags,
+                features.point_names);
             held = io::held_rows(reference.V, reference.F, reference.F_labels);
             reference_curves = std::move(reference.curves);
+            reference_points = std::move(reference.P);
+            reference_point_labels = std::move(reference.P_labels);
         }
         // The input, as the surface route's is its input files: the reference when one is
         // given, else the tracked surface as received, on vertices of its own. What the envelopes
@@ -1205,11 +1213,13 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.m_input_point_labels = features.point_input;
         // With a reference, as simwild holds one (TetOptimizerMesh::m_has_reference): the order-2
         // tubes and the curve-end anchors around its curves, an edge on none held around itself
-        // (TetOptimizerMesh::InputCurves), set before the initialization builds them.
+        // (TetOptimizerMesh::InputCurves), and the input points' anchors on its points
+        // (TetOptimizerMesh::ReferencePoints), set before the initialization builds them.
         if (held) {
             mesh_new.m_has_reference = true;
             mesh_new.m_reference_curves = reference_curves;
             mesh_new.set_input_curves(verts, tris, F_sets, &reference_curves);
+            mesh_new.set_reference_points(reference_points, reference_point_labels);
         }
         timer.start();
         igl::Timer init_timer;

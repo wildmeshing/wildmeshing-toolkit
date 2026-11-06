@@ -161,7 +161,8 @@ feature curves (a curve input, named as every input is); in a triangle mesh, edg
 (an input curve, each row oriented as its input); in both, points are input points (a point
 input, or a curve input's vertex no segment uses, each row a vertex under the labels of the inputs
 with a point there). simwild, tetwild and triwild write them so, and simwild, tetwild and triwild
-read them back as the tags they hold, the points anchored where they are; topological_offset and
+read them back as the tags they hold, the points anchored where they are (with an `envelope` given,
+on the envelope's point of their label, which must lie within the anchor's radius); topological_offset and
 manifold_extraction, which hold no points yet, refuse a point block, as they refuse feature
 curves. Until 2026-11 no mesh marked its input points. tetwild takes a tet mesh as its
 only input on the tagged route, its tets kept: no simplification, no insertion, no input winding

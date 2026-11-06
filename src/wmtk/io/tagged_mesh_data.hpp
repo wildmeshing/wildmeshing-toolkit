@@ -175,29 +175,35 @@ void orient_tagged_row(
 /// (read_labelled_envelope()): its triangles (2D: segments) on vertices of their own (`dim`
 /// columns), each with the bits of the receiver's labels it names, 0 for a row of labels the
 /// receiver lacks; in 3D its feature curves of the receiver's feature labels, an input edge per
-/// edge and label, edge_input that label's feature input.
+/// edge and label, edge_input that label's feature input; its points (`dim` columns), each with
+/// the bits of the receiver's point labels it carries, 0 for one of labels the receiver lacks.
 struct LabelledReference
 {
     MatrixXd V;
     MatrixXi F;
     std::vector<InputSet> F_labels;
     utils::FeatureInputs curves;
+    MatrixXd P;
+    std::vector<InputSet> P_labels;
 };
 /**
  * @brief Read `envelope`, a labelled reference (is_labelled_envelope()), for a receiving mesh of
  * dimension `dim`: its triangles (2D: segments) and, in 3D, feature curves, each row with its
- * labels, which name the receiver's tags; its points, which no tag of a mesh marks, are only
- * handed on. Matched to the receiver by name: `bits_named(name)` is the receiver's bits a label
- * names (several where its tags share a name), `feature_names` its feature labels, bit i the
- * i-th. Throws on cells a labelled reference does not have, and drops every field but `tags`
- * (ComponentIO::dropped_fields()). simwild's and tetwild's
- * tagged routes read their `envelope` so; moved here from simwild's reader (2026-11), unchanged.
+ * labels, which name the receiver's tags, and its points, each with its labels, which name the
+ * receiver's input points. Matched to the receiver by name: `bits_named(name)` is the
+ * receiver's bits a label names (several where its tags share a name), `feature_names` its
+ * feature labels and `point_names` its point labels, bit i the i-th. Throws on cells a labelled
+ * reference does not have, and drops every field but `tags` (ComponentIO::dropped_fields()).
+ * simwild's, tetwild's and triwild's tagged routes read their `envelope` so; moved here from
+ * simwild's reader (2026-11). Until 2026-11 the points were only handed on, and a received
+ * point was anchored where it arrived (TetOptimizerMesh::ReferencePoints).
  */
 inline LabelledReference read_labelled_envelope(
     const MeshData& envelope,
     const int dim,
     const std::function<InputSet(const std::string&)>& bits_named,
-    const std::vector<std::string>& feature_names)
+    const std::vector<std::string>& feature_names,
+    const std::vector<std::string>& point_names = {})
 {
     envelope.validate();
     std::set<std::string> dropped = ComponentIO::dropped_fields(envelope.vertex_attributes, {});
@@ -269,6 +275,28 @@ inline LabelledReference read_labelled_envelope(
                 if (!on(r, Eigen::Index(j))) continue;
                 out.curves.edges.push_back({{vertex(E(r, 0)), vertex(E(r, 1))}});
                 out.curves.edge_input.push_back(int(k - feature_names.begin()));
+            }
+        }
+    }
+    // The points (append_envelope_points()), each with the receiver's point labels it carries
+    // by name: none without tags, which an envelope built without point labels has.
+    if (const auto points = envelope.cells.find(CellType::Point); points != envelope.cells.end()) {
+        const auto& C = points->second.connectivity;
+        out.P.resize(C.rows(), dim);
+        out.P_labels.assign(size_t(C.rows()), 0);
+        for (Eigen::Index r = 0; r < C.rows(); ++r)
+            out.P.row(r) = envelope.V.row(C(r, 0)).head(dim);
+        if (points->second.attributes.count("tags")) {
+            const MeshAttribute& point_tags = labelled(points->second);
+            const auto& on = std::get<DataMatrix<uint8_t>>(point_tags.values);
+            for (size_t j = 0; j < point_tags.labels.size(); ++j) {
+                const auto k =
+                    std::find(point_names.begin(), point_names.end(), point_tags.labels[j]);
+                const size_t bit = size_t(k - point_names.begin());
+                if (k == point_names.end() || bit >= size_t(SurfaceTagAttributes::max_inputs))
+                    continue;
+                for (Eigen::Index r = 0; r < C.rows(); ++r)
+                    if (on(r, Eigen::Index(j))) out.P_labels[size_t(r)] |= InputSet(1) << bit;
             }
         }
     }

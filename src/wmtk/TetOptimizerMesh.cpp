@@ -2017,6 +2017,16 @@ bool TetOptimizerMesh::anchor_feature_point(
     return true;
 }
 
+void TetOptimizerMesh::set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels)
+{
+    assert(labels.size() == size_t(P.rows()));
+    ReferencePoints ref;
+    for (Eigen::Index i = 0; i < P.rows(); ++i) ref.V.emplace_back(P(i, 0), P(i, 1), P(i, 2));
+    ref.labels = labels;
+    logger().info("reference: {} input points", ref.V.size());
+    m_reference_points = std::move(ref);
+}
+
 size_t TetOptimizerMesh::anchor_feature_points(
     const std::vector<size_t>& input_point_vids,
     const double order2_radius,
@@ -2080,7 +2090,12 @@ size_t TetOptimizerMesh::anchor_feature_points(
             anchors.emplace_back(vid, r, p);
         }
     }
-    for (const size_t vid : input_point_vids) {
+    // With the reference's points (ReferencePoints), an input point's ball is centred on the
+    // nearest of them of its label in it, tested as the anchor will hold it; one with none is
+    // counted by label, and refused below.
+    std::map<int, size_t> n_unmatched;
+    for (size_t k = 0; k < input_point_vids.size(); ++k) {
+        const size_t vid = input_point_vids[k];
         if (vid >= vert_capacity()) {
             log_and_throw_error("Input point vertex id {} out of range", vid);
         }
@@ -2088,7 +2103,47 @@ size_t TetOptimizerMesh::anchor_feature_points(
         if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
             r = std::min(r, order2_radius);
         }
-        anchors.emplace_back(vid, r, m_vertex_attribute[vid].m_posf);
+        const Vector3d& p = m_vertex_attribute[vid].m_posf;
+        if (!m_reference_points) {
+            anchors.emplace_back(vid, r, p);
+            continue;
+        }
+        const int label = k < m_input_point_labels.size() ? m_input_point_labels[k] : -1;
+        const Vector3d* centre = nullptr;
+        double best = r * r;
+        for (size_t q = 0; q < m_reference_points->V.size(); ++q) {
+            if (label < 0 || label >= SurfaceTagAttributes::max_inputs ||
+                ((m_reference_points->labels[q] >> label) & 1) == 0) {
+                continue;
+            }
+            const double sq = (p - m_reference_points->V[q]).squaredNorm();
+            if (sq <= best) {
+                best = sq;
+                centre = &m_reference_points->V[q];
+            }
+        }
+        if (centre == nullptr) {
+            ++n_unmatched[label];
+            continue;
+        }
+        anchors.emplace_back(vid, r, *centre);
+    }
+    if (!n_unmatched.empty()) {
+        std::vector<std::string> counts;
+        for (const auto& [label, n] : n_unmatched) {
+            counts.push_back(
+                fmt::format(
+                    "{} labelled {}",
+                    n,
+                    label >= 0 && size_t(label) < m_point_names.size()
+                        ? m_point_names[label]
+                        : "tag_" + std::to_string(label)));
+        }
+        log_and_throw_error(
+            "envelope: received input points with no point of the reference of their label in "
+            "their anchor's radius: {}. A component makes no input points, so these are not the "
+            "reference's",
+            fmt::join(counts, ", "));
     }
     if (m_input_curves) {
         logger().info(

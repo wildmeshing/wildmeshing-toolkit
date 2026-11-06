@@ -20,7 +20,8 @@ namespace wmtk::components::triwild {
  * input, every row oriented by its vertex order. Rows of one edge are merged: their labels
  * united, their orientation one count, +1 along E's row where they all run that way, -1 where
  * they all run the other, 0 where both, as coincident input segments of opposite directions
- * cancel at the arrangement. The point block is input points, anchored where they are.
+ * cancel at the arrangement. The point block is input points, anchored where they are -- with an
+ * `envelope`, on its points (TriOptimizerMesh::ReferencePoints).
  */
 struct TaggedTriMesh
 {

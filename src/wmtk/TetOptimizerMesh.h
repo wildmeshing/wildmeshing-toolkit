@@ -690,7 +690,9 @@ public:
      *
      * With m_input_curves set, the ball of a curve end or junction is centred on the nearest of
      * the input's own curve points when one lies in it, and at the vertex otherwise (see
-     * InputCurves). An input point is anchored as before: it is the input's.
+     * InputCurves). An input point is the input's, and keeps its own position -- unless
+     * m_reference_points is set: its ball is then centred on the nearest of the reference's
+     * points of its label within it, and a point with none throws (see there).
      */
     size_t anchor_feature_points(
         const std::vector<size_t>& input_point_vids,
@@ -817,6 +819,28 @@ public:
     /// The reference's feature curves: an input edge per edge and label, edge_input the feature
     /// input of the label (m_feature_edge_names).
     utils::FeatureInputs m_reference_curves;
+    /**
+     * @brief The reference's input points (its point block), each with the labels of this mesh's
+     * input points it carries (bit j: m_point_names[j]).
+     *
+     * Set, anchor_feature_points() centres the ball of each received input point on the nearest
+     * of them with its label in the ball, as it centres a curve end on the nearest of the
+     * reference's curve points (InputCurves): so a received point is held to the first
+     * component's, within one radius however many components came before, where anchored where it
+     * arrives it could end up to one radius further at every stage. Unlike a curve end, a point
+     * with none in reach throws, before anything runs: a simplification makes curve ends, but no
+     * component makes input points, so such a point is not this reference's. Unset -- no
+     * `envelope` given -- an input point is anchored where it is, as before. Set by the
+     * application before init, by set_reference_points().
+     */
+    struct ReferencePoints
+    {
+        std::vector<Vector3d> V;
+        std::vector<InputSet> labels;
+    };
+    std::optional<ReferencePoints> m_reference_points;
+    /// Set m_reference_points from the reference's points `P` (rows, x y z) and their labels.
+    void set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels);
     /// Names of the feature curves' inputs: bit i of a feature edge's input set
     /// (FeatureEdgeAttributes::inputs(feature)) is m_feature_edge_names[i], the output's edge tag
     /// (io::collect_feature_edge_tags()). Set by the application: the label of its i-th input
