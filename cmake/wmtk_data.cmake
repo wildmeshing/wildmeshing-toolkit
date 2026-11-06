@@ -119,8 +119,13 @@ ExternalProject_Add(
     # At e085b8f (2026-11-05, data2 #14) the hidden [offset] group drops its two slowest cube
     # cases (cube_small_offset_conv0.1 and conv0.025, 45 of its 49 min) and parks its nine 2D
     # cases in _commented_out while the offset refuses 2D input.
+    # At 7df4924 (2026-11-06, data2 main) the tight_seal_geom configs keep the join region off the
+    # mesh boundary, which the operation now refuses: explicit_2d moves to the new model
+    # tight_seal_geom_bars_2d.msh, explicit_3d to d 0.35, detected_3d to d 0.6. It holds data2 #15
+    # too, whose tetwild_features.json lists its curve and point files in `input`: that config
+    # needs the toolkit's one input list (#1162) and fails until it lands.
     #
-    GIT_TAG e085b8fa1a0420d9a966a16b55bec5084dcc68d7
+    GIT_TAG 7df4924ab9c550d02d77c3c8139dd4863096ab6f
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
