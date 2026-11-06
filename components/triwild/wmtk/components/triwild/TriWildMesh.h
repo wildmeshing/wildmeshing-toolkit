@@ -185,6 +185,9 @@ public:
      * @param E_env_input,E_input_set with several inputs: per row of E_env, the input it came
      *        from, which builds m_input_envelopes; per row of E, its input set. Null => one
      *        input, and every tracked segment gets input 0.
+     * @param E_input_orientation optional, read in a build with WMTK_PER_INPUT_ORIENTATION: per
+     *        row of E, each input's own direction on it, measured along the row (embed_segments'
+     *        E_out_input_orientation). Without it each input of a row takes E_orientation's.
      */
     void init_mesh(
         const MatrixXd& V,
@@ -197,7 +200,8 @@ public:
         const std::vector<int>* E_orientation = nullptr,
         const std::vector<size_t>& free_point_vids = {},
         const std::vector<int>* E_env_input = nullptr,
-        const std::vector<InputSet>* E_input_set = nullptr);
+        const std::vector<InputSet>* E_input_set = nullptr,
+        const std::vector<InputOrientations>* E_input_orientation = nullptr);
 
     void init_surfaces_and_boundaries();
 

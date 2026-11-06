@@ -317,9 +317,10 @@ simplifies the mesh within `eps_simplify_rel` of that envelope (unless
 simplified interfaces, so the envelope bounds how far the simplification moves them; with
 `simplify` false, it bounds the whole run.
 
-Do not pass it after a region edit. The edits change which faces are interfaces, so they return no
-envelope, and an old one does not cover the new interfaces: simwild finds faces outside it, warns
-`Some surface faces are outside the envelope. Re-build envelope`, and builds one from the regions.
+A region edit (below) changes which faces are interfaces, and an earlier envelope does not cover the
+new ones. An edit therefore does not read the `envelope` input, and returns an envelope built
+around its result: every interface face of the edited mesh (2D: edge), labelled by the regions it
+bounds, with the feature curves. A later remeshing holds the interfaces to it.
 
 On files, the `.msh` simwild writes holds the mesh only.
 [`wm.save`](../python-api.md#meshes-and-files) writes the envelope next to it (`stem.msh` and
@@ -540,10 +541,10 @@ no cell changes.
   in memory. Its tets (triangles in 2D) carry `tags` (the regions, and `ambient`), `quality` (the
   energy), `quality_target` and `quality_rel` (their ratio, at most 1 when the run converged); its
   vertices carry `sizing_field`.
-- In memory, also `outputs["surface"]`: the interface triangles (in 2D, segments), and in 3D
-  `outputs["edges"]`: the edges where the interfaces are not manifold, such as the circle where
-  the two spheres cross. With [`write_vtu`](../reference/simwild.md#write_vtu), the file route
-  writes VTU files of the same.
+- The interfaces are where the tags differ across a face (in 2D, an edge): the mesh holds them,
+  and no output repeats them. With [`write_vtu`](../reference/simwild.md#write_vtu), the file
+  route writes VTU files of the interface triangles (in 2D, segments) and, in 3D, of the edges
+  where the interfaces are not manifold, such as the circle where the two spheres cross.
 - `outputs["envelope"]`, see [above](#the-envelope-a-run-returns).
 - With [`report`](../reference/simwild.md#report), a JSON file (in memory, the report) with the
   number of cells `#t` and vertices `#v`, `max_energy` and `avg_energy` over all cells, `eps`,

@@ -1,6 +1,7 @@
 #include <bitset>
 #include <fstream>
 #include <set>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Delaunay.hpp>
 #include <wmtk/utils/predicates.hpp>
 #include "SimWildMesh.h"
@@ -16,7 +17,8 @@ void SimWildMesh::init_from_image(
     const MatrixSi& F_tags,
     const std::vector<std::string>& face_tag_names,
     const utils::FeatureInputs* features,
-    const utils::EmbedFeaturesResult* features_placed)
+    const utils::EmbedFeaturesResult* features_placed,
+    const MatrixSi& F_orientation)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -63,7 +65,7 @@ void SimWildMesh::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
-    init_face_tags(F_tagged, F_tags, face_tag_names);
+    init_face_tags(F_tagged, F_tags, face_tag_names, F_orientation);
     init_surfaces_and_boundaries(features, features_placed);
     // The tagged mesh fills its box, as on tetwild's tagged route (require_box_boundary() says
     // why). Until 2026-11-05 only tracked boundary faces were refused, and an object's tet mesh --
@@ -218,7 +220,8 @@ void SimWildMesh::init_from_image(
     const MatrixSi& F_tags,
     const std::vector<std::string>& face_tag_names,
     const utils::FeatureInputs* features,
-    const utils::EmbedFeaturesResult* features_placed)
+    const utils::EmbedFeaturesResult* features_placed,
+    const MatrixSi& F_orientation)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -274,7 +277,7 @@ void SimWildMesh::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
-    init_face_tags(F_tagged, F_tags, face_tag_names);
+    init_face_tags(F_tagged, F_tags, face_tag_names, F_orientation);
     init_surfaces_and_boundaries(features, features_placed);
     require_box_boundary("simwild"); // as in the overload above
 
@@ -290,7 +293,8 @@ void SimWildMesh::init_from_image(
 void SimWildMesh::init_face_tags(
     const MatrixXi& F_tagged,
     const MatrixSi& F_tags,
-    const std::vector<std::string>& face_tag_names)
+    const std::vector<std::string>& face_tag_names,
+    const MatrixSi& F_orientation)
 {
     m_face_tag_names = face_tag_names;
     for (Eigen::Index r = 0; r < F_tagged.rows(); ++r) {
@@ -303,7 +307,7 @@ void SimWildMesh::init_face_tags(
             if (F_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
         auto& attr = m_face_attribute[std::get<1>(*face)];
         attr.set_input_set(attr.input_set() | set);
-        attr.set_orientation_along(vids, 1);
+        io::orient_tagged_row(attr, vids, set, F_orientation, r);
     }
 }
 
@@ -488,9 +492,9 @@ void SimWildMesh::init_surfaces_and_boundaries(
     const size_t n_order2 = tag_order2_edges(order2_eps, m_envelope && m_envelope->use_exact);
     logger().info("order-2 edges tagged: {}", n_order2);
 
-    // The input feature curves (input_edges), held as tetwild holds them, by the same code: the
-    // tet edges tiling them are tagged with their input_edges file and kept in tubes of
-    // feature_envelope_ratio x eps -- around the input curves, and one per file
+    // The input feature curves (the curve inputs), held as tetwild holds them, by the same code:
+    // the tet edges tiling them are tagged with their curve input and kept in tubes of
+    // feature_envelope_ratio x eps -- around the input curves, and one per input
     // (tag_feature_edges()) -- with the surface envelope's predicate, as the order-2 tubes.
     const double feature_eps =
         m_params.epsr * m_params.diag_l * m_sim_params.feature_envelope_ratio;
@@ -507,12 +511,12 @@ void SimWildMesh::init_surfaces_and_boundaries(
     // With a reference the tubes are around its curves, not around the edges received.
     if (m_has_reference) init_reference_feature_tubes(feature_eps, m_envelope->use_exact);
     // Before a remeshing, which holds the mesh to the reference: what was received must already
-    // lie in it. The tag operations hold nothing to it, and drop it.
+    // lie in it. The tag operations are given none (simwild.cpp).
     if (m_has_reference && m_sim_params.operation == "remeshing") {
         check_reference_containment(m_envelope_eps);
     }
 
-    // Where a tagged curve ends or three or more meet, and at every input point (input_points),
+    // Where a tagged curve ends or three or more meet, and at every input point (a point input),
     // the vertex is anchored (anchor_feature_points()), held like the curves: always. The radius
     // is the tube's of the kinds it is on, the smallest where it is on several.
     anchor_feature_points(input_points, order2_eps, feature_eps);

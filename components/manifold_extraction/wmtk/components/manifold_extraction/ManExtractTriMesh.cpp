@@ -1,5 +1,4 @@
 #include "ManExtractTriMesh.h"
-#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
@@ -151,9 +150,9 @@ void ManExtractTriMesh::extract_curve_mesh(MatrixXd& V, MatrixXi& F) const
 }
 
 
-void ManExtractTriMesh::write_curve(const std::string& path, MeshMap* output)
+void ManExtractTriMesh::write_curve(const std::string& path)
 {
-    if (!m_params.output_enabled && !output) return;
+    if (!m_params.output_enabled) return;
     logger().info("Write curve {}.obj", path);
     MatrixXd pre_V_out;
     MatrixXi pre_F_out;
@@ -212,13 +211,6 @@ void ManExtractTriMesh::write_curve(const std::string& path, MeshMap* output)
         }
     }
 
-    if (output) {
-        MatrixXi edges(ordered_edges.size(), 2);
-        for (size_t i = 0; i < ordered_edges.size(); ++i)
-            for (int j = 0; j < 2; ++j) edges(i, j) = ordered_edges[i][j];
-        (*output)["surface"] = io::geometry_data(V_out, edges, CellType::Edge);
-        return;
-    }
     // write obj file (v <x> <y> <z> ... l <v1> <v2> ...)
     std::ofstream out(path + ".obj");
     out << std::setprecision(17);

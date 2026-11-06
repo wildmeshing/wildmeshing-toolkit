@@ -2,7 +2,6 @@
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
 
 #include <Eigen/Core>
@@ -13,140 +12,83 @@
 using namespace wmtk;
 using namespace components::shortest_edge_collapse;
 
-// Quarantined below: three cases that predate freeze_boundary().
-//
-// create_mesh() now ends with freeze_boundary(), and collapse_edge_before() refuses a collapse
-// whose two endpoints are both frozen. The meshes these three build are small open patches in
-// which every vertex lies on a boundary edge, so every vertex is frozen and no collapse can
-// succeed -- the logs show "success / fail: 0 / N". Their expectations (collapse down to 3
-// vertices / 1 face) are unreachable, and separate-manifold-patch additionally asserts
-// out_v.size() == 9 over a 5-vertex input, so it could never have passed as written.
-//
-// freeze_boundary() arrived in b640ec5f, the same commit that last touched this file; the
-// suite was built but never registered with ctest, so nothing noticed. Tagged [.] (skipped
-// by default) rather than deleted: the scenarios are worth keeping, but they need rebuilding
-// on closed meshes, or an opt-out from boundary freezing, to say anything again.
-
-TEST_CASE("separate-manifold-patch", "[test_sec][.stale_pre_freeze_boundary]")
+namespace {
+// The octahedron of the unit vectors, its faces facing out, with vertex 4 (+z)
+// moved to (0.5, 0, 0.6): its edge to vertex 0 (+x), 0.78 long, is the shortest
+// (the next, 4 to 2 and 4 to 3, are 1.27). A closed mesh, so freeze_boundary()
+// freezes no vertex and every collapse the link condition allows can happen.
+// Until 2026-11-05 these cases ran on open patches, every vertex of which lies
+// on the boundary, is frozen, and no collapse could succeed.
+struct Octahedron
 {
     std::vector<Eigen::Vector3d> v = {
-        {Eigen::Vector3d(0, 0, 0),
-         Eigen::Vector3d(1, 0, 0),
-         Eigen::Vector3d(0, 1, 0),
-         Eigen::Vector3d(0, 0, 1),
-         Eigen::Vector3d(0, -1, 0)}};
-    std::vector<std::array<size_t, 3>> tris = {{
-        {{0, 1, 2}},
-        {{0, 1, 3}},
-        {{0, 1, 4}},
-    }};
-
-    std::vector<Eigen::Vector3d> out_v = v;
-    std::vector<std::array<size_t, 3>> out_f = tris;
-    std::vector<size_t> freeze_v;
-    REQUIRE(out_v.size() == 9);
-    REQUIRE(out_f.size() == 3);
-
-    // after extraction the output should be manifold
-    Eigen::VectorXi dummy;
-    Eigen::MatrixXd F(out_f.size(), 3);
-    for (int i = 0; i < out_f.size(); i++) {
-        F.row(i) << out_f[i][0], out_f[i][1], out_f[i][2];
+        Eigen::Vector3d(1, 0, 0),
+        Eigen::Vector3d(-1, 0, 0),
+        Eigen::Vector3d(0, 1, 0),
+        Eigen::Vector3d(0, -1, 0),
+        Eigen::Vector3d(0.5, 0, 0.6),
+        Eigen::Vector3d(0, 0, -1)};
+    std::vector<std::array<size_t, 3>> tris = {
+        {{0, 2, 4}},
+        {{1, 4, 2}},
+        {{0, 4, 3}},
+        {{0, 5, 2}},
+        {{1, 3, 4}},
+        {{1, 2, 5}},
+        {{0, 3, 5}},
+        {{1, 5, 3}}};
+};
+// The edge of `m` between vertices a and b.
+TriMesh::Tuple edge_between(const ShortestEdgeCollapse& m, size_t a, size_t b)
+{
+    for (const TriMesh::Tuple& e : m.get_edges()) {
+        const size_t u = e.vid(m), w = e.switch_vertex(m).vid(m);
+        if ((u == a && w == b) || (u == b && w == a)) return e;
     }
-    REQUIRE(igl::is_edge_manifold(F));
+    FAIL("no edge " << a << "-" << b);
+    return {};
+}
+} // namespace
 
-    ShortestEdgeCollapse m(out_v);
-    m.create_mesh(out_v.size(), out_f, freeze_v, 0);
+TEST_CASE("shortest_edge_collapse", "[test_sec]")
+{
+    // Collapsing every edge it can, shortest first, takes the octahedron down to
+    // a tet, the shortest edge among the collapsed.
+    const Octahedron o;
+    ShortestEdgeCollapse m(o.v);
+    m.create_mesh(o.v.size(), o.tris);
+    const TriMesh::Tuple shortest = edge_between(m, 0, 4);
+    REQUIRE(m.check_link_condition(shortest));
     m.collapse_shortest(-1);
-    Eigen::MatrixXi Fafter = Eigen::MatrixXi::Constant(m.tri_capacity(), 3, -1);
-    for (auto& t : m.get_faces()) {
-        auto i = t.fid(m);
-        auto vs = m.oriented_tri_vertices(t);
-        Fafter.row(i) << vs[0].vid(m), vs[1].vid(m), vs[2].vid(m);
-    }
-    // after operations the mesh is manifold
-    REQUIRE(igl::is_edge_manifold(Fafter));
-    REQUIRE(igl::is_vertex_manifold(Fafter, dummy));
+    REQUIRE_FALSE(shortest.is_valid(m));
+    REQUIRE(m.get_vertices().size() == 4);
+    REQUIRE(m.get_faces().size() == 4);
 }
 
-
-TEST_CASE("shortest_edge_collapse", "[test_sec][.stale_pre_freeze_boundary]")
+TEST_CASE("shortest_edge_collapse_shortest_first", "[test_sec]")
 {
-    // 0___1___2                *
-    // \  /\  /                 *
-    // 3\/__\/4  ==>    __      *
-    //   \  /          \  /     *
-    //    \/5           \/5     *
-    // 3-4 is shortest
-
-    std::vector<Eigen::Vector3d> v_positions(6);
-    v_positions[0] = Eigen::Vector3d(-3, 3, 0);
-    v_positions[1] = Eigen::Vector3d(0, 3, 0);
-    v_positions[2] = Eigen::Vector3d(3, 3, 0);
-    v_positions[3] = Eigen::Vector3d(0, 0, 0);
-    v_positions[4] = Eigen::Vector3d(0.5, 0, 0);
-    v_positions[5] = Eigen::Vector3d(0, -3, 0);
-    ShortestEdgeCollapse m(v_positions);
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{1, 4, 3}}, {{3, 4, 5}}};
-    m.create_mesh(6, tris);
-    std::vector<TriMesh::Tuple> edges = m.get_edges();
-    // find the shortest edge
-    double shortest = std::numeric_limits<double>::max();
-    TriMesh::Tuple shortest_edge;
-    for (TriMesh::Tuple t : edges) {
-        size_t v1 = t.vid(m);
-        size_t v2 = m.switch_vertex(t).vid(m);
-        if ((v_positions[v1] - v_positions[v2]).squaredNorm() < shortest) {
-            shortest = (v_positions[v1] - v_positions[v2]).squaredNorm();
-            shortest_edge = t;
-        }
+    // One collapse (target 5 vertices of 6): the shortest edge's, onto its
+    // midpoint (no endpoint frozen or on a boundary, collapse_edge_after()). The
+    // vertices left are 1, 2, 3 and 5 where they were and the midpoint of 0 and
+    // 4; a collapse of any other edge at 0 or 4 would leave another set.
+    const Octahedron o;
+    ShortestEdgeCollapse m(o.v);
+    m.create_mesh(o.v.size(), o.tris);
+    m.collapse_shortest(5);
+    REQUIRE(m.get_vertices().size() == 5);
+    REQUIRE(m.get_faces().size() == 6);
+    REQUIRE(m.check_mesh_connectivity_validity());
+    std::vector<std::array<double, 3>> left, expected;
+    for (const TriMesh::Tuple& t : m.get_vertices()) {
+        const Eigen::Vector3d& p = m.vertex_attrs[t.vid(m)].pos;
+        left.push_back({{p[0], p[1], p[2]}});
     }
-
-    REQUIRE_FALSE(m.check_link_condition(shortest_edge));
-    m.collapse_shortest(-1);
-
-    REQUIRE_FALSE(shortest_edge.is_valid(m));
-
-    REQUIRE(m.get_vertices().size() == 3);
-    REQUIRE(m.get_faces().size() == 1);
-}
-
-TEST_CASE("shortest_edge_collapse_boundary_edge", "[test_sec][.stale_pre_freeze_boundary]")
-{
-    // 0___1___2    0 __1___2      0 __1
-    // \  /\  /      \  |  /         \ |
-    // 3\/__\/4  ==>  \ | / ==>        6
-    //                 \|/5
-    //
-
-    std::vector<Eigen::Vector3d> v_positions(6);
-    v_positions[0] = Eigen::Vector3d(-3, 3, 0);
-    v_positions[1] = Eigen::Vector3d(0, 3, 0);
-    v_positions[2] = Eigen::Vector3d(3, 3, 0);
-    v_positions[3] = Eigen::Vector3d(0, 0, 0);
-    v_positions[4] = Eigen::Vector3d(0.5, 0, 0);
-    ShortestEdgeCollapse m(v_positions);
-    std::vector<std::array<size_t, 3>> tris = {{{0, 1, 3}}, {{1, 2, 4}}, {{3, 1, 4}}};
-    m.create_mesh(5, tris);
-    std::vector<TriMesh::Tuple> edges = m.get_edges();
-    // find the shortest edge
-    double shortest = std::numeric_limits<double>::max();
-    TriMesh::Tuple shortest_edge;
-    for (TriMesh::Tuple t : edges) {
-        size_t v1 = t.vid(m);
-        size_t v2 = m.switch_vertex(t).vid(m);
-        if ((v_positions[v1] - v_positions[v2]).squaredNorm() < shortest) {
-            shortest = (v_positions[v1] - v_positions[v2]).squaredNorm();
-            shortest_edge = t;
-        }
-    }
-    m.collapse_shortest(100);
-    // the collapsed edge tuple is not valid anymore
-    REQUIRE_FALSE(shortest_edge.is_valid(m));
-
-    m.write_triangle_mesh("collapsed.obj");
-    REQUIRE(m.get_vertices().size() == 3);
-    REQUIRE(m.get_faces().size() == 1);
+    for (const size_t i : {1, 2, 3, 5}) expected.push_back({{o.v[i][0], o.v[i][1], o.v[i][2]}});
+    const Eigen::Vector3d mid = (o.v[0] + o.v[4]) / 2.0;
+    expected.push_back({{mid[0], mid[1], mid[2]}});
+    std::sort(left.begin(), left.end());
+    std::sort(expected.begin(), expected.end());
+    CHECK(left == expected);
 }
 
 TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
@@ -207,7 +149,6 @@ TEST_CASE("shortest_edge_collapse_closed_mesh", "[test_sec]")
         REQUIRE(m.get_faces().size() == 4);
     }
 }
-
 
 TEST_CASE("shortest_edge_collapse_octocat", "[test_sec][.slow]")
 {
@@ -288,7 +229,6 @@ TEST_CASE("shortest_edge_collapse_circle", "[test_sec]")
     m.write_triangle_mesh("collapsed.obj");
 }
 
-
 TEST_CASE("metis_test_bigmesh", "[test_sec][.slow]")
 {
     const std::string root(WMTK_DATA_DIR);
@@ -330,11 +270,13 @@ TEST_CASE("metis_test_bigmesh", "[test_sec][.slow]")
 }
 TEST_CASE("sec-holds-each-face-to-its-own-input", "[test_sec]")
 {
-    // Input 0: a square tent, its apex 3 eps above the flat square of input 1. The apex is the
-    // one vertex not on a boundary, so the only collapses move it onto a corner, which lays
-    // input 0 flat on input 1, 2 eps from itself at a remaining face's centroid. Held to the
-    // union that is inside; held to its own input's envelope it is not, and the apex stays.
-    // Without per_input_envelopes the inputs share one envelope again, whatever tri_input says.
+    // Input 0: a square tent, its apex 3 eps above the flat square of input 1.
+    // The apex is the one vertex not on a boundary, so the only collapses move it
+    // onto a corner, which lays input 0 flat on input 1, 2 eps from itself at a
+    // remaining face's centroid. Held to the union that is inside; held to its
+    // own input's envelope it is not, and the apex stays. Without
+    // per_input_envelopes the inputs share one envelope again, whatever tri_input
+    // says.
     const double eps = 1e-2;
     const std::vector<Eigen::Vector3d> v = {
         {0, 0, 0},

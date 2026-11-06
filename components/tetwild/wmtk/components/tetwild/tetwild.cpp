@@ -38,7 +38,6 @@
 #include <igl/random_points_on_mesh.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_unreferenced.h>
-#include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 #include <wmtk/utils/EnvelopeBudget.hpp>
 #include <wmtk/utils/FeatureInputs.hpp>
@@ -193,7 +192,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
         jse::embed::wmtk_tetwild_spec::tetwild_spec::spec());
-    const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
+    const std::vector<std::string> inputs = component_io.paths(root, json_params["input"]);
 
     tetwild::Parameters params;
     params.output_enabled = !component_io.memory();
@@ -260,14 +259,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.skip_good_regions = json_params["skip_good_regions"];
     params.skip_good_regions_margin = json_params["skip_good_regions_margin"];
 
-    // The legacy optimizer carries no curve tags: the feature curves and points would leave the
-    // output without a word (mesh_improvement_legacy() re-tags the open boundaries only).
-    if (json_params["use_legacy_code"] &&
-        (!json_params["input_edges"].empty() || !json_params["input_points"].empty())) {
-        log_and_throw_error(
-            "input_edges and input_points: not with use_legacy_code, which "
-            "carries no feature curves or points");
-    }
     // Recording the tracked surface: from the input files as read, through the weld, the
     // simplification and the insertion, to the output.
     const std::string history_output = json_params["history_output"];
@@ -302,15 +293,56 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // the input winding numbers, which are of input surfaces (wn_<i>). Until 2026-11 a tet mesh
     // threw on the memory route ("Expected triangle input"), and on the file route every
     // triangle of the .msh became one input surface, its tets and tags dropped.
-    std::optional<TaggedMesh> tagged_mesh = read_tagged_input(component_io, input_paths);
+    std::optional<TaggedMesh> tagged_mesh = read_tagged_input(component_io, inputs);
     const bool tagged = tagged_mesh.has_value();
+    // One input list. On the surface route each entry is what its content makes it
+    // (io::ComponentIO::input_kind()) -- triangles a surface, inserted and tracked as its face
+    // tag; segments a curve, forced in as tet edges and held as a feature curve; bare vertices
+    // points, forced in as tet vertices and anchored -- and each is named by input_names at its
+    // position in the list, tag_<i> without a name (io::input_labels()). Until 2026-11 curves and
+    // points came in lists of their own, input_edges and input_points, the curves named
+    // feature_<i> after their position there.
+    std::vector<std::string> input_paths; // the surfaces; on the tagged route the tet mesh
+    std::vector<std::string> surface_labels, curve_labels, point_labels;
+    nlohmann::json curve_inputs = nlohmann::json::array(), point_inputs = nlohmann::json::array();
+    if (tagged) {
+        input_paths = inputs;
+    } else {
+        const std::vector<std::string> labels = io::input_labels(
+            json_params["input_names"].get<std::vector<std::string>>(),
+            inputs.size());
+        for (size_t i = 0; i < inputs.size(); ++i) {
+            switch (component_io.input_kind(inputs[i])) {
+            case io::ComponentIO::InputKind::surface:
+                input_paths.push_back(inputs[i]);
+                surface_labels.push_back(labels[i]);
+                break;
+            case io::ComponentIO::InputKind::curve:
+                curve_inputs.push_back(json_params["input"][i]);
+                curve_labels.push_back(labels[i]);
+                break;
+            case io::ComponentIO::InputKind::points:
+                point_inputs.push_back(json_params["input"][i]);
+                point_labels.push_back(labels[i]);
+                break;
+            }
+        }
+        if (input_paths.empty()) {
+            log_and_throw_error(
+                "tetwild needs a surface among its inputs: got {} curves and {} point inputs",
+                curve_inputs.size(),
+                point_inputs.size());
+        }
+    }
+    // The legacy optimizer carries no curve tags: the feature curves and points would leave the
+    // output without a word (mesh_improvement_legacy() re-tags the open boundaries only).
+    if (json_params["use_legacy_code"] && (!curve_inputs.empty() || !point_inputs.empty())) {
+        log_and_throw_error(
+            "curve and point inputs: not with use_legacy_code, which carries no feature curves or "
+            "points");
+    }
     if (tagged) {
         // What the route has no use for, refused rather than ignored.
-        if (!json_params["input_edges"].empty() || !json_params["input_points"].empty()) {
-            log_and_throw_error(
-                "input_edges and input_points: not with a tagged mesh input, whose edge and point "
-                "blocks are its feature curves and points");
-        }
         if (!json_params["input_names"].empty()) {
             log_and_throw_error("input_names: a tagged mesh input names its labels itself");
         }
@@ -356,23 +388,12 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         }
     }
     // The labels of the output's tags, the same on both routes. Of the surface route: the tracked
-    // faces of each input surface, named as triwild's and simwild's tags name an input
-    // (input_names, else tag_<i>; tetwild names nothing else after them but the wn_ fields), and
-    // the tet edges tiling each input_edges file, feature_<i>. Of the tagged route: the mesh's
-    // own labels, so that they leave as they came.
-    const std::vector<std::string> face_tags =
-        tagged ? tagged_mesh->face_names
-               : io::input_labels(
-                     json_params["input_names"].get<std::vector<std::string>>(),
-                     input_paths.size());
-    std::vector<std::string> feature_tags;
-    if (tagged) {
-        feature_tags = tagged_mesh->feature_names;
-    } else {
-        for (size_t i = 0; i < json_params["input_edges"].size(); ++i) {
-            feature_tags.push_back(utils::feature_input_name(i));
-        }
-    }
+    // faces of each input surface and the tet edges tiling each input curve, named by their
+    // inputs' labels (above), as triwild's and simwild's tags name an input. Of the tagged route:
+    // the mesh's own labels, so that they leave as they came.
+    const std::vector<std::string> face_tags = tagged ? tagged_mesh->face_names : surface_labels;
+    const std::vector<std::string> feature_tags =
+        tagged ? tagged_mesh->feature_names : curve_labels;
     // filter_inputs: the inputs that bound the domain a filter keeps, by their labels (bit i:
     // face_tags[i]). Every input by default, as before the key.
     InputSet bounding = ~InputSet(0);
@@ -392,7 +413,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             const auto it = std::find(face_tags.begin(), face_tags.end(), name);
             if (it == face_tags.end()) {
                 log_and_throw_error(
-                    "filter_inputs: {} is not an input (the inputs: {})",
+                    "filter_inputs: {} is not a surface input (the surface inputs: {})",
                     name,
                     face_tags);
             }
@@ -487,11 +508,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         // background box derive from it -- they are input geometry, and a feature outside the
         // surface's box must still land inside the triangulated domain.
         // Read and grown over by the shared code simwild uses too (utils::read_feature_inputs()).
+        // Each point labelled by its input's name (FeatureInputs::point_names): the mesh's point
+        // block.
         features = utils::read_feature_inputs(
             component_io,
             root,
-            json_params["input_edges"],
-            json_params["input_points"]);
+            curve_inputs,
+            point_inputs,
+            curve_labels,
+            point_labels);
         features.extend_bbox(box_minmax.first, box_minmax.second);
 
         t_load = phase_timer.getElapsedTime();
@@ -793,24 +818,22 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 io::geometry_data(env_V, env_F, CellType::Triangle),
                 CellType::Triangle,
                 F_sets,
-                io::input_labels(
-                    json_params["input_names"].get<std::vector<std::string>>(),
-                    input_paths.size()));
+                face_tags);
             std::vector<InputSet> E_sets;
             for (const int file : features.edge_input) {
                 E_sets.push_back(file < SurfaceTagAttributes::max_inputs ? InputSet(1) << file : 0);
-            }
-            std::vector<std::string> E_names;
-            for (size_t i = 0; i < json_params["input_edges"].size(); ++i) {
-                E_names.push_back(utils::feature_input_name(i));
             }
             io::append_envelope_block(
                 envelope_out,
                 io::geometry_data(features.edge_vertices, features.edges, CellType::Edge),
                 CellType::Edge,
                 E_sets,
-                E_names);
-            io::append_envelope_points(envelope_out, features.points);
+                feature_tags);
+            io::append_envelope_points(
+                envelope_out,
+                features.points,
+                features.point_input,
+                features.point_names);
         }
 
         // One envelope per input, around the same surface as tet_envelope and at the same eps, with
@@ -936,6 +959,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         const bool per_input = input_paths.size() > 1;
         std::vector<InputSet> facet_input_set; // per facet, with several inputs only
         std::vector<std::vector<uint32_t>> facet_sources;
+        // Per facet, each input's own orientation, with several inputs in a build that keeps one
+        // count per input (SurfaceTagAttributes::m_input_orientation).
+        std::vector<InputOrientations> facet_input_orientation;
+        const bool per_input_orientation = per_input && SurfaceTagAttributes::per_input_orientation;
         mesh.insertion_by_volumeremesher(
             vsimp,
             fsimp,
@@ -951,7 +978,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             &features_out,
             per_input ? &fsimp_input : nullptr,
             per_input ? &facet_input_set : nullptr,
-            record_history ? &facet_sources : nullptr);
+            record_history ? &facet_sources : nullptr,
+            per_input_orientation ? &facet_input_orientation : nullptr);
 
         if (!feature_edges.empty() || !feature_points.empty()) {
             size_t tiling_edges = 0;
@@ -989,7 +1017,12 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 std::move(facet_sources[i]));
         }
         facet_sources = {};
-        mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
+        // The wn_ fields are named after the inputs when input_names names them, else numbered.
+        if (!json_params["input_names"].empty()) mesh_new.m_input_names = face_tags;
+        // The input points' labels, which their anchors keep and the output writes as its point
+        // block (io::collect_point_tags()).
+        mesh_new.m_point_names = features.point_names;
+        mesh_new.m_input_point_labels = features.point_input;
 
         // Around the input after a simplification, the input's own curves: the tubes and anchors
         // are built around them, and an order-2 edge or curve end the simplification made is held
@@ -1005,7 +1038,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         const bool has_features = !feature_edges.empty() || !feature_points.empty();
         // The feature-curve tubes -- what the collapse guard checks tagged edges against, and what
         // curve-vertex smoothing is pulled toward -- are built with the tags, around the input
-        // feature edges and one per input_edges file (TetOptimizerMesh::tag_feature_edges()),
+        // feature edges and one per input curve (TetOptimizerMesh::tag_feature_edges()),
         // following the surface envelope's choice of predicate.
         mesh_new.init_from_Volumeremesher(
             v_rational,
@@ -1016,7 +1049,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             &tet_face_orientation,
             has_features ? &features_out : nullptr,
             per_input ? &facet_input_set : nullptr,
-            &features);
+            &features,
+            per_input_orientation ? &facet_input_orientation : nullptr);
         mesh_new.m_input_envelopes.set(std::move(input_envelopes));
 
         // The insertion's output now lives in mesh_new. These are function locals, so without this
@@ -1029,6 +1063,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         std::vector<bool>().swap(tet_face_on_input_surface);
         std::vector<int8_t>().swap(tet_face_orientation);
         std::vector<InputSet>().swap(facet_input_set);
+        std::vector<InputOrientations>().swap(facet_input_orientation);
         std::vector<Eigen::Vector3d>().swap(vsimp);
         std::vector<std::array<size_t, 3>>().swap(fsimp);
         std::vector<int>().swap(fsimp_input);
@@ -1061,10 +1096,12 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             box_minmax.second = box_minmax.second.cwiseMax(p);
         }
         // An `envelope` given: the reference held to, its triangles of the mesh's face labels
-        // (io::held_rows()), each with its labels, and its feature curves of the mesh's feature
-        // labels, matched by name.
+        // (io::held_rows()), each with its labels, its feature curves of the mesh's feature
+        // labels and its points of the mesh's point labels, matched by name.
         std::optional<io::HeldRows> held;
         utils::FeatureInputs reference_curves;
+        MatrixXd reference_points;
+        std::vector<InputSet> reference_point_labels;
         if (envelope_given) {
             const auto bits_named = [&](const std::string& name) {
                 InputSet bits = 0;
@@ -1072,10 +1109,16 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                     if (face_tags[i] == name) bits |= InputSet(1) << i;
                 return bits;
             };
-            io::LabelledReference reference =
-                io::read_labelled_envelope(*envelope_given, 3, bits_named, feature_tags);
+            io::LabelledReference reference = io::read_labelled_envelope(
+                *envelope_given,
+                3,
+                bits_named,
+                feature_tags,
+                features.point_names);
             held = io::held_rows(reference.V, reference.F, reference.F_labels);
             reference_curves = std::move(reference.curves);
+            reference_points = std::move(reference.P);
+            reference_point_labels = std::move(reference.P_labels);
         }
         // The input, as the surface route's is its input files: the reference when one is
         // given, else the tracked surface as received, on vertices of its own. What the envelopes
@@ -1150,7 +1193,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 CellType::Edge,
                 E_sets,
                 feature_tags);
-            io::append_envelope_points(envelope_out, features.points);
+            io::append_envelope_points(
+                envelope_out,
+                features.points,
+                features.point_input,
+                features.point_names);
         }
         logger().info(
             "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
@@ -1162,13 +1209,17 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         auto& mesh_new = *mesh_owner;
         mesh_new.m_input_names = face_tags;
         mesh_new.m_feature_edge_names = feature_tags;
+        mesh_new.m_point_names = features.point_names; // as on the surface route
+        mesh_new.m_input_point_labels = features.point_input;
         // With a reference, as simwild holds one (TetOptimizerMesh::m_has_reference): the order-2
         // tubes and the curve-end anchors around its curves, an edge on none held around itself
-        // (TetOptimizerMesh::InputCurves), set before the initialization builds them.
+        // (TetOptimizerMesh::InputCurves), and the input points' anchors on its points
+        // (TetOptimizerMesh::ReferencePoints), set before the initialization builds them.
         if (held) {
             mesh_new.m_has_reference = true;
             mesh_new.m_reference_curves = reference_curves;
             mesh_new.set_input_curves(verts, tris, F_sets, &reference_curves);
+            mesh_new.set_reference_points(reference_points, reference_point_labels);
         }
         timer.start();
         igl::Timer init_timer;
@@ -1342,10 +1393,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // Feature collections, taken BEFORE any filter deletes tets: explicit features are
     // user input, and a filter discarding the region they live in must not erase them from
-    // the feature outputs and audits (they do disappear from the tet mesh itself). Same
-    // rule in 2D. With filter='none' nothing is deleted and this equals the final state.
+    // the audits (they do disappear from the tet mesh itself). Same rule in 2D. With
+    // filter='none' nothing is deleted and this equals the final state.
     std::vector<std::array<Vector3d, 2>> hybrid_curve_segs;
-    std::vector<Vector3d> hybrid_anchor_pts;
     std::pair<size_t, size_t> hybrid_retention{0, 0};
     double hybrid_retention_worst = 0;
     const bool features_present = !feature_edges.empty() || !feature_points.empty();
@@ -1358,13 +1408,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             hybrid_curve_segs.push_back(
                 {{mesh_new.m_vertex_attribute[e.vid(mesh_new)].m_posf,
                   mesh_new.m_vertex_attribute[e.switch_vertex(mesh_new).vid(mesh_new)].m_posf}});
-        }
-        for (const auto& v : mesh_new.get_vertices()) {
-            const size_t vid = v.vid(mesh_new);
-            if (mesh_new.m_feature_point_attribute[vid].m_feature_point_id !=
-                TetWildMesh::NO_FEATURE_POINT) {
-                hybrid_anchor_pts.push_back(mesh_new.m_vertex_attribute[vid].m_posf);
-            }
         }
         hybrid_retention = mesh_new.feature_retention(&hybrid_retention_worst);
     }
@@ -1742,8 +1785,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         if (json_params["DEBUG_feature_retention"]) {
             double worst_ratio = 0;
             // Measured pre-filter: the anchors' vertices may have been deleted with a
-            // discarded region, but the features were preserved up to that point and
-            // survive in the feature outputs.
+            // discarded region, but the features were preserved up to that point.
             auto [kept, total] = hybrid_retention;
             worst_ratio = hybrid_retention_worst;
             if (total > 0) {
@@ -1846,40 +1888,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     mesh_new.output_mesh(output_path + "_final.msh", face_tags, feature_tags);
     // The reference the tags were held to, for the next component (the memory route's
     // outputs["envelope"]), in a file of its own: _final.msh is read as a mesh by gmsh and polyfem.
+    // Nothing derived from the mesh: _final.msh holds the tracked surface (its triangle block), the
+    // feature curves and the input points (its edge and point blocks) and the boundary of the tets
+    // kept. Until 2026-11 they were also written as _surface.obj and _features.obj.
     if (!component_io.memory()) io::write_mesh(output_path + "_envelope.msh", envelope_out);
-
-    if (!component_io.memory()) igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
-
-    // The tracked feature curves, as an edge mesh -- the 1D counterpart of _surface.obj.
-    // Only written when features exist, so featureless runs are byte-identical.
-    if (!component_io.memory() && features_present) {
-        // From the pre-filter collections: a filter must not erase user-supplied features
-        // from the feature outputs (they do leave the tet mesh with their region).
-        std::ofstream fout(output_path + "_features.obj");
-        std::map<std::array<double, 3>, size_t> vid_of;
-        const auto obj_vertex = [&](const Vector3d& p) {
-            const std::array<double, 3> key = {{p[0], p[1], p[2]}};
-            const auto [it, inserted] = vid_of.emplace(key, vid_of.size() + 1);
-            if (inserted) {
-                fout << "v " << p[0] << " " << p[1] << " " << p[2] << "\n";
-            }
-            return it->second;
-        };
-        std::vector<std::array<size_t, 2>> obj_edges;
-        for (const auto& seg : hybrid_curve_segs) {
-            obj_edges.push_back({{obj_vertex(seg[0]), obj_vertex(seg[1])}});
-        }
-        std::vector<size_t> obj_points;
-        for (const Vector3d& p : hybrid_anchor_pts) {
-            obj_points.push_back(obj_vertex(p));
-        }
-        for (const auto& e : obj_edges) {
-            fout << "l " << e[0] << " " << e[1] << "\n";
-        }
-        for (const size_t pid : obj_points) {
-            fout << "p " << pid << "\n";
-        }
-    }
 
     wmtk::logger().info("======= finish =========");
 
@@ -1895,10 +1907,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             component_io.result.first,
             face_tags);
         io::collect_feature_edge_tags(mesh_new, component_io.result.first, feature_tags);
+        io::collect_point_tags(mesh_new, component_io.result.first, mesh_new.m_point_names);
         component_io.result.first.merge(io::named_outputs(std::move(history_meshes)));
-        if (features_present)
-            component_io.result.first["features"] =
-                io::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
         component_io.result.first["envelope"] = std::move(envelope_out);
         return {}; // the memory overload returns component_io.result instead
     }

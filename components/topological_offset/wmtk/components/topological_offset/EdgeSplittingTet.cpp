@@ -418,11 +418,16 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
         // when v sorted into the replaced corner's place, so the output's face-tag triangles
         // (io::collect_input_set_tags()) could come out turned over.
         const FaceSnapshot& split_face = cache.split_f[opp_vid];
-        const int o =
-            split_face.tags.orientation_along(std::array<size_t, 3>{{v1_id, v2_id, opp_vid}});
+        const std::array<size_t, 3> parent{{v1_id, v2_id, opp_vid}};
         FaceSnapshot half1 = split_face, half2 = split_face;
-        half1.tags.set_orientation_along(std::array<size_t, 3>{{v1_id, v_id, opp_vid}}, o);
-        half2.tags.set_orientation_along(std::array<size_t, 3>{{v_id, v2_id, opp_vid}}, o);
+        half1.tags.set_orientation_from(
+            split_face.tags,
+            parent,
+            std::array<size_t, 3>{{v1_id, v_id, opp_vid}});
+        half2.tags.set_orientation_from(
+            split_face.tags,
+            parent,
+            std::array<size_t, 3>{{v_id, v2_id, opp_vid}});
         auto [_1, glob_fid1] = tuple_from_face({{opp_vid, v1_id, v_id}});
         auto [_2, glob_fid2] = tuple_from_face({{opp_vid, v2_id, v_id}});
         restore_face(glob_fid1, half1);
@@ -582,7 +587,6 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
     // turn of (v1, v2, v3). Until 2026-11 the pieces took a fresh snapshot with the label alone,
     // so a tracked face split here lost its tracking: its surface got a hole -- its topology no
     // longer kept, its face tags missing on the pieces, nothing holding them.
-    const int splitf_orientation = cache.split_f.tags.orientation_along(splitf_vids);
     for (int i = 0; i < 3; i++) {
         size_t curr_v1_id = splitf_vids[i];
         size_t curr_v2_id = splitf_vids[(i + 1) % 3];
@@ -591,9 +595,10 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
         m_edge_attribute[glob_eid] = splitf_eattr;
 
         FaceSnapshot piece = cache.split_f;
-        piece.tags.set_orientation_along(
-            std::array<size_t, 3>{{curr_v1_id, curr_v2_id, v_id}},
-            splitf_orientation);
+        piece.tags.set_orientation_from(
+            cache.split_f.tags,
+            splitf_vids,
+            std::array<size_t, 3>{{curr_v1_id, curr_v2_id, v_id}});
         auto [_, glob_fid] = tuple_from_face({{curr_v1_id, curr_v2_id, v_id}}); // new face
         restore_face(glob_fid, piece);
     }

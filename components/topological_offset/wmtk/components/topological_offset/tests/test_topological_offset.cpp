@@ -5607,14 +5607,10 @@ TEST_CASE("memory-output-with-offset-front", "[offset][3d][io]")
     io::ComponentIO context;
     REQUIRE_NOTHROW(collect_memory_output(*mesh, context));
     const auto& out = context.result.first;
+    // The mesh alone, no envelope given: the front, the input complex and its edges are the
+    // mesh's tags, not outputs of their own.
+    CHECK(out.size() == 1);
     CHECK(out.count("mesh") == 1);
-    CHECK(out.count("offset") == 1);
-    for (const auto& [key, data] : out) {
-        INFO("result key " << key);
-        CHECK(
-            (key == "mesh" || key == "surface" || key == "edges" || key == "offset" ||
-             key == "envelope"));
-    }
     CHECK(size_t(out.at("mesh").V.rows()) == mesh->get_vertices().size());
 }
 

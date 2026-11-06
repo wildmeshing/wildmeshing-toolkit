@@ -23,8 +23,7 @@ int main()
          {"fill_tags", nlohmann::json::array()}},
         meshes);
     std::cout << report["before #t"] << " -> " << report["after #t"] << " tets\n";
+    // The boundary of the selection after the repair is where its tags differ across a face.
     wmtk::io::write_mesh("double_sphere_manifold.msh", outputs.at("mesh"));
-    // The boundary of the selection after the repair, a triangle mesh of its own.
-    wmtk::io::write_mesh("double_sphere_manifold_surface.msh", outputs.at("surface"));
     // --8<-- [end:run]
 }

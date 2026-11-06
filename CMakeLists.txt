@@ -63,6 +63,12 @@ option(WMTK_BUILD_DOC_EXAMPLES "Build the documentation's C++ examples; with BUI
 # the whole mesh, so it is O(#F) per operation. Tests only -- off by default, and gated at
 # compile time rather than by a runtime flag so a normal build carries none of it.
 option(WMTK_DEBUG_BRUTE_FORCE_OPS "Validate each TriMesh operation against a brute-force reference (very slow)" OFF)
+
+# One orientation count per input on every tracked face (2D: edge), rather than one for all its
+# inputs (SurfaceTagAttributes::m_input_orientation): filter "tracked" with filter_inputs then works
+# where inputs coincide, and tagged meshes carry each input's count (`orientation`). 32 bytes more
+# per face record, 43 instead of 11.
+option(WMTK_PER_INPUT_ORIENTATION "One orientation count per input on each tracked face (32 bytes more per face record)" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -126,6 +132,11 @@ if(WMTK_DEBUG_BRUTE_FORCE_OPS)
     message(STATUS "TriMesh operations will be cross-checked against a brute-force reference. This is very slow.")
     # PUBLIC: tests #ifdef on the same macro to decide whether to exercise the validator.
     target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_DEBUG_BRUTE_FORCE_OPS)
+endif()
+
+if(WMTK_PER_INPUT_ORIENTATION)
+    # PUBLIC: the face record's layout depends on it, so everything that includes it must agree.
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_PER_INPUT_ORIENTATION)
 endif()
 
 # C++ standard

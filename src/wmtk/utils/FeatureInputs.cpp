@@ -3,6 +3,7 @@
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include <algorithm>
 #include <string>
 
 namespace wmtk::utils {
@@ -23,9 +24,21 @@ FeatureInputs read_feature_inputs(
     const io::ComponentIO& component_io,
     const std::filesystem::path& root,
     const nlohmann::json& edge_selectors,
-    const nlohmann::json& point_selectors)
+    const nlohmann::json& point_selectors,
+    const std::vector<std::string>& edge_names,
+    const std::vector<std::string>& point_names)
 {
     FeatureInputs out;
+    const bool labelled =
+        edge_names.size() == edge_selectors.size() && point_names.size() == point_selectors.size();
+    // A point of input `name`: its label's column, the name added on first use.
+    const auto add_point = [&](const Vector3d& p, const std::string& name) {
+        out.points.push_back(p);
+        if (!labelled) return;
+        auto it = std::find(out.point_names.begin(), out.point_names.end(), name);
+        if (it == out.point_names.end()) it = out.point_names.insert(out.point_names.end(), name);
+        out.point_input.push_back(int(it - out.point_names.begin()));
+    };
     std::vector<std::string> edge_paths, point_paths;
     for (const auto& s : edge_selectors) edge_paths.push_back(component_io.path(root, s));
     for (const auto& s : point_selectors) point_paths.push_back(component_io.path(root, s));
@@ -52,24 +65,18 @@ FeatureInputs read_feature_inputs(
         }
         for (int v = 0; v < Ve.rows(); ++v) {
             if (valence[v] == 0) {
-                out.points.emplace_back(Ve.row(v));
+                add_point(Ve.row(v).transpose(), labelled ? edge_names[file] : "");
             }
         }
     }
-    for (const std::string& path : point_paths) {
+    for (size_t file = 0; file < point_paths.size(); ++file) {
+        const std::string& path = point_paths[file];
         MatrixXd Vp;
-        MatrixXi Ep;
+        MatrixXi Ep; // none: a point input has no segments (ComponentIO::input_kind())
         component_io.edges(path, Vp, Ep);
-        if (Ep.rows() > 0) {
-            logger().warn(
-                "input_points file {} has {} edges; only its {} vertices are used",
-                path,
-                Ep.rows(),
-                Vp.rows());
-        }
         logger().info("Read feature point file {}: #P = {}", path, Vp.rows());
         for (int i = 0; i < Vp.rows(); ++i) {
-            out.points.emplace_back(Vp.row(i));
+            add_point(Vp.row(i).transpose(), labelled ? point_names[file] : "");
         }
     }
     return out;

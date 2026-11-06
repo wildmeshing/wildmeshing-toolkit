@@ -358,9 +358,15 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         m_edge_attribute[eid1] = cache.old_e_attrs;
         m_edge_attribute[eid2] = cache.old_e_attrs;
         // (v1,v2) -> (v1,v) + (v,v2), each carrying the parent's direction.
-        const int o = cache.old_e_attrs.orientation_along(std::array<size_t, 2>{{v1_id, v2_id}});
-        m_edge_attribute[eid1].set_orientation_along(std::array<size_t, 2>{{v1_id, v_id}}, o);
-        m_edge_attribute[eid2].set_orientation_along(std::array<size_t, 2>{{v_id, v2_id}}, o);
+        const std::array<size_t, 2> parent{{v1_id, v2_id}};
+        m_edge_attribute[eid1].set_orientation_from(
+            cache.old_e_attrs,
+            parent,
+            std::array<size_t, 2>{{v1_id, v_id}});
+        m_edge_attribute[eid2].set_orientation_from(
+            cache.old_e_attrs,
+            parent,
+            std::array<size_t, 2>{{v_id, v2_id}});
         for (const auto& [vid, _] : cache.faces) {
             const auto [_tup, eid] = tuple_from_edge({{v_id, vid}});
             m_edge_attribute[eid].reset();

@@ -57,7 +57,7 @@ public:
     /**
      * @brief write curve .obj (boundary of in_tag)
      */
-    void write_curve(const std::string& path, MeshMap* output = nullptr);
+    void write_curve(const std::string& path);
 
 private: // helpers
     bool is_curve_vertex(const Tuple& v) const;
