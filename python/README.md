@@ -9,6 +9,10 @@ One package, `wildmeshing`:
 - `wildmeshing.viewer`: a polyscope viewer for a chain of components, each stage's outputs by
   label (volume, face and edge tags) with their envelopes; `python -m wildmeshing.viewer
   <checkpoint stem> ...` views saved stages. Needs polyscope (`pip install -e ".[viewer]"`).
+- `wildmeshing.pipeline`: a pipeline of components in one JSON file, run in memory, each stage
+  cached under a key and saved only where asked (see [Pipelines](#pipelines)).
+- `wildmeshing.builder`: a window to build, run and view a pipeline: `python -m
+  wildmeshing.builder [<pipeline.json>]`. Needs polyscope.
 
 The bindings are the compiled module `wildmeshing._core`, built from `python/src`; the
 pure-Python part of the package is `python/wildmeshing`.
@@ -87,14 +91,47 @@ Operations that change regions return no envelope.
 - `wm.read_mesh(path)` reads `.msh`, `.obj` and libigl's surface formats (`.stl`, `.off`, ...);
   `wm.write_mesh(path, mesh)` writes `.msh` and `.vtu`. A `.msh` holds one mesh and nothing
   else.
-- `wm.save(outputs, stem)` writes `stem.msh`, plus `stem_envelope.msh` when the outputs have an
-  envelope. `wm.load(stem)` returns exactly the arrays `save` wrote, in the same order, so a
-  pipeline resumed from a checkpoint continues as it would have without one.
+- `wm.save(outputs, stem)` writes `stem.msh` for the output `mesh`, `stem_<name>.msh` for every
+  other output (`stem_envelope.msh`), and the record `stem.json`: each file's sha256. Given a
+  report, it also writes its histories (`stem_<key>.history`) and its other values in the record.
+  `wm.load(stem)` reads only the files the record lists, refuses one changed since, and returns
+  exactly the arrays `save` wrote, in the same order, so a pipeline resumed from a checkpoint
+  continues as it would have without one.
 
 ```python
 wm.save(m2, "out/m2")
 m2 = wm.load("out/m2")
 ```
+
+## Pipelines
+
+A pipeline file names its inputs and lists its stages; an option value may refer to an input, or
+to an earlier stage's output mesh, report value or option:
+
+```json
+{"inputs": {"bunny": "data/models/bunny.obj"},
+ "stages": [
+   {"name": "remesh", "component": "isotropic_remeshing",
+    "options": {"input": {"from": "bunny", "output": "mesh"}, "eps_rel": 0.02,
+                "length_rel": 0.045, "history_output": "history"}},
+   {"name": "map", "component": "tracking",
+    "options": {"operation": "info", "history": {"from": "remesh", "report": "history"}}}]}
+```
+
+```python
+from wildmeshing.pipeline import Pipeline
+results = Pipeline.load("bunny.json").run()  # {name: {"outputs", "report", "key", ...}}
+```
+
+Each stage has a key: the sha256 of its component, its options, the keys of what it reads and the
+installed compiled module. A stage whose key is unchanged comes from memory or from the cache
+(`<pipeline>_cache/`, checkpoints with their records) instead of running; a stage with `"save":
+"<stem>"` also writes its checkpoint there. A file is used only for the key it was written for and
+while it hashes as written. Each stage's C++ log is kept next to its checkpoint.
+
+`python -m wildmeshing.builder bunny.json` edits the same file in a window: inputs, stages and
+their options as each component's spec types them, a run in the background with the log, and a
+view of every stage (tags, envelopes, attributes, correspondences).
 
 ## Operations
 

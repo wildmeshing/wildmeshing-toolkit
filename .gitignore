@@ -5,6 +5,9 @@ bin*/
 .idea*
 ./*build*
 *build*
+# Not build trees: the pipeline builder and its test.
+!python/wildmeshing/builder.py
+!python/tests/test_builder.py
 xcode*
 temp-plot.html
 matlab/*.msh
