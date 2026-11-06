@@ -6,6 +6,9 @@ One package, `wildmeshing`:
   keys as the command line's JSON (see each component's `*_spec.json`).
 - `wildmeshing.save` / `wildmeshing.load`: checkpoints of memory results.
 - `wildmeshing.polyfem_ops`: the PolyFEM-backed operations.
+- `wildmeshing.viewer`: a polyscope viewer for a chain of components, each stage's outputs by
+  label (volume, face and edge tags) with their envelopes; `python -m wildmeshing.viewer
+  <checkpoint stem> ...` views saved stages. Needs polyscope (`pip install -e ".[viewer]"`).
 
 The bindings are the compiled module `wildmeshing._core`, built from `python/src`; the
 pure-Python part of the package is `python/wildmeshing`.
