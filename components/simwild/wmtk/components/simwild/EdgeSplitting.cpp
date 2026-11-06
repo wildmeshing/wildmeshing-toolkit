@@ -52,9 +52,6 @@ bool SimWildMesh::split_after_cells(
 
 bool SimWildMesh::split_face_before(const Tuple& t)
 {
-    if (m_track_feature_edges) {
-        return false;
-    }
     auto& c = m_face_split_cache;
     c.v = {
         {t.vid(*this),
@@ -99,6 +96,13 @@ bool SimWildMesh::split_face_before(const Tuple& t)
             std::sort(f.begin(), f.end());
             c.faces.emplace_back(f, m_face_attribute[std::get<1>(tuple_from_face(f))]);
         }
+    }
+    if (m_track_feature_edges) {
+        std::vector<size_t> tids;
+        for (const Tuple& parent : parents) {
+            tids.push_back(parent.tid(*this));
+        }
+        feature_edges_cache(tids, c.changed_edges);
     }
     return true;
 }
@@ -178,15 +182,16 @@ bool SimWildMesh::split_face_after(const Tuple& t)
         }
         m_tet_attribute[tid].m_quality = get_quality(child);
     }
+    // no edge goes: each keeps its tags in the children, and the new ones, at v_new, have none
+    if (m_track_feature_edges) {
+        feature_edges_restore_region(get_one_ring_tids_for_vertex(v_new), c.changed_edges);
+    }
     m_last_face_split_vertex = v_new;
     return true;
 }
 
 bool SimWildMesh::split_tet_before(const Tuple& t)
 {
-    if (m_track_feature_edges) {
-        return false;
-    }
     auto& c = m_tet_split_cache;
     c.v = oriented_tet_vids(t);
     Vector3d centroid = Vector3d::Zero();
@@ -211,6 +216,9 @@ bool SimWildMesh::split_tet_before(const Tuple& t)
         std::array<size_t, 3> f = {{c.v[(k + 1) % 4], c.v[(k + 2) % 4], c.v[(k + 3) % 4]}};
         std::sort(f.begin(), f.end());
         c.faces.emplace_back(f, m_face_attribute[std::get<1>(tuple_from_face(f))]);
+    }
+    if (m_track_feature_edges) {
+        feature_edges_cache({t.tid(*this)}, c.changed_edges);
     }
     return true;
 }
@@ -263,6 +271,10 @@ bool SimWildMesh::split_tet_after(const Tuple& t)
             return false; // split_tet rolls back
         }
         m_tet_attribute[tid].m_quality = get_quality(child);
+    }
+    // no edge goes: each keeps its tags in the children, and the new ones, at v_new, have none
+    if (m_track_feature_edges) {
+        feature_edges_restore_region(get_one_ring_tids_for_vertex(v_new), c.changed_edges);
     }
     return true;
 }

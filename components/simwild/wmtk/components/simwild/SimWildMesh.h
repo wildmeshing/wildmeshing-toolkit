@@ -308,15 +308,13 @@ protected:
     /// A face split puts the new vertex at m_face_split_position (the face's centroid if unset),
     /// in doubles, so every corner must be rounded. The children of each tet on the face take its
     /// attributes; the face's three pieces take the face's, and the tets' other faces keep
-    /// theirs. Refused if a child is inverted, or while feature edges are tracked (their tags
-    /// would not follow).
+    /// theirs, and every old edge keeps its feature tags. Refused if a child is inverted.
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
     /// A tet split puts the new vertex at the tet's centroid, in doubles, so every corner must be
-    /// rounded. The four children take the tet's attributes and its four faces keep theirs; the
-    /// six faces inside it are new. Refused if a child is inverted, or while feature edges are
-    /// tracked (their tags would not follow). Only tight_seal_geom's simplicial embedding of its
-    /// regions splits tets.
+    /// rounded. The four children take the tet's attributes and its four faces and six edges keep
+    /// theirs; the six faces inside it are new. Refused if a child is inverted. Only
+    /// tight_seal_geom's simplicial embedding of its regions splits tets.
     bool split_tet_before(const Tuple& t) override;
     bool split_tet_after(const Tuple& t) override;
 
@@ -403,6 +401,7 @@ private:
         FaceAttributes face;
         std::vector<std::pair<size_t, TetAttributes>> tets; // by each tet's corner off the face
         std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> faces; // the tets' others
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> changed_edges;
         Vector3d position;
         double sizing_scalar = 1;
         size_t partition_id = 0;
@@ -416,6 +415,7 @@ private:
         std::array<size_t, 4> v; // the tet
         TetAttributes tet;
         std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> faces; // its four faces
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> changed_edges;
         Vector3d position;
         double sizing_scalar = 1;
         size_t partition_id = 0;
