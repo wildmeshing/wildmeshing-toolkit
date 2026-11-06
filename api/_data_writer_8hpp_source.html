@@ -251,38 +251,44 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>}</div>
 <div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span><span class="comment">// The result key of each memory export. The exporters keep their legacy file naming,</span></div>
 <div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span><span class="comment">// &lt;stem&gt;&lt;suffix&gt;.vtu, and the memory calls use the stem &quot;mesh&quot;. An empty key drops an export</span></div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span><span class="comment">// that the caller returns in another form. The .msh among them are the meshes a history names</span></div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span><span class="comment">// its points by: &lt;output&gt;_history_input.msh, simwild&#39;s and tetwild&#39;s, where the surface history</span></div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span><span class="comment">// (and the volume history) starts, and tetwild&#39;s &lt;output&gt;_history_output.msh, the mesh before</span></div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span><span class="comment">// its filter, where the volume history ends.</span></div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span><span class="keyword">using </span>OutputKeys = std::map&lt;std::string, std::string&gt;;</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span><span class="keyword">inline</span> OutputKeys default_output_keys()</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>{</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>    <span class="keywordflow">return</span> {</div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>        {<span class="stringliteral">&quot;mesh.vtu&quot;</span>, <span class="stringliteral">&quot;mesh&quot;</span>},</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>        {<span class="stringliteral">&quot;mesh_surf.vtu&quot;</span>, <span class="stringliteral">&quot;surface&quot;</span>},</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        {<span class="stringliteral">&quot;mesh_edge.vtu&quot;</span>, <span class="stringliteral">&quot;edges&quot;</span>},</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>        {<span class="stringliteral">&quot;mesh_off.vtu&quot;</span>, <span class="stringliteral">&quot;offset&quot;</span>},</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>        {<span class="stringliteral">&quot;mesh_front.vtu&quot;</span>, <span class="stringliteral">&quot;offset&quot;</span>},</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>        {<span class="stringliteral">&quot;mesh_offset_faces.vtu&quot;</span>, <span class="stringliteral">&quot;offset&quot;</span>},</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        {<span class="stringliteral">&quot;mesh_history_input.msh&quot;</span>, <span class="stringliteral">&quot;history_input&quot;</span>},</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>        {<span class="stringliteral">&quot;mesh_history_output.msh&quot;</span>, <span class="stringliteral">&quot;history_output&quot;</span>}};</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>}</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span><span class="comment">// Rename the exports into public result keys. An export missing from `keys`, or two exports</span></div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span><span class="comment">// with the same key, is an error rather than a silently dropped output.</span></div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span><span class="keyword">inline</span> MeshMap named_outputs(MeshMap raw, <span class="keyword">const</span> OutputKeys&amp; keys = default_output_keys())</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>{</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>    MeshMap result;</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; [path, data] : raw) {</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>        <span class="keyword">const</span> <span class="keyword">auto</span> key = <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a>.find(path);</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>        <span class="keywordflow">if</span> (key == <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a>.end()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Unexpected memory export: &quot;</span> + path);</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        <span class="keywordflow">if</span> (key-&gt;second.empty()) <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        <span class="keywordflow">if</span> (!result.emplace(key-&gt;second, std::move(data)).second)</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>            <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Two memory exports map to the result key &quot;</span> + key-&gt;second);</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    }</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>}</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>} <span class="comment">// namespace wmtk::io</span></div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span><span class="comment">// that the caller returns in another form or that the mesh already holds: the boundary</span></div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span><span class="comment">// (`_surf`), the non-manifold or feature edges (`_edge`) and the offset&#39;s front (`_off`,</span></div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span><span class="comment">// `_front`) are the mesh&#39;s tags -- its face and edge blocks, and the tet (2D: triangle) tags</span></div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span><span class="comment">// that differ across a face -- and each was a second copy of the mesh&#39;s vertices. Until 2026-11</span></div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span><span class="comment">// they were returned as `surface`, `edges` and `offset`; isotropic_remeshing, whose mesh has no</span></div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span><span class="comment">// edge block, still returns its feature edges as `edges`, and prismatic_mesh its classified</span></div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span><span class="comment">// offset faces as `offset`. The .msh among them are the meshes a history names its points by:</span></div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span><span class="comment">// &lt;output&gt;_history_input.msh, simwild&#39;s and tetwild&#39;s, where the surface history (and the volume</span></div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span><span class="comment">// history) starts, and tetwild&#39;s &lt;output&gt;_history_output.msh, the mesh before its filter, where</span></div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span><span class="comment">// the volume history ends.</span></div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span><span class="keyword">using </span>OutputKeys = std::map&lt;std::string, std::string&gt;;</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span><span class="keyword">inline</span> OutputKeys default_output_keys()</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>{</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>    <span class="keywordflow">return</span> {</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        {<span class="stringliteral">&quot;mesh.vtu&quot;</span>, <span class="stringliteral">&quot;mesh&quot;</span>},</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>        {<span class="stringliteral">&quot;mesh_surf.vtu&quot;</span>, <span class="stringliteral">&quot;&quot;</span>},</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>        {<span class="stringliteral">&quot;mesh_edge.vtu&quot;</span>, <span class="stringliteral">&quot;&quot;</span>},</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        {<span class="stringliteral">&quot;mesh_off.vtu&quot;</span>, <span class="stringliteral">&quot;&quot;</span>},</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>        {<span class="stringliteral">&quot;mesh_front.vtu&quot;</span>, <span class="stringliteral">&quot;&quot;</span>},</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        {<span class="stringliteral">&quot;mesh_offset_faces.vtu&quot;</span>, <span class="stringliteral">&quot;offset&quot;</span>},</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        {<span class="stringliteral">&quot;mesh_history_input.msh&quot;</span>, <span class="stringliteral">&quot;history_input&quot;</span>},</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>        {<span class="stringliteral">&quot;mesh_history_output.msh&quot;</span>, <span class="stringliteral">&quot;history_output&quot;</span>}};</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>}</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span><span class="comment">// Rename the exports into public result keys. An export missing from `keys`, or two exports</span></div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span><span class="comment">// with the same key, is an error rather than a silently dropped output.</span></div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span><span class="keyword">inline</span> MeshMap named_outputs(MeshMap raw, <span class="keyword">const</span> OutputKeys&amp; keys = default_output_keys())</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>{</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>    MeshMap result;</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; [path, data] : raw) {</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        <span class="keyword">const</span> <span class="keyword">auto</span> key = <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a>.find(path);</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        <span class="keywordflow">if</span> (key == <a class="code hl_function" href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">keys</a>.end()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Unexpected memory export: &quot;</span> + path);</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>        <span class="keywordflow">if</span> (key-&gt;second.empty()) <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>        <span class="keywordflow">if</span> (!result.emplace(key-&gt;second, std::move(data)).second)</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>            <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Two memory exports map to the result key &quot;</span> + key-&gt;second);</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>    }</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>}</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>} <span class="comment">// namespace wmtk::io</span></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_data_writer_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_data_writer.html">wmtk::io::DataWriter</a></div><div class="ttdef"><b>Definition</b> DataWriter.hpp:12</div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1tracking_1_1volume_html_a27e48ad098df7c336f0a7888168f3b9d"><div class="ttname"><a href="namespacewmtk_1_1components_1_1tracking_1_1volume.html#a27e48ad098df7c336f0a7888168f3b9d">wmtk::components::tracking::volume::keys</a></div><div class="ttdeci">std::set&lt; Tet &gt; keys(const Tets &amp;T)</div><div class="ttdoc">The tets as a set of sorted tets.</div><div class="ttdef"><b>Definition</b> volume_complex.cpp:41</div></div>
 <div class="ttc" id="astructwmtk_1_1_mesh_attribute_html"><div class="ttname"><a href="structwmtk_1_1_mesh_attribute.html">wmtk::MeshAttribute</a></div><div class="ttdef"><b>Definition</b> MeshData.hpp:28</div></div>

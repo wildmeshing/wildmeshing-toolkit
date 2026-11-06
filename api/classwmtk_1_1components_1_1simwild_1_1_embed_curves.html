@@ -200,7 +200,7 @@ MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags</b></td>
 <div class="textblock"><p>Turn a set of 2D curve networks into one tagged triangle mesh. </p>
 <p>The 2D counterpart of <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html">EmbedSurface</a>, member for member, with each 3D primitive replaced by the 2D one:</p>
 <p><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html">EmbedSurface</a> <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html" title="Turn a set of 2D curve networks into one tagged triangle mesh.">EmbedCurves</a> </p><hr  />
-<p> read_triangle_mesh + 4x4 transform read_input_curves + 3x3 transform simplify_surface (ShortestEdgeCollapse) simplify_curves (simplify_segments) delaunay_box_mesh + embed_tri_in_poly embed_segments (grid is inside it) winding_number (solid angle) winding_number_2d T_emb (Nx4), T_tags (#T x #inputs) F_emb (Nx3), F_tags (F x #inputs)</p>
+<p> read_triangle_mesh + 4x4 transform read_input_curves + 3x3 transform simplify_surface (ShortestEdgeCollapse) simplify_curves (simplify_segments) delaunay_box_mesh + embed_tri_in_poly embed_segments (grid is inside it) winding_number (solid angle) winding_number_2d T_emb (Nx4), T_tags (#T x #inputs) F_emb (Nx3), F_tags (#F x #inputs)</p>
 <p>The tagging contract is identical and is what makes this a <em>simwild</em> input rather than a triwild one: tag i is set on a cell when input i's winding number at the cell's barycenter exceeds 0.5, so a cell inside two inputs carries both tags and the material interfaces fall out of where adjacent cells disagree.</p>
 <p>Unlike the 3D path there is no separate background mesh to build: the 2D arrangement triangulates every point it is handed, so the background grid is just extra points appended to the same array (wmtk::utils::embed_segments does that). </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -322,7 +322,7 @@ MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags</b></td>
   <table class="params">
     <tr><td class="paramname">tag_from_winding_number</td><td>Decide each face's tags by evaluating the winding number of every input at its barycenter (the default), rather than by propagating them across the arrangement's own segment provenance. See tag_from_provenance. </td></tr>
     <tr><td class="paramname">collect_provenance</td><td>Collect <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#abb09713d9ab2fbf560805922f2beff27">E_constrained_inputs()</a> with the winding-number tagging too: the curve inputs' edges are read off it. </td></tr>
-    <tr><td class="paramname">points</td><td>input points (input_points), each inserted as a vertex of the arrangement, exactly; <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a556862f8bb3308da4bcf63d138d91506" title="Per input point given to embed_curves(): its row of V_emb(), kept through consolidate().">point_vids()</a> says which. They carry no winding number. </td></tr>
+    <tr><td class="paramname">points</td><td>input points (the point inputs), each inserted as a vertex of the arrangement, exactly; <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a556862f8bb3308da4bcf63d138d91506" title="Per input point given to embed_curves(): its row of V_emb(), kept through consolidate().">point_vids()</a> says which. They carry no winding number. </td></tr>
   </table>
   </dd>
 </dl>

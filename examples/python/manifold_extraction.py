@@ -58,9 +58,6 @@ def nonmanifold_edges(F):
 before = boundary(spheres, selected(spheres, "tag_0", "tag_1"))
 after = boundary(repaired, selected(repaired, "tag_0", "tag_1"))
 print("non-manifold edges:", nonmanifold_edges(before), "->", nonmanifold_edges(after))
-print("extracted surface:", len(outputs["surface"]["cells"]["triangle"]["connectivity"]),
-      "triangles, non-manifold edges:",
-      nonmanifold_edges(outputs["surface"]["cells"]["triangle"]["connectivity"]))
 # --8<-- [end:check]
 
 # --8<-- [start:fill]
@@ -80,7 +77,13 @@ for fill in [[], ["tag_0"]]:
 triangles = wm.read_mesh(str(DATA / "vertex_adj_tris.msh"))
 out, report = wm.manifold_extraction(
     {"input": "triangles", "tag_selection": "tag_0"}, {"triangles": triangles})
-curve = out["surface"]  # the boundary of tag_0 after the repair: edges
+m = out["mesh"]
+# The boundary of tag_0 after the repair: the edges of its triangles on one of them.
+t = m["cells"]["triangle"]["attributes"]["tags"]
+F = np.asarray(m["cells"]["triangle"]["connectivity"])[
+    np.asarray(t["values"])[:, t["labels"].index("tag_0")] == 1]
+E = np.sort(np.concatenate([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]), axis=1)
+_, count = np.unique(E, axis=0, return_counts=True)
 print(report["before #f"], "->", report["after #f"], "triangles;",
-      len(curve["cells"]["edge"]["connectivity"]), "boundary edges")
+      int((count == 1).sum()), "boundary edges")
 # --8<-- [end:planar]

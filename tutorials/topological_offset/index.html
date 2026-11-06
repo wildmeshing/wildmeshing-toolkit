@@ -3930,9 +3930,8 @@ counted before and after the construction, and a change stops the run
   band) and two annotations: <code>amips</code>, each tet's quality, and <code>distance_over_target</code>, each
   vertex's distance to the complex over <code>target_distance</code>. The diagnostics of the optimization
   are in the <code>DEBUG_output</code> frames only.</li>
-<li>In memory, <code>outputs["offset"]</code>: the front, as triangles on the mesh's vertices, after the
-  optimization (2,462 triangles in one five-turn run); a construction-only run returns it
-  without triangles. <code>outputs["envelope"]</code> is the input's <code>EnvelopeSurface</code> group, passed on, or the
+<li>The front is the band's boundary, where <code>offset_tag</code> differs across a face: the mesh holds it,
+  and no output repeats it. <code>outputs["envelope"]</code> is the input's <code>EnvelopeSurface</code> group, passed on, or the
   <a href="../../reference/topological_offset/#envelope"><code>envelope</code></a> given, a labelled reference, which the
   run holds to and returns with the band's boundary added under the band's tags (on the command
   line also <code>&lt;output&gt;_envelope.msh</code>): the front, which is new and so its own reference, and, where

@@ -3477,9 +3477,9 @@ Intersections between input triangles are resolved there, exactly. The remesher'
 used directly, with no extra vertices at cell centres. The vertices have rational coordinates;
 how they become doubles is described in
 <a href="../robust-geometry/#exact-and-rounded-positions">Robust geometry</a>. tetwild's feature curves and
-points (<a href="../../reference/tetwild/#input_edges"><code>input_edges</code></a>,
-<a href="../../reference/tetwild/#input_points"><code>input_points</code></a>) are inserted in the same arrangement, so
-each feature edge is tiled by tetrahedron edges and each feature point is a vertex.</p>
+points (its curve and point inputs, <a href="../../reference/tetwild/#input"><code>input</code></a>) are inserted in the
+same arrangement, so each feature edge is tiled by tetrahedron edges and each feature point is a
+vertex.</p>
 <p><strong>In 2D</strong> (triwild, and simwild on curves), VolumeRemesher's <code>embed_seg_in_tri_mesh</code> computes the
 exact arrangement of the segments: a triangulation of the input's bounding box, seeded with a grid
 of background points, in which every input segment is a chain of triangle edges and every crossing

@@ -103,17 +103,23 @@ std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:aad44d37d9c9db33869c1a1f7a64327aa" id="r_aad44d37d9c9db33869c1a1f7a64327aa"><td class="memItemLeft" align="right" valign="top"><a id="aad44d37d9c9db33869c1a1f7a64327aa" name="aad44d37d9c9db33869c1a1f7a64327aa"></a>
 std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>E_orientation</b></td></tr>
 <tr class="separator:aad44d37d9c9db33869c1a1f7a64327aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d7fcc0df1e60047150e87e5550a7714" id="r_a5d7fcc0df1e60047150e87e5550a7714"><td class="memItemLeft" align="right" valign="top">std::vector&lt; InputOrientations &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_tagged_tri_mesh.html#a5d7fcc0df1e60047150e87e5550a7714">E_input_orientation</a></td></tr>
+<tr class="separator:a5d7fcc0df1e60047150e87e5550a7714"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76173b714e8c71e22a25e20957b51277" id="r_a76173b714e8c71e22a25e20957b51277"><td class="memItemLeft" align="right" valign="top"><a id="a76173b714e8c71e22a25e20957b51277" name="a76173b714e8c71e22a25e20957b51277"></a>
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edge_names</b></td></tr>
 <tr class="separator:a76173b714e8c71e22a25e20957b51277"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86ccfc284beb439107e96558fa86ab3b" id="r_a86ccfc284beb439107e96558fa86ab3b"><td class="memItemLeft" align="right" valign="top"><a id="a86ccfc284beb439107e96558fa86ab3b" name="a86ccfc284beb439107e96558fa86ab3b"></a>
-std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>point_vids</b></td></tr>
-<tr class="memdesc:a86ccfc284beb439107e96558fa86ab3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">The point block's vertices. <br /></td></tr>
+<tr class="memitem:a86ccfc284beb439107e96558fa86ab3b" id="r_a86ccfc284beb439107e96558fa86ab3b"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_tagged_tri_mesh.html#a86ccfc284beb439107e96558fa86ab3b">point_vids</a></td></tr>
 <tr class="separator:a86ccfc284beb439107e96558fa86ab3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d4a1c8ed49fbabbd10e8834053eb588" id="r_a6d4a1c8ed49fbabbd10e8834053eb588"><td class="memItemLeft" align="right" valign="top"><a id="a6d4a1c8ed49fbabbd10e8834053eb588" name="a6d4a1c8ed49fbabbd10e8834053eb588"></a>
+std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>point_labels</b></td></tr>
+<tr class="separator:a6d4a1c8ed49fbabbd10e8834053eb588"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fa047a6cf3ef169da18e9a4f435750e" id="r_a4fa047a6cf3ef169da18e9a4f435750e"><td class="memItemLeft" align="right" valign="top"><a id="a4fa047a6cf3ef169da18e9a4f435750e" name="a4fa047a6cf3ef169da18e9a4f435750e"></a>
+std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>point_names</b></td></tr>
+<tr class="separator:a4fa047a6cf3ef169da18e9a4f435750e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A tagged triangle mesh as triwild's tagged route takes it, the 2D twin of tetwild's TaggedMesh: the triangles, and what triwild holds on them &ndash; tracked curves and points. No regions: triwild tracks curves through its operations and writes no region tags (the inputs' winding numbers, computed at the end, are fields, wn_&lt;name&gt;), so a mesh whose triangles carry a label other than ambient is refused (read_tagged_mesh()). </p>
-<p>The edge block is read as simwild's read_mesh_data() reads a triangle mesh's: each label one input, every row oriented by its vertex order. Rows of one edge are merged: their labels united, their orientation one count, +1 along E's row where they all run that way, -1 where they all run the other, 0 where both, as coincident input segments of opposite directions cancel at the arrangement. The point block is input points, anchored where they are. </p>
+<p>The edge block is read as simwild's read_mesh_data() reads a triangle mesh's: each label one input, every row oriented by its vertex order. Rows of one edge are merged: their labels united, their orientation one count, +1 along E's row where they all run that way, -1 where they all run the other, 0 where both, as coincident input segments of opposite directions cancel at the arrangement. The point block is input points, anchored where they are &ndash; with an <code>envelope</code>, on its points (<a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_reference_points.html">TriOptimizerMesh::ReferencePoints</a>). </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
 <a id="a2e5d37186f5a8571a4b566f773720c90" name="a2e5d37186f5a8571a4b566f773720c90"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2e5d37186f5a8571a4b566f773720c90">&#9670;&#160;</a></span>E</h2>
@@ -127,6 +133,36 @@ std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
       </table>
 </div><div class="memdoc">
 <p>The tracked edges, one row per edge: E_sets[i] has bit j for label edge_names[j], and E_orientation[i] is the orientation along the row. </p>
+
+</div>
+</div>
+<a id="a5d7fcc0df1e60047150e87e5550a7714" name="a5d7fcc0df1e60047150e87e5550a7714"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d7fcc0df1e60047150e87e5550a7714">&#9670;&#160;</a></span>E_input_orientation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;InputOrientations&gt; wmtk::components::triwild::TaggedTriMesh::E_input_orientation</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>With WMTK_PER_INPUT_ORIENTATION: per row, each label's own orientation along it &ndash; the label's rows' <code>orientation</code> entries (io::read_orientation()) summed where the mesh has them, else as E_orientation is counted, label by label. Empty otherwise. </p>
+
+</div>
+</div>
+<a id="a86ccfc284beb439107e96558fa86ab3b" name="a86ccfc284beb439107e96558fa86ab3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86ccfc284beb439107e96558fa86ab3b">&#9670;&#160;</a></span>point_vids</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;size_t&gt; wmtk::components::triwild::TaggedTriMesh::point_vids</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The point block's vertices, one per row and label, each under the label point_labels[i] of point_names. </p>
 
 </div>
 </div>

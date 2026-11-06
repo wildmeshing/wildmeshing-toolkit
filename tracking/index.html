@@ -4055,7 +4055,7 @@ carry them by fixed rules, which the recording mesh must follow:
 <p>The map flattens each side of a feature curve separately (<code>sides_of</code> in <code>SurfaceMap.cpp</code>). A
 non-manifold edge -- three or more faces -- separates sides without being declared.</p>
 <p>On curves the features are points: the ends and junctions of the input's curves and its input
-points (<code>input_points</code> files, and isolated vertices of the curve files), and, from the
+points (point inputs, and isolated vertices of the curve inputs), and, from the
 insertion on, the points the mesh anchors (<code>TriOptimizerMesh</code>'s feature point ids). Their rules:
 - <strong>Split:</strong> makes none.
 - <strong>Collapse:</strong> a removed feature point goes to the survivor.

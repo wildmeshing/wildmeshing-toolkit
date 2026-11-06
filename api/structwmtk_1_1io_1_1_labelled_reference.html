@@ -96,9 +96,15 @@ std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:a197c27a1971037a285c51d210d597899" id="r_a197c27a1971037a285c51d210d597899"><td class="memItemLeft" align="right" valign="top"><a id="a197c27a1971037a285c51d210d597899" name="a197c27a1971037a285c51d210d597899"></a>
 <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a>&#160;</td><td class="memItemRight" valign="bottom"><b>curves</b></td></tr>
 <tr class="separator:a197c27a1971037a285c51d210d597899"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8dafb60d7af2a6eefbecc35e67691bb1" id="r_a8dafb60d7af2a6eefbecc35e67691bb1"><td class="memItemLeft" align="right" valign="top"><a id="a8dafb60d7af2a6eefbecc35e67691bb1" name="a8dafb60d7af2a6eefbecc35e67691bb1"></a>
+MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>P</b></td></tr>
+<tr class="separator:a8dafb60d7af2a6eefbecc35e67691bb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7cdf31ceece71cdd7d6b54ebf54b24d" id="r_ad7cdf31ceece71cdd7d6b54ebf54b24d"><td class="memItemLeft" align="right" valign="top"><a id="ad7cdf31ceece71cdd7d6b54ebf54b24d" name="ad7cdf31ceece71cdd7d6b54ebf54b24d"></a>
+std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>P_labels</b></td></tr>
+<tr class="separator:ad7cdf31ceece71cdd7d6b54ebf54b24d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A labelled reference (append_envelope_block()) as a receiving mesh reads it (read_labelled_envelope()): its triangles (2D: segments) on vertices of their own (<code>dim</code> columns), each with the bits of the receiver's labels it names, 0 for a row of labels the receiver lacks; in 3D its feature curves of the receiver's feature labels, an input edge per edge and label, edge_input that label's feature input. </p>
+<div class="textblock"><p>A labelled reference (append_envelope_block()) as a receiving mesh reads it (read_labelled_envelope()): its triangles (2D: segments) on vertices of their own (<code>dim</code> columns), each with the bits of the receiver's labels it names, 0 for a row of labels the receiver lacks; in 3D its feature curves of the receiver's feature labels, an input edge per edge and label, edge_input that label's feature input; its points (<code>dim</code> columns), each with the bits of the receiver's point labels it carries, 0 for one of labels the receiver lacks. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>src/wmtk/io/<a class="el" href="tagged__mesh__data_8hpp_source.html">tagged_mesh_data.hpp</a></li>
 </ul>

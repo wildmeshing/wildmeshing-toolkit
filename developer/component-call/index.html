@@ -3658,8 +3658,8 @@ and <code>mesh_conversion.cpp</code>; <code>python/wildmeshing/__init__.py</code
 in <code>memory_components</code>, the module defines one function with two overloads:</p>
 <ul>
 <li><code>wm.&lt;name&gt;(options, meshes)</code>: the memory route. <code>call_component</code> (<code>mesh_conversion.cpp</code>)
-  converts the meshes the selectors name (the keys <code>input</code>, <code>input_edges</code>, <code>input_points</code>,
-  <code>surface_mesh</code>, <code>uv_mesh</code>, <code>envelope</code>, <code>tet_mesh</code>, <code>output_tet_mesh</code> and <code>features</code>), releases
+  converts the meshes the selectors name (the keys <code>input</code>, <code>surface_mesh</code>, <code>uv_mesh</code>,
+  <code>envelope</code>, <code>tet_mesh</code>, <code>output_tet_mesh</code> and <code>features</code>), releases
   the GIL, calls the memory overload and returns <code>(outputs, report)</code> as NumPy dictionaries.</li>
 <li><code>wm.&lt;name&gt;(options)</code>: the file route, as <code>wmtk_app</code> runs it. It adds <code>application</code> if it is
   missing and releases the GIL. It does not set <code>input_dir</code>, so relative paths resolve against

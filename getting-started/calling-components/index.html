@@ -3427,7 +3427,7 @@ differ (it groups cells by region). The full specification is in the
 <p><code>wm.&lt;component&gt;(options)</code> works on files and returns nothing;
 <code>wm.&lt;component&gt;(options, meshes)</code> works in memory and returns <code>(outputs, report)</code>.
 <code>outputs["mesh"]</code> is the result; some components return more meshes (TetWild also returns
-<code>surface</code>, its tracked surface, and <code>envelope</code>). The component releases the Python GIL while
+<code>envelope</code>, the input its tags were held to). The component releases the Python GIL while
 it runs; calls run one at a time per process.</p>
 </div>
 <div class="tabbed-block">

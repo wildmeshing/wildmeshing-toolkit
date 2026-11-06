@@ -97,6 +97,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>want_face_triangles</
 <tr class="separator:a9a6142d9c1f56242615adbf5c7c19b2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45c47c5605c7b8d80ffa808ed661ee17" id="r_a45c47c5605c7b8d80ffa808ed661ee17"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; uint32_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html#a45c47c5605c7b8d80ffa808ed661ee17">face_triangles</a></td></tr>
 <tr class="separator:a45c47c5605c7b8d80ffa808ed661ee17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa17b67394d030871e3fabb3167c3c84c" id="r_aa17b67394d030871e3fabb3167c3c84c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html#aa17b67394d030871e3fabb3167c3c84c">want_input_orientation</a> = false</td></tr>
+<tr class="separator:aa17b67394d030871e3fabb3167c3c84c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a337602b4a96e301f3aa434a32d4b4c3b" id="r_a337602b4a96e301f3aa434a32d4b4c3b"><td class="memItemLeft" align="right" valign="top">std::vector&lt; InputOrientations &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html#a337602b4a96e301f3aa434a32d4b4c3b">face_input_orientation</a></td></tr>
+<tr class="separator:a337602b4a96e301f3aa434a32d4b4c3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Which input triangles each output surface face came from. </p>
@@ -115,6 +119,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>want_face_triangles</
       </table>
 </div><div class="memdoc">
 <p>(facet, coplanar group) pairs, sorted, indexing <code>polygon_faces</code>. Only facets on the input surface appear, and a facet where two exactly-coplanar groups meet appears once per group. </p>
+
+</div>
+</div>
+<a id="a337602b4a96e301f3aa434a32d4b4c3b" name="a337602b4a96e301f3aa434a32d4b4c3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a337602b4a96e301f3aa434a32d4b4c3b">&#9670;&#160;</a></span>face_input_orientation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;InputOrientations&gt; wmtk::utils::EmbedTrianglesProvenance::face_input_orientation</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per facet (indexing <code>polygon_faces</code>): each input's orientation on it, against the facet's ascending vertex order &ndash; as <code>tet_face_orientation</code>'s, with every coplanar group split by input, so that inputs coinciding in one group count once each rather than once together, and made consistent patch by patch within each input. For a mesh built with WMTK_PER_INPUT_ORIENTATION (SurfaceTagAttributes::m_input_orientation). </p>
 
 </div>
 </div>
@@ -145,6 +164,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>want_face_triangles</
       </table>
 </div><div class="memdoc">
 <p>Per input triangle (same indexing as <code>triangle_indices</code>): its coplanar group, or UINT32_MAX if it was degenerate and dropped before the arrangement. </p>
+
+</div>
+</div>
+<a id="aa17b67394d030871e3fabb3167c3c84c" name="aa17b67394d030871e3fabb3167c3c84c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa17b67394d030871e3fabb3167c3c84c">&#9670;&#160;</a></span>want_input_orientation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::utils::EmbedTrianglesProvenance::want_input_orientation = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Set, with <code>tet_face_orientation</code> and <a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_options.html#a359ae61a5905c24fb1e6fff1938297f5">EmbedTrianglesOptions::triangle_input</a>, to have face_input_orientation filled. </p>
 
 </div>
 </div>

@@ -13,7 +13,7 @@ var searchData=
   ['settle_5frefinement_10',['settle_refinement',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ac3e4baf9a3fe479b460f12ec7acd6e23',1,'wmtk::components::topological_offset::Parameters']]],
   ['settle_5fstall_5feps_11',['settle_stall_eps',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ad04fbc5b56c32b78ba4d0fb24719a0b0',1,'wmtk::components::topological_offset::Parameters']]],
   ['settle_5ftest_12',['settle_test',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#afdc95c6edbc07cd90cf469cd7375fcdc',1,'wmtk::components::topological_offset::Parameters']]],
-  ['sf_5forientation_13',['sf_orientation',['../structwmtk_1_1_tet_optimizer_mesh_1_1_swap_info_cache.html#a13a1ac6a4dc8392b301ba22507ec09fa',1,'wmtk::TetOptimizerMesh::SwapInfoCache']]],
+  ['sf_5forientation_13',['sf_orientation',['../structwmtk_1_1_tet_optimizer_mesh_1_1_swap_info_cache.html#acc794433ff000384da1e5194c142821e',1,'wmtk::TetOptimizerMesh::SwapInfoCache']]],
   ['sf_5forientation_5fmismatch_14',['sf_orientation_mismatch',['../structwmtk_1_1_tet_optimizer_mesh_1_1_swap_info_cache.html#a74ddaef654125149b11fe121bd32a5c3',1,'wmtk::TetOptimizerMesh::SwapInfoCache']]],
   ['should_5frenew_15',['should_renew',['../structwmtk_1_1_execute_pass.html#addd10a3e42d324239dc3c970580d373f',1,'wmtk::ExecutePass']]],
   ['side_5fclipped_16',['side_clipped',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#a3c7cd78ba69d7082b1660120ebfcfb85',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],

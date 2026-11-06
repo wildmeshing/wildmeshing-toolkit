@@ -1426,10 +1426,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#feature-points-input_points" class="md-nav__link">
+  <a href="#feature-points" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Feature points: input_points
+        Feature points
       
     </span>
   </a>
@@ -3511,10 +3511,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#feature-points-input_points" class="md-nav__link">
+  <a href="#feature-points" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Feature points: input_points
+        Feature points
       
     </span>
   </a>
@@ -3738,10 +3738,11 @@ time against the first run (with <code>num_threads</code> 0, so that they repeat
 </code></pre></div>
 <h3 id="the-inputs-input-input_names-output">The inputs: <code>input</code>, <code>input_names</code>, <code>output</code><a class="headerlink" href="#the-inputs-input-input_names-output" title="Permanent link">&para;</a></h3>
 <p><a href="../../reference/triwild/#input"><code>input</code></a> is a list of OBJ files of polylines (<code>v</code> and <code>l</code> lines),
-up to 64. Each file is one input: its curves are kept apart from the others' in the output tags,
-and each tracked edge is held to the envelope of the inputs it lies on. Vertices that coincide
-exactly are merged when a file is read; a vertex of a curve file that no segment uses is kept as a
-<a href="#feature-points-input_points">feature point</a>.
+up to 64, and of point files (<code>v</code> lines alone). Each curve file is one input: its curves are kept
+apart from the others' in the output tags, and each tracked edge is held to the envelope of the
+inputs it lies on. Vertices that coincide exactly are merged when a file is read; a vertex of a
+curve file that no segment uses is kept as a <a href="#feature-points">feature point</a>, as every vertex of a
+point file is.
 <a href="../../reference/triwild/#input_names"><code>input_names</code></a> gives the inputs names, in the same order:
 they label the tag columns of the output (<code>tag_0</code>, <code>tag_1</code>, ... without them) and each input's
 winding-number field on the triangles, <code>wn_&lt;name&gt;</code> in the VTU file and the memory outputs (<code>wn_0</code>,
@@ -3930,9 +3931,10 @@ four of the shapes run clockwise and the rectangle counterclockwise, so the wind
 inside a clockwise shape and 0 where one overlaps the rectangle, and only the part of the
 rectangle that no other curve covers is kept. <code>input</code> orients each input on its own. Use it for
 several inputs. All three need closed curves (see the <a href="#pitfalls">pitfalls</a>).</p>
-<h3 id="feature-points-input_points">Feature points: <code>input_points</code><a class="headerlink" href="#feature-points-input_points" title="Permanent link">&para;</a></h3>
-<p><a href="../../reference/triwild/#input_points"><code>input_points</code></a> lists files whose vertices are inserted as
-vertices of the triangulation (their edges are ignored). The endpoints of open polylines are kept
+<h3 id="feature-points">Feature points<a class="headerlink" href="#feature-points" title="Permanent link">&para;</a></h3>
+<p>A point file in <a href="../../reference/triwild/#input"><code>input</code></a> (<code>v</code> lines alone) has its vertices
+inserted as vertices of the triangulation. Until 2026-11 such files came in a list of their own,
+<code>input_points</code>. The endpoints of open polylines are kept
 the same way. Each is anchored: some vertex stays within its radius of it --
 <a href="../../reference/triwild/#feature_envelope_ratio"><code>feature_envelope_ratio</code></a> <span class="arithmatex">\(\cdot\,\varepsilon\)</span>
 for the points, <a href="../../reference/triwild/#order2_envelope_ratio"><code>order2_envelope_ratio</code></a>
@@ -3942,20 +3944,18 @@ would remove it is refused. Junctions, where three or more polylines meet, are n
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">star</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"curve"</span><span class="p">:</span> <span class="n">wm</span><span class="o">.</span><span class="n">read_mesh</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"triwild_free_points_curve.obj"</span><span class="p">)),</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>        <span class="s2">"points"</span><span class="p">:</span> <span class="n">wm</span><span class="o">.</span><span class="n">read_mesh</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"triwild_free_points_points.obj"</span><span class="p">))}</span>
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">outputs</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">triangulate</span><span class="p">(</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="p">{</span><span class="s2">"input_points"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"points"</span><span class="p">],</span> <span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">"DEBUG_feature_retention"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">star</span><span class="p">,</span> <span class="p">[</span><span class="s2">"curve"</span><span class="p">])</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">V</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">][</span><span class="s2">"V"</span><span class="p">]</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c1"># How far each input point is from the nearest vertex of the output.</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">worst</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">V</span> <span class="o">-</span> <span class="n">p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">star</span><span class="p">[</span><span class="s2">"points"</span><span class="p">][</span><span class="s2">"V"</span><span class="p">])</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'features_retained'</span><span class="p">]</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'features_total'</span><span class="p">]</span><span class="si">}</span><span class="s2"> points kept, the worst "</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>      <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">worst</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> from a vertex (eps </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'eps'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="p">{</span><span class="s2">"stop_energy"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">"DEBUG_feature_retention"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span> <span class="n">star</span><span class="p">,</span> <span class="p">[</span><span class="s2">"curve"</span><span class="p">,</span> <span class="s2">"points"</span><span class="p">])</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">V</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">][</span><span class="s2">"V"</span><span class="p">]</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># How far each input point is from the nearest vertex of the output.</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">worst</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">V</span> <span class="o">-</span> <span class="n">p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">star</span><span class="p">[</span><span class="s2">"points"</span><span class="p">][</span><span class="s2">"V"</span><span class="p">])</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'features_retained'</span><span class="p">]</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'features_total'</span><span class="p">]</span><span class="si">}</span><span class="s2"> points kept, the worst "</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>      <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">worst</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> from a vertex (eps </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'eps'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 </code></pre></div>
 <p>All 12 points keep a vertex within <span class="arithmatex">\(\varepsilon\)</span>, the farthest at 0. Without the anchors (until
 2026-10, <code>preserve_feature_points</code> false turned them off), the collapses took the points' vertices
 like any other: 0 of 12 kept, the farthest 1.50 (44 <span class="arithmatex">\(\varepsilon\)</span>) from a vertex. The points outside
 the curve's bounding box grow it, and with it <span class="arithmatex">\(\varepsilon\)</span> and the edge length, which are
-relative to its diagonal. A point in a region the filter discards leaves the mesh with that region,
-but stays in the feature output.</p>
+relative to its diagonal. A point in a region the filter discards leaves the mesh, and its point block, with that region.</p>
 <h3 id="topology-preserve_topology">Topology: <code>preserve_topology</code><a class="headerlink" href="#topology-preserve_topology" title="Permanent link">&para;</a></h3>
 <p>By default the simplification and the optimization may change the curves' topology: close a gap
 narrower than <span class="arithmatex">\(\varepsilon\)</span>, merge two junctions, remove a loop smaller than <span class="arithmatex">\(\varepsilon\)</span>.
@@ -3982,13 +3982,12 @@ to 455 triangles. On inputs of this size a run takes a fraction of a second eith
   with a single column, <code>ambient</code>: triwild writes no regions, which are simwild's (until 2026-11
   one column per input, 1 where the triangle is inside that input). The
   tracked curves are its edges, with <code>tags</code>, one column per input labelled by <code>input_names</code>: each
-  edge under every input it lies on, oriented as its input. simwild reads them back as edge tags.</li>
+  edge under every input it lies on, oriented as its input. simwild reads them back as edge tags.
+  The input points are its point block, each vertex under the inputs with a point there.</li>
 <li><code>shapes.vtu</code>: the same triangles for ParaView, with <code>quality</code>, the winding numbers (<code>wn_&lt;name&gt;</code>
   with <code>input_names</code>), and <code>flood_fill</code> (the regions the curves separate) when the flood fill ran
   (<a href="../../reference/triwild/#compute_flood_fill"><code>compute_flood_fill</code></a>).</li>
 <li><code>shapes_surf.vtu</code>: the tracked curves, the edges of the mesh that lie on the input.</li>
-<li><code>shapes_features.obj</code>: with feature points only, the tracked curves (<code>l</code>) and the anchored
-  points (<code>p</code>), collected before the filter.</li>
 <li>With <a href="../../reference/triwild/#report"><code>report</code></a>, a JSON file with the vertex and triangle counts
   (<code>#v</code>, <code>#t</code>), <code>max_energy</code>, <code>avg_energy</code>, <code>#iterations</code>, <code>eps</code>, the coarsening statistics, and,
   with <code>DEBUG_hausdorff</code>, the distances <code>hausdorff</code> (output to input, the containment) and

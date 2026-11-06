@@ -103,6 +103,8 @@ std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:a0bf8e274647309509368c1b4b3de2977" id="r_a0bf8e274647309509368c1b4b3de2977"><td class="memItemLeft" align="right" valign="top"><a id="a0bf8e274647309509368c1b4b3de2977" name="a0bf8e274647309509368c1b4b3de2977"></a>
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>face_names</b></td></tr>
 <tr class="separator:a0bf8e274647309509368c1b4b3de2977"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace99fb9ca6cf3275ab1aecc8b7e3d84b" id="r_ace99fb9ca6cf3275ab1aecc8b7e3d84b"><td class="memItemLeft" align="right" valign="top">DataMatrix&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_tagged_mesh.html#ace99fb9ca6cf3275ab1aecc8b7e3d84b">F_orientation</a></td></tr>
+<tr class="separator:ace99fb9ca6cf3275ab1aecc8b7e3d84b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af83ba63ec4f23135ed3cb5ff1c51e1a3" id="r_af83ba63ec4f23135ed3cb5ff1c51e1a3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_tagged_mesh.html#af83ba63ec4f23135ed3cb5ff1c51e1a3">features</a></td></tr>
 <tr class="separator:af83ba63ec4f23135ed3cb5ff1c51e1a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab35b33b044f41f85d792aee9d5322292" id="r_ab35b33b044f41f85d792aee9d5322292"><td class="memItemLeft" align="right" valign="top"><a id="ab35b33b044f41f85d792aee9d5322292" name="ab35b33b044f41f85d792aee9d5322292"></a>
@@ -114,7 +116,7 @@ std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bott
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A tagged tet mesh as tetwild's tagged route takes it: the tets, and what tetwild holds on them &ndash; tagged faces, feature curves and points. No volumes: tetwild carries no tet tags through its operations, and a mesh whose tets carry a label other than ambient is refused (read_tagged_mesh()). </p>
-<p>The lower blocks are read as simwild's read_mesh_data() reads them, so a mesh means the same to both: a triangle block is tagged faces, each label one input, every row oriented by its vertex order; an edge block is feature curves, each label one feature input, every edge and label an input edge placed on itself. A point block is input points, anchored where they are. </p>
+<p>The lower blocks are read as simwild's read_mesh_data() reads them, so a mesh means the same to both: a triangle block is tagged faces, each label one input, every row oriented by its vertex order; an edge block is feature curves, each label one feature input, every edge and label an input edge placed on itself. A point block is input points, anchored where they are &ndash; with an <code>envelope</code>, on its points (<a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_reference_points.html" title="The reference&#39;s input points (its point block), each with the labels of this mesh&#39;s input points it c...">TetOptimizerMesh::ReferencePoints</a>). </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
 <a id="adfc60cbdb50ac1fd7c8c97c1fcb4574e" name="adfc60cbdb50ac1fd7c8c97c1fcb4574e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adfc60cbdb50ac1fd7c8c97c1fcb4574e">&#9670;&#160;</a></span>F</h2>
@@ -131,6 +133,21 @@ std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bott
 
 </div>
 </div>
+<a id="ace99fb9ca6cf3275ab1aecc8b7e3d84b" name="ace99fb9ca6cf3275ab1aecc8b7e3d84b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace99fb9ca6cf3275ab1aecc8b7e3d84b">&#9670;&#160;</a></span>F_orientation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DataMatrix&lt;int64_t&gt; wmtk::components::tetwild::TaggedMesh::F_orientation</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per row of F and label, its count along the row (io::read_orientation()): with WMTK_PER_INPUT_ORIENTATION, from the block's <code>orientation</code>; 0 rows without one. </p>
+
+</div>
+</div>
 <a id="af83ba63ec4f23135ed3cb5ff1c51e1a3" name="af83ba63ec4f23135ed3cb5ff1c51e1a3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af83ba63ec4f23135ed3cb5ff1c51e1a3">&#9670;&#160;</a></span>features</h2>
 
@@ -142,7 +159,7 @@ std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bott
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The edge block: per edge and label, an input edge (features.edges, edge_input the label's column of feature_names) placed on itself (features_placed.edge_tiling). The point block: features.points, each the vertex features_placed.point_vertex names. </p>
+<p>The edge block: per edge and label, an input edge (features.edges, edge_input the label's column of feature_names) placed on itself (features_placed.edge_tiling). The point block: per row and label features.points, each the vertex features_placed.point_vertex names, under the label features.point_input of features.point_names. </p>
 
 </div>
 </div>

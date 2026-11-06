@@ -91,20 +91,35 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a248d209412525429b742eeabd7552bdd" id="r_a248d209412525429b742eeabd7552bdd"><td class="memItemLeft" align="right" valign="top"><a id="a248d209412525429b742eeabd7552bdd" name="a248d209412525429b742eeabd7552bdd"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_set</b> (InputSet s)</td></tr>
 <tr class="separator:a248d209412525429b742eeabd7552bdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc3146f12bf85798b6abed097a3b6db1" id="r_acc3146f12bf85798b6abed097a3b6db1"><td class="memItemLeft" align="right" valign="top"><a id="acc3146f12bf85798b6abed097a3b6db1" name="acc3146f12bf85798b6abed097a3b6db1"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_orientation</b> (int o)</td></tr>
-<tr class="memdesc:acc3146f12bf85798b6abed097a3b6db1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store an orientation already measured against the ascending vertex order, clamped. <br /></td></tr>
-<tr class="separator:acc3146f12bf85798b6abed097a3b6db1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aedfcac35ed3a515fd2268c85f9457669" id="r_aedfcac35ed3a515fd2268c85f9457669"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#aedfcac35ed3a515fd2268c85f9457669">orientation</a> () const</td></tr>
+<tr class="separator:aedfcac35ed3a515fd2268c85f9457669"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae88c5b4bfecdce17e23ebeee57c8db57" id="r_ae88c5b4bfecdce17e23ebeee57c8db57"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#ae88c5b4bfecdce17e23ebeee57c8db57">oriented</a> () const</td></tr>
+<tr class="separator:ae88c5b4bfecdce17e23ebeee57c8db57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a452023533841a7afc5eb2541c3e62c93" id="r_a452023533841a7afc5eb2541c3e62c93"><td class="memTemplParams" colspan="2"><a id="a452023533841a7afc5eb2541c3e62c93" name="a452023533841a7afc5eb2541c3e62c93"></a>
 template&lt;size_t N&gt; </td></tr>
 <tr class="memitem:a452023533841a7afc5eb2541c3e62c93"><td class="memTemplItemLeft" align="right" valign="top">int&#160;</td><td class="memTemplItemRight" valign="bottom"><b>orientation_along</b> (const std::array&lt; size_t, N &gt; &amp;v) const</td></tr>
 <tr class="memdesc:a452023533841a7afc5eb2541c3e62c93"><td class="mdescLeft">&#160;</td><td class="mdescRight">The orientation measured against the simplex ordered as <code>v</code> (which must be its vertices). <br /></td></tr>
 <tr class="separator:a452023533841a7afc5eb2541c3e62c93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad60335b076a34405dd8394865e50e5d7" id="r_ad60335b076a34405dd8394865e50e5d7"><td class="memTemplParams" colspan="2"><a id="ad60335b076a34405dd8394865e50e5d7" name="ad60335b076a34405dd8394865e50e5d7"></a>
+<tr class="memitem:aa399de7754156bccb75e11dfe64b99e0" id="r_aa399de7754156bccb75e11dfe64b99e0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#aa399de7754156bccb75e11dfe64b99e0">orientation_of</a> (InputSet inputs) const</td></tr>
+<tr class="separator:aa399de7754156bccb75e11dfe64b99e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a105a20ea2ad0db4c3d5a67ee625ea8f5" id="r_a105a20ea2ad0db4c3d5a67ee625ea8f5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a105a20ea2ad0db4c3d5a67ee625ea8f5">set_orientation</a> (InputSet inputs, int o)</td></tr>
+<tr class="separator:a105a20ea2ad0db4c3d5a67ee625ea8f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43be7dc50426e9df3c5fd4d06f0fbea0" id="r_a43be7dc50426e9df3c5fd4d06f0fbea0"><td class="memTemplParams" colspan="2"><a id="a43be7dc50426e9df3c5fd4d06f0fbea0" name="a43be7dc50426e9df3c5fd4d06f0fbea0"></a>
 template&lt;size_t N&gt; </td></tr>
-<tr class="memitem:ad60335b076a34405dd8394865e50e5d7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>set_orientation_along</b> (const std::array&lt; size_t, N &gt; &amp;v, int o)</td></tr>
-<tr class="memdesc:ad60335b076a34405dd8394865e50e5d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store orientation <code>o</code>, measured against the simplex ordered as <code>v</code>. <br /></td></tr>
-<tr class="separator:ad60335b076a34405dd8394865e50e5d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43be7dc50426e9df3c5fd4d06f0fbea0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>set_orientation_along</b> (InputSet inputs, const std::array&lt; size_t, N &gt; &amp;v, int o)</td></tr>
+<tr class="memdesc:a43be7dc50426e9df3c5fd4d06f0fbea0"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a105a20ea2ad0db4c3d5a67ee625ea8f5">set_orientation()</a>, with <code>o</code> measured against the simplex ordered as <code>v</code>. <br /></td></tr>
+<tr class="separator:a43be7dc50426e9df3c5fd4d06f0fbea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a078527ad40fe9fc378abedeb64d0b26f" id="r_a078527ad40fe9fc378abedeb64d0b26f"><td class="memTemplParams" colspan="2"><a id="a078527ad40fe9fc378abedeb64d0b26f" name="a078527ad40fe9fc378abedeb64d0b26f"></a>
+template&lt;size_t N&gt; </td></tr>
+<tr class="memitem:a078527ad40fe9fc378abedeb64d0b26f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>set_orientation_from</b> (const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> &amp;src, const std::array&lt; size_t, N &gt; &amp;from, const std::array&lt; size_t, N &gt; &amp;to)</td></tr>
+<tr class="memdesc:a078527ad40fe9fc378abedeb64d0b26f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Take the orientation of <code>src</code>, simplex <code>from</code>, as this simplex's, <code>to</code> &ndash; every input's count with WMTK_PER_INPUT_ORIENTATION. <code>from</code> and <code>to</code> are the two simplices' vertices in corresponding order (a split half, a renamed face): a count along <code>from</code> is the same count along <code>to</code>. <code>src</code> may be this record. <br /></td></tr>
+<tr class="separator:a078527ad40fe9fc378abedeb64d0b26f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab339e76b02a65622ef33188e42150c01" id="r_ab339e76b02a65622ef33188e42150c01"><td class="memTemplParams" colspan="2">template&lt;size_t N&gt; </td></tr>
+<tr class="memitem:ab339e76b02a65622ef33188e42150c01"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#ab339e76b02a65622ef33188e42150c01">add_orientation_from</a> (const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> &amp;src, const std::array&lt; size_t, N &gt; &amp;from, const std::array&lt; size_t, N &gt; &amp;to)</td></tr>
+<tr class="separator:ab339e76b02a65622ef33188e42150c01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06bedfd203e8653552f18d0cd6e2c77b" id="r_a06bedfd203e8653552f18d0cd6e2c77b"><td class="memTemplParams" colspan="2">template&lt;size_t N&gt; </td></tr>
+<tr class="memitem:a06bedfd203e8653552f18d0cd6e2c77b"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a06bedfd203e8653552f18d0cd6e2c77b">same_orientation</a> (const std::array&lt; size_t, N &gt; &amp;v, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> &amp;other, const std::array&lt; size_t, N &gt; &amp;w) const</td></tr>
+<tr class="separator:a06bedfd203e8653552f18d0cd6e2c77b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f0b90f92ba5596a9cb9562ba0059da7" id="r_a0f0b90f92ba5596a9cb9562ba0059da7"><td class="memItemLeft" align="right" valign="top"><a id="a0f0b90f92ba5596a9cb9562ba0059da7" name="a0f0b90f92ba5596a9cb9562ba0059da7"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>reset</b> ()</td></tr>
 <tr class="separator:a0f0b90f92ba5596a9cb9562ba0059da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,8 +147,8 @@ int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_bbox_fs</b> = 
 <tr class="memitem:adafbc2ff3b07876e7922846baa80c573" id="r_adafbc2ff3b07876e7922846baa80c573"><td class="memItemLeft" align="right" valign="top">int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573">m_surface_class</a>: 3</td></tr>
 <tr class="memdesc:adafbc2ff3b07876e7922846baa80c573"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which tracked surface this simplex belongs to, for applications that track more than one. 0 to 3.  <br /></td></tr>
 <tr class="separator:adafbc2ff3b07876e7922846baa80c573"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20141019339d52b2b10fac74a7d8c569" id="r_a20141019339d52b2b10fac74a7d8c569"><td class="memItemLeft" align="right" valign="top">int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a20141019339d52b2b10fac74a7d8c569">m_orientation</a>: 5</td></tr>
-<tr class="memdesc:a20141019339d52b2b10fac74a7d8c569"><td class="mdescLeft">&#160;</td><td class="mdescRight">The input's orientation on this simplex: a signed count of input sheets lying on it, measured against its vertices in ASCENDING id order. -15 to 15.  <br /></td></tr>
+<tr class="memitem:a20141019339d52b2b10fac74a7d8c569" id="r_a20141019339d52b2b10fac74a7d8c569"><td class="memItemLeft" align="right" valign="top"><a id="a20141019339d52b2b10fac74a7d8c569" name="a20141019339d52b2b10fac74a7d8c569"></a>
+int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_orientation</b>: 5</td></tr>
 <tr class="separator:a20141019339d52b2b10fac74a7d8c569"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95b6ae22dd5be68eb747bbd3e27a7451" id="r_a95b6ae22dd5be68eb747bbd3e27a7451"><td class="memItemLeft" align="right" valign="top"><a id="a95b6ae22dd5be68eb747bbd3e27a7451" name="a95b6ae22dd5be68eb747bbd3e27a7451"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_input_set</b> [sizeof(InputSet)] = {}</td></tr>
@@ -141,15 +156,66 @@ uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_input_set</b> [s
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
+<tr class="memitem:a09ee93fdf33b15231fe703d694d0a3b4" id="r_a09ee93fdf33b15231fe703d694d0a3b4"><td class="memItemLeft" align="right" valign="top">static constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a09ee93fdf33b15231fe703d694d0a3b4">per_input_orientation</a> = false</td></tr>
+<tr class="memdesc:a09ee93fdf33b15231fe703d694d0a3b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">The input's orientation on this simplex: a signed count of input sheets lying on it, measured against its vertices in ASCENDING id order. -15 to 15.  <br /></td></tr>
+<tr class="separator:a09ee93fdf33b15231fe703d694d0a3b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac18a0296017965b5a35aa345d7ff6c7e" id="r_ac18a0296017965b5a35aa345d7ff6c7e"><td class="memItemLeft" align="right" valign="top"><a id="ac18a0296017965b5a35aa345d7ff6c7e" name="ac18a0296017965b5a35aa345d7ff6c7e"></a>
-static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>max_orientation</b> = 15</td></tr>
+static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>max_orientation</b> = <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a09ee93fdf33b15231fe703d694d0a3b4">per_input_orientation</a> ? 7 : 15</td></tr>
 <tr class="separator:ac18a0296017965b5a35aa345d7ff6c7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa65416d95eb325a53cb34a6a9ed931bd" id="r_aa65416d95eb325a53cb34a6a9ed931bd"><td class="memItemLeft" align="right" valign="top"><a id="aa65416d95eb325a53cb34a6a9ed931bd" name="aa65416d95eb325a53cb34a6a9ed931bd"></a>
+static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>min_orientation</b> = <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a09ee93fdf33b15231fe703d694d0a3b4">per_input_orientation</a> ? -8 : -15</td></tr>
+<tr class="separator:aa65416d95eb325a53cb34a6a9ed931bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa10482b477bd212489df7345832ecf72" id="r_aa10482b477bd212489df7345832ecf72"><td class="memItemLeft" align="right" valign="top"><a id="aa10482b477bd212489df7345832ecf72" name="aa10482b477bd212489df7345832ecf72"></a>
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>max_inputs</b> = int(8 * sizeof(InputSet))</td></tr>
 <tr class="memdesc:aa10482b477bd212489df7345832ecf72"><td class="mdescLeft">&#160;</td><td class="mdescRight">One input per bit of InputSet: the width is set there, and only there. <br /></td></tr>
 <tr class="separator:aa10482b477bd212489df7345832ecf72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ab339e76b02a65622ef33188e42150c01" name="ab339e76b02a65622ef33188e42150c01"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab339e76b02a65622ef33188e42150c01">&#9670;&#160;</a></span>add_orientation_from()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;size_t N&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SurfaceTagAttributes::add_orientation_from </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> &amp;&#160;</td>
+          <td class="paramname"><em>src</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; size_t, N &gt; &amp;&#160;</td>
+          <td class="paramname"><em>from</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; size_t, N &gt; &amp;&#160;</td>
+          <td class="paramname"><em>to</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a078527ad40fe9fc378abedeb64d0b26f" title="Take the orientation of src, simplex from, as this simplex&#39;s, to – every input&#39;s count with WMTK_PER_...">set_orientation_from()</a>, adding to this simplex's orientation rather than replacing it: the face a collapse merges two into covers what both covered. </p>
+
+</div>
+</div>
 <a id="a4d76d2c26d832b561a20d4342d5c0202" name="a4d76d2c26d832b561a20d4342d5c0202"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4d76d2c26d832b561a20d4342d5c0202">&#9670;&#160;</a></span>input_set()</h2>
 
@@ -206,27 +272,168 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>max_i
 
 </div>
 </div>
-<h2 class="groupheader">Member Data Documentation</h2>
-<a id="a20141019339d52b2b10fac74a7d8c569" name="a20141019339d52b2b10fac74a7d8c569"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a20141019339d52b2b10fac74a7d8c569">&#9670;&#160;</a></span>m_orientation</h2>
+<a id="aedfcac35ed3a515fd2268c85f9457669" name="aedfcac35ed3a515fd2268c85f9457669"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aedfcac35ed3a515fd2268c85f9457669">&#9670;&#160;</a></span>orientation()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int8_t wmtk::SurfaceTagAttributes::m_orientation</td>
+          <td class="memname">int wmtk::SurfaceTagAttributes::orientation </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
-
-<p>The input's orientation on this simplex: a signed count of input sheets lying on it, measured against its vertices in ASCENDING id order. -15 to 15. </p>
-<p>For a face (a &lt; b &lt; c), +k means a net k sheets cover it with normal along (b-a) x (c-a); for an edge (a &lt; b), +k means a net k run a -&gt; b. A count rather than a sign so coincident sheets combine the way they do in a winding number: two opposite ones cancel to 0 (a solid resting on another, a fold), two equal ones give 2. A tracked simplex can therefore have orientation 0 and still be constrained; m_is_surface_fs keeps that meaning, and the orientation only feeds winding numbers.</p>
-<p>At insertion a SHEET is a set of coincident input triangles (segments) of one orientation: duplicates of one triangle count once, as do the triangles of one coplanar group overlapping the same way, so the count is +-1 or 0 per coplanar group (per input curve in 2D). A collapse merging two separate sheets can make it larger. See embed_triangles_in_tets and embed_segments.</p>
-<p>Ascending ids because the value then depends on nothing but the simplex's vertex set: attribute copies keyed by the sorted vertex tuple (the swap trackers), a different slot becoming the simplex's canonical one, and consolidate_mesh (which renumbers monotonically) all leave it valid. Anything that moves a value onto a simplex with a DIFFERENT vertex set &ndash; the halves of a split, the faces a collapse merges or renames in place, the faces a surface flip creates &ndash; must convert it, through orientation_along / set_orientation_along. <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30">merge()</a> does not touch it for that reason: it cannot know the two vertex orders.</p>
-<p>Meaningful only on a mesh whose application set it at insertion (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a> / <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af47f1c426ed7aad35a55096d03115fc8" title="The application set EdgeAttributes::m_orientation at insertion, so the tracked curves carry the input...">TriOptimizerMesh::m_tracks_orientation</a>); 0 elsewhere. Writes clamp to the range rather than wrap: a face would need 16 net coincident sheets to reach it. </p>
+<p>The orientation against the ascending vertex order: the count (m_orientation), with WMTK_PER_INPUT_ORIENTATION the sum of the per-input counts. </p>
 
 </div>
 </div>
+<a id="aa399de7754156bccb75e11dfe64b99e0" name="aa399de7754156bccb75e11dfe64b99e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa399de7754156bccb75e11dfe64b99e0">&#9670;&#160;</a></span>orientation_of()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::SurfaceTagAttributes::orientation_of </td>
+          <td>(</td>
+          <td class="paramtype">InputSet&#160;</td>
+          <td class="paramname"><em>inputs</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The orientation of the inputs in <code>inputs</code>, against the ascending vertex order: with WMTK_PER_INPUT_ORIENTATION the sum of their counts; without, the one count if the simplex is on any of them, else 0 &ndash; theirs only where it is on no other input. </p>
+
+</div>
+</div>
+<a id="ae88c5b4bfecdce17e23ebeee57c8db57" name="ae88c5b4bfecdce17e23ebeee57c8db57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae88c5b4bfecdce17e23ebeee57c8db57">&#9670;&#160;</a></span>oriented()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::SurfaceTagAttributes::oriented </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether any input's count is nonzero &ndash; the count, without WMTK_PER_INPUT_ORIENTATION. Not <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#aedfcac35ed3a515fd2268c85f9457669">orientation()</a> != 0: two inputs facing opposite ways sum to 0, and each still has one. </p>
+
+</div>
+</div>
+<a id="a06bedfd203e8653552f18d0cd6e2c77b" name="a06bedfd203e8653552f18d0cd6e2c77b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06bedfd203e8653552f18d0cd6e2c77b">&#9670;&#160;</a></span>same_orientation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;size_t N&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::SurfaceTagAttributes::same_orientation </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, N &gt; &amp;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> &amp;&#160;</td>
+          <td class="paramname"><em>other</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; size_t, N &gt; &amp;&#160;</td>
+          <td class="paramname"><em>w</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether this simplex, ordered as <code>v</code>, and <code>other</code>, ordered as <code>w</code>, carry the same orientation along those orders &ndash; every input's count with WMTK_PER_INPUT_ORIENTATION. </p>
+
+</div>
+</div>
+<a id="a105a20ea2ad0db4c3d5a67ee625ea8f5" name="a105a20ea2ad0db4c3d5a67ee625ea8f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a105a20ea2ad0db4c3d5a67ee625ea8f5">&#9670;&#160;</a></span>set_orientation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SurfaceTagAttributes::set_orientation </td>
+          <td>(</td>
+          <td class="paramtype">InputSet&#160;</td>
+          <td class="paramname"><em>inputs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>o</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Store orientation <code>o</code>, against the ascending vertex order, clamped, as the orientation of each input in <code>inputs</code>: with WMTK_PER_INPUT_ORIENTATION each of their counts is <code>o</code>, the other inputs' unchanged; without, the one count is <code>o</code>. How a producer that knows one direction for a row of inputs &ndash; a tagged row without per-input counts, the insertion of a single input &ndash; stores it. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
 <a id="adafbc2ff3b07876e7922846baa80c573" name="adafbc2ff3b07876e7922846baa80c573"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adafbc2ff3b07876e7922846baa80c573">&#9670;&#160;</a></span>m_surface_class</h2>
 
@@ -242,6 +449,35 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>max_i
 <p>Which tracked surface this simplex belongs to, for applications that track more than one. 0 to 3. </p>
 <p>0 is the application's primary surface, and is all tetwild and simwild ever use. topological_offset tracks two &ndash; the input complex it must stay in the envelope of, and the offset boundary it is free to move &ndash; and uses 1 for the latter. Meaningless, and left at 0, when m_is_surface_fs is false.</p>
 <p>The class lives here, on the attribute struct, rather than in a container of its own because the shared operations copy face attributes WHOLESALE &ndash; assignment in the split and collapse caches, <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30">merge()</a> in collapse_edge_before, reset() in the swap tracker. A field here is carried by all of that for free; a parallel container would be silently dropped by every one of those operations. </p>
+
+</div>
+</div>
+<a id="a09ee93fdf33b15231fe703d694d0a3b4" name="a09ee93fdf33b15231fe703d694d0a3b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09ee93fdf33b15231fe703d694d0a3b4">&#9670;&#160;</a></span>per_input_orientation</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr bool wmtk::SurfaceTagAttributes::per_input_orientation = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The input's orientation on this simplex: a signed count of input sheets lying on it, measured against its vertices in ASCENDING id order. -15 to 15. </p>
+<p>For a face (a &lt; b &lt; c), +k means a net k sheets cover it with normal along (b-a) x (c-a); for an edge (a &lt; b), +k means a net k run a -&gt; b. A count rather than a sign so coincident sheets combine the way they do in a winding number: two opposite ones cancel to 0 (a solid resting on another, a fold), two equal ones give 2. A tracked simplex can therefore have orientation 0 and still be constrained; m_is_surface_fs keeps that meaning, and the orientation only feeds winding numbers.</p>
+<p>At insertion a SHEET is a set of coincident input triangles (segments) of one orientation: duplicates of one triangle count once, as do the triangles of one coplanar group overlapping the same way, so the count is +-1 or 0 per coplanar group (per input curve in 2D). A collapse merging two separate sheets can make it larger. See embed_triangles_in_tets and embed_segments.</p>
+<p>Ascending ids because the value then depends on nothing but the simplex's vertex set: attribute copies keyed by the sorted vertex tuple (the swap trackers), a different slot becoming the simplex's canonical one, and consolidate_mesh (which renumbers monotonically) all leave it valid. Anything that moves a value onto a simplex with a DIFFERENT vertex set &ndash; the halves of a split, the faces a collapse merges or renames in place, the faces a surface flip creates &ndash; must convert it, through set_orientation_from / add_orientation_from. <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30">merge()</a> does not touch it for that reason: it cannot know the two vertex orders.</p>
+<p>Meaningful only on a mesh whose application set it at insertion (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a> / <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af47f1c426ed7aad35a55096d03115fc8" title="The application set EdgeAttributes::m_orientation at insertion, so the tracked curves carry the input...">TriOptimizerMesh::m_tracks_orientation</a>); 0 elsewhere. Writes clamp to the range rather than wrap: a face would need 16 net coincident sheets to reach it.</p>
+<p>One count for all the inputs of the simplex: where two inputs coincide, it is of both, and neither input's own is known. The CMake option WMTK_PER_INPUT_ORIENTATION keeps one count per input instead (m_input_orientation), and the field is then not there: the total is the sum of the per-input counts, read through <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#aedfcac35ed3a515fd2268c85f9457669">orientation()</a>, so that there is one stored value and not two to keep equal. That saves no memory &ndash; the 5 bits share a byte with the 3-bit class &ndash; but leaves nothing to disagree. Every reader of the count goes through <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#aedfcac35ed3a515fd2268c85f9457669">orientation()</a> and <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a452023533841a7afc5eb2541c3e62c93" title="The orientation measured against the simplex ordered as v (which must be its vertices).">orientation_along()</a>, every writer through the setters below, in both builds; only the setters' meaning for several inputs differs (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a105a20ea2ad0db4c3d5a67ee625ea8f5">set_orientation()</a>). </p>
 
 </div>
 </div>

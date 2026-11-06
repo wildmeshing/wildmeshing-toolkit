@@ -74,6 +74,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
@@ -84,6 +85,14 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a4b56cb2351871a348d715d5bf95487c7" id="r_a4b56cb2351871a348d715d5bf95487c7"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_component_i_o.html#a4b56cb2351871a348d715d5bf95487c7">InputKind</a> { <b>surface</b>
+, <b>curve</b>
+, <b>points</b>
+ }</td></tr>
+<tr class="separator:a4b56cb2351871a348d715d5bf95487c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a491c8457f4cd6c30b974c863b4aa612b" id="r_a491c8457f4cd6c30b974c863b4aa612b"><td class="memItemLeft" align="right" valign="top"><a id="a491c8457f4cd6c30b974c863b4aa612b" name="a491c8457f4cd6c30b974c863b4aa612b"></a>
@@ -108,6 +117,9 @@ ComponentResult&#160;</td><td class="memItemRight" valign="bottom"><b>take_resul
 <tr class="memitem:af14bd8cccf4ad361fe51e1bb9423c73f" id="r_af14bd8cccf4ad361fe51e1bb9423c73f"><td class="memItemLeft" align="right" valign="top"><a id="af14bd8cccf4ad361fe51e1bb9423c73f" name="af14bd8cccf4ad361fe51e1bb9423c73f"></a>
 const <a class="el" href="structwmtk_1_1_mesh_data.html">MeshData</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> (const std::string &amp;name) const</td></tr>
 <tr class="separator:af14bd8cccf4ad361fe51e1bb9423c73f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa68bf060eb82b9521c844947c21dd1f" id="r_afa68bf060eb82b9521c844947c21dd1f"><td class="memItemLeft" align="right" valign="top"><a id="afa68bf060eb82b9521c844947c21dd1f" name="afa68bf060eb82b9521c844947c21dd1f"></a>
+<a class="el" href="classwmtk_1_1io_1_1_component_i_o.html#a4b56cb2351871a348d715d5bf95487c7">InputKind</a>&#160;</td><td class="memItemRight" valign="bottom"><b>input_kind</b> (const std::string &amp;name) const</td></tr>
+<tr class="separator:afa68bf060eb82b9521c844947c21dd1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4492c2f9f319aacbc06b3faa6115be86" id="r_a4492c2f9f319aacbc06b3faa6115be86"><td class="memItemLeft" align="right" valign="top"><a id="a4492c2f9f319aacbc06b3faa6115be86" name="a4492c2f9f319aacbc06b3faa6115be86"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>path</b> (const std::filesystem::path &amp;root, const nlohmann::json &amp;selector) const</td></tr>
 <tr class="separator:a4492c2f9f319aacbc06b3faa6115be86"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -136,6 +148,10 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:a85eac9376a84fae02be4c994363d354b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a394c71c7a49081ca655f70657026574f" id="r_a394c71c7a49081ca655f70657026574f"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_component_i_o.html#a394c71c7a49081ca655f70657026574f">log_dropped</a> (const std::string &amp;what, const std::set&lt; std::string &gt; &amp;dropped)</td></tr>
 <tr class="separator:a394c71c7a49081ca655f70657026574f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a064ce3a6d12ebf1bab655b61765a844e" id="r_a064ce3a6d12ebf1bab655b61765a844e"><td class="memItemLeft" align="right" valign="top"><a id="a064ce3a6d12ebf1bab655b61765a844e" name="a064ce3a6d12ebf1bab655b61765a844e"></a>
+static <a class="el" href="classwmtk_1_1io_1_1_component_i_o.html#a4b56cb2351871a348d715d5bf95487c7">InputKind</a>&#160;</td><td class="memItemRight" valign="bottom"><b>file_input_kind</b> (const std::string &amp;name)</td></tr>
+<tr class="memdesc:a064ce3a6d12ebf1bab655b61765a844e"><td class="mdescLeft">&#160;</td><td class="mdescRight">input_kind() of a file. <br /></td></tr>
+<tr class="separator:a064ce3a6d12ebf1bab655b61765a844e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fcbb0a9da474687e47d4dbd53729b8b" id="r_a5fcbb0a9da474687e47d4dbd53729b8b"><td class="memItemLeft" align="right" valign="top"><a id="a5fcbb0a9da474687e47d4dbd53729b8b" name="a5fcbb0a9da474687e47d4dbd53729b8b"></a>
 static MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>indices</b> (const DataMatrix&lt; int64_t &gt; &amp;c)</td></tr>
 <tr class="separator:a5fcbb0a9da474687e47d4dbd53729b8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -169,6 +185,30 @@ std::optional&lt; std::vector&lt; uint8_t &gt; &gt;&#160;</td><td class="memItem
 std::optional&lt; std::vector&lt; uint8_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>recorded_volume_history</b></td></tr>
 <tr class="separator:a5ab74e8c6e23f9239335e7a4df523f55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="a4b56cb2351871a348d715d5bf95487c7" name="a4b56cb2351871a348d715d5bf95487c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b56cb2351871a348d715d5bf95487c7">&#9670;&#160;</a></span>InputKind</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="classwmtk_1_1io_1_1_component_i_o.html#a4b56cb2351871a348d715d5bf95487c7">wmtk::io::ComponentIO::InputKind</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>What an entry of an <code>input</code> list is (tetwild, triwild and simwild), read off the input itself: triangles make a surface, segments a curve, bare vertices points. On the memory route by the mesh's blocks &ndash; triangles, else edges, else points (a point block, or the vertices alone); on the file route an OBJ by its records &ndash; an <code>f</code>, else an <code>l</code>, else points &ndash; and any other format a surface, which read_triangle_mesh() reads. Until 2026-11 curves and points came in lists of their own, input_edges and input_points. </p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a85eac9376a84fae02be4c994363d354b" name="a85eac9376a84fae02be4c994363d354b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a85eac9376a84fae02be4c994363d354b">&#9670;&#160;</a></span>dropped_fields()</h2>
