@@ -182,9 +182,12 @@ eps, matching the envelope's labels to the mesh's face tags (2D: edge tags), reg
 curves by name; it throws for a label the mesh holds that the envelope lacks, and, before a
 remeshing, unless every held face and feature edge received lies, exactly, in the envelopes of its
 labels -- the error names the labels, the number outside and the eps. tetwild's and triwild's tagged
-routes hold to it the same way, by the same code, before every run. topological_offset and
-manifold_extraction carry it, not yet holding to it. Each returns it unchanged as its own
-`envelope`. An `envelope` without labels -- bare geometry -- is held to as a whole, as before.
+routes hold to it the same way, by the same code, before every run. topological_offset and, in 3D,
+manifold_extraction hold to it the same way before their construction, and return it with the
+faces their band makes added, each under the labels of the regions it separates -- the offset's
+band boundary, the faces manifold_extraction carves -- since that geometry is new and its own
+reference; in 2D manifold_extraction carries it, returning it unchanged. An `envelope` without
+labels -- bare geometry -- is held to as a whole, as before.
 
 The prismatic adapter accepts scalar `tag_0` and `offset_tag`, or the corresponding columns of
 `tags`. `vid` defaults to vertex row IDs; absent `labels` are derived from input-volume cells and

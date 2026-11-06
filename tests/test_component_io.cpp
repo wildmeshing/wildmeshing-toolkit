@@ -266,6 +266,22 @@ segment_input(double x0, double y0, double z0, double x1, double y1, double z1)
 {
     return {{{{x, y, z}}}};
 }
+// The boundary of the box [lo, hi], its triangles facing out.
+[[maybe_unused]] MeshData box_surface(const Vector3d& lo, const Vector3d& hi)
+{
+    MeshData data;
+    data.V.resize(8, 3);
+    for (int i = 0; i < 8; ++i) {
+        const bool x = i == 1 || i == 2 || i == 5 || i == 6;
+        const bool y = i == 2 || i == 3 || i == 6 || i == 7;
+        data.V.row(i) << (x ? hi : lo).x(), (y ? hi : lo).y(), (i >= 4 ? hi : lo).z();
+    }
+    auto& F = data.cells[CellType::Triangle].connectivity;
+    F.resize(12, 3);
+    F << 0, 3, 2, 0, 2, 1, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 3, 7, 6, 3, 6, 2, 0, 4, 7, 0, 7, 3,
+        1, 2, 6, 1, 6, 5;
+    return data;
+}
 // A unit tet's boundary, `shift` along x, its triangles facing out.
 [[maybe_unused]] MeshData tet_surface(double shift)
 {
@@ -1707,6 +1723,69 @@ TEST_CASE("Manifold extraction leaves a manifold selection as it is", "[componen
     CHECK(output_names(outputs) == std::set<std::string>{"mesh"});
 }
 #endif
+#if defined(WMTK_TEST_simwild) && defined(WMTK_TEST_manifold_extraction)
+TEST_CASE(
+    "Manifold extraction holds the envelope it is given and hands on its carved faces",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    // simwild -> manifold_extraction -> simwild, each given the envelope the one before returned.
+    // Two boxes `a` and `b` touching along an edge: their union's boundary is not manifold there,
+    // and manifold_extraction carves a gap along it. It first checks that the mesh it receives
+    // lies in the reference, as the offset does; then it hands the reference on with the faces
+    // the carving made, under the labels of the regions they bound -- new geometry, its own
+    // reference. simwild then holds the result to it. Handed on as given, the reference does not
+    // hold the carved faces, and simwild refuses them.
+    WorkingDirectory cwd;
+    const nlohmann::json first = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"eps_rel", 1e-3},
+        {"length_rel", 0.2},
+        {"max_iterations", 2},
+        {"num_threads", 1}};
+    const auto meshed = simwild::simwild(
+        first,
+        {{"a", box_surface(Vector3d(0, 0, 0), Vector3d(1, 1, 1))},
+         {"b", box_surface(Vector3d(1, 1, 0), Vector3d(2, 2, 1))}});
+    check(meshed);
+    REQUIRE(meshed.first.count("envelope"));
+    const MeshData& reference = meshed.first.at("envelope");
+    const double eps = meshed.second.at("eps");
+    const nlohmann::json extraction = {
+        {"input", "m"},
+        {"envelope", "e"},
+        {"tag_selection", "a | b"},
+        {"fill_tags", nlohmann::json::array()}};
+    const MeshMap inputs{{"m", tags_only(meshed.first.at("mesh"))}, {"e", reference}};
+    const auto repaired = manifold_extraction::manifold_extraction(extraction, inputs);
+    check(repaired);
+    REQUIRE(repaired.second.at("after #t") > repaired.second.at("before #t"));
+    REQUIRE(repaired.first.count("envelope"));
+    const MeshData& handed = repaired.first.at("envelope");
+    // Every face of the result bounding a or b lies on the reference's rows of its label or is
+    // handed on with them: simwild, remeshing the result held to it at the first run's eps,
+    // finds every held face inside.
+    const nlohmann::json remeshing = {
+        {"input", "m"},
+        {"envelope", "e"},
+        {"eps", eps},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    const MeshData result = tags_only(repaired.first.at("mesh"));
+    CHECK_NOTHROW(simwild::simwild(remeshing, {{"m", result}, {"e", handed}}));
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(remeshing, {{"m", result}, {"e", reference}}),
+        Catch::Matchers::ContainsSubstring("held faces outside"));
+    // A reference without a label of the mesh is refused before anything is carved.
+    MeshData renamed = reference;
+    renamed.cells.at(CellType::Triangle).attributes.at("tags").labels = {"a", "c"};
+    REQUIRE_THROWS_WITH(
+        manifold_extraction::manifold_extraction(
+            extraction,
+            {{"m", inputs.at("m")}, {"e", renamed}}),
+        Catch::Matchers::ContainsSubstring("labelled b"));
+}
+#endif
 #ifdef WMTK_TEST_manifold_extraction
 TEST_CASE(
     "Manifold extraction gives the same result from memory and from a file",
@@ -3132,24 +3211,6 @@ TEST_CASE(
 }
 #endif
 #ifdef WMTK_TEST_tetwild
-namespace {
-// The boundary of the box [lo, hi], its triangles facing out.
-MeshData box_surface(const Vector3d& lo, const Vector3d& hi)
-{
-    MeshData data;
-    data.V.resize(8, 3);
-    for (int i = 0; i < 8; ++i) {
-        const bool x = i == 1 || i == 2 || i == 5 || i == 6;
-        const bool y = i == 2 || i == 3 || i == 6 || i == 7;
-        data.V.row(i) << (x ? hi : lo).x(), (y ? hi : lo).y(), (i >= 4 ? hi : lo).z();
-    }
-    auto& F = data.cells[CellType::Triangle].connectivity;
-    F.resize(12, 3);
-    F << 0, 3, 2, 0, 2, 1, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 3, 7, 6, 3, 6, 2, 0, 4, 7, 0, 7, 3,
-        1, 2, 6, 1, 6, 5;
-    return data;
-}
-} // namespace
 TEST_CASE(
     "TetWild filter_inputs: tracked refuses the faces a named input shares, flood keeps it",
     "[component_io][tagged]" + release_only)
