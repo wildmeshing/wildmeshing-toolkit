@@ -2,6 +2,8 @@
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 #include <wmtk/components/tetwild/Parameters.h>
 #include <wmtk/components/tetwild/TetWildMesh.h>
+#include <wmtk/history/History.hpp>
+#include <wmtk/history/Replay.hpp>
 #include <wmtk/utils/FeatureInputs.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -684,4 +686,83 @@ TEST_CASE(
     CHECK(max_degree <= 2);
     // Two open chains: a tree each, so two fewer edges than vertices.
     CHECK(edges.size() + 2 == degree.size());
+}
+
+TEST_CASE(
+    "curve-history-finishes-on-a-consolidated-mesh",
+    "[tetwild_operation][features][tracking]")
+{
+    // A curve history names the output's points by the mesh's vertex ids, the output's rows only
+    // once the mesh is consolidated: finishing it before refuses, after gives the history. The 3D
+    // twin of triwild's case.
+    FeatureScene sc = build_scene();
+    TetWildMesh& m = *sc.mesh;
+    m.record_curve_history("{}");
+    bool collapsed = false;
+    for (const auto& e : m.get_edges()) {
+        std::vector<TetMesh::Tuple> new_tets;
+        if (m.collapse_edge(e, new_tets)) {
+            collapsed = true;
+            break;
+        }
+    }
+    REQUIRE(collapsed);
+    CHECK_THROWS(m.finish_curve_history());
+    m.consolidate_mesh();
+    const auto h = m.finish_curve_history();
+    REQUIRE(h);
+    history::CurveReplay r(*h);
+    r.apply_all(*h);
+    size_t segments = 0;
+    for (uint64_t f = 0; f < r.faces().size(); ++f) {
+        if (!r.face_alive()[f]) continue;
+        ++segments;
+        for (const uint64_t v : r.faces()[f]) CHECK(h->output_vertex_ids[v] < m.vert_capacity());
+    }
+    CHECK(segments == tagged_edges(m).size());
+}
+
+TEST_CASE(
+    "curve-history-follows-the-feature-tags",
+    "[tetwild_operation][features][tracking]" + release_only)
+{
+    // The curve history of the whole optimization ends at the edges tagged `feature`, where the
+    // mesh has them, every change recognised as an edit (none recorded as it is), and its feature
+    // points at the chain's two ends, which the mesh anchors. With and without preserve_topology.
+    for (const bool preserve_topology : {false, true}) {
+        CAPTURE(preserve_topology);
+        FeatureScene sc = build_scene(
+            {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
+            {{{0, 1}}, {{1, 2}}},
+            {0, 1},
+            preserve_topology);
+        TetWildMesh& m = *sc.mesh;
+        m.record_curve_history("{}");
+        REQUIRE(m.tracked_feature_points().size() == 2);
+        m.mesh_improvement(3);
+        m.consolidate_mesh();
+        const auto h = m.finish_curve_history();
+        REQUIRE(h);
+        CHECK(h->features.size() == 2);
+        for (const auto& e : h->edits) CHECK(e.kind != history::EditKind::replace_faces);
+        history::CurveReplay r(*h);
+        r.apply_all(*h);
+        std::set<std::array<size_t, 2>> segments;
+        for (uint64_t f = 0; f < r.faces().size(); ++f) {
+            if (!r.face_alive()[f]) continue;
+            const auto& s = r.faces()[f];
+            const size_t a = size_t(h->output_vertex_ids[s[0]]);
+            const size_t b = size_t(h->output_vertex_ids[s[1]]);
+            for (const uint64_t v : s) {
+                CHECK(r.vertices()[v] == m.m_vertex_attribute[h->output_vertex_ids[v]].m_posf);
+            }
+            segments.insert({{std::min(a, b), std::max(a, b)}});
+        }
+        const auto tagged = tagged_edges(m);
+        CHECK(segments == std::set<std::array<size_t, 2>>(tagged.begin(), tagged.end()));
+        std::vector<size_t> points;
+        for (const auto& f : r.features()) points.push_back(size_t(h->output_vertex_ids[f[0]]));
+        std::sort(points.begin(), points.end());
+        CHECK(points == m.tracked_feature_points());
+    }
 }

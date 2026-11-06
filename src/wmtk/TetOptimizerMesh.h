@@ -631,6 +631,12 @@ public:
     std::vector<std::string> m_point_names;
     std::vector<int> m_input_point_labels;
     std::vector<InputSet> m_feature_point_inputs;
+    /// Beside m_feature_points: whether the anchor stands for an end or a junction of the
+    /// feature curves (1 or 3+ edges tagged `feature`) or for an input point, set by
+    /// anchor_feature_points(). Those are the feature points of a curve history
+    /// (tracked_feature_points()), as the input's curves have them (history::
+    /// curves_from_input()); an anchor of an order-2 curve alone is not one.
+    std::vector<uint8_t> m_curve_feature_point;
     /// Whether the shared operations maintain and enforce the anchors
     /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
@@ -1058,6 +1064,44 @@ public:
     /// The edges tagged `feature` (m_feature_edge_attribute) that are edges of tracked faces.
     std::vector<std::array<size_t, 2>> tracked_feature_edges() const override;
 
+    /// For a curve history (TetMesh::start_curve_history): the tracked curves are the edges
+    /// tagged `feature`, the input's feature curves, wherever they lie. Not the order-2 edges:
+    /// they are edges of tracked faces, which the surface history keeps as curves (SurfaceMap
+    /// flattens each side of an edge with other than two faces separately).
+    bool is_tracked_edge(size_t tid, int j) const override;
+    /// The feature points of a curve history: the anchored vertices that stand for an end or a
+    /// junction of the feature curves, or for an input point (m_curve_feature_point). Not those
+    /// anchored for an order-2 curve alone, which the input's curves do not have.
+    std::vector<size_t> tracked_feature_points() const override;
+
+    /// A tracked edge by its ends' positions, sorted.
+    using SegmentKey = std::array<std::array<double, 3>, 2>;
+    static SegmentKey segment_key(const Vector3d& a, const Vector3d& b);
+    /// Where the tracked edges lie on the input's feature curves: by segment key, sorted, the
+    /// input segments (rows of utils::FeatureInputs::edges). Filled at insertion when a curve
+    /// history is to start from the input; record_curve_history takes it. Keyed by position, as
+    /// m_insertion_sources is: the mesh is consolidated between the insertion and the recording.
+    std::vector<std::pair<SegmentKey, std::vector<uint32_t>>> m_insertion_curve_sources;
+    /// Start recording the tracked curves (TetMesh::start_curve_history), at m_posf, with
+    /// `metadata` (the application's parameters, say) saved along. Takes
+    /// m_insertion_curve_sources. The 3D twin of TriOptimizerMesh::record_curve_history().
+    void record_curve_history(const std::string& metadata);
+    /**
+     * @brief Check the recorded curves against the tracked edges, stop recording, log what the
+     * history holds and return it, for the application to save (tetwild and simwild:
+     * io::ComponentIO::save_curve_history). None if not recording. The 3D twin of
+     * TriOptimizerMesh::finish_curve_history().
+     *
+     * With `input`, the history of the input the mesh was made from (the feature curve files as
+     * read): the history returned is that, then the insertion -- each tracked edge on the input
+     * segments it lies on, from m_insertion_curve_sources -- then the recorded one, so it maps
+     * the input files to the output. The output names a point on the curves by two of its
+     * vertices, numbered as they are now: the mesh must be written as it is here, consolidated
+     * -- which this checks, throwing otherwise.
+     */
+    std::optional<history::CurveHistory> finish_curve_history(
+        const history::CurveHistory* input = nullptr);
+
     /// m_params.check_surface_folds; see there.
     bool checks_tracked_surface() const override { return m_params.check_surface_folds; }
     void tracked_surface_before(const std::vector<size_t>& vs, bool all) override;
@@ -1088,6 +1132,9 @@ public:
     size_t tracked_star_folds(const std::vector<std::array<size_t, 3>>& faces) const;
     /// The input triangles each face of the recorded surface's first state lies on.
     std::vector<std::vector<uint64_t>> m_recorded_sources;
+    std::shared_ptr<history::TrackedCurveRecorder> m_recorded_curves;
+    /// The input segments each segment of the recorded curves' first state lies on.
+    std::vector<std::vector<uint64_t>> m_recorded_curve_sources;
     int m_debug_print_counter = 0;
     /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
     /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer
