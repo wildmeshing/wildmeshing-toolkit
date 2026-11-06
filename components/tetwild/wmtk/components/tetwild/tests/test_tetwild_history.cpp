@@ -3,6 +3,7 @@
 #include <wmtk/components/tetwild/tetwild.hpp>
 #include <wmtk/components/tracking/SurfaceMap.hpp>
 #include <wmtk/components/tracking/surface_io.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
 #include <wmtk/components/tracking/transfer.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/io/mesh_io.hpp>
@@ -12,6 +13,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <set>
 
 namespace fs = std::filesystem;
@@ -285,4 +287,377 @@ TEST_CASE(
     CHECK(found);
     CHECK(misplaced == 0);
     CHECK(mislabelled == 0);
+}
+
+// tetwild's curve history (curve_history_output) under its options, on the memory route: what
+// recording changes, and that the history it returns ends at the mesh it returns. The 3D twin of
+// triwild's test_triwild_history.cpp.
+namespace {
+
+/// The cube [0,2]^3 as a triangle mesh.
+MeshData cube()
+{
+    MeshData m;
+    m.V.resize(8, 3);
+    m.V << 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 0, 0, 0, 2, 2, 0, 2, 2, 2, 2, 0, 2, 2;
+    auto& F = m.cells[CellType::Triangle].connectivity;
+    F.resize(12, 3);
+    F << 0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 2, 3, 7, 2, 7, 6, 1, 2, 6, 1, 6, 5,
+        0, 4, 7, 0, 7, 3;
+    return m;
+}
+
+/// An open polyline through `v`, or the points `v` with no segment.
+MeshData curve(const std::vector<Eigen::Vector3d>& v, const bool segments = true)
+{
+    MeshData m;
+    m.V.resize(Eigen::Index(v.size()), 3);
+    for (size_t i = 0; i < v.size(); ++i) m.V.row(Eigen::Index(i)) = v[i].transpose();
+    auto& E = m.cells[CellType::Edge].connectivity;
+    E.resize(segments ? Eigen::Index(v.size()) - 1 : 0, 2);
+    for (Eigen::Index i = 0; i < E.rows(); ++i) E.row(i) << i, i + 1;
+    return m;
+}
+
+/// The bent chain inside the cube, of 4 segments, `dy` off it along y.
+std::vector<Eigen::Vector3d> chain(const double dy = 0)
+{
+    std::vector<Eigen::Vector3d> v =
+        {{0.5, 0.5, 0.5}, {0.75, 0.75, 0.75}, {1, 1, 1}, {1.25, 1, 1.25}, {1.5, 1, 1.5}};
+    for (auto& p : v) p.y() += dy;
+    return v;
+}
+
+/// The worked example's input: the cube, and three feature curve files -- the chain inside it, a
+/// segment on its face y = 0, a chain outside it, past x = 2 -- of 8 segments, and three points:
+/// inside, on the face x = 2, at the corner (0, 0, 0).
+MeshMap curve_scene()
+{
+    return {
+        {"cube", cube()},
+        {"chain", curve(chain())},
+        {"rim", curve({{0.5, 0, 0.5}, {1, 0, 1}, {1.5, 0, 1.5}})},
+        {"outside", curve({{2.3, 0.5, 1}, {2.3, 1, 1}, {2.3, 1.5, 1}})},
+        {"points", curve({{1, 0.5, 1.5}, {2, 1, 1}, {0, 0, 0}}, false)}};
+}
+constexpr size_t n_curve_segments = 8;
+constexpr size_t n_curve_features = 9; // the ends of the three curves, and the points
+
+/// tetwild on the example, recording the curves unless `record` is false, with `extra` options.
+/// With `near`, a fourth curve input: the chain, `near` off it.
+ComponentResult run_curves(const nlohmann::json& extra, const bool record = true, double near = 0)
+{
+    nlohmann::json options = {
+        {"input", {"cube", "chain", "rim", "outside", "points"}},
+        {"max_iterations", 3}};
+    MeshMap meshes = curve_scene();
+    if (near != 0) {
+        meshes.emplace("near", curve(chain(near)));
+        options["input"].push_back("near");
+    }
+    if (record) options["curve_history_output"] = "record";
+    if (!extra.is_null()) options.update(extra);
+    return tetwild::tetwild(options, meshes);
+}
+
+/// `m` as an OBJ file: its vertices, triangles and segments, the files tetwild's file route reads.
+void write_obj(const fs::path& path, const MeshData& m)
+{
+    std::ofstream o(path);
+    for (Eigen::Index v = 0; v < m.V.rows(); ++v) {
+        o << fmt::format("v {:.17g} {:.17g} {:.17g}\n", m.V(v, 0), m.V(v, 1), m.V(v, 2));
+    }
+    for (const auto& [type, c] : m.cells) {
+        const char* tag = type == CellType::Triangle ? "f" : "l";
+        for (Eigen::Index i = 0; i < c.connectivity.rows(); ++i) {
+            o << tag;
+            for (Eigen::Index k = 0; k < c.connectivity.cols(); ++k) {
+                o << ' ' << c.connectivity(i, k) + 1;
+            }
+            o << '\n';
+        }
+    }
+}
+
+history::CurveHistory curve_history_of(const ComponentResult& r)
+{
+    return history::CurveHistory::from_bytes(r.second.at("curve_history").get_binary());
+}
+
+/// What the map of a curve history does with random points on its input.
+struct CurveMapped
+{
+    size_t points = 0, lost = 0;
+    double round_trip = 0;
+    size_t exact = 0;
+    size_t features_kept = 0;
+};
+
+/**
+ * @brief What every curve history tetwild returns must hold, whatever its options: it starts at
+ * the segments of the curve files, and ends at the mesh returned -- its last state's segments,
+ * by output_vertex_ids, are edges of the tet mesh at the same positions, and exactly the edges
+ * of its edge block, the feature curves. Returns what the map does with points on the input,
+ * and how many feature points end within the anchors' radius of where they were.
+ */
+CurveMapped check_curve_history(
+    const ComponentResult& r,
+    const size_t n_segments = n_curve_segments,
+    const size_t n_features = n_curve_features)
+{
+    const history::CurveHistory h = curve_history_of(r);
+    const tracking::CurveTracking t(h);
+    CHECK(t.input_segments().size() == n_segments);
+    REQUIRE(t.output_by_vertices());
+    const MeshData& mesh = r.first.at("mesh");
+    const auto V = [&mesh](const uint64_t v) {
+        return Eigen::Vector3d(mesh.V.row(Eigen::Index(v)).transpose());
+    };
+    std::set<std::array<uint64_t, 2>> tet_edges;
+    const auto& T = mesh.cell(CellType::Tetrahedron).connectivity;
+    for (Eigen::Index t = 0; t < T.rows(); ++t) {
+        for (int a = 0; a < 4; ++a) {
+            for (int b = a + 1; b < 4; ++b) {
+                const uint64_t x = uint64_t(T(t, a)), y = uint64_t(T(t, b));
+                tet_edges.insert({{std::min(x, y), std::max(x, y)}});
+            }
+        }
+    }
+    const auto& out = t.map().output_vertices();
+    for (uint64_t v = 0; v < h.output_vertex_ids.size(); ++v) {
+        const uint64_t o = h.output_vertex_ids[v];
+        if (o == history::kNoVertex) continue;
+        REQUIRE(o < uint64_t(mesh.V.rows()));
+        CHECK(out[v] == V(o));
+    }
+    std::set<std::array<uint64_t, 2>> tracked, block;
+    for (const auto& e : t.output_segments()) {
+        const std::array<uint64_t, 2> s = {{std::min(e[0], e[1]), std::max(e[0], e[1])}};
+        CHECK(tet_edges.count(s) == 1);
+        tracked.insert(s);
+    }
+    const auto& E = mesh.cell(CellType::Edge).connectivity;
+    for (Eigen::Index i = 0; i < E.rows(); ++i) {
+        const uint64_t x = uint64_t(E(i, 0)), y = uint64_t(E(i, 1));
+        block.insert({{std::min(x, y), std::max(x, y)}});
+    }
+    CHECK(tracked == block);
+
+    std::mt19937 rng(5);
+    std::vector<tracking::InputCurvePoint> pts;
+    for (int i = 0; i < 1000; ++i) {
+        const double x = double(rng()) / 4294967296.0;
+        pts.push_back({uint64_t(rng() % n_segments), Eigen::Vector2d(1 - x, x)});
+    }
+    const auto there = t.to_output(pts);
+    const auto back = t.to_input(there);
+    CurveMapped m;
+    m.points = pts.size();
+    for (size_t i = 0; i < pts.size(); ++i) {
+        if (there[i].vertices[0] == tracking::kNoId) {
+            ++m.lost;
+            continue;
+        }
+        REQUIRE(back[i].segment != tracking::kNoId);
+        double err = 0;
+        if (back[i].segment == pts[i].segment) {
+            err = (back[i].bary - pts[i].bary).norm();
+        } else {
+            // A segment welded onto another maps back onto that one: the error is in space.
+            const auto& S = t.input_segments();
+            const auto& IV = t.map().input_vertices();
+            const auto at = [&](const tracking::InputCurvePoint& p) {
+                return Eigen::Vector3d(
+                    p.bary[0] * IV[S[p.segment][0]] + p.bary[1] * IV[S[p.segment][1]]);
+            };
+            err = (at(back[i]) - at(pts[i])).norm();
+        }
+        m.round_trip = std::max(m.round_trip, err);
+        m.exact += err < 1e-8;
+    }
+    // The anchors' radius: feature_envelope_ratio (1) x eps_rel (1e-3) x the diagonal of the
+    // box, grown over the features (x from 0 to 2.3).
+    const double radius = 1e-3 * Eigen::Vector3d(2.3, 2, 2).norm();
+    const auto features = t.feature_points();
+    CHECK(features.size() == n_features);
+    const auto& in = t.map().input_vertices();
+    for (const auto& f : features) {
+        if (f.output_vertex == tracking::kNoId) continue;
+        REQUIRE(f.output_vertex < uint64_t(mesh.V.rows()));
+        m.features_kept += (V(f.output_vertex) - in[f.input_vertex]).norm() <= radius;
+    }
+    return m;
+}
+
+} // namespace
+
+TEST_CASE("tetwild-curve-history-leaves-the-output-alone", "[tetwild][tracking]" + release_only)
+{
+    // Recording never changes the meshing: the same config gives the same mesh recorded or not.
+    const ComponentResult recorded = run_curves({});
+    const ComponentResult plain = run_curves({}, false);
+    CHECK_FALSE(plain.second.contains("curve_history"));
+    CHECK_FALSE(recorded.second.contains("history")); // its own key, without history_output
+    const MeshData& a = recorded.first.at("mesh");
+    const MeshData& b = plain.first.at("mesh");
+    CHECK(a.V == b.V);
+    CHECK(a.cell(CellType::Tetrahedron).connectivity == b.cell(CellType::Tetrahedron).connectivity);
+}
+
+TEST_CASE("tetwild-curve-history-preserve-topology", "[tetwild][tracking]" + release_only)
+{
+    // Under preserve_topology the map is a bijection: every point maps there and back, no
+    // warning, and every feature point ends within its anchor's radius.
+    const ComponentResult r = run_curves({{"preserve_topology", true}});
+    const CurveMapped m = check_curve_history(r);
+    CHECK(m.lost == 0);
+    CHECK(m.round_trip < 1e-8);
+    CHECK(m.features_kept == n_curve_features);
+    CHECK(tracking::CurveTracking(curve_history_of(r)).map().build_warnings().total() == 0);
+}
+
+TEST_CASE("tetwild-curve-history-default-topology", "[tetwild][tracking]" + release_only)
+{
+    // Without preserve_topology the collapses may weld curves that pass within the tube: a
+    // fourth curve runs along the chain, 1e-3 off it, closer than eps (3.5e-3). The welds are
+    // warnings of the map, which still ends at the mesh and maps every point. Under
+    // preserve_topology the substructure link condition refuses them -- for these curves off the
+    // surface only since 2026-11 -- and the map is a bijection.
+    for (const bool preserve_topology : {false, true}) {
+        CAPTURE(preserve_topology);
+        const ComponentResult r =
+            run_curves({{"preserve_topology", preserve_topology}}, true, 1e-3);
+        const CurveMapped m = check_curve_history(r, n_curve_segments + 4, n_curve_features + 2);
+        CHECK(m.lost == 0);
+        const tracking::CurveTracking t(curve_history_of(r));
+        const auto& w = t.map().build_warnings();
+        INFO(m.exact << " of " << m.points << " exact, worst " << m.round_trip);
+        if (preserve_topology) {
+            CHECK(w.topology == 0);
+            CHECK(m.round_trip < 1e-8);
+        } else {
+            CHECK(w.topology > 0);
+            CHECK(m.exact < m.points);
+        }
+    }
+}
+
+TEST_CASE("tetwild-curve-history-filters", "[tetwild][tracking]" + release_only)
+{
+    // A filter removes the tets outside the cube after the optimization, and with them the curve
+    // past x = 2: the history records that as segments replaced by nothing (resync,
+    // replace_faces), and ends at the filtered mesh. Points that were on it have no image, nor
+    // its two ends; every other point maps there and back.
+    for (const std::string filter : {"input", "flood"}) {
+        INFO("filter " << filter);
+        const ComponentResult r = run_curves({{"filter", filter}, {"preserve_topology", true}});
+        const CurveMapped m = check_curve_history(r);
+        CHECK(m.lost > 0);
+        CHECK(m.lost < m.points);
+        CHECK(m.round_trip < 1e-8);
+        CHECK(m.features_kept == n_curve_features - 2);
+        const tracking::CurveTracking t(curve_history_of(r));
+        CHECK(t.map().build_warnings().replaced > 0);
+        CHECK(t.map().build_warnings().topology == 0);
+    }
+}
+
+TEST_CASE("tetwild-curve-history-tagged-route", "[tetwild][tracking]" + release_only)
+{
+    // tetwild's own output taken back in, its edge block the feature curves: the history starts
+    // at them as received -- a segment per tracked edge of that mesh, at its positions -- and
+    // ends at the output's, as the surface history of a tagged mesh input does.
+    const ComponentResult first = run_curves({{"preserve_topology", true}}, false);
+    const MeshData& received = first.first.at("mesh");
+    const ComponentResult r = tetwild::tetwild(
+        {{"input", {"mesh"}},
+         {"curve_history_output", "record"},
+         {"preserve_topology", true},
+         {"max_iterations", 2}},
+        {{"mesh", received}});
+    const history::CurveHistory h = curve_history_of(r);
+    const tracking::CurveTracking t(h);
+    const auto& E = received.cell(CellType::Edge).connectivity;
+    REQUIRE(t.input_segments().size() == size_t(E.rows()));
+    std::set<Key> given, started;
+    const auto key2 = [](const Eigen::Vector3d& a, const Eigen::Vector3d& b) {
+        return key_of(a, b, b);
+    };
+    for (Eigen::Index i = 0; i < E.rows(); ++i) {
+        given.insert(
+            key2(received.V.row(E(i, 0)).transpose(), received.V.row(E(i, 1)).transpose()));
+    }
+    const auto& IV = t.map().input_vertices();
+    for (const auto& s : t.input_segments()) started.insert(key2(IV[s[0]], IV[s[1]]));
+    CHECK(started == given);
+    CHECK(t.map().build_warnings().total() == 0);
+    std::set<std::array<uint64_t, 2>> tracked, block;
+    for (const auto& e : t.output_segments()) {
+        tracked.insert({{std::min(e[0], e[1]), std::max(e[0], e[1])}});
+    }
+    const auto& E2 = r.first.at("mesh").cell(CellType::Edge).connectivity;
+    for (Eigen::Index i = 0; i < E2.rows(); ++i) {
+        const uint64_t x = uint64_t(E2(i, 0)), y = uint64_t(E2(i, 1));
+        block.insert({{std::min(x, y), std::max(x, y)}});
+    }
+    CHECK(tracked == block);
+}
+
+TEST_CASE("tetwild-curve-history-file-and-memory-routes", "[tetwild][tracking]" + release_only)
+{
+    // The same curves through files and in memory record the same curve history: the same first
+    // state, the same edits, the same output ids. Only the parameters differ, the route among
+    // them. Beside history_output, each in its own file: the surface history is unchanged by it.
+    const fs::path dir = fs::current_path() / "tetwild_curve_history_file_and_memory";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+    for (const auto& [name, m] : curve_scene()) write_obj(dir / (name + ".obj"), m);
+    const nlohmann::json options = {{"preserve_topology", true}, {"max_iterations", 3}};
+    nlohmann::json file = options;
+    file.update({
+        {"application", "tetwild"},
+        {"input",
+         {(dir / "cube.obj").string(),
+          (dir / "chain.obj").string(),
+          (dir / "rim.obj").string(),
+          (dir / "outside.obj").string(),
+          (dir / "points.obj").string()}},
+        {"output", (dir / "out").string()},
+        {"history_output", (dir / "out.wmtkhist").string()},
+        {"curve_history_output", (dir / "out_curves.wmtkhist").string()},
+        {"write_vtu", false},
+    });
+    tetwild::tetwild(file);
+    const auto a = history::CurveHistory::load((dir / "out_curves.wmtkhist").string());
+    nlohmann::json memory = options;
+    memory["history_output"] = "record";
+    const ComponentResult r = run_curves(memory);
+    REQUIRE(r.second.at("history").is_binary());
+    const history::CurveHistory b = curve_history_of(r);
+    CHECK(a.vertices == b.vertices);
+    CHECK(a.faces == b.faces);
+    CHECK(a.features == b.features);
+    CHECK(a.output_vertex_ids == b.output_vertex_ids);
+    REQUIRE(a.edits.size() == b.edits.size());
+    for (size_t i = 0; i < a.edits.size(); ++i) {
+        CHECK(a.edits[i].kind == b.edits[i].kind);
+        CHECK(a.edits[i].v == b.edits[i].v);
+        CHECK(a.edits[i].faces == b.edits[i].faces);
+    }
+    CHECK(nlohmann::json::parse(a.metadata).at("route") == "file");
+    CHECK(nlohmann::json::parse(b.metadata).at("route") == "memory");
+    // The surface history is the same with the curves recorded or not.
+    const auto surface = history::SurfaceHistory::load((dir / "out.wmtkhist").string());
+    nlohmann::json without = file;
+    without.erase("curve_history_output");
+    without["history_output"] = (dir / "plain.wmtkhist").string();
+    without["output"] = (dir / "plain").string();
+    tetwild::tetwild(without);
+    CHECK_FALSE(fs::exists(dir / "plain_curves.wmtkhist"));
+    const auto plain = history::SurfaceHistory::load((dir / "plain.wmtkhist").string());
+    CHECK(surface.edits.size() == plain.edits.size());
+    CHECK(surface.output_vertex_ids == plain.output_vertex_ids);
+    // The output the file route wrote is the mesh the memory route returned.
+    CHECK(io::read_mesh(dir / "out_final.msh").V == r.first.at("mesh").V);
+    fs::remove_all(dir);
 }

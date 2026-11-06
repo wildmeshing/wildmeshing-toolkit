@@ -12,6 +12,7 @@
 #include <wmtk/utils/Partitioning.h>
 #include <cstdlib>
 #include <wmtk/history/History.hpp>
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
@@ -266,6 +267,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     if (!history_output.empty() && !record_history) {
         logger().warn("history_output: not recorded, use_legacy_code rebuilds the mesh");
     }
+    // Recording the feature curves (the curve inputs, with their ends, junctions and the point
+    // inputs), the edges tagged `feature`: their own history and file, as the volume's, with or
+    // without the surface's. From the inputs as read, through the insertion, to the output. The
+    // legacy optimizer carries no curves.
+    const std::string curve_history_output = json_params["curve_history_output"];
+    const bool record_curves = !curve_history_output.empty() && !json_params["use_legacy_code"];
+    if (!curve_history_output.empty() && !record_curves) {
+        logger().warn("curve_history_output: not recorded, use_legacy_code rebuilds the mesh");
+    }
     // The volume around it too, its own choice, recorded alongside from the insertion on (see
     // below). It follows the surface history. And the coarsening pass's local smoothing moves a
     // whole ball of vertices inside one collapse, of which the volume history, which records
@@ -423,6 +433,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     }
 
     history::SurfaceHistory input_history; // the files as read, welded, simplified
+    history::CurveHistory curve_input_history; // the feature curve files as read
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
@@ -510,13 +521,28 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         // Read and grown over by the shared code simwild uses too (utils::read_feature_inputs()).
         // Each point labelled by its input's name (FeatureInputs::point_names): the mesh's point
         // block.
+        io::ReadProvenance curves_read;
         features = utils::read_feature_inputs(
             component_io,
             root,
             curve_inputs,
             point_inputs,
             curve_labels,
-            point_labels);
+            point_labels,
+            record_curves ? &curves_read : nullptr);
+        // The curves are inserted as read: no weld and no simplification, so the history goes from
+        // the inputs straight to the insertion's embed.
+        if (record_curves) {
+            curve_input_history = history::curves_from_input(
+                curves_read,
+                curves_read.V,
+                curves_read.cells,
+                {},
+                curves_read.V,
+                curves_read.cells,
+                {},
+                /*keep_z=*/true);
+        }
         features.extend_bbox(box_minmax.first, box_minmax.second);
 
         t_load = phase_timer.getElapsedTime();
@@ -1017,6 +1043,13 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 std::move(facet_sources[i]));
         }
         facet_sources = {};
+        // Where each tet edge tiling a feature curve lies on the input segments, by the positions
+        // its ends will have.
+        if (record_curves) {
+            mesh_new.set_insertion_curve_sources(features_out, [&v_rational](size_t v) {
+                return to_double(v_rational[v]);
+            });
+        }
         // The wn_ fields are named after the inputs when input_names names them, else numbered.
         if (!json_params["input_names"].empty()) mesh_new.m_input_names = face_tags;
         // The input points' labels, which their anchors keep and the output writes as its point
@@ -1330,6 +1363,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // From here on the tracked surface is recorded, starting where the insertion left it.
     if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
+    if (record_curves) mesh_new.record_curve_history(component_io.history_metadata(json_params));
     // The whole volume around it too, if asked: the map of the volume starts at the tet mesh
     // written here, and ends at the mesh before the filter (<output>_history_output.msh). Both
     // are files next to the output; on the memory route, which has none, the output meshes
@@ -1516,6 +1550,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     }
     if (const auto vh = mesh_new.finish_volume_history()) {
         component_io.save_volume_history(*vh, volume_history_output);
+    }
+    // As the surface's: a filter removes the tracked edges of the tets it drops.
+    if (const auto ch = mesh_new.finish_curve_history(tagged ? nullptr : &curve_input_history)) {
+        component_io.save_curve_history(*ch, curve_history_output);
     }
 
     t_finalize = phase_timer.getElapsedTime(); // winding/flood/filter done
