@@ -304,8 +304,6 @@ On files, `output` names:
   with `input_names`) and the vertex fields `sizing_field`, `is_rounded`, `on_surface`,
   `on_open_boundary` and `order`.
 - `snowman_surf.vtu`: the tracked surface, the tet faces that lie on the input.
-- `snowman_surface.obj`: with a filter, the boundary of the tets kept; with `filter` `none`, the
-  tracked surface.
 - `snowman_simplified_input.obj`: the input after the simplification, as inserted.
 - `snowman_features.obj`: with feature curves or points, the tracked curves (`l`) and the
   anchored points (`p`).

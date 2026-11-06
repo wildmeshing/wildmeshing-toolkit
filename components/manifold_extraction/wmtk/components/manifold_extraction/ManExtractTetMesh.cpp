@@ -1,5 +1,4 @@
 #include "ManExtractTetMesh.h"
-#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
@@ -438,9 +437,9 @@ void ManExtractTetMesh::extract_surface_mesh(MatrixXd& V, MatrixXi& F)
 }
 
 
-void ManExtractTetMesh::write_surface(const std::string& path, MeshMap* output)
+void ManExtractTetMesh::write_surface(const std::string& path)
 {
-    if (!m_params.output_enabled && !output) return;
+    if (!m_params.output_enabled) return;
     logger().info("Write surface {}.obj", path);
     MatrixXd pre_V_out;
     MatrixXi pre_F_out;
@@ -469,10 +468,7 @@ void ManExtractTetMesh::write_surface(const std::string& path, MeshMap* output)
             "boundary.");
     }
 
-    if (output)
-        (*output)["surface"] = io::geometry_data(V_out, F_out, CellType::Triangle);
-    else
-        igl::write_triangle_mesh(path + ".obj", V_out, F_out);
+    igl::write_triangle_mesh(path + ".obj", V_out, F_out);
 }
 
 

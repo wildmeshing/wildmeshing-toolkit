@@ -38,7 +38,6 @@
 #include <igl/random_points_on_mesh.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_unreferenced.h>
-#include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 #include <wmtk/utils/EnvelopeBudget.hpp>
 #include <wmtk/utils/FeatureInputs.hpp>
@@ -1846,12 +1845,12 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     mesh_new.output_mesh(output_path + "_final.msh", face_tags, feature_tags);
     // The reference the tags were held to, for the next component (the memory route's
     // outputs["envelope"]), in a file of its own: _final.msh is read as a mesh by gmsh and polyfem.
+    // Nothing derived from the mesh: _final.msh holds the tracked surface (its triangle block) and
+    // the boundary of the tets kept. Until 2026-11 they were also written as _surface.obj.
     if (!component_io.memory()) io::write_mesh(output_path + "_envelope.msh", envelope_out);
 
-    if (!component_io.memory()) igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
-
-    // The tracked feature curves, as an edge mesh -- the 1D counterpart of _surface.obj.
-    // Only written when features exist, so featureless runs are byte-identical.
+    // The tracked feature curves, as an edge mesh. Only written when features exist, so
+    // featureless runs are byte-identical.
     if (!component_io.memory() && features_present) {
         // From the pre-filter collections: a filter must not erase user-supplied features
         // from the feature outputs (they do leave the tet mesh with their region).

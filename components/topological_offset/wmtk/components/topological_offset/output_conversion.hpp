@@ -5,21 +5,18 @@
 
 namespace wmtk::components::topological_offset {
 template <typename Mesh>
-void collect_memory_output(
-    Mesh& mesh,
-    io::ComponentIO& context,
-    io::OutputKeys keys = io::default_output_keys())
+void collect_memory_output(Mesh& mesh, io::ComponentIO& context)
 {
-    // In 2D, `_surf` is the envelope curve itself, which is returned as `envelope` below.
-    if constexpr (!std::is_base_of_v<TetMesh, Mesh>) keys["mesh_surf.vtu"] = "";
     MeshMap raw;
-    // The result: the tags, the data fields and two annotations (write_vtu_frame()). No stencil
-    // file, a debug-frame diagnostic indexed by its own points, not by the mesh's vertex slots,
-    // which compact_slot_outputs() could not remap ("Export references an inactive vertex": every
-    // run of the 2026-10-29 sonic sweep aborted there).
+    // The result: the tags, the data fields and two annotations (write_vtu_frame()). Its companion
+    // exports -- the input complex, the front, their edges; in 2D `_surf` is the envelope curve,
+    // returned as `envelope` below -- are the mesh's tags, and io::default_output_keys() drops
+    // them. No stencil file, a debug-frame diagnostic indexed by its own points, not by the mesh's
+    // vertex slots, which compact_slot_outputs() could not remap ("Export references an inactive
+    // vertex": every run of the 2026-10-29 sonic sweep aborted there).
     mesh.write_vtu("mesh", &raw, /*result=*/true);
     if constexpr (std::is_base_of_v<TetMesh, Mesh>) io::compact_slot_outputs(mesh, raw);
-    context.result.first = io::named_outputs(std::move(raw), keys);
+    context.result.first = io::named_outputs(std::move(raw));
     auto& data = context.result.first.at("mesh");
     if constexpr (std::is_base_of_v<TetMesh, Mesh>) {
         io::collect_tags(

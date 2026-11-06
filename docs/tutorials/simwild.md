@@ -540,10 +540,10 @@ no cell changes.
   in memory. Its tets (triangles in 2D) carry `tags` (the regions, and `ambient`), `quality` (the
   energy), `quality_target` and `quality_rel` (their ratio, at most 1 when the run converged); its
   vertices carry `sizing_field`.
-- In memory, also `outputs["surface"]`: the interface triangles (in 2D, segments), and in 3D
-  `outputs["edges"]`: the edges where the interfaces are not manifold, such as the circle where
-  the two spheres cross. With [`write_vtu`](../reference/simwild.md#write_vtu), the file route
-  writes VTU files of the same.
+- The interfaces are where the tags differ across a face (in 2D, an edge): the mesh holds them,
+  and no output repeats them. With [`write_vtu`](../reference/simwild.md#write_vtu), the file
+  route writes VTU files of the interface triangles (in 2D, segments) and, in 3D, of the edges
+  where the interfaces are not manifold, such as the circle where the two spheres cross.
 - `outputs["envelope"]`, see [above](#the-envelope-a-run-returns).
 - With [`report`](../reference/simwild.md#report), a JSON file (in memory, the report) with the
   number of cells `#t` and vertices `#v`, `max_energy` and `avg_energy` over all cells, `eps`,

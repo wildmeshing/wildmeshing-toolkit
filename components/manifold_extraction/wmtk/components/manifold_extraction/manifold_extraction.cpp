@@ -188,11 +188,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             }
         }
 
-        // save output
+        // save output: the mesh, whose tags give the extracted curves
         topological_offset::collect_memory_output(mesh, component_io);
-        if (component_io.memory())
-            mesh.write_curve("", &component_io.result.first);
-        else
+        if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         hand_on_envelope();
         if (mesh.m_man_params.save_vtu) {
@@ -277,14 +275,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             }
         }
 
-        // save output
-        // `_surf` holds the input-complex faces here; `surface` is the extracted boundary.
-        auto keys = io::default_output_keys();
-        keys["mesh_surf.vtu"] = "input_complex";
-        topological_offset::collect_memory_output(mesh, component_io, keys);
-        if (component_io.memory())
-            mesh.write_surface("", &component_io.result.first);
-        else
+        // save output: the mesh, whose tags give the extracted surface and the input complex
+        topological_offset::collect_memory_output(mesh, component_io);
+        if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         hand_on_envelope();
         if (mesh.m_man_params.save_vtu) {

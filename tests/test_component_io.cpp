@@ -115,6 +115,13 @@ void add_tags(MeshData& data, CellType type)
     auto& c = data.cells.at(type);
     c.attributes["tags"] = {DataMatrix<uint8_t>::Ones(c.connectivity.rows(), 1).eval(), {"tag_0"}};
 }
+// The names of a result's meshes.
+[[maybe_unused]] std::set<std::string> output_names(const MeshMap& outputs)
+{
+    std::set<std::string> names;
+    for (const auto& entry : outputs) names.insert(entry.first);
+    return names;
+}
 void check(const ComponentResult& result)
 {
     REQUIRE(result.first.count("mesh"));
@@ -297,6 +304,8 @@ TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
     auto result = simwild::simwild(options, {{"tagged", data}, {"boundary", envelope}});
     check(result);
     REQUIRE(result.first.at("mesh").cells.begin()->second.attributes.count("tags"));
+    // The mesh and the envelope, nothing derived from the mesh.
+    CHECK(output_names(result.first) == std::set<std::string>{"mesh", "envelope"});
 }
 TEST_CASE(
     "SimWild remeshes a tagged mesh with nothing tracked and no envelope",
@@ -646,15 +655,17 @@ TEST_CASE("TriWild embeds named curves in memory", "[component_io]")
     data.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0;
     data.cells[CellType::Edge].connectivity.resize(4, 2);
     data.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 3, 3, 0;
-    check(
-        triwild::triwild(
-            {{"input", {"curves"}},
-             {"simplify", false},
-             {"max_iterations", 0},
-             {"num_threads", 1},
-             {"DEBUG_output", true},
-             {"write_vtu", true}},
-            {{"curves", data}}));
+    const auto result = triwild::triwild(
+        {{"input", {"curves"}},
+         {"simplify", false},
+         {"max_iterations", 0},
+         {"num_threads", 1},
+         {"DEBUG_output", true},
+         {"write_vtu", true}},
+        {{"curves", data}});
+    check(result);
+    // The mesh, its tracked curves the edge block, and the envelope: no `surface`.
+    CHECK(output_names(result.first) == std::set<std::string>{"mesh", "envelope"});
 }
 TEST_CASE("TriWild writes each input's curve tags on both routes", "[component_io][io]")
 {
@@ -740,15 +751,17 @@ TEST_CASE("TetWild embeds a named surface in memory", "[component_io]" + release
     data.cells.clear();
     data.cells[CellType::Triangle].connectivity.resize(4, 3);
     data.cells[CellType::Triangle].connectivity << 1, 2, 3, 0, 3, 2, 0, 1, 3, 0, 2, 1;
-    check(
-        tetwild::tetwild(
-            {{"input", {"surface"}},
-             {"simplify", false},
-             {"max_iterations", 0},
-             {"num_threads", 1},
-             {"DEBUG_output", true},
-             {"write_vtu", true}},
-            {{"surface", data}}));
+    const auto result = tetwild::tetwild(
+        {{"input", {"surface"}},
+         {"simplify", false},
+         {"max_iterations", 0},
+         {"num_threads", 1},
+         {"DEBUG_output", true},
+         {"write_vtu", true}},
+        {{"surface", data}});
+    check(result);
+    // The mesh, its tracked surface the triangle block, and the envelope: no `surface`.
+    CHECK(output_names(result.first) == std::set<std::string>{"mesh", "envelope"});
 }
 TEST_CASE(
     "TetWild writes each input's face tags and its feature curves on both routes",
@@ -868,13 +881,15 @@ TEST_CASE("Offset accepts named tagged meshes", "[component_io]")
     WorkingDirectory cwd;
     auto data = cube_tets();
     add_tags(data, CellType::Tetrahedron);
-    check(
-        topological_offset::topological_offset(
-            {{"input", "tagged"},
-             {"offset_selection", "tag_0 & !tag_0"},
-             {"optimize_offset", false},
-             {"DEBUG_output", true}},
-            {{"tagged", data}}));
+    const auto result = topological_offset::topological_offset(
+        {{"input", "tagged"},
+         {"offset_selection", "tag_0 & !tag_0"},
+         {"optimize_offset", false},
+         {"DEBUG_output", true}},
+        {{"tagged", data}});
+    check(result);
+    // The mesh alone, no envelope given: no `surface`, `edges` or `offset`.
+    CHECK(output_names(result.first) == std::set<std::string>{"mesh"});
 }
 #endif
 #ifdef WMTK_TEST_manifold_extraction
@@ -900,11 +915,11 @@ TEST_CASE("Manifold extraction accepts named tagged meshes", "[component_io]")
         options,
         {{"tagged", data}, {"boundary", envelope}});
     check(result);
-    REQUIRE(result.first.count("surface"));
-    REQUIRE(result.first.at("surface").cells.count(CellType::Edge));
-    // A 2D offset exports no input complex; its `_surf` export is the envelope curve.
-    REQUIRE(!result.first.count("input_complex"));
-    REQUIRE(result.first.count("envelope") == options.count("envelope"));
+    // The mesh, and the envelope given: no `surface`, the extracted boundary, which the mesh's
+    // tags give.
+    std::set<std::string> expected = {"mesh"};
+    if (options.count("envelope")) expected.insert("envelope");
+    CHECK(output_names(result.first) == expected);
 }
 #endif
 #ifdef WMTK_TEST_prismatic_mesh
@@ -1241,6 +1256,8 @@ TEST_CASE("Manifold extraction leaves a manifold selection as it is", "[componen
     CHECK(
         outputs.at("mesh").cell(CellType::Tetrahedron).connectivity.rows() ==
         meshes.at("tagged").cell(CellType::Tetrahedron).connectivity.rows());
+    // The mesh alone: no `surface`, the extracted boundary, and no `input_complex`.
+    CHECK(output_names(outputs) == std::set<std::string>{"mesh"});
 }
 #endif
 #ifdef WMTK_TEST_manifold_extraction

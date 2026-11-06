@@ -193,16 +193,19 @@ unchanged.
 
 ## Results and compatibility
 
-`mesh` is the primary output key. Components also return their applicable existing secondary
-geometry under fixed keys:
+`mesh` is the primary output key. tetwild, triwild, simwild, topological_offset and
+manifold_extraction return nothing `mesh` already holds: their tracked surfaces and curves are
+its triangle and edge blocks, and the boundary of a region -- simwild's interfaces, an offset's
+front, the surface manifold_extraction extracts -- is where the cell tags differ across a face
+(2D: an edge), as the next component reads it. Until 2026-11 they also returned these as
+`surface`, `edges` (simwild 3D: where the interfaces are not manifold), `offset` and
+`input_complex`, each a second copy of the mesh's vertices. The keys besides `mesh`:
 
-- `surface`: the boundary (triangles in 3D; in 2D -- triwild, 2D simwild -- the boundary edges).
-  Manifold extraction returns its extracted boundary here.
-- `edges`: simwild's 3D feature edges; isotropic_remeshing's feature edges, with `features` or
-  `feature_fields` (its Int64 `edge_id`, and `mesh`'s Int64 `vertex_id` and per-face fields --
-  in the types they were given in, with their labels -- are what its `.vtu` output holds, an
-  edge block of none where there are none), which can be the next call's `features`.
-- `offset`: the offset surface or front; prismatic's classified offset faces.
+- `edges`: isotropic_remeshing's feature edges, with `features` or `feature_fields` (its Int64
+  `edge_id`, and `mesh`'s Int64 `vertex_id` and per-face fields -- in the types they were given
+  in, with their labels -- are what its `.vtu` output holds, an edge block of none where there are
+  none), which can be the next call's `features`: a triangle mesh holds no edge block.
+- `offset`: prismatic's classified offset faces.
 - `envelope`: what tetwild, triwild and simwild held their tags to, the reference -- the input,
   or the simplified input under `envelope_reference` "simplified" -- labelled as `mesh` labels the
   tags: in 3D a triangle block with one `tags` column per input surface's face tag or region, and
@@ -210,7 +213,8 @@ geometry under fixed keys:
   curve's edge tag or region; the input points as a point block without tags, as `mesh` writes
   nothing for them. No eps: a receiver brings its own. A component given an `envelope` returns that
   one, unchanged; simwild's tag operations return none.
-- `features`, `uv`, and manifold extraction's 3D input-complex preview `input_complex`.
+- `features`: tetwild's and triwild's tracked curves and anchored points, with input points.
+- `uv`: c1_simplification's UV mesh.
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as
   `input_and_shell_offset`; with `prism_dominant`, the report adds that export's
   `input_and_shell_hybrid` report, as in its `_hybrid.json` file.
@@ -222,19 +226,14 @@ geometry under fixed keys:
   ends at, all of it before the filter (its `<output>_history_output.msh`); `mesh` is the part
   the filter keeps. For simwild the volume history ends at `mesh`.
 
-For tetwild, triwild, simwild, topological_offset and isotropic_remeshing, `surface`, `edges` and
-`offset` share the `mesh` vertex rows: their connectivity indexes the same `V`, with the same
-vertex fields, so row `i` is the same vertex in every one of them, and vertices an output does not
-reference are kept.
-This is deliberate -- it maps a boundary vertex to its volume vertex without a search -- at the
-cost of one vertex array per output. `envelope`, `features`, manifold extraction's `surface` and
-prismatic's offset faces have vertices of their own.
+isotropic_remeshing's `edges` shares the `mesh` vertex rows: its connectivity indexes the same
+`V`, with the same vertex fields, so row `i` is the same vertex in both, and vertices it does not
+reference are kept. `envelope`, `features` and prismatic's offset faces have vertices of their own.
 
 topological_offset's result -- `mesh`, the `.msh`, and the `save_vtu` file -- carries the tags,
 the data fields (`vid`, `labels`, `offset_tag`; in `mesh` and the `.msh`, with
 `save_offset_correspondence`, `corr_input_vid`) and two annotations, `amips` per tet and
-`distance_over_target` per vertex; `surface`, `edges` and `offset` carry `vid`, and `offset`
-`distance_over_target`. Its `DEBUG_output` frames carry every diagnostic field.
+`distance_over_target` per vertex. Its `DEBUG_output` frames carry every diagnostic field.
 manifold_extraction, which returns its mesh through the offset's writer, returns it so too.
 
 The exporters' legacy file names map to these keys through one explicit table
