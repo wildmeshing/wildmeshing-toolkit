@@ -523,14 +523,19 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     it tiles (`E_out_sources`). The mesh's vertices are the arrangement's rows, so triwild keys
     them by vertex pair (`TriOptimizerMesh::CurveSources`); `finish_curve_history` appends the
     `embed`, then the mesh's edits.
-- **tetwild's and simwild's feature curves** (`history::curves_from_input(..., keep_z = true)`):
+- **tetwild's and simwild's feature curves** (`history::curves_from_features`, which calls
+  `curves_from_input(..., keep_z = true)`):
   - **Read.** `utils::read_feature_inputs(..., ReadProvenance*)` gives the curve inputs'
     vertices and segments, concatenated in input order, then the point inputs' vertices,
-    as triwild appends its points. The files are read with no tolerance, so nothing is welded
-    and the maps are the identity: ends of two files that only coincide in space are two input
-    vertices, two feature points, which the insertion makes one vertex.
-  - **No simplification.** The curves are inserted as read; the history goes from the files to
-    the insertion's `embed`.
+    as triwild appends its points, and where each went: the curves are welded by exact position,
+    in one input and across inputs, with no tolerance, as the insertion places them and as the
+    anchors' reference (`InputCurves`) merges them. The ends of two curves that touch are then one
+    input vertex, which the joined curve passes, as the mesh has it. Until 2026-11 they were two
+    input vertices, two feature points on one output vertex, and the input's curves had a
+    component more than the output's: tetwild's end-of-run check counted a topology change, and
+    under `preserve_topology` with `throw_on_fail` threw. The insertion is unchanged by the weld:
+    the same vertices, bit for bit, as `insertion-of-welded-curves-is-the-same` checks.
+  - **No simplification.** The history goes from the weld to the insertion's `embed`.
   - **Insert.** The insertion's `edge_tiling`, inverted and keyed by position
     (`TetOptimizerMesh::set_insertion_curve_sources`); `finish_curve_history` appends the
     `embed`, then the mesh's edits.
@@ -890,10 +895,6 @@ the one it ends at.
   the input simplification without the link condition: all of them `topology` warnings. With
   `preserve_topology` there are none of these left.
 - Duplicate segments in the input files (`merged_segments`), which the weld makes one.
-- In 3D, curve ends that only coincide in space: tetwild and simwild do not weld their feature
-  curve files, so two such ends are two input feature points, and both map onto the one vertex
-  the insertion makes of them. Where they make a vertex of two feature edges, the mesh does not
-  anchor it, and the operations may move it along the curve.
 - **Not a warning, but a distortion: junctions that slide.** triwild anchors only curve ends; a
   junction is free to move, with or without tracking, and does: on 190246 one slid 14 units in a single smoothing step, zipping two curves that run
   side by side inside the envelope. The map still takes the junction to the junction, so one

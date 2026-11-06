@@ -981,8 +981,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     } else {
         const InputLists lists = split_inputs(component_io, input_paths, json_params, 3);
         // Read by the code tetwild reads them with, and recorded from the inputs as tetwild
-        // records them: inserted as read, so the history goes from the inputs to the insertion's
-        // embed.
+        // records them: inserted as read, welded by exact position, so the history goes from the
+        // inputs through that weld to the insertion's embed.
         const bool record_curves = !std::string(json_params["curve_history_output"]).empty();
         io::ReadProvenance curves_read;
         const utils::FeatureInputs features = utils::read_feature_inputs(
@@ -1004,15 +1004,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         input_data.point_names = features.point_names;
         if (record_curves) {
             input_data.has_curve_input_history = true;
-            input_data.curve_input_history = history::curves_from_input(
-                curves_read,
-                curves_read.V,
-                curves_read.cells,
-                {},
-                curves_read.V,
-                curves_read.cells,
-                {},
-                /*keep_z=*/true);
+            input_data.curve_input_history = history::curves_from_features(curves_read, features);
         }
     }
 

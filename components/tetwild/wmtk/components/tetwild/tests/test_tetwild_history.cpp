@@ -603,6 +603,45 @@ TEST_CASE("tetwild-curve-history-tagged-route", "[tetwild][tracking]" + release_
     CHECK(tracked == block);
 }
 
+TEST_CASE("tetwild-curve-inputs-touching-end-to-end", "[tetwild][tracking]" + release_only)
+{
+    // Two curve inputs, the chain split at (1, 1, 1): `a` ends where `b` starts, the two
+    // vertices at exactly the same position. The insertion makes them one vertex, and the curves
+    // are read welded by exact position as it places them: one input vertex, which the joined
+    // curve passes, neither an anchor nor a feature point, as the mesh has it. Until 2026-11 they
+    // were read as two vertices, two components of the input's curves where the output has one,
+    // and under preserve_topology with throw_on_fail the end-of-run check threw "Feature-curve
+    // topology was not preserved" on a run that kept it.
+    const std::vector<Eigen::Vector3d> v = chain();
+    MeshMap meshes = {
+        {"cube", cube()},
+        {"a", curve({v[0], v[1], v[2]})},
+        {"b", curve({v[2], v[3], v[4]})}};
+    ComponentResult r;
+    REQUIRE_NOTHROW(
+        r = tetwild::tetwild(
+            {{"input", {"cube", "a", "b"}},
+             {"curve_history_output", "record"},
+             {"preserve_topology", true},
+             {"throw_on_fail", true},
+             {"max_iterations", 3}},
+            meshes));
+    const tracking::CurveTracking t(curve_history_of(r));
+    CHECK(t.input_segments().size() == 4);
+    CHECK(t.map().build_warnings().total() == 0);
+    // The ends of the chain, each at an output vertex; not the vertex where a and b meet.
+    const auto features = t.feature_points();
+    REQUIRE(features.size() == 2);
+    const MeshData& mesh = r.first.at("mesh");
+    std::set<std::array<double, 3>> at;
+    for (const auto& f : features) {
+        REQUIRE(f.output_vertex < uint64_t(mesh.V.rows()));
+        const Eigen::Vector3d p = t.map().input_vertices()[f.input_vertex];
+        at.insert({{p[0], p[1], p[2]}});
+    }
+    CHECK(at.count({{1, 1, 1}}) == 0);
+}
+
 TEST_CASE("tetwild-curve-history-file-and-memory-routes", "[tetwild][tracking]" + release_only)
 {
     // The same curves through files and in memory record the same curve history: the same first

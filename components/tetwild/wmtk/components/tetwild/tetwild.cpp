@@ -530,18 +530,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             curve_labels,
             point_labels,
             record_curves ? &curves_read : nullptr);
-        // The curves are inserted as read: no weld and no simplification, so the history goes from
-        // the inputs straight to the insertion's embed.
+        // The curves are inserted as read, welded by exact position and not simplified, so the
+        // history goes from the inputs through that weld to the insertion's embed.
         if (record_curves) {
-            curve_input_history = history::curves_from_input(
-                curves_read,
-                curves_read.V,
-                curves_read.cells,
-                {},
-                curves_read.V,
-                curves_read.cells,
-                {},
-                /*keep_z=*/true);
+            curve_input_history = history::curves_from_features(curves_read, features);
         }
         features.extend_bbox(box_minmax.first, box_minmax.second);
 

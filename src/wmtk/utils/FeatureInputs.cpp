@@ -30,20 +30,14 @@ FeatureInputs read_feature_inputs(
     io::ReadProvenance* read)
 {
     FeatureInputs out;
-    std::vector<Vector3d> read_V;
-    std::vector<std::array<int, 2>> read_E;
+    // The inputs as read, for `read`: every vertex and segment, and what each became.
+    std::vector<Vector3d> raw_V;
+    std::vector<std::array<int, 2>> raw_E;
     std::vector<int> vertex_map, cell_map;
-    // Appends what reading one input gave, its rows offset by what came before.
-    const auto append_read = [&](const io::ReadProvenance& r, const bool segments) {
-        const int base_v = int(read_V.size()), base_e = int(read_E.size());
-        for (Eigen::Index v = 0; v < r.V.rows(); ++v) read_V.emplace_back(r.V.row(v));
-        for (const int w : r.vertex_map) vertex_map.push_back(w < 0 ? -1 : base_v + w);
-        if (!segments) return;
-        for (Eigen::Index e = 0; e < r.cells.rows(); ++e) {
-            read_E.push_back({{base_v + r.cells(e, 0), base_v + r.cells(e, 1)}});
-        }
-        for (const int c : r.cell_map) cell_map.push_back(c < 0 ? -1 : base_e + c);
-    };
+    // The curves' vertices welded by exact position, across the inputs and within each: two at
+    // the same coordinates, bit for bit, are one, the first of them, as the insertion places them.
+    std::map<std::array<double, 3>, size_t> welded;
+    size_t n_degenerate = 0;
     const bool labelled =
         edge_names.size() == edge_selectors.size() && point_names.size() == point_selectors.size();
     // A point of input `name`: its label's column, the name added on first use.
@@ -61,16 +55,29 @@ FeatureInputs read_feature_inputs(
         const std::string& path = edge_paths[file];
         MatrixXd Ve;
         MatrixXi Ee;
-        io::ReadProvenance r;
-        component_io.edges(path, Ve, Ee, -1, -1, read != nullptr ? &r : nullptr);
-        if (read != nullptr) append_read(r, true);
+        component_io.edges(path, Ve, Ee); // as given: no tolerance, nothing merged
         logger().info("Read feature edge mesh {}: #V = {}, #E = {}", path, Ve.rows(), Ee.rows());
-        const size_t base = out.edge_vertices.size();
+        const int raw_base = int(raw_V.size());
+        std::vector<size_t> id(Ve.rows());
         for (int i = 0; i < Ve.rows(); ++i) {
-            out.edge_vertices.emplace_back(Ve.row(i));
+            const Vector3d p = Ve.row(i).transpose();
+            const auto [it, added] =
+                welded.emplace(std::array<double, 3>{{p[0], p[1], p[2]}}, out.edge_vertices.size());
+            if (added) out.edge_vertices.push_back(p);
+            id[i] = it->second;
+            raw_V.push_back(p);
+            vertex_map.push_back(int(id[i]));
         }
         for (int i = 0; i < Ee.rows(); ++i) {
-            out.edges.push_back({{base + size_t(Ee(i, 0)), base + size_t(Ee(i, 1))}});
+            raw_E.push_back({{raw_base + Ee(i, 0), raw_base + Ee(i, 1)}});
+            const size_t a = id[Ee(i, 0)], b = id[Ee(i, 1)];
+            if (a == b) { // two vertices at one position: a segment of no length tiles nothing
+                ++n_degenerate;
+                cell_map.push_back(-1);
+                continue;
+            }
+            cell_map.push_back(int(out.edges.size()));
+            out.edges.push_back({{a, b}});
             out.edge_input.push_back(int(file));
         }
         // A vertex of an edge file with no incident edge is a free point, same rule as
@@ -86,25 +93,35 @@ FeatureInputs read_feature_inputs(
             }
         }
     }
+    if (welded.size() < raw_V.size() || n_degenerate > 0) {
+        logger().info(
+            "feature curves: {} vertices welded into {} by exact position, {} segments of no "
+            "length dropped",
+            raw_V.size(),
+            welded.size(),
+            n_degenerate);
+    }
+    size_t n_points_read = 0;
     for (size_t file = 0; file < point_paths.size(); ++file) {
         const std::string& path = point_paths[file];
         MatrixXd Vp;
         MatrixXi Ep; // none: a point input has no segments (ComponentIO::input_kind())
-        io::ReadProvenance r;
-        component_io.edges(path, Vp, Ep, -1, -1, read != nullptr ? &r : nullptr);
-        if (read != nullptr) append_read(r, false);
+        component_io.edges(path, Vp, Ep);
         logger().info("Read feature point file {}: #P = {}", path, Vp.rows());
         for (int i = 0; i < Vp.rows(); ++i) {
+            // After the curves' welded vertices, each its own.
+            vertex_map.push_back(int(out.edge_vertices.size() + n_points_read++));
+            raw_V.push_back(Vp.row(i).transpose());
             add_point(Vp.row(i).transpose(), labelled ? point_names[file] : "");
         }
     }
     if (read != nullptr) {
-        read->V.resize(Eigen::Index(read_V.size()), 3);
-        for (size_t v = 0; v < read_V.size(); ++v) read->V.row(Eigen::Index(v)) = read_V[v];
-        read->cells.resize(Eigen::Index(read_E.size()), 2);
-        for (size_t e = 0; e < read_E.size(); ++e) {
-            read->cells(Eigen::Index(e), 0) = read_E[e][0];
-            read->cells(Eigen::Index(e), 1) = read_E[e][1];
+        read->V.resize(Eigen::Index(raw_V.size()), 3);
+        for (size_t v = 0; v < raw_V.size(); ++v) read->V.row(Eigen::Index(v)) = raw_V[v];
+        read->cells.resize(Eigen::Index(raw_E.size()), 2);
+        for (size_t e = 0; e < raw_E.size(); ++e) {
+            read->cells(Eigen::Index(e), 0) = raw_E[e][0];
+            read->cells(Eigen::Index(e), 1) = raw_E[e][1];
         }
         read->vertex_map = std::move(vertex_map);
         read->cell_map = std::move(cell_map);

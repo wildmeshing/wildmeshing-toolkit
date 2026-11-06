@@ -29,9 +29,17 @@ namespace wmtk::utils {
  */
 struct FeatureInputs
 {
-    /// The vertices of every curve input, concatenated in input order.
+    /// The vertices of every curve input, in input order, welded by exact position: vertices at
+    /// the same coordinates, bit for bit, in one input or in two, are one, the first of them.
+    /// So the ends of two curves that touch are one vertex, as the insertion places them, which
+    /// the joined curve passes through. Until 2026-11 they were concatenated as given, and the input's curves had two
+    /// components where the output, and the insertion, have one: under preserve_topology with
+    /// throw_on_fail, tetwild's end-of-run check threw "Feature-curve topology was not preserved"
+    /// on a run that kept it.
     std::vector<Vector3d> edge_vertices;
-    /// The feature edges, into edge_vertices.
+    /// The feature edges, into edge_vertices. A segment whose ends weld into one is dropped: it
+    /// tiles nothing, and the insertion refuses it ("forced edge has coincident endpoints"), as
+    /// it refused a segment between two vertices at one position before the weld.
     std::vector<std::array<size_t, 2>> edges;
     /// Per edge, the curve input it came from (its position among the curve inputs): the edge's
     /// input, as an input surface is a tracked face's (TetOptimizerMesh::tag_feature_edges()).
@@ -60,10 +68,10 @@ struct FeatureInputs
  * selector, each point is labelled by its input's (point_input, point_names).
  *
  * `read`, if given, gets the inputs as read, for a curve history to start from them
- * (history::curves_from_input()): the curve inputs' vertices and segments, concatenated in input
- * order, then the point inputs' vertices, as triwild appends its points. Nothing is welded -- the
- * inputs are read with no tolerance -- so its maps are the identity, and read->V and read->cells
- * are also the network the history goes on from.
+ * (history::curves_from_features()): the curve inputs' vertices and segments as given,
+ * concatenated in input order, then the point inputs' vertices, as triwild appends its points;
+ * and where each went: a curve vertex to its welded vertex of edge_vertices, a point to its row
+ * after them, a segment to its row of edges (-1 for one of no length).
  */
 FeatureInputs read_feature_inputs(
     const io::ComponentIO& component_io,

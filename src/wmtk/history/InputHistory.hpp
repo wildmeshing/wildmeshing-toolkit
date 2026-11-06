@@ -4,6 +4,7 @@
 
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 #include <Eigen/Core>
 
@@ -61,5 +62,14 @@ CurveHistory curves_from_input(
     const MatrixXi& E_out,
     const std::vector<int>& surviving_vertices,
     bool keep_z = false);
+
+/**
+ * @brief The curve history of curves inserted as read, tetwild's and simwild's: curves_from_input()
+ * from `read`, the inputs as utils::read_feature_inputs() read them, to `features`, the curves it
+ * welded by exact position, and the points, with no simplification.
+ */
+CurveHistory curves_from_features(
+    const io::ReadProvenance& read,
+    const utils::FeatureInputs& features);
 
 } // namespace wmtk::history

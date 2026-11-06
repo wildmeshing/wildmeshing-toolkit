@@ -148,4 +148,24 @@ CurveHistory curves_from_input(
     return h;
 }
 
+CurveHistory curves_from_features(
+    const io::ReadProvenance& read,
+    const utils::FeatureInputs& features)
+{
+    // The network the history goes on from: the welded vertices, then the points, at the
+    // positions of the vertices read that became them.
+    Eigen::Index n = 0;
+    for (const int w : read.vertex_map) n = std::max(n, Eigen::Index(w) + 1);
+    MatrixXd V(n, 3);
+    for (size_t r = 0; r < read.vertex_map.size(); ++r) {
+        if (read.vertex_map[r] >= 0) V.row(read.vertex_map[r]) = read.V.row(Eigen::Index(r));
+    }
+    MatrixXi E(Eigen::Index(features.edges.size()), 2);
+    for (size_t e = 0; e < features.edges.size(); ++e) {
+        E(Eigen::Index(e), 0) = int(features.edges[e][0]);
+        E(Eigen::Index(e), 1) = int(features.edges[e][1]);
+    }
+    return curves_from_input(read, V, E, {}, V, E, {}, /*keep_z=*/true);
+}
+
 } // namespace wmtk::history
