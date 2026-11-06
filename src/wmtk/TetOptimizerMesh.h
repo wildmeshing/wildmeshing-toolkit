@@ -1749,8 +1749,9 @@ protected:
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
         FaceAttributes sf_face_attr;
-        /// Orientation of the flipped pair, measured along [a,b,c] (and so along [b,a,d]).
-        int sf_orientation = 0;
+        /// Orientation of the flipped pair, measured along [a,b,c] (and so along [b,a,d]): an
+        /// attribute record holding only it, per input with WMTK_PER_INPUT_ORIENTATION.
+        FaceAttributes sf_orientation;
         /// The pair's two faces were not oriented alike; see prepare_surface_flip.
         bool sf_orientation_mismatch = false;
     };
@@ -1783,9 +1784,10 @@ protected:
         /// face with (v2,x,y) -- for the containment check, which runs before they are written.
         std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> surface_faces;
         /// Oriented faces (v1,x,y) the collapse renames in place to (v2,x,y), as {v2,x,y} with
-        /// the orientation measured along that order. Their attribute stays in its slot, so
-        /// without this the value would be read against the wrong vertex set.
-        std::vector<std::pair<std::array<size_t, 3>, int>> renamed_orientations;
+        /// the orientation measured along that order (an attribute record holding only it, per
+        /// input with WMTK_PER_INPUT_ORIENTATION). Their attribute stays in its slot, so without
+        /// this the value would be read against the wrong vertex set.
+        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> renamed_orientations;
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;

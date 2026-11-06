@@ -397,7 +397,8 @@ public:
         const MatrixSi& F_tags = MatrixSi(),
         const std::vector<std::string>& face_tag_names = {},
         const utils::FeatureInputs* features = nullptr,
-        const utils::EmbedFeaturesResult* features_placed = nullptr);
+        const utils::EmbedFeaturesResult* features_placed = nullptr,
+        const MatrixSi& F_orientation = MatrixSi());
     void init_from_image(
         const MatrixXd& V,
         const MatrixXi& T,
@@ -407,7 +408,8 @@ public:
         const MatrixSi& F_tags = MatrixSi(),
         const std::vector<std::string>& face_tag_names = {},
         const utils::FeatureInputs* features = nullptr,
-        const utils::EmbedFeaturesResult* features_placed = nullptr);
+        const utils::EmbedFeaturesResult* features_placed = nullptr,
+        const MatrixSi& F_orientation = MatrixSi());
 
     /// `features`, optional: the input feature curves and points, and where the insertion put
     /// them (`features_placed`, in the vertex numbering of the mesh), tagged and anchored here.
@@ -415,11 +417,13 @@ public:
         const utils::FeatureInputs* features = nullptr,
         const utils::EmbedFeaturesResult* features_placed = nullptr);
     /// Tracks the faces F_tagged (rows of T's vertices, as read_mesh_data gives them) as surface,
-    /// with input set bit j where F_tags has a 1 in column j. Throws on a row that is no face.
+    /// with input set bit j where F_tags has a 1 in column j, oriented along the row, or with
+    /// F_orientation as it says (InputData::F_orientation). Throws on a row that is no face.
     void init_face_tags(
         const MatrixXi& F_tagged,
         const MatrixSi& F_tags,
-        const std::vector<std::string>& face_tag_names);
+        const std::vector<std::string>& face_tag_names,
+        const MatrixSi& F_orientation = MatrixSi());
 
 
     /**

@@ -108,16 +108,68 @@ inline bool is_labelled_envelope(const MeshData& envelope, const bool is_3d)
     const auto it = envelope.cells.find(is_3d ? CellType::Triangle : CellType::Edge);
     return it != envelope.cells.end() && it->second.attributes.count("tags");
 }
-/// `mesh` with its tags only: every vertex field and every cell field but `tags` dropped.
+/// The fields a tagged mesh's reader reads on a cell block: `tags`, and in a build with
+/// WMTK_PER_INPUT_ORIENTATION `orientation`, the per-input counts collect_input_set_tags() writes
+/// beside them there (read_orientation()). A build without the option drops `orientation` as it
+/// drops every annotation (ComponentIO::dropped_fields()).
+inline const std::set<std::string>& tag_fields()
+{
+    static const std::set<std::string> fields = SurfaceTagAttributes::per_input_orientation
+                                                    ? std::set<std::string>{"tags", "orientation"}
+                                                    : std::set<std::string>{"tags"};
+    return fields;
+}
+/// `mesh` with its tags only: every vertex field and every cell field but tag_fields() dropped.
 inline MeshData tags_only(MeshData mesh)
 {
     mesh.vertex_attributes.clear();
     for (auto& entry : mesh.cells) {
         auto& attributes = entry.second.attributes;
         for (auto it = attributes.begin(); it != attributes.end();)
-            it = it->first == "tags" ? std::next(it) : attributes.erase(it);
+            it = tag_fields().count(it->first) ? std::next(it) : attributes.erase(it);
     }
     return mesh;
+}
+/**
+ * @brief A tagged mesh's lower block's `orientation` (collect_input_set_tags()), in a build with
+ * WMTK_PER_INPUT_ORIENTATION: per row and `tags` column, that input's count against the row's
+ * vertex order. 0 rows without the field -- each of a row's inputs then has +1 along the row,
+ * the meaning of a row without it -- and always in a build without the option, which does not
+ * read it. Throws on a field that does not match the block's `tags`: Int64, its column labels,
+ * and 0 wherever the row lacks that tag.
+ */
+inline DataMatrix<int64_t> read_orientation(const CellData& cells, const std::string& what)
+{
+    if (!SurfaceTagAttributes::per_input_orientation) return {};
+    const auto it = cells.attributes.find("orientation");
+    if (it == cells.attributes.end()) return {};
+    const auto tags = cells.attributes.find("tags");
+    if (tags == cells.attributes.end() || it->second.labels != tags->second.labels)
+        throw std::runtime_error(what + ": orientation needs the tags' column labels");
+    if (!std::holds_alternative<DataMatrix<int64_t>>(it->second.values))
+        throw std::runtime_error(what + ": orientation must be an Int64 matrix");
+    DataMatrix<int64_t> counts = std::get<DataMatrix<int64_t>>(it->second.values);
+    if (((tags->second.integers().array() == 0) && (counts.array() != 0)).any())
+        throw std::runtime_error(what + ": an orientation count where its row lacks the tag");
+    return counts;
+}
+/// Store a tagged row's orientation on its simplex's `attr`: `row` the row's vertices, `set` its
+/// tags' bits. Each tag of the row +1 along it -- or, with `counts` (per row and tag column, its
+/// count along the row, read_orientation()'s; 0 rows without), each its count r.
+template <size_t N>
+void orient_tagged_row(
+    SurfaceTagAttributes& attr,
+    const std::array<size_t, N>& row,
+    const InputSet set,
+    const MatrixSi& counts,
+    const Eigen::Index r)
+{
+    if (counts.rows() == 0) {
+        attr.set_orientation_along(set, row, 1);
+        return;
+    }
+    for (Eigen::Index j = 0; j < counts.cols() && j < SurfaceTagAttributes::max_inputs; ++j)
+        if ((set >> j) & 1) attr.set_orientation_along(InputSet(1) << j, row, counts.coeff(r, j));
 }
 /// A labelled reference (append_envelope_block()) as a receiving mesh reads it
 /// (read_labelled_envelope()): its triangles (2D: segments) on vertices of their own (`dim`
@@ -332,8 +384,10 @@ void collect_tags(Mesh& mesh, MeshMap& outputs, CellType type, const TupleRange&
 // The tracked simplices -- `type` Triangle: a tet mesh's faces; Edge: a triangle mesh's edges --
 // whose input set is not empty, as the `type` block of outputs["mesh"]: rows of its V (the
 // vertices in get_vertices() order, as compact_slot_outputs leaves them), one tags column per
-// name (bit j of the input set is names[j]), each row oriented as the simplex's input was.
-// Nothing is written without names.
+// name (bit j of the input set is names[j]), each row oriented as the simplex's input was. In a
+// build with WMTK_PER_INPUT_ORIENTATION, beside `tags` an `orientation` field with its columns:
+// per row and name, that input's count against the row's vertex order, 0 off the input
+// (read_orientation()). Nothing is written without names.
 template <CellType type, typename Mesh>
 void collect_input_set_tags(
     const Mesh& mesh,
@@ -348,6 +402,7 @@ void collect_input_set_tags(
     for (const auto& v : mesh.get_vertices()) row[v.vid(mesh)] = n++;
     std::vector<std::array<int64_t, N>> simplices;
     std::vector<InputSet> sets;
+    std::vector<int64_t> counts; // per row, names.size() of them: with WMTK_PER_INPUT_ORIENTATION
     const InputSet mask = names.size() >= size_t(SurfaceTagAttributes::max_inputs)
                               ? ~InputSet(0)
                               : (InputSet(1) << names.size()) - 1;
@@ -358,6 +413,10 @@ void collect_input_set_tags(
         if (set == 0) return;
         std::sort(vids.begin(), vids.end());
         if (attr.orientation_along(vids) < 0) std::swap(vids[N - 2], vids[N - 1]);
+#ifdef WMTK_PER_INPUT_ORIENTATION
+        for (size_t j = 0; j < names.size(); ++j)
+            counts.push_back(((set >> j) & 1) ? attr.input_orientation_along(int(j), vids) : 0);
+#endif
         std::array<int64_t, N> r;
         for (size_t k = 0; k < N; ++k) r[k] = row[vids[k]];
         simplices.push_back(r);
@@ -378,6 +437,11 @@ void collect_input_set_tags(
         for (size_t j = 0; j < names.size(); ++j) member(i, j) = (sets[i] >> j) & 1;
     }
     block.attributes["tags"] = {std::move(member), names};
+    if (!SurfaceTagAttributes::per_input_orientation) return;
+    DataMatrix<int64_t> orientation(simplices.size(), names.size());
+    for (size_t i = 0; i < simplices.size(); ++i)
+        for (size_t j = 0; j < names.size(); ++j) orientation(i, j) = counts[i * names.size() + j];
+    block.attributes["orientation"] = {std::move(orientation), names};
 }
 // The tet edges tagged `feature` (TetOptimizerMesh::FeatureEdgeAttributes: the feature curves the
 // application was given) whose feature input set is not empty, as the Edge block of

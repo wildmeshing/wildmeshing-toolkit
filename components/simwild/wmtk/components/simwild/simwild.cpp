@@ -473,7 +473,8 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.F_tags,
             input_data.face_tag_names,
             input_data.features.empty() ? nullptr : &input_data.features,
-            &input_data.features_placed);
+            &input_data.features_placed,
+            input_data.F_orientation);
     } else {
         logger().warn("Use RATIONAL input for TetWild");
         mesh.init_from_image(
@@ -485,7 +486,8 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.F_tags,
             input_data.face_tag_names,
             input_data.features.empty() ? nullptr : &input_data.features,
-            &input_data.features_placed);
+            &input_data.features_placed,
+            input_data.F_orientation);
     }
 
     auto write_unique_vtu = [&params, &mesh]() {
@@ -710,7 +712,8 @@ void run_2D(
             input_data.tag_names,
             input_data.F_tagged,
             input_data.F_tags,
-            input_data.face_tag_names);
+            input_data.face_tag_names,
+            input_data.F_orientation);
     } else {
         logger().warn("Use RATIONAL input for 2D");
         mesh.init_from_image(
@@ -720,7 +723,8 @@ void run_2D(
             input_data.tag_names,
             input_data.F_tagged,
             input_data.F_tags,
-            input_data.face_tag_names);
+            input_data.face_tag_names,
+            input_data.F_orientation);
     }
 
     auto write_unique_vtu = [&params, &mesh]() {

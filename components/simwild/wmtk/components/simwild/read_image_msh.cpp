@@ -377,6 +377,9 @@ InputData read_mesh(
                 }
         input_data.F_tagged.resize(rows.size(), 3);
         input_data.F_tags.resize(rows.size(), input_data.face_tag_names.size());
+        // With WMTK_PER_INPUT_ORIENTATION each surface input's own direction too, along the row.
+        if (SurfaceTagAttributes::per_input_orientation)
+            input_data.F_orientation.resize(rows.size(), input_data.face_tag_names.size());
         // A face points as its surface inputs do: the sum of their directions on it, opposite
         // coincident sheets cancelling (SurfaceTagAttributes::m_orientation). The remesher's
         // vertex order carries none; a face whose sum is 0 keeps it, as the writer does.
@@ -391,6 +394,13 @@ InputData read_mesh(
                 sum += facing[rows[k]][j];
             }
             if (sum < 0) std::swap(input_data.F_tagged(k, 1), input_data.F_tagged(k, 2));
+            if (!SurfaceTagAttributes::per_input_orientation) continue;
+            for (size_t j = 0; j < tiles[rows[k]].size(); ++j) {
+                const size_t in = tiles[rows[k]][j];
+                if (surface_column[in] < 0 || facing[rows[k]][j] == 0) continue;
+                input_data.F_orientation.coeffRef(k, surface_column[in]) =
+                    sum < 0 ? -facing[rows[k]][j] : facing[rows[k]][j];
+            }
         }
     }
 
@@ -713,7 +723,7 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         if (t != type && t != lower_type && t != CellType::Point &&
             !(type == CellType::Tetrahedron && t == CellType::Edge))
             throw std::runtime_error("Incompatible tagged mesh topology");
-        dropped.merge(io::ComponentIO::dropped_fields(c.attributes, {"tags"}));
+        dropped.merge(io::ComponentIO::dropped_fields(c.attributes, io::tag_fields()));
     }
     io::ComponentIO::log_dropped("tagged mesh", dropped);
     const auto lower = mesh.cells.find(lower_type);
@@ -849,12 +859,18 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         out.envelope_name = "EnvelopeSurface";
     };
     // The tagged rows of a lower block on V_input's rows, in the block's vertex order, which is
-    // their orientation, each with its tags' columns.
+    // their orientation, each with its tags' columns -- and with WMTK_PER_INPUT_ORIENTATION, where
+    // the block has an `orientation`, each tag's count along the row (io::read_orientation()).
     const auto place_tagged = [&](const CellData& cells,
                                   const LowerTags& lt,
                                   MatrixXi& C,
                                   MatrixSi& C_tags,
-                                  const std::string& what) {
+                                  const std::string& what,
+                                  MatrixSi* C_orientation = nullptr) {
+        const DataMatrix<int64_t> counts =
+            C_orientation ? io::read_orientation(cells, "tagged mesh") : DataMatrix<int64_t>();
+        if (C_orientation && counts.rows() > 0)
+            C_orientation->resize(lt.tagged_rows.size(), lt.columns.size());
         C.resize(lt.tagged_rows.size(), cells.connectivity.cols());
         C_tags.resize(lt.tagged_rows.size(), lt.columns.size());
         for (size_t k = 0; k < lt.tagged_rows.size(); ++k) {
@@ -868,6 +884,10 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
             }
             for (size_t j = 0; j < lt.columns.size(); ++j)
                 if (lt.member(lt.tagged_rows[k], lt.columns[j])) C_tags.coeffRef(k, j) = 1;
+            if (counts.rows() == 0) continue;
+            for (size_t j = 0; j < lt.columns.size(); ++j)
+                if (const int64_t c = counts(lt.tagged_rows[k], lt.columns[j]); c != 0)
+                    C_orientation->coeffRef(k, j) = int(c);
         }
     };
     if (has_lower && type == CellType::Tetrahedron) {
@@ -880,7 +900,7 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
                 throw std::runtime_error("Tag " + name + " names both tets and faces");
         out.face_tag_names = ft.names;
         if (!ft.envelope_rows.empty()) envelope_from(faces, ft.envelope_rows);
-        place_tagged(faces, ft, out.F_tagged, out.F_tags, "face");
+        place_tagged(faces, ft, out.F_tagged, out.F_tags, "face", &out.F_orientation);
     }
     if (has_curves) {
         // The edge block of a tet mesh: the feature curves, each label one feature input, bit j
@@ -934,7 +954,7 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
             const LowerTags et = lower_tags(edges, "edge");
             out.face_tag_names = et.names;
             if (!et.envelope_rows.empty()) envelope_from(edges, et.envelope_rows);
-            place_tagged(edges, et, out.F_tagged, out.F_tags, "edge");
+            place_tagged(edges, et, out.F_tagged, out.F_tags, "edge", &out.F_orientation);
         }
     }
     // The point block (io::read_point_tags()): one input point per row and label, anchored where

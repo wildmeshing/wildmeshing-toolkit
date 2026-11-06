@@ -55,12 +55,13 @@ TaggedMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
                 volumes);
         }
     }
-    // Fields: tags are read, every other is dropped (io::ComponentIO::data_fields).
+    // Fields: tags are read (io::tag_fields()), every other is dropped
+    // (io::ComponentIO::data_fields).
     std::set<std::string> dropped = io::ComponentIO::dropped_fields(mesh.vertex_attributes, {});
     for (const auto& [type, cells] : mesh.cells) {
         if (type == CellType::Tetrahedron || type == CellType::Triangle || type == CellType::Edge ||
             type == CellType::Point) {
-            dropped.merge(io::ComponentIO::dropped_fields(cells.attributes, {"tags"}));
+            dropped.merge(io::ComponentIO::dropped_fields(cells.attributes, io::tag_fields()));
         } else {
             log_and_throw_error(
                 "{}: a tagged mesh for tetwild has tets and, besides them, triangles (tagged "
@@ -155,6 +156,7 @@ TaggedMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
                 if (faces.member(r, j)) set |= InputSet(1) << j;
             out.F_sets.push_back(set);
         }
+        out.F_orientation = io::read_orientation(*faces.cells, what);
     }
     if (const Lower edges = lower(CellType::Edge, "edge"); edges.cells) {
         const auto& C = edges.cells->connectivity;

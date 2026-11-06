@@ -600,11 +600,12 @@ std::vector<std::array<size_t, 2>> TriOptimizerMesh::oriented_tracked_edges() co
     std::vector<std::array<size_t, 2>> res;
     for (const Tuple& e : get_edges()) {
         const auto& attr = m_edge_attribute[e.eid(*this)];
-        if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+        const int o = attr.orientation();
+        if (!attr.m_is_surface_fs || o == 0) continue;
         size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
         if (a > b) std::swap(a, b);
-        if (attr.m_orientation < 0) std::swap(a, b);
-        for (int k = 0; k < std::abs(attr.m_orientation); ++k) res.push_back({{a, b}});
+        if (o < 0) std::swap(a, b);
+        for (int k = 0; k < std::abs(o); ++k) res.push_back({{a, b}});
     }
     return res;
 }

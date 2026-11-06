@@ -185,7 +185,8 @@ void embed_segments(
     std::vector<std::vector<int>>* E_out_sources,
     std::vector<int>* E_out_orientation,
     std::vector<int>* point_map,
-    const std::vector<int>* E_input)
+    const std::vector<int>* E_input,
+    std::vector<InputOrientations>* E_out_input_orientation)
 {
     assert(V.cols() == 2);
     assert(E.cols() == 2);
@@ -361,6 +362,65 @@ void embed_segments(
             E_out,
             *E_out_orientation,
             E_input != nullptr ? &edge_input : nullptr);
+    }
+    if (E_out_input_orientation != nullptr && E_out_orientation != nullptr && E_input != nullptr) {
+        // The copies of a segment, by input: each input's count of them once.
+        using Key = std::array<double, 5>; // the input, then the endpoints ascending
+        std::map<Key, std::pair<int, int>> copies; // -> (first copy, net direction along key)
+        std::vector<int> along(E.rows()), weight(E.rows(), 0);
+        for (int i = 0; i < E.rows(); ++i) {
+            const int in = size_t(i) < E_input->size() ? (*E_input)[i] : -1;
+            if (in < 0) continue;
+            const std::array<double, 2> p{{V(E(i, 0), 0), V(E(i, 0), 1)}};
+            const std::array<double, 2> q{{V(E(i, 1), 0), V(E(i, 1), 1)}};
+            along[i] = p < q ? 1 : -1;
+            const Key k = p < q ? Key{{double(in), p[0], p[1], q[0], q[1]}}
+                                : Key{{double(in), q[0], q[1], p[0], p[1]}};
+            copies.try_emplace(k, i, 0).first->second.second += along[i];
+        }
+        for (const auto& [k, c] : copies) {
+            const int net = c.second;
+            weight[c.first] = ((net > 0) - (net < 0)) * along[c.first];
+        }
+        std::map<std::pair<int, int>, std::map<int, int>> by_input; // along (min, max)
+        for (size_t s = 0; s < segment_provenance.size(); ++s) {
+            if (weight[s] == 0) continue;
+            for (const auto& e : segment_provenance[s]) {
+                const int a = int(e[1]), b = int(e[2]);
+                by_input[{std::min(a, b), std::max(a, b)}][(*E_input)[s]] +=
+                    (a < b ? 1 : -1) * weight[s];
+            }
+        }
+        auto& out = *E_out_input_orientation;
+        out.assign(constrained_edges.size(), {});
+        std::map<int, std::vector<size_t>> rows_of; // input -> its rows of E_out
+        int idx = 0;
+        for (const auto& [edge, src] : constrained_edges) {
+            if (const auto it = by_input.find(edge); it != by_input.end()) {
+                for (const auto& [in, c] : it->second) {
+                    if (c == 0) continue;
+                    out[idx].emplace_back(in, c);
+                    rows_of[in].push_back(size_t(idx));
+                }
+            }
+            ++idx;
+        }
+        // Each input's curves made consistent, as above, among its own edges only.
+        for (const auto& [in, rows] : rows_of) {
+            MatrixXi E_in(rows.size(), 2);
+            std::vector<int> o_in(rows.size());
+            const auto count_of = [&](const size_t r) -> int& {
+                for (auto& p : out[r])
+                    if (p.first == in) return p.second;
+                throw std::logic_error("embed_segments: an input without its count");
+            };
+            for (size_t k = 0; k < rows.size(); ++k) {
+                E_in.row(Eigen::Index(k)) = E_out.row(Eigen::Index(rows[k]));
+                o_in[k] = count_of(rows[k]);
+            }
+            orient_curve_patches(V_out, E_in, o_in);
+            for (size_t k = 0; k < rows.size(); ++k) count_of(rows[k]) = o_in[k];
+        }
     }
 
     // Where did each input point end up? The remesher reports {triangle, vertex} per input

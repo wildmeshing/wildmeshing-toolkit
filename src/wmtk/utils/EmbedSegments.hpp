@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/Types.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 
@@ -53,6 +54,12 @@ namespace wmtk::utils {
  *             it the repair of E_out_orientation keeps to one input -- edges are linked only to
  *             edges on the same inputs -- so two input curves meeting end to end in opposite
  *             directions are both kept. Without it all edges are one input, as before.
+ * @param[out] E_out_input_orientation optional, with E_out_orientation and E_input: for each row
+ *             of E_out, each input's own direction on it, along the row, as E_out_orientation is
+ *             counted but with a repeated segment counted once per input rather than once, so
+ *             that inputs sharing a segment each count it; then made consistent curve by curve
+ *             within each input. For a mesh built with WMTK_PER_INPUT_ORIENTATION
+ *             (SurfaceTagAttributes::m_input_orientation).
  */
 void embed_segments(
     const MatrixXd& V,
@@ -64,7 +71,8 @@ void embed_segments(
     std::vector<std::vector<int>>* E_out_sources = nullptr,
     std::vector<int>* E_out_orientation = nullptr,
     std::vector<int>* point_map = nullptr,
-    const std::vector<int>* E_input = nullptr);
+    const std::vector<int>* E_input = nullptr,
+    std::vector<InputOrientations>* E_out_input_orientation = nullptr);
 
 /**
  * @brief Read every input edge mesh and concatenate them into one segment network.

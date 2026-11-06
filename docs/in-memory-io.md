@@ -173,6 +173,13 @@ no triangle tags but `ambient`: regions are simwild's. Rows labelled `EnvelopeSu
 an edge block without `tags` too) are the envelope instead, which cannot be combined with an
 `envelope` input. Other lower-dimensional blocks are rejected.
 
+A row's vertex order is the orientation of all its inputs: one count per simplex for all of them.
+Built with the CMake option `WMTK_PER_INPUT_ORIENTATION`, a simplex keeps one count per input, and
+the tagged faces (2D: edges) carry an `orientation` field beside `tags`: Int64, the same column
+labels, per row and input that input's count along the row, 0 where the row lacks the tag. Such a
+build reads it back, and without it gives each input of a row +1 along the row; a build without
+the option writes none and drops it as it drops every field it does not read.
+
 The `envelope` input is a mesh of the call on the memory route and the path of a mesh file on the
 file route (relative to `input_dir`): the `envelope` a producer returns or writes (below). It is the
 reference the first component held its tags to, its input, labelled as its mesh labels them, so a

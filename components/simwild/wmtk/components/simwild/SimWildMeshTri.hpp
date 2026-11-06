@@ -151,7 +151,8 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& E_tagged = MatrixXi(),
         const MatrixSi& E_tags = MatrixSi(),
-        const std::vector<std::string>& edge_tag_names = {});
+        const std::vector<std::string>& edge_tag_names = {},
+        const MatrixSi& E_orientation = MatrixSi());
 
     /**
      * @brief Same, from EXACT input positions.
@@ -167,7 +168,8 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& E_tagged = MatrixXi(),
         const MatrixSi& E_tags = MatrixSi(),
-        const std::vector<std::string>& edge_tag_names = {});
+        const std::vector<std::string>& edge_tag_names = {},
+        const MatrixSi& E_orientation = MatrixSi());
 
     void init_surfaces_and_boundaries();
     /// Tracks the edges E_tagged (rows of T's vertices, as read_curves gives them) as surface,
@@ -176,7 +178,8 @@ public:
     void init_edge_tags(
         const MatrixXi& E_tagged,
         const MatrixSi& E_tags,
-        const std::vector<std::string>& edge_tag_names);
+        const std::vector<std::string>& edge_tag_names,
+        const MatrixSi& E_orientation = MatrixSi());
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 

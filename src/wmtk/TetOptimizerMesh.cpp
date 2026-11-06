@@ -709,12 +709,13 @@ std::vector<std::array<size_t, 3>> TetOptimizerMesh::oriented_tracked_faces() co
     std::vector<std::array<size_t, 3>> res;
     for (const auto& f : get_faces()) {
         const auto& attr = m_face_attribute[f.fid(*this)];
-        if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+        const int o = attr.orientation();
+        if (!attr.m_is_surface_fs || o == 0) continue;
         const auto vs = get_face_vertices(f);
         std::array<size_t, 3> v{{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
         std::sort(v.begin(), v.end());
-        if (attr.m_orientation < 0) std::swap(v[1], v[2]);
-        for (int k = 0; k < std::abs(attr.m_orientation); ++k) res.push_back(v);
+        if (o < 0) std::swap(v[1], v[2]);
+        for (int k = 0; k < std::abs(o); ++k) res.push_back(v);
     }
     return res;
 }

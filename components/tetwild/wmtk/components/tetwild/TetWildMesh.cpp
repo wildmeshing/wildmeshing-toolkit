@@ -511,10 +511,13 @@ void TetWildMesh::compute_winding_number(
         if (all_inputs) {
             outface = oriented_tracked_faces();
         } else {
-            // oriented_tracked_faces(), of the faces bounds() keeps. A face's orientation is one
-            // count for all its inputs (SurfaceTagAttributes::m_orientation), not one per input:
-            // on a face where a kept input coincides with another the count is of both, and the
-            // kept inputs' own is not known. Refused there rather than guessed.
+            // oriented_tracked_faces(), of the faces bounds() keeps, each as often as the kept
+            // inputs' count on it (SurfaceTagAttributes::orientation_of()). Without
+            // WMTK_PER_INPUT_ORIENTATION a face's orientation is one count for all its inputs
+            // (SurfaceTagAttributes::m_orientation), not one per input: on a face where a kept
+            // input coincides with another the count is of both, and the kept inputs' own is not
+            // known. Refused there rather than guessed; with the option each input has its own.
+#ifndef WMTK_PER_INPUT_ORIENTATION
             size_t n_shared = 0;
             for (const auto& f : get_faces()) {
                 const auto& attr = m_face_attribute[f.fid(*this)];
@@ -531,13 +534,15 @@ void TetWildMesh::compute_winding_number(
                     "exact without orientation for inputs that do not overlap themselves",
                     n_shared);
             }
+#endif
             for (const auto& f : get_faces()) {
                 const auto& attr = m_face_attribute[f.fid(*this)];
-                if (!attr.m_is_surface_fs || attr.m_orientation == 0 || !bounds(attr)) continue;
+                const int o = attr.orientation_of(bounding);
+                if (!attr.m_is_surface_fs || o == 0 || !bounds(attr)) continue;
                 std::array<size_t, 3> v = get_face_vids(f);
                 std::sort(v.begin(), v.end());
-                if (attr.m_orientation < 0) std::swap(v[1], v[2]);
-                for (int k = 0; k < std::abs(attr.m_orientation); ++k) outface.push_back(v);
+                if (o < 0) std::swap(v[1], v[2]);
+                for (int k = 0; k < std::abs(o); ++k) outface.push_back(v);
             }
         }
         V = Eigen::MatrixXd::Zero(vert_capacity(), 3);

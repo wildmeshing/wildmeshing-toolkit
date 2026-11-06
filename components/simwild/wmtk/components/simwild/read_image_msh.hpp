@@ -26,6 +26,11 @@ struct InputData
     MatrixXi F_tagged;
     MatrixSi F_tags;
     std::vector<std::string> face_tag_names;
+    /// With WMTK_PER_INPUT_ORIENTATION: per row of F_tagged and column of F_tags, that tag's own
+    /// orientation count along the row -- a tagged mesh's `orientation` (io::read_orientation()),
+    /// a surface input's direction from the embedding. 0 rows otherwise, and then each tag of a
+    /// row has +1 along it (io::orient_tagged_row()).
+    MatrixSi F_orientation;
 
     MatrixXd V_envelope;
     MatrixXi F_envelope;

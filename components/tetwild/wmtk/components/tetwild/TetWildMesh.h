@@ -348,7 +348,8 @@ public:
         utils::EmbedFeaturesResult* features_out = nullptr,
         const std::vector<int>* face_input = nullptr,
         std::vector<InputSet>* facet_input_set = nullptr,
-        std::vector<std::vector<uint32_t>>* facet_sources = nullptr);
+        std::vector<std::vector<uint32_t>>* facet_sources = nullptr,
+        std::vector<InputOrientations>* facet_input_orientation = nullptr);
 
     /**
      * `features` tags the feature-edge tilings on the initial mesh; passing it registers
@@ -357,6 +358,11 @@ public:
      *
      * `facet_input_set` (from insertion_by_volumeremesher) gives each tracked face its input
      * set; null => one input, and every tracked face gets input 0.
+     *
+     * `facet_input_orientation` (from insertion_by_volumeremesher, per facet, against its
+     * ascending vertex order) gives each tracked face its per-input orientation, in a build with
+     * WMTK_PER_INPUT_ORIENTATION; null => each face's inputs take tet_face_orientation's count
+     * (SurfaceTagAttributes::set_orientation()), which with one input is the input's own.
      */
     void init_from_Volumeremesher(
         const std::vector<Vector3r>& v_rational,
@@ -367,7 +373,8 @@ public:
         const std::vector<int8_t>* tet_face_orientation = nullptr,
         const utils::EmbedFeaturesResult* features = nullptr,
         const std::vector<InputSet>* facet_input_set = nullptr,
-        const utils::FeatureInputs* feature_input = nullptr);
+        const utils::FeatureInputs* feature_input = nullptr,
+        const std::vector<InputOrientations>* facet_input_orientation = nullptr);
 
     /**
      * @brief The tagged route: initialize from a tagged tet mesh (read_tagged_mesh()), its tets

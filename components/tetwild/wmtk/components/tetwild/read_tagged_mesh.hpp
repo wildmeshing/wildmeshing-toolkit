@@ -34,6 +34,9 @@ struct TaggedMesh
     std::vector<std::array<size_t, 3>> F;
     std::vector<InputSet> F_sets;
     std::vector<std::string> face_names;
+    /// Per row of F and label, its count along the row (io::read_orientation()): with
+    /// WMTK_PER_INPUT_ORIENTATION, from the block's `orientation`; 0 rows without one.
+    DataMatrix<int64_t> F_orientation;
     /// The edge block: per edge and label, an input edge (features.edges, edge_input the
     /// label's column of feature_names) placed on itself (features_placed.edge_tiling). The
     /// point block: per row and label features.points, each the vertex
@@ -55,7 +58,8 @@ bool is_tet_mesh(const MeshData& mesh);
  * SurfaceTagAttributes::max_inputs, a row on a vertex no tet has. `what` names the input in the
  * errors.
  *
- * Fields: `tags` is read, and every other field dropped (io::ComponentIO::data_fields), on both
+ * Fields: `tags` is read (and with WMTK_PER_INPUT_ORIENTATION the faces' `orientation`,
+ * io::tag_fields()), and every other field dropped (io::ComponentIO::data_fields), on both
  * routes: a result, tetwild's own fields and all, goes back in as it is.
  */
 TaggedMesh read_tagged_mesh(const MeshData& mesh, const std::string& what);

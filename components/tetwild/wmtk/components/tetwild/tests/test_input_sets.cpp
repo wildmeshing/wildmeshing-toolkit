@@ -216,7 +216,12 @@ TEST_CASE("input-set-merge", "[tetwild][input_sets]")
     CHECK(a.input_set() == ((InputSet(1) << (SurfaceTagAttributes::max_inputs - 1)) | 0b0101));
     a.reset();
     CHECK(a.input_set() == 0);
-    CHECK(sizeof(FaceAttributes) == 3 + sizeof(InputSet));
+    // With WMTK_PER_INPUT_ORIENTATION a nibble per input more (SurfaceTagAttributes).
+    CHECK(
+        sizeof(FaceAttributes) == 3 + sizeof(InputSet) +
+                                      (SurfaceTagAttributes::per_input_orientation
+                                           ? SurfaceTagAttributes::max_inputs / 2
+                                           : 0));
 }
 
 TEST_CASE("input-set-split-copies", "[tetwild][input_sets]")

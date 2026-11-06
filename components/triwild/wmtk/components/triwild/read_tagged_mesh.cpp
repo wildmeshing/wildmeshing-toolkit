@@ -60,7 +60,7 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
     std::set<std::string> dropped = io::ComponentIO::dropped_fields(mesh.vertex_attributes, {});
     for (const auto& [type, cells] : mesh.cells) {
         if (type == CellType::Triangle || type == CellType::Edge || type == CellType::Point) {
-            dropped.merge(io::ComponentIO::dropped_fields(cells.attributes, {"tags"}));
+            dropped.merge(io::ComponentIO::dropped_fields(cells.attributes, io::tag_fields()));
         } else {
             log_and_throw_error(
                 "{}: a tagged mesh for triwild has triangles and, besides them, edges (tracked "
@@ -136,12 +136,17 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
                 out.edge_names.size(),
                 SurfaceTagAttributes::max_inputs);
         }
-        // One row per edge, by its vertex set: the labels united, the directions counted.
+        // One row per edge, by its vertex set: the labels united, the directions counted. With
+        // WMTK_PER_INPUT_ORIENTATION label by label too: the rows' `orientation` entries summed
+        // where the block has the field, else a label's rows along and against its edge.
+        const DataMatrix<int64_t> counts = io::read_orientation(cells, what);
         struct Merged
         {
             size_t row;
             InputSet set = 0;
             bool along = false, against = false;
+            std::map<int, int> count; // per label, with WMTK_PER_INPUT_ORIENTATION
+            InputSet label_along = 0, label_against = 0;
         };
         std::map<std::array<size_t, 2>, Merged> edges;
         std::vector<std::array<size_t, 2>> order;
@@ -153,7 +158,17 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
             if (added) order.push_back(e);
             for (Eigen::Index j = 0; j < member.cols(); ++j)
                 if (member(r, j)) m->second.set |= InputSet(1) << j;
-            (e == order[m->second.row] ? m->second.along : m->second.against) = true;
+            const bool along = e == order[m->second.row];
+            (along ? m->second.along : m->second.against) = true;
+            if (!SurfaceTagAttributes::per_input_orientation) continue;
+            for (Eigen::Index j = 0; j < member.cols(); ++j) {
+                if (!member(r, j)) continue;
+                if (counts.rows() > 0) {
+                    m->second.count[int(j)] += (along ? 1 : -1) * int(counts(r, j));
+                } else {
+                    (along ? m->second.label_along : m->second.label_against) |= InputSet(1) << j;
+                }
+            }
         }
         out.E.resize(order.size(), 2);
         out.E_sets.resize(order.size());
@@ -165,6 +180,14 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
             out.E(i, 1) = int(order[i][1]);
             out.E_sets[i] = m.set;
             out.E_orientation[i] = int(m.along) - int(m.against);
+            if (!SurfaceTagAttributes::per_input_orientation) continue;
+            auto& per = out.E_input_orientation.emplace_back();
+            for (int j = 0; j < int(out.edge_names.size()); ++j) {
+                const int c = counts.rows() > 0
+                                  ? (m.count.count(j) ? m.count.at(j) : 0)
+                                  : int((m.label_along >> j) & 1) - int((m.label_against >> j) & 1);
+                if (c != 0) per.emplace_back(j, c);
+            }
         }
     }
     // The point block: one input point per row and label (io::read_point_tags()), as tetwild's.

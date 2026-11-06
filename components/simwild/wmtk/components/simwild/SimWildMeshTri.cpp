@@ -46,7 +46,8 @@ void SimWildMeshTri::init_from_image(
     const std::vector<std::string>& tag_names,
     const MatrixXi& E_tagged,
     const MatrixSi& E_tags,
-    const std::vector<std::string>& edge_tag_names)
+    const std::vector<std::string>& edge_tag_names,
+    const MatrixSi& E_orientation)
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
@@ -106,7 +107,7 @@ void SimWildMeshTri::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
-    init_edge_tags(E_tagged, E_tags, edge_tag_names);
+    init_edge_tags(E_tagged, E_tags, edge_tag_names, E_orientation);
     init_surfaces_and_boundaries();
     // The tagged mesh fills its box, as in 3D (SimWildMesh::init_from_image()).
     require_box_boundary("simwild");
@@ -119,7 +120,8 @@ void SimWildMeshTri::init_from_image(
     const std::vector<std::string>& tag_names,
     const MatrixXi& E_tagged,
     const MatrixSi& E_tags,
-    const std::vector<std::string>& edge_tag_names)
+    const std::vector<std::string>& edge_tag_names,
+    const MatrixSi& E_orientation)
 {
     assert(V.cols() == 2);
     assert(T.cols() == 3);
@@ -207,7 +209,7 @@ void SimWildMeshTri::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
-    init_edge_tags(E_tagged, E_tags, edge_tag_names);
+    init_edge_tags(E_tagged, E_tags, edge_tag_names, E_orientation);
     init_surfaces_and_boundaries();
     require_box_boundary("simwild"); // as in the overload above
 }
@@ -370,7 +372,8 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 void SimWildMeshTri::init_edge_tags(
     const MatrixXi& E_tagged,
     const MatrixSi& E_tags,
-    const std::vector<std::string>& edge_tag_names)
+    const std::vector<std::string>& edge_tag_names,
+    const MatrixSi& E_orientation)
 {
     if (edge_tag_names.size() > size_t(SurfaceTagAttributes::max_inputs)) {
         log_and_throw_error(
@@ -396,7 +399,7 @@ void SimWildMeshTri::init_edge_tags(
             if (E_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
         auto& attr = m_edge_attribute[eid];
         attr.set_input_set(attr.input_set() | set);
-        attr.set_orientation_along(vids, 1);
+        io::orient_tagged_row(attr, vids, set, E_orientation, r);
     }
 }
 

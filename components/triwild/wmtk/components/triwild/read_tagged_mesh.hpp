@@ -33,6 +33,10 @@ struct TaggedTriMesh
     MatrixXi E;
     std::vector<InputSet> E_sets;
     std::vector<int> E_orientation;
+    /// With WMTK_PER_INPUT_ORIENTATION: per row, each label's own orientation along it -- the
+    /// label's rows' `orientation` entries (io::read_orientation()) summed where the mesh has
+    /// them, else as E_orientation is counted, label by label. Empty otherwise.
+    std::vector<InputOrientations> E_input_orientation;
     std::vector<std::string> edge_names;
     /// The point block's vertices, one per row and label, each under the label point_labels[i]
     /// of point_names.

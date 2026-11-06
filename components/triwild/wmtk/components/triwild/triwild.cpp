@@ -679,6 +679,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // The simplified segments each of E lies on: for the input sets, with several inputs, and
         // for the history.
         std::vector<std::vector<int>> E_sources;
+        // Each input's own direction, with several inputs in a build that keeps one count per
+        // input (SurfaceTagAttributes::m_input_orientation).
+        std::vector<InputOrientations> E_input_orientation;
+        const bool per_input_orientation = per_input && SurfaceTagAttributes::per_input_orientation;
         wmtk::utils::embed_segments(
             V_simp,
             E_simp,
@@ -689,7 +693,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             per_input || record_history ? &E_sources : nullptr,
             &E_orientation,
             free_points.empty() ? nullptr : &point_map,
-            per_input ? &E_simp_input : nullptr); // the orientation repair keeps to one input
+            per_input ? &E_simp_input : nullptr, // the orientation repair keeps to one input
+            per_input_orientation ? &E_input_orientation : nullptr);
         // Each constraint edge's input set: the inputs of the segments it tiles. Several only where
         // segments of different inputs overlap -- the 2D counterpart of a coplanar group spanning
         // several inputs in 3D -- and then the edge is held to all of them. Counted.
@@ -830,7 +835,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             &E_orientation,
             free_point_vids,
             per_input ? &E_env_input : nullptr,
-            per_input ? &E_input_set : nullptr);
+            per_input ? &E_input_set : nullptr,
+            per_input_orientation ? &E_input_orientation : nullptr);
         if (record_history) {
             input_history = history::curves_from_input(
                 read,
@@ -858,6 +864,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         E.resize(0, 0);
         std::vector<Vector2r>().swap(V_rational);
         std::vector<int>().swap(E_orientation);
+        std::vector<InputOrientations>().swap(E_input_orientation);
         std::vector<InputSet>().swap(E_input_set);
         std::vector<std::vector<int>>().swap(E_sources);
 
@@ -965,7 +972,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             &in.E_orientation,
             in.point_vids,
             edge_tags.size() > 1 ? &E_env_input : nullptr,
-            &in.E_sets);
+            &in.E_sets,
+            SurfaceTagAttributes::per_input_orientation ? &in.E_input_orientation : nullptr);
         // The wall, as tetwild's: the boundary edges, untracked, each on a line of the box, which
         // init_mesh() flagged as it flags every edge on one -- the mesh fills its box, as the
         // arrangement's padded box does (require_box_boundary() says why).

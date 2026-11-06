@@ -228,11 +228,16 @@ bool TopoOffsetTriMesh::marching_split_edge_after(const Tuple& t)
     // (TriOptimizerMesh::split_edge_after()): it is stored against the ascending order of an
     // edge's own ids, so restored as is a half was right only when v sorted into the replaced
     // end's place. As in 3D (marching_split_edge_after()).
-    const int o =
-        cache.split_eattr.tags.orientation_along(std::array<size_t, 2>{{cache.v1_id, cache.v2_id}});
+    const std::array<size_t, 2> parent{{cache.v1_id, cache.v2_id}};
     EdgeSnapshot2d half1 = cache.split_eattr, half2 = cache.split_eattr;
-    half1.tags.set_orientation_along(std::array<size_t, 2>{{cache.v1_id, v_id}}, o);
-    half2.tags.set_orientation_along(std::array<size_t, 2>{{v_id, cache.v2_id}}, o);
+    half1.tags.set_orientation_from(
+        cache.split_eattr.tags,
+        parent,
+        std::array<size_t, 2>{{cache.v1_id, v_id}});
+    half2.tags.set_orientation_from(
+        cache.split_eattr.tags,
+        parent,
+        std::array<size_t, 2>{{v_id, cache.v2_id}});
     for (const auto& pair : cache.opp_v_fattr) {
         size_t opp_v_id = pair.first;
 

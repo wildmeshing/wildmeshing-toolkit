@@ -3212,12 +3212,15 @@ TEST_CASE(
 #endif
 #ifdef WMTK_TEST_tetwild
 TEST_CASE(
-    "TetWild filter_inputs: tracked refuses the faces a named input shares, flood keeps it",
+    "TetWild filter_inputs: the faces a named input shares, tracked and flood",
     "[component_io][tagged]" + release_only)
 {
     // Two unit boxes touching face to face, filter_inputs a: on the faces between them the
     // orientation counts both boxes (one count per face), so "tracked" cannot take a's winding
     // number and throws, naming flood; "flood" keeps a alone, its volume 1. On both input routes.
+    // With WMTK_PER_INPUT_ORIENTATION each box has its own count there, and "tracked" keeps a
+    // alone too -- on the tagged route from the mesh's `orientation` -- and after the
+    // operations, which carry the counts.
     WorkingDirectory cwd;
     using Catch::Matchers::ContainsSubstring;
     const MeshMap boxes{
@@ -3231,9 +3234,20 @@ TEST_CASE(
         {"num_threads", 1},
         {"filter_inputs", {"a"}}};
     options["filter"] = "tracked";
+#ifdef WMTK_PER_INPUT_ORIENTATION
+    const auto tracked = volume_and_max_x(tetwild::tetwild(options, boxes).first.at("mesh"));
+    CHECK(std::abs(tracked.first - 1) < 1e-9);
+    CHECK(tracked.second < 1);
+    auto optimized = options;
+    optimized["max_iterations"] = 2;
+    const auto moved = volume_and_max_x(tetwild::tetwild(optimized, boxes).first.at("mesh"));
+    CHECK(std::abs(moved.first - 1) < 0.05);
+    CHECK(moved.second < 1);
+#else
     REQUIRE_THROWS_WITH(
         tetwild::tetwild(options, boxes),
         ContainsSubstring("per face") && ContainsSubstring("flood"));
+#endif
     options["filter"] = "flood";
     const auto a = volume_and_max_x(tetwild::tetwild(options, boxes).first.at("mesh"));
     CHECK(std::abs(a.first - 1) < 1e-9);
@@ -3249,7 +3263,13 @@ TEST_CASE(
         {"filter_inputs", {"a"}},
         {"max_iterations", 0},
         {"num_threads", 1}};
+#ifdef WMTK_PER_INPUT_ORIENTATION
+    const auto tagged_tracked = volume_and_max_x(tetwild::tetwild(again, tagged).first.at("mesh"));
+    CHECK(std::abs(tagged_tracked.first - 1) < 1e-9);
+    CHECK(tagged_tracked.second < 1);
+#else
     REQUIRE_THROWS_WITH(tetwild::tetwild(again, tagged), ContainsSubstring("per face"));
+#endif
     again["filter"] = "flood";
     const auto tagged_a = volume_and_max_x(tetwild::tetwild(again, tagged).first.at("mesh"));
     CHECK(std::abs(tagged_a.first - 1) < 1e-9);
@@ -3258,10 +3278,11 @@ TEST_CASE(
 #endif
 #ifdef WMTK_TEST_triwild
 TEST_CASE(
-    "TriWild filter_inputs: tracked refuses the edges a named input shares, flood keeps it",
+    "TriWild filter_inputs: the edges a named input shares, tracked and flood",
     "[component_io][tagged]")
 {
-    // Two unit squares touching edge to edge, filter_inputs a: the 2D twin of tetwild's.
+    // Two unit squares touching edge to edge, filter_inputs a: the 2D twin of tetwild's, the
+    // tagged route included.
     WorkingDirectory cwd;
     using Catch::Matchers::ContainsSubstring;
     const MeshMap squares{{"a", square_curve(0)}, {"b", square_curve(1)}};
@@ -3273,13 +3294,42 @@ TEST_CASE(
         {"num_threads", 1},
         {"filter_inputs", {"a"}}};
     options["filter"] = "tracked";
+#ifdef WMTK_PER_INPUT_ORIENTATION
+    const auto tracked = area_and_max_x(triwild::triwild(options, squares).first.at("mesh"));
+    CHECK(std::abs(tracked.first - 1) < 1e-9);
+    CHECK(tracked.second < 1);
+    auto optimized = options;
+    optimized["max_iterations"] = 2;
+    const auto moved = area_and_max_x(triwild::triwild(optimized, squares).first.at("mesh"));
+    CHECK(std::abs(moved.first - 1) < 0.05);
+    CHECK(moved.second < 1);
+#else
     REQUIRE_THROWS_WITH(
         triwild::triwild(options, squares),
         ContainsSubstring("per edge") && ContainsSubstring("flood"));
+#endif
     options["filter"] = "flood";
     const auto a = area_and_max_x(triwild::triwild(options, squares).first.at("mesh"));
     CHECK(std::abs(a.first - 1) < 1e-9);
     CHECK(a.second < 1);
+
+    auto unfiltered = options;
+    unfiltered.erase("filter_inputs");
+    unfiltered["filter"] = "none";
+    const MeshMap tagged{{"m", triwild::triwild(unfiltered, squares).first.at("mesh")}};
+    nlohmann::json again = {
+        {"input", "m"},
+        {"filter", "tracked"},
+        {"filter_inputs", {"a"}},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+#ifdef WMTK_PER_INPUT_ORIENTATION
+    const auto tagged_tracked = area_and_max_x(triwild::triwild(again, tagged).first.at("mesh"));
+    CHECK(std::abs(tagged_tracked.first - 1) < 1e-9);
+    CHECK(tagged_tracked.second < 1);
+#else
+    REQUIRE_THROWS_WITH(triwild::triwild(again, tagged), ContainsSubstring("per edge"));
+#endif
 }
 TEST_CASE("TriWild refuses a filtered mesh, its tracked boundary", "[component_io][tagged]")
 {
@@ -3408,6 +3458,168 @@ TEST_CASE(
     CHECK(same_geometry_and_tags(io::read_mesh("noted_out.msh"), io::read_mesh("bare_out.msh")));
 }
 #endif
+// Each input's orientation beside the tags (io::collect_input_set_tags()): with
+// WMTK_PER_INPUT_ORIENTATION a lower block's `orientation`, per row and tag, that input's count
+// along the row. Two unit boxes (2D: squares) touching: a face of one alone is written along it,
+// +1; a face between them carries both tags, one +1 and the other -1; each box's faces, counted,
+// are a cycle, as inserted and after two iterations of the operations. A build without the option
+// writes no such field and its readers drop one (io::tag_fields()), the result unchanged.
+namespace {
+[[maybe_unused]] void check_input_orientation(const MeshData& mesh, const CellType type)
+{
+    const CellData& rows = mesh.cell(type);
+    const auto tags = rows.attributes.at("tags").integers();
+#ifdef WMTK_PER_INPUT_ORIENTATION
+    REQUIRE(rows.attributes.count("orientation"));
+    const MeshAttribute& field = rows.attributes.at("orientation");
+    CHECK(field.labels == rows.attributes.at("tags").labels);
+    const auto counts = field.integers();
+    size_t n_shared = 0, wrong = 0;
+    for (Eigen::Index r = 0; r < tags.rows(); ++r) {
+        if (tags(r, 0) && tags(r, 1)) {
+            ++n_shared;
+            wrong += !(counts(r, 0) == -counts(r, 1) && std::abs(counts(r, 0)) == 1);
+            continue;
+        }
+        for (Eigen::Index j = 0; j < tags.cols(); ++j) wrong += counts(r, j) != tags(r, j);
+    }
+    CHECK(n_shared > 0);
+    CHECK(wrong == 0);
+#else
+    CHECK_FALSE(rows.attributes.count("orientation"));
+    (void)tags;
+#endif
+}
+// With WMTK_PER_INPUT_ORIENTATION: each input's rows, each as often as its count along it, a
+// cycle -- no boundary -- as the input is closed: the insertion and every operation carry each
+// input's own count.
+[[maybe_unused]] void check_input_cycles(const MeshData& mesh, const CellType type)
+{
+#ifdef WMTK_PER_INPUT_ORIENTATION
+    const CellData& rows = mesh.cell(type);
+    const auto counts = rows.attributes.at("orientation").integers();
+    const auto& C = rows.connectivity;
+    for (Eigen::Index j = 0; j < counts.cols(); ++j) {
+        INFO(rows.attributes.at("orientation").labels[size_t(j)]);
+        std::map<std::vector<int64_t>, int64_t> boundary; // sorted face of a row -> net count
+        size_t n_rows = 0;
+        for (Eigen::Index r = 0; r < C.rows(); ++r) {
+            if (counts(r, j) == 0) continue;
+            ++n_rows;
+            for (Eigen::Index k = 0; k < C.cols(); ++k) { // the face opposite corner k
+                std::vector<int64_t> face;
+                for (Eigen::Index m = 0; m < C.cols(); ++m)
+                    if (m != k) face.push_back(C(r, m));
+                int64_t sign = k % 2 == 0 ? 1 : -1;
+                if (face.size() == 2 && face[0] > face[1]) {
+                    std::swap(face[0], face[1]);
+                    sign = -sign;
+                }
+                boundary[face] += sign * counts(r, j);
+            }
+        }
+        CHECK(n_rows > 0);
+        size_t n_open = 0;
+        for (const auto& [face, c] : boundary) n_open += c != 0;
+        CHECK(n_open == 0);
+    }
+#else
+    (void)mesh;
+    (void)type;
+#endif
+}
+// `mesh` with an `orientation` on its `type` block, as a build with WMTK_PER_INPUT_ORIENTATION
+// writes one: +1 for each tag of a row.
+[[maybe_unused]] MeshData with_orientation(MeshData mesh, const CellType type)
+{
+    auto& attributes = mesh.cells.at(type).attributes;
+    const MeshAttribute& tags = attributes.at("tags");
+    attributes["orientation"] = {DataMatrix<int64_t>(tags.integers()), tags.labels};
+    return mesh;
+}
+} // namespace
+#ifdef WMTK_TEST_tetwild
+TEST_CASE(
+    "TetWild writes each input's orientation beside its face tags",
+    "[component_io][tagged]" + release_only)
+{
+    WorkingDirectory cwd;
+    const MeshMap boxes{
+        {"a", box_surface(Vector3d(0, 0, 0), Vector3d(1, 1, 1))},
+        {"b", box_surface(Vector3d(1, 0, 0), Vector3d(2, 1, 1))}};
+    const nlohmann::json options = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1},
+        {"filter", "none"}};
+    const MeshData mesh = tetwild::tetwild(options, boxes).first.at("mesh");
+    check_input_orientation(mesh, CellType::Triangle);
+    check_input_cycles(mesh, CellType::Triangle);
+    // And after the operations, which carry the counts.
+    auto optimized = options;
+    optimized["max_iterations"] = 2;
+    check_input_cycles(tetwild::tetwild(optimized, boxes).first.at("mesh"), CellType::Triangle);
+    // Read back: the counts as written, on the tagged route.
+    const nlohmann::json again = {
+        {"input", "m"},
+        {"filter", "none"},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    check_input_orientation(
+        tetwild::tetwild(again, {{"m", mesh}}).first.at("mesh"),
+        CellType::Triangle);
+    const MeshData counted = with_orientation(tags_only(mesh), CellType::Triangle);
+    CHECK(
+        io::ComponentIO::dropped_fields(
+            counted.cell(CellType::Triangle).attributes,
+            io::tag_fields())
+            .count("orientation") == !SurfaceTagAttributes::per_input_orientation);
+#ifndef WMTK_PER_INPUT_ORIENTATION
+    CHECK(same_geometry_and_tags(
+        tetwild::tetwild(again, {{"m", counted}}).first.at("mesh"),
+        tetwild::tetwild(again, {{"m", tags_only(mesh)}}).first.at("mesh")));
+#endif
+}
+#endif
+#ifdef WMTK_TEST_triwild
+TEST_CASE("TriWild writes each input's orientation beside its edge tags", "[component_io][tagged]")
+{
+    WorkingDirectory cwd;
+    const MeshMap squares{{"a", square_curve(0)}, {"b", square_curve(1)}};
+    const nlohmann::json options = {
+        {"input", {"a", "b"}},
+        {"input_names", {"a", "b"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1},
+        {"filter", "none"}};
+    const MeshData mesh = triwild::triwild(options, squares).first.at("mesh");
+    check_input_orientation(mesh, CellType::Edge);
+    check_input_cycles(mesh, CellType::Edge);
+    auto optimized = options;
+    optimized["max_iterations"] = 2;
+    check_input_cycles(triwild::triwild(optimized, squares).first.at("mesh"), CellType::Edge);
+    const nlohmann::json again = {
+        {"input", "m"},
+        {"filter", "none"},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    check_input_orientation(
+        triwild::triwild(again, {{"m", mesh}}).first.at("mesh"),
+        CellType::Edge);
+    const MeshData counted = with_orientation(tags_only(mesh), CellType::Edge);
+    CHECK(
+        io::ComponentIO::dropped_fields(counted.cell(CellType::Edge).attributes, io::tag_fields())
+            .count("orientation") == !SurfaceTagAttributes::per_input_orientation);
+#ifndef WMTK_PER_INPUT_ORIENTATION
+    CHECK(same_geometry_and_tags(
+        triwild::triwild(again, {{"m", counted}}).first.at("mesh"),
+        triwild::triwild(again, {{"m", tags_only(mesh)}}).first.at("mesh")));
+#endif
+}
+#endif
 #ifdef WMTK_TEST_simwild
 TEST_CASE("SimWild drops a field it does not read, on both routes", "[component_io][io][tagged]")
 {
@@ -3509,6 +3721,9 @@ TEST_CASE(
     check(result);
     const std::set<std::string> vertex = {"vid", "labels", "distance_over_target"};
     const std::set<std::string> tet = {"tags", "amips", "offset_tag"};
+    // With WMTK_PER_INPUT_ORIENTATION the tagged faces' `orientation` too.
+    std::set<std::string> cell_fields = tet;
+    if (SurfaceTagAttributes::per_input_orientation) cell_fields.insert("orientation");
     const MeshData& mesh = result.first.at("mesh");
     CHECK(field_names(mesh.vertex_attributes) == vertex);
     CHECK(field_names(mesh.cell(CellType::Tetrahedron).attributes) == tet);
@@ -3516,7 +3731,7 @@ TEST_CASE(
         INFO(key);
         for (const auto& name : field_names(data.vertex_attributes)) CHECK(vertex.count(name));
         for (const auto& [type, cells] : data.cells)
-            for (const auto& name : field_names(cells.attributes)) CHECK(tet.count(name));
+            for (const auto& name : field_names(cells.attributes)) CHECK(cell_fields.count(name));
     }
 
     io::write_mesh("m.msh", tagged);

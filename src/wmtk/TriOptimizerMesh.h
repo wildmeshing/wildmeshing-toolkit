@@ -1015,7 +1015,7 @@ protected:
         std::vector<std::pair<std::array<size_t, 2>, EdgeAttributes>> surface_edges;
         /// Oriented edges (v1,y) the collapse renames in place to (v2,y), as {v2,y} with the
         /// orientation measured along that order -- see the 3D counterpart.
-        std::vector<std::pair<std::array<size_t, 2>, int>> renamed_orientations;
+        std::vector<std::pair<std::array<size_t, 2>, EdgeAttributes>> renamed_orientations;
         std::vector<size_t> changed_fids;
         std::vector<double> changed_energies;
         /// Coarsening pass only: the worst relative quality in the region the composite may
