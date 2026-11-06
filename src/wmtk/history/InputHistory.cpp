@@ -49,9 +49,9 @@ SurfaceHistory from_input(
 }
 
 namespace {
-Eigen::Vector3d point_of(const MatrixXd& V, const Eigen::Index v)
+Eigen::Vector3d point_of(const MatrixXd& V, const Eigen::Index v, const bool keep_z)
 {
-    return Eigen::Vector3d(V(v, 0), V(v, 1), 0);
+    return Eigen::Vector3d(V(v, 0), V(v, 1), keep_z ? V(v, 2) : 0);
 }
 } // namespace
 
@@ -62,10 +62,16 @@ CurveHistory curves_from_input(
     const std::vector<Edit>& collapses,
     const MatrixXd& V_out,
     const MatrixXi& E_out,
-    const std::vector<int>& surviving_vertices)
+    const std::vector<int>& surviving_vertices,
+    const bool keep_z)
 {
+    if (keep_z && (read.V.cols() < 3 || V_in.cols() < 3 || V_out.cols() < 3)) {
+        log_and_throw_error("curve history: curves in space need three coordinates");
+    }
     CurveHistory h;
-    for (Eigen::Index v = 0; v < read.V.rows(); ++v) h.vertices.push_back(point_of(read.V, v));
+    for (Eigen::Index v = 0; v < read.V.rows(); ++v) {
+        h.vertices.push_back(point_of(read.V, v, keep_z));
+    }
     h.vertex_alive.assign(h.vertices.size(), 1);
     for (Eigen::Index e = 0; e < read.cells.rows(); ++e) {
         h.faces.push_back({{uint64_t(read.cells(e, 0)), uint64_t(read.cells(e, 1))}});
@@ -95,7 +101,7 @@ CurveHistory curves_from_input(
     for (const int w : read.vertex_map) weld.v.push_back(w < 0 ? kNoVertex : uint64_t(w));
     for (const int e : read.cell_map) weld.faces.push_back(e < 0 ? kNoVertex : uint64_t(e));
     for (Eigen::Index v = 0; v < V_in.rows(); ++v)
-        weld.moves.push_back({uint64_t(v), point_of(V_in, v)});
+        weld.moves.push_back({uint64_t(v), point_of(V_in, v, keep_z)});
     h.edits.push_back(std::move(weld));
     if (collapses.empty()) return h;
 
@@ -136,7 +142,7 @@ CurveHistory curves_from_input(
         log_and_throw_error("curve history: the collapses do not leave the simplified curves");
     }
     for (Eigen::Index v = 0; v < V_out.rows(); ++v) {
-        compact.moves.push_back({uint64_t(v), point_of(V_out, v)});
+        compact.moves.push_back({uint64_t(v), point_of(V_out, v, keep_z)});
     }
     h.edits.push_back(std::move(compact));
     return h;

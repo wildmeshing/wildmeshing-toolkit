@@ -1082,6 +1082,12 @@ public:
     /// history is to start from the input; record_curve_history takes it. Keyed by position, as
     /// m_insertion_sources is: the mesh is consolidated between the insertion and the recording.
     std::vector<std::pair<SegmentKey, std::vector<uint32_t>>> m_insertion_curve_sources;
+    /// Fill m_insertion_curve_sources from where the insertion put the feature curves: each tet
+    /// edge of `placed`'s tiling, by its ends' positions (`position` of a vertex of the tiling),
+    /// with the input segments it tiles -- several where input segments overlap.
+    void set_insertion_curve_sources(
+        const utils::EmbedFeaturesResult& placed,
+        const std::function<Vector3d(size_t)>& position);
     /// Start recording the tracked curves (TetMesh::start_curve_history), at m_posf, with
     /// `metadata` (the application's parameters, say) saved along. Takes
     /// m_insertion_curve_sources. The 3D twin of TriOptimizerMesh::record_curve_history().

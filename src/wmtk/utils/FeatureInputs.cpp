@@ -26,9 +26,24 @@ FeatureInputs read_feature_inputs(
     const nlohmann::json& edge_selectors,
     const nlohmann::json& point_selectors,
     const std::vector<std::string>& edge_names,
-    const std::vector<std::string>& point_names)
+    const std::vector<std::string>& point_names,
+    io::ReadProvenance* read)
 {
     FeatureInputs out;
+    std::vector<Vector3d> read_V;
+    std::vector<std::array<int, 2>> read_E;
+    std::vector<int> vertex_map, cell_map;
+    // Appends what reading one input gave, its rows offset by what came before.
+    const auto append_read = [&](const io::ReadProvenance& r, const bool segments) {
+        const int base_v = int(read_V.size()), base_e = int(read_E.size());
+        for (Eigen::Index v = 0; v < r.V.rows(); ++v) read_V.emplace_back(r.V.row(v));
+        for (const int w : r.vertex_map) vertex_map.push_back(w < 0 ? -1 : base_v + w);
+        if (!segments) return;
+        for (Eigen::Index e = 0; e < r.cells.rows(); ++e) {
+            read_E.push_back({{base_v + r.cells(e, 0), base_v + r.cells(e, 1)}});
+        }
+        for (const int c : r.cell_map) cell_map.push_back(c < 0 ? -1 : base_e + c);
+    };
     const bool labelled =
         edge_names.size() == edge_selectors.size() && point_names.size() == point_selectors.size();
     // A point of input `name`: its label's column, the name added on first use.
@@ -46,7 +61,9 @@ FeatureInputs read_feature_inputs(
         const std::string& path = edge_paths[file];
         MatrixXd Ve;
         MatrixXi Ee;
-        component_io.edges(path, Ve, Ee);
+        io::ReadProvenance r;
+        component_io.edges(path, Ve, Ee, -1, -1, read != nullptr ? &r : nullptr);
+        if (read != nullptr) append_read(r, true);
         logger().info("Read feature edge mesh {}: #V = {}, #E = {}", path, Ve.rows(), Ee.rows());
         const size_t base = out.edge_vertices.size();
         for (int i = 0; i < Ve.rows(); ++i) {
@@ -73,11 +90,24 @@ FeatureInputs read_feature_inputs(
         const std::string& path = point_paths[file];
         MatrixXd Vp;
         MatrixXi Ep; // none: a point input has no segments (ComponentIO::input_kind())
-        component_io.edges(path, Vp, Ep);
+        io::ReadProvenance r;
+        component_io.edges(path, Vp, Ep, -1, -1, read != nullptr ? &r : nullptr);
+        if (read != nullptr) append_read(r, false);
         logger().info("Read feature point file {}: #P = {}", path, Vp.rows());
         for (int i = 0; i < Vp.rows(); ++i) {
             add_point(Vp.row(i).transpose(), labelled ? point_names[file] : "");
         }
+    }
+    if (read != nullptr) {
+        read->V.resize(Eigen::Index(read_V.size()), 3);
+        for (size_t v = 0; v < read_V.size(); ++v) read->V.row(Eigen::Index(v)) = read_V[v];
+        read->cells.resize(Eigen::Index(read_E.size()), 2);
+        for (size_t e = 0; e < read_E.size(); ++e) {
+            read->cells(Eigen::Index(e), 0) = read_E[e][0];
+            read->cells(Eigen::Index(e), 1) = read_E[e][1];
+        }
+        read->vertex_map = std::move(vertex_map);
+        read->cell_map = std::move(cell_map);
     }
     return out;
 }

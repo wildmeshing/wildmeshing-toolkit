@@ -1013,6 +1013,19 @@ TetOptimizerMesh::SegmentKey TetOptimizerMesh::segment_key(const Vector3d& a, co
     return k;
 }
 
+void TetOptimizerMesh::set_insertion_curve_sources(
+    const utils::EmbedFeaturesResult& placed,
+    const std::function<Vector3d(size_t)>& position)
+{
+    std::map<SegmentKey, std::vector<uint32_t>> sources;
+    for (size_t e = 0; e < placed.edge_tiling.size(); ++e) {
+        for (const auto& s : placed.edge_tiling[e]) {
+            sources[segment_key(position(s[0]), position(s[1]))].push_back(uint32_t(e));
+        }
+    }
+    m_insertion_curve_sources.assign(sources.begin(), sources.end());
+}
+
 void TetOptimizerMesh::record_curve_history(const std::string& metadata)
 {
     m_recorded_curves =

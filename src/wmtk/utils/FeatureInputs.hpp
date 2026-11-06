@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/Types.hpp>
+#include <wmtk/io/ReadProvenance.hpp>
 #include <wmtk/utils/EmbedTriangles.hpp>
 
 #include <nlohmann/json.hpp>
@@ -57,6 +58,12 @@ struct FeatureInputs
  * Curves are concatenated with their indices offset. A vertex of a curve input with no incident
  * edge is a feature point, the same rule as triwild's 2D inputs. With the inputs' names, one per
  * selector, each point is labelled by its input's (point_input, point_names).
+ *
+ * `read`, if given, gets the inputs as read, for a curve history to start from them
+ * (history::curves_from_input()): the curve inputs' vertices and segments, concatenated in input
+ * order, then the point inputs' vertices, as triwild appends its points. Nothing is welded -- the
+ * inputs are read with no tolerance -- so its maps are the identity, and read->V and read->cells
+ * are also the network the history goes on from.
  */
 FeatureInputs read_feature_inputs(
     const io::ComponentIO& component_io,
@@ -64,7 +71,8 @@ FeatureInputs read_feature_inputs(
     const nlohmann::json& edge_selectors,
     const nlohmann::json& point_selectors,
     const std::vector<std::string>& edge_names = {},
-    const std::vector<std::string>& point_names = {});
+    const std::vector<std::string>& point_names = {},
+    io::ReadProvenance* read = nullptr);
 
 /**
  * @brief Marshal feature edges and points into the remesher's flat arrays, and check the

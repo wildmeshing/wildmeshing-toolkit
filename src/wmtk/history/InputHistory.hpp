@@ -42,11 +42,14 @@ SurfaceHistory from_input(
  *
  * @param read                the files as read -- the curve files' vertices and segments, then
  *                            the point files' vertices -- and where each went in V_in, E_in
- * @param V_in, E_in          the welded network (two or three columns; z is dropped)
+ * @param V_in, E_in          the welded network (two or three columns; z is dropped unless
+ *                            `keep_z`)
  * @param collapses           utils::simplify_segments' collapses on V_in, E_in; empty if it did
  *                            not run
  * @param V_out, E_out        the network the simplification left, the one inserted
  * @param surviving_vertices  for each row of V_out, its row of V_in
+ * @param keep_z              the curves are in space (tetwild, simwild), every matrix with three
+ *                            columns; otherwise in the plane z = 0 (triwild)
  * @throws if the collapses do not leave E_out's segments
  */
 CurveHistory curves_from_input(
@@ -56,6 +59,7 @@ CurveHistory curves_from_input(
     const std::vector<Edit>& collapses,
     const MatrixXd& V_out,
     const MatrixXi& E_out,
-    const std::vector<int>& surviving_vertices);
+    const std::vector<int>& surviving_vertices,
+    bool keep_z = false);
 
 } // namespace wmtk::history
