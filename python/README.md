@@ -133,6 +133,10 @@ while it hashes as written. Each stage's C++ log is kept next to its checkpoint.
 their options as each component's spec types them, a run in the background with the log, and a
 view of every stage (tags, envelopes, attributes, correspondences).
 
+A `prismatic_mesh` stage can name its regions with `input_tags` (the volume) and `offset_tags`
+(the bands). Until the C++ component reads these options, the pipeline rebuilds its input: the
+regions `tag_0` and `offset`, and vertex labels from the offsets' correspondence.
+
 ## Operations
 
 Full options in each component's spec.

@@ -230,3 +230,22 @@ def test_an_option_reference_takes_the_value_or_the_default(tmp_path, calls):
     p.stages[1]["options"]["target_rel"] = 0.5  # the option it refers to: both rerun
     r = p.run()
     assert calls == {"qslim": 2} and r["simplify_b"]["key"] != first["simplify_b"]["key"]
+
+
+def test_the_prismatic_input_is_rebuilt_from_the_regions_and_the_correspondence():
+    from wildmeshing.pipeline import _prismatic_input
+    # Two tets: the volume's and the band's; vertex 4, on the band, came from vertex 1.
+    mesh = {"V": np.eye(5, 3), "vertex_attributes": {"vid": {"values": np.arange(5)},
+                                                     "corr_input_vid": {"values": [-1] * 4 + [1]}},
+            "cells": {"tetrahedron": {"connectivity": np.array([[0, 1, 2, 3], [1, 2, 3, 4]]),
+                                      "attributes": {"tags": {"values": [[1, 0, 0], [0, 1, 0]],
+                                                              "labels": ["cube", "b", "ambient"]}}}}}
+    m = _prismatic_input(mesh, ["cube"], ["b"])
+    tags = m["cells"]["tetrahedron"]["attributes"]["tags"]
+    assert tags["labels"] == ["tag_0", "offset", "ambient"]
+    assert tags["values"].tolist() == [[1, 0, 0], [0, 1, 0]]
+    assert m["vertex_attributes"]["labels"]["values"].tolist() == [1, 1, 1, 1, 2]
+    with pytest.raises(ValueError, match="no region c"):
+        _prismatic_input(mesh, ["cube"], ["c"])
+    with pytest.raises(ValueError, match="both"):
+        _prismatic_input(mesh, ["cube"], [])

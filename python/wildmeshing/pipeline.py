@@ -43,9 +43,58 @@ import os
 import re
 import sys
 
+import numpy as np
+
 import wildmeshing
 
 from . import checkpoint
+
+# prismatic_mesh reads fixed names: the regions tag_0 (the input volume) and offset (the band), and
+# vertex labels 1 input / 2 offset / 0 background. Until it takes its regions by label, a pipeline
+# names them with two options its C++ spec does not have yet, and the input is rebuilt here: tag_0
+# and offset the unions of those regions, the labels from the offsets' correspondence
+# (corr_input_vid, by vid). The JSON stays as it is once the C++ side reads these options.
+OPTIONS = {"prismatic_mesh": [
+    {"pointer": "/input_tags", "type": "list", "default": [],
+     "doc": "Regions of the input volume (tag_0). Read by wildmeshing.pipeline, not C++, for now."},
+    {"pointer": "/input_tags/*", "type": "string"},
+    {"pointer": "/offset_tags", "type": "list", "default": [],
+     "doc": "Regions of the band (offset). Read by wildmeshing.pipeline, not C++, for now."},
+    {"pointer": "/offset_tags/*", "type": "string"}]}
+
+
+def _prismatic_input(mesh, input_tags, offset_tags):
+    """The mesh as prismatic_mesh reads it: regions tag_0, offset and ambient, and vertex labels 1
+    on the input volume and on every correspondence target, 2 on every vertex with one."""
+    if not input_tags or not offset_tags:
+        raise ValueError("prismatic_mesh: give both input_tags and offset_tags")
+    attributes = mesh.get("vertex_attributes", {})
+    if "corr_input_vid" not in attributes:
+        raise ValueError("prismatic_mesh: the input has no corr_input_vid (run the offsets with"
+                         " save_offset_correspondence)")
+    tets = mesh["cells"]["tetrahedron"]
+    tags = tets["attributes"]["tags"]
+    values, labels = np.asarray(tags["values"]), list(tags["labels"])
+
+    def union(names):
+        missing = [n for n in names if n not in labels]
+        if missing:
+            raise ValueError(f"prismatic_mesh: the input has no region {', '.join(missing)}")
+        return (values[:, [labels.index(n) for n in names]] == 1).any(axis=1)
+    tag_0, band = union(input_tags), union(offset_tags)
+    vid = np.asarray(attributes["vid"]["values"]).ravel()
+    corr = np.asarray(attributes["corr_input_vid"]["values"]).ravel()
+    row = {v: k for k, v in enumerate(vid)}
+    vertex = np.zeros(len(vid), np.int64)
+    vertex[np.unique(tets["connectivity"][tag_0])] = 1
+    vertex[[row[c] for c in corr[corr >= 0]]] = 1
+    vertex[corr >= 0] = 2
+    return {"V": mesh["V"],
+            "vertex_attributes": {"vid": {"values": vid}, "corr_input_vid": {"values": corr},
+                                  "labels": {"values": vertex}},
+            "cells": {"tetrahedron": {"connectivity": tets["connectivity"], "attributes": {
+                "tags": {"values": np.stack([tag_0, band, ~(tag_0 | band)], 1).astype(np.uint8),
+                         "labels": ["tag_0", "offset", "ambient"]}}}}}
 
 _module_hash = None
 
@@ -223,8 +272,15 @@ class Pipeline:
         self.running = stage["name"], log
         try:
             with _captured(log):
+                if stage["component"] == "prismatic_mesh" and (
+                        "input_tags" in options or "offset_tags" in options):
+                    meshes[options["input"]] = _prismatic_input(
+                        meshes[options["input"]], options.pop("input_tags", []),
+                        options.pop("offset_tags", []))
                 outputs, report = getattr(wildmeshing, stage["component"])(options, meshes)
         except Exception as e:
+            with open(log, "a") as f:  # the error, which the C++ log need not hold
+                f.write(f"\n{type(e).__name__}: {e}\n")
             raise StageFailed(stage["name"], log) from e
         finally:
             self.running = None

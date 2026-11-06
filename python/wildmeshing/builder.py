@@ -36,7 +36,7 @@ import threading
 import wildmeshing as wm
 
 from . import viewer as _viewer
-from .pipeline import Pipeline, StageFailed, _is_ref, _refs, _replace, check_name
+from .pipeline import OPTIONS, Pipeline, StageFailed, _is_ref, _refs, _replace, check_name
 
 ZERO = {"bool": False, "int": 0, "float": 0.0, "string": "", "list": [], "object": {}}
 SCALARS = ("bool", "int", "float", "string")
@@ -95,11 +95,13 @@ class Builder:
         """The component's option rules by pointer, its required and its optional options; the
         application name aside, which the memory route does not need."""
         if component not in self.specs:
-            rules = {r["pointer"]: r for r in wm.spec(component)}
+            extra = OPTIONS.get(component, [])  # the options the pipeline reads for C++, for now
+            rules = {r["pointer"]: r for r in wm.spec(component) + extra}
             root = rules.get("/", {})
             self.specs[component] = (rules,
                                      [k for k in root.get("required", []) if k != "application"],
-                                     [k for k in root.get("optional", []) if k != "application"])
+                                     [k for k in root.get("optional", []) if k != "application"]
+                                     + [r["pointer"][1:] for r in extra if "*" not in r["pointer"]])
         return self.specs[component]
 
     def stage(self, name):
