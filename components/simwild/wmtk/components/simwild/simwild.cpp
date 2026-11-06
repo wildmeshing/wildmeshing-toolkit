@@ -292,10 +292,10 @@ struct InputLists
     /// readers (read_mesh(), read_curves()), which index those by insertion.
     std::vector<std::string> inserted;
     nlohmann::json params;
-    /// The selectors of the 3D curve inputs (feature curves), with their names, and of the point
-    /// inputs.
+    /// The selectors of the 3D curve inputs (feature curves) and of the point inputs, with their
+    /// names.
     nlohmann::json curves = nlohmann::json::array(), points = nlohmann::json::array();
-    std::vector<std::string> curve_names;
+    std::vector<std::string> curve_names, point_names;
 };
 
 /**
@@ -372,7 +372,7 @@ InputLists split_inputs(
                 kind == Kind::points ? "points" : "feature curves");
         }
         (kind == Kind::points ? out.points : out.curves).push_back(json_params["input"][i]);
-        if (kind == Kind::curve) out.curve_names.push_back(name);
+        (kind == Kind::points ? out.point_names : out.curve_names).push_back(name);
     }
     if (out.inserted.empty()) {
         log_and_throw_error(
@@ -421,8 +421,11 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
         mesh.m_F_envelope_labels = input_data.F_envelope_labels;
     }
-    // Before init_from_image(): its reference checks name the feature curves' labels by these.
+    // Before init_from_image(): its reference checks name the feature curves' labels by these,
+    // and its anchors keep the input points' labels, which the output's point block writes.
     mesh.m_feature_edge_names = input_data.feature_edge_names;
+    mesh.m_point_names = input_data.point_names;
+    mesh.m_input_point_labels = input_data.input_point_labels;
     // Around the input after a simplification before the insertion, the input's own curves: the
     // order-2 tubes and the curve anchors are built around them, and a rim, non-manifold edge or
     // curve end the simplification made is held around itself (TetOptimizerMesh::InputCurves).
@@ -511,6 +514,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
         io::collect_input_set_tags<CellType::Triangle>(mesh, outputs, mesh.m_face_tag_names);
         io::collect_feature_edge_tags(mesh, outputs, mesh.m_feature_edge_names);
+        io::collect_point_tags(mesh, outputs, mesh.m_point_names);
         return outputs;
     };
 
@@ -696,6 +700,8 @@ void run_2D(
         mesh.set_input_curve_points(held->V, held->F);
     }
     mesh.m_input_point_vids = input_data.input_point_vids;
+    mesh.m_point_names = input_data.point_names; // as in 3D
+    mesh.m_input_point_labels = input_data.input_point_labels;
     if (input_data.V_input_r.size() == 0) {
         mesh.init_from_image(
             input_data.V_input,
@@ -794,6 +800,7 @@ void run_2D(
             mesh,
             component_io.result.first,
             mesh.m_edge_tag_names);
+        io::collect_point_tags(mesh, component_io.result.first, mesh.m_point_names);
         // The envelope handed on, as in 3D, with the input points.
         if (!mesh.m_V_envelope.empty()) {
             std::vector<Vector2d> points;
@@ -914,19 +921,31 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     } else if (dimension == 2) {
         const InputLists lists = split_inputs(component_io, input_paths, json_params, 2);
         // Read by the code the 3D route reads them with; only their x and y are used.
-        const utils::FeatureInputs features =
-            utils::read_feature_inputs(component_io, root, nlohmann::json::array(), lists.points);
+        const utils::FeatureInputs features = utils::read_feature_inputs(
+            component_io,
+            root,
+            nlohmann::json::array(),
+            lists.points,
+            {},
+            lists.point_names);
         input_data = read_curves(
             lists.inserted,
             output_filename.string(),
             lists.params,
             component_io.memory() ? &component_io : nullptr,
             &features);
+        input_data.input_point_labels = features.point_input;
+        input_data.point_names = features.point_names;
     } else {
         const InputLists lists = split_inputs(component_io, input_paths, json_params, 3);
         // Read by the code tetwild reads them with.
-        const utils::FeatureInputs features =
-            utils::read_feature_inputs(component_io, root, lists.curves, lists.points);
+        const utils::FeatureInputs features = utils::read_feature_inputs(
+            component_io,
+            root,
+            lists.curves,
+            lists.points,
+            lists.curve_names,
+            lists.point_names);
         input_data = read_mesh(
             lists.inserted,
             output_filename.string(),
@@ -934,6 +953,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             component_io.memory() ? &component_io : nullptr,
             &features);
         if (!input_data.features.empty()) input_data.feature_edge_names = lists.curve_names;
+        input_data.input_point_labels = features.point_input;
+        input_data.point_names = features.point_names;
     }
 
     if (input_data.T_input.cols() == 4) {

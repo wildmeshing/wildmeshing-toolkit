@@ -1,6 +1,7 @@
 #include "read_tagged_mesh.hpp"
 
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -57,10 +58,9 @@ TaggedMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
     // Fields: tags are read, every other is dropped (io::ComponentIO::data_fields).
     std::set<std::string> dropped = io::ComponentIO::dropped_fields(mesh.vertex_attributes, {});
     for (const auto& [type, cells] : mesh.cells) {
-        if (type == CellType::Tetrahedron || type == CellType::Triangle || type == CellType::Edge) {
+        if (type == CellType::Tetrahedron || type == CellType::Triangle || type == CellType::Edge ||
+            type == CellType::Point) {
             dropped.merge(io::ComponentIO::dropped_fields(cells.attributes, {"tags"}));
-        } else if (type == CellType::Point) {
-            dropped.merge(io::ComponentIO::dropped_fields(cells.attributes, {}));
         } else {
             log_and_throw_error(
                 "{}: a tagged mesh for tetwild has tets and, besides them, triangles (tagged "
@@ -175,13 +175,15 @@ TaggedMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
             }
         }
     }
-    if (const auto points = mesh.cells.find(CellType::Point); points != mesh.cells.end()) {
-        const auto& C = points->second.connectivity;
-        for (Eigen::Index r = 0; r < C.rows(); ++r) {
-            const size_t v = vertex(C(r, 0), "point");
-            out.features.points.push_back(out.V[v]);
-            out.features_placed.point_vertex.push_back(int64_t(v));
-        }
+    // The point block: one input point per row and label (io::read_point_tags()), anchored
+    // where it is and written back under its label.
+    const io::PointTags points = io::read_point_tags(mesh, what);
+    out.features.point_names = points.names;
+    for (size_t k = 0; k < points.rows.size(); ++k) {
+        const size_t v = vertex(points.rows[k], "point");
+        out.features.points.push_back(out.V[v]);
+        out.features.point_input.push_back(points.labels[k]);
+        out.features_placed.point_vertex.push_back(int64_t(v));
     }
     logger().info(
         "tagged mesh {}: {} tets, {} tagged faces ({} labels), {} feature edges ({} labels), {} "

@@ -101,8 +101,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // until they are carried.
     if (input_data.F_tagged.rows())
         log_and_throw_error("manifold_extraction does not take tagged faces (2D: edges) yet");
-    if (!input_data.features.empty())
-        log_and_throw_error("manifold_extraction does not take feature curves yet");
+    if (!input_data.features.empty() || !input_data.input_point_vids.empty())
+        log_and_throw_error("manifold_extraction does not take feature curves or points yet");
     man_params.init(
         input_data.V_input.colwise().minCoeff(),
         input_data.V_input.colwise().maxCoeff());

@@ -27,11 +27,10 @@ int main()
          {"num_threads", 0}},
         inputs);
     const wmtk::MeshData& mesh = outputs.at("mesh");
-    const wmtk::MeshData& features = outputs.at("features");
+    // The feature curve is the mesh's edge block, the input points its point block.
     std::cout << mesh.V.rows() << " vertices, "
               << mesh.cell(wmtk::CellType::Tetrahedron).connectivity.rows() << " tets, "
-              << features.cell(wmtk::CellType::Edge).connectivity.rows()
-              << " tet edges on the curve\n";
+              << mesh.cell(wmtk::CellType::Edge).connectivity.rows() << " tet edges on the curve\n";
     // Every input point is a vertex of the tet mesh: the nearest vertex is at distance 0.
     const auto& points = inputs.at("points").V;
     for (Eigen::Index i = 0; i < points.rows(); ++i) {

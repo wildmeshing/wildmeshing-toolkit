@@ -206,8 +206,7 @@ All 12 points keep a vertex within \(\varepsilon\), the farthest at 0. Without t
 2026-10, `preserve_feature_points` false turned them off), the collapses took the points' vertices
 like any other: 0 of 12 kept, the farthest 1.50 (44 \(\varepsilon\)) from a vertex. The points outside
 the curve's bounding box grow it, and with it \(\varepsilon\) and the edge length, which are
-relative to its diagonal. A point in a region the filter discards leaves the mesh with that region,
-but stays in the feature output.
+relative to its diagonal. A point in a region the filter discards leaves the mesh, and its point block, with that region.
 
 ### Topology: `preserve_topology`
 
@@ -241,12 +240,11 @@ On files, `output` names:
   one column per input, 1 where the triangle is inside that input). The
   tracked curves are its edges, with `tags`, one column per input labelled by `input_names`: each
   edge under every input it lies on, oriented as its input. simwild reads them back as edge tags.
+  The input points are its point block, each vertex under the inputs with a point there.
 - `shapes.vtu`: the same triangles for ParaView, with `quality`, the winding numbers (`wn_<name>`
   with `input_names`), and `flood_fill` (the regions the curves separate) when the flood fill ran
   ([`compute_flood_fill`](../reference/triwild.md#compute_flood_fill)).
 - `shapes_surf.vtu`: the tracked curves, the edges of the mesh that lie on the input.
-- `shapes_features.obj`: with feature points only, the tracked curves (`l`) and the anchored
-  points (`p`), collected before the filter.
 - With [`report`](../reference/triwild.md#report), a JSON file with the vertex and triangle counts
   (`#v`, `#t`), `max_energy`, `avg_energy`, `#iterations`, `eps`, the coarsening statistics, and,
   with `DEBUG_hausdorff`, the distances `hausdorff` (output to input, the containment) and

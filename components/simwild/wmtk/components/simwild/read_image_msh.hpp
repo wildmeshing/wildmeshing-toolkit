@@ -85,6 +85,11 @@ struct InputData
     /// A 2D curve input with point inputs: the row of V_input each point became, in
     /// input order. Empty otherwise.
     std::vector<size_t> input_point_vids;
+    /// The input points' labels, which the mesh's point block writes (io::collect_point_tags()):
+    /// per input point -- features.points in 3D, input_point_vids in 2D -- its label's column of
+    /// point_names, the name of its input, or of a tagged mesh's point block's label.
+    std::vector<int> input_point_labels;
+    std::vector<std::string> point_names;
 };
 
 /**

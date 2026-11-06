@@ -808,6 +808,7 @@ void TetWildMesh::output_mesh(
     MeshMap tagged{{"mesh", MeshData()}};
     io::collect_input_set_tags<CellType::Triangle>(*this, tagged, face_tags);
     io::collect_feature_edge_tags(*this, tagged, feature_tags);
+    io::collect_point_tags(*this, tagged, m_point_names);
     for (const auto& entry : tagged.at("mesh").cells) {
         const CellType type = entry.first;
         const CellData& block = entry.second;
@@ -826,12 +827,17 @@ void TetWildMesh::output_mesh(
                     for (int c = 0; c < 3; ++c) f[c] = size_t(block.connectivity(rows[k], c));
                     return f;
                 });
-            } else {
+            } else if (type == CellType::Edge) {
                 msh.add_edge_vertices();
                 msh.add_edges(rows.size(), [&](size_t k) {
                     std::array<size_t, 2> e;
                     for (int c = 0; c < 2; ++c) e[c] = size_t(block.connectivity(rows[k], c));
                     return e;
+                });
+            } else {
+                msh.add_point_vertices();
+                msh.add_points(rows.size(), [&](size_t k) {
+                    return std::array<size_t, 1>{{size_t(block.connectivity(rows[k], 0))}};
                 });
             }
             msh.add_physical_group(tags.labels[j]);

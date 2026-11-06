@@ -303,7 +303,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // points came in lists of their own, input_edges and input_points, the curves named
     // feature_<i> after their position there.
     std::vector<std::string> input_paths; // the surfaces; on the tagged route the tet mesh
-    std::vector<std::string> surface_labels, curve_labels;
+    std::vector<std::string> surface_labels, curve_labels, point_labels;
     nlohmann::json curve_inputs = nlohmann::json::array(), point_inputs = nlohmann::json::array();
     if (tagged) {
         input_paths = inputs;
@@ -323,6 +323,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 break;
             case io::ComponentIO::InputKind::points:
                 point_inputs.push_back(json_params["input"][i]);
+                point_labels.push_back(labels[i]);
                 break;
             }
         }
@@ -507,7 +508,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         // background box derive from it -- they are input geometry, and a feature outside the
         // surface's box must still land inside the triangulated domain.
         // Read and grown over by the shared code simwild uses too (utils::read_feature_inputs()).
-        features = utils::read_feature_inputs(component_io, root, curve_inputs, point_inputs);
+        // Each point labelled by its input's name (FeatureInputs::point_names): the mesh's point
+        // block.
+        features = utils::read_feature_inputs(
+            component_io,
+            root,
+            curve_inputs,
+            point_inputs,
+            curve_labels,
+            point_labels);
         features.extend_bbox(box_minmax.first, box_minmax.second);
 
         t_load = phase_timer.getElapsedTime();
@@ -820,7 +829,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 CellType::Edge,
                 E_sets,
                 feature_tags);
-            io::append_envelope_points(envelope_out, features.points);
+            io::append_envelope_points(
+                envelope_out,
+                features.points,
+                features.point_input,
+                features.point_names);
         }
 
         // One envelope per input, around the same surface as tet_envelope and at the same eps, with
@@ -1001,6 +1014,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         facet_sources = {};
         // The wn_ fields are named after the inputs when input_names names them, else numbered.
         if (!json_params["input_names"].empty()) mesh_new.m_input_names = face_tags;
+        // The input points' labels, which their anchors keep and the output writes as its point
+        // block (io::collect_point_tags()).
+        mesh_new.m_point_names = features.point_names;
+        mesh_new.m_input_point_labels = features.point_input;
 
         // Around the input after a simplification, the input's own curves: the tubes and anchors
         // are built around them, and an order-2 edge or curve end the simplification made is held
@@ -1161,7 +1178,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 CellType::Edge,
                 E_sets,
                 feature_tags);
-            io::append_envelope_points(envelope_out, features.points);
+            io::append_envelope_points(
+                envelope_out,
+                features.points,
+                features.point_input,
+                features.point_names);
         }
         logger().info(
             "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
@@ -1173,6 +1194,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         auto& mesh_new = *mesh_owner;
         mesh_new.m_input_names = face_tags;
         mesh_new.m_feature_edge_names = feature_tags;
+        mesh_new.m_point_names = features.point_names; // as on the surface route
+        mesh_new.m_input_point_labels = features.point_input;
         // With a reference, as simwild holds one (TetOptimizerMesh::m_has_reference): the order-2
         // tubes and the curve-end anchors around its curves, an edge on none held around itself
         // (TetOptimizerMesh::InputCurves), set before the initialization builds them.
@@ -1353,10 +1376,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // Feature collections, taken BEFORE any filter deletes tets: explicit features are
     // user input, and a filter discarding the region they live in must not erase them from
-    // the feature outputs and audits (they do disappear from the tet mesh itself). Same
-    // rule in 2D. With filter='none' nothing is deleted and this equals the final state.
+    // the audits (they do disappear from the tet mesh itself). Same rule in 2D. With
+    // filter='none' nothing is deleted and this equals the final state.
     std::vector<std::array<Vector3d, 2>> hybrid_curve_segs;
-    std::vector<Vector3d> hybrid_anchor_pts;
     std::pair<size_t, size_t> hybrid_retention{0, 0};
     double hybrid_retention_worst = 0;
     const bool features_present = !feature_edges.empty() || !feature_points.empty();
@@ -1369,13 +1391,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             hybrid_curve_segs.push_back(
                 {{mesh_new.m_vertex_attribute[e.vid(mesh_new)].m_posf,
                   mesh_new.m_vertex_attribute[e.switch_vertex(mesh_new).vid(mesh_new)].m_posf}});
-        }
-        for (const auto& v : mesh_new.get_vertices()) {
-            const size_t vid = v.vid(mesh_new);
-            if (mesh_new.m_feature_point_attribute[vid].m_feature_point_id !=
-                TetWildMesh::NO_FEATURE_POINT) {
-                hybrid_anchor_pts.push_back(mesh_new.m_vertex_attribute[vid].m_posf);
-            }
         }
         hybrid_retention = mesh_new.feature_retention(&hybrid_retention_worst);
     }
@@ -1753,8 +1768,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         if (json_params["DEBUG_feature_retention"]) {
             double worst_ratio = 0;
             // Measured pre-filter: the anchors' vertices may have been deleted with a
-            // discarded region, but the features were preserved up to that point and
-            // survive in the feature outputs.
+            // discarded region, but the features were preserved up to that point.
             auto [kept, total] = hybrid_retention;
             worst_ratio = hybrid_retention_worst;
             if (total > 0) {
@@ -1857,40 +1871,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     mesh_new.output_mesh(output_path + "_final.msh", face_tags, feature_tags);
     // The reference the tags were held to, for the next component (the memory route's
     // outputs["envelope"]), in a file of its own: _final.msh is read as a mesh by gmsh and polyfem.
-    // Nothing derived from the mesh: _final.msh holds the tracked surface (its triangle block) and
-    // the boundary of the tets kept. Until 2026-11 they were also written as _surface.obj.
+    // Nothing derived from the mesh: _final.msh holds the tracked surface (its triangle block), the
+    // feature curves and the input points (its edge and point blocks) and the boundary of the tets
+    // kept. Until 2026-11 they were also written as _surface.obj and _features.obj.
     if (!component_io.memory()) io::write_mesh(output_path + "_envelope.msh", envelope_out);
-
-    // The tracked feature curves, as an edge mesh. Only written when features exist, so
-    // featureless runs are byte-identical.
-    if (!component_io.memory() && features_present) {
-        // From the pre-filter collections: a filter must not erase user-supplied features
-        // from the feature outputs (they do leave the tet mesh with their region).
-        std::ofstream fout(output_path + "_features.obj");
-        std::map<std::array<double, 3>, size_t> vid_of;
-        const auto obj_vertex = [&](const Vector3d& p) {
-            const std::array<double, 3> key = {{p[0], p[1], p[2]}};
-            const auto [it, inserted] = vid_of.emplace(key, vid_of.size() + 1);
-            if (inserted) {
-                fout << "v " << p[0] << " " << p[1] << " " << p[2] << "\n";
-            }
-            return it->second;
-        };
-        std::vector<std::array<size_t, 2>> obj_edges;
-        for (const auto& seg : hybrid_curve_segs) {
-            obj_edges.push_back({{obj_vertex(seg[0]), obj_vertex(seg[1])}});
-        }
-        std::vector<size_t> obj_points;
-        for (const Vector3d& p : hybrid_anchor_pts) {
-            obj_points.push_back(obj_vertex(p));
-        }
-        for (const auto& e : obj_edges) {
-            fout << "l " << e[0] << " " << e[1] << "\n";
-        }
-        for (const size_t pid : obj_points) {
-            fout << "p " << pid << "\n";
-        }
-    }
 
     wmtk::logger().info("======= finish =========");
 
@@ -1906,10 +1890,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             component_io.result.first,
             face_tags);
         io::collect_feature_edge_tags(mesh_new, component_io.result.first, feature_tags);
+        io::collect_point_tags(mesh_new, component_io.result.first, mesh_new.m_point_names);
         component_io.result.first.merge(io::named_outputs(std::move(history_meshes)));
-        if (features_present)
-            component_io.result.first["features"] =
-                io::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
         component_io.result.first["envelope"] = std::move(envelope_out);
         return {}; // the memory overload returns component_io.result instead
     }

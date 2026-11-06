@@ -38,6 +38,11 @@ struct FeatureInputs
     /// The feature points: every vertex of the point inputs, and every vertex of a curve input
     /// with no incident edge.
     std::vector<Vector3d> points;
+    /// Per point, the column of its label in point_names: the name of the input it is a vertex
+    /// of. The names in the order they first label a point. Empty without the inputs' names
+    /// (read_feature_inputs()): the points are then not labelled.
+    std::vector<int> point_input;
+    std::vector<std::string> point_names;
 
     bool empty() const { return edges.empty() && points.empty(); }
     /// Grow [lo, hi] over every feature vertex and point. They are input geometry, and a
@@ -50,13 +55,16 @@ struct FeatureInputs
  * selector resolved against `root` (a mesh name on the memory route).
  *
  * Curves are concatenated with their indices offset. A vertex of a curve input with no incident
- * edge is a feature point, the same rule as triwild's 2D inputs.
+ * edge is a feature point, the same rule as triwild's 2D inputs. With the inputs' names, one per
+ * selector, each point is labelled by its input's (point_input, point_names).
  */
 FeatureInputs read_feature_inputs(
     const io::ComponentIO& component_io,
     const std::filesystem::path& root,
     const nlohmann::json& edge_selectors,
-    const nlohmann::json& point_selectors);
+    const nlohmann::json& point_selectors,
+    const std::vector<std::string>& edge_names = {},
+    const std::vector<std::string>& point_names = {});
 
 /**
  * @brief Marshal feature edges and points into the remesher's flat arrays, and check the

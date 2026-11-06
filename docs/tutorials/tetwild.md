@@ -300,15 +300,14 @@ On files, `output` names:
   `sizing` holds the sizing scalar of the optimization. The tracked faces are tagged, one physical
   group per input named after it (`input_names`, `tag_<i>` without), each face under every input it
   lies on and oriented as its input, and with feature curves the tet edges tiling them are, one
-  group per curve input, named alike: the triangle and edge blocks simwild reads back as
-  face tags and feature curves. The memory route's `mesh` carries the same blocks.
+  group per curve input, named alike, and so are the vertices standing for input points, one
+  group per input with points: the triangle, edge and point blocks simwild reads back as face tags,
+  feature curves and input points. The memory route's `mesh` carries the same blocks.
 - `snowman.vtu`: the same tets for ParaView, with `t_energy`, the winding numbers (`wn_<name>`
   with `input_names`) and the vertex fields `sizing_field`, `is_rounded`, `on_surface`,
   `on_open_boundary` and `order`.
 - `snowman_surf.vtu`: the tracked surface, the tet faces that lie on the input.
 - `snowman_simplified_input.obj`: the input after the simplification, as inserted.
-- `snowman_features.obj`: with feature curves or points, the tracked curves (`l`) and the
-  anchored points (`p`).
 - With [`report`](../reference/tetwild.md#report), a JSON file with the vertex and tet counts
   (`#v`, `#t`), `max_energy`, `avg_energy`, `#iterations`, `eps`, the coarsening statistics, and
   `hausdorff` and `coverage` with `DEBUG_hausdorff`, `input_euler_characteristic`,

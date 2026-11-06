@@ -34,8 +34,11 @@ struct TaggedTriMesh
     std::vector<InputSet> E_sets;
     std::vector<int> E_orientation;
     std::vector<std::string> edge_names;
-    /// The point block's vertices.
+    /// The point block's vertices, one per row and label, each under the label point_labels[i]
+    /// of point_names.
     std::vector<size_t> point_vids;
+    std::vector<int> point_labels;
+    std::vector<std::string> point_names;
 };
 
 /// Whether `mesh` has triangles: the tagged route's input, rather than curves.

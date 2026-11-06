@@ -286,11 +286,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!component_io.memory() && envelope && outputs.count("envelope"))
             io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
     };
-    // Feature curves (a tet mesh's tagged edges, as tetwild and simwild write them) would be
-    // dropped silently: the offset holds the held surfaces' own curves only. Refused until carried.
-    if (!input_data.features.empty()) {
+    // Feature curves and input points (a tet mesh's tagged edges and a tagged mesh's point block,
+    // as tetwild and simwild write them) would be dropped silently: the offset holds the held
+    // surfaces' own curves only, and no points. Refused until carried.
+    if (!input_data.features.empty() || !input_data.input_point_vids.empty()) {
         log_and_throw_error(
-            "topological_offset does not take feature curves (an edge block in a tet mesh) yet");
+            "topological_offset does not take feature curves or points (an edge block in a tet "
+            "mesh, a point block) yet");
     }
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (params.debug_output) {

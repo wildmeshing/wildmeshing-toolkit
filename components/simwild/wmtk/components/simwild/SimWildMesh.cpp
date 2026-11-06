@@ -560,7 +560,7 @@ MeshData SimWildMesh::envelope_data(
         CellType::Edge,
         curve_sets,
         curve_names);
-    io::append_envelope_points(out, curves.points);
+    io::append_envelope_points(out, curves.points, m_input_point_labels, m_point_names);
     return out;
 }
 

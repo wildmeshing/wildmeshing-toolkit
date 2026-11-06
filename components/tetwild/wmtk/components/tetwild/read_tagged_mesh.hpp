@@ -36,7 +36,9 @@ struct TaggedMesh
     std::vector<std::string> face_names;
     /// The edge block: per edge and label, an input edge (features.edges, edge_input the
     /// label's column of feature_names) placed on itself (features_placed.edge_tiling). The
-    /// point block: features.points, each the vertex features_placed.point_vertex names.
+    /// point block: per row and label features.points, each the vertex
+    /// features_placed.point_vertex names, under the label features.point_input of
+    /// features.point_names.
     utils::FeatureInputs features;
     utils::EmbedFeaturesResult features_placed;
     std::vector<std::string> feature_names;

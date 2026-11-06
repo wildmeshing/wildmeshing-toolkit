@@ -329,6 +329,11 @@ public:
      * gate was the real cause.
      */
     std::vector<double> m_feature_point_radius;
+    /// The input points' labels: the 2D twin of TetOptimizerMesh::m_point_names,
+    /// m_input_point_labels and m_feature_point_inputs.
+    std::vector<std::string> m_point_names;
+    std::vector<int> m_input_point_labels;
+    std::vector<InputSet> m_feature_point_inputs;
     /// Whether the shared operations maintain and enforce the anchors
     /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
@@ -438,6 +443,8 @@ public:
         const std::vector<size_t>& input_point_vids,
         double order2_radius,
         double feature_radius);
+    /// The 2D twin of TetOptimizerMesh::label_feature_points().
+    void label_feature_points(const std::vector<size_t>& input_point_vids);
 
     /// True iff collapsing v1 into v2 would drop or displace a feature point. False when
     /// tracking is off.

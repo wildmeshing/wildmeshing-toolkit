@@ -621,6 +621,16 @@ public:
     /// Radius of each anchor's ball, beside m_feature_points. Per anchor, because each kind of
     /// feature has its own radius (see anchor_feature_points()).
     std::vector<double> m_feature_point_radius;
+    /// The input points' labels, which the output writes as its point block
+    /// (io::collect_point_tags()) and a receiver reads back as input points: names, bit i of an
+    /// input set m_point_names[i], and per input point -- in the order of anchor_feature_points()'s
+    /// input_point_vids -- the bit of its label, set by the application before the anchoring;
+    /// empty, the points carry no label. Per anchor, beside m_feature_points, the labels of the
+    /// input points it stands for, 0 for a curve end or junction (which the tags give again),
+    /// filled by anchor_feature_points(). Until 2026-11 no output marked the input points.
+    std::vector<std::string> m_point_names;
+    std::vector<int> m_input_point_labels;
+    std::vector<InputSet> m_feature_point_inputs;
     /// Whether the shared operations maintain and enforce the anchors
     /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
@@ -686,6 +696,9 @@ public:
         const std::vector<size_t>& input_point_vids,
         double order2_radius,
         double feature_radius);
+    /// At the end of anchor_feature_points(): each anchor's labels (m_feature_point_inputs), the
+    /// bits m_input_point_labels gives the input points it stands for.
+    void label_feature_points(const std::vector<size_t>& input_point_vids);
 
     /**
      * True iff collapsing v1 into v2 would drop or displace a feature-point anchor. False

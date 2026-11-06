@@ -35,36 +35,6 @@ geometry_data(const std::vector<Vertex>& vertices, const std::vector<Cell>& cell
     data.validate();
     return data;
 }
-template <typename Point>
-MeshData feature_data(
-    const std::vector<std::array<Point, 2>>& segments,
-    const std::vector<Point>& anchors)
-{
-    std::map<std::array<double, 3>, int64_t> rows;
-    MeshData data;
-    std::vector<std::array<double, 3>> vertices;
-    auto vertex = [&](const Point& p) {
-        std::array<double, 3> key{{0, 0, 0}};
-        for (int i = 0; i < p.size(); ++i) key[i] = p[i];
-        auto [it, added] = rows.emplace(key, rows.size());
-        if (added) vertices.push_back(key);
-        return it->second;
-    };
-    auto& E = data.cells[CellType::Edge].connectivity;
-    E.resize(segments.size(), 2);
-    for (size_t i = 0; i < segments.size(); ++i) {
-        E(i, 0) = vertex(segments[i][0]);
-        E(i, 1) = vertex(segments[i][1]);
-    }
-    auto& P = data.cells[CellType::Point].connectivity;
-    P.resize(anchors.size(), 1);
-    for (size_t i = 0; i < anchors.size(); ++i) P(i, 0) = vertex(anchors[i]);
-    data.V.resize(vertices.size(), 3);
-    for (size_t i = 0; i < vertices.size(); ++i)
-        for (int j = 0; j < 3; ++j) data.V(i, j) = vertices[i][j];
-    data.validate();
-    return data;
-}
 // The envelope a component hands on -- outputs["envelope"] on the memory route,
 // <output>_envelope.msh on the file route -- is the REFERENCE it held its tags to: the geometry its
 // envelopes, tubes and anchors were built around (the input, or the simplified input, per
@@ -105,18 +75,30 @@ inline void append_envelope_block(
             member(r, j) = (sets[r] >> j) & 1;
     out.attributes["tags"] = {std::move(member), names};
 }
-// The reference's input points, as the envelope's point block, without tags.
+// The reference's input points, as the envelope's point block: point i labelled by the bit
+// labels[i] of names, as the mesh's point block labels it (collect_point_tags()); without labels,
+// untagged.
 template <typename Point>
-void append_envelope_points(MeshData& envelope, const std::vector<Point>& points)
+void append_envelope_points(
+    MeshData& envelope,
+    const std::vector<Point>& points,
+    const std::vector<int>& labels = {},
+    const std::vector<std::string>& names = {})
 {
     std::vector<std::array<int64_t, 1>> cells(points.size());
     for (size_t i = 0; i < points.size(); ++i) cells[i] = {{int64_t(i)}};
+    const bool labelled = !names.empty() && labels.size() == points.size();
+    std::vector<InputSet> sets;
+    if (labelled) {
+        for (const int l : labels)
+            sets.push_back(l >= 0 && l < SurfaceTagAttributes::max_inputs ? InputSet(1) << l : 0);
+    }
     append_envelope_block(
         envelope,
         geometry_data(points, cells, CellType::Point),
         CellType::Point,
-        {},
-        {});
+        sets,
+        labelled ? names : std::vector<std::string>());
 }
 // Whether `envelope` is a labelled reference (append_envelope_block()), as producers write it,
 // rather than bare geometry: its triangles (3D) or edges (2D) carry `tags`. Bare geometry, an
@@ -436,5 +418,100 @@ void collect_feature_edge_tags(
         for (size_t j = 0; j < names.size(); ++j) member(i, j) = (sets[i] >> j) & 1;
     }
     block.attributes["tags"] = {std::move(member), names};
+}
+// The input points (TetOptimizerMesh / TriOptimizerMesh::m_feature_point_inputs, by their
+// anchors) as the Point block of outputs["mesh"], on the rows collect_input_set_tags() uses: one
+// tags column per name (bit j: names[j]), the input points' labels. Each at the vertex standing
+// for its anchor; one whose anchor a collapse merged into another's -- which the collapse allows
+// where each lies in the other's ball -- at the nearest vertex in its ball; one with neither, its
+// region filtered away, is not written. Several at one vertex are one row under all their labels.
+// Nothing is written without names or point tracking. Until 2026-11 no output marked the input
+// points: tetwild's and triwild's `features` listed them beside the mesh.
+template <typename Mesh>
+void collect_point_tags(const Mesh& mesh, MeshMap& outputs, const std::vector<std::string>& names)
+{
+    if (names.empty() || !mesh.m_track_feature_points) return;
+    const auto& inputs = mesh.m_feature_point_inputs;
+    std::vector<int64_t> row(mesh.vert_capacity(), -1);
+    std::vector<size_t> carrier(inputs.size(), size_t(-1)); // anchor -> its vertex
+    int64_t n = 0;
+    for (const auto& v : mesh.get_vertices()) {
+        const size_t vid = v.vid(mesh);
+        row[vid] = n++;
+        const size_t f = mesh.m_feature_point_attribute[vid].m_feature_point_id;
+        if (f < inputs.size()) carrier[f] = vid;
+    }
+    const InputSet mask = names.size() >= size_t(SurfaceTagAttributes::max_inputs)
+                              ? ~InputSet(0)
+                              : (InputSet(1) << names.size()) - 1;
+    std::map<int64_t, InputSet> sets; // output row -> labels
+    for (size_t f = 0; f < inputs.size(); ++f) {
+        if ((inputs[f] & mask) == 0) continue;
+        size_t vid = carrier[f];
+        if (vid == size_t(-1)) {
+            const double r = mesh.m_feature_point_radius[f];
+            double nearest = r * r;
+            for (const auto& v : mesh.get_vertices()) {
+                const double d =
+                    (mesh.m_vertex_attribute[v.vid(mesh)].m_posf - mesh.m_feature_points[f])
+                        .squaredNorm();
+                if (d <= nearest) {
+                    nearest = d;
+                    vid = v.vid(mesh);
+                }
+            }
+            if (vid == size_t(-1)) continue;
+        }
+        sets[row[vid]] |= inputs[f] & mask;
+    }
+    auto& block = outputs.at("mesh").cells[CellType::Point];
+    block.connectivity.resize(Eigen::Index(sets.size()), 1);
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(sets.size(), names.size());
+    Eigen::Index i = 0;
+    for (const auto& [r, set] : sets) {
+        block.connectivity(i, 0) = r;
+        for (size_t j = 0; j < names.size(); ++j) member(i, Eigen::Index(j)) = (set >> j) & 1;
+        ++i;
+    }
+    block.attributes["tags"] = {std::move(member), names};
+}
+// A tagged mesh's point block, as collect_point_tags() writes it: its labels, and one point per
+// row and label -- as an edge is read once per row and label -- with its row of mesh.V and its
+// label's column. None without a point block. A point block needs tags, every row a label, as
+// every other lower block of a tagged mesh.
+struct PointTags
+{
+    std::vector<std::string> names;
+    std::vector<int64_t> rows;
+    std::vector<int> labels;
+};
+inline PointTags read_point_tags(const MeshData& mesh, const std::string& what)
+{
+    PointTags out;
+    const auto it = mesh.cells.find(CellType::Point);
+    if (it == mesh.cells.end() || it->second.connectivity.rows() == 0) return out;
+    const auto tags = it->second.attributes.find("tags");
+    if (tags == it->second.attributes.end())
+        throw std::runtime_error(what + ": its points need tags, one column per label");
+    const MeshAttribute& field = tags->second;
+    if (!std::holds_alternative<DataMatrix<uint8_t>>(field.values) ||
+        field.labels.size() != size_t(field.cols()))
+        throw std::runtime_error("tags must be a UInt8 membership matrix with column labels");
+    const auto& member = std::get<DataMatrix<uint8_t>>(field.values);
+    if ((member.array() > 1).any()) throw std::runtime_error("tags must be binary");
+    if ((member.cast<int>().rowwise().sum().array() == 0).any())
+        throw std::runtime_error(what + ": every tagged point needs a tag");
+    if (field.labels.size() > size_t(SurfaceTagAttributes::max_inputs))
+        throw std::runtime_error(what + ": more point labels than an input set holds");
+    out.names = field.labels;
+    const auto& C = it->second.connectivity;
+    for (Eigen::Index r = 0; r < C.rows(); ++r) {
+        for (Eigen::Index j = 0; j < member.cols(); ++j) {
+            if (!member(r, j)) continue;
+            out.rows.push_back(C(r, 0));
+            out.labels.push_back(int(j));
+        }
+    }
+    return out;
 }
 } // namespace wmtk::io

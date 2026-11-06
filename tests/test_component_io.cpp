@@ -254,6 +254,18 @@ segment_input(double x0, double y0, double z0, double x1, double y1, double z1)
     if (it == mesh.cells.end() || !it->second.attributes.count("tags")) return {};
     return it->second.attributes.at("tags").labels;
 }
+// The positions of `mesh`'s points labelled `name`, in order: its point block's rows.
+[[maybe_unused]] std::vector<std::vector<std::array<double, 3>>> points_labelled(
+    const MeshData& mesh,
+    const std::string& name)
+{
+    return unoriented(labelled_rows(mesh, CellType::Point, name));
+}
+// One position as points_labelled() gives one.
+[[maybe_unused]] std::vector<std::vector<std::array<double, 3>>> at(double x, double y, double z)
+{
+    return {{{{x, y, z}}}};
+}
 // A unit tet's boundary, `shift` along x, its triangles facing out.
 [[maybe_unused]] MeshData tet_surface(double shift)
 {
@@ -381,6 +393,48 @@ TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
     REQUIRE(result.first.at("mesh").cells.begin()->second.attributes.count("tags"));
     // The mesh and the envelope, nothing derived from the mesh.
     CHECK(output_names(result.first) == std::set<std::string>{"mesh", "envelope"});
+}
+TEST_CASE(
+    "SimWild writes input points as a tagged point block and holds a mesh's",
+    "[component_io][tagged]" + release_only)
+{
+    // A region and a point inside it, `p`, in both dimensions: the mesh's point block holds the
+    // point under p, a vertex where it was, and the result goes back in -- a tagged mesh with a
+    // point block -- its point anchored and written again. A point block needs tags.
+    WorkingDirectory cwd;
+    const bool is_3d = GENERATE(false, true);
+    INFO((is_3d ? "3D" : "2D"));
+    MeshData region;
+    if (is_3d) {
+        region = tet_surface(0);
+    } else {
+        region.V.resize(4, 3);
+        region.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0;
+        region.cells[CellType::Edge].connectivity.resize(4, 2);
+        region.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 3, 3, 0;
+    }
+    const auto point = is_3d ? at(0.2, 0.15, 0.3) : at(0.3, 0.6, 0);
+    const nlohmann::json options = {{"simplify", false}, {"max_iterations", 0}, {"num_threads", 1}};
+    auto raw = options;
+    raw["input"] = {"r", "p"};
+    raw["input_names"] = {"r", "p"};
+    const auto p = point[0][0];
+    const auto result =
+        simwild::simwild(raw, {{"r", region}, {"p", point_input(p[0], p[1], p[2])}});
+    check(result);
+    CHECK(labels_of(result.first.at("mesh"), CellType::Point) == std::vector<std::string>{"p"});
+    CHECK(points_labelled(result.first.at("mesh"), "p") == point);
+    const MeshData tagged = tags_only(result.first.at("mesh"));
+    auto again_options = options;
+    again_options["input"] = "m";
+    const auto again = simwild::simwild(again_options, {{"m", tagged}});
+    check(again);
+    CHECK(points_labelled(again.first.at("mesh"), "p") == point);
+    MeshData untagged = tagged;
+    untagged.cells.at(CellType::Point).attributes.clear();
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(again_options, {{"m", untagged}}),
+        Catch::Matchers::ContainsSubstring("points need tags"));
 }
 TEST_CASE(
     "SimWild takes one input list, each input what its content makes it",
@@ -864,6 +918,38 @@ TEST_CASE("SimWild checks a forced dimension against memory inputs", "[component
 }
 #endif
 #ifdef WMTK_TEST_triwild
+TEST_CASE(
+    "TriWild writes its input points as a tagged point block, and keeps them",
+    "[component_io][tagged]")
+{
+    // A square's boundary `s` and a point inside it `p`: the mesh's point block holds the point
+    // under p, a vertex where it was, and so does the envelope's; no `features` beside the mesh.
+    // The tagged route takes the result back in and writes the point again.
+    WorkingDirectory cwd;
+    MeshData square;
+    square.V.resize(4, 3);
+    square.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0;
+    square.cells[CellType::Edge].connectivity.resize(4, 2);
+    square.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 3, 3, 0;
+    const auto result = triwild::triwild(
+        {{"input", {"square", "point"}},
+         {"input_names", {"s", "p"}},
+         {"simplify", false},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"square", square}, {"point", point_input(0.3, 0.6, 0)}});
+    check(result);
+    CHECK(output_names(result.first) == std::set<std::string>{"mesh", "envelope"});
+    for (const MeshData* mesh : {&result.first.at("mesh"), &result.first.at("envelope")}) {
+        CHECK(labels_of(*mesh, CellType::Point) == std::vector<std::string>{"p"});
+        CHECK(points_labelled(*mesh, "p") == at(0.3, 0.6, 0));
+    }
+    const auto again = triwild::triwild(
+        {{"input", "m"}, {"max_iterations", 0}, {"num_threads", 1}},
+        {{"m", tags_only(result.first.at("mesh"))}});
+    check(again);
+    CHECK(points_labelled(again.first.at("mesh"), "p") == at(0.3, 0.6, 0));
+}
 TEST_CASE("TriWild takes one input list: curves and points", "[component_io]")
 {
     // A square's boundary and a point inside it, listed point first: each input is what its
@@ -1039,6 +1125,56 @@ TEST_CASE(
         tetwild::tetwild(no_surface, meshes),
         Catch::Matchers::ContainsSubstring("needs a surface"));
 }
+TEST_CASE(
+    "TetWild writes its input points as a tagged point block on both routes, and keeps them",
+    "[component_io][io][tagged]" + release_only)
+{
+    // A unit tet `a`, a segment inside it with a vertex no edge uses, a curve input `c`, and a
+    // point inside it, a point input `p`: the mesh's point block holds the point under p and the
+    // lone vertex under c, each a vertex where it was, and so does the envelope's. Nothing beside
+    // the mesh lists them: no `features`, no _features.obj. The tagged route takes the result back
+    // in, its points anchored, and writes them again. Until 2026-11 the mesh did not mark them.
+    WorkingDirectory cwd;
+    MeshData curve = segment_input(0.1, 0.1, 0.1, 0.3, 0.2, 0.1);
+    curve.V.conservativeResize(3, 3);
+    curve.V.row(2) << 0.15, 0.3, 0.2;
+    const MeshData point = point_input(0.2, 0.15, 0.3);
+    const nlohmann::json options = {
+        {"input_names", {"a", "c", "p"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = {"a", "curve", "point"};
+    const auto result = tetwild::tetwild(
+        memory_options,
+        {{"a", tet_surface(0)}, {"curve", curve}, {"point", point}});
+    check(result);
+    CHECK(output_names(result.first) == std::set<std::string>{"mesh", "envelope"});
+    const auto again = tetwild::tetwild(
+        {{"input", "m"}, {"max_iterations", 0}, {"num_threads", 1}},
+        {{"m", tags_only(result.first.at("mesh"))}});
+    check(again);
+    CHECK(labels_of(again.first.at("mesh"), CellType::Point) == std::vector<std::string>{"c", "p"});
+    CHECK(points_labelled(again.first.at("mesh"), "p") == at(0.2, 0.15, 0.3));
+    CHECK(points_labelled(again.first.at("mesh"), "c") == at(0.15, 0.3, 0.2));
+    write_obj("a.obj", tet_surface(0));
+    write_obj("curve.obj", curve);
+    write_obj("point.obj", point);
+    auto file_options = options;
+    file_options["application"] = "tetwild";
+    file_options["input"] = {here("a.obj"), here("curve.obj"), here("point.obj")};
+    file_options["output"] = "out";
+    file_options["write_vtu"] = false;
+    tetwild::tetwild(file_options);
+    CHECK(!std::filesystem::exists("out_features.obj"));
+    const MeshData file = io::read_mesh("out_final.msh");
+    for (const MeshData* mesh : {&result.first.at("mesh"), &file, &result.first.at("envelope")}) {
+        CHECK(labels_of(*mesh, CellType::Point) == std::vector<std::string>{"c", "p"});
+        CHECK(points_labelled(*mesh, "p") == at(0.2, 0.15, 0.3));
+        CHECK(points_labelled(*mesh, "c") == at(0.15, 0.3, 0.2));
+    }
+}
 TEST_CASE("TetWild embeds a named surface in memory", "[component_io]" + release_only)
 {
     WorkingDirectory cwd;
@@ -1167,6 +1303,24 @@ TEST_CASE(
 }
 #endif
 #ifdef WMTK_TEST_topological_offset
+TEST_CASE("Offset refuses a tagged mesh's points until it holds them", "[component_io][tagged]")
+{
+    // The offset holds no points, as it holds no feature curves: a point block is refused, not
+    // dropped.
+    WorkingDirectory cwd;
+    auto data = cube_tets();
+    add_tags(data, CellType::Tetrahedron);
+    data.cells[CellType::Point].connectivity.resize(1, 1);
+    data.cells[CellType::Point].connectivity << 7;
+    data.cells[CellType::Point].attributes["tags"] = {
+        DataMatrix<uint8_t>::Ones(1, 1).eval(),
+        {"p"}};
+    REQUIRE_THROWS_WITH(
+        topological_offset::topological_offset(
+            {{"input", "tagged"}, {"offset_selection", "tag_0"}, {"optimize_offset", false}},
+            {{"tagged", data}}),
+        Catch::Matchers::ContainsSubstring("points"));
+}
 TEST_CASE("Offset accepts named tagged meshes", "[component_io]")
 {
     // A mesh that fills its box: the offset refuses one that does not (require_box_boundary()),

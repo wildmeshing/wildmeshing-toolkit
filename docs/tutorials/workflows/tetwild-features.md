@@ -46,8 +46,8 @@ The inside of the cube (`filter` `tracked`), with every tet's energy below 10, a
     wmtk_app -j workflow_tetwild_features.json
     ```
 
-    The input paths are relative to the JSON file; the outputs, `cube_final.msh` and
-    `cube_features.obj` among them, are written to the working directory.
+    The input paths are relative to the JSON file; the outputs, `cube_final.msh` among them, are
+    written to the working directory.
 
 === "Python"
 
@@ -109,9 +109,11 @@ edges, which nothing bounds: it grows when a curve is shortened. Both are measur
 filter. The "3/3 points" are the points inserted on their own, the free vertex and the two points
 of the point file; the curve's ends are vertices of the curve.
 
-**In the output.** `cube_features.obj` holds the tagged edges (`l` lines) and the anchored vertices
-(`p` lines), at their output positions. In memory, the same is `outputs["features"]`, with an
-`edge` and a `point` block. Compare them with the input:
+**In the output.** The mesh holds the tagged edges as its edge block and the input points as its
+point block, each under the label of its input (`tag_1` for the curve and its free vertex, `tag_2`
+for the point file, by their positions in `input`): in `cube_final.msh` as physical groups, in
+memory as `outputs["mesh"]`'s `edge` and `point` blocks. Until 2026-11 they were listed beside the
+mesh, in `cube_features.obj` and `outputs["features"]`. Compare them with the input:
 
 ```python
 --8<-- "docs/examples/python/workflow_tetwild_features.py:check"

@@ -2102,6 +2102,7 @@ size_t TetOptimizerMesh::anchor_feature_points(
     for (const auto& [vid, r, centre] : anchors) {
         n_anchored += anchor_feature_point(vid, r, centre);
     }
+    label_feature_points(input_point_vids);
     logger().info(
         "feature anchors: {} curve endpoints, {} junctions, {} input points; {} anchored",
         n_ends,
@@ -2109,6 +2110,24 @@ size_t TetOptimizerMesh::anchor_feature_points(
         input_point_vids.size(),
         n_anchored);
     return n_anchored;
+}
+
+void TetOptimizerMesh::label_feature_points(const std::vector<size_t>& input_point_vids)
+{
+    m_feature_point_inputs.assign(m_feature_points.size(), 0);
+    if (m_input_point_labels.empty()) return;
+    if (m_input_point_labels.size() != input_point_vids.size()) {
+        log_and_throw_error(
+            "{} input point labels for {} input points",
+            m_input_point_labels.size(),
+            input_point_vids.size());
+    }
+    for (size_t k = 0; k < input_point_vids.size(); ++k) {
+        const int label = m_input_point_labels[k];
+        if (label < 0 || label >= SurfaceTagAttributes::max_inputs) continue;
+        const size_t f = m_feature_point_attribute[input_point_vids[k]].m_feature_point_id;
+        if (f < m_feature_point_inputs.size()) m_feature_point_inputs[f] |= InputSet(1) << label;
+    }
 }
 
 bool TetOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const

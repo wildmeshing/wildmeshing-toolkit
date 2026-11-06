@@ -474,7 +474,7 @@ MeshData SimWildMeshTri::envelope_data(const std::vector<Vector2d>& points) cons
     names.insert(names.end(), face_labels.begin(), face_labels.end());
     names.resize(std::min(names.size(), size_t(SurfaceTagAttributes::max_inputs)));
     io::append_envelope_block(out, edges, CellType::Edge, sets, names);
-    io::append_envelope_points(out, points);
+    io::append_envelope_points(out, points, m_input_point_labels, m_point_names);
     return out;
 }
 

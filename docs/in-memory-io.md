@@ -158,11 +158,15 @@ field is all background. Tagged results label their background `ambient` explici
 readers and writers infer nothing from an untagged row. As on the `.msh` route, the lower-dimensional blocks are tags, one `tags` column per input: in a tet mesh,
 triangles are tagged faces (an input surface, each row oriented as its input) and edges tagged
 feature curves (a curve input, named as every input is); in a triangle mesh, edges are tagged curves
-(an input curve, each row oriented as its input). simwild, tetwild and triwild write them so, and
-simwild, tetwild and triwild read them back as the tags they hold. tetwild takes a tet mesh as its
+(an input curve, each row oriented as its input); in both, points are input points (a point
+input, or a curve input's vertex no segment uses, each row a vertex under the labels of the inputs
+with a point there). simwild, tetwild and triwild write them so, and simwild, tetwild and triwild
+read them back as the tags they hold, the points anchored where they are; topological_offset and
+manifold_extraction, which hold no points yet, refuse a point block, as they refuse feature
+curves. Until 2026-11 no mesh marked its input points. tetwild takes a tet mesh as its
 only input on the tagged route, its tets kept: no simplification, no insertion, no input winding
 numbers. It holds no volumes, so a mesh whose tets carry a tag other than `ambient` is refused
-(simwild remeshes those), and its point block is input points, anchored where they are. triwild
+(simwild remeshes those). triwild
 takes a triangle mesh the same way, holding its tracked curves and points and no regions: a mesh
 whose triangles carry a tag other than `ambient` is refused. tetwild writes no tet tags and triwild
 no triangle tags but `ambient`: regions are simwild's. Rows labelled `EnvelopeSurface` (in a triangle mesh,
@@ -199,7 +203,9 @@ its triangle and edge blocks, and the boundary of a region -- simwild's interfac
 front, the surface manifold_extraction extracts -- is where the cell tags differ across a face
 (2D: an edge), as the next component reads it. Until 2026-11 they also returned these as
 `surface`, `edges` (simwild 3D: where the interfaces are not manifold), `offset` and
-`input_complex`, each a second copy of the mesh's vertices. The keys besides `mesh`:
+`input_complex`, each a second copy of the mesh's vertices, and tetwild and triwild listed their
+tracked curves and anchored points as `features`, which the mesh's edge and point blocks hold now.
+The keys besides `mesh`:
 
 - `edges`: isotropic_remeshing's feature edges, with `features` or `feature_fields` (its Int64
   `edge_id`, and `mesh`'s Int64 `vertex_id` and per-face fields -- in the types they were given
@@ -210,13 +216,12 @@ front, the surface manifold_extraction extracts -- is where the cell tags differ
   or the simplified input under `envelope_reference` "simplified" -- labelled as `mesh` labels the
   tags: in 3D a triangle block with one `tags` column per input surface's face tag or region, and
   an edge block of the feature curves, one column per curve input; in 2D an edge block, one column per input
-  curve's edge tag or region; the input points as a point block without tags, as `mesh` writes
-  nothing for them. No eps: a receiver brings its own. A component given an `envelope` returns that
+  curve's edge tag or region; the input points as a point block, labelled as `mesh` labels them
+  (a receiver anchors the points it receives where they are). No eps: a receiver brings its own. A component given an `envelope` returns that
   one, unchanged. simwild's tag operations hold nothing to one and do not read it: they move the
   boundaries between regions, which no envelope given covers, and return one built around their
   result, each face between regions (2D: edge) labelled by the regions it bounds and its face tags,
   with the feature curves.
-- `features`: tetwild's and triwild's tracked curves and anchored points, with input points.
 - `uv`: c1_simplification's UV mesh.
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as
   `input_and_shell_offset`; with `prism_dominant`, the report adds that export's
@@ -231,7 +236,7 @@ front, the surface manifold_extraction extracts -- is where the cell tags differ
 
 isotropic_remeshing's `edges` shares the `mesh` vertex rows: its connectivity indexes the same
 `V`, with the same vertex fields, so row `i` is the same vertex in both, and vertices it does not
-reference are kept. `envelope`, `features` and prismatic's offset faces have vertices of their own.
+reference are kept. `envelope` and prismatic's offset faces have vertices of their own.
 
 topological_offset's result -- `mesh`, the `.msh`, and the `save_vtu` file -- carries the tags,
 the data fields (`vid`, `labels`, `offset_tag`; in `mesh` and the `.msh`, with

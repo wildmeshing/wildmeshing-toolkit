@@ -706,11 +706,12 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         io::ComponentIO::dropped_fields(mesh.vertex_attributes, {"vid", "corr_input_vid"});
     // The lower-dimensional blocks allowed next to the top cells: in a tet mesh, triangles,
     // which are tagged faces, and edges, which are tagged feature curves; in a triangle mesh,
-    // edges, which are tagged curves. Rows labelled EnvelopeSurface are the envelope instead
-    // (lower_tags below).
+    // edges, which are tagged curves; in both, points, which are input points. Rows labelled
+    // EnvelopeSurface are the envelope instead (lower_tags below).
     const auto lower_type = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
     for (const auto& [t, c] : mesh.cells) {
-        if (t != type && t != lower_type && !(type == CellType::Tetrahedron && t == CellType::Edge))
+        if (t != type && t != lower_type && t != CellType::Point &&
+            !(type == CellType::Tetrahedron && t == CellType::Edge))
             throw std::runtime_error("Incompatible tagged mesh topology");
         dropped.merge(io::ComponentIO::dropped_fields(c.attributes, {"tags"}));
     }
@@ -934,6 +935,30 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
             out.face_tag_names = et.names;
             if (!et.envelope_rows.empty()) envelope_from(edges, et.envelope_rows);
             place_tagged(edges, et, out.F_tagged, out.F_tags, "edge");
+        }
+    }
+    // The point block (io::read_point_tags()): one input point per row and label, anchored where
+    // it is and written back under its label (InputData::input_point_labels). Until 2026-11 a
+    // tagged mesh had none, and a point block was refused.
+    {
+        const io::PointTags points = io::read_point_tags(mesh, "tagged mesh");
+        out.point_names = points.names;
+        for (size_t k = 0; k < points.rows.size(); ++k) {
+            const int v = remap[size_t(points.rows[k])];
+            if (v < 0)
+                throw std::runtime_error(
+                    std::string("A tagged point has a vertex no ") +
+                    (dim == 3 ? "tet" : "triangle") + " has");
+            out.input_point_labels.push_back(points.labels[k]);
+            if (dim == 3) {
+                out.features.points.emplace_back(
+                    out.V_input(v, 0),
+                    out.V_input(v, 1),
+                    out.V_input(v, 2));
+                out.features_placed.point_vertex.push_back(int64_t(v));
+            } else {
+                out.input_point_vids.push_back(size_t(v));
+            }
         }
     }
     if (envelope && !io::is_labelled_envelope(*envelope, dim == 3)) {
