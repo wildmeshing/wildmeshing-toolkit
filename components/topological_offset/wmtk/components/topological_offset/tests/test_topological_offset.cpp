@@ -3033,8 +3033,13 @@ MeshData two_sheet_grid(const double z_blue)
 }
 
 /// One construction-only offset of the face tag `sheet`, its band tagged `band`, the
-/// correspondence saved: the step a pipeline runs once per sheet before prismatic_mesh.
-MeshData offset_sheet(const MeshData& m, const std::string& sheet, const std::string& band)
+/// correspondence saved, the tags `protect` protected: the step a pipeline runs once per sheet
+/// before prismatic_mesh.
+MeshData offset_sheet(
+    const MeshData& m,
+    const std::string& sheet,
+    const std::string& band,
+    const std::vector<std::string>& protect = {})
 {
     return components::topological_offset::topological_offset(
                {{"input", "m"},
@@ -3043,6 +3048,7 @@ MeshData offset_sheet(const MeshData& m, const std::string& sheet, const std::st
                 {"target_distance", 0.1},
                 {"optimize_offset", false},
                 {"save_offset_correspondence", true},
+                {"protected_tags", protect},
                 {"num_threads", 1}},
                {{"m", m}})
         .first.at("mesh");
@@ -3084,12 +3090,39 @@ TEST_CASE("offset-carries-an-earlier-correspondence", "[offset][3d][corresponden
         CHECK(!to_blue.empty());
         for (const auto& p : to_blue) CHECK(p[5] == 0.25);
     }
-    SECTION("sheets one cube apart: blue's march splits yellow's band, and the run refuses")
+    SECTION("sheets one cube apart: blue's march cuts beside yellow's pairs, not them")
     {
+        // Blue's marched edges end at yellow's offset vertices, not at the input vertices they
+        // name, so no carried edge is cut and every carried value survives. Until 2026-11-06 the
+        // run compared whole stars and refused this.
         const auto first = offset_sheet(two_sheet_grid(0.75), "yellow", "band_yellow");
+        const auto second = offset_sheet(first, "blue", "band_blue");
+        const auto carried = correspondence_pairs(first);
+        REQUIRE(!carried.empty());
+        const auto pairs = correspondence_pairs(second);
+        CHECK(std::includes(pairs.begin(), pairs.end(), carried.begin(), carried.end()));
+    }
+    SECTION("yellow offset again: the march cuts yellow's carried edges, and the run throws")
+    {
+        // The second march's edges run from yellow's vertices out, among them each carried edge
+        // from an offset vertex to the yellow vertex it names.
+        const auto first = offset_sheet(two_sheet_grid(0.25), "yellow", "band_yellow");
         REQUIRE_THROWS_WITH(
-            offset_sheet(first, "blue", "band_blue"),
-            Catch::Matchers::ContainsSubstring("changed star"));
+            offset_sheet(first, "yellow", "band_yellow_2"),
+            Catch::Matchers::ContainsSubstring("protect the earlier band"));
+    }
+    SECTION("sheets one cube apart, yellow's band protected: blue's march leaves it")
+    {
+        // A protected cell is split by no march and taken by no band (marching_tets()), so
+        // every carried value survives.
+        const auto first = offset_sheet(two_sheet_grid(0.75), "yellow", "band_yellow");
+        const auto second = offset_sheet(first, "blue", "band_blue", {"band_yellow"});
+        const auto carried = correspondence_pairs(first);
+        REQUIRE(!carried.empty());
+        std::set<std::array<double, 6>> to_yellow;
+        for (const auto& p : correspondence_pairs(second))
+            if (carried.count(p)) to_yellow.insert(p);
+        CHECK(to_yellow == carried);
     }
 }
 

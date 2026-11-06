@@ -85,6 +85,10 @@ public:
     /// into the output .msh by save_offset_correspondence; not maintained by the optimization.
     /// The 2D twin is VertexExtra2d::m_corr_input_vid.
     int64_t m_corr_input_vid = -1;
+    /// m_corr_input_vid came with the input, from an earlier offset (topological_offset.cpp), not
+    /// from this run's march. split_edge_before() throws rather than cut this vertex's edge to the
+    /// vertex it names.
+    bool m_corr_carried = false;
 
     /// Which split pass created this vertex, from wmtk::TetOptimizerMesh::m_op_epoch; 0 means not
     /// created by an optimization split. Read only by the needle diagnostics' per-vertex lines.

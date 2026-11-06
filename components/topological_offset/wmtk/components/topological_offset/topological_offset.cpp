@@ -189,22 +189,6 @@ MeshData with_offset_surface(const MeshData& reference, const OffsetRows& offset
     return out;
 }
 
-/// The star of each vertex in `vids`: its tets, each by its corners sorted, in sorted order.
-std::vector<std::vector<std::array<size_t, 4>>> carried_stars(
-    const TopoOffsetTetMesh& mesh,
-    const std::vector<size_t>& vids)
-{
-    std::vector<std::vector<std::array<size_t, 4>>> stars(vids.size());
-    for (size_t i = 0; i < vids.size(); ++i) {
-        for (const size_t t : mesh.get_one_ring_tids_for_vertex(vids[i])) {
-            auto corners = mesh.oriented_tet_vids(mesh.tuple_from_tet(t));
-            std::sort(corners.begin(), corners.end());
-            stars[i].push_back(corners);
-        }
-        std::sort(stars[i].begin(), stars[i].end());
-    }
-    return stars;
-}
 } // namespace
 
 static void run(nlohmann::json json_params, io::ComponentIO& component_io)
@@ -622,13 +606,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         mesh.label_input_complex();
 
         // A correspondence handed on from an earlier offset is carried: its offset vertices keep
-        // their values (vertex i is V_input row i), and the march adds this run's.
-        std::vector<size_t> carried;
+        // their values (vertex i is V_input row i), and the march adds this run's. Construction
+        // only splits, so every vertex keeps its id, and it throws rather than cut a carried
+        // vertex's edge to its input vertex (split_edge_before()).
         if (params.save_offset_correspondence) {
             for (size_t v = 0; v < input_data.corr_input_vid.size(); ++v) {
                 if (input_data.corr_input_vid[v] < 0) continue;
                 mesh.m_vertex_extra[v].m_corr_input_vid = input_data.corr_input_vid[v];
-                carried.push_back(v);
+                mesh.m_vertex_extra[v].m_corr_carried = true;
             }
         }
 
@@ -684,26 +669,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // execute offset
         igl::Timer timer;
         timer.start();
-        const auto carried_before = carried_stars(mesh, carried);
         mesh.construct_offset(output_filename);
-        // A carried value holds while its vertex keeps its id and its star: prismatic_mesh builds
-        // each prism from that star. Construction only splits (no vertex is removed, so
-        // consolidate_mesh() keeps every id), and only near this run's input complex, so a star
-        // that changed means the two offsets touch.
-        {
-            const auto carried_after = carried_stars(mesh, carried);
-            size_t changed = 0;
-            for (size_t i = 0; i < carried.size(); ++i)
-                changed += carried_before[i] != carried_after[i];
-            if (changed > 0) {
-                log_and_throw_error(
-                    "{} of {} carried offset vertices (corr_input_vid from an earlier offset) "
-                    "changed star: this offset touches the earlier one. Run them as one offset or "
-                    "move the surfaces apart",
-                    changed,
-                    carried.size());
-            }
-        }
 
         // checks
         {

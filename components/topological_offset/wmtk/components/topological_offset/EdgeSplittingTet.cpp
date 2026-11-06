@@ -12,6 +12,27 @@ namespace wmtk::components::topological_offset {
 
 bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
 {
+    // A correspondence carried from an earlier offset is the edge from its offset vertex to the
+    // input vertex it names; cutting that edge loses it, whichever step cuts (the simplicial
+    // embedding, the march). The march cuts no edge of a protected cell (marching_tets()), so an
+    // earlier band that is protected keeps every one. Until 2026-11-06 the run instead compared
+    // each carried vertex's star before and after construction, which also refused cuts beside
+    // the earlier band: feature demo 4, the wire's band protected, 258 of its 1886 stars.
+    {
+        const size_t a = t.vid(*this);
+        const size_t b = switch_vertex(t).vid(*this);
+        const auto names = [&](const size_t o, const size_t i) {
+            return m_vertex_extra[o].m_corr_carried &&
+                   m_vertex_extra[o].m_corr_input_vid == int64_t(i);
+        };
+        if (names(a, b) || names(b, a)) {
+            log_and_throw_error(
+                "the offset cuts the edge from an earlier offset's vertex to its input vertex "
+                "(corr_input_vid), vertices {} and {}: protect the earlier band (protected_tags)",
+                a,
+                b);
+        }
+    }
     // The optimization phase runs wmtk::TetOptimizerMesh's split; everything else here is the
     // marching-tets machinery, which places the new vertex on the offset's distance field and
     // carries per-simplex labels the shared engine knows nothing about.
