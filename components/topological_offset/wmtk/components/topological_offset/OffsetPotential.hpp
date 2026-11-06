@@ -1002,7 +1002,8 @@ public:
      * A piece of a face that a curved bisector crosses is labelled by value()'s rule (a) in the
      * limit of a thin swept tet (ExactBandIntegral::CurvedBisectorRuleA), so at x = x0 the
      * gradient is the exact derivative of the judged change, where value() and the face's
-     * labelling cut alike (not where two edge members cross with a planar bisector). There the
+     * labelling cut alike (since 2026-11 also where two edge members cross with a planar
+     * bisector, ExactBandIntegral.hpp). There the
      * change is no longer E(B(x)) - E(B(x0)): each swept tet takes its own rule (a), and the
      * faces' derivatives at x are those of the change judged from x, whose sum is a gradient only
      * where every face's parts take their neighbours' labels. So where a face holds a rule-(a)
