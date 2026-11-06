@@ -344,15 +344,15 @@ constexpr size_t n_curve_segments = 8;
 constexpr size_t n_curve_features = 9; // the ends of the three curves, and the points
 
 /// tetwild on the example, recording the curves unless `record` is false, with `extra` options.
-/// With `near`, a fourth curve input: the chain, `near` off it.
-ComponentResult run_curves(const nlohmann::json& extra, const bool record = true, double near = 0)
+/// With `near_offset`, a fourth curve input: the chain, `near_offset` off it.
+ComponentResult run_curves(const nlohmann::json& extra, const bool record = true, double near_offset = 0)
 {
     nlohmann::json options = {
         {"input", {"cube", "chain", "rim", "outside", "points"}},
         {"max_iterations", 3}};
     MeshMap meshes = curve_scene();
-    if (near != 0) {
-        meshes.emplace("near", curve(chain(near)));
+    if (near_offset != 0) {
+        meshes.emplace("near", curve(chain(near_offset)));
         options["input"].push_back("near");
     }
     if (record) options["curve_history_output"] = "record";
