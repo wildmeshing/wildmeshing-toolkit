@@ -3099,6 +3099,7 @@ public:
         const MatrixXi& F_tagged = MatrixXi(),
         const MatrixSi& F_tags = MatrixSi(),
         const std::vector<std::string>& face_tag_names = {},
+        const MatrixSi& F_orientation = MatrixSi(),
         const std::vector<std::string>& edge_tag_names = {},
         const utils::FeatureInputs* features = nullptr,
         const utils::EmbedFeaturesResult* features_placed = nullptr);

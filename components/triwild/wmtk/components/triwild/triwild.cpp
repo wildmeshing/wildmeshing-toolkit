@@ -281,7 +281,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
         jse::embed::wmtk_triwild_spec::triwild_spec::spec());
-    const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
+    const std::vector<std::string> inputs = component_io.paths(root, json_params["input"]);
 
     triwild::Parameters params(json_params);
     params.output_enabled = !component_io.memory();
@@ -305,14 +305,46 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // (read_tagged_mesh()), and no regions: its inputs' winding numbers, computed at the end, are
     // fields (wn_<name>), not regions, and a tagged mesh has none. Skipped on it: the reading of
     // curves, the simplification, the arrangement and the input winding numbers.
-    std::optional<TaggedTriMesh> tagged_mesh = read_tagged_input(component_io, input_paths);
+    std::optional<TaggedTriMesh> tagged_mesh = read_tagged_input(component_io, inputs);
     const bool tagged = tagged_mesh.has_value();
+    // One input list, as tetwild's: on the curve route each entry is what its content makes it
+    // (io::ComponentIO::input_kind()) -- segments a curve, arranged and tracked as its edge tag;
+    // bare vertices points, inserted as vertices and anchored -- and each is named by input_names
+    // at its position in the list, tag_<i> without a name (io::input_labels()). Until 2026-11
+    // points came in a list of their own, input_points.
+    std::vector<std::string> input_paths, point_paths; // the curves and the point inputs
+    std::vector<std::string> curve_labels, point_labels;
+    if (tagged) {
+        input_paths = inputs;
+    } else {
+        const std::vector<std::string> labels = io::input_labels(
+            json_params["input_names"].get<std::vector<std::string>>(),
+            inputs.size());
+        for (size_t i = 0; i < inputs.size(); ++i) {
+            switch (component_io.input_kind(inputs[i])) {
+            case io::ComponentIO::InputKind::surface:
+                log_and_throw_error(
+                    "{}: triangles; triwild's inputs are curves and points (a triangle mesh is a "
+                    "tagged mesh, its only input)",
+                    inputs[i]);
+            case io::ComponentIO::InputKind::curve:
+                input_paths.push_back(inputs[i]);
+                curve_labels.push_back(labels[i]);
+                break;
+            case io::ComponentIO::InputKind::points:
+                point_paths.push_back(inputs[i]);
+                point_labels.push_back(labels[i]);
+                break;
+            }
+        }
+        if (input_paths.empty()) {
+            log_and_throw_error(
+                "triwild needs a curve among its inputs: got {} point inputs",
+                point_paths.size());
+        }
+    }
     if (tagged) {
         // What the route has no use for, refused rather than ignored.
-        if (!json_params["input_points"].empty()) {
-            log_and_throw_error(
-                "input_points: not with a tagged mesh input, whose point block is its points");
-        }
         if (!json_params["input_names"].empty()) {
             log_and_throw_error("input_names: a tagged mesh input names its labels itself");
         }
@@ -350,13 +382,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 "use_sample_envelope");
         }
     }
-    // The labels of the output's edge tags, the same on both routes: an input curve's
-    // (input_names, else tag_<i>), or a tagged mesh's own.
-    const std::vector<std::string> edge_tags =
-        tagged ? tagged_mesh->edge_names
-               : io::input_labels(
-                     json_params["input_names"].get<std::vector<std::string>>(),
-                     input_paths.size());
+    // The labels of the output's edge tags, the same on both routes: an input curve's (above), or
+    // a tagged mesh's own.
+    const std::vector<std::string> edge_tags = tagged ? tagged_mesh->edge_names : curve_labels;
     // filter_inputs: the inputs that bound the domain a filter keeps, by their labels (bit i:
     // edge_tags[i]). Every input by default, as before the key.
     InputSet bounding = ~InputSet(0);
@@ -370,7 +398,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             const auto it = std::find(edge_tags.begin(), edge_tags.end(), name);
             if (it == edge_tags.end()) {
                 log_and_throw_error(
-                    "filter_inputs: {} is not an input (the inputs: {})",
+                    "filter_inputs: {} is not a curve input (the curve inputs: {})",
                     name,
                     edge_tags);
             }
@@ -385,10 +413,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     MatrixXi E_in;
     std::vector<MatrixXd> Vs;
     std::vector<MatrixXi> Es;
-    // What both routes leave to the optimization and the output: the free points, the Euler
-    // characteristics compared at the end, the mesh, the curve history before it, and the
-    // reference handed on (`envelope`).
+    // What both routes leave to the optimization and the output: the free points -- one per point
+    // and label, its label's column of point_names, which the output's point block names it by
+    // (io::collect_point_tags()) -- the Euler characteristics compared at the end, the mesh, the
+    // curve history before it, and the reference handed on (`envelope`).
     std::vector<Vector2d> free_points;
+    std::vector<int> free_point_labels;
+    std::vector<std::string> point_names;
     const bool debug_euler = json_params["DEBUG_euler"];
     std::vector<int> ecs_input, ecs_arrangement;
     std::unique_ptr<TriWildMesh> mesh_owner;
@@ -427,18 +458,29 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
         assert(E_in_input.size() == size_t(E_in.rows()));
 
-        // Input point files: every vertex is a feature point, appended to V_in as an isolated
-        // vertex (referenced by no segment). Appended BEFORE the bounding box is taken, so a
-        // point outside the curves' box still ends up inside the triangulated domain. Not added
-        // to Vs/Es: points carry no winding number.
-        {
-            std::vector<std::string> point_paths = json_params["input_points"];
-            for (std::string& p : point_paths) {
-                p = component_io.path(root, p);
+        // Where each input has a point: a curve input's vertex no segment uses, every vertex of a
+        // point input. The free points' labels, by position.
+        std::map<std::pair<double, double>, std::vector<std::string>> names_at;
+        for (size_t k = 0; k < Es.size(); ++k) {
+            std::vector<int> valence(Vs[k].rows(), 0);
+            for (Eigen::Index i = 0; i < Es[k].rows(); ++i) {
+                ++valence[Es[k](i, 0)];
+                ++valence[Es[k](i, 1)];
             }
-            for (const std::string& path : point_paths) {
+            for (Eigen::Index v = 0; v < Vs[k].rows(); ++v) {
+                if (valence[v] == 0)
+                    names_at[{Vs[k](v, 0), Vs[k](v, 1)}].push_back(curve_labels[k]);
+            }
+        }
+        // Point inputs: every vertex is a feature point, appended to V_in as an isolated vertex
+        // (referenced by no segment). Appended BEFORE the bounding box is taken, so a point
+        // outside the curves' box still ends up inside the triangulated domain. Not added to
+        // Vs/Es: points carry no winding number.
+        {
+            for (size_t file = 0; file < point_paths.size(); ++file) {
+                const std::string& path = point_paths[file];
                 MatrixXd Vp;
-                MatrixXi Ep;
+                MatrixXi Ep; // none: a point input has no segments (ComponentIO::input_kind())
                 io::ReadProvenance read_points;
                 component_io.edges(
                     path,
@@ -447,14 +489,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     remove_duplicate_eps,
                     -1,
                     record_history ? &read_points : nullptr);
-                if (Ep.rows() > 0) {
-                    logger().warn(
-                        "input_points file {} has {} edges; only its {} vertices are used",
-                        path,
-                        Ep.rows(),
-                        Vp.rows());
-                }
                 logger().info("Read point file {}: #P = {}", path, Vp.rows());
+                for (Eigen::Index v = 0; v < Vp.rows(); ++v)
+                    names_at[{Vp(v, 0), Vp(v, 1)}].push_back(point_labels[file]);
                 const int base = V_in.rows();
                 V_in.conservativeResize(base + Vp.rows(), 2);
                 V_in.block(base, 0, Vp.rows(), 2) = Vp.block(0, 0, Vp.rows(), 2);
@@ -482,9 +519,17 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 ++valence[E_in(i, 0)];
                 ++valence[E_in(i, 1)];
             }
+            // One free point per label, the inputs with a point there (names_at).
             for (int v = 0; v < V_in.rows(); ++v) {
-                if (valence[v] == 0) {
+                if (valence[v] != 0) continue;
+                std::vector<std::string> names = names_at[{V_in(v, 0), V_in(v, 1)}];
+                std::sort(names.begin(), names.end());
+                names.erase(std::unique(names.begin(), names.end()), names.end());
+                for (const std::string& name : names) {
+                    auto it = std::find(point_names.begin(), point_names.end(), name);
+                    if (it == point_names.end()) it = point_names.insert(point_names.end(), name);
                     free_points.emplace_back(V_in.row(v));
+                    free_point_labels.push_back(int(it - point_names.begin()));
                 }
             }
             if (!free_points.empty()) {
@@ -634,6 +679,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // The simplified segments each of E lies on: for the input sets, with several inputs, and
         // for the history.
         std::vector<std::vector<int>> E_sources;
+        // Each input's own direction, with several inputs in a build that keeps one count per
+        // input (SurfaceTagAttributes::m_input_orientation).
+        std::vector<InputOrientations> E_input_orientation;
+        const bool per_input_orientation = per_input && SurfaceTagAttributes::per_input_orientation;
         wmtk::utils::embed_segments(
             V_simp,
             E_simp,
@@ -644,7 +693,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             per_input || record_history ? &E_sources : nullptr,
             &E_orientation,
             free_points.empty() ? nullptr : &point_map,
-            per_input ? &E_simp_input : nullptr); // the orientation repair keeps to one input
+            per_input ? &E_simp_input : nullptr, // the orientation repair keeps to one input
+            per_input_orientation ? &E_input_orientation : nullptr);
         // Each constraint edge's input set: the inputs of the segments it tiles. Several only where
         // segments of different inputs overlap -- the 2D counterpart of a coplanar group spanning
         // several inputs in 3D -- and then the edge is held to all of them. Counted.
@@ -736,8 +786,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             simp_out.close();
         }
 
-        const std::vector<std::string> tag_names = json_params["input_names"];
-
         // Which curves is the optimizer's envelope built around, and at what radius?
         //
         // envelope_reference "input", the default: the ORIGINAL input curves at the full eps.
@@ -763,7 +811,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
         mesh_owner = std::make_unique<TriWildMesh>(params, envelope_eps, NUM_THREADS);
         auto& mesh = *mesh_owner;
+        // The curves' names when input_names names the inputs -- the wn_ fields are named after
+        // them -- else none, and the fields numbered.
+        const std::vector<std::string> tag_names =
+            json_params["input_names"].empty() ? std::vector<std::string>() : edge_tags;
         mesh.m_input_names = tag_names;
+        // The free points' labels, which their anchors keep and the output writes as its point
+        // block (io::collect_point_tags()).
+        mesh.m_point_names = point_names;
+        mesh.m_input_point_labels = free_point_labels;
         // Around the input after a simplification, the input's own curve ends and junctions: the
         // anchors are centred on them, and an end the simplification made is anchored where it is
         // (TriOptimizerMesh::m_input_curve_points).
@@ -779,7 +835,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             &E_orientation,
             free_point_vids,
             per_input ? &E_env_input : nullptr,
-            per_input ? &E_input_set : nullptr);
+            per_input ? &E_input_set : nullptr,
+            per_input_orientation ? &E_input_orientation : nullptr);
         if (record_history) {
             input_history = history::curves_from_input(
                 read,
@@ -807,6 +864,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         E.resize(0, 0);
         std::vector<Vector2r>().swap(V_rational);
         std::vector<int>().swap(E_orientation);
+        std::vector<InputOrientations>().swap(E_input_orientation);
         std::vector<InputSet>().swap(E_input_set);
         std::vector<std::vector<int>>().swap(E_sources);
 
@@ -825,14 +883,17 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 CellType::Edge,
                 E_sets,
                 edge_tags);
-            io::append_envelope_points(envelope_out, free_points);
+            io::append_envelope_points(envelope_out, free_points, free_point_labels, point_names);
         }
     } else {
         // The tagged route (read_tagged_input() above): the mesh is the input as it is.
         const TaggedTriMesh& in = *tagged_mesh;
         // An `envelope` given: the reference held to, its segments of the mesh's edge labels
-        // (io::held_rows()), each with its labels, matched by name.
+        // (io::held_rows()), each with its labels, and its points of the mesh's point labels,
+        // matched by name.
         std::optional<io::HeldRows> held;
+        MatrixXd reference_points;
+        std::vector<InputSet> reference_point_labels;
         if (envelope_given) {
             const auto bits_named = [&](const std::string& name) {
                 InputSet bits = 0;
@@ -841,8 +902,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 return bits;
             };
             io::LabelledReference reference =
-                io::read_labelled_envelope(*envelope_given, 2, bits_named, {});
+                io::read_labelled_envelope(*envelope_given, 2, bits_named, {}, in.point_names);
             held = io::held_rows(reference.V, reference.F, reference.F_labels);
+            reference_points = std::move(reference.P);
+            reference_point_labels = std::move(reference.P_labels);
         }
         // The input, as the curve route's is its curve files: the reference when one is given,
         // else the curves as received. What the envelopes are built around, one row per label
@@ -861,6 +924,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             }
         }
         for (const size_t v : in.point_vids) free_points.emplace_back(in.V(v, 0), in.V(v, 1));
+        free_point_labels = in.point_labels;
+        point_names = in.point_names;
         logger().info("tagged mesh input: its triangles kept, no simplification, no arrangement");
 
         // eps_rel and length_rel are of the mesh's bounding box diagonal, its domain's.
@@ -887,17 +952,21 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 CellType::Edge,
                 E_in_sets,
                 edge_tags);
-            io::append_envelope_points(envelope_out, free_points);
+            io::append_envelope_points(envelope_out, free_points, free_point_labels, point_names);
         }
 
         mesh_owner = std::make_unique<TriWildMesh>(params, envelope_eps, NUM_THREADS);
         auto& mesh = *mesh_owner;
         mesh.m_edge_tag_names = edge_tags;
+        mesh.m_point_names = point_names; // as on the curve route
+        mesh.m_input_point_labels = free_point_labels;
         // With a reference, the curve-end anchors around its curve ends and junctions, as
-        // simwild's (TriOptimizerMesh::m_input_curve_points), set before init_mesh() anchors.
+        // simwild's (TriOptimizerMesh::m_input_curve_points), and the input points' on its points
+        // (TriOptimizerMesh::ReferencePoints), set before init_mesh() anchors.
         if (held) {
             mesh.m_has_reference = true;
             mesh.set_input_curve_points(V_in, E_in);
+            mesh.set_reference_points(reference_points, reference_point_labels);
         }
         mesh.init_mesh(
             in.V,
@@ -910,7 +979,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             &in.E_orientation,
             in.point_vids,
             edge_tags.size() > 1 ? &E_env_input : nullptr,
-            &in.E_sets);
+            &in.E_sets,
+            SurfaceTagAttributes::per_input_orientation ? &in.E_input_orientation : nullptr);
         // The wall, as tetwild's: the boundary edges, untracked, each on a line of the box, which
         // init_mesh() flagged as it flags every edge on one -- the mesh fills its box, as the
         // arrangement's padded box does (require_box_boundary() says why).
@@ -1005,31 +1075,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     }
 
-    // Feature collections, taken BEFORE any filter deletes triangles: user-supplied
-    // features must not vanish from the feature outputs and audits when the region they
-    // live in is discarded (they do leave the triangle mesh itself). Same rule as 3D.
-    std::vector<std::array<Vector2d, 2>> collected_curve_segs;
-    std::vector<Vector2d> collected_anchor_pts;
+    // The feature audit, taken BEFORE any filter deletes triangles: user-supplied features must
+    // not vanish from it when the region they live in is discarded (they do leave the triangle
+    // mesh itself). Same rule as 3D.
     std::pair<size_t, size_t> collected_retention{0, 0};
     double collected_retention_worst = 0;
-    {
-        for (const auto& e : mesh.get_edges()) {
-            if (!mesh.m_edge_attribute[e.eid(mesh)].m_is_surface_fs) {
-                continue;
-            }
-            collected_curve_segs.push_back(
-                {{mesh.m_vertex_attribute[e.vid(mesh)].m_posf,
-                  mesh.m_vertex_attribute[e.switch_vertex(mesh).vid(mesh)].m_posf}});
-        }
-        for (const auto& v : mesh.get_vertices()) {
-            const size_t vid = v.vid(mesh);
-            if (mesh.m_feature_point_attribute[vid].m_feature_point_id !=
-                TriWildMesh::NO_FEATURE_POINT) {
-                collected_anchor_pts.push_back(mesh.m_vertex_attribute[vid].m_posf);
-            }
-        }
-        collected_retention = mesh.feature_retention(&collected_retention_worst);
-    }
+    collected_retention = mesh.feature_retention(&collected_retention_worst);
 
     if (filter_option == "input") {
         mesh.filter_with_input_winding_number(bounding);
@@ -1160,8 +1211,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     size_t feat_kept = 0, feat_total = 0;
     if (json_params["DEBUG_feature_retention"]) {
         // Pre-filter numbers (see the collection above): a feature in a discarded region
-        // left the triangle mesh with its region, but was preserved up to extraction and
-        // survives in _features.obj.
+        // left the triangle mesh with its region, but was preserved up to extraction.
         std::tie(feat_kept, feat_total) = collected_retention;
         feat_worst_ratio = collected_retention_worst;
     }
@@ -1270,46 +1320,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         mesh.write_vtu(output_path);
     }
 
-    // The tracked curves and feature anchors, as an edge mesh with point records -- the 2D
-    // counterpart of tetwild's _features.obj, from the same pre-filter collections. Only
-    // written when the input supplied free points, mirroring 3D's features-present gate --
-    // and keeping featureless runs byte-identical, output file set included.
-    if (!component_io.memory() && !free_points.empty()) {
-        std::ofstream fout(output_path + "_features.obj");
-        std::map<std::array<double, 2>, size_t> vid_of;
-        const auto obj_vertex = [&](const Vector2d& p) {
-            const std::array<double, 2> key = {{p[0], p[1]}};
-            const auto [it, inserted] = vid_of.emplace(key, vid_of.size() + 1);
-            if (inserted) {
-                fout << "v " << p[0] << " " << p[1] << " 0\n";
-            }
-            return it->second;
-        };
-        std::vector<std::array<size_t, 2>> obj_edges;
-        for (const auto& seg : collected_curve_segs) {
-            obj_edges.push_back({{obj_vertex(seg[0]), obj_vertex(seg[1])}});
-        }
-        std::vector<size_t> obj_points;
-        for (const Vector2d& p : collected_anchor_pts) {
-            obj_points.push_back(obj_vertex(p));
-        }
-        for (const auto& e : obj_edges) {
-            fout << "l " << e[0] << " " << e[1] << "\n";
-        }
-        for (const size_t pid : obj_points) {
-            fout << "p " << pid << "\n";
-        }
-    }
-
     // One result for both routes: returned from memory calls, written as the .msh otherwise.
     {
         MeshMap raw;
         mesh.write_vtu("mesh", &raw);
         io::compact_slot_outputs(mesh, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
-        if (!free_points.empty())
-            component_io.result.first["features"] =
-                io::feature_data(collected_curve_segs, collected_anchor_pts);
         io::collect_tags(
             mesh,
             component_io.result.first,
@@ -1320,6 +1336,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // tag_<i>), each edge with its input set and oriented as its input: the edge block of the
         // mesh, as simwild writes its curve inputs.
         io::collect_input_set_tags<CellType::Edge>(mesh, component_io.result.first, edge_tags);
+        // The input points, under their inputs' names: the point block (io::collect_point_tags()).
+        io::collect_point_tags(mesh, component_io.result.first, mesh.m_point_names);
         // The reference the curves were held to (envelope_out, above), handed on: on the file
         // route in a file of its own, as the mesh file holds the mesh.
         if (!component_io.memory()) {

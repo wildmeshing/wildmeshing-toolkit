@@ -1,9 +1,9 @@
 # TetWild with features
 
 A tet mesh for a simulation often has to contain more than the surface: a curve along which a
-load is applied or a crack runs, a point where a sensor sits or a boundary condition holds. With
-[`input_edges`](../../reference/tetwild.md#input_edges) and
-[`input_points`](../../reference/tetwild.md#input_points), [TetWild](../tetwild.md) inserts such
+load is applied or a crack runs, a point where a sensor sits or a boundary condition holds. Given
+as entries of [`input`](../../reference/tetwild.md#input) beside the surface -- a curve file of `l`
+polylines, a point file of `v` lines alone -- [TetWild](../tetwild.md) inserts such
 curves and points into the tet mesh exactly, in the same arrangement as the surface: each feature
 edge becomes a chain of tet edges, each feature point a tet vertex. The optimization then keeps
 them: the curves stay in a thin tube around the input, and the points and the ends of the curves
@@ -46,8 +46,8 @@ The inside of the cube (`filter` `tracked`), with every tet's energy below 10, a
     wmtk_app -j workflow_tetwild_features.json
     ```
 
-    The input paths are relative to the JSON file; the outputs, `cube_final.msh` and
-    `cube_features.obj` among them, are written to the working directory.
+    The input paths are relative to the JSON file; the outputs, `cube_final.msh` among them, are
+    written to the working directory.
 
 === "Python"
 
@@ -109,9 +109,11 @@ edges, which nothing bounds: it grows when a curve is shortened. Both are measur
 filter. The "3/3 points" are the points inserted on their own, the free vertex and the two points
 of the point file; the curve's ends are vertices of the curve.
 
-**In the output.** `cube_features.obj` holds the tagged edges (`l` lines) and the anchored vertices
-(`p` lines), at their output positions. In memory, the same is `outputs["features"]`, with an
-`edge` and a `point` block. Compare them with the input:
+**In the output.** The mesh holds the tagged edges as its edge block and the input points as its
+point block, each under the label of its input (`tag_1` for the curve and its free vertex, `tag_2`
+for the point file, by their positions in `input`): in `cube_final.msh` as physical groups, in
+memory as `outputs["mesh"]`'s `edge` and `point` blocks. Until 2026-11 they were listed beside the
+mesh, in `cube_features.obj` and `outputs["features"]`. Compare them with the input:
 
 ```python
 --8<-- "docs/examples/python/workflow_tetwild_features.py:check"
@@ -152,10 +154,9 @@ always on, as the tube and the surface envelope are.
 ## See also
 
 - The [TetWild tutorial](../tetwild.md), and the reference of
-  [`input_edges`](../../reference/tetwild.md#input_edges),
-  [`input_points`](../../reference/tetwild.md#input_points) and
+  [`input`](../../reference/tetwild.md#input) and
   [`feature_envelope_ratio`](../../reference/tetwild.md#feature_envelope_ratio).
 - [Embedding](../../concepts/embedding.md): how the curves and points are inserted with the
   surface.
-- [TriWild](../triwild.md#feature-points-input_points): the same anchors in
+- [TriWild](../triwild.md#feature-points): the same anchors in
   2D.

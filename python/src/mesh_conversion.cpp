@@ -204,8 +204,6 @@ py::tuple call_component(MemoryComponent component, nlohmann::json options, cons
     };
     for (const auto* role :
          {"input",
-          "input_edges",
-          "input_points",
           "surface_mesh",
           "uv_mesh",
           "envelope",

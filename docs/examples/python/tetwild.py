@@ -28,7 +28,7 @@ outputs, report = wm.tetwild(
 )
 mesh = outputs["mesh"]
 tets = mesh["cells"]["tetrahedron"]["connectivity"]
-surface = outputs["surface"]["cells"]["triangle"]["connectivity"]
+surface = mesh["cells"]["triangle"]["connectivity"]  # the tracked surface: the face tags
 print(len(mesh["V"]), "vertices,", len(tets), "tets,", len(surface), "surface triangles,",
       f"max energy {report['max_energy']:.1f}, avg {report['avg_energy']:.2f}")
 # --8<-- [end:memory]

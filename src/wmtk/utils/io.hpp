@@ -45,8 +45,8 @@ public:
 
     void add_empty_vertices(int dim)
     {
-        if (dim < 1 || dim > 3) {
-            log_and_throw_error("Only 1,2,3D elements are supported!");
+        if (dim < 0 || dim > 3) {
+            log_and_throw_error("Only 0,1,2,3D elements are supported!");
         }
 
         if (m_spec.nodes.entity_blocks.empty()) {
@@ -62,9 +62,17 @@ public:
         m_spec.nodes.entity_blocks.push_back(std::move(block));
     }
 
+    void add_point_vertices() { add_empty_vertices(0); }
     void add_edge_vertices() { add_empty_vertices(1); }
     void add_face_vertices() { add_empty_vertices(2); }
     void add_tet_vertices() { add_empty_vertices(3); }
+
+    /// Point elements (one node each), for a physical group of vertices: tetwild's input points.
+    template <typename Fn>
+    void add_points(size_t num_points, const Fn& get_point_cb)
+    {
+        add_simplex_elements<0>(num_points, get_point_cb);
+    }
 
     template <typename Fn>
     void add_edges(size_t num_edges, const Fn& get_edge_cb)
@@ -429,8 +437,8 @@ private:
     void add_simplex_elements(size_t num_elements, const Fn& get_element_cb)
     {
         static_assert(
-            DIM == 1 || DIM == 2 || DIM == 3,
-            "Only 1,2,3D simplex elements are supported");
+            DIM == 0 || DIM == 1 || DIM == 2 || DIM == 3,
+            "Only 0,1,2,3D simplex elements are supported");
         if (num_elements == 0) return;
 
         if (m_spec.nodes.num_nodes == 0) {
@@ -447,7 +455,9 @@ private:
         mshio::ElementBlock block;
         block.entity_dim = DIM;
         block.entity_tag = vertex_block.entity_tag;
-        if constexpr (DIM == 1) {
+        if constexpr (DIM == 0) {
+            block.element_type = 15; // 1-node point.
+        } else if constexpr (DIM == 1) {
             block.element_type = 1; // 2-node line.
         } else if constexpr (DIM == 2) {
             block.element_type = 2; // 3-node triangle.

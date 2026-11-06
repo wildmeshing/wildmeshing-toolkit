@@ -279,7 +279,7 @@ public:
         uint8_t m_kinds = 0;
         /// Per kind, the inputs whose curves of that kind this edge tiles, bit i for input i, as
         /// a tracked face carries the inputs it lies on (SurfaceTagAttributes::input_set()):
-        /// the input_edges file for `feature`, the inputs of the tracked faces at the edge for
+        /// the input curve for `feature`, the inputs of the tracked faces at the edge for
         /// `order2`. The edge is held to those inputs' tubes (tagged_edge_leaves_tube()); an
         /// empty set falls back to the kind's union tube.
         InputSet m_feature_inputs = 0;
@@ -523,7 +523,7 @@ public:
     size_t tag_order2_edges(double eps, bool exact);
     /**
      * @brief Tag every tet edge tiling an input feature edge (`placed`, from the insertion)
-     * with the feature kind and the input_edges file it comes from, and build the tubes, of
+     * with the feature kind and the input curve it comes from, and build the tubes, of
      * half-width `eps` with the exact predicate when `exact`. Returns the number of tet edges
      * tagged.
      *
@@ -621,6 +621,16 @@ public:
     /// Radius of each anchor's ball, beside m_feature_points. Per anchor, because each kind of
     /// feature has its own radius (see anchor_feature_points()).
     std::vector<double> m_feature_point_radius;
+    /// The input points' labels, which the output writes as its point block
+    /// (io::collect_point_tags()) and a receiver reads back as input points: names, bit i of an
+    /// input set m_point_names[i], and per input point -- in the order of anchor_feature_points()'s
+    /// input_point_vids -- the bit of its label, set by the application before the anchoring;
+    /// empty, the points carry no label. Per anchor, beside m_feature_points, the labels of the
+    /// input points it stands for, 0 for a curve end or junction (which the tags give again),
+    /// filled by anchor_feature_points(). Until 2026-11 no output marked the input points.
+    std::vector<std::string> m_point_names;
+    std::vector<int> m_input_point_labels;
+    std::vector<InputSet> m_feature_point_inputs;
     /// Whether the shared operations maintain and enforce the anchors
     /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
@@ -680,12 +690,17 @@ public:
      *
      * With m_input_curves set, the ball of a curve end or junction is centred on the nearest of
      * the input's own curve points when one lies in it, and at the vertex otherwise (see
-     * InputCurves). An input point is anchored as before: it is the input's.
+     * InputCurves). An input point is the input's, and keeps its own position -- unless
+     * m_reference_points is set: its ball is then centred on the nearest of the reference's
+     * points of its label within it, and a point with none throws (see there).
      */
     size_t anchor_feature_points(
         const std::vector<size_t>& input_point_vids,
         double order2_radius,
         double feature_radius);
+    /// At the end of anchor_feature_points(): each anchor's labels (m_feature_point_inputs), the
+    /// bits m_input_point_labels gives the input points it stands for.
+    void label_feature_points(const std::vector<size_t>& input_point_vids);
 
     /**
      * True iff collapsing v1 into v2 would drop or displace a feature-point anchor. False
@@ -804,10 +819,32 @@ public:
     /// The reference's feature curves: an input edge per edge and label, edge_input the feature
     /// input of the label (m_feature_edge_names).
     utils::FeatureInputs m_reference_curves;
+    /**
+     * @brief The reference's input points (its point block), each with the labels of this mesh's
+     * input points it carries (bit j: m_point_names[j]).
+     *
+     * Set, anchor_feature_points() centres the ball of each received input point on the nearest
+     * of them with its label in the ball, as it centres a curve end on the nearest of the
+     * reference's curve points (InputCurves): so a received point is held to the first
+     * component's, within one radius however many components came before, where anchored where it
+     * arrives it could end up to one radius further at every stage. Unlike a curve end, a point
+     * with none in reach throws, before anything runs: a simplification makes curve ends, but no
+     * component makes input points, so such a point is not this reference's. Unset -- no
+     * `envelope` given -- an input point is anchored where it is, as before. Set by the
+     * application before init, by set_reference_points().
+     */
+    struct ReferencePoints
+    {
+        std::vector<Vector3d> V;
+        std::vector<InputSet> labels;
+    };
+    std::optional<ReferencePoints> m_reference_points;
+    /// Set m_reference_points from the reference's points `P` (rows, x y z) and their labels.
+    void set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels);
     /// Names of the feature curves' inputs: bit i of a feature edge's input set
     /// (FeatureEdgeAttributes::inputs(feature)) is m_feature_edge_names[i], the output's edge tag
-    /// (io::collect_feature_edge_tags()). Set by the application: feature_<i> for input_edges
-    /// file i, or the edge tags of a tagged mesh input.
+    /// (io::collect_feature_edge_tags()). Set by the application: the label of its i-th input
+    /// curve, or the edge tags of a tagged mesh input.
     std::vector<std::string> m_feature_edge_names;
     /// The label of bit `bit` of a face's input set, as the output names it; the application's,
     /// for the reference checks to name a label by.
@@ -1736,8 +1773,9 @@ protected:
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
         FaceAttributes sf_face_attr;
-        /// Orientation of the flipped pair, measured along [a,b,c] (and so along [b,a,d]).
-        int sf_orientation = 0;
+        /// Orientation of the flipped pair, measured along [a,b,c] (and so along [b,a,d]): an
+        /// attribute record holding only it, per input with WMTK_PER_INPUT_ORIENTATION.
+        FaceAttributes sf_orientation;
         /// The pair's two faces were not oriented alike; see prepare_surface_flip.
         bool sf_orientation_mismatch = false;
     };
@@ -1770,9 +1808,10 @@ protected:
         /// face with (v2,x,y) -- for the containment check, which runs before they are written.
         std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> surface_faces;
         /// Oriented faces (v1,x,y) the collapse renames in place to (v2,x,y), as {v2,x,y} with
-        /// the orientation measured along that order. Their attribute stays in its slot, so
-        /// without this the value would be read against the wrong vertex set.
-        std::vector<std::pair<std::array<size_t, 3>, int>> renamed_orientations;
+        /// the orientation measured along that order (an attribute record holding only it, per
+        /// input with WMTK_PER_INPUT_ORIENTATION). Their attribute stays in its slot, so without
+        /// this the value would be read against the wrong vertex set.
+        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> renamed_orientations;
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;

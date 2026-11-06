@@ -143,9 +143,9 @@ not named, they are dropped, and with them their curves.
 | `qslim` | `input` | Triangle geometry, no attributes |
 | `shortest_edge_collapse` | `input` | Triangle geometry, no attributes |
 | `isotropic_remeshing` | `input`; optional `features` | Triangle geometry and the triangle fields `feature_fields` names; `features` on the rows of `input`: edges with Int64 `edge_id`, points with Int64 `vertex_id`, or Int64 vertex `vertex_id` (-1 for none) |
-| `tetwild` | `input`; `input_edges`, `input_points`; optional `envelope` for tagged input | Triangle surfaces; optional curve/point geometry, no attributes. Or one tagged tet mesh, continued from as it is: tagged faces, feature curves and points, no tet tags but `ambient` |
-| `triwild` | `input`; `input_points`; optional `envelope` for tagged input | Curve geometry, optional free points, no attributes. Or one tagged triangle mesh, continued from as it is: tracked curves and points, no triangle tags but `ambient` |
-| `simwild` | `input`; optional `envelope` for tagged input | Surface/curve geometry, or tagged triangle/tet mesh |
+| `tetwild` | `input`; optional `envelope` for tagged input | Triangle surfaces, and optionally curves and points (each `input` entry what its blocks make it: triangles, else edges, else points), no attributes. Or one tagged tet mesh, continued from as it is: tagged faces, feature curves and points, no tet tags but `ambient` |
+| `triwild` | `input`; optional `envelope` for tagged input | Curves, and optionally points, no attributes. Or one tagged triangle mesh, continued from as it is: tracked curves and points, no triangle tags but `ambient` |
+| `simwild` | `input`; optional `envelope` for tagged input | Surfaces (3D) or curves (2D), and optionally 3D curves and points, or tagged triangle/tet mesh |
 | `topological_offset` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `manifold_extraction` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `prismatic_mesh` | `input` | Tet construction mesh with `corr_input_vid` and cell region memberships |
@@ -157,17 +157,29 @@ column labelled `ambient` is the background, as is a cell without a tag; a mesh 
 field is all background. Tagged results label their background `ambient` explicitly; the shared
 readers and writers infer nothing from an untagged row. As on the `.msh` route, the lower-dimensional blocks are tags, one `tags` column per input: in a tet mesh,
 triangles are tagged faces (an input surface, each row oriented as its input) and edges tagged
-feature curves (an `input_edges` file, `feature_<i>`); in a triangle mesh, edges are tagged curves
-(an input curve, each row oriented as its input). simwild, tetwild and triwild write them so, and
-simwild, tetwild and triwild read them back as the tags they hold. tetwild takes a tet mesh as its
+feature curves (a curve input, named as every input is); in a triangle mesh, edges are tagged curves
+(an input curve, each row oriented as its input); in both, points are input points (a point
+input, or a curve input's vertex no segment uses, each row a vertex under the labels of the inputs
+with a point there). simwild, tetwild and triwild write them so, and simwild, tetwild and triwild
+read them back as the tags they hold, the points anchored where they are (with an `envelope` given,
+on the envelope's point of their label, which must lie within the anchor's radius); topological_offset and
+manifold_extraction, which hold no points yet, refuse a point block, as they refuse feature
+curves. Until 2026-11 no mesh marked its input points. tetwild takes a tet mesh as its
 only input on the tagged route, its tets kept: no simplification, no insertion, no input winding
 numbers. It holds no volumes, so a mesh whose tets carry a tag other than `ambient` is refused
-(simwild remeshes those), and its point block is input points, anchored where they are. triwild
+(simwild remeshes those). triwild
 takes a triangle mesh the same way, holding its tracked curves and points and no regions: a mesh
 whose triangles carry a tag other than `ambient` is refused. tetwild writes no tet tags and triwild
 no triangle tags but `ambient`: regions are simwild's. Rows labelled `EnvelopeSurface` (in a triangle mesh,
 an edge block without `tags` too) are the envelope instead, which cannot be combined with an
 `envelope` input. Other lower-dimensional blocks are rejected.
+
+A row's vertex order is the orientation of all its inputs: one count per simplex for all of them.
+Built with the CMake option `WMTK_PER_INPUT_ORIENTATION`, a simplex keeps one count per input, and
+the tagged faces (2D: edges) carry an `orientation` field beside `tags`: Int64, the same column
+labels, per row and input that input's count along the row, 0 where the row lacks the tag. Such a
+build reads it back, and without it gives each input of a row +1 along the row; a build without
+the option writes none and drops it as it drops every field it does not read.
 
 The `envelope` input is a mesh of the call on the memory route and the path of a mesh file on the
 file route (relative to `input_dir`): the `envelope` a producer returns or writes (below). It is the
@@ -178,9 +190,12 @@ eps, matching the envelope's labels to the mesh's face tags (2D: edge tags), reg
 curves by name; it throws for a label the mesh holds that the envelope lacks, and, before a
 remeshing, unless every held face and feature edge received lies, exactly, in the envelopes of its
 labels -- the error names the labels, the number outside and the eps. tetwild's and triwild's tagged
-routes hold to it the same way, by the same code, before every run. topological_offset and
-manifold_extraction carry it, not yet holding to it. Each returns it unchanged as its own
-`envelope`. An `envelope` without labels -- bare geometry -- is held to as a whole, as before.
+routes hold to it the same way, by the same code, before every run. topological_offset and, in 3D,
+manifold_extraction hold to it the same way before their construction, and return it with the
+faces their band makes added, each under the labels of the regions it separates -- the offset's
+band boundary, the faces manifold_extraction carves -- since that geometry is new and its own
+reference; in 2D manifold_extraction carries it, returning it unchanged. An `envelope` without
+labels -- bare geometry -- is held to as a whole, as before.
 
 The prismatic adapter accepts scalar `tag_0` and `offset_tag`, or the corresponding columns of
 `tags`. `vid` defaults to vertex row IDs; absent `labels` are derived from input-volume cells and
@@ -193,24 +208,32 @@ unchanged.
 
 ## Results and compatibility
 
-`mesh` is the primary output key. Components also return their applicable existing secondary
-geometry under fixed keys:
+`mesh` is the primary output key. tetwild, triwild, simwild, topological_offset and
+manifold_extraction return nothing `mesh` already holds: their tracked surfaces and curves are
+its triangle and edge blocks, and the boundary of a region -- simwild's interfaces, an offset's
+front, the surface manifold_extraction extracts -- is where the cell tags differ across a face
+(2D: an edge), as the next component reads it. Until 2026-11 they also returned these as
+`surface`, `edges` (simwild 3D: where the interfaces are not manifold), `offset` and
+`input_complex`, each a second copy of the mesh's vertices, and tetwild and triwild listed their
+tracked curves and anchored points as `features`, which the mesh's edge and point blocks hold now.
+The keys besides `mesh`:
 
-- `surface`: the boundary (triangles in 3D; in 2D -- triwild, 2D simwild -- the boundary edges).
-  Manifold extraction returns its extracted boundary here.
-- `edges`: simwild's 3D feature edges; isotropic_remeshing's feature edges, with `features` or
-  `feature_fields` (its Int64 `edge_id`, and `mesh`'s Int64 `vertex_id` and per-face fields --
-  in the types they were given in, with their labels -- are what its `.vtu` output holds, an
-  edge block of none where there are none), which can be the next call's `features`.
-- `offset`: the offset surface or front; prismatic's classified offset faces.
+- `edges`: isotropic_remeshing's feature edges, with `features` or `feature_fields` (its Int64
+  `edge_id`, and `mesh`'s Int64 `vertex_id` and per-face fields -- in the types they were given
+  in, with their labels -- are what its `.vtu` output holds, an edge block of none where there are
+  none), which can be the next call's `features`: a triangle mesh holds no edge block.
+- `offset`: prismatic's classified offset faces.
 - `envelope`: what tetwild, triwild and simwild held their tags to, the reference -- the input,
   or the simplified input under `envelope_reference` "simplified" -- labelled as `mesh` labels the
   tags: in 3D a triangle block with one `tags` column per input surface's face tag or region, and
-  an edge block of the feature curves (`feature_<i>`); in 2D an edge block, one column per input
-  curve's edge tag or region; the input points as a point block without tags, as `mesh` writes
-  nothing for them. No eps: a receiver brings its own. A component given an `envelope` returns that
-  one, unchanged; simwild's tag operations return none.
-- `features`, `uv`, and manifold extraction's 3D input-complex preview `input_complex`.
+  an edge block of the feature curves, one column per curve input; in 2D an edge block, one column per input
+  curve's edge tag or region; the input points as a point block, labelled as `mesh` labels them
+  (a receiver anchors the points it receives where they are). No eps: a receiver brings its own. A component given an `envelope` returns that
+  one, unchanged. simwild's tag operations hold nothing to one and do not read it: they move the
+  boundaries between regions, which no envelope given covers, and return one built around their
+  result, each face between regions (2D: edge) labelled by the regions it bounds and its face tags,
+  with the feature curves.
+- `uv`: c1_simplification's UV mesh.
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as
   `input_and_shell_offset`; with `prism_dominant`, the report adds that export's
   `input_and_shell_hybrid` report, as in its `_hybrid.json` file.
@@ -222,19 +245,14 @@ geometry under fixed keys:
   ends at, all of it before the filter (its `<output>_history_output.msh`); `mesh` is the part
   the filter keeps. For simwild the volume history ends at `mesh`.
 
-For tetwild, triwild, simwild, topological_offset and isotropic_remeshing, `surface`, `edges` and
-`offset` share the `mesh` vertex rows: their connectivity indexes the same `V`, with the same
-vertex fields, so row `i` is the same vertex in every one of them, and vertices an output does not
-reference are kept.
-This is deliberate -- it maps a boundary vertex to its volume vertex without a search -- at the
-cost of one vertex array per output. `envelope`, `features`, manifold extraction's `surface` and
-prismatic's offset faces have vertices of their own.
+isotropic_remeshing's `edges` shares the `mesh` vertex rows: its connectivity indexes the same
+`V`, with the same vertex fields, so row `i` is the same vertex in both, and vertices it does not
+reference are kept. `envelope` and prismatic's offset faces have vertices of their own.
 
 topological_offset's result -- `mesh`, the `.msh`, and the `save_vtu` file -- carries the tags,
 the data fields (`vid`, `labels`, `offset_tag`; in `mesh` and the `.msh`, with
 `save_offset_correspondence`, `corr_input_vid`) and two annotations, `amips` per tet and
-`distance_over_target` per vertex; `surface`, `edges` and `offset` carry `vid`, and `offset`
-`distance_over_target`. Its `DEBUG_output` frames carry every diagnostic field.
+`distance_over_target` per vertex. Its `DEBUG_output` frames carry every diagnostic field.
 manifold_extraction, which returns its mesh through the offset's writer, returns it so too.
 
 The exporters' legacy file names map to these keys through one explicit table

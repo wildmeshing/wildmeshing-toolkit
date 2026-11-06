@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <map>
 #include <vector>
 
 using namespace wmtk;
@@ -179,4 +180,156 @@ TEST_CASE("embed-triangles-orientation-keeps-to-each-input", "[embed_triangles]"
             CHECK(wrong_b == 0);
         }
     }
+}
+
+TEST_CASE("embed-triangles-orientation-per-input", "[embed_triangles][orientation]")
+{
+    // EmbedTrianglesProvenance::face_input_orientation: each input's own count. A on
+    // [0,1]x[0,1] (input 0, +z) and a copy of it (input 1, +z or -z) are one coplanar group,
+    // which the one count takes once: 1 where the copy faces alike, 0 where it faces the other
+    // way. Input by input each counts: +1 and +1, or +1 and -1. Beside them B (input 2, -z),
+    // edge-adjacent to A in the same group, counts for input 2 alone. The arrangement does not
+    // cut a group along the edge between two of its triangles, so a facet may lie across x = 1:
+    // it is then on every input whose triangles it overlaps (face_triangles), each with its own
+    // count, and the one count is that at its first test point (facet_orientations()).
+    static constexpr std::array<std::array<int, 3>, 4> local_faces = {
+        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}}; // TetMesh::m_local_faces
+    for (const bool copy_up : {true, false}) {
+        CAPTURE(copy_up);
+        Sheets s = two_sheets(false);
+        s.F.insert(s.F.end(), {0, 1, 2, 0, 2, 3});
+        if (!copy_up) {
+            std::swap(s.F[13], s.F[14]);
+            std::swap(s.F[16], s.F[17]);
+        }
+        const std::vector<int> inputs = {0, 0, 2, 2, 1, 1};
+        std::vector<double> TV;
+        std::vector<uint32_t> TT;
+        background(TV, TT);
+        Embedded e;
+        e.prov.want_input_orientation = true;
+        e.prov.want_face_triangles = true;
+        utils::EmbedTrianglesOptions opts;
+        opts.triangle_input = &inputs;
+        utils::embed_triangles_in_tets(
+            s.V,
+            s.F,
+            TV,
+            TT,
+            e.v,
+            e.faces,
+            e.on_input,
+            e.v_on_input,
+            e.tets,
+            e.tet_face_on_input,
+            opts,
+            &e.prov,
+            &e.orientation);
+        REQUIRE(e.prov.face_input_orientation.size() == e.faces.size());
+        std::map<std::array<size_t, 3>, size_t> facet_of;
+        for (size_t f = 0; f < e.faces.size(); ++f) {
+            std::array<size_t, 3> key = e.faces[f];
+            std::sort(key.begin(), key.end());
+            facet_of[key] = f;
+        }
+        const std::array<int, 3> facing = {{1, copy_up ? 1 : -1, -1}}; // per input, +z or -z
+        size_t n_coincident = 0, n_b = 0, wrong = 0;
+        for (size_t t = 0; t < e.tets.size(); ++t) {
+            for (int k = 0; k < 4; ++k) {
+                if (!e.tet_face_on_input[4 * t + k]) continue;
+                std::array<size_t, 3> f;
+                for (int j = 0; j < 3; ++j) f[j] = e.tets[t][local_faces[k][j]];
+                std::sort(f.begin(), f.end());
+                const size_t facet = facet_of.at(f);
+                const Vector3d a = to_double(e.v[f[0]]), b = to_double(e.v[f[1]]),
+                               c = to_double(e.v[f[2]]);
+                const int up = (b - a).cross(c - a)[2] > 0 ? 1 : -1; // +z, against ascending
+                std::vector<int> on;
+                for (const uint32_t tri : e.prov.face_triangles[facet]) on.push_back(inputs[tri]);
+                std::sort(on.begin(), on.end());
+                on.erase(std::unique(on.begin(), on.end()), on.end());
+                InputOrientations want;
+                for (const int in : on) want.emplace_back(in, facing[in] * up);
+                wrong += e.prov.face_input_orientation[facet] != want;
+                const bool on_a = on.front() < 2, on_b = on.back() == 2;
+                if (on_a != on_b) { // on one side of x = 1: the one count as before
+                    wrong += e.orientation[4 * t + k] != (on_a ? (copy_up ? up : 0) : -up);
+                }
+                n_coincident += on.size() >= 2 && on[0] == 0 && on[1] == 1;
+                n_b += on_b;
+            }
+        }
+        CHECK(n_coincident > 0);
+        CHECK(n_b > 0);
+        CHECK(wrong == 0);
+    }
+}
+
+TEST_CASE("surface-tag-orientation-carried", "[orientation]")
+{
+    // What the operations do with the orientation (SurfaceTagAttributes): a count along one
+    // vertex order is the same count along the corresponding order of the simplex it moves to
+    // (set_orientation_from), a merge adds (add_orientation_from), and alike means equal along
+    // corresponding orders (same_orientation). Every input's count with WMTK_PER_INPUT_ORIENTATION.
+    using A3 = std::array<size_t, 3>;
+    SurfaceTagAttributes f;
+    f.set_input_set(0b11);
+    f.set_orientation_along(InputSet(0b01), A3{{5, 3, 7}}, 1);
+    CHECK(f.orientation_along(A3{{5, 3, 7}}) == 1);
+    CHECK(f.orientation() == -1); // (5, 3, 7) is an odd permutation of (3, 5, 7)
+    CHECK(f.oriented());
+    SurfaceTagAttributes half;
+    half.set_orientation_from(f, A3{{5, 3, 7}}, A3{{5, 9, 7}}); // 3 replaced by 9 in place
+    CHECK(half.orientation_along(A3{{5, 9, 7}}) == 1);
+    CHECK(half.same_orientation(A3{{5, 9, 7}}, f, A3{{5, 3, 7}}));
+    CHECK_FALSE(half.same_orientation(A3{{9, 5, 7}}, f, A3{{5, 3, 7}}));
+    SurfaceTagAttributes merged;
+    merged.set_orientation_from(f, A3{{5, 3, 7}}, A3{{5, 3, 8}});
+    merged.add_orientation_from(half, A3{{5, 9, 7}}, A3{{5, 3, 8}});
+    CHECK(merged.orientation_along(A3{{5, 3, 8}}) == 2);
+    merged.reset();
+    CHECK(merged.orientation() == 0);
+    CHECK_FALSE(merged.oriented());
+
+#ifdef WMTK_PER_INPUT_ORIENTATION
+    // One count per input, 4 bits each, and the total their sum: two inputs facing opposite
+    // ways on one face sum to 0, each keeping its own.
+    STATIC_REQUIRE(sizeof(SurfaceTagAttributes) == 43);
+    f.set_orientation_along(InputSet(0b10), A3{{3, 5, 7}}, 1);
+    CHECK(f.input_orientation(0) == -1);
+    CHECK(f.input_orientation(1) == 1);
+    CHECK(f.orientation() == 0);
+    CHECK(f.oriented());
+    CHECK(f.orientation_of(0b01) == -1);
+    CHECK(f.orientation_of(0b10) == 1);
+    // Along (3, 5, 7) taken as along (5, 3, 7), the other orientation of the same vertex set:
+    // every input's count turned over.
+    half.set_orientation_from(f, A3{{3, 5, 7}}, A3{{5, 3, 7}});
+    CHECK(half.input_orientation(0) == 1);
+    CHECK(half.input_orientation(1) == -1);
+    CHECK(half.same_orientation(A3{{5, 3, 7}}, f, A3{{3, 5, 7}}));
+    half.set_input_orientation(1, 0); // input 0 still alike, input 1 not
+    CHECK_FALSE(half.same_orientation(A3{{5, 3, 7}}, f, A3{{3, 5, 7}}));
+    // Clamped to -8..7; the total is exact while every count is in range.
+    SurfaceTagAttributes c;
+    c.set_orientation(0b111, 7);
+    CHECK(c.orientation() == 21);
+    c.set_orientation(0b001, 20);
+    c.set_orientation(0b010, -20);
+    CHECK(c.input_orientation(0) == 7);
+    CHECK(c.input_orientation(1) == -8);
+    c.set_input_orientations({{2, -3}, {63, 5}});
+    CHECK(c.input_orientation(0) == 0);
+    CHECK(c.input_orientation(2) == -3);
+    CHECK(c.input_orientation(63) == 5);
+    CHECK(c.orientation() == 2);
+#else
+    // One count for all the inputs: set for one input, it is every input's.
+    STATIC_REQUIRE(sizeof(SurfaceTagAttributes) == 11);
+    CHECK(f.orientation_of(0b10) == -1);
+    CHECK(f.orientation_of(0b100) == 0); // not on input 2
+    SurfaceTagAttributes c;
+    c.set_orientation(0b1, 20);
+    CHECK(c.orientation() == 15);
+#endif
 }

@@ -70,7 +70,11 @@ public:
     /// The envelope the run hands on, when it built its own: the 2D twin of
     /// SimWildMesh::envelope_data(), with the input `points`.
     MeshData envelope_data(const std::vector<Vector2d>& points) const;
-    /// The vertices of the input points (input_points), set before init: anchored there, in a
+    /// After a tag operation, the envelope it hands on, around its result: the 2D twin of
+    /// SimWildMesh::set_envelope_around_tags(), every edge the next component holds, labelled
+    /// by its edge tags and the triangle tags on one side of it and not the other.
+    void set_envelope_around_tags();
+    /// The vertices of the input points (the point inputs), set before init: anchored there, in a
     /// ball of feature_envelope_ratio x eps (TriOptimizerMesh::anchor_feature_points()).
     std::vector<size_t> m_input_point_vids;
 
@@ -147,7 +151,8 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& E_tagged = MatrixXi(),
         const MatrixSi& E_tags = MatrixSi(),
-        const std::vector<std::string>& edge_tag_names = {});
+        const std::vector<std::string>& edge_tag_names = {},
+        const MatrixSi& E_orientation = MatrixSi());
 
     /**
      * @brief Same, from EXACT input positions.
@@ -163,7 +168,8 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXi& E_tagged = MatrixXi(),
         const MatrixSi& E_tags = MatrixSi(),
-        const std::vector<std::string>& edge_tag_names = {});
+        const std::vector<std::string>& edge_tag_names = {},
+        const MatrixSi& E_orientation = MatrixSi());
 
     void init_surfaces_and_boundaries();
     /// Tracks the edges E_tagged (rows of T's vertices, as read_curves gives them) as surface,
@@ -172,7 +178,8 @@ public:
     void init_edge_tags(
         const MatrixXi& E_tagged,
         const MatrixSi& E_tags,
-        const std::vector<std::string>& edge_tag_names);
+        const std::vector<std::string>& edge_tag_names,
+        const MatrixSi& E_orientation = MatrixSi());
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 

@@ -72,9 +72,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     // The `envelope` input: a mesh of the call on the memory route, a mesh file on the file
-    // route (relative to input_dir). Carried, not held to: handed on unchanged
-    // (hand_on_envelope()), while the extraction holds the offset's envelopes, built around the
-    // mesh it receives (TopoOffsetTetMesh::build_envelopes()).
+    // route (relative to input_dir). In 3D a labelled reference is held to as the offset holds one
+    // (below), and handed on with the faces the carving made (hand_on_envelope()); in 2D it is
+    // carried, handed on unchanged, while the extraction builds its envelopes around the mesh it
+    // receives (TopoOffsetTriMesh).
     const std::string envelope_path =
         component_io.memory() ? "" : json_params["envelope"].get<std::string>();
     std::optional<MeshData> envelope_file;
@@ -88,12 +89,22 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     InputData input_data = component_io.memory()
                                ? read_mesh_data(component_io.mesh(input_path), envelope)
                                : read_image_msh(input_path, envelope);
-    // After the output: the envelope given goes on as given (a labelled reference unchanged, so
-    // that a chain keeps passing the first component's input), on the file route as
-    // <output>_envelope.msh.
-    const auto hand_on_envelope = [&]() {
+    // After the output: a labelled reference goes on, so that a chain keeps passing the first
+    // component's input, with `carved` added (topological_offset::with_offset_surface()): in 3D
+    // the faces between a carved cell and the rest that bound a region, each under the labels of
+    // the regions it separates -- new geometry, its own reference, as the offset's band boundary
+    // (topological_offset::offset_rows(), the band here the carved cells). Unchanged where nothing
+    // was carved, and in 2D. On the file route as <output>_envelope.msh. Until 2026-11 the
+    // reference went on unchanged in 3D too, and simwild refused the carved faces outside it.
+    const auto hand_on_envelope = [&](const topological_offset::OffsetRows& carved =
+                                          topological_offset::OffsetRows()) {
         auto& outputs = component_io.result.first;
-        if (input_data.envelope_reference) outputs["envelope"] = *input_data.envelope_reference;
+        if (input_data.envelope_reference) {
+            outputs["envelope"] = carved.F.rows() > 0 ? topological_offset::with_offset_surface(
+                                                            *input_data.envelope_reference,
+                                                            carved)
+                                                      : *input_data.envelope_reference;
+        }
         if (!component_io.memory() && envelope && outputs.count("envelope"))
             io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
     };
@@ -101,8 +112,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // until they are carried.
     if (input_data.F_tagged.rows())
         log_and_throw_error("manifold_extraction does not take tagged faces (2D: edges) yet");
-    if (!input_data.features.empty())
-        log_and_throw_error("manifold_extraction does not take feature curves yet");
+    if (!input_data.features.empty() || !input_data.input_point_vids.empty())
+        log_and_throw_error("manifold_extraction does not take feature curves or points yet");
     man_params.init(
         input_data.V_input.colwise().minCoeff(),
         input_data.V_input.colwise().maxCoeff());
@@ -188,11 +199,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             }
         }
 
-        // save output
+        // save output: the mesh, whose tags give the extracted curves
         topological_offset::collect_memory_output(mesh, component_io);
-        if (component_io.memory())
-            mesh.write_curve("", &component_io.result.first);
-        else
+        if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         hand_on_envelope();
         if (mesh.m_man_params.save_vtu) {
@@ -202,15 +211,39 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     } else { // input is 3d tetmesh
         logger().info("Input mesh (3d tetmesh): {}", input_path);
 
-        // initialize mesh
+        // initialize mesh. A labelled reference is held to (below), as the offset holds one, not
+        // the envelope surface group.
+        const bool reference = input_data.envelope_reference.has_value();
         ManExtractTetMesh mesh(man_params, offset_params, NUM_THREADS);
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.V_envelope,
-            input_data.F_envelope,
+            reference ? MatrixXd() : input_data.V_envelope,
+            reference ? MatrixXi() : input_data.F_envelope,
             input_data.tag_names);
+        // A reference, held to by the code the offset's 3D route holds one with (its start checks
+        // in TopoOffsetTetMesh::build_envelopes(): every label of the held faces in it, and every
+        // held face received inside its labels' envelopes, exactly, before anything is carved).
+        // The construction only splits, so nothing moves after the checks.
+        if (reference) {
+            const io::HeldRows held = io::held_rows(
+                input_data.V_envelope,
+                input_data.F_envelope,
+                input_data.F_envelope_labels);
+            mesh.m_has_reference = true;
+            mesh.m_reference_V = held.V;
+            mesh.m_reference_F = held.F;
+            mesh.m_reference_labels = held.labels;
+            mesh.m_reference_curves = input_data.reference_curves;
+            std::vector<Eigen::Vector3d> V(size_t(held.V.rows()));
+            for (size_t i = 0; i < V.size(); ++i) V[i] = held.V.row(Eigen::Index(i)).transpose();
+            std::vector<std::array<size_t, 3>> F(size_t(held.F.rows()));
+            for (size_t i = 0; i < F.size(); ++i) {
+                for (int j = 0; j < 3; ++j) F[i][j] = size_t(held.F(Eigen::Index(i), j));
+            }
+            mesh.set_input_curves(V, F, held.labels, &input_data.reference_curves);
+        }
 
         // record counts (mostly debugging, this is probably really slow)
         mesh.m_init_counts[0] = mesh.vertex_size();
@@ -277,16 +310,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             }
         }
 
-        // save output
-        // `_surf` holds the input-complex faces here; `surface` is the extracted boundary.
-        auto keys = io::default_output_keys();
-        keys["mesh_surf.vtu"] = "input_complex";
-        topological_offset::collect_memory_output(mesh, component_io, keys);
-        if (component_io.memory())
-            mesh.write_surface("", &component_io.result.first);
-        else
+        // save output: the mesh, whose tags give the extracted surface and the input complex
+        topological_offset::collect_memory_output(mesh, component_io);
+        if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
-        hand_on_envelope();
+        hand_on_envelope(topological_offset::offset_rows(mesh));
         if (mesh.m_man_params.save_vtu) {
             mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         }

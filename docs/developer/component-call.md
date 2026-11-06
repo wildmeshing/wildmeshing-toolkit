@@ -178,8 +178,8 @@ and `mesh_conversion.cpp`; `python/wildmeshing/__init__.py` re-exports it. For e
 in `memory_components`, the module defines one function with two overloads:
 
 - `wm.<name>(options, meshes)`: the memory route. `call_component` (`mesh_conversion.cpp`)
-  converts the meshes the selectors name (the keys `input`, `input_edges`, `input_points`,
-  `surface_mesh`, `uv_mesh`, `envelope`, `tet_mesh`, `output_tet_mesh` and `features`), releases
+  converts the meshes the selectors name (the keys `input`, `surface_mesh`, `uv_mesh`,
+  `envelope`, `tet_mesh`, `output_tet_mesh` and `features`), releases
   the GIL, calls the memory overload and returns `(outputs, report)` as NumPy dictionaries.
 - `wm.<name>(options)`: the file route, as `wmtk_app` runs it. It adds `application` if it is
   missing and releases the GIL. It does not set `input_dir`, so relative paths resolve against

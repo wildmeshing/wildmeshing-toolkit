@@ -46,7 +46,7 @@ components:
     title: TetWild
     group: meshing
     tutorial: tutorials/tetwild.md
-    key_options: [input, input_names, output, eps_rel, length_rel, stop_energy, filter, max_iterations, input_edges, input_points, preserve_topology, coarsen_pass, history_output]
+    key_options: [input, input_names, output, eps_rel, length_rel, stop_energy, filter, max_iterations, preserve_topology, coarsen_pass, history_output]
     papers:
       - "[Hu et al. 2018, Tetrahedral Meshing in the Wild](https://cims.nyu.edu/gcl/papers/2018-TetWild.pdf)"
       - "[Hu et al. 2020, Fast Tetrahedral Meshing in the Wild](https://arxiv.org/abs/1908.03581)"
@@ -55,7 +55,7 @@ components:
     title: TriWild
     group: meshing
     tutorial: tutorials/triwild.md
-    key_options: [input, input_names, output, eps_rel, length_rel, stop_energy, filter, input_points, preserve_topology]
+    key_options: [input, input_names, output, eps_rel, length_rel, stop_energy, filter, preserve_topology]
     papers:
       - "[Hu et al. 2019, TriWild: Robust Triangulation with Curve Constraints](https://cims.nyu.edu/gcl/papers/2019-TriWild.pdf)"
 

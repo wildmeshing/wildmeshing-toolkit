@@ -109,6 +109,7 @@ void TopoOffsetTetMesh::init_from_image(
     const MatrixXi& F_tagged,
     const MatrixSi& F_tags,
     const std::vector<std::string>& face_tag_names,
+    const MatrixSi& F_orientation,
     const std::vector<std::string>& edge_tag_names,
     const utils::FeatureInputs* features,
     const utils::EmbedFeaturesResult* features_placed)
@@ -197,7 +198,7 @@ void TopoOffsetTetMesh::init_from_image(
             if (F_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
         auto& attr = m_face_attribute[std::get<1>(*face)];
         attr.set_input_set(attr.input_set() | set);
-        attr.set_orientation_along(vids, 1);
+        io::orient_tagged_row(attr, vids, set, F_orientation, r);
     }
 
     // Edge tags, the feature curves of a tet mesh's edge block, as the face tags: selectable by
@@ -215,8 +216,8 @@ void TopoOffsetTetMesh::init_from_image(
         m_edge_tag_bit[id] = int(j);
     }
     if (features != nullptr && features_placed != nullptr) {
-        // The points of an edge block's file, or of input_points, have no tag in a tet mesh
-        // (tagged_mesh_data.hpp), so nothing marks their vertices here: refused, not dropped.
+        // Input points (a tagged mesh's point block): the offset holds no point yet, so they are
+        // refused, not dropped, as run() refuses them before the mesh is built.
         if (!features->points.empty()) {
             log_and_throw_error(
                 "topological_offset does not take feature points ({} given) yet",
@@ -525,7 +526,7 @@ void TopoOffsetTetMesh::hold_curves_and_points()
     const double order2_eps = m_envelope_eps * m_offset_params.order2_envelope_ratio;
     const size_t n_order2 = tag_order2_edges(order2_eps, /*exact=*/true);
 
-    // The feature curves, held as tetwild holds its input_edges (the engine's
+    // The feature curves, held as tetwild holds its curve inputs (the engine's
     // tag_feature_edges()): the edges tiling each input curve tagged with the feature kind, held
     // in the tube around the curve as read, one tube per input; their ends and junctions anchored
     // below. The inputs: every edge tag (bit j, m_feature_edge_names[j], around its curves as

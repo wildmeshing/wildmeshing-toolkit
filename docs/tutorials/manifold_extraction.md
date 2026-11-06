@@ -79,7 +79,7 @@ result, count the edges of the boundary that are not on exactly two triangles:
 --8<-- "docs/examples/python/manifold_extraction.py:check"
 ```
 
-It prints `28 -> 0`, and `0` for the extracted surface.
+It prints `28 -> 0`.
 
 ### In 2D
 
@@ -187,8 +187,8 @@ passed.` (in 2D, `Curve manifoldness check passed.`), or a warning.
 - The repaired mesh: `output` on the command line (default `out`, written as `out.msh`),
   `outputs["mesh"]` in memory. It has the input's tags, the fill tags on the carved cells, and
   diagnostic fields of the offset (`labels`, `offset_tag`, `amips` and others).
-- `outputs["surface"]` in memory: the boundary of the selection after the repair, a triangle mesh
-  in 3D and an edge mesh in 2D, with vertices of its own. On files, `write_surface` writes it.
+- The boundary of the selection after the repair is where the selected tags differ across a face
+  (2D: an edge): the mesh holds it, and no output repeats it. On files, `write_surface` writes it.
 - With `report`, a JSON file with the vertex, edge, face (and in 3D tet) counts before and after,
   and the run time. In memory, the report is the second return value.
 - With `save_vtu`, the mesh as `.vtu` files for ParaView.
