@@ -450,6 +450,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_vertex</b> (
 <tr class="memitem:a1c6ec4f44b939712dafb3e659b1fedd6" id="r_a1c6ec4f44b939712dafb3e659b1fedd6"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a1c6ec4f44b939712dafb3e659b1fedd6">get_order_of_vertex</a> (const size_t vid) const</td></tr>
 <tr class="memdesc:a1c6ec4f44b939712dafb3e659b1fedd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the order of a vertex.  <br /></td></tr>
 <tr class="separator:a1c6ec4f44b939712dafb3e659b1fedd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4883140aeb4ed59fb78f75135eda7dc7" id="r_a4883140aeb4ed59fb78f75135eda7dc7"><td class="memItemLeft" align="right" valign="top">virtual size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a4883140aeb4ed59fb78f75135eda7dc7">substructure_order_of_vertex</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:a4883140aeb4ed59fb78f75135eda7dc7"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vertex order substructure_link_condition consults, overridable so an application can add points the surface does not derive, as TetMesh::substructure_order_of_vertex. The meaning of get_order_of_vertex is untouched.  <br /></td></tr>
+<tr class="separator:a4883140aeb4ed59fb78f75135eda7dc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc3ccbd86a79b382228ef9f33b127b5b" id="r_abc3ccbd86a79b382228ef9f33b127b5b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#abc3ccbd86a79b382228ef9f33b127b5b">substructure_link_condition</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e_tuple) const</td></tr>
 <tr class="memdesc:abc3ccbd86a79b382228ef9f33b127b5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Link condition that also considers substructures.  <br /></td></tr>
 <tr class="separator:abc3ccbd86a79b382228ef9f33b127b5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2237,6 +2240,36 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <p>Implementation based on the pseudo code from the paper: Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes</p>
 <p>The math and the pseudo code in the paper contain errors! The theory itself is correct.</p>
 <p>The link condition must be evaluated for the mesh and all substructures (surfaces, lines, points). If there is a substructure simplex in the star, the simplex is extended with a dummy vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for the link. </p>
+
+</div>
+</div>
+<a id="a4883140aeb4ed59fb78f75135eda7dc7" name="a4883140aeb4ed59fb78f75135eda7dc7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4883140aeb4ed59fb78f75135eda7dc7">&#9670;&#160;</a></span>substructure_order_of_vertex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual size_t wmtk::TriMesh::substructure_order_of_vertex </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The vertex order substructure_link_condition consults, overridable so an application can add points the surface does not derive, as TetMesh::substructure_order_of_vertex. The meaning of get_order_of_vertex is untouched. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a2c03dc0a3cc8bbc7854d8098d55d70c3">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>

@@ -2608,6 +2608,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#curve_history_output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        curve_history_output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#max_expected_iterations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4589,6 +4600,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#curve_history_output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        curve_history_output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#max_expected_iterations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4917,7 +4939,7 @@
 <p>Maximum iterations before stopping.</p>
 <h3 id="preserve_topology"><code>preserve_topology</code><a class="headerlink" href="#preserve_topology" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
-<p>Preserve the topology of the input surface where the phases can. This forces remove_duplicate_eps to merge only exactly coincident vertices, keeps the link condition enabled during the input simplification, and enables the substructure link condition during optimization; when unset, all three are relaxed and the topology may change. Even so, the surface simplification before the insertion may change the topology: the link condition checks connectivity only, and the envelope admits a fold of the surface through itself. The insertion keeps the topology of the surface it receives when that surface does not cross itself, and cuts crossing triangles along their intersection otherwise; that surface is checked once, exactly, and a warning names its crossing pairs of triangles and its degenerate triangles (report: inserted_crossing_pairs, inserted_degenerate_triangles). The optimization after the insertion keeps the topology of the inserted surface. The run reports the Euler characteristics of the input surface, of the tracked surface right after the insertion and of the output surface, and warns when the input's and the output's differ (an error with throw_on_fail).</p>
+<p>Preserve the topology of the input surface where the phases can. This forces remove_duplicate_eps to merge only exactly coincident vertices, keeps the link condition enabled during the input simplification, and enables the substructure link condition during optimization; when unset, all three are relaxed and the topology may change. Even so, the surface simplification before the insertion may change the topology: the link condition checks connectivity only, and the envelope admits a fold of the surface through itself. The insertion keeps the topology of the surface it receives when that surface does not cross itself, and cuts crossing triangles along their intersection otherwise; that surface is checked once, exactly, and a warning names its crossing pairs of triangles and its degenerate triangles (report: inserted_crossing_pairs, inserted_degenerate_triangles). The optimization after the insertion keeps the topology of the inserted surface, and its input points stay points: no collapse merges one with another, or with a curve or the surface it is not on. The run reports the Euler characteristics of the input surface, of the tracked surface right after the insertion and of the output surface, and warns when the input's and the output's differ (an error with throw_on_fail).</p>
 <h3 id="coarsen_pass"><code>coarsen_pass</code><a class="headerlink" href="#coarsen_pass" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Run a final coarsening pass after the optimization has converged. The ordinary collapse judges a candidate on the raw post-collapse geometry -- the worst moment in the operation's life, before smoothing has absorbed any of the damage -- so a collapse that would be fine once its neighbourhood relaxes is never taken, and the converged mesh keeps vertices it does not need. This pass takes the collapse optimistically, re-smooths coarsen_smooth_ring around the merged vertex, and keeps it only if the worst element in the region it touched is no worse than before; every element outside that region is untouched, so 'no worse locally' is exactly 'no worse globally'. Alternates with ordinary smoothing passes, as the main optimization does.</p>
@@ -5019,6 +5041,9 @@
 <h3 id="volume_history_output"><code>volume_history_output</code><a class="headerlink" href="#volume_history_output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>
 <p>With history_output. Also record the tets around every operation that changes the tracked surface, and save them here (see wmtk/history/VolumeHistory.hpp): with the surface history, the tracking component rebuilds a map of the whole volume -- one region, the tracked surface kept on itself -- from the tet mesh the optimization starts from, written as &lt;output&gt;_history_input.msh, to the mesh before the filter, written as &lt;output&gt;_history_output.msh. On the memory route no file is written: any non-empty value records the volume history, the bytes of the file it would be are returned in the report as volume_history (bytes in Python; history::write_history or wm.write_history saves them), and the two meshes as the output meshes history_input and history_output, the rows of the files. It takes several times the room of the surface history. Not with use_legacy_code, nor with coarsen_pass and coarsen_local_smoothing_passes above 0: the coarsening composite smooths a ball of vertices inside one collapse, which the volume history does not see. Empty: no recording.</p>
+<h3 id="curve_history_output"><code>curve_history_output</code><a class="headerlink" href="#curve_history_output" title="Permanent link">&para;</a></h3>
+<p><strong>string</strong> · default <code>""</code></p>
+<p>Record every change to the feature curves -- the tet edges tiling the curve inputs, with the feature points: their ends and junctions, and the point inputs -- from the inputs as read to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it, as from triwild's history_output. Its own file, with or without history_output. The output names a point on its curves by two vertices of &lt;output&gt;_final.msh. The curves are welded by exact position, as the insertion places them, and not simplified: ends of two curves at the same coordinates are one vertex, which the joined curve passes. Recording ends after the filter, as the surface's does, and records the tracked edges of the tets the filter drops as segments no map can follow. Not with use_legacy_code. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as curve_history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording.</p>
 <h3 id="max_expected_iterations"><code>max_expected_iterations</code><a class="headerlink" href="#max_expected_iterations" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>0</code></p>
 <p>Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy. 0 disables the check. This is a regression guard rather than a quality target: an input that normally converges in a handful of iterations and suddenly needs the whole budget means the sizing-refinement trigger stopped firing when it should, which is a silent slowdown that no energy or envelope assertion catches.</p>

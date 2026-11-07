@@ -93,7 +93,7 @@ uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>segment</b> = kNo
 <tr class="separator:ac1581736cfc834f23c18287a7151314a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a477b6c3b1eee5bb81f194296be7c9c79" id="r_a477b6c3b1eee5bb81f194296be7c9c79"><td class="memItemLeft" align="right" valign="top"><a id="a477b6c3b1eee5bb81f194296be7c9c79" name="a477b6c3b1eee5bb81f194296be7c9c79"></a>
 std::array&lt; uint64_t, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>vertices</b> = {{kNoId, kNoId}}</td></tr>
-<tr class="memdesc:a477b6c3b1eee5bb81f194296be7c9c79"><td class="mdescLeft">&#160;</td><td class="mdescRight">Triangle mesh outputs: the output's vertices at the ends of the tracked edge holding it. <br /></td></tr>
+<tr class="memdesc:a477b6c3b1eee5bb81f194296be7c9c79"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mesh outputs: the output's vertices at the ends of the tracked edge holding it. <br /></td></tr>
 <tr class="separator:a477b6c3b1eee5bb81f194296be7c9c79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8eeea3ab758c4caea2fcaa52abd2672" id="r_ae8eeea3ab758c4caea2fcaa52abd2672"><td class="memItemLeft" align="right" valign="top"><a id="ae8eeea3ab758c4caea2fcaa52abd2672" name="ae8eeea3ab758c4caea2fcaa52abd2672"></a>
 Eigen::Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>bary</b> = Eigen::Vector2d::Constant(0.5)</td></tr>
@@ -101,7 +101,7 @@ Eigen::Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>bary</b> =
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A point on an application's output curves. </p>
-<p>An application whose output is the curves themselves would name it by a segment of its output file. One whose tracked curves are edges of a triangle mesh (triwild), which are no element of the file, names it by two vertices of the mesh &ndash; the ends of a tracked edge &ndash; and barycentric coordinates in their order. </p>
+<p>An application whose output is the curves themselves would name it by a segment of its output file. One whose tracked curves are edges of a triangle mesh (triwild) or of a tet mesh (tetwild's and simwild's feature curves), which are no element of the file, names it by two vertices of the mesh &ndash; the ends of a tracked edge &ndash; and barycentric coordinates in their order. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>components/tracking/wmtk/components/tracking/<a class="el" href="tracking_8hpp_source.html">tracking.hpp</a></li>
 </ul>

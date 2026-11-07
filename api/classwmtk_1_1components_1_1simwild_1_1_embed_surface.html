@@ -107,9 +107,9 @@ FacetSources &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>facet_s
 void&#160;</td><td class="memItemRight" valign="bottom"><b>remove_duplicates</b> (const double eps)</td></tr>
 <tr class="memdesc:aa74c124f5249f70b274105df856a699a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Merge vertices that are closer than eps. <br /></td></tr>
 <tr class="separator:aa74c124f5249f70b274105df856a699a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4199651ffda9d78412f2660a7163210b" id="r_a4199651ffda9d78412f2660a7163210b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a4199651ffda9d78412f2660a7163210b">embed_surface</a> (const bool flood_fill=false, const bool <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#acc817f8f6500325879aff94703123805">tag_from_winding_number</a>=true, const bool provenance=false, const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> *features=nullptr)</td></tr>
-<tr class="memdesc:a4199651ffda9d78412f2660a7163210b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the arrangement and tag the resulting cells.  <br /></td></tr>
-<tr class="separator:a4199651ffda9d78412f2660a7163210b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff4bc9981119c567b5e1555e5e9cb2d7" id="r_aff4bc9981119c567b5e1555e5e9cb2d7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aff4bc9981119c567b5e1555e5e9cb2d7">embed_surface</a> (const bool flood_fill=false, const bool <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#af67069859ad1dc224ddc883b3e6aeb3a">tag_from_winding_number</a>=true, const bool provenance=false, const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> *features=nullptr, const std::vector&lt; bool &gt; &amp;is_volume={})</td></tr>
+<tr class="memdesc:aff4bc9981119c567b5e1555e5e9cb2d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the arrangement and tag the resulting cells.  <br /></td></tr>
+<tr class="separator:aff4bc9981119c567b5e1555e5e9cb2d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a247c5b4ea204873b007265da6815f155" id="r_a247c5b4ea204873b007265da6815f155"><td class="memItemLeft" align="right" valign="top"><a id="a247c5b4ea204873b007265da6815f155" name="a247c5b4ea204873b007265da6815f155"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>consolidate</b> ()</td></tr>
 <tr class="memdesc:a247c5b4ea204873b007265da6815f155"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove unreferenced vertices. <br /></td></tr>
@@ -190,10 +190,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>V_surf_from_vector</b
 <tr class="memitem:a0e6a7211f77c22ec6d5298d39c094d76" id="r_a0e6a7211f77c22ec6d5298d39c094d76"><td class="memItemLeft" align="right" valign="top"><a id="a0e6a7211f77c22ec6d5298d39c094d76" name="a0e6a7211f77c22ec6d5298d39c094d76"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>F_surf_from_vector</b> (const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris)</td></tr>
 <tr class="separator:a0e6a7211f77c22ec6d5298d39c094d76"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc817f8f6500325879aff94703123805" id="r_acc817f8f6500325879aff94703123805"><td class="memItemLeft" align="right" valign="top"><a id="acc817f8f6500325879aff94703123805" name="acc817f8f6500325879aff94703123805"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>tag_from_winding_number</b> ()</td></tr>
-<tr class="memdesc:acc817f8f6500325879aff94703123805"><td class="mdescLeft">&#160;</td><td class="mdescRight">One binary tag column per input, set where that input's winding number at a tet barycenter is at least 0.5. Auto-corrects an inside-out input and warns when an input claims nothing, as the 2D <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#ab5db2ce97a066d5eeb9d7e39f4f9b7d1" title="One binary tag column per input, set where that input&#39;s winding number at a face barycenter exceeds 0...">EmbedCurves::tag_from_winding_number</a> does. <br /></td></tr>
-<tr class="separator:acc817f8f6500325879aff94703123805"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af67069859ad1dc224ddc883b3e6aeb3a" id="r_af67069859ad1dc224ddc883b3e6aeb3a"><td class="memItemLeft" align="right" valign="top"><a id="af67069859ad1dc224ddc883b3e6aeb3a" name="af67069859ad1dc224ddc883b3e6aeb3a"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>tag_from_winding_number</b> (const std::vector&lt; bool &gt; &amp;is_volume)</td></tr>
+<tr class="memdesc:af67069859ad1dc224ddc883b3e6aeb3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">One binary tag column per input, set where that input's winding number at a tet barycenter is at least 0.5. Auto-corrects an inside-out input and warns when an input declared a volume (<code>is_volume</code>, as <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aff4bc9981119c567b5e1555e5e9cb2d7" title="Run the arrangement and tag the resulting cells.">embed_surface()</a>) claims nothing, as the 2D <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a288b23f153290879d9a74c6ef424dad8" title="One binary tag column per input, set where that input&#39;s winding number at a face barycenter exceeds 0...">EmbedCurves::tag_from_winding_number</a> does. <br /></td></tr>
+<tr class="separator:af67069859ad1dc224ddc883b3e6aeb3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b585d6f7e94de8fbaaa4b3aa5c7f8db" id="r_a6b585d6f7e94de8fbaaa4b3aa5c7f8db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a6b585d6f7e94de8fbaaa4b3aa5c7f8db">tag_from_provenance</a> ()</td></tr>
 <tr class="memdesc:a6b585d6f7e94de8fbaaa4b3aa5c7f8db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decide the cell tags from the arrangement's surface provenance.  <br /></td></tr>
 <tr class="separator:a6b585d6f7e94de8fbaaa4b3aa5c7f8db"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -364,8 +364,8 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 
 </div>
 </div>
-<a id="a4199651ffda9d78412f2660a7163210b" name="a4199651ffda9d78412f2660a7163210b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4199651ffda9d78412f2660a7163210b">&#9670;&#160;</a></span>embed_surface()</h2>
+<a id="aff4bc9981119c567b5e1555e5e9cb2d7" name="aff4bc9981119c567b5e1555e5e9cb2d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff4bc9981119c567b5e1555e5e9cb2d7">&#9670;&#160;</a></span>embed_surface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -392,7 +392,13 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> *&#160;</td>
-          <td class="paramname"><em>features</em> = <code>nullptr</code>&#160;</td>
+          <td class="paramname"><em>features</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; bool &gt; &amp;&#160;</td>
+          <td class="paramname"><em>is_volume</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -409,6 +415,7 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
     <tr><td class="paramname">tag_from_winding_number</td><td>Decide each cell's tags by evaluating the winding number of every input at its centroid (the default), rather than by propagating them across the arrangement's own surface provenance. See tag_from_provenance. </td></tr>
     <tr><td class="paramname">provenance</td><td>Also record which inputs tile each surface face (<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#ae69e4ed1f9484d98f9573deba19221d9" title="Per row of F_on_surface(): the inputs tiling it. Empty unless embed_surface recorded it.">F_tags_surface()</a>), which the provenance tagging records anyway. </td></tr>
     <tr><td class="paramname">features</td><td>Optional feature curves and points forced into the embedding with the surface; the background box is grown over them. Where they went: <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aeda359093a7b60e792c648d20ad4d71d">features_placed()</a>. </td></tr>
+    <tr><td class="paramname">is_volume</td><td>Per input, whether it is declared a volume, which must enclose a material (see <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#af67069859ad1dc224ddc883b3e6aeb3a" title="One binary tag column per input, set where that input&#39;s winding number at a tet barycenter is at leas...">tag_from_winding_number()</a>); empty: every input is. </td></tr>
   </table>
   </dd>
 </dl>

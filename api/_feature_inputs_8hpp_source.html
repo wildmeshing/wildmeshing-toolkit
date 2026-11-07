@@ -84,61 +84,63 @@ $(document).ready(function() { init_codefold(0); });
 <div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &lt;wmtk/Types.hpp&gt;</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="preprocessor">#include &lt;wmtk/utils/EmbedTriangles.hpp&gt;</span></div>
-<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span> </div>
-<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="preprocessor">#include &lt;array&gt;</span></div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#include &lt;filesystem&gt;</span></div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#include &lt;string&gt;</span></div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span> </div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="keyword">namespace </span>wmtk::io {</div>
-<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="keyword">class </span>ComponentIO;</div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>}</div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span> </div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="keyword">namespace </span>wmtk::utils {</div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span> </div>
-<div class="foldopen" id="foldopen00029" data-start="{" data-end="};">
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html">   29</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1utils_1_1_feature_inputs.html">FeatureInputs</a></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>{</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a2053bdfa5a83ea38c38e12794a0dcfd9">   32</a></span>    std::vector&lt;Vector3d&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a2053bdfa5a83ea38c38e12794a0dcfd9">edge_vertices</a>;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a780a170f8dddea95ee08086bce0a88d9">   34</a></span>    std::vector&lt;std::array&lt;size_t, 2&gt;&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a780a170f8dddea95ee08086bce0a88d9">edges</a>;</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a58e8347bfa8ca6a1e3e406498e7ddeb2">   37</a></span>    std::vector&lt;int&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a58e8347bfa8ca6a1e3e406498e7ddeb2">edge_input</a>;</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a90b9b0019a3d69d74408f52a86f193c6">   40</a></span>    std::vector&lt;Vector3d&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a90b9b0019a3d69d74408f52a86f193c6">points</a>;</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a253f3e10a9b0bb19348d8cf20d237cc3">   44</a></span>    std::vector&lt;int&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a253f3e10a9b0bb19348d8cf20d237cc3">point_input</a>;</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    std::vector&lt;std::string&gt; point_names;</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="keywordtype">bool</span> empty()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a780a170f8dddea95ee08086bce0a88d9">edges</a>.empty() &amp;&amp; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a90b9b0019a3d69d74408f52a86f193c6">points</a>.empty(); }</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="structwmtk_1_1utils_1_1_feature_inputs.html#afea0918d616a04e6461f7c97d2281d78">extend_bbox</a>(Vector3d&amp; lo, Vector3d&amp; hi) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>};</div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="preprocessor">#include &lt;wmtk/io/ReadProvenance.hpp&gt;</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="preprocessor">#include &lt;wmtk/utils/EmbedTriangles.hpp&gt;</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span> </div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span> </div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#include &lt;array&gt;</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#include &lt;filesystem&gt;</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="preprocessor">#include &lt;string&gt;</span></div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span> </div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="keyword">namespace </span>wmtk::io {</div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="keyword">class </span>ComponentIO;</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>}</div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span> </div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="keyword">namespace </span>wmtk::utils {</div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
+<div class="foldopen" id="foldopen00030" data-start="{" data-end="};">
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html">   30</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1utils_1_1_feature_inputs.html">FeatureInputs</a></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>{</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a2053bdfa5a83ea38c38e12794a0dcfd9">   39</a></span>    std::vector&lt;Vector3d&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a2053bdfa5a83ea38c38e12794a0dcfd9">edge_vertices</a>;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a780a170f8dddea95ee08086bce0a88d9">   43</a></span>    std::vector&lt;std::array&lt;size_t, 2&gt;&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a780a170f8dddea95ee08086bce0a88d9">edges</a>;</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a58e8347bfa8ca6a1e3e406498e7ddeb2">   46</a></span>    std::vector&lt;int&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a58e8347bfa8ca6a1e3e406498e7ddeb2">edge_input</a>;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a90b9b0019a3d69d74408f52a86f193c6">   49</a></span>    std::vector&lt;Vector3d&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a90b9b0019a3d69d74408f52a86f193c6">points</a>;</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_feature_inputs.html#a253f3e10a9b0bb19348d8cf20d237cc3">   53</a></span>    std::vector&lt;int&gt; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a253f3e10a9b0bb19348d8cf20d237cc3">point_input</a>;</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    std::vector&lt;std::string&gt; point_names;</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="keywordtype">bool</span> empty()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a780a170f8dddea95ee08086bce0a88d9">edges</a>.empty() &amp;&amp; <a class="code hl_variable" href="structwmtk_1_1utils_1_1_feature_inputs.html#a90b9b0019a3d69d74408f52a86f193c6">points</a>.empty(); }</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="structwmtk_1_1utils_1_1_feature_inputs.html#afea0918d616a04e6461f7c97d2281d78">extend_bbox</a>(Vector3d&amp; lo, Vector3d&amp; hi) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>};</div>
 </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>FeatureInputs read_feature_inputs(</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="keyword">const</span> <a class="code hl_class" href="classwmtk_1_1io_1_1_component_i_o.html">io::ComponentIO</a>&amp; component_io,</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="keyword">const</span> std::filesystem::path&amp; root,</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="keyword">const</span> nlohmann::json&amp; edge_selectors,</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="keyword">const</span> nlohmann::json&amp; point_selectors,</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; edge_names = {},</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; point_names = {});</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>EmbedFeaturesInput embed_features_input(</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; edge_vertices,</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 2&gt;&gt;&amp; edges,</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; points,</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="keyword">const</span> Vector3d&amp; box_min,</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    <span class="keyword">const</span> Vector3d&amp; box_max);</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span> </div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>std::vector&lt;size_t&gt; placed_point_vertices(<span class="keyword">const</span> EmbedFeaturesResult&amp; placed);</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>} <span class="comment">// namespace wmtk::utils</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>FeatureInputs read_feature_inputs(</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="keyword">const</span> <a class="code hl_class" href="classwmtk_1_1io_1_1_component_i_o.html">io::ComponentIO</a>&amp; component_io,</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <span class="keyword">const</span> std::filesystem::path&amp; root,</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keyword">const</span> nlohmann::json&amp; edge_selectors,</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keyword">const</span> nlohmann::json&amp; point_selectors,</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; edge_names = {},</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; point_names = {},</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    io::ReadProvenance* read = <span class="keyword">nullptr</span>);</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>EmbedFeaturesInput embed_features_input(</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; edge_vertices,</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 2&gt;&gt;&amp; edges,</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>    <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; points,</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    <span class="keyword">const</span> Vector3d&amp; box_min,</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    <span class="keyword">const</span> Vector3d&amp; box_max);</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span> </div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>std::vector&lt;size_t&gt; placed_point_vertices(<span class="keyword">const</span> EmbedFeaturesResult&amp; placed);</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span> </div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>} <span class="comment">// namespace wmtk::utils</span></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_component_i_o_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_component_i_o.html">wmtk::io::ComponentIO</a></div><div class="ttdef"><b>Definition</b> ComponentIO.hpp:18</div></div>
-<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html">wmtk::utils::FeatureInputs</a></div><div class="ttdoc">The feature curves and points a 3D application forces into its tetrahedralization (its curve and poin...</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:30</div></div>
-<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a2053bdfa5a83ea38c38e12794a0dcfd9"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a2053bdfa5a83ea38c38e12794a0dcfd9">wmtk::utils::FeatureInputs::edge_vertices</a></div><div class="ttdeci">std::vector&lt; Vector3d &gt; edge_vertices</div><div class="ttdoc">The vertices of every curve input, concatenated in input order.</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:32</div></div>
-<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a253f3e10a9b0bb19348d8cf20d237cc3"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a253f3e10a9b0bb19348d8cf20d237cc3">wmtk::utils::FeatureInputs::point_input</a></div><div class="ttdeci">std::vector&lt; int &gt; point_input</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:44</div></div>
-<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a58e8347bfa8ca6a1e3e406498e7ddeb2"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a58e8347bfa8ca6a1e3e406498e7ddeb2">wmtk::utils::FeatureInputs::edge_input</a></div><div class="ttdeci">std::vector&lt; int &gt; edge_input</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:37</div></div>
-<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a780a170f8dddea95ee08086bce0a88d9"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a780a170f8dddea95ee08086bce0a88d9">wmtk::utils::FeatureInputs::edges</a></div><div class="ttdeci">std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; edges</div><div class="ttdoc">The feature edges, into edge_vertices.</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:34</div></div>
-<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a90b9b0019a3d69d74408f52a86f193c6"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a90b9b0019a3d69d74408f52a86f193c6">wmtk::utils::FeatureInputs::points</a></div><div class="ttdeci">std::vector&lt; Vector3d &gt; points</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:40</div></div>
+<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html">wmtk::utils::FeatureInputs</a></div><div class="ttdoc">The feature curves and points a 3D application forces into its tetrahedralization (its curve and poin...</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:31</div></div>
+<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a2053bdfa5a83ea38c38e12794a0dcfd9"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a2053bdfa5a83ea38c38e12794a0dcfd9">wmtk::utils::FeatureInputs::edge_vertices</a></div><div class="ttdeci">std::vector&lt; Vector3d &gt; edge_vertices</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:39</div></div>
+<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a253f3e10a9b0bb19348d8cf20d237cc3"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a253f3e10a9b0bb19348d8cf20d237cc3">wmtk::utils::FeatureInputs::point_input</a></div><div class="ttdeci">std::vector&lt; int &gt; point_input</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:53</div></div>
+<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a58e8347bfa8ca6a1e3e406498e7ddeb2"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a58e8347bfa8ca6a1e3e406498e7ddeb2">wmtk::utils::FeatureInputs::edge_input</a></div><div class="ttdeci">std::vector&lt; int &gt; edge_input</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:46</div></div>
+<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a780a170f8dddea95ee08086bce0a88d9"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a780a170f8dddea95ee08086bce0a88d9">wmtk::utils::FeatureInputs::edges</a></div><div class="ttdeci">std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; edges</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:43</div></div>
+<div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_a90b9b0019a3d69d74408f52a86f193c6"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#a90b9b0019a3d69d74408f52a86f193c6">wmtk::utils::FeatureInputs::points</a></div><div class="ttdeci">std::vector&lt; Vector3d &gt; points</div><div class="ttdef"><b>Definition</b> FeatureInputs.hpp:49</div></div>
 <div class="ttc" id="astructwmtk_1_1utils_1_1_feature_inputs_html_afea0918d616a04e6461f7c97d2281d78"><div class="ttname"><a href="structwmtk_1_1utils_1_1_feature_inputs.html#afea0918d616a04e6461f7c97d2281d78">wmtk::utils::FeatureInputs::extend_bbox</a></div><div class="ttdeci">void extend_bbox(Vector3d &amp;lo, Vector3d &amp;hi) const</div><div class="ttdef"><b>Definition</b> FeatureInputs.cpp:11</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

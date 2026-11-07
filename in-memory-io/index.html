@@ -3749,6 +3749,11 @@ starts, and tetwild's <code>history_output</code>, the mesh before its filter, w
 ends at <code>mesh</code>). <code>read_history</code> and <code>write_history</code> take a volume history by its header as they
 take the others; <code>history::VolumeHistory::from_bytes</code> loads it and <code>history::is_volume_history</code>
 says that bytes are one.</p>
+<p>tetwild and simwild in 3D record the history of their feature curves (their curve inputs,
+with the point inputs) with <code>curve_history_output</code>, a curve history in a file of its own, with or
+without <code>history_output</code>. The memory route returns it the same way, as <code>curve_history</code> in the
+report, the bytes of its file, and writes no file; <code>history::CurveHistory::from_bytes</code> loads it,
+as triwild's <code>history</code>.</p>
 <p><code>tracking</code> takes the bytes as <code>history</code> on the memory route, where a string is refused, as
 every memory call refuses to take a name for a file. <code>info</code> returns its report, of a surface or
 of a curve history. <code>features</code>, on a curve history, returns its feature points in the report:

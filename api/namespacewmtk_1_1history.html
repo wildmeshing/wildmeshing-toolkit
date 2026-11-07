@@ -217,9 +217,13 @@ template void&#160;</td><td class="memItemRight" valign="bottom"><b>append_embed
 <tr class="memitem:ae5efd2b65c54439e5f3e742b391cea8b" id="r_ae5efd2b65c54439e5f3e742b391cea8b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744d9f1660ae">SurfaceHistory</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#ae5efd2b65c54439e5f3e742b391cea8b">from_input</a> (const <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">io::ReadProvenance</a> &amp;read, const std::vector&lt; Eigen::Vector3d &gt; &amp;welded, const <a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744d9f1660ae">SurfaceHistory</a> &amp;recorded)</td></tr>
 <tr class="memdesc:ae5efd2b65c54439e5f3e742b391cea8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">A surface application's history from its input file as read.  <br /></td></tr>
 <tr class="separator:ae5efd2b65c54439e5f3e742b391cea8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad927e6aa31173d80d8a62ab2ec289df5" id="r_ad927e6aa31173d80d8a62ab2ec289df5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk_1_1history.html#a4ad095464f54e79777e1b2f2e48c0c0f">CurveHistory</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#ad927e6aa31173d80d8a62ab2ec289df5">curves_from_input</a> (const <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">io::ReadProvenance</a> &amp;read, const MatrixXd &amp;V_in, const MatrixXi &amp;E_in, const std::vector&lt; <a class="el" href="structwmtk_1_1history_1_1_edit.html">Edit</a> &gt; &amp;collapses, const MatrixXd &amp;V_out, const MatrixXi &amp;E_out, const std::vector&lt; int &gt; &amp;surviving_vertices)</td></tr>
-<tr class="memdesc:ad927e6aa31173d80d8a62ab2ec289df5"><td class="mdescLeft">&#160;</td><td class="mdescRight">A curve application's history from its input files as read, to the network it inserts.  <br /></td></tr>
-<tr class="separator:ad927e6aa31173d80d8a62ab2ec289df5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63d64f9526dca213e7b14c25e30e74c2" id="r_a63d64f9526dca213e7b14c25e30e74c2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk_1_1history.html#a4ad095464f54e79777e1b2f2e48c0c0f">CurveHistory</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#a63d64f9526dca213e7b14c25e30e74c2">curves_from_input</a> (const <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">io::ReadProvenance</a> &amp;read, const MatrixXd &amp;V_in, const MatrixXi &amp;E_in, const std::vector&lt; <a class="el" href="structwmtk_1_1history_1_1_edit.html">Edit</a> &gt; &amp;collapses, const MatrixXd &amp;V_out, const MatrixXi &amp;E_out, const std::vector&lt; int &gt; &amp;surviving_vertices, bool keep_z=false)</td></tr>
+<tr class="memdesc:a63d64f9526dca213e7b14c25e30e74c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">A curve application's history from its input files as read, to the network it inserts.  <br /></td></tr>
+<tr class="separator:a63d64f9526dca213e7b14c25e30e74c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e5fcd38efb9d87174824c80ca6c73ea" id="r_a0e5fcd38efb9d87174824c80ca6c73ea"><td class="memItemLeft" align="right" valign="top"><a id="a0e5fcd38efb9d87174824c80ca6c73ea" name="a0e5fcd38efb9d87174824c80ca6c73ea"></a>
+<a class="el" href="namespacewmtk_1_1history.html#a4ad095464f54e79777e1b2f2e48c0c0f">CurveHistory</a>&#160;</td><td class="memItemRight" valign="bottom"><b>curves_from_features</b> (const <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">io::ReadProvenance</a> &amp;read, const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> &amp;features)</td></tr>
+<tr class="memdesc:a0e5fcd38efb9d87174824c80ca6c73ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">The curve history of curves inserted as read, tetwild's and simwild's: <a class="el" href="namespacewmtk_1_1history.html#a63d64f9526dca213e7b14c25e30e74c2" title="A curve application&#39;s history from its input files as read, to the network it inserts.">curves_from_input()</a> from <code>read</code>, the inputs as utils::read_feature_inputs() read them, to <code>features</code>, the curves it welded by exact position, and the points, with no simplification. <br /></td></tr>
+<tr class="separator:a0e5fcd38efb9d87174824c80ca6c73ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b65de869f46421f6e985a1634eb8115" id="r_a0b65de869f46421f6e985a1634eb8115"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#a0b65de869f46421f6e985a1634eb8115">is_volume_history</a> (const std::vector&lt; uint8_t &gt; &amp;bytes, const std::string &amp;name)</td></tr>
 <tr class="separator:a0b65de869f46421f6e985a1634eb8115"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ffba17b270c455bf9a8ccccb373030d" id="r_a4ffba17b270c455bf9a8ccccb373030d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1history_1_1_surface_key.html">SurfaceKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1history.html#a4ffba17b270c455bf9a8ccccb373030d">surface_key</a> (const <a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744d9f1660ae">SurfaceHistory</a> &amp;h)</td></tr>
@@ -281,8 +285,8 @@ constexpr uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>kNoVert
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ad927e6aa31173d80d8a62ab2ec289df5" name="ad927e6aa31173d80d8a62ab2ec289df5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad927e6aa31173d80d8a62ab2ec289df5">&#9670;&#160;</a></span>curves_from_input()</h2>
+<a id="a63d64f9526dca213e7b14c25e30e74c2" name="a63d64f9526dca213e7b14c25e30e74c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a63d64f9526dca213e7b14c25e30e74c2">&#9670;&#160;</a></span>curves_from_input()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -327,7 +331,13 @@ constexpr uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>kNoVert
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::vector&lt; int &gt; &amp;&#160;</td>
-          <td class="paramname"><em>surviving_vertices</em>&#160;</td>
+          <td class="paramname"><em>surviving_vertices</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>keep_z</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -342,10 +352,11 @@ constexpr uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>kNoVert
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">read</td><td>the files as read &ndash; the curve files' vertices and segments, then the point files' vertices &ndash; and where each went in V_in, E_in </td></tr>
-    <tr><td class="paramname">V_in,E_in</td><td>the welded network (two or three columns; z is dropped) </td></tr>
+    <tr><td class="paramname">V_in,E_in</td><td>the welded network (two or three columns; z is dropped unless <code>keep_z</code>) </td></tr>
     <tr><td class="paramname">collapses</td><td>utils::simplify_segments' collapses on V_in, E_in; empty if it did not run </td></tr>
     <tr><td class="paramname">V_out,E_out</td><td>the network the simplification left, the one inserted </td></tr>
     <tr><td class="paramname">surviving_vertices</td><td>for each row of V_out, its row of V_in </td></tr>
+    <tr><td class="paramname">keep_z</td><td>the curves are in space (tetwild, simwild), every matrix with three columns; otherwise in the plane z = 0 (triwild) </td></tr>
   </table>
   </dd>
 </dl>

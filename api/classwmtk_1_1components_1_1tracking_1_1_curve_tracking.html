@@ -82,7 +82,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The map between a curve application's input curves and its output's, read from the tracking file the application wrote (its history_output option), in the terms its files use: <a class="el" href="classwmtk_1_1components_1_1tracking_1_1_tracking.html" title="The map between an application&#39;s input and its output, read from the tracking file the application wr...">Tracking</a>'s counterpart for curves (triwild).  
+<p>The map between a curve application's input curves and its output's, read from the tracking file the application wrote (its history_output option; tetwild's and simwild's curve_history_output), in the terms its files use: <a class="el" href="classwmtk_1_1components_1_1tracking_1_1_tracking.html" title="The map between an application&#39;s input and its output, read from the tracking file the application wr...">Tracking</a>'s counterpart for curves (triwild, and tetwild's and simwild's feature curves).  
  <a href="classwmtk_1_1components_1_1tracking_1_1_curve_tracking.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="tracking_8hpp_source.html">tracking.hpp</a>&gt;</code></p>
@@ -134,7 +134,7 @@ std::map&lt; uint64_t, uint64_t &gt;&#160;</td><td class="memItemRight" valign="
 <tr class="separator:a5e716f1813e154e6f925a8ff9359610d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The map between a curve application's input curves and its output's, read from the tracking file the application wrote (its history_output option), in the terms its files use: <a class="el" href="classwmtk_1_1components_1_1tracking_1_1_tracking.html" title="The map between an application&#39;s input and its output, read from the tracking file the application wr...">Tracking</a>'s counterpart for curves (triwild). </p>
+<div class="textblock"><p>The map between a curve application's input curves and its output's, read from the tracking file the application wrote (its history_output option; tetwild's and simwild's curve_history_output), in the terms its files use: <a class="el" href="classwmtk_1_1components_1_1tracking_1_1_tracking.html" title="The map between an application&#39;s input and its output, read from the tracking file the application wr...">Tracking</a>'s counterpart for curves (triwild, and tetwild's and simwild's feature curves). </p>
 <p>Built from the history alone; see <a class="el" href="classwmtk_1_1components_1_1tracking_1_1_curve_map.html" title="The map between the first and the last state of a CurveHistory.">CurveMap</a> for how. A point that cannot be mapped comes back with no segment and no vertices (kNoId), and the warnings of the call count it. Mapping never changes the object: several threads may map through one at once. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="ae1be1e477bd54871ca5bc3fd19fa631d" name="ae1be1e477bd54871ca5bc3fd19fa631d"></a>

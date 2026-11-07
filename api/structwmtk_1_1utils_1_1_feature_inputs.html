@@ -96,13 +96,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>empty</b> () const</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a2053bdfa5a83ea38c38e12794a0dcfd9" id="r_a2053bdfa5a83ea38c38e12794a0dcfd9"><td class="memItemLeft" align="right" valign="top"><a id="a2053bdfa5a83ea38c38e12794a0dcfd9" name="a2053bdfa5a83ea38c38e12794a0dcfd9"></a>
-std::vector&lt; Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edge_vertices</b></td></tr>
-<tr class="memdesc:a2053bdfa5a83ea38c38e12794a0dcfd9"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vertices of every curve input, concatenated in input order. <br /></td></tr>
+<tr class="memitem:a2053bdfa5a83ea38c38e12794a0dcfd9" id="r_a2053bdfa5a83ea38c38e12794a0dcfd9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html#a2053bdfa5a83ea38c38e12794a0dcfd9">edge_vertices</a></td></tr>
 <tr class="separator:a2053bdfa5a83ea38c38e12794a0dcfd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a780a170f8dddea95ee08086bce0a88d9" id="r_a780a170f8dddea95ee08086bce0a88d9"><td class="memItemLeft" align="right" valign="top"><a id="a780a170f8dddea95ee08086bce0a88d9" name="a780a170f8dddea95ee08086bce0a88d9"></a>
-std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edges</b></td></tr>
-<tr class="memdesc:a780a170f8dddea95ee08086bce0a88d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">The feature edges, into edge_vertices. <br /></td></tr>
+<tr class="memitem:a780a170f8dddea95ee08086bce0a88d9" id="r_a780a170f8dddea95ee08086bce0a88d9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html#a780a170f8dddea95ee08086bce0a88d9">edges</a></td></tr>
 <tr class="separator:a780a170f8dddea95ee08086bce0a88d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58e8347bfa8ca6a1e3e406498e7ddeb2" id="r_a58e8347bfa8ca6a1e3e406498e7ddeb2"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html#a58e8347bfa8ca6a1e3e406498e7ddeb2">edge_input</a></td></tr>
 <tr class="separator:a58e8347bfa8ca6a1e3e406498e7ddeb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -160,6 +156,36 @@ std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bott
       </table>
 </div><div class="memdoc">
 <p>Per edge, the curve input it came from (its position among the curve inputs): the edge's input, as an input surface is a tracked face's (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a716605a0df02c615568f104e594efd5a" title="Tag every tet edge tiling an input feature edge (placed, from the insertion) with the feature kind an...">TetOptimizerMesh::tag_feature_edges()</a>). </p>
+
+</div>
+</div>
+<a id="a2053bdfa5a83ea38c38e12794a0dcfd9" name="a2053bdfa5a83ea38c38e12794a0dcfd9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2053bdfa5a83ea38c38e12794a0dcfd9">&#9670;&#160;</a></span>edge_vertices</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;Vector3d&gt; wmtk::utils::FeatureInputs::edge_vertices</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The vertices of every curve input, in input order, welded by exact position: vertices at the same coordinates, bit for bit, in one input or in two, are one, the first of them. So the ends of two curves that touch are one vertex, as the insertion places them, which the joined curve passes through. Until 2026-11 they were concatenated as given, and the input's curves had two components where the output, and the insertion, have one: under preserve_topology with throw_on_fail, tetwild's end-of-run check threw "Feature-curve topology was not preserved" on a run that kept it. </p>
+
+</div>
+</div>
+<a id="a780a170f8dddea95ee08086bce0a88d9" name="a780a170f8dddea95ee08086bce0a88d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a780a170f8dddea95ee08086bce0a88d9">&#9670;&#160;</a></span>edges</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::array&lt;size_t, 2&gt; &gt; wmtk::utils::FeatureInputs::edges</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The feature edges, into edge_vertices. A segment whose ends weld into one is dropped: it tiles nothing, and the insertion refuses it ("forced edge has coincident endpoints"), as it refused a segment between two vertices at one position before the weld. </p>
 
 </div>
 </div>

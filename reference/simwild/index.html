@@ -2739,6 +2739,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#curve_history_output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        curve_history_output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#allow_surface_swap" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4820,6 +4831,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#curve_history_output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        curve_history_output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#allow_surface_swap" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5475,6 +5497,9 @@
 <h3 id="volume_history_output"><code>volume_history_output</code><a class="headerlink" href="#volume_history_output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>
 <p>3D only, with history_output. Also record the tets around every operation that changes the tracked surface, and save them here (see wmtk/history/VolumeHistory.hpp): with the surface history, the tracking component rebuilds a map of the volume, region by region (a region: the tets with the same tags), from the mesh the surface history starts from (&lt;output&gt;_history_input.msh; on the memory route the output mesh history_input) to the output. On the memory route no file is written: any non-empty value records the volume history, and the bytes of the file it would be are returned in the report as volume_history (bytes in Python; history::write_history or wm.write_history saves them). It takes many times the room of the surface history. Empty: no recording.</p>
+<h3 id="curve_history_output"><code>curve_history_output</code><a class="headerlink" href="#curve_history_output" title="Permanent link">&para;</a></h3>
+<p><strong>string</strong> · default <code>""</code></p>
+<p>3D surface inputs only: a .msh input, a tagged mesh and a 2D input refuse it. Record every change to the feature curves -- the tet edges tiling the curve inputs, with the feature points: their ends and junctions, and the point inputs -- from the inputs as read to the output, and save the history here (see wmtk/history), as tetwild's curve_history_output: the tracking component rebuilds the map between the two from it. Its own file, with or without history_output. The output names a point on its curves by two vertices of the output mesh. The curves are welded by exact position, as the insertion places them, and not simplified: ends of two curves at the same coordinates are one vertex, which the joined curve passes. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as curve_history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording.</p>
 <h3 id="allow_surface_swap"><code>allow_surface_swap</code><a class="headerlink" href="#allow_surface_swap" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
 <p>Allow surface edge swapping.</p>

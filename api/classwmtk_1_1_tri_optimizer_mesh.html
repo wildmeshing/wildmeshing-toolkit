@@ -334,6 +334,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (
 <tr class="memitem:a17480dfdb43b5d7bde8e0cb3b68efd93" id="r_a17480dfdb43b5d7bde8e0cb3b68efd93"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a17480dfdb43b5d7bde8e0cb3b68efd93">vertex_is_on_surface</a> (const size_t vid) const override</td></tr>
 <tr class="memdesc:a17480dfdb43b5d7bde8e0cb3b68efd93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a vertex part of the substructure.  <br /></td></tr>
 <tr class="separator:a17480dfdb43b5d7bde8e0cb3b68efd93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c03dc0a3cc8bbc7854d8098d55d70c3" id="r_a2c03dc0a3cc8bbc7854d8098d55d70c3"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a2c03dc0a3cc8bbc7854d8098d55d70c3">substructure_order_of_vertex</a> (const size_t vid) const override</td></tr>
+<tr class="separator:a2c03dc0a3cc8bbc7854d8098d55d70c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81c16b6bbee153e77d3cad21deb0c2a5" id="r_a81c16b6bbee153e77d3cad21deb0c2a5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a81c16b6bbee153e77d3cad21deb0c2a5">edge_is_on_surface</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const override</td></tr>
 <tr class="memdesc:a81c16b6bbee153e77d3cad21deb0c2a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is an edge part of the substructure.  <br /></td></tr>
 <tr class="separator:a81c16b6bbee153e77d3cad21deb0c2a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2529,6 +2531,35 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <p>Every pass grows the storage at its serial points &ndash; between operations when serial, between rounds when parallel (see <a class="el" href="structwmtk_1_1_execute_pass.html">ExecutePass</a>) &ndash; so the optimizer only keeps a small slack instead of the preallocation factor. </p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a961d33e83a1fbba80fa930d4b39b83ae">wmtk::TriMesh</a>.</p>
+
+</div>
+</div>
+<a id="a2c03dc0a3cc8bbc7854d8098d55d70c3" name="a2c03dc0a3cc8bbc7854d8098d55d70c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c03dc0a3cc8bbc7854d8098d55d70c3">&#9670;&#160;</a></span>substructure_order_of_vertex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TriOptimizerMesh::substructure_order_of_vertex </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>For the link condition (preserve_topology): an anchor is a point (order 2), on a curve or not, as in 3D (TetOptimizerMesh::substructure_order_of_vertex()); any other vertex has <a class="el" href="classwmtk_1_1_tri_mesh.html#a1c6ec4f44b939712dafb3e659b1fedd6" title="Get the order of a vertex.">get_order_of_vertex()</a>'s order. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a4883140aeb4ed59fb78f75135eda7dc7">wmtk::TriMesh</a>.</p>
 
 </div>
 </div>

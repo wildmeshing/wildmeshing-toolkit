@@ -147,6 +147,11 @@ std::vector&lt; std::pair&lt; std::array&lt; std::array&lt; double, 3 &gt;, 3 &g
 <tr class="memitem:ac772fda3acb98b82770d6032679684b9" id="r_ac772fda3acb98b82770d6032679684b9"><td class="memItemLeft" align="right" valign="top"><a id="ac772fda3acb98b82770d6032679684b9" name="ac772fda3acb98b82770d6032679684b9"></a>
 <a class="el" href="structwmtk_1_1utils_1_1_embed_features_result.html">utils::EmbedFeaturesResult</a>&#160;</td><td class="memItemRight" valign="bottom"><b>features_placed</b></td></tr>
 <tr class="separator:ac772fda3acb98b82770d6032679684b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24172796db64fffc16fcec9a249a4ea1" id="r_a24172796db64fffc16fcec9a249a4ea1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#a24172796db64fffc16fcec9a249a4ea1">has_curve_input_history</a> = false</td></tr>
+<tr class="separator:a24172796db64fffc16fcec9a249a4ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06aa1b7a11dc141a37627aa09ffb4ad2" id="r_a06aa1b7a11dc141a37627aa09ffb4ad2"><td class="memItemLeft" align="right" valign="top"><a id="a06aa1b7a11dc141a37627aa09ffb4ad2" name="a06aa1b7a11dc141a37627aa09ffb4ad2"></a>
+<a class="el" href="namespacewmtk_1_1history.html#a4ad095464f54e79777e1b2f2e48c0c0f">history::CurveHistory</a>&#160;</td><td class="memItemRight" valign="bottom"><b>curve_input_history</b></td></tr>
+<tr class="separator:a06aa1b7a11dc141a37627aa09ffb4ad2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a752588aeae42f1b7735f12b859c1a6f0" id="r_a752588aeae42f1b7735f12b859c1a6f0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#a752588aeae42f1b7735f12b859c1a6f0">feature_edge_names</a></td></tr>
 <tr class="separator:a752588aeae42f1b7735f12b859c1a6f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a796197666c02aa842ae04cbb4684a243" id="r_a796197666c02aa842ae04cbb4684a243"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#a796197666c02aa842ae04cbb4684a243">input_point_vids</a></td></tr>
@@ -275,6 +280,21 @@ std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bott
       </table>
 </div><div class="memdoc">
 <p>A surface input with curve or point inputs (feature curves and points): them as read, and where the insertion put them, in V_input's numbering. A tagged tet mesh with an edge block: its feature edges, one input edge per edge and tag (edge_input the tag's column), each placed on itself. Empty otherwise. </p>
+
+</div>
+</div>
+<a id="a24172796db64fffc16fcec9a249a4ea1" name="a24172796db64fffc16fcec9a249a4ea1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24172796db64fffc16fcec9a249a4ea1">&#9670;&#160;</a></span>has_curve_input_history</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::InputData::has_curve_input_history = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>A surface input with feature curves to record (curve_history_output): the curve inputs as read (<a class="el" href="namespacewmtk_1_1history.html#a63d64f9526dca213e7b14c25e30e74c2" title="A curve application&#39;s history from its input files as read, to the network it inserts.">history::curves_from_input()</a>), as tetwild records them. Empty otherwise. </p>
 
 </div>
 </div>

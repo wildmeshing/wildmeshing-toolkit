@@ -3148,6 +3148,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#recording-tracked-curves-on-a-tetmesh-tetwild-simwild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording tracked curves on a TetMesh (tetwild, simwild)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#from-the-input-files-the-chain" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3631,6 +3642,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#recording-tracked-curves-on-a-tetmesh-tetwild-simwild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording tracked curves on a TetMesh (tetwild, simwild)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#from-the-input-files-the-chain" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3807,7 +3829,7 @@
 <h1 id="tracking-recording-mapping-extending">Tracking: recording, mapping, extending<a class="headerlink" href="#tracking-recording-mapping-extending" title="Permanent link">&para;</a></h1>
 <p>Notes on the tracking framework added for BijectiveRemesh (arXiv 2605.30744): how it works, how
 to use it, how to bring it to another application, and how to check that it is right, for
-surfaces and for curves (triwild). File paths are relative to the repository root; the memory
+surfaces and for curves (triwild's, and tetwild's and simwild's feature curves). File paths are relative to the repository root; the memory
 interface is in <code>docs/in-memory-io.md</code>.</p>
 <h2 id="what-it-is-for">What it is for<a class="headerlink" href="#what-it-is-for" title="Permanent link">&para;</a></h2>
 <p>An application that remeshes a surface -- or a tet mesh whose tracked faces are a surface --
@@ -3821,7 +3843,9 @@ is a bijection, so is the whole map.</p>
 <p>The same holds one dimension down. triwild tracks curves -- the input's segments, inserted as
 edges of its triangle mesh -- and records every change to them; the map then takes the input
 curves onto the output's tracked edges, and the input's feature points (curve ends, junctions,
-input points) onto the output vertices they became. See <em>Curves</em> below.</p>
+input points) onto the output vertices they became. See <em>Curves</em> below. tetwild and simwild track
+their feature curves (their curve inputs, inserted as edges of the tet mesh) the same way, in a curve
+history of their own: see <em>Recording tracked curves on a TetMesh</em>.</p>
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <p>Turn tracking on with <code>history_output</code> -- the same option in every application that has it:
 <code>isotropic_remeshing</code>, <code>qslim</code>, <code>shortest_edge_collapse</code>, <code>tetwild</code>, <code>simwild</code> (surfaces) and
@@ -3833,7 +3857,8 @@ any non-empty <code>history_output</code> records the history, and the report re
 bytes of the file the file route writes (bytes in Python). <code>history::write_history</code> /
 <code>wm.write_history</code> save them as that file. simwild also returns the mesh its history starts from
 as the output mesh <code>history_input</code>. tetwild and simwild can track the volume around the surface
-too, with <code>volume_history_output</code>: see <em>Volumes</em>.</p>
+too, with <code>volume_history_output</code>: see <em>Volumes</em>; and their feature curves, with
+<code>curve_history_output</code>, a curve history in a file of its own, <code>curve_history</code> in the report.</p>
 <p>Map points with the <code>tracking</code> application of the same <code>wmtk_app</code> binary:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span><span class="nt">"application"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tracking"</span><span class="p">,</span><span class="w"> </span><span class="nt">"history"</span><span class="p">:</span><span class="w"> </span><span class="s2">"out.wmtkhist"</span><span class="p">,</span><span class="w"> </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"map"</span><span class="p">,</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w"> </span><span class="nt">"points"</span><span class="p">:</span><span class="w"> </span><span class="s2">"points.txt"</span><span class="p">,</span><span class="w"> </span><span class="nt">"output_points"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mapped.txt"</span><span class="p">,</span><span class="w"> </span><span class="nt">"direction"</span><span class="p">:</span><span class="w"> </span><span class="s2">"to_output"</span><span class="p">}</span>
@@ -3853,12 +3878,15 @@ too, with <code>volume_history_output</code>: see <em>Volumes</em>.</p>
   the coordinates follow them.</p>
 <p><code>direction</code> is <code>to_output</code> or <code>to_input</code> (the inverse map). A point with no image comes back
 with id <code>-1</code>.</p>
-<p>On curves (triwild) the file says it holds curves, and the points are:
-- on the input: <code>segment b0 b1</code>. <code>segment</code> is a segment of the input curve files, counting from
-  0 over all of them in order -- a polyline <code>l</code> line gives its consecutive vertex pairs -- and
-  <code>b</code> are barycentric coordinates with respect to its ends in file order;
-- on the output: <code>v0 v1 b0 b1</code>, two vertices of the output mesh at the ends of a tracked edge,
-  in either order, the coordinates following them.</p>
+<p>On curves (triwild's <code>history_output</code>, tetwild's and simwild's <code>curve_history_output</code>) the file
+says it holds curves, and the points are:
+- on the input: <code>segment b0 b1</code>. <code>segment</code> is a segment of the curve inputs, counting from 0
+  over all of them in the order of <code>input</code> -- a
+  polyline <code>l</code> line gives its consecutive vertex pairs -- and <code>b</code> are barycentric coordinates
+  with respect to its ends in file order;
+- on the output: <code>v0 v1 b0 b1</code>, two vertices of the output mesh (triwild's triangle mesh, the
+  tet mesh of tetwild and simwild) at the ends of a tracked edge, in either order, the
+  coordinates following them.</p>
 <p><code>"operation": "features"</code> writes the input's feature points to <code>output_points</code>, one
 <code>input_vertex output_vertex</code> per line: a vertex of the input files (the curve files' vertices in
 order, then the point files') and the output vertex it ended at, <code>-1</code> for none; on the memory
@@ -3887,7 +3915,7 @@ or from its file:</p>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">faces</span><span class="p">,</span> <span class="n">bary</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">to_input</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">bary</span><span class="p">)</span>         <span class="c1"># and back</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">ids</span><span class="p">,</span> <span class="n">bary</span><span class="p">,</span> <span class="n">warnings</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">to_output</span><span class="p">(</span><span class="n">faces</span><span class="p">,</span> <span class="n">bary</span><span class="p">,</span> <span class="n">warnings</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># what this call found</span>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">c</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">CurveTracking</span><span class="p">(</span><span class="n">triwild_report</span><span class="p">[</span><span class="s2">"history"</span><span class="p">])</span>   <span class="c1"># or .load(path)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">c</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">CurveTracking</span><span class="p">(</span><span class="n">triwild_report</span><span class="p">[</span><span class="s2">"history"</span><span class="p">])</span>   <span class="c1"># tetwild's: report["curve_history"]; or .load(path)</span>
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">pairs</span><span class="p">,</span> <span class="n">bary</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to_output</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="n">bary</span><span class="p">)</span>   <span class="c1"># int64 (n,), float64 (n, 2) -&gt; (n, 2) vertex pairs</span>
 <a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">c</span><span class="o">.</span><span class="n">feature_points</span><span class="p">()</span>                          <span class="c1"># int64 (p, 2): input vertex, output vertex</span>
 </code></pre></div>
@@ -3914,7 +3942,9 @@ or from its file:</p>
 - <code>components/simwild/wmtk/components/simwild/tests/test_simwild_tracking.cpp</code>
 - <code>components/qslim/wmtk/components/qslim/tests/test_qslim_tracking.cpp</code>
 - <code>components/shortest_edge_collapse/wmtk/components/shortest_edge_collapse/tests/test_sec_tracking.cpp</code>
-- <code>components/triwild/wmtk/components/triwild/tests/test_triwild_tracking.cpp</code> (curves)</p>
+- <code>components/triwild/wmtk/components/triwild/tests/test_triwild_tracking.cpp</code> (curves)
+- tetwild's and simwild's feature curves: <code>test_tetwild_history.cpp</code> (<code>tetwild-curve-history-*</code>)
+  and <code>test_simwild_tracking.cpp</code> (<code>tracking-simwild-curves</code>)</p>
 <p>Each one runs the application with tracking on, maps random input points to the output and
 back, remaps a per-vertex attribute onto the output's vertices, and does the same from the
 command line with a points file.</p>
@@ -4191,6 +4221,79 @@ mesh's, fills <code>output_vertex_ids</code> (the mesh's vertex ids: after the l
 vertex rows of the output mesh, which the file route writes with <code>io::write_mesh</code> and the memory
 route returns), and returns the chain from the input files, which triwild saves with
 <code>ComponentIO::save_history</code>: a file on the file route, <code>report["history"]</code> on the memory route.</p>
+<h2 id="recording-tracked-curves-on-a-tetmesh-tetwild-simwild">Recording tracked curves on a TetMesh (tetwild, simwild)<a class="headerlink" href="#recording-tracked-curves-on-a-tetmesh-tetwild-simwild" title="Permanent link">&para;</a></h2>
+<p>The curve twin of the tracked surface on a TetMesh, and the 3D twin of the TriMesh's curves: the
+same recorder, <code>TrackedCurveRecorder</code>, fed by the same hooks. A tet edge's attribute slot is
+<code>6 * lowest incident tet + local index</code>, which moves whenever its tets change, so the tracked
+curves get ids of their own there too.</p>
+<p><code>TetMesh</code> (<code>src/wmtk/TetMesh.{h,cpp}</code>) calls it, next to the surface's:
+- <strong>Start and stop:</strong> <code>start_curve_history(position)</code>, <code>stop_curve_history()</code>; it records beside
+  a surface history or alone.
+- <strong>Capture and commit:</strong> <code>curve_history_before(vs)</code>, <code>curve_history_commit(kind, v, vs_after)</code>,
+  at the points the surface's are taken. Hooked: <code>split_edge</code> (<code>{v1, v2}</code>, then with the new
+  vertex), <code>collapse_edge</code> (<code>{removed, kept}</code>, then <code>{kept}</code>), the four swaps (the ring's
+  vertices; no swap takes a tracked edge, see below) and <code>smooth_vertex</code>. <code>split_face</code>,
+  <code>split_tet</code> and <code>insert_point</code> have no hooks, and throw while a curve history records, as
+  while a surface history does.
+- <strong>Locking.</strong> The tracked edges at a vertex v are read from v's own tets alone
+  (<code>tracked_edges_around</code>): v's fan is sorted, so the first of its tets to hold an edge at v is
+  the edge's lowest, whose slot holds its attributes, and <code>is_tracked_edge(tid, j)</code> is asked of
+  that tet. <code>Tuple::eid</code> would read the other end's fan, which another thread may be rewriting
+  (<code>substructure_order_of_vertex</code> measured that race: 6 runs in 25 threw at 8 threads).
+- <strong>Renumbering and resyncing.</strong> <code>consolidate_mesh</code> renumbers the recorder;
+  <code>remove_tets_by_ids</code> (the filters) resyncs it.
+- <strong>Virtuals for the application:</strong> <code>is_tracked_edge(tid, j)</code> and <code>tracked_feature_points()</code>.</p>
+<p><code>TetOptimizerMesh</code> fills them in and adds <code>record_curve_history(metadata)</code> and
+<code>finish_curve_history(input)</code>, as <code>TriOptimizerMesh</code> does:
+- <strong>The tracked curves are the edges tagged <code>feature</code></strong>, the input's feature curves, wherever
+  they lie: inside the volume or on the tracked surface. Not the order-2 edges (open boundaries,
+  non-manifold edges): they are edges of tracked faces, which the surface history keeps as curves
+  (<code>SurfaceMap</code> flattens each side of an edge with other than two faces on its own), and their
+  tags are re-derived outside the operations (<code>drop_stale_order2_tags</code>, simwild's retag). The
+  operations keep <code>feature</code> tags by the history's rules: a split halves a tagged edge, a collapse
+  renames the removed end's and merges duplicates, the swaps refuse to remove one, and a 2-3 swap
+  only adds an edge.
+- <strong>The feature points</strong> are the anchored vertices that stand for an end or a junction of the
+  feature curves (1, or 3 and more, edges tagged <code>feature</code>) or for an input point: the vertices
+  the input's feature points became (<code>curves_from_input</code>'s rule on the files). <code>anchor_feature_points</code>
+  marks those anchors (<code>m_curve_feature_point</code>); an anchor of an order-2 curve alone is not one.
+- <strong>Sources</strong> are keyed by position, as the surface's: the mesh is consolidated between the
+  insertion and the recording. <code>set_insertion_curve_sources(placed, position)</code> inverts the
+  insertion's <code>edge_tiling</code> (per input segment, the tet edges tiling it) into, per tet edge by
+  its ends' positions (<code>segment_key</code>), the input segments it tiles; <code>record_curve_history</code> finds
+  every snapshot segment's sources there (<code>m_insertion_curve_sources</code>), and warns about any it
+  does not.
+- <strong><code>finish_curve_history(input)</code></strong> refuses a mesh that is not consolidated, resyncs, checks the
+  feature points against the mesh's, fills <code>output_vertex_ids</code> and returns the chain from the
+  input files, which the application saves with <code>ComponentIO::save_curve_history</code>: a file on the
+  file route, <code>report["curve_history"]</code> on the memory route.</p>
+<p>tetwild records from the inputs as read, after the first consolidation, beside the surface
+history, and finishes after the filter and the last consolidation, as the surface history; its
+tagged route starts at the mesh as received. simwild records a 3D surface input's curves the
+same way; a <code>.msh</code> input, a tagged mesh and a 2D input refuse <code>curve_history_output</code>, having no
+curve inputs to start from.</p>
+<p><strong>preserve_topology and curves off the surface.</strong> The collapse asks the substructure link
+condition only when both ends are on the substructure. Until 2026-11 that gate was
+<code>m_is_on_surface</code>, set only from tracked faces, so no vertex of a feature curve off the surface
+reached the condition, which itself counts feature edges wherever they lie: under
+<code>preserve_topology</code> two interior curves in each other's tubes welded. The gate now also takes a
+vertex with a tagged edge, as 2D takes its curve vertices. On tetwild with a curve 1e-3 off
+another (eps 3.5e-3; the <code>tetwild-curve-history-default-topology</code> scene, 3 iterations, serial),
+under <code>preserve_topology</code>: the link condition refused 0 collapses before and 148 after, the
+feature curves' Euler characteristics went from [1, 1, 1, 1] to [1, 1, 1] before (two curves
+welded into one; with <code>throw_on_fail</code> the run threw "Feature-curve topology was not
+preserved") and stayed [1, 1, 1, 1] after. Without feature curves off the surface nothing
+changes: on <code>tetwild_features.json</code> (one interior chain) 0 refusals and 13609 collapses both
+ways.</p>
+<p><strong>preserve_topology and input points.</strong> The link condition's points are the anchors: an anchor
+is order 3 (<code>TetOptimizerMesh::substructure_order_of_vertex()</code>; 2D: order 2, in
+<code>TriOptimizerMesh</code>), and the gate takes it. So no collapse merges two anchors, or an anchor with
+a curve or the surface it is not on. Until 2026-11 an input point off the curves and the surface
+was not on the substructure, and a collapse merged it into another input point or a curve's end
+in its ball (<code>input-points-stay-apart-under-preserve-topology</code>: 4 anchors left 3; 2D
+<code>free-points-stay-apart-under-preserve-topology</code>). On <code>tetwild_features.json</code> and
+<code>triwild_free_points.json</code> under <code>preserve_topology</code> the condition refused 0 collapses before
+and after, and the outputs are byte-identical.</p>
 <h2 id="from-the-input-files-the-chain">From the input files: the chain<a class="headerlink" href="#from-the-input-files-the-chain" title="Permanent link">&para;</a></h2>
 <p>The tet histories, and isotropic's, start at the input files as read, so that a user's
 triangle id is a triangle of their own file. The stages before the mesh go into one history:
@@ -4236,6 +4339,22 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   - <strong>Insert.</strong> <code>utils::embed_segments</code> already gives each arrangement edge the input segments
     it tiles (<code>E_out_sources</code>). The mesh's vertices are the arrangement's rows, so triwild keys
     them by vertex pair (<code>TriOptimizerMesh::CurveSources</code>); <code>finish_curve_history</code> appends the
+    <code>embed</code>, then the mesh's edits.
+- <strong>tetwild's and simwild's feature curves</strong> (<code>history::curves_from_features</code>, which calls
+  <code>curves_from_input(..., keep_z = true)</code>):
+  - <strong>Read.</strong> <code>utils::read_feature_inputs(..., ReadProvenance*)</code> gives the curve inputs'
+    vertices and segments, concatenated in input order, then the point inputs' vertices,
+    as triwild appends its points, and where each went: the curves are welded by exact position,
+    in one input and across inputs, with no tolerance, as the insertion places them and as the
+    anchors' reference (<code>InputCurves</code>) merges them. The ends of two curves that touch are then one
+    input vertex, which the joined curve passes, as the mesh has it. Until 2026-11 they were two
+    input vertices, two feature points on one output vertex, and the input's curves had a
+    component more than the output's: tetwild's end-of-run check counted a topology change, and
+    under <code>preserve_topology</code> with <code>throw_on_fail</code> threw. The insertion is unchanged by the weld:
+    the same vertices, bit for bit, as <code>insertion-of-welded-curves-is-the-same</code> checks.
+  - <strong>No simplification.</strong> The history goes from the weld to the insertion's <code>embed</code>.
+  - <strong>Insert.</strong> The insertion's <code>edge_tiling</code>, inverted and keyed by position
+    (<code>TetOptimizerMesh::set_insertion_curve_sources</code>); <code>finish_curve_history</code> appends the
     <code>embed</code>, then the mesh's edits.</p>
 <table>
 <thead>
@@ -4276,6 +4395,18 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 <td>the input curve files (and point files) as read</td>
 <td>the tracked edges of <code>&lt;output&gt;.msh</code> (after any filter)</td>
 <td>two mesh vertex ids + barycentrics</td>
+</tr>
+<tr>
+<td><code>tetwild</code>, <code>curve_history_output</code></td>
+<td>the curve inputs (and point inputs) as read; a tagged mesh input: its feature curves as received</td>
+<td>the edges tagged <code>feature</code> of <code>&lt;output&gt;_final.msh</code> (after any filter)</td>
+<td>two tet vertex ids + barycentrics</td>
+</tr>
+<tr>
+<td><code>simwild</code>, surface input, <code>curve_history_output</code></td>
+<td>the curve inputs (and point inputs) as read</td>
+<td>the edges tagged <code>feature</code> of <code>&lt;output&gt;.msh</code></td>
+<td>two tet vertex ids + barycentrics</td>
 </tr>
 </tbody>
 </table>
@@ -4600,6 +4731,11 @@ the one it ends at.</p>
 <li>For an insertion stage: collect per-facet sources keyed by position
    (<code>m_insertion_sources</code>), and finish with the input history
    (<code>finish_surface_history(&amp;input)</code>).</li>
+<li>For feature curves, the same one dimension down: <code>record_curve_history</code> once the edges are
+   tagged and consolidated, <code>set_insertion_curve_sources</code> from the insertion's tiling, and
+   <code>finish_curve_history(&amp;input)</code> after the last consolidation, with the input from
+   <code>curves_from_input(..., keep_z = true)</code>; save it with <code>ComponentIO::save_curve_history</code>
+   under its own key, <code>curve_history_output</code>.</li>
 </ol>
 <h3 id="what-breaks-bijectivity-on-curves">What breaks bijectivity on curves<a class="headerlink" href="#what-breaks-bijectivity-on-curves" title="Permanent link">&para;</a></h3>
 <ul>
@@ -4929,7 +5065,11 @@ iteration counts, and other load moves them too. Compare instruction counts.</p>
 </tr>
 <tr>
 <td>TetMesh hooks</td>
-<td><code>src/wmtk/TetMesh.{h,cpp}</code>, <code>TetMeshEdgeSplittingConn.cpp</code>, <code>TetMeshEdgeCollapsingConn.cpp</code>, <code>TetMeshSwapMeshConnectivity.cpp</code></td>
+<td><code>src/wmtk/TetMesh.{h,cpp}</code>, <code>TetMeshEdgeSplittingConn.cpp</code>, <code>TetMeshEdgeCollapsingConn.cpp</code>, <code>TetMeshSwapMeshConnectivity.cpp</code> (<code>start_surface_history</code>; <code>start_curve_history</code>, <code>curve_history_commit</code>)</td>
+</tr>
+<tr>
+<td>TetOptimizerMesh side (curves)</td>
+<td><code>src/wmtk/TetOptimizerMesh.{h,cpp}</code> (<code>record_curve_history</code>, <code>set_insertion_curve_sources</code>); 3D curve read provenance <code>src/wmtk/utils/FeatureInputs.{hpp,cpp}</code></td>
 </tr>
 <tr>
 <td>TetOptimizerMesh side, fold check</td>
@@ -4977,7 +5117,7 @@ iteration counts, and other load moves them too. Compare instruction counts.</p>
 </tr>
 <tr>
 <td>tests</td>
-<td><code>tests/test_history.cpp</code>; <code>test_surface_map.cpp</code>, <code>test_curve_map.cpp</code>, <code>test_tracking.cpp</code>, <code>test_volume_map.cpp</code>, <code>test_volume_ops.cpp</code>; <code>test_remeshing_history.cpp</code>; <code>test_tetwild_history.cpp</code>, <code>test_tetwild_tracking.cpp</code>; <code>test_simwild_history.cpp</code>, <code>test_simwild_tracking.cpp</code>; <code>test_triwild_tracking.cpp</code></td>
+<td><code>tests/test_history.cpp</code>; <code>test_surface_map.cpp</code>, <code>test_curve_map.cpp</code>, <code>test_tracking.cpp</code>, <code>test_volume_map.cpp</code>, <code>test_volume_ops.cpp</code>; <code>test_remeshing_history.cpp</code>; <code>test_tetwild_history.cpp</code>, <code>test_tetwild_tracking.cpp</code>; <code>test_simwild_history.cpp</code>, <code>test_simwild_tracking.cpp</code>; <code>test_triwild_tracking.cpp</code>; curves on a TetMesh: <code>tests/test_tracked_curves.cpp</code>, tetwild's <code>test_feature_tags.cpp</code></td>
 </tr>
 </tbody>
 </table>
