@@ -60,13 +60,13 @@ std::optional<double> sphere_trace(
     double tol,
     bool from_below);
 
-/// The region i among `regions` whose BVH (bvhs[i]) is nearest p; the first in `regions` on a
-/// tie.
-size_t nearest_region(
+/// `regions` by the distance from p to their BVHs (region i's is bvhs[i]), nearest first; those at
+/// the same distance stay in their order in `regions`.
+std::vector<size_t> regions_by_distance(
     const std::vector<SimpleBVH::BVH>& bvhs,
     const Vector2d& p,
     const std::vector<size_t>& regions);
-size_t nearest_region(
+std::vector<size_t> regions_by_distance(
     const std::vector<SimpleBVH::BVH>& bvhs,
     const Vector3d& p,
     const std::vector<size_t>& regions);
@@ -82,8 +82,9 @@ void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& tri
 /// What topology_fill needs of the mesh, by cell id (faces in 2D, tets in 3D).
 struct TopologyFillMesh
 {
-    /// The nearest of `regions`, indices into the tags, to the cell's centroid.
-    std::function<size_t(size_t cell, const std::vector<size_t>& regions)> nearest_region;
+    /// `regions`, indices into the tags, by the distance from the cell's centroid, nearest first.
+    std::function<std::vector<size_t>(size_t cell, const std::vector<size_t>& regions)>
+        regions_by_distance;
     /// Whether adding the cell to the region keeps the region's topology
     /// (wmtk/utils/ConsistentTopology.hpp).
     std::function<bool(size_t cell, const std::function<bool(size_t)>& in_region)>
@@ -100,15 +101,18 @@ struct TopologyFillMesh
  * of those regions, a breadth-first search grows the region's tag over the cells that got it: a
  * cell joins if it passes the topology test against the tag's cells, and a cell refused is asked
  * again when a neighbour joins (only that can change the answer: more of the region around the
- * cell without another shared facet leaves it refused). Until labelled, a cell of a component
- * counts as in no region, whatever tags it came with; labelling it replaces its tags of the
- * component's regions, as the Voronoi fill does.
+ * cell without another shared facet leaves it refused). The cells still refused wait until every
+ * region has been tried. Each then takes the nearest of the component's regions that passes the
+ * test, so the second nearest if the nearest still refuses it, and so on; and they are gone over
+ * until a pass labels none, since a cell may pass only once a neighbour has been labelled. Until
+ * labelled, a cell of a component counts as in no region, whatever tags it came with; labelling it
+ * replaces its tags of the component's regions, as the Voronoi fill does.
  *
  * components_regions[c] holds the regions of components[c], as indices into `tags`. filled[cell]
  * is set for each cell labelled. after_component is called after each component.
  *
- * Throws, after trying every component, if a cell fails the test with its nearest region; the
- * warnings before it name the components and tags.
+ * Throws, after trying every component, if a cell fails the test with all of its component's
+ * regions; the warnings before it name the components.
  */
 void topology_fill(
     const std::vector<ConnectedComponent>& components,

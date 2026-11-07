@@ -96,21 +96,25 @@ std::optional<double> sphere_trace_impl(
 }
 
 template <typename Vec>
-size_t nearest_region_impl(
+std::vector<size_t> regions_by_distance_impl(
     const std::vector<SimpleBVH::BVH>& bvhs,
     const Vec& p,
     const std::vector<size_t>& regions)
 {
-    size_t best = 0;
-    double best_d = std::numeric_limits<double>::infinity();
+    std::vector<std::pair<double, size_t>> ranked;
+    ranked.reserve(regions.size());
     for (const size_t i : regions) {
-        const double d = bvh_distance(bvhs[i], p);
-        if (d < best_d) {
-            best = i;
-            best_d = d;
-        }
+        ranked.emplace_back(bvh_distance(bvhs[i], p), i);
     }
-    return best;
+    std::stable_sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+    std::vector<size_t> out;
+    out.reserve(ranked.size());
+    for (const auto& r : ranked) {
+        out.push_back(r.second);
+    }
+    return out;
 }
 
 } // namespace
@@ -139,20 +143,20 @@ std::optional<double> sphere_trace(
     return sphere_trace_impl(f, a, dir, L, level, tol, from_below);
 }
 
-size_t nearest_region(
+std::vector<size_t> regions_by_distance(
     const std::vector<SimpleBVH::BVH>& bvhs,
     const Vector2d& p,
     const std::vector<size_t>& regions)
 {
-    return nearest_region_impl(bvhs, p, regions);
+    return regions_by_distance_impl(bvhs, p, regions);
 }
 
-size_t nearest_region(
+std::vector<size_t> regions_by_distance(
     const std::vector<SimpleBVH::BVH>& bvhs,
     const Vector3d& p,
     const std::vector<size_t>& regions)
 {
-    return nearest_region_impl(bvhs, p, regions);
+    return regions_by_distance_impl(bvhs, p, regions);
 }
 
 void topology_fill(
@@ -173,19 +177,34 @@ void topology_fill(
     }
 
     size_t n_left = 0;
-    size_t n_left_reached = 0; // of them, sharing a facet with their tag's cells
+    size_t n_farther = 0; // cells labelled with other than their nearest region
     for (size_t c = 0; c < components.size(); ++c) {
         const std::vector<size_t>& regions = components_regions[c];
+        const auto in_region = [&](const int64_t tag) {
+            return std::function<bool(size_t)>([&pending, &mesh, tag](const size_t cell) {
+                return !pending[cell] && mesh.tags(cell).count(tag) > 0;
+            });
+        };
+        const auto label = [&](const size_t cell, const int64_t tag) {
+            CellTag& cell_tags = mesh.tags(cell);
+            for (const size_t j : regions) {
+                cell_tags.erase(tags[j]);
+            }
+            cell_tags.insert(tag);
+            pending[cell] = 0;
+            filled[cell] = 1;
+        };
+
         std::map<size_t, std::vector<size_t>> cells_of_region;
         for (const size_t cell : components[c].cells) {
-            cells_of_region[mesh.nearest_region(cell, regions)].push_back(cell);
+            cells_of_region[mesh.regions_by_distance(cell, regions).front()].push_back(cell);
         }
 
+        // Each region grows over the cells nearest it; those it cannot add wait in `refused`.
+        std::vector<size_t> refused;
         for (const auto& [i, cells] : cells_of_region) {
             const int64_t tag = tags[i];
-            const std::function<bool(size_t)> in_region = [&](const size_t cell) {
-                return !pending[cell] && mesh.tags(cell).count(tag) > 0;
-            };
+            const std::function<bool(size_t)> in_tag = in_region(tag);
             std::unordered_set<size_t> left(cells.begin(), cells.end());
             std::unordered_set<size_t> queued(cells.begin(), cells.end());
             std::deque<size_t> queue(cells.begin(), cells.end());
@@ -193,16 +212,10 @@ void topology_fill(
                 const size_t cell = queue.front();
                 queue.pop_front();
                 queued.erase(cell);
-                if (!mesh.consistent_topology(cell, in_region)) {
+                if (!mesh.consistent_topology(cell, in_tag)) {
                     continue;
                 }
-                CellTag& cell_tags = mesh.tags(cell);
-                for (const size_t j : regions) {
-                    cell_tags.erase(tags[j]);
-                }
-                cell_tags.insert(tag);
-                pending[cell] = 0;
-                filled[cell] = 1;
+                label(cell, tag);
                 left.erase(cell);
                 for (const size_t nbr : mesh.neighbours(cell)) {
                     if (left.count(nbr) > 0 && queued.insert(nbr).second) {
@@ -210,26 +223,45 @@ void topology_fill(
                     }
                 }
             }
-
-            if (!left.empty()) {
-                size_t n_reached = 0;
-                for (const size_t cell : left) {
-                    const std::vector<size_t> nbrs = mesh.neighbours(cell);
-                    n_reached += std::any_of(nbrs.begin(), nbrs.end(), in_region);
+            for (const size_t cell : cells) {
+                if (left.count(cell) > 0) {
+                    refused.push_back(cell);
                 }
-                logger().warn(
-                    "tight_seal_geom: fill of component {} ({} cells): {} of the {} cells nearest "
-                    "tag {} are left: {} share a facet with it, {} do not",
-                    c,
-                    components[c].cells.size(),
-                    left.size(),
-                    cells.size(),
-                    tag,
-                    n_reached,
-                    left.size() - n_reached);
-                n_left += left.size();
-                n_left_reached += n_reached;
             }
+        }
+
+        // With every region tried, each refused cell takes the nearest region that passes the
+        // test. Its own nearest may pass by now, and a cell may pass only once a neighbour has
+        // been labelled, so the cells are gone over until a pass labels none.
+        bool labelled = !refused.empty();
+        while (labelled) {
+            labelled = false;
+            std::vector<size_t> still_refused;
+            for (const size_t cell : refused) {
+                const std::vector<size_t> ranked = mesh.regions_by_distance(cell, regions);
+                const auto passes = std::find_if(ranked.begin(), ranked.end(), [&](const size_t i) {
+                    return mesh.consistent_topology(cell, in_region(tags[i]));
+                });
+                if (passes == ranked.end()) {
+                    still_refused.push_back(cell);
+                    continue;
+                }
+                label(cell, tags[*passes]);
+                n_farther += passes != ranked.begin();
+                labelled = true;
+            }
+            refused = std::move(still_refused);
+        }
+
+        if (!refused.empty()) {
+            logger().warn(
+                "tight_seal_geom: fill of component {} ({} cells): {} cells are left, passing the "
+                "topology test with none of its {} tags",
+                c,
+                components[c].cells.size(),
+                refused.size(),
+                regions.size());
+            n_left += refused.size();
         }
         after_component();
     }
@@ -237,18 +269,16 @@ void topology_fill(
     if (n_left > 0) {
         log_and_throw_error(
             "tight_seal_geom: the fill left {} of the {} cells of the join regions unlabelled: "
-            "each fails the topology test with its nearest tag. {} share a facet with that tag, "
-            "{} do not",
+            "each fails the topology test with every tag its part borders",
             n_left,
-            n_cells,
-            n_left_reached,
-            n_left - n_left_reached);
+            n_cells);
     }
     logger().info(
-        "tight_seal_geom: fill of {} components: {} cells labelled, each with its nearest tag, "
-        "every tag's topology kept",
+        "tight_seal_geom: fill of {} components: {} cells labelled, {} of them with other than "
+        "their nearest tag, every tag's topology kept",
         components.size(),
-        n_cells);
+        n_cells,
+        n_farther);
 }
 
 void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& triangles)
@@ -454,12 +484,12 @@ void SimWildMeshTri::tight_seal_topology_fill(
     std::vector<char>& filled)
 {
     tight_seal::TopologyFillMesh view;
-    view.nearest_region = [&](const size_t fid, const std::vector<size_t>& regions) {
+    view.regions_by_distance = [&](const size_t fid, const std::vector<size_t>& regions) {
         Vector2d centroid = Vector2d::Zero();
         for (const size_t v : oriented_tri_vids(fid)) {
             centroid += m_vertex_attribute[v].m_posf / 3.;
         }
-        return tight_seal::nearest_region(region_bvhs, centroid, regions);
+        return tight_seal::regions_by_distance(region_bvhs, centroid, regions);
     };
     view.consistent_topology = [&](const size_t fid, const std::function<bool(size_t)>& in_region) {
         return wmtk::utils::tri_consistent_topology(*this, fid, in_region);
@@ -820,12 +850,12 @@ void SimWildMesh::tight_seal_topology_fill(
     std::vector<char>& filled)
 {
     tight_seal::TopologyFillMesh view;
-    view.nearest_region = [&](const size_t tid, const std::vector<size_t>& regions) {
+    view.regions_by_distance = [&](const size_t tid, const std::vector<size_t>& regions) {
         Vector3d centroid = Vector3d::Zero();
         for (const size_t v : oriented_tet_vids(tid)) {
             centroid += m_vertex_attribute[v].m_posf / 4.;
         }
-        return tight_seal::nearest_region(region_bvhs, centroid, regions);
+        return tight_seal::regions_by_distance(region_bvhs, centroid, regions);
     };
     view.consistent_topology = [&](const size_t tid, const std::function<bool(size_t)>& in_region) {
         return wmtk::utils::tet_consistent_topology(*this, tid, in_region);

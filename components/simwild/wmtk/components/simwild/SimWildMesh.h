@@ -624,7 +624,9 @@ public:
      * number of `tags` from two up, any `min_regions` from two up, and a component may border any
      * number of regions. Its tets are not split: each takes the nearest of the regions the
      * component borders, and each region grows over those that took it, as long as that keeps
-     * its topology (tight_seal::topology_fill). A tet left out throws.
+     * its topology (tight_seal::topology_fill). A tet no region added takes the nearest region
+     * that passes the same test, so the second nearest if the nearest refuses it, and so on. If
+     * no region does, the operation throws.
      *
      * `sanity`: afterwards, throw if a tet is inverted, a filled tet carries other than one
      * region's tag, or a part of the filled tets borders fewer than two regions (a concave
