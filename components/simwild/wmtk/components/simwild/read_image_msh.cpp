@@ -211,8 +211,6 @@ InputData read_mesh(
                 input_paths.size());
         for (size_t i = 0; i < input_type.size(); ++i) is_volume[i] = input_type[i] == "volume";
     }
-    if (std::count(input_type.begin(), input_type.end(), "curve"))
-        log_and_throw_error("Curve inputs (input_type curve) are 2D only");
     const bool has_surface = std::count(is_volume.begin(), is_volume.end(), false) > 0;
     if (has_surface && split_connected_components)
         log_and_throw_error(
@@ -314,10 +312,6 @@ InputData read_mesh(
     if (features != nullptr && !features->empty()) {
         input_data.features = *features;
         input_data.features_placed = image_mesh.features_placed();
-        // One per input_edges file, as tetwild names them in its output.
-        for (size_t i = 0; i < json_params["input_edges"].size(); ++i) {
-            input_data.feature_edge_names.push_back(utils::feature_input_name(i));
-        }
     }
 
     if (debug_output) {
@@ -383,6 +377,9 @@ InputData read_mesh(
                 }
         input_data.F_tagged.resize(rows.size(), 3);
         input_data.F_tags.resize(rows.size(), input_data.face_tag_names.size());
+        // With WMTK_PER_INPUT_ORIENTATION each surface input's own direction too, along the row.
+        if (SurfaceTagAttributes::per_input_orientation)
+            input_data.F_orientation.resize(rows.size(), input_data.face_tag_names.size());
         // A face points as its surface inputs do: the sum of their directions on it, opposite
         // coincident sheets cancelling (SurfaceTagAttributes::m_orientation). The remesher's
         // vertex order carries none; a face whose sum is 0 keeps it, as the writer does.
@@ -397,6 +394,13 @@ InputData read_mesh(
                 sum += facing[rows[k]][j];
             }
             if (sum < 0) std::swap(input_data.F_tagged(k, 1), input_data.F_tagged(k, 2));
+            if (!SurfaceTagAttributes::per_input_orientation) continue;
+            for (size_t j = 0; j < tiles[rows[k]].size(); ++j) {
+                const size_t in = tiles[rows[k]][j];
+                if (surface_column[in] < 0 || facing[rows[k]][j] == 0) continue;
+                input_data.F_orientation.coeffRef(k, surface_column[in]) =
+                    sum < 0 ? -facing[rows[k]][j] : facing[rows[k]][j];
+            }
         }
     }
 
@@ -429,8 +433,6 @@ InputData read_curves(
 {
     // Which inputs enclose a region (triangle tags) and which stay curves (edge tags).
     const std::vector<std::string> input_type = json_params["input_type"];
-    if (std::count(input_type.begin(), input_type.end(), "surface"))
-        log_and_throw_error("Surface inputs (input_type surface) are 3D only");
     std::vector<bool> is_curve(input_paths.size(), false);
     if (!input_type.empty()) {
         if (input_type.size() != input_paths.size())
@@ -625,7 +627,12 @@ int resolve_input_dimension(
         };
         const bool tagged =
             tets || (triangles && has_regions(data.cell(CellType::Triangle).attributes));
-        const int topology = tets || (triangles && !tagged) ? 3 : 2;
+        // Untagged, a surface among the inputs makes the run 3D (io::ComponentIO::input_kind()).
+        bool surface = false;
+        for (const std::string& path : input_paths)
+            surface =
+                surface || component_io->input_kind(path) == io::ComponentIO::InputKind::surface;
+        const int topology = tets || (surface && !tagged) ? 3 : 2;
         const std::string d = json_params.value("dimension", std::string("auto"));
         if (d != "auto") {
             const int forced = std::stoi(d);
@@ -641,7 +648,7 @@ int resolve_input_dimension(
                     topology,
                     tets        ? "tagged tetrahedra"
                     : tagged    ? "tagged triangles"
-                    : triangles ? "a triangle surface"
+                    : triangles ? "triangle surfaces"
                                 : "curves");
             }
         }
@@ -655,33 +662,17 @@ int resolve_input_dimension(
     int sniffed = 0;
     if (extension == ".msh") {
         sniffed = 0; // let the msh reader decide
-    } else if (extension == ".obj") {
-        // A curve network and a surface are both OBJ, so the extension cannot separate them.
-        // 'f' records mean a surface; 'l' records with no 'f' mean a curve network.
-        bool has_f = false, has_l = false;
-        std::ifstream in(input_paths[0]);
-        if (!in) {
-            log_and_throw_error("Could not open input file {}", input_paths[0]);
-        }
-        std::string line;
-        while (std::getline(in, line)) {
-            if (line.size() < 2 || line[1] != ' ') {
-                continue;
-            }
-            if (line[0] == 'f') {
-                has_f = true;
-                break; // a surface: no need to read further
-            }
-            if (line[0] == 'l') {
-                has_l = true;
-            }
-        }
-        sniffed = has_f ? 3 : (has_l ? 2 : 3);
     } else {
-        logger().warn(
-            "Cannot determine dimension from file with extension {}. Assuming 3D surface.",
-            extension);
-        sniffed = 3;
+        // A curve network and a surface are both OBJ, so the extension cannot separate them: each
+        // input's records do (io::ComponentIO::file_input_kind()). A surface among the inputs
+        // makes the run 3D, else curves make it 2D; points alone go with either.
+        bool surface = false, curve = false;
+        for (const std::string& path : input_paths) {
+            const auto kind = io::ComponentIO::file_input_kind(path);
+            surface = surface || kind == io::ComponentIO::InputKind::surface;
+            curve = curve || kind == io::ComponentIO::InputKind::curve;
+        }
+        sniffed = surface || !curve ? 3 : 2;
     }
 
     const std::string d = json_params.value("dimension", std::string("auto"));
@@ -700,12 +691,12 @@ int resolve_input_dimension(
         // Disagree loudly rather than proceeding: without the sniff, a curve network read as
         // a surface surfaces much later as an empty-face assertion inside EmbedSurface.
         log_and_throw_error(
-            "dimension is set to {} but {} looks like a {}D input ({}). Remove the dimension "
-            "key to accept the detected one.",
+            "dimension is set to {} but the inputs look like a {}D input ({}). Remove the "
+            "dimension key to accept the detected one.",
             forced,
-            input_paths[0],
             sniffed,
-            sniffed == 2 ? "OBJ with 'l' polylines and no 'f' faces" : "OBJ with 'f' faces");
+            sniffed == 2 ? "OBJ curves ('l' polylines) and no surface"
+                         : "a surface (OBJ 'f' faces, or another format) among them");
     }
     logger().info("dimension: {} (forced)", forced);
     return forced;
@@ -725,13 +716,14 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         io::ComponentIO::dropped_fields(mesh.vertex_attributes, {"vid", "corr_input_vid"});
     // The lower-dimensional blocks allowed next to the top cells: in a tet mesh, triangles,
     // which are tagged faces, and edges, which are tagged feature curves; in a triangle mesh,
-    // edges, which are tagged curves. Rows labelled EnvelopeSurface are the envelope instead
-    // (lower_tags below).
+    // edges, which are tagged curves; in both, points, which are input points. Rows labelled
+    // EnvelopeSurface are the envelope instead (lower_tags below).
     const auto lower_type = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
     for (const auto& [t, c] : mesh.cells) {
-        if (t != type && t != lower_type && !(type == CellType::Tetrahedron && t == CellType::Edge))
+        if (t != type && t != lower_type && t != CellType::Point &&
+            !(type == CellType::Tetrahedron && t == CellType::Edge))
             throw std::runtime_error("Incompatible tagged mesh topology");
-        dropped.merge(io::ComponentIO::dropped_fields(c.attributes, {"tags"}));
+        dropped.merge(io::ComponentIO::dropped_fields(c.attributes, io::tag_fields()));
     }
     io::ComponentIO::log_dropped("tagged mesh", dropped);
     const auto lower = mesh.cells.find(lower_type);
@@ -867,12 +859,18 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         out.envelope_name = "EnvelopeSurface";
     };
     // The tagged rows of a lower block on V_input's rows, in the block's vertex order, which is
-    // their orientation, each with its tags' columns.
+    // their orientation, each with its tags' columns -- and with WMTK_PER_INPUT_ORIENTATION, where
+    // the block has an `orientation`, each tag's count along the row (io::read_orientation()).
     const auto place_tagged = [&](const CellData& cells,
                                   const LowerTags& lt,
                                   MatrixXi& C,
                                   MatrixSi& C_tags,
-                                  const std::string& what) {
+                                  const std::string& what,
+                                  MatrixSi* C_orientation = nullptr) {
+        const DataMatrix<int64_t> counts =
+            C_orientation ? io::read_orientation(cells, "tagged mesh") : DataMatrix<int64_t>();
+        if (C_orientation && counts.rows() > 0)
+            C_orientation->resize(lt.tagged_rows.size(), lt.columns.size());
         C.resize(lt.tagged_rows.size(), cells.connectivity.cols());
         C_tags.resize(lt.tagged_rows.size(), lt.columns.size());
         for (size_t k = 0; k < lt.tagged_rows.size(); ++k) {
@@ -886,6 +884,10 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
             }
             for (size_t j = 0; j < lt.columns.size(); ++j)
                 if (lt.member(lt.tagged_rows[k], lt.columns[j])) C_tags.coeffRef(k, j) = 1;
+            if (counts.rows() == 0) continue;
+            for (size_t j = 0; j < lt.columns.size(); ++j)
+                if (const int64_t c = counts(lt.tagged_rows[k], lt.columns[j]); c != 0)
+                    C_orientation->coeffRef(k, j) = int(c);
         }
     };
     if (has_lower && type == CellType::Tetrahedron) {
@@ -898,12 +900,12 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
                 throw std::runtime_error("Tag " + name + " names both tets and faces");
         out.face_tag_names = ft.names;
         if (!ft.envelope_rows.empty()) envelope_from(faces, ft.envelope_rows);
-        place_tagged(faces, ft, out.F_tagged, out.F_tags, "face");
+        place_tagged(faces, ft, out.F_tagged, out.F_tags, "face", &out.F_orientation);
     }
     if (has_curves) {
         // The edge block of a tet mesh: the feature curves, each label one feature input, bit j
         // of an edge's set (FeatureEdgeAttributes::inputs(feature)). They are held as the curves
-        // of input_edges are: an input edge per edge and label, placed on itself, the tubes
+        // of the curve inputs are: an input edge per edge and label, placed on itself, the tubes
         // around the edges as read (TetOptimizerMesh::tag_feature_edges()). A tet mesh's
         // envelope is triangles. Until 2026-11 tetwild and simwild did not write their feature
         // curves, and an edge block in a tet mesh was refused.
@@ -952,7 +954,31 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
             const LowerTags et = lower_tags(edges, "edge");
             out.face_tag_names = et.names;
             if (!et.envelope_rows.empty()) envelope_from(edges, et.envelope_rows);
-            place_tagged(edges, et, out.F_tagged, out.F_tags, "edge");
+            place_tagged(edges, et, out.F_tagged, out.F_tags, "edge", &out.F_orientation);
+        }
+    }
+    // The point block (io::read_point_tags()): one input point per row and label, anchored where
+    // it is and written back under its label (InputData::input_point_labels). Until 2026-11 a
+    // tagged mesh had none, and a point block was refused.
+    {
+        const io::PointTags points = io::read_point_tags(mesh, "tagged mesh");
+        out.point_names = points.names;
+        for (size_t k = 0; k < points.rows.size(); ++k) {
+            const int v = remap[size_t(points.rows[k])];
+            if (v < 0)
+                throw std::runtime_error(
+                    std::string("A tagged point has a vertex no ") +
+                    (dim == 3 ? "tet" : "triangle") + " has");
+            out.input_point_labels.push_back(points.labels[k]);
+            if (dim == 3) {
+                out.features.points.emplace_back(
+                    out.V_input(v, 0),
+                    out.V_input(v, 1),
+                    out.V_input(v, 2));
+                out.features_placed.point_vertex.push_back(int64_t(v));
+            } else {
+                out.input_point_vids.push_back(size_t(v));
+            }
         }
     }
     if (envelope && !io::is_labelled_envelope(*envelope, dim == 3)) {
@@ -970,10 +996,10 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         out.envelope_name = "EnvelopeSurface";
     } else if (envelope) {
         // A labelled reference (io::append_envelope_block()): its triangles (2D: segments) and,
-        // in 3D, feature curves, each row with its labels, which name the mesh's tags; its points,
-        // which no tag of a mesh marks, are only handed on. Matched to the mesh by name, after
-        // the mesh's own labels are read above (io::read_labelled_envelope(), which tetwild's
-        // tagged route reads its `envelope` with too).
+        // in 3D, feature curves, each row with its labels, which name the mesh's tags, and its
+        // points, each with its labels, which name the mesh's points. Matched to the mesh by name,
+        // after the mesh's own labels are read above (io::read_labelled_envelope(), which
+        // tetwild's and triwild's tagged routes read their `envelope` with too).
         // The mesh's bits named `name`: a face tag's (2D: an edge tag's), a region's after them.
         // In 2D a curve and a region may share a name, as triwild names them, and the segments
         // then hold both: the curve is the region's boundary.
@@ -987,8 +1013,12 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
                     bits |= InputSet(1) << (F + j);
             return bits;
         };
-        io::LabelledReference reference =
-            io::read_labelled_envelope(*envelope, dim, bits_named, out.feature_edge_names);
+        io::LabelledReference reference = io::read_labelled_envelope(
+            *envelope,
+            dim,
+            bits_named,
+            out.feature_edge_names,
+            out.point_names);
         out.V_envelope = std::move(reference.V);
         out.F_envelope = std::move(reference.F);
         out.F_envelope_labels = std::move(reference.F_labels);
@@ -996,6 +1026,8 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         // The feature curves of the labels the mesh's feature curves have (feature_edge_names),
         // one input edge per edge and label, as the mesh's own are read above.
         out.reference_curves = std::move(reference.curves);
+        out.reference_points = std::move(reference.P);
+        out.reference_point_labels = std::move(reference.P_labels);
         out.envelope_reference = *envelope;
     }
     return out;

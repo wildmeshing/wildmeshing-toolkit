@@ -40,155 +40,6 @@ void check_envelope_leash(const Parameters& params)
     }
 }
 
-/// The band's boundary as rows to hand on with a reference: its triangles on vertices of their
-/// own, and per row the labels the output gives the regions it separates.
-struct OffsetRows
-{
-    MatrixXd V = MatrixXd(0, 3);
-    MatrixXi F = MatrixXi(0, 3);
-    std::vector<std::vector<std::string>> names;
-};
-
-/// The band's boundary -- every face between a band cell and a cell outside the band, the domain
-/// wall's excepted: the final offset surface and, where the band wraps a region or takes its
-/// cells, its interface with that region -- each named by the tet tags that differ across it as
-/// the output labels them (io::tag_labels()), the labels the next component holds it under
-/// (TopoOffsetTetMesh::assign_face_labels(), simwild's alike). The whole boundary, as every other
-/// label's envelope covers its region's. With the offset surface alone, simwild found the faces
-/// between a region and its band outside the band's envelope (72 on a unit tet, 2026-11-05); with
-/// the band's labels alone, the next offset found the boundary a band moves into a region it takes
-/// cells of outside that region's envelope (118, feature demo 4's cube, 2026-11-05).
-OffsetRows offset_rows(const TopoOffsetTetMesh& mesh)
-{
-    OffsetRows out;
-    const std::vector<std::string> labels =
-        io::tag_labels(mesh.m_tag_id_to_name, mesh.m_tags_count);
-    std::vector<int> row(mesh.vert_capacity(), -1);
-    std::vector<Vector3d> V;
-    std::vector<std::array<int, 3>> F;
-    for (const TetMesh::Tuple& f : mesh.get_faces()) {
-        const auto opp = f.switch_tetrahedron(mesh);
-        if (!opp ||
-            mesh.cell_is_offset_band(f.tid(mesh)) == mesh.cell_is_offset_band(opp->tid(mesh)))
-            continue;
-        const auto& a = mesh.m_tet_attribute[f.tid(mesh)].tag;
-        const auto& b = mesh.m_tet_attribute[opp->tid(mesh)].tag;
-        std::vector<std::string> names;
-        for (const auto& [x, y] : {std::pair(&a, &b), std::pair(&b, &a)}) {
-            for (const int64_t t : *x)
-                if (t > 0 && !y->count(t) && size_t(t) < labels.size())
-                    names.push_back(labels[size_t(t)]); // ambient carries no label
-        }
-        if (names.empty()) continue;
-        out.names.push_back(std::move(names));
-        std::array<int, 3> r;
-        const auto vs = mesh.get_face_vids(f);
-        for (int k = 0; k < 3; ++k) {
-            int& v = row[vs[k]];
-            if (v < 0) {
-                v = int(V.size());
-                V.push_back(mesh.m_vertex_attribute[vs[k]].m_posf);
-            }
-            r[k] = v;
-        }
-        F.push_back(r);
-    }
-    out.V.resize(Eigen::Index(V.size()), 3);
-    for (size_t i = 0; i < V.size(); ++i) out.V.row(Eigen::Index(i)) = V[i].transpose();
-    out.F.resize(Eigen::Index(F.size()), 3);
-    for (size_t i = 0; i < F.size(); ++i)
-        for (int k = 0; k < 3; ++k) out.F(Eigen::Index(i), k) = F[i][k];
-    return out;
-}
-
-/// `reference`, a labelled reference as given, with `offset`'s triangles added to its triangle
-/// block, each labelled by its names in offset.names, its own rows keeping theirs: built anew
-/// with the io helpers the producers build theirs with (io::append_envelope_block(),
-/// io::append_envelope_points()), each block on vertices of its own.
-MeshData with_offset_surface(const MeshData& reference, const OffsetRows& offset)
-{
-    struct Block
-    {
-        MatrixXd V = MatrixXd(0, 3);
-        MatrixXi C;
-        std::vector<InputSet> sets;
-        std::vector<std::string> names;
-    };
-    // The `type` rows of the reference on vertices of their own, in first use, with their labels.
-    const auto block = [&](const CellType type) {
-        Block b;
-        const auto it = reference.cells.find(type);
-        if (it == reference.cells.end()) return b;
-        const auto& C = it->second.connectivity;
-        std::vector<int> row(size_t(reference.V.rows()), -1);
-        std::vector<Eigen::Index> used;
-        b.C.resize(C.rows(), C.cols());
-        for (Eigen::Index r = 0; r < C.rows(); ++r) {
-            for (Eigen::Index k = 0; k < C.cols(); ++k) {
-                int& v = row[size_t(C(r, k))];
-                if (v < 0) {
-                    v = int(used.size());
-                    used.push_back(Eigen::Index(C(r, k)));
-                }
-                b.C(r, k) = v;
-            }
-        }
-        b.V.resize(Eigen::Index(used.size()), 3);
-        for (size_t i = 0; i < used.size(); ++i)
-            b.V.row(Eigen::Index(i)) = reference.V.row(used[i]);
-        const auto tags = it->second.attributes.find("tags");
-        if (tags == it->second.attributes.end()) return b;
-        b.names = tags->second.labels;
-        const auto member = tags->second.integers();
-        b.sets.assign(size_t(C.rows()), 0);
-        for (Eigen::Index r = 0; r < C.rows(); ++r) {
-            for (size_t j = 0; j < b.names.size() && j < size_t(SurfaceTagAttributes::max_inputs);
-                 ++j) {
-                if (member(r, Eigen::Index(j))) b.sets[size_t(r)] |= InputSet(1) << j;
-            }
-        }
-        return b;
-    };
-    Block tri = block(CellType::Triangle);
-    tri.sets.resize(size_t(tri.C.rows()), 0);
-    for (const auto& names : offset.names) {
-        InputSet set = 0;
-        for (const std::string& name : names) {
-            auto k = std::find(tri.names.begin(), tri.names.end(), name);
-            if (k == tri.names.end()) k = tri.names.insert(tri.names.end(), name);
-            const size_t j = size_t(k - tri.names.begin());
-            if (j < size_t(SurfaceTagAttributes::max_inputs)) set |= InputSet(1) << j;
-        }
-        tri.sets.push_back(set);
-    }
-    const Eigen::Index nv = tri.V.rows(), nf = tri.C.rows();
-    tri.V.conservativeResize(nv + offset.V.rows(), 3);
-    tri.V.bottomRows(offset.V.rows()) = offset.V;
-    tri.C.conservativeResize(nf + offset.F.rows(), 3);
-    tri.C.bottomRows(offset.F.rows()) = (offset.F.array() + int(nv)).matrix();
-    MeshData out;
-    io::append_envelope_block(
-        out,
-        io::geometry_data(tri.V, tri.C, CellType::Triangle),
-        CellType::Triangle,
-        tri.sets,
-        tri.names);
-    const Block curves = block(CellType::Edge);
-    if (curves.C.rows() > 0) {
-        io::append_envelope_block(
-            out,
-            io::geometry_data(curves.V, curves.C, CellType::Edge),
-            CellType::Edge,
-            curves.sets,
-            curves.names);
-    }
-    const Block points = block(CellType::Point);
-    std::vector<Vector3d> P(size_t(points.V.rows()));
-    for (size_t i = 0; i < P.size(); ++i) P[i] = points.V.row(Eigen::Index(i)).transpose();
-    io::append_envelope_points(out, P);
-    return out;
-}
-
 } // namespace
 
 static void run(nlohmann::json json_params, io::ComponentIO& component_io)
@@ -286,11 +137,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!component_io.memory() && envelope && outputs.count("envelope"))
             io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
     };
-    // Feature curves (a tet mesh's tagged edges, as tetwild and simwild write them) would be
-    // dropped silently: the offset holds the held surfaces' own curves only. Refused until carried.
-    if (!input_data.features.empty()) {
-        log_and_throw_error(
-            "topological_offset does not take feature curves (an edge block in a tet mesh) yet");
+    // Input points (a tagged mesh's point block, as tetwild, triwild and simwild write it) would be
+    // dropped silently: the offset holds no point. Refused until carried. Feature curves (a tet
+    // mesh's edge block) are held (TopoOffsetTetMesh::hold_curves_and_points()).
+    if (!input_data.features.points.empty() || !input_data.input_point_vids.empty()) {
+        log_and_throw_error("topological_offset does not take input points (a point block) yet");
     }
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (params.debug_output) {
@@ -570,7 +421,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.envelope_name,
             input_data.F_tagged,
             input_data.F_tags,
-            input_data.face_tag_names);
+            input_data.face_tag_names,
+            input_data.F_orientation,
+            input_data.feature_edge_names,
+            &input_data.features,
+            &input_data.features_placed);
         // The domain is the mesh's box, its wall held by the box rule as in tetwild and simwild
         // and never tracked: a mesh that does not fill its box -- a filtered tetwild output, its
         // boundary its tracked faces -- is refused (require_box_boundary()).
@@ -579,8 +434,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // (simwild.cpp's run_3D): the envelopes around its triangles of this mesh's labels
         // (io::held_rows(); TopoOffsetTetMesh::build_envelopes() builds them and runs the two
         // start checks), the order-2 tubes and the curve-end anchors around its curves, never
-        // around the mesh received. No feature tube: the offset takes no feature curve (refused
-        // above), so the reference's (init_reference_feature_tubes()) would hold nothing.
+        // around the mesh received, and the feature tubes around its feature curves
+        // (init_reference_feature_tubes(), from hold_curves_and_points()).
         if (reference) {
             const io::HeldRows held = io::held_rows(
                 input_data.V_envelope,
@@ -728,6 +583,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
             mesh.optimize_offset(output_filename);
+            mesh.audit_input_curves();
 
             // The manifoldness check above ran on the offset as constructed. Optimization then
             // re-triangulates it -- splits, collapses and four kinds of swap all touch the

@@ -82,8 +82,10 @@ TEST_CASE("tracking-example-triwild", "[triwild][tracking]" + release_only)
     // map a bijection; the junctions are free, and the map follows one sliding along a curve.
     triwild::triwild({
         {"application", "triwild"},
-        {"input", {(dir / "circle.obj").string(), (dir / "open.obj").string()}},
-        {"input_points", {(dir / "points.obj").string()}},
+        {"input",
+         {(dir / "circle.obj").string(),
+          (dir / "open.obj").string(),
+          (dir / "points.obj").string()}},
         {"output", output.string()},
         {"history_output", tracking_file.string()},
         {"preserve_topology", true},
@@ -237,8 +239,7 @@ TEST_CASE("tracking-memory-route-triwild", "[triwild][tracking]" + release_only)
     points.cells[CellType::Point].connectivity << 0, 1;
     const MeshMap meshes{{"circle", circle}, {"open", open}, {"points", points}};
     const ComponentResult result = triwild::triwild(
-        {{"input", {"circle", "open"}},
-         {"input_points", {"points"}},
+        {{"input", {"circle", "open", "points"}},
          {"history_output", tracking_file.string()},
          {"preserve_topology", true},
          {"length_rel", 0.02},

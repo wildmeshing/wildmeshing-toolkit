@@ -25,8 +25,11 @@ struct Parameters : public wmtk::OptimizerParameters
     ExpressionPtr offset_selection;
     std::set<std::string> offset_output_tag;
     std::set<std::string> protected_tags;
-    bool offset_in;
-    bool offset_out;
+    // The spec's defaults, as envelope_size below: init_input_complex_bvh() refuses offset_in on a
+    // curve or a point, and a unit test that builds Parameters without init() and offsets a point
+    // (dist_to_tetmesh) read an uninitialized offset_in as true on the Linux and Windows Debug CI.
+    bool offset_in = false;
+    bool offset_out = true;
     double target_distance;
     double target_distance_rel;
     // Turn a non-converged run into a hard error instead of a warning. Off by default: a run that
@@ -48,6 +51,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// non-manifold edges -- as a fraction of envelope_size, and the radius of the anchors where
     /// those curves end or three or more meet. 1, as tetwild's and simwild's key of the same name.
     double order2_envelope_ratio = 1.0;
+    /// Half-width of the tube that holds the input complex's own curves -- a curve offset's
+    /// segments (TopoOffsetTetMesh::hold_curves_and_points()) -- as a fraction of envelope_size,
+    /// and the radius of the anchors where they end or three or more meet, and of its points. 1,
+    /// as tetwild's and simwild's key of the same name.
+    double feature_envelope_ratio = 1.0;
 
     // ---- the smooth offset potential ----
     // Support radius of the potential, as a multiple of target_distance. Must be > 1: the offset
@@ -389,6 +397,7 @@ struct Parameters : public wmtk::OptimizerParameters
         envelope_size_rel = json_params["envelope_size_rel"];
         per_input_envelopes = json_params["per_input_envelopes"];
         order2_envelope_ratio = json_params["order2_envelope_ratio"];
+        feature_envelope_ratio = json_params["feature_envelope_ratio"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
         front_conv = json_params["front_conv"];

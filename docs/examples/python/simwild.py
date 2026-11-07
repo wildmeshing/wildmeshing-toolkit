@@ -5,6 +5,7 @@ memory; then the options the page measures, and the envelope a run returns."""
 import os
 from pathlib import Path
 
+import numpy as np
 import wildmeshing as wm
 
 # The example meshes: $WMTK_DATA, or data/models from the repository root.
@@ -23,6 +24,20 @@ def regions(mesh):
         counts[key] = counts.get(key, 0) + 1
     return dict(sorted(counts.items()))
 # --8<-- [end:regions]
+
+
+def interface_triangles(mesh):
+    """How many triangles lie between two tets of different regions: the interfaces, which the
+    mesh's tags give."""
+    cells = mesh["cells"]["tetrahedron"]
+    T = np.asarray(cells["connectivity"])
+    tags = np.asarray(cells["attributes"]["tags"]["values"])
+    faces = np.sort(T[:, [[1, 2, 3], [0, 2, 3], [0, 1, 3], [0, 1, 2]]], axis=2).reshape(-1, 3)
+    tet = np.repeat(np.arange(len(T)), 4)
+    order = np.lexsort(faces.T[::-1])
+    faces, tet = faces[order], tet[order]
+    pair = np.flatnonzero((faces[1:] == faces[:-1]).all(axis=1))  # rows i, i + 1: one face
+    return int((tags[tet[pair]] != tags[tet[pair + 1]]).any(axis=1).sum())
 
 
 # --8<-- [start:memory]
@@ -84,8 +99,8 @@ def mesh_shapes(**change):
 # --8<-- [start:sweep]
 for change in [{"length_rel": 0.1}, {}, {"length_rel": 0.025}, {"eps_rel": 0.002}]:
     outputs, report = mesh_spheres(**change)
-    surface = outputs["surface"]["cells"]["triangle"]["connectivity"]
-    print(f"{change}: {report['#t']} tets, {len(surface)} interface triangles, "
+    interfaces = interface_triangles(outputs["mesh"])
+    print(f"{change}: {report['#t']} tets, {interfaces} interface triangles, "
           f"eps {report['eps']:.4f}, max energy {report['max_energy']:.2f}")
 # --8<-- [end:sweep]
 

@@ -83,7 +83,7 @@ public:
     /**
      * @brief write surface (boundary of in_tag)
      */
-    void write_surface(const std::string& path, MeshMap* output = nullptr);
+    void write_surface(const std::string& path);
 
 private: // helpers
     bool is_surface_vertex(const Tuple& v) const;

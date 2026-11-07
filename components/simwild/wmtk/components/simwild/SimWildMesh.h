@@ -71,7 +71,7 @@ public:
     /// Names of the face tags: bit i of a face's input set is m_face_tag_names[i].
     std::vector<std::string> m_face_tag_names;
     // The names of the feature curves' inputs are the base's m_feature_edge_names, set by the
-    // driver: feature_<i> for input_edges file i, or the edge tags of a tagged mesh input
+    // driver: the label of the i-th curve input, or the edge tags of a tagged mesh input
     // (InputData::feature_edge_names).
 
     /**
@@ -144,6 +144,16 @@ public:
     MeshData envelope_data(
         const utils::FeatureInputs& curves,
         const std::vector<std::string>& curve_names) const;
+    /**
+     * @brief After a tag operation, the envelope it hands on, around its result: m_F_envelope
+     * every face the next component holds, labelled (m_F_envelope_labels) as it labels it -- its
+     * face tags, and the tet tags on one side of it and not the other, the regions it bounds
+     * (init_surfaces_and_boundaries()) -- on its own vertices in m_V_envelope; none without such
+     * a face. A tag operation retags cells and splits edges, so the faces between regions after
+     * it are new geometry, which no envelope given covers: the driver does not read one, and the
+     * next component holds these faces to themselves.
+     */
+    void set_envelope_around_tags();
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// simwild-only fields (tags, quality/sizing fields, the operation name).
@@ -455,7 +465,8 @@ public:
         const MatrixSi& F_tags = MatrixSi(),
         const std::vector<std::string>& face_tag_names = {},
         const utils::FeatureInputs* features = nullptr,
-        const utils::EmbedFeaturesResult* features_placed = nullptr);
+        const utils::EmbedFeaturesResult* features_placed = nullptr,
+        const MatrixSi& F_orientation = MatrixSi());
     void init_from_image(
         const MatrixXd& V,
         const MatrixXi& T,
@@ -465,7 +476,8 @@ public:
         const MatrixSi& F_tags = MatrixSi(),
         const std::vector<std::string>& face_tag_names = {},
         const utils::FeatureInputs* features = nullptr,
-        const utils::EmbedFeaturesResult* features_placed = nullptr);
+        const utils::EmbedFeaturesResult* features_placed = nullptr,
+        const MatrixSi& F_orientation = MatrixSi());
 
     /// `features`, optional: the input feature curves and points, and where the insertion put
     /// them (`features_placed`, in the vertex numbering of the mesh), tagged and anchored here.
@@ -473,11 +485,13 @@ public:
         const utils::FeatureInputs* features = nullptr,
         const utils::EmbedFeaturesResult* features_placed = nullptr);
     /// Tracks the faces F_tagged (rows of T's vertices, as read_mesh_data gives them) as surface,
-    /// with input set bit j where F_tags has a 1 in column j. Throws on a row that is no face.
+    /// with input set bit j where F_tags has a 1 in column j, oriented along the row, or with
+    /// F_orientation as it says (InputData::F_orientation). Throws on a row that is no face.
     void init_face_tags(
         const MatrixXi& F_tagged,
         const MatrixSi& F_tags,
-        const std::vector<std::string>& face_tag_names);
+        const std::vector<std::string>& face_tag_names,
+        const MatrixSi& F_orientation = MatrixSi());
 
 
     /**

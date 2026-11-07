@@ -145,7 +145,6 @@ bool SimWildMesh::split_face_after(const Tuple& t)
     for (const auto& [f, attrs] : c.faces) {
         m_face_attribute[std::get<1>(tuple_from_face(f))] = attrs;
     }
-    const int o = c.face.orientation_along(c.v);
     for (int k = 0; k < 3; ++k) {
         std::array<size_t, 3> piece = c.v;
         piece[k] = v_new;
@@ -153,7 +152,7 @@ bool SimWildMesh::split_face_after(const Tuple& t)
         std::sort(sorted.begin(), sorted.end());
         auto& attrs = m_face_attribute[std::get<1>(tuple_from_face(sorted))];
         attrs = c.face;
-        attrs.set_orientation_along(piece, o);
+        attrs.set_orientation_from(c.face, c.v, piece);
     }
     for (const auto& [off, _] : c.tets) {
         for (const size_t v : c.v) {

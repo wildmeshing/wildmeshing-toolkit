@@ -17,7 +17,11 @@ namespace wmtk::components::topological_offset {
 /**
  * @brief The band-volume integral of one cell, in closed form:
  *
- *     J(t) = int_t (d(x) - delta) dV,   d = Euclidean distance to the input triangle mesh.
+ *     J(t) = int_t (d(x) - delta) dV,   d = Euclidean distance to the input,
+ *
+ * the input a triangle mesh, or a complex of segments and points (a curve offset's input: rods,
+ * their ends and junctions, isolated points) -- one kind, as the envelope whose box queries this
+ * reads holds one (TopoOffsetTetMesh::m_input_complex_envelope).
  *
  * A port of the VALUE path of the Python reference exact_mesh.integrate_mesh (and of the
  * exact_tri closed forms it calls), scratchpad exact_integral/ of 2026-10-10/11: same algorithm,
@@ -26,27 +30,37 @@ namespace wmtk::components::topological_offset {
  * (the band cell term) and, through max_distance(), by the settle loop's max test.
  *
  * Features and local regions. The input's features are its face interiors, edges and vertices
- * (duplicate vertices merged). The local region L_g of a feature g is an intersection of
+ * (duplicate vertices merged): a triangle's interior, edges and corners; a segment's interior (an
+ * edge) and ends; a point (a vertex). The local region L_g of a feature g is an intersection of
  * half-spaces built from its incident features only: a face's prism (inside the planes through
  * its edges perpendicular to it), an edge's slab between the planes through its ends perpendicular
  * to it, cut by the plane through the edge perpendicular to each incident face (away from that
- * face's third vertex), a vertex's cone {x : (x - v).(w - v) <= 0 for every edge (v, w)}. Two
- * facts make d = min over {g : x in L_g} of d_g exact, d_g the plane, line or point distance of g:
- * (i) the feature holding x's nearest point in its relative interior has x in its region, and
- * d_g(x) = d(x); (ii) on L_g, d_g is the distance to an actual point of g, so d_g >= d.
+ * face's third vertex), a vertex's cone {x : (x - v).(w - v) <= 0 for every edge (v, w)}. A
+ * segment's edge has no face, so its region is the slab; a rod's end, one edge, has the half-space
+ * beyond it; an isolated point, no edge, all of space. Two facts make d = min over
+ * {g : x in L_g} of d_g exact, d_g the plane, line or point distance of g: (i) the feature holding
+ * x's nearest point in its relative interior has x in its region, and d_g(x) = d(x); (ii) on L_g,
+ * d_g is the distance to an actual point of g, so d_g >= d.
  *
  * Per cell:
- *  0. Candidates: U = min over triangles P of max over t's corners of d_P is an upper bound of
- *     d on t (d_P convex), so every feature whose bounding box is within U of t's box is kept.
- *     U is the exact min over ALL triangles (a box search); the Python takes the min over the 32
- *     triangles nearest t by box distance, MEASURED equal on all 14180 cells checked (the five
- *     stored cases, sample + 3000 random each), although ties at rank 32 occur in up to 634 of
- *     3240 cells, where numpy's sort order decides which 32 it takes.
+ *  0. Candidates: U = min over the input's primitives P (triangles, or segments and points) of
+ *     max over t's corners of d_P is an upper bound of d on t (d_P convex), so every feature whose
+ *     bounding box is within U of t's box is kept. U is the exact min over ALL primitives (a box
+ *     search); the Python takes the min over the 32 triangles nearest t by box distance, MEASURED
+ *     equal on all 14180 cells checked (the five stored cases, sample + 3000 random each),
+ *     although ties at rank 32 occur in up to 634 of 3240 cells, where numpy's sort order decides
+ *     which 32 it takes.
  *  1. t is cut by the candidates' local regions into convex pieces of constant member set
  *     S = {g : piece inside L_g}. Members that cannot attain the minimum on a piece are dropped
  *     (lower bound >= another member's upper bound); this changes no value.
  *  2. |S| = 1: the closed form of d_g. S all faces: split by the planes and the bisectors of
  *     the (then affine) distances, exact. S all vertices: split by the bisector planes, exact.
+ *     S all edges: split by the bisectors of the pairs whose distances cross on the piece, which
+ *     are planes for edges meeting at a point or parallel (bisector_planes()), each part labelled
+ *     with its nearest edge, as the front form labels a face (resolve()), exact; a crossing pair
+ *     of skew edges has a curved bisector, and the piece takes rule (a). Two edges of a rod meet
+ *     at its vertices, so a rod is exact at every bend and junction: their regions overlap only
+ *     on the inside of a bend, where until 2026-11 the piece took rule (a). Not in the Python.
  *  3. Otherwise ("rule (a)") the boundary between members is curved and the piece returns
  *     min over g in S of int_piece d_g >= int_piece d: an UPPER BOUND, not the integral.
  *     Stats::rule_a_vol reports its volume (0.15-0.35% of the band volume on t100026).
@@ -88,13 +102,13 @@ namespace wmtk::components::topological_offset {
  *    and that min was -1.32e-5 (the lower plate's face, nearest there, drops it).
  *  - -delta vol(t) becomes -delta times the kept volume; a cell where nothing is clipped keeps
  *    the unclipped sum, int d - delta vol(t), bit for bit.
- * Features of isolated triangles (no side), edges without exactly two faces and zero
- * pseudonormals have no plane: every point counts there. Why (exact_mesh.band_integral): the
- * input surface inside the tet mesh may move within its envelope, and just inside the input body
- * the integrand is about -1, so pushing the band's inner boundary into the body lowered E;
- * operations accepted when they lower E ratcheted it inward. MEASURED: on the outward sphere
- * 446 of 881 inner-boundary vertices lay inside the input by turn 12, E_band ended 58.6 bars
- * below its exact minimum (Steiner's formula), and the settle test could not pass.
+ * Features of isolated triangles (no side), edges without exactly two faces (a segment's among
+ * them) and zero pseudonormals have no plane: every point counts there, as all around a rod. Why
+ * (exact_mesh.band_integral): the input surface inside the tet mesh may move within its envelope,
+ * and just inside the input body the integrand is about -1, so pushing the band's inner boundary
+ * into the body lowered E; operations accepted when they lower E ratcheted it inward. MEASURED: on
+ * the outward sphere 446 of 881 inner-boundary vertices lay inside the input by turn 12, E_band
+ * ended 58.6 bars below its exact minimum (Steiner's formula), and the settle test could not pass.
  *
  * Thread safety: value() and value_grad_hess() are const. Their state is a per-thread scratch
  * partition and value()'s table of results, whose slots are read and written under a lock
@@ -125,6 +139,33 @@ public:
         const std::vector<int8_t>& face_side,
         int sigma,
         size_t value_slots = 0,
+        std::shared_ptr<const wmtk::Envelope> envelope = nullptr)
+        : ExactBandIntegral(
+              V,
+              F,
+              Eigen::MatrixXi(0, 2),
+              {},
+              face_side,
+              sigma,
+              value_slots,
+              envelope)
+    {}
+    /// The input of either kind: the triangles F, or the segments E (m x 2, rows of V) and the
+    /// points P (rows of V), with F empty -- a complex of both is refused (throws), as its
+    /// envelope holds one kind. The segments' and points' vertices are merged with each other by
+    /// exact coordinates, as the triangles' are; with E and P empty this is the constructor above.
+    /// envelope: for segments and points an Edges3d Envelope whose primitive i is row i of E and
+    /// primitive |E| + j the degenerate segment (P[j], P[j]) (TopoOffsetTetMesh's
+    /// euclidean_query_envelope()); null: one is built here. Neither a segment nor a point bounds
+    /// a solid, so with them face_side is empty and sigma has no plane to clip by.
+    ExactBandIntegral(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const Eigen::MatrixXi& E,
+        const std::vector<int>& P,
+        const std::vector<int8_t>& face_side,
+        int sigma,
+        size_t value_slots = 0,
         std::shared_ptr<const wmtk::Envelope> envelope = nullptr);
 
     /// Counters, volumes and (when `timing`) times of value() calls, ADDED to on every call (never
@@ -135,9 +176,13 @@ public:
         int64_t candidates = 0; ///< candidate features
         int64_t pieces = 0; ///< convex pieces of the partition
         int64_t rule_a_pieces = 0;
+        /// pieces whose members are all edges, split exactly by their planar bisectors (class
+        /// doc, step 2); before 2026-11 each was a rule-(a) piece
+        int64_t edge_split_pieces = 0;
         double vol = 0.; ///< cell volume
         double exact_vol = 0.; ///< volume of pieces integrated exactly
         double rule_a_vol = 0.; ///< volume of rule-(a) pieces (upper bound)
+        double edge_split_vol = 0.; ///< volume of the edge_split_pieces (in exact_vol)
         double empty_vol = 0.; ///< volume of pieces with no member (must be rounding)
         int64_t clips = 0; ///< half-space clips of a polytope
         int64_t clips_closed_up = 0; ///< cutting clips whose kept faces closed up without a cap
@@ -300,6 +345,8 @@ public:
         bool rule_a = false; ///< the max came from a rule-(a) piece: an upper bound there
         double U = 0.; ///< min over P of max over f's corners of d_P (the former settle bound)
         int candidates = 0, pieces = 0, rule_a_pieces = 0;
+        /// pieces whose members are all edges, split exactly (Stats::edge_split_pieces)
+        int edge_split_pieces = 0;
     };
 
     /**
@@ -309,8 +356,9 @@ public:
      * and d is convex wherever one member's distance is d, so on each piece the max is at a
      * vertex of the piece:
      *  - one member: the max of d_g over the piece's vertices, exact;
-     *  - members all faces, or all vertices: split by the bisectors as in value(), each sub-ring
-     *    one affine or point distance, exact;
+     *  - members all faces, all vertices, or all edges: split by the bisectors as in value(), each
+     *    sub-ring one affine, point or line distance, exact (all edges: unless a crossing pair is
+     *    skew, rule (a) then);
      *  - otherwise (rule (a), the boundary between members curved): min over members g of the max
      *    of d_g over the piece's vertices, an upper bound on max of d there (d <= d_g).
      * The max over pieces is exact up to rounding unless it comes from a rule-(a) piece; never
@@ -449,9 +497,10 @@ public:
      * else it is dropped. The part is then labelled with that member as any other (labeled()).
      * So summed over the band's boundary faces through x, front_face_derivs() at x is the exact
      * derivative at x of the band change "exact_swept" judges a move from x on (the sum of
-     * value() over the swept tets), where value() and the face's labelling cut alike: they do
-     * not where two edge members cross with a planar bisector (value() takes rule (a) there, the
-     * labelling splits the piece exactly).
+     * value() over the swept tets), where value() and the face's labelling cut alike. Until
+     * 2026-11 they did not where two edge members cross with a planar bisector (value() took rule
+     * (a) there, the labelling split the piece exactly); both now split it by the same planes
+     * (resolve()), which on a rod is the inside of every bend.
      *
      * "exact_swept"'s search model opens one (BandVolumeEnergy3D::set_swept(); before, it took
      * the ring cells' derivatives where a face threw). MEASURED (test_exact_swept's
@@ -513,9 +562,10 @@ public:
     /// points is flagged only if the points are, so the points of an operation's ring unflagged
     /// leave every cell made from them unflagged.
     bool front_flux_flag(const Eigen::Vector3d* t, int n) const;
-    /// d(x), the distance to the input: min over the triangles of the point-triangle distance.
+    /// d(x), the distance to the input: min over its primitives (triangles, or segments and
+    /// points) of the distance to one.
     double distance(const Eigen::Vector3d& x) const { return upper_bound(&x, 1); }
-    /// U = min over the input triangles P of max over t's corners of d_P: an upper bound of d on
+    /// U = min over the input's primitives P of max over t's corners of d_P: an upper bound of d on
     /// t (each d_P is convex, and d <= d_P), the bound value()'s candidate search starts from.
     double distance_bound(const std::array<Eigen::Vector3d, 4>& t) const
     {
@@ -550,6 +600,11 @@ private:
     int m_nF = 0, m_nE = 0;
     std::vector<Eigen::Vector3d> m_A, m_B, m_C; ///< triangle corners, for d_P
     std::vector<std::array<int, 6>> m_face_feats; ///< per face: its 3 edges, its 3 vertices
+    /// The segments' and points' primitives, in the envelope's order (constructor): the ends, for
+    /// d_P (a point's are equal); and per primitive its features, a segment's edge and two
+    /// vertices, a point's vertex alone (-1, the vertex, -1).
+    std::vector<Eigen::Vector3d> m_SA, m_SB;
+    std::vector<std::array<int, 3>> m_seg_feats;
     /// The offset side (class doc): sigma (0: none), and per feature its side plane, the unit
     /// normal N oriented out of the solid (face_side) and a point q on it; m_side_has[g] false
     /// where the feature has no plane (every point counts).
@@ -557,9 +612,9 @@ private:
     std::vector<char> m_side_has;
     std::vector<Eigen::Vector3d> m_side_n, m_side_q;
 
-    /// The triangles' boxes, for U and the candidate query: the envelope's
-    /// Envelope::primitives_in_box(), primitive f being face f. Until 2026-10-15 a tree of
-    /// this class's own over the same boxes, beside the envelope's.
+    /// The primitives' boxes, for U and the candidate query: the envelope's
+    /// Envelope::primitives_in_box(), primitive f being face f, or segment or point f. Until
+    /// 2026-10-15 a tree of this class's own over the same boxes, beside the envelope's.
     std::shared_ptr<const wmtk::Envelope> m_env;
     /// 1e-9 of the input's diagonal: what a box query is grown by, so that a triangle whose
     /// distance reaches a bound by rounding is never left out of it.

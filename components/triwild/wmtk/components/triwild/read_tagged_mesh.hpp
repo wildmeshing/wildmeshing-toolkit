@@ -20,7 +20,8 @@ namespace wmtk::components::triwild {
  * input, every row oriented by its vertex order. Rows of one edge are merged: their labels
  * united, their orientation one count, +1 along E's row where they all run that way, -1 where
  * they all run the other, 0 where both, as coincident input segments of opposite directions
- * cancel at the arrangement. The point block is input points, anchored where they are.
+ * cancel at the arrangement. The point block is input points, anchored where they are -- with an
+ * `envelope`, on its points (TriOptimizerMesh::ReferencePoints).
  */
 struct TaggedTriMesh
 {
@@ -33,9 +34,16 @@ struct TaggedTriMesh
     MatrixXi E;
     std::vector<InputSet> E_sets;
     std::vector<int> E_orientation;
+    /// With WMTK_PER_INPUT_ORIENTATION: per row, each label's own orientation along it -- the
+    /// label's rows' `orientation` entries (io::read_orientation()) summed where the mesh has
+    /// them, else as E_orientation is counted, label by label. Empty otherwise.
+    std::vector<InputOrientations> E_input_orientation;
     std::vector<std::string> edge_names;
-    /// The point block's vertices.
+    /// The point block's vertices, one per row and label, each under the label point_labels[i]
+    /// of point_names.
     std::vector<size_t> point_vids;
+    std::vector<int> point_labels;
+    std::vector<std::string> point_names;
 };
 
 /// Whether `mesh` has triangles: the tagged route's input, rather than curves.

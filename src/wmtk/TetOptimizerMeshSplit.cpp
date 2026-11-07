@@ -412,17 +412,19 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
             // (v1,v2,c) -> (v1,v,c) + (v,v2,c): each half replaces one endpoint by v in place,
             // so measured along those orders it carries the parent's orientation unchanged.
             const size_t c = old_vids[j_vn[0]];
-            const int o = f_attr.orientation_along(std::array<size_t, 3>{{v1_id, v2_id, c}});
+            const std::array<size_t, 3> parent{{v1_id, v2_id, c}};
             auto [_1, global_fid1] = tuple_from_face({{v1_id, v_id, c}});
             m_face_attribute[global_fid1] = f_attr;
-            m_face_attribute[global_fid1].set_orientation_along(
-                std::array<size_t, 3>{{v1_id, v_id, c}},
-                o);
+            m_face_attribute[global_fid1].set_orientation_from(
+                f_attr,
+                parent,
+                std::array<size_t, 3>{{v1_id, v_id, c}});
             auto [_2, global_fid2] = tuple_from_face({{v2_id, v_id, c}});
             m_face_attribute[global_fid2] = f_attr;
-            m_face_attribute[global_fid2].set_orientation_along(
-                std::array<size_t, 3>{{v_id, v2_id, c}},
-                o);
+            m_face_attribute[global_fid2].set_orientation_from(
+                f_attr,
+                parent,
+                std::array<size_t, 3>{{v_id, v2_id, c}});
         } else { // j_vn.size() == 2
             auto [_, global_fid] = tuple_from_face(old_vids);
             m_face_attribute[global_fid] = f_attr;

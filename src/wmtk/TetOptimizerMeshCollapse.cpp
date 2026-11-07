@@ -252,10 +252,8 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         // (v1,l1,l2) and (v2,l1,l2) become one face (v2,l1,l2): renaming v1 to v2 keeps the
         // first one's orientation along that order, and the two sheets add up.
         const std::array<size_t, 3> merged{{v2_id, f_vids[1], f_vids[2]}};
-        f_attr.set_orientation_along(
-            merged,
-            m_face_attribute.at(global_fid1).orientation_along(f_vids) +
-                m_face_attribute.at(global_fid2).orientation_along(merged));
+        f_attr.set_orientation_from(m_face_attribute.at(global_fid1), f_vids, merged);
+        f_attr.add_orientation_from(m_face_attribute.at(global_fid2), merged, merged);
         cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
     }
 
@@ -326,8 +324,11 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                         // check if this face is actually on the surface
                         continue;
                     }
-                    if (const int o = m_face_attribute.at(fid).orientation_along(f); o != 0) {
-                        cache.renamed_orientations.push_back({{{v2_id, va, vb}}, o});
+                    if (m_face_attribute.at(fid).oriented()) {
+                        const std::array<size_t, 3> renamed{{v2_id, va, vb}};
+                        FaceAttributes o;
+                        o.set_orientation_from(m_face_attribute.at(fid), f, renamed);
+                        cache.renamed_orientations.emplace_back(renamed, o);
                     }
                     std::sort(f.begin(), f.end());
                     fs.emplace_back(f, m_face_attribute.at(fid));
@@ -499,7 +500,7 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // when the face (v1,l1,l2) also bounds a tet of v1's ring -- overwrite with the sum.
     for (const auto& [f, o] : cache.renamed_orientations) {
         if (const auto found = try_tuple_from_face(f); found.has_value()) {
-            m_face_attribute[std::get<1>(found.value())].set_orientation_along(f, o);
+            m_face_attribute[std::get<1>(found.value())].set_orientation_from(o, f, f);
         }
     }
     for (auto& info : cache.changed_faces) {

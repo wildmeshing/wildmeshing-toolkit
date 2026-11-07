@@ -709,12 +709,13 @@ std::vector<std::array<size_t, 3>> TetOptimizerMesh::oriented_tracked_faces() co
     std::vector<std::array<size_t, 3>> res;
     for (const auto& f : get_faces()) {
         const auto& attr = m_face_attribute[f.fid(*this)];
-        if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+        const int o = attr.orientation();
+        if (!attr.m_is_surface_fs || o == 0) continue;
         const auto vs = get_face_vertices(f);
         std::array<size_t, 3> v{{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
         std::sort(v.begin(), v.end());
-        if (attr.m_orientation < 0) std::swap(v[1], v[2]);
-        for (int k = 0; k < std::abs(attr.m_orientation); ++k) res.push_back(v);
+        if (o < 0) std::swap(v[1], v[2]);
+        for (int k = 0; k < std::abs(o); ++k) res.push_back(v);
     }
     return res;
 }
@@ -1230,11 +1231,11 @@ size_t TetOptimizerMesh::tag_feature_edges(
     size_t n_tagged = 0;
     std::vector<size_t> eids;
     for (size_t e = 0; e < placed.edge_tiling.size(); ++e) {
-        // The file the input edge came from: its input, as an input surface is a face's.
+        // The curve the input edge came from: its input, as an input surface is a face's.
         const size_t file = input != nullptr ? size_t(input->edge_input[e]) : 0;
         if (file >= size_t(SurfaceTagAttributes::max_inputs)) {
             log_and_throw_error(
-                "input_edges file {}: a tagged edge records its files in {} bits, so at most {} "
+                "input curve {}: a tagged edge records its curves in {} bits, so at most {} "
                 "are supported",
                 file,
                 SurfaceTagAttributes::max_inputs,
@@ -2016,6 +2017,16 @@ bool TetOptimizerMesh::anchor_feature_point(
     return true;
 }
 
+void TetOptimizerMesh::set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels)
+{
+    assert(labels.size() == size_t(P.rows()));
+    ReferencePoints ref;
+    for (Eigen::Index i = 0; i < P.rows(); ++i) ref.V.emplace_back(P(i, 0), P(i, 1), P(i, 2));
+    ref.labels = labels;
+    logger().info("reference: {} input points", ref.V.size());
+    m_reference_points = std::move(ref);
+}
+
 size_t TetOptimizerMesh::anchor_feature_points(
     const std::vector<size_t>& input_point_vids,
     const double order2_radius,
@@ -2079,7 +2090,12 @@ size_t TetOptimizerMesh::anchor_feature_points(
             anchors.emplace_back(vid, r, p);
         }
     }
-    for (const size_t vid : input_point_vids) {
+    // With the reference's points (ReferencePoints), an input point's ball is centred on the
+    // nearest of them of its label in it, tested as the anchor will hold it; one with none is
+    // counted by label, and refused below.
+    std::map<int, size_t> n_unmatched;
+    for (size_t k = 0; k < input_point_vids.size(); ++k) {
+        const size_t vid = input_point_vids[k];
         if (vid >= vert_capacity()) {
             log_and_throw_error("Input point vertex id {} out of range", vid);
         }
@@ -2087,7 +2103,47 @@ size_t TetOptimizerMesh::anchor_feature_points(
         if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
             r = std::min(r, order2_radius);
         }
-        anchors.emplace_back(vid, r, m_vertex_attribute[vid].m_posf);
+        const Vector3d& p = m_vertex_attribute[vid].m_posf;
+        if (!m_reference_points) {
+            anchors.emplace_back(vid, r, p);
+            continue;
+        }
+        const int label = k < m_input_point_labels.size() ? m_input_point_labels[k] : -1;
+        const Vector3d* centre = nullptr;
+        double best = r * r;
+        for (size_t q = 0; q < m_reference_points->V.size(); ++q) {
+            if (label < 0 || label >= SurfaceTagAttributes::max_inputs ||
+                ((m_reference_points->labels[q] >> label) & 1) == 0) {
+                continue;
+            }
+            const double sq = (p - m_reference_points->V[q]).squaredNorm();
+            if (sq <= best) {
+                best = sq;
+                centre = &m_reference_points->V[q];
+            }
+        }
+        if (centre == nullptr) {
+            ++n_unmatched[label];
+            continue;
+        }
+        anchors.emplace_back(vid, r, *centre);
+    }
+    if (!n_unmatched.empty()) {
+        std::vector<std::string> counts;
+        for (const auto& [label, n] : n_unmatched) {
+            counts.push_back(
+                fmt::format(
+                    "{} labelled {}",
+                    n,
+                    label >= 0 && size_t(label) < m_point_names.size()
+                        ? m_point_names[label]
+                        : "tag_" + std::to_string(label)));
+        }
+        log_and_throw_error(
+            "envelope: received input points with no point of the reference of their label in "
+            "their anchor's radius: {}. A component makes no input points, so these are not the "
+            "reference's",
+            fmt::join(counts, ", "));
     }
     if (m_input_curves) {
         logger().info(
@@ -2102,6 +2158,7 @@ size_t TetOptimizerMesh::anchor_feature_points(
     for (const auto& [vid, r, centre] : anchors) {
         n_anchored += anchor_feature_point(vid, r, centre);
     }
+    label_feature_points(input_point_vids);
     logger().info(
         "feature anchors: {} curve endpoints, {} junctions, {} input points; {} anchored",
         n_ends,
@@ -2109,6 +2166,24 @@ size_t TetOptimizerMesh::anchor_feature_points(
         input_point_vids.size(),
         n_anchored);
     return n_anchored;
+}
+
+void TetOptimizerMesh::label_feature_points(const std::vector<size_t>& input_point_vids)
+{
+    m_feature_point_inputs.assign(m_feature_points.size(), 0);
+    if (m_input_point_labels.empty()) return;
+    if (m_input_point_labels.size() != input_point_vids.size()) {
+        log_and_throw_error(
+            "{} input point labels for {} input points",
+            m_input_point_labels.size(),
+            input_point_vids.size());
+    }
+    for (size_t k = 0; k < input_point_vids.size(); ++k) {
+        const int label = m_input_point_labels[k];
+        if (label < 0 || label >= SurfaceTagAttributes::max_inputs) continue;
+        const size_t f = m_feature_point_attribute[input_point_vids[k]].m_feature_point_id;
+        if (f < m_feature_point_inputs.size()) m_feature_point_inputs[f] |= InputSet(1) << label;
+    }
 }
 
 bool TetOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const

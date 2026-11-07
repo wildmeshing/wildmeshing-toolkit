@@ -248,7 +248,7 @@ The map flattens each side of a feature curve separately (`sides_of` in `Surface
 non-manifold edge -- three or more faces -- separates sides without being declared.
 
 On curves the features are points: the ends and junctions of the input's curves and its input
-points (`input_points` files, and isolated vertices of the curve files), and, from the
+points (point inputs, and isolated vertices of the curve inputs), and, from the
 insertion on, the points the mesh anchors (`TriOptimizerMesh`'s feature point ids). Their rules:
 - **Split:** makes none.
 - **Collapse:** a removed feature point goes to the survivor.

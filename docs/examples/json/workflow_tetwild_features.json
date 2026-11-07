@@ -1,8 +1,6 @@
 {
   "application": "tetwild",
-  "input": ["tetwild_features_cube.obj"],
-  "input_edges": ["tetwild_features_edges.obj"],
-  "input_points": ["tetwild_features_points.obj"],
+  "input": ["tetwild_features_cube.obj", "tetwild_features_edges.obj", "tetwild_features_points.obj"],
   "output": "cube",
   "filter": "tracked",
   "stop_energy": 10,

@@ -48,7 +48,7 @@ struct FeatureScene
     std::shared_ptr<components::shortest_edge_collapse::ShortestEdgeCollapse> surf;
 };
 
-/// `fe_verts`, `fe`: the feature curves; `edge_input`: per edge, its input_edges file.
+/// `fe_verts`, `fe`: the feature curves; `edge_input`: per edge, its curve input.
 FeatureScene build_scene(
     const std::vector<Vector3d>& fe_verts = {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
     const std::vector<std::array<size_t, 2>>& fe = {{{0, 1}}, {{1, 2}}},
@@ -103,8 +103,8 @@ FeatureScene build_scene(
             &features_out);
     }
     sc.mesh = std::make_shared<TetWildMesh>(sc.params, env, 0);
-    // By default each segment its own input_edges file, so each tagged edge carries the file of
-    // the segment it tiles and is held in that file's tube, of radius 0.05 as the union's. The
+    // By default each segment its own curve input, so each tagged edge carries the input of
+    // the segment it tiles and is held in that input's tube, of radius 0.05 as the union's. The
     // init anchors the chain's endpoints, its tagged edges' ends, in a ball of the tube's radius.
     utils::FeatureInputs input;
     input.edge_vertices = sc.fe_verts;
@@ -593,7 +593,7 @@ TEST_CASE(
 
 TEST_CASE("feature-curves-held-to-their-own-tubes", "[tetwild_operation][features]" + release_only)
 {
-    // Two parallel curves 0.07 apart, each its own input_edges file, in tubes of 0.05. The tubes
+    // Two parallel curves 0.07 apart, each its own curve input, in tubes of 0.05. The tubes
     // overlap, so in their union a collapse may weld one curve onto the other, its edges then
     // 0.07 off their own curve; each tagged edge is held to the tube of its own file instead.
     // Checked after the whole optimization against the input segments themselves, not through the

@@ -369,14 +369,12 @@ def simwild(options: dict, meshes: dict) -> tuple:
       application (string, required): Application name must be simwild.
       input (list, required): List of input files.
       dimension (string, default "auto"): Whether the input is 2D or 3D, as a string.
-      input_names (list, default []): List of names for the input meshes.
+      input_names (list, default []): List of names for the inputs, one per entry of /input, at its position there: a volume's region, a surface's face tag (2D: a curve's edge tag), a 3D curve's feature-curve tag.
       input_type (list, default []): One entry per input, saying what its tag marks.
       operation (string, default "remeshing"): What to do.
       output (string, default "out"): Output file name (without extension): the mesh is <output>.msh.
-      input_transform (list, default []): Transformation matrices for the inputs.
+      input_transform (list, default []): Transformation matrices for the inputs, one per entry of /input.
       input_dir (string, default ""): Directory where the input files are located.
-      input_edges (list, default []): List of input feature EDGE meshes, 3D surface inputs only (a .msh input, a tagged mesh and a 2D input refuse them): curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint.
-      input_points (list, default []): List of input feature POINT files, 3D surface inputs and 2D curve inputs (a .msh input and a tagged mesh refuse them): every vertex of each file is forced into the mesh as a vertex, exactly -- a tet vertex in 3D, a vertex of the curve arrangement in 2D, where only x and y are used (edges in these files are ignored, with a warning).
       simplify (bool, default true): If true, the input is simplified: a surface or curve input before insertion when preserve_topology is false; in 3D, the tet mesh after insertion when preserve_topology is true and the operation is remeshing -- a tagged mesh input included, whose envelope is then the mesh's tracked faces as read (see envelope_reference).
       tag_from_winding_number (bool, default true): How the cells of the arrangement are tagged.
       split_connected_components (bool, default false): Treat each connected component of an input file as an input in its own right, rather than the file as a whole.
@@ -393,7 +391,7 @@ def simwild(options: dict, meshes: dict) -> tuple:
       simplify_boundary_envelope (bool, default true): Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses).
       remove_duplicate_eps (float, default 0): Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal.
       order2_envelope_ratio (float, default 1.0): Thickness of the tube that holds the order-2 edges -- the open boundaries of the surface and its non-manifold edges -- as a fraction of the surface envelope's eps, and the radius of the anchors where they end or three or more meet.
-      feature_envelope_ratio (float, default 1.0): Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge (/input_edges) must stay inside -- and the radius of the feature anchors (the /input_points, and the vertices where feature curves end or three or more meet), as a fraction of the surface envelope's eps.
+      feature_envelope_ratio (float, default 1.0): Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge (a 3D curve input) must stay inside -- and the radius of the feature anchors (the point inputs, and the vertices where feature curves end or three or more meet), as a fraction of the surface envelope's eps.
       length (float, default -1): Absolute target edge length.
       length_rel (float, default 0.05): Target edge length relative to the bounding box diagonal.
       sizing_field (list, default []): Prescribe a length for a specific region defined by tags.
@@ -474,13 +472,11 @@ def tetwild(options: dict, meshes: dict) -> tuple:
     
     Options (every one, with its full description: https://wildmeshing.github.io/wildmeshing-toolkit/reference/tetwild/):
       application (string, required): Application name must be tetwild.
-      input (list, required): List of input meshes: triangle surfaces, or one tagged tet mesh.
-      input_edges (list, default []): List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint.
-      input_points (list, default []): List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning).
-      DEBUG_feature_retention (bool, default false): Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius.
+      input (list, required): List of inputs, each read for what it is: triangles a surface (an OBJ with 'f' records, STL, OFF, a .msh of triangles, ...; on the memory route a mesh with a triangle block), segments a curve (an OBJ of 'l' polylines; a mesh with an edge block), bare vertices points (an OBJ of 'v' records alone; a mesh without either block).
+      DEBUG_feature_retention (bool, default false): Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region), and report the worst miss in multiples of the ball radius.
       feature_envelope_ratio (float, default 1.0): Thickness of the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- and the radius of the feature-point anchors, as a fraction of the surface envelope's eps.
       output (string, default "out"): Output file name (without extension): the tet mesh is <output>_final.msh.
-      input_names (list, default []): Names for the inputs, used for each input's face tag and its winding-number field.
+      input_names (list, default []): Names for the inputs, one per entry of /input, at its position there: a surface's face tag and winding-number field, a curve's edge tag.
       envelope (string, default ""): The envelope of a tagged mesh input (see /input): on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs["envelope"]) and write (<output>_envelope.msh), labelled by the tags it holds.
       input_dir (string, default ""): Directory where the input files are located.
       write_vtu (bool, default true): Write the VTU output next to the MSH.
@@ -497,7 +493,7 @@ def tetwild(options: dict, meshes: dict) -> tuple:
       num_threads (int, default 0): Number of threads.
       max_iterations (int, default 80): Maximum iterations before stopping.
       filter (string, default "none"): Remove the outside region based on different criteria.
-      filter_inputs (list, default []): The inputs that bound the domain a filter keeps, by their labels: the names of input_names (tag_<i> without one), or a tagged mesh's face-tag labels.
+      filter_inputs (list, default []): The inputs that bound the domain a filter keeps, by their labels: the names of the surface inputs (input_names, tag_<i> without one), or a tagged mesh's face-tag labels.
       skip_winding_number (bool, default false): Skip the finalize-phase winding numbers of the input: the whole input's (winding_number_input) and each input's (wn_<i>).
       compute_tracked_winding_number (bool, default false): Compute the winding number with respect to the tracked surface and write it (winding_number_tracked) even when filter is not 'tracked', which computes it anyway.
       compute_flood_fill (bool, default false): Compute the flood-fill parts -- the regions the tracked surface separates -- and write them (part) even when filter is not 'flood', which computes them anyway.
@@ -576,6 +572,7 @@ def topological_offset(options: dict, meshes: dict) -> tuple:
       envelope_size_rel (float, default 0.001): Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it.
       per_input_envelopes (bool, default true): Hold each input to its own envelopes.
       order2_envelope_ratio (float, default 1.0): Thickness of the tube that holds the order-2 edges of the held surfaces -- their rims and the non-manifold edges where labelled regions meet -- as a fraction of envelope_size, and the radius of the anchors where those curves end or three or more meet.
+      feature_envelope_ratio (float, default 1.0): Thickness of the tube that holds the input complex's own curves -- the segments of a curve offset's input (an offset_selection without triangles: a rod, a curve network) -- as a fraction of envelope_size, and the radius of the anchors where those curves end or three or more meet and of the complex's isolated points.
       envelope_size (float, default -1.0): Absolute half-width of the envelope that holds the held surfaces (see envelope_size_rel).
       offset_field (string, default "euclidean"): Which field defines the offset, and so what the front is placed on, what the criterion measures and what the sizing field refines by.
       offset_dhat_factor (float, default 2.0): Support radius of the smooth offset potential, as a multiple of target_distance.
@@ -711,10 +708,9 @@ def triwild(options: dict, meshes: dict) -> tuple:
     
     Options (every one, with its full description: https://wildmeshing.github.io/wildmeshing-toolkit/reference/triwild/):
       application (string, required): Application name must be triwild.
-      input (list, required): List of input curve networks: OBJ files of polylines ('v' and 'l' lines).
-      input_points (list, default []): List of input POINT files: every vertex of each file is a feature point to preserve, whether or not the file also has edges (they are ignored).
+      input (list, required): List of inputs, each read for what it is: segments a curve network (an OBJ of 'v' and 'l' lines; on the memory route a mesh with an edge block), bare vertices points (an OBJ of 'v' records alone; a mesh without edges).
       output (string, default "out"): Output file name (without extension): the mesh is <output>.msh.
-      input_names (list, default []): List of names for the input meshes.
+      input_names (list, default []): List of names for the inputs, one per entry of /input, at its position there.
       envelope (string, default ""): The envelope of a tagged mesh input (see /input): on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope triwild and simwild return (outputs["envelope"]) and write (<output>_envelope.msh), an edge block labelled by the tags it holds.
       input_dir (string, default ""): Directory where the input files are located.
       num_threads (int, default 0): Number of threads.
@@ -727,7 +723,7 @@ def triwild(options: dict, meshes: dict) -> tuple:
       simplify_use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects.
       use_sample_envelope (bool, default false): Use the sampled envelope instead of the exact one.
       filter (string, default "none"): Remove the outside region based on different criteria.
-      filter_inputs (list, default []): The inputs that bound the domain a filter keeps, by their labels: the names of input_names (tag_<i> without one), or a tagged mesh's edge-tag labels.
+      filter_inputs (list, default []): The inputs that bound the domain a filter keeps, by their labels: the names of the curve inputs (input_names, tag_<i> without one), or a tagged mesh's edge-tag labels.
       skip_winding_number (bool, default false): Skip the finalize-phase winding numbers of the inputs, each input's (wn_<i>).
       compute_flood_fill (bool, default false): Compute the flood-fill parts -- the regions the tracked curves separate -- and write them (the VTU field flood_fill) even when filter is not 'flood', which computes them anyway.
       eps_rel (float, default 0.001): Envelope thickness relative to the bounding box diagonal.

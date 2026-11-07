@@ -195,11 +195,12 @@ def test_envelope_is_passed_on_only_by_the_caller(boxes):
     assert "envelope" not in r3
     # and without its optimization the offset does not depend on it
     assert canonical(r2["mesh"]) == canonical(r3["mesh"])
-    # tag-changing ops clear it
+    # tag-changing ops do not read it, and hand on one around their result: its interfaces
     r4, _ = wm.simwild({"operation": "resolve_overlaps", "input": ["m"], "envelope": "e",
                         "resolve_overlaps_tags": [["a", "b"]]},
                        {"m": r1["mesh"], "e": r1["envelope"]})
-    assert "envelope" not in r4
+    assert "envelope" in r4
+    assert canonical(r4["envelope"]) != canonical(r1["envelope"])
 
 
 def _tags_only(m):

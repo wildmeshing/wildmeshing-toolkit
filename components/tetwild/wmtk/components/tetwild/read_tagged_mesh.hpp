@@ -21,7 +21,8 @@ namespace wmtk::components::tetwild {
  * The lower blocks are read as simwild's read_mesh_data() reads them, so a mesh means the same
  * to both: a triangle block is tagged faces, each label one input, every row oriented by its
  * vertex order; an edge block is feature curves, each label one feature input, every edge and
- * label an input edge placed on itself. A point block is input points, anchored where they are.
+ * label an input edge placed on itself. A point block is input points, anchored where they are --
+ * with an `envelope`, on its points (TetOptimizerMesh::ReferencePoints).
  */
 struct TaggedMesh
 {
@@ -34,9 +35,14 @@ struct TaggedMesh
     std::vector<std::array<size_t, 3>> F;
     std::vector<InputSet> F_sets;
     std::vector<std::string> face_names;
+    /// Per row of F and label, its count along the row (io::read_orientation()): with
+    /// WMTK_PER_INPUT_ORIENTATION, from the block's `orientation`; 0 rows without one.
+    DataMatrix<int64_t> F_orientation;
     /// The edge block: per edge and label, an input edge (features.edges, edge_input the
     /// label's column of feature_names) placed on itself (features_placed.edge_tiling). The
-    /// point block: features.points, each the vertex features_placed.point_vertex names.
+    /// point block: per row and label features.points, each the vertex
+    /// features_placed.point_vertex names, under the label features.point_input of
+    /// features.point_names.
     utils::FeatureInputs features;
     utils::EmbedFeaturesResult features_placed;
     std::vector<std::string> feature_names;
@@ -53,7 +59,8 @@ bool is_tet_mesh(const MeshData& mesh);
  * SurfaceTagAttributes::max_inputs, a row on a vertex no tet has. `what` names the input in the
  * errors.
  *
- * Fields: `tags` is read, and every other field dropped (io::ComponentIO::data_fields), on both
+ * Fields: `tags` is read (and with WMTK_PER_INPUT_ORIENTATION the faces' `orientation`,
+ * io::tag_fields()), and every other field dropped (io::ComponentIO::data_fields), on both
  * routes: a result, tetwild's own fields and all, goes back in as it is.
  */
 TaggedMesh read_tagged_mesh(const MeshData& mesh, const std::string& what);
