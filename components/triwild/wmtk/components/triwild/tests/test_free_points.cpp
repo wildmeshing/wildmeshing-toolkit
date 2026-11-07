@@ -181,3 +181,68 @@ TEST_CASE("init-mesh-registers-free-points", "[triwild_operation][free_points]")
     CHECK(kept == 1);
     CHECK(total == 1);
 }
+
+namespace {
+
+/// The anchors left after 3 iterations of triwild's operations on the square [0, 4]^2 with the
+/// open segment (1, 1)-(3, 1) inside and the free points `points`, in balls of 0.1.
+size_t anchors_after_optimization(const std::vector<Vector2d>& points, const bool preserve_topology)
+{
+    MatrixXd V(6 + points.size(), 2);
+    V.topRows(6) << 0, 0, 4, 0, 4, 4, 0, 4, // the square
+        1, 1, 3, 1; // the open segment
+    for (size_t i = 0; i < points.size(); ++i) V.row(6 + i) = points[i];
+    MatrixXi E(5, 2);
+    E << 0, 1, 1, 2, 2, 3, 3, 0, 4, 5;
+
+    MatrixXd V_arr;
+    std::vector<Vector2r> V_rational;
+    MatrixXi F_arr, E_arr;
+    std::vector<int> point_map;
+    utils::embed_segments(V, E, V_arr, V_rational, F_arr, E_arr, nullptr, nullptr, &point_map);
+    std::vector<size_t> free_point_vids;
+    for (size_t i = 0; i < points.size(); ++i) free_point_vids.push_back(point_map[6 + i]);
+
+    Parameters params;
+    params.init(Vector2d(0, 0), Vector2d(4, 4));
+    params.preserve_topology = preserve_topology;
+    TriWildMesh mesh(params, /*envelope_eps=*/0.1);
+    mesh.init_mesh(
+        V_arr,
+        V_rational,
+        F_arr,
+        E_arr,
+        /*tag_names=*/{},
+        V,
+        E,
+        /*E_orientation=*/nullptr,
+        free_point_vids);
+    // The segment's two ends and the free points.
+    REQUIRE(mesh.tracked_feature_points().size() == 2 + points.size());
+    mesh.mesh_improvement(3);
+    return mesh.tracked_feature_points().size();
+}
+
+} // namespace
+
+TEST_CASE("free-points-stay-apart-under-preserve-topology", "[triwild_operation][free_points]")
+{
+    // Two free points 0.03 apart in anchor balls of 0.1: each ball holds the other point, so a
+    // collapse of the edge between them passes the anchor test and merges the two. Without
+    // preserve_topology it does. Under it the substructure link condition refuses it, an anchor
+    // being a point of the substructure (substructure_order_of_vertex()). Until 2026-11 the
+    // condition was not asked: neither end is on a curve.
+    CHECK(anchors_after_optimization({{2, 3}, {2.03, 3}}, false) == 3);
+    CHECK(anchors_after_optimization({{2, 3}, {2.03, 3}}, true) == 4);
+}
+
+TEST_CASE(
+    "free-point-and-curve-end-stay-apart-under-preserve-topology",
+    "[triwild_operation][free_points]")
+{
+    // A free point 0.03 from the segment's end (3, 1): the same merge, of a point into a curve's
+    // end, and the same refusal under preserve_topology. Until 2026-11 the condition was not
+    // asked: the free point is not on a curve.
+    CHECK(anchors_after_optimization({{3, 1.03}}, false) == 2);
+    CHECK(anchors_after_optimization({{3, 1.03}}, true) == 3);
+}

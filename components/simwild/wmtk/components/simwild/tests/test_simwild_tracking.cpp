@@ -9,6 +9,7 @@
 #include <wmtk/history/History.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
@@ -18,6 +19,7 @@
 #include <filesystem>
 #include <fstream>
 #include <random>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -497,4 +499,133 @@ TEST_CASE("tracking-example-simwild-volume", "[simwild][tracking]" + release_onl
     const auto [moving, kept_orientation] = orientation_kept(tracking, pts);
     CHECK(moving > 0);
     CHECK(kept_orientation == moving);
+}
+
+namespace {
+
+/// The cube [0,1]^3 as a triangle mesh.
+MeshData unit_cube_surface()
+{
+    MatrixXd V(8, 3);
+    V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1;
+    MatrixXi F(12, 3);
+    F << 0, 3, 2, 0, 2, 1, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 3, 7, 6, 3, 6, 2, 0, 4, 7, 0, 7, 3,
+        1, 2, 6, 1, 6, 5;
+    return io::geometry_data(V, F, CellType::Triangle);
+}
+
+/// A bent chain of four segments inside the cube, and two vertices with no edge -- feature
+/// points by the edge-file rule -- one inside the cube, one outside its bounding box.
+MeshData chain_and_points()
+{
+    MatrixXd V(7, 3);
+    V << 0.2, 0.5, 0.5, 0.35, 0.5, 0.5, 0.5, 0.5, 0.5, 0.65, 0.65, 0.5, 0.8, 0.8, 0.5, //
+        0.3, 0.3, 0.7, 1.5, 0.5, 0.5;
+    MatrixXi E(4, 2);
+    E << 0, 1, 1, 2, 2, 3, 3, 4;
+    return io::geometry_data(V, E, CellType::Edge);
+}
+
+} // namespace
+
+TEST_CASE("tracking-simwild-curves", "[simwild][tracking]" + release_only)
+{
+    // simwild records the feature curves of a surface input as tetwild does (curve_history_output),
+    // from the curve file as read to the output; on the memory route the history is the report's
+    // curve_history. It ends at the output's feature curves -- its edge block, edges of its tets
+    // -- and under preserve_topology the map is a bijection: every point on the input curves maps
+    // there and back, and each feature point (the chain's two ends, the two points) ends within
+    // the anchors' radius, eps, of where it was.
+    const MeshData features = chain_and_points();
+    const auto [outputs, report] = simwild::simwild(
+        {{"input", {"cube", "features"}},
+         {"curve_history_output", "recorded"},
+         {"preserve_topology", true},
+         {"max_iterations", 3},
+         {"num_threads", 1}},
+        {{"cube", unit_cube_surface()}, {"features", features}});
+    CHECK(!fs::exists("recorded"));
+    CHECK(!report.contains("history")); // its own key, without history_output
+    REQUIRE(report.at("curve_history").is_binary());
+    const tracking::CurveTracking t(
+        history::CurveHistory::from_bytes(report.at("curve_history").get_binary()));
+    REQUIRE(t.output_by_vertices());
+    CHECK(t.input_segments().size() == 4);
+    CHECK(t.map().build_warnings().total() == 0);
+    const MeshData& mesh = outputs.at("mesh");
+    std::set<std::array<uint64_t, 2>> tet_edges, tracked, block;
+    const auto& T = mesh.cell(CellType::Tetrahedron).connectivity;
+    for (Eigen::Index i = 0; i < T.rows(); ++i) {
+        for (int a = 0; a < 4; ++a) {
+            for (int b = a + 1; b < 4; ++b) {
+                const uint64_t x = uint64_t(T(i, a)), y = uint64_t(T(i, b));
+                tet_edges.insert({{std::min(x, y), std::max(x, y)}});
+            }
+        }
+    }
+    for (const auto& e : t.output_segments()) {
+        const std::array<uint64_t, 2> s = {{std::min(e[0], e[1]), std::max(e[0], e[1])}};
+        CHECK(tet_edges.count(s) == 1);
+        tracked.insert(s);
+    }
+    const auto& E = mesh.cell(CellType::Edge).connectivity;
+    for (Eigen::Index i = 0; i < E.rows(); ++i) {
+        const uint64_t x = uint64_t(E(i, 0)), y = uint64_t(E(i, 1));
+        block.insert({{std::min(x, y), std::max(x, y)}});
+    }
+    CHECK(!tracked.empty());
+    CHECK(tracked == block);
+
+    std::mt19937 rng(7);
+    std::vector<tracking::InputCurvePoint> pts;
+    for (int i = 0; i < 500; ++i) {
+        const double x = double(rng()) / 4294967296.0;
+        pts.push_back({uint64_t(rng() % 4), Eigen::Vector2d(1 - x, x)});
+    }
+    const auto there = t.to_output(pts);
+    const auto back = t.to_input(there);
+    double round_trip = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(there[i].vertices[0] != kNoId);
+        REQUIRE(back[i].segment == pts[i].segment);
+        round_trip = std::max(round_trip, (back[i].bary - pts[i].bary).cwiseAbs().maxCoeff());
+    }
+    CHECK(round_trip < 1e-8);
+
+    const double eps = report.at("eps").get<double>();
+    const auto points = t.feature_points();
+    CHECK(points.size() == 4);
+    for (const auto& f : points) {
+        REQUIRE(f.output_vertex < uint64_t(mesh.V.rows()));
+        const Eigen::Vector3d at = mesh.V.row(Eigen::Index(f.output_vertex)).transpose();
+        CHECK((at - features.V.row(Eigen::Index(f.input_vertex)).transpose()).norm() <= eps);
+    }
+}
+
+TEST_CASE("tracking-simwild-curves-refusals", "[simwild][tracking]")
+{
+    // The curve history starts at the feature curve files, which only a 3D surface input takes:
+    // a tagged tet mesh and a 2D input refuse curve_history_output rather than record nothing.
+    MatrixXd V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixXd V2(3, 3);
+    V2 << 0, 0, 0, 1, 0, 0, 0, 1, 0;
+    MatrixXi E2(3, 2);
+    E2 << 0, 1, 1, 2, 2, 0;
+    const MeshMap meshes{
+        {"tets", io::geometry_data(V, T, CellType::Tetrahedron)},
+        {"loop", io::geometry_data(V2, E2, CellType::Edge)}};
+    for (const char* input : {"tets", "loop"}) {
+        CAPTURE(input);
+        CHECK_THROWS_WITH(
+            simwild::simwild(
+                {{"input", {input}},
+                 {"curve_history_output", "recorded"},
+                 {"max_iterations", 1},
+                 {"num_threads", 1}},
+                meshes),
+            Catch::Matchers::ContainsSubstring("feature curves of a 3D surface input only"));
+    }
 }

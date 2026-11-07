@@ -391,7 +391,8 @@ void map_curve_points(
     log_warnings("mapping", warnings);
 }
 
-/// The operations on a curve history (triwild's); `history_path` names it in messages. Returns
+/// The operations on a curve history (triwild's, tetwild's or simwild's curve_history_output);
+/// `history_path` names it in messages. Returns
 /// info's report, and on the memory route the feature points of features, which the file route
 /// writes to output_points; map writes its points and returns an empty one.
 nlohmann::json curves(
@@ -629,7 +630,8 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
                                          : resolve_path(root, json_params["history"]).string();
     igl::Timer timer;
     timer.start();
-    // A surface's history or curves' (triwild's): the header says which.
+    // A surface's history or curves' (triwild's, or a curve_history_output): the header says
+    // which.
     if ((component_io.memory() ? history::face_size(history_bytes)
                                : history::face_size(history_path)) == 2) {
         const history::CurveHistory h = component_io.memory()

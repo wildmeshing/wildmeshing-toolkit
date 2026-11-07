@@ -1,6 +1,9 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/history/History.hpp>
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/history/Replay.hpp>
+#include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/utils/FeatureInputs.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -451,4 +454,70 @@ TEST_CASE("history-load-refuses-what-a-map-cannot-follow", "[history]")
     feature.vi(3).vi(0 << 1).pos(0, 0, 0).vi(1 << 1).pos(1, 0, 0).vi(2 << 1).pos(0, 1, 0);
     feature.trailer().vi(0).vi(0).vi(0).vi(0).vi(0).vi(0).vi(0).vi(0).vi(0).vi(0);
     CHECK_THROWS_WITH(loads(feature), Catch::Matchers::ContainsSubstring("is corrupt"));
+}
+
+TEST_CASE("curve-history-from-3d-feature-files", "[history][curves]")
+{
+    // tetwild's and simwild's feature curves, as read_feature_inputs() reads them, start a curve
+    // history at the files as given: the segments of the edge files in order, then the point
+    // files' vertices, every one at its position in space. The curves are welded by exact
+    // position, as the insertion places them: the end of `a` at (1, 0, 1) and the start of `b`
+    // there are one vertex, which the joined curve passes. The feature points are where the
+    // curves end or three or more segments meet, a vertex of an edge file on no segment, and every
+    // point. Until 2026-11 the curves were not welded, and (1, 0, 1) was two input vertices, two
+    // curve ends.
+    const auto edges = [](const std::vector<Eigen::Vector3d>& v,
+                          const std::vector<std::array<int64_t, 2>>& e) {
+        MeshData m;
+        m.V.resize(Eigen::Index(v.size()), 3);
+        for (size_t i = 0; i < v.size(); ++i) m.V.row(Eigen::Index(i)) = v[i].transpose();
+        auto& E = m.cells[CellType::Edge].connectivity;
+        E.resize(Eigen::Index(e.size()), 2);
+        for (size_t i = 0; i < e.size(); ++i) E.row(Eigen::Index(i)) << e[i][0], e[i][1];
+        return m;
+    };
+    // `a`: a chain 0-1-2 with a branch 1-3, and 4 on no segment; `b`: a chain of two segments
+    // from a's vertex 2; `p`: a point.
+    const MeshMap meshes{
+        {"a",
+         edges(
+             {{0, 0, 0}, {1, 0, 0.5}, {1, 0, 1}, {1, 1, 0.5}, {2, 2, 2}},
+             {{{0, 1}}, {{1, 2}}, {{1, 3}}})},
+        {"b", edges({{1, 0, 1}, {0, 0, 2}, {-1, 0, 2}}, {{{0, 1}}, {{1, 2}}})},
+        {"p", edges({{0.5, 0.5, 0.25}}, {})}};
+    const io::ComponentIO component_io(&meshes);
+    io::ReadProvenance read;
+    const utils::FeatureInputs features =
+        utils::read_feature_inputs(component_io, "", {"a", "b"}, {"p"}, {}, {}, &read);
+    REQUIRE(read.V.rows() == 9);
+    REQUIRE(read.cells.rows() == 5);
+    CHECK(read.V.row(5).transpose() == Eigen::Vector3d(1, 0, 1));
+    CHECK(read.V.row(8).transpose() == Eigen::Vector3d(0.5, 0.5, 0.25));
+    CHECK(read.vertex_map == std::vector<int>{0, 1, 2, 3, 4, 2, 5, 6, 7});
+    CHECK(read.cell_map == std::vector<int>{0, 1, 2, 3, 4});
+    CHECK(features.edge_vertices.size() == 7);
+    CHECK(
+        features.edges ==
+        std::vector<std::array<size_t, 2>>{{{0, 1}}, {{1, 2}}, {{1, 3}}, {{2, 5}}, {{5, 6}}});
+    CHECK(features.edge_input == std::vector<int>{0, 0, 0, 1, 1});
+    CHECK(features.points.size() == 2); // a's vertex 4, and p's point
+
+    const history::CurveHistory h = history::curves_from_features(read, features);
+    REQUIRE(h.vertices.size() == 9);
+    for (Eigen::Index v = 0; v < read.V.rows(); ++v) {
+        CHECK(h.vertices[size_t(v)] == read.V.row(v).transpose());
+    }
+    REQUIRE(h.faces.size() == 5);
+    CHECK(h.faces[3] == std::array<uint64_t, 2>{{5, 6}});
+    CHECK(h.faces[4] == std::array<uint64_t, 2>{{6, 7}});
+    // Ends 0 and 3, the junction 1, 4 on no segment, b's end 7, the point 8; not 2, where a
+    // ends and b starts, nor b's middle 6.
+    std::vector<uint64_t> points;
+    for (const auto& f : h.features) points.push_back(f[0]);
+    CHECK(points == std::vector<uint64_t>{0, 1, 3, 4, 7, 8});
+    history::CurveReplay r(h);
+    r.apply_all(h);
+    CHECK(r.vertices()[2] == Eigen::Vector3d(1, 0, 1));
+    CHECK(r.vertices()[7] == Eigen::Vector3d(0.5, 0.5, 0.25));
+    CHECK(r.faces_of(2).size() == 2); // a's 1-2 and b's first segment
 }

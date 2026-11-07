@@ -1,4 +1,5 @@
 #include "simwild.hpp"
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
@@ -538,6 +539,16 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         mesh.m_insertion_sources = std::move(input_data.facet_sources);
         mesh.record_surface_history(component_io.history_metadata(json_params));
     }
+    // The feature curves of a surface run (its curve and point inputs), the edges tagged
+    // `feature`: their own history and file, as tetwild records them, from the inputs through the
+    // insertion to the output.
+    const std::string curve_history_output = json_params["curve_history_output"];
+    if (!curve_history_output.empty()) {
+        mesh.set_insertion_curve_sources(input_data.features_placed, [&input_data](size_t v) {
+            return Vector3d(input_data.V_input.row(Eigen::Index(v)));
+        });
+        mesh.record_curve_history(component_io.history_metadata(json_params));
+    }
     // The volume around the tracked surface: its own choice, as it takes far more room.
     const std::string volume_history_output = json_params["volume_history_output"];
     if (!volume_history_output.empty()) {
@@ -569,6 +580,10 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     if (const auto h = mesh.finish_surface_history(
             input_data.has_input_history ? &input_data.input_history : nullptr)) {
         component_io.save_history(*h, history_output);
+    }
+    if (const auto h = mesh.finish_curve_history(
+            input_data.has_curve_input_history ? &input_data.curve_input_history : nullptr)) {
+        component_io.save_curve_history(*h, curve_history_output);
     }
 
     // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
@@ -663,6 +678,12 @@ void run_2D(
         log_and_throw_error(
             "history_output: simwild records a surface history in 3D only, and this input is "
             "2D");
+    }
+    // Nor are its curves feature curves, which only a 3D run has.
+    if (!std::string(json_params["curve_history_output"]).empty()) {
+        log_and_throw_error(
+            "curve_history_output: simwild records the feature curves of a 3D surface input "
+            "only, and this input is 2D");
     }
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
@@ -906,6 +927,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                                : !envelope_selector.is_null() && !tag_operation
                                    ? &component_io.mesh(envelope_selector)
                                    : nullptr;
+    // A curve history starts at the curve inputs as read, which only a 3D surface run has: the
+    // other routes refuse it rather than record nothing.
+    const auto no_curve_history = [&](const char* route) {
+        if (!std::string(json_params["curve_history_output"]).empty()) {
+            log_and_throw_error(
+                "curve_history_output: simwild records the feature curves of a 3D surface input "
+                "only (its curve and point inputs), not of {}",
+                route);
+        }
+    };
     // A tagged mesh is the run's one input, as on tetwild's and triwild's tagged routes: the route
     // reads input[0] only, and until 2026-11 dropped any other input without a word.
     const auto only_input = [&](const char* route) {
@@ -920,12 +951,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     };
     if (component_io.memory() && dimension == 0) {
         only_input("a tagged mesh");
+        no_curve_history("a tagged mesh");
         // Label images become regions here as on the file route (read_image_msh).
         MeshData input = component_io.mesh(input_paths.at(0));
         tags_from_label_images(input, input_paths.at(0));
         input_data = read_mesh_data(input, envelope);
     } else if (!component_io.memory() && extension == ".msh") {
         only_input("a .msh input");
+        no_curve_history("a .msh input");
         input_data = read_image_msh(input_paths[0], envelope);
     } else if (dimension == 2) {
         const InputLists lists = split_inputs(component_io, input_paths, json_params, 2);
@@ -947,14 +980,19 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         input_data.point_names = features.point_names;
     } else {
         const InputLists lists = split_inputs(component_io, input_paths, json_params, 3);
-        // Read by the code tetwild reads them with.
+        // Read by the code tetwild reads them with, and recorded from the inputs as tetwild
+        // records them: inserted as read, welded by exact position, so the history goes from the
+        // inputs through that weld to the insertion's embed.
+        const bool record_curves = !std::string(json_params["curve_history_output"]).empty();
+        io::ReadProvenance curves_read;
         const utils::FeatureInputs features = utils::read_feature_inputs(
             component_io,
             root,
             lists.curves,
             lists.points,
             lists.curve_names,
-            lists.point_names);
+            lists.point_names,
+            record_curves ? &curves_read : nullptr);
         input_data = read_mesh(
             lists.inserted,
             output_filename.string(),
@@ -964,6 +1002,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!input_data.features.empty()) input_data.feature_edge_names = lists.curve_names;
         input_data.input_point_labels = features.point_input;
         input_data.point_names = features.point_names;
+        if (record_curves) {
+            input_data.has_curve_input_history = true;
+            input_data.curve_input_history = history::curves_from_features(curves_read, features);
+        }
     }
 
     if (input_data.T_input.cols() == 4) {

@@ -1350,6 +1350,16 @@ public:
     size_t get_order_of_vertex(const size_t vid) const;
 
     /**
+     * @brief The vertex order substructure_link_condition consults, overridable so an
+     * application can add points the surface does not derive, as
+     * TetMesh::substructure_order_of_vertex. The meaning of get_order_of_vertex is untouched.
+     */
+    virtual size_t substructure_order_of_vertex(const size_t vid) const
+    {
+        return get_order_of_vertex(vid);
+    }
+
+    /**
      * @brief Link condition that also considers substructures.
      *
      * Implementation based on the pseudo code from the paper:

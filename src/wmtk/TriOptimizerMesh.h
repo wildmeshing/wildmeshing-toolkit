@@ -939,6 +939,10 @@ public:
         return m_vertex_attribute.at(vid).m_is_on_surface ||
                !m_vertex_attribute.at(vid).on_bbox_faces.empty();
     }
+    /// For the link condition (preserve_topology): an anchor is a point (order 2), on a curve or
+    /// not, as in 3D (TetOptimizerMesh::substructure_order_of_vertex()); any other vertex has
+    /// get_order_of_vertex()'s order.
+    size_t substructure_order_of_vertex(const size_t vid) const override;
     bool edge_is_on_surface(const std::array<size_t, 2>& vids) const override
     {
         if (!vertex_is_on_surface(vids[0]) || !vertex_is_on_surface(vids[1])) {

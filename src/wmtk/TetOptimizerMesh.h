@@ -571,8 +571,8 @@ public:
 
     // Substructure widening for the link condition (preserve_topology): a tagged edge, of any
     // kind, is order-2 substructure, a vertex with two incident tagged edges is on a curve
-    // (order 2), with one or three-plus it is a curve endpoint or junction (order 3). The
-    // meaning of get_order_of_* is untouched.
+    // (order 2), with one or three-plus it is a curve endpoint or junction (order 3), and an
+    // anchor is a point (order 3). The meaning of get_order_of_* is untouched.
     size_t substructure_order_of_edge(const std::array<size_t, 2>& vids) const override;
     size_t substructure_order_of_vertex(size_t vid) const override;
     void substructure_feature_neighbors(size_t vid, std::vector<size_t>& out) const override;
@@ -631,6 +631,12 @@ public:
     std::vector<std::string> m_point_names;
     std::vector<int> m_input_point_labels;
     std::vector<InputSet> m_feature_point_inputs;
+    /// Beside m_feature_points: whether the anchor stands for an end or a junction of the
+    /// feature curves (1 or 3+ edges tagged `feature`) or for an input point, set by
+    /// anchor_feature_points(). Those are the feature points of a curve history
+    /// (tracked_feature_points()), as the input's curves have them (history::
+    /// curves_from_input()); an anchor of an order-2 curve alone is not one.
+    std::vector<uint8_t> m_curve_feature_point;
     /// Whether the shared operations maintain and enforce the anchors
     /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
@@ -1058,6 +1064,50 @@ public:
     /// The edges tagged `feature` (m_feature_edge_attribute) that are edges of tracked faces.
     std::vector<std::array<size_t, 2>> tracked_feature_edges() const override;
 
+    /// For a curve history (TetMesh::start_curve_history): the tracked curves are the edges
+    /// tagged `feature`, the input's feature curves, wherever they lie. Not the order-2 edges:
+    /// they are edges of tracked faces, which the surface history keeps as curves (SurfaceMap
+    /// flattens each side of an edge with other than two faces separately).
+    bool is_tracked_edge(size_t tid, int j) const override;
+    /// The feature points of a curve history: the anchored vertices that stand for an end or a
+    /// junction of the feature curves, or for an input point (m_curve_feature_point). Not those
+    /// anchored for an order-2 curve alone, which the input's curves do not have.
+    std::vector<size_t> tracked_feature_points() const override;
+
+    /// A tracked edge by its ends' positions, sorted.
+    using SegmentKey = std::array<std::array<double, 3>, 2>;
+    static SegmentKey segment_key(const Vector3d& a, const Vector3d& b);
+    /// Where the tracked edges lie on the input's feature curves: by segment key, sorted, the
+    /// input segments (rows of utils::FeatureInputs::edges). Filled at insertion when a curve
+    /// history is to start from the input; record_curve_history takes it. Keyed by position, as
+    /// m_insertion_sources is: the mesh is consolidated between the insertion and the recording.
+    std::vector<std::pair<SegmentKey, std::vector<uint32_t>>> m_insertion_curve_sources;
+    /// Fill m_insertion_curve_sources from where the insertion put the feature curves: each tet
+    /// edge of `placed`'s tiling, by its ends' positions (`position` of a vertex of the tiling),
+    /// with the input segments it tiles -- several where input segments overlap.
+    void set_insertion_curve_sources(
+        const utils::EmbedFeaturesResult& placed,
+        const std::function<Vector3d(size_t)>& position);
+    /// Start recording the tracked curves (TetMesh::start_curve_history), at m_posf, with
+    /// `metadata` (the application's parameters, say) saved along. Takes
+    /// m_insertion_curve_sources. The 3D twin of TriOptimizerMesh::record_curve_history().
+    void record_curve_history(const std::string& metadata);
+    /**
+     * @brief Check the recorded curves against the tracked edges, stop recording, log what the
+     * history holds and return it, for the application to save (tetwild and simwild:
+     * io::ComponentIO::save_curve_history). None if not recording. The 3D twin of
+     * TriOptimizerMesh::finish_curve_history().
+     *
+     * With `input`, the history of the input the mesh was made from (the feature curve files as
+     * read): the history returned is that, then the insertion -- each tracked edge on the input
+     * segments it lies on, from m_insertion_curve_sources -- then the recorded one, so it maps
+     * the input files to the output. The output names a point on the curves by two of its
+     * vertices, numbered as they are now: the mesh must be written as it is here, consolidated
+     * -- which this checks, throwing otherwise.
+     */
+    std::optional<history::CurveHistory> finish_curve_history(
+        const history::CurveHistory* input = nullptr);
+
     /// m_params.check_surface_folds; see there.
     bool checks_tracked_surface() const override { return m_params.check_surface_folds; }
     void tracked_surface_before(const std::vector<size_t>& vs, bool all) override;
@@ -1088,6 +1138,9 @@ public:
     size_t tracked_star_folds(const std::vector<std::array<size_t, 3>>& faces) const;
     /// The input triangles each face of the recorded surface's first state lies on.
     std::vector<std::vector<uint64_t>> m_recorded_sources;
+    std::shared_ptr<history::TrackedCurveRecorder> m_recorded_curves;
+    /// The input segments each segment of the recorded curves' first state lies on.
+    std::vector<std::vector<uint64_t>> m_recorded_curve_sources;
     int m_debug_print_counter = 0;
     /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
     /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer
@@ -1656,7 +1709,7 @@ protected:
         inverted, // a cell the collapse reshapes would invert
         quality, // collapse_quality_allowed() said no
         edge_leaves_envelope, // both ends on the surface, the edge on none and outside the envelope
-        substructure_link, // preserve_topology, both ends on the surface: substructure link
+        substructure_link, // preserve_topology, both ends on the surface or a tagged curve
         feature_leaves_tube, // an edge tagged `feature` the collapse moves would leave its tube
         order2_leaves_tube, // an edge tagged `order2` the collapse moves would leave its tube
         feature_point, // v1 stands for a feature point and v2 is outside its ball

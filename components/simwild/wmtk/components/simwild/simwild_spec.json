@@ -57,6 +57,7 @@
       "report",
       "history_output",
       "volume_history_output",
+      "curve_history_output",
       "DEBUG_output",
       "DEBUG_sanity_checks",
       "allow_surface_swap",
@@ -464,6 +465,12 @@
     "type": "string",
     "default": "",
     "doc": "3D only, with history_output. Also record the tets around every operation that changes the tracked surface, and save them here (see wmtk/history/VolumeHistory.hpp): with the surface history, the tracking component rebuilds a map of the volume, region by region (a region: the tets with the same tags), from the mesh the surface history starts from (<output>_history_input.msh; on the memory route the output mesh history_input) to the output. On the memory route no file is written: any non-empty value records the volume history, and the bytes of the file it would be are returned in the report as volume_history (bytes in Python; history::write_history or wm.write_history saves them). It takes many times the room of the surface history. Empty: no recording."
+  },
+  {
+    "pointer": "/curve_history_output",
+    "type": "string",
+    "default": "",
+    "doc": "3D surface inputs only: a .msh input, a tagged mesh and a 2D input refuse it. Record every change to the feature curves -- the tet edges tiling the curve inputs, with the feature points: their ends and junctions, and the point inputs -- from the inputs as read to the output, and save the history here (see wmtk/history), as tetwild's curve_history_output: the tracking component rebuilds the map between the two from it. Its own file, with or without history_output. The output names a point on its curves by two vertices of the output mesh. The curves are welded by exact position, as the insertion places them, and not simplified: ends of two curves at the same coordinates are one vertex, which the joined curve passes. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as curve_history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording."
   },
   {
     "pointer": "/DEBUG_output",
