@@ -3610,6 +3610,12 @@ and optional keys and says what the component does:</p>
 <li>A key the spec does not have is accepted and ignored (with a warning from <code>wmtk_app</code> and the
   bindings), unless the component sets <code>spec_engine.strict = true</code>. So do not read a key that is
   not in the spec.</li>
+<li>A string that names labels (tags) says how, in <code>"labels"</code>: <code>"existing"</code>, one label the mesh has;
+  <code>"expression"</code>, a tag expression over them, as <code>expression_parser::parse</code> reads it; <code>"new"</code>, a
+  label the component makes. A list with one entry per entry of <code>input</code>, at its position there,
+  has <code>"per_input": true</code>. The engine ignores both keys; the pipeline gui (<code>wildmeshing.gui</code>)
+  reads them: a label option gets a dropdown of the labels of the mesh the stage reads, and the
+  per-input lists become columns of one table beside <code>input</code>.</li>
 </ul>
 <p><code>python docs/tools/gen_reference.py --check</code> fails when the root rule or any other rule has no
 <code>doc</code>, when the spec has no entry in <code>docs/components.yml</code>, or when that entry names an option
