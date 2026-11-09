@@ -404,7 +404,7 @@ def _node(psim, label):
 
 
 class Viewer:
-    """The stages shown and their panel: view() sets a fixed list of stages, the pipeline builder
+    """The stages shown and their panel: view() sets a fixed list of stages, the pipeline GUI
     sets each stage as it runs. Every stage is moved and scaled by one transform -- the first
     stage's, unless one is given."""
 

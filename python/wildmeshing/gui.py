@@ -1,8 +1,8 @@
-"""A pipeline builder: stack components as stages, edit their options, run, read each stage's log
+"""A pipeline window: stack components as stages, edit their options, run, read each stage's log
 and view each stage's result, in one polyscope window -- over wildmeshing.pipeline (the pipeline
 file, its stage keys and cache) and wildmeshing.viewer (the view of each stage).
 
-    python -m wildmeshing.builder [<pipeline.json>]
+    python -m wildmeshing.gui [<pipeline.json>]
 
 The "pipeline" window lists the inputs first, a table: name (editable; every reference follows a
 rename), file path ("..." for the system's file dialog), "x"; its last row adds one. Then the
@@ -68,7 +68,7 @@ def _parses(text):
         return False
 
 
-class Builder:
+class Gui:
     """The pipeline being built, its runs and its windows. The methods that change the pipeline
     are the panel's buttons, callable without a window."""
 
@@ -679,18 +679,18 @@ class Builder:
         psim.End()
 
 
-def run_window(builder, screenshots=None):
-    """Open `builder`'s window; `screenshots` "mock" (or WM_VIEWER_SCREENSHOTS) draws three frames
+def run_window(gui, screenshots=None):
+    """Open `gui`'s window; `screenshots` "mock" (or WM_VIEWER_SCREENSHOTS) draws three frames
     without one, as a self-test."""
     import polyscope as ps
     import polyscope.imgui as psim
 
     mode = _viewer.start(ps, screenshots)
-    ps.set_open_imgui_window_for_user_callback(False)  # the builder places its own windows
-    builder.ps, builder.psim = ps, psim
-    if builder.viewer is None:
-        builder.viewer = _viewer.Viewer(ps, psim)
-    ps.set_user_callback(builder.panel)
+    ps.set_open_imgui_window_for_user_callback(False)  # the GUI places its own windows
+    gui.ps, gui.psim = ps, psim
+    if gui.viewer is None:
+        gui.viewer = _viewer.Viewer(ps, psim)
+    ps.set_user_callback(gui.panel)
     if mode == "mock":
         ps.show(3)
     else:
@@ -699,10 +699,10 @@ def run_window(builder, screenshots=None):
 
 def main(argv):
     if argv and os.path.exists(argv[0]):
-        builder = Builder(Pipeline.load(argv[0]), argv[0])
+        gui = Gui(Pipeline.load(argv[0]), argv[0])
     else:
-        builder = Builder(Pipeline([], os.getcwd()), argv[0] if argv else None)
-    run_window(builder)
+        gui = Gui(Pipeline([], os.getcwd()), argv[0] if argv else None)
+    run_window(gui)
 
 
 if __name__ == "__main__":

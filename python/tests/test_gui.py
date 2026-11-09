@@ -1,5 +1,5 @@
-"""wildmeshing.builder without a window (polyscope's mock backend): a pipeline built stage by stage
-through the builder's methods, run in its background thread, each stage reaching the viewer; an
+"""wildmeshing.gui without a window (polyscope's mock backend): a pipeline built stage by stage
+through the GUI's methods, run in its background thread, each stage reaching the viewer; an
 edit marking the stage and its readers, and the rerun running only those; every panel widget
 drawn, each tree node open, for each kind of option value (number, flag, choice, text, list,
 reference)."""
@@ -7,7 +7,7 @@ import pytest
 
 polyscope = pytest.importorskip("polyscope")
 import wildmeshing as wm  # noqa: E402
-from wildmeshing import builder, viewer  # noqa: E402
+from wildmeshing import gui, viewer  # noqa: E402
 from wildmeshing.pipeline import Pipeline  # noqa: E402
 
 
@@ -28,7 +28,7 @@ def run(b):
 def test_build_run_edit_and_draw(tmp_path, monkeypatch):
     monkeypatch.setattr(viewer, "OPEN_ALL", True)
     box(tmp_path)
-    b = builder.Builder(Pipeline([], str(tmp_path)), str(tmp_path / "p.json"))
+    b = gui.Gui(Pipeline([], str(tmp_path)), str(tmp_path / "p.json"))
     b.add_input("box", "box.obj")
     b.add_stage("remesh", "isotropic_remeshing")
     # The required options; the first stage reads the input.
@@ -56,7 +56,7 @@ def test_build_run_edit_and_draw(tmp_path, monkeypatch):
     value = b._value
     monkeypatch.setattr(b, "_value", lambda name, label, v, pointer, rules, unset=None: (
         drawn.add((name, pointer)), value(name, label, v, pointer, rules, unset))[1])
-    builder.run_window(b, "mock")  # three frames, nothing run yet
+    gui.run_window(b, "mock")  # three frames, nothing run yet
     assert drawn >= {("remesh", p) for p in ["/input", "/length_rel", "/max_iterations",
                                              "/use_sample_envelope", "/history_output"]} \
         | {("map", "/history"), ("map", "/operation"), ("simplify", "/eps_rel")}
@@ -102,22 +102,22 @@ def test_build_run_edit_and_draw(tmp_path, monkeypatch):
 
 def test_a_failed_stage_is_marked_and_its_log_chosen(tmp_path, monkeypatch):
     box(tmp_path)
-    b = builder.Builder(Pipeline([], str(tmp_path)))
+    b = gui.Gui(Pipeline([], str(tmp_path)))
     b.add_input("box", "box.obj")
     b.add_stage("remesh", "isotropic_remeshing")
     b.set_option("remesh", "max_iterations", "two")  # the spec refuses a string
-    builder.run_window(b, "mock")
+    gui.run_window(b, "mock")
     run(b)
     assert b.status["remesh"] == "failed" and b.log_stage == "remesh"
 
 
 def test_a_picked_file_and_the_default_names(tmp_path, monkeypatch):
     box(tmp_path)
-    b = builder.Builder(Pipeline([], str(tmp_path)))
-    builder.run_window(b, "mock")
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    gui.run_window(b, "mock")
     assert b.new_input["name"] == ""  # no file yet
     picked = type("Done", (), {"stdout": str(tmp_path / "box.obj") + "\n"})
-    monkeypatch.setattr(builder.subprocess, "run", lambda *a, **k: picked)
+    monkeypatch.setattr(gui.subprocess, "run", lambda *a, **k: picked)
     b.pick_file("new").join()
     polyscope.show(1)
     assert b.new_input == {"name": "box", "file": "box.obj", "default": "box"}  # relative, stem
