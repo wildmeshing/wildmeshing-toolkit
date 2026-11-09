@@ -35,6 +35,9 @@ void collect_memory_output(Mesh& mesh, io::ComponentIO& context)
         // edge block tetwild and simwild write; a tag-expression curve's bit, past the names, is
         // not written
         io::collect_feature_edge_tags(mesh, context.result.first, mesh.m_feature_edge_names);
+        // the input points, as their anchors carry them (hold_curves_and_points()), the point
+        // block tetwild and simwild write
+        io::collect_point_tags(mesh, context.result.first, mesh.m_point_names);
     } else {
         io::collect_tags(
             mesh,
