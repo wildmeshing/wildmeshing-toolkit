@@ -483,3 +483,75 @@ TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]" 
     }
     CHECK(flagged == tiling_verts.size());
 }
+
+TEST_CASE("insertion-of-welded-curves-is-the-same", "[tetwild_operation][features]" + release_only)
+{
+    // The feature curves are read welded by exact position (utils::read_feature_inputs()): two
+    // vertices at the same coordinates are one. The insertion places vertices by position, so it
+    // makes the same mesh of two curves touching end to end welded as given, bit for bit: the
+    // same vertices, facets and tets, each edge tiled by the same tet edges. (A segment between
+    // two such vertices, which the weld drops, the insertion refuses: "forced edge has coincident
+    // endpoints".)
+    MatrixXd V(8, 3);
+    V << 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 0, //
+        0, 0, 2, 2, 0, 2, 2, 2, 2, 0, 2, 2;
+    MatrixXi F(12, 3);
+    F << 0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, //
+        2, 3, 7, 2, 7, 6, 1, 2, 6, 1, 6, 5, 0, 4, 7, 0, 7, 3;
+    std::vector<Vector3d> vertices;
+    std::vector<std::array<size_t, 3>> faces;
+    VF_to_vectors(V, F, vertices, faces);
+    Parameters params;
+    params.init(vertices, faces);
+    components::shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(vertices, 0);
+    {
+        std::vector<size_t> frozen_verts;
+        surf_mesh.create_mesh(vertices.size(), faces, frozen_verts, 0.1);
+    }
+    const std::shared_ptr<Envelope> env(&surf_mesh.m_envelope, [](Envelope*) {});
+
+    struct Inserted
+    {
+        std::vector<Vector3r> v_rational;
+        std::vector<std::array<size_t, 3>> facets;
+        std::vector<bool> is_v_on_input;
+        std::vector<std::array<size_t, 4>> tets;
+        std::vector<bool> tet_face_on_input_surface;
+        utils::EmbedFeaturesResult features;
+    };
+    const auto insert = [&](const std::vector<Vector3d>& fe_verts,
+                            const std::vector<std::array<size_t, 2>>& fe) {
+        Inserted out;
+        TetWildMesh mesh(params, env, 0);
+        mesh.insertion_by_volumeremesher(
+            vertices,
+            faces,
+            out.v_rational,
+            out.facets,
+            out.is_v_on_input,
+            out.tets,
+            out.tet_face_on_input_surface,
+            /*tet_face_orientation=*/nullptr,
+            fe_verts,
+            fe,
+            {{1.0, 0.5, 1.5}},
+            &out.features);
+        return out;
+    };
+    const Vector3d a(0.5, 0.5, 0.5), m(1, 1, 1), b(1.5, 1, 1.5);
+    const Inserted x = insert({a, m, m, b}, {{{0, 1}}, {{2, 3}}});
+    const Inserted y = insert({a, m, b}, {{{0, 1}}, {{1, 2}}});
+    // The exact coordinates, one by one: Eigen's comparison does not take rationals.
+    REQUIRE(x.v_rational.size() == y.v_rational.size());
+    size_t moved = 0;
+    for (size_t v = 0; v < x.v_rational.size(); ++v) {
+        for (int k = 0; k < 3; ++k) moved += !(x.v_rational[v][k] == y.v_rational[v][k]);
+    }
+    CHECK(moved == 0);
+    CHECK(x.facets == y.facets);
+    CHECK(x.is_v_on_input == y.is_v_on_input);
+    CHECK(x.tets == y.tets);
+    CHECK(x.tet_face_on_input_surface == y.tet_face_on_input_surface);
+    CHECK(x.features.point_vertex == y.features.point_vertex);
+    CHECK(x.features.edge_tiling == y.features.edge_tiling);
+}

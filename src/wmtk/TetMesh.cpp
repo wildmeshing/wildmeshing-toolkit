@@ -392,6 +392,7 @@ bool TetMesh::smooth_vertex(const Tuple& loc0)
             volume_history_commit(history::VolumeOp::smooth, edits, {v}, {v});
         }
     }
+    if (m_curve_history) curve_history_commit(history::EditKind::move_vertices, {}, {});
     release_protect_attributes();
 
     return true;
@@ -997,6 +998,7 @@ void TetMesh::consolidate_mesh()
         v_cnt++;
     }
     if (m_surface_history) m_surface_history->renumber(map_v_ids);
+    if (m_curve_history) m_curve_history->renumber(map_v_ids);
     if (m_volume_history) m_volume_history->recorder->renumber(map_v_ids);
     auto t_cnt = 0;
     std::vector<size_t> map_t_ids(tet_capacity(), -1);
@@ -1849,6 +1851,85 @@ std::array<size_t, 2> TetMesh::surface_history_commit(
     }
     if (p_vertex_attrs) p_vertex_attrs->append_recorded(c.written);
     return m_surface_history->commit(std::move(c));
+}
+
+std::shared_ptr<history::TrackedCurveRecorder> TetMesh::start_curve_history(
+    std::function<Eigen::Vector3d(size_t)> position)
+{
+    std::vector<std::array<size_t, 1>> points;
+    for (const size_t v : tracked_feature_points()) points.push_back({{v}});
+    m_curve_history = std::make_shared<history::TrackedCurveRecorder>(
+        tracked_edges(),
+        std::move(position),
+        [](const std::array<size_t, 2>& e) { return e; },
+        points);
+    return m_curve_history;
+}
+
+void TetMesh::stop_curve_history()
+{
+    m_curve_history.reset();
+}
+
+size_t TetMesh::resync_curve_history(const std::vector<std::array<size_t, 2>>& edges)
+{
+    return m_curve_history ? m_curve_history->resync(edges) : 0;
+}
+
+std::vector<std::array<size_t, 2>> TetMesh::tracked_edges_around(
+    const std::vector<size_t>& vs) const
+{
+    std::vector<std::array<size_t, 2>> out;
+    std::vector<size_t> seen;
+    for (const size_t v : vs) {
+        if (v >= vert_capacity() || m_vertex_connectivity[v].m_is_removed) continue;
+        seen.clear();
+        // v's fan is sorted, so the first of its tets to hold an edge at v is the edge's lowest.
+        for (const size_t tid : m_vertex_connectivity[v].m_conn_tets) {
+            const auto& t = m_tet_connectivity[tid];
+            for (int j = 0; j < 6; ++j) {
+                const size_t a = t[m_local_edges[j][0]], b = t[m_local_edges[j][1]];
+                if (a != v && b != v) continue;
+                const size_t u = a == v ? b : a;
+                if (std::find(seen.begin(), seen.end(), u) != seen.end()) continue;
+                seen.push_back(u);
+                if (is_tracked_edge(tid, j)) out.push_back({{std::min(v, u), std::max(v, u)}});
+            }
+        }
+    }
+    std::sort(out.begin(), out.end());
+    out.erase(std::unique(out.begin(), out.end()), out.end());
+    return out;
+}
+
+std::vector<std::array<size_t, 2>> TetMesh::tracked_edges() const
+{
+    std::vector<size_t> vs;
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        if (!m_vertex_connectivity[v].m_is_removed) vs.push_back(v);
+    }
+    return tracked_edges_around(vs);
+}
+
+void TetMesh::curve_history_before(const std::vector<size_t>& vs)
+{
+    m_curve_history_before.local() = tracked_edges_around(vs);
+}
+
+void TetMesh::curve_history_commit(
+    const history::EditKind kind,
+    std::vector<size_t> v,
+    const std::vector<size_t>& vs_after)
+{
+    history::TrackedCurveRecorder::Change c;
+    c.kind = kind;
+    c.v = std::move(v);
+    if (kind != history::EditKind::move_vertices) {
+        c.before = std::move(m_curve_history_before.local());
+        c.after = tracked_edges_around(vs_after);
+    }
+    if (p_vertex_attrs) p_vertex_attrs->append_recorded(c.written);
+    m_curve_history->commit(std::move(c));
 }
 
 history::VolumeCapture TetMesh::volume_capture(const std::vector<size_t>& vs) const

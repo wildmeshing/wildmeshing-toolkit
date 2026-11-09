@@ -702,6 +702,39 @@ public:
      */
     std::array<size_t, 3> face_out_of(size_t tid, const std::array<size_t, 3>& face) const;
 
+    /**
+     * @brief Record every change to the tracked curves from now on (see
+     * wmtk/history/TrackedRecorder.hpp): TriMesh::start_curve_history() on a tet mesh, beside a
+     * surface history or alone.
+     *
+     * The tracked curves are the edges is_tracked_edge() names, with the feature points
+     * tracked_feature_points() names. Snapshots them and returns the recorder. Every operation
+     * then reports the tracked edges around it at its commit point, a consolidation renumbers the
+     * recorder's vertices, and remove_tets_by_ids() resyncs it. `position(v)` gives vertex v's
+     * position: it is called at the snapshot, and then from inside an operation while its locks
+     * are held, so it must read through const attribute access. Recording changes nothing the
+     * operations do.
+     */
+    std::shared_ptr<history::TrackedCurveRecorder> start_curve_history(
+        std::function<Eigen::Vector3d(size_t)> position);
+    /// Stop recording curves. The recorder keeps what it has.
+    void stop_curve_history();
+    /// Brings the recorded curves in line with `edges`, every tracked edge, after a change outside
+    /// the operations. Returns how many segments it removed and added: 0 when nothing changed,
+    /// or when not recording.
+    size_t resync_curve_history(const std::vector<std::array<size_t, 2>>& edges);
+    /// Every tracked edge, each with its smaller vertex first.
+    std::vector<std::array<size_t, 2>> tracked_edges() const;
+    /// Whether local edge `j` of tet `tid` is on a tracked curve, for a curve history. `tid` is
+    /// the edge's lowest tet, whose slot (tid * 6 + j) holds the edge's attributes. None is,
+    /// unless an application says so. Called from inside an operation for the edges at the
+    /// vertices it holds, so it must read through const attribute access.
+    virtual bool is_tracked_edge(size_t tid, int j) const { return false; }
+    /// The feature points of the tracked curves, for a curve history: vertices the operations
+    /// keep by the history's rules (a collapse of one renames it to the survivor). None, unless
+    /// an application says otherwise.
+    virtual std::vector<size_t> tracked_feature_points() const { return {}; }
+
 protected:
     /// The tracked faces of the tets at the vertices `vs` that have a corner among them -- or,
     /// with `all`, all three -- as sorted vertex triples.
@@ -1580,6 +1613,7 @@ public:
             if (v.m_conn_tets.empty()) v.m_is_removed = true;
         }
         if (m_surface_history) resync_surface_history();
+        if (m_curve_history) resync_curve_history(tracked_edges());
     }
     bool m_collapse_check_link_condition = true; // classical link condition
     bool m_collapse_check_topology = false; // sanity check
@@ -1714,6 +1748,23 @@ private:
         std::vector<size_t> v,
         const std::vector<size_t>& vs_after,
         bool all);
+
+    std::shared_ptr<history::TrackedCurveRecorder> m_curve_history;
+    /// The tracked edges around the operation this thread is in, as they were before it.
+    wmtk::threading::enumerable_thread_specific<std::vector<std::array<size_t, 2>>>
+        m_curve_history_before;
+    /// The tracked edges at the vertices `vs`, each with its smaller vertex first. Reads only the
+    /// tets at those vertices, which an operation holding them may read: an edge's slot is its
+    /// lowest tet's, the first tet of a corner's fan to hold it, since fans are sorted.
+    std::vector<std::array<size_t, 2>> tracked_edges_around(const std::vector<size_t>& vs) const;
+    void curve_history_before(const std::vector<size_t>& vs);
+    /// Reports the operation to the curve recorder: the tracked edges at `vs_after` against those
+    /// curve_history_before() saw, and the vertices it wrote (the vertex journal, so call it
+    /// before release_protect_attributes()).
+    void curve_history_commit(
+        history::EditKind kind,
+        std::vector<size_t> v,
+        const std::vector<size_t>& vs_after);
 
     /// The volume history being recorded (TetMesh.cpp): its recorder, the positions it is given,
     /// and the tets around the operation each thread is in, as they were before it.

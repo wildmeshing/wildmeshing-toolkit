@@ -742,6 +742,18 @@ std::vector<size_t> TriOptimizerMesh::tracked_feature_points() const
     return out;
 }
 
+size_t TriOptimizerMesh::substructure_order_of_vertex(const size_t vid) const
+{
+    // Two anchors, or an anchor and a curve, never merge under the condition. Until 2026-11 a
+    // free point was order 0, and a collapse merged it into another free point or a curve's end
+    // in its ball (free-points-stay-apart-under-preserve-topology).
+    if (m_track_feature_points &&
+        m_feature_point_attribute[vid].m_feature_point_id != NO_FEATURE_POINT) {
+        return 2;
+    }
+    return get_order_of_vertex(vid);
+}
+
 bool TriOptimizerMesh::is_edge_on_surface(const std::array<size_t, 2>& vids) const
 {
     if (!m_vertex_attribute.at(vids[0]).m_is_on_surface ||

@@ -988,6 +988,129 @@ std::optional<history::SurfaceHistory> TetOptimizerMesh::finish_surface_history(
     return h;
 }
 
+bool TetOptimizerMesh::is_tracked_edge(const size_t tid, const int j) const
+{
+    return m_track_feature_edges &&
+           m_feature_edge_attribute.at(tid * 6 + size_t(j)).has(FeatureEdgeAttributes::feature);
+}
+
+std::vector<size_t> TetOptimizerMesh::tracked_feature_points() const
+{
+    std::vector<size_t> out;
+    if (!m_track_feature_points) return out;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const size_t f = m_feature_point_attribute.at(vid).m_feature_point_id;
+        if (f != NO_FEATURE_POINT && m_curve_feature_point[f]) out.push_back(vid);
+    }
+    return out;
+}
+
+TetOptimizerMesh::SegmentKey TetOptimizerMesh::segment_key(const Vector3d& a, const Vector3d& b)
+{
+    SegmentKey k = {{{{a[0], a[1], a[2]}}, {{b[0], b[1], b[2]}}}};
+    std::sort(k.begin(), k.end());
+    return k;
+}
+
+void TetOptimizerMesh::set_insertion_curve_sources(
+    const utils::EmbedFeaturesResult& placed,
+    const std::function<Vector3d(size_t)>& position)
+{
+    std::map<SegmentKey, std::vector<uint32_t>> sources;
+    for (size_t e = 0; e < placed.edge_tiling.size(); ++e) {
+        for (const auto& s : placed.edge_tiling[e]) {
+            sources[segment_key(position(s[0]), position(s[1]))].push_back(uint32_t(e));
+        }
+    }
+    m_insertion_curve_sources.assign(sources.begin(), sources.end());
+}
+
+void TetOptimizerMesh::record_curve_history(const std::string& metadata)
+{
+    m_recorded_curves =
+        start_curve_history([this](size_t v) { return m_vertex_attribute.at(v).m_posf; });
+    m_recorded_curves->history().metadata = metadata;
+    m_recorded_curve_sources.clear();
+    if (m_insertion_curve_sources.empty()) return;
+    // The insertion gave each tet edge tiling an input segment the segments it lies on, by the
+    // positions its ends have here too: m_posf is the rounding of the same exact coordinates.
+    std::sort(m_insertion_curve_sources.begin(), m_insertion_curve_sources.end());
+    const auto& h = m_recorded_curves->history();
+    m_recorded_curve_sources.resize(h.faces.size());
+    size_t missing = 0;
+    for (size_t f = 0; f < h.faces.size(); ++f) {
+        const auto& s = h.faces[f];
+        const SegmentKey key = segment_key(h.vertices[s[0]], h.vertices[s[1]]);
+        const auto it = std::lower_bound(
+            m_insertion_curve_sources.begin(),
+            m_insertion_curve_sources.end(),
+            key,
+            [](const auto& entry, const SegmentKey& k) { return entry.first < k; });
+        if (it == m_insertion_curve_sources.end() || it->first != key) {
+            ++missing;
+            continue;
+        }
+        m_recorded_curve_sources[f].assign(it->second.begin(), it->second.end());
+    }
+    if (missing > 0) {
+        logger().warn("curve history: {} tracked edges lie on no input segment known", missing);
+    }
+    m_insertion_curve_sources.clear();
+    m_insertion_curve_sources.shrink_to_fit();
+}
+
+std::optional<history::CurveHistory> TetOptimizerMesh::finish_curve_history(
+    const history::CurveHistory* input)
+{
+    if (!m_recorded_curves) return std::nullopt;
+    // output_vertex_ids are the mesh's vertex ids, which are the output's rows only once the mesh
+    // is consolidated: with a slot left by a removed vertex, they would name the wrong vertices.
+    if (get_vertices().size() != vert_capacity()) {
+        log_and_throw_error(
+            "curve history: the mesh has {} vertex slots for {} vertices; consolidate it before "
+            "finishing the history, whose output ids are its vertex rows",
+            vert_capacity(),
+            get_vertices().size());
+    }
+    if (const size_t drift = resync_curve_history(tracked_edges())) {
+        logger().warn("curve history: {} tracked edges changed outside the operations", drift);
+    }
+    std::vector<std::array<size_t, 1>> points;
+    for (const size_t v : tracked_feature_points()) points.push_back({{v}});
+    if (m_recorded_curves->features() != points) {
+        logger().warn(
+            "curve history: the feature points the history carried ({}) are not the mesh's ({})",
+            m_recorded_curves->features().size(),
+            points.size());
+    }
+    stop_curve_history();
+    m_recorded_curves->history().output_vertex_ids = m_recorded_curves->mesh_vertex_ids();
+    const auto st = m_recorded_curves->stats();
+    logger().info(
+        "curve history: {} edits -- {} splits, {} collapses ({} welding two curve vertices), {} "
+        "moves; {} changes recorded as they are",
+        m_recorded_curves->history().edits.size(),
+        st.split,
+        st.collapse,
+        st.weld,
+        st.move,
+        st.replaced);
+    if (st.unknown > 0) logger().error("curve history: lost track of {} segments", st.unknown);
+    history::CurveHistory h;
+    if (input != nullptr) {
+        h = *input;
+        history::append_embedded(h, m_recorded_curves->history(), m_recorded_curve_sources);
+        h.metadata = m_recorded_curves->history().metadata;
+        h.output_vertex_ids = m_recorded_curves->history().output_vertex_ids;
+    } else {
+        h = std::move(m_recorded_curves->history());
+    }
+    m_recorded_curves.reset();
+    m_recorded_curve_sources.clear();
+    return h;
+}
+
 void TetOptimizerMesh::update_attributes_and_history()
 {
     update_attributes();
@@ -1897,6 +2020,15 @@ size_t TetOptimizerMesh::substructure_order_of_edge(const std::array<size_t, 2>&
 size_t TetOptimizerMesh::substructure_order_of_vertex(const size_t vid) const
 {
     size_t order = TetMesh::substructure_order_of_vertex(vid);
+    // An anchor is a point of the substructure, on a curve or not: two anchors, or an anchor and
+    // a curve, never merge under the condition. vid's own attribute, so fan-local as below.
+    // Until 2026-11 an input point off the curves was order 0 or 1, and a collapse merged it
+    // into another input point or a curve's end in its ball
+    // (input-points-stay-apart-under-preserve-topology).
+    if (order < 3 && m_track_feature_points &&
+        m_feature_point_attribute[vid].m_feature_point_id != NO_FEATURE_POINT) {
+        return 3;
+    }
     if (order < 3 && m_track_feature_edges) {
         // The tagged edges at vid, read from vid's own fan alone. The link condition asks this
         // of the link vertices of the collapsing edge, whose neighbours u lie two steps from it,
@@ -2014,6 +2146,7 @@ bool TetOptimizerMesh::anchor_feature_point(
     f = m_feature_points.size();
     m_feature_points.push_back(centre);
     m_feature_point_radius.push_back(radius);
+    m_curve_feature_point.push_back(0);
     return true;
 }
 
@@ -2032,8 +2165,9 @@ size_t TetOptimizerMesh::anchor_feature_points(
     const double order2_radius,
     const double feature_radius)
 {
-    // {vertex, radius, centre}: the curve endpoints and junctions first, then the input points.
-    std::vector<std::tuple<size_t, double, Vector3d>> anchors;
+    // {vertex, radius, centre, a feature point of the curve history}: the curve endpoints and
+    // junctions first, then the input points.
+    std::vector<std::tuple<size_t, double, Vector3d, bool>> anchors;
     size_t n_ends = 0, n_junctions = 0;
     // With the input's own curves (InputCurves), a curve end or junction is the input's only
     // where one of its curve points is in the ball, and the ball is centred there; any other
@@ -2054,7 +2188,7 @@ size_t TetOptimizerMesh::anchor_feature_points(
     if (m_track_feature_edges) {
         for (const Tuple& t : get_vertices()) {
             const size_t vid = t.vid(*this);
-            size_t n_tagged = 0;
+            size_t n_tagged = 0, n_feature = 0;
             uint8_t kinds = 0;
             for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
                 const Tuple e = tuple_from_edge({{vid, u}});
@@ -2062,9 +2196,13 @@ size_t TetOptimizerMesh::anchor_feature_points(
                 const FeatureEdgeAttributes& a = m_feature_edge_attribute[e.eid(*this)];
                 if (!a.is_tagged()) continue;
                 ++n_tagged;
+                n_feature += a.has(FeatureEdgeAttributes::feature);
                 kinds |= a.m_kinds;
             }
             if (n_tagged != 1 && n_tagged < 3) continue;
+            // An end or a junction of the feature curves themselves (curves_from_input()'s rule
+            // on the input), not one where a feature curve only meets an order-2 curve.
+            const bool curve_point = n_feature == 1 || n_feature >= 3;
             ++(n_tagged == 1 ? n_ends : n_junctions);
             double r = std::numeric_limits<double>::infinity();
             if (kinds & FeatureEdgeAttributes::order2) r = std::min(r, order2_radius);
@@ -2081,13 +2219,13 @@ size_t TetOptimizerMesh::anchor_feature_points(
                     // A curve end or junction the simplification made: anchored where it is,
                     // since the tube along a curve cannot stop it eroding from its end.
                     ++n_not_input;
-                    anchors.emplace_back(vid, r, p);
+                    anchors.emplace_back(vid, r, p, curve_point);
                     continue;
                 }
-                anchors.emplace_back(vid, r, m_input_curves->points[nearest]);
+                anchors.emplace_back(vid, r, m_input_curves->points[nearest], curve_point);
                 continue;
             }
-            anchors.emplace_back(vid, r, p);
+            anchors.emplace_back(vid, r, p, curve_point);
         }
     }
     // With the reference's points (ReferencePoints), an input point's ball is centred on the
@@ -2105,7 +2243,7 @@ size_t TetOptimizerMesh::anchor_feature_points(
         }
         const Vector3d& p = m_vertex_attribute[vid].m_posf;
         if (!m_reference_points) {
-            anchors.emplace_back(vid, r, p);
+            anchors.emplace_back(vid, r, p, true);
             continue;
         }
         const int label = k < m_input_point_labels.size() ? m_input_point_labels[k] : -1;
@@ -2126,7 +2264,7 @@ size_t TetOptimizerMesh::anchor_feature_points(
             ++n_unmatched[label];
             continue;
         }
-        anchors.emplace_back(vid, r, *centre);
+        anchors.emplace_back(vid, r, *centre, true);
     }
     if (!n_unmatched.empty()) {
         std::vector<std::string> counts;
@@ -2155,8 +2293,11 @@ size_t TetOptimizerMesh::anchor_feature_points(
 
     enable_feature_point_tracking();
     size_t n_anchored = 0;
-    for (const auto& [vid, r, centre] : anchors) {
+    for (const auto& [vid, r, centre, curve_point] : anchors) {
         n_anchored += anchor_feature_point(vid, r, centre);
+        if (curve_point) {
+            m_curve_feature_point[m_feature_point_attribute[vid].m_feature_point_id] = 1;
+        }
     }
     label_feature_points(input_point_vids);
     logger().info(

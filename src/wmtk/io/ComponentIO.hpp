@@ -17,7 +17,8 @@ namespace wmtk::io {
 class ComponentIO
 {
     detail::ComponentLoggerScope logging;
-    std::optional<std::vector<uint8_t>> recorded_history, recorded_volume_history;
+    std::optional<std::vector<uint8_t>> recorded_history, recorded_volume_history,
+        recorded_curve_history;
 
 public:
     const MeshMap* inputs = nullptr;
@@ -64,6 +65,23 @@ public:
             double(bytes.size()) / 1e6);
         recorded_volume_history = std::move(bytes);
     }
+    // The tracked curves of a tet mesh, recorded beside its surface history or alone
+    // (curve_history_output; tetwild and simwild), as a curve history (wmtk/history). The file
+    // route saves it to `path`; the memory route returns the bytes of that file in the report, as
+    // "curve_history", next to "history".
+    void save_curve_history(const history::CurveHistory& h, const std::string& path)
+    {
+        if (!memory()) {
+            h.save(path);
+            logger().info("curve history: {} edits saved to {}", h.edits.size(), path);
+            return;
+        }
+        recorded_curve_history = h.to_bytes();
+        logger().info(
+            "curve history: {} edits, {} bytes, returned in the report",
+            h.edits.size(),
+            recorded_curve_history->size());
+    }
     // The metadata of a history the component records: its parameters, and the route it ran on,
     // "file" or "memory". On the memory route the inputs the parameters name are meshes of the
     // call, which no file holds.
@@ -83,8 +101,13 @@ public:
             result.second["volume_history"] =
                 nlohmann::json::binary(std::move(*recorded_volume_history));
         }
+        if (recorded_curve_history) {
+            result.second["curve_history"] =
+                nlohmann::json::binary(std::move(*recorded_curve_history));
+        }
         recorded_history.reset();
         recorded_volume_history.reset();
+        recorded_curve_history.reset();
         return std::move(result);
     }
     const MeshData& mesh(const std::string& name) const

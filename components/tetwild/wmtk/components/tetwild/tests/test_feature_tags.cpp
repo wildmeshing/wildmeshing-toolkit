@@ -2,12 +2,16 @@
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 #include <wmtk/components/tetwild/Parameters.h>
 #include <wmtk/components/tetwild/TetWildMesh.h>
+#include <wmtk/history/History.hpp>
+#include <wmtk/history/Replay.hpp>
 #include <wmtk/utils/FeatureInputs.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
+#include <map>
 #include <random>
 #include <set>
 
@@ -48,13 +52,17 @@ struct FeatureScene
     std::shared_ptr<components::shortest_edge_collapse::ShortestEdgeCollapse> surf;
 };
 
-/// `fe_verts`, `fe`: the feature curves; `edge_input`: per edge, its curve input.
+/// `fe_verts`, `fe`: the feature curves; `edge_input`: per edge, its curve input; `points`: the
+/// input points.
 FeatureScene build_scene(
     const std::vector<Vector3d>& fe_verts = {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
     const std::vector<std::array<size_t, 2>>& fe = {{{0, 1}}, {{1, 2}}},
-    const std::vector<int>& edge_input = {0, 1})
+    const std::vector<int>& edge_input = {0, 1},
+    const bool preserve_topology = false,
+    const std::vector<Vector3d>& points = {})
 {
     FeatureScene sc;
+    sc.params.preserve_topology = preserve_topology;
     // Cube [0,2]^3 with an interior 2-segment feature chain.
     MatrixXd V(8, 3);
     V << 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 0, //
@@ -99,13 +107,14 @@ FeatureScene build_scene(
             /*tet_face_orientation=*/nullptr,
             sc.fe_verts,
             sc.fe,
-            {},
+            points,
             &features_out);
     }
     sc.mesh = std::make_shared<TetWildMesh>(sc.params, env, 0);
     // By default each segment its own curve input, so each tagged edge carries the input of
     // the segment it tiles and is held in that input's tube, of radius 0.05 as the union's. The
-    // init anchors the chain's endpoints, its tagged edges' ends, in a ball of the tube's radius.
+    // init anchors the chain's endpoints, its tagged edges' ends, and the input points in a ball
+    // of the tube's radius.
     utils::FeatureInputs input;
     input.edge_vertices = sc.fe_verts;
     input.edges = sc.fe;
@@ -637,4 +646,174 @@ TEST_CASE("feature-curves-held-to-their-own-tubes", "[tetwild_operation][feature
     }
     CHECK(n_tagged > 0);
     CHECK(m.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::feature) == 0);
+}
+
+TEST_CASE(
+    "feature-curves-keep-their-topology-under-preserve-topology",
+    "[tetwild_operation][features]" + release_only)
+{
+    // Two parallel interior curves 0.03 apart, each its own curve input, in tubes of 0.05: each
+    // tube holds the other curve too, so the tubes let a collapse take a vertex of one onto
+    // the other, welding the two curves into one. preserve_topology refuses that by the
+    // substructure link condition, in which a tagged edge is 1D substructure wherever it lies.
+    // Until 2026-11 the condition was asked only of an edge with both ends on the tracked surface,
+    // which no vertex of an interior curve is. Checked after the whole optimization: the tagged
+    // edges still form two open chains, no vertex with three or more.
+    FeatureScene sc = build_scene(
+        {{0.5, 1.0, 1.0}, {1.5, 1.0, 1.0}, {0.5, 1.03, 1.0}, {1.5, 1.03, 1.0}},
+        {{{0, 1}}, {{2, 3}}},
+        {0, 1},
+        /*preserve_topology=*/true);
+    TetWildMesh& m = *sc.mesh;
+    m.mesh_improvement(3);
+
+    const auto edges = tagged_edges(m);
+    std::map<size_t, size_t> degree, parent;
+    const std::function<size_t(size_t)> root = [&](const size_t v) {
+        return parent[v] == v ? v : parent[v] = root(parent[v]);
+    };
+    for (const auto& e : edges) {
+        for (const size_t v : e) {
+            ++degree[v];
+            parent.emplace(v, v);
+        }
+    }
+    for (const auto& e : edges) parent[root(e[0])] = root(e[1]);
+    size_t components = 0, max_degree = 0;
+    for (const auto& [v, d] : degree) {
+        components += root(v) == v;
+        max_degree = std::max(max_degree, d);
+    }
+    CAPTURE(edges.size(), degree.size());
+    CHECK(components == 2);
+    CHECK(max_degree <= 2);
+    // Two open chains: a tree each, so two fewer edges than vertices.
+    CHECK(edges.size() + 2 == degree.size());
+}
+
+TEST_CASE(
+    "input-points-stay-apart-under-preserve-topology",
+    "[tetwild_operation][features]" + release_only)
+{
+    // Two input points 0.03 apart, off the surface and off every curve, in anchor balls of 0.05:
+    // each ball holds the other point, so a collapse of the edge between them passes the anchor
+    // test and merges the two. Without preserve_topology it does. Under it the substructure link
+    // condition refuses it, an anchor being a point of the substructure
+    // (substructure_order_of_vertex()). Until 2026-11 the condition was not asked: neither end
+    // is on the surface or has a tagged edge.
+    for (const bool preserve_topology : {false, true}) {
+        CAPTURE(preserve_topology);
+        FeatureScene sc = build_scene(
+            {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
+            {{{0, 1}}, {{1, 2}}},
+            {0, 1},
+            preserve_topology,
+            {{1.5, 0.5, 0.5}, {1.53, 0.5, 0.5}});
+        TetWildMesh& m = *sc.mesh;
+        REQUIRE(m.tracked_feature_points().size() == 4);
+        m.mesh_improvement(3);
+        CHECK(m.tracked_feature_points().size() == (preserve_topology ? 4 : 3));
+    }
+}
+
+TEST_CASE(
+    "input-point-and-curve-end-stay-apart-under-preserve-topology",
+    "[tetwild_operation][features]" + release_only)
+{
+    // An input point 0.03 from the chain's end (1.5, 1, 1.5), off the surface and off the curve,
+    // in balls of 0.05, the tube's radius: the same merge, of a point into a curve's end, and the
+    // same refusal under preserve_topology. Until 2026-11 the condition was not asked: the point
+    // is not on the substructure.
+    for (const bool preserve_topology : {false, true}) {
+        CAPTURE(preserve_topology);
+        FeatureScene sc = build_scene(
+            {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
+            {{{0, 1}}, {{1, 2}}},
+            {0, 1},
+            preserve_topology,
+            {{1.5, 1.03, 1.5}});
+        TetWildMesh& m = *sc.mesh;
+        REQUIRE(m.tracked_feature_points().size() == 3);
+        m.mesh_improvement(3);
+        CHECK(m.tracked_feature_points().size() == (preserve_topology ? 3 : 2));
+    }
+}
+
+TEST_CASE(
+    "curve-history-finishes-on-a-consolidated-mesh",
+    "[tetwild_operation][features][tracking]")
+{
+    // A curve history names the output's points by the mesh's vertex ids, the output's rows only
+    // once the mesh is consolidated: finishing it before refuses, after gives the history. The 3D
+    // twin of triwild's case.
+    FeatureScene sc = build_scene();
+    TetWildMesh& m = *sc.mesh;
+    m.record_curve_history("{}");
+    bool collapsed = false;
+    for (const auto& e : m.get_edges()) {
+        std::vector<TetMesh::Tuple> new_tets;
+        if (m.collapse_edge(e, new_tets)) {
+            collapsed = true;
+            break;
+        }
+    }
+    REQUIRE(collapsed);
+    CHECK_THROWS(m.finish_curve_history());
+    m.consolidate_mesh();
+    const auto h = m.finish_curve_history();
+    REQUIRE(h);
+    history::CurveReplay r(*h);
+    r.apply_all(*h);
+    size_t segments = 0;
+    for (uint64_t f = 0; f < r.faces().size(); ++f) {
+        if (!r.face_alive()[f]) continue;
+        ++segments;
+        for (const uint64_t v : r.faces()[f]) CHECK(h->output_vertex_ids[v] < m.vert_capacity());
+    }
+    CHECK(segments == tagged_edges(m).size());
+}
+
+TEST_CASE(
+    "curve-history-follows-the-feature-tags",
+    "[tetwild_operation][features][tracking]" + release_only)
+{
+    // The curve history of the whole optimization ends at the edges tagged `feature`, where the
+    // mesh has them, every change recognised as an edit (none recorded as it is), and its feature
+    // points at the chain's two ends, which the mesh anchors. With and without preserve_topology.
+    for (const bool preserve_topology : {false, true}) {
+        CAPTURE(preserve_topology);
+        FeatureScene sc = build_scene(
+            {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}},
+            {{{0, 1}}, {{1, 2}}},
+            {0, 1},
+            preserve_topology);
+        TetWildMesh& m = *sc.mesh;
+        m.record_curve_history("{}");
+        REQUIRE(m.tracked_feature_points().size() == 2);
+        m.mesh_improvement(3);
+        m.consolidate_mesh();
+        const auto h = m.finish_curve_history();
+        REQUIRE(h);
+        CHECK(h->features.size() == 2);
+        for (const auto& e : h->edits) CHECK(e.kind != history::EditKind::replace_faces);
+        history::CurveReplay r(*h);
+        r.apply_all(*h);
+        std::set<std::array<size_t, 2>> segments;
+        for (uint64_t f = 0; f < r.faces().size(); ++f) {
+            if (!r.face_alive()[f]) continue;
+            const auto& s = r.faces()[f];
+            const size_t a = size_t(h->output_vertex_ids[s[0]]);
+            const size_t b = size_t(h->output_vertex_ids[s[1]]);
+            for (const uint64_t v : s) {
+                CHECK(r.vertices()[v] == m.m_vertex_attribute[h->output_vertex_ids[v]].m_posf);
+            }
+            segments.insert({{std::min(a, b), std::max(a, b)}});
+        }
+        const auto tagged = tagged_edges(m);
+        CHECK(segments == std::set<std::array<size_t, 2>>(tagged.begin(), tagged.end()));
+        std::vector<size_t> points;
+        for (const auto& f : r.features()) points.push_back(size_t(h->output_vertex_ids[f[0]]));
+        std::sort(points.begin(), points.end());
+        CHECK(points == m.tracked_feature_points());
+    }
 }

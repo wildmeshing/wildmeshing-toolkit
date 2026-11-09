@@ -19,6 +19,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     const size_t v2_id = loc2.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
     if (m_surface_history) surface_history_before({v1_id, v2_id}, false);
+    if (m_curve_history) curve_history_before({v1_id, v2_id});
 
     // infomation needed for return tuple
     // refer to illustrations
@@ -116,6 +117,10 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
             {v1_id, v2_id, vn},
             {v1_id, v2_id, vn},
             false);
+    }
+    if (m_curve_history) {
+        const size_t vn = size_t(v_id);
+        curve_history_commit(history::EditKind::split_edge, {v1_id, v2_id, vn}, {v1_id, v2_id, vn});
     }
     release_protect_attributes();
 
