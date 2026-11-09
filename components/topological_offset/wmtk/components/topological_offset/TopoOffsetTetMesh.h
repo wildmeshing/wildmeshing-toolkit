@@ -78,6 +78,11 @@ class VertexExtra
 {
 public:
     int label = 0;
+    /// The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set
+    /// at load (init_from_image()), carried by the construction, which only splits, and cleared
+    /// by hold_curves_and_points(), from which on the anchors carry them
+    /// (TopoOffsetTetMesh::vertex_has_point()).
+    InputSet point_inputs = 0;
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset surface itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
@@ -207,7 +212,15 @@ public:
     /// Whether edge `eid` tiles edge tag `bit`: by EdgeAttributes::feature_inputs until
     /// hold_curves_and_points() tags the curves, by the engine's feature tags after.
     bool edge_has_tag(size_t eid, int bit) const;
-    /// Set by hold_curves_and_points(): the engine's feature tags hold the edge tags.
+    /// Point labels, the input points' (a tagged mesh's point block): bit j is the base's
+    /// m_point_names[j], each name a tag id offset_selection can name alone (m_point_tag_bit: id ->
+    /// bit), an edge tag's id where the two share a name (init_from_image()).
+    std::map<int64_t, int> m_point_tag_bit;
+    /// Whether vertex `vid` is an input point of label `bit`: by VertexExtra::point_inputs until
+    /// hold_curves_and_points() anchors the points, by its anchor's labels after.
+    bool vertex_has_point(size_t vid, int bit) const;
+    /// Set by hold_curves_and_points(): the engine's feature tags hold the edge tags, and its
+    /// anchors the input points.
     bool m_edge_tags_held = false;
     /// The surface group as loaded, kept because the classification below is redone on demand.
     MatrixXd m_sheet_V;
@@ -428,6 +441,9 @@ public:
     /// curves: its edges tagged with the feature kind and held in the tube around the input's
     /// segments, of half-width feature_envelope_ratio x envelope_size, its curve ends, junctions
     /// and points anchored at that radius (construct_offset() checks the tags survive the march).
+    /// Every input point (a point block, VertexExtra::point_inputs), selected or not, is anchored
+    /// at that radius with its label, as tetwild and simwild anchor theirs; with a reference, on
+    /// the nearest of its points of its label (the base's set_reference_points()).
     void hold_curves_and_points();
     /// The feature curves as the operations left them (hold_curves_and_points()): the
     /// feature-tagged edges, those of them outside their tube, and, for a complex of segments, its
