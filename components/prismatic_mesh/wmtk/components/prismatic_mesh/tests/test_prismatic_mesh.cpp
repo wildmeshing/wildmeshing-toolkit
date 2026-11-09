@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <fstream>
+#include <wmtk/components/prismatic_mesh/junction_protection.hpp>
 #include <wmtk/components/prismatic_mesh/prismatic_mesh.hpp>
 
 using namespace wmtk::components::prismatic_mesh;
@@ -154,6 +155,70 @@ TEST_CASE("prismatic mesh loads topology and resolves source IDs independently o
     REQUIRE(result.input_to_offset_vertices[0] == std::vector<size_t>{3, 4});
     REQUIRE(result.input_cells == std::vector<int>{0, 1});
     REQUIRE(result.offset_tet_tags == std::vector<int>{1, -1});
+}
+
+TEST_CASE("stacked correspondence preserves shared offset roles as protected junctions")
+{
+    auto text = replace(fixture, "-1 -1 -1 10 10", "-1 -1 -1 10 40");
+    File file(text);
+    auto input = load_prismatic_mesh(file.path);
+    REQUIRE(input.vertex_tags[3] == 2);
+    REQUIRE(input.vertex_tags[4] == 2);
+    REQUIRE(input.corr_input_vid[3] == 10);
+    REQUIRE(input.corr_input_vid[4] == 10);
+    REQUIRE(input.layered_junction_vertices == std::set<size_t>{3, 4});
+    REQUIRE(
+        input.layered_correspondence_report["normalized_links"][0]["original_target_vid"] == 40);
+    const auto positions = input.vertices.eval();
+    initialize_junction_protection(input);
+    REQUIRE(input.junction_protection->offset_vertices.count(3));
+    REQUIRE(input.junction_protection->offset_vertices.count(4));
+    OptimizationOptions options;
+    options.iterations = 2;
+    options.keep_background_mesh = true;
+    prism_main(input, .1, options);
+    REQUIRE(input.vertices == positions);
+    const auto hybrid = build_prism_dominant_mesh(input, 0);
+    REQUIRE_NOTHROW(validate_prism_dominant_mesh(input, hybrid, 0));
+}
+
+TEST_CASE("stacked correspondence rejects a cycle instead of inventing an input root")
+{
+    File file(replace(fixture, "-1 -1 -1 10 10", "-1 -1 -1 50 40"));
+    REQUIRE_THROWS(load_prismatic_mesh(file.path));
+}
+
+TEST_CASE("memory input retains layer junctions and original lower-dimensional simplices")
+{
+    File file(fixture);
+    auto input = load_prismatic_mesh(file.path);
+    wmtk::MeshMap raw;
+    write_prismatic_mesh(input, "mesh.vtu", nullptr, true, &raw);
+    auto& source = raw.at("mesh.vtu");
+    auto correspondence = source.vertex_attributes.at("corr_input_vid").integers();
+    correspondence(4, 0) = 40;
+    source.vertex_attributes["corr_input_vid"].values = correspondence;
+    source.cells[wmtk::CellType::Edge].connectivity.resize(1, 2);
+    source.cells[wmtk::CellType::Edge].connectivity << 0, 3;
+    source.cells[wmtk::CellType::Triangle].connectivity.resize(1, 3);
+    source.cells[wmtk::CellType::Triangle].connectivity << 0, 1, 3;
+    auto loaded = load_prismatic_data(source);
+    REQUIRE(loaded.layered_junction_vertices == std::set<size_t>{3, 4});
+    REQUIRE(loaded.source_edges == std::vector<std::array<size_t, 2>>{{0, 3}});
+    REQUIRE(loaded.source_faces == std::vector<std::array<size_t, 3>>{{0, 1, 3}});
+    const auto result = prismatic_mesh(
+        {{"application", "prismatic_mesh"},
+         {"input", "construction"},
+         {"output", "mesh.vtu"},
+         {"rod_mode", true},
+         {"iterations", 2},
+         {"keep_background_mesh", true},
+         {"prism_dominant", true}},
+        {{"construction", source}});
+    REQUIRE(result.second["hybrid"]["checks"]["reference_tetrahedra_positive"] == true);
+    REQUIRE(
+        result.second["hybrid"]["junction_protection"]["layered_correspondence"]["normalized_links"]
+            .size() == 1);
 }
 TEST_CASE("keeping the offset band filters topology and preserves vertex tags and correspondence")
 {

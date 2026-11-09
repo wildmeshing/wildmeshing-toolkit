@@ -1,10 +1,13 @@
 #include <wmtk/io/DataWriter.hpp>
+#include "junction_protection.hpp"
 #include "prismatic_mesh.hpp"
+#include "rod_mesh.hpp"
 #include "write_msh.hpp"
 
 #include <algorithm>
 #include <fstream>
 #include <paraviewo/VTUWriter.hpp>
+#include <set>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::components::prismatic_mesh {
@@ -81,6 +84,12 @@ void write_prismatic_mesh(
     // Compact output row indices only. vid and corr_input_vid remain source IDs.
     const size_t nc = cell_rows.size();
     VectorXd input_tags(nc), offset_tags(nc), tau22(nc);
+    VectorXd joint_one_ring, rod_region, construction_region;
+    if (input.rod_state) {
+        joint_one_ring = VectorXd::Zero(nc);
+        rod_region = VectorXd::Zero(nc);
+        construction_region = VectorXd::Zero(nc);
+    }
     VectorXd cell_types, source_counts, candidates, retriangulated, background_transition;
     std::vector<bool> changed_reference_tets(input.tetrahedra.rows(), false);
     MatrixXd reference_tets, source_tet_ids;
@@ -106,6 +115,33 @@ void write_prismatic_mesh(
         offset_tags[i] = input.offset_tet_tags[tid];
         const bool is_tet = !hybrid || hybrid->cells[row].type == HybridCellType::Tetrahedron;
         tau22[i] = is_tet && classify_tau22(input, tid) ? 1 : -1;
+        if (input.rod_state && input.offset_tet_tags[tid] == 1) {
+            size_t in_count = 0;
+            bool rod = false, shell = false;
+            for (size_t source_tid :
+                 hybrid ? hybrid->cells[row].source_tets : std::vector<size_t>{tid})
+                for (int k = 0; k < 4; ++k) {
+                    const size_t v = input.tetrahedra(source_tid, k);
+                    if (input.vertex_tags[v] != 2) continue;
+                    rod = rod || is_rod_offset_vertex(input, v);
+                    shell = shell || !is_rod_offset_vertex(input, v);
+                }
+            if (hybrid && hybrid->cells[row].type == HybridCellType::Prism) {
+                for (size_t v : hybrid->cells[row].vertices) in_count += input.vertex_tags[v] == 1;
+                construction_region[i] = in_count == 2 ? 2 : 1;
+            } else
+                construction_region[i] = rod && shell ? 3 : rod ? 2 : 1;
+            // Only tetrahedra incident to a degree > 2 centerline joint belong
+            // to its one-ring. End caps and nearby transition tets stay separate.
+            if (is_tet)
+                for (int k = 0; k < 4; ++k)
+                    if (input.rod_state->joints.count(input.tetrahedra(tid, k)))
+                        joint_one_ring[i] = 1;
+            rod_region[i] = joint_one_ring[i] == 1                             ? 3
+                            : is_tet                                           ? 2
+                            : hybrid->cells[row].type == HybridCellType::Prism ? 1
+                                                                               : 4;
+        }
         if (!hybrid) {
             paraviewo::CellElement out;
             out.ctype = paraviewo::CellType::Tetrahedron;
@@ -158,6 +194,11 @@ void write_prismatic_mesh(
     cell_fields.emplace("tag_0", std::move(input_tags));
     cell_fields.emplace("offset_tag", std::move(offset_tags));
     cell_fields.emplace("tau22", std::move(tau22));
+    if (input.rod_state) {
+        cell_fields.emplace("joint_one_ring", std::move(joint_one_ring));
+        cell_fields.emplace("rod_region", std::move(rod_region));
+        cell_fields.emplace("construction_region", std::move(construction_region));
+    }
     if (hybrid) {
         cell_fields.emplace("cell_type", std::move(cell_types));
         cell_fields.emplace("source_tet_count", std::move(source_counts));
@@ -168,6 +209,54 @@ void write_prismatic_mesh(
         cell_fields.emplace("background_transition", std::move(background_transition));
     }
     add_targets(point_fields, input, vertex_rows);
+    if (input.rod_state && hybrid) {
+        VectorXd terminal_vertices = VectorXd::Zero(n), terminal_cells = VectorXd::Zero(nc);
+        for (size_t i = 0; i < n; ++i)
+            terminal_vertices[i] = input.rod_state->terminal_frame_vertices.count(vertex_rows[i]);
+        for (size_t i = 0; i < nc; ++i)
+            terminal_cells[i] = input.rod_state->terminal_prism_cells.count(cell_rows[i]);
+        point_fields.emplace("rod_terminal_frame", std::move(terminal_vertices));
+        cell_fields.emplace("rod_terminal_prism", std::move(terminal_cells));
+    }
+    if (input.junction_protection) {
+        const auto& protection = *input.junction_protection;
+        VectorXd no_collapse(n), connection_kind(n), connection_ring(nc);
+        for (size_t i = 0; i < n; ++i) {
+            const size_t v = vertex_rows[i];
+            no_collapse[i] = protection.offset_vertices.count(v);
+            connection_kind[i] =
+                (protection.rod_shell_vertices.count(v) || protection.rod_joint_vertices.count(v)) +
+                2 * protection.shell_terminal_vertices.count(v) +
+                4 * protection.layered_centers.count(v);
+        }
+        for (size_t i = 0; i < nc; ++i) {
+            if (hybrid) {
+                const auto& cell = hybrid->cells[cell_rows[i]];
+                connection_ring[i] =
+                    std::any_of(cell.vertices.begin(), cell.vertices.end(), [&](size_t v) {
+                        return protection.centers.count(v);
+                    });
+            } else {
+                std::array<size_t, 4> tet;
+                for (size_t j = 0; j < 4; ++j) tet[j] = input.tetrahedra(cell_rows[i], j);
+                connection_ring[i] = junction_tet_protected(input, tet);
+            }
+        }
+        point_fields.emplace("no_collapse", std::move(no_collapse));
+        point_fields.emplace("connection_kind", std::move(connection_kind));
+        cell_fields.emplace("connection_one_ring", std::move(connection_ring));
+    }
+    if (hybrid && hybrid->report.contains("marked_offset_source_vids")) {
+        const auto marked = hybrid->report["marked_offset_source_vids"].get<std::set<int64_t>>();
+        VectorXd marks(n);
+        for (size_t i = 0; i < n; ++i) {
+            const size_t v = vertex_rows[i];
+            marks[i] = input.vertex_tags[v] == 2
+                           ? static_cast<int>(marked.count(input.source_vertex_ids[v]))
+                           : -1;
+        }
+        point_fields.emplace("transition_mark", std::move(marks));
+    }
     if (!output && !path.parent_path().empty())
         std::filesystem::create_directories(path.parent_path());
     if (!output && path.extension() == ".msh") {

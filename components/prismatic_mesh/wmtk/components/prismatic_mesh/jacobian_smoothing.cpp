@@ -8,7 +8,9 @@
 #include <set>
 #include <stdexcept>
 #include <wmtk/utils/Logger.hpp>
+#include "junction_protection.hpp"
 #include "prism_jacobian.hpp"
+#include "rod_mesh.hpp"
 
 namespace wmtk::components::prismatic_mesh {
 namespace {
@@ -297,6 +299,10 @@ void smooth_prism_jacobians(
         std::vector<std::pair<double, size_t>> pending;
         for (size_t v = 0; v < incident.size(); ++v) {
             if (incident[v].empty() || input.vertex_tags[v] != 2) continue;
+            if (!junction_collapse_allowed(input, v)) continue;
+            if (input.rod_state && input.rod_state->options.unified_optimization &&
+                (is_rod_offset_vertex(input, v) || input.rod_state->frozen_offset.count(v)))
+                continue;
             double worst = std::numeric_limits<double>::infinity();
             for (size_t i : incident[v])
                 worst = std::min(worst, state[i].minimum.determinant / scales[i]);

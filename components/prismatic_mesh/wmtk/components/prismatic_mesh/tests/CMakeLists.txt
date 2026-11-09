@@ -13,8 +13,10 @@ target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE
     test_read_msh.cpp
     test_target_positions.cpp
     test_open_boundary.cpp
+    test_junction_protection.cpp
     test_optimization.cpp
     test_background_remeshing.cpp
     test_unlock.cpp
     test_prism_dominant.cpp
+    test_rod_mesh.cpp
 )

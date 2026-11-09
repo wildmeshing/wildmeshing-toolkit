@@ -11,13 +11,22 @@
         "optional": [
             "input_dir",
             "thicknessratio",
+            "rod_mode",
+            "rod_radius",
+            "rod_axial_split",
+            "rod_corner_preview_vid",
+            "rod_buffer_max_angle",
+            "rod_buffer_max_subdivision",
             "iterations",
             "keep_background_mesh",
+            "ignore_background_mesh",
             "prism_dominant",
             "export_input_and_shell",
             "min_tet_volume",
             "smoothing_max_backtracks",
+            "relative_tet_volume_floor",
             "jacobian_smoothing_iterations",
+            "transition_smoothing_iterations",
             "jacobian_target",
             "jacobian_position_weight",
             "jacobian_max_step_ratio",
@@ -28,6 +37,42 @@
             "background_remeshing_max_operations",
             "background_remeshing_max_attempts"
         ]
+    },
+    {
+        "pointer": "/rod_mode",
+        "type": "bool",
+        "default": false,
+        "doc": "Enable rod preparation within the shared shell/rod optimizer. Accepts mixed curve, face and solid offset constructions. Rod edges are input edges without input face/solid cofaces. Non-rod attachments and branching joints protect one-rings; free ends use terminal frames, and isolated loops reuse a periodic frame without endpoint protection. Build rod frame targets and shell normal targets, then jointly collapse/smooth with the complete background and reconstruct both kinds of prism plus conforming pyramid/tet interfaces. Requires explicit input labels and correspondence. The isolated corner-preview experiment remains curve-only."
+    },
+    {
+        "pointer": "/rod_radius",
+        "type": "float",
+        "default": 0.0,
+        "doc": "Rod mode only. Absolute target section radius; positive, or zero to use thicknessratio times the mean centerline edge length. Infeasible circular targets retain valid geometry and are reported."
+    },
+    {
+        "pointer": "/rod_axial_split",
+        "type": "bool",
+        "default": true,
+        "doc": "Rod mode only. Insert a midpoint input vertex and equivalent frame into compatible prism intervals during construction; both halves and all changed background interfaces must validate before commit."
+    },
+    {
+        "pointer": "/rod_corner_preview_vid",
+        "type": "int",
+        "default": -1,
+        "doc": "Experimental rod-mode local patch export. A nonnegative input source vid constructs a quaternion-interpolated corner buffer, fixing its local pose and the two neighboring section interfaces. Exports only the isolated patch; does not replace or include the source background. -1 keeps the normal full-mesh pipeline. Requires prism_dominant."
+    },
+    {
+        "pointer": "/rod_buffer_max_angle",
+        "type": "float",
+        "default": 15.0,
+        "doc": "For rod_corner_preview_vid only. Maximum quaternion rotation between adjacent buffer frames, in degrees, in (0,90]. The corner pose stays fixed; extra frames lie on the original two input segments."
+    },
+    {
+        "pointer": "/rod_buffer_max_subdivision",
+        "type": "int",
+        "default": 3,
+        "doc": "For rod_corner_preview_vid only. Maximum additional binary subdivision depth in [0,7]. Try the initial interpolated buffer, then double both side layer counts on each failed geometric attempt. If no valid prism construction is found within this bound, export the unchanged local reference tets. A separate 128-layer-per-side bound limits work."
     },
     {
         "pointer": "/application",
@@ -72,6 +117,12 @@
         "doc": "Keep exterior background tetrahedra during optimization/output. Background must remain strictly positive. Without background_remeshing only offset vertices move. Targets are computed from the band alone."
     },
     {
+        "pointer": "/ignore_background_mesh",
+        "type": "bool",
+        "default": false,
+        "doc": "Explicitly discard background tetrahedra before rod preprocessing and joint optimization. Keep input volume and offset band, remove background constraints and background-pyramid reconstruction, and do not reattach the discarded mesh. Overrides keep_background_mesh. Intended for a band-only result or a background-constraint comparison."
+    },
+    {
         "pointer": "/prism_dominant",
         "type": "bool",
         "default": false,
@@ -100,6 +151,18 @@
         "type": "int",
         "default": 0,
         "doc": "Optional prism Jacobian smoothing rounds after tet optimization. Zero disables this stage. Only offset vertices move; input, correspondence and connectivity remain fixed."
+    },
+    {
+        "pointer": "/relative_tet_volume_floor",
+        "type": "float",
+        "default": 0.0,
+        "doc": "Optional fraction in [0,1). Each collapse or smoothing move must retain more than this fraction of every modified surviving tet's volume, including background. Zero keeps the original strict-positive rule. Deleted collapse cells are excluded. The absolute band min_tet_volume floor still applies."
+    },
+    {
+        "pointer": "/transition_smoothing_iterations",
+        "type": "int",
+        "default": 0,
+        "doc": "Optional local convex-envelope initialization and concave-hinge smoothing after hybrid construction, in [0,100]. Only outer offset vertices in protected/marked transition neighborhoods move. Input, correspondence, connectivity and completed rod-prism frames stay fixed; every step checks reference tets, native prism/pyramid Jacobians and native shape quality. Zero disables this stage."
     },
     {
         "pointer": "/jacobian_target",

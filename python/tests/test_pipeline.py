@@ -249,3 +249,22 @@ def test_the_prismatic_input_is_rebuilt_from_the_regions_and_the_correspondence(
         _prismatic_input(mesh, ["cube"], ["c"])
     with pytest.raises(ValueError, match="both"):
         _prismatic_input(mesh, ["cube"], [])
+
+
+def test_prismatic_adapter_preserves_original_curves_faces_and_layer_links():
+    from wildmeshing.pipeline import _prismatic_input
+    mesh = {"V": np.eye(6, 3),
+            "vertex_attributes": {"vid": {"values": np.arange(6)},
+                                  "corr_input_vid": {"values": [-1,-1,-1,-1,0,4]}},
+            "cells": {
+                "edge": {"connectivity": np.array([[0,1]]), "attributes": {}},
+                "triangle": {"connectivity": np.array([[1,2,4]]), "attributes": {}},
+                "tetrahedron": {"connectivity": np.array([[0,1,2,3],[0,1,4,5]]),
+                    "attributes": {"tags": {"values": [[1,0],[0,1]], "labels": ["cube","b"]}}}}}
+    converted = _prismatic_input(mesh, ["cube"], ["b"])
+    assert set(converted['cells']) == {'edge','triangle','tetrahedron'}
+    assert np.array_equal(converted['cells']['edge']['connectivity'], [[0,1]])
+    assert np.array_equal(converted['cells']['triangle']['connectivity'], [[1,2,4]])
+    # The adapter leaves the two layer links intact for C++ junction handling.
+    assert converted['vertex_attributes']['corr_input_vid']['values'].tolist() == [-1,-1,-1,-1,0,4]
+    assert converted['vertex_attributes']['labels']['values'][4] == 2

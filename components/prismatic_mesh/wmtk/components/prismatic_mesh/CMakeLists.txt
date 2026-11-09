@@ -17,7 +17,12 @@ set(SRC_FILES
     write_msh.hpp
     write_msh.cpp
     prism_main.cpp
+    rod_mesh.hpp
+    rod_mesh.cpp
+    rod_corner_buffer.cpp
     open_boundary.cpp
+    junction_protection.hpp
+    junction_protection.cpp
     background_pyramids.hpp
     background_pyramids.cpp
     prism_dominant.cpp
