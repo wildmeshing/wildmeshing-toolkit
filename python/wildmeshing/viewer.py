@@ -125,10 +125,8 @@ def _colour_by(targets, attribute):
 
 def _offset_correspondence(mesh):
     """An offset's correspondence (save_offset_correspondence): each vertex whose corr_input_vid
-    is set (>= 0: the band's front) to the vertex of that vid. None without these attributes."""
-    va = mesh.get("vertex_attributes") or {}
-    if "corr_input_vid" not in va or "vid" not in va:
-        return None
+    is set (>= 0: the band's front) to the vertex of that vid."""
+    va = mesh["vertex_attributes"]
     corr = _values(va["corr_input_vid"]).ravel()
     row = {int(v): k for k, v in enumerate(_values(va["vid"]).ravel())}
     front = np.flatnonzero(corr >= 0)
@@ -309,11 +307,9 @@ def _stage_items(ps, stage, outputs, transform, targets):
     env_V, env_centre = _placed(envelope, transform) if envelope else (None, None)
     # The mesh only: the other outputs a component returns (surface, edges, offset, ...) are
     # derived from it.
-    for mesh_name, mesh in outputs.items():
-        if mesh_name != "mesh" or not mesh.get("cells"):
-            continue
+    mesh = outputs.get("mesh") or {}
+    if mesh.get("cells"):
         V, centre = _placed(mesh, transform)
-        prefix = stage if mesh_name == "mesh" else f"{stage}/{mesh_name}"
         for group, kinds in GROUPS:
             labels = []
             for kind in kinds:
@@ -321,7 +317,7 @@ def _stage_items(ps, stage, outputs, transform, targets):
                     labels += [l for l in _label_rows(mesh["cells"][kind]) if l not in labels]
             for label in labels:
                 colour = _colour(label)
-                name = f"{prefix} {group[:-5]} {label}"
+                name = f"{stage} {group[:-5]} {label}"
                 if group == "volume tags":
                     layers = _volume_layers(ps, name, V, mesh, label, colour, targets)
                 else:
@@ -342,7 +338,7 @@ def _stage_items(ps, stage, outputs, transform, targets):
                                                        block, rows, colour, kind, True)
                 for s in env_layers:
                     s.set_position(env_centre)
-                items[group][f"{mesh_name}: {label}" if prefix != stage else label] = {
+                items[group][label] = {
                     "layers": layers, "envelope": env_layers, "show": label != "ambient",
                     "default": label != "ambient", "env": False}
     # An envelope without labels: one item of its own.
@@ -657,10 +653,7 @@ def view(stages, screenshots=None):
         return
 
     ps.set_user_callback(lambda: (polyscope_panels(ps, psim), viewer.panel()))
-    if screenshots == "mock":
-        ps.show(3)
-    else:
-        ps.show()
+    ps.show(3 if screenshots == "mock" else None)
 
 
 def main(argv):

@@ -333,7 +333,11 @@ class Pipeline:
         (None for an input). on_stage(name, result) is called after each."""
         keys = {}
 
-        def done(name, result):
+        def done(name, key, fresh):
+            # The result in memory while its key is unchanged, else fresh().
+            old = self.results.get(name)
+            result = {**old, "source": "memory"} if old is not None and old["key"] == key else \
+                fresh()
             self.results[name] = result
             if on_stage:
                 on_stage(name, result)
@@ -342,16 +346,12 @@ class Pipeline:
             path = os.path.join(self.root, file)
             with open(path, "rb") as f:
                 key = keys[name] = hashlib.sha256(f.read()).hexdigest()
-            old = self.results.get(name)
-            done(name, {**old, "source": "memory"} if old is not None and old["key"] == key else
-                 {"outputs": {"mesh": wildmeshing.read_mesh(path)}, "report": {}, "key": key,
-                  "source": "file", "log": None})
+            done(name, key, lambda: {"outputs": {"mesh": wildmeshing.read_mesh(path)},
+                                     "report": {}, "key": key, "source": "file", "log": None})
         for stage in self.stages:
             name = stage["name"]
             key = keys[name] = self._key(stage, keys)
-            old = self.results.get(name)
-            done(name, {**old, "source": "memory"} if old is not None and old["key"] == key else
-                 self._component(stage, key))
+            done(name, key, lambda: self._component(stage, key))
             if name == until:
                 break
         return {name: self.results[name] for name in keys}

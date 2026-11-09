@@ -7,7 +7,6 @@ import os
 from itertools import permutations
 from pathlib import Path
 
-import gmsh
 import numpy as np
 import pytest
 
@@ -44,6 +43,8 @@ def _write_groups_msh(path, dim, coords, groups):
     """Write a physical-groups .msh: coords (n,3) 1-based-node-tag order,
     groups = {name: [prim vertex tuples]} written in insertion order
     (first group owns the node block, matching wmtk's convention)."""
+    import gmsh  # here, not above: gmsh comes with the polyfem extras, which most tests need not
+
     gmsh.initialize()
     try:
         gmsh.model.add("synthetic")

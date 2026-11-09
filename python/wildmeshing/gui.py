@@ -489,11 +489,14 @@ class Gui:
                 psim.TreePop()
         psim.TreePop()
 
-    def _remove(self, name):
+    def _try(self, edit, *args):
+        """Apply an edit; one it refuses (ValueError) becomes the message. Whether it applied."""
         try:
-            self.remove(name)
+            edit(*args)
+            return True
         except ValueError as e:
             self.message = str(e)
+            return False
 
     def _input_row(self, name, file):
         """An input as a row of the inputs table: its name (editable; every reference to it
@@ -505,10 +508,7 @@ class Gui:
         _, self.renaming[name] = psim.InputText(f"##name{name}", self.renaming.get(name, name))
         psim.PopItemWidth()
         if psim.IsItemDeactivatedAfterEdit():  # Enter, or a click elsewhere
-            try:
-                self.rename(name, self.renaming.pop(name))
-            except ValueError as e:
-                self.message = str(e)
+            self._try(self.rename, name, self.renaming.pop(name))
         psim.TableSetColumnIndex(1)
         missing = not os.path.exists(os.path.join(self.pipeline.root, file))
         psim.PushItemWidth(-100 if missing else -30)
@@ -524,7 +524,7 @@ class Gui:
             psim.TextColored(RED, "missing")
         psim.TableSetColumnIndex(2)
         if psim.SmallButton(f"x##remove{name}"):
-            self._remove(name)
+            self._try(self.remove, name)
 
     def _new_input_row(self):
         """The inputs table's last row: an input to add, named after its file until a name is
@@ -549,11 +549,8 @@ class Gui:
             self.pick_file("new")
         psim.TableSetColumnIndex(2)
         if psim.SmallButton("+##addinput"):
-            try:
-                self.add_input(new["name"], new["file"])
+            if self._try(self.add_input, new["name"], new["file"]):
                 self.new_input = {"name": "", "file": ""}
-            except ValueError as e:
-                self.message = str(e)
 
     def _stage(self, i, stage):
         psim = self.psim
@@ -574,7 +571,7 @@ class Gui:
             self.log_stage = name
         psim.SameLine()
         if psim.Button(f"remove##remove{name}"):
-            self._remove(name)
+            self._try(self.remove, name)
         psim.TreePop()
 
     def _add(self):
@@ -588,10 +585,7 @@ class Gui:
         self.new["default"] = default
         _, self.new["name"] = psim.InputText("name##new", self.new["name"])
         if psim.Button("add stage"):
-            try:
-                self.add_stage(self.new["name"], kinds[self.new["kind"]])
-            except ValueError as e:
-                self.message = str(e)
+            self._try(self.add_stage, self.new["name"], kinds[self.new["kind"]])
 
     def panel(self):
         """Every frame: what the run finished, then the windows. polyscope's own on the left,
@@ -691,10 +685,7 @@ def run_window(gui, screenshots=None):
     if gui.viewer is None:
         gui.viewer = _viewer.Viewer(ps, psim)
     ps.set_user_callback(gui.panel)
-    if mode == "mock":
-        ps.show(3)
-    else:
-        ps.show()
+    ps.show(3 if mode == "mock" else None)
 
 
 def main(argv):
