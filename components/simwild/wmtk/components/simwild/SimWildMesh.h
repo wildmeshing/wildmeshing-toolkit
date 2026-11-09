@@ -642,6 +642,10 @@ public:
      * that passes the same test, so the second nearest if the nearest refuses it, and so on. If
      * no region does, the operation throws.
      *
+     * `spatial_selection`: J keeps only the tets whose tags satisfy it, before its components are
+     * found; nullptr keeps them all. On hold: the simwild component passes none, and refuses
+     * any tight_seal_geom_spatial_selection but its default.
+     *
      * `sanity`: afterwards, throw if a tet is inverted, a filled tet carries other than one
      * region's tag, or a part of the filled tets borders fewer than two regions (a concave
      * feature of one body, filled).
@@ -653,7 +657,8 @@ public:
         const std::string& selection = "explicit",
         int64_t min_regions = 2,
         bool sanity = false,
-        const std::string& mode = "voronoi");
+        const std::string& mode = "voronoi",
+        const ExprPtr& spatial_selection = nullptr);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 

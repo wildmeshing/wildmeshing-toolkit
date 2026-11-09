@@ -440,6 +440,7 @@ def simwild(options: dict, meshes: dict) -> tuple:
       tight_seal_geom_min_regions (int, default 2): For tight_seal_geom with tight_seal_geom_selection "detected": a part is filled only if it borders at least this many regions, 2 or 3 (2 or more with tight_seal_geom_EXPERIMENTAL_mode "fill"); parts bordering fewer are left alone, and so are parts bordering four or more (with a warning; not with "fill").
       tight_seal_geom_sanity (bool, default false): For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell carries other than one region's tag, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two regions, which would be a concave feature of one body, filled.
       tight_seal_geom_EXPERIMENTAL_mode (string, default "voronoi"): EXPERIMENTAL.
+      tight_seal_geom_spatial_selection (string, default "_ | !_"): ON HOLD: only the default is accepted for now; any other value throws.
       keep_lcc_tags (list, default []): For keep_lcc: list of tag values for which only the largest connected component is kept.
       keep_lcc_num (int, default 1): Number of largest connected components that are kept.
       resolve_overlaps_tags (list, default []): Resolve intersections between tags by filling the areas with intersections with the nearest of the intersecting tags.

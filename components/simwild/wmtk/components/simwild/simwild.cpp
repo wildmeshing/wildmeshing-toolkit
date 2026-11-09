@@ -6,6 +6,8 @@
 #include <wmtk/utils/DriverPrologue.hpp>
 
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
 #include <optional>
 #include <set>
@@ -127,6 +129,22 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
                 }
                 tags.push_back(*tag.begin());
             }
+        }
+        // On hold: the spatial selection takes only its default, every cell, so it reaches the
+        // operation as no selection at all.
+        const std::string spatial = json_params["tight_seal_geom_spatial_selection"];
+        std::string compact = spatial;
+        compact.erase(
+            std::remove_if(
+                compact.begin(),
+                compact.end(),
+                [](unsigned char c) { return std::isspace(c); }),
+            compact.end());
+        if (compact != "_|!_") {
+            log_and_throw_error(
+                "tight_seal_geom_spatial_selection is on hold: it takes only its default, "
+                "\"_ | !_\". Got \"{}\"",
+                spatial);
         }
         mesh.tight_seal_geom(
             tags,

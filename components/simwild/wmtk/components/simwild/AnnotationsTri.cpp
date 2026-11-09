@@ -586,7 +586,8 @@ void SimWildMeshTri::tight_seal_geom(
     const std::string& selection,
     const int64_t min_regions,
     const bool sanity,
-    const std::string& mode)
+    const std::string& mode,
+    const ExprPtr& spatial_selection)
 {
     const bool fill_mode = mode == "fill";
     if (!fill_mode && mode != "voronoi") {
@@ -921,6 +922,27 @@ void SimWildMeshTri::tight_seal_geom(
             n_split,
             n_not_split,
             J_faces.size());
+
+
+        // The spatial selection keeps the faces of J whose tags satisfy it, every face by
+        // default, before J is split into its components.
+        if (spatial_selection) {
+            const size_t n_before = J_faces.size();
+            std::vector<size_t> kept;
+            for (const size_t id : J_faces) {
+                if (spatial_selection->eval(m_face_attribute[id].tags)) {
+                    kept.push_back(id);
+                } else {
+                    in_J[id] = 0;
+                }
+            }
+            J_faces = std::move(kept);
+            logger().info(
+                "tight_seal_geom: the spatial selection {} keeps {} of the {} faces of J",
+                spatial_selection->to_string(),
+                J_faces.size(),
+                n_before);
+        }
 
         // 3. Connected components of J (through edges); keep the ones that share an edge with
         // every R_i (with detected tags: with min_regions R_i or more, which the component is

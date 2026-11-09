@@ -4,7 +4,8 @@
 bordering four regions alone. "fill" takes all of those, splits no cell of the part, labels it
 with the nearest tags, keeps each tag's topology, gives a cell its nearest tag refuses to the next
 nearest that takes it, and throws if none does. Both throw if the join region touches the mesh
-boundary, even at a vertex.
+boundary, even at a vertex. tight_seal_geom_spatial_selection is on hold: anything but its default
+throws.
 
 Needs the wildmeshing bindings; no external data."""
 import numpy as np
@@ -98,6 +99,19 @@ def _stranded_triangle():
         values[f, labels.index(t or "ambient")] = 1
     return {"V": V, "cells": {"triangle": {
         "connectivity": T, "attributes": {"tags": {"values": values, "labels": labels}}}}}
+
+
+def _gap_with_another_tag():
+    """Bodies a and b with a gap between them that a band of tag c crosses, ambient around."""
+    def tag_of(x, y):
+        if not (2 < x < 8 and 2 < y < 8):
+            return None
+        if x < 4:
+            return "a"
+        if x > 6:
+            return "b"
+        return "c" if 4 < y < 5 else None
+    return _grid_mesh(10, 10, tag_of)
 
 
 def _gap_to_the_boundary():
@@ -245,6 +259,24 @@ def test_part_left_alone_on_the_mesh_boundary_throws_too():
         return None
     with pytest.raises(Exception, match=r"touches the mesh boundary.* 0 of them in parts to fill"):
         _seal(_grid_mesh(16, 8, tag_of), selection="detected")
+
+
+def test_spatial_selection_default_keeps_everything():
+    mesh = _gap_with_another_tag()
+    default = _seal(mesh, tags=["a", "b"])
+    everything = _seal(mesh, tags=["a", "b"], spatial_selection="_|!_")
+    assert np.array_equal(default["V"], everything["V"])
+    assert np.array_equal(
+        default["cells"]["triangle"]["connectivity"], everything["cells"]["triangle"]["connectivity"])
+    assert np.array_equal(
+        default["cells"]["triangle"]["attributes"]["tags"]["values"],
+        everything["cells"]["triangle"]["attributes"]["tags"]["values"])
+
+
+@pytest.mark.parametrize("selection", ["_", "_ & !_", "c", "!_ | _"])
+def test_spatial_selection_is_on_hold(selection):
+    with pytest.raises(Exception, match="on hold"):
+        _seal(_gap_with_another_tag(), tags=["a", "b"], spatial_selection=selection)
 
 
 def test_voronoi_is_still_the_default():

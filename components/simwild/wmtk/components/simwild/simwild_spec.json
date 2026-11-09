@@ -84,6 +84,7 @@
       "tight_seal_geom_min_regions",
       "tight_seal_geom_sanity",
       "tight_seal_geom_EXPERIMENTAL_mode",
+      "tight_seal_geom_spatial_selection",
       "keep_lcc_tags",
       "keep_lcc_num",
       "resolve_overlaps_tags",
@@ -661,6 +662,12 @@
       "fill"
     ],
     "doc": "EXPERIMENTAL. For tight_seal_geom: how a part is filled. \"voronoi\": with the Voronoi diagram of the regions it borders, cells split along the bisectors; a part has at most three regions (tight_seal_geom_tags holds two or three, tight_seal_geom_min_regions is 2 or 3, and a part bordering four regions or more is not filled). \"fill\": none of those limits, and no cell is split. Each cell of the part takes the nearest, from its centroid, of the regions the part borders (shares an edge with in 2D, a face in 3D). Then each of those regions grows by breadth-first search over the cells that took it, adding a cell only if that keeps the topology of the region (the region meets the cell in a disk of whole facets of the cell), until it can add no more. A cell no region added then takes the nearest of the part's regions that passes the same test, so the second nearest if the nearest still refuses it, and so on, and these cells are gone over until none more can be labelled. If a cell is still unlabelled the operation throws."
+  },
+  {
+    "pointer": "/tight_seal_geom_spatial_selection",
+    "type": "string",
+    "default": "_ | !_",
+    "doc": "ON HOLD: only the default is accepted for now; any other value throws. For tight_seal_geom: a Boolean expression on tags, as in resolve_overlaps_tags (`_` is a cell with no tag, ambient), which restricts the seal to the cells whose tags satisfy it. The join region is found as usual, its cells that do not satisfy the expression are dropped from it, and only then is it split into the parts that are filled; the check that the join region stays off the mesh boundary applies to what is left. The default, `_ | !_`, keeps every cell. `_` keeps ambient cells alone, so no cell of another tag is filled: with tight_seal_geom_selection \"explicit\", such cells are otherwise free space, and keep their tag when filled."
   },
   {
     "pointer": "/keep_lcc_tags",
