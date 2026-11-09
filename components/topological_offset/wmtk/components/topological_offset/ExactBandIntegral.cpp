@@ -2452,7 +2452,21 @@ void face_line_derivs(
         pmul(lam, 2, lam, 2, lam2);
         inplane_edges += t.cross(n) * seg_int(w0, tp, ell, lam2, 3, 1);
     }
-    if (std::abs(sn) <= 16 * EPS && std::abs(n.dot(V[0] - A)) <= 16 * EPS * scale) {
+    // The plane holds the line where it passes the polygon when the line's height over the plane,
+    // n.(L_i - V_i) at the point L_i of the line nearest each corner V_i, is rounding at every
+    // corner; and the series below expands in the distance to the line, so it needs that distance
+    // above rounding (zamin > tol), the radial branch taking the face otherwise. MEASURED (p70565
+    // piece16 inward, exact_swept, 1 thread, 2026-10-28): three cells, each with a face through an
+    // input edge (corners 2e-16..1.3e-15 off its line), had e.n 3.4e-15..8e-15, beyond the test at
+    // V[0] and A alone (A ~1 away along the line); the series took zeta at 7e-18..9e-16 and
+    // returned NaN gradients and Hessians (test exact-band-integral-line-in-face-plane).
+    const double tol = 16 * EPS * scale;
+    double hmax = 0.;
+    for (int i = 0; i < k; ++i) {
+        const Vec3 w = V[i] - A;
+        hmax = std::max(hmax, std::abs(n.dot(w - w.dot(e) * e)));
+    }
+    if ((std::abs(sn) <= 16 * EPS && std::abs(n.dot(V[0] - A)) <= tol) || hmax <= tol) {
         // the face plane contains the line: r = |eta|, grad r = sign(eta) e_eta in the plane
         Vec3 eh = n.cross(e);
         eh /= eh.norm();
@@ -2498,7 +2512,7 @@ void face_line_derivs(
         if (zmin > 0. || zmax < 0.) {
             const double sg = zeta_of(xi_of(0)) > 0 ? 1. : -1.;
             const double zamin = sg > 0 ? zmin : -zmax;
-            if (std::abs(sn) * (ximax - ximin) < EPS_PAR_D * zamin) {
+            if (zamin > tol && std::abs(sn) * (ximax - ximin) < EPS_PAR_D * zamin) {
                 const double lA = l0 + g0.dot(Ac) + H * g0.dot(n);
                 const double le = g0.dot(eeta), lx = g0.dot(exi);
                 Weights W1, W2;
