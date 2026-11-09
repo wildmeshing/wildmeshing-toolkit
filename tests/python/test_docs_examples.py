@@ -30,7 +30,7 @@ APP = os.environ.get("WMTK_APP", "")
 RUN_DIR = os.environ.get("WMTK_DOC_EXAMPLES_RUN_DIR")
 
 
-def tested_elsewhere(script):
+def _tested_elsewhere(script):
     with open(script) as f:
         return f.readline().startswith("# docs-example: tested by")
 
@@ -60,7 +60,7 @@ class DocsExamples(unittest.TestCase):
         self.assertTrue(scripts)
         env = dict(os.environ, WMTK_DATA=str(DATA))
         for script in scripts:
-            if tested_elsewhere(script):
+            if _tested_elsewhere(script):
                 continue
             with self.subTest(script=script.name):
                 cwd = self.run_dir("python_" + script.stem)

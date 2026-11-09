@@ -96,12 +96,14 @@
   {
     "pointer": "/input_names",
     "type": "list",
+    "per_input": true,
     "doc": "List of names for the inputs, one per entry of /input, at its position there. If no names are assigned, the inputs will be named tag_0, tag_1, etc., by their position. Each name labels the input's curves in the output mesh, on both routes: the tracked edges on it, each under every input it lies on and oriented as its input, as the output mesh's edge block, which simwild reads back as edge tags. It also names the input's winding-number field on the triangles, wn_<name>, in the VTU output and on the memory route; the .msh output numbers them, wn_0, wn_1, ..., and so does everything without names. triwild writes no regions: its triangles carry no label but ambient (until 2026-11 each name also labelled the triangles its winding number puts inside).",
     "default": []
   },
   {
     "pointer": "/input_names/*",
     "type": "string",
+    "labels": "new",
     "doc": "Name for one input mesh."
   },
   {
@@ -187,6 +189,7 @@
   {
     "pointer": "/filter_inputs/*",
     "type": "string",
+    "labels": "existing",
     "doc": "The label of one input that bounds the domain."
   },
   {

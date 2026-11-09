@@ -142,6 +142,12 @@ and every option has a rule of its own, with a `doc`:
 - A key the spec does not have is accepted and ignored (with a warning from `wmtk_app` and the
   bindings), unless the component sets `spec_engine.strict = true`. So do not read a key that is
   not in the spec.
+- A string that names labels (tags) says how, in `"labels"`: `"existing"`, one label the mesh has;
+  `"expression"`, a tag expression over them, as `expression_parser::parse` reads it; `"new"`, a
+  label the component makes. A list with one entry per entry of `input`, at its position there,
+  has `"per_input": true`. The engine ignores both keys; the pipeline gui (`wildmeshing.gui`)
+  reads them: a label option gets a dropdown of the labels of the mesh the stage reads, and the
+  per-input lists become columns of one table beside `input`.
 
 `python docs/tools/gen_reference.py --check` fails when the root rule or any other rule has no
 `doc`, when the spec has no entry in `docs/components.yml`, or when that entry names an option

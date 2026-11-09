@@ -115,12 +115,14 @@
   {
     "pointer": "/input_names",
     "type": "list",
+    "per_input": true,
     "doc": "Names for the inputs, one per entry of /input, at its position there: a surface's face tag and winding-number field, a curve's edge tag. The face tag, on both routes, is a column of the tags of the output mesh's triangle block (<output>_final.msh, the memory route's mesh): the tracked faces on the input, each under every input it lies on and oriented as its input, which simwild and topological_offset read back as face tags. An input curve's edge tag is a column of the tags of the output mesh's edge block: the tet edges tiling it. An input without a name is tag_<i>, i its position in /input, as simwild and triwild name one. The winding-number field is wn_<name> in the VTU output and on the memory route; the .msh output numbers them, wn_0, wn_1, ..., and so does everything without names.",
     "default": []
   },
   {
     "pointer": "/input_names/*",
     "type": "string",
+    "labels": "new",
     "doc": "Name for one input."
   },
   {
@@ -230,6 +232,7 @@
   {
     "pointer": "/filter_inputs/*",
     "type": "string",
+    "labels": "existing",
     "doc": "The label of one input that bounds the domain."
   },
   {

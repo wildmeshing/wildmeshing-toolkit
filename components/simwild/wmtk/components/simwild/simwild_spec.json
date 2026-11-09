@@ -119,17 +119,20 @@
   {
     "pointer": "/input_names",
     "type": "list",
+    "per_input": true,
     "doc": "List of names for the inputs, one per entry of /input, at its position there: a volume's region, a surface's face tag (2D: a curve's edge tag), a 3D curve's feature-curve tag. If no names are assigned, the inputs will be named tag_0, tag_1, etc., by their position.",
     "default": []
   },
   {
     "pointer": "/input_names/*",
     "type": "string",
+    "labels": "new",
     "doc": "Name for one input mesh."
   },
   {
     "pointer": "/input_type",
     "type": "list",
+    "per_input": true,
     "doc": "One entry per input, saying what its tag marks. 'volume': the input encloses a volume (in 2D, a region), and the tets (in 2D, the triangles) inside it get its name as a tag. 'surface' (3D only): the input stays a surface, and the embedded faces on it get its name as a face tag. 'curve': in 2D the input stays a curve, open or closed, and the arrangement's edges on it get its name as an edge tag, written as the edge block of the output mesh; in 3D a curve input is a feature curve, and 'curve' is the only entry it takes. 'point': a point input, the only entry it takes. An entry the input's content contradicts is refused. 'surface' and 'curve' (2D) need tag_from_winding_number, and 'surface' needs split_connected_components off. Empty (the default): every surface (2D: curve) is a volume, every other input what its content makes it. Applies to surface and curve inputs, not to a tagged mesh input.",
     "default": []
   },
@@ -164,6 +167,7 @@
   {
     "pointer": "/input_transform",
     "type": "list",
+    "per_input": true,
     "doc": "Transformation matrices for the inputs, one per entry of /input. Transformations are optional and don't need to be described for all inputs. They apply to the surfaces (2D: curves): one for a 3D curve or for points is refused.",
     "default": []
   },
@@ -322,6 +326,7 @@
   {
     "pointer": "/sizing_field/*/tags",
     "type": "string",
+    "labels": "expression",
     "doc": "A region of tags."
   },
   {
@@ -351,6 +356,7 @@
   {
     "pointer": "/quality_field/*/tags",
     "type": "string",
+    "labels": "expression",
     "doc": "A region of tags."
   },
   {
@@ -573,6 +579,7 @@
   {
     "pointer": "/fill_holes_tags/*",
     "type": "string",
+    "labels": "expression",
     "doc": "An intersection of tag values to fill holes."
   },
   {
@@ -597,6 +604,7 @@
   {
     "pointer": "/tight_seal_tag_sets/*/*",
     "type": "string",
+    "labels": "expression",
     "doc": "An intersection of tags."
   },
   {
@@ -614,6 +622,7 @@
   {
     "pointer": "/tight_seal_geom_tags/*",
     "type": "string",
+    "labels": "expression",
     "doc": "One tag name."
   },
   {
@@ -660,6 +669,7 @@
   {
     "pointer": "/keep_lcc_tags/*",
     "type": "string",
+    "labels": "expression",
     "doc": "An intersection of tags whose smaller connected components will be removed."
   },
   {
@@ -684,6 +694,7 @@
   {
     "pointer": "/resolve_overlaps_tags/*/*",
     "type": "string",
+    "labels": "expression",
     "doc": "A Boolean expression that defines a region of tags."
   },
   {
@@ -695,6 +706,7 @@
   {
     "pointer": "/replace_tags_in/*",
     "type": "string",
+    "labels": "expression",
     "doc": "An intersection of tags that should be replaced."
   },
   {
@@ -706,6 +718,7 @@
   {
     "pointer": "/replace_tags_out/*",
     "type": "string",
+    "labels": "expression",
     "doc": "An intersection of tags that should replace the input tags."
   },
   {
@@ -717,6 +730,7 @@
   {
     "pointer": "/tag_priority/*",
     "type": "string",
+    "labels": "existing",
     "doc": "A tag value."
   },
   {
