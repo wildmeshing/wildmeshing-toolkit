@@ -65,6 +65,7 @@ def test_build_run_edit_and_draw(tmp_path, monkeypatch):
     assert [s["name"] for s in b.viewer.stages] == ["box", "remesh", "simplify", "map"]
     # The last stage with a mesh is shown alone; the tracking run after it has none to show.
     assert [s["shown"] for s in b.viewer.stages] == [False, False, True, True]
+    assert [s["folder"] for s in b.viewer.stages] == ["inputs", None, None, None]
     remesh = b.viewer.stages[1]
     (entry,) = remesh["correspondences"]  # the history's, its input found through the reference
     b.viewer._build(remesh, entry)

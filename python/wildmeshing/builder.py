@@ -154,7 +154,7 @@ class Builder:
         if self.viewer is not None and result is not None:
             shown = any(s["name"] == old and s["shown"] for s in self.viewer.stages)
             self.viewer.set_stage(new, result["outputs"], result["report"], self._input(new),
-                                  shown=shown, replace=old)
+                                  shown=shown, replace=old, folder=self._folder(new))
             self.viewed[new] = result["key"]
 
     def add_input(self, name, file):
@@ -283,6 +283,10 @@ class Builder:
             return self.pipeline.results[ref["from"]]["outputs"].get(ref["output"])
         return None
 
+    def _folder(self, name):
+        """The inputs share one folder in the view."""
+        return "inputs" if name in self.pipeline.inputs else None
+
     def poll(self):
         """Take in what the run finished, on the main thread, where polyscope's calls go."""
         while True:
@@ -298,7 +302,7 @@ class Builder:
                     for other in self.viewer.stages if value["outputs"] else []:
                         other["shown"] = False
                     self.viewer.set_stage(name, value["outputs"], value["report"],
-                                          self._input(name))
+                                          self._input(name), folder=self._folder(name))
                     self.viewed[name] = value["key"]
             elif kind == "picked":
                 if name == "new":

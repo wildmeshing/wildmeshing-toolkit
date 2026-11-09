@@ -417,15 +417,17 @@ class Viewer:
         self.plane.set_pose((0.0, 0.0, 0.0), (1.0, 0.0, 0.0))
         self.plane.set_draw_plane(False)
 
-    def set_stage(self, name, outputs, report=None, source=None, shown=True, replace=None):
+    def set_stage(self, name, outputs, report=None, source=None, shown=True, replace=None,
+                  folder=None):
         """Show the stage `name` -- outputs and report as a component returns them on the memory
         route, source the MeshData it ran on, which a history's correspondence needs -- in place of
-        the stage of that name, or of the stage `replace` (a renamed one), if any."""
+        the stage of that name, or of the stage `replace` (a renamed one), if any; in the panel,
+        under `folder` if one is given."""
         if self.transform is None:
             self.transform = _transform([outputs])
         old = self.remove_stage(replace or name)
         targets = []
-        stage = {"name": name, "shown": shown, "targets": targets,
+        stage = {"name": name, "shown": shown, "targets": targets, "folder": folder,
                  "items": _stage_items(self.ps, name, outputs, self.transform, targets),
                  "attributes": _attributes(outputs["mesh"])
                  if (outputs.get("mesh") or {}).get("cells") else [],
@@ -485,83 +487,39 @@ class Viewer:
             d.update(layers=b["layers"], text=b["text"])
         entry["warnings"], entry["built"] = built["warnings"], True
 
+    def _show(self, stage, shown):
+        stage["shown"] = shown
+        if shown:
+            # A stage switched on shows everything in it but the background and envelopes.
+            for item in self._items(stage):
+                item["show"], item["env"] = item["default"], False
+
     def panel(self):
         """The stages, each a checkbox and a tree: its volume, face and edge tags, attributes and
-        correspondences; then the gizmo toggles."""
+        correspondences; the stages of one folder under one checkbox and one tree, folded; then
+        the gizmo toggles."""
         psim = self.psim
         changed = False
+        drawn = set()
         for i, stage in enumerate(self.stages):
-            name = stage["name"]
-            c, stage["shown"] = psim.Checkbox(f"##stage{name}", stage["shown"])
-            changed |= c
-            if c and stage["shown"]:
-                # A stage switched on shows everything in it but the background and envelopes.
-                for item in self._items(stage):
-                    item["show"], item["env"] = item["default"], False
-            psim.SameLine()
-            if not _node(psim, f"{i + 1}. {name}##stage{name}"):
+            folder = stage["folder"]
+            if folder is None:
+                changed |= self._stage_row(i, stage)
                 continue
-            for group, group_items in stage["items"].items():
-                if not group_items or not _node(psim, f"{group}##{name}"):
-                    continue
-                for label, item in group_items.items():
-                    key = f"{name}/{group}/{label}"
-                    if item["layers"]:
-                        c, item["show"] = psim.Checkbox(f"{label}##show{key}", item["show"])
-                        changed |= c
-                    else:
-                        psim.TextUnformatted(label)
-                    psim.SameLine()
-                    if item["envelope"]:
-                        c, item["env"] = psim.Checkbox(f"envelope##env{key}", item["env"])
-                        changed |= c
-                        psim.SameLine()
-                    if psim.Button(f"only##only{key}"):
-                        for other_stage in self.stages:
-                            other_stage["shown"] = other_stage is stage
-                            for other in self._items(other_stage):
-                                other["show"] = other["env"] = False
-                            for d in self._directions(other_stage):
-                                d["lines"] = d["images"] = False
-                        item["show"] = bool(item["layers"])
-                        item["env"] = not item["layers"]
-                        changed = True
+            if folder in drawn:
+                continue
+            drawn.add(folder)
+            members = [(j, s) for j, s in enumerate(self.stages) if s["folder"] == folder]
+            c, shown = psim.Checkbox(f"##folder{folder}", all(s["shown"] for _, s in members))
+            if c:
+                for _, s in members:
+                    self._show(s, shown)
+                changed = True
+            psim.SameLine()
+            if _node(psim, f"{folder} ({len(members)})##folder{folder}"):
+                for j, s in members:
+                    changed |= self._stage_row(j, s)
                 psim.TreePop()
-            if stage["attributes"] and _node(psim, f"attributes##{name}"):
-                # One choice per stage: polyscope colours a layer by one quantity at a time.
-                for k, a in enumerate([None] + stage["attributes"]):
-                    if a is not None and a["range"] is None:
-                        psim.TextDisabled(f"{a['label']}: {a['text']}")
-                        continue
-                    label = "none" if a is None else a["label"]
-                    if psim.RadioButton(f"{label}##colour{name}/{k}", stage["colour"] is a) \
-                            and stage["colour"] is not a:
-                        stage["colour"] = a
-                        _colour_by(stage["targets"], a)
-                    if a is not None and a["text"]:
-                        psim.SameLine()
-                        psim.TextDisabled(a["text"])
-                psim.TreePop()
-            if stage["correspondences"] and _node(psim, f"correspondence##{name}"):
-                for k, entry in enumerate(stage["correspondences"]):
-                    psim.TextUnformatted(entry["name"])
-                    if entry["error"]:
-                        psim.TextDisabled(entry["error"])
-                        continue
-                    for j, d in enumerate(entry["directions"]):
-                        key = f"{name}/{k}/{j}"
-                        c_lines, d["lines"] = psim.Checkbox(f"{d['name']}##lines{key}", d["lines"])
-                        psim.SameLine()
-                        c_images, d["images"] = psim.Checkbox(f"images##images{key}", d["images"])
-                        if (c_lines or c_images) and not entry["built"]:
-                            self._build(stage, entry)
-                        changed |= c_lines or c_images
-                        if "text" in d:
-                            psim.TextDisabled(d["text"])
-                    if entry["warnings"]:
-                        psim.TextDisabled(entry["warnings"])
-                psim.TreePop()
-            psim.TreePop()
         psim.Separator()
         c, self.gizmos["slice"] = psim.Checkbox("slice", self.gizmos["slice"])
         changed |= c
@@ -569,6 +527,79 @@ class Viewer:
         changed |= c
         if changed:
             self.apply()
+
+    def _stage_row(self, i, stage):
+        """One stage's checkbox and tree; whether what is shown changed."""
+        psim = self.psim
+        name = stage["name"]
+        changed, shown = psim.Checkbox(f"##stage{name}", stage["shown"])
+        if changed:
+            self._show(stage, shown)
+        psim.SameLine()
+        if not _node(psim, f"{i + 1}. {name}##stage{name}"):
+            return changed
+        for group, group_items in stage["items"].items():
+            if not group_items or not _node(psim, f"{group}##{name}"):
+                continue
+            for label, item in group_items.items():
+                key = f"{name}/{group}/{label}"
+                if item["layers"]:
+                    c, item["show"] = psim.Checkbox(f"{label}##show{key}", item["show"])
+                    changed |= c
+                else:
+                    psim.TextUnformatted(label)
+                psim.SameLine()
+                if item["envelope"]:
+                    c, item["env"] = psim.Checkbox(f"envelope##env{key}", item["env"])
+                    changed |= c
+                    psim.SameLine()
+                if psim.Button(f"only##only{key}"):
+                    for other_stage in self.stages:
+                        other_stage["shown"] = other_stage is stage
+                        for other in self._items(other_stage):
+                            other["show"] = other["env"] = False
+                        for d in self._directions(other_stage):
+                            d["lines"] = d["images"] = False
+                    item["show"] = bool(item["layers"])
+                    item["env"] = not item["layers"]
+                    changed = True
+            psim.TreePop()
+        if stage["attributes"] and _node(psim, f"attributes##{name}"):
+            # One choice per stage: polyscope colours a layer by one quantity at a time.
+            for k, a in enumerate([None] + stage["attributes"]):
+                if a is not None and a["range"] is None:
+                    psim.TextDisabled(f"{a['label']}: {a['text']}")
+                    continue
+                label = "none" if a is None else a["label"]
+                if psim.RadioButton(f"{label}##colour{name}/{k}", stage["colour"] is a) \
+                        and stage["colour"] is not a:
+                    stage["colour"] = a
+                    _colour_by(stage["targets"], a)
+                if a is not None and a["text"]:
+                    psim.SameLine()
+                    psim.TextDisabled(a["text"])
+            psim.TreePop()
+        if stage["correspondences"] and _node(psim, f"correspondence##{name}"):
+            for k, entry in enumerate(stage["correspondences"]):
+                psim.TextUnformatted(entry["name"])
+                if entry["error"]:
+                    psim.TextDisabled(entry["error"])
+                    continue
+                for j, d in enumerate(entry["directions"]):
+                    key = f"{name}/{k}/{j}"
+                    c_lines, d["lines"] = psim.Checkbox(f"{d['name']}##lines{key}", d["lines"])
+                    psim.SameLine()
+                    c_images, d["images"] = psim.Checkbox(f"images##images{key}", d["images"])
+                    if (c_lines or c_images) and not entry["built"]:
+                        self._build(stage, entry)
+                    changed |= c_lines or c_images
+                    if "text" in d:
+                        psim.TextDisabled(d["text"])
+                if entry["warnings"]:
+                    psim.TextDisabled(entry["warnings"])
+            psim.TreePop()
+        psim.TreePop()
+        return changed
 
 
 def start(ps, screenshots=None):
