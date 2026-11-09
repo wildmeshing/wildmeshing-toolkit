@@ -589,10 +589,11 @@ void SimWildMeshTri::tight_seal_geom(
     const std::string& mode,
     const ExprPtr& spatial_selection)
 {
-    const bool fill_mode = mode == "fill";
+    const bool split_fill = mode == "split_fill";
+    const bool fill_mode = mode == "fill" || split_fill; // neither has the limit of three regions
     if (!fill_mode && mode != "voronoi") {
         log_and_throw_error(
-            "tight_seal_geom: mode must be \"voronoi\" or \"fill\". Input was {}",
+            "tight_seal_geom: mode must be \"voronoi\", \"fill\" or \"split_fill\". Input was {}",
             mode);
     }
     const bool detected = selection == "detected";
@@ -1150,7 +1151,9 @@ void SimWildMeshTri::tight_seal_geom(
         }
     };
 
-    if (fill_mode) {
+    if (split_fill) {
+        tight_seal_split_fill(components_seal, components_regions, tags, region_bvhs, filled);
+    } else if (fill_mode) {
         tight_seal_topology_fill(components_seal, components_regions, tags, region_bvhs, filled);
     } else {
         multi_voronoi::FillStats2D fill_stats;

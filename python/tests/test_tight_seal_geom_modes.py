@@ -4,10 +4,13 @@
 bordering four regions alone. "fill" takes all of those, splits no cell of the part, labels it
 with the nearest tags, keeps each tag's topology, gives a cell its nearest tag refuses to the next
 nearest that takes it, and throws if none does. Both throw if the join region touches the mesh
-boundary, even at a vertex. tight_seal_geom_spatial_selection is on hold: anything but its default
-throws.
+boundary, even at a vertex. "split_fill" first splits each part along the regions nearest its
+vertices, so its fill follows their bisectors. tight_seal_geom_spatial_selection is on hold:
+anything but its default throws.
 
 Needs the wildmeshing bindings; no external data."""
+import itertools
+
 import numpy as np
 import pytest
 
@@ -112,6 +115,55 @@ def _gap_with_another_tag():
             return "b"
         return "c" if 4 < y < 5 else None
     return _grid_mesh(10, 10, tag_of)
+
+
+def _grid_mesh_3d(nx, ny, nz, tag_of):
+    """[0, nx] x [0, ny] x [0, nz] in unit cubes, each cut into six tets around its diagonal, every
+    tet positively oriented. tag_of(x, y, z), at a tet's centroid, gives its tag or None."""
+    ids = np.arange((nx + 1) * (ny + 1) * (nz + 1)).reshape(nz + 1, ny + 1, nx + 1)
+    V = np.array([(i, j, k) for k in range(nz + 1) for j in range(ny + 1) for i in range(nx + 1)],
+                 dtype=float)
+    tets = []
+    for k, j, i in itertools.product(range(nz), range(ny), range(nx)):
+        for axes in itertools.permutations(range(3)):
+            corner = [0, 0, 0]
+            tet = [ids[k, j, i]]
+            for axis in axes:
+                corner[axis] = 1
+                tet.append(ids[k + corner[2], j + corner[1], i + corner[0]])
+            tets.append(tet)
+    tets = np.array(tets, dtype=int)
+    P = V[tets]
+    negative = np.einsum("ij,ij->i", np.cross(P[:, 1] - P[:, 0], P[:, 2] - P[:, 0]),
+                         P[:, 3] - P[:, 0]) < 0
+    tets[negative, 2], tets[negative, 3] = tets[negative, 3].copy(), tets[negative, 2].copy()
+    names = [tag_of(*c) for c in V[tets].mean(axis=1).tolist()]
+    labels = ["ambient"] + sorted({t for t in names if t})
+    values = np.zeros((len(tets), len(labels)), dtype=np.uint8)
+    for t, name in enumerate(names):
+        values[t, labels.index(name or "ambient")] = 1
+    return {"V": V, "cells": {"tetrahedron": {
+        "connectivity": tets, "attributes": {"tags": {"values": values, "labels": labels}}}}}
+
+
+def _two_bodies_3_apart(dim):
+    """Bodies a (2 < x < 4) and b (7 < x < 9), mirror images about x = 5.5, ambient around."""
+    if dim == 2:
+        return _grid_mesh(11, 10, lambda x, y: (
+            None if not 2 < y < 8 else "a" if 2 < x < 4 else "b" if 7 < x < 9 else None))
+    return _grid_mesh_3d(11, 6, 6, lambda x, y, z: (
+        None if not (2 < y < 4 and 2 < z < 4) else "a" if 2 < x < 4 else "b" if 7 < x < 9
+        else None))
+
+
+def _tagged(mesh, tag):
+    """Each cell with `tag`, as its corners' positions."""
+    kind = "tetrahedron" if "tetrahedron" in mesh["cells"] else "triangle"
+    block = mesh["cells"][kind]
+    column = list(block["attributes"]["tags"]["labels"]).index(tag)
+    cells = np.asarray(block["connectivity"])[
+        np.asarray(block["attributes"]["tags"]["values"])[:, column] > 0]
+    return np.asarray(mesh["V"])[cells]
 
 
 def _gap_to_the_boundary():
@@ -277,6 +329,32 @@ def test_spatial_selection_default_keeps_everything():
 def test_spatial_selection_is_on_hold(selection):
     with pytest.raises(Exception, match="on hold"):
         _seal(_gap_with_another_tag(), tags=["a", "b"], spatial_selection=selection)
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+def test_split_fill_follows_the_bisector(dim):
+    mesh = _two_bodies_3_apart(dim)
+    out = _seal(mesh, mode="split_fill", tags=["a", "b"], distance=3.5)
+    a = _tagged(out, "a")[:, :, 0]
+    b = _tagged(out, "b")[:, :, 0]
+    filled_a = a[a.max(axis=1) > 4 + 1e-9]  # the cells of a beyond its body
+    filled_b = b[b.min(axis=1) < 7 - 1e-9]
+    assert len(filled_a) > 0 and len(filled_b) > 0
+    # the fill of each body stops at the bisector, to the precision of the split's bisection
+    assert filled_a.max() <= 5.5 + 1e-5
+    assert filled_b.min() >= 5.5 - 1e-5
+    # "fill" labels whole cells, which cross it
+    plain = _seal(mesh, mode="fill", tags=["a", "b"], distance=3.5)
+    assert _tagged(plain, "a")[:, :, 0].max() > 5.5 + 1e-3
+
+
+def test_split_fill_has_no_limit_of_three_regions():
+    mesh = _four_bodies()
+    out = _seal(mesh, mode="split_fill", tags=TAGS)
+    assert sum(_area(out, tag) for tag in TAGS) == pytest.approx(
+        sum(_area(mesh, tag) for tag in TAGS) + 4)
+    for tag in TAGS:
+        assert _components_and_euler(_cells(out, tag)) == (1, 1)
 
 
 def test_voronoi_is_still_the_default():

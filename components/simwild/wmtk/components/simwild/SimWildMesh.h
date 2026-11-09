@@ -383,6 +383,23 @@ private:
         size_t& n_failed) const;
     /// How many of `tids` have a vertex on the mesh's boundary, a face with no tet beyond it.
     size_t tight_seal_cells_on_boundary(const std::vector<size_t>& tids) const;
+    /// Split tet tid at its centroid, keeping `cells`, `filled` and `cell_group` up to date as
+    /// tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused.
+    size_t tight_seal_split_tet_tracked(
+        size_t tid,
+        std::unordered_set<size_t>& cells,
+        std::vector<char>& filled,
+        std::vector<int>* cell_group = nullptr);
+    /// tight_seal_geom's "split_fill" mode: labels each vertex of `components` with its nearest
+    /// region, splits each component's tets with three or four labels, then its faces with three,
+    /// then its edges with two (queues all taken before any split), then labels and grows the
+    /// regions over the result as tight_seal_topology_fill does.
+    void tight_seal_split_fill(
+        const std::vector<ConnectedComponent>& components,
+        const std::vector<std::vector<size_t>>& components_regions,
+        const std::vector<int64_t>& tags,
+        const std::vector<SimpleBVH::BVH>& region_bvhs,
+        std::vector<char>& filled);
     /// tight_seal_geom's "fill" mode: labels the cells of `components` and grows each region over
     /// them, keeping its topology (tight_seal::topology_fill). Throws if a tet is left.
     void tight_seal_topology_fill(
@@ -641,6 +658,11 @@ public:
      * its topology (tight_seal::topology_fill). A tet no region added takes the nearest region
      * that passes the same test, so the second nearest if the nearest refuses it, and so on. If
      * no region does, the operation throws.
+     *
+     * "split_fill": as "fill", but each component is first split as the regions nearest its
+     * vertices require: tets with three or four distinct vertex labels, then faces with three, then
+     * edges with two, each list taken before any split; each split puts its vertex at the centroid,
+     * an edge's where the distances to its ends' regions are equal (tight_seal_split_fill).
      *
      * `spatial_selection`: J keeps only the tets whose tags satisfy it, before its components are
      * found; nullptr keeps them all. On hold: the simwild component passes none, and refuses
