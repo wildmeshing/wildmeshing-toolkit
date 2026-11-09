@@ -112,11 +112,14 @@ matches: a `pip install` on Python 3.10 or later, and a CMake build whose Python
 
 ## Tests
 
-From the repository root:
+The Python tests are in `tests/python`, listed in
+[docs/developer/testing.md](../docs/developer/testing.md#python-tests). The pipeline's, the GUI's
+and the viewer's, from the repository root:
 
 ```bash
-python -m pytest python/tests
+python -m pytest tests/python/test_pipeline.py tests/python/test_gui.py tests/python/test_viewer.py
 ```
 
 The tests find the bindings in `build/bin` when the package is not installed. The PolyFEM
-end-to-end tests are skipped while those ops raise.
+operations' tests are in `tests/python/polyfem`, collected only with the polyfem extras installed;
+the end-to-end ones are skipped while those ops raise.

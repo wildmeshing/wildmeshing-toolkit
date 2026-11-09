@@ -114,9 +114,14 @@ The others are run by hand or elsewhere:
 - `test_integration.py`: the integration configs through the bindings, compared byte for byte
   with `wmtk_app`'s output when the config is serial (`python -m pytest tests/python`; see its
   `README.md`).
+- `test_pipeline.py`, `test_gui.py`, `test_viewer.py`: `wildmeshing.pipeline`, `wildmeshing.gui`
+  and `wildmeshing.viewer`; the last two need polyscope, whose mock backend opens no window.
+- `test_face_tags.py`, `test_memory_route.py`: the tagged components' face, edge and point tags,
+  and their memory route against the file route; three PolyFEM-reader tests need gmsh.
 
-`python/tests` holds the tests of `wildmeshing.polyfem_ops`, run with `python -m pytest
-python/tests` and gmsh installed.
+`tests/python/polyfem` holds the tests of `wildmeshing.polyfem_ops`. pytest collects it only when
+the polyfem extras (gmsh, scipy, h5py) are installed, and its tests that run PolyFEM skip without
+`POLYFEM_BIN`.
 
 ## Documentation examples
 
