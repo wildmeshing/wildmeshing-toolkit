@@ -20,6 +20,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace py = pybind11;
@@ -271,17 +272,25 @@ constexpr const char* kIds =
     "warnings=True, (ids, bary, warnings), what this call found where the map is not a "
     "bijection. The GIL is released while mapping: several threads may map through one object.";
 
-py::tuple surface_to_output(const Tracking& t, py::handle ids, py::handle bary, const bool warnings)
+/// Surface points either way: `forward` from the input to the output, else back. A side names
+/// its points by faces, or by three vertices of a tet mesh (input_by_vertices,
+/// output_by_vertices); InputPoint and OutputPoint hold both.
+template <bool forward>
+py::tuple surface_points(const Tracking& t, py::handle ids, py::handle bary, const bool warnings)
 {
-    const bool by_vertices = t.input_by_vertices();
-    const DataMatrix<int64_t> I = read_ids(
-        ids,
-        by_vertices ? 3 : 0,
-        by_vertices ? "this history names input points by three vertices of the mesh it starts "
-                      "from (input_by_vertices)"
-                    : "this history names input points by triangles of its input files");
+    using From = std::conditional_t<forward, InputPoint, OutputPoint>;
+    using To = std::conditional_t<forward, OutputPoint, InputPoint>;
+    const bool by_vertices = forward ? t.input_by_vertices() : t.output_by_vertices();
+    const char* naming =
+        forward ? (by_vertices ? "this history names input points by three vertices of the mesh "
+                                 "it starts from (input_by_vertices)"
+                               : "this history names input points by triangles of its input files")
+                : (by_vertices ? "this history names output points by three vertices of the "
+                                 "output tet mesh (output_by_vertices)"
+                               : "this history names output points by triangles of its output");
+    const DataMatrix<int64_t> I = read_ids(ids, by_vertices ? 3 : 0, naming);
     const DataMatrix<double> B = read_bary(bary, I.rows(), 3);
-    std::vector<InputPoint> pts(size_t(I.rows()));
+    std::vector<From> pts(size_t(I.rows()));
     for (Eigen::Index i = 0; i < I.rows(); ++i) {
         if (by_vertices) {
             for (int k = 0; k < 3; ++k) pts[i].vertices[k] = id_of(I(i, k));
@@ -290,13 +299,17 @@ py::tuple surface_to_output(const Tracking& t, py::handle ids, py::handle bary, 
         }
         pts[i].bary = B.row(i).transpose();
     }
-    std::vector<OutputPoint> out;
+    std::vector<To> out;
     MapWarnings w;
     {
         py::gil_scoped_release release;
-        out = t.to_output(pts, &w);
+        if constexpr (forward) {
+            out = t.to_output(pts, &w);
+        } else {
+            out = t.to_input(pts, &w);
+        }
     }
-    const bool out_vertices = t.output_by_vertices();
+    const bool out_vertices = forward ? t.output_by_vertices() : t.input_by_vertices();
     std::vector<std::array<uint64_t, 3>> named(out.size());
     std::vector<uint8_t> found(out.size());
     for (size_t i = 0; i < out.size(); ++i) {
@@ -306,46 +319,6 @@ py::tuple surface_to_output(const Tracking& t, py::handle ids, py::handle bary, 
     }
     return result(
         ids_array(named, !out_vertices),
-        bary_array(out, found),
-        warnings,
-        components::tracking::warnings_report(w));
-}
-
-py::tuple surface_to_input(const Tracking& t, py::handle ids, py::handle bary, const bool warnings)
-{
-    const bool by_vertices = t.output_by_vertices();
-    const DataMatrix<int64_t> I = read_ids(
-        ids,
-        by_vertices ? 3 : 0,
-        by_vertices ? "this history names output points by three vertices of the output tet "
-                      "mesh (output_by_vertices)"
-                    : "this history names output points by triangles of its output");
-    const DataMatrix<double> B = read_bary(bary, I.rows(), 3);
-    std::vector<OutputPoint> pts(size_t(I.rows()));
-    for (Eigen::Index i = 0; i < I.rows(); ++i) {
-        if (by_vertices) {
-            for (int k = 0; k < 3; ++k) pts[i].vertices[k] = id_of(I(i, k));
-        } else {
-            pts[i].face = id_of(I(i, 0));
-        }
-        pts[i].bary = B.row(i).transpose();
-    }
-    std::vector<InputPoint> out;
-    MapWarnings w;
-    {
-        py::gil_scoped_release release;
-        out = t.to_input(pts, &w);
-    }
-    const bool in_vertices = t.input_by_vertices();
-    std::vector<std::array<uint64_t, 3>> named(out.size());
-    std::vector<uint8_t> found(out.size());
-    for (size_t i = 0; i < out.size(); ++i) {
-        named[i] = in_vertices ? out[i].vertices : std::array<uint64_t, 3>{{out[i].face}};
-        found[i] = named[i][0] != kNoId;
-        if (!found[i]) named[i] = {{kNoId, kNoId, kNoId}};
-    }
-    return result(
-        ids_array(named, !in_vertices),
         bary_array(out, found),
         warnings,
         components::tracking::warnings_report(w));
@@ -568,14 +541,14 @@ void bind_tracking(py::module_& module)
             "Build the map from a history file, as from its bytes (wm.read_history).")
         .def(
             "to_output",
-            &surface_to_output,
+            &surface_points<true>,
             "ids"_a,
             "bary"_a,
             "warnings"_a = false,
             (std::string("Points on the input, to the output. ") + kIds).c_str())
         .def(
             "to_input",
-            &surface_to_input,
+            &surface_points<false>,
             "ids"_a,
             "bary"_a,
             "warnings"_a = false,

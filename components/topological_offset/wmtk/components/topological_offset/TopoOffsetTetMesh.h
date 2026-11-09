@@ -1047,7 +1047,12 @@ public:
     /// halved toward x0 and tested again, up to kSweptHalvings times, then refused. The halved
     /// positions are on the segment between two valid positions, and the positions at which
     /// vid's ring has no inverted cell are an intersection of half-spaces, so they are valid
-    /// too (tested anyway, exactly). Counts into c.
+    /// too (tested anyway, exactly). Counts into c. At a position where the solve's search model
+    /// took its last value, the model's value is the change (BandVolumeEnergy3D::swept_value_at(),
+    /// the same function of the same inputs). MEASURED (Thingi 70565 piece 16 inward at 0.5
+    /// delta_1, 1 thread, turn 7, 2026-11-02): in 8977 of 8977 front solves the model's last value
+    /// was at the solve's end, bit-equal to band_swept_change() there; the test's value() calls
+    /// took 5.0 s of the turn's 260 s.
     static constexpr int kSweptHalvings = 4;
     struct SweptCounters
     {
@@ -1061,6 +1066,10 @@ public:
         double amips_before,
         SweptCounters& c);
     mutable SweptCounters m_swept_front, m_swept_nonfront;
+    /// "exact_swept": the search model band_volume_energy_at() built last on this thread, for
+    /// swept_accept().
+    mutable wmtk::threading::enumerable_thread_specific<std::shared_ptr<const BandVolumeEnergy3D>>
+        m_swept_model;
     /// "exact_swept": the smoother's search model's derivative evaluations, and of them those
     /// taken from the ring's band cells (BandVolumeEnergy3D::set_swept()), per pass.
     mutable BandVolumeEnergy3D::SweptDerivCounts m_swept_derivs;

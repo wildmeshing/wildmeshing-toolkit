@@ -396,6 +396,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
             m_offset_params.target_distance,
             std::move(swept_faces),
             &m_swept_derivs);
+        m_swept_model.local() = e;
         return e;
     }
 

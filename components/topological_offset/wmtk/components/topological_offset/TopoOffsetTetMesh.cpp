@@ -1646,10 +1646,11 @@ void TopoOffsetTetMesh::init_band_exact()
                 sigma,
                 vol6 / 6.);
         }
-        // The value table (ExactBandIntegral::value()) for the band term only, which
-        // reads cells again; twice the constructed mesh's tets, so that its live band
-        // cells seldom share a slot. Its box queries are m_input_complex_envelope's, built
-        // from the same rows of m_phi_F, or of m_phi_E and m_phi_P.
+        // The value table (ExactBandIntegral::value()) for the band term and the swept
+        // changes (EXACT SWEPT CHANGE), which read cells again; twice the constructed
+        // mesh's tets, so that its live band cells seldom share a slot. Its box queries are
+        // m_input_complex_envelope's, built from the same rows of m_phi_F, or of m_phi_E and
+        // m_phi_P.
         const size_t value_slots = exact_rule ? 2 * tet_capacity() : 0;
         auto eb = std::make_shared<ExactBandIntegral>(
             m_phi_V,
@@ -2564,6 +2565,22 @@ void TopoOffsetTetMesh::marching_tets()
                 e_to_split.size(),
                 target);
         }
+    }
+    // optimize_offset false: a target the march does not trace to has no effect on the result.
+    // Nothing after the march reads target_distance, so every target from the maximum marchable
+    // distance up gives the same offset -- unless the repulsion passes or rounds, which push the
+    // outer ends out by target_distance before the march, ran. MEASURED (2026-11-06, a pipeline
+    // of two construction-only offsets at 0.05 and 0.1): bit-identical results, with no word in
+    // the log but the info line above.
+    if (!reachable && !e_to_split.empty() && !m_offset_params.optimize_offset &&
+        m_offset_params.repulsion_smoothing_passes == 0 && m_offset_params.repulsion_rounds == 0) {
+        logger().warn(
+            "\t[construction] optimize_offset false: target_distance {:.6g} has no effect -- it "
+            "is not below the maximum marchable distance {:.6g}, and nothing after the march "
+            "carries the front to it; every target_distance from {:.6g} up gives this result",
+            target,
+            d_max,
+            d_max);
     }
 
     // init_optimize, only when the target is not below the maximum

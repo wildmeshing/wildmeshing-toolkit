@@ -1,5 +1,6 @@
 #include <jse/jse.h>
 #include <math.h>
+#include <spdlog/sinks/ostream_sink.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/components/topological_offset/TopoOffsetTetMesh.h>
@@ -16,6 +17,7 @@
 #include <numeric>
 #include <queue>
 #include <set>
+#include <sstream>
 #include <topological_offset_spec.hpp>
 #include <tuple>
 #include <wmtk/Types.hpp>
@@ -3747,6 +3749,56 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
     CHECK(fs.tag_names == ft.tag_names);
 }
 
+TEST_CASE("construction-target-distance-inert", "[offset][3d]")
+{
+    // The grid of save-offset-correspondence-3d, constructed: every outer end of a marched edge
+    // is a unit from the complex, the maximum marchable distance 1. A target from 1 up is not
+    // traced to; the march traces to half of it, 0.5, the same construction for every such
+    // target. With optimize_offset false nothing after the march reads target_distance, so it has
+    // no effect on the result, and the march warns. Below 1 the march traces to the target, and
+    // with optimize_offset true the optimization carries the front out to it: no warning.
+    const GridInput g = grid_input();
+    struct Run
+    {
+        std::vector<Vector3d> positions;
+        bool warned;
+    };
+    const auto construct = [&](const double target, const bool optimize) {
+        Parameters param = construction_params(
+            {{"offset_selection", "tag_0"},
+             {"num_threads", 0},
+             {"target_distance", target},
+             {"optimize_offset", optimize}},
+            g.V);
+        TopoOffsetTetMesh mesh(param, 0);
+        MatrixXd V_env;
+        MatrixXi F_env;
+        mesh.init_from_image(g.V, g.Tm, g.Tags, V_env, F_env, {"tag_0"});
+        mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+        mesh.label_input_complex();
+        mesh.init_input_complex_bvh();
+        mesh.consolidate_mesh();
+        std::ostringstream log;
+        const auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(log);
+        wmtk::logger().sinks().push_back(sink);
+        mesh.construct_offset(std::filesystem::temp_directory_path() / "wmtk_offset_inert");
+        wmtk::logger().sinks().pop_back();
+        Run run{{}, log.str().find("has no effect") != std::string::npos};
+        for (const auto& v : mesh.get_vertices())
+            run.positions.push_back(mesh.m_vertex_attribute[v.vid(mesh)].m_posf);
+        return run;
+    };
+    const Run traced = construct(0.3, false);
+    const Run above = construct(1.5, false);
+    const Run far_above = construct(3., false);
+    CHECK_FALSE(traced.warned);
+    CHECK(above.warned);
+    CHECK(far_above.warned);
+    CHECK(above.positions == far_above.positions); // bit for bit
+    CHECK(traced.positions != above.positions);
+    CHECK_FALSE(construct(1.5, true).warned);
+}
+
 TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]" + release_only)
 {
     // take_snapshot() / restore_snapshot(): after a restore the mesh is the one the snapshot left,
@@ -6130,6 +6182,44 @@ TEST_CASE("point-offset-label-names", "[offset][3d]")
                 {{"m", point_grid({{"ambient", {{4, 4, 4}}}})}}),
             Catch::Matchers::ContainsSubstring("is also a tet or face tag"));
     }
+}
+
+TEST_CASE("empty-input-complex-keeps-curves-and-points", "[offset][3d]")
+{
+    // An offset_selection naming a region with no tet: the input complex is empty, and the run
+    // returns the mesh as loaded before anything is held (topological_offset.cpp). Its result
+    // keeps the input's edge block and point block, as a run with a band does.
+    MeshData input = point_grid({{"p", {{4, 4, 4}}}}, {{"curve", {{{2, 4, 4}}, {{6, 4, 4}}}}});
+    auto& tets = input.cells.at(CellType::Tetrahedron);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+    tags.col(0).setOnes();
+    tets.attributes["tags"] = {tags, {"ambient", "nothing"}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "nothing"},
+        {"target_distance", 0.2},
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    // the curve: the four grid edges from x = -0.5 to x = 0.5 on the x axis
+    REQUIRE(out.cells.count(CellType::Edge) == 1);
+    const auto& edges = out.cells.at(CellType::Edge);
+    CHECK(edges.attributes.at("tags").labels == std::vector<std::string>{"curve"});
+    CHECK(edges.connectivity.rows() == 4);
+    for (Eigen::Index r = 0; r < edges.connectivity.rows(); ++r) {
+        for (int c = 0; c < 2; ++c) {
+            const Vector3d x = out.V.row(edges.connectivity(r, c)).transpose();
+            CHECK(std::abs(x[0]) <= 0.5);
+            CHECK(x.tail<2>().norm() == 0.);
+        }
+    }
+    // the point, at the origin
+    REQUIRE(out.cells.count(CellType::Point) == 1);
+    const auto points = result_points(out);
+    REQUIRE(points.size() == 1);
+    REQUIRE(points.at("p").size() == 1);
+    CHECK(points.at("p")[0] == grid_point({{4, 4, 4}}));
 }
 
 namespace {
