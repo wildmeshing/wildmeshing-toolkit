@@ -139,6 +139,7 @@
   {
     "pointer": "/offset_selection",
     "type": "string",
+    "labels": "expression",
     "default": "!_",
     "doc": "Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used. A face tag or an edge tag of the input is selected alone: the complex is then that sheet or that curve, the band growing on every side of it."
   },
@@ -153,6 +154,7 @@
   {
     "pointer": "/offset_output_tags/*",
     "type": "string",
+    "labels": "new",
     "doc": "A tag."
   },
   {
@@ -164,6 +166,7 @@
   {
     "pointer": "/protected_tags/*",
     "type": "string",
+    "labels": "existing",
     "doc": "A tag."
   },
   {
