@@ -90,6 +90,8 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:ad561961f38c2f95abe1e1dcba4893971" id="r_ad561961f38c2f95abe1e1dcba4893971"><td class="memItemLeft" align="right" valign="top"><a id="ad561961f38c2f95abe1e1dcba4893971" name="ad561961f38c2f95abe1e1dcba4893971"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>label</b> = 0</td></tr>
 <tr class="separator:ad561961f38c2f95abe1e1dcba4893971"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf891296fe91c0df8346a71ab961f686" id="r_aaf891296fe91c0df8346a71ab961f686"><td class="memItemLeft" align="right" valign="top">InputSet&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#aaf891296fe91c0df8346a71ab961f686">point_inputs</a> = 0</td></tr>
+<tr class="separator:aaf891296fe91c0df8346a71ab961f686"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d6df8d3264d89dc2dcbdac706481753" id="r_a0d6df8d3264d89dc2dcbdac706481753"><td class="memItemLeft" align="right" valign="top"><a id="a0d6df8d3264d89dc2dcbdac706481753" name="a0d6df8d3264d89dc2dcbdac706481753"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_input</b> = false</td></tr>
 <tr class="separator:a0d6df8d3264d89dc2dcbdac706481753"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -172,6 +174,21 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>m_front_change_group</
       </table>
 </div><div class="memdoc">
 <p>How much the vertex's latest front solve changed its own error, |r(after) - r(before)| / front_conv_frac() (r = relative_residual()), in bars &ndash; 0 for a move that was refused and rolled back &ndash; and the operation group that solve ran in (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aeb83e425a7206b93729971f2fd98ed37">TopoOffsetTetMesh::m_smooth_group</a>; -1 = none yet). The debug frames' front_last_change. </p>
+
+</div>
+</div>
+<a id="aaf891296fe91c0df8346a71ab961f686" name="aaf891296fe91c0df8346a71ab961f686"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf891296fe91c0df8346a71ab961f686">&#9670;&#160;</a></span>point_inputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">InputSet wmtk::components::topological_offset::VertexExtra::point_inputs = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set at load (init_from_image()), carried by the construction, which only splits, and cleared by hold_curves_and_points(), from which on the anchors carry them (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8121fe2f6b24c6dc38df54f5e0bdf733">TopoOffsetTetMesh::vertex_has_point()</a>). </p>
 
 </div>
 </div>
