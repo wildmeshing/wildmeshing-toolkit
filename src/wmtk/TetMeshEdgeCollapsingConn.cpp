@@ -273,6 +273,7 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     if (dry_run()) return op_screened(OpKind::collapse);
     const size_t v_removed = loc0.vid(*this), v_kept = loc0.switch_vertex(*this).vid(*this);
     if (m_surface_history) surface_history_before({v_removed, v_kept}, false);
+    if (m_curve_history) curve_history_before({v_removed, v_kept});
     if (m_volume_history) volume_history_before({v_removed, v_kept});
     if (checks_tracked_surface()) tracked_surface_before({v_removed, v_kept}, false);
 
@@ -326,6 +327,9 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
                 {v_removed, v_kept},
                 {v_kept});
         }
+    }
+    if (m_curve_history) {
+        curve_history_commit(history::EditKind::collapse_edge, {v_removed, v_kept}, {v_kept});
     }
     release_protect_attributes();
 

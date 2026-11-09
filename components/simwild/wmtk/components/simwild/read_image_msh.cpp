@@ -306,8 +306,12 @@ InputData read_mesh(
     input_data.V_envelope = envelope_is_read ? V_read : image_mesh.V_surface();
     input_data.F_envelope = envelope_is_read ? F_read : image_mesh.F_surface();
 
-    const bool all_rounded =
-        image_mesh.embed_surface(preserve_topology, tag_from_winding_number, has_surface, features);
+    const bool all_rounded = image_mesh.embed_surface(
+        preserve_topology,
+        tag_from_winding_number,
+        has_surface,
+        features,
+        is_volume);
     image_mesh.consolidate();
     if (features != nullptr && !features->empty()) {
         input_data.features = *features;
@@ -562,7 +566,8 @@ InputData read_curves(
     if (features) {
         for (const Vector3d& p : features->points) points.emplace_back(p[0], p[1]);
     }
-    const bool all_rounded = curves.embed_curves(tag_from_winding_number, has_curve, points);
+    const bool all_rounded =
+        curves.embed_curves(tag_from_winding_number, has_curve, points, is_curve);
     curves.consolidate();
     input_data.input_point_vids = curves.point_vids();
 

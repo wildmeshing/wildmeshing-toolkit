@@ -414,11 +414,11 @@ void wmtk::TetMesh::subdivide_a_tet(
 
 bool wmtk::TetMesh::insert_point(const Tuple& t, std::vector<Tuple>& new_tets)
 {
-    // It reports nothing to a surface history: recording through it would lose the surface.
-    if (m_surface_history) {
+    // It reports nothing to a surface or curve history: recording through it would lose them.
+    if (m_surface_history || m_curve_history) {
         log_and_throw_error(
-            "TetMesh::insert_point: no surface history hooks; it cannot run while one is "
-            "recording");
+            "TetMesh::insert_point: no history hooks; it cannot run while a surface or curve "
+            "history is recording");
     }
     if (!insert_point_before(t)) return false;
     start_protect_attributes();

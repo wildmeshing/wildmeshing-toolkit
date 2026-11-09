@@ -72,12 +72,15 @@ public:
      * tagging too: the curve inputs' edges are read off it.
      * @param points input points (the point inputs), each inserted as a vertex of the arrangement,
      * exactly; point_vids() says which. They carry no winding number.
+     * @param is_curve Per input, whether it is declared a curve, which encloses nothing (see
+     * tag_from_winding_number()); empty: none is.
      * @return true when every arrangement vertex has an exact double representation.
      */
     bool embed_curves(
         const bool tag_from_winding_number = true,
         const bool collect_provenance = false,
-        const std::vector<Vector2d>& points = {});
+        const std::vector<Vector2d>& points = {},
+        const std::vector<bool>& is_curve = {});
 
     /// Per input point given to embed_curves(): its row of V_emb(), kept through consolidate().
     const std::vector<size_t>& point_vids() const { return m_point_vids; }
@@ -116,10 +119,11 @@ private:
      * @brief One binary tag column per input, set where that input's winding number at a
      * face barycenter exceeds 0.5.
      *
-     * Auto-corrects an inverted input orientation and warns when an input claims nothing, as
-     * triwild's compute_winding_numbers and the 3D EmbedSurface::tag_from_winding_number do.
+     * Auto-corrects an inverted input orientation and warns when an input not declared a curve
+     * (`is_curve`, as embed_curves()) claims nothing, as triwild's compute_winding_numbers and
+     * the 3D EmbedSurface::tag_from_winding_number do.
      */
-    void tag_from_winding_number();
+    void tag_from_winding_number(const std::vector<bool>& is_curve);
 
     /**
      * @brief Decide the face tags from the arrangement's segment provenance.

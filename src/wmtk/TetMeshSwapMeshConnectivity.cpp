@@ -208,10 +208,12 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         wmtk::array_replace_inline(new_tets[1], v1_id, (size_t)n2_id);
     }
     if (dry_run()) return op_screened(OpKind::swap_32);
-    const std::vector<size_t> ring_vs = m_surface_history || checks_tracked_surface()
-                                            ? vertices_of_tets(affected)
-                                            : std::vector<size_t>();
+    const std::vector<size_t> ring_vs =
+        m_surface_history || m_curve_history || checks_tracked_surface()
+            ? vertices_of_tets(affected)
+            : std::vector<size_t>();
     if (m_surface_history) surface_history_before(ring_vs, true);
+    if (m_curve_history) curve_history_before(ring_vs);
     if (m_volume_history) volume_history_before(ring_vs);
     if (checks_tracked_surface()) tracked_surface_before(ring_vs, true);
 
@@ -261,6 +263,7 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         const auto edits = surface_history_commit(history::EditKind::swap_edge, {}, ring_vs, true);
         if (m_volume_history) volume_history_commit(history::VolumeOp::swap_32, edits, {}, ring_vs);
     }
+    if (m_curve_history) curve_history_commit(history::EditKind::swap_edge, {}, ring_vs);
     release_protect_attributes();
 
 
@@ -318,10 +321,12 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         }
     }
     if (dry_run()) return op_screened(OpKind::swap_face);
-    const std::vector<size_t> ring_vs = m_surface_history || checks_tracked_surface()
-                                            ? vertices_of_tets(affected)
-                                            : std::vector<size_t>();
+    const std::vector<size_t> ring_vs =
+        m_surface_history || m_curve_history || checks_tracked_surface()
+            ? vertices_of_tets(affected)
+            : std::vector<size_t>();
     if (m_surface_history) surface_history_before(ring_vs, true);
+    if (m_curve_history) curve_history_before(ring_vs);
     if (m_volume_history) volume_history_before(ring_vs);
     if (checks_tracked_surface()) tracked_surface_before(ring_vs, true);
 
@@ -379,6 +384,7 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
                 volume_history_commit(history::VolumeOp::swap_23, edits, {}, ring_vs);
             }
         }
+        if (m_curve_history) curve_history_commit(history::EditKind::swap_edge, {}, ring_vs);
         release_protect_attributes();
     }
 
@@ -615,10 +621,12 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             any_case_allowed ? OpEvent::no_better_case : OpEvent::no_case_allowed);
     }
     if (dry_run()) return op_screened(OpKind::swap_44);
-    const std::vector<size_t> ring_vs = m_surface_history || checks_tracked_surface()
-                                            ? vertices_of_tets(affected)
-                                            : std::vector<size_t>();
+    const std::vector<size_t> ring_vs =
+        m_surface_history || m_curve_history || checks_tracked_surface()
+            ? vertices_of_tets(affected)
+            : std::vector<size_t>();
     if (m_surface_history) surface_history_before(ring_vs, true);
+    if (m_curve_history) curve_history_before(ring_vs);
     if (m_volume_history) volume_history_before(ring_vs);
     if (checks_tracked_surface()) tracked_surface_before(ring_vs, true);
 
@@ -678,6 +686,7 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
                 volume_history_commit(history::VolumeOp::swap_44, edits, {}, ring_vs);
             }
         }
+        if (m_curve_history) curve_history_commit(history::EditKind::swap_edge, {}, ring_vs);
         release_protect_attributes();
         op_event(OpKind::swap_44, OpEvent::committed);
         return true;
@@ -867,10 +876,12 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             any_case_allowed ? OpEvent::no_better_case : OpEvent::no_case_allowed);
     }
     if (dry_run()) return op_screened(OpKind::swap_56);
-    const std::vector<size_t> ring_vs = m_surface_history || checks_tracked_surface()
-                                            ? vertices_of_tets(affected)
-                                            : std::vector<size_t>();
+    const std::vector<size_t> ring_vs =
+        m_surface_history || m_curve_history || checks_tracked_surface()
+            ? vertices_of_tets(affected)
+            : std::vector<size_t>();
     if (m_surface_history) surface_history_before(ring_vs, true);
+    if (m_curve_history) curve_history_before(ring_vs);
     if (m_volume_history) volume_history_before(ring_vs);
     if (checks_tracked_surface()) tracked_surface_before(ring_vs, true);
 
@@ -930,6 +941,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
                 volume_history_commit(history::VolumeOp::swap_56, edits, {}, ring_vs);
             }
         }
+        if (m_curve_history) curve_history_commit(history::EditKind::swap_edge, {}, ring_vs);
         release_protect_attributes();
         op_event(OpKind::swap_56, OpEvent::committed);
         return true;

@@ -89,6 +89,10 @@ struct InputData
     /// each placed on itself. Empty otherwise.
     utils::FeatureInputs features;
     utils::EmbedFeaturesResult features_placed;
+    /// A surface input with feature curves to record (curve_history_output): the curve inputs as
+    /// read (history::curves_from_input()), as tetwild records them. Empty otherwise.
+    bool has_curve_input_history = false;
+    history::CurveHistory curve_input_history;
     /// The name of each feature input, bit i of a feature edge's input set: the label of the i-th
     /// curve input, a tagged tet mesh's edge tags. Empty without feature curves.
     std::vector<std::string> feature_edge_names;

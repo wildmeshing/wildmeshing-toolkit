@@ -93,7 +93,8 @@ void require_kind(const int n, const int corners)
 {
     if (n == corners) return;
     throw py::value_error(
-        n == 2 ? "the history is of curves (triwild's): map it with CurveTracking"
+        n == 2 ? "the history is of curves (triwild's, or a curve_history_output): map it with "
+                 "CurveTracking"
                : "the history is of a surface: map it with Tracking");
 }
 
@@ -122,7 +123,8 @@ void require_volume_pair(
     }
     if (history::face_size(surface_history) != 3) {
         throw py::value_error(
-            "surface_history is of curves (triwild's), not the surface a volume history follows");
+            "surface_history is of curves (triwild's, or a curve_history_output), not the surface "
+            "a volume history follows");
     }
     if (is_face_history(volume_history)) {
         throw py::value_error(
@@ -614,8 +616,9 @@ void bind_tracking(py::module_& module)
     py::class_<CurveTracking>(
         module,
         "CurveTracking",
-        "The map between a curve application's input curves and its output's (triwild), both "
-        "ways, built from the history it recorded: the bytes of report['history'], or "
+        "The map between a curve application's input curves and its output's (triwild, and "
+        "tetwild's and simwild's feature curves), both ways, built from the history it recorded: "
+        "the bytes of report['history'] (tetwild's and simwild's report['curve_history']), or "
         "CurveTracking.load(path). Points on the input are named by segments of the input curve "
         "files -- the segments of all of them, in order, a polyline's consecutive vertex pairs "
         "-- and points on the output by the two vertices of a tracked edge of the output mesh "
