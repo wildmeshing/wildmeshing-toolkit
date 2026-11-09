@@ -215,13 +215,51 @@ void TopoOffsetTetMesh::init_from_image(
         m_tag_name_to_id[edge_tag_names[j]] = id;
         m_edge_tag_bit[id] = int(j);
     }
+    // Point labels, the input points' (a tagged mesh's point block), as the edge tags: bit j is
+    // the base's m_point_names[j], set by the caller before this, each name a tag id
+    // offset_selection can name alone (m_point_tag_bit). One name is one input: a curve input's
+    // vertices on no segment are its points (utils::read_feature_inputs()), so a label an edge
+    // tag also has shares its id, and selecting it selects both. Until 2026-11 a point block was
+    // refused: the offset held no point, and they would have been dropped.
+    for (size_t j = 0; j < m_point_names.size(); ++j) {
+        const std::string& name = m_point_names[j];
+        int64_t id;
+        if (const auto it = m_tag_name_to_id.find(name); it != m_tag_name_to_id.end()) {
+            if (!m_edge_tag_bit.count(it->second))
+                log_and_throw_error("Point label {} is also a tet or face tag", name);
+            id = it->second;
+        } else {
+            id = int64_t(m_tag_id_to_name.size());
+            m_tag_id_to_name[id] = name;
+            m_tag_name_to_id[name] = id;
+        }
+        m_point_tag_bit[id] = int(j);
+    }
     if (features != nullptr && features_placed != nullptr) {
-        // Input points (a tagged mesh's point block): the offset holds no point yet, so they are
-        // refused, not dropped, as run() refuses them before the mesh is built.
-        if (!features->points.empty()) {
+        // Each input point's vertex carries its label (VertexExtra::point_inputs) until
+        // hold_curves_and_points() anchors it, as an edge carries its edge tags: the vertex ids
+        // change before then (consolidate_mesh()).
+        if (m_input_point_labels.size() != features->points.size() ||
+            features_placed->point_vertex.size() != features->points.size()) {
             log_and_throw_error(
-                "topological_offset does not take feature points ({} given) yet",
-                features->points.size());
+                "{} input points, {} placed, {} labels",
+                features->points.size(),
+                features_placed->point_vertex.size(),
+                m_input_point_labels.size());
+        }
+        for (size_t k = 0; k < features->points.size(); ++k) {
+            const int bit = m_input_point_labels[k];
+            if (bit < 0 || bit >= int(SurfaceTagAttributes::max_inputs) ||
+                size_t(bit) >= m_point_names.size()) {
+                log_and_throw_error(
+                    "Input point {}: label {} of {} names, in {} bits",
+                    k,
+                    bit,
+                    m_point_names.size(),
+                    SurfaceTagAttributes::max_inputs);
+            }
+            m_vertex_extra[size_t(features_placed->point_vertex[k])].point_inputs |= InputSet(1)
+                                                                                     << bit;
         }
         m_input_features = *features;
         for (size_t e = 0; e < features_placed->edge_tiling.size(); ++e) {
@@ -637,8 +675,32 @@ void TopoOffsetTetMesh::hold_curves_and_points()
         check_reference_containment(m_envelope_eps);
     }
     m_edge_tags_held = true;
+
+    // After both kinds are tagged: every vertex where a tagged curve ends or three or more meet,
+    // and the input points, each at the smaller radius of its kinds. The input points: one per
+    // vertex and label of VertexExtra::point_inputs, selected or not, with their labels
+    // (m_input_point_labels), which their anchors keep and the output's point block writes; with
+    // a reference, each centred on the nearest of its points of its label
+    // (set_reference_points()). From here on their anchors carry them (vertex_has_point()).
+    std::vector<int> point_labels;
+    std::vector<char> is_input_point(vert_capacity(), 0);
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        InputSet& bits = m_vertex_extra[vid].point_inputs;
+        for (int j = 0; j < int(SurfaceTagAttributes::max_inputs); ++j) {
+            if (((bits >> j) & 1) == 0) continue;
+            point_vids.push_back(vid);
+            point_labels.push_back(j);
+            is_input_point[vid] = 1;
+        }
+        bits = 0;
+    }
+    m_input_point_labels = point_labels;
+    size_t n_anchors = anchor_feature_points(point_vids, order2_eps, feature_eps);
     if (m_phi_F.rows() == 0) {
-        // A complex's isolated points: its vertices on none of its edges.
+        // A complex's isolated points, its vertices on none of its edges, that are no input
+        // point: a tag expression's, this mesh's as an expression curve is, which a reference has
+        // no point for. Anchored where they are, at an input point's radius.
         std::vector<char> on_edge(vert_capacity(), 0);
         for (const Tuple& e : get_edges()) {
             if (m_edge_attribute[e.eid(*this)].label != 1) continue;
@@ -646,13 +708,15 @@ void TopoOffsetTetMesh::hold_curves_and_points()
         }
         for (const Tuple& t : get_vertices()) {
             const size_t vid = t.vid(*this);
-            if (m_vertex_extra[vid].label == 1 && !on_edge[vid]) point_vids.push_back(vid);
+            if (m_vertex_extra[vid].label != 1 || on_edge[vid] || is_input_point[vid]) continue;
+            enable_feature_point_tracking();
+            double r = feature_eps;
+            if (vertex_has_edge_of_kind(vid, FeatureEdgeAttributes::order2)) {
+                r = std::min(r, order2_eps);
+            }
+            n_anchors += anchor_feature_point(vid, r);
         }
     }
-
-    // After both kinds are tagged: every vertex where a tagged curve ends or three or more meet,
-    // and the complex's points, each at the smaller radius of its kinds.
-    const size_t n_anchors = anchor_feature_points(point_vids, order2_eps, feature_eps);
     logger().info(
         "\t[curves] {} order-2 edges tagged (eps {:.6g}), {} feature-curve edges tagged (eps "
         "{:.6g}), {} curve ends, junctions and points anchored",
@@ -840,6 +904,15 @@ bool TopoOffsetTetMesh::edge_has_tag(const size_t eid, const int bit) const
            ((tags.inputs(FeatureEdgeAttributes::feature) >> bit) & 1);
 }
 
+bool TopoOffsetTetMesh::vertex_has_point(const size_t vid, const int bit) const
+{
+    // See the declaration.
+    if (!m_edge_tags_held) return (m_vertex_extra[vid].point_inputs >> bit) & 1;
+    if (!m_track_feature_points) return false;
+    const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
+    return f < m_feature_point_inputs.size() && ((m_feature_point_inputs[f] >> bit) & 1);
+}
+
 void TopoOffsetTetMesh::label_input_complex()
 {
     classify_sheet_faces(); // the mesh may have been refined since the last call
@@ -857,12 +930,13 @@ void TopoOffsetTetMesh::label_input_complex()
     bool single_body = (tags_involved.size() == 1) && expr->contains_only_or() &&
                        expr->contains_only_and() && expr->contains_only_not();
 
-    // An edge tag is a curve, offset one tag at a time: an expression over cells has no meaning
-    // for it.
+    // An edge tag is a curve and a point label points, offset one tag at a time: an expression
+    // over cells has no meaning for them.
     for (const int64_t& tag : tags_involved) {
-        if (m_edge_tag_bit.count(tag) && !single_body) {
+        if ((m_edge_tag_bit.count(tag) || m_point_tag_bit.count(tag)) && !single_body) {
             log_and_throw_error(
-                "offset_selection: the edge tag {} is selected alone",
+                "offset_selection: the {} {} is selected alone",
+                m_edge_tag_bit.count(tag) ? "edge tag" : "point label",
                 m_tag_id_to_name[tag]);
         }
     }
@@ -870,25 +944,38 @@ void TopoOffsetTetMesh::label_input_complex()
     if (single_body) {
         m_singlebody = true;
         m_single_tag = *tags_involved.begin();
-        if (const auto bit = m_edge_tag_bit.find(m_single_tag); bit != m_edge_tag_bit.end()) {
-            // An edge tag: its edges exactly, and their vertices -- a curve offset's input. The
-            // band grows all around it.
-            size_t n = 0;
-            for (const Tuple& e : get_edges()) {
-                const size_t eid = e.eid(*this);
-                if (!edge_has_tag(eid, bit->second)) continue;
-                m_edge_attribute[eid].label = 1;
-                m_vertex_extra[e.vid(*this)].label = 1;
-                m_vertex_extra[e.switch_vertex(*this).vid(*this)].label = 1;
-                ++n;
+        const auto edge_bit = m_edge_tag_bit.find(m_single_tag);
+        const auto point_bit = m_point_tag_bit.find(m_single_tag);
+        if (edge_bit != m_edge_tag_bit.end() || point_bit != m_point_tag_bit.end()) {
+            // An edge tag, a point label, or both under one name: its edges and its points
+            // exactly, and their vertices -- a curve or point offset's input. The band grows all
+            // around it.
+            size_t n = 0, n_points = 0;
+            if (edge_bit != m_edge_tag_bit.end()) {
+                for (const Tuple& e : get_edges()) {
+                    const size_t eid = e.eid(*this);
+                    if (!edge_has_tag(eid, edge_bit->second)) continue;
+                    m_edge_attribute[eid].label = 1;
+                    m_vertex_extra[e.vid(*this)].label = 1;
+                    m_vertex_extra[e.switch_vertex(*this).vid(*this)].label = 1;
+                    ++n;
+                }
+            }
+            if (point_bit != m_point_tag_bit.end()) {
+                for (const Tuple& v : get_vertices()) {
+                    if (!vertex_has_point(v.vid(*this), point_bit->second)) continue;
+                    m_vertex_extra[v.vid(*this)].label = 1;
+                    ++n_points;
+                }
             }
             logger().info(
-                "Using the edge tag '{}' as the complex: {} edges",
+                "Using '{}' as the complex: {} edges, {} points",
                 m_tag_id_to_name[m_single_tag],
-                n);
-            if (n == 0)
+                n,
+                n_points);
+            if (n + n_points == 0)
                 log_and_throw_error(
-                    "offset_selection names the edge tag {} but no mesh edge carries it",
+                    "offset_selection names {} but no mesh edge or vertex carries it",
                     m_tag_id_to_name[m_single_tag]);
             mark_input_complex_vertices();
             return;

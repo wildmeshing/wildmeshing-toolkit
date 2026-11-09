@@ -137,12 +137,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!component_io.memory() && envelope && outputs.count("envelope"))
             io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
     };
-    // Input points (a tagged mesh's point block, as tetwild, triwild and simwild write it) would be
-    // dropped silently: the offset holds no point. Refused until carried. Feature curves (a tet
-    // mesh's edge block) are held (TopoOffsetTetMesh::hold_curves_and_points()).
-    if (!input_data.features.points.empty() || !input_data.input_point_vids.empty()) {
-        log_and_throw_error("topological_offset does not take input points (a point block) yet");
-    }
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (params.debug_output) {
         logger().info("====== input parameters =======");
@@ -411,6 +405,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // group: its triangles are the first component's input, not a sheet of this mesh.
         const bool reference = input_data.envelope_reference.has_value();
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
+        // Before init_from_image(): the input points' labels, as simwild sets them, which it makes
+        // tags of and which the anchors keep (TopoOffsetTetMesh::hold_curves_and_points()).
+        mesh.m_point_names = input_data.point_names;
+        mesh.m_input_point_labels = input_data.input_point_labels;
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
@@ -453,6 +451,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 for (int j = 0; j < 3; ++j) F[i][j] = size_t(held.F(Eigen::Index(i), j));
             }
             mesh.set_input_curves(V, F, held.labels, &input_data.reference_curves);
+            // The input points' anchors on its points (TetOptimizerMesh::ReferencePoints).
+            mesh.set_reference_points(
+                input_data.reference_points,
+                input_data.reference_point_labels);
         }
 
         // label input complex
