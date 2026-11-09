@@ -1646,10 +1646,11 @@ void TopoOffsetTetMesh::init_band_exact()
                 sigma,
                 vol6 / 6.);
         }
-        // The value table (ExactBandIntegral::value()) for the band term only, which
-        // reads cells again; twice the constructed mesh's tets, so that its live band
-        // cells seldom share a slot. Its box queries are m_input_complex_envelope's, built
-        // from the same rows of m_phi_F, or of m_phi_E and m_phi_P.
+        // The value table (ExactBandIntegral::value()) for the band term and the swept
+        // changes (EXACT SWEPT CHANGE), which read cells again; twice the constructed
+        // mesh's tets, so that its live band cells seldom share a slot. Its box queries are
+        // m_input_complex_envelope's, built from the same rows of m_phi_F, or of m_phi_E and
+        // m_phi_P.
         const size_t value_slots = exact_rule ? 2 * tet_capacity() : 0;
         auto eb = std::make_shared<ExactBandIntegral>(
             m_phi_V,

@@ -521,9 +521,8 @@ double TopoOffsetTetMesh::band_chain_change(
     for (const auto& [v, n] : on) {
         if (n > on[apex]) apex = v;
     }
+    // value() through the value table unless `st` is given (BandVolumeEnergy3D::swept_change())
     const double delta = m_offset_params.target_distance;
-    ExactBandIntegral::Stats local;
-    ExactBandIntegral::Stats* sp = st ? st : &local;
     double s = 0.;
     for (const auto& [f, m] : dD) {
         if (m == 0 || std::find(f.begin(), f.end(), apex) != f.end()) continue; // a flat cone
@@ -531,7 +530,7 @@ double TopoOffsetTetMesh::band_chain_change(
         if (o == Orientation::COPLANAR) continue;
         const double sign = o == Orientation::POSITIVE ? 1. : -1.;
         s += double(m) * sign *
-             m_band_exact->value({{P(apex), P(f[0]), P(f[1]), P(f[2])}}, delta, sp);
+             m_band_exact->value({{P(apex), P(f[0]), P(f[1]), P(f[2])}}, delta, st);
     }
     return s / delta;
 }
@@ -556,6 +555,11 @@ bool TopoOffsetTetMesh::swept_accept(
     // See the declaration.
     ++c.solves;
     const Vector3d x1 = m_vertex_attribute[vid].m_posf;
+    // band_swept_change()'s faces, the same at every halving (band_swept_faces() does not read
+    // vid's position)
+    std::vector<std::array<Vector3d, 2>> faces;
+    band_swept_faces(vid, x0, faces);
+    const std::shared_ptr<const BandVolumeEnergy3D>& model = m_swept_model.local();
     for (int k = 0; k <= kSweptHalvings; ++k) {
         if (k > 0) {
             m_vertex_attribute[vid].m_posf = x0 + std::ldexp(1., -k) * (x1 - x0);
@@ -566,7 +570,17 @@ bool TopoOffsetTetMesh::swept_accept(
             for (const size_t t : ring) set_cell_quality(t, get_quality(tuple_from_tet(t)));
         }
         const double dA = tet_energy_sum(ring, false) - amips_before;
-        const double dB = band_swept_change(vid, x0, m_vertex_attribute[vid].m_posf);
+        const Vector3d& x = m_vertex_attribute[vid].m_posf;
+        double dB;
+        if (!(model && model->swept_value_at(
+                           *m_band_exact,
+                           m_offset_params.target_distance,
+                           x0,
+                           x,
+                           faces,
+                           dB))) {
+            dB = band_swept_sum(x0, x, faces);
+        }
         if (dA + dB <= 0.) { // a NaN refuses; a tie passes
             ++c.accepted[size_t(k)];
             return true;
