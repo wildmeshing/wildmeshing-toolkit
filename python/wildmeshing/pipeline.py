@@ -51,16 +51,15 @@ from . import checkpoint
 
 # prismatic_mesh reads fixed names: the regions tag_0 (the input volume) and offset (the band), and
 # vertex labels 1 input / 2 offset / 0 background. Until it takes its regions by label, a pipeline
-# names them with two options its C++ spec does not have yet, and the input is rebuilt here: tag_0
-# and offset the unions of those regions, the labels from the offsets' correspondence
-# (corr_input_vid, by vid). The JSON stays as it is once the C++ side reads these options.
+# selects them with two tag expressions its C++ spec does not have yet, and the input is rebuilt
+# here: tag_0 and offset the tets each expression selects, the labels from the offsets'
+# correspondence (corr_input_vid, by vid). The JSON stays as it is once the C++ side reads these
+# options.
 OPTIONS = {"prismatic_mesh": [
-    {"pointer": "/input_tags", "type": "list", "default": [],
-     "doc": "Regions of the input volume (tag_0). Read by wildmeshing.pipeline, not C++, for now."},
-    {"pointer": "/input_tags/*", "type": "string"},
-    {"pointer": "/offset_tags", "type": "list", "default": [],
-     "doc": "Regions of the band (offset). Read by wildmeshing.pipeline, not C++, for now."},
-    {"pointer": "/offset_tags/*", "type": "string"}]}
+    {"pointer": "/input_tags", "type": "string", "default": "",
+     "doc": "The input volume (tag_0), a tag expression. Read by wildmeshing.pipeline for now."},
+    {"pointer": "/offset_tags", "type": "string", "default": "",
+     "doc": "The band (offset), a tag expression. Read by wildmeshing.pipeline for now."}]}
 
 
 def _prismatic_input(mesh, input_tags, offset_tags):
@@ -76,12 +75,17 @@ def _prismatic_input(mesh, input_tags, offset_tags):
     tags = tets["attributes"]["tags"]
     values, labels = np.asarray(tags["values"]), list(tags["labels"])
 
-    def union(names):
-        missing = [n for n in names if n not in labels]
-        if missing:
-            raise ValueError(f"prismatic_mesh: the input has no region {', '.join(missing)}")
-        return (values[:, [labels.index(n) for n in names]] == 1).any(axis=1)
-    tag_0, band = union(input_tags), union(offset_tags)
+    def selected(expr):
+        # simwild's parser, as every component reads an expression; one evaluation per distinct
+        # set of regions a tet is in.
+        e = wildmeshing.Expression(expr, labels)
+        if e.has_unknown_names():
+            raise ValueError(f"prismatic_mesh: {expr!r} names a region the input does not have"
+                             f" (it has {', '.join(labels)})")
+        rows, inverse = np.unique(values == 1, axis=0, return_inverse=True)
+        chosen = [e.eval({n for n, x in zip(labels, row) if x}) for row in rows]
+        return np.array(chosen, bool)[inverse.ravel()]
+    tag_0, band = selected(input_tags), selected(offset_tags)
     vid = np.asarray(attributes["vid"]["values"]).ravel()
     corr = np.asarray(attributes["corr_input_vid"]["values"]).ravel()
     row = {v: k for k, v in enumerate(vid)}

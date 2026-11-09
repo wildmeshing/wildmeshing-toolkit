@@ -240,12 +240,13 @@ def test_the_prismatic_input_is_rebuilt_from_the_regions_and_the_correspondence(
             "cells": {"tetrahedron": {"connectivity": np.array([[0, 1, 2, 3], [1, 2, 3, 4]]),
                                       "attributes": {"tags": {"values": [[1, 0, 0], [0, 1, 0]],
                                                               "labels": ["cube", "b", "ambient"]}}}}}
-    m = _prismatic_input(mesh, ["cube"], ["b"])
-    tags = m["cells"]["tetrahedron"]["attributes"]["tags"]
-    assert tags["labels"] == ["tag_0", "offset", "ambient"]
-    assert tags["values"].tolist() == [[1, 0, 0], [0, 1, 0]]
-    assert m["vertex_attributes"]["labels"]["values"].tolist() == [1, 1, 1, 1, 2]
-    with pytest.raises(ValueError, match="no region c"):
-        _prismatic_input(mesh, ["cube"], ["c"])
+    for offset in ["b", "b | ambient", "!cube"]:  # tag expressions, as the components read them
+        m = _prismatic_input(mesh, "cube", offset)
+        tags = m["cells"]["tetrahedron"]["attributes"]["tags"]
+        assert tags["labels"] == ["tag_0", "offset", "ambient"]
+        assert tags["values"].tolist() == [[1, 0, 0], [0, 1, 0]]
+        assert m["vertex_attributes"]["labels"]["values"].tolist() == [1, 1, 1, 1, 2]
+    with pytest.raises(ValueError, match="names a region"):
+        _prismatic_input(mesh, "cube", "c")
     with pytest.raises(ValueError, match="both"):
-        _prismatic_input(mesh, ["cube"], [])
+        _prismatic_input(mesh, "cube", "")
