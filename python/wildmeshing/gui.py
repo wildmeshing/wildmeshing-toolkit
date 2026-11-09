@@ -9,7 +9,8 @@ rename), file path ("..." for the system's file dialog), "x"; its last row adds 
 stages in run order, each with where its last result came from (memory, cache, save, run),
 "edited" once it or a stage it reads has changed since, or "failed". A new stage is named
 <n>_<component> until typed over, and reads the stage before it: its input that stage's mesh, its
-envelope that stage's envelope; the first stage reads the inputs. A component stage calls one
+envelope that stage's envelope; the first stage reads the inputs. A tracking stage reads the last
+history recorded: of the last stage with history_output set. A component stage calls one
 component, on options edited as the component's spec types them (wm.spec: the spec the compiled
 module holds, so the fields follow the installed build): checkboxes, numbers, choices, text,
 lists item by item, JSON for objects. Only the options set are written to the pipeline; "other
@@ -176,7 +177,9 @@ class Gui:
         that stage's envelope (unless it ran and returned none). With no stage before it, its
         `input` is the inputs -- all of them for a list, named by `input_names` when it has one;
         the last one otherwise. Only a required `input` is chained: an optional one means
-        something else (tracking's: the surface a history starts from)."""
+        something else (tracking's: the surface a history starts from). A required `history`
+        (tracking's) is the history of the last stage that records one, its history_output set;
+        with none, add_stage() leaves it at its default."""
         rules, required, _ = self.spec(component)
         results = self.pipeline.results
         before = next((s["name"] for s in reversed(self.pipeline.stages) if s["name"] not in
@@ -197,6 +200,10 @@ class Gui:
         result = results.get(before)
         if "/envelope" in rules and before and (result is None or "envelope" in result["outputs"]):
             out["envelope"] = {"from": before, "output": "envelope"}
+        recorder = next((s["name"] for s in reversed(self.pipeline.stages)
+                         if s.get("options", {}).get("history_output")), None)
+        if "history" in required and recorder:
+            out["history"] = {"from": recorder, "report": "history"}
         return out
 
     def remove(self, name):

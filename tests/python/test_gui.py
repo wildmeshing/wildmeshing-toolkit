@@ -128,3 +128,19 @@ def test_a_picked_file_and_the_default_names(tmp_path, monkeypatch):
     b.add_stage(b.new["name"], "qslim")
     polyscope.show(1)
     assert b.new["name"] == "2_qslim"
+
+
+def test_a_tracking_stage_reads_the_last_history(tmp_path):
+    # Its history is the last one recorded above it, of a stage with history_output set; with
+    # none recorded, the option's default.
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    b.add_input("box", "box.obj")
+    b.add_stage("simplify", "qslim")
+    b.add_stage("map", "tracking")
+    assert b.stage("map")["options"]["history"] == ""
+    b.set_option("simplify", "history_output", "h")
+    b.add_stage("remesh", "isotropic_remeshing")
+    b.set_option("remesh", "history_output", "h")
+    b.add_stage("collapse", "shortest_edge_collapse")
+    b.add_stage("map_again", "tracking")
+    assert b.stage("map_again")["options"]["history"] == {"from": "remesh", "report": "history"}
