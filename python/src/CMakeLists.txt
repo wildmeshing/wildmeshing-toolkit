@@ -20,15 +20,52 @@ if(NOT MSVC)
 endif(NOT MSVC)
 
 # The module is wildmeshing._core. The build tree mirrors the Python package, so that
-# PYTHONPATH=<build>/bin imports the same `wildmeshing` package a wheel installs.
+# PYTHONPATH=<build>/bin imports the same `wildmeshing` package a wheel installs. The $<1:...>
+# keeps multi-config generators (Visual Studio, which the Windows wheels use) from adding a
+# Release/ folder, which would part the module from the package's __init__.py.
 set(WMTK_PYTHON_PACKAGE_DIR "${CMAKE_BINARY_DIR}/bin/wildmeshing")
 set_target_properties(wildmeshing PROPERTIES
     OUTPUT_NAME _core
-    LIBRARY_OUTPUT_DIRECTORY "${WMTK_PYTHON_PACKAGE_DIR}")
+    LIBRARY_OUTPUT_DIRECTORY "$<1:${WMTK_PYTHON_PACKAGE_DIR}>")
 add_custom_target(wildmeshing_python_sources
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/../wildmeshing" "${WMTK_PYTHON_PACKAGE_DIR}")
 add_dependencies(wildmeshing wildmeshing_python_sources)
+
+# On Windows the module loads GMP's DLL, which Python (3.8 and later) looks for next to the module,
+# not on PATH: the build tree gets it there, as the wheel does (install below).
+if(WIN32 AND TARGET gmp::gmp)
+    add_custom_command(TARGET wildmeshing POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:gmp::gmp>"
+            "${WMTK_PYTHON_PACKAGE_DIR}"
+        VERBATIM)
+endif()
+
+# The type stub wildmeshing/_core.pyi, written from the module just built, so it cannot drift from
+# the bindings: the hand-regenerated copy git held missed CurveTracking. pybind11-stubgen 3 and
+# numpy: 2.5 writes os.PathLike without importing os (7 mypy errors), and without numpy the
+# numpy.ndarray annotations have no import. After the GMP copy above, which the import needs.
+execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c
+        "import numpy, importlib.metadata as m; assert int(m.version('pybind11-stubgen').split('.')[0]) >= 3"
+    RESULT_VARIABLE WMTK_NO_STUBGEN OUTPUT_QUIET ERROR_QUIET)
+if(WMTK_NO_STUBGEN)
+    message(STATUS "wildmeshing: no type stub (needs pybind11-stubgen >= 3 and numpy in "
+        "${Python_EXECUTABLE})")
+else()
+    # Run in bin/, which `python -m` puts first on sys.path, so the package just built is the one
+    # imported; PYTHONPATH stays as it is: pip's isolated build puts pybind11-stubgen there.
+    add_custom_command(TARGET wildmeshing POST_BUILD
+        COMMAND "${Python_EXECUTABLE}" -m pybind11_stubgen --exit-code wildmeshing._core
+            -o "${CMAKE_BINARY_DIR}/bin"
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        COMMENT "Writing the type stub wildmeshing/_core.pyi"
+        VERBATIM)
+    if(DEFINED SKBUILD)
+        install(FILES "${WMTK_PYTHON_PACKAGE_DIR}/_core.pyi"
+            DESTINATION "${SKBUILD_PLATLIB_DIR}/wildmeshing" COMPONENT python_bindings)
+    endif()
+endif()
 
 include(GNUInstallDirs)
 if(DEFINED SKBUILD)

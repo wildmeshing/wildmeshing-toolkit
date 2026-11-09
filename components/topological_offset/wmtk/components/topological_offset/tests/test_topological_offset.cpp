@@ -2954,7 +2954,7 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
 }
 
 namespace {
-/// python/tests/test_face_tags.py's tagged grid: [0, 2]^3 in 8^3 cubes of six tets, the corner
+/// tests/python/test_face_tags.py's tagged grid: [0, 2]^3 in 8^3 cubes of six tets, the corner
 /// cube [0, 0.25]^3 tagged red, and two open sheets on [0.5, 1.5]^2 as face tags, yellow at z = 1
 /// and blue at z = z_blue, a multiple of the cube size 0.25.
 MeshData two_sheet_grid(const double z_blue)

@@ -5,9 +5,6 @@ bin*/
 .idea*
 ./*build*
 *build*
-# Not build trees: the pipeline builder and its test.
-!python/wildmeshing/builder.py
-!python/tests/test_builder.py
 xcode*
 temp-plot.html
 matlab/*.msh
@@ -31,6 +28,8 @@ app/components_python.hpp
 app/components_spec_include.hpp
 app/components_spec_map.hpp
 *.egg-info
+# The type stub, which the build writes (python/src/CMakeLists.txt)
+python/wildmeshing/_core.pyi
 CMakePresets.json
 CMakeCache.txt
 # ctest's logs, when it is run from the repository root

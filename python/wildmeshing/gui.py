@@ -1,8 +1,8 @@
-"""A pipeline builder: stack components as stages, edit their options, run, read each stage's log
+"""A pipeline window: stack components as stages, edit their options, run, read each stage's log
 and view each stage's result, in one polyscope window -- over wildmeshing.pipeline (the pipeline
 file, its stage keys and cache) and wildmeshing.viewer (the view of each stage).
 
-    python -m wildmeshing.builder [<pipeline.json>]
+    python -m wildmeshing.gui [<pipeline.json>]
 
 The "pipeline" window lists the inputs first, a table: name (editable; every reference follows a
 rename), file path ("..." for the system's file dialog), "x"; its last row adds one. Then the
@@ -68,7 +68,7 @@ def _parses(text):
         return False
 
 
-class Builder:
+class Gui:
     """The pipeline being built, its runs and its windows. The methods that change the pipeline
     are the panel's buttons, callable without a window."""
 
@@ -154,7 +154,7 @@ class Builder:
         if self.viewer is not None and result is not None:
             shown = any(s["name"] == old and s["shown"] for s in self.viewer.stages)
             self.viewer.set_stage(new, result["outputs"], result["report"], self._input(new),
-                                  shown=shown, replace=old)
+                                  shown=shown, replace=old, folder=self._folder(new))
             self.viewed[new] = result["key"]
 
     def add_input(self, name, file):
@@ -283,6 +283,10 @@ class Builder:
             return self.pipeline.results[ref["from"]]["outputs"].get(ref["output"])
         return None
 
+    def _folder(self, name):
+        """The inputs share one folder in the view."""
+        return "inputs" if name in self.pipeline.inputs else None
+
     def poll(self):
         """Take in what the run finished, on the main thread, where polyscope's calls go."""
         while True:
@@ -298,7 +302,7 @@ class Builder:
                     for other in self.viewer.stages if value["outputs"] else []:
                         other["shown"] = False
                     self.viewer.set_stage(name, value["outputs"], value["report"],
-                                          self._input(name))
+                                          self._input(name), folder=self._folder(name))
                     self.viewed[name] = value["key"]
             elif kind == "picked":
                 if name == "new":
@@ -485,11 +489,14 @@ class Builder:
                 psim.TreePop()
         psim.TreePop()
 
-    def _remove(self, name):
+    def _try(self, edit, *args):
+        """Apply an edit; one it refuses (ValueError) becomes the message. Whether it applied."""
         try:
-            self.remove(name)
+            edit(*args)
+            return True
         except ValueError as e:
             self.message = str(e)
+            return False
 
     def _input_row(self, name, file):
         """An input as a row of the inputs table: its name (editable; every reference to it
@@ -501,10 +508,7 @@ class Builder:
         _, self.renaming[name] = psim.InputText(f"##name{name}", self.renaming.get(name, name))
         psim.PopItemWidth()
         if psim.IsItemDeactivatedAfterEdit():  # Enter, or a click elsewhere
-            try:
-                self.rename(name, self.renaming.pop(name))
-            except ValueError as e:
-                self.message = str(e)
+            self._try(self.rename, name, self.renaming.pop(name))
         psim.TableSetColumnIndex(1)
         missing = not os.path.exists(os.path.join(self.pipeline.root, file))
         psim.PushItemWidth(-100 if missing else -30)
@@ -520,7 +524,7 @@ class Builder:
             psim.TextColored(RED, "missing")
         psim.TableSetColumnIndex(2)
         if psim.SmallButton(f"x##remove{name}"):
-            self._remove(name)
+            self._try(self.remove, name)
 
     def _new_input_row(self):
         """The inputs table's last row: an input to add, named after its file until a name is
@@ -545,11 +549,8 @@ class Builder:
             self.pick_file("new")
         psim.TableSetColumnIndex(2)
         if psim.SmallButton("+##addinput"):
-            try:
-                self.add_input(new["name"], new["file"])
+            if self._try(self.add_input, new["name"], new["file"]):
                 self.new_input = {"name": "", "file": ""}
-            except ValueError as e:
-                self.message = str(e)
 
     def _stage(self, i, stage):
         psim = self.psim
@@ -570,7 +571,7 @@ class Builder:
             self.log_stage = name
         psim.SameLine()
         if psim.Button(f"remove##remove{name}"):
-            self._remove(name)
+            self._try(self.remove, name)
         psim.TreePop()
 
     def _add(self):
@@ -584,10 +585,7 @@ class Builder:
         self.new["default"] = default
         _, self.new["name"] = psim.InputText("name##new", self.new["name"])
         if psim.Button("add stage"):
-            try:
-                self.add_stage(self.new["name"], kinds[self.new["kind"]])
-            except ValueError as e:
-                self.message = str(e)
+            self._try(self.add_stage, self.new["name"], kinds[self.new["kind"]])
 
     def panel(self):
         """Every frame: what the run finished, then the windows. polyscope's own on the left,
@@ -675,30 +673,27 @@ class Builder:
         psim.End()
 
 
-def run_window(builder, screenshots=None):
-    """Open `builder`'s window; `screenshots` "mock" (or WM_VIEWER_SCREENSHOTS) draws three frames
+def run_window(gui, screenshots=None):
+    """Open `gui`'s window; `screenshots` "mock" (or WM_VIEWER_SCREENSHOTS) draws three frames
     without one, as a self-test."""
     import polyscope as ps
     import polyscope.imgui as psim
 
     mode = _viewer.start(ps, screenshots)
-    ps.set_open_imgui_window_for_user_callback(False)  # the builder places its own windows
-    builder.ps, builder.psim = ps, psim
-    if builder.viewer is None:
-        builder.viewer = _viewer.Viewer(ps, psim)
-    ps.set_user_callback(builder.panel)
-    if mode == "mock":
-        ps.show(3)
-    else:
-        ps.show()
+    ps.set_open_imgui_window_for_user_callback(False)  # the GUI places its own windows
+    gui.ps, gui.psim = ps, psim
+    if gui.viewer is None:
+        gui.viewer = _viewer.Viewer(ps, psim)
+    ps.set_user_callback(gui.panel)
+    ps.show(3 if mode == "mock" else None)
 
 
 def main(argv):
     if argv and os.path.exists(argv[0]):
-        builder = Builder(Pipeline.load(argv[0]), argv[0])
+        gui = Gui(Pipeline.load(argv[0]), argv[0])
     else:
-        builder = Builder(Pipeline([], os.getcwd()), argv[0] if argv else None)
-    run_window(builder)
+        gui = Gui(Pipeline([], os.getcwd()), argv[0] if argv else None)
+    run_window(gui)
 
 
 if __name__ == "__main__":
