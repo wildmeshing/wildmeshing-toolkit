@@ -101,7 +101,7 @@ When you change the toolkit and rebuild the package often:
 
 ```bash
 uv venv --python 3.14 .venv
-uv pip install --python .venv/bin/python numpy scikit-build-core pybind11
+uv pip install --python .venv/bin/python numpy scikit-build-core pybind11 pybind11-stubgen==3.0.0
 CMAKE_BUILD_PARALLEL_LEVEL=8 uv pip install --python .venv/bin/python --no-build-isolation .
 ```
 

@@ -1,5 +1,9 @@
 [build-system]
-requires = ["scikit-build-core>=1.1", "pybind11>=2.11", "setuptools-scm>=8"]
+# pybind11-stubgen and numpy write the type stub wildmeshing/_core.pyi from the module just built
+# (python/src/CMakeLists.txt); pybind11-stubgen 3 needs Python 3.10, so a 3.9 build has no stub.
+requires = ["scikit-build-core>=1.1", "pybind11>=2.11", "setuptools-scm>=8",
+            "pybind11-stubgen==3.0.0; python_version >= '3.10'",
+            "numpy; python_version >= '3.10'"]
 build-backend = "scikit_build_core.build"
 
 [project]

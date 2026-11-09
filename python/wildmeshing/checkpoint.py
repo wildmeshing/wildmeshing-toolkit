@@ -12,8 +12,7 @@ options). <stem>.log is the stage's log, when one is given.
 load() reads only the files the record lists and refuses one whose sha256
 differs, so a leftover file of an older save is never read and a file edited
 since is never taken for the saved one; it returns exactly the arrays save()
-wrote, in the same order. A checkpoint written before the record existed
-(<stem>.msh, <stem>_envelope.msh, no <stem>.json) loads as it always did.
+wrote, in the same order. A checkpoint without a record is refused.
 """
 import hashlib
 import json
@@ -41,9 +40,6 @@ def save(result, stem, report=None, log=None, **record):
     for name, mesh in result.items():
         files[name] = _path(stem, name, ".msh")
         write_mesh(files[name], mesh)
-    envelope = f"{stem}_envelope.msh"
-    if "envelope" not in result and os.path.exists(envelope):
-        os.remove(envelope)  # else a load without the record would return an older envelope
     histories, values = {}, {}
     for key, value in (report or {}).items():
         if isinstance(value, bytes):
@@ -73,6 +69,13 @@ def record(stem):
         return None
 
 
+def _required(stem):
+    rec = record(stem)
+    if rec is None:
+        raise FileNotFoundError(f"{stem}.json: no checkpoint record (wm.save writes one)")
+    return rec
+
+
 def _checked(stem, entry):
     path = os.path.join(os.path.dirname(stem), entry["file"])
     if _sha256(path) != entry["sha256"]:
@@ -95,20 +98,12 @@ def verified(stem):
 
 def load(stem):
     """Read the checkpoint <stem> back into a memory result."""
-    rec = record(stem)
-    if rec is None:
-        result = {"mesh": read_mesh(f"{stem}.msh")}
-        envelope = f"{stem}_envelope.msh"
-        if os.path.exists(envelope):
-            result["envelope"] = read_mesh(envelope)
-        return result
+    rec = _required(stem)
     return {name: read_mesh(_checked(stem, e)) for name, e in rec["outputs"].items()}
 
 
 def load_report(stem):
-    """The report saved with the checkpoint <stem>, histories included; {} without a record."""
-    rec = record(stem)
-    if rec is None:
-        return {}
+    """The report saved with the checkpoint <stem>, histories included."""
+    rec = _required(stem)
     return {**rec["report"],
             **{k: read_history(_checked(stem, e)) for k, e in rec["histories"].items()}}

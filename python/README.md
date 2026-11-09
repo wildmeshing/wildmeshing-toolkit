@@ -104,14 +104,11 @@ region expressions; a bare string is a region's whole boundary.
 
 ## Type stubs
 
-`python/wildmeshing/_core.pyi` describes the compiled module for editors and type checkers, with
-the docstrings the components' specs give (`help(wm.qslim)`). Regenerate it after changing the
-bindings or a spec, from the repository root:
-
-```bash
-pip install pybind11-stubgen
-PYTHONPATH=build/bin python -m pybind11_stubgen wildmeshing._core -o python
-```
+`wildmeshing/_core.pyi` describes the compiled module for editors and type checkers, with the
+docstrings the components' specs give (`help(wm.qslim)`); `py.typed` tells them to read it. The
+build writes it from the module it has just built (`python/src/CMakeLists.txt`), so it always
+matches: a `pip install` on Python 3.10 or later, and a CMake build whose Python has
+`pybind11-stubgen` 3 and numpy. Not in git.
 
 ## Tests
 

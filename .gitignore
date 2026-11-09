@@ -28,6 +28,8 @@ app/components_python.hpp
 app/components_spec_include.hpp
 app/components_spec_map.hpp
 *.egg-info
+# The type stub, which the build writes (python/src/CMakeLists.txt)
+python/wildmeshing/_core.pyi
 CMakePresets.json
 CMakeCache.txt
 # ctest's logs, when it is run from the repository root
