@@ -3581,7 +3581,7 @@ topological_offset. All the configs run in one ctest entry, <code>Integration_Te
 commit that has it (<a href="../writing-a-component/#6-an-integration-config">writing a component</a>).</p>
 <h2 id="python-tests">Python tests<a class="headerlink" href="#python-tests" title="Permanent link">&para;</a></h2>
 <p>The tests in <a href="https://github.com/wildmeshing/wildmeshing-toolkit/tree/main/tests/python"><code>tests/python</code></a>
-run the bindings. Three are registered in <code>tests/CMakeLists.txt</code>, when the module is built
+run the bindings. Four are registered in <code>tests/CMakeLists.txt</code>, when the module is built
 (<code>WMTK_PYBIND</code>, on by default) and the interpreter CMake found imports NumPy:</p>
 <table>
 <thead>
@@ -3603,6 +3603,11 @@ run the bindings. Three are registered in <code>tests/CMakeLists.txt</code>, whe
 <td>histories as bytes and files, <code>wm.Tracking</code>, <code>wm.CurveTracking</code>, <code>wm.VolumeTracking</code></td>
 </tr>
 <tr>
+<td><code>python_pipeline</code></td>
+<td><code>test_pipeline.py</code>, <code>test_gui.py</code>, <code>test_viewer.py</code></td>
+<td><code>wildmeshing.pipeline</code>, <code>wildmeshing.gui</code> and <code>wildmeshing.viewer</code>, with pytest; registered when the interpreter has pytest; the last two skip without polyscope, whose mock backend opens no window</td>
+</tr>
+<tr>
 <td><code>python_tracking_correspondences</code></td>
 <td><code>test_tracking_correspondences.py</code></td>
 <td>the tracking tutorial's pipeline (<code>docs/examples/python/tracking_correspondences.py</code>): the dense bunny remeshed, tetrahedralized, and every vertex mapped through both histories and back; its counts are ranges, since a run with threads changes slightly from one run to the next; non-Debug builds only, timeout 1800 s</td>
@@ -3613,14 +3618,17 @@ run the bindings. Three are registered in <code>tests/CMakeLists.txt</code>, whe
 <ul>
 <li><code>test_docs_examples.py</code>: the documentation's examples, below.</li>
 <li><code>test_smoke.py</code>: imports the module and its error paths; the wheel builds run it with
-  <code>test_memory_io.py</code> and <code>test_tracking.py</code> on every wheel (<code>test-command</code> in
-  <code>pyproject.toml</code>).</li>
+  <code>test_memory_io.py</code>, <code>test_tracking.py</code> and the three of <code>python_pipeline</code> on every wheel
+  (<code>test-command</code> in <code>pyproject.toml</code>).</li>
 <li><code>test_integration.py</code>: the integration configs through the bindings, compared byte for byte
   with <code>wmtk_app</code>'s output when the config is serial (<code>python -m pytest tests/python</code>; see its
   <code>README.md</code>).</li>
+<li><code>test_face_tags.py</code>, <code>test_memory_route.py</code>: the tagged components' face, edge and point tags,
+  and their memory route against the file route; three PolyFEM-reader tests need gmsh.</li>
 </ul>
-<p><code>python/tests</code> holds the tests of <code>wildmeshing.polyfem_ops</code>, run with <code>python -m pytest
-python/tests</code> and gmsh installed.</p>
+<p><code>tests/python/polyfem</code> holds the tests of <code>wildmeshing.polyfem_ops</code>. pytest collects it only when
+the polyfem extras (gmsh, scipy, h5py) are installed, and its tests that run PolyFEM skip without
+<code>POLYFEM_BIN</code>.</p>
 <h2 id="documentation-examples">Documentation examples<a class="headerlink" href="#documentation-examples" title="Permanent link">&para;</a></h2>
 <p>With <code>-DWMTK_BUILD_DOC_EXAMPLES=ON</code>, every <code>docs/examples/cpp/&lt;name&gt;.cpp</code> is built as
 <code>wmtk_doc_example_&lt;name&gt;</code>, linked with every component, and in a non-Debug build registered as

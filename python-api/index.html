@@ -3508,9 +3508,12 @@ its <a href="../reference/">reference</a> is generated.</dd>
 <dt><code>wm.write_mesh(path, mesh)</code></dt>
 <dd>Writes <code>.msh</code> or <code>.vtu</code>.</dd>
 <dt><code>wm.save(outputs, stem)</code>, <code>wm.load(stem) -&gt; dict</code></dt>
-<dd>A checkpoint of a memory result: <code>&lt;stem&gt;.msh</code>, and <code>&lt;stem&gt;_envelope.msh</code> when the result has
-an envelope. <code>load</code> returns exactly the arrays <code>save</code> wrote, in the same order, so a pipeline
-resumed from a checkpoint continues as it would have without one.</dd>
+<dd>A checkpoint of a memory result: <code>&lt;stem&gt;.msh</code> for the output <code>mesh</code>, <code>&lt;stem&gt;_&lt;name&gt;.msh</code> for
+every other output (<code>&lt;stem&gt;_envelope.msh</code>), and the record <code>&lt;stem&gt;.json</code>, each file's sha256.
+Given a report, <code>save</code> also writes its histories (<code>&lt;stem&gt;_&lt;key&gt;.history</code>) and its other values
+in the record. <code>load</code> reads only the files the record lists, refuses one changed since, and
+returns exactly the arrays <code>save</code> wrote, in the same order, so a pipeline resumed from a
+checkpoint continues as it would have without one.</dd>
 <dt><code>wm.read_history(path) -&gt; bytes</code>, <code>wm.write_history(path, history)</code></dt>
 <dd>A history file (<code>history_output</code>, <code>volume_history_output</code>) as the bytes a memory call returns
 in its report, and back.</dd>
