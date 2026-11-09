@@ -100,6 +100,60 @@ def test_build_run_edit_and_draw(tmp_path, monkeypatch):
     assert [s["name"] for s in b.viewer.stages] == ["cube", "remesh", "simplify"]
 
 
+def test_label_options_and_the_inputs_table(tmp_path, monkeypatch):
+    """A label option names the labels of the mesh the stage reads, marked once that mesh is
+    made; a stage naming its inputs lists their names and marks nothing; its per-input lists
+    are one table with `input`, a row added or removed in all of them."""
+    monkeypatch.setattr(viewer, "OPEN_ALL", True)
+    box(tmp_path)
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    b.add_input("box", "box.obj")
+    b.add_input("wire", "box.obj")
+    b.add_stage("mesh", "simwild")
+    b.set_option("mesh", "input_type", ["volume"])  # shorter than input: a "+" in its column
+    assert b.labels("mesh") == (["box", "wire"], False)  # its inputs' names, never all known
+    priority = b.spec("simwild")[0]["/tag_priority/*"]
+    assert priority["labels"] == "existing"  # the C++ spec's key, through wm.spec
+    assert b.label_problem("mesh", priority, "zz") is None
+    b.add_stage("offset", "topological_offset")
+    rules = b.spec("topological_offset")[0]
+    selection, protected = rules["/offset_selection"], rules["/protected_tags/*"]
+    assert b.labels("offset") == ([], False)  # mesh has not run
+    assert b.label_problem("offset", selection, "zz") is None
+    # mesh made: a tet tagged box, a curve tagged wire.
+    b.pipeline.results["mesh"] = {"key": "k", "report": {}, "outputs": {"mesh": {"cells": {
+        "tetrahedron": {"attributes": {"tags": {"values": [[1, 0]], "labels": ["box", "ambient"]}}},
+        "edge": {"attributes": {"tags": {"values": [[1]], "labels": ["wire"]}}}}}}}
+    assert b.labels("offset") == (["box", "ambient", "wire"], True)
+    assert b.label_problem("offset", selection, "box | !wire") is None
+    assert b.label_problem("offset", selection, "box | zz") == "unknown label"
+    assert b.label_problem("offset", selection, "box |").startswith("not a tag expression")
+    assert b.label_problem("offset", protected, "zz") == "unknown label"
+    b.set_option("offset", "offset_selection", "box | zz")
+    b.set_option("offset", "protected_tags", ["wire", "zz"])
+
+    drawn, red = set(), set()
+    value = b._value
+    monkeypatch.setattr(b, "_value", lambda name, label, v, pointer, rules, unset=None: (
+        drawn.add((name, pointer)), value(name, label, v, pointer, rules, unset))[1])
+    imgui = pytest.importorskip("polyscope.imgui")
+    coloured = imgui.TextColored
+    monkeypatch.setattr(imgui, "TextColored", lambda c, text: (red.add(text), coloured(c, text)))
+    gui.run_window(b, "mock")
+    assert drawn >= {("mesh", "/input/*"), ("mesh", "/input_names/*"), ("mesh", "/input_type/*"),
+                     ("offset", "/offset_selection"), ("offset", "/protected_tags/*")}
+    assert ("mesh", "/input") not in drawn  # the table draws its entries
+    assert red == {"unknown label: the stage can name box, ambient, wire"}
+
+    b.append_stage_input("mesh")
+    options = b.stage("mesh")["options"]
+    assert options["input"][2] == {"from": "wire", "output": "mesh"}
+    assert options["input_names"] == ["box", "wire", ""] and options["input_type"] == ["volume"]
+    b.remove_stage_input("mesh", 0)
+    assert [r["from"] for r in options["input"]] == ["wire", "wire"]
+    assert options["input_names"] == ["wire", ""] and options["input_type"] == []
+
+
 def test_a_failed_stage_is_marked_and_its_log_chosen(tmp_path, monkeypatch):
     box(tmp_path)
     b = gui.Gui(Pipeline([], str(tmp_path)))

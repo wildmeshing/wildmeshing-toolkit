@@ -56,9 +56,9 @@ from . import checkpoint
 # correspondence (corr_input_vid, by vid). The JSON stays as it is once the C++ side reads these
 # options.
 OPTIONS = {"prismatic_mesh": [
-    {"pointer": "/input_tags", "type": "string", "default": "",
+    {"pointer": "/input_tags", "type": "string", "labels": "expression", "default": "",
      "doc": "The input volume (tag_0), a tag expression. Read by wildmeshing.pipeline for now."},
-    {"pointer": "/offset_tags", "type": "string", "default": "",
+    {"pointer": "/offset_tags", "type": "string", "labels": "expression", "default": "",
      "doc": "The band (offset), a tag expression. Read by wildmeshing.pipeline for now."}]}
 
 

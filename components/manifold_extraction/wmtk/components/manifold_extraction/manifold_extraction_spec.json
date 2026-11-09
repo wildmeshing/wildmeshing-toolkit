@@ -45,6 +45,7 @@
   {
     "pointer": "/tag_selection",
     "type": "string",
+    "labels": "expression",
     "default": "tag_0",
     "doc": "Tag selection, the boundary of which is taken to be the input surface to make manifold. An expression of tags: names, &, |, ! and parentheses."
   },
@@ -57,6 +58,7 @@
   {
     "pointer": "/fill_tags/*",
     "type": "string",
+    "labels": "existing",
     "doc": "A tag."
   },
   {
