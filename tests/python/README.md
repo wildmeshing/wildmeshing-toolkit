@@ -1,4 +1,10 @@
-# Python integration tests
+# Python tests
+
+Every Python test of the toolkit: [docs/developer/testing.md](../../docs/developer/testing.md#python-tests)
+lists them, and `polyfem/` holds the PolyFEM operations' (optional). This file describes
+`test_integration.py`.
+
+## Integration tests
 
 These tests mirror the C++ integration tests in
 [`tests/integration_tests.cpp`](../integration_tests.cpp): the same list of JSON

@@ -59,9 +59,12 @@ Mesh dictionaries are described in [Calling components](getting-started/calling-
 :   Writes `.msh` or `.vtu`.
 
 `wm.save(outputs, stem)`, `wm.load(stem) -> dict`
-:   A checkpoint of a memory result: `<stem>.msh`, and `<stem>_envelope.msh` when the result has
-    an envelope. `load` returns exactly the arrays `save` wrote, in the same order, so a pipeline
-    resumed from a checkpoint continues as it would have without one.
+:   A checkpoint of a memory result: `<stem>.msh` for the output `mesh`, `<stem>_<name>.msh` for
+    every other output (`<stem>_envelope.msh`), and the record `<stem>.json`, each file's sha256.
+    Given a report, `save` also writes its histories (`<stem>_<key>.history`) and its other values
+    in the record. `load` reads only the files the record lists, refuses one changed since, and
+    returns exactly the arrays `save` wrote, in the same order, so a pipeline resumed from a
+    checkpoint continues as it would have without one.
 
 `wm.read_history(path) -> bytes`, `wm.write_history(path, history)`
 :   A history file (`history_output`, `volume_history_output`) as the bytes a memory call returns
