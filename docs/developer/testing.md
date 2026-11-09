@@ -96,26 +96,25 @@ commit that has it ([writing a component](writing-a-component.md#6-an-integratio
 ## Python tests
 
 The tests in [`tests/python`](https://github.com/wildmeshing/wildmeshing-toolkit/tree/main/tests/python)
-run the bindings. Three are registered in `tests/CMakeLists.txt`, when the module is built
+run the bindings. Four are registered in `tests/CMakeLists.txt`, when the module is built
 (`WMTK_PYBIND`, on by default) and the interpreter CMake found imports NumPy:
 
 | ctest entry | File | What it runs |
 |---|---|---|
 | `python_memory_io` | `test_memory_io.py` | the memory route through the bindings, NumPy only |
 | `python_tracking` | `test_tracking.py` | histories as bytes and files, `wm.Tracking`, `wm.CurveTracking`, `wm.VolumeTracking` |
+| `python_pipeline` | `test_pipeline.py`, `test_gui.py`, `test_viewer.py` | `wildmeshing.pipeline`, `wildmeshing.gui` and `wildmeshing.viewer`, with pytest; registered when the interpreter has pytest; the last two skip without polyscope, whose mock backend opens no window |
 | `python_tracking_correspondences` | `test_tracking_correspondences.py` | the tracking tutorial's pipeline (`docs/examples/python/tracking_correspondences.py`): the dense bunny remeshed, tetrahedralized, and every vertex mapped through both histories and back; its counts are ranges, since a run with threads changes slightly from one run to the next; non-Debug builds only, timeout 1800 s |
 
 The others are run by hand or elsewhere:
 
 - `test_docs_examples.py`: the documentation's examples, below.
 - `test_smoke.py`: imports the module and its error paths; the wheel builds run it with
-  `test_memory_io.py` and `test_tracking.py` on every wheel (`test-command` in
-  `pyproject.toml`).
+  `test_memory_io.py`, `test_tracking.py` and the three of `python_pipeline` on every wheel
+  (`test-command` in `pyproject.toml`).
 - `test_integration.py`: the integration configs through the bindings, compared byte for byte
   with `wmtk_app`'s output when the config is serial (`python -m pytest tests/python`; see its
   `README.md`).
-- `test_pipeline.py`, `test_gui.py`, `test_viewer.py`: `wildmeshing.pipeline`, `wildmeshing.gui`
-  and `wildmeshing.viewer`; the last two need polyscope, whose mock backend opens no window.
 - `test_face_tags.py`, `test_memory_route.py`: the tagged components' face, edge and point tags,
   and their memory route against the file route; three PolyFEM-reader tests need gmsh.
 

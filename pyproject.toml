@@ -35,14 +35,14 @@ build = ["cp*-*"]
 skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*", "cp3??t-*"]
 
 # Smoke-test every built wheel on its target platform/Python: install it into an
-# isolated environment and check dispatch and the NumPy memory interface. These
-# need no external test data. The data-driven Python tests run in the Build workflow
+# isolated environment and check dispatch, the NumPy memory interface and the pipeline
+# (the GUI's and the viewer's tests skip there: no polyscope). These need no external test data. The data-driven Python tests run in the Build workflow
 # (.github/workflows/continuous.yml), through ctest.
 # Volume.test_regions_kept is left to the Build workflow: it maps points through a mesh SimWild
 # builds with 4 threads, a different mesh every run, and a few of those meshes give a round trip
 # off by about 1e-3 (it failed one wheel build), a tracking question, not a packaging one.
 test-requires = "pytest"
-test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py {project}/tests/python/test_tracking.py -k \"not test_regions_kept\""
+test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py {project}/tests/python/test_tracking.py {project}/tests/python/test_pipeline.py {project}/tests/python/test_gui.py {project}/tests/python/test_viewer.py -k \"not test_regions_kept\""
 
 [tool.cibuildwheel.linux]
 before-all = "yum install -y gmp-devel"

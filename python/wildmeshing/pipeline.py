@@ -154,7 +154,9 @@ def _mesh_name(ref):
 @contextlib.contextmanager
 def _captured(path):
     """fds 1 and 2 into the file `path`, restored on the way out, exceptions included."""
-    libc = ctypes.CDLL(None)
+    # The C library's buffers, flushed on the way out, so that what the module wrote lands in
+    # `path`; Windows has no ctypes.CDLL(None) to reach them by.
+    libc = ctypes.CDLL(None) if os.name != "nt" else None
     sys.stdout.flush()
     sys.stderr.flush()
     saved = os.dup(1), os.dup(2)
@@ -166,7 +168,8 @@ def _captured(path):
         finally:
             sys.stdout.flush()
             sys.stderr.flush()
-            libc.fflush(None)
+            if libc is not None:
+                libc.fflush(None)
             os.dup2(saved[0], 1)
             os.dup2(saved[1], 2)
             os.close(saved[0])
