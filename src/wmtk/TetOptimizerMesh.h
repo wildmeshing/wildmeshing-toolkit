@@ -783,6 +783,48 @@ public:
         bool exact);
 
     /**
+     * @name A mesh from exact positions
+     *
+     * What tetwild and simwild both do to the tets they are given with exact positions -- the
+     * insertion's output, or simwild's tagged mesh with rational coordinates -- done once, here.
+     * Until 2026-11 each kept a copy (TetWildMesh::init_from_Volumeremesher(),
+     * SimWildMesh::init_from_image()), simwild's rounding copied from tetwild's (a8d9e65d50) in
+     * 0f617ab966. They had drifted only in how the box faces were found -- tetwild's in parallel
+     * and in place (5e466d9d35, aff96d866c), simwild's serially over a list of every face -- and
+     * in when the direct points were found. Same flags either way; the list was the peak of the
+     * run on the larger tetwild inputs.
+     * @{
+     */
+    /// Coordinate k of vertex vid's exact position, as the caller holds it (a vector of Vector3r,
+    /// a MatrixXr), by reference: reading it copies no Rational.
+    using ExactCoordinate = std::function<const Rational&(size_t vid, int k)>;
+
+    /**
+     * @brief Set the position of every vertex (vert_capacity() of them) from its exact one, and
+     * return, per vertex, whether it is a direct point: one whose exact position is already a
+     * double. A direct point is rounded here and stores nothing -- its double is its exact
+     * position, so rounding it cannot invert a tet. An indirect point keeps its rational,
+     * unrounded, until round_indirect_vertices().
+     */
+    std::vector<char> set_exact_positions(const ExactCoordinate& exact);
+
+    /**
+     * @brief Round every indirect vertex that can be, once the tets are final. `is_direct_point`
+     * and `exact` as set_exact_positions() took and returned them; `exact` reverts a vertex.
+     */
+    void round_indirect_vertices(
+        const std::vector<char>& is_direct_point,
+        const ExactCoordinate& exact);
+
+    /**
+     * @brief Flag each face in a plane of the box [box_min, box_max] with that plane
+     * (m_is_bbox_fs: 2 k on the min side of axis k, 2 k + 1 on the max side) and give each of its
+     * vertices the plane (on_bbox_faces, sorted, once each). Exact: compares the exact positions.
+     */
+    void tag_bbox_faces(const Vector3d& box_min, const Vector3d& box_max);
+    /** @} */
+
+    /**
      * @brief Throws unless the mesh fills its box: every boundary face (no tet across) a face of
      * the box (m_is_bbox_fs >= 0) and untracked, naming the count of each kind found otherwise --
      * the tracked boundary faces, and the untracked ones in no plane of the box. `who` names the

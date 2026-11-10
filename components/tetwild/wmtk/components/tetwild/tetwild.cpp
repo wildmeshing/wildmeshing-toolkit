@@ -1365,7 +1365,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         if (component_io.memory()) {
             history_meshes["mesh_history_input.msh"] = mesh_new.tet_mesh_data();
         } else {
-            mesh_new.output_mesh(output_path + "_history_input.msh");
+            io::write_mesh(output_path + "_history_input.msh", mesh_new.tet_mesh_data());
         }
         mesh_new.record_volume_history();
     }
@@ -1520,7 +1520,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         if (component_io.memory()) {
             history_meshes["mesh_history_output.msh"] = mesh_new.tet_mesh_data();
         } else {
-            mesh_new.output_mesh(output_path + "_history_output.msh");
+            io::write_mesh(output_path + "_history_output.msh", mesh_new.tet_mesh_data());
         }
     }
 
@@ -1913,31 +1913,52 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.save_paraview(output_path, false);
     }
 
-    // The output's tags (face_tags, feature_tags, above), the same on both routes, each with its
-    // input set, the faces oriented as their input.
-    mesh_new.output_mesh(output_path + "_final.msh", face_tags, feature_tags);
-    // The reference the tags were held to, for the next component (the memory route's
-    // outputs["envelope"]), in a file of its own: _final.msh is read as a mesh by gmsh and polyfem.
-    // Nothing derived from the mesh: _final.msh holds the tracked surface (its triangle block), the
-    // feature curves and the input points (its edge and point blocks) and the boundary of the tets
-    // kept. Until 2026-11 they were also written as _surface.obj and _features.obj.
-    if (!component_io.memory()) io::write_mesh(output_path + "_envelope.msh", envelope_out);
-
-    wmtk::logger().info("======= finish =========");
-
-    if (component_io.memory()) {
+    // One result for both routes, as triwild's: returned from memory calls, written as
+    // <output>_final.msh otherwise. The tets with their fields (save_paraview()), and the output's
+    // tags (face_tags, feature_tags, above), each with its input set, the faces oriented as their
+    // input: the tracked surface its triangle block, the feature curves and the input points its
+    // edge and point blocks. Nothing derived from the mesh: until 2026-11 the tracked surface and
+    // the curves were also written as _surface.obj and _features.obj. Until 2026-11 too the file
+    // had a writer of its own (TetWildMesh::output_mesh()), which named two fields apart from the
+    // memory route (energy and sizing for t_energy and sizing_field) and wrote none of the vertex
+    // flags (is_rounded, on_surface, on_open_boundary, order).
+    {
         MeshMap raw;
         mesh_new.save_paraview("mesh", false, &raw);
         io::compact_slot_outputs(mesh_new, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
-        // The tags _final.msh holds on the file route (output_mesh()), as the triangle and edge
-        // blocks of the mesh.
         io::collect_input_set_tags<CellType::Triangle>(
             mesh_new,
             component_io.result.first,
             face_tags);
         io::collect_feature_edge_tags(mesh_new, component_io.result.first, feature_tags);
         io::collect_point_tags(mesh_new, component_io.result.first, mesh_new.m_point_names);
+    }
+    if (!component_io.memory()) {
+        // The .msh numbers each input's winding-number field, wn_0, wn_1, ..., as triwild's .msh
+        // does; the memory route and the VTU name it after the input (save_paraview()). All taken
+        // out before any is put back, so that a name which is a number cannot overwrite another
+        // input's field.
+        MeshData msh = component_io.result.first.at("mesh");
+        auto& fields = msh.cells.at(CellType::Tetrahedron).attributes;
+        std::vector<std::pair<std::string, MeshAttribute>> numbered;
+        for (size_t i = 0; i < mesh_new.m_input_names.size(); ++i) {
+            auto field = fields.extract("wn_" + mesh_new.m_input_names[i]);
+            if (field) {
+                numbered.emplace_back("wn_" + std::to_string(i), std::move(field.mapped()));
+            }
+        }
+        for (auto& [name, field] : numbered) fields[name] = std::move(field);
+        io::write_mesh(output_path + "_final.msh", msh);
+        // The reference the tags were held to, for the next component (the memory route's
+        // outputs["envelope"]), in a file of its own: _final.msh is read as a mesh by gmsh and
+        // polyfem.
+        io::write_mesh(output_path + "_envelope.msh", envelope_out);
+    }
+
+    wmtk::logger().info("======= finish =========");
+
+    if (component_io.memory()) {
         component_io.result.first.merge(io::named_outputs(std::move(history_meshes)));
         component_io.result.first["envelope"] = std::move(envelope_out);
         return {}; // the memory overload returns component_io.result instead

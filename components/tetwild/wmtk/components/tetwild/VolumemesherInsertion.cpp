@@ -11,7 +11,6 @@
 #include "TetWildMesh.h"
 
 #include <atomic>
-#include <mutex>
 
 namespace wmtk::components::tetwild {
 
@@ -209,34 +208,11 @@ void TetWildMesh::insertion_by_volumeremesher(
 
     // TODO this is a sanity check, but it is checked all the time for now, until insertion is
     // stable.
-    // check for consistent orientation between tets: every oriented face must be unique.
-    //
-    // A sorted array rather than a std::set: 12 bytes per face instead of a 64-byte tree node.
-    // This runs over the whole arrangement while the insertion's output is still held, and on
-    // the largest inputs the set alone was over half a gigabyte. Vertex ids come from the
-    // remesher as uint32, so narrowing them is lossless.
-    std::vector<std::array<uint32_t, 3>> oriented_faces;
-    oriented_faces.reserve(4 * tets_after.size());
-    for (int i = 0; i < tets_after.size(); ++i) {
-        const auto& t = tets_after[i];
-        std::array<std::array<size_t, 3>, 4> faces = {{
-            {{t[1], t[3], t[2]}}, // opposite t[0]
-            {{t[0], t[2], t[3]}}, // opposite t[1]
-            {{t[0], t[3], t[1]}}, // opposite t[2]
-            {{t[0], t[1], t[2]}}, // opposite t[3]
-        }};
-        // Rotate vertex IDs in faces to start with the lowest vertex ID. This ensures that the
-        // same face is represented by the same set of vertex IDs, regardless of the order in
-        // which they appear in the tet.
-        for (auto& f : faces) {
-            std::rotate(f.begin(), std::min_element(f.begin(), f.end()), f.end());
-            oriented_faces.push_back({{uint32_t(f[0]), uint32_t(f[1]), uint32_t(f[2])}});
-        }
-    }
-    std::sort(oriented_faces.begin(), oriented_faces.end());
-    const auto dup = std::adjacent_find(oriented_faces.begin(), oriented_faces.end());
-    if (dup != oriented_faces.end()) {
-        log_and_throw_error("Face {} appears more than once in the tet list", *dup);
+    // check for consistent orientation between tets: every oriented face must be unique
+    // (utils::repeated_oriented_faces()).
+    const auto repeated = utils::repeated_oriented_faces(tets_after);
+    if (!repeated.empty()) {
+        log_and_throw_error("Face {} appears more than once in the tet list", repeated.front());
     }
 }
 
@@ -274,33 +250,10 @@ void TetWildMesh::init_from_Volumeremesher(
     // equals its double, so snapping it cannot invert any tet. Mark those rounded
     // here and remember which are direct, so the rounding pass below only does real
     // work (and can do it in parallel) for the indirect points.
-    std::vector<char> is_direct_point(vert_capacity(), 0);
-    {
-        // Per-vertex, independent: each i writes only its own m_pos/m_posf/
-        // m_is_rounded/is_direct_point; the rational->double conversion and the
-        // exact comparison read only local data.
-        threading::parallel_for(
-            threading::range(0, vert_capacity()),
-            [&](const threading::range& range) {
-                for (size_t i = range.begin(); i < range.end(); ++i) {
-                    m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
-                    const Vector3r& rp = v_rational[i];
-                    const Vector3d& d = m_vertex_attribute[i].m_posf;
-                    const bool direct = (wmtk::Rational(d[0]) == rp[0]) &&
-                                        (wmtk::Rational(d[1]) == rp[1]) &&
-                                        (wmtk::Rational(d[2]) == rp[2]);
-                    is_direct_point[i] = direct ? 1 : 0;
-                    m_vertex_attribute[i].m_is_rounded = direct;
-                    // A direct point's exact position is its double one: store nothing.
-                    if (direct) {
-                        m_vertex_attribute[i].set_pos_to_posf();
-                    } else {
-                        m_vertex_attribute[i].set_pos(rp);
-                    }
-                }
-            },
-            NUM_THREADS);
-    }
+    const ExactCoordinate exact = [&v_rational](size_t i, int k) -> const Rational& {
+        return v_rational[i][k];
+    };
+    const std::vector<char> is_direct_point = set_exact_positions(exact);
 
     for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
         m_face_attribute[i].m_is_surface_fs = tet_face_on_input_surface[i];
@@ -414,61 +367,9 @@ void TetWildMesh::init_from_Volumeremesher(
             m_envelope && m_envelope->use_exact);
     }
 
-    // track bounding box (parallel). The per-face exact-rational corner test is the
-    // cost; on-bbox faces are rare, so each chunk collects (vertex, bbox-side) pairs
-    // locally and merges once, and the per-vertex vectors are appended serially.
-    {
-        std::vector<std::pair<size_t, int>> bbox_vert_faces;
-        std::mutex bbox_mutex;
-        threading::parallel_for(
-            threading::range(0, tet_capacity()),
-            [&](const threading::range& r) {
-                std::vector<std::pair<size_t, int>> local;
-                for_each_face_in(r, [&](const Tuple& f) {
-                    auto vs = get_face_vertices(f);
-                    std::array<size_t, 3> vids = {
-                        {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-                    int on_bbox = -1;
-                    for (int k = 0; k < 3; k++) {
-                        if (m_vertex_attribute[vids[0]].pos_coord_equals(
-                                k,
-                                m_tet_params.box_min[k]) &&
-                            m_vertex_attribute[vids[1]].pos_coord_equals(
-                                k,
-                                m_tet_params.box_min[k]) &&
-                            m_vertex_attribute[vids[2]].pos_coord_equals(
-                                k,
-                                m_tet_params.box_min[k])) {
-                            on_bbox = k * 2;
-                            break;
-                        }
-                        if (m_vertex_attribute[vids[0]].pos_coord_equals(
-                                k,
-                                m_tet_params.box_max[k]) &&
-                            m_vertex_attribute[vids[1]].pos_coord_equals(
-                                k,
-                                m_tet_params.box_max[k]) &&
-                            m_vertex_attribute[vids[2]].pos_coord_equals(
-                                k,
-                                m_tet_params.box_max[k])) {
-                            on_bbox = k * 2 + 1;
-                            break;
-                        }
-                    }
-                    if (on_bbox < 0) return;
-                    m_face_attribute[f.fid(*this)].m_is_bbox_fs = on_bbox;
-                    for (size_t vid : vids) local.emplace_back(vid, on_bbox);
-                });
-                if (local.empty()) return;
-                std::lock_guard<std::mutex> lk(bbox_mutex);
-                bbox_vert_faces.insert(bbox_vert_faces.end(), local.begin(), local.end());
-            },
-            NUM_THREADS);
-        for (const auto& [vid, on_bbox] : bbox_vert_faces)
-            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
-    }
-
-    for_each_vertex([&](const Tuple& v) { vector_unique(VA[v.vid(*this)].on_bbox_faces); });
+    // track bounding box: the padded one the background mesh was built in, or a tagged mesh's own
+    // (init_from_tagged_mesh()).
+    tag_bbox_faces(m_tet_params.box_min, m_tet_params.box_max);
 
     init_vertex_order();
     {
@@ -510,93 +411,9 @@ void TetWildMesh::init_from_Volumeremesher(
             eps * m_tet_params.feature_envelope_ratio);
     }
 
-    // Round the indirect vertices in parallel. Rounding snaps m_pos to its double
-    // and may not invert any incident tet, so it is not independent across adjacent
-    // vertices and the old code did it serially (round() per vertex, an exact-
-    // rational inversion check over each vertex's incident tets). Instead, snap all
-    // indirect vertices at once and then revalidate/revert the few conflicts:
-    //   1. snap every not-yet-rounded (indirect) vertex to its double (parallel);
-    //   2. scan all tets (parallel) -- any inverted tet must contain an indirect
-    //      vertex (a direct vertex never moves, so cannot cause an inversion), so
-    //      revert those indirect vertices to their exact rational coordinate;
-    //   3. repeat until no tet is inverted.
-    // This terminates: every non-empty pass un-rounds at least one vertex, and the
-    // all-rational mesh is valid. Direct points are skipped throughout.
-    for_each_vertex([&](const Tuple& v) {
-        const size_t i = v.vid(*this);
-        if (!VA[i].m_is_rounded) {
-            VA[i].set_pos_to_posf();
-            VA[i].m_is_rounded = true;
-        }
-    });
-
-    while (true) {
-        // A flag per vertex rather than a shared appended list: a vertex is reachable
-        // from several tets, so the old version took a lock per push and then pushed the
-        // same vid repeatedly. Every write here stores the same value to a slot indexed
-        // by vid, so the threads cannot disagree -- relaxed is enough, and the duplicates
-        // collapse for free.
-        std::vector<std::atomic<uint8_t>> to_revert(vert_capacity());
-        for (auto& f : to_revert) {
-            f.store(0, std::memory_order_relaxed);
-        }
-
-        std::atomic<bool> any{false};
-        for_each_tetra([&](const Tuple& t) {
-            if (is_inverted(t)) {
-                for (const size_t vid : oriented_tet_vids(t)) {
-                    if (!is_direct_point[vid] && m_vertex_attribute[vid].m_is_rounded) {
-                        to_revert[vid].store(1, std::memory_order_relaxed);
-                        any.store(true, std::memory_order_relaxed);
-                    }
-                }
-            }
-        });
-        if (!any.load(std::memory_order_relaxed)) {
-            break;
-        }
-        for (size_t vid = 0; vid < to_revert.size(); ++vid) {
-            if (!to_revert[vid].load(std::memory_order_relaxed)) {
-                continue;
-            }
-            if (m_vertex_attribute[vid].m_is_rounded) {
-                m_vertex_attribute[vid].set_pos(v_rational[vid]);
-                m_vertex_attribute[vid].m_is_rounded = false;
-                m_all_rounded.store(false, std::memory_order_relaxed);
-            }
-        }
-    }
-
-    const auto vertices = get_vertices();
-    size_t cnt_round_parallel = 0;
-    for (const Tuple& v : vertices) {
-        if (VA[v.vid(*this)].m_is_rounded) {
-            ++cnt_round_parallel;
-        }
-    }
-
-    // Final serial sweep: the parallel batch reverts a vertex whenever it lies in
-    // any inverted tet, which can over-revert (a vertex may round fine once its
-    // neighbours are committed). Retry the leftovers one at a time -- round() is a
-    // no-op for the already-rounded majority, so this only pays for the few that
-    // remain, and recovers vertices the batch conservatively reverted.
-    for (const Tuple& v : vertices) {
-        round(v);
-    }
-
-    size_t cnt_round = 0;
-    for (const Tuple& v : vertices) {
-        if (VA[v.vid(*this)].m_is_rounded) {
-            ++cnt_round;
-        }
-    }
-
-    logger().info(
-        "Rounded vertices {}/{} (parallel {}, serial recovered {})",
-        cnt_round,
-        vertices.size(),
-        cnt_round_parallel,
-        cnt_round - cnt_round_parallel);
+    // Round the indirect vertices: all at once, then the few that invert a tet reverted
+    // (round_indirect_vertices()).
+    round_indirect_vertices(is_direct_point, exact);
 
     // init qualities
     for_each_tetra(

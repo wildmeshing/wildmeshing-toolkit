@@ -212,19 +212,10 @@ public:
 
     ////// Attributes related
 
-    /// With `face_tags`, also the tracked faces, one physical group per input
-    /// (io::collect_input_set_tags()), and with `feature_tags` the tet edges tiling the feature
-    /// curves, one per input curve (io::collect_feature_edge_tags()), and the input points, one
-    /// group per label of m_point_names (io::collect_point_tags()): the tags the memory route
-    /// returns on its mesh, which the shared reader reads back as those blocks.
-    void output_mesh(
-        std::string file,
-        const std::vector<std::string>& face_tags = {},
-        const std::vector<std::string>& feature_tags = {});
-    /// The tets and their vertices as output_mesh() writes them -- consolidated first, a row per
-    /// vertex at m_posf and a row per tet, oriented, in the file's order -- without the fields:
-    /// the memory route's counterpart of the file, for the meshes a volume history starts and
-    /// ends at.
+    /// The tets and their vertices -- consolidated first, a row per vertex at m_posf and a row per
+    /// tet, oriented, in the output's order -- without the fields: the meshes a volume history
+    /// starts and ends at, on both routes (<output>_history_input.msh and _history_output.msh on
+    /// the file route, until 2026-11 written with the fields by the file route's own writer).
     MeshData tet_mesh_data();
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 

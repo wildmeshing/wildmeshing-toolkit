@@ -6,6 +6,7 @@
 #include <utility>
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 
@@ -19,7 +20,12 @@ void TopoOffsetTriMesh::init_from_image(
     const MatrixXd& V_env,
     const MatrixXi& F_env,
     const std::vector<std::string>& tag_names,
-    const std::string& curve_name)
+    const std::string& curve_name,
+    const MatrixXi& E_tagged,
+    const MatrixSi& E_tags,
+    const std::vector<std::string>& edge_tag_names,
+    const MatrixSi& E_orientation,
+    const std::vector<size_t>& point_vids)
 {
     // assert dimensions
     assert(V.cols() == 2);
@@ -132,6 +138,48 @@ void TopoOffsetTriMesh::init_from_image(
         size_t v_id = v.vid(*this);
         set_vertex_position(v_id, Vector2d(V.row(v_id)));
     }
+
+    // Edge tags, the tagged curves of a triangle mesh's edge block, on the edges' input sets, as
+    // the 3D face tags (TopoOffsetTetMesh::init_from_image()): the construction's splits carry
+    // them (marching_split_edge_after(), split_face_after()), and the output writes them back as
+    // its edge block. Not tracked: the tracked flags and their tubes are the optimization's, which
+    // no 2D route runs -- the offset refuses 2D, and manifold_extraction does not optimize. Until
+    // 2026-11 manifold_extraction refused them, and the 2D mesh took none.
+    m_edge_tag_names = edge_tag_names;
+    for (Eigen::Index r = 0; r < E_tagged.rows(); ++r) {
+        const std::array<size_t, 2> vids = {{size_t(E_tagged(r, 0)), size_t(E_tagged(r, 1))}};
+        const auto edge = try_tuple_from_edge(vids);
+        if (!edge) log_and_throw_error("Tagged edge {} is not an edge of the triangle mesh", r);
+        InputSet set = 0;
+        for (Eigen::Index j = 0; j < E_tags.cols(); ++j)
+            if (E_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
+        auto& attr = m_edge_attribute[std::get<1>(*edge)];
+        attr.set_input_set(attr.input_set() | set);
+        io::orient_tagged_row(attr, vids, set, E_orientation, r);
+    }
+    // Point labels, the input points' (a tagged mesh's point block): each input point's vertex
+    // carries its label (VertexExtra2d::point_inputs), as in 3D until the anchors take over,
+    // which in 2D none does.
+    if (m_input_point_labels.size() != point_vids.size()) {
+        log_and_throw_error(
+            "{} input points, {} labels",
+            point_vids.size(),
+            m_input_point_labels.size());
+    }
+    for (size_t k = 0; k < point_vids.size(); ++k) {
+        const int bit = m_input_point_labels[k];
+        if (bit < 0 || bit >= int(SurfaceTagAttributes::max_inputs) ||
+            size_t(bit) >= m_point_names.size()) {
+            log_and_throw_error(
+                "Input point {}: label {} of {} names, in {} bits",
+                k,
+                bit,
+                m_point_names.size(),
+                SurfaceTagAttributes::max_inputs);
+        }
+        m_vertex_extra[point_vids[k]].point_inputs |= InputSet(1) << bit;
+    }
+
     // Once at load too, before the masks are seeded: init_surfaces_and_boundaries() reads on_curve
     // to put the curve group's edges in its tube, and a curve that bounds no region is held by
     // nothing otherwise. label_input_complex() re-derives it afterwards.

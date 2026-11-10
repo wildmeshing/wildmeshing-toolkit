@@ -1317,6 +1317,62 @@ TEST_CASE(
     }
 #endif
 }
+TEST_CASE("TetWild's _final.msh is the memory route's mesh", "[component_io][io]" + release_only)
+{
+    // One result for both routes (tetwild.cpp): the file route writes the memory route's mesh
+    // with the shared writer, each input's winding-number field numbered (wn_0, wn_1) where the
+    // memory route names it after the input. Until 2026-11 the file had a writer of its own
+    // (TetWildMesh::output_mesh()), which named the energy and sizing fields apart (energy,
+    // sizing) and wrote none of the vertex flags.
+    WorkingDirectory cwd;
+    const nlohmann::json options = {
+        {"input_names", {"a", "b"}},
+        {"simplify", false},
+        {"max_iterations", 0},
+        {"num_threads", 1}};
+    auto memory_options = options;
+    memory_options["input"] = {"a", "b"};
+    const auto result =
+        tetwild::tetwild(memory_options, {{"a", tet_surface(0)}, {"b", tet_surface(3)}});
+    check(result);
+    write_obj("a.obj", tet_surface(0));
+    write_obj("b.obj", tet_surface(3));
+    auto file_options = options;
+    file_options["application"] = "tetwild";
+    file_options["input"] = {here("a.obj"), here("b.obj")};
+    file_options["output"] = "out";
+    file_options["write_vtu"] = false;
+    tetwild::tetwild(file_options);
+    const MeshData file = io::read_mesh("out_final.msh");
+    const MeshData& memory = result.first.at("mesh");
+    const auto same = [](const auto& x, const auto& y) {
+        return x.rows() == y.rows() && x.cols() == y.cols() && x == y;
+    };
+    CHECK(same(file.V, memory.V));
+    const auto numbered = [](const std::string& name) {
+        return name == "wn_a" ? std::string("wn_0") : name == "wn_b" ? std::string("wn_1") : name;
+    };
+    const auto same_fields = [&](const MeshAttributes& f, const MeshAttributes& m) {
+        CHECK(f.size() == m.size());
+        for (const auto& [name, attr] : m) {
+            INFO("field " << name);
+            REQUIRE(f.count(numbered(name)));
+            CHECK(same(f.at(numbered(name)).doubles(), attr.doubles()));
+            CHECK(f.at(numbered(name)).labels == attr.labels);
+        }
+    };
+    same_fields(file.vertex_attributes, memory.vertex_attributes);
+    for (const CellType type : {CellType::Tetrahedron, CellType::Triangle}) {
+        INFO("block " << int(type));
+        CHECK(same(file.cell(type).connectivity, memory.cell(type).connectivity));
+        same_fields(file.cell(type).attributes, memory.cell(type).attributes);
+    }
+    const MeshAttributes& tet_fields = file.cell(CellType::Tetrahedron).attributes;
+    CHECK(tet_fields.count("t_energy"));
+    CHECK(!tet_fields.count("energy"));
+    CHECK(file.vertex_attributes.count("sizing_field"));
+    CHECK(!file.vertex_attributes.count("sizing"));
+}
 #endif
 #ifdef WMTK_TEST_topological_offset
 TEST_CASE("Offset accepts named tagged meshes", "[component_io]")
