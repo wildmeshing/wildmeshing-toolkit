@@ -1925,6 +1925,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> 
 <tr class="memitem:a12cb40f1ff49f3d7d67c974e6aece6f6" id="r_a12cb40f1ff49f3d7d67c974e6aece6f6"><td class="memItemLeft" align="right" valign="top"><a id="a12cb40f1ff49f3d7d67c974e6aece6f6" name="a12cb40f1ff49f3d7d67c974e6aece6f6"></a>
 <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swept_counters.html">SweptCounters</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_swept_nonfront</b></td></tr>
 <tr class="separator:a12cb40f1ff49f3d7d67c974e6aece6f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6abe7f16741fed26a65468f557a7321" id="r_aa6abe7f16741fed26a65468f557a7321"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html">BandVolumeEnergy3D</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa6abe7f16741fed26a65468f557a7321">m_swept_model</a></td></tr>
+<tr class="separator:aa6abe7f16741fed26a65468f557a7321"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35753dda1c840cb97c4dd449f7bbbeb0" id="r_a35753dda1c840cb97c4dd449f7bbbeb0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_swept_deriv_counts.html">BandVolumeEnergy3D::SweptDerivCounts</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a35753dda1c840cb97c4dd449f7bbbeb0">m_swept_derivs</a></td></tr>
 <tr class="separator:a35753dda1c840cb97c4dd449f7bbbeb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf31cbd9d6e2338b59528161c9943c68" id="r_acf31cbd9d6e2338b59528161c9943c68"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::pair&lt; size_t, Vector3d &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acf31cbd9d6e2338b59528161c9943c68">m_swept_stored</a></td></tr>
@@ -8905,7 +8907,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
   </tr>
 </table>
 </div><div class="memdoc">
-<p>"exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is. The move stands iff the ring's AMIPS change (tet_energy_sum(ring, false) - amips_before) plus <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac01045a69297027bfc93d8033f8145e4">band_swept_change()</a> is &lt;= 0 (a tie passes, a NaN refuses); if not, the step is halved toward x0 and tested again, up to kSweptHalvings times, then refused. The halved positions are on the segment between two valid positions, and the positions at which vid's ring has no inverted cell are an intersection of half-spaces, so they are valid too (tested anyway, exactly). Counts into c. </p>
+<p>"exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is. The move stands iff the ring's AMIPS change (tet_energy_sum(ring, false) - amips_before) plus <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac01045a69297027bfc93d8033f8145e4">band_swept_change()</a> is &lt;= 0 (a tie passes, a NaN refuses); if not, the step is halved toward x0 and tested again, up to kSweptHalvings times, then refused. The halved positions are on the segment between two valid positions, and the positions at which vid's ring has no inverted cell are an intersection of half-spaces, so they are valid too (tested anyway, exactly). Counts into c. At a position where the solve's search model took its last value, the model's value is the change (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#af2eb9858ba64ce6e3320d77c2c9f4709">BandVolumeEnergy3D::swept_value_at()</a>, the same function of the same inputs). MEASURED (Thingi 70565 piece 16 inward at 0.5 delta_1, 1 thread, turn 7, 2026-11-02): in 8977 of 8977 front solves the model's last value was at the solve's end, bit-equal to <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac01045a69297027bfc93d8033f8145e4">band_swept_change()</a> there; the test's value() calls took 5.0 s of the turn's 260 s. </p>
 
 </div>
 </div>
@@ -9795,6 +9797,29 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 </table>
 </div><div class="memdoc">
 <p>"exact_swept": the smoother's search model's derivative evaluations, and of them those taken from the ring's band cells (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#afcaf8931611dbe4b0cd2d035ef413cf4" title="EXPERIMENTAL_band_volume_rule &quot;exact_swept&quot;: the smoother&#39;s search model is the function the move is ...">BandVolumeEnergy3D::set_swept()</a>), per pass. </p>
+
+</div>
+</div>
+<a id="aa6abe7f16741fed26a65468f557a7321" name="aa6abe7f16741fed26a65468f557a7321"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6abe7f16741fed26a65468f557a7321">&#9670;&#160;</a></span>m_swept_model</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt;std::shared_ptr&lt;const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html">BandVolumeEnergy3D</a>&gt; &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_swept_model</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>"exact_swept": the search model <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6658bc7d749bb40ddddfdc4fc4348886">band_volume_energy_at()</a> built last on this thread, for swept_accept(). </p>
 
 </div>
 </div>

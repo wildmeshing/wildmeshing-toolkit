@@ -134,6 +134,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_exact_integral</b
 <tr class="memitem:afcaf8931611dbe4b0cd2d035ef413cf4" id="r_afcaf8931611dbe4b0cd2d035ef413cf4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#afcaf8931611dbe4b0cd2d035ef413cf4">set_swept</a> (std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &gt; eb, double delta, std::vector&lt; std::array&lt; Eigen::Vector3d, 2 &gt; &gt; faces, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_swept_deriv_counts.html">SweptDerivCounts</a> *counts)</td></tr>
 <tr class="memdesc:afcaf8931611dbe4b0cd2d035ef413cf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXPERIMENTAL_band_volume_rule "exact_swept": the smoother's search model is the function the move is judged on (TopoOffsetTetMesh::swept_accept()). Its value at x is swept_change(x0, x) over <code>faces</code>, x0 the position at construction: (E(B(x)) - E(B(x0))) / delta, E(B) = int_B chi (d - delta) dV, exactly where value() integrates every piece exactly. Its gradient and Hessian are E(B)'s at x by Reynolds' transport theorem: the sum over f of ExactBandIntegral::front_face_derivs((x, a_f, b_f), delta, 0) / delta, the "front_flux" rule's derivative, no D_t term (d is Lipschitz). Each face's normal stays out of B at every x the solver evaluates, where no ring cell is inverted (polysolve tests is_step_valid() before each trial value). Defined at x = x0 too, where every swept tet is flat and its own value_grad_hess() would be 0.  <br /></td></tr>
 <tr class="separator:afcaf8931611dbe4b0cd2d035ef413cf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2eb9858ba64ce6e3320d77c2c9f4709" id="r_af2eb9858ba64ce6e3320d77c2c9f4709"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#af2eb9858ba64ce6e3320d77c2c9f4709">swept_value_at</a> (const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &amp;eb, double delta, const Eigen::Vector3d &amp;x0, const Eigen::Vector3d &amp;x1, const std::vector&lt; std::array&lt; Eigen::Vector3d, 2 &gt; &gt; &amp;faces, double &amp;E) const</td></tr>
+<tr class="separator:af2eb9858ba64ce6e3320d77c2c9f4709"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afabcf8deadec0fab837ab04282b7353c" id="r_afabcf8deadec0fab837ab04282b7353c"><td class="memItemLeft" align="right" valign="top"><a id="afabcf8deadec0fab837ab04282b7353c" name="afabcf8deadec0fab837ab04282b7353c"></a>
 std::pair&lt; Eigen::Vector3d, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>certified_ball</b> () const</td></tr>
 <tr class="memdesc:afabcf8deadec0fab837ab04282b7353c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The current certified ball, its centre and radius (radius &lt; 0: none yet). For the tests. <br /></td></tr>
@@ -534,7 +536,60 @@ m_t(x) = min over ALL input triangles P of (1/4) sum over t's 4 corners q of
   </tr>
 </table>
 </div><div class="memdoc">
-<p>"exact_swept": the band term's change for the vertex moving from x0 to x1, dE* / delta = ( sum over f of sign_f value(conv(x0, x1, a_f, b_f), delta) ) / delta, f = (x, a_f, b_f) the boundary faces of the band B through the vertex, ordered with their normal (a_f - x0) x (b_f - x0) out of B (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a828e5e3cbc37cae1b30b8177c03643f7">TopoOffsetTetMesh::band_swept_faces()</a>), sign_f the sign of (x1 - x0) along it by exact orient3d, a flat swept tet skipped (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer.">TopoOffsetTetMesh</a>, EXACT SWEPT CHANGE). value() with a Stats (<code>st</code>, or a local one), which keeps the value table out of the swept tets: no other call asks for them again. The one function both the decisions (TopoOffsetTetMesh::band_swept_sum()) and the smoother's search model (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#afcaf8931611dbe4b0cd2d035ef413cf4" title="EXPERIMENTAL_band_volume_rule &quot;exact_swept&quot;: the smoother&#39;s search model is the function the move is ...">set_swept()</a>) evaluate. <code>keep</code> (the search model's): per face its swept tet's partition, written here and read by the model's derivatives at the same x1 (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a19bca15ea89b85db5b8d741f91b03336" title="The &quot;exact_swept&quot; model&#39;s value / derivatives at x (eval()).">sw_eval()</a>); the value is the one computed without it (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html" title="One cell&#39;s partition, kept by the caller between value() and value_grad_hess() of that cell: each par...">ExactBandIntegral::Partition</a>). </p>
+<p>"exact_swept": the band term's change for the vertex moving from x0 to x1, dE* / delta = ( sum over f of sign_f value(conv(x0, x1, a_f, b_f), delta) ) / delta, f = (x, a_f, b_f) the boundary faces of the band B through the vertex, ordered with their normal (a_f - x0) x (b_f - x0) out of B (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a828e5e3cbc37cae1b30b8177c03643f7">TopoOffsetTetMesh::band_swept_faces()</a>), sign_f the sign of (x1 - x0) along it by exact orient3d, a flat swept tet skipped (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer.">TopoOffsetTetMesh</a>, EXACT SWEPT CHANGE). value() through its value table, or with <code>st</code> when given (a Stats counts every evaluation: no table). The one function both the decisions (TopoOffsetTetMesh::band_swept_sum()) and the smoother's search model (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#afcaf8931611dbe4b0cd2d035ef413cf4" title="EXPERIMENTAL_band_volume_rule &quot;exact_swept&quot;: the smoother&#39;s search model is the function the move is ...">set_swept()</a>) evaluate. <code>keep</code> (the search model's): per face its swept tet's partition, written here with <code>st</code> or a local Stats and read by the model's derivatives at the same x1 (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a19bca15ea89b85db5b8d741f91b03336" title="The &quot;exact_swept&quot; model&#39;s value / derivatives at x (eval()).">sw_eval()</a>); the value is the one computed without it (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html" title="One cell&#39;s partition, kept by the caller between value() and value_grad_hess() of that cell: each par...">ExactBandIntegral::Partition</a>). Why the table for the decisions: a swept tet is asked for again within a pass. MEASURED (Thingi 70565 piece 16 inward at 0.5 delta_1, 1 thread, turn 7, 2026-11-02, every swept tet keyed by its 12 coordinates): 58% of the collapses' swept tets and 61% of the swaps' cone tets (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af6961f687f73e4540b846e132204fe24">TopoOffsetTetMesh::band_chain_change()</a>) repeated one of their pass bit for bit; their value() calls took 27.7 s and 10.5 s of the turn's 260 s. The projected step's calls take the table too (its repeats not measured). </p>
+
+</div>
+</div>
+<a id="af2eb9858ba64ce6e3320d77c2c9f4709" name="af2eb9858ba64ce6e3320d77c2c9f4709"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2eb9858ba64ce6e3320d77c2c9f4709">&#9670;&#160;</a></span>swept_value_at()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::BandVolumeEnergy3D::swept_value_at </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &amp;&#160;</td>
+          <td class="paramname"><em>eb</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>delta</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>x0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>x1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; Eigen::Vector3d, 2 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>faces</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double &amp;&#160;</td>
+          <td class="paramname"><em>E</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>"exact_swept": the search model's last value in E, when it was taken for the move x0 -&gt; x1 over <code>faces</code> &ndash; the model's integral, delta, x0 and faces, and its last value's x, equal to them bit for bit &ndash; so <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a5a126c9c881533bcc8e9145256defb04">swept_change()</a> of those inputs (TopoOffsetTetMesh::swept_accept()); false otherwise. </p>
 
 </div>
 </div>
