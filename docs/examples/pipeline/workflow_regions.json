@@ -1,0 +1,66 @@
+{
+  "inputs": {
+    "sphere": "sphere.obj"
+  },
+  "stages": [
+    {
+      "name": "spheres",
+      "component": "simwild",
+      "options": {
+        "input": [{"from": "sphere", "output": "mesh"}, {"from": "sphere", "output": "mesh"}],
+        "input_names": ["a", "b"],
+        "input_transform": [[], [[1, 0, 0, 0.3], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]],
+        "eps_rel": 0.01,
+        "length_rel": 0.05,
+        "num_threads": 4
+      }
+    },
+    {
+      "name": "overlap_to_b",
+      "component": "simwild",
+      "options": {
+        "operation": "replace_tags",
+        "input": [{"from": "spheres", "output": "mesh"}],
+        "replace_tags_in": ["a & b"],
+        "replace_tags_out": ["b"]
+      }
+    },
+    {
+      "name": "gap",
+      "component": "topological_offset",
+      "options": {
+        "input": {"from": "overlap_to_b", "output": "mesh"},
+        "offsets": [{"selection": "a", "output_tags": ["gap"], "target_distance": 0.01}],
+        "optimize_offset": false,
+        "num_threads": 4
+      }
+    },
+    {
+      "name": "remeshed",
+      "component": "simwild",
+      "options": {
+        "input": [{"from": "gap", "output": "mesh"}],
+        "eps_rel": 0.001,
+        "num_threads": 4
+      }
+    },
+    {
+      "name": "resolved",
+      "component": "simwild",
+      "options": {
+        "operation": "resolve_overlaps",
+        "input": [{"from": "spheres", "output": "mesh"}],
+        "resolve_overlaps_tags": [["a", "b"]]
+      }
+    },
+    {
+      "name": "resolved_remeshed",
+      "component": "simwild",
+      "options": {
+        "input": [{"from": "resolved", "output": "mesh"}],
+        "eps_rel": 0.01,
+        "num_threads": 4
+      }
+    }
+  ]
+}

@@ -47,6 +47,23 @@ The input on the left, the result on the right: drag to rotate, scroll to zoom; 
     The script also defines `nonmanifold_edges`, which counts the edges of a union's boundary that
     are not on exactly two of its triangles.
 
+=== "Pipeline"
+
+    The same chain as one [pipeline file][pipelines]: each stage cached, and run again only when
+    its options or what it reads change. Its inputs are file names relative to the file, as a
+    JSON example names its meshes: put it next to `double_sphere_hole.msh`.
+
+    ```json
+    --8<-- "docs/examples/pipeline/workflow_repair.json"
+    ```
+
+    ```bash
+    python -m wildmeshing.gui workflow_repair.json
+    ```
+
+    The window runs the stages and shows each one's result; without a window,
+    `Pipeline.load("workflow_repair.json").run()` from `wildmeshing.pipeline`.
+
 === "C++"
 
     ```cpp
@@ -101,3 +118,5 @@ Remeshing alone, the last row, gives better cells and the same 28 non-manifold e
 - [Manifold extraction](../manifold_extraction.md)
 - [SimWild](../simwild.md), and its [reference](../../reference/simwild.md)
 - [Topological offset](../topological_offset.md): the construction manifold extraction carves with
+
+[pipelines]: https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/python/README.md#pipelines

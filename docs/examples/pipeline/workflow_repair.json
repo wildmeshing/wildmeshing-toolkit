@@ -1,0 +1,25 @@
+{
+  "inputs": {
+    "spheres": "double_sphere_hole.msh"
+  },
+  "stages": [
+    {
+      "name": "repaired",
+      "component": "manifold_extraction",
+      "options": {
+        "input": {"from": "spheres", "output": "mesh"},
+        "tag_selection": "tag_0 | tag_1",
+        "fill_tags": []
+      }
+    },
+    {
+      "name": "remeshed",
+      "component": "simwild",
+      "options": {
+        "input": [{"from": "repaired", "output": "mesh"}],
+        "operation": "remeshing",
+        "num_threads": 4
+      }
+    }
+  ]
+}
