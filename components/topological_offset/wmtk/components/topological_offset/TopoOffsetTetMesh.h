@@ -399,27 +399,56 @@ public:
     int place_piece(const size_t* vids, size_t n) const;
     /// The piece nearest to p, by the per-piece envelopes (m_region_envelopes); -1 without them.
     int nearest_piece(const Vector3d& p) const;
-    /// Piece r's target distance: its entry's (m_region_offset). The run's (the smallest entry's)
-    /// for r < 0 and with one entry.
+    /// Piece r's target distance: its entry's (m_region_offset), its growth_mode stage's while a
+    /// stage runs (m_offset_levels). The run's (the smallest entry's) for r < 0 and with one entry.
     double region_delta(const int r) const
     {
         if (m_offset_params.offsets.size() <= 1 || r < 0 || size_t(r) >= m_region_offset.size())
             return m_offset_params.target_distance;
-        return m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
+        const size_t k = size_t(m_region_offset[size_t(r)]);
+        return m_offset_levels.empty() ? m_offset_params.offsets[k].target_distance
+                                       : m_offset_levels[k];
     }
+    /// Several entries, growth_mode: each entry's target in the stage running (region_delta());
+    /// empty outside the stages. One entry: the stages set target_distance itself, as before.
+    std::vector<double> m_offset_levels;
+    /// Several entries, growth_mode: each entry's d_0, the distance its march traced to; its
+    /// target_distance where it traced to that, or could not trace (marching_tets()).
+    std::vector<double> m_growth_starts;
     /// The target distance at a place (place_piece()).
     double place_delta(const size_t* vids, const size_t n) const
     {
         return region_delta(place_piece(vids, n));
     }
     double vertex_delta(const size_t vid) const { return place_delta(&vid, 1); }
-    /// front_conv at a place of target distance `delta`: front_conv_rel of it, each piece its own
-    /// (Parameters::init() refuses an absolute front_conv for entries of different distances);
-    /// front_conv itself with one entry.
-    double front_conv_at(const double delta) const
+    /// front_conv at a place of piece r: front_conv_rel of its entry's target_distance, each piece
+    /// its own (Parameters::init() refuses an absolute front_conv for entries of different
+    /// distances), fixed through growth_mode's stages as front_conv is for one entry; front_conv
+    /// itself with one entry.
+    double front_conv_of(const int r) const
     {
-        return m_offset_params.offsets.size() <= 1 ? m_offset_params.front_conv
-                                                   : m_offset_params.front_conv_frac() * delta;
+        if (m_offset_params.offsets.size() <= 1 || r < 0 || size_t(r) >= m_region_offset.size())
+            return m_offset_params.front_conv;
+        return m_offset_params.front_conv_rel *
+               m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
+    }
+    /// The bar as a fraction of piece r's current target (front_conv_frac() with one entry): the
+    /// unit of a relative residual read on piece r's field.
+    double front_conv_frac_of(const int r) const
+    {
+        if (m_offset_params.offsets.size() <= 1 || r < 0 || size_t(r) >= m_region_offset.size())
+            return m_offset_params.front_conv_frac();
+        return front_conv_of(r) / std::max(region_delta(r), 1e-16);
+    }
+    /// The factor that puts a relative residual r of face f's piece in the run's units, |d -
+    /// delta| for one entry: delta itself with one entry (`delta`, the run's), front_conv /
+    /// front_conv_frac_of(the face's piece) with several, so that the run's measures in lengths
+    /// (stencil_max_sq_error(), surface_integral_raw()) compared against front_conv^2 compare
+    /// each face's r against its own piece's bar.
+    double run_units_scale(const std::array<size_t, 3>& f, const double delta) const
+    {
+        if (m_offset_params.offsets.size() <= 1) return delta;
+        return m_offset_params.front_conv / front_conv_frac_of(place_piece(f.data(), 3));
     }
     const OffsetPotential3D& potential_for(const size_t vid) const
     {
@@ -1395,7 +1424,7 @@ public:
     /// (d - delta) / delta, is L (A_f / |S|) sum
     /// (d - delta)^2 / front_conv^2 -- a volume, as the AMIPS term (w / s^3) V A^3 is, both
     /// integrands 1 at convergence (HackMD, 2026-10-27 revision).
-    double surface_term_weight() const;
+    double surface_term_weight(int piece = -1) const;
     /// W A_f m_f of triangle (a, b, c), its corners read in ascending vertex order so every
     /// reader gets the same number (SurfaceOffsetError3D::face_value()); +inf where a stencil
     /// point is unmeasurable; 0 without a potential.
@@ -1434,9 +1463,9 @@ public:
     /** @} */
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
     /// error in units of the tolerance. The scale of face_offset_term() and of the repulsion term.
-    double offset_term_weight() const
+    double offset_term_weight(const int piece = -1) const
     {
-        const double f = m_offset_params.front_conv_frac();
+        const double f = front_conv_frac_of(piece);
         return 1. / (f * f);
     }
 
@@ -2636,11 +2665,13 @@ public:
      * face measure always has.
      */
     double face_offset_term(size_t a, size_t b, size_t c) const;
+    /// `piece`: the face's (place_piece()), whose bar the measure is in; -1, the run's.
     double face_offset_term(
         const OffsetPotential3D& pot,
         const Vector3d& pa,
         const Vector3d& pb,
-        const Vector3d& pc) const;
+        const Vector3d& pc,
+        int piece = -1) const;
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector3d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a front vertex it

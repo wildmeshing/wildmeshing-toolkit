@@ -2948,14 +2948,42 @@ void TopoOffsetTetMesh::marching_tets()
     // the target (optimize_offset(): linear_growth(), smart_growth()).
     m_growth_start = 0.;
     const std::string& growth = m_offset_params.growth_mode;
+    m_growth_starts.clear();
     if (growth != "none" && m_offset_params.optimize_offset && n_off > 1) {
-        log_and_throw_error(
-            "growth_mode \"{}\": one offset only for now -- the loop grows from one traced "
-            "distance to one target_distance, and {} offsets have one each",
-            growth,
-            n_off);
-    }
-    if (growth != "none" && m_offset_params.optimize_offset) {
+        // Several entries: each entry grows from its own d_0 to its own target, all in one
+        // schedule (linear_growth(), smart_growth()): an entry the march traced to its target
+        // stays at it, and so does one it could not trace (split at its midpoints: at no single
+        // distance to grow from).
+        m_growth_starts.assign(n_off, 0.);
+        bool grows = false;
+        for (size_t k = 0; k < n_off; ++k) {
+            const double target_k = offset_target(k);
+            const bool from_below = n_marched[k] > 0 && !reachable[k] && m_construction_traced[k];
+            m_growth_starts[k] = from_below ? m_construction_distances[k] : target_k;
+            grows = grows || from_below;
+            if (n_marched[k] > 0 && !reachable[k] && !m_construction_traced[k]) {
+                logger().warn(
+                    "\t[growth] offsets[{}]: every marched edge is split at its midpoint, so its "
+                    "front is at no single distance to grow from; it is held at its "
+                    "target_distance {:.6g}",
+                    k,
+                    target_k);
+            }
+            logger().info(
+                "\t[growth] offsets[{}]: from {:.6g} to its target_distance {:.6g}{}",
+                k,
+                m_growth_starts[k],
+                target_k,
+                from_below ? "" : " (no growth: it starts at its target)");
+        }
+        if (grows) {
+            m_growth_start = *std::min_element(m_growth_starts.begin(), m_growth_starts.end());
+        } else {
+            m_growth_starts.clear();
+            logger().info(
+                "\t[growth] not done: every entry starts at its target; the loop runs as usual");
+        }
+    } else if (growth != "none" && m_offset_params.optimize_offset) {
         // "linear" (and "individual_op_reject", one step of it) keeps the log tag of its
         // EXPERIMENTAL_incremental_growth days.
         const bool stepped = growth == "linear" || growth == "individual_op_reject";
@@ -3506,7 +3534,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
             }
             int64_t best = -1;
             const double gap = band_cell_corner_bound(vids, best) - exact / delta_t;
-            fr.band_gap[k] = gap / vol * delta_t / std::max(front_conv_at(delta_t), 1e-300);
+            fr.band_gap[k] = gap / vol * delta_t / std::max(front_conv_of(piece), 1e-300);
         }
     });
     if (n_gap_threw > 0) {
@@ -3590,7 +3618,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
             const double d =
                 env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x);
             const double delta_v = region_delta(piece);
-            fr.front_err[vid] = (d - delta_v) / std::max(front_conv_at(delta_v), 1e-300);
+            fr.front_err[vid] = (d - delta_v) / std::max(front_conv_of(piece), 1e-300);
         }
     });
 
@@ -3718,7 +3746,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 const std::array<size_t, 3> fv{{a, b, c}};
                 const int piece = place_piece(fv.data(), 3);
                 const double delta_f = region_delta(piece);
-                const double fc_f = std::max(front_conv_at(delta_f), 1e-300);
+                const double fc_f = std::max(front_conv_of(piece), 1e-300);
                 const Envelope& env_f = *envelope_for(piece);
                 const auto& exact_f = band_exact_for(piece);
                 fr.f_inside[i] =

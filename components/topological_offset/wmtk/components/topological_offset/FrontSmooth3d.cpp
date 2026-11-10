@@ -66,8 +66,9 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
         VertexExtra& ve = m_vertex_extra[vid];
         ve.m_front_change_group = m_smooth_group;
         const double r_after = moved ? front_vertex_relative_residual(vid) : r_before;
-        ve.m_front_change =
-            moved ? std::abs(r_after - r_before) / m_offset_params.front_conv_frac() : 0.;
+        // in the vertex's piece's bar (one entry: the run's)
+        const int piece = m_offset_params.offsets.size() > 1 ? place_piece(&vid, 1) : -1;
+        ve.m_front_change = moved ? std::abs(r_after - r_before) / front_conv_frac_of(piece) : 0.;
     };
     const auto solve_3d = [&]() {
         const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
@@ -336,13 +337,16 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
             fs.push_back({VA[o[0]].m_posf, VA[o[1]].m_posf});
         }
         if (!fs.empty()) {
+            // Several entries of offsets: the vertex's piece's field and bar (one entry: the whole
+            // complex's and the run's).
+            const int piece = m_offset_params.offsets.size() > 1 ? place_piece(&vid, 1) : -1;
             sum->add_energy(
                 std::make_shared<SurfaceOffsetError3D>(
-                    m_offset_potential,
+                    piece >= 0 ? potential_ptr_for(vid) : m_offset_potential,
                     std::move(fs),
                     face_stencil(),
                     face_stencil_weights(),
-                    surface_term_weight()));
+                    surface_term_weight(piece)));
         }
         return sum;
     }

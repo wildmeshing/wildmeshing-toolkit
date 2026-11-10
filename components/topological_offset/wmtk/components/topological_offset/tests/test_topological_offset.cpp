@@ -6746,49 +6746,51 @@ TEST_CASE("several-offsets-optimize-distances", "[offset][3d]" + release_only)
     // boxes 0.5 apart, a at 0.1, b at 0.2: both fronts at their own targets and converged.
     // MEASURED (2026-11-09, 5 turns): a's front mean 0.1025, b's 0.2031 (each alone: 0.1023,
     // 0.2037); before, b's bar was a's (the settle vertex test against the run's front_conv) and
-    // the run refined b's front to 7905 vertices (alone 227) without converging. b at 0.3, above
-    // the maximum marchable distance, constructed at 0.125 and still moving out after 3 turns:
-    // its front stays around b. Before the per-piece integral, the band term rewarded b's band
-    // for the cells around a, below 0.3 from a: its front reached 1.05 from b, 0.12 from a.
+    // the run refined b's front to 7905 vertices (alone 227) without converging.
     const std::array<int, 6> a = {{1, 2, 1, 2, 1, 2}}, b = {{5, 6, 1, 2, 1, 2}};
-    const MeshData m = box_grid({{"a", a}, {"b", b}});
-    const auto run = [&](const double db, const int rounds) {
+    const auto run = [](const MeshData& m, const double db) {
         const nlohmann::json j = {
             {"input", "m"},
             {"offsets",
              nlohmann::json::array(
                  {{{"selection", "a"}, {"output_tags", {"a_band"}}, {"target_distance", 0.1}},
                   {{"selection", "b"}, {"output_tags", {"b_band"}}, {"target_distance", db}}})},
-            {"max_rounds", rounds},
+            {"max_rounds", 5},
             {"num_threads", 1},
             {"throw_on_nonconvergence", false}};
         return components::topological_offset::topological_offset(j, {{"m", m}});
     };
-    {
-        const ComponentResult res = run(0.2, 5);
-        CHECK(res.second.value("converged", false));
-        for (const auto& [tag, box, delta] :
-             {std::make_tuple("a_band", a, 0.1), std::make_tuple("b_band", b, 0.2)}) {
-            INFO(tag);
-            const std::vector<double> d = front_distances(res.first.at("mesh"), tag, box);
-            REQUIRE(!d.empty());
-            double mean = 0.;
-            for (const double x : d) mean += x / double(d.size());
-            CHECK(std::abs(mean - delta) <= 0.05 * delta);
-            CHECK(*std::min_element(d.begin(), d.end()) >= 0.95 * delta);
-            CHECK(*std::max_element(d.begin(), d.end()) <= 1.15 * delta);
-        }
-    }
-    {
-        const ComponentResult res = run(0.3, 3);
-        const std::vector<double> d = front_distances(res.first.at("mesh"), "b_band", b);
+    const auto check_front = [](const MeshData& out,
+                                const std::string& tag,
+                                const std::array<int, 6>& box,
+                                const double delta) {
+        INFO(tag);
+        const std::vector<double> d = front_distances(out, tag, box);
         REQUIRE(!d.empty());
-        CHECK(*std::min_element(d.begin(), d.end()) >= 0.2);
-        CHECK(*std::max_element(d.begin(), d.end()) <= 0.35);
-        for (const double x : front_distances(res.first.at("mesh"), "a_band", a)) {
-            CHECK(x >= 0.095);
-            CHECK(x <= 0.115);
-        }
+        double mean = 0.;
+        for (const double x : d) mean += x / double(d.size());
+        CHECK(std::abs(mean - delta) <= 0.05 * delta);
+        CHECK(*std::min_element(d.begin(), d.end()) >= 0.95 * delta);
+        CHECK(*std::max_element(d.begin(), d.end()) <= 1.15 * delta);
+    };
+    {
+        const ComponentResult res = run(box_grid({{"a", a}, {"b", b}}), 0.2);
+        CHECK(res.second.value("converged", false));
+        check_front(res.first.at("mesh"), "a_band", a, 0.1);
+        check_front(res.first.at("mesh"), "b_band", b, 0.2);
+    }
+    // b a one cube at 0.3, above the maximum marchable distance (constructed at 0.125), a 0.5 away:
+    // the cells within 0.3 of a reach past b's front. Over the whole complex the band term
+    // rewarded b's band for them (d there is a's, below b's 0.3): MEASURED (2026-11-09, boxes 0.5
+    // apart, b at 0.3, 5 turns) b's band reached around a, its front vertices up to 1.05 from b
+    // and 0.12 from a. Each piece's own integral: b's front at 0.3 (MEASURED 0.297..0.313, 5
+    // turns, converged), as far from a as the gap leaves.
+    {
+        const std::array<int, 6> a1 = {{1, 2, 3, 3, 3, 3}}, b1 = {{5, 5, 3, 3, 3, 3}};
+        const ComponentResult res = run(box_grid({{"a", a1}, {"b", b1}}), 0.3);
+        CHECK(res.second.value("converged", false));
+        check_front(res.first.at("mesh"), "a_band", a1, 0.1);
+        check_front(res.first.at("mesh"), "b_band", b1, 0.3);
     }
 }
 
@@ -6890,4 +6892,39 @@ TEST_CASE("several-offsets-solid-and-curve-optimize", "[offset][3d]" + release_o
         }
     }
     CHECK(n > 0);
+}
+
+TEST_CASE("several-offsets-growth", "[offset][3d]" + release_only)
+{
+    // growth_mode with several entries (linear_growth()): each entry from its own d_0 to its own
+    // target, one schedule. a one cube at 0.1, traced to by the march, stays there; b one cube at
+    // 0.4, above the maximum marchable distance 0.25 (constructed at 0.125), grows in
+    // linear_growth_steps stages 0.125 -> 0.4. Both converge at their own targets. MEASURED
+    // (2026-11-10, 10 turns a stage): a's front mean 0.1019, b's 0.4052 (0.392 .. 0.431).
+    const std::array<int, 6> a = {{1, 1, 3, 3, 3, 3}}, b = {{5, 5, 3, 3, 3, 3}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets",
+         nlohmann::json::array(
+             {{{"selection", "a"}, {"output_tags", {"a_band"}}, {"target_distance", 0.1}},
+              {{"selection", "b"}, {"output_tags", {"b_band"}}, {"target_distance", 0.4}}})},
+        {"growth_mode", "linear"},
+        {"max_rounds", 10},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    const ComponentResult res = components::topological_offset::topological_offset(
+        j,
+        {{"m", box_grid({{"a", a}, {"b", b}})}});
+    CHECK(res.second.value("converged", false));
+    for (const auto& [tag, box, delta] :
+         {std::make_tuple("a_band", a, 0.1), std::make_tuple("b_band", b, 0.4)}) {
+        INFO(tag);
+        const std::vector<double> d = front_distances(res.first.at("mesh"), tag, box);
+        REQUIRE(!d.empty());
+        double mean = 0.;
+        for (const double x : d) mean += x / double(d.size());
+        CHECK(std::abs(mean - delta) <= 0.05 * delta);
+        CHECK(*std::min_element(d.begin(), d.end()) >= 0.95 * delta);
+        CHECK(*std::max_element(d.begin(), d.end()) <= 1.15 * delta);
+    }
 }
