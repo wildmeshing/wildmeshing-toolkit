@@ -611,7 +611,7 @@
     "pointer": "/tight_seal_geom_tags",
     "type": "list",
     "default": [],
-    "doc": "For tight_seal_geom (2D and 3D): the tags to seal, two or three (two or more with tight_seal_geom_EXPERIMENTAL_mode \"fill\"). Each entry is a single tag other than ambient; its region is the cells (faces in 2D, tets in 3D) tagged with it and nothing else. Ignored, with a warning, if tight_seal_geom_selection is \"detected\"."
+    "doc": "For tight_seal_geom (2D and 3D): the tags to seal, two or three (two or more with tight_seal_geom_EXPERIMENTAL_mode \"split_fill\"). Each entry is a single tag other than ambient; its region is the cells (faces in 2D, tets in 3D) tagged with it and nothing else. Ignored, with a warning, if tight_seal_geom_selection is \"detected\"."
   },
   {
     "pointer": "/tight_seal_geom_tags/*",
@@ -638,14 +638,14 @@
       "explicit",
       "detected"
     ],
-    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders tight_seal_geom_min_regions to three regions (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags. A part bordering four regions or more is not filled; a warning names its regions. tight_seal_geom_EXPERIMENTAL_mode \"fill\" lifts the limit of three."
+    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders tight_seal_geom_min_regions to three regions (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags. A part bordering four regions or more is not filled; a warning names its regions. tight_seal_geom_EXPERIMENTAL_mode \"split_fill\" lifts the limit of three."
   },
   {
     "pointer": "/tight_seal_geom_min_regions",
     "type": "int",
     "default": 2,
     "min": 2,
-    "doc": "For tight_seal_geom with tight_seal_geom_selection \"detected\": a part is filled only if it borders at least this many regions, 2 or 3 (2 or more with tight_seal_geom_EXPERIMENTAL_mode \"fill\"); parts bordering fewer are left alone, and so are parts bordering four or more (with a warning; not with \"fill\"). Ignored, with a warning if not 2, with \"explicit\", which fills the parts that border every listed region."
+    "doc": "For tight_seal_geom with tight_seal_geom_selection \"detected\": a part is filled only if it borders at least this many regions, 2 or 3 (2 or more with tight_seal_geom_EXPERIMENTAL_mode \"split_fill\"); parts bordering fewer are left alone, and so are parts bordering four or more (with a warning; not with \"split_fill\"). Ignored, with a warning if not 2, with \"explicit\", which fills the parts that border every listed region."
   },
   {
     "pointer": "/tight_seal_geom_sanity",
@@ -659,10 +659,9 @@
     "default": "voronoi",
     "options": [
       "voronoi",
-      "fill",
       "split_fill"
     ],
-    "doc": "EXPERIMENTAL. For tight_seal_geom: how a part is filled. \"voronoi\": with the Voronoi diagram of the regions it borders, cells split along the bisectors; a part has at most three regions (tight_seal_geom_tags holds two or three, tight_seal_geom_min_regions is 2 or 3, and a part bordering four regions or more is not filled). \"fill\": none of those limits, and no cell is split. Each cell of the part takes the nearest, from its centroid, of the regions the part borders (shares an edge with in 2D, a face in 3D). Then each of those regions grows by breadth-first search over the cells that took it, adding a cell only if that keeps the topology of the region (the region meets the cell in a disk of whole facets of the cell), until it can add no more. A cell no region added then takes the nearest of the part's regions that passes the same test, so the second nearest if the nearest still refuses it, and so on, and these cells are gone over until none more can be labelled. If a cell is still unlabelled the operation throws. \"split_fill\": as \"fill\", but the part is first split as the regions nearest its vertices require. Each vertex takes the nearest of the regions the part borders; then, from lists all taken before any split, the part's tets with three or four distinct labels are split at their centroid (in 2D, its triangles with three), then its faces with three distinct labels at theirs (3D), then its edges whose ends have different labels, where the distances to the two labels are equal (found by bisection). An edge with an end as near both labels is not split."
+    "doc": "EXPERIMENTAL. For tight_seal_geom: how a part is filled. \"voronoi\": with the Voronoi diagram of the regions it borders, cells split along the bisectors; a part has at most three regions (tight_seal_geom_tags holds two or three, tight_seal_geom_min_regions is 2 or 3, and a part bordering four regions or more is not filled). \"split_fill\": none of those limits. Each cell of the part labels its corners: a corner takes the nearest of the regions the part borders (shares an edge with in 2D, a face in 3D), the first of them on an exact tie, except that the corners of a facet (edge in 2D, face in 3D) the cell shares with a cell of one of those regions take that region; a cell has at most one such facet, as the regions are simplicially embedded first. From these labels, all taken before any split, the part's tets with three or four distinct labels are split at their centroid (in 2D, its triangles with three), then its faces with three distinct labels in a tet holding them at theirs (3D), then its edges whose ends have different labels in a cell holding them, where the distances to the two labels are equal (found by bisection; not if that falls on an end). A cell made by a split keeps its parent's labels of the corners it keeps; a new vertex has none. Each cell of the part then takes its corners' label if they agree; else the one region within a tie (1e-10 of the bounding box diagonal) of the nearest at every labelled corner; else, on an exact tie between regions, the first of them. No topology is checked."
   },
   {
     "pointer": "/tight_seal_geom_spatial_selection",

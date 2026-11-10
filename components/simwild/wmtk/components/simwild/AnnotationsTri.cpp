@@ -589,11 +589,10 @@ void SimWildMeshTri::tight_seal_geom(
     const std::string& mode,
     const ExprPtr& spatial_selection)
 {
-    const bool split_fill = mode == "split_fill";
-    const bool fill_mode = mode == "fill" || split_fill; // neither has the limit of three regions
-    if (!fill_mode && mode != "voronoi") {
+    const bool split_fill = mode == "split_fill"; // has no limit of three regions
+    if (!split_fill && mode != "voronoi") {
         log_and_throw_error(
-            "tight_seal_geom: mode must be \"voronoi\", \"fill\" or \"split_fill\". Input was {}",
+            "tight_seal_geom: mode must be \"voronoi\" or \"split_fill\". Input was {}",
             mode);
     }
     const bool detected = selection == "detected";
@@ -602,10 +601,10 @@ void SimWildMeshTri::tight_seal_geom(
             "tight_seal_geom: selection must be \"explicit\" or \"detected\". Input was {}",
             selection);
     }
-    if (detected && (min_regions < 2 || (!fill_mode && min_regions > 3))) {
+    if (detected && (min_regions < 2 || (!split_fill && min_regions > 3))) {
         log_and_throw_error(
             "tight_seal_geom: min_regions must be {}. Input was {}",
-            fill_mode ? "at least 2" : "2 or 3",
+            split_fill ? "at least 2" : "2 or 3",
             min_regions);
     }
     if (!detected && min_regions != 2) {
@@ -632,10 +631,10 @@ void SimWildMeshTri::tight_seal_geom(
         tags.assign(found.begin(), found.end());
     } else {
         tags = listed_tags;
-        if (tags.size() < 2 || (!fill_mode && tags.size() > 3)) {
+        if (tags.size() < 2 || (!split_fill && tags.size() > 3)) {
             log_and_throw_error(
                 "tight_seal_geom needs {} tags. Input was {}",
-                fill_mode ? "two or more" : "two or three",
+                split_fill ? "two or more" : "two or three",
                 tags);
         }
         if (CellTag(tags.begin(), tags.end()).size() != tags.size()) {
@@ -990,7 +989,7 @@ void SimWildMeshTri::tight_seal_geom(
             }
             // The Voronoi fill handles two or three regions per component: one bordering more
             // (only detected tags can give that; at most three are listed) is left alone.
-            if (!fill_mode && comp_regions.size() > 3) {
+            if (!split_fill && comp_regions.size() > 3) {
                 std::vector<std::string> names;
                 for (const size_t i : comp_regions) {
                     const auto it = m_tag_id_to_name.find(tags[i]);
@@ -1031,7 +1030,7 @@ void SimWildMeshTri::tight_seal_geom(
             detected ? fmt::format(
                            "{}{} of the detected tags",
                            needed,
-                           fill_mode ? " or more" : (needed < 3 ? " to 3" : ""))
+                           split_fill ? " or more" : (needed < 3 ? " to 3" : ""))
                      : std::string("all tags"),
             tags,
             n_too_many);
@@ -1054,8 +1053,8 @@ void SimWildMeshTri::tight_seal_geom(
         }
     }
 
-    // Each component is filled by tight_seal_topology_fill in "fill" mode (no split), otherwise by
-    // the Voronoi fill of each component with its regions, by enumeration
+    // Each component is filled by tight_seal_split_fill in "split_fill" mode, otherwise by the
+    // Voronoi fill of each component with its regions, by enumeration
     // (MultiVoronoiEnumeration.hpp): each vertex gets the set of the component's regions nearest to
     // it (those it touches, for a vertex on a region), and each face is split as its corners' sets
     // require and labelled with the region they share. The components are connected through edges,
@@ -1153,8 +1152,6 @@ void SimWildMeshTri::tight_seal_geom(
 
     if (split_fill) {
         tight_seal_split_fill(components_seal, components_regions, tags, region_bvhs, filled);
-    } else if (fill_mode) {
-        tight_seal_topology_fill(components_seal, components_regions, tags, region_bvhs, filled);
     } else {
         multi_voronoi::FillStats2D fill_stats;
         for (size_t c = 0; c < components_seal.size(); ++c) {

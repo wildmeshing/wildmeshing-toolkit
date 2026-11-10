@@ -433,11 +433,11 @@ def simwild(options: dict, meshes: dict) -> tuple:
       fill_holes_threshold (float, default -1): For fill_holes_topo: only fill a connected component if its size (area in 2D, volume in 3D, in model units) is less than this threshold.
       tight_seal_tag_sets (list, default []): For tight_seal_topo: list of tag sets.
       tight_seal_threshold (float, default -1): For tight_seal_topo: only fill a hole cluster if its total size (area in 2D, volume in 3D, in model units) is less than this threshold.
-      tight_seal_geom_tags (list, default []): For tight_seal_geom (2D and 3D): the tags to seal, two or three (two or more with tight_seal_geom_EXPERIMENTAL_mode "fill").
+      tight_seal_geom_tags (list, default []): For tight_seal_geom (2D and 3D): the tags to seal, two or three (two or more with tight_seal_geom_EXPERIMENTAL_mode "split_fill").
       tight_seal_geom_distance (float, default -1): For tight_seal_geom: the distance d, which must be positive.
       tight_seal_geom_trace_rel_tol (float, default 0.01): For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the parts' boundary, where the distance to the dilation surface falls to d/2.
       tight_seal_geom_selection (string, default "explicit"): For tight_seal_geom: which regions are sealed.
-      tight_seal_geom_min_regions (int, default 2): For tight_seal_geom with tight_seal_geom_selection "detected": a part is filled only if it borders at least this many regions, 2 or 3 (2 or more with tight_seal_geom_EXPERIMENTAL_mode "fill"); parts bordering fewer are left alone, and so are parts bordering four or more (with a warning; not with "fill").
+      tight_seal_geom_min_regions (int, default 2): For tight_seal_geom with tight_seal_geom_selection "detected": a part is filled only if it borders at least this many regions, 2 or 3 (2 or more with tight_seal_geom_EXPERIMENTAL_mode "split_fill"); parts bordering fewer are left alone, and so are parts bordering four or more (with a warning; not with "split_fill").
       tight_seal_geom_sanity (bool, default false): For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell carries other than one region's tag, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two regions, which would be a concave feature of one body, filled.
       tight_seal_geom_EXPERIMENTAL_mode (string, default "voronoi"): EXPERIMENTAL.
       tight_seal_geom_spatial_selection (string, default "_ | !_"): ON HOLD: only the default is accepted for now; any other value throws.

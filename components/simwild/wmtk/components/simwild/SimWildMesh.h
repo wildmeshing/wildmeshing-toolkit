@@ -347,24 +347,27 @@ private:
         const std::function<bool(size_t)>& in_set,
         SimpleBVH::BVH& bvh) const;
     /// Split edge e, keeping `cells` up to date: the children of a tet in it replace it, and
-    /// each child takes its parent's flag in `filled` (resized to the new capacity) and, if
-    /// given, its entry in `cell_group` (resized with -1). Calls on_child(id, end_vid) for each
-    /// child in `cells`, end_vid being the endpoint of e the child keeps. Returns the new vertex,
-    /// or -1 if the split was refused.
+    /// each child takes its parent's flag in `filled` (resized to the new capacity), if given its
+    /// entry in `cell_group` (resized with -1), and if given its parent's `corner_labels` for the
+    /// corners it keeps (resized). Calls on_child(id, end_vid) for each child in `cells`, end_vid
+    /// being the endpoint of e the child keeps. Returns the new vertex, or -1 if the split was
+    /// refused.
     size_t tight_seal_split_tracked(
         const simplex::Edge& e,
         std::unordered_set<size_t>& cells,
         std::vector<char>& filled,
         const std::function<void(size_t, size_t)>& on_child,
-        std::vector<int>* cell_group = nullptr);
-    /// Split face f at p, keeping `cells`, `filled` and `cell_group` up to date as
-    /// tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused.
+        std::vector<int>* cell_group = nullptr,
+        std::vector<CornerLabels>* corner_labels = nullptr);
+    /// Split face f at p, keeping `cells`, `filled`, `cell_group` and `corner_labels` up to date
+    /// as tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused.
     size_t tight_seal_split_face_tracked(
         const std::array<size_t, 3>& f,
         const Vector3d& p,
         std::unordered_set<size_t>& cells,
         std::vector<char>& filled,
-        std::vector<int>* cell_group = nullptr);
+        std::vector<int>* cell_group = nullptr,
+        std::vector<CornerLabels>* corner_labels = nullptr);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
     /// as a BVH of triangles. On each edge of a tet outside R (region < 0) between a vertex with
     /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
@@ -383,26 +386,26 @@ private:
         size_t& n_failed) const;
     /// How many of `tids` have a vertex on the mesh's boundary, a face with no tet beyond it.
     size_t tight_seal_cells_on_boundary(const std::vector<size_t>& tids) const;
-    /// Split tet tid at its centroid, keeping `cells`, `filled` and `cell_group` up to date as
-    /// tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused.
+    /// Split tet tid at its centroid, keeping `cells`, `filled`, `cell_group` and `corner_labels`
+    /// up to date as tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was
+    /// refused.
     size_t tight_seal_split_tet_tracked(
         size_t tid,
         std::unordered_set<size_t>& cells,
         std::vector<char>& filled,
-        std::vector<int>* cell_group = nullptr);
-    /// tight_seal_geom's "split_fill" mode: labels each vertex of `components` with its nearest
-    /// region, splits each component's tets with three or four labels, then its faces with three,
-    /// then its edges with two (queues all taken before any split), then labels and grows the
-    /// regions over the result as tight_seal_topology_fill does.
+        std::vector<int>* cell_group = nullptr,
+        std::vector<CornerLabels>* corner_labels = nullptr);
+    /// tight_seal_geom's "split_fill" mode. Each tet of `components` labels its corners: a corner
+    /// takes the nearest of the component's regions (the first on an exact tie), except that the
+    /// corners of a face the tet shares with a region's tet take that region (a tet has at most
+    /// one such face, the regions' union being simplicially embedded). From these labels, all
+    /// taken before any split: the tets with three or four labels are split at their centroid,
+    /// then the faces with three in a tet holding them at theirs, then the edges whose ends differ
+    /// in a tet holding them where the distances to the two labels are equal (not if that falls on
+    /// an end). Each child keeps its parent's labels of the corners it keeps, a new vertex has
+    /// none, and each tet of the components then takes a region by tight_seal::split_fill_label.
+    /// No topology is checked.
     void tight_seal_split_fill(
-        const std::vector<ConnectedComponent>& components,
-        const std::vector<std::vector<size_t>>& components_regions,
-        const std::vector<int64_t>& tags,
-        const std::vector<SimpleBVH::BVH>& region_bvhs,
-        std::vector<char>& filled);
-    /// tight_seal_geom's "fill" mode: labels the cells of `components` and grows each region over
-    /// them, keeping its topology (tight_seal::topology_fill). Throws if a tet is left.
-    void tight_seal_topology_fill(
         const std::vector<ConnectedComponent>& components,
         const std::vector<std::vector<size_t>>& components_regions,
         const std::vector<int64_t>& tags,
@@ -651,18 +654,11 @@ public:
      * them is filled with those it borders. A part bordering four or more is left alone, with a
      * warning: the fill handles at most three regions.
      *
-     * `mode` is EXPERIMENTAL. "voronoi": as above. "fill": the limit of three regions goes: any
-     * number of `tags` from two up, any `min_regions` from two up, and a component may border any
-     * number of regions. Its tets are not split: each takes the nearest of the regions the
-     * component borders, and each region grows over those that took it, as long as that keeps
-     * its topology (tight_seal::topology_fill). A tet no region added takes the nearest region
-     * that passes the same test, so the second nearest if the nearest refuses it, and so on. If
-     * no region does, the operation throws.
-     *
-     * "split_fill": as "fill", but each component is first split as the regions nearest its
-     * vertices require: tets with three or four distinct vertex labels, then faces with three, then
-     * edges with two, each list taken before any split; each split puts its vertex at the centroid,
-     * an edge's where the distances to its ends' regions are equal (tight_seal_split_fill).
+     * `mode` is EXPERIMENTAL. "voronoi": as above. "split_fill": the limit of three regions
+     * goes: any number of `tags` from two up, any `min_regions` from two up, and a component may
+     * border any number of regions. Each component is split as its tets' own labels of their
+     * corners require, and each resulting tet takes the region its corners' labels give
+     * (tight_seal_split_fill). No topology is checked.
      *
      * `spatial_selection`: J keeps only the tets whose tags satisfy it, before its components are
      * found; nullptr keeps them all. On hold: the simwild component passes none, and refuses

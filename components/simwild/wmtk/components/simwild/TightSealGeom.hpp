@@ -5,6 +5,7 @@
 #include <SimpleBVH/BVH.hpp>
 #include <wmtk/Types.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <functional>
@@ -79,48 +80,33 @@ inline constexpr std::array<std::array<int, 2>, 6> tet_edges = {
 /// triples of points).
 void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& triangles);
 
-/// What topology_fill needs of the mesh, by cell id (faces in 2D, tets in 3D).
-struct TopologyFillMesh
-{
-    /// `regions`, indices into the tags, by the distance from the cell's centroid, nearest first.
-    std::function<std::vector<size_t>(size_t cell, const std::vector<size_t>& regions)>
-        regions_by_distance;
-    /// Whether adding the cell to the region keeps the region's topology
-    /// (wmtk/utils/ConsistentTopology.hpp).
-    std::function<bool(size_t cell, const std::function<bool(size_t)>& in_region)>
-        consistent_topology;
-    /// The cells sharing an edge (2D) or a face (3D) with the cell.
-    std::function<std::vector<size_t>(size_t cell)> neighbours;
-    std::function<CellTag&(size_t cell)> tags;
-};
-
 /**
- * @brief The fill of tight_seal_geom's EXPERIMENTAL "fill" mode; no cell is split.
+ * @brief The region "split_fill" gives a cell, from its corners' own labels.
  *
- * Each cell of a component gets the nearest of the regions the component borders. Then, for each
- * of those regions, a breadth-first search grows the region's tag over the cells that got it: a
- * cell joins if it passes the topology test against the tag's cells, and a cell refused is asked
- * again when a neighbour joins (only that can change the answer: more of the region around the
- * cell without another shared facet leaves it refused). The cells still refused wait until every
- * region has been tried. Each then takes the nearest of the component's regions that passes the
- * test, so the second nearest if the nearest still refuses it, and so on; and they are gone over
- * until a pass labels none, since a cell may pass only once a neighbour has been labelled. Until
- * labelled, a cell of a component counts as in no region, whatever tags it came with; labelling it
- * replaces its tags of the component's regions, as the Voronoi fill does.
+ * The corners' region if they agree. Otherwise an edge between two of them was not split, because
+ * the distances to their regions are equal at one of its ends; the cell then takes the one region
+ * that every corner's tie set holds. If they share several (an exact tie between regions) or none,
+ * the choice is arbitrary: the first region they share, or else the first corner's.
  *
- * components_regions[c] holds the regions of components[c], as indices into `tags`. filled[cell]
- * is set for each cell labelled. after_component is called after each component.
- *
- * Throws, after trying every component, if a cell fails the test with all of its component's
- * regions; the warnings before it name the components.
+ * ties(v): the regions within the tie tolerance of the nearest one at v, ascending. Returns the
+ * region and how it was chosen: 0 the corners agree, 1 their tie sets, 2 arbitrarily.
  */
-void topology_fill(
-    const std::vector<ConnectedComponent>& components,
-    const std::vector<std::vector<size_t>>& components_regions,
-    const std::vector<int64_t>& tags,
-    const TopologyFillMesh& mesh,
-    std::vector<char>& filled,
-    const std::function<void()>& after_component);
+std::pair<size_t, int> split_fill_label(
+    const CornerLabels& corners,
+    const std::function<const std::vector<size_t>&(size_t)>& ties);
+
+/// The pairs of `parent` whose vertex is one of `corners`: a child's labels after a split.
+template <typename Corners>
+CornerLabels kept_corner_labels(const CornerLabels& parent, const Corners& corners)
+{
+    CornerLabels kept;
+    for (const auto& [v, region] : parent) {
+        if (std::find(corners.begin(), corners.end(), v) != corners.end()) {
+            kept.emplace_back(v, region);
+        }
+    }
+    return kept;
+}
 
 /// Sets `fn` to nullptr when it goes out of scope: m_voronoi_split_fn must not outlive the
 /// operation that set it.

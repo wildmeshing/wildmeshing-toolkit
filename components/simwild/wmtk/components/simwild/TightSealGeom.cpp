@@ -3,12 +3,11 @@
 #include "SimWildMesh.h"
 #include "SimWildMeshTri.hpp"
 
-#include <wmtk/utils/ConsistentTopology.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <algorithm>
 #include <cmath>
-#include <deque>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <optional>
@@ -161,126 +160,35 @@ std::vector<size_t> regions_by_distance(
     return regions_by_distance_impl(bvhs, p, regions);
 }
 
-void topology_fill(
-    const std::vector<ConnectedComponent>& components,
-    const std::vector<std::vector<size_t>>& components_regions,
-    const std::vector<int64_t>& tags,
-    const TopologyFillMesh& mesh,
-    std::vector<char>& filled,
-    const std::function<void()>& after_component)
+std::pair<size_t, int> split_fill_label(
+    const CornerLabels& corners,
+    const std::function<const std::vector<size_t>&(size_t)>& ties)
 {
-    std::vector<char> pending(filled.size(), 0); // a cell of a component, not labelled yet
-    size_t n_cells = 0;
-    for (const ConnectedComponent& comp : components) {
-        n_cells += comp.cells.size();
-        for (const size_t cell : comp.cells) {
-            pending[cell] = 1;
-        }
+    if (corners.empty()) {
+        log_and_throw_error("tight_seal_geom: a cell of split_fill has no labelled corner");
     }
-
-    size_t n_left = 0;
-    size_t n_farther = 0; // cells labelled with other than their nearest region
-    for (size_t c = 0; c < components.size(); ++c) {
-        const std::vector<size_t>& regions = components_regions[c];
-        const auto in_region = [&](const int64_t tag) {
-            return std::function<bool(size_t)>([&pending, &mesh, tag](const size_t cell) {
-                return !pending[cell] && mesh.tags(cell).count(tag) > 0;
-            });
-        };
-        const auto label = [&](const size_t cell, const int64_t tag) {
-            CellTag& cell_tags = mesh.tags(cell);
-            for (const size_t j : regions) {
-                cell_tags.erase(tags[j]);
-            }
-            cell_tags.insert(tag);
-            pending[cell] = 0;
-            filled[cell] = 1;
-        };
-
-        std::map<size_t, std::vector<size_t>> cells_of_region;
-        for (const size_t cell : components[c].cells) {
-            cells_of_region[mesh.regions_by_distance(cell, regions).front()].push_back(cell);
-        }
-
-        // Each region grows over the cells nearest it; those it cannot add wait in `refused`.
-        std::vector<size_t> refused;
-        for (const auto& [i, cells] : cells_of_region) {
-            const int64_t tag = tags[i];
-            const std::function<bool(size_t)> in_tag = in_region(tag);
-            std::unordered_set<size_t> left(cells.begin(), cells.end());
-            std::unordered_set<size_t> queued(cells.begin(), cells.end());
-            std::deque<size_t> queue(cells.begin(), cells.end());
-            while (!queue.empty()) {
-                const size_t cell = queue.front();
-                queue.pop_front();
-                queued.erase(cell);
-                if (!mesh.consistent_topology(cell, in_tag)) {
-                    continue;
-                }
-                label(cell, tag);
-                left.erase(cell);
-                for (const size_t nbr : mesh.neighbours(cell)) {
-                    if (left.count(nbr) > 0 && queued.insert(nbr).second) {
-                        queue.push_back(nbr);
-                    }
-                }
-            }
-            for (const size_t cell : cells) {
-                if (left.count(cell) > 0) {
-                    refused.push_back(cell);
-                }
-            }
-        }
-
-        // With every region tried, each refused cell takes the nearest region that passes the
-        // test. Its own nearest may pass by now, and a cell may pass only once a neighbour has
-        // been labelled, so the cells are gone over until a pass labels none.
-        bool labelled = !refused.empty();
-        while (labelled) {
-            labelled = false;
-            std::vector<size_t> still_refused;
-            for (const size_t cell : refused) {
-                const std::vector<size_t> ranked = mesh.regions_by_distance(cell, regions);
-                const auto passes = std::find_if(ranked.begin(), ranked.end(), [&](const size_t i) {
-                    return mesh.consistent_topology(cell, in_region(tags[i]));
-                });
-                if (passes == ranked.end()) {
-                    still_refused.push_back(cell);
-                    continue;
-                }
-                label(cell, tags[*passes]);
-                n_farther += passes != ranked.begin();
-                labelled = true;
-            }
-            refused = std::move(still_refused);
-        }
-
-        if (!refused.empty()) {
-            logger().warn(
-                "tight_seal_geom: fill of component {} ({} cells): {} cells are left, passing the "
-                "topology test with none of its {} tags",
-                c,
-                components[c].cells.size(),
-                refused.size(),
-                regions.size());
-            n_left += refused.size();
-        }
-        after_component();
+    const size_t first = corners.front().second;
+    if (std::all_of(corners.begin(), corners.end(), [&](const auto& c) {
+            return c.second == first;
+        })) {
+        return {first, 0};
     }
-
-    if (n_left > 0) {
-        log_and_throw_error(
-            "tight_seal_geom: the fill left {} of the {} cells of the join regions unlabelled: "
-            "each fails the topology test with every tag its part borders",
-            n_left,
-            n_cells);
+    std::vector<size_t> shared = ties(corners.front().first);
+    for (size_t k = 1; k < corners.size() && !shared.empty(); ++k) {
+        const std::vector<size_t>& other = ties(corners[k].first);
+        std::vector<size_t> both;
+        std::set_intersection(
+            shared.begin(),
+            shared.end(),
+            other.begin(),
+            other.end(),
+            std::back_inserter(both));
+        shared = std::move(both);
     }
-    logger().info(
-        "tight_seal_geom: fill of {} components: {} cells labelled, {} of them with other than "
-        "their nearest tag, every tag's topology kept",
-        components.size(),
-        n_cells,
-        n_farther);
+    if (shared.size() == 1) {
+        return {shared.front(), 1};
+    }
+    return {shared.empty() ? first : shared.front(), 2};
 }
 
 void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& triangles)
@@ -380,19 +288,22 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
     const simplex::Edge& e,
     std::unordered_set<size_t>& faces,
     std::vector<char>& filled,
-    const std::function<void(size_t, size_t)>& on_child)
+    const std::function<void(size_t, size_t)>& on_child,
+    std::vector<CornerLabels>* corner_labels)
 {
     const auto [e0, e1] = e.vertices();
     const auto [t, eid] = tuple_from_edge(e.vertices());
 
     // Each face on the edge gives two children, which keep the face's vertex opposite the
-    // edge. Record by that vertex whether the face is in the set, and whether it was filled.
+    // edge. Record by that vertex whether the face is in the set, whether it was filled, and its
+    // corner labels.
     const std::vector<size_t> parents = get_incident_fids_for_edge(t);
-    std::map<size_t, std::pair<bool, char>> parent_state;
+    std::map<size_t, std::tuple<bool, char, CornerLabels>> parent_state;
     for (const size_t fid : parents) {
         parent_state[simplex_from_face(fid).opposite_vertex(e).id()] = {
             faces.count(fid) > 0,
-            filled[fid]};
+            filled[fid],
+            corner_labels && fid < corner_labels->size() ? (*corner_labels)[fid] : CornerLabels{}};
     }
 
     std::vector<Tuple> new_tris;
@@ -406,6 +317,9 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
         faces.erase(fid);
     }
     filled.resize(tri_capacity(), 0);
+    if (corner_labels) {
+        corner_labels->resize(tri_capacity());
+    }
     const std::vector<size_t> children = get_one_ring_fids_for_vertex(v_new);
     for (const size_t fid : children) {
         size_t end_vid = -1;
@@ -420,8 +334,12 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
         if (end_vid == size_t(-1) || parent_state.count(opp_vid) == 0) {
             log_and_throw_error("Could not find the parent of a face after a split.");
         }
-        const auto [in_set, parent_filled] = parent_state.at(opp_vid);
+        const auto& [in_set, parent_filled, parent_labels] = parent_state.at(opp_vid);
         filled[fid] = parent_filled;
+        if (corner_labels) {
+            (*corner_labels)[fid] =
+                tight_seal::kept_corner_labels(parent_labels, oriented_tri_vids(fid));
+        }
         if (!in_set) {
             continue; // outside the set, keeps its tags
         }
@@ -435,10 +353,13 @@ size_t SimWildMeshTri::tight_seal_split_face_tracked(
     const size_t fid,
     const Vector2d& p,
     std::unordered_set<size_t>& faces,
-    std::vector<char>& filled)
+    std::vector<char>& filled,
+    std::vector<CornerLabels>* corner_labels)
 {
     const bool in_set = faces.count(fid) > 0;
     const char parent_filled = filled[fid];
+    const CornerLabels parent_labels =
+        corner_labels && fid < corner_labels->size() ? (*corner_labels)[fid] : CornerLabels{};
     const Tuple t = tuple_from_tri(fid);
     reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
     m_face_split_position = p;
@@ -451,8 +372,15 @@ size_t SimWildMeshTri::tight_seal_split_face_tracked(
     const size_t v_new = m_last_split_vertex.local();
     faces.erase(fid);
     filled.resize(tri_capacity(), 0);
+    if (corner_labels) {
+        corner_labels->resize(tri_capacity());
+    }
     for (const size_t f : get_one_ring_fids_for_vertex(v_new)) {
         filled[f] = parent_filled;
+        if (corner_labels) {
+            (*corner_labels)[f] =
+                tight_seal::kept_corner_labels(parent_labels, oriented_tri_vids(f));
+        }
         if (in_set) {
             faces.insert(f);
         }
@@ -478,41 +406,6 @@ size_t SimWildMeshTri::tight_seal_cells_on_boundary(const std::vector<size_t>& f
     });
 }
 
-void SimWildMeshTri::tight_seal_topology_fill(
-    const std::vector<ConnectedComponent>& components,
-    const std::vector<std::vector<size_t>>& components_regions,
-    const std::vector<int64_t>& tags,
-    const std::vector<SimpleBVH::BVH>& region_bvhs,
-    std::vector<char>& filled)
-{
-    tight_seal::TopologyFillMesh view;
-    view.regions_by_distance = [&](const size_t fid, const std::vector<size_t>& regions) {
-        Vector2d centroid = Vector2d::Zero();
-        for (const size_t v : oriented_tri_vids(fid)) {
-            centroid += m_vertex_attribute[v].m_posf / 3.;
-        }
-        return tight_seal::regions_by_distance(region_bvhs, centroid, regions);
-    };
-    view.consistent_topology = [&](const size_t fid, const std::function<bool(size_t)>& in_region) {
-        return wmtk::utils::tri_consistent_topology(*this, fid, in_region);
-    };
-    view.neighbours = [&](const size_t fid) {
-        std::vector<size_t> nbrs;
-        for (int j = 0; j < 3; ++j) {
-            if (const auto opp = tuple_from_edge(fid, j).switch_face(*this)) {
-                nbrs.push_back(opp->fid(*this));
-            }
-        }
-        return nbrs;
-    };
-    view.tags = [&](const size_t fid) -> CellTag& { return m_face_attribute[fid].tags; };
-    tight_seal::topology_fill(components, components_regions, tags, view, filled, [&]() {
-        if (m_params.debug_output) {
-            write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-        }
-    });
-}
-
 void SimWildMeshTri::tight_seal_split_fill(
     const std::vector<ConnectedComponent>& components,
     const std::vector<std::vector<size_t>>& components_regions,
@@ -523,54 +416,6 @@ void SimWildMeshTri::tight_seal_split_fill(
     const auto pos = [&](const size_t v) -> const Vector2d& {
         return m_vertex_attribute[v].m_posf;
     };
-
-    // Each component's queues, from its own faces before any split of any component: its faces
-    // with three distinct vertex labels, its edges with two. A vertex's label is the nearest of the
-    // component's regions (the first in their order on a tie).
-    struct Queues
-    {
-        std::map<size_t, size_t> label;
-        std::set<std::array<size_t, 3>> faces;
-        std::set<std::array<size_t, 2>> edges;
-    };
-    std::vector<Queues> queues(components.size());
-    for (size_t c = 0; c < components.size(); ++c) {
-        Queues& q = queues[c];
-        const auto label_of = [&](const size_t v) {
-            auto it = q.label.find(v);
-            if (it == q.label.end()) {
-                const size_t nearest =
-                    tight_seal::regions_by_distance(region_bvhs, pos(v), components_regions[c])
-                        .front();
-                it = q.label.emplace(v, nearest).first;
-            }
-            return it->second;
-        };
-        for (const size_t fid : components[c].cells) {
-            std::array<size_t, 3> vs = oriented_tri_vids(fid);
-            std::sort(vs.begin(), vs.end());
-            const std::set<size_t> found = {label_of(vs[0]), label_of(vs[1]), label_of(vs[2])};
-            if (found.size() == 3) {
-                q.faces.insert(vs);
-            }
-            for (int j = 0; j < 3; ++j) {
-                for (int k = j + 1; k < 3; ++k) {
-                    if (label_of(vs[j]) != label_of(vs[k])) {
-                        q.edges.insert({{vs[j], vs[k]}});
-                    }
-                }
-            }
-        }
-    }
-
-    // The splits, component by component, each queue in turn: the faces at their centroid, the
-    // edges where the distances to their two ends' labels are equal (the bisection of
-    // split_adjust_position on m_voronoi_split_fn). Components meet at vertices only, so each
-    // component's faces are tracked in a set of its own.
-    std::vector<std::unordered_set<size_t>> comp_faces(components.size());
-    for (size_t c = 0; c < components.size(); ++c) {
-        comp_faces[c].insert(components[c].cells.begin(), components[c].cells.end());
-    }
     Vector2d lo = Vector2d::Constant(std::numeric_limits<double>::infinity());
     Vector2d hi = -lo;
     for (const Tuple& t : get_vertices()) {
@@ -579,6 +424,114 @@ void SimWildMeshTri::tight_seal_split_fill(
     }
     const double tie = 1e-10 * (hi - lo).norm(); // distances this close count as equal
 
+    // A vertex's nearest region of a component (the first on an exact tie) and its tie set: the
+    // regions within `tie` of the nearest, ascending.
+    struct Nearest
+    {
+        size_t region;
+        std::vector<size_t> ties;
+    };
+    std::vector<std::map<size_t, Nearest>> nearest(components.size());
+    const auto nearest_of = [&](const size_t c, const size_t v) -> const Nearest& {
+        auto it = nearest[c].find(v);
+        if (it == nearest[c].end()) {
+            const std::vector<size_t>& regions = components_regions[c];
+            std::vector<double> d(regions.size());
+            for (size_t k = 0; k < regions.size(); ++k) {
+                d[k] = tight_seal::bvh_distance(region_bvhs[regions[k]], pos(v));
+            }
+            const size_t best = std::min_element(d.begin(), d.end()) - d.begin();
+            Nearest n{regions[best], {}};
+            for (size_t k = 0; k < regions.size(); ++k) {
+                if (d[k] - d[best] < tie) {
+                    n.ties.push_back(regions[k]);
+                }
+            }
+            std::sort(n.ties.begin(), n.ties.end());
+            it = nearest[c].emplace(v, std::move(n)).first;
+        }
+        return it->second;
+    };
+
+    // Each face's own labels of its corners: its corner's nearest region, but the ends of an edge
+    // it shares with a face of one of the component's regions (a face with that region's tag
+    // alone) take that region. The queues come from these, all before any split: the faces with
+    // three labels, the edges whose ends differ in a face holding them, with the label pairs asked.
+    std::vector<CornerLabels> corner_labels(tri_capacity());
+    struct Queues
+    {
+        std::set<std::array<size_t, 3>> faces;
+        std::map<std::array<size_t, 2>, std::set<std::pair<size_t, size_t>>> edges;
+    };
+    std::vector<Queues> queues(components.size());
+    size_t n_on_region = 0, n_on_two = 0;
+    for (size_t c = 0; c < components.size(); ++c) {
+        std::map<int64_t, size_t> region_of_tag;
+        for (const size_t i : components_regions[c]) {
+            region_of_tag[tags[i]] = i;
+        }
+        Queues& q = queues[c];
+        for (const size_t fid : components[c].cells) {
+            std::array<size_t, 3> vs = oriented_tri_vids(fid);
+            std::sort(vs.begin(), vs.end());
+            std::map<size_t, size_t> label;
+            for (const size_t v : vs) {
+                label[v] = nearest_of(c, v).region;
+            }
+            int on = 0;
+            for (int j = 0; j < 3; ++j) {
+                const Tuple e = tuple_from_edge(fid, j);
+                const auto opp = e.switch_face(*this);
+                if (!opp) {
+                    continue;
+                }
+                const CellTag& beyond = m_face_attribute[opp->fid(*this)].tags;
+                if (beyond.size() != 1) {
+                    continue;
+                }
+                const auto r = region_of_tag.find(*beyond.begin());
+                if (r == region_of_tag.end()) {
+                    continue;
+                }
+                if (on++ == 0) {
+                    label[e.vid(*this)] = r->second;
+                    label[e.switch_vertex(*this).vid(*this)] = r->second;
+                }
+            }
+            n_on_region += on > 0;
+            n_on_two += on > 1;
+            CornerLabels& own = corner_labels[fid];
+            own.assign(label.begin(), label.end());
+            if (label[vs[0]] != label[vs[1]] && label[vs[0]] != label[vs[2]] &&
+                label[vs[1]] != label[vs[2]]) {
+                q.faces.insert(vs);
+            }
+            for (int j = 0; j < 3; ++j) {
+                for (int k = j + 1; k < 3; ++k) {
+                    if (label[vs[j]] != label[vs[k]]) {
+                        q.edges[{{vs[j], vs[k]}}].insert({label[vs[j]], label[vs[k]]});
+                    }
+                }
+            }
+        }
+    }
+    if (n_on_two > 0) {
+        logger().warn(
+            "tight_seal_geom: split_fill: {} faces share edges with two regions' faces or more "
+            "(the "
+            "regions are not simplicially embedded there); the first edge's region labels its ends",
+            n_on_two);
+    }
+
+    // The splits, component by component, each queue in turn: the faces at their centroid, the
+    // edges where the distances to a pair of labels asked for are equal (the bisection of
+    // split_adjust_position on m_voronoi_split_fn). An edge is not split if that falls on an end
+    // for every pair asked; split_fill_label settles it. Components meet at vertices only, so
+    // each component's faces are tracked in a set of its own.
+    std::vector<std::unordered_set<size_t>> comp_faces(components.size());
+    for (size_t c = 0; c < components.size(); ++c) {
+        comp_faces[c].insert(components[c].cells.begin(), components[c].cells.end());
+    }
     size_t n_faces = 0, n_edges = 0, n_gone = 0, n_tied = 0, n_refused = 0;
     for (size_t c = 0; c < components.size(); ++c) {
         const Queues& q = queues[c];
@@ -596,27 +549,38 @@ void SimWildMeshTri::tight_seal_split_fill(
                 continue;
             }
             const Vector2d centroid = (pos(vs[0]) + pos(vs[1]) + pos(vs[2])) / 3.;
-            if (tight_seal_split_face_tracked(*fid, centroid, comp_faces[c], filled) ==
-                size_t(-1)) {
+            if (tight_seal_split_face_tracked(
+                    *fid,
+                    centroid,
+                    comp_faces[c],
+                    filled,
+                    &corner_labels) == size_t(-1)) {
                 ++n_refused;
             } else {
                 ++n_faces;
             }
         }
-        for (const auto& [a, b] : q.edges) {
+        for (const auto& [ends, pairs] : q.edges) {
+            const size_t a = ends[0];
+            const size_t b = ends[1];
             if (!try_tuple_from_edge({{a, b}})) {
                 ++n_gone;
                 continue;
             }
-            const size_t i = q.label.at(a);
-            const size_t j = q.label.at(b);
-            const std::function<double(const Vector2d&)> difference = [&, i, j](const Vector2d& p) {
-                return tight_seal::bvh_distance(region_bvhs[i], p) -
-                       tight_seal::bvh_distance(region_bvhs[j], p);
-            };
-            // a's label is nearest at a and b's at b; an end as near the other label puts the
-            // equality there, and the edge is not split
-            if (difference(pos(a)) > -tie || difference(pos(b)) < tie) {
+            std::function<double(const Vector2d&)> difference;
+            for (const auto& pair : pairs) {
+                const size_t i = pair.first;
+                const size_t j = pair.second;
+                std::function<double(const Vector2d&)> d = [&, i, j](const Vector2d& p) {
+                    return tight_seal::bvh_distance(region_bvhs[i], p) -
+                           tight_seal::bvh_distance(region_bvhs[j], p);
+                };
+                if (d(pos(a)) <= -tie && d(pos(b)) >= tie) {
+                    difference = d;
+                    break;
+                }
+            }
+            if (!difference) {
                 ++n_tied;
                 continue;
             }
@@ -625,7 +589,8 @@ void SimWildMeshTri::tight_seal_split_fill(
                 simplex::Edge(a, b),
                 comp_faces[c],
                 filled,
-                [](const size_t, const size_t) {});
+                [](const size_t, const size_t) {},
+                &corner_labels);
             m_voronoi_split_fn = nullptr;
             if (v == size_t(-1)) {
                 ++n_refused;
@@ -635,22 +600,45 @@ void SimWildMeshTri::tight_seal_split_fill(
         }
     }
     logger().info(
-        "tight_seal_geom: split_fill split {} faces and {} edges of {} components; {} queued "
-        "elements were gone, {} edges have an end as near both labels and are not split, {} "
-        "splits were refused",
+        "tight_seal_geom: split_fill split {} faces and {} edges of {} components ({} faces with "
+        "an edge on a region); {} queued elements were gone, {} edges were not split because the "
+        "equality fell on an end, {} splits were refused",
         n_faces,
         n_edges,
         components.size(),
+        n_on_region,
         n_gone,
         n_tied,
         n_refused);
 
-    std::vector<ConnectedComponent> split(components.size());
+    // Each face of the components takes a region from its corners' own labels.
+    size_t n_agree = 0, n_ties = 0, n_arbitrary = 0;
     for (size_t c = 0; c < components.size(); ++c) {
-        split[c].cells.assign(comp_faces[c].begin(), comp_faces[c].end());
-        std::sort(split[c].cells.begin(), split[c].cells.end());
+        for (const size_t fid : comp_faces[c]) {
+            const std::pair<size_t, int> chosen = tight_seal::split_fill_label(
+                corner_labels[fid],
+                [&](const size_t v) -> const std::vector<size_t>& {
+                    return nearest_of(c, v).ties;
+                });
+            CellTag& cell_tags = m_face_attribute[fid].tags;
+            for (const size_t j : components_regions[c]) {
+                cell_tags.erase(tags[j]);
+            }
+            cell_tags.insert(tags[chosen.first]);
+            filled[fid] = 1;
+            ++(chosen.second == 0 ? n_agree : chosen.second == 1 ? n_ties : n_arbitrary);
+        }
     }
-    tight_seal_topology_fill(split, components_regions, tags, region_bvhs, filled);
+    logger().info(
+        "tight_seal_geom: split_fill labelled {} faces: {} by their corners' own labels, {} by the "
+        "one region their corners' tie sets share, {} arbitrarily (an exact tie between regions)",
+        n_agree + n_ties + n_arbitrary,
+        n_agree,
+        n_ties,
+        n_arbitrary);
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
 }
 
 void SimWildMeshTri::tight_seal_geom_sanity(
@@ -830,21 +818,23 @@ size_t SimWildMesh::tight_seal_split_tracked(
     std::unordered_set<size_t>& cells,
     std::vector<char>& filled,
     const std::function<void(size_t, size_t)>& on_child,
-    std::vector<int>* cell_group)
+    std::vector<int>* cell_group,
+    std::vector<CornerLabels>* corner_labels)
 {
     const auto [e0, e1] = e.vertices();
     const Tuple t = tuple_from_edge(e.vertices());
 
     // Each tet on the edge gives two children, which keep the tet's edge opposite the split
-    // edge. Record by that edge whether the tet is in the set, whether it was filled, and its
-    // group.
+    // edge. Record by that edge whether the tet is in the set, whether it was filled, its group
+    // and its corner labels.
     const std::vector<size_t> parents = get_incident_tids_for_edge(t);
-    std::map<simplex::Edge, std::tuple<bool, char, int>> parent_state;
+    std::map<simplex::Edge, std::tuple<bool, char, int, CornerLabels>> parent_state;
     for (const size_t tid : parents) {
         parent_state[simplex_from_tet(tid).opposite_edge(e)] = {
             cells.count(tid) > 0,
             filled[tid],
-            cell_group ? (*cell_group)[tid] : -1};
+            cell_group ? (*cell_group)[tid] : -1,
+            corner_labels && tid < corner_labels->size() ? (*corner_labels)[tid] : CornerLabels{}};
     }
 
     std::vector<Tuple> new_edges;
@@ -860,6 +850,9 @@ size_t SimWildMesh::tight_seal_split_tracked(
     filled.resize(tet_capacity(), 0);
     if (cell_group) {
         cell_group->resize(tet_capacity(), -1);
+    }
+    if (corner_labels) {
+        corner_labels->resize(tet_capacity());
     }
     const std::vector<size_t> children = get_one_ring_tids_for_vertex(v_new);
     for (const size_t tid : children) {
@@ -879,10 +872,14 @@ size_t SimWildMesh::tight_seal_split_tracked(
         if (it == parent_state.end()) {
             log_and_throw_error("Could not find the parent of a tet after a split.");
         }
-        const auto [in_set, parent_filled, parent_group] = it->second;
+        const auto& [in_set, parent_filled, parent_group, parent_labels] = it->second;
         filled[tid] = parent_filled;
         if (cell_group) {
             (*cell_group)[tid] = parent_group;
+        }
+        if (corner_labels) {
+            (*corner_labels)[tid] =
+                tight_seal::kept_corner_labels(parent_labels, oriented_tet_vids(tid));
         }
         if (!in_set) {
             continue; // outside the set, keeps its tags
@@ -898,14 +895,16 @@ size_t SimWildMesh::tight_seal_split_face_tracked(
     const Vector3d& p,
     std::unordered_set<size_t>& cells,
     std::vector<char>& filled,
-    std::vector<int>* cell_group)
+    std::vector<int>* cell_group,
+    std::vector<CornerLabels>* corner_labels)
 {
     std::array<size_t, 3> sorted = f;
     std::sort(sorted.begin(), sorted.end());
     const Tuple t = std::get<0>(tuple_from_face(sorted));
 
     // The tets on the face give three children each, which keep the tet's corner off the face.
-    // Record by that corner whether the tet is in the set, whether it was filled, and its group.
+    // Record by that corner whether the tet is in the set, whether it was filled, its group and
+    // its corner labels.
     std::vector<size_t> parents = {t.tid(*this)};
     if (const auto opp = t.switch_tetrahedron(*this)) {
         parents.push_back(opp->tid(*this));
@@ -918,12 +917,13 @@ size_t SimWildMesh::tight_seal_split_face_tracked(
         }
         return size_t(-1);
     };
-    std::map<size_t, std::tuple<bool, char, int>> parent_state;
+    std::map<size_t, std::tuple<bool, char, int, CornerLabels>> parent_state;
     for (const size_t tid : parents) {
         parent_state[off_face(tid)] = {
             cells.count(tid) > 0,
             filled[tid],
-            cell_group ? (*cell_group)[tid] : -1};
+            cell_group ? (*cell_group)[tid] : -1,
+            corner_labels && tid < corner_labels->size() ? (*corner_labels)[tid] : CornerLabels{}};
     }
 
     reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
@@ -942,6 +942,9 @@ size_t SimWildMesh::tight_seal_split_face_tracked(
     if (cell_group) {
         cell_group->resize(tet_capacity(), -1);
     }
+    if (corner_labels) {
+        corner_labels->resize(tet_capacity());
+    }
     for (const size_t tid : get_one_ring_tids_for_vertex(v_new)) {
         size_t off = size_t(-1);
         for (const size_t v : oriented_tet_vids(tid)) {
@@ -953,10 +956,14 @@ size_t SimWildMesh::tight_seal_split_face_tracked(
         if (it == parent_state.end()) {
             log_and_throw_error("Could not find the parent of a tet after a face split.");
         }
-        const auto [in_set, parent_filled, parent_group] = it->second;
+        const auto& [in_set, parent_filled, parent_group, parent_labels] = it->second;
         filled[tid] = parent_filled;
         if (cell_group) {
             (*cell_group)[tid] = parent_group;
+        }
+        if (corner_labels) {
+            (*corner_labels)[tid] =
+                tight_seal::kept_corner_labels(parent_labels, oriented_tet_vids(tid));
         }
         if (in_set) {
             cells.insert(tid);
@@ -984,50 +991,18 @@ size_t SimWildMesh::tight_seal_cells_on_boundary(const std::vector<size_t>& tids
     });
 }
 
-void SimWildMesh::tight_seal_topology_fill(
-    const std::vector<ConnectedComponent>& components,
-    const std::vector<std::vector<size_t>>& components_regions,
-    const std::vector<int64_t>& tags,
-    const std::vector<SimpleBVH::BVH>& region_bvhs,
-    std::vector<char>& filled)
-{
-    tight_seal::TopologyFillMesh view;
-    view.regions_by_distance = [&](const size_t tid, const std::vector<size_t>& regions) {
-        Vector3d centroid = Vector3d::Zero();
-        for (const size_t v : oriented_tet_vids(tid)) {
-            centroid += m_vertex_attribute[v].m_posf / 4.;
-        }
-        return tight_seal::regions_by_distance(region_bvhs, centroid, regions);
-    };
-    view.consistent_topology = [&](const size_t tid, const std::function<bool(size_t)>& in_region) {
-        return wmtk::utils::tet_consistent_topology(*this, tid, in_region);
-    };
-    view.neighbours = [&](const size_t tid) {
-        std::vector<size_t> nbrs;
-        for (int j = 0; j < 4; ++j) {
-            if (const auto opp = tuple_from_face(tid, j).switch_tetrahedron(*this)) {
-                nbrs.push_back(opp->tid(*this));
-            }
-        }
-        return nbrs;
-    };
-    view.tags = [&](const size_t tid) -> CellTag& { return m_tet_attribute[tid].tags; };
-    tight_seal::topology_fill(components, components_regions, tags, view, filled, [&]() {
-        if (m_params.debug_output) {
-            write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-        }
-    });
-}
-
 size_t SimWildMesh::tight_seal_split_tet_tracked(
     const size_t tid,
     std::unordered_set<size_t>& cells,
     std::vector<char>& filled,
-    std::vector<int>* cell_group)
+    std::vector<int>* cell_group,
+    std::vector<CornerLabels>* corner_labels)
 {
     const bool in_set = cells.count(tid) > 0;
     const char parent_filled = filled[tid];
     const int parent_group = cell_group ? (*cell_group)[tid] : -1;
+    const CornerLabels parent_labels =
+        corner_labels && tid < corner_labels->size() ? (*corner_labels)[tid] : CornerLabels{};
     const std::array<size_t, 4> parent = oriented_tet_vids(tid);
     const Tuple t = tuple_from_tet(tid);
     reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
@@ -1050,10 +1025,17 @@ size_t SimWildMesh::tight_seal_split_tet_tracked(
     if (cell_group) {
         cell_group->resize(tet_capacity(), -1);
     }
+    if (corner_labels) {
+        corner_labels->resize(tet_capacity());
+    }
     for (const size_t child : get_one_ring_tids_for_vertex(v_new)) {
         filled[child] = parent_filled;
         if (cell_group) {
             (*cell_group)[child] = parent_group;
+        }
+        if (corner_labels) {
+            (*corner_labels)[child] =
+                tight_seal::kept_corner_labels(parent_labels, oriented_tet_vids(child));
         }
         if (in_set) {
             cells.insert(child);
@@ -1072,41 +1054,100 @@ void SimWildMesh::tight_seal_split_fill(
     const auto pos = [&](const size_t v) -> const Vector3d& {
         return m_vertex_attribute[v].m_posf;
     };
+    Vector3d lo = Vector3d::Constant(std::numeric_limits<double>::infinity());
+    Vector3d hi = -lo;
+    for (const Tuple& t : get_vertices()) {
+        lo = lo.cwiseMin(pos(t.vid(*this)));
+        hi = hi.cwiseMax(pos(t.vid(*this)));
+    }
+    const double tie = 1e-10 * (hi - lo).norm(); // distances this close count as equal
 
-    // Each component's queues, from its own tets before any split of any component: its tets
-    // with three or four distinct vertex labels, its faces with three, its edges with two. A
-    // vertex's label is the nearest of the component's regions (the first in their order on a tie).
+    // A vertex's nearest region of a component (the first on an exact tie) and its tie set: the
+    // regions within `tie` of the nearest, ascending.
+    struct Nearest
+    {
+        size_t region;
+        std::vector<size_t> ties;
+    };
+    std::vector<std::map<size_t, Nearest>> nearest(components.size());
+    const auto nearest_of = [&](const size_t c, const size_t v) -> const Nearest& {
+        auto it = nearest[c].find(v);
+        if (it == nearest[c].end()) {
+            const std::vector<size_t>& regions = components_regions[c];
+            std::vector<double> d(regions.size());
+            for (size_t k = 0; k < regions.size(); ++k) {
+                d[k] = tight_seal::bvh_distance(region_bvhs[regions[k]], pos(v));
+            }
+            const size_t best = std::min_element(d.begin(), d.end()) - d.begin();
+            Nearest n{regions[best], {}};
+            for (size_t k = 0; k < regions.size(); ++k) {
+                if (d[k] - d[best] < tie) {
+                    n.ties.push_back(regions[k]);
+                }
+            }
+            std::sort(n.ties.begin(), n.ties.end());
+            it = nearest[c].emplace(v, std::move(n)).first;
+        }
+        return it->second;
+    };
+
+    // Each tet's own labels of its corners: its corner's nearest region, but the corners of a face
+    // it shares with a tet of one of the component's regions (a tet with that region's tag alone)
+    // take that region. The queues come from these, all before any split: the tets with three or
+    // four labels, the faces with three in a tet holding them, the edges whose ends differ in a
+    // tet holding them, with the label pairs asked.
+    std::vector<CornerLabels> corner_labels(tet_capacity());
     struct Queues
     {
-        std::map<size_t, size_t> label;
         std::set<std::array<size_t, 4>> tets;
         std::set<std::array<size_t, 3>> faces;
-        std::set<std::array<size_t, 2>> edges;
+        std::map<std::array<size_t, 2>, std::set<std::pair<size_t, size_t>>> edges;
     };
     std::vector<Queues> queues(components.size());
+    size_t n_on_region = 0, n_on_two = 0;
     for (size_t c = 0; c < components.size(); ++c) {
+        std::map<int64_t, size_t> region_of_tag;
+        for (const size_t i : components_regions[c]) {
+            region_of_tag[tags[i]] = i;
+        }
         Queues& q = queues[c];
-        const auto label_of = [&](const size_t v) {
-            auto it = q.label.find(v);
-            if (it == q.label.end()) {
-                const size_t nearest =
-                    tight_seal::regions_by_distance(region_bvhs, pos(v), components_regions[c])
-                        .front();
-                it = q.label.emplace(v, nearest).first;
-            }
-            return it->second;
-        };
-        const auto n_labels = [&](const auto& vs) {
-            std::set<size_t> found;
-            for (const size_t v : vs) {
-                found.insert(label_of(v));
-            }
-            return found.size();
-        };
         for (const size_t tid : components[c].cells) {
             std::array<size_t, 4> vs = oriented_tet_vids(tid);
             std::sort(vs.begin(), vs.end());
-            if (n_labels(vs) >= 3) {
+            std::map<size_t, size_t> label;
+            for (const size_t v : vs) {
+                label[v] = nearest_of(c, v).region;
+            }
+            int on = 0;
+            for (int j = 0; j < 4; ++j) {
+                const Tuple f = tuple_from_face(tid, j);
+                const auto opp = f.switch_tetrahedron(*this);
+                if (!opp) {
+                    continue;
+                }
+                const CellTag& beyond = m_tet_attribute[opp->tid(*this)].tags;
+                if (beyond.size() != 1) {
+                    continue;
+                }
+                const auto r = region_of_tag.find(*beyond.begin());
+                if (r == region_of_tag.end()) {
+                    continue;
+                }
+                if (on++ == 0) {
+                    for (const size_t v : get_face_vids(f)) {
+                        label[v] = r->second;
+                    }
+                }
+            }
+            n_on_region += on > 0;
+            n_on_two += on > 1;
+            CornerLabels& own = corner_labels[tid];
+            own.assign(label.begin(), label.end());
+            std::set<size_t> distinct;
+            for (const auto& [v, l] : label) {
+                distinct.insert(l);
+            }
+            if (distinct.size() >= 3) {
                 q.tets.insert(vs);
             }
             for (int skip = 0; skip < 4; ++skip) {
@@ -1116,23 +1157,31 @@ void SimWildMesh::tight_seal_split_fill(
                         f[k++] = vs[j];
                     }
                 }
-                if (n_labels(f) == 3) {
+                if (label[f[0]] != label[f[1]] && label[f[0]] != label[f[2]] &&
+                    label[f[1]] != label[f[2]]) {
                     q.faces.insert(f);
                 }
             }
             for (const auto& [a, b] : tight_seal::tet_edges) {
-                if (label_of(vs[a]) != label_of(vs[b])) {
-                    q.edges.insert({{vs[a], vs[b]}});
+                if (label[vs[a]] != label[vs[b]]) {
+                    q.edges[{{vs[a], vs[b]}}].insert({label[vs[a]], label[vs[b]]});
                 }
             }
         }
     }
+    if (n_on_two > 0) {
+        logger().warn(
+            "tight_seal_geom: split_fill: {} tets share faces with two regions' tets or more (the "
+            "regions are not simplicially embedded there); the first face's region labels its "
+            "corners",
+            n_on_two);
+    }
 
-    // The splits, component by component, each queue in turn: the tets at their centroid, the
-    // faces at theirs, the edges where the distances to their two ends' labels are equal (the
-    // bisection of split_adjust_position on m_voronoi_split_fn). Every component's tets are
-    // tracked: two components can share an edge, and splitting it for one splits the other's tets,
-    // so an element of a later queue may be gone.
+    // The splits, component by component, each queue in turn: the tets and faces at their
+    // centroid, the edges where the distances to a pair of labels asked for are equal (the
+    // bisection of split_adjust_position on m_voronoi_split_fn). An edge is not split if that
+    // falls on an end for every pair asked; split_fill_label settles it. Components meet at edges
+    // and vertices, so each tet's component is tracked through the splits in cell_comp.
     std::vector<int> cell_comp(tet_capacity(), -1);
     std::unordered_set<size_t> cells;
     for (size_t c = 0; c < components.size(); ++c) {
@@ -1141,14 +1190,6 @@ void SimWildMesh::tight_seal_split_fill(
             cells.insert(tid);
         }
     }
-    Vector3d lo = Vector3d::Constant(std::numeric_limits<double>::infinity());
-    Vector3d hi = -lo;
-    for (const Tuple& t : get_vertices()) {
-        lo = lo.cwiseMin(pos(t.vid(*this)));
-        hi = hi.cwiseMax(pos(t.vid(*this)));
-    }
-    const double tie = 1e-10 * (hi - lo).norm(); // distances this close count as equal
-
     const auto find_tet = [&](const std::array<size_t, 4>& vs) -> std::optional<size_t> {
         for (const size_t tid : get_one_ring_tids_for_vertex(vs[0])) {
             std::array<size_t, 4> ws = oriented_tet_vids(tid);
@@ -1167,7 +1208,8 @@ void SimWildMesh::tight_seal_split_fill(
             if (!tid) {
                 ++n_gone;
             } else if (
-                tight_seal_split_tet_tracked(*tid, cells, filled, &cell_comp) == size_t(-1)) {
+                tight_seal_split_tet_tracked(*tid, cells, filled, &cell_comp, &corner_labels) ==
+                size_t(-1)) {
                 ++n_refused;
             } else {
                 ++n_tets;
@@ -1179,27 +1221,39 @@ void SimWildMesh::tight_seal_split_fill(
                 continue;
             }
             const Vector3d centroid = (pos(f[0]) + pos(f[1]) + pos(f[2])) / 3.;
-            if (tight_seal_split_face_tracked(f, centroid, cells, filled, &cell_comp) ==
-                size_t(-1)) {
+            if (tight_seal_split_face_tracked(
+                    f,
+                    centroid,
+                    cells,
+                    filled,
+                    &cell_comp,
+                    &corner_labels) == size_t(-1)) {
                 ++n_refused;
             } else {
                 ++n_faces;
             }
         }
-        for (const auto& [a, b] : q.edges) {
+        for (const auto& [ends, pairs] : q.edges) {
+            const size_t a = ends[0];
+            const size_t b = ends[1];
             if (get_incident_tids_for_edge(a, b).empty()) {
                 ++n_gone;
                 continue;
             }
-            const size_t i = q.label.at(a);
-            const size_t j = q.label.at(b);
-            const std::function<double(const Vector3d&)> difference = [&, i, j](const Vector3d& p) {
-                return tight_seal::bvh_distance(region_bvhs[i], p) -
-                       tight_seal::bvh_distance(region_bvhs[j], p);
-            };
-            // a's label is nearest at a and b's at b; an end as near the other label puts the
-            // equality there, and the edge is not split
-            if (difference(pos(a)) > -tie || difference(pos(b)) < tie) {
+            std::function<double(const Vector3d&)> difference;
+            for (const auto& pair : pairs) {
+                const size_t i = pair.first;
+                const size_t j = pair.second;
+                std::function<double(const Vector3d&)> d = [&, i, j](const Vector3d& p) {
+                    return tight_seal::bvh_distance(region_bvhs[i], p) -
+                           tight_seal::bvh_distance(region_bvhs[j], p);
+                };
+                if (d(pos(a)) <= -tie && d(pos(b)) >= tie) {
+                    difference = d;
+                    break;
+                }
+            }
+            if (!difference) {
                 ++n_tied;
                 continue;
             }
@@ -1209,7 +1263,8 @@ void SimWildMesh::tight_seal_split_fill(
                 cells,
                 filled,
                 [](const size_t, const size_t) {},
-                &cell_comp);
+                &cell_comp,
+                &corner_labels);
             m_voronoi_split_fn = nullptr;
             if (v == size_t(-1)) {
                 ++n_refused;
@@ -1219,25 +1274,48 @@ void SimWildMesh::tight_seal_split_fill(
         }
     }
     logger().info(
-        "tight_seal_geom: split_fill split {} tets, {} faces and {} edges of {} components; {} "
-        "queued elements were gone (an edge shared with a component split before), {} edges have "
-        "an end as near both labels and are not split, {} splits were refused",
+        "tight_seal_geom: split_fill split {} tets, {} faces and {} edges of {} components ({} "
+        "tets with a face on a region); {} queued elements were gone (an edge shared with a "
+        "component split before), {} edges were not split because the equality fell on an end, "
+        "{} splits were refused",
         n_tets,
         n_faces,
         n_edges,
         components.size(),
+        n_on_region,
         n_gone,
         n_tied,
         n_refused);
 
-    std::vector<ConnectedComponent> split(components.size());
+    // Each tet of the components takes a region from its corners' own labels.
+    size_t n_agree = 0, n_ties = 0, n_arbitrary = 0;
     for (const Tuple& t : get_tets()) {
         const size_t tid = t.tid(*this);
-        if (tid < cell_comp.size() && cell_comp[tid] >= 0) {
-            split[size_t(cell_comp[tid])].cells.push_back(tid);
+        if (tid >= cell_comp.size() || cell_comp[tid] < 0) {
+            continue;
         }
+        const size_t c = size_t(cell_comp[tid]);
+        const std::pair<size_t, int> chosen = tight_seal::split_fill_label(
+            corner_labels[tid],
+            [&](const size_t v) -> const std::vector<size_t>& { return nearest_of(c, v).ties; });
+        CellTag& cell_tags = m_tet_attribute[tid].tags;
+        for (const size_t j : components_regions[c]) {
+            cell_tags.erase(tags[j]);
+        }
+        cell_tags.insert(tags[chosen.first]);
+        filled[tid] = 1;
+        ++(chosen.second == 0 ? n_agree : chosen.second == 1 ? n_ties : n_arbitrary);
     }
-    tight_seal_topology_fill(split, components_regions, tags, region_bvhs, filled);
+    logger().info(
+        "tight_seal_geom: split_fill labelled {} tets: {} by their corners' own labels, {} by the "
+        "one region their corners' tie sets share, {} arbitrarily (an exact tie between regions)",
+        n_agree + n_ties + n_arbitrary,
+        n_agree,
+        n_ties,
+        n_arbitrary);
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
 }
 
 void SimWildMesh::tight_seal_geom_sanity(

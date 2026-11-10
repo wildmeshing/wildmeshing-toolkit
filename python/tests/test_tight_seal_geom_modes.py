@@ -1,12 +1,11 @@
-"""tight_seal_geom_EXPERIMENTAL_mode: the limit of three regions and what "fill" does.
+"""tight_seal_geom_EXPERIMENTAL_mode: the limit of three regions, and what "split_fill" does.
 
 "voronoi" (the default) refuses four listed tags and four as min_regions, and leaves a part
-bordering four regions alone. "fill" takes all of those, splits no cell of the part, labels it
-with the nearest tags, keeps each tag's topology, gives a cell its nearest tag refuses to the next
-nearest that takes it, and throws if none does. Both throw if the join region touches the mesh
-boundary, even at a vertex. "split_fill" first splits each part along the regions nearest its
-vertices, so its fill follows their bisectors. tight_seal_geom_spatial_selection is on hold:
-anything but its default throws.
+bordering four regions alone. "split_fill" takes all of those: it splits each part along the
+regions nearest its cells' corners, a cell sharing a facet with a region labelling that facet's
+corners with it, and labels each resulting cell from its corners, with no topology test. Both
+throw if the join region touches the mesh boundary, even at a vertex.
+tight_seal_geom_spatial_selection is on hold: anything but its default throws.
 
 Needs the wildmeshing bindings; no external data."""
 import itertools
@@ -65,43 +64,6 @@ def _slot():
             return None if 3 < x < 7 else "b"
         return "a"
     return _grid_mesh(10, 8, tag_of)
-
-
-def _stranded_triangle():
-    """Tag a below and at the sides of a closed cavity, tag b on top. The cavity's face around
-    (5, 3.93) is nearest a, but touches a only at its lowest corner: b's faces hold its edges."""
-    def tag_of(x, y):
-        if not (2 < x < 8 and 2 < y < 6) or (3 < x < 7 and 3 < y < 5):
-            return None
-        return "b" if y > 5 else "a"
-    grid = _grid_mesh(10, 8, tag_of)["cells"]["triangle"]["connectivity"]
-    V = _grid_mesh(10, 8, tag_of)["V"]
-    centroids = V[grid].mean(axis=1)
-    cavity = (3 < centroids[:, 0]) & (centroids[:, 0] < 7) & (3 < centroids[:, 1]) \
-        & (centroids[:, 1] < 5)
-
-    def vid(x, y):
-        return x + y * 11
-
-    p, q, r, left, right = range(len(V), len(V) + 5)
-    V = np.vstack([V, [(5, 3.2, 0), (4.6, 4.3, 0), (5.4, 4.3, 0), (3.7, 4.6, 0), (6.3, 4.6, 0)]])
-    b0, b1, b2, b3, b4 = (vid(x, 3) for x in range(3, 8))
-    w0, w1, w2, w3, w4 = (vid(x, 5) for x in range(3, 8))
-    side0, side1 = vid(3, 4), vid(7, 4)
-    faces = [(p, r, q), (p, q, left), (p, right, r), (q, r, w2), (q, w2, w1), (q, w1, left),
-             (r, w3, w2), (r, right, w3), (left, w1, w0), (left, w0, side0), (right, w4, w3),
-             (right, side1, w4), (b1, p, left), (b1, left, b0), (b0, left, side0), (b1, b2, p),
-             (b2, b3, p), (b3, right, p), (b3, b4, right), (b4, side1, right)]
-    used, T = np.unique(np.vstack([grid[~cavity], faces]), return_inverse=True)
-    T = T.reshape(-1, 3)
-    V = V[used]
-    labels = ["ambient", "a", "b"]
-    names = [tag_of(*c) for c in V[T][:, :, :2].mean(axis=1).tolist()]
-    values = np.zeros((len(T), 3), dtype=np.uint8)
-    for f, t in enumerate(names):
-        values[f, labels.index(t or "ambient")] = 1
-    return {"V": V, "cells": {"triangle": {
-        "connectivity": T, "attributes": {"tags": {"values": values, "labels": labels}}}}}
 
 
 def _gap_with_another_tag():
@@ -252,51 +214,23 @@ def test_unknown_mode_refused():
     {"selection": "detected"},
     {"selection": "detected", "min_regions": 4},
 ])
-def test_fill_has_no_limit_of_three_regions(options):
+def test_split_fill_has_no_limit_of_three_regions(options):
     mesh = _four_bodies()
-    out = _seal(mesh, mode="fill", **options)
+    out = _seal(mesh, mode="split_fill", **options)
     # the whole hole goes, each side of it to the bar beside it
     for tag in TAGS:
         assert _area(out, tag) == pytest.approx(_area(mesh, tag) + 1)
         assert _components_and_euler(_cells(out, tag)) == (1, 1)
 
 
-def test_fill_min_regions_above_what_a_part_borders_fills_nothing():
+def test_split_fill_min_regions_above_what_a_part_borders_fills_nothing():
     mesh = _four_bodies()
-    out = _seal(mesh, mode="fill", selection="detected", min_regions=5)
+    out = _seal(mesh, mode="split_fill", selection="detected", min_regions=5)
     for tag in TAGS:
         assert _area(out, tag) == pytest.approx(_area(mesh, tag))
 
 
-def test_fill_splits_no_cell_of_the_part():
-    mesh = _four_bodies()
-    out = _seal(mesh, mode="fill", tags=TAGS)
-    assert len(_cells(out, "a")) > len(_cells(mesh, "a"))
-    assert len(out["cells"]["triangle"]["connectivity"]) == \
-        len(mesh["cells"]["triangle"]["connectivity"])
-
-
-def test_fill_gives_a_refused_cell_the_next_nearest_tag():
-    mesh = _stranded_triangle()
-    out = _seal(mesh, mode="fill", selection="detected")
-    # the whole cavity goes, and neither tag changes its topology
-    assert _area(out, "a") + _area(out, "b") == pytest.approx(
-        _area(mesh, "a") + _area(mesh, "b") + 8)
-    for tag in "ab":
-        assert _components_and_euler(_cells(out, tag)) == _components_and_euler(_cells(mesh, tag))
-    # a is nearest the stranded face, but only b could take it
-    centroids = np.asarray(out["V"])[_cells(out, "b")][:, :, :2].mean(axis=1)
-    assert np.linalg.norm(centroids - (5, 3 + 2.8 / 3), axis=1).min() < 1e-9
-
-
-def test_fill_throws_when_no_tag_can_take_a_cell():
-    # The bars of a and the ends of b alternate around the slot. A full labelling of it would join
-    # a's bars or b's ends, so a cell must be left, whatever the order.
-    with pytest.raises(Exception, match="the fill left"):
-        _seal(_slot(), mode="fill", tags=["a", "b"])
-
-
-@pytest.mark.parametrize("mode", ["voronoi", "fill"])
+@pytest.mark.parametrize("mode", ["voronoi", "split_fill"])
 @pytest.mark.parametrize("mesh", [_gap_to_the_boundary, _diamond_on_the_boundary])
 def test_join_region_on_the_mesh_boundary_throws(mesh, mode):
     with pytest.raises(Exception, match="touches the mesh boundary"):
@@ -343,9 +277,46 @@ def test_split_fill_follows_the_bisector(dim):
     # the fill of each body stops at the bisector, to the precision of the split's bisection
     assert filled_a.max() <= 5.5 + 1e-5
     assert filled_b.min() >= 5.5 - 1e-5
-    # "fill" labels whole cells, which cross it
-    plain = _seal(mesh, mode="fill", tags=["a", "b"], distance=3.5)
-    assert _tagged(plain, "a")[:, :, 0].max() > 5.5 + 1e-3
+
+
+def _region_facets(mesh, tags):
+    """The facets (edges in 2D, faces in 3D) of each tag's own cells, as sets of corner positions,
+    and those cells themselves."""
+    kind = "tetrahedron" if "tetrahedron" in mesh["cells"] else "triangle"
+    block = mesh["cells"][kind]
+    labels = list(block["attributes"]["tags"]["labels"])
+    values = np.asarray(block["attributes"]["tags"]["values"]) > 0
+    P = np.asarray(mesh["V"])[np.asarray(block["connectivity"])]
+    facets, cells = {}, set()
+    for tag in tags:
+        for corners in P[values[:, labels.index(tag)] & (values.sum(axis=1) == 1)]:
+            points = [tuple(c) for c in corners.tolist()]
+            cells.add(frozenset(points))
+            for facet in itertools.combinations(points, len(points) - 1):
+                facets[frozenset(facet)] = tag
+    return facets, cells
+
+
+@pytest.mark.parametrize("case", ["four_bodies", "two_bodies_2d", "two_bodies_3d"])
+def test_split_fill_gives_a_cell_on_a_region_that_region(case):
+    mesh, tags, distance = {
+        "four_bodies": (_four_bodies(), TAGS, 2.5),
+        "two_bodies_2d": (_two_bodies_3_apart(2), ["a", "b"], 3.5),
+        "two_bodies_3d": (_two_bodies_3_apart(3), ["a", "b"], 3.5),
+    }[case]
+    out = _seal(mesh, mode="split_fill", tags=tags, distance=distance)
+    facets, own = _region_facets(mesh, tags)
+    seen = 0
+    for tag in tags:
+        for corners in _tagged(out, tag):
+            points = [tuple(c) for c in corners.tolist()]
+            if frozenset(points) in own:
+                continue  # a region's own cell, not one the fill labelled
+            for facet in itertools.combinations(points, len(points) - 1):
+                if frozenset(facet) in facets:
+                    assert facets[frozenset(facet)] == tag
+                    seen += 1
+    assert seen > 0
 
 
 def test_split_fill_has_no_limit_of_three_regions():
