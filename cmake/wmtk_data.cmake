@@ -122,8 +122,12 @@ ExternalProject_Add(
     # At b03a392 (2026-11-06, data2 #15) tetwild_features and triwild_free_points list their
     # curve and point files in `input`: the toolkit reads every input from one list, and refuses
     # input_edges and input_points as unknown keys.
+    # At 546e1f0 (2026-11-10, data2 #16, on b03a392) the 16 offset configs pass `offsets`, a list
+    # of {selection, output_tags, target_distance, target_distance_rel}: the toolkit no longer
+    # reads offset_selection and target_distance_rel. data2 main's 7df4924 (the tight_seal_geom
+    # configs) is not in it; it belongs with its own toolkit change.
     #
-    GIT_TAG b03a392adac532d3411b71794165e816fb7f45a4
+    GIT_TAG 546e1f07d3ca77f9c277126aa10ef2d9e40b0c95
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
