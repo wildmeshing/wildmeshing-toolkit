@@ -4,6 +4,7 @@
 #   cpp/<name>.cpp      one program each, linking every component; ctest runs it
 #   python/<name>.py    run by tests/python/test_docs_examples.py
 #   json/<name>.json    run through wmtk_app by the same test
+#   pipeline/<name>.json  a wildmeshing.pipeline file, run by the same test
 #
 # Each example reads the example meshes from $WMTK_DATA, data/models by default (from the
 # repository root), and writes its output to the directory it runs in. The tests run them in the

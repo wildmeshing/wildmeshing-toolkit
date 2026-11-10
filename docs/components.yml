@@ -69,7 +69,7 @@ components:
     title: Topological offset
     group: offsets
     tutorial: tutorials/topological_offset.md
-    key_options: [input, output, offset_selection, offset_output_tags, protected_tags, offset_in, offset_out, target_distance_rel, target_distance, front_conv_rel, optimize_offset, max_rounds, num_threads, check_manifoldness]
+    key_options: [input, output, offsets, protected_tags, offset_in, offset_out, front_conv_rel, optimize_offset, max_rounds, num_threads, check_manifoldness]
     papers:
       - "[Topological Offsets, ACM TOG 2025](https://dl.acm.org/doi/10.1145/3731157)"
 

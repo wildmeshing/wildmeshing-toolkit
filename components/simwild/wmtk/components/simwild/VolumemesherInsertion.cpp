@@ -34,13 +34,12 @@ void SimWildMesh::init_from_image(
     m_tet_attribute.resize(T.rows());
     m_face_attribute.resize(T.rows() * 4);
 
-    auto& VA = m_vertex_attribute;
-
-    for (int i = 0; i < vert_capacity(); i++) {
-        const Vector3r r = V.row(i);
-        VA[i].set_pos(r);
-        VA[i].m_posf = to_double(r);
-    }
+    // The exact positions, each direct point rounded at once (set_exact_positions()), as
+    // tetwild's insertion route sets them. Until 2026-11 the direct points were found only before
+    // the rounding below; in between only is_inverted() reads m_is_rounded, to pick between two
+    // exact tests.
+    const ExactCoordinate exact = [&V](size_t i, int k) -> const Rational& { return V(i, k); };
+    const std::vector<char> is_direct_point = set_exact_positions(exact);
 
     if (m_params.perform_sanity_checks) {
         for_each_tetra([this](const Tuple& t) {
@@ -87,114 +86,9 @@ void SimWildMesh::init_from_image(
         logger().info("done");
     }
 
-    // rounding
-    {
-        std::vector<char> is_direct_point(vert_capacity(), 0);
-        // Per-vertex, independent: each i writes only its own m_pos/m_posf/
-        // m_is_rounded/is_direct_point; the rational->double conversion and the
-        // exact comparison read only local data.
-        threading::parallel_for(
-            threading::range(0, vert_capacity()),
-            [&](const threading::range& range) {
-                for (size_t i = range.begin(); i < range.end(); ++i) {
-                    const Vector3r r = VA[i].pos();
-                    const Vector3r r_from_d = to_rational(VA[i].m_posf);
-                    is_direct_point[i] = (r_from_d == r);
-                    VA[i].m_is_rounded = is_direct_point[i];
-                    // A direct point's exact position is its double one; see ExactPosition.
-                    if (is_direct_point[i]) VA[i].set_pos_to_posf();
-                }
-            },
-            NUM_THREADS);
-
-        // Round the indirect vertices in parallel. Rounding snaps m_pos to its double
-        // and may not invert any incident tet, so it is not independent across adjacent
-        // vertices and the old code did it serially (round() per vertex, an exact-
-        // rational inversion check over each vertex's incident tets). Instead, snap all
-        // indirect vertices at once and then revalidate/revert the few conflicts:
-        //   1. snap every not-yet-rounded (indirect) vertex to its double (parallel);
-        //   2. scan all tets (parallel) -- any inverted tet must contain an indirect
-        //      vertex (a direct vertex never moves, so cannot cause an inversion), so
-        //      revert those indirect vertices to their exact rational coordinate;
-        //   3. repeat until no tet is inverted.
-        // This terminates: every non-empty pass un-rounds at least one vertex, and the
-        // all-rational mesh is valid. Direct points are skipped throughout.
-        for_each_vertex([&](const Tuple& v) {
-            const size_t i = v.vid(*this);
-            if (!VA[i].m_is_rounded) {
-                VA[i].set_pos_to_posf();
-                VA[i].m_is_rounded = true;
-            }
-        });
-
-        while (true) {
-            // A flag per vertex rather than a shared appended list: a vertex is reachable
-            // from several tets, so the old version took a lock per push and then pushed the
-            // same vid repeatedly. Every write here stores the same value to a slot indexed
-            // by vid, so the threads cannot disagree -- relaxed is enough, and the duplicates
-            // collapse for free.
-            std::vector<std::atomic<uint8_t>> to_revert(vert_capacity());
-            for (auto& f : to_revert) {
-                f.store(0, std::memory_order_relaxed);
-            }
-
-            std::atomic<bool> any{false};
-            for_each_tetra([&](const Tuple& t) {
-                if (is_inverted(t)) {
-                    for (const size_t vid : oriented_tet_vids(t)) {
-                        if (!is_direct_point[vid] && m_vertex_attribute[vid].m_is_rounded) {
-                            to_revert[vid].store(1, std::memory_order_relaxed);
-                            any.store(true, std::memory_order_relaxed);
-                        }
-                    }
-                }
-            });
-            if (!any.load(std::memory_order_relaxed)) {
-                break;
-            }
-            for (size_t vid = 0; vid < to_revert.size(); ++vid) {
-                if (!to_revert[vid].load(std::memory_order_relaxed)) {
-                    continue;
-                }
-                if (m_vertex_attribute[vid].m_is_rounded) {
-                    m_vertex_attribute[vid].set_pos(Vector3r(V.row(vid)));
-                    m_vertex_attribute[vid].m_is_rounded = false;
-                    m_all_rounded.store(false, std::memory_order_relaxed);
-                }
-            }
-        }
-
-        const auto vertices = get_vertices();
-        size_t cnt_round_parallel = 0;
-        for (const Tuple& v : vertices) {
-            if (VA[v.vid(*this)].m_is_rounded) {
-                ++cnt_round_parallel;
-            }
-        }
-
-        // Final serial sweep: the parallel batch reverts a vertex whenever it lies in
-        // any inverted tet, which can over-revert (a vertex may round fine once its
-        // neighbours are committed). Retry the leftovers one at a time -- round() is a
-        // no-op for the already-rounded majority, so this only pays for the few that
-        // remain, and recovers vertices the batch conservatively reverted.
-        for (const Tuple& v : vertices) {
-            round(v);
-        }
-
-        size_t cnt_round = 0;
-        for (const Tuple& v : vertices) {
-            if (VA[v.vid(*this)].m_is_rounded) {
-                ++cnt_round;
-            }
-        }
-
-        logger().info(
-            "Rounded vertices {}/{} (parallel {}, serial recovered {})",
-            cnt_round,
-            vertices.size(),
-            cnt_round_parallel,
-            cnt_round - cnt_round_parallel);
-    }
+    // rounding: the indirect vertices all at once, then the few that invert a tet reverted
+    // (round_indirect_vertices()).
+    round_indirect_vertices(is_direct_point, exact);
 
     // init qualities
     for_each_tetra(
@@ -440,39 +334,7 @@ void SimWildMesh::init_surfaces_and_boundaries(
     init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
 
     // track bounding box
-    for (size_t i = 0; i < faces.size(); i++) {
-        const auto vs = get_face_vertices(faces[i]);
-        std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-        int on_bbox = -1;
-        for (int k = 0; k < 3; k++) {
-            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, m_sim_params.box_min[k]) &&
-                m_vertex_attribute[vids[1]].pos_coord_equals(k, m_sim_params.box_min[k]) &&
-                m_vertex_attribute[vids[2]].pos_coord_equals(k, m_sim_params.box_min[k])) {
-                on_bbox = k * 2;
-                break;
-            }
-            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, m_sim_params.box_max[k]) &&
-                m_vertex_attribute[vids[1]].pos_coord_equals(k, m_sim_params.box_max[k]) &&
-                m_vertex_attribute[vids[2]].pos_coord_equals(k, m_sim_params.box_max[k])) {
-                on_bbox = k * 2 + 1;
-                break;
-            }
-        }
-        if (on_bbox < 0) {
-            continue;
-        }
-        assert(!faces[i].switch_tetrahedron(*this)); // face must be on boundary
-
-        const size_t fid = faces[i].fid(*this);
-        m_face_attribute[fid].m_is_bbox_fs = on_bbox;
-
-        for (const size_t vid : vids) {
-            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
-        }
-    }
-
-    for_each_vertex(
-        [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
+    tag_bbox_faces(m_sim_params.box_min, m_sim_params.box_max);
 
     // The order-2 edges (open boundaries, non-manifold edges) are tagged and held by the base's
     // tube, with or without preserve_topology: keeping them in place is a geometric guarantee,

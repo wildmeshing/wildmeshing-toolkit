@@ -44,10 +44,11 @@ by the tests. A page never contains example code of its own that is not in one o
 | `docs/examples/json/<name>.json` | a `wmtk_app` input file | copied into a directory with the meshes it names, run with `wmtk_app -j` |
 | `docs/examples/python/<name>.py` | a script | run with `python <name>.py` in a directory of its own |
 | `docs/examples/cpp/<name>.cpp` | a program | built as `wmtk_doc_example_<name>`, linking every component, and run |
+| `docs/examples/pipeline/<name>.json` | a pipeline file (`wildmeshing.pipeline`) | copied into a directory with the meshes its inputs name, run with `Pipeline.load(<name>.json).run()` |
 
-All three are registered in ctest when CMake runs with `-DWMTK_BUILD_DOC_EXAMPLES=ON` (and
+All four are registered in ctest when CMake runs with `-DWMTK_BUILD_DOC_EXAMPLES=ON` (and
 `BUILD_TESTING`), in Release builds only: `doc_example_cpp_<name>` for each program, and
-`doc_examples_python_json` for the scripts and JSON files together
+`doc_examples_python_json` for the scripts, JSON files and pipeline files together
 (`tests/python/test_docs_examples.py`).
 
 Conventions, so that the files run the same from the repository root, in the tests and on a

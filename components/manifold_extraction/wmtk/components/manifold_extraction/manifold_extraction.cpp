@@ -108,12 +108,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!component_io.memory() && envelope && outputs.count("envelope"))
             io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
     };
-    // Tagged faces (2D: tagged edges) and feature curves would be dropped silently; refuse them
-    // until they are carried.
-    if (input_data.F_tagged.rows())
-        log_and_throw_error("manifold_extraction does not take tagged faces (2D: edges) yet");
-    if (!input_data.features.empty() || !input_data.input_point_vids.empty())
-        log_and_throw_error("manifold_extraction does not take feature curves or points yet");
     man_params.init(
         input_data.V_input.colwise().minCoeff(),
         input_data.V_input.colwise().maxCoeff());
@@ -128,15 +122,27 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (input_data.T_input.cols() == 3) { // input is 2d trimesh
         logger().info("Input mesh (2d trimesh): {}", input_path);
 
-        // initialize mesh
+        // initialize mesh. The tagged edges and the input points ride on the edges' input sets and
+        // the vertices' point labels (TopoOffsetTriMesh::init_from_image()), which the
+        // construction carries, as it only splits; nothing holds them, as nothing moves (in 3D the
+        // construction holds them, below). Before init_from_image(): the input points' labels.
+        // Until 2026-11 both were refused.
         ManExtractTriMesh mesh(man_params, offset_params, NUM_THREADS);
+        mesh.m_point_names = input_data.point_names;
+        mesh.m_input_point_labels = input_data.input_point_labels;
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
             input_data.T_input_tag,
             input_data.V_envelope,
             input_data.F_envelope,
-            input_data.tag_names);
+            input_data.tag_names,
+            "", // the curve group's tag keeps its default name, "curve"
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names,
+            input_data.F_orientation,
+            input_data.input_point_vids);
 
         // record counts (mostly debugging, this is probably really slow)
         mesh.m_init_counts[0] = mesh.get_vertices().size();
@@ -212,19 +218,36 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         logger().info("Input mesh (3d tetmesh): {}", input_path);
 
         // initialize mesh. A labelled reference is held to (below), as the offset holds one, not
-        // the envelope surface group.
+        // the envelope surface group. The tagged faces, the feature curves and the input points
+        // are loaded as the offset's 3D route loads them, and held by its construction
+        // (TopoOffsetTetMesh::build_envelopes(), hold_curves_and_points()): the tagged faces in
+        // their labels' envelopes, the curves in their tubes, the points anchored, each written
+        // back by collect_memory_output(). Before init_from_image(): the input points' labels.
+        // Until 2026-11 all three were refused.
         const bool reference = input_data.envelope_reference.has_value();
         ManExtractTetMesh mesh(man_params, offset_params, NUM_THREADS);
+        mesh.m_point_names = input_data.point_names;
+        mesh.m_input_point_labels = input_data.input_point_labels;
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
             input_data.T_input_tag,
             reference ? MatrixXd() : input_data.V_envelope,
             reference ? MatrixXi() : input_data.F_envelope,
-            input_data.tag_names);
+            input_data.tag_names,
+            "", // the sheet group's tag keeps its default name, "surface"
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names,
+            input_data.F_orientation,
+            input_data.feature_edge_names,
+            &input_data.features,
+            &input_data.features_placed);
         // A reference, held to by the code the offset's 3D route holds one with (its start checks
         // in TopoOffsetTetMesh::build_envelopes(): every label of the held faces in it, and every
-        // held face received inside its labels' envelopes, exactly, before anything is carved).
+        // held face received inside its labels' envelopes, exactly, before anything is carved;
+        // in hold_curves_and_points(), every feature edge received inside the tubes around its
+        // feature curves, and every input point anchored on one of its points of that label).
         // The construction only splits, so nothing moves after the checks.
         if (reference) {
             const io::HeldRows held = io::held_rows(
@@ -243,6 +266,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 for (int j = 0; j < 3; ++j) F[i][j] = size_t(held.F(Eigen::Index(i), j));
             }
             mesh.set_input_curves(V, F, held.labels, &input_data.reference_curves);
+            // The input points' anchors on its points (TetOptimizerMesh::ReferencePoints).
+            mesh.set_reference_points(
+                input_data.reference_points,
+                input_data.reference_point_labels);
         }
 
         // record counts (mostly debugging, this is probably really slow)

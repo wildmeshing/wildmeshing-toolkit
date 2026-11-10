@@ -63,7 +63,8 @@ struct Parameters
         nlohmann::json offset_params;
         offset_params["application"] = "topological_offset";
         offset_params["input"] = "this doesn't matter";
-        offset_params["offset_selection"] = "this should never be used.";
+        // One offset, labelled by label_non_manifold() rather than by this selection.
+        offset_params["offsets"] = {{{"selection", "this should never be used."}}};
 
         // inject defaults
         const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
@@ -78,6 +79,9 @@ struct Parameters
         ret_params.target_distance = radius;
         ret_params.target_distance_rel = radius_rel;
         ret_params.offset_output_tag = fill_tags;
+        ret_params.offsets[0].output_tags = fill_tags;
+        ret_params.offsets[0].target_distance = radius;
+        ret_params.offsets[0].target_distance_rel = radius_rel;
         ret_params.debug_output = debug_output;
         ret_params.save_vtu = save_vtu;
         return ret_params;

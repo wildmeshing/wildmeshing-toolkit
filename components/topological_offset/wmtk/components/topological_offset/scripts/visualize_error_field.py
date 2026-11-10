@@ -35,7 +35,8 @@ WHICH Phi. Both fields, selected with --field (default: the config's offset_fiel
 
 WHICH SEGMENTS. The input complex is derived from the mesh the way the C++ derives it: an edge
 whose two incident triangles have different group membership under the selection. With a config,
-`offset_selection` is used; without one, the default is every non-ambient group against the rest.
+its first offset's `selection` (`offsets[0].selection`) is used; without one, the default is every
+non-ambient group against the rest.
 """
 import argparse
 import json
@@ -69,7 +70,7 @@ def load_field_module():
 
 
 def eval_selection(expr, names):
-    """The offset_selection boolean expression, on one cell's group memberships.
+    """An offset's selection boolean expression, on one cell's group memberships.
 
     Same language the C++ parses: tag names, & | !, parentheses; 'ambient' (spelled '_' in the
     spec) means "in no tag group". Names are substituted with their membership truth value, so
@@ -86,7 +87,7 @@ def eval_selection(expr, names):
     py = re.sub(r"[A-Za-z0-9_]+", sub, expr)  # tag names may be purely numeric
     py = py.replace("!", " not ").replace("&", " and ").replace("|", " or ")
     if not re.fullmatch(r"[ ()TrueFalsandnot]*", py):
-        raise ValueError("cannot evaluate offset_selection %r" % expr)
+        raise ValueError("cannot evaluate selection %r" % expr)
     return bool(eval(py))
 
 
@@ -112,7 +113,7 @@ def read_mesh(path):
 
 
 def selection_mask(tris, groups, expr):
-    """(m,) bool: which triangles the offset_selection picks out. This is the region being
+    """(m,) bool: which triangles the selection picks out. This is the region being
     offset -- the offset grows OUT of it, so it is also the region there is nothing to plot in."""
     names = sorted(groups)
     sel = np.zeros(len(tris), dtype=bool)
@@ -222,8 +223,8 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mesh", type=Path, help="2D .msh")
     ap.add_argument("config", type=Path, nargs="?", help="the run's config, for delta/selection")
-    ap.add_argument("--delta", type=float, default=None, help="target_distance; overrides config")
-    ap.add_argument("--selection", default=None, help="offset_selection; overrides config")
+    ap.add_argument("--delta", type=float, default=None, help="offsets[0].target_distance; overrides config")
+    ap.add_argument("--selection", default=None, help="offsets[0].selection; overrides config")
     ap.add_argument("--res", type=int, default=600, help="pixels on the long axis")
     ap.add_argument("--cap", type=float, default=None,
                     help="clamp the plotted value here before colouring; default c^2 for "
@@ -259,18 +260,19 @@ def main():
     a = ap.parse_args()
 
     cfg = json.loads(a.config.read_text()) if a.config else {}
-    expr = a.selection or cfg.get("offset_selection") or "!_"
-    delta = a.delta if a.delta is not None else cfg.get("target_distance", -1.0)
-    prov = "--delta" if a.delta is not None else "config target_distance"
+    first = (cfg.get("offsets") or [{}])[0]  # the first offset: the 2D offset takes one entry
+    expr = a.selection or first.get("selection") or "!_"
+    delta = a.delta if a.delta is not None else first.get("target_distance", -1.0)
+    prov = "--delta" if a.delta is not None else "config offsets[0].target_distance"
     field = a.field or cfg.get("offset_field", "smooth")
     dhat_factor = (a.dhat_factor if a.dhat_factor is not None
                    else float(cfg.get("offset_dhat_factor", 2.0)))
 
     pts, tris, groups = read_mesh(a.mesh)
     if delta is None or delta <= 0:
-        rel = cfg.get("target_distance_rel", 0.01)
+        rel = first.get("target_distance_rel", 0.01)
         delta = rel * np.linalg.norm(pts.max(0) - pts.min(0))
-        prov = "target_distance_rel %g x bbox diagonal" % rel
+        prov = "offsets[0].target_distance_rel %g x bbox diagonal" % rel
 
     sel = selection_mask(tris, groups, expr)
     seg_a, seg_b, _ = input_segments(pts, tris, sel, expr)

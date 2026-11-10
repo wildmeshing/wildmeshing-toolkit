@@ -125,8 +125,12 @@ ExternalProject_Add(
     # At 7df4924 (2026-11-06, data2 main, on b03a392) the tight_seal_geom configs keep the join
     # region off the mesh boundary, which the operation now refuses: explicit_2d moves to the new
     # model tight_seal_geom_bars_2d.msh, explicit_3d to d 0.35, detected_3d to d 0.6.
+    # At 546e1f0 (2026-11-10, data2 #16, on b03a392) the 16 offset configs pass `offsets`, a list
+    # of {selection, output_tags, target_distance, target_distance_rel}: the toolkit no longer
+    # reads offset_selection and target_distance_rel.
+    # 86e0f2a (2026-11-10, data2 main) merges #16 and holds both.
     #
-    GIT_TAG 7df4924ab9c550d02d77c3c8139dd4863096ab6f
+    GIT_TAG 86e0f2a1ae34ad364e83a646010486fa4add05ac
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

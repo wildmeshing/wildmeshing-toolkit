@@ -23,9 +23,7 @@ def count(mesh, tag):
 wm.topological_offset({
     "input": str(DATA / "127891.msh"),
     "output": "127891_offset",
-    "offset_selection": "127891",
-    "offset_output_tags": ["offset"],
-    "target_distance": 0.4,
+    "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
     "optimize_offset": False,
 })
 # --8<-- [end:file]
@@ -33,8 +31,9 @@ wm.topological_offset({
 # --8<-- [start:memory]
 bar = wm.read_mesh(str(DATA / "127891.msh"))
 outputs, report = wm.topological_offset(
-    {"input": "bar", "offset_selection": "127891", "offset_output_tags": ["offset"],
-     "target_distance": 0.4, "optimize_offset": False},
+    {"input": "bar",
+     "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
+     "optimize_offset": False},
     {"bar": bar},
 )
 offset = outputs["mesh"]
@@ -46,8 +45,9 @@ print(report["before #t"], "->", report["after #t"], "tets,", count(offset, "off
 for side in [{"offset_out": True}, {"offset_in": True, "offset_out": False},
              {"offset_in": True, "offset_out": True}]:
     out, _ = wm.topological_offset(
-        {"input": "bar", "offset_selection": "127891", "offset_output_tags": ["offset"],
-         "target_distance": 0.4, "optimize_offset": False, **side},
+        {"input": "bar",
+         "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
+         "optimize_offset": False, **side},
         {"bar": bar})
     print(side, count(out["mesh"], "offset"), "band tets")
 # --8<-- [end:sides]
@@ -58,28 +58,31 @@ spheres = wm.read_mesh(str(DATA / "double_sphere.msh"))
 for selection in ["tag_0 & tag_1",             # the overlap, a lens
                   "ambient & tag_0 & tag_1"]:  # the circle where the two surfaces cross
     out, _ = wm.topological_offset(
-        {"input": "spheres", "offset_selection": selection, "offset_output_tags": ["offset"],
-         "target_distance": 0.05, "optimize_offset": False},
+        {"input": "spheres",
+         "offsets": [{"selection": selection, "output_tags": ["offset"], "target_distance": 0.05}],
+         "optimize_offset": False},
         {"spheres": spheres})
     print(f"{selection!r}: {count(out['mesh'], 'offset')} band tets")
 # --8<-- [end:expressions]
 
 # --8<-- [start:protected]
-# The band around tag_0 runs through tag_1. Protected, tag_1 stays on the band's cells.
-for protected in [[], ["tag_1"]]:
+# The band around tag_0 runs through tag_1. Protected, tag_1 keeps its cells: the band stops there.
+for protected in ["", "tag_1"]:
     out, _ = wm.topological_offset(
-        {"input": "spheres", "offset_selection": "tag_0", "offset_output_tags": ["offset"],
-         "protected_tags": protected, "target_distance": 0.05, "optimize_offset": False},
+        {"input": "spheres",
+         "offsets": [{"selection": "tag_0", "output_tags": ["offset"], "target_distance": 0.05}],
+         "protected_tags": protected, "optimize_offset": False},
         {"spheres": spheres})
     m = out["mesh"]
-    print(f"protected {protected}: offset {count(m, 'offset')}, tag_1 {count(m, 'tag_1')} tets")
+    print(f"protected {protected!r}: offset {count(m, 'offset')}, tag_1 {count(m, 'tag_1')} tets")
 # --8<-- [end:protected]
 
 # --8<-- [start:optimize]
 # The optimization, cut short: five turns, a bar of 20% of the target, four threads.
 outputs, report = wm.topological_offset(
-    {"input": "bar", "offset_selection": "127891", "offset_output_tags": ["offset"],
-     "target_distance": 0.4, "front_conv_rel": 0.2, "max_rounds": 5, "num_threads": 4},
+    {"input": "bar",
+     "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
+     "front_conv_rel": 0.2, "max_rounds": 5, "num_threads": 4},
     {"bar": bar},
 )
 metrics = report["optimization_metrics"]

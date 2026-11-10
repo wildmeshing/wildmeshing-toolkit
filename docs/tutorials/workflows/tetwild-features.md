@@ -55,6 +55,23 @@ The inside of the cube (`filter` `tracked`), with every tet's energy below 10, a
     --8<-- "docs/examples/python/workflow_tetwild_features.py:run"
     ```
 
+=== "Pipeline"
+
+    The same chain as one [pipeline file][pipelines]: each stage cached, and run again only when
+    its options or what it reads change. Its inputs are file names relative to the file, as a
+    JSON example names its meshes: put it next to the three `tetwild_features_*.obj` files.
+
+    ```json
+    --8<-- "docs/examples/pipeline/workflow_tetwild_features.json"
+    ```
+
+    ```bash
+    python -m wildmeshing.gui workflow_tetwild_features.json
+    ```
+
+    The window runs the stages and shows each one's result; without a window,
+    `Pipeline.load("workflow_tetwild_features.json").run()` from `wildmeshing.pipeline`.
+
 === "C++"
 
     ```cpp
@@ -160,3 +177,5 @@ always on, as the tube and the surface envelope are.
   surface.
 - [TriWild](../triwild.md#feature-points): the same anchors in
   2D.
+
+[pipelines]: https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/python/README.md#pipelines
