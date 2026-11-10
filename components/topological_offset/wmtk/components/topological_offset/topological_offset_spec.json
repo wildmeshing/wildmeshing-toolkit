@@ -184,15 +184,10 @@
   },
   {
     "pointer": "/protected_tags",
-    "type": "list",
-    "default": [],
-    "doc": "Set of tags that will not be overwritten by the offset. Tet tags: the march leaves a cell carrying one as it is -- it splits none of its edges and the band takes none of it, so the offset is not made in a direction such a cell blocks; an earlier offset's band, protected, keeps its cells (since 2026-11-05; before, the band took such cells and they kept the protected tags beside offset_output_tags). 3D: face tags and the sheet group (the .msh's envelope surface group, by its name) too -- a face the band covers (both of its tets band cells; never a face of the input complex itself) keeps the protected ones it carried, and every other face tag and the sheet group give way there, as the cells' other tags do (since 2026-11-04). A face that then still separates two tag sets or still carries a face tag or the sheet group stays tracked, and held; any other face inside the band is no longer tracked."
-  },
-  {
-    "pointer": "/protected_tags/*",
     "type": "string",
-    "labels": "existing",
-    "doc": "A tag."
+    "default": "",
+    "labels": "expression",
+    "doc": "Boolean expression over the input's tags of what the offset does not overwrite; empty: nothing ('tag_1 | tag_2' protects the cells and faces carrying either; 'ambient' is refused). A simplex is protected when its own tags satisfy it -- a cell its tet tags, a face its face tags and the sheet group (the .msh's envelope surface group, by its name). The march leaves a protected cell as it is -- it splits none of its edges and the band takes none of it, so the offset is not made in a direction such a cell blocks; an earlier offset's band, protected, keeps its cells (since 2026-11-05; before, the band took such cells and they kept the protected tags beside offset_output_tags). 3D: a protected face the band covers (both of its tets band cells; never a face of the input complex itself) keeps the face tags and the sheet group the expression names, and every other face tag and the sheet group give way there, as the cells' other tags do (since 2026-11-04). A face that then still separates two tag sets or still carries a face tag or the sheet group stays tracked, and held; any other face inside the band is no longer tracked. Until 2026-11 a list of tag names, which is the expression of the names joined by '|'."
   },
   {
     "pointer": "/offset_in",

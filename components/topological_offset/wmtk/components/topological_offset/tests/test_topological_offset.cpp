@@ -45,8 +45,8 @@ using namespace components::simwild::expression_parser;
 namespace {
 /// Select `selection` as the one offset, as topological_offset.cpp parses an entry's selection:
 /// into the entry the json gave (its output tags and distance kept), or into one added for a
-/// Parameters built by hand, which offsets at the run's target_distance with no output tag. Either
-/// dimension's mesh.
+/// Parameters built by hand, which offsets at the run's target_distance with no output tag; and
+/// parse protected_tags beside it. Either dimension's mesh.
 template <typename Mesh>
 void select_offset(Mesh& mesh, const std::string& selection)
 {
@@ -54,6 +54,7 @@ void select_offset(Mesh& mesh, const std::string& selection)
     if (offsets.empty()) offsets.emplace_back();
     offsets[0].selection = selection;
     offsets[0].expression = parse(selection, mesh.m_tag_name_to_id);
+    mesh.m_offset_params.parse_protected_tags(mesh.m_tag_name_to_id);
 }
 } // namespace
 
@@ -3052,13 +3053,13 @@ MeshData two_sheet_grid(const double z_blue)
 }
 
 /// One construction-only offset of the face tag `sheet`, its band tagged `band`, the
-/// correspondence saved, the tags `protect` protected: the step a pipeline runs once per sheet
+/// correspondence saved, the tag expression `protect` protected: the step a pipeline runs once per sheet
 /// before prismatic_mesh.
 MeshData offset_sheet(
     const MeshData& m,
     const std::string& sheet,
     const std::string& band,
-    const std::vector<std::string>& protect = {})
+    const std::string& protect = "")
 {
     return components::topological_offset::topological_offset(
                {{"input", "m"},
@@ -3135,7 +3136,7 @@ TEST_CASE("offset-carries-an-earlier-correspondence", "[offset][3d][corresponden
         // A protected cell is split by no march and taken by no band (marching_tets()), so
         // every carried value survives.
         const auto first = offset_sheet(two_sheet_grid(0.75), "yellow", "band_yellow");
-        const auto second = offset_sheet(first, "blue", "band_blue", {"band_yellow"});
+        const auto second = offset_sheet(first, "blue", "band_blue", "band_yellow");
         const auto carried = correspondence_pairs(first);
         REQUIRE(!carried.empty());
         std::set<std::array<double, 6>> to_yellow;
@@ -3354,12 +3355,12 @@ TEST_CASE("band-covered-region-boundaries", "[offset][3d][envelope]")
         }
     }
     for (const bool protect : {false, true}) {
-        INFO("protected_tags " << (protect ? "[tag_1]" : "[]"));
+        INFO("protected_tags " << (protect ? "tag_1" : "(none)"));
         nlohmann::json j = {
             {"offsets",
              nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
             {"num_threads", 0}};
-        if (protect) j["protected_tags"] = {"tag_1"};
+        if (protect) j["protected_tags"] = "tag_1";
         Parameters param = construction_params(j, g.V);
         const auto mesh = tagged_grid_offset_mesh(
             g,
@@ -3397,6 +3398,84 @@ TEST_CASE("band-covered-region-boundaries", "[offset][3d][envelope]")
         CHECK((n_covered == 0) == protect);
         REQUIRE(n_beyond > 0);
         REQUIRE_NOTHROW(mesh->audit_surface_containment("construction"));
+    }
+}
+
+TEST_CASE("protected-tags-expression", "[offset][3d]")
+{
+    // protected_tags is a tag expression (until 2026-11 a list of names). A simplex is protected
+    // when its own tags satisfy it, and keeps those of them it names
+    // (Parameters::protected_kept()); a list's names joined by '|' keep what the list kept.
+    nlohmann::json j = {{"num_threads", 0}};
+    const std::map<std::string, int64_t> ids = {{"ambient", 0}, {"a", 1}, {"b", 2}, {"c", 3}};
+    const auto rule = [&](const std::string& expr) {
+        j["protected_tags"] = expr;
+        Parameters p = construction_params(j, Eigen::MatrixXd::Identity(3, 3));
+        p.parse_protected_tags(ids);
+        return p;
+    };
+    using Tags = std::set<int64_t>;
+    CHECK(!rule("").protected_expression); // nothing protected
+    CHECK(rule("").protected_kept({1, 2}).empty());
+    const Parameters list = rule("a | b"); // the list [a, b]
+    CHECK(list.protected_kept({1, 3}) == Tags{1});
+    CHECK(list.protected_kept({1, 2, 3}) == Tags{1, 2});
+    CHECK(list.protected_kept({3}).empty());
+    CHECK(rule("a & b").protected_kept({1, 3}).empty()); // not protected: no b
+    CHECK(rule("a & b").protected_kept({1, 2, 3}) == Tags{1, 2});
+    CHECK(rule("a & !c").protected_kept({1}) == Tags{1});
+    CHECK(rule("a & !c").protected_kept({1, 3}).empty());
+    CHECK_THROWS(rule("a | ambient"));
+
+    // In the march: the grid of band-covered-region-boundaries, tag_1 the cube next to the
+    // complex along +x and tag_2 the same cells. A protected tag_1 cell is never the band's, so
+    // none of the cube's side faces is covered; an unprotected cube is entered.
+    const GridInput g = grid_input(5);
+    MatrixSi tags(g.Tm.rows(), 3);
+    for (Eigen::Index t = 0; t < g.Tm.rows(); ++t) {
+        Eigen::Vector3d c = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) c += g.V.row(g.Tm(t, k)).transpose() / 4.;
+        if (g.Tags.coeff(t, 0) != 0) tags.coeffRef(t, 0) = 1;
+        if (c[0] > 0.5 && c[0] < 1.5 && std::abs(c[1]) < 0.5 && std::abs(c[2]) < 0.5) {
+            tags.coeffRef(t, 1) = 1;
+            tags.coeffRef(t, 2) = 1;
+        }
+    }
+    for (const auto& [expr, cube_protected] : std::vector<std::pair<std::string, bool>>{
+             {"", false},
+             {"tag_1", true},
+             {"tag_1 & tag_2", true},
+             {"tag_2 | tag_1", true},
+             {"tag_1 & !tag_2", false}}) {
+        INFO("protected_tags '" << expr << "'");
+        nlohmann::json jm = {
+            {"offsets",
+             nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
+            {"num_threads", 0},
+            {"protected_tags", expr}};
+        Parameters param = construction_params(jm, g.V);
+        const auto mesh = tagged_grid_offset_mesh(
+            g,
+            tags,
+            {"tag_0", "tag_1", "tag_2"},
+            Eigen::MatrixXi(),
+            MatrixSi(),
+            {},
+            "tag_0",
+            param,
+            std::filesystem::temp_directory_path() / "wmtk_offset_protected_expression");
+        size_t n_covered = 0;
+        for (const auto& [axis, value] :
+             std::vector<std::pair<int, double>>{{1, 0.5}, {1, -0.5}, {2, 0.5}, {2, -0.5}}) {
+            n_covered += square_faces(
+                             *mesh,
+                             axis,
+                             value,
+                             Eigen::Vector3d(0.5, -0.5, -0.5),
+                             Eigen::Vector3d(1.5, 0.5, 0.5))
+                             .covered.size();
+        }
+        CHECK((n_covered == 0) == cube_protected);
     }
 }
 
@@ -3452,7 +3531,7 @@ TEST_CASE("band-covered-face-tags", "[offset][3d][envelope]")
             {"offsets",
              nlohmann::json::array({{{"selection", c.selection}, {"target_distance", 0.2}}})},
             {"num_threads", 0}};
-        if (c.protect) j["protected_tags"] = {"S"};
+        if (c.protect) j["protected_tags"] = "S";
         // The driver refuses a face-tag selection with the optimization, which holds no face
         // tags yet; the construction alone is what this case checks.
         if (c.selection == "S") j["optimize_offset"] = false;
@@ -3548,7 +3627,7 @@ TEST_CASE("band-crossed-sheet-keeps-its-orientation", "[offset][3d][split_op]")
     Parameters param = construction_params(
         {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
          {"num_threads", 0},
-         {"protected_tags", {"S"}}},
+         {"protected_tags", "S"}},
         g.V);
     const auto mesh = tagged_grid_offset_mesh(
         g,
@@ -6360,7 +6439,7 @@ TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
         {"max_rounds", 15},
         {"num_threads", 4},
         {"throw_on_nonconvergence", true}};
-    if (protect) j["protected_tags"] = {"tag_1"};
+    if (protect) j["protected_tags"] = "tag_1";
     REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
 }
 

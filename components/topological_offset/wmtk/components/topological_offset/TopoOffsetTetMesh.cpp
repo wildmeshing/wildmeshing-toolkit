@@ -2754,22 +2754,16 @@ void TopoOffsetTetMesh::marching_tets()
     m_marching_midpoint_splits = 0;
     m_marching_trace_steps = 0;
     m_marching_trace_steps_max = 0;
-    // A protected cell (a tet tag of protected_tags) is not the offset's: the march splits no
-    // edge of it and the band takes none of it, so an earlier offset's band, protected, keeps its
-    // cells, and the stars of its offset vertices there, as they are. An edge out of the complex
-    // in a protected cell stays unsplit (blocked), and no cell around it joins the band: in that
-    // direction the offset is not made. Until 2026-11-05 the band took protected cells too, and
-    // they kept the protected tags beside its own, so a chain of offsets could not keep an earlier
-    // band: feature demo 4's wire, offset after the sheet it runs in, changed the stars of 482 of
-    // the sheet's offset vertices, which prismatic_mesh builds prisms from.
+    // A protected cell (its tet tags satisfy protected_tags) is not the offset's: the march splits
+    // no edge of it and the band takes none of it, so an earlier offset's band, protected, keeps
+    // its cells, and the stars of its offset vertices there, as they are. An edge out of the
+    // complex in a protected cell stays unsplit (blocked), and no cell around it joins the band: in
+    // that direction the offset is not made. Until 2026-11-05 the band took protected cells too,
+    // and they kept the protected tags beside its own, so a chain of offsets could not keep an
+    // earlier band: feature demo 4's wire, offset after the sheet it runs in, changed the stars of
+    // 482 of the sheet's offset vertices, which prismatic_mesh builds prisms from.
     const auto is_protected = [&](const size_t tid) {
-        for (const int64_t t : m_tet_attribute[tid].tag) {
-            const auto name = m_tag_id_to_name.find(t);
-            if (name != m_tag_id_to_name.end() &&
-                m_offset_params.protected_tags.count(name->second))
-                return true;
-        }
-        return false;
+        return m_offset_params.is_protected(m_tet_attribute[tid].tag);
     };
     const auto key = [](size_t a, size_t b) {
         return std::array<size_t, 2>{{std::min(a, b), std::max(a, b)}};
@@ -3136,18 +3130,15 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
     // they stay. One rule for cell and face tags (Uday, 2026-11-04); until then a surface input
     // the band covered survived inside the band, tracked and held, pinning the band's vertices on
     // it. untrack_covered_boundaries() then untracks what no longer bounds anything.
-    const auto is_protected = [&](const std::string& name) {
-        return m_offset_params.protected_tags.count(name) > 0;
-    };
-    InputSet gives_way = 0;
-    for (size_t j = 0; j < m_face_tag_names.size(); ++j) {
-        if (!is_protected(m_face_tag_names[j])) gives_way |= InputSet(1) << j;
-    }
-    const bool sheet_gives_way = m_sheet_tag > 0 && !is_protected(m_tag_id_to_name[m_sheet_tag]);
-    if (sheet_gives_way) {
-        const size_t bit = m_face_tag_names.size() + size_t(m_sheet_tag) - 1;
-        if (bit < size_t(SurfaceTagAttributes::max_inputs)) gives_way |= InputSet(1) << bit;
-    }
+    // A face's own tags here are its face tags and the sheet group (on_sheet, or its label bit);
+    // its cells' are this run's band tags. A face whose own tags satisfy protected_tags keeps
+    // those the expression names (Parameters::protected_kept()); the rest give way. Until 2026-11
+    // protected_tags was a list of names, and a face kept each one it carried: the same rule for
+    // the names joined by '|'.
+    const size_t F = m_face_tag_names.size();
+    const size_t sheet_bit = m_sheet_tag > 0 ? F + size_t(m_sheet_tag) - 1 : 0;
+    const bool sheet_has_bit =
+        m_sheet_tag > 0 && sheet_bit < size_t(SurfaceTagAttributes::max_inputs);
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
         if (m_face_extra[fid].label == 1) continue;
@@ -3155,7 +3146,22 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
         if (!opp || !cell_is_offset_band(f.tid(*this)) || !cell_is_offset_band(opp->tid(*this)))
             continue;
         FaceAttributes& attr = m_face_attribute[fid];
-        attr.set_input_set(attr.input_set() & ~gives_way);
+        const InputSet set = attr.input_set();
+        CellTag own;
+        for (const auto& [id, bit] : m_face_tag_bit) {
+            if (size_t(bit) < F && ((set >> bit) & 1)) own.insert(id);
+        }
+        if (m_sheet_tag > 0 &&
+            (m_face_extra[fid].on_sheet || (sheet_has_bit && ((set >> sheet_bit) & 1))))
+            own.insert(m_sheet_tag);
+        const CellTag kept = m_offset_params.protected_kept(own);
+        InputSet gives_way = 0;
+        for (const auto& [id, bit] : m_face_tag_bit) {
+            if (size_t(bit) < F && !kept.count(id)) gives_way |= InputSet(1) << bit;
+        }
+        const bool sheet_gives_way = m_sheet_tag > 0 && !kept.count(m_sheet_tag);
+        if (sheet_gives_way && sheet_has_bit) gives_way |= InputSet(1) << sheet_bit;
+        attr.set_input_set(set & ~gives_way);
         if (sheet_gives_way) m_face_extra[fid].on_sheet = false;
     }
 }

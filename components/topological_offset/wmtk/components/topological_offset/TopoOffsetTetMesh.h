@@ -3335,7 +3335,8 @@ public:
 
     /// update 'tags' data for tets in the offset region (tets labelled 2), and on the faces it
     /// covers (both tets band, the input complex's own faces excepted) the face tags and the sheet
-    /// group, by the same rule: each gives way unless protected_tags names it.
+    /// group, by the same rule: each gives way unless the face is protected (its own tags satisfy
+    /// protected_tags) and the expression names it.
     void set_offset_tet_tags();
     /**
      * @brief After set_offset_tet_tags(): a tracked face stays tracked iff it still passes the
@@ -3349,9 +3350,9 @@ public:
      * next to the complex where the band takes tag_1's cells, or a face-tagged surface whose tag
      * gave way there -- kept its flag: a surface inside the band that bounds nothing, which the
      * operations would keep and the loop would hold where it was, every tracked face being held
-     * (face_is_held()). A protected tet tag's cells are never the band's (marching_tets()); with a
-     * protected face tag or sheet group the band's faces keep it, so such a boundary still carries
-     * its input and stays tracked. A face of the input complex (label 1) is never
+     * (face_is_held()). A protected cell is never the band's (marching_tets()); a protected face
+     * the band covers keeps the face tags or sheet group protected_tags names, so such a boundary
+     * still carries its input and stays tracked. A face of the input complex (label 1) is never
      * untracked, as set_offset_tet_tags() never clears one: with output_tags naming the
      * selection's own tag the complex and the band carry one tag set, and the complex's boundary
      * stays tracked and held.

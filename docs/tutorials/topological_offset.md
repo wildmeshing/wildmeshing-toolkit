@@ -172,16 +172,18 @@ only.
 An entry's `output_tags` (default `["newtag"]`) are the tags every cell of its band gets,
 replacing the tags it had; a name the mesh does not have is added as a new region. `[]` makes the
 band background, which carves a gap.
-[`protected_tags`](../reference/topological_offset.md#protected_tags) are kept on the band cells
-that have them, alongside the output tags. `ambient` can be neither (it is ignored, with a
+[`protected_tags`](../reference/topological_offset.md#protected_tags) is a tag expression of
+what the band leaves alone (default `""`, nothing): the march takes none of the cells whose tags
+satisfy it, so the band stops at them, and a face the band covers whose face tags satisfy it keeps
+the ones it names. `ambient` cannot be protected (refused), nor be an output tag (ignored, with a
 warning). On the two spheres, the band around `tag_0` runs through `tag_1`:
 
 ```python
 --8<-- "docs/examples/python/topological_offset.py:protected"
 ```
 
-The band is 3,998 tets either way; `tag_1` keeps 3,539 tets without protection and 4,729 with it:
-1,190 band cells stay in `tag_1` as well.
+Protected, `tag_1` is not taken: none of its cells joins the band, which grows only where it does
+not meet `tag_1`.
 
 ### The distance: `target_distance_rel`, `target_distance`
 

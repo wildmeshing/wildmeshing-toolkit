@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Expression.hpp>
+#include <wmtk/components/simwild/expression_parser/Parser.hpp>
 
 using ExpressionPtr = wmtk::components::simwild::expression_parser::ExpressionPtr;
 
@@ -40,7 +41,42 @@ struct Parameters : public wmtk::OptimizerParameters
     std::vector<Offset> offsets;
     /// Every entry's output_tags: the tags the run adds to the mesh (init_from_image()).
     std::set<std::string> offset_output_tag;
-    std::set<std::string> protected_tags;
+    /// The tag expression of what the offset does not overwrite, as the json gives it; empty:
+    /// nothing. The run parses it into `protected_expression` against the mesh's tags, as each
+    /// entry's selection (topological_offset.cpp); null: nothing is protected.
+    std::string protected_tags;
+    ExpressionPtr protected_expression;
+
+    /// Parses protected_tags against the mesh's tags (`tag_name_to_id`, which exist only once the
+    /// mesh is read). 'ambient' is refused: the band grows into ambient cells, so protecting them
+    /// leaves no offset to make (until 2026-11, as a name in a list, it was skipped with a warning;
+    /// a term of an expression cannot be skipped).
+    void parse_protected_tags(const std::map<std::string, int64_t>& tag_name_to_id)
+    {
+        protected_expression = nullptr;
+        if (protected_tags.empty()) return;
+        protected_expression =
+            wmtk::components::simwild::expression_parser::parse(protected_tags, tag_name_to_id);
+        if (protected_expression->tag_names_involved().count("ambient"))
+            log_and_throw_error("protected_tags: 'ambient' cannot be protected");
+    }
+    /// Whether a simplex whose own tags are `tags` is protected: they satisfy protected_tags.
+    bool is_protected(const std::set<int64_t>& tags) const
+    {
+        return protected_expression && protected_expression->eval(tags);
+    }
+    /// The tags of `tags` (a simplex's own) the offset keeps where it covers that simplex: none
+    /// unless the simplex is protected, and then those protected_tags names. With the names of a
+    /// list joined by '|' this is a list's rule until 2026-11: each protected name it carries.
+    std::set<int64_t> protected_kept(const std::set<int64_t>& tags) const
+    {
+        std::set<int64_t> kept;
+        if (!is_protected(tags)) return kept;
+        const std::set<int64_t> named = protected_expression->tags_involved();
+        for (const int64_t t : tags)
+            if (named.count(t)) kept.insert(t);
+        return kept;
+    }
     // The spec's defaults, as envelope_size below: init_input_complex_bvh() refuses offset_in on a
     // curve or a point, and a unit test that builds Parameters without init() and offsets a point
     // (dist_to_tetmesh) read an uninitialized offset_in as true on the Linux and Windows Debug CI.
@@ -404,13 +440,7 @@ struct Parameters : public wmtk::OptimizerParameters
             entry.target_distance_rel = o["target_distance_rel"];
         }
         if (offsets.empty()) log_and_throw_error("offsets: at least one offset is needed");
-        for (const std::string& tag : json_params["protected_tags"]) {
-            if (tag == "ambient") {
-                logger().warn("'ambient' tag cannot be protected, ignoring.");
-                continue;
-            }
-            protected_tags.insert(tag);
-        }
+        protected_tags = json_params["protected_tags"];
         offset_in = json_params["offset_in"];
         offset_out = json_params["offset_out"];
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];

@@ -1590,15 +1590,9 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
         if (m_face_extra[f_id].label == 2) {
             CellTag new_tag;
 
-            // add existing protected tags
-            for (const int64_t& existing_tag : m_face_attribute[f_id].tags) {
-                if (std::find(
-                        m_offset_params.protected_tags.begin(),
-                        m_offset_params.protected_tags.end(),
-                        m_tag_id_to_name[existing_tag]) != m_offset_params.protected_tags.end()) {
-                    new_tag.insert(existing_tag);
-                }
-            }
+            // add existing protected tags: those protected_tags names, on a triangle whose tags
+            // satisfy it (Parameters::protected_kept(); until 2026-11 a list's names)
+            new_tag = m_offset_params.protected_kept(m_face_attribute[f_id].tags);
 
             // add actual offset tags
             if (m_offset_output_tag_ids.size() == 0) {

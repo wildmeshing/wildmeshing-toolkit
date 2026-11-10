@@ -66,15 +66,15 @@ for selection in ["tag_0 & tag_1",             # the overlap, a lens
 # --8<-- [end:expressions]
 
 # --8<-- [start:protected]
-# The band around tag_0 runs through tag_1. Protected, tag_1 stays on the band's cells.
-for protected in [[], ["tag_1"]]:
+# The band around tag_0 runs through tag_1. Protected, tag_1 keeps its cells: the band stops there.
+for protected in ["", "tag_1"]:
     out, _ = wm.topological_offset(
         {"input": "spheres",
          "offsets": [{"selection": "tag_0", "output_tags": ["offset"], "target_distance": 0.05}],
          "protected_tags": protected, "optimize_offset": False},
         {"spheres": spheres})
     m = out["mesh"]
-    print(f"protected {protected}: offset {count(m, 'offset')}, tag_1 {count(m, 'tag_1')} tets")
+    print(f"protected {protected!r}: offset {count(m, 'offset')}, tag_1 {count(m, 'tag_1')} tets")
 # --8<-- [end:protected]
 
 # --8<-- [start:optimize]

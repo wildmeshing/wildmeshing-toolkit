@@ -185,6 +185,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // label input complex
         for (Parameters::Offset& o : mesh.m_offset_params.offsets)
             o.expression = expression_parser::parse(o.selection, mesh.m_tag_name_to_id);
+        mesh.m_offset_params.parse_protected_tags(mesh.m_tag_name_to_id);
         mesh.label_input_complex();
 
         // check empty input
@@ -465,6 +466,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // label input complex
         for (Parameters::Offset& o : mesh.m_offset_params.offsets)
             o.expression = expression_parser::parse(o.selection, mesh.m_tag_name_to_id);
+        mesh.m_offset_params.parse_protected_tags(mesh.m_tag_name_to_id);
         mesh.label_input_complex();
 
         // A correspondence handed on from an earlier offset is carried: its offset vertices keep
