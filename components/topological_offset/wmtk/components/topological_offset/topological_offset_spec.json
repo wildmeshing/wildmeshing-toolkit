@@ -122,7 +122,7 @@
   {
     "pointer": "/input",
     "type": "string",
-    "doc": "Input mesh, .msh: a tetrahedral mesh (a triangle mesh is refused for now: the 2D offset is being brought up to date). The two pipelines are the same algorithm one dimension apart and read every key below the same way. Its triangle block is face tags; its edge block is edge tags, the feature curves tetwild and simwild write: each selectable alone by offset_selection (a curve offset), and every one held, selected or not, as tetwild holds its feature curves (see feature_envelope_ratio), and written back as the result's edge block. Input points (a point block, tetwild's and simwild's point inputs) are refused for now: the offset holds no point yet. It must fill its bounding box, as tetwild's and simwild's meshes do (an output with filter \"none\"): its boundary faces are the domain wall, held by the box rule and never tracked, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary, its face tags -- is refused, and so is an untracked one in no plane (since 2026-11-05; until then every boundary face was tracked)."
+    "doc": "Input mesh, .msh: a tetrahedral mesh (a triangle mesh is refused for now: the 2D offset is being brought up to date). The two pipelines are the same algorithm one dimension apart and read every key below the same way. Its triangle block is face tags; its edge block is edge tags, the feature curves tetwild and simwild write: each selectable alone by offset_selection (a curve offset), and every one held, selected or not, as tetwild holds its feature curves (see feature_envelope_ratio), and written back as the result's edge block. Its point block is input points, tetwild's and simwild's point inputs, each under its input's name: each label selectable alone by offset_selection (a point offset), every point anchored, selected or not, as tetwild anchors its input points (see feature_envelope_ratio), and written back as the result's point block. A curve input's vertices on no segment are its points, under the curve's name, so selecting the name selects both. It must fill its bounding box, as tetwild's and simwild's meshes do (an output with filter \"none\"): its boundary faces are the domain wall, held by the box rule and never tracked, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary, its face tags -- is refused, and so is an untracked one in no plane (since 2026-11-05; until then every boundary face was tracked)."
   },
   {
     "pointer": "/output",
@@ -139,8 +139,9 @@
   {
     "pointer": "/offset_selection",
     "type": "string",
+    "labels": "expression",
     "default": "!_",
-    "doc": "Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used. A face tag or an edge tag of the input is selected alone: the complex is then that sheet or that curve, the band growing on every side of it."
+    "doc": "Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used. A face tag, an edge tag or a point label of the input is selected alone: the complex is then that sheet, that curve or those points, the band growing on every side of it (around a point, a ball)."
   },
   {
     "pointer": "/offset_output_tags",
@@ -153,6 +154,7 @@
   {
     "pointer": "/offset_output_tags/*",
     "type": "string",
+    "labels": "new",
     "doc": "A tag."
   },
   {
@@ -164,6 +166,7 @@
   {
     "pointer": "/protected_tags/*",
     "type": "string",
+    "labels": "existing",
     "doc": "A tag."
   },
   {
@@ -200,7 +203,7 @@
     "pointer": "/optimize_offset",
     "type": "bool",
     "default": true,
-    "doc": "Run the optimization (optimize_offset: pre-loop setup, the loop's turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries only the before/after counts, threads and time -- no converged, offset_level, offset_dhat or optimization_metrics -- and throw_on_nonconvergence is not consulted. The offset potential is built only for the optimization, so with false phi_grid_resolution is ignored (with a warning) and the result's distance_over_target is NaN."
+    "doc": "Run the optimization (optimize_offset: pre-loop setup, the loop's turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The march traces the front to target_distance only when target_distance is below the maximum marchable distance (construction_mode); otherwise the front's distance to the input complex is set by the input mesh's resolution, the same for every target_distance from that distance up, and the run warns that target_distance has no effect (unless repulsion_smoothing_passes or repulsion_rounds ran, which read it). The report then carries only the before/after counts, threads and time -- no converged, offset_level, offset_dhat or optimization_metrics -- and throw_on_nonconvergence is not consulted. The offset potential is built only for the optimization, so with false phi_grid_resolution is ignored (with a warning) and the result's distance_over_target is NaN."
   },
   {
     "pointer": "/envelope_size_rel",
@@ -224,7 +227,7 @@
     "pointer": "/feature_envelope_ratio",
     "type": "float",
     "default": 1.0,
-    "doc": "Thickness of the tube that holds the input complex's own curves -- the segments of a curve offset's input (an offset_selection without triangles: a rod, a curve network) -- as a fraction of envelope_size, and the radius of the anchors where those curves end or three or more meet and of the complex's isolated points. Tagged once before the march, around the input's segments as they were extracted, and held as tetwild holds its feature curves: a tagged edge never leaves the tube (collapses and smoothing moves that would take it out are refused, swaps never remove it) and an anchor keeps a vertex within its radius. Where an anchor is on a curve of both kinds it takes the smaller of this radius and order2_envelope_ratio's. 1, as tetwild's and simwild's key of the same name."
+    "doc": "Thickness of the tube that holds the input complex's own curves -- the segments of a curve offset's input (an offset_selection without triangles: a rod, a curve network) -- as a fraction of envelope_size, and the radius of the anchors where those curves end or three or more meet, of the complex's isolated points, and of the input points (the input's point block). Tagged once before the march, around the input's segments as they were extracted, and held as tetwild holds its feature curves: a tagged edge never leaves the tube (collapses and smoothing moves that would take it out are refused, swaps never remove it) and an anchor keeps a vertex within its radius. Where an anchor is on a curve of both kinds it takes the smaller of this radius and order2_envelope_ratio's. 1, as tetwild's and simwild's key of the same name."
   },
   {
     "pointer": "/envelope_size",
@@ -807,6 +810,6 @@
     "pointer": "/envelope",
     "type": "string",
     "default": "",
-    "doc": "The envelope of a tagged mesh input: on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs[\"envelope\"]) and write (<output>_envelope.msh), labelled by the tags it holds. A labelled envelope is a reference, the first component's input, held to as simwild holds one (3D): the envelopes (envelope_size; one per label with per_input_envelopes) are built around its triangles of this mesh's labels instead of the faces received, the order-2 tubes and curve-end anchors around its curves, and the feature tubes (feature_envelope_ratio) around its feature curves, those of the edge tags (a curve a tag expression selects is this mesh's, its tube around it as extracted). The run throws for a label the held faces or feature edges carry that it lacks, and for a held face or feature edge received outside its labels' envelopes or tubes (envelope_size below the eps the sender held it to). It is returned with the band's boundary added, labelled by the band's tags (offset_output_tags), its curves and points passed on as received: the final offset surface, which is new and so its own reference, and, where the band wraps a region, its interface with that region, whose faces carry that region's label too (on the file route <output>_envelope.msh). So a chain keeps passing the first component's input on to the components after it. Until 2026-11-05 a reference was carried unchanged and not held to. An envelope without labels stands for the input's EnvelopeSurface group, which it cannot be combined with, and is returned as given."
+    "doc": "The envelope of a tagged mesh input: on the memory route the name of an input mesh, on the file route the path of a mesh file, relative to input_dir as the input is -- the envelope tetwild, triwild and simwild return (outputs[\"envelope\"]) and write (<output>_envelope.msh), labelled by the tags it holds. A labelled envelope is a reference, the first component's input, held to as simwild holds one (3D): the envelopes (envelope_size; one per label with per_input_envelopes) are built around its triangles of this mesh's labels instead of the faces received, the order-2 tubes and curve-end anchors around its curves, and the feature tubes (feature_envelope_ratio) around its feature curves, those of the edge tags (a curve a tag expression selects is this mesh's, its tube around it as extracted), and each input point's anchor is centred on the nearest of its points of the point's label, as in tetwild and simwild; a point with none in the anchor's radius throws. The run throws for a label the held faces or feature edges carry that it lacks, and for a held face or feature edge received outside its labels' envelopes or tubes (envelope_size below the eps the sender held it to). It is returned with the band's boundary added, labelled by the band's tags (offset_output_tags), its curves and points passed on as received: the final offset surface, which is new and so its own reference, and, where the band wraps a region, its interface with that region, whose faces carry that region's label too (on the file route <output>_envelope.msh). So a chain keeps passing the first component's input on to the components after it. Until 2026-11-05 a reference was carried unchanged and not held to. An envelope without labels stands for the input's EnvelopeSurface group, which it cannot be combined with, and is returned as given."
   }
 ]

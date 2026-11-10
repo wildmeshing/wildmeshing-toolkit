@@ -1,5 +1,6 @@
 #include <jse/jse.h>
 #include <math.h>
+#include <spdlog/sinks/ostream_sink.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/components/topological_offset/TopoOffsetTetMesh.h>
@@ -16,6 +17,7 @@
 #include <numeric>
 #include <queue>
 #include <set>
+#include <sstream>
 #include <topological_offset_spec.hpp>
 #include <tuple>
 #include <wmtk/Types.hpp>
@@ -2819,7 +2821,7 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
 }
 
 namespace {
-/// python/tests/test_face_tags.py's tagged grid: [0, 2]^3 in 8^3 cubes of six tets, the corner
+/// tests/python/test_face_tags.py's tagged grid: [0, 2]^3 in 8^3 cubes of six tets, the corner
 /// cube [0, 0.25]^3 tagged red, and two open sheets on [0.5, 1.5]^2 as face tags, yellow at z = 1
 /// and blue at z = z_blue, a multiple of the cube size 0.25.
 MeshData two_sheet_grid(const double z_blue)
@@ -3610,6 +3612,56 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
     REQUIRE(fs.tags.size() == ft.tags.size());
     for (size_t i = 0; i < fs.tags.size(); ++i) CHECK(same(fs.tags[i], ft.tags[i], n));
     CHECK(fs.tag_names == ft.tag_names);
+}
+
+TEST_CASE("construction-target-distance-inert", "[offset][3d]")
+{
+    // The grid of save-offset-correspondence-3d, constructed: every outer end of a marched edge
+    // is a unit from the complex, the maximum marchable distance 1. A target from 1 up is not
+    // traced to; the march traces to half of it, 0.5, the same construction for every such
+    // target. With optimize_offset false nothing after the march reads target_distance, so it has
+    // no effect on the result, and the march warns. Below 1 the march traces to the target, and
+    // with optimize_offset true the optimization carries the front out to it: no warning.
+    const GridInput g = grid_input();
+    struct Run
+    {
+        std::vector<Vector3d> positions;
+        bool warned;
+    };
+    const auto construct = [&](const double target, const bool optimize) {
+        Parameters param = construction_params(
+            {{"offset_selection", "tag_0"},
+             {"num_threads", 0},
+             {"target_distance", target},
+             {"optimize_offset", optimize}},
+            g.V);
+        TopoOffsetTetMesh mesh(param, 0);
+        MatrixXd V_env;
+        MatrixXi F_env;
+        mesh.init_from_image(g.V, g.Tm, g.Tags, V_env, F_env, {"tag_0"});
+        mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+        mesh.label_input_complex();
+        mesh.init_input_complex_bvh();
+        mesh.consolidate_mesh();
+        std::ostringstream log;
+        const auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(log);
+        wmtk::logger().sinks().push_back(sink);
+        mesh.construct_offset(std::filesystem::temp_directory_path() / "wmtk_offset_inert");
+        wmtk::logger().sinks().pop_back();
+        Run run{{}, log.str().find("has no effect") != std::string::npos};
+        for (const auto& v : mesh.get_vertices())
+            run.positions.push_back(mesh.m_vertex_attribute[v.vid(mesh)].m_posf);
+        return run;
+    };
+    const Run traced = construct(0.3, false);
+    const Run above = construct(1.5, false);
+    const Run far_above = construct(3., false);
+    CHECK_FALSE(traced.warned);
+    CHECK(above.warned);
+    CHECK(far_above.warned);
+    CHECK(above.positions == far_above.positions); // bit for bit
+    CHECK(traced.positions != above.positions);
+    CHECK_FALSE(construct(1.5, true).warned);
 }
 
 TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]" + release_only)
@@ -5830,6 +5882,257 @@ TEST_CASE("curve-offset-converges", "[offset][3d][.]")
             }
         }
     }
+}
+
+namespace {
+/// A grid point of curve_grid(), in its coordinates.
+Vector3d grid_point(const std::array<int, 3>& c)
+{
+    return Vector3d(c[0] * 0.25 - 1, c[1] * 0.25 - 1, c[2] * 0.25 - 1);
+}
+
+/// curve_grid(curves) and a point block: each (name, grid point), its vertex under the name (a
+/// name given twice labels both), as tetwild and simwild write their input points.
+MeshData point_grid(
+    const std::vector<std::pair<std::string, std::array<int, 3>>>& points,
+    const std::vector<std::pair<std::string, GridPolyline>>& curves = {})
+{
+    MeshData m = curve_grid(curves);
+    if (curves.empty()) m.cells.erase(CellType::Edge);
+    const auto vid = [](const std::array<int, 3>& c) { return c[0] + 9 * (c[1] + 9 * c[2]); };
+    std::vector<std::string> names;
+    auto& block = m.cells[CellType::Point];
+    block.connectivity.resize(Eigen::Index(points.size()), 1);
+    std::vector<size_t> col;
+    for (size_t r = 0; r < points.size(); ++r) {
+        auto it = std::find(names.begin(), names.end(), points[r].first);
+        if (it == names.end()) it = names.insert(names.end(), points[r].first);
+        col.push_back(size_t(it - names.begin()));
+        block.connectivity(Eigen::Index(r), 0) = vid(points[r].second);
+    }
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(points.size(), names.size());
+    for (size_t r = 0; r < points.size(); ++r) member(r, col[r]) = 1;
+    block.attributes["tags"] = {member, names};
+    return m;
+}
+
+/// The result's point block: per label, the positions of its rows' vertices.
+std::map<std::string, std::vector<Vector3d>> result_points(const MeshData& out)
+{
+    std::map<std::string, std::vector<Vector3d>> by_label;
+    const auto& block = out.cells.at(CellType::Point);
+    const auto& tags = block.attributes.at("tags");
+    const auto member = tags.integers();
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (size_t t = 0; t < tags.labels.size(); ++t) {
+            if (member(r, Eigen::Index(t)) != 0)
+                by_label[tags.labels[t]].push_back(out.V.row(block.connectivity(r, 0)).transpose());
+        }
+    }
+    return by_label;
+}
+} // namespace
+
+TEST_CASE("point-offset-point-label", "[offset][3d]" + release_only)
+{
+    // A point label selected (label_input_complex()): the point offset of a tetwild or simwild
+    // input point, its band a ball. Every input point is anchored, selected or not
+    // (hold_curves_and_points()), and written back as the result's point block: each within its
+    // anchor's radius, feature_envelope_ratio x envelope_size, of where it was given. The rules
+    // and the ratio over its range: 0.01, 1 and 10.
+    struct Case
+    {
+        std::string rule;
+        double ratio;
+    };
+    const Case c = GENERATE(
+        Case{"exact", 1.},
+        Case{"exact_swept", 1.},
+        Case{"corner_bound", 1.},
+        Case{"exact", 0.01},
+        Case{"exact", 10.});
+    INFO("EXPERIMENTAL_band_volume_rule " << c.rule << ", feature_envelope_ratio " << c.ratio);
+    // p at the origin, q 0.5 from it, out of the band at 0.2
+    const std::array<int, 3> p{{4, 4, 4}}, q{{6, 4, 4}};
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "p"},
+        {"target_distance", 0.2},
+        {"EXPERIMENTAL_band_volume_rule", c.rule},
+        {"feature_envelope_ratio", c.ratio},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    // the default clean-up reads the exact integral, which "corner_bound" does not build
+    if (c.rule == "corner_bound") j["EXPERIMENTAL_label_cleanup"] = "off";
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", point_grid({{"p", p}, {"q", q}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const double r = c.ratio * 1e-3 * 2. * std::sqrt(3.); // the anchors' radius
+    const auto points = result_points(out);
+    REQUIRE(points.size() == 2);
+    for (const auto& [label, at] : {std::pair("p", p), std::pair("q", q)}) {
+        INFO("point " << label);
+        REQUIRE(points.at(label).size() == 1);
+        CHECK((points.at(label)[0] - grid_point(at)).norm() <= r);
+    }
+    // the complex: p alone, its vertex
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    size_t n_complex = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (labels(v, 0) != 1.) continue;
+        ++n_complex;
+        CHECK((out.V.row(v).transpose() - grid_point(p)).norm() <= r);
+    }
+    CHECK(n_complex == 1);
+}
+
+TEST_CASE("point-offset-label-alone", "[offset][3d]")
+{
+    // A point label is offset one label at a time, as an edge tag.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "p | q"},
+        {"target_distance", 0.2},
+        {"num_threads", 1}};
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(
+            j,
+            {{"m", point_grid({{"p", {{4, 4, 4}}}, {"q", {{6, 4, 4}}}})}}),
+        Catch::Matchers::ContainsSubstring("is selected alone"));
+}
+
+TEST_CASE("point-offset-label-names", "[offset][3d]")
+{
+    // One name is one input (init_from_image()): a point label an edge tag also has is that
+    // input's points beside its curve, selected with it; one a region has is refused.
+    SECTION("an edge tag's")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offset_selection", "curve"},
+            {"target_distance", 0.2},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m",
+                  point_grid({{"curve", {{6, 4, 4}}}}, {{"curve", {{{2, 4, 4}}, {{4, 4, 4}}}}})}}));
+        const MeshData& out = res.first.at("mesh");
+        const auto labels = out.vertex_attributes.at("labels").doubles();
+        bool point_in_complex = false;
+        for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+            if (labels(v, 0) == 1. &&
+                (out.V.row(v).transpose() - grid_point({{6, 4, 4}})).norm() < 1e-12)
+                point_in_complex = true;
+        }
+        CHECK(point_in_complex);
+        CHECK(result_points(out).at("curve").size() == 1);
+    }
+    SECTION("a region's")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offset_selection", "ambient"},
+            {"target_distance", 0.2},
+            {"num_threads", 1}};
+        REQUIRE_THROWS_WITH(
+            components::topological_offset::topological_offset(
+                j,
+                {{"m", point_grid({{"ambient", {{4, 4, 4}}}})}}),
+            Catch::Matchers::ContainsSubstring("is also a tet or face tag"));
+    }
+}
+
+TEST_CASE("empty-input-complex-keeps-curves-and-points", "[offset][3d]")
+{
+    // An offset_selection naming a region with no tet: the input complex is empty, and the run
+    // returns the mesh as loaded before anything is held (topological_offset.cpp). Its result
+    // keeps the input's edge block and point block, as a run with a band does.
+    MeshData input = point_grid({{"p", {{4, 4, 4}}}}, {{"curve", {{{2, 4, 4}}, {{6, 4, 4}}}}});
+    auto& tets = input.cells.at(CellType::Tetrahedron);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+    tags.col(0).setOnes();
+    tets.attributes["tags"] = {tags, {"ambient", "nothing"}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "nothing"},
+        {"target_distance", 0.2},
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    // the curve: the four grid edges from x = -0.5 to x = 0.5 on the x axis
+    REQUIRE(out.cells.count(CellType::Edge) == 1);
+    const auto& edges = out.cells.at(CellType::Edge);
+    CHECK(edges.attributes.at("tags").labels == std::vector<std::string>{"curve"});
+    CHECK(edges.connectivity.rows() == 4);
+    for (Eigen::Index r = 0; r < edges.connectivity.rows(); ++r) {
+        for (int c = 0; c < 2; ++c) {
+            const Vector3d x = out.V.row(edges.connectivity(r, c)).transpose();
+            CHECK(std::abs(x[0]) <= 0.5);
+            CHECK(x.tail<2>().norm() == 0.);
+        }
+    }
+    // the point, at the origin
+    REQUIRE(out.cells.count(CellType::Point) == 1);
+    const auto points = result_points(out);
+    REQUIRE(points.size() == 1);
+    REQUIRE(points.at("p").size() == 1);
+    CHECK(points.at("p")[0] == grid_point({{4, 4, 4}}));
+}
+
+namespace {
+/// The offset of point_grid(points)'s point p at `delta`, run to convergence (the settle exit,
+/// throw_on_nonconvergence), and every input point within its anchor's radius in the result.
+void require_point_offset_converges(
+    const std::vector<std::pair<std::string, std::array<int, 3>>>& points,
+    const double delta)
+{
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offset_selection", "p"},
+        {"target_distance", delta},
+        {"max_rounds", 15},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", true}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(j, {{"m", point_grid(points)}}));
+    const auto out = result_points(res.first.at("mesh"));
+    const double r = 1e-3 * 2. * std::sqrt(3.);
+    for (const auto& [name, at] : points) {
+        INFO("point " << name);
+        REQUIRE(out.at(name).size() == 1);
+        CHECK((out.at(name)[0] - grid_point(at)).norm() <= r);
+    }
+}
+} // namespace
+
+TEST_CASE("point-offset-converges", "[offset][3d][.]")
+{
+    // Hidden, for the runs before a merge: a point offset alone, run to convergence.
+    require_point_offset_converges({{"p", {{4, 4, 4}}}}, 0.2);
+}
+
+TEST_CASE("point-offset-held-point-inside-the-band", "[offset][3d][.]")
+{
+    // Hidden, and failing until the front can be kept off a held vertex that cannot reach the
+    // level set; the hidden runs record it until then. p is offset to 0.3, and q, a second input
+    // point, is held 0.25 from it, inside the band. MEASURED (2026-11-06, frames): turn 1's label
+    // clean-up puts q's vertex on the front. Its anchor (feature_envelope_ratio x envelope_size,
+    // 0.0035) lets it reach at most 0.2535, 0.047 short of the level set and beyond the bar
+    // (front_conv, 0.1 x 0.3), so the front never resolves there and folds around q through the
+    // 15th turn. With feature_envelope_ratio 10, q reaches 0.274, within the bar, and the run
+    // converges. It is the contradiction check_no_vertex_on_both_surfaces() refuses at
+    // construction for a vertex on the input complex (double_sphere with tag_1 protected throws
+    // there, 2026-11-09): a front vertex held where it cannot reach the level set.
+    require_point_offset_converges({{"p", {{4, 4, 4}}}, {"q", {{5, 4, 4}}}}, 0.3);
 }
 
 TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")

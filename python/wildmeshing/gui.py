@@ -1,18 +1,23 @@
-"""A pipeline builder: stack components as stages, edit their options, run, read each stage's log
+"""A pipeline window: stack components as stages, edit their options, run, read each stage's log
 and view each stage's result, in one polyscope window -- over wildmeshing.pipeline (the pipeline
 file, its stage keys and cache) and wildmeshing.viewer (the view of each stage).
 
-    python -m wildmeshing.builder [<pipeline.json>]
+    python -m wildmeshing.gui [<pipeline.json>]
 
 The "pipeline" window lists the inputs first, a table: name (editable; every reference follows a
 rename), file path ("..." for the system's file dialog), "x"; its last row adds one. Then the
 stages in run order, each with where its last result came from (memory, cache, save, run),
 "edited" once it or a stage it reads has changed since, or "failed". A new stage is named
 <n>_<component> until typed over, and reads the stage before it: its input that stage's mesh, its
-envelope that stage's envelope; the first stage reads the inputs. A component stage calls one
+envelope that stage's envelope; the first stage reads the inputs. A tracking stage reads the last
+history recorded: of the last stage with history_output set. A component stage calls one
 component, on options edited as the component's spec types them (wm.spec: the spec the compiled
 module holds, so the fields follow the installed build): checkboxes, numbers, choices, text,
-lists item by item, JSON for objects. Only the options set are written to the pipeline; "other
+lists item by item, JSON for objects. An option naming labels (its rule's "labels") has a
+dropdown of the labels the stage can name (Gui.labels), and a red note when its value names one
+the stage's input does not have; a stage naming its inputs (simwild, tetwild, triwild) shows
+`input` and its per-input lists (their rules' "per_input") as one table, a row per input. Only
+the options set are written to the pipeline; "other
 options", folded, lists the others -- a filter, each with its default, its doc as its tooltip,
 "+" to set it; EXPERIMENTAL_ and DEBUG_ ones in a group of their own. "ref" turns a value into a
 reference to an earlier stage's output mesh, report value or option. "run" on a stage runs the
@@ -25,6 +30,7 @@ paths stay relative to the folder the pipeline was loaded from (the current fold
 Needs polyscope (pip install -e ".[viewer]").
 """
 import copy
+import functools
 import json
 import os
 import queue
@@ -68,7 +74,28 @@ def _parses(text):
         return False
 
 
-class Builder:
+def _mesh_labels(mesh):
+    """The labels of a mesh's tagged blocks -- cells, faces, curves, points -- each once."""
+    out = []
+    for block in mesh.get("cells", {}).values():
+        tags = block.get("attributes", {}).get("tags", {})
+        out += [label for label in tags.get("labels", []) if label not in out]
+    return out
+
+
+@functools.lru_cache(maxsize=256)
+def _expression_problem(expr, labels):
+    """Why the tag expression `expr` selects nothing of `labels`: a syntax error, or a name they
+    do not have; None when it parses on them. Cached: the parser logs each problem it meets, and
+    the panel asks every frame."""
+    try:
+        unknown = wm.Expression(expr, list(labels)).has_unknown_names()
+    except RuntimeError as e:
+        return f"not a tag expression: {e}"
+    return "unknown label" if unknown else None
+
+
+class Gui:
     """The pipeline being built, its runs and its windows. The methods that change the pipeline
     are the panel's buttons, callable without a window."""
 
@@ -154,7 +181,7 @@ class Builder:
         if self.viewer is not None and result is not None:
             shown = any(s["name"] == old and s["shown"] for s in self.viewer.stages)
             self.viewer.set_stage(new, result["outputs"], result["report"], self._input(new),
-                                  shown=shown, replace=old)
+                                  shown=shown, replace=old, folder=self._folder(new))
             self.viewed[new] = result["key"]
 
     def add_input(self, name, file):
@@ -176,7 +203,9 @@ class Builder:
         that stage's envelope (unless it ran and returned none). With no stage before it, its
         `input` is the inputs -- all of them for a list, named by `input_names` when it has one;
         the last one otherwise. Only a required `input` is chained: an optional one means
-        something else (tracking's: the surface a history starts from)."""
+        something else (tracking's: the surface a history starts from). A required `history`
+        (tracking's) is the history of the last stage that records one, its history_output set;
+        with none, add_stage() leaves it at its default."""
         rules, required, _ = self.spec(component)
         results = self.pipeline.results
         before = next((s["name"] for s in reversed(self.pipeline.stages) if s["name"] not in
@@ -197,6 +226,10 @@ class Builder:
         result = results.get(before)
         if "/envelope" in rules and before and (result is None or "envelope" in result["outputs"]):
             out["envelope"] = {"from": before, "output": "envelope"}
+        recorder = next((s["name"] for s in reversed(self.pipeline.stages)
+                         if s.get("options", {}).get("history_output")), None)
+        if "history" in required and recorder:
+            out["history"] = {"from": recorder, "report": "history"}
         return out
 
     def remove(self, name):
@@ -224,6 +257,33 @@ class Builder:
     def unset_option(self, name, key):
         del self.stage(name)["options"][key]
         self._edited(name)
+
+    def _per_input(self, name):
+        """The per-input options the stage sets as lists (not references), in its order."""
+        stage = self.stage(name)
+        rules, _, _ = self.spec(stage["component"])
+        return [k for k, v in stage["options"].items()
+                if rules.get(f"/{k}", {}).get("per_input") and isinstance(v, list)]
+
+    def append_stage_input(self, name):
+        """Append an input to a stage's `input` list, a reference to the mesh of what it can read
+        last, and its entry, the item default, to each per-input list as long as `input` was."""
+        stage = self.stage(name)
+        rules, _, _ = self.spec(stage["component"])
+        options = stage["options"]
+        n = len(options["input"])
+        for key in self._per_input(name):
+            if len(options[key]) == n:
+                self.set_option(name, key, options[key] + [_default(rules.get(f"/{key}/*", {}))])
+        self.set_option(name, "input", options["input"] + [{"from": self.above(name)[-1],
+                                                            "output": "mesh"}])
+
+    def remove_stage_input(self, name, j):
+        """Remove a stage's input `j` and its entry in each per-input list that has one."""
+        options = self.stage(name)["options"]
+        for key in ["input"] + self._per_input(name):
+            if j < len(options[key]):
+                self.set_option(name, key, options[key][:j] + options[key][j + 1:])
 
     def save(self, path):
         cache = os.path.relpath(self.pipeline.cache, self.pipeline.root)
@@ -283,6 +343,49 @@ class Builder:
             return self.pipeline.results[ref["from"]]["outputs"].get(ref["output"])
         return None
 
+    def labels(self, name):
+        """The labels a stage's label options can name, and whether they are all of them (a name
+        outside them is then marked). They are the labels of the meshes its `input` refers to,
+        known once those have been made, and the names it gives its inputs (`input_names`: a
+        per-input list of new labels). A stage that names its inputs never knows all of them: C++
+        labels an unnamed input tag_<i>, and adds ambient; copying that rule here could drift."""
+        stage = self.stage(name)
+        rules, _, _ = self.spec(stage["component"])
+        refs = stage["options"].get("input")
+        out, known = [], True
+        for ref in refs if isinstance(refs, list) else [refs]:
+            result = self.pipeline.results.get(ref["from"]) \
+                if _is_ref(ref) and "output" in ref else None
+            mesh = result["outputs"].get(ref["output"]) if result else None
+            if mesh is None:
+                known = False
+            else:
+                out += [label for label in _mesh_labels(mesh) if label not in out]
+        for pointer, rule in rules.items():
+            if rule.get("per_input") and rules.get(pointer + "/*", {}).get("labels") == "new":
+                known = False
+                names = stage["options"].get(pointer[1:], [])
+                out += [n for n in names if isinstance(n, str) and n and n not in out] \
+                    if isinstance(names, list) else []
+        return out, known
+
+    def label_problem(self, name, rule, value):
+        """Why a label option's value names a label the stage cannot name (see labels): "unknown
+        label", or a tag expression's syntax error; None when it does not, or when the labels are
+        not all known."""
+        labels, known = self.labels(name)
+        if not known or not isinstance(value, str) or not value.strip():
+            return None
+        if rule.get("labels") == "existing":
+            return None if value in labels else "unknown label"
+        if rule.get("labels") == "expression":
+            return _expression_problem(value, tuple(labels))
+        return None
+
+    def _folder(self, name):
+        """The inputs share one folder in the view."""
+        return "inputs" if name in self.pipeline.inputs else None
+
     def poll(self):
         """Take in what the run finished, on the main thread, where polyscope's calls go."""
         while True:
@@ -298,7 +401,7 @@ class Builder:
                     for other in self.viewer.stages if value["outputs"] else []:
                         other["shown"] = False
                     self.viewer.set_stage(name, value["outputs"], value["report"],
-                                          self._input(name))
+                                          self._input(name), folder=self._folder(name))
                     self.viewed[name] = value["key"]
             elif kind == "picked":
                 if name == "new":
@@ -378,6 +481,76 @@ class Builder:
         psim.PopItemWidth()
         return c_from or c_kind or c_key, {"from": source, kind: current}
 
+    def _label(self, name, label, value, rule):
+        """A label option: its text, beside it a dropdown of the labels the stage can name -- one
+        chosen replaces an existing label, and joins an expression with |; in red, why the value
+        names one it cannot (label_problem)."""
+        psim = self.psim
+        labels, _ = self.labels(name)
+        changed, value = psim.InputText(label, value)
+        if labels:
+            psim.SameLine()
+            psim.PushItemWidth(110)
+            chosen, k = psim.Combo(f"##labels{label}", -1, labels)
+            psim.PopItemWidth()
+            if chosen:
+                join = rule["labels"] == "expression" and value.strip()
+                value, changed = f"{value} | {labels[k]}" if join else labels[k], True
+        problem = self.label_problem(name, rule, value)
+        if problem == "unknown label":
+            psim.TextColored(RED, f"unknown label: the stage can name {', '.join(labels)}")
+        elif problem:
+            psim.TextColored(RED, problem)
+        return changed, value
+
+    def _inputs_table(self, stage, keys, rules, required):
+        """`input` and the per-input options set (`keys`) as one table, a row per entry. "+" in a
+        cell lengthens a list shorter than `input` to that row; "x" ends a row (the input and its
+        entries), or, on an optional column's title, unsets that option; "+ input" appends one.
+        The edits apply after the table is drawn."""
+        psim = self.psim
+        name, options = stage["name"], stage["options"]
+        rows = max(len(options[k]) for k in ["input"] + keys)
+        edits = []
+        if psim.BeginTable(f"inputs##{name}", len(keys) + 2,
+                           psim.ImGuiTableFlags_SizingStretchProp):
+            psim.TableNextRow()
+            for c, key in enumerate(["input"] + keys):
+                psim.TableSetColumnIndex(c)
+                psim.TextUnformatted(key)
+                self._tooltip(rules.get(f"/{key}", {}))
+                if c and key not in required:
+                    psim.SameLine()
+                    if psim.SmallButton(f"x##unset{name}/{key}"):
+                        edits.append(lambda key=key: self.unset_option(name, key))
+            for j in range(rows):
+                psim.TableNextRow()
+                for c, key in enumerate(["input"] + keys):
+                    psim.TableSetColumnIndex(c)
+                    entries = options[key]
+                    if j < len(entries):
+                        psim.PushItemWidth(-1)
+                        changed, value = self._value(name, f"##{name}/{key}/{j}", entries[j],
+                                                     f"/{key}/*", rules)
+                        psim.PopItemWidth()
+                        if changed:
+                            edits.append(lambda key=key, j=j, value=value: self.set_option(
+                                name, key, options[key][:j] + [value] + options[key][j + 1:]))
+                    elif key == "input":
+                        psim.TextDisabled("no input")
+                    elif psim.SmallButton(f"+##{name}/{key}/{j}"):
+                        item = _default(rules.get(f"/{key}/*", {}))
+                        edits.append(lambda key=key, j=j, item=item: self.set_option(
+                            name, key, options[key] + [item] * (j + 1 - len(options[key]))))
+                psim.TableSetColumnIndex(len(keys) + 1)
+                if psim.SmallButton(f"x##{name}/remove_input{j}"):
+                    edits.append(lambda j=j: self.remove_stage_input(name, j))
+            psim.EndTable()
+        if self.above(name) and psim.SmallButton(f"+ input##{name}"):
+            edits.append(lambda: self.append_stage_input(name))
+        for edit in edits:
+            edit()
+
     def _list(self, name, label, value, pointer, rules, unset=None):
         """A list of scalars, an item per row with "x" to remove it; "+" appends a value, "+ ref"
         a reference to the stage just above. `unset` (an optional option): an "x" on the title
@@ -432,6 +605,9 @@ class Builder:
         elif kind == "string" and value in rule.get("options", []):
             changed, k = psim.Combo(label, rule["options"].index(value), rule["options"])
             value = rule["options"][k]
+        elif kind == "string" and isinstance(value, str) \
+                and rule.get("labels") in ("existing", "expression"):
+            changed, value = self._label(name, label, value, rule)
         elif kind == "string" and isinstance(value, str):
             changed, value = psim.InputText(label, value)
         else:  # objects, lists of objects, and values of another type than their rule's
@@ -454,7 +630,15 @@ class Builder:
         psim = self.psim
         name = stage["name"]
         rules, required, optional = self.spec(stage["component"])
+        # A stage naming its inputs: `input` and its per-input lists in one table.
+        table = isinstance(stage["options"].get("input"), list) \
+            and any(r.get("per_input") for r in rules.values())
+        keys = self._per_input(name) if table else []
+        if table:
+            self._inputs_table(stage, keys, rules, required)
         for key in list(stage["options"]):
+            if table and (key == "input" or key in keys):
+                continue
             unset = None if key in required else lambda key=key: self.unset_option(name, key)
             c, value = self._value(name, f"{key}##{name}/{key}", stage["options"][key], f"/{key}",
                                    rules, unset)
@@ -485,11 +669,14 @@ class Builder:
                 psim.TreePop()
         psim.TreePop()
 
-    def _remove(self, name):
+    def _try(self, edit, *args):
+        """Apply an edit; one it refuses (ValueError) becomes the message. Whether it applied."""
         try:
-            self.remove(name)
+            edit(*args)
+            return True
         except ValueError as e:
             self.message = str(e)
+            return False
 
     def _input_row(self, name, file):
         """An input as a row of the inputs table: its name (editable; every reference to it
@@ -501,10 +688,7 @@ class Builder:
         _, self.renaming[name] = psim.InputText(f"##name{name}", self.renaming.get(name, name))
         psim.PopItemWidth()
         if psim.IsItemDeactivatedAfterEdit():  # Enter, or a click elsewhere
-            try:
-                self.rename(name, self.renaming.pop(name))
-            except ValueError as e:
-                self.message = str(e)
+            self._try(self.rename, name, self.renaming.pop(name))
         psim.TableSetColumnIndex(1)
         missing = not os.path.exists(os.path.join(self.pipeline.root, file))
         psim.PushItemWidth(-100 if missing else -30)
@@ -520,7 +704,7 @@ class Builder:
             psim.TextColored(RED, "missing")
         psim.TableSetColumnIndex(2)
         if psim.SmallButton(f"x##remove{name}"):
-            self._remove(name)
+            self._try(self.remove, name)
 
     def _new_input_row(self):
         """The inputs table's last row: an input to add, named after its file until a name is
@@ -545,11 +729,8 @@ class Builder:
             self.pick_file("new")
         psim.TableSetColumnIndex(2)
         if psim.SmallButton("+##addinput"):
-            try:
-                self.add_input(new["name"], new["file"])
+            if self._try(self.add_input, new["name"], new["file"]):
                 self.new_input = {"name": "", "file": ""}
-            except ValueError as e:
-                self.message = str(e)
 
     def _stage(self, i, stage):
         psim = self.psim
@@ -570,7 +751,7 @@ class Builder:
             self.log_stage = name
         psim.SameLine()
         if psim.Button(f"remove##remove{name}"):
-            self._remove(name)
+            self._try(self.remove, name)
         psim.TreePop()
 
     def _add(self):
@@ -584,10 +765,7 @@ class Builder:
         self.new["default"] = default
         _, self.new["name"] = psim.InputText("name##new", self.new["name"])
         if psim.Button("add stage"):
-            try:
-                self.add_stage(self.new["name"], kinds[self.new["kind"]])
-            except ValueError as e:
-                self.message = str(e)
+            self._try(self.add_stage, self.new["name"], kinds[self.new["kind"]])
 
     def panel(self):
         """Every frame: what the run finished, then the windows. polyscope's own on the left,
@@ -675,30 +853,27 @@ class Builder:
         psim.End()
 
 
-def run_window(builder, screenshots=None):
-    """Open `builder`'s window; `screenshots` "mock" (or WM_VIEWER_SCREENSHOTS) draws three frames
+def run_window(gui, screenshots=None):
+    """Open `gui`'s window; `screenshots` "mock" (or WM_VIEWER_SCREENSHOTS) draws three frames
     without one, as a self-test."""
     import polyscope as ps
     import polyscope.imgui as psim
 
     mode = _viewer.start(ps, screenshots)
-    ps.set_open_imgui_window_for_user_callback(False)  # the builder places its own windows
-    builder.ps, builder.psim = ps, psim
-    if builder.viewer is None:
-        builder.viewer = _viewer.Viewer(ps, psim)
-    ps.set_user_callback(builder.panel)
-    if mode == "mock":
-        ps.show(3)
-    else:
-        ps.show()
+    ps.set_open_imgui_window_for_user_callback(False)  # the GUI places its own windows
+    gui.ps, gui.psim = ps, psim
+    if gui.viewer is None:
+        gui.viewer = _viewer.Viewer(ps, psim)
+    ps.set_user_callback(gui.panel)
+    ps.show(3 if mode == "mock" else None)
 
 
 def main(argv):
     if argv and os.path.exists(argv[0]):
-        builder = Builder(Pipeline.load(argv[0]), argv[0])
+        gui = Gui(Pipeline.load(argv[0]), argv[0])
     else:
-        builder = Builder(Pipeline([], os.getcwd()), argv[0] if argv else None)
-    run_window(builder)
+        gui = Gui(Pipeline([], os.getcwd()), argv[0] if argv else None)
+    run_window(gui)
 
 
 if __name__ == "__main__":

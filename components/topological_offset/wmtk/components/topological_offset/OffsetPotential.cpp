@@ -1397,7 +1397,6 @@ double BandVolumeEnergy3D::swept_change(
     using wmtk::utils::predicates::Orientation;
     if (x0 == x1) return 0.;
     ExactBandIntegral::Stats local;
-    ExactBandIntegral::Stats* sp = st ? st : &local;
     double s = 0.;
     for (size_t i = 0; i < faces.size(); ++i) {
         const auto& [A, B] = faces[i];
@@ -1405,8 +1404,8 @@ double BandVolumeEnergy3D::swept_change(
         const Orientation mv = orient3d(x0, A, B, x1);
         if (mv == Orientation::COPLANAR) continue; // a flat swept tet
         const double sign = mv == Orientation::POSITIVE ? -1. : 1.;
-        s += sign * (keep ? eb.value({{x0, x1, A, B}}, delta, sp, (*keep)[i])
-                          : eb.value({{x0, x1, A, B}}, delta, sp));
+        s += sign * (keep ? eb.value({{x0, x1, A, B}}, delta, st ? st : &local, (*keep)[i])
+                          : eb.value({{x0, x1, A, B}}, delta, st));
     }
     return s / delta;
 }
@@ -1429,6 +1428,31 @@ void BandVolumeEnergy3D::set_swept(
     m_eb_val_set = m_eb_der_set = false;
     m_eb_parts.clear();
     m_eb_parts.resize(m_cells.size());
+}
+
+bool BandVolumeEnergy3D::swept_value_at(
+    const ExactBandIntegral& eb,
+    const double delta,
+    const Eigen::Vector3d& x0,
+    const Eigen::Vector3d& x1,
+    const std::vector<std::array<Eigen::Vector3d, 2>>& faces,
+    double& E) const
+{
+    // See the declaration.
+    const auto same = [](const Eigen::Vector3d& a, const Eigen::Vector3d& b) {
+        return std::memcmp(a.data(), b.data(), 3 * sizeof(double)) == 0;
+    };
+    if (!m_sw || !m_eb_val_set || m_eb.get() != &eb || !(m_delta == delta) ||
+        !same(m_eb_val_x, x1) || !same(m_x0, x0) || faces.size() != m_sw_faces.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < faces.size(); ++i) {
+        if (!same(faces[i][0], m_sw_faces[i][0]) || !same(faces[i][1], m_sw_faces[i][1])) {
+            return false;
+        }
+    }
+    E = m_eb_E;
+    return true;
 }
 
 double BandVolumeEnergy3D::sw_eval(

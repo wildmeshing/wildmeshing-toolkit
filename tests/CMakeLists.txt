@@ -147,6 +147,24 @@ if(TARGET wildmeshing AND Python_EXECUTABLE)
                         -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_tracking_correspondences.py")
             set_tests_properties(python_tracking_correspondences PROPERTIES TIMEOUT 1800)
         endif()
+        # The pipeline, its GUI and the viewer, pytest tests (the GUI's and the viewer's skip
+        # without polyscope), when the interpreter has pytest: the Linux CI jobs install it.
+        execute_process(
+            COMMAND "${Python_EXECUTABLE}" -c "import pytest"
+            RESULT_VARIABLE WMTK_PYTHON_PYTEST_RESULT
+            OUTPUT_QUIET ERROR_QUIET)
+        if(WMTK_PYTHON_PYTEST_RESULT EQUAL 0)
+            add_test(
+                NAME python_pipeline
+                COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>/.."
+                        "WM_VIEWER_SCREENSHOTS=mock"
+                        "${Python_EXECUTABLE}" -m pytest -q -p no:cacheprovider
+                        "${PROJECT_SOURCE_DIR}/tests/python/test_pipeline.py"
+                        "${PROJECT_SOURCE_DIR}/tests/python/test_gui.py"
+                        "${PROJECT_SOURCE_DIR}/tests/python/test_viewer.py")
+        else()
+            message(STATUS "pytest not found for ${Python_EXECUTABLE}: python_pipeline is not registered")
+        endif()
     else()
         message(STATUS "NumPy not found for ${Python_EXECUTABLE}: python_memory_io and python_tracking are not registered")
     endif()

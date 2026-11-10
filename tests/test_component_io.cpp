@@ -1319,24 +1319,6 @@ TEST_CASE(
 }
 #endif
 #ifdef WMTK_TEST_topological_offset
-TEST_CASE("Offset refuses a tagged mesh's points until it holds them", "[component_io][tagged]")
-{
-    // The offset holds no points, as it holds no feature curves: a point block is refused, not
-    // dropped.
-    WorkingDirectory cwd;
-    auto data = cube_tets();
-    add_tags(data, CellType::Tetrahedron);
-    data.cells[CellType::Point].connectivity.resize(1, 1);
-    data.cells[CellType::Point].connectivity << 7;
-    data.cells[CellType::Point].attributes["tags"] = {
-        DataMatrix<uint8_t>::Ones(1, 1).eval(),
-        {"p"}};
-    REQUIRE_THROWS_WITH(
-        topological_offset::topological_offset(
-            {{"input", "tagged"}, {"offset_selection", "tag_0"}, {"optimize_offset", false}},
-            {{"tagged", data}}),
-        Catch::Matchers::ContainsSubstring("points"));
-}
 TEST_CASE("Offset accepts named tagged meshes", "[component_io]")
 {
     // A mesh that fills its box: the offset refuses one that does not (require_box_boundary()),
@@ -3781,7 +3763,8 @@ TEST_CASE(
 // A received input point and the reference (TetOptimizerMesh::ReferencePoints). `run` a receiving
 // component's call, `mesh` and `envelope` a producer's output and envelope, with an input point
 // labelled p; the anchor radius r is 10 eps, at which the receivers move a point in two
-// iterations (at the default, eps, these do not). Without an envelope given the point is held
+// iterations (at the default, eps, these do not); `eps` the receiver's, from its report unless
+// given (the offset's report has none). Without an envelope given the point is held
 // around where it arrives, as before: it may move, within r of there. With the envelope, its
 // point p moved 0.9 r from the point, opposite to where the point moved without it, the point
 // ends within r of the envelope's: held around where it arrived, as until 2026-11, it ended its
@@ -3815,7 +3798,8 @@ template <typename Run>
     const Run& run,
     const MeshData& mesh,
     const MeshData& envelope,
-    nlohmann::json options)
+    nlohmann::json options,
+    const double eps = 0)
 {
     using Catch::Matchers::ContainsSubstring;
     const double ratio = 10;
@@ -3823,7 +3807,7 @@ template <typename Run>
     const Vector3d arrival = point_p(mesh);
     const auto alone = run(options, MeshMap{{"m", mesh}});
     check(alone);
-    const double r = ratio * alone.second.at("eps").template get<double>();
+    const double r = ratio * (eps > 0 ? eps : alone.second.at("eps").template get<double>());
     const Vector3d move = point_p(alone.first.at("mesh")) - arrival;
     CHECK(move.norm() <= r * (1 + 1e-9));
     options["envelope"] = "e";
@@ -3864,6 +3848,42 @@ TEST_CASE(
         tags_only(produced.first.at("mesh")),
         produced.first.at("envelope"),
         {{"input", "m"}, {"filter", "none"}, {"max_iterations", 2}, {"num_threads", 1}});
+}
+#endif
+#if defined(WMTK_TEST_tetwild) && defined(WMTK_TEST_topological_offset)
+TEST_CASE(
+    "Offset holds a received point to the envelope's point of its label",
+    "[component_io][envelope][tagged]" + release_only)
+{
+    // The point offset of the received point: its band grows around it, and it is held to the
+    // reference's point as tetwild, triwild and simwild hold theirs. At tetwild's eps, as a chain
+    // runs the offset (envelope_size).
+    WorkingDirectory cwd;
+    const auto produced = tetwild::tetwild(
+        {{"input", {"a", "p"}},
+         {"input_names", {"a", "p"}},
+         {"simplify", false},
+         {"filter", "none"},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"a", box_surface(Vector3d(0, 0, 0), Vector3d(1, 1, 1))},
+         {"p", point_input(0.3, 0.4, 0.45)}});
+    check(produced);
+    const double eps = produced.second.at("eps").get<double>() * (1 + 1e-9);
+    check_received_point(
+        [](const nlohmann::json& o, const MeshMap& m) {
+            return topological_offset::topological_offset(o, m);
+        },
+        tags_only(produced.first.at("mesh")),
+        produced.first.at("envelope"),
+        {{"input", "m"},
+         {"envelope_size", eps},
+         {"offset_selection", "p"},
+         {"target_distance", 0.1},
+         {"max_rounds", 1},
+         {"num_threads", 1},
+         {"throw_on_nonconvergence", false}},
+        eps);
 }
 #endif
 #ifdef WMTK_TEST_triwild

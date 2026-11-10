@@ -370,7 +370,8 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
     // BandVolumeEnergy3D::set_swept(), built as the smoother builds it (band_volume_energy_at()),
     // on a box coned to the moving vertex with random labels (exact-swept-identities), at the
     // cube's corner and across the valley's bisector:
-    //  (1) its value against band_swept_change() from x0, bit for bit;
+    //  (1) its value against band_swept_change() from x0, bit for bit, and read back by
+    //      swept_value_at() for those inputs only (TopoOffsetTetMesh::swept_accept());
     //  (2) its gradient and Hessian against central differences of its value and gradient;
     //  (3) its gradient and Hessian against the "exact" rule's (band_volume_energy_at() under
     //      "exact"), at x0 and at displaced points: both are E(B)'s, and no face part is labelled
@@ -408,7 +409,7 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
          {std::tuple{"cube corner", &in_cube, Vec3(1.04, 1.03, 1.05)},
           std::tuple{"valley bisector", &in_valley, Vec3(0.2, 0.05, 0.052)}}) {
         double worst_g = 0., worst_h = 0., worst_eg = 0., worst_eh = 0.;
-        int n_models = 0, n_points = 0, value_mismatch = 0;
+        int n_models = 0, n_points = 0, value_mismatch = 0, readback_mismatch = 0;
         size_t evals = 0, rule_a = 0, ring = 0;
         for (int trial = 0; trial < 20; ++trial) {
             std::vector<Vec3> pts;
@@ -432,6 +433,27 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
                 ++n_points;
                 // (1)
                 if (!(sw->value(xv) == mesh->band_swept_change(0, x0, x))) ++value_mismatch;
+                {
+                    std::vector<std::array<Vec3, 2>> faces;
+                    mesh->band_swept_faces(0, x0, faces);
+                    const ExactBandIntegral& eb = *mesh->m_band_exact;
+                    const double delta = mesh->m_offset_params.target_distance;
+                    double E = std::nan("");
+                    if (!(sw->swept_value_at(eb, delta, x0, x, faces, E) &&
+                          E == mesh->band_swept_change(0, x0, x))) {
+                        ++readback_mismatch;
+                    }
+                    // one ulp off in the position, x0 or a face corner: not its inputs
+                    Vec3 y = x;
+                    y[0] = std::nextafter(y[0], 2.);
+                    auto f2 = faces;
+                    f2.back()[1][2] = std::nextafter(f2.back()[1][2], 2.);
+                    if (sw->swept_value_at(eb, delta, x0, y, faces, E) ||
+                        sw->swept_value_at(eb, delta, y, x, faces, E) ||
+                        sw->swept_value_at(eb, delta, x0, x, f2, E)) {
+                        ++readback_mismatch;
+                    }
+                }
                 // (2)
                 Vec3 g, ge;
                 Eigen::Matrix3d H, He;
@@ -467,6 +489,7 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
         }
         CHECK(n_models > 0);
         CHECK(value_mismatch == 0);
+        CHECK(readback_mismatch == 0);
         CHECK(worst_g <= 1e-6);
         CHECK(worst_h <= 1e-5);
         CHECK(worst_eg <= 1e-9);
@@ -476,13 +499,14 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
         CHECK(ring == 0);
         std::printf(
             "  (1)-(3) %s: %d models, %d points: value against band_swept_change() %d "
-            "mismatches; against central differences gradient %.1e, Hessian %.1e; against "
-            "\"exact\" gradient %.1e, Hessian %.1e; %zu derivative evaluations, %zu from the "
-            "ring\n",
+            "mismatches, read back %d; against central differences gradient %.1e, Hessian %.1e; "
+            "against \"exact\" gradient %.1e, Hessian %.1e; %zu derivative evaluations, %zu from "
+            "the ring\n",
             name,
             n_models,
             n_points,
             value_mismatch,
+            readback_mismatch,
             worst_g,
             worst_h,
             worst_eg,

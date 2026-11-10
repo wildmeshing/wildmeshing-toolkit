@@ -1,4 +1,4 @@
-"""Fixtures: synthetic multi-tag meshes and PolyFEM discovery.
+"""The PolyFEM operations' tests: synthetic multi-tag meshes and PolyFEM discovery.
 
 Meshes are built directly with gmsh (Freudenthal/Kuhn tet grids, conforming
 across cells) so tests are deterministic and need no external data.
@@ -7,22 +7,8 @@ import os
 from itertools import permutations
 from pathlib import Path
 
-import gmsh
 import numpy as np
 import pytest
-
-# When wildmeshing is not pip-installed, fall back to the toolkit build tree,
-# which mirrors the package in build/bin/wildmeshing.
-try:
-    import wildmeshing  # noqa: F401
-except ImportError:
-    import sys
-    for up in Path(__file__).resolve().parents:
-        cand = up / "build" / "bin"
-        if (cand / "wildmeshing" / "__init__.py").is_file():
-            sys.path.insert(0, str(cand))
-            break
-
 
 # --------------------------------------------------------------------------
 # PolyFEM discovery
@@ -44,6 +30,8 @@ def _write_groups_msh(path, dim, coords, groups):
     """Write a physical-groups .msh: coords (n,3) 1-based-node-tag order,
     groups = {name: [prim vertex tuples]} written in insertion order
     (first group owns the node block, matching wmtk's convention)."""
+    import gmsh  # here, not above: gmsh comes with the polyfem extras, which most tests need not
+
     gmsh.initialize()
     try:
         gmsh.model.add("synthetic")

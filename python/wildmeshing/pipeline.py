@@ -51,16 +51,15 @@ from . import checkpoint
 
 # prismatic_mesh reads fixed names: the regions tag_0 (the input volume) and offset (the band), and
 # vertex labels 1 input / 2 offset / 0 background. Until it takes its regions by label, a pipeline
-# names them with two options its C++ spec does not have yet, and the input is rebuilt here: tag_0
-# and offset the unions of those regions, the labels from the offsets' correspondence
-# (corr_input_vid, by vid). The JSON stays as it is once the C++ side reads these options.
+# selects them with two tag expressions its C++ spec does not have yet, and the input is rebuilt
+# here: tag_0 and offset the tets each expression selects, the labels from the offsets'
+# correspondence (corr_input_vid, by vid). The JSON stays as it is once the C++ side reads these
+# options.
 OPTIONS = {"prismatic_mesh": [
-    {"pointer": "/input_tags", "type": "list", "default": [],
-     "doc": "Regions of the input volume (tag_0). Read by wildmeshing.pipeline, not C++, for now."},
-    {"pointer": "/input_tags/*", "type": "string"},
-    {"pointer": "/offset_tags", "type": "list", "default": [],
-     "doc": "Regions of the band (offset). Read by wildmeshing.pipeline, not C++, for now."},
-    {"pointer": "/offset_tags/*", "type": "string"}]}
+    {"pointer": "/input_tags", "type": "string", "labels": "expression", "default": "",
+     "doc": "The input volume (tag_0), a tag expression. Read by wildmeshing.pipeline for now."},
+    {"pointer": "/offset_tags", "type": "string", "labels": "expression", "default": "",
+     "doc": "The band (offset), a tag expression. Read by wildmeshing.pipeline for now."}]}
 
 
 def _prismatic_input(mesh, input_tags, offset_tags):
@@ -76,12 +75,17 @@ def _prismatic_input(mesh, input_tags, offset_tags):
     tags = tets["attributes"]["tags"]
     values, labels = np.asarray(tags["values"]), list(tags["labels"])
 
-    def union(names):
-        missing = [n for n in names if n not in labels]
-        if missing:
-            raise ValueError(f"prismatic_mesh: the input has no region {', '.join(missing)}")
-        return (values[:, [labels.index(n) for n in names]] == 1).any(axis=1)
-    tag_0, band = union(input_tags), union(offset_tags)
+    def selected(expr):
+        # simwild's parser, as every component reads an expression; one evaluation per distinct
+        # set of regions a tet is in.
+        e = wildmeshing.Expression(expr, labels)
+        if e.has_unknown_names():
+            raise ValueError(f"prismatic_mesh: {expr!r} names a region the input does not have"
+                             f" (it has {', '.join(labels)})")
+        rows, inverse = np.unique(values == 1, axis=0, return_inverse=True)
+        chosen = [e.eval({n for n, x in zip(labels, row) if x}) for row in rows]
+        return np.array(chosen, bool)[inverse.ravel()]
+    tag_0, band = selected(input_tags), selected(offset_tags)
     vid = np.asarray(attributes["vid"]["values"]).ravel()
     corr = np.asarray(attributes["corr_input_vid"]["values"]).ravel()
     row = {v: k for k, v in enumerate(vid)}
@@ -150,7 +154,9 @@ def _mesh_name(ref):
 @contextlib.contextmanager
 def _captured(path):
     """fds 1 and 2 into the file `path`, restored on the way out, exceptions included."""
-    libc = ctypes.CDLL(None)
+    # The C library's buffers, flushed on the way out, so that what the module wrote lands in
+    # `path`; Windows has no ctypes.CDLL(None) to reach them by.
+    libc = ctypes.CDLL(None) if os.name != "nt" else None
     sys.stdout.flush()
     sys.stderr.flush()
     saved = os.dup(1), os.dup(2)
@@ -162,7 +168,8 @@ def _captured(path):
         finally:
             sys.stdout.flush()
             sys.stderr.flush()
-            libc.fflush(None)
+            if libc is not None:
+                libc.fflush(None)
             os.dup2(saved[0], 1)
             os.dup2(saved[1], 2)
             os.close(saved[0])
@@ -329,7 +336,11 @@ class Pipeline:
         (None for an input). on_stage(name, result) is called after each."""
         keys = {}
 
-        def done(name, result):
+        def done(name, key, fresh):
+            # The result in memory while its key is unchanged, else fresh().
+            old = self.results.get(name)
+            result = {**old, "source": "memory"} if old is not None and old["key"] == key else \
+                fresh()
             self.results[name] = result
             if on_stage:
                 on_stage(name, result)
@@ -338,16 +349,12 @@ class Pipeline:
             path = os.path.join(self.root, file)
             with open(path, "rb") as f:
                 key = keys[name] = hashlib.sha256(f.read()).hexdigest()
-            old = self.results.get(name)
-            done(name, {**old, "source": "memory"} if old is not None and old["key"] == key else
-                 {"outputs": {"mesh": wildmeshing.read_mesh(path)}, "report": {}, "key": key,
-                  "source": "file", "log": None})
+            done(name, key, lambda: {"outputs": {"mesh": wildmeshing.read_mesh(path)},
+                                     "report": {}, "key": key, "source": "file", "log": None})
         for stage in self.stages:
             name = stage["name"]
             key = keys[name] = self._key(stage, keys)
-            old = self.results.get(name)
-            done(name, {**old, "source": "memory"} if old is not None and old["key"] == key else
-                 self._component(stage, key))
+            done(name, key, lambda: self._component(stage, key))
             if name == until:
                 break
         return {name: self.results[name] for name in keys}

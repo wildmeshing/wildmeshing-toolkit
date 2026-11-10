@@ -965,12 +965,18 @@ public:
     /// f = (x, a_f, b_f) the boundary faces of the band B through the vertex, ordered with their
     /// normal (a_f - x0) x (b_f - x0) out of B (TopoOffsetTetMesh::band_swept_faces()), sign_f
     /// the sign of (x1 - x0) along it by exact orient3d, a flat swept tet skipped (TopoOffsetTetMesh,
-    /// EXACT SWEPT CHANGE). value() with a Stats (`st`, or a local one), which keeps the value
-    /// table out of the swept tets: no other call asks for them again. The one function both the
-    /// decisions (TopoOffsetTetMesh::band_swept_sum()) and the smoother's search model
-    /// (set_swept()) evaluate. `keep` (the search model's): per face its swept tet's partition,
-    /// written here and read by the model's derivatives at the same x1 (sw_eval()); the value is
-    /// the one computed without it (ExactBandIntegral::Partition).
+    /// EXACT SWEPT CHANGE). value() through its value table, or with `st` when given (a Stats
+    /// counts every evaluation: no table). The one function both the decisions
+    /// (TopoOffsetTetMesh::band_swept_sum()) and the smoother's search model (set_swept())
+    /// evaluate. `keep` (the search model's): per face its swept tet's partition, written here
+    /// with `st` or a local Stats and read by the model's derivatives at the same x1 (sw_eval());
+    /// the value is the one computed without it (ExactBandIntegral::Partition).
+    /// Why the table for the decisions: a swept tet is asked for again within a pass. MEASURED
+    /// (Thingi 70565 piece 16 inward at 0.5 delta_1, 1 thread, turn 7, 2026-11-02, every swept
+    /// tet keyed by its 12 coordinates): 58% of the collapses' swept tets and 61% of the swaps'
+    /// cone tets (TopoOffsetTetMesh::band_chain_change()) repeated one of their pass bit for bit;
+    /// their value() calls took 27.7 s and 10.5 s of the turn's 260 s. The projected step's calls
+    /// take the table too (its repeats not measured).
     static double swept_change(
         const ExactBandIntegral& eb,
         double delta,
@@ -1049,6 +1055,17 @@ public:
         double delta,
         std::vector<std::array<Eigen::Vector3d, 2>> faces,
         SweptDerivCounts* counts);
+    /// "exact_swept": the search model's last value in E, when it was taken for the move x0 -> x1
+    /// over `faces` -- the model's integral, delta, x0 and faces, and its last value's x, equal to
+    /// them bit for bit -- so swept_change() of those inputs (TopoOffsetTetMesh::swept_accept());
+    /// false otherwise.
+    bool swept_value_at(
+        const ExactBandIntegral& eb,
+        double delta,
+        const Eigen::Vector3d& x0,
+        const Eigen::Vector3d& x1,
+        const std::vector<std::array<Eigen::Vector3d, 2>>& faces,
+        double& E) const;
     /// The current certified ball, its centre and radius (radius < 0: none yet). For the tests.
     std::pair<Eigen::Vector3d, double> certified_ball() const { return {m_ball_c, m_ball_r}; }
 
