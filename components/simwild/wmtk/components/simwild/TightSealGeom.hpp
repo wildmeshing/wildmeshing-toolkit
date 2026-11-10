@@ -61,16 +61,6 @@ std::optional<double> sphere_trace(
     double tol,
     bool from_below);
 
-/// `regions` by the distance from p to their BVHs (region i's is bvhs[i]), nearest first; those at
-/// the same distance stay in their order in `regions`.
-std::vector<size_t> regions_by_distance(
-    const std::vector<SimpleBVH::BVH>& bvhs,
-    const Vector2d& p,
-    const std::vector<size_t>& regions);
-std::vector<size_t> regions_by_distance(
-    const std::vector<SimpleBVH::BVH>& bvhs,
-    const Vector3d& p,
-    const std::vector<size_t>& regions);
 
 /// The six edges of a tet, as pairs of its local vertex indices.
 inline constexpr std::array<std::array<int, 2>, 6> tet_edges = {

@@ -15,7 +15,6 @@ set(SRC_FILES
     test_embed_surface_components.cpp
     test_simplify_boundary.cpp
     test_late_feature_tracking.cpp
-    test_multi_voronoi.cpp
     test_order2_tube.cpp
     test_feature_inputs.cpp
     )

@@ -1,4 +1,3 @@
-#include "MultiVoronoiEnumeration.hpp"
 #include "SimWildMeshTri.hpp"
 #include "TightSealGeom.hpp"
 
@@ -586,25 +585,17 @@ void SimWildMeshTri::tight_seal_geom(
     const std::string& selection,
     const int64_t min_regions,
     const bool sanity,
-    const std::string& mode,
     const ExprPtr& spatial_selection)
 {
-    const bool split_fill = mode == "split_fill"; // has no limit of three regions
-    if (!split_fill && mode != "voronoi") {
-        log_and_throw_error(
-            "tight_seal_geom: mode must be \"voronoi\" or \"split_fill\". Input was {}",
-            mode);
-    }
     const bool detected = selection == "detected";
     if (!detected && selection != "explicit") {
         log_and_throw_error(
             "tight_seal_geom: selection must be \"explicit\" or \"detected\". Input was {}",
             selection);
     }
-    if (detected && (min_regions < 2 || (!split_fill && min_regions > 3))) {
+    if (detected && min_regions < 2) {
         log_and_throw_error(
-            "tight_seal_geom: min_regions must be {}. Input was {}",
-            split_fill ? "at least 2" : "2 or 3",
+            "tight_seal_geom: min_regions must be at least 2. Input was {}",
             min_regions);
     }
     if (!detected && min_regions != 2) {
@@ -631,11 +622,8 @@ void SimWildMeshTri::tight_seal_geom(
         tags.assign(found.begin(), found.end());
     } else {
         tags = listed_tags;
-        if (tags.size() < 2 || (!split_fill && tags.size() > 3)) {
-            log_and_throw_error(
-                "tight_seal_geom needs {} tags. Input was {}",
-                split_fill ? "two or more" : "two or three",
-                tags);
+        if (tags.size() < 2) {
+            log_and_throw_error("tight_seal_geom needs two or more tags. Input was {}", tags);
         }
         if (CellTag(tags.begin(), tags.end()).size() != tags.size()) {
             log_and_throw_error("tight_seal_geom needs distinct tags. Input was {}", tags);
@@ -738,7 +726,7 @@ void SimWildMeshTri::tight_seal_geom(
     tight_seal::ClearOnExit<std::function<double(const Vector2d&)>> clear_voronoi_split{
         m_voronoi_split_fn};
 
-    // filled[fid]: the Voronoi fill set the face's region. A split's children inherit it from
+    // filled[fid]: the fill set the face's region. A split's children inherit it from
     // their parent, so it stays right whichever component's split cuts the face. For the sanity
     // check.
     std::vector<char> filled(tri_capacity(), 0);
@@ -890,8 +878,7 @@ void SimWildMeshTri::tight_seal_geom(
                 continue;
             }
             trace_point = a + *t * trace_dir;
-            const size_t v_new =
-                tight_seal_split_tracked(e, processed, filled, [](const size_t, const size_t) {});
+            const size_t v_new = tight_seal_split_tracked(e, processed, filled);
             if (v_new == size_t(-1)) {
                 ++n_not_split;
                 continue;
@@ -950,7 +937,6 @@ void SimWildMeshTri::tight_seal_geom(
         // above have no entry in `region`.
         std::vector<int> comp_id(tri_capacity(), -1);
         size_t n_components = 0;
-        size_t n_too_many = 0; // components bordering more than three regions
         for (const size_t fid : J_faces) {
             if (comp_id[fid] != -1) {
                 continue;
@@ -987,24 +973,6 @@ void SimWildMeshTri::tight_seal_geom(
                     comp_regions.push_back(i);
                 }
             }
-            // The Voronoi fill handles two or three regions per component: one bordering more
-            // (only detected tags can give that; at most three are listed) is left alone.
-            if (!split_fill && comp_regions.size() > 3) {
-                std::vector<std::string> names;
-                for (const size_t i : comp_regions) {
-                    const auto it = m_tag_id_to_name.find(tags[i]);
-                    names.push_back(
-                        it != m_tag_id_to_name.end() ? it->second : std::to_string(tags[i]));
-                }
-                logger().warn(
-                    "tight_seal_geom: a component of J ({} faces) borders {} regions {}, more "
-                    "than three: detected but not filled",
-                    comp.cells.size(),
-                    comp_regions.size(),
-                    names);
-                ++n_too_many;
-                continue;
-            }
             if (comp_regions.size() >= needed) {
                 if (detected) {
                     std::vector<int64_t> comp_tags;
@@ -1023,17 +991,12 @@ void SimWildMeshTri::tight_seal_geom(
             }
         }
         logger().info(
-            "tight_seal_geom: J has {} components; {} of them border {} {}; {} border more "
-            "than three and are not filled",
+            "tight_seal_geom: J has {} components; {} of them border {} {}",
             n_components,
             components_seal.size(),
-            detected ? fmt::format(
-                           "{}{} of the detected tags",
-                           needed,
-                           split_fill ? " or more" : (needed < 3 ? " to 3" : ""))
+            detected ? fmt::format("{} or more of the detected tags", needed)
                      : std::string("all tags"),
-            tags,
-            n_too_many);
+            tags);
 
         // J may not touch the mesh's boundary at all, not even at a vertex, in any component: the
         // topology of a region that reaches the boundary is much harder to reason about.
@@ -1053,160 +1016,9 @@ void SimWildMeshTri::tight_seal_geom(
         }
     }
 
-    // Each component is filled by tight_seal_split_fill in "split_fill" mode, otherwise by the
-    // Voronoi fill of each component with its regions, by enumeration
-    // (MultiVoronoiEnumeration.hpp): each vertex gets the set of the component's regions nearest to
-    // it (those it touches, for a vertex on a region), and each face is split as its corners' sets
-    // require and labelled with the region they share. The components are connected through edges,
-    // so the splits of one never cut the faces of another.
-    Vector2d lo = Vector2d::Constant(std::numeric_limits<double>::infinity());
-    Vector2d hi = -lo;
-    for (const Tuple& t : get_vertices()) {
-        lo = lo.cwiseMin(pos(t.vid(*this)));
-        hi = hi.cwiseMax(pos(t.vid(*this)));
-    }
-    const double tie_eps = 1e-10 * (hi - lo).norm(); // distances this close count as a tie
-
-    // The fill's view of the mesh, for one component: label l is region regions[l].
-    struct FillAdapter
-    {
-        SimWildMeshTri& m;
-        std::unordered_set<size_t>& faces;
-        std::vector<char>& filled;
-        const std::vector<size_t>& regions;
-        const std::vector<SimpleBVH::BVH>& bvhs;
-        const std::vector<int64_t>& tags;
-        multi_voronoi::LabelSet all;
-        double eps;
-
-        std::array<size_t, 3> face_vertices(const size_t f) const { return m.oriented_tri_vids(f); }
-        Vector2d position(const size_t v) const { return m.m_vertex_attribute[v].m_posf; }
-        double distance(const Vector2d& x, const int l) const
-        {
-            return tight_seal::bvh_distance(bvhs[regions[l]], x);
-        }
-        multi_voronoi::LabelSet initial_labels(const size_t v) const
-        {
-            // the regions of the faces at v; a filled face (of another component, met at a
-            // vertex) carries a region's tag too, but is no region
-            multi_voronoi::LabelSet s = 0;
-            for (const size_t f : m.get_one_ring_fids_for_vertex(v)) {
-                const CellTag& tag = m.m_face_attribute[f].tags;
-                if (tag.size() != 1 || filled[f]) {
-                    continue;
-                }
-                for (size_t l = 0; l < regions.size(); ++l) {
-                    if (tags[regions[l]] == *tag.begin()) {
-                        s |= multi_voronoi::label_bit(int(l));
-                    }
-                }
-            }
-            if (s != 0) {
-                return s;
-            }
-            return multi_voronoi::nearest_labels(
-                [this](const Vector2d& x, const int l) { return distance(x, l); },
-                position(v),
-                all,
-                eps);
-        }
-        bool alive(const size_t f) const { return faces.count(f) > 0; }
-        size_t split_edge(const size_t v0, const size_t v1, const Vector2d& x)
-        {
-            // linear along the edge, zero at x, so split_adjust_position puts the vertex there
-            const Vector2d dir = (position(v1) - position(v0)).normalized();
-            m.m_voronoi_split_fn = [x, dir](const Vector2d& p) { return (p - x).dot(dir); };
-            const size_t v = m.tight_seal_split_tracked(
-                simplex::Edge(v0, v1),
-                faces,
-                filled,
-                [](const size_t, const size_t) {});
-            m.m_voronoi_split_fn = nullptr;
-            return v;
-        }
-        size_t split_face(const size_t f, const Vector2d& x)
-        {
-            return m.tight_seal_split_face_tracked(f, x, faces, filled);
-        }
-        std::vector<size_t> faces_around(const size_t v) const
-        {
-            std::vector<size_t> out;
-            for (const size_t f : m.get_one_ring_fids_for_vertex(v)) {
-                if (faces.count(f) > 0) {
-                    out.push_back(f);
-                }
-            }
-            return out;
-        }
-        // replace the face's tags of the component's regions with label l's; other tags stay
-        void set_label(const size_t f, const int l)
-        {
-            CellTag& tag = m.m_face_attribute[f].tags;
-            for (const size_t j : regions) {
-                tag.erase(tags[j]);
-            }
-            tag.insert(tags[regions[l]]);
-            filled[f] = 1;
-        }
-    };
-
-    if (split_fill) {
-        tight_seal_split_fill(components_seal, components_regions, tags, region_bvhs, filled);
-    } else {
-        multi_voronoi::FillStats2D fill_stats;
-        for (size_t c = 0; c < components_seal.size(); ++c) {
-            const std::vector<size_t>& regions = components_regions[c];
-            if (regions.size() > size_t(multi_voronoi::max_labels)) {
-                log_and_throw_error(
-                    "tight_seal_geom: a component borders {} regions, more than the fill's {}",
-                    regions.size(),
-                    multi_voronoi::max_labels);
-            }
-            const multi_voronoi::LabelSet all =
-                regions.size() == size_t(multi_voronoi::max_labels)
-                    ? ~multi_voronoi::LabelSet(0)
-                    : multi_voronoi::label_bit(int(regions.size())) - 1;
-            std::unordered_set<size_t> comp_faces(
-                components_seal[c].cells.begin(),
-                components_seal[c].cells.end());
-            FillAdapter
-                adapter{*this, comp_faces, filled, regions, region_bvhs, tags, all, tie_eps};
-            fill_stats +=
-                multi_voronoi::fill_component_2d(adapter, components_seal[c].cells, all, tie_eps);
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-        }
-        if (!components_seal.empty()) {
-            logger().info(
-                "tight_seal_geom: Voronoi fill of {} components: faces planned as {} chord, {} "
-                "strip, "
-                "{} triple point, {} triple point at a corner, {} other; {} edges crossed twice; "
-                "{} "
-                "face splits, {} edge splits; {} faces revisited",
-                components_seal.size(),
-                fill_stats.chord,
-                fill_stats.strip,
-                fill_stats.triple,
-                fill_stats.triple_at_corner,
-                fill_stats.other,
-                fill_stats.fake_edges,
-                fill_stats.face_splits,
-                fill_stats.edge_splits,
-                fill_stats.visits);
-            if (fill_stats.other > 0 || fill_stats.refused_splits > 0 ||
-                fill_stats.fallback_labels > 0 || fill_stats.gave_up) {
-                logger().warn(
-                    "tight_seal_geom: Voronoi fill: {} faces of no known case, {} splits refused, "
-                    "{} "
-                    "faces labelled by their centroid's nearest region{}",
-                    fill_stats.other,
-                    fill_stats.refused_splits,
-                    fill_stats.fallback_labels,
-                    fill_stats.gave_up ? ", the visit cap was reached" : "");
-            }
-        }
-    }
+    // Each component is split as its faces' own labels of their corners require, and each face
+    // then takes a region from its corners' labels (tight_seal_split_fill).
+    tight_seal_split_fill(components_seal, components_regions, tags, region_bvhs, filled);
 
     // Sanity checks, on the output alone rather than on the components above: no face is
     // inverted; each filled face carries exactly one of the regions' tags; and each part of the

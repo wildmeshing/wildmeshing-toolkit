@@ -349,14 +349,11 @@ private:
     /// Split edge e, keeping `cells` up to date: the children of a tet in it replace it, and
     /// each child takes its parent's flag in `filled` (resized to the new capacity), if given its
     /// entry in `cell_group` (resized with -1), and if given its parent's `corner_labels` for the
-    /// corners it keeps (resized). Calls on_child(id, end_vid) for each child in `cells`, end_vid
-    /// being the endpoint of e the child keeps. Returns the new vertex, or -1 if the split was
-    /// refused.
+    /// corners it keeps (resized). Returns the new vertex, or -1 if the split was refused.
     size_t tight_seal_split_tracked(
         const simplex::Edge& e,
         std::unordered_set<size_t>& cells,
         std::vector<char>& filled,
-        const std::function<void(size_t, size_t)>& on_child,
         std::vector<int>* cell_group = nullptr,
         std::vector<CornerLabels>* corner_labels = nullptr);
     /// Split face f at p, keeping `cells`, `filled`, `cell_group` and `corner_labels` up to date
@@ -641,24 +638,15 @@ public:
      * The operation throws if a tet of J has a vertex on the mesh's boundary, in any component,
      * filled or not. Regions more than distance/2 from the boundary keep J off it.
      * Each component (connected through faces, so two touching at an edge or a vertex are filled
-     * separately) is then filled with the Voronoi diagram of its regions, by enumeration
-     * (MultiVoronoiEnumeration.hpp): every vertex gets the set of regions nearest to it; each
-     * face that the triple line (where three regions meet) pierces is split at its centroid, and
-     * each edge where its ends' nearest regions change (twice where a third region crosses it);
-     * each tet gets the tag of the region its corners share.
+     * separately) is then split as its tets' own labels of their corners require, and each
+     * resulting tet takes the region its corners' labels give (tight_seal_split_fill). No
+     * topology is checked.
      *
-     * `selection` "explicit": the regions are `tags`, two or three, which may not hold ambient
+     * `selection` "explicit": the regions are `tags`, two or more, which may not hold ambient
      * (the tag named "ambient"). "detected": `tags` is ignored (with a warning if it is not
      * empty), the regions are every tag but ambient that some tet has alone, and each part that
-     * borders `min_regions` (2 or 3; ignored, with a warning if not 2, for "explicit") to three of
-     * them is filled with those it borders. A part bordering four or more is left alone, with a
-     * warning: the fill handles at most three regions.
-     *
-     * `mode` is EXPERIMENTAL. "voronoi": as above. "split_fill": the limit of three regions
-     * goes: any number of `tags` from two up, any `min_regions` from two up, and a component may
-     * border any number of regions. Each component is split as its tets' own labels of their
-     * corners require, and each resulting tet takes the region its corners' labels give
-     * (tight_seal_split_fill). No topology is checked.
+     * borders at least `min_regions` of them (2 or more; ignored, with a warning if not 2, for
+     * "explicit") is filled with those it borders.
      *
      * `spatial_selection`: J keeps only the tets whose tags satisfy it, before its components are
      * found; nullptr keeps them all. On hold: the simwild component passes none, and refuses
@@ -675,7 +663,6 @@ public:
         const std::string& selection = "explicit",
         int64_t min_regions = 2,
         bool sanity = false,
-        const std::string& mode = "voronoi",
         const ExprPtr& spatial_selection = nullptr);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);

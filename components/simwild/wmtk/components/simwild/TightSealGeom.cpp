@@ -96,28 +96,6 @@ std::optional<double> sphere_trace_impl(
     return std::nullopt;
 }
 
-template <typename Vec>
-std::vector<size_t> regions_by_distance_impl(
-    const std::vector<SimpleBVH::BVH>& bvhs,
-    const Vec& p,
-    const std::vector<size_t>& regions)
-{
-    std::vector<std::pair<double, size_t>> ranked;
-    ranked.reserve(regions.size());
-    for (const size_t i : regions) {
-        ranked.emplace_back(bvh_distance(bvhs[i], p), i);
-    }
-    std::stable_sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
-        return a.first < b.first;
-    });
-    std::vector<size_t> out;
-    out.reserve(ranked.size());
-    for (const auto& r : ranked) {
-        out.push_back(r.second);
-    }
-    return out;
-}
-
 } // namespace
 
 std::optional<double> sphere_trace(
@@ -142,22 +120,6 @@ std::optional<double> sphere_trace(
     const bool from_below)
 {
     return sphere_trace_impl(f, a, dir, L, level, tol, from_below);
-}
-
-std::vector<size_t> regions_by_distance(
-    const std::vector<SimpleBVH::BVH>& bvhs,
-    const Vector2d& p,
-    const std::vector<size_t>& regions)
-{
-    return regions_by_distance_impl(bvhs, p, regions);
-}
-
-std::vector<size_t> regions_by_distance(
-    const std::vector<SimpleBVH::BVH>& bvhs,
-    const Vector3d& p,
-    const std::vector<size_t>& regions)
-{
-    return regions_by_distance_impl(bvhs, p, regions);
 }
 
 std::pair<size_t, int> split_fill_label(
@@ -288,7 +250,6 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
     const simplex::Edge& e,
     std::unordered_set<size_t>& faces,
     std::vector<char>& filled,
-    const std::function<void(size_t, size_t)>& on_child,
     std::vector<CornerLabels>* corner_labels)
 {
     const auto [e0, e1] = e.vertices();
@@ -344,7 +305,6 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
             continue; // outside the set, keeps its tags
         }
         faces.insert(fid);
-        on_child(fid, end_vid);
     }
     return v_new;
 }
@@ -589,7 +549,6 @@ void SimWildMeshTri::tight_seal_split_fill(
                 simplex::Edge(a, b),
                 comp_faces[c],
                 filled,
-                [](const size_t, const size_t) {},
                 &corner_labels);
             m_voronoi_split_fn = nullptr;
             if (v == size_t(-1)) {
@@ -817,7 +776,6 @@ size_t SimWildMesh::tight_seal_split_tracked(
     const simplex::Edge& e,
     std::unordered_set<size_t>& cells,
     std::vector<char>& filled,
-    const std::function<void(size_t, size_t)>& on_child,
     std::vector<int>* cell_group,
     std::vector<CornerLabels>* corner_labels)
 {
@@ -885,7 +843,6 @@ size_t SimWildMesh::tight_seal_split_tracked(
             continue; // outside the set, keeps its tags
         }
         cells.insert(tid);
-        on_child(tid, end_vid);
     }
     return v_new;
 }
@@ -1262,7 +1219,6 @@ void SimWildMesh::tight_seal_split_fill(
                 simplex::Edge(a, b),
                 cells,
                 filled,
-                [](const size_t, const size_t) {},
                 &cell_comp,
                 &corner_labels);
             m_voronoi_split_fn = nullptr;

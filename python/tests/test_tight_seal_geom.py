@@ -1,10 +1,9 @@
-"""tight_seal_geom_EXPERIMENTAL_mode: the limit of three regions, and what "split_fill" does.
+"""tight_seal_geom: what a fill does.
 
-"voronoi" (the default) refuses four listed tags and four as min_regions, and leaves a part
-bordering four regions alone. "split_fill" takes all of those: it splits each part along the
-regions nearest its cells' corners, a cell sharing a facet with a region labelling that facet's
-corners with it, and labels each resulting cell from its corners, with no topology test. Both
-throw if the join region touches the mesh boundary, even at a vertex.
+Each part of the join region is split along the regions nearest its cells' corners, a cell
+sharing a facet with a region labelling that facet's corners with it, and each resulting cell is
+labelled from its corners, with no topology test; a part may border any number of regions. The
+operation throws if the join region touches the mesh boundary, even at a vertex.
 tight_seal_geom_spatial_selection is on hold: anything but its default throws.
 
 Needs the wildmeshing bindings; no external data."""
@@ -53,17 +52,6 @@ def _four_bodies():
             return "b"
         return "c" if y < 3 else "d"
     return _grid_mesh(8, 8, tag_of)
-
-
-def _slot():
-    """Two bars of tag a over a slot that tag b closes at both ends, ambient around them."""
-    def tag_of(x, y):
-        if not (2 < x < 8 and 2 < y < 6):
-            return None
-        if 3 < y < 5:
-            return None if 3 < x < 7 else "b"
-        return "a"
-    return _grid_mesh(10, 8, tag_of)
 
 
 def _gap_with_another_tag():
@@ -141,11 +129,9 @@ def _diamond_on_the_boundary():
         lambda x, y: None if abs(x - 8) + abs(y - 2) < 2 else ("a" if x < 8 else "b"))
 
 
-def _seal(mesh, mode=None, **options):
+def _seal(mesh, **options):
     opts = {"operation": "tight_seal_geom", "input": ["m"], "tight_seal_geom_distance": 2.5,
             "tight_seal_geom_sanity": True}
-    if mode:
-        opts["tight_seal_geom_EXPERIMENTAL_mode"] = mode
     opts.update({f"tight_seal_geom_{k}": v for k, v in options.items()})
     outputs, _ = wm.simwild(opts, {"m": mesh})
     return outputs["mesh"]
@@ -187,26 +173,14 @@ def _components_and_euler(cells):
 TAGS = ["a", "b", "c", "d"]
 
 
-def test_voronoi_refuses_four_listed_tags():
-    with pytest.raises(Exception, match="two or three tags"):
-        _seal(_four_bodies(), tags=TAGS)
+def test_needs_two_tags():
+    with pytest.raises(Exception, match="two or more tags"):
+        _seal(_four_bodies(), tags=["a"])
 
 
-def test_voronoi_refuses_four_min_regions():
-    with pytest.raises(Exception, match="min_regions must be 2 or 3"):
-        _seal(_four_bodies(), selection="detected", min_regions=4)
-
-
-def test_voronoi_leaves_a_part_of_four_regions_alone():
-    mesh = _four_bodies()
-    out = _seal(mesh, selection="detected")
-    for tag in TAGS:
-        assert _area(out, tag) == pytest.approx(_area(mesh, tag))
-
-
-def test_unknown_mode_refused():
+def test_min_regions_below_two_refused():
     with pytest.raises(Exception):
-        _seal(_four_bodies(), mode="nearest", tags=TAGS)
+        _seal(_four_bodies(), selection="detected", min_regions=1)
 
 
 @pytest.mark.parametrize("options", [
@@ -214,27 +188,26 @@ def test_unknown_mode_refused():
     {"selection": "detected"},
     {"selection": "detected", "min_regions": 4},
 ])
-def test_split_fill_has_no_limit_of_three_regions(options):
+def test_fills_a_part_of_any_number_of_regions(options):
     mesh = _four_bodies()
-    out = _seal(mesh, mode="split_fill", **options)
+    out = _seal(mesh, **options)
     # the whole hole goes, each side of it to the bar beside it
     for tag in TAGS:
         assert _area(out, tag) == pytest.approx(_area(mesh, tag) + 1)
         assert _components_and_euler(_cells(out, tag)) == (1, 1)
 
 
-def test_split_fill_min_regions_above_what_a_part_borders_fills_nothing():
+def test_min_regions_above_what_a_part_borders_fills_nothing():
     mesh = _four_bodies()
-    out = _seal(mesh, mode="split_fill", selection="detected", min_regions=5)
+    out = _seal(mesh, selection="detected", min_regions=5)
     for tag in TAGS:
         assert _area(out, tag) == pytest.approx(_area(mesh, tag))
 
 
-@pytest.mark.parametrize("mode", ["voronoi", "split_fill"])
 @pytest.mark.parametrize("mesh", [_gap_to_the_boundary, _diamond_on_the_boundary])
-def test_join_region_on_the_mesh_boundary_throws(mesh, mode):
+def test_join_region_on_the_mesh_boundary_throws(mesh):
     with pytest.raises(Exception, match="touches the mesh boundary"):
-        _seal(mesh(), mode=mode, selection="detected", distance=4.0)
+        _seal(mesh(), selection="detected", distance=4.0)
 
 
 def test_part_left_alone_on_the_mesh_boundary_throws_too():
@@ -266,9 +239,9 @@ def test_spatial_selection_is_on_hold(selection):
 
 
 @pytest.mark.parametrize("dim", [2, 3])
-def test_split_fill_follows_the_bisector(dim):
+def test_fill_follows_the_bisector(dim):
     mesh = _two_bodies_3_apart(dim)
-    out = _seal(mesh, mode="split_fill", tags=["a", "b"], distance=3.5)
+    out = _seal(mesh, tags=["a", "b"], distance=3.5)
     a = _tagged(out, "a")[:, :, 0]
     b = _tagged(out, "b")[:, :, 0]
     filled_a = a[a.max(axis=1) > 4 + 1e-9]  # the cells of a beyond its body
@@ -298,13 +271,13 @@ def _region_facets(mesh, tags):
 
 
 @pytest.mark.parametrize("case", ["four_bodies", "two_bodies_2d", "two_bodies_3d"])
-def test_split_fill_gives_a_cell_on_a_region_that_region(case):
+def test_a_cell_on_a_region_takes_that_region(case):
     mesh, tags, distance = {
         "four_bodies": (_four_bodies(), TAGS, 2.5),
         "two_bodies_2d": (_two_bodies_3_apart(2), ["a", "b"], 3.5),
         "two_bodies_3d": (_two_bodies_3_apart(3), ["a", "b"], 3.5),
     }[case]
-    out = _seal(mesh, mode="split_fill", tags=tags, distance=distance)
+    out = _seal(mesh, tags=tags, distance=distance)
     facets, own = _region_facets(mesh, tags)
     seen = 0
     for tag in tags:
@@ -317,21 +290,3 @@ def test_split_fill_gives_a_cell_on_a_region_that_region(case):
                     assert facets[frozenset(facet)] == tag
                     seen += 1
     assert seen > 0
-
-
-def test_split_fill_has_no_limit_of_three_regions():
-    mesh = _four_bodies()
-    out = _seal(mesh, mode="split_fill", tags=TAGS)
-    assert sum(_area(out, tag) for tag in TAGS) == pytest.approx(
-        sum(_area(mesh, tag) for tag in TAGS) + 4)
-    for tag in TAGS:
-        assert _components_and_euler(_cells(out, tag)) == (1, 1)
-
-
-def test_voronoi_is_still_the_default():
-    mesh = _slot()
-    default = _seal(mesh, tags=["a", "b"])
-    named = _seal(mesh, mode="voronoi", tags=["a", "b"])
-    assert np.array_equal(default["V"], named["V"])
-    assert np.array_equal(
-        default["cells"]["triangle"]["connectivity"], named["cells"]["triangle"]["connectivity"])
