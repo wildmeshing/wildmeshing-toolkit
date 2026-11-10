@@ -3865,11 +3865,12 @@ passed.</code> (in 2D, <code>Curve manifoldness check passed.</code>), or a warn
   outside of the mesh as one more cell; the log warns <code>Vertex of offset input complex lies on mesh
   boundary</code>, and the final check may report a non-manifold surface, which it attributes to that.
   Keep the selection inside the domain, with background cells around it.</li>
-<li><strong>Face tags, edge tags and feature curves are refused.</strong> A mesh with tagged faces (simwild's
-  <code>input_type</code> <code>surface</code>, tetwild's output) or, in 2D, tagged edges (simwild's <code>input_type</code> <code>curve</code>,
-  triwild's output) stops with <code>manifold_extraction does not take tagged faces (2D: edges) yet</code>; one
-  with feature curves (a tet mesh's edge block) with <code>manifold_extraction does not take feature
-  curves yet</code>.</li>
+<li><strong>Tagged faces, curves and points go through.</strong> A mesh's tagged faces (simwild's <code>input_type</code>
+  <code>surface</code>, tetwild's output), in 2D its tagged edges (simwild's <code>input_type</code> <code>curve</code>, triwild's
+  output), its feature curves (a tet mesh's edge block) and its input points (a point block) come
+  back as the same blocks of the result, under the same labels; the carving splits the ones it
+  crosses. In 3D they are held as <a href="../topological_offset/">topological_offset</a> holds them. Until
+  2026-11 they were refused.</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

@@ -3745,7 +3745,7 @@
 <p>Application name must be manifold_extraction.</p>
 <h3 id="input"><code>input</code><a class="headerlink" href="#input" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · required</p>
-<p>Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh. Tagged faces (2D: tagged edges) and feature curves are refused: they are not carried yet.</p>
+<p>Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh. Its triangle block is tagged faces (2D: its edge block, tagged edges), its edge block in 3D feature curves, its point block input points, as tetwild, triwild and simwild write them: each carried through the carving, which only splits, and written back as the same block of the result. In 3D they are held as topological_offset holds them -- the tagged faces in their labels' envelopes, the feature curves in their tubes, the points anchored; in 2D nothing moves them and nothing holds them. Until 2026-11 they were refused.</p>
 <h2 id="key-options">Key options<a class="headerlink" href="#key-options" title="Permanent link">&para;</a></h2>
 <h3 id="output"><code>output</code><a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"out"</code></p>

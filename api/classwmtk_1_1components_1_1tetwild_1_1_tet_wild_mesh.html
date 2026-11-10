@@ -134,6 +134,8 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>SurfaceTopoSignature
 <tr class="memitem:a41adf104a39234953685fdc7d1ff9963 inherit pub_types_classwmtk_1_1_tet_optimizer_mesh" id="r_a41adf104a39234953685fdc7d1ff9963"><td class="memItemLeft" align="right" valign="top">
 using&#160;</td><td class="memItemRight" valign="bottom"><b>FeaturePointAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_point_attributes.html">FeaturePointAttributes</a> &gt;</td></tr>
 <tr class="separator:a41adf104a39234953685fdc7d1ff9963 inherit pub_types_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02905c57fe594b74206d8d69283446be inherit pub_types_classwmtk_1_1_tet_optimizer_mesh" id="r_a02905c57fe594b74206d8d69283446be"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a02905c57fe594b74206d8d69283446be">ExactCoordinate</a> = std::function&lt; const <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;(size_t vid, int k)&gt;</td></tr>
+<tr class="separator:a02905c57fe594b74206d8d69283446be inherit pub_types_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:af7017cfb156f28856045b90b6d86e921 inherit pub_types_classwmtk_1_1_tet_mesh" id="r_af7017cfb156f28856045b90b6d86e921"><td class="memItemLeft" align="right" valign="top"><a id="af7017cfb156f28856045b90b6d86e921" name="af7017cfb156f28856045b90b6d86e921"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>OpKind</b> : int { <br />
 &#160;&#160;<b>split</b>
@@ -200,8 +202,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6c5a00a48426e6fcf606280a8c40eab7" id="r_a6c5a00a48426e6fcf606280a8c40eab7"><td class="memItemLeft" align="right" valign="top"><a id="a6c5a00a48426e6fcf606280a8c40eab7" name="a6c5a00a48426e6fcf606280a8c40eab7"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>create_mesh_attributes</b> (const std::vector&lt; <a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_vertex_attributes.html">VertexAttributes</a> &gt; &amp;_vertex_attribute, const std::vector&lt; <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_attributes.html">TetAttributes</a> &gt; &amp;_tet_attribute)</td></tr>
 <tr class="separator:a6c5a00a48426e6fcf606280a8c40eab7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a51a4ac4f1d32a24c3a8aa809acaa8a83" id="r_a51a4ac4f1d32a24c3a8aa809acaa8a83"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a51a4ac4f1d32a24c3a8aa809acaa8a83">output_mesh</a> (std::string file, const std::vector&lt; std::string &gt; &amp;face_tags={}, const std::vector&lt; std::string &gt; &amp;feature_tags={})</td></tr>
-<tr class="separator:a51a4ac4f1d32a24c3a8aa809acaa8a83"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e801362e9fc07464fdf8ff6d857f5b0" id="r_a2e801362e9fc07464fdf8ff6d857f5b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_mesh_data.html">MeshData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a2e801362e9fc07464fdf8ff6d857f5b0">tet_mesh_data</a> ()</td></tr>
 <tr class="separator:a2e801362e9fc07464fdf8ff6d857f5b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a82cccd447e956f9bc5bcfafc609bac" id="r_a1a82cccd447e956f9bc5bcfafc609bac"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a1a82cccd447e956f9bc5bcfafc609bac">init_from_delaunay_box_mesh</a> (const std::vector&lt; Eigen::Vector3d &gt; &amp;vertices)</td></tr>
@@ -638,6 +638,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>anchor_feature_point<
 <tr class="separator:aae7258bf6338f518b2beb08e9eb81302 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9962f638e709c197ab507642117da249 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a9962f638e709c197ab507642117da249"><td class="memItemLeft" align="right" valign="top">std::pair&lt; size_t, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9962f638e709c197ab507642117da249">feature_retention</a> (double *worst_ratio=nullptr) const</td></tr>
 <tr class="separator:a9962f638e709c197ab507642117da249 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa22083fe99eb21addab2d60e8ab689c8 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aa22083fe99eb21addab2d60e8ab689c8"><td class="memItemLeft" align="right" valign="top">
+std::vector&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>set_exact_positions</b> (const <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a02905c57fe594b74206d8d69283446be">ExactCoordinate</a> &amp;exact)</td></tr>
+<tr class="memdesc:aa22083fe99eb21addab2d60e8ab689c8 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the position of every vertex (<a class="el" href="classwmtk_1_1_tet_mesh.html#a204a973795d87f3b69a06cf699b400f2" title="get the current largest global vid">vert_capacity()</a> of them) from its exact one, and return, per vertex, whether it is a direct point: one whose exact position is already a double. A direct point is rounded here and stores nothing &ndash; its double is its exact position, so rounding it cannot invert a tet. An indirect point keeps its rational, unrounded, until <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a256facd96b4727cbae6d74b71878ceef" title="Round every indirect vertex that can be, once the tets are final. is_direct_point and exact as set_ex...">round_indirect_vertices()</a>. <br /></td></tr>
+<tr class="separator:aa22083fe99eb21addab2d60e8ab689c8 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a256facd96b4727cbae6d74b71878ceef inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a256facd96b4727cbae6d74b71878ceef"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>round_indirect_vertices</b> (const std::vector&lt; char &gt; &amp;is_direct_point, const <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a02905c57fe594b74206d8d69283446be">ExactCoordinate</a> &amp;exact)</td></tr>
+<tr class="memdesc:a256facd96b4727cbae6d74b71878ceef inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Round every indirect vertex that can be, once the tets are final. <code>is_direct_point</code> and <code>exact</code> as <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aa22083fe99eb21addab2d60e8ab689c8" title="Set the position of every vertex (vert_capacity() of them) from its exact one, and return,...">set_exact_positions()</a> took and returned them; <code>exact</code> reverts a vertex. <br /></td></tr>
+<tr class="separator:a256facd96b4727cbae6d74b71878ceef inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44a3704e811e3dc994b8549f8de2f75e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a44a3704e811e3dc994b8549f8de2f75e"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>tag_bbox_faces</b> (const Vector3d &amp;box_min, const Vector3d &amp;box_max)</td></tr>
+<tr class="memdesc:a44a3704e811e3dc994b8549f8de2f75e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag each face in a plane of the box [box_min, box_max] with that plane (m_is_bbox_fs: 2 k on the min side of axis k, 2 k + 1 on the max side) and give each of its vertices the plane (on_bbox_faces, sorted, once each). Exact: compares the exact positions. <br /></td></tr>
+<tr class="separator:a44a3704e811e3dc994b8549f8de2f75e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca304ebf376d390e7b2f51690d91eee3 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aca304ebf376d390e7b2f51690d91eee3"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_reference_points</b> (const MatrixXd &amp;P, const std::vector&lt; InputSet &gt; &amp;labels)</td></tr>
 <tr class="memdesc:aca304ebf376d390e7b2f51690d91eee3 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set m_reference_points from the reference's points <code>P</code> (rows, x y z) and their labels. <br /></td></tr>
@@ -2228,41 +2240,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="a51a4ac4f1d32a24c3a8aa809acaa8a83" name="a51a4ac4f1d32a24c3a8aa809acaa8a83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a51a4ac4f1d32a24c3a8aa809acaa8a83">&#9670;&#160;</a></span>output_mesh()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::tetwild::TetWildMesh::output_mesh </td>
-          <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>file</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
-          <td class="paramname"><em>face_tags</em> = <code>{}</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
-          <td class="paramname"><em>feature_tags</em> = <code>{}</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>With <code>face_tags</code>, also the tracked faces, one physical group per input (io::collect_input_set_tags()), and with <code>feature_tags</code> the tet edges tiling the feature curves, one per input curve (io::collect_feature_edge_tags()), and the input points, one group per label of m_point_names (io::collect_point_tags()): the tags the memory route returns on its mesh, which the shared reader reads back as those blocks. </p>
-
-</div>
-</div>
 <a id="a8a434e5587b2de810fde1b98b14ad78c" name="a8a434e5587b2de810fde1b98b14ad78c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8a434e5587b2de810fde1b98b14ad78c">&#9670;&#160;</a></span>refine_sizing_around_worst()</h2>
 
@@ -2346,7 +2323,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The tets and their vertices as <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a51a4ac4f1d32a24c3a8aa809acaa8a83">output_mesh()</a> writes them &ndash; consolidated first, a row per vertex at m_posf and a row per tet, oriented, in the file's order &ndash; without the fields: the memory route's counterpart of the file, for the meshes a volume history starts and ends at. </p>
+<p>The tets and their vertices &ndash; consolidated first, a row per vertex at m_posf and a row per tet, oriented, in the output's order &ndash; without the fields: the meshes a volume history starts and ends at, on both routes (&lt;output&gt;_history_input.msh and _history_output.msh on the file route, until 2026-11 written with the fields by the file route's own writer). </p>
 
 </div>
 </div>

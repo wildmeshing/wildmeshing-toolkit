@@ -2336,6 +2336,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#offsets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        offsets
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2358,28 +2369,6 @@
     <span class="md-ellipsis">
       
         output
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#offset_selection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        offset_selection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#offset_output_tags" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        offset_output_tags
       
     </span>
   </a>
@@ -2413,28 +2402,6 @@
     <span class="md-ellipsis">
       
         offset_out
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#target_distance_rel" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        target_distance_rel
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#target_distance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        target_distance
       
     </span>
   </a>
@@ -3321,17 +3288,6 @@
     <span class="md-ellipsis">
       
         Experimental options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#testing-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Testing options
       
     </span>
   </a>
@@ -4345,6 +4301,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#offsets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        offsets
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4367,28 +4334,6 @@
     <span class="md-ellipsis">
       
         output
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#offset_selection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        offset_selection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#offset_output_tags" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        offset_output_tags
       
     </span>
   </a>
@@ -4422,28 +4367,6 @@
     <span class="md-ellipsis">
       
         offset_out
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#target_distance_rel" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        target_distance_rel
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#target_distance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        target_distance
       
     </span>
   </a>
@@ -5336,17 +5259,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#testing-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Testing options
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -5374,34 +5286,31 @@
 <p>Application name must be topological_offset.</p>
 <h3 id="input"><code>input</code><a class="headerlink" href="#input" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · required</p>
-<p>Input mesh, .msh: a tetrahedral mesh (a triangle mesh is refused for now: the 2D offset is being brought up to date). The two pipelines are the same algorithm one dimension apart and read every key below the same way. Its triangle block is face tags; its edge block is edge tags, the feature curves tetwild and simwild write: each selectable alone by offset_selection (a curve offset), and every one held, selected or not, as tetwild holds its feature curves (see feature_envelope_ratio), and written back as the result's edge block. Its point block is input points, tetwild's and simwild's point inputs, each under its input's name: each label selectable alone by offset_selection (a point offset), every point anchored, selected or not, as tetwild anchors its input points (see feature_envelope_ratio), and written back as the result's point block. A curve input's vertices on no segment are its points, under the curve's name, so selecting the name selects both. It must fill its bounding box, as tetwild's and simwild's meshes do (an output with filter "none"): its boundary faces are the domain wall, held by the box rule and never tracked, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary, its face tags -- is refused, and so is an untracked one in no plane (since 2026-11-05; until then every boundary face was tracked).</p>
+<p>Input mesh, .msh: a tetrahedral mesh (a triangle mesh is refused for now: the 2D offset is being brought up to date). The two pipelines are the same algorithm one dimension apart and read every key below the same way. Its triangle block is face tags; its edge block is edge tags, the feature curves tetwild and simwild write: each selectable by an offset's selection, alone (a curve offset) or in an expression, and every one held, selected or not, as tetwild holds its feature curves (see feature_envelope_ratio), and written back as the result's edge block. Its point block is input points, tetwild's and simwild's point inputs, each under its input's name: each label selectable by an offset's selection, alone (a point offset) or in an expression, every point anchored, selected or not, as tetwild anchors its input points (see feature_envelope_ratio), and written back as the result's point block. A curve input's vertices on no segment are its points, under the curve's name, so selecting the name selects both. It must fill its bounding box, as tetwild's and simwild's meshes do (an output with filter "none"): its boundary faces are the domain wall, held by the box rule and never tracked, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary, its face tags -- is refused, and so is an untracked one in no plane (since 2026-11-05; until then every boundary face was tracked).</p>
+<h3 id="offsets"><code>offsets</code><a class="headerlink" href="#offsets" title="Permanent link">&para;</a></h3>
+<p><strong>list of objects</strong> · required</p>
+<p>The offsets to make, each from its own input complex: a list of {selection, output_tags, target_distance, target_distance_rel}, constructed in one march. Each entry is offset as if it were the only one -- its own marched edges, its distance to its own complex alone, its own maximum marchable distance and fallback (construction_mode), its own target -- and the cells of its band take its own output_tags; one run of several entries gives the band cells, positions and tags of one run per entry. Entries must not intersect: a vertex two entries' complexes share is refused (offsets that meet need a rule for which band takes the cells between them). Two complexes joined by a mesh edge are kept apart by the simplicial embedding, which splits that edge; its midpoint is then an outer end of both, so each entry's maximum marchable distance is no more than half that edge -- each band has the room between them, not the room it would have alone. After the march two bands share no vertex. The optimization reads each entry's distance where it is: every place -- a band vertex, a band cell, a front face -- reads the piece of the input complex it belongs to (its band's; where two pieces meet, the one of smaller distance; off every band, the nearest): that piece's target_distance, its own field, distance engine and exact band integral, and the bar front_conv_rel of its distance. Every convergence, settle and refinement test is then each piece's own. An absolute front_conv is refused for entries of different distances (give front_conv_rel). Run-wide and from the smallest entry's distance: min_edge_length, the construction pass's offset envelope, the report's offset_level. Entries may differ in primitive kind (a solid and a curve); each entry is one kind (triangles, or segments and points). MEASURED (2026-11-09, two boxes 0.5 apart at 0.1 and 0.2, 5 turns): each front at its own target, as each alone (means 0.1025 and 0.2031 against 0.1023 and 0.2037), converged in 20 s against 15 + 14 s alone. repulsion_smoothing_passes, repulsion_rounds and growth_mode take one entry only for now; the 2D offset (refused for now) takes one entry. Until 2026-11 one offset per run, in the flat keys offset_selection, offset_output_tags, target_distance and target_distance_rel. Example: [{"selection": "tag_0", "target_distance": 0.1}, {"selection": "rod", "output_tags": ["rod_band"], "target_distance_rel": 0.02}]</p>
+<p>Each entry: One offset: its input complex, its band's tags, its distance.</p>
+<p>Each entry is an object with:</p>
+<ul>
+<li><code>selection</code>: <strong>string</strong> · required. Boolean expression over the input's tags for this offset's input complex. A single tet tag (ie 'tag_0') is single body mode, offset_in and offset_out saying on which side of it. A face tag, the surface group, an edge tag or a point label alone is that sheet, that curve or those points, the band growing on every side of it (around a point, a ball). In an expression a simplex carries the tags of the cells around it and those on it or on a face or edge it bounds -- a face's face tags and the surface group, an edge's edge tags, a vertex's point labels -- so each tag means what it means alone: 'yellow | red' is the sheet yellow and the solid red, 'curve | other' both curves, 'yellow &amp; red' the faces of yellow that bound red cells (until 2026-11 an edge tag or a point label in an expression was refused, and a face tag or the surface group selected nothing). One input complex takes one primitive kind: triangles (solids, sheets), or segments and points.</li>
+<li><code>output_tags</code>: <strong>list of string</strong> · default <code>["newtag"]</code>. Tags the cells of this offset's band take; none: ambient.</li>
+<li><code>target_distance</code>: <strong>float</strong> · default <code>-1.0</code>. Target distance of this offset. If &lt;= 0 (the default -1): derived from target_distance_rel. It must come out positive.</li>
+<li><code>target_distance_rel</code>: <strong>float</strong> · default <code>0.01</code>. Target distance of this offset relative to the bounding box diagonal of the mesh. Ignored if target_distance &gt; 0.</li>
+</ul>
 <h2 id="key-options">Key options<a class="headerlink" href="#key-options" title="Permanent link">&para;</a></h2>
 <h3 id="output"><code>output</code><a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>"out"</code></p>
 <p>Output file name (without extension).</p>
-<h3 id="offset_selection"><code>offset_selection</code><a class="headerlink" href="#offset_selection" title="Permanent link">&para;</a></h3>
-<p><strong>string</strong> · default <code>"!_"</code></p>
-<p>Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used. A face tag, an edge tag or a point label of the input is selected alone: the complex is then that sheet, that curve or those points, the band growing on every side of it (around a point, a ball).</p>
-<h3 id="offset_output_tags"><code>offset_output_tags</code><a class="headerlink" href="#offset_output_tags" title="Permanent link">&para;</a></h3>
-<p><strong>list of string</strong> · default <code>["newtag"]</code></p>
-<p>Tags to add to elements in the resulting offset region.</p>
-<p>Each entry: A tag.</p>
 <h3 id="protected_tags"><code>protected_tags</code><a class="headerlink" href="#protected_tags" title="Permanent link">&para;</a></h3>
-<p><strong>list of string</strong> · default <code>[]</code></p>
-<p>Set of tags that will not be overwritten by the offset. Tet tags: the march leaves a cell carrying one as it is -- it splits none of its edges and the band takes none of it, so the offset is not made in a direction such a cell blocks; an earlier offset's band, protected, keeps its cells (since 2026-11-05; before, the band took such cells and they kept the protected tags beside offset_output_tags). 3D: face tags and the sheet group (the .msh's envelope surface group, by its name) too -- a face the band covers (both of its tets band cells; never a face of the input complex itself) keeps the protected ones it carried, and every other face tag and the sheet group give way there, as the cells' other tags do (since 2026-11-04). A face that then still separates two tag sets or still carries a face tag or the sheet group stays tracked, and held; any other face inside the band is no longer tracked.</p>
-<p>Each entry: A tag.</p>
+<p><strong>string</strong> · default <code>""</code></p>
+<p>Boolean expression over the input's tags of what the offset does not overwrite; empty: nothing ('tag_1 | tag_2' protects the cells and faces carrying either; 'ambient' is refused). A simplex is protected when its own tags satisfy it -- a cell its tet tags, a face its face tags and the sheet group (the .msh's envelope surface group, by its name). The march leaves a protected cell as it is -- it splits none of its edges and the band takes none of it, so the offset is not made in a direction such a cell blocks; an earlier offset's band, protected, keeps its cells (since 2026-11-05; before, the band took such cells and they kept the protected tags beside offset_output_tags). 3D: a protected face the band covers (both of its tets band cells; never a face of the input complex itself) keeps the face tags and the sheet group the expression names, and every other face tag and the sheet group give way there, as the cells' other tags do (since 2026-11-04). A face that then still separates two tag sets or still carries a face tag or the sheet group stays tracked, and held; any other face inside the band is no longer tracked. Until 2026-11 a list of tag names, which is the expression of the names joined by '|'.</p>
 <h3 id="offset_in"><code>offset_in</code><a class="headerlink" href="#offset_in" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Only relevant for single body mode. Whether to create offset inside body</p>
 <h3 id="offset_out"><code>offset_out</code><a class="headerlink" href="#offset_out" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
 <p>Only relevant for single body mode. Whether to create offset outside body</p>
-<h3 id="target_distance_rel"><code>target_distance_rel</code><a class="headerlink" href="#target_distance_rel" title="Permanent link">&para;</a></h3>
-<p><strong>float</strong> · default <code>0.01</code></p>
-<p>Target offset distance relative to the bounding box diagonal of the mesh. Ignored if target_distance &gt; 0.</p>
-<h3 id="target_distance"><code>target_distance</code><a class="headerlink" href="#target_distance" title="Permanent link">&para;</a></h3>
-<p><strong>float</strong> · default <code>-1.0</code></p>
-<p>Target distance for offset. If &lt;= 0 (the default -1): derived from target_distance_rel.</p>
 <h3 id="front_conv_rel"><code>front_conv_rel</code><a class="headerlink" href="#front_conv_rel" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>0.1</code></p>
 <p>THE convergence epsilon as a fraction of target_distance, used when front_conv is &lt;= 0; ignored if front_conv &gt; 0. Since 2026-10-21: the config's target_distance, fixed for the whole run -- every growth_mode stage and attempt included, though they run at smaller target. Must not exceed 1 (startup refuses front_conv above target_distance). 0.1 (the default since 2026-10-29, the value of the latest offset runs; 0.025 before, which kept a fully default run at the bar it had, 2.5e-4 x the bounding box diagonal at the default target_distance_rel 0.01). From 2026-09-23 to 2026-10-20 this key was a fraction of the bounding box diagonal (default 2.5e-4): a value written for that meaning now asks for a bar target_distance / diagonal times as large (1/100 at the default target). See front_conv for what the bar gates.</p>
@@ -5672,12 +5581,6 @@
 <p>EXPERIMENTAL (2026-10-26; foldover faces only since 2026-10-27; the fold predicate since 2026-11-02), 3D. The loop does not exit on a turn whose front has a fold (TopoOffsetTetMesh::fold_test(); see foldover_angle): an edge with exactly two offset faces whose normals out of the band are within foldover_angle of opposite, at least one of the two more than foldover_angle from the field's normal, grad d at its centroid (front_face_field_angle(), the debug frames' field_normal_angle); a face that cannot be measured counts as turned. Two opposite faces that both follow the field are a ridge edge, not a fold, and do not hold the exit. The exit test is otherwise unchanged; a held turn continues the loop. One [exit folds] line per turn gives the count of folds, and one [exit ridge edges] line per turn with a ridge edge their count and the largest field angle of their faces, with the key on or off (until 2026-11-02: [exit folds] counted every pair of opposite faces as real folds, and [exit folds foldover] how many of them had a foldover face). Why: the vertex exit tests only the front's vertices, and a flat sheet of inner cells lying within front_conv of the level set passes it. Measured (cube_in at 0.45, front_conv 5%, 30 runs, 8 threads): one run exited with an inner region of 0.5% of the target's volume, every front point within 0.76 front_conv, 5 pairs of opposite faces; 5-7 of each batch's 28-30 exits had 1-5. Why a ridge edge does not hold the exit: where the level set itself has a ridge sharper than 30 degrees, the correct front has two opposite faces that follow the field there, and holding the exit for every pair of opposite faces (the key until 2026-10-27) held such runs to the turn cap. MEASURED offline (every turn of the 10-26 batch held for the pairs: 117 turns of 31 runs, d exact): in the 4 runs held to the 30-turn cap (p70565 piece17 and input1, inward at 0.5 and 0.25 delta_1, 10%), 845 of 858 pairs had both faces within 10 degrees of the field, on a level set 7.7 to 27 degrees sharp there (piece17's input has convex edges of 26.1 and 27.0 degrees; input1 a part just over 2 delta thick); the other 13, at 87 to 131 degrees, were at 2 early turns. In the 27 runs that resolved, every one of the 74 pairs of their 32 held turns had a face 32 to 161 degrees from the field (median 108), though 73 had every corner, edge midpoint and centroid of both faces within front_conv of the level set: a test of the faces' distance instead would have let 31 of those 32 turns exit. The margin is thin on that side: the nearest such pair, 32.1 degrees (screw15 inward at 0.25 delta_1). MEASURED with this rule (those 31 runs, 8 threads): all 31 resolved; the 4 in 38 turns against 120 at the cap, each releasing once, 35 ridge edges whose faces lay within 0.57 front_conv of the level set, within 13.1 degrees of the field, on a level set 7.7 to 31.4 degrees sharp there; the 27 released none and exited with no fold. false (the default until 2026-10-29): the exit test alone; the counts are still logged.</p>
 <p><a id="EXPERIMENTAL_label_cleanup"></a><strong><code>EXPERIMENTAL_label_cleanup</code></strong> · <strong>string</strong> · default <code>"one_sided_at_target"</code> · one of <code>off</code>, <code>one_sided</code>, <code>one_sided_tips</code>, <code>one_sided_at_target</code>, <code>energy_decrease</code></p>
 <p>EXPERIMENTAL (2026-10-26), 3D, with EXPERIMENTAL_front_pocket_split true (refused otherwise). The one exception to cell labels being fixed after construction. In every operation group of the loop (once per turn with interleaved_smoothing false), after its operation passes (split, collapse, swap) and before the condition-1 splits that precede its first smoothing pass, a cell on the band / non-band interface (a candidate: a cell with a face shared with a cell of the other label, neither of them the input complex) whose own geometry puts it on the other side of the level set d = target_distance takes the other label, where that keeps the topology of both. Why there: a flip with f = 1 or 2 (below) leaves the cell with all four corners on the front, a pinned cell, which those splits handle, and one with f = 3 removes a pinned cell; the smoothing pass then moves the new front in the same turn. The side test: "one_sided" (conservative): non-band -&gt; band iff U(t) &lt; target_distance, U the min over input triangles of the max of their distance over t's corners, an upper bound of d on t; band -&gt; non-band iff d(c) - max_k |v_k - c| &gt; target_distance, c the centroid, a lower bound of d on t (d is 1-Lipschitz). It reads d through the exact band integral, built under EXPERIMENTAL_band_volume_rule "exact" or "front_flux", EXPERIMENTAL_settle_mark "max" or DEBUG_output; otherwise it throws. Eligible cells only: every cell sharing a vertex with t is band or non-band, not plastic (use_rest_pose makes every non-band cell plastic, and with it the clean-up flips nothing), and of the one tag of its label there; no corner of t is on the input complex, on another tracked surface (a tag boundary, the box) or on the mesh boundary. The topology test, f = the faces of t shared with a cell of the other label: f = 0 refused (a new piece, or the front pinched at an edge or vertex); f = 1 refused if the corner opposite that face is in a cell of the other label; f = 2 refused if the edge on neither face is in a cell of the other label; f = 3 allowed (the fourth face becomes front); f = 4 refused (t is a whole piece; the flip deletes it). The other label then meets t in exactly its f faces, a disk. Serial passes over the candidates in tid order, each reading the labels as the flips before it left them, repeated until a pass flips nothing. They end: no vertex moves and a cell's side test reads its own corners alone, so a cell flips at most once (a second flip throws). After the flips, everything derived from the labels is re-derived where it changed: the closed labels and the cached front class of the flipped cells' faces, edges and corners, the corners' front flags and vertex order, the band-region map. One [label cleanup] line: passes; flips each way; what the last pass left (candidates, cells on the other side by the side test, of them skipped for eligibility and refused by topology per f); E before and after; the components (face adjacency) of the band and of the non-band region before and after, where a change throws; the front edges on more than two front faces before and after. MEASURED before the key (cube_in at target 0.45, 5% tolerance, 30-run batches): some runs end with thin non-band cells left beyond the level set, one with 117 cells reaching 5.6 tolerances out, where E is 1.2e-7 above its optimum against a settle bar of 3.5e-5, so nothing removes them. "off" (the default until 2026-10-29): nothing changes. "one_sided_tips" (2026-10-26): "one_sided", and also a cell with three faces on the other label whose four corners are all within front_conv of the level set flips iff that strictly lowers E: non-band -&gt; band iff its band term (EXPERIMENTAL_band_volume_rule) is &lt; 0, band -&gt; non-band iff it is &gt; 0 (the AMIPS term of a cell that is not plastic does not read its label, so a flip changes E by exactly the band term). Why: under "one_sided" 9 of 30 runs exited with a real fold, a blade of flat non-band cells reaching up to 0.07 front_conv into the target; a blade that no collapse, swap or smoothing removes is, when the operation passes end, one such cell (cube_in at 0.45, 5%). "one_sided_at_target" (2026-10-26; the default since 2026-10-29): "one_sided", and also any cell with a front face (1, 2 or 3 faces on the other label) whose four corners are all within front_conv of the level set flips iff that strictly lowers E, by the sign of its band term: the tip rule of "one_sided_tips" without its three-face condition. Why: in t126196 inward at 0.5 delta_1 (10%, 8 threads, "one_sided_tips") the run hit the 30-turn cap held by 3 real folds; from turn 4 on, the band cells carrying the folds' faces after the clean-up had all four corners within front_conv and a positive band term, all with two faces on the other label (one with one, at turn 25), which the tip rule refuses; at turn 30 the one-sided test read 14 to 16 front_conv short and the topology test allowed both cells. Removed 2026-10-26: "energy" (every candidate flipped by the sign of its band term alone). MEASURED (cube_in at 0.45, 5%, 30 runs, 8 threads, damping off): 23 of 30 resolved, every failure the non-band region reduced to one flat cell covering none of the target. "energy_decrease" (2026-10-28, Spencer; EXPERIMENTAL_band_volume_rule "surface" only, refused otherwise): no side test and no corner gate -- every cell with a front face whose flip strictly lowers the "surface" rule's face term over its four faces (a face shared with a cell of its own label becomes a front face, one shared with the other label stops being one; the flip changes E by exactly that, an eligible cell being not plastic) flips, if eligible and allowed by the topology test, the same tests as the other modes. A cell may flip again in a later pass (every flip strictly lowers E, so the passes end; at most 100 passes, with a warning).</p>
-</details>
-<h2 id="testing-options">Testing options<a class="headerlink" href="#testing-options" title="Permanent link">&para;</a></h2>
-<details class="note">
-<summary>For the test suites. (1)</summary>
-<p><a id="TESTING_allow_mult_comp"></a><strong><code>TESTING_allow_mult_comp</code></strong> · <strong>bool</strong> · default <code>false</code></p>
-<p>TESTING (2026-10-16), 3D. true = an input complex of more than one connected piece (connected components under vertex connectivity; the count is logged as 'Input complex: N connected piece(s)') is accepted. false (the default) = such an input is refused with an error when the offset potential is built, after the construction and before the optimization; with optimize_offset false no potential is built and nothing is refused. Accepted, the energy's band term (every EXPERIMENTAL_band_volume_rule) reads the distance to all the input's triangles, every piece at once, as it does for one piece, and a warning is logged.</p>
 </details>
 
 

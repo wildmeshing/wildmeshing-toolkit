@@ -1608,6 +1608,24 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>anchor_feature_point<
 <tr class="memitem:a9962f638e709c197ab507642117da249" id="r_a9962f638e709c197ab507642117da249"><td class="memItemLeft" align="right" valign="top">std::pair&lt; size_t, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9962f638e709c197ab507642117da249">feature_retention</a> (double *worst_ratio=nullptr) const</td></tr>
 <tr class="separator:a9962f638e709c197ab507642117da249"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">A mesh from exact positions</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p>What tetwild and simwild both do to the tets they are given with exact positions &ndash; the insertion's output, or simwild's tagged mesh with rational coordinates &ndash; done once, here. Until 2026-11 each kept a copy (TetWildMesh::init_from_Volumeremesher(), SimWildMesh::init_from_image()), simwild's rounding copied from tetwild's (a8d9e65d50) in 0f617ab966. They had drifted only in how the box faces were found &ndash; tetwild's in parallel and in place (5e466d9d35, aff96d866c), simwild's serially over a list of every face &ndash; and in when the direct points were found. Same flags either way; the list was the peak of the run on the larger tetwild inputs. </p>
+</td></tr>
+<tr class="memitem:a02905c57fe594b74206d8d69283446be" id="r_a02905c57fe594b74206d8d69283446be"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a02905c57fe594b74206d8d69283446be">ExactCoordinate</a> = std::function&lt; const <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;(size_t vid, int k)&gt;</td></tr>
+<tr class="separator:a02905c57fe594b74206d8d69283446be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa22083fe99eb21addab2d60e8ab689c8" id="r_aa22083fe99eb21addab2d60e8ab689c8"><td class="memItemLeft" align="right" valign="top"><a id="aa22083fe99eb21addab2d60e8ab689c8" name="aa22083fe99eb21addab2d60e8ab689c8"></a>
+std::vector&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>set_exact_positions</b> (const <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a02905c57fe594b74206d8d69283446be">ExactCoordinate</a> &amp;exact)</td></tr>
+<tr class="memdesc:aa22083fe99eb21addab2d60e8ab689c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the position of every vertex (<a class="el" href="classwmtk_1_1_tet_mesh.html#a204a973795d87f3b69a06cf699b400f2" title="get the current largest global vid">vert_capacity()</a> of them) from its exact one, and return, per vertex, whether it is a direct point: one whose exact position is already a double. A direct point is rounded here and stores nothing &ndash; its double is its exact position, so rounding it cannot invert a tet. An indirect point keeps its rational, unrounded, until <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a256facd96b4727cbae6d74b71878ceef" title="Round every indirect vertex that can be, once the tets are final. is_direct_point and exact as set_ex...">round_indirect_vertices()</a>. <br /></td></tr>
+<tr class="separator:aa22083fe99eb21addab2d60e8ab689c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a256facd96b4727cbae6d74b71878ceef" id="r_a256facd96b4727cbae6d74b71878ceef"><td class="memItemLeft" align="right" valign="top"><a id="a256facd96b4727cbae6d74b71878ceef" name="a256facd96b4727cbae6d74b71878ceef"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>round_indirect_vertices</b> (const std::vector&lt; char &gt; &amp;is_direct_point, const <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a02905c57fe594b74206d8d69283446be">ExactCoordinate</a> &amp;exact)</td></tr>
+<tr class="memdesc:a256facd96b4727cbae6d74b71878ceef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Round every indirect vertex that can be, once the tets are final. <code>is_direct_point</code> and <code>exact</code> as <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aa22083fe99eb21addab2d60e8ab689c8" title="Set the position of every vertex (vert_capacity() of them) from its exact one, and return,...">set_exact_positions()</a> took and returned them; <code>exact</code> reverts a vertex. <br /></td></tr>
+<tr class="separator:a256facd96b4727cbae6d74b71878ceef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44a3704e811e3dc994b8549f8de2f75e" id="r_a44a3704e811e3dc994b8549f8de2f75e"><td class="memItemLeft" align="right" valign="top"><a id="a44a3704e811e3dc994b8549f8de2f75e" name="a44a3704e811e3dc994b8549f8de2f75e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>tag_bbox_faces</b> (const Vector3d &amp;box_min, const Vector3d &amp;box_max)</td></tr>
+<tr class="memdesc:a44a3704e811e3dc994b8549f8de2f75e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag each face in a plane of the box [box_min, box_max] with that plane (m_is_bbox_fs: 2 k on the min side of axis k, 2 k + 1 on the max side) and give each of its vertices the plane (on_bbox_faces, sorted, once each). Exact: compares the exact positions. <br /></td></tr>
+<tr class="separator:a44a3704e811e3dc994b8549f8de2f75e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">A reference held to</h2></td></tr>
 <tr><td class="ititle" colspan="2"><p>An <code>envelope</code> input that is a labelled reference (io::read_labelled_envelope()), the first component's input, held to by the run it is given to, simwild's and tetwild's tagged routes alike: m_envelope and m_input_envelopes are built around its triangles of this mesh's labels (io::held_rows()), the order-2 tubes and curve-end anchors around its curves (m_input_curves, <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#afa1e3f2c721362a4c4b36ac037393c86" title="Set m_input_curves from the input surface V, F, each face with its input set (F_inputs),...">set_input_curves()</a>), the feature tubes around its feature curves (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab69ea937589eced2cd948e500ceae2d9">init_reference_feature_tubes()</a>), never around the mesh received. So the output is within this run's eps of the first component's input however many components came before; rebuilt from what each receives, the bound would grow by one eps per stage. Before an optimization, which holds the mesh to it, what was received must already lie in it (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a256af05afda07b7dea7bfd56baa4b2df">check_reference_containment()</a>). Moved here from SimWildMesh (2026-11) for tetwild's tagged route, unchanged. </p>
 </td></tr>
@@ -1647,7 +1665,23 @@ Additional Inherited Members</h2></td></tr>
 <p>Seeded by MOVING tetwild's implementation here, not by designing an abstraction: tetwild is the more heavily measured of the two, so the move leaves it byte-identical and confines any output change to the commit where simwild adopts the base.</p>
 <p>The 2D counterpart is <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html" title="What triwild and simwild&#39;s 2D mesh share.">wmtk::TriOptimizerMesh</a>. The two are deliberately NOT unified with each other &ndash; see that class for why.</p>
 <p><b>Cell attributes stay per-application.</b> tetwild's tets carry winding numbers and a flood-fill id, simwild's carry a CellTag set, and an <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a> member cannot change type in a derived class. The base therefore reaches the one field it needs &ndash; the quality &ndash; through <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a591913486d64d18d27b226d6cd9a19a9" title="The quality of cell tid, and how to write it.">cell_quality()</a>/set_cell_quality(). This keeps the shared pass, swap and smoothing implementations independent of the derived cell-attribute layout; the virtual dispatch is negligible beside their geometric predicates and energy evaluations. </p>
-</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a02905c57fe594b74206d8d69283446be" name="a02905c57fe594b74206d8d69283446be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02905c57fe594b74206d8d69283446be">&#9670;&#160;</a></span>ExactCoordinate</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a02905c57fe594b74206d8d69283446be">wmtk::TetOptimizerMesh::ExactCoordinate</a> =  std::function&lt;const <a class="el" href="classwmtk_1_1_rational.html">Rational</a>&amp;(size_t vid, int k)&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Coordinate k of vertex vid's exact position, as the caller holds it (a vector of Vector3r, a MatrixXr), by reference: reading it copies no <a class="el" href="classwmtk_1_1_rational.html">Rational</a>. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="a1e04b3d042d1636a04a949f2f1d8f33d" name="a1e04b3d042d1636a04a949f2f1d8f33d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1e04b3d042d1636a04a949f2f1d8f33d">&#9670;&#160;</a></span>SwapRejectRole</h2>
 

@@ -11,7 +11,7 @@
     },
     "input": {
       "type": "string",
-      "description": "Input mesh, .msh: a tetrahedral mesh (a triangle mesh is refused for now: the 2D offset is being brought up to date). The two pipelines are the same algorithm one dimension apart and read every key below the same way. Its triangle block is face tags; its edge block is edge tags, the feature curves tetwild and simwild write: each selectable alone by offset_selection (a curve offset), and every one held, selected or not, as tetwild holds its feature curves (see feature_envelope_ratio), and written back as the result's edge block. Its point block is input points, tetwild's and simwild's point inputs, each under its input's name: each label selectable alone by offset_selection (a point offset), every point anchored, selected or not, as tetwild anchors its input points (see feature_envelope_ratio), and written back as the result's point block. A curve input's vertices on no segment are its points, under the curve's name, so selecting the name selects both. It must fill its bounding box, as tetwild's and simwild's meshes do (an output with filter \"none\"): its boundary faces are the domain wall, held by the box rule and never tracked, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary, its face tags -- is refused, and so is an untracked one in no plane (since 2026-11-05; until then every boundary face was tracked)."
+      "description": "Input mesh, .msh: a tetrahedral mesh (a triangle mesh is refused for now: the 2D offset is being brought up to date). The two pipelines are the same algorithm one dimension apart and read every key below the same way. Its triangle block is face tags; its edge block is edge tags, the feature curves tetwild and simwild write: each selectable by an offset's selection, alone (a curve offset) or in an expression, and every one held, selected or not, as tetwild holds its feature curves (see feature_envelope_ratio), and written back as the result's edge block. Its point block is input points, tetwild's and simwild's point inputs, each under its input's name: each label selectable by an offset's selection, alone (a point offset) or in an expression, every point anchored, selected or not, as tetwild anchors its input points (see feature_envelope_ratio), and written back as the result's point block. A curve input's vertices on no segment are its points, under the curve's name, so selecting the name selects both. It must fill its bounding box, as tetwild's and simwild's meshes do (an output with filter \"none\"): its boundary faces are the domain wall, held by the box rule and never tracked, each untracked and in a plane of the box. A tracked boundary face -- a filtered mesh's boundary, its face tags -- is refused, and so is an untracked one in no plane (since 2026-11-05; until then every boundary face was tracked)."
     },
     "output": {
       "type": "string",
@@ -23,30 +23,48 @@
       "description": "Directory where the input files are located. This is injected by the application and should not be set by the user.",
       "default": ""
     },
-    "offset_selection": {
-      "type": "string",
-      "description": "Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used. A face tag, an edge tag or a point label of the input is selected alone: the complex is then that sheet, that curve or those points, the band growing on every side of it (around a point, a ball).",
-      "default": "!_"
-    },
-    "offset_output_tags": {
+    "offsets": {
       "type": "array",
-      "description": "Tags to add to elements in the resulting offset region.",
-      "default": [
-        "newtag"
-      ],
+      "description": "The offsets to make, each from its own input complex: a list of {selection, output_tags, target_distance, target_distance_rel}, constructed in one march. Each entry is offset as if it were the only one -- its own marched edges, its distance to its own complex alone, its own maximum marchable distance and fallback (construction_mode), its own target -- and the cells of its band take its own output_tags; one run of several entries gives the band cells, positions and tags of one run per entry. Entries must not intersect: a vertex two entries' complexes share is refused (offsets that meet need a rule for which band takes the cells between them). Two complexes joined by a mesh edge are kept apart by the simplicial embedding, which splits that edge; its midpoint is then an outer end of both, so each entry's maximum marchable distance is no more than half that edge -- each band has the room between them, not the room it would have alone. After the march two bands share no vertex. The optimization reads each entry's distance where it is: every place -- a band vertex, a band cell, a front face -- reads the piece of the input complex it belongs to (its band's; where two pieces meet, the one of smaller distance; off every band, the nearest): that piece's target_distance, its own field, distance engine and exact band integral, and the bar front_conv_rel of its distance. Every convergence, settle and refinement test is then each piece's own. An absolute front_conv is refused for entries of different distances (give front_conv_rel). Run-wide and from the smallest entry's distance: min_edge_length, the construction pass's offset envelope, the report's offset_level. Entries may differ in primitive kind (a solid and a curve); each entry is one kind (triangles, or segments and points). MEASURED (2026-11-09, two boxes 0.5 apart at 0.1 and 0.2, 5 turns): each front at its own target, as each alone (means 0.1025 and 0.2031 against 0.1023 and 0.2037), converged in 20 s against 15 + 14 s alone. repulsion_smoothing_passes, repulsion_rounds and growth_mode take one entry only for now; the 2D offset (refused for now) takes one entry. Until 2026-11 one offset per run, in the flat keys offset_selection, offset_output_tags, target_distance and target_distance_rel. Example: [{\"selection\": \"tag_0\", \"target_distance\": 0.1}, {\"selection\": \"rod\", \"output_tags\": [\"rod_band\"], \"target_distance_rel\": 0.02}]",
       "items": {
-        "type": "string",
-        "description": "A tag."
+        "type": "object",
+        "description": "One offset: its input complex, its band's tags, its distance.",
+        "properties": {
+          "selection": {
+            "type": "string",
+            "description": "Boolean expression over the input's tags for this offset's input complex. A single tet tag (ie 'tag_0') is single body mode, offset_in and offset_out saying on which side of it. A face tag, the surface group, an edge tag or a point label alone is that sheet, that curve or those points, the band growing on every side of it (around a point, a ball). In an expression a simplex carries the tags of the cells around it and those on it or on a face or edge it bounds -- a face's face tags and the surface group, an edge's edge tags, a vertex's point labels -- so each tag means what it means alone: 'yellow | red' is the sheet yellow and the solid red, 'curve | other' both curves, 'yellow & red' the faces of yellow that bound red cells (until 2026-11 an edge tag or a point label in an expression was refused, and a face tag or the surface group selected nothing). One input complex takes one primitive kind: triangles (solids, sheets), or segments and points."
+          },
+          "output_tags": {
+            "type": "array",
+            "description": "Tags the cells of this offset's band take; none: ambient.",
+            "default": [
+              "newtag"
+            ],
+            "items": {
+              "type": "string",
+              "description": "A tag."
+            }
+          },
+          "target_distance": {
+            "type": "number",
+            "description": "Target distance of this offset. If <= 0 (the default -1): derived from target_distance_rel. It must come out positive.",
+            "default": -1.0
+          },
+          "target_distance_rel": {
+            "type": "number",
+            "description": "Target distance of this offset relative to the bounding box diagonal of the mesh. Ignored if target_distance > 0.",
+            "default": 0.01
+          }
+        },
+        "required": [
+          "selection"
+        ]
       }
     },
     "protected_tags": {
-      "type": "array",
-      "description": "Set of tags that will not be overwritten by the offset. Tet tags: the march leaves a cell carrying one as it is -- it splits none of its edges and the band takes none of it, so the offset is not made in a direction such a cell blocks; an earlier offset's band, protected, keeps its cells (since 2026-11-05; before, the band took such cells and they kept the protected tags beside offset_output_tags). 3D: face tags and the sheet group (the .msh's envelope surface group, by its name) too -- a face the band covers (both of its tets band cells; never a face of the input complex itself) keeps the protected ones it carried, and every other face tag and the sheet group give way there, as the cells' other tags do (since 2026-11-04). A face that then still separates two tag sets or still carries a face tag or the sheet group stays tracked, and held; any other face inside the band is no longer tracked.",
-      "default": [],
-      "items": {
-        "type": "string",
-        "description": "A tag."
-      }
+      "type": "string",
+      "description": "Boolean expression over the input's tags of what the offset does not overwrite; empty: nothing ('tag_1 | tag_2' protects the cells and faces carrying either; 'ambient' is refused). A simplex is protected when its own tags satisfy it -- a cell its tet tags, a face its face tags and the sheet group (the .msh's envelope surface group, by its name). The march leaves a protected cell as it is -- it splits none of its edges and the band takes none of it, so the offset is not made in a direction such a cell blocks; an earlier offset's band, protected, keeps its cells (since 2026-11-05; before, the band took such cells and they kept the protected tags beside offset_output_tags). 3D: a protected face the band covers (both of its tets band cells; never a face of the input complex itself) keeps the face tags and the sheet group the expression names, and every other face tag and the sheet group give way there, as the cells' other tags do (since 2026-11-04). A face that then still separates two tag sets or still carries a face tag or the sheet group stays tracked, and held; any other face inside the band is no longer tracked. Until 2026-11 a list of tag names, which is the expression of the names joined by '|'.",
+      "default": ""
     },
     "offset_in": {
       "type": "boolean",
@@ -57,16 +75,6 @@
       "type": "boolean",
       "description": "Only relevant for single body mode. Whether to create offset outside body",
       "default": true
-    },
-    "target_distance_rel": {
-      "type": "number",
-      "description": "Target offset distance relative to the bounding box diagonal of the mesh. Ignored if target_distance > 0.",
-      "default": 0.01
-    },
-    "target_distance": {
-      "type": "number",
-      "description": "Target distance for offset. If <= 0 (the default -1): derived from target_distance_rel.",
-      "default": -1.0
     },
     "throw_on_nonconvergence": {
       "type": "boolean",
@@ -298,11 +306,6 @@
     "DEBUG_stencil": {
       "type": "boolean",
       "description": "DEBUG (2026-10-29), 3D, with DEBUG_output (or DEBUG_remote_output; refused otherwise). true: every debug frame also writes <frame>_stencil.vtu (and <output>_stencil.pvd lists them), one VTK vertex cell per stencil point of every offset face (offset_surface_faces() order times the face stencil: stencil_order, EXPERIMENTAL_stencil_type; a point shared by two faces appears once per face), with point fields stencil_error r^2 (r = (d - target_distance) / target_distance), error_over_bound (d - target_distance)^2 / front_conv^2 (>= 1 out of tolerance), signed_error r, distance_over_target 1 + r, sq_error (d - target_distance)^2 (its max is O*, the \"surface\" rule's settle metric), face and point. Not written before the loop's offset potential exists, nor for a mesh without offset faces. false (the default): no _stencil file.",
-      "default": false
-    },
-    "TESTING_allow_mult_comp": {
-      "type": "boolean",
-      "description": "TESTING (2026-10-16), 3D. true = an input complex of more than one connected piece (connected components under vertex connectivity; the count is logged as 'Input complex: N connected piece(s)') is accepted. false (the default) = such an input is refused with an error when the offset potential is built, after the construction and before the optimization; with optimize_offset false no potential is built and nothing is refused. Accepted, the energy's band term (every EXPERIMENTAL_band_volume_rule) reads the distance to all the input's triangles, every piece at once, as it does for one piece, and a warning is logged.",
       "default": false
     },
     "EXPERIMENTAL_settle_refinement": {
@@ -606,7 +609,8 @@
   },
   "required": [
     "application",
-    "input"
+    "input",
+    "offsets"
   ],
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://wildmeshing.github.io/wildmeshing-toolkit/schemas/topological_offset.json",

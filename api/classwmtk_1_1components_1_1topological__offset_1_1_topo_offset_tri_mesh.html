@@ -636,9 +636,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>append_frame_label</b
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_debug_frame</b> (const std::string &amp;label)</td></tr>
 <tr class="memdesc:a5c6399a7f7ce8877c6b7f0579eebba85"><td class="mdescLeft">&#160;</td><td class="mdescRight">One frame of the run's single debug timeline: &lt;output&gt;_NNNNN.vtu with the next sequence number, and one "NNNNN&lt;tab&gt;label" line in &lt;output&gt;_frames.txt. Every debug frame the run writes &ndash; the input as loaded, the construction stages, and the optimization's own frames through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1148365246b4569aefcabc41dfed1950" title="Put the optimization&#39;s frames on the run&#39;s single debug timeline (see write_debug_frame()),...">write_smoothing_debug_output()</a> &ndash; goes through this sequence, so the numbers are consecutive and the .txt says what each one is. The only debug files outside it are the ones that are not this mesh: &lt;output&gt;_input_complex.vtu and the phi grid. <br /></td></tr>
 <tr class="separator:a5c6399a7f7ce8877c6b7f0579eebba85"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80af96dc1d64f478c466915ed596edc3" id="r_a80af96dc1d64f478c466915ed596edc3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a80af96dc1d64f478c466915ed596edc3">init_from_image</a> (const MatrixXd &amp;V, const MatrixXi &amp;F, const MatrixSi &amp;F_tags, const MatrixXd &amp;V_env, const MatrixXi &amp;F_env, const std::vector&lt; std::string &gt; &amp;tag_names, const std::string &amp;curve_name=&quot;&quot;)</td></tr>
-<tr class="memdesc:a80af96dc1d64f478c466915ed596edc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> from vertex, face, tag data  <br /></td></tr>
-<tr class="separator:a80af96dc1d64f478c466915ed596edc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64b84671abbaf99c5be1d836c6c6f042" id="r_a64b84671abbaf99c5be1d836c6c6f042"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a64b84671abbaf99c5be1d836c6c6f042">init_from_image</a> (const MatrixXd &amp;V, const MatrixXi &amp;F, const MatrixSi &amp;F_tags, const MatrixXd &amp;V_env, const MatrixXi &amp;F_env, const std::vector&lt; std::string &gt; &amp;tag_names, const std::string &amp;curve_name=&quot;&quot;, const MatrixXi &amp;E_tagged=MatrixXi(), const MatrixSi &amp;E_tags=MatrixSi(), const std::vector&lt; std::string &gt; &amp;edge_tag_names={}, const MatrixSi &amp;E_orientation=MatrixSi(), const std::vector&lt; size_t &gt; &amp;point_vids={})</td></tr>
+<tr class="memdesc:a64b84671abbaf99c5be1d836c6c6f042"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> from vertex, face, tag data  <br /></td></tr>
+<tr class="separator:a64b84671abbaf99c5be1d836c6c6f042"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5d6e6ce51a4fed24491a9078509db62" id="r_ae5d6e6ce51a4fed24491a9078509db62"><td class="memItemLeft" align="right" valign="top"><a id="ae5d6e6ce51a4fed24491a9078509db62" name="ae5d6e6ce51a4fed24491a9078509db62"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>ambient_assert</b> ()</td></tr>
 <tr class="memdesc:ae5d6e6ce51a4fed24491a9078509db62"><td class="mdescLeft">&#160;</td><td class="mdescRight">ensure ambient tag does not overlap any other tags in mesh. <br /></td></tr>
@@ -1375,6 +1375,8 @@ MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>m_V_envelope</b><
 <tr class="memitem:a7e94b3c1d545724f39877103bfa6a081" id="r_a7e94b3c1d545724f39877103bfa6a081"><td class="memItemLeft" align="right" valign="top"><a id="a7e94b3c1d545724f39877103bfa6a081" name="a7e94b3c1d545724f39877103bfa6a081"></a>
 MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_envelope</b></td></tr>
 <tr class="separator:a7e94b3c1d545724f39877103bfa6a081"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a092e2958b4b1eb012d751ff0932b4515" id="r_a092e2958b4b1eb012d751ff0932b4515"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a092e2958b4b1eb012d751ff0932b4515">m_edge_tag_names</a></td></tr>
+<tr class="separator:a092e2958b4b1eb012d751ff0932b4515"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a107b02eb2864f5ccce3028d2afaf13f1" id="r_a107b02eb2864f5ccce3028d2afaf13f1"><td class="memItemLeft" align="right" valign="top"><a id="a107b02eb2864f5ccce3028d2afaf13f1" name="a107b02eb2864f5ccce3028d2afaf13f1"></a>
 <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html">Parameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_params</b></td></tr>
 <tr class="memdesc:a107b02eb2864f5ccce3028d2afaf13f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">The base holds only <a class="el" href="structwmtk_1_1_optimizer_parameters.html" title="The parameters tetwild, triwild and simwild all share.">wmtk::OptimizerParameters</a>; this is the same object, typed. <br /></td></tr>
@@ -3183,8 +3185,8 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
-<a id="a80af96dc1d64f478c466915ed596edc3" name="a80af96dc1d64f478c466915ed596edc3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80af96dc1d64f478c466915ed596edc3">&#9670;&#160;</a></span>init_from_image()</h2>
+<a id="a64b84671abbaf99c5be1d836c6c6f042" name="a64b84671abbaf99c5be1d836c6c6f042"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64b84671abbaf99c5be1d836c6c6f042">&#9670;&#160;</a></span>init_from_image()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3229,7 +3231,37 @@ template&lt;typename Visit &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>curve_name</em> = <code>&quot;&quot;</code>&#160;</td>
+          <td class="paramname"><em>curve_name</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const MatrixXi &amp;&#160;</td>
+          <td class="paramname"><em>E_tagged</em> = <code>MatrixXi()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const MatrixSi &amp;&#160;</td>
+          <td class="paramname"><em>E_tags</em> = <code>MatrixSi()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>edge_tag_names</em> = <code>{}</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const MatrixSi &amp;&#160;</td>
+          <td class="paramname"><em>E_orientation</em> = <code>MatrixSi()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>point_vids</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -3247,6 +3279,8 @@ template&lt;typename Visit &gt; </div>
     <tr><td class="paramname">F_tags</td><td>#F by physical groups tag matrix </td></tr>
     <tr><td class="paramname">V_env</td><td>V_env by 2 EnvelopeSurface vertex matrix </td></tr>
     <tr><td class="paramname">F_env</td><td>F_env by 2 EnvelopeSurface edge matrix </td></tr>
+    <tr><td class="paramname">E_tagged,E_tags,edge_tag_names,E_orientation</td><td>the tagged edges, as InputData's F_tagged, F_tags, face_tag_names and F_orientation give them in 2D </td></tr>
+    <tr><td class="paramname">point_vids</td><td>the input points' vertices (InputData::input_point_vids), each labelled by the base's m_input_point_labels, which the caller sets before this with m_point_names </td></tr>
   </table>
   </dd>
 </dl>
@@ -3310,7 +3344,7 @@ template&lt;typename Visit &gt; </div>
 
 <p>Classify every region boundary, build the per-tag containment envelopes, and tag the domain wall &ndash; once, from the input mesh, before offset construction runs. </p>
 <p>The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af73224d67c178a003138208607dd62be" title="Classify every region boundary and flag the domain wall – once, from the input mesh,...">TopoOffsetTetMesh::init_surfaces_and_boundaries()</a>, called from the same place for the same reason: the band's tags replace a face's own rather than joining them, so an envelope built afterwards would be a tube around a curve truncated at the band.</p>
-<p>A region boundary is an edge whose two incident faces carry different tag sets; it enters the bucket of every tag on exactly one side (the symmetric difference). An edge with only one incident face is the domain wall and enters its single face's tags' buckets, which is how ambient's envelope comes to hold the box. Requires the face tags to be set, which <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a80af96dc1d64f478c466915ed596edc3" title="initialize TriMesh from vertex, face, tag data">init_from_image()</a> does just above the call. </p>
+<p>A region boundary is an edge whose two incident faces carry different tag sets; it enters the bucket of every tag on exactly one side (the symmetric difference). An edge with only one incident face is the domain wall and enters its single face's tags' buckets, which is how ambient's envelope comes to hold the box. Requires the face tags to be set, which <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a64b84671abbaf99c5be1d836c6c6f042" title="initialize TriMesh from vertex, face, tag data">init_from_image()</a> does just above the call. </p>
 
 </div>
 </div>
@@ -5783,7 +5817,7 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Tag id of the input's curve group (the .msh line elements), or -1. An open curve has no face set whose boundary it is, so it is selectable only through this tag: offset_selection naming it makes the curve the complex and the band grows on both of its sides. </p>
+<p>Tag id of the input's curve group (the .msh line elements), or -1. An open curve has no face set whose boundary it is, so it is selectable only through this tag: a selection (offsets) naming it makes the curve the complex and the band grows on both of its sides. </p>
 
 </div>
 </div>
@@ -5830,6 +5864,21 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
 </table>
 </div><div class="memdoc">
 <p>Pass index within the current turn, and the (turn, loop-or-final-pass tag, prefix) it belongs to &ndash; when those change the index restarts. All exist only to name frames. </p>
+
+</div>
+</div>
+<a id="a092e2958b4b1eb012d751ff0932b4515" name="a092e2958b4b1eb012d751ff0932b4515"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a092e2958b4b1eb012d751ff0932b4515">&#9670;&#160;</a></span>m_edge_tag_names</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::string&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_edge_tag_names</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Edge tags, the tagged curves of a triangle mesh's edge block (triwild's and simwild's): bit j of an edge's input set is m_edge_tag_names[j]. The 3D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac301c958a30e81590c512664cf2582b4">TopoOffsetTetMesh::m_face_tag_names</a>, without its tag ids: no 2D selection names a curve, and a curve may share its name with a region, as triwild names them (SimWildMeshTri::m_edge_tag_names). </p>
 
 </div>
 </div>
@@ -6188,7 +6237,7 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The source tags (offset_selection's tags_involved), stored at release so the ops-only tube's edge classification applies the same never-freed rule the release did. </p>
+<p>The source tags (the selection's tags_involved), stored at release so the ops-only tube's edge classification applies the same never-freed rule the release did. </p>
 
 </div>
 </div>
@@ -6241,7 +6290,7 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Input tag id -&gt; bit position in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a7782cf5be960945eb7046ef6cdc571e0" title="Which tag boundaries this vertex lies on – one bit per input tag, ambient included....">VertexExtra2d::m_boundary_mask</a>. Assigned in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a80af96dc1d64f478c466915ed596edc3" title="initialize TriMesh from vertex, face, tag data">init_from_image()</a> once the tag maps are complete; at most 64 input tags. </p>
+<p>Input tag id -&gt; bit position in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a7782cf5be960945eb7046ef6cdc571e0" title="Which tag boundaries this vertex lies on – one bit per input tag, ambient included....">VertexExtra2d::m_boundary_mask</a>. Assigned in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a64b84671abbaf99c5be1d836c6c6f042" title="initialize TriMesh from vertex, face, tag data">init_from_image()</a> once the tag maps are complete; at most 64 input tags. </p>
 
 </div>
 </div>

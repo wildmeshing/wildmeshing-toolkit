@@ -90,6 +90,8 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a8dfa0f63b7fafc6ec9ea68f460b9d83a" id="r_a8dfa0f63b7fafc6ec9ea68f460b9d83a"><td class="memItemLeft" align="right" valign="top"><a id="a8dfa0f63b7fafc6ec9ea68f460b9d83a" name="a8dfa0f63b7fafc6ec9ea68f460b9d83a"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>label</b> = 0</td></tr>
 <tr class="separator:a8dfa0f63b7fafc6ec9ea68f460b9d83a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64562b467031b605895ae354edcd3cb5" id="r_a64562b467031b605895ae354edcd3cb5"><td class="memItemLeft" align="right" valign="top">InputSet&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a64562b467031b605895ae354edcd3cb5">point_inputs</a> = 0</td></tr>
+<tr class="separator:a64562b467031b605895ae354edcd3cb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c240333447786a16d788405f93ddf03" id="r_a7c240333447786a16d788405f93ddf03"><td class="memItemLeft" align="right" valign="top"><a id="a7c240333447786a16d788405f93ddf03" name="a7c240333447786a16d788405f93ddf03"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_input</b> = false</td></tr>
 <tr class="separator:a7c240333447786a16d788405f93ddf03"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -155,6 +157,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
       </table>
 </div><div class="memdoc">
 <p>The input-complex vertex this offset vertex was split off from by marching_tris(): the marched edge's endpoint on the complex. -1 for every vertex the march did not make. Written into the output .msh by save_offset_correspondence; not maintained by the optimization. The 3D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#a076486a398d36991eb95b48c78435d26">VertexExtra::m_corr_input_vid</a>. </p>
+
+</div>
+</div>
+<a id="a64562b467031b605895ae354edcd3cb5" name="a64562b467031b605895ae354edcd3cb5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64562b467031b605895ae354edcd3cb5">&#9670;&#160;</a></span>point_inputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">InputSet wmtk::components::topological_offset::VertexExtra2d::point_inputs = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set at load (init_from_image()) and carried by the construction, which only splits, a new vertex starting from none (marching_split_edge_before(), split_face_before()). The 3D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#aaf891296fe91c0df8346a71ab961f686">VertexExtra::point_inputs</a>, whose anchors take over from it; in 2D no anchor holds a point, nothing moving one, and the output's point block is written from this (collect_loaded_curves_and_points()). </p>
 
 </div>
 </div>

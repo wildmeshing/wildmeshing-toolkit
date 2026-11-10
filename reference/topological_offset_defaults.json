@@ -1,15 +1,9 @@
 {
   "output": "out",
   "input_dir": "",
-  "offset_selection": "!_",
-  "offset_output_tags": [
-    "newtag"
-  ],
-  "protected_tags": [],
+  "protected_tags": "",
   "offset_in": false,
   "offset_out": true,
-  "target_distance_rel": 0.01,
-  "target_distance": -1.0,
   "throw_on_nonconvergence": false,
   "optimize_offset": true,
   "envelope_size_rel": 0.001,
@@ -46,7 +40,6 @@
   "smart_growth_max_fails": 10,
   "foldover_angle": 30.0,
   "DEBUG_stencil": false,
-  "TESTING_allow_mult_comp": false,
   "EXPERIMENTAL_settle_refinement": true,
   "check_manifoldness": true,
   "save_vtu": false,

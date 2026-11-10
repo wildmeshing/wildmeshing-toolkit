@@ -147,32 +147,36 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>        nlohmann::json offset_params;</div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        offset_params[<span class="stringliteral">&quot;application&quot;</span>] = <span class="stringliteral">&quot;topological_offset&quot;</span>;</div>
 <div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>        offset_params[<span class="stringliteral">&quot;input&quot;</span>] = <span class="stringliteral">&quot;this doesn&#39;t matter&quot;</span>;</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        offset_params[<span class="stringliteral">&quot;offset_selection&quot;</span>] = <span class="stringliteral">&quot;this should never be used.&quot;</span>;</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span> </div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>        <span class="comment">// inject defaults</span></div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        <span class="keyword">const</span> <span class="keyword">auto</span> spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        jse::JSE spec_engine;</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        <span class="keywordtype">bool</span> r = spec_engine.verify_json(offset_params, spec);</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        <span class="keywordflow">if</span> (!r) {</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>            log_and_throw_error(spec_engine.log2str());</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>        }</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        offset_params = spec_engine.inject_defaults(offset_params, spec);</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span> </div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        <span class="keyword">auto</span> ret_params = <a class="code hl_struct" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html">topological_offset::Parameters</a>(offset_params);</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>        ret_params.target_distance = radius;</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        ret_params.target_distance_rel = radius_rel;</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        ret_params.offset_output_tag = fill_tags;</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>        ret_params.debug_output = debug_output;</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        ret_params.save_vtu = save_vtu;</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        <span class="keywordflow">return</span> ret_params;</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    }</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>};</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        <span class="comment">// One offset, labelled by label_non_manifold() rather than by this selection.</span></div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>        offset_params[<span class="stringliteral">&quot;offsets&quot;</span>] = {{{<span class="stringliteral">&quot;selection&quot;</span>, <span class="stringliteral">&quot;this should never be used.&quot;</span>}}};</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        <span class="comment">// inject defaults</span></div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        <span class="keyword">const</span> <span class="keyword">auto</span> spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        jse::JSE spec_engine;</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        <span class="keywordtype">bool</span> r = spec_engine.verify_json(offset_params, spec);</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>        <span class="keywordflow">if</span> (!r) {</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>            log_and_throw_error(spec_engine.log2str());</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        }</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>        offset_params = spec_engine.inject_defaults(offset_params, spec);</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>        <span class="keyword">auto</span> ret_params = <a class="code hl_struct" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html">topological_offset::Parameters</a>(offset_params);</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        ret_params.target_distance = radius;</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        ret_params.target_distance_rel = radius_rel;</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>        ret_params.offset_output_tag = fill_tags;</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        ret_params.offsets[0].output_tags = fill_tags;</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        ret_params.offsets[0].target_distance = radius;</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        ret_params.offsets[0].target_distance_rel = radius_rel;</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        ret_params.debug_output = debug_output;</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        ret_params.save_vtu = save_vtu;</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>        <span class="keywordflow">return</span> ret_params;</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    }</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>};</div>
 </div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span> </div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span> </div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>} <span class="comment">// namespace wmtk::components::manifold_extraction</span></div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>} <span class="comment">// namespace wmtk::components::manifold_extraction</span></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1manifold__extraction_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1manifold__extraction_1_1_parameters.html">wmtk::components::manifold_extraction::Parameters</a></div><div class="ttdef"><b>Definition</b> Parameters.h:19</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1topological__offset_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html">wmtk::components::topological_offset::Parameters</a></div><div class="ttdoc">What the offset needs on top of the parameters every wmtk optimizer shares.</div><div class="ttdef"><b>Definition</b> Parameters.h:24</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1topological__offset_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html">wmtk::components::topological_offset::Parameters</a></div><div class="ttdoc">What the offset needs on top of the parameters every wmtk optimizer shares.</div><div class="ttdef"><b>Definition</b> Parameters.h:25</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
