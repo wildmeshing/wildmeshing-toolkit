@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <mutex>
 #include <queue>
 #include <tuple>
 
@@ -1741,6 +1742,187 @@ std::string counts_by_name(const std::vector<size_t>& outside, Name name)
     return out;
 }
 } // namespace
+
+std::vector<char> TetOptimizerMesh::set_exact_positions(const ExactCoordinate& exact)
+{
+    std::vector<char> is_direct_point(vert_capacity(), 0);
+    // Per-vertex, independent: each i writes only its own m_pos/m_posf/m_is_rounded/
+    // is_direct_point; the rational->double conversion and the exact comparison read only local
+    // data.
+    threading::parallel_for(
+        threading::range(0, vert_capacity()),
+        [&](const threading::range& range) {
+            for (size_t i = range.begin(); i < range.end(); ++i) {
+                auto& va = m_vertex_attribute[i];
+                for (int k = 0; k < 3; ++k) va.m_posf[k] = exact(i, k).to_double();
+                const Vector3d& d = va.m_posf;
+                const bool direct = (wmtk::Rational(d[0]) == exact(i, 0)) &&
+                                    (wmtk::Rational(d[1]) == exact(i, 1)) &&
+                                    (wmtk::Rational(d[2]) == exact(i, 2));
+                is_direct_point[i] = direct ? 1 : 0;
+                va.m_is_rounded = direct;
+                // A direct point's exact position is its double one: store nothing.
+                if (direct) {
+                    va.set_pos_to_posf();
+                } else {
+                    va.set_pos(Vector3r(exact(i, 0), exact(i, 1), exact(i, 2)));
+                }
+            }
+        },
+        NUM_THREADS);
+    return is_direct_point;
+}
+
+void TetOptimizerMesh::round_indirect_vertices(
+    const std::vector<char>& is_direct_point,
+    const ExactCoordinate& exact)
+{
+    auto& VA = m_vertex_attribute;
+
+    // Round the indirect vertices in parallel. Rounding snaps m_pos to its double
+    // and may not invert any incident tet, so it is not independent across adjacent
+    // vertices and the old code did it serially (round() per vertex, an exact-
+    // rational inversion check over each vertex's incident tets). Instead, snap all
+    // indirect vertices at once and then revalidate/revert the few conflicts:
+    //   1. snap every not-yet-rounded (indirect) vertex to its double (parallel);
+    //   2. scan all tets (parallel) -- any inverted tet must contain an indirect
+    //      vertex (a direct vertex never moves, so cannot cause an inversion), so
+    //      revert those indirect vertices to their exact rational coordinate;
+    //   3. repeat until no tet is inverted.
+    // This terminates: every non-empty pass un-rounds at least one vertex, and the
+    // all-rational mesh is valid. Direct points are skipped throughout.
+    for_each_vertex([&](const Tuple& v) {
+        const size_t i = v.vid(*this);
+        if (!VA[i].m_is_rounded) {
+            VA[i].set_pos_to_posf();
+            VA[i].m_is_rounded = true;
+        }
+    });
+
+    while (true) {
+        // A flag per vertex rather than a shared appended list: a vertex is reachable
+        // from several tets, so the old version took a lock per push and then pushed the
+        // same vid repeatedly. Every write here stores the same value to a slot indexed
+        // by vid, so the threads cannot disagree -- relaxed is enough, and the duplicates
+        // collapse for free.
+        std::vector<std::atomic<uint8_t>> to_revert(vert_capacity());
+        for (auto& f : to_revert) {
+            f.store(0, std::memory_order_relaxed);
+        }
+
+        std::atomic<bool> any{false};
+        for_each_tetra([&](const Tuple& t) {
+            if (is_inverted(t)) {
+                for (const size_t vid : oriented_tet_vids(t)) {
+                    if (!is_direct_point[vid] && m_vertex_attribute[vid].m_is_rounded) {
+                        to_revert[vid].store(1, std::memory_order_relaxed);
+                        any.store(true, std::memory_order_relaxed);
+                    }
+                }
+            }
+        });
+        if (!any.load(std::memory_order_relaxed)) {
+            break;
+        }
+        for (size_t vid = 0; vid < to_revert.size(); ++vid) {
+            if (!to_revert[vid].load(std::memory_order_relaxed)) {
+                continue;
+            }
+            if (m_vertex_attribute[vid].m_is_rounded) {
+                m_vertex_attribute[vid].set_pos(
+                    Vector3r(exact(vid, 0), exact(vid, 1), exact(vid, 2)));
+                m_vertex_attribute[vid].m_is_rounded = false;
+                m_all_rounded.store(false, std::memory_order_relaxed);
+            }
+        }
+    }
+
+    const auto vertices = get_vertices();
+    size_t cnt_round_parallel = 0;
+    for (const Tuple& v : vertices) {
+        if (VA[v.vid(*this)].m_is_rounded) {
+            ++cnt_round_parallel;
+        }
+    }
+
+    // Final serial sweep: the parallel batch reverts a vertex whenever it lies in
+    // any inverted tet, which can over-revert (a vertex may round fine once its
+    // neighbours are committed). Retry the leftovers one at a time -- round() is a
+    // no-op for the already-rounded majority, so this only pays for the few that
+    // remain, and recovers vertices the batch conservatively reverted.
+    for (const Tuple& v : vertices) {
+        round(v);
+    }
+
+    size_t cnt_round = 0;
+    for (const Tuple& v : vertices) {
+        if (VA[v.vid(*this)].m_is_rounded) {
+            ++cnt_round;
+        }
+    }
+
+    logger().info(
+        "Rounded vertices {}/{} (parallel {}, serial recovered {})",
+        cnt_round,
+        vertices.size(),
+        cnt_round_parallel,
+        cnt_round - cnt_round_parallel);
+}
+
+void TetOptimizerMesh::tag_bbox_faces(const Vector3d& box_min, const Vector3d& box_max)
+{
+    // In parallel. The per-face exact-rational corner test is the cost; on-bbox faces are rare,
+    // so each chunk collects (vertex, bbox-side) pairs locally and merges once, and the
+    // per-vertex vectors are appended serially. Each face is visited once, at the tet that owns
+    // it, and nothing is materialised: the mesh is at its largest here.
+    std::vector<std::pair<size_t, int>> bbox_vert_faces;
+    std::mutex bbox_mutex;
+    threading::parallel_for(
+        threading::range(0, tet_capacity()),
+        [&](const threading::range& r) {
+            std::vector<std::pair<size_t, int>> local;
+            for (size_t t = r.begin(); t < r.end(); ++t) {
+                if (!tuple_from_tet(t).is_valid(*this)) continue;
+                for (int j = 0; j < 4; ++j) {
+                    const Tuple f = tuple_from_face(t, j);
+                    if (f.fid(*this) != 4 * t + j) continue; // a lower tet owns this face
+                    const auto vs = get_face_vertices(f);
+                    const std::array<size_t, 3> vids = {
+                        {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+                    int on_bbox = -1;
+                    for (int k = 0; k < 3; k++) {
+                        if (m_vertex_attribute[vids[0]].pos_coord_equals(k, box_min[k]) &&
+                            m_vertex_attribute[vids[1]].pos_coord_equals(k, box_min[k]) &&
+                            m_vertex_attribute[vids[2]].pos_coord_equals(k, box_min[k])) {
+                            on_bbox = k * 2;
+                            break;
+                        }
+                        if (m_vertex_attribute[vids[0]].pos_coord_equals(k, box_max[k]) &&
+                            m_vertex_attribute[vids[1]].pos_coord_equals(k, box_max[k]) &&
+                            m_vertex_attribute[vids[2]].pos_coord_equals(k, box_max[k])) {
+                            on_bbox = k * 2 + 1;
+                            break;
+                        }
+                    }
+                    if (on_bbox < 0) continue;
+                    assert(!f.switch_tetrahedron(*this)); // face must be on boundary
+                    m_face_attribute[f.fid(*this)].m_is_bbox_fs = on_bbox;
+                    for (const size_t vid : vids) local.emplace_back(vid, on_bbox);
+                }
+            }
+            if (local.empty()) return;
+            std::lock_guard<std::mutex> lk(bbox_mutex);
+            bbox_vert_faces.insert(bbox_vert_faces.end(), local.begin(), local.end());
+        },
+        NUM_THREADS);
+    for (const auto& [vid, on_bbox] : bbox_vert_faces) {
+        m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+    }
+
+    for_each_vertex([&](const Tuple& v) {
+        wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces);
+    });
+}
 
 void TetOptimizerMesh::require_box_boundary(const std::string& who) const
 {
