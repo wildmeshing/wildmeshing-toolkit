@@ -1,6 +1,7 @@
 # Workflows
 
-Pipelines of several components, each as one script.
+Pipelines of several components, each as one script and as one pipeline file
+(`docs/examples/pipeline`).
 
 - [TetWild with features](tetwild-features.md): feature curves and points forced into a tet
   mesh, and how to check they are kept.

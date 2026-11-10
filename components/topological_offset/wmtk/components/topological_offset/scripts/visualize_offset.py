@@ -72,10 +72,11 @@ what a vertex trapped on the medial axis of the field looks like. Frames written
 fields existed simply do not offer the layers.
 
 The offset surface carries two scalar layers: distance to the input surface, and
-|distance - delta| / delta. delta comes from the config (`target_distance`, else
-`target_distance_rel` x the mesh bounding-box diagonal -- the box is the frozen
-background bbox, so the output diagonal equals the input one). Without a config the
-defaults (rel 0.01, tag "offset") are assumed and said so.
+|distance - delta| / delta. delta comes from the config's first offset
+(`offsets[0].target_distance`, else its `target_distance_rel` x the mesh bounding-box
+diagonal -- the box is the frozen background bbox, so the output diagonal equals the input
+one). The band is the cells of every offset's `output_tags`. Without a config the defaults
+(rel 0.01, tag "offset") are assumed and said so.
 
 Two honesty notes on the error layer:
 
@@ -157,7 +158,7 @@ def read_vtu(path):
 
 
 def eval_selection(expr, names):
-    """The offset_selection boolean expression, on one cell's group memberships.
+    """An offset's selection boolean expression, on one cell's group memberships.
 
     Same language the C++ parses: tag names, & | !, parentheses; 'ambient' (spec default
     spells it '_' or '!_') means "in no tag group". Names are substituted with their
@@ -175,7 +176,7 @@ def eval_selection(expr, names):
     py = re.sub(r"[A-Za-z0-9_]+", sub, expr)  # tag names may be purely numeric
     py = py.replace("!", " not ").replace("&", " and ").replace("|", " or ")
     if not re.fullmatch(r"[ ()TrueFalsandnot]*", py):
-        raise ValueError("cannot evaluate offset_selection %r" % expr)
+        raise ValueError("cannot evaluate selection %r" % expr)
     return bool(eval(py))
 
 
@@ -746,7 +747,8 @@ def load(msh, cfg):
     # present; .msh files name the band by its output tag instead.
     offset_tags = {"offset_tag"} & set(groups)
     if not offset_tags:
-        offset_tags = set(cfg.get("offset_output_tags", ["offset"])) & set(groups)
+        offset_tags = {t for e in cfg.get("offsets", []) for t in e.get("output_tags", ["offset"])} \
+            & set(groups)
     if not offset_tags:
         offset_tags = {"offset"} & set(groups)
 
@@ -784,7 +786,8 @@ def load(msh, cfg):
         return {n for i, n in enumerate(gnames) if (int(mask) >> i) & 1}
 
     distinct = {int(m): names_of(m) for m in np.unique(masks)}
-    expr = cfg.get("offset_selection", "!_")
+    first = (cfg.get("offsets") or [{}])[0]  # the input complex and delta: the first offset's
+    expr = first.get("selection", "!_")
     classed = {"offset": [], "input": [], "ambient": []}
     # The same cells again, deduplicated and in one stable order, so the background mesh can
     # be drawn with per-cell quantities that line up with it: which of the three classes each
@@ -850,8 +853,8 @@ def load(msh, cfg):
         "envelope": envelope,
     }
     # PER-TAG BOUNDARIES, one curve per tag, from THIS frame's tags: the boundary of the set of
-    # cells carrying the tag, whatever else they carry. The classes above come from
-    # offset_selection, which is the right view of the offset and a misleading one of the
+    # cells carrying the tag, whatever else they carry. The classes above come from the first
+    # offset's selection, which is the right view of the offset and a misleading one of the
     # input: on a multi-tag model (the dragon fixture) "input surface" is the outline of
     # everything the selection matches -- every tag, when no config is found -- and where the
     # band overwrote tags it is cropped at the band and moves as cells beside it collapse.
@@ -859,7 +862,8 @@ def load(msh, cfg):
     # Not for the band (any of its names) and not for ambient, whose "boundary" is the domain
     # box plus the outline of everything tagged -- the layer that read as the input surface
     # showing the box.
-    skip = offset_tags | {"offset_tag", "offset", "ambient"} | set(cfg.get("offset_output_tags", []))
+    skip = offset_tags | {"offset_tag", "offset", "ambient"} \
+        | {t for e in cfg.get("offsets", []) for t in e.get("output_tags", [])}
     for g in sorted(groups):
         if g in skip:
             continue
@@ -871,14 +875,14 @@ def load(msh, cfg):
         got = [tb[p] for p in (("in", "out"), ("in", "")) if p in tb]
         surf["tag:" + g] = np.vstack(got) if got else np.zeros((0, dim), np.int64)
 
-    delta = float(cfg.get("target_distance", -1.0))
+    delta = float(first.get("target_distance", -1.0))
     if delta <= 0:
-        rel = float(cfg.get("target_distance_rel", 0.01))
+        rel = float(first.get("target_distance_rel", 0.01))
         diag = float(np.linalg.norm(points.max(axis=0) - points.min(axis=0)))
         delta = rel * diag
         prov = "%g x bbox diagonal %g%s" % (rel, diag, "" if cfg else " (no config: defaults)")
     else:
-        prov = "config target_distance"
+        prov = "config offsets[0].target_distance"
 
     # Distance reference: the INNER interface, not the input groups' boundary. For an
     # expression selection (e.g. "tag_0 & tag_1") the complex is the intersection, which
@@ -1191,8 +1195,8 @@ def main():
         if k == 0 or not series:
             print("mesh   %s  (%s)" % (path, "tets" if dim == 3 else "triangles"))
             print("delta  %g  (%s)" % (delta, prov))
-            print("  'input surface' = boundary of the cells offset_selection %r matches%s"
-                  % (cfg.get("offset_selection", "!_"),
+            print("  'input surface' = boundary of the cells offsets[0].selection %r matches%s"
+                  % ((cfg.get("offsets") or [{}])[0].get("selection", "!_"),
                      "" if cfg else "  -- NO CONFIG FOUND, so every tag counts; put the run's "
                                     "json next to the frames"))
             print("  %-22s %8d cells, %d vertices" % ("background mesh", len(mesh[0]), len(points)))

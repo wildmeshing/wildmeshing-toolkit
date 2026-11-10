@@ -74,7 +74,7 @@ of its own, named `ambient`, so there it is selected by that name.
 | simwild, `replace_tags` | [`replace_tags_in`](../reference/simwild.md#replace_tags_in), [`replace_tags_out`](../reference/simwild.md#replace_tags_out) | `&` only: the regions of each input expression are replaced by those of the output one |
 | simwild, `fill_holes_topo`, `tight_seal_topo`, `keep_lcc` | [`fill_holes_tags`](../reference/simwild.md#fill_holes_tags), [`tight_seal_tag_sets`](../reference/simwild.md#tight_seal_tag_sets), [`keep_lcc_tags`](../reference/simwild.md#keep_lcc_tags) | `&` only: sets of regions |
 | simwild, `tag_priority` | [`tag_priority`](../reference/simwild.md#tag_priority) | region names, highest priority first |
-| topological_offset | [`offset_selection`](../reference/topological_offset.md#offset_selection) | an expression: the cells to offset; a single name selects single-body mode |
+| topological_offset | [`offsets`](../reference/topological_offset.md#offsets) | a list of `{"selection": expression, ...}`, one offset per entry: the cells to offset; a single name selects single-body mode |
 | manifold_extraction | [`tag_selection`](../reference/manifold_extraction.md#tag_selection) | an expression: the cells whose boundary is made manifold |
 
 In simwild the surface the optimization tracks is the interface between regions: the faces

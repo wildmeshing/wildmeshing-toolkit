@@ -74,9 +74,10 @@ void TopoOffsetTriMesh::init_from_image(
     }
 
     // The curve group is registered as a tag so an OPEN curve can be selected as the input
-    // complex; offset_selection is otherwise an expression over face tags. Membership is decided
-    // geometrically below: triwild writes its curves with their own vertices, nothing matches by
-    // index, so an edge inside the polyline's tube (the eps the tag envelopes use) carries it.
+    // complex; a selection (offsets) is otherwise an expression over face tags. Membership is
+    // decided geometrically below: triwild writes its curves with their own vertices, nothing
+    // matches by index, so an edge inside the polyline's tube (the eps the tag envelopes use)
+    // carries it.
     if (F_env.rows() > 0) {
         m_curve_V = V_env;
         m_curve_E = F_env;
@@ -452,13 +453,17 @@ void TopoOffsetTriMesh::classify_curve_edges()
 void TopoOffsetTriMesh::label_input_complex()
 {
     classify_curve_edges(); // the mesh may have been refined since the last call
+    // One entry of offsets: the 2D offset, refused until it is brought into lock-step with 3D,
+    // has no several-entry march.
+    if (m_offset_params.offsets.size() != 1)
+        log_and_throw_error("2D: one entry of offsets, not {}", m_offset_params.offsets.size());
     // ensure all tags exist in map
-    const ExpressionPtr& expr = m_offset_params.offset_selection;
+    const ExpressionPtr& expr = m_offset_params.offsets[0].expression;
     const CellTag tags_involved = expr->tags_involved();
     for (const int64_t& tag : tags_involved) {
         auto it = m_tag_id_to_name.find(tag);
         if (it == m_tag_id_to_name.end()) {
-            log_and_throw_error("Unknown tag given in offset_selection (id {})", tag);
+            log_and_throw_error("Unknown tag given in offsets[0].selection (id {})", tag);
         }
     }
 
@@ -488,7 +493,7 @@ void TopoOffsetTriMesh::label_input_complex()
                 n);
             if (n == 0)
                 log_and_throw_error(
-                    "offset_selection names the curve group but no mesh edge lies on it");
+                    "offsets[0].selection names the curve group but no mesh edge lies on it");
             mark_input_complex_vertices();
             return;
         }
@@ -1633,15 +1638,9 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
         if (m_face_extra[f_id].label == 2) {
             CellTag new_tag;
 
-            // add existing protected tags
-            for (const int64_t& existing_tag : m_face_attribute[f_id].tags) {
-                if (std::find(
-                        m_offset_params.protected_tags.begin(),
-                        m_offset_params.protected_tags.end(),
-                        m_tag_id_to_name[existing_tag]) != m_offset_params.protected_tags.end()) {
-                    new_tag.insert(existing_tag);
-                }
-            }
+            // add existing protected tags: those protected_tags names, on a triangle whose tags
+            // satisfy it (Parameters::protected_kept(); until 2026-11 a list's names)
+            new_tag = m_offset_params.protected_kept(m_face_attribute[f_id].tags);
 
             // add actual offset tags
             if (m_offset_output_tag_ids.size() == 0) {

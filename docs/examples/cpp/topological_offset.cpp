@@ -19,9 +19,11 @@ int main()
     wmtk::MeshMap meshes{{"bar", wmtk::io::read_mesh(data / "127891.msh")}};
     auto [outputs, report] = wmtk::components::topological_offset::topological_offset(
         {{"input", "bar"},
-         {"offset_selection", "127891"},
-         {"offset_output_tags", nlohmann::json::array({"offset"})},
-         {"target_distance", 0.4},
+         {"offsets",
+          nlohmann::json::array(
+              {{{"selection", "127891"},
+                {"output_tags", nlohmann::json::array({"offset"})},
+                {"target_distance", 0.4}}})},
          {"optimize_offset", false}},
         meshes);
     std::cout << report["before #t"] << " -> " << report["after #t"] << " tets\n";

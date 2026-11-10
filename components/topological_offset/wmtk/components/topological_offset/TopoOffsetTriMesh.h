@@ -132,7 +132,7 @@ public:
     std::array<size_t, 3> m_init_counts = {{0, 0, 0}};
     size_t m_tags_count;
     /// Tag id of the input's curve group (the .msh line elements), or -1. An open curve has no
-    /// face set whose boundary it is, so it is selectable only through this tag: offset_selection
+    /// face set whose boundary it is, so it is selectable only through this tag: a selection (offsets)
     /// naming it makes the curve the complex and the band grows on both of its sides.
     int64_t m_curve_tag = -1;
     /// The curve group as loaded, kept because the classification below is redone on demand.
@@ -1606,7 +1606,7 @@ public:
 
     /// The released tags. Filled by release_deformable_regions(); empty = feature inactive.
     std::set<int64_t> m_deform_tags;
-    /// The source tags (offset_selection's tags_involved), stored at release so the ops-only
+    /// The source tags (the selection's tags_involved), stored at release so the ops-only
     /// tube's edge classification applies the same never-freed rule the release did.
     std::set<int64_t> m_source_tags;
     /// The released boundaries' ops-only tube: an Envelope around the current deformed
