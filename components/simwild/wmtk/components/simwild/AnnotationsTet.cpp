@@ -1028,7 +1028,19 @@ void SimWildMesh::tight_seal_geom(
 
     // Each component is split as its tets' own labels of their corners require, and each tet
     // then takes a region from its corners' labels (tight_seal_split_fill).
-    tight_seal_split_fill(components_seal, components_regions, tags, region_bvhs, filled);
+    std::vector<CellTag> tags_before_fill;
+    tight_seal_split_fill(
+        components_seal,
+        components_regions,
+        tags,
+        region_bvhs,
+        filled,
+        tags_before_fill);
+
+    // Topology check of every tag the fill changed, before the fill and after it: warns if a tag
+    // gained or lost non-manifold vertices, or the fill made an island of it or merged two of
+    // its components.
+    tight_seal_topology_check(filled, tags_before_fill);
 
     // Sanity checks, on the output alone rather than on the components above: no tet is
     // inverted; each filled tet carries exactly one of the regions' tags; and each part of the

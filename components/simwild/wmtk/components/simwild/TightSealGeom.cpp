@@ -4,6 +4,7 @@
 #include "SimWildMeshTri.hpp"
 
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/ManifoldCheck.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -161,6 +162,173 @@ void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& tri
         triangles.push_back(poly[k + 1]);
     }
 }
+
+namespace {
+
+/// tight_seal_topology_check on either mesh. `cells`: the mesh's cells (ids); `tags_now(id)`: a
+/// cell's tags; `neighbours(id)`: the cells sharing a facet with it; `nonmanifold(cells, in)`:
+/// the number of vertices of `cells` not manifold in the cells for which `in` holds.
+void topology_check(
+    const std::vector<size_t>& cells,
+    const std::function<const CellTag&(size_t)>& tags_now,
+    const std::vector<char>& filled,
+    const std::vector<CellTag>& tags_before,
+    const std::function<std::vector<size_t>(size_t)>& neighbours,
+    const std::function<size_t(const std::vector<size_t>&, const wmtk::utils::CellTest&)>&
+        nonmanifold,
+    const std::map<int64_t, std::string>& tag_id_to_name,
+    const std::string& cell_name)
+{
+    const auto is_filled = [&](const size_t id) { return id < filled.size() && filled[id]; };
+    // A cell's tags before the fill: the fill changes the tags of the cells it labels and of no
+    // others, and each split's children take their parent's tags.
+    const auto before = [&](const size_t id) -> const CellTag& {
+        return is_filled(id) ? tags_before[id] : tags_now(id);
+    };
+
+    // the filled cells whose membership of each tag changed: the fill added the tag or took it
+    std::map<int64_t, std::vector<size_t>> changed_cells;
+    for (const size_t id : cells) {
+        if (!is_filled(id)) {
+            continue;
+        }
+        const CellTag& a = tags_before[id];
+        const CellTag& b = tags_now(id);
+        std::vector<int64_t> diff;
+        std::set_symmetric_difference(
+            a.begin(),
+            a.end(),
+            b.begin(),
+            b.end(),
+            std::back_inserter(diff));
+        for (const int64_t tag : diff) {
+            changed_cells[tag].push_back(id);
+        }
+    }
+    if (changed_cells.empty()) {
+        return;
+    }
+
+    // the cells of each changed tag, before the fill or after it
+    std::map<int64_t, std::vector<size_t>> cells_of;
+    size_t capacity = 0;
+    for (const size_t id : cells) {
+        capacity = std::max(capacity, id + 1);
+        for (const CellTag* t : {&before(id), &tags_now(id)}) {
+            for (const int64_t tag : *t) {
+                if (changed_cells.count(tag) == 0) {
+                    continue;
+                }
+                std::vector<size_t>& of = cells_of[tag];
+                if (of.empty() || of.back() != id) {
+                    of.push_back(id);
+                }
+            }
+        }
+    }
+
+    // Labels the components, through facets, of the cells of `of` for which `in` holds; returns
+    // their number.
+    const auto label = [&](const std::vector<size_t>& of,
+                           const std::function<bool(size_t)>& in,
+                           std::vector<int>& comp) {
+        int n = 0;
+        for (const size_t start : of) {
+            if (comp[start] >= 0 || !in(start)) {
+                continue;
+            }
+            comp[start] = n;
+            std::vector<size_t> queue{start};
+            for (size_t i = 0; i < queue.size(); ++i) { // BFS loop with queue growing
+                for (const size_t nbr : neighbours(queue[i])) {
+                    if (comp[nbr] < 0 && in(nbr)) {
+                        comp[nbr] = n;
+                        queue.push_back(nbr);
+                    }
+                }
+            }
+            ++n;
+        }
+        return size_t(n);
+    };
+
+    std::vector<int> comp_before(capacity, -1);
+    std::vector<int> comp_after(capacity, -1);
+    size_t n_warned = 0;
+    for (const auto& [tag, changed] : changed_cells) {
+        const std::vector<size_t>& of = cells_of[tag];
+        const std::function<bool(size_t)> in_before = [&](const size_t id) {
+            return before(id).count(tag) > 0;
+        };
+        const std::function<bool(size_t)> in_after = [&](const size_t id) {
+            return tags_now(id).count(tag) > 0;
+        };
+        // A vertex or an edge changes only if a cell holding it does, so the vertices of the
+        // changed cells are enough.
+        const int64_t nm_change =
+            int64_t(nonmanifold(changed, in_after)) - int64_t(nonmanifold(changed, in_before));
+
+        // Each component after the fill holds the components before it whose cells (carrying
+        // the tag both before and after) it holds, and the reverse.
+        const size_t n_before = label(of, in_before, comp_before);
+        const size_t n_after = label(of, in_after, comp_after);
+        std::vector<std::set<int>> held(n_after);
+        std::vector<std::set<int>> holders(n_before);
+        for (const size_t id : of) {
+            if (comp_before[id] >= 0 && comp_after[id] >= 0) {
+                held[comp_after[id]].insert(comp_before[id]);
+                holders[comp_before[id]].insert(comp_after[id]);
+            }
+            comp_before[id] = -1;
+            comp_after[id] = -1;
+        }
+        size_t islands = 0, merges = 0, splits = 0, lost = 0;
+        for (const std::set<int>& h : held) {
+            if (h.empty()) {
+                ++islands;
+            } else {
+                merges += h.size() - 1;
+            }
+        }
+        for (const std::set<int>& h : holders) {
+            if (h.empty()) {
+                ++lost;
+            } else {
+                splits += h.size() - 1;
+            }
+        }
+
+        const auto it = tag_id_to_name.find(tag);
+        const std::string name = it == tag_id_to_name.end() ? std::to_string(tag) : it->second;
+        if (nm_change != 0 || islands > 0 || merges > 0) {
+            ++n_warned;
+            logger().warn(
+                "tight_seal_geom topology check: tag {}: (non-manifold vertices, islands, merges) "
+                "= ({:+}, {}, {})",
+                name,
+                nm_change,
+                islands,
+                merges);
+        }
+        if (splits > 0 || lost > 0) {
+            logger().warn(
+                "tight_seal_geom topology check: tag {}: the fill took it from {} that carried it "
+                "with another tag, which split its components into {} more pieces and removed {} "
+                "of them",
+                name,
+                cell_name,
+                splits,
+                lost);
+        }
+    }
+    logger().info(
+        "tight_seal_geom topology check: the fill changed {} tags; {} of them have (non-manifold "
+        "vertices, islands, merges) other than (0, 0, 0)",
+        changed_cells.size(),
+        n_warned);
+}
+
+} // namespace
 
 } // namespace wmtk::components::simwild::tight_seal
 
@@ -371,7 +539,8 @@ void SimWildMeshTri::tight_seal_split_fill(
     const std::vector<std::vector<size_t>>& components_regions,
     const std::vector<int64_t>& tags,
     const std::vector<SimpleBVH::BVH>& region_bvhs,
-    std::vector<char>& filled)
+    std::vector<char>& filled,
+    std::vector<CellTag>& tags_before)
 {
     const auto pos = [&](const size_t v) -> const Vector2d& {
         return m_vertex_attribute[v].m_posf;
@@ -580,6 +749,10 @@ void SimWildMeshTri::tight_seal_split_fill(
                     return nearest_of(c, v).ties;
                 });
             CellTag& cell_tags = m_face_attribute[fid].tags;
+            if (fid >= tags_before.size()) {
+                tags_before.resize(tri_capacity());
+            }
+            tags_before[fid] = cell_tags;
             for (const size_t j : components_regions[c]) {
                 cell_tags.erase(tags[j]);
             }
@@ -598,6 +771,35 @@ void SimWildMeshTri::tight_seal_split_fill(
     if (m_params.debug_output) {
         write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     }
+}
+
+void SimWildMeshTri::tight_seal_topology_check(
+    const std::vector<char>& filled,
+    const std::vector<CellTag>& tags_before) const
+{
+    std::vector<size_t> fids;
+    for (const Tuple& t : get_faces()) {
+        fids.push_back(t.fid(*this));
+    }
+    tight_seal::topology_check(
+        fids,
+        [&](const size_t fid) -> const CellTag& { return m_face_attribute[fid].tags; },
+        filled,
+        tags_before,
+        [&](const size_t fid) {
+            std::vector<size_t> nbrs;
+            for (int j = 0; j < 3; ++j) {
+                if (const auto opp = tuple_from_edge(fid, j).switch_face(*this)) {
+                    nbrs.push_back(opp->fid(*this));
+                }
+            }
+            return nbrs;
+        },
+        [&](const std::vector<size_t>& cells, const wmtk::utils::CellTest& in) {
+            return wmtk::utils::nonmanifold_vertices(*this, cells, in).size();
+        },
+        m_tag_id_to_name,
+        "faces");
 }
 
 void SimWildMeshTri::tight_seal_geom_sanity(
@@ -1006,7 +1208,8 @@ void SimWildMesh::tight_seal_split_fill(
     const std::vector<std::vector<size_t>>& components_regions,
     const std::vector<int64_t>& tags,
     const std::vector<SimpleBVH::BVH>& region_bvhs,
-    std::vector<char>& filled)
+    std::vector<char>& filled,
+    std::vector<CellTag>& tags_before)
 {
     const auto pos = [&](const size_t v) -> const Vector3d& {
         return m_vertex_attribute[v].m_posf;
@@ -1255,6 +1458,10 @@ void SimWildMesh::tight_seal_split_fill(
             corner_labels[tid],
             [&](const size_t v) -> const std::vector<size_t>& { return nearest_of(c, v).ties; });
         CellTag& cell_tags = m_tet_attribute[tid].tags;
+        if (tid >= tags_before.size()) {
+            tags_before.resize(tet_capacity());
+        }
+        tags_before[tid] = cell_tags;
         for (const size_t j : components_regions[c]) {
             cell_tags.erase(tags[j]);
         }
@@ -1272,6 +1479,35 @@ void SimWildMesh::tight_seal_split_fill(
     if (m_params.debug_output) {
         write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     }
+}
+
+void SimWildMesh::tight_seal_topology_check(
+    const std::vector<char>& filled,
+    const std::vector<CellTag>& tags_before) const
+{
+    std::vector<size_t> tids;
+    for (const Tuple& t : get_tets()) {
+        tids.push_back(t.tid(*this));
+    }
+    tight_seal::topology_check(
+        tids,
+        [&](const size_t tid) -> const CellTag& { return m_tet_attribute[tid].tags; },
+        filled,
+        tags_before,
+        [&](const size_t tid) {
+            std::vector<size_t> nbrs;
+            for (int j = 0; j < 4; ++j) {
+                if (const auto opp = tuple_from_face(tid, j).switch_tetrahedron(*this)) {
+                    nbrs.push_back(opp->tid(*this));
+                }
+            }
+            return nbrs;
+        },
+        [&](const std::vector<size_t>& cells, const wmtk::utils::CellTest& in) {
+            return wmtk::utils::nonmanifold_vertices(*this, cells, in).size();
+        },
+        m_tag_id_to_name,
+        "tets");
 }
 
 void SimWildMesh::tight_seal_geom_sanity(

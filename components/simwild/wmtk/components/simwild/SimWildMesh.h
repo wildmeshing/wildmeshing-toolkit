@@ -401,13 +401,26 @@ private:
     /// in a tet holding them where the distances to the two labels are equal (not if that falls on
     /// an end). Each child keeps its parent's labels of the corners it keeps, a new vertex has
     /// none, and each tet of the components then takes a region by tight_seal::split_fill_label.
+    /// tags_before[id] gets the tags of each tet it labels (filled[id] set) as they were before.
     /// No topology is checked.
     void tight_seal_split_fill(
         const std::vector<ConnectedComponent>& components,
         const std::vector<std::vector<size_t>>& components_regions,
         const std::vector<int64_t>& tags,
         const std::vector<SimpleBVH::BVH>& region_bvhs,
-        std::vector<char>& filled);
+        std::vector<char>& filled,
+        std::vector<CellTag>& tags_before);
+    /// tight_seal_geom's topology check: for each tag the fill added to or took from a tet, warns
+    /// if (change in non-manifold vertices, islands, merges) is not (0, 0, 0). The tag before the
+    /// fill and after it are compared on the output mesh, so splits that only refine a tag change
+    /// nothing. Non-manifold vertices by wmtk::utils::nonmanifold_vertices, both ends of a
+    /// non-manifold edge included; an island is a component of the tag after the fill (through
+    /// faces) with none of its tets from before; a merge joins two components from before into
+    /// one. Also warns if a component from before is split or lost (the fill took the tag from a
+    /// tet carrying it with another tag). filled and tags_before as split_fill leaves them.
+    void tight_seal_topology_check(
+        const std::vector<char>& filled,
+        const std::vector<CellTag>& tags_before) const;
     /// tight_seal_geom's `sanity` checks, on the output: throws if a tet is inverted, a filled
     /// tet (filled[id] set) carries other than exactly one of `tags`, or a part of the filled
     /// tets, connected through faces, borders fewer than two of them.

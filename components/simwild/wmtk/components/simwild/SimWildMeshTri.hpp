@@ -467,13 +467,20 @@ private:
     /// the edges whose ends differ in a face holding them where the distances to the two labels
     /// are equal (not if that falls on an end). Each child keeps its parent's labels of the
     /// corners it keeps, a new vertex has none, and each face of the components then takes a
-    /// region by tight_seal::split_fill_label. No topology is checked.
+    /// region by tight_seal::split_fill_label. tags_before[id] gets the tags of each face it
+    /// labels (filled[id] set) as they were before. No topology is checked.
     void tight_seal_split_fill(
         const std::vector<ConnectedComponent>& components,
         const std::vector<std::vector<size_t>>& components_regions,
         const std::vector<int64_t>& tags,
         const std::vector<SimpleBVH::BVH>& region_bvhs,
-        std::vector<char>& filled);
+        std::vector<char>& filled,
+        std::vector<CellTag>& tags_before);
+    /// tight_seal_geom's topology check, as SimWildMesh::tight_seal_topology_check, with faces
+    /// for tets and edges for faces (components through edges).
+    void tight_seal_topology_check(
+        const std::vector<char>& filled,
+        const std::vector<CellTag>& tags_before) const;
     /// tight_seal_geom's `sanity` checks, on the output: throws if a face is inverted, a filled
     /// face (filled[id] set) carries other than exactly one of `tags`, or a part of the filled
     /// faces, connected through edges, borders fewer than two of them.
