@@ -764,6 +764,21 @@ public:
      */
     void label_cleanup(const std::string& where);
     /**
+     * @name The level set out of reach (2026-11-10)
+     * The last clean-up's non-band cells wholly inside the level set (the one-sided side test)
+     * that the held objects' test kept out of the band: the band would have to touch a held
+     * object it did not touch as constructed to reach the level set there. At a settled turn and
+     * at the loop's end, check_level_set_reachable() throws on them (warns under
+     * throw_on_unreachable_level_set false).
+     * @{
+     */
+    void check_level_set_reachable(const std::string& when);
+    size_t m_unreachable_cells = 0;
+    std::string m_unreachable_where;
+    /// The last settle test's verdict (settle_refinement_turn()).
+    bool m_turn_settled = false;
+    /** @} */
+    /**
      * @name The held objects (2026-11-10)
      * The input complex (label 1), the held curves (tagged edges) and points (anchors), the
      * region boundaries and the box (the mesh boundary): the objects the optimization keeps the

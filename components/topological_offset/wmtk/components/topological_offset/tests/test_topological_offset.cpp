@@ -6414,8 +6414,9 @@ TEST_CASE("point-offset-held-point-inside-the-band", "[offset][3d][.]")
     // 2026-11-10 the clean-up keeps q out of the band
     // (label-cleanup-keeps-held-point-off-the-band); the run still does not converge (MEASURED, 15
     // turns, exact and exact_swept: q never on the front, 2-6 folded faces on the boundary of q's
-    // cells), as the level set near q is not attainable without the band touching q: what the throw
-    // near a held object is for.
+    // cells), as the level set near q is not attainable without the band touching q; since the
+    // same day it throws there (unreachable-level-set-throws: turn 2), and stays hidden and failing
+    // as the record of the case until a flag lets the front go beyond the throw.
     require_point_offset_converges({{"p", {{4, 4, 4}}}, {"q", {{5, 4, 4}}}}, 0.3);
 }
 
@@ -6473,6 +6474,7 @@ TEST_CASE("label-cleanup-keeps-held-point-off-the-band", "[offset][3d]" + releas
         {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
         {"EXPERIMENTAL_band_volume_rule", rule},
         {"max_rounds", 3},
+        {"throw_on_unreachable_level_set", false}, // the topology is what is tested
         {"num_threads", 1},
         {"throw_on_nonconvergence", false}};
     ComponentResult res;
@@ -6513,6 +6515,7 @@ TEST_CASE("label-cleanup-held-curves", "[offset][3d]" + release_only)
         {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
         {"EXPERIMENTAL_band_volume_rule", rule},
         {"max_rounds", 3},
+        {"throw_on_unreachable_level_set", false}, // the topology is what is tested
         {"num_threads", 1},
         {"throw_on_nonconvergence", false}};
     ComponentResult res;
@@ -6569,6 +6572,7 @@ TEST_CASE("label-cleanup-held-surfaces", "[offset][3d]" + release_only)
         {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
         {"EXPERIMENTAL_band_volume_rule", rule},
         {"max_rounds", 3},
+        {"throw_on_unreachable_level_set", false}, // the topology is what is tested
         {"num_threads", 1},
         {"throw_on_nonconvergence", false}};
     ComponentResult res;
@@ -6585,6 +6589,50 @@ TEST_CASE("label-cleanup-held-surfaces", "[offset][3d]" + release_only)
         CHECK(touched[size_t(v)] == 0);
     }
     CHECK(n_held > 0);
+}
+
+TEST_CASE("unreachable-level-set-throws", "[offset][3d]" + release_only)
+{
+    // The level set out of reach (check_level_set_reachable(), 2026-11-10): p offset to 0.3 with
+    // a held object the band did not touch as constructed. Inside the level set -- a held point,
+    // a curve, a region boundary, the box, each 0.25 from p -- the run throws at a settled turn
+    // or at the loop's end (MEASURED: the held point at turn 2). A curve the band crosses as
+    // constructed (through p) is reachable by moving the crossing along it: no throw.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    const std::string held = GENERATE("point", "curve", "region", "box", "curve through p");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule << ", held: " << held);
+    const std::array<int, 3> p =
+        held == "box" ? std::array<int, 3>{{1, 4, 4}} : std::array<int, 3>{{4, 4, 4}};
+    std::vector<std::pair<std::string, std::array<int, 3>>> points{{"p", p}};
+    if (held == "point") points.push_back({"q", {{5, 4, 4}}});
+    std::vector<std::pair<std::string, GridPolyline>> curves;
+    if (held == "curve") curves.push_back({"curve", {{{2, 5, 4}}, {{6, 5, 4}}}});
+    if (held == "curve through p") curves.push_back({"curve", {{{1, 4, 4}}, {{7, 4, 4}}}});
+    MeshData input = point_grid(points, curves);
+    if (held == "region") {
+        auto& tets = input.cells.at(CellType::Tetrahedron);
+        DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+        for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
+            double x = 0.;
+            for (int c = 0; c < 4; ++c) x += input.V(tets.connectivity(r, c), 0) / 4.;
+            tags(r, x > 0.25 ? 1 : 0) = 1;
+        }
+        tets.attributes["tags"] = {tags, {"A", "B"}};
+    }
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    if (held == "curve through p") {
+        REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
+    } else {
+        REQUIRE_THROWS_WITH(
+            components::topological_offset::topological_offset(j, {{"m", input}}),
+            Catch::Matchers::ContainsSubstring("the level set is out of reach"));
+    }
 }
 
 TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")

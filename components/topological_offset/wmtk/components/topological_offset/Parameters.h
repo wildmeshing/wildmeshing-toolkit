@@ -91,6 +91,9 @@ struct Parameters : public wmtk::OptimizerParameters
     // misses the target is still a usable offset, and the warnings name the criterion that failed.
     // Integration tests set it true so a convergence regression fails rather than warns.
     bool throw_on_nonconvergence;
+    /// 3D (2026-11-10): throw when the level set is out of reach without the band touching a
+    /// held object (TopoOffsetTetMesh::check_level_set_reachable()); false warns. See the spec.
+    bool throw_on_unreachable_level_set = true;
     /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
     /// called and the constructed band is written as the result.
     bool optimize_offset;
@@ -447,6 +450,7 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_in = json_params["offset_in"];
         offset_out = json_params["offset_out"];
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
+        throw_on_unreachable_level_set = json_params["throw_on_unreachable_level_set"];
         optimize_offset = json_params["optimize_offset"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];

@@ -3835,6 +3835,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         : surface_energy()
             ? (e_now < o_bound || de <= m_offset_params.settle_stall_eps * (e_now - o_bound))
             : de < bar_energy;
+    m_turn_settled = settled; // check_level_set_reachable()
     // The floor of refine_front_by_halving().
     const double l = std::max(m_params.l, 1e-300);
     const double s_floor =
@@ -6127,6 +6128,22 @@ void TopoOffsetTetMesh::held_topology_check(const std::string& pass)
     m_held_vertex_touch = std::move(touch);
 }
 
+void TopoOffsetTetMesh::check_level_set_reachable(const std::string& when)
+{
+    // See the declaration.
+    if (m_unreachable_cells == 0) return;
+    const std::string msg = fmt::format(
+        "[held objects] {}: the level set is out of reach without the band touching a held object "
+        "it did not touch as constructed -- the label clean-up keeps {} non-band cell(s) wholly "
+        "inside the level set out of the band, the first at {} (throw_on_unreachable_level_set "
+        "false warns and goes on)",
+        when,
+        m_unreachable_cells,
+        m_unreachable_where);
+    if (m_offset_params.throw_on_unreachable_level_set) log_and_throw_error("{}", msg);
+    logger().warn("\t{}", msg);
+}
+
 void TopoOffsetTetMesh::label_cleanup(const std::string& where)
 {
     // EXPERIMENTAL_label_cleanup (see the spec and the declaration). MEASURED before it (cube_in,
@@ -6535,6 +6552,37 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         return true;
     };
 
+    // The one-sided side test's non-band half (wants_flip()): d < the piece's target on all of
+    // t, so the band reaches the level set only through t. A cell held objects keep out, so,
+    // makes the level set out of reach (check_level_set_reachable()).
+    const auto inside_level_set = [&](const size_t tid) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const int piece = place_piece(vs.data(), 4);
+        const std::shared_ptr<const ExactBandIntegral>& be = band_exact_for(piece);
+        if (!be) return false;
+        std::array<Vector3d, 4> p;
+        for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+        return be->distance_bound(p) < region_delta(piece);
+    };
+    // The first held corner of t: its kind and position, for the message.
+    const auto describe_held = [&](const size_t tid) {
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (!held_object_vertex(v)) continue;
+            const bool anchored =
+                m_track_feature_points &&
+                m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT;
+            const char* kind = m_vertex_extra[v].label == 1 ? "the input complex"
+                               : anchored
+                                   ? "an anchored point (an input point, a curve end or a junction)"
+                               : !m_vertex_attribute[v].on_bbox_faces.empty() ? "the box"
+                               : m_vertex_extra[v].m_is_on_region             ? "a region boundary"
+                                                                              : "a held curve";
+            const Vector3d& x = m_vertex_attribute[v].m_posf;
+            return fmt::format("{} at ({:.4g}, {:.4g}, {:.4g})", kind, x[0], x[1], x[2]);
+        }
+        return std::string("a held object");
+    };
+
     // A flip, and everything derived from t's label, which lives on t's closure: the closed labels
     // of its faces, edges and corners (2 where some cell holding it is band, else 0; a simplex of
     // the input complex keeps its 1), the cached class of its four faces -- the only faces whose
@@ -6647,6 +6695,8 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     int passes = 0;
     // The last pass's verdicts: that pass flips nothing, so they are what the clean-up leaves.
     size_t n_cand = 0, n_want = 0, n_skip = 0, n_refused_held = 0, n_refused_tag = 0;
+    size_t n_unreachable = 0; // of n_refused_held: non-band and wholly inside the level set
+    std::string unreachable_where;
     std::array<size_t, 5> n_refused{}; // by f
     for (;;) {
         ++passes;
@@ -6660,6 +6710,8 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         n_skip = 0;
         n_refused_held = 0;
         n_refused_tag = 0;
+        n_unreachable = 0;
+        unreachable_where.clear();
         n_refused.fill(0);
         size_t n_now = 0;
         // The three tests are pure reads, so the order they are asked in decides only what is
@@ -6684,6 +6736,9 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             }
             if (!held_allows(tid)) {
                 ++n_refused_held;
+                if (!cell_is_offset_band(tid) && inside_level_set(tid) && n_unreachable++ == 0) {
+                    unreachable_where = describe_held(tid);
+                }
                 continue;
             }
             CellTag tag;
@@ -6731,6 +6786,8 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             break;
         }
     }
+    m_unreachable_cells = n_unreachable;
+    m_unreachable_where = unreachable_where;
     double e1 = e0;
     size_t band1 = band0, non1 = non0, nm1 = nm0;
     if (to_band + to_non > 0) {
@@ -6756,8 +6813,8 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         "({} of them with f = 2 or 3 where the old label meets the cell again, at a front edge on "
         "more than two front faces or a front vertex, not tested) | left after the last pass: {} "
         "cells with a front face, {} on the other side by the side test, of which {} skipped for "
-        "eligibility, refused by topology f=0 {}, f=1 {}, f=2 {}, f=4 {}, by the held objects {}, "
-        "for no single tag {} | "
+        "eligibility, refused by topology f=0 {}, f=1 {}, f=2 {}, f=4 {}, by the held objects {} "
+        "({} wholly inside the level set), for no single tag {} | "
         "E {:.9g} -> {:.9g} | "
         "components (face adjacency) band {} -> {}, non-band {} -> {} | non-manifold front edges "
         "(on more than two front faces) {} -> {}",
@@ -6775,6 +6832,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         n_refused[2],
         n_refused[4],
         n_refused_held,
+        n_unreachable,
         n_refused_tag,
         e0,
         e1,
@@ -6813,6 +6871,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
     audit_surface_containment("construction");
+    m_unreachable_cells = 0; // each loop judges its own target (growth_mode's stages)
     needle_scan("after construction, before the loop");
     assign_band_regions();
     m_front_gradient_reference = front_gradient_linf();
@@ -7174,6 +7233,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // EXPERIMENTAL_settle_refinement: the settle test, the face test and the halving; true
         // when the loop may exit, which then replaces EnergyCriterion::converged() below.
         const bool settle_exit = settle && settle_refinement_turn(it + 1, settle_e_prev, refine);
+        // At a settled turn the last clean-up's refusals are no longer the front on its way.
+        if (settle && m_turn_settled) check_level_set_reachable(fmt::format("turn {}", it + 1));
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
         // turn's final state, so what it carries is the sizing field the halving just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
@@ -7388,6 +7449,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             return true;
         }
     }
+    check_level_set_reachable("the loop's end");
     logger().warn(
         "The loop did not converge in {} turns ({}){}",
         budget,

@@ -15,6 +15,7 @@
       "offset_in",
       "offset_out",
       "throw_on_nonconvergence",
+      "throw_on_unreachable_level_set",
       "optimize_offset",
       "envelope_size",
       "envelope_size_rel",
@@ -207,6 +208,12 @@
     "type": "bool",
     "default": false,
     "doc": "If true, a run that finishes without meeting the convergence criteria raises an error instead of logging a warning. Default false: a non-converged offset is still a usable one, and the warnings already name which criterion failed. Integration tests set it true so a convergence regression fails the run rather than passing with a warning."
+  },
+  {
+    "pointer": "/throw_on_unreachable_level_set",
+    "type": "bool",
+    "default": true,
+    "doc": "3D (2026-11-10). The optimization keeps the topology the construction gave the band and every held object (the label clean-up's held objects' test): the front never newly touches a held object -- a held point, a held curve, a region boundary, the box -- that the band did not touch as constructed. Where such an object lies inside the level set, the level set is out of reach there. true (the default): the run throws at the first settled turn (or at the loop's end) where the last clean-up kept a non-band cell wholly inside the level set (its one-sided side test) out of the band for a held object, naming how many and the first one's held object and position. false: a warning instead, and the run goes on -- the front then wraps the held object as closely as the mesh allows (MEASURED, a held point 0.25 from p at target 0.3: the gap from the point to the front fell to 0.0005 by turn 2 and 1e-4 from turn 6, through slivers and 2-6 folded faces), which a later flag is to make clean. No threshold: the cells the clean-up itself wants are the measure."
   },
   {
     "pointer": "/optimize_offset",
