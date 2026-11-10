@@ -12,7 +12,10 @@ namespace wmtk::components::topological_offset {
 /// and io::collect_point_tags() write them from the engine's: rows of the vertices in
 /// get_vertices() order, an edge's vertices ascending, one row per vertex under all its labels.
 /// Until 2026-11 that exit wrote neither block, and the input's curves and points were dropped.
-inline void collect_loaded_curves_and_points(const TopoOffsetTetMesh& mesh, MeshMap& outputs)
+/// In 2D the point block alone, from VertexExtra2d::point_inputs, which nothing hands over to an
+/// anchor: the curves are the tagged edges' input sets, which io::collect_input_set_tags() writes.
+template <typename Mesh>
+void collect_loaded_curves_and_points(const Mesh& mesh, MeshMap& outputs)
 {
     std::vector<int64_t> row(mesh.vert_capacity(), -1);
     int64_t n = 0;
@@ -35,18 +38,20 @@ inline void collect_loaded_curves_and_points(const TopoOffsetTetMesh& mesh, Mesh
     };
     std::vector<std::vector<int64_t>> rows;
     std::vector<InputSet> sets;
-    if (!mesh.m_feature_edge_names.empty()) {
-        for (const auto& e : mesh.get_edges()) {
-            const InputSet set = mesh.m_edge_attribute[e.eid(mesh)].feature_inputs;
-            if (set == 0) continue;
-            const size_t a = e.vid(mesh), b = e.switch_vertex(mesh).vid(mesh);
-            rows.push_back({row[std::min(a, b)], row[std::max(a, b)]});
-            sets.push_back(set);
+    if constexpr (std::is_base_of_v<TetMesh, Mesh>) {
+        if (!mesh.m_feature_edge_names.empty()) {
+            for (const auto& e : mesh.get_edges()) {
+                const InputSet set = mesh.m_edge_attribute[e.eid(mesh)].feature_inputs;
+                if (set == 0) continue;
+                const size_t a = e.vid(mesh), b = e.switch_vertex(mesh).vid(mesh);
+                rows.push_back({row[std::min(a, b)], row[std::max(a, b)]});
+                sets.push_back(set);
+            }
+            write(CellType::Edge, rows, sets, mesh.m_feature_edge_names);
         }
-        write(CellType::Edge, rows, sets, mesh.m_feature_edge_names);
+        rows.clear();
+        sets.clear();
     }
-    rows.clear();
-    sets.clear();
     if (!mesh.m_point_names.empty()) {
         for (const auto& v : mesh.get_vertices()) {
             const InputSet set = mesh.m_vertex_extra[v.vid(mesh)].point_inputs;
@@ -101,6 +106,13 @@ void collect_memory_output(Mesh& mesh, io::ComponentIO& context)
             CellType::Triangle,
             mesh.get_faces(),
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
+        // the tagged edges, on the input sets the construction carries (init_from_image()), the
+        // edge block triwild and simwild write; and the input points, as loaded
+        io::collect_input_set_tags<CellType::Edge>(
+            mesh,
+            context.result.first,
+            mesh.m_edge_tag_names);
+        collect_loaded_curves_and_points(mesh, context.result.first);
     }
     if (mesh.m_offset_params.save_offset_correspondence) {
         const auto ids = data.vertex_attributes.at("vid").integers();

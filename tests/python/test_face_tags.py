@@ -507,8 +507,11 @@ def test_offset_optimizes_around_a_tagged_sheet():
     assert_hausdorff(V, boundary(T), lambda P: to_box_surface(P, *RED), box_samples(*RED), eps)
 
 
-def test_manifold_extraction_refuses_tagged_faces():
-    """It would drop them silently, so it refuses them until it carries them."""
-    with pytest.raises(Exception, match="does not take tagged faces"):
-        wm.manifold_extraction({"input": "m", "tag_selection": "red", "fill_tags": []},
-                               {"m": tagged_grid()})
+def test_manifold_extraction_carries_tagged_faces():
+    """red's boundary is manifold, so nothing is carved: the yellow and blue faces come back as
+    they went in. Refused until 2026-11."""
+    m = tagged_grid()
+    r = wm.manifold_extraction({"input": "m", "tag_selection": "red", "fill_tags": []}, {"m": m})[0]["mesh"]
+    key = lambda M, F: sorted(tuple(sorted(map(tuple, M["V"][f]))) for f in F)
+    for label in ["yellow", "blue"]:
+        assert key(r, rows(r, "triangle", label)) == key(m, rows(m, "triangle", label))
