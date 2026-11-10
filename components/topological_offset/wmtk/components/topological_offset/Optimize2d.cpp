@@ -387,8 +387,8 @@ void TopoOffsetTriMesh::release_deformable_regions()
     // input tag the selection does not name, ambient included; it drives face_is_released_band()
     // and the diagnostics. The tubes and the masks come from build_boundary_envelopes().
     std::set<int64_t> source_tags;
-    if (m_offset_params.offset_selection) {
-        for (const int64_t t : m_offset_params.offset_selection->tags_involved()) {
+    if (!m_offset_params.offsets.empty() && m_offset_params.offsets[0].expression) {
+        for (const int64_t t : m_offset_params.offsets[0].expression->tags_involved()) {
             source_tags.insert(t);
         }
     }

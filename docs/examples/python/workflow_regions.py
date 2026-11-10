@@ -49,8 +49,8 @@ print("2. replace_tags:", regions(m2["mesh"]))
 # --8<-- [start:offset]
 # 3. A gap of thickness 0.01 around a, carved out of b and the background.
 m3, report = wm.topological_offset(
-    {"input": "m", "offset_selection": "a", "offset_output_tags": ["gap"],
-     "target_distance": 0.01, "optimize_offset": False, "num_threads": 4},
+    {"input": "m", "offsets": [{"selection": "a", "output_tags": ["gap"], "target_distance": 0.01}],
+     "optimize_offset": False, "num_threads": 4},
     {"m": m2["mesh"]},
 )
 wm.save(m3, "regions/m3")

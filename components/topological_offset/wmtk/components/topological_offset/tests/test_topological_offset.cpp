@@ -42,6 +42,21 @@ using namespace wmtk;
 using namespace components::topological_offset;
 using namespace components::simwild::expression_parser;
 
+namespace {
+/// Select `selection` as the one offset, as topological_offset.cpp parses an entry's selection:
+/// into the entry the json gave (its output tags and distance kept), or into one added for a
+/// Parameters built by hand, which offsets at the run's target_distance with no output tag. Either
+/// dimension's mesh.
+template <typename Mesh>
+void select_offset(Mesh& mesh, const std::string& selection)
+{
+    auto& offsets = mesh.m_offset_params.offsets;
+    if (offsets.empty()) offsets.emplace_back();
+    offsets[0].selection = selection;
+    offsets[0].expression = parse(selection, mesh.m_tag_name_to_id);
+}
+} // namespace
+
 
 // used for checking attribute propagation. values are arbitrary
 const int V0_LABEL = 10;
@@ -2694,7 +2709,7 @@ TEST_CASE("exact-band-offset-side-inward-and-outward", "[offset][3d][exact_band]
         MatrixXd V_env;
         MatrixXi F_env;
         mesh.init_from_image(V, Tm, Tags, V_env, F_env, {"tag_0"});
-        mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+        select_offset(mesh, "tag_0");
         mesh.label_input_complex();
         mesh.init_input_complex_bvh();
         mesh.init_offset_potential();
@@ -2718,6 +2733,7 @@ Parameters construction_params(nlohmann::json j, const Eigen::MatrixXd& V)
 {
     j["application"] = "topological_offset";
     j["input"] = "unused.msh";
+    if (!j.contains("offsets")) j["offsets"] = nlohmann::json::array({{{"selection", "tag_0"}}});
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     jse::JSE spec_engine;
     spec_engine.strict = true;
@@ -2730,12 +2746,12 @@ Parameters construction_params(nlohmann::json j, const Eigen::MatrixXd& V)
 nlohmann::json correspondence_json()
 {
     return {
-        {"offset_selection", "tag_0"},
-        {"offset_output_tags", {"offset"}},
+        {"offsets",
+         nlohmann::json::array(
+             {{{"selection", "tag_0"}, {"output_tags", {"offset"}}, {"target_distance", 0.2}}})},
         {"optimize_offset", false},
         {"save_offset_correspondence", true},
-        {"num_threads", 0},
-        {"target_distance", 0.2}};
+        {"num_threads", 0}};
 }
 
 /// The marched edges as marching_tets() / marching_tris() pick them: exactly one endpoint labelled
@@ -2925,7 +2941,7 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
     MatrixXd V_env;
     MatrixXi F_env;
     mesh.init_from_image(V, Tm, Tags, V_env, F_env, {"tag_0"});
-    mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+    select_offset(mesh, "tag_0");
     mesh.label_input_complex();
     mesh.init_input_complex_bvh();
     mesh.consolidate_mesh();
@@ -2949,6 +2965,7 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
     nlohmann::json j = correspondence_json();
     j["application"] = "topological_offset";
     j["input"] = "unused.msh";
+    if (!j.contains("offsets")) j["offsets"] = nlohmann::json::array({{{"selection", "tag_0"}}});
     j["optimize_offset"] = true;
     REQUIRE_THROWS_WITH(
         components::topological_offset::topological_offset(j),
@@ -3045,9 +3062,9 @@ MeshData offset_sheet(
 {
     return components::topological_offset::topological_offset(
                {{"input", "m"},
-                {"offset_selection", sheet},
-                {"offset_output_tags", {band}},
-                {"target_distance", 0.1},
+                {"offsets",
+                 nlohmann::json::array(
+                     {{{"selection", sheet}, {"output_tags", {band}}, {"target_distance", 0.1}}})},
                 {"optimize_offset", false},
                 {"save_offset_correspondence", true},
                 {"protected_tags", protect},
@@ -3190,7 +3207,7 @@ grid_offset_mesh(const GridInput& g, Parameters& param, const std::filesystem::p
     MatrixXd V_env;
     MatrixXi F_env;
     mesh->init_from_image(g.V, g.Tm, g.Tags, V_env, F_env, {"tag_0"});
-    mesh->m_offset_params.offset_selection = parse("tag_0", mesh->m_tag_name_to_id);
+    select_offset(*mesh, "tag_0");
     mesh->label_input_complex();
     mesh->init_input_complex_bvh();
     mesh->consolidate_mesh();
@@ -3271,7 +3288,7 @@ std::unique_ptr<TopoOffsetTetMesh> tagged_grid_offset_mesh(
         F_tagged,
         F_tags,
         face_tag_names);
-    mesh->m_offset_params.offset_selection = parse(selection, mesh->m_tag_name_to_id);
+    select_offset(*mesh, selection);
     mesh->label_input_complex();
     mesh->init_input_complex_bvh();
     mesh->consolidate_mesh();
@@ -3339,9 +3356,9 @@ TEST_CASE("band-covered-region-boundaries", "[offset][3d][envelope]")
     for (const bool protect : {false, true}) {
         INFO("protected_tags " << (protect ? "[tag_1]" : "[]"));
         nlohmann::json j = {
-            {"offset_selection", "tag_0"},
-            {"num_threads", 0},
-            {"target_distance", 0.2}};
+            {"offsets",
+             nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
+            {"num_threads", 0}};
         if (protect) j["protected_tags"] = {"tag_1"};
         Parameters param = construction_params(j, g.V);
         const auto mesh = tagged_grid_offset_mesh(
@@ -3432,9 +3449,9 @@ TEST_CASE("band-covered-face-tags", "[offset][3d][envelope]")
           Case{"S the selection", "S", false}}) {
         INFO(c.name);
         nlohmann::json j = {
-            {"offset_selection", c.selection},
-            {"num_threads", 0},
-            {"target_distance", 0.2}};
+            {"offsets",
+             nlohmann::json::array({{{"selection", c.selection}, {"target_distance", 0.2}}})},
+            {"num_threads", 0}};
         if (c.protect) j["protected_tags"] = {"S"};
         // The driver refuses a face-tag selection with the optimization, which holds no face
         // tags yet; the construction alone is what this case checks.
@@ -3529,9 +3546,8 @@ TEST_CASE("band-crossed-sheet-keeps-its-orientation", "[offset][3d][split_op]")
         F_tags.coeffRef(int(r), 0) = 1;
     }
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"},
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
          {"num_threads", 0},
-         {"target_distance", 0.2},
          {"protected_tags", {"S"}}},
         g.V);
     const auto mesh = tagged_grid_offset_mesh(
@@ -3604,13 +3620,14 @@ TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
     MatrixSi F_tags(1, 1);
     F_tags.coeffRef(0, 0) = 1;
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
+         {"num_threads", 0}},
         V);
     TopoOffsetTetMesh mesh(param, 0);
     MatrixXd V_env;
     MatrixXi F_env;
     mesh.init_from_image(V, T, tags, V_env, F_env, {"tag_0", "tag_1"}, "", F_tagged, F_tags, {"S"});
-    mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+    select_offset(mesh, "tag_0");
     mesh.label_input_complex();
 
     const auto fid_of = [&](size_t a, size_t b, size_t c) {
@@ -3667,9 +3684,8 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
     const GridInput g = grid_input();
 
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"},
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
          {"num_threads", 0},
-         {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "exact"}},
         g.V);
     param.debug_stencil = true; // the _stencil file's arrays too (DEBUG_stencil)
@@ -3765,16 +3781,16 @@ TEST_CASE("construction-target-distance-inert", "[offset][3d]")
     };
     const auto construct = [&](const double target, const bool optimize) {
         Parameters param = construction_params(
-            {{"offset_selection", "tag_0"},
+            {{"offsets",
+              nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", target}}})},
              {"num_threads", 0},
-             {"target_distance", target},
              {"optimize_offset", optimize}},
             g.V);
         TopoOffsetTetMesh mesh(param, 0);
         MatrixXd V_env;
         MatrixXi F_env;
         mesh.init_from_image(g.V, g.Tm, g.Tags, V_env, F_env, {"tag_0"});
-        mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+        select_offset(mesh, "tag_0");
         mesh.label_input_complex();
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
@@ -3808,9 +3824,8 @@ TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]" + release_only)
     // sizing field, which adds vertices and cells.
     const GridInput g = grid_input();
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"},
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
          {"num_threads", 0},
-         {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "exact"}},
         g.V);
     const std::filesystem::path out =
@@ -3858,9 +3873,8 @@ TEST_CASE("turned-faces-at-vertex", "[offset][3d]")
     // faces to find.
     const GridInput g = grid_input();
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"},
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
          {"num_threads", 0},
-         {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "exact"}},
         g.V);
     const std::filesystem::path out =
@@ -3946,7 +3960,7 @@ TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")
     MatrixXd V_env;
     MatrixXi F_env;
     mesh.init_from_image(V, Fm, Tags, V_env, F_env, {"tag_0"});
-    mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+    select_offset(mesh, "tag_0");
     mesh.label_input_complex();
     mesh.init_input_complex_bvh();
     mesh.consolidate_mesh();
@@ -3978,6 +3992,8 @@ TEST_CASE("damping-factor-key", "[offset][3d]")
     const auto injected = [&](nlohmann::json j) {
         j["application"] = "topological_offset";
         j["input"] = "unused.msh";
+        if (!j.contains("offsets"))
+            j["offsets"] = nlohmann::json::array({{{"selection", "tag_0"}}});
         jse::JSE spec_engine;
         spec_engine.strict = true;
         REQUIRE(spec_engine.verify_json(j, spec));
@@ -4008,6 +4024,8 @@ TEST_CASE("growth-mode-keys", "[offset][3d]" + release_only)
     const auto with_app = [](nlohmann::json j) {
         j["application"] = "topological_offset";
         j["input"] = "unused.msh";
+        if (!j.contains("offsets"))
+            j["offsets"] = nlohmann::json::array({{{"selection", "tag_0"}}});
         return j;
     };
     const auto injected = [&](const nlohmann::json& j) {
@@ -4087,6 +4105,8 @@ TEST_CASE("optimize-construction-key", "[offset][3d]")
     const auto base = [](nlohmann::json j) {
         j["application"] = "topological_offset";
         j["input"] = "unused.msh";
+        if (!j.contains("offsets"))
+            j["offsets"] = nlohmann::json::array({{{"selection", "tag_0"}}});
         return j;
     };
     const auto injected = [&](nlohmann::json j) {
@@ -4126,17 +4146,28 @@ TEST_CASE("front-conv-rel-of-target", "[offset][3d]")
     // against it would come out 26 times the target-relative one here.
     Eigen::MatrixXd V(2, 3);
     V << 0, 0, 0, 3, 4, 12;
-    const Parameters by_default = construction_params({{"target_distance", 0.5}}, V);
+    const Parameters by_default = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.5}}})}},
+        V);
     CHECK(by_default.front_conv_rel == 0.1);
     CHECK(by_default.front_conv == 0.1 * 0.5);
-    const Parameters rel =
-        construction_params({{"target_distance_rel", 0.02}, {"front_conv_rel", 0.1}}, V);
+    const Parameters rel = construction_params(
+        {{"offsets",
+          nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance_rel", 0.02}}})},
+         {"front_conv_rel", 0.1}},
+        V);
     CHECK(rel.target_distance == Catch::Approx(0.26));
     CHECK(rel.front_conv == 0.1 * rel.target_distance);
-    const Parameters abs = construction_params({{"target_distance", 0.5}, {"front_conv", 0.05}}, V);
+    const Parameters abs = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.5}}})},
+         {"front_conv", 0.05}},
+        V);
     CHECK(abs.front_conv == 0.05);
     CHECK(abs.front_conv_rel == Catch::Approx(0.1));
-    CHECK_THROWS(construction_params({{"target_distance", 0.5}, {"front_conv_rel", 1.5}}, V));
+    CHECK_THROWS(construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.5}}})},
+         {"front_conv_rel", 1.5}},
+        V));
 }
 
 TEST_CASE("band-side-dihedral", "[offset][3d]")
@@ -4253,6 +4284,8 @@ TEST_CASE("foldover-face-angle", "[offset][3d]")
     const auto with_app = [](nlohmann::json j) {
         j["application"] = "topological_offset";
         j["input"] = "unused.msh";
+        if (!j.contains("offsets"))
+            j["offsets"] = nlohmann::json::array({{{"selection", "tag_0"}}});
         return j;
     };
     const auto injected = [&](const nlohmann::json& j) {
@@ -4320,6 +4353,8 @@ TEST_CASE("debug-remote-output-key", "[offset][3d]")
     const auto injected = [&](nlohmann::json j) {
         j["application"] = "topological_offset";
         j["input"] = "unused.msh";
+        if (!j.contains("offsets"))
+            j["offsets"] = nlohmann::json::array({{{"selection", "tag_0"}}});
         jse::JSE spec_engine;
         spec_engine.strict = true;
         REQUIRE(spec_engine.verify_json(j, spec));
@@ -4869,6 +4904,8 @@ TEST_CASE("surface-energy-keys", "[offset][3d]" + release_only)
     const auto with_app = [](nlohmann::json j) {
         j["application"] = "topological_offset";
         j["input"] = "unused.msh";
+        if (!j.contains("offsets"))
+            j["offsets"] = nlohmann::json::array({{{"selection", "tag_0"}}});
         return j;
     };
     const auto injected = [&](const nlohmann::json& j) {
@@ -5016,9 +5053,8 @@ TEST_CASE("surface-energy-sums", "[offset][3d]" + release_only)
     // it under both stencils (EXPERIMENTAL_stencil_type "interior" and "fem").
     const GridInput g = grid_input();
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"},
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
          {"num_threads", 0},
-         {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "surface"},
          {"stencil_order", 5}},
         g.V);
@@ -5188,9 +5224,9 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]" + release_only)
     const auto build = [&](const char* name, const char* mark) {
         params.push_back(
             std::make_unique<Parameters>(construction_params(
-                {{"offset_selection", "tag_0"},
+                {{"offsets",
+                  nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
                  {"num_threads", 0},
-                 {"target_distance", 0.2},
                  {"EXPERIMENTAL_settle_mark", mark},
                  {"EXPERIMENTAL_band_volume_rule", "exact"},
                  {"EXPERIMENTAL_stencil_type", "fem"},
@@ -5389,9 +5425,9 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]" + release_only)
     {
         params.push_back(
             std::make_unique<Parameters>(construction_params(
-                {{"offset_selection", "tag_0"},
+                {{"offsets",
+                  nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
                  {"num_threads", 0},
-                 {"target_distance", 0.2},
                  {"EXPERIMENTAL_band_volume_rule", "exact"},
                  {"EXPERIMENTAL_stencil_type", "fem"},
                  {"stencil_order", 5},
@@ -5434,9 +5470,8 @@ TEST_CASE("label-cleanup-energy-decrease", "[offset][3d]" + release_only)
     // input, which eligibility refuses, so no flip happens here.)
     const GridInput g = grid_input(5);
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"},
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
          {"num_threads", 0},
-         {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "surface"}},
         g.V);
     const std::filesystem::path out =
@@ -5514,6 +5549,7 @@ TEST_CASE("settle-mark-stencil", "[offset][3d]" + release_only)
         nlohmann::json j = {
             {"application", "topological_offset"},
             {"input", "unused.msh"},
+            {"offsets", nlohmann::json::array({{{"selection", "tag_0"}}})},
             {"EXPERIMENTAL_settle_mark", "stencil"}};
         REQUIRE(spec_engine.verify_json(j, spec));
         nlohmann::json in = spec_engine.inject_defaults(j, spec);
@@ -5528,9 +5564,9 @@ TEST_CASE("settle-mark-stencil", "[offset][3d]" + release_only)
     const auto build = [&](const char* mark, const char* name) {
         params.push_back(
             std::make_unique<Parameters>(construction_params(
-                {{"offset_selection", "tag_0"},
+                {{"offsets",
+                  nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
                  {"num_threads", 0},
-                 {"target_distance", 0.2},
                  {"EXPERIMENTAL_settle_mark", mark},
                  {"EXPERIMENTAL_band_volume_rule", "exact"},
                  {"EXPERIMENTAL_stencil_type", "fem"},
@@ -5649,7 +5685,8 @@ TEST_CASE("memory-output-with-offset-front", "[offset][3d][io]")
     // keys be the offsets' own, and the mesh's rows be the live vertices.
     const GridInput g = grid_input(5);
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.2}}})},
+         {"num_threads", 0}},
         g.V);
     param.debug_stencil = true;
     auto mesh =
@@ -5753,8 +5790,9 @@ TEST_CASE("curve-offset-rod-held", "[offset][3d]" + release_only)
         INFO("EXPERIMENTAL_band_volume_rule " << rule);
         nlohmann::json j = {
             {"input", "m"},
-            {"offset_selection", "tag_0 & tag_1 & tag_2"},
-            {"target_distance", 0.2},
+            {"offsets",
+             nlohmann::json::array(
+                 {{{"selection", "tag_0 & tag_1 & tag_2"}, {"target_distance", 0.2}}})},
             {"EXPERIMENTAL_band_volume_rule", rule},
             {"max_rounds", 1},
             {"num_threads", 1},
@@ -5791,8 +5829,9 @@ TEST_CASE("curve-offset-refuses-offset-in", "[offset][3d]")
     // A curve encloses no volume (init_input_complex_bvh()).
     const nlohmann::json j = {
         {"input", "m"},
-        {"offset_selection", "tag_0 & tag_1 & tag_2"},
-        {"target_distance", 0.2},
+        {"offsets",
+         nlohmann::json::array(
+             {{{"selection", "tag_0 & tag_1 & tag_2"}, {"target_distance", 0.2}}})},
         {"offset_in", true},
         {"offset_out", false},
         {"num_threads", 1}};
@@ -5837,8 +5876,7 @@ TEST_CASE("curve-offset-edge-tag", "[offset][3d]" + release_only)
     const MeshData input = rod_edge_grid();
     const nlohmann::json j = {
         {"input", "m"},
-        {"offset_selection", "curve"},
-        {"target_distance", 0.2},
+        {"offsets", nlohmann::json::array({{{"selection", "curve"}, {"target_distance", 0.2}}})},
         {"max_rounds", 1},
         {"num_threads", 1},
         {"throw_on_nonconvergence", false}};
@@ -5882,17 +5920,36 @@ TEST_CASE("curve-offset-edge-tag", "[offset][3d]" + release_only)
     CHECK(n_rod >= 3);
 }
 
-TEST_CASE("curve-offset-edge-tag-alone", "[offset][3d]")
+TEST_CASE("curve-offset-edge-tags-in-expression", "[offset][3d]")
 {
-    // An edge tag is a curve, offset one tag at a time.
+    // An edge tag in an expression means what it means alone (label_offset()): "curve | other" is
+    // both curves, every input-complex vertex on one of the two segments and both segments
+    // whole, end to end. Refused until 2026-11 ("is selected alone").
     const nlohmann::json j = {
         {"input", "m"},
-        {"offset_selection", "curve | other"},
-        {"target_distance", 0.2},
+        {"offsets",
+         nlohmann::json::array({{{"selection", "curve | other"}, {"target_distance", 0.2}}})},
+        {"optimize_offset", false},
         {"num_threads", 1}};
-    REQUIRE_THROWS_WITH(
-        components::topological_offset::topological_offset(j, {{"m", rod_edge_grid()}}),
-        Catch::Matchers::ContainsSubstring("is selected alone"));
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(j, {{"m", rod_edge_grid()}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    double zlo[2] = {1., 1.}, zhi[2] = {-1., -1.};
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (labels(v, 0) != 1.) continue;
+        const Vector3d p = out.V.row(v).transpose();
+        const int t = p[0] > 0.25 ? 1 : 0; // "curve" at x = y = 0, "other" at x = y = 0.5
+        CHECK(std::abs(p[0] - 0.5 * t) < 1e-12);
+        CHECK(std::abs(p[1] - 0.5 * t) < 1e-12);
+        zlo[t] = std::min(zlo[t], p[2]);
+        zhi[t] = std::max(zhi[t], p[2]);
+    }
+    for (int t = 0; t < 2; ++t) {
+        CHECK(zlo[t] == -0.5);
+        CHECK(zhi[t] == 0.5);
+    }
 }
 
 namespace {
@@ -5987,8 +6044,8 @@ TEST_CASE("curve-offset-converges", "[offset][3d][.]")
         INFO(c.name);
         const nlohmann::json j = {
             {"input", "m"},
-            {"offset_selection", "curve"},
-            {"target_distance", c.delta},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "curve"}, {"target_distance", c.delta}}})},
             {"max_rounds", 15},
             {"num_threads", 1},
             {"throw_on_nonconvergence", true}};
@@ -6091,8 +6148,7 @@ TEST_CASE("point-offset-point-label", "[offset][3d]" + release_only)
     const std::array<int, 3> p{{4, 4, 4}}, q{{6, 4, 4}};
     nlohmann::json j = {
         {"input", "m"},
-        {"offset_selection", "p"},
-        {"target_distance", 0.2},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
         {"EXPERIMENTAL_band_volume_rule", c.rule},
         {"feature_envelope_ratio", c.ratio},
         {"max_rounds", 1},
@@ -6125,19 +6181,30 @@ TEST_CASE("point-offset-point-label", "[offset][3d]" + release_only)
     CHECK(n_complex == 1);
 }
 
-TEST_CASE("point-offset-label-alone", "[offset][3d]")
+TEST_CASE("point-offset-labels-in-expression", "[offset][3d]")
 {
-    // A point label is offset one label at a time, as an edge tag.
+    // A point label in an expression means what it means alone, as an edge tag: "p | q" is both
+    // points, and no other vertex. Refused until 2026-11 ("is selected alone").
     const nlohmann::json j = {
         {"input", "m"},
-        {"offset_selection", "p | q"},
-        {"target_distance", 0.2},
+        {"offsets", nlohmann::json::array({{{"selection", "p | q"}, {"target_distance", 0.2}}})},
+        {"optimize_offset", false},
         {"num_threads", 1}};
-    REQUIRE_THROWS_WITH(
-        components::topological_offset::topological_offset(
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
             j,
-            {{"m", point_grid({{"p", {{4, 4, 4}}}, {"q", {{6, 4, 4}}}})}}),
-        Catch::Matchers::ContainsSubstring("is selected alone"));
+            {{"m", point_grid({{"p", {{4, 4, 4}}}, {"q", {{6, 4, 4}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    std::vector<Vector3d> complex;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (labels(v, 0) == 1.) complex.push_back(out.V.row(v).transpose());
+    }
+    REQUIRE(complex.size() == 2);
+    const bool p_first = (complex[0] - grid_point({{4, 4, 4}})).norm() < 1e-12;
+    CHECK((complex[p_first ? 0 : 1] - grid_point({{4, 4, 4}})).norm() < 1e-12);
+    CHECK((complex[p_first ? 1 : 0] - grid_point({{6, 4, 4}})).norm() < 1e-12);
 }
 
 TEST_CASE("point-offset-label-names", "[offset][3d]")
@@ -6148,8 +6215,8 @@ TEST_CASE("point-offset-label-names", "[offset][3d]")
     {
         const nlohmann::json j = {
             {"input", "m"},
-            {"offset_selection", "curve"},
-            {"target_distance", 0.2},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "curve"}, {"target_distance", 0.2}}})},
             {"optimize_offset", false},
             {"num_threads", 1}};
         ComponentResult res;
@@ -6173,8 +6240,8 @@ TEST_CASE("point-offset-label-names", "[offset][3d]")
     {
         const nlohmann::json j = {
             {"input", "m"},
-            {"offset_selection", "ambient"},
-            {"target_distance", 0.2},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "ambient"}, {"target_distance", 0.2}}})},
             {"num_threads", 1}};
         REQUIRE_THROWS_WITH(
             components::topological_offset::topological_offset(
@@ -6196,8 +6263,7 @@ TEST_CASE("empty-input-complex-keeps-curves-and-points", "[offset][3d]")
     tets.attributes["tags"] = {tags, {"ambient", "nothing"}};
     const nlohmann::json j = {
         {"input", "m"},
-        {"offset_selection", "nothing"},
-        {"target_distance", 0.2},
+        {"offsets", nlohmann::json::array({{{"selection", "nothing"}, {"target_distance", 0.2}}})},
         {"num_threads", 1}};
     ComponentResult res;
     REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
@@ -6231,8 +6297,7 @@ void require_point_offset_converges(
 {
     const nlohmann::json j = {
         {"input", "m"},
-        {"offset_selection", "p"},
-        {"target_distance", delta},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
         {"max_rounds", 15},
         {"num_threads", 1},
         {"throw_on_nonconvergence", true}};
@@ -6290,8 +6355,7 @@ TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
     INFO((protect ? "tag_1 protected" : "tag_1 held"));
     nlohmann::json j = {
         {"input", "m"},
-        {"offset_selection", "tag_0"},
-        {"target_distance", 0.05},
+        {"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.05}}})},
         {"optimize_offset", true},
         {"max_rounds", 15},
         {"num_threads", 4},
@@ -6311,10 +6375,440 @@ TEST_CASE("exact-swept-front-vertex-held-on-another-region", "[offset][3d]" + re
         (std::filesystem::path(WMTK_DATA_DIR) / "models" / "double_sphere.msh").string());
     const nlohmann::json j = {
         {"input", "m"},
-        {"offset_selection", "tag_0"},
-        {"target_distance", 0.05},
+        {"offsets", nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.05}}})},
         {"EXPERIMENTAL_band_volume_rule", "exact_swept"},
         {"max_rounds", 1},
         {"num_threads", 1}};
     REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
+}
+
+namespace {
+/// [-1, 1]^3 in 8^3 cubes of edge 0.25 (cube_grid()), the cubes (i, j, k) of each named box --
+/// i, j, k in [lo, hi] of its {i_lo, i_hi, j_lo, j_hi, k_lo, k_hi} -- tagged by its name, every
+/// other cube ambient. Boxes do not overlap.
+MeshData box_grid(const std::vector<std::pair<std::string, std::array<int, 6>>>& boxes)
+{
+    const CubeGrid g = cube_grid(8, 0.25);
+    Eigen::MatrixXi Tm(int(g.T.size()), 4);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(g.T.size(), boxes.size() + 1);
+    std::vector<std::string> names;
+    for (const auto& [name, box] : boxes) names.push_back(name);
+    names.push_back("ambient");
+    for (size_t i = 0; i < g.T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = g.T[i][size_t(j)];
+        size_t col = boxes.size();
+        for (size_t b = 0; b < boxes.size(); ++b) {
+            const auto& r = boxes[b].second;
+            bool in = true;
+            for (int a = 0; a < 3; ++a)
+                in = in && g.cube[i][size_t(a)] >= r[size_t(2 * a)] &&
+                     g.cube[i][size_t(a)] <= r[size_t(2 * a + 1)];
+            if (in) col = b;
+        }
+        tags(i, col) = 1;
+    }
+    MeshData m = io::geometry_data(g.V, Tm, CellType::Tetrahedron);
+    m.cells.at(CellType::Tetrahedron).attributes["tags"] = {tags, names};
+    return m;
+}
+
+/// The distance from p to box_grid()'s box of cube indices r.
+double box_distance(const Vector3d& p, const std::array<int, 6>& r)
+{
+    double s = 0.;
+    for (int a = 0; a < 3; ++a) {
+        const double lo = r[size_t(2 * a)] * 0.25 - 1., hi = (r[size_t(2 * a + 1)] + 1) * 0.25 - 1.;
+        const double e = std::max({lo - p[a], 0., p[a] - hi});
+        s += e * e;
+    }
+    return std::sqrt(s);
+}
+
+/// The cells of a result carrying `tag`, each as its corners' positions in sorted order: a cell's
+/// identity across two runs that number the vertices differently.
+using CellCorners = std::array<std::array<double, 3>, 4>;
+std::set<CellCorners> cells_tagged(const MeshData& m, const std::string& tag)
+{
+    const auto& block = m.cells.at(CellType::Tetrahedron);
+    const auto& tags = block.attributes.at("tags");
+    const auto it = std::find(tags.labels.begin(), tags.labels.end(), tag);
+    REQUIRE(it != tags.labels.end());
+    const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+    const auto member = tags.integers();
+    std::set<CellCorners> out;
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        if (member(r, col) == 0) continue;
+        CellCorners c;
+        for (int k = 0; k < 4; ++k) {
+            const auto p = m.V.row(block.connectivity(r, k));
+            c[size_t(k)] = {{p(0), p(1), p(2)}};
+        }
+        std::sort(c.begin(), c.end());
+        out.insert(c);
+    }
+    return out;
+}
+
+/// One construction-only run with these offsets.
+MeshData construct_offsets(const MeshData& m, const nlohmann::json& offsets)
+{
+    return components::topological_offset::topological_offset(
+               {{"input", "m"},
+                {"offsets", offsets},
+                {"optimize_offset", false},
+                {"num_threads", 1}},
+               {{"m", m}})
+        .first.at("mesh");
+}
+} // namespace
+
+TEST_CASE("several-offsets-as-alone", "[offset][3d]")
+{
+    // Three bodies, each two cubes from the next, offset in one march: each entry's band is the
+    // one a run of that entry alone makes -- the same cells at the same positions -- and takes its
+    // own output tags. Each entry decides its fallback itself (marching_tets()): every outer end is
+    // a grid edge (0.25) or more from its body, so a at 0.1 and c at 0.2 are traced to, and b at
+    // 0.3 falls back to half of 0.25. Before 2026-11 the union "a | b | c" was one input under one
+    // maximum marchable distance, one target and one set of output tags.
+    const std::vector<std::pair<std::string, std::array<int, 6>>> boxes = {
+        {"a", {{1, 2, 1, 2, 1, 2}}},
+        {"b", {{5, 6, 1, 2, 1, 2}}},
+        {"c", {{1, 2, 5, 6, 5, 6}}}};
+    const MeshData m = box_grid(boxes);
+    const std::vector<double> D = {0.1, 0.3, 0.2};
+    nlohmann::json all = nlohmann::json::array();
+    for (size_t k = 0; k < boxes.size(); ++k) {
+        all.push_back(
+            {{"selection", boxes[k].first},
+             {"output_tags", {boxes[k].first + "_band"}},
+             {"target_distance", D[k]}});
+    }
+    const MeshData joint = construct_offsets(m, all);
+    for (size_t k = 0; k < boxes.size(); ++k) {
+        const std::string band = boxes[k].first + "_band";
+        INFO("offsets[" << k << "] " << boxes[k].first << " at " << D[k]);
+        const auto cells = cells_tagged(joint, band);
+        CHECK(!cells.empty());
+        CHECK(cells == cells_tagged(construct_offsets(m, nlohmann::json::array({all[k]})), band));
+        const double traced = D[k] < 0.25 ? D[k] : 0.125;
+        size_t n_outer = 0;
+        for (const CellCorners& c : cells) {
+            for (const auto& q : c) {
+                const double d = box_distance(Vector3d(q[0], q[1], q[2]), boxes[k].second);
+                if (d == 0.) continue; // on the body
+                ++n_outer;
+                CHECK(std::abs(d - traced) <= 0.01 * traced);
+            }
+        }
+        CHECK(n_outer > 0);
+    }
+    // The comparison tells positions apart: a alone at c's distance is not a's band.
+    nlohmann::json a_at_c = all[0];
+    a_at_c["target_distance"] = D[2];
+    CHECK(
+        cells_tagged(joint, "a_band") !=
+        cells_tagged(construct_offsets(m, nlohmann::json::array({a_at_c})), "a_band"));
+}
+
+TEST_CASE("several-offsets-touch", "[offset][3d]")
+{
+    // Entries that intersect are refused (label_input_complex()): b's cubes next to a's share
+    // their vertices. One cube apart, a's and b's vertices are joined by grid edges; the simplicial
+    // embedding splits them, and the two bands come out apart -- no vertex in both -- each within
+    // half of such an edge (0.125, from the half-edge midpoint 0.125 from both), so a target of 0.1
+    // is still traced to.
+    const auto run = [](const std::array<int, 6>& b) {
+        return construct_offsets(
+            box_grid({{"a", {{1, 2, 1, 2, 1, 2}}}, {"b", b}}),
+            nlohmann::json::array(
+                {{{"selection", "a"}, {"output_tags", {"a_band"}}, {"target_distance", 0.1}},
+                 {{"selection", "b"}, {"output_tags", {"b_band"}}, {"target_distance", 0.1}}}));
+    };
+    REQUIRE_THROWS_WITH(run({{3, 4, 1, 2, 1, 2}}), Catch::Matchers::ContainsSubstring("share"));
+    const std::array<int, 6> b = {{4, 5, 1, 2, 1, 2}};
+    MeshData out;
+    REQUIRE_NOTHROW(out = run(b));
+    std::set<std::array<double, 3>> corners_a;
+    for (const CellCorners& c : cells_tagged(out, "a_band")) corners_a.insert(c.begin(), c.end());
+    size_t n_b = 0;
+    for (const CellCorners& c : cells_tagged(out, "b_band")) {
+        ++n_b;
+        for (const auto& q : c) {
+            CHECK(corners_a.count(q) == 0);
+            const double d = box_distance(Vector3d(q[0], q[1], q[2]), b);
+            if (d > 0.) CHECK(std::abs(d - 0.1) <= 0.01 * 0.1);
+        }
+    }
+    CHECK(!corners_a.empty());
+    CHECK(n_b > 0);
+}
+
+TEST_CASE("several-offsets-sheets", "[offset][3d]")
+{
+    // A body and two sheets (face tags) in one march, each as alone: the sheets' faces are each
+    // entry's own (label_input_complex()'s on_sheet union), not the last one's.
+    const MeshData m = two_sheet_grid(1.5);
+    const std::vector<std::string> names = {"red", "yellow", "blue"};
+    nlohmann::json all = nlohmann::json::array();
+    for (const std::string& name : names) {
+        all.push_back(
+            {{"selection", name}, {"output_tags", {name + "_band"}}, {"target_distance", 0.1}});
+    }
+    const MeshData joint = construct_offsets(m, all);
+    for (size_t k = 0; k < names.size(); ++k) {
+        INFO("offsets[" << k << "] " << names[k]);
+        const auto cells = cells_tagged(joint, names[k] + "_band");
+        CHECK(!cells.empty());
+        CHECK(
+            cells == cells_tagged(
+                         construct_offsets(m, nlohmann::json::array({all[k]})),
+                         names[k] + "_band"));
+    }
+}
+
+TEST_CASE("offsets-face-tags-in-expression", "[offset][3d]")
+{
+    // A face tag in an expression means what it means alone (label_offset()): "yellow | red" is
+    // the yellow sheet and the red solid, one input of triangles -- the sheet's faces and the
+    // solid's boundary -- and its band the band of both. Until 2026-11 a face tag in an
+    // expression selected nothing, silently: no cell carries it. An empty list makes no offset.
+    const MeshData m = two_sheet_grid(1.5);
+    const MeshData out = construct_offsets(
+        m,
+        nlohmann::json::array(
+            {{{"selection", "yellow | red"},
+              {"output_tags", {"band"}},
+              {"target_distance", 0.1}}}));
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    size_t on_sheet = 0, on_red = 0, elsewhere = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (labels(v, 0) != 1.) continue;
+        const Vector3d p = out.V.row(v).transpose();
+        if (p[2] == 1. && p[0] >= 0.5 && p[0] <= 1.5 && p[1] >= 0.5 && p[1] <= 1.5) {
+            ++on_sheet;
+        } else if (p.maxCoeff() <= 0.25) {
+            ++on_red;
+        } else {
+            ++elsewhere;
+        }
+    }
+    CHECK(on_sheet == 25); // the sheet's 5 x 5 grid vertices
+    CHECK(on_red == 8); // the red cube's corners
+    CHECK(elsewhere == 0);
+    // The band of the union: the bands each makes alone, together.
+    std::set<CellCorners> both = cells_tagged(
+        construct_offsets(
+            m,
+            nlohmann::json::array(
+                {{{"selection", "yellow"}, {"output_tags", {"band"}}, {"target_distance", 0.1}}})),
+        "band");
+    for (const CellCorners& c : cells_tagged(
+             construct_offsets(
+                 m,
+                 nlohmann::json::array(
+                     {{{"selection", "red"},
+                       {"output_tags", {"band"}},
+                       {"target_distance", 0.1}}})),
+             "band"))
+        both.insert(c);
+    CHECK(cells_tagged(out, "band") == both);
+    REQUIRE_THROWS_WITH(
+        construct_offsets(m, nlohmann::json::array()),
+        Catch::Matchers::ContainsSubstring("at least one offset"));
+}
+
+TEST_CASE("several-offsets-optimize", "[offset][3d]" + release_only)
+{
+    // Several entries run the optimization: an input complex of several connected pieces is no
+    // longer refused (TESTING_allow_mult_comp, until 2026-11).
+    const MeshData m = box_grid({{"a", {{1, 2, 1, 2, 1, 2}}}, {"b", {{5, 6, 1, 2, 1, 2}}}});
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets",
+         nlohmann::json::array(
+             {{{"selection", "a"}, {"output_tags", {"a_band"}}, {"target_distance", 0.1}},
+              {{"selection", "b"}, {"output_tags", {"b_band"}}, {"target_distance", 0.1}}})},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", m}}));
+    CHECK(!cells_tagged(res.first.at("mesh"), "a_band").empty());
+    CHECK(!cells_tagged(res.first.at("mesh"), "b_band").empty());
+}
+
+namespace {
+/// The front of `tag`'s band in an optimized result: the corners its cells share with ambient
+/// cells, off the body's own box.
+std::vector<double>
+front_distances(const MeshData& out, const std::string& tag, const std::array<int, 6>& box)
+{
+    std::set<std::array<double, 3>> ambient;
+    for (const CellCorners& c : cells_tagged(out, "ambient")) ambient.insert(c.begin(), c.end());
+    std::set<std::array<double, 3>> front;
+    for (const CellCorners& c : cells_tagged(out, tag)) {
+        for (const auto& q : c) {
+            if (ambient.count(q)) front.insert(q);
+        }
+    }
+    std::vector<double> d;
+    for (const auto& q : front) {
+        const double x = box_distance(Vector3d(q[0], q[1], q[2]), box);
+        if (x > 0.) d.push_back(x);
+    }
+    return d;
+}
+} // namespace
+
+TEST_CASE("several-offsets-optimize-distances", "[offset][3d]" + release_only)
+{
+    // Each piece its own target distance in the optimization: its field, the band term's distance
+    // and integral, the settle tests' bar (front_conv_rel of its distance) -- place_piece(). Two
+    // boxes 0.5 apart, a at 0.1, b at 0.2: both fronts at their own targets and converged.
+    // MEASURED (2026-11-09, 5 turns): a's front mean 0.1025, b's 0.2031 (each alone: 0.1023,
+    // 0.2037); before, b's bar was a's (the settle vertex test against the run's front_conv) and
+    // the run refined b's front to 7905 vertices (alone 227) without converging. b at 0.3, above
+    // the maximum marchable distance, constructed at 0.125 and still moving out after 3 turns:
+    // its front stays around b. Before the per-piece integral, the band term rewarded b's band
+    // for the cells around a, below 0.3 from a: its front reached 1.05 from b, 0.12 from a.
+    const std::array<int, 6> a = {{1, 2, 1, 2, 1, 2}}, b = {{5, 6, 1, 2, 1, 2}};
+    const MeshData m = box_grid({{"a", a}, {"b", b}});
+    const auto run = [&](const double db, const int rounds) {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array(
+                 {{{"selection", "a"}, {"output_tags", {"a_band"}}, {"target_distance", 0.1}},
+                  {{"selection", "b"}, {"output_tags", {"b_band"}}, {"target_distance", db}}})},
+            {"max_rounds", rounds},
+            {"num_threads", 1},
+            {"throw_on_nonconvergence", false}};
+        return components::topological_offset::topological_offset(j, {{"m", m}});
+    };
+    {
+        const ComponentResult res = run(0.2, 5);
+        CHECK(res.second.value("converged", false));
+        for (const auto& [tag, box, delta] :
+             {std::make_tuple("a_band", a, 0.1), std::make_tuple("b_band", b, 0.2)}) {
+            INFO(tag);
+            const std::vector<double> d = front_distances(res.first.at("mesh"), tag, box);
+            REQUIRE(!d.empty());
+            double mean = 0.;
+            for (const double x : d) mean += x / double(d.size());
+            CHECK(std::abs(mean - delta) <= 0.05 * delta);
+            CHECK(*std::min_element(d.begin(), d.end()) >= 0.95 * delta);
+            CHECK(*std::max_element(d.begin(), d.end()) <= 1.15 * delta);
+        }
+    }
+    {
+        const ComponentResult res = run(0.3, 3);
+        const std::vector<double> d = front_distances(res.first.at("mesh"), "b_band", b);
+        REQUIRE(!d.empty());
+        CHECK(*std::min_element(d.begin(), d.end()) >= 0.2);
+        CHECK(*std::max_element(d.begin(), d.end()) <= 0.35);
+        for (const double x : front_distances(res.first.at("mesh"), "a_band", a)) {
+            CHECK(x >= 0.095);
+            CHECK(x <= 0.115);
+        }
+    }
+}
+
+TEST_CASE("several-offsets-absolute-front-conv", "[offset][3d]")
+{
+    // An absolute front_conv is one length for every piece; entries of different distances
+    // take front_conv_rel, each bar its own distance's fraction (Parameters::init()). Equal
+    // distances keep it.
+    Eigen::MatrixXd V(2, 3);
+    V << 0, 0, 0, 3, 4, 12;
+    const auto with = [&](const double d1) {
+        return construction_params(
+            {{"offsets",
+              nlohmann::json::array(
+                  {{{"selection", "a"}, {"target_distance", 0.5}},
+                   {{"selection", "b"}, {"target_distance", d1}}})},
+             {"front_conv", 0.05}},
+            V);
+    };
+    CHECK_THROWS(with(0.6));
+    const Parameters same = with(0.5);
+    CHECK(same.front_conv == 0.05);
+}
+
+TEST_CASE("several-offsets-solid-and-curve", "[offset][3d]")
+{
+    // Entries of different primitive kinds in one run, a solid (triangles) and an edge tag (a
+    // curve, segments): one kind per entry, each entry its own engine (init_input_complex_bvh()).
+    // Refused until 2026-11 ("the input complex mixes primitive kinds: 48 triangles, 4 segments
+    // not on a triangle"). Each band is the one its entry makes alone.
+    const GridPolyline rod = {{{1, 6, 6}}, {{2, 6, 6}}, {{3, 6, 6}}, {{4, 6, 6}}, {{5, 6, 6}}};
+    MeshData m = curve_grid({{"rod", rod}});
+    m.cells.at(CellType::Tetrahedron).attributes["tags"] = box_grid({{"a", {{1, 2, 1, 2, 1, 2}}}})
+                                                               .cells.at(CellType::Tetrahedron)
+                                                               .attributes.at("tags");
+    const nlohmann::json a = {
+        {"selection", "a"},
+        {"output_tags", {"a_band"}},
+        {"target_distance", 0.1}};
+    const nlohmann::json r = {
+        {"selection", "rod"},
+        {"output_tags", {"rod_band"}},
+        {"target_distance", 0.1}};
+    const MeshData joint = construct_offsets(m, nlohmann::json::array({a, r}));
+    CHECK(!cells_tagged(joint, "a_band").empty());
+    CHECK(!cells_tagged(joint, "rod_band").empty());
+    CHECK(
+        cells_tagged(joint, "a_band") ==
+        cells_tagged(construct_offsets(m, nlohmann::json::array({a})), "a_band"));
+    CHECK(
+        cells_tagged(joint, "rod_band") ==
+        cells_tagged(construct_offsets(m, nlohmann::json::array({r})), "rod_band"));
+    // A tag expression may not mix the kinds within one entry.
+    REQUIRE_THROWS_WITH(
+        construct_offsets(m, nlohmann::json::array({{{"selection", "a | rod"}}})),
+        Catch::Matchers::ContainsSubstring("mixes primitive kinds"));
+}
+
+TEST_CASE("several-offsets-solid-and-curve-optimize", "[offset][3d]" + release_only)
+{
+    // The same two entries through the optimization: each piece its own engine, field and
+    // integral, so the curve's band is not read against the solid's triangles. Both bands at
+    // their targets: their front vertices within 10% of 0.1 from their own input.
+    const GridPolyline rod = {{{1, 6, 6}}, {{2, 6, 6}}, {{3, 6, 6}}, {{4, 6, 6}}, {{5, 6, 6}}};
+    MeshData m = curve_grid({{"rod", rod}});
+    m.cells.at(CellType::Tetrahedron).attributes["tags"] = box_grid({{"a", {{1, 2, 1, 2, 1, 2}}}})
+                                                               .cells.at(CellType::Tetrahedron)
+                                                               .attributes.at("tags");
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets",
+         nlohmann::json::array(
+             {{{"selection", "a"}, {"output_tags", {"a_band"}}, {"target_distance", 0.1}},
+              {{"selection", "rod"}, {"output_tags", {"rod_band"}}, {"target_distance", 0.1}}})},
+        {"max_rounds", 5},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", m}}));
+    const MeshData& out = res.first.at("mesh");
+    for (const double d : front_distances(out, "a_band", {{1, 2, 1, 2, 1, 2}})) {
+        CHECK(d >= 0.09);
+        CHECK(d <= 0.11);
+    }
+    // the rod: x in [-0.75, 0.25] at y = z = 0.5
+    const auto rod_distance = [](const std::array<double, 3>& q) {
+        const double x = std::clamp(q[0], -0.75, 0.25);
+        return (Vector3d(q[0], q[1], q[2]) - Vector3d(x, 0.5, 0.5)).norm();
+    };
+    std::set<std::array<double, 3>> ambient;
+    for (const CellCorners& c : cells_tagged(out, "ambient")) ambient.insert(c.begin(), c.end());
+    size_t n = 0;
+    for (const CellCorners& c : cells_tagged(out, "rod_band")) {
+        for (const auto& q : c) {
+            if (!ambient.count(q)) continue;
+            ++n;
+            CHECK(rod_distance(q) >= 0.09);
+            CHECK(rod_distance(q) <= 0.11);
+        }
+    }
+    CHECK(n > 0);
 }

@@ -86,7 +86,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             "save_offset_correspondence requires optimize_offset false: corr_input_vid is "
             "recorded by the march and not carried through the optimization");
     }
-    const std::string offset_selection_str = json_params["offset_selection"];
     bool check_manifoldness = json_params["check_manifoldness"];
 
     std::filesystem::path output_filename = params.output_path;
@@ -140,7 +139,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (params.debug_output) {
         logger().info("====== input parameters =======");
-        logger().info("target_distance: {}", params.target_distance);
+        for (size_t k = 0; k < params.offsets.size(); ++k) {
+            logger().info(
+                "offsets[{}]: selection '{}', target_distance {}",
+                k,
+                params.offsets[k].selection,
+                params.offsets[k].target_distance);
+        }
         logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
         logger().info(
             "front_conv: {} ({} x target_distance)",
@@ -178,8 +183,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.envelope_name);
 
         // label input complex
-        mesh.m_offset_params.offset_selection =
-            expression_parser::parse(offset_selection_str, mesh.m_tag_name_to_id);
+        for (Parameters::Offset& o : mesh.m_offset_params.offsets)
+            o.expression = expression_parser::parse(o.selection, mesh.m_tag_name_to_id);
         mesh.label_input_complex();
 
         // check empty input
@@ -458,8 +463,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // label input complex
-        mesh.m_offset_params.offset_selection =
-            expression_parser::parse(offset_selection_str, mesh.m_tag_name_to_id);
+        for (Parameters::Offset& o : mesh.m_offset_params.offsets)
+            o.expression = expression_parser::parse(o.selection, mesh.m_tag_name_to_id);
         mesh.label_input_complex();
 
         // A correspondence handed on from an earlier offset is carried: its offset vertices keep

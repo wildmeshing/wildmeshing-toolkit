@@ -22,7 +22,23 @@ namespace wmtk::components::topological_offset {
  */
 struct Parameters : public wmtk::OptimizerParameters
 {
-    ExpressionPtr offset_selection;
+    /// One entry of `offsets`: an input complex and the band grown from it alone, constructed in
+    /// the same march as the other entries' and independent of them (see the spec).
+    struct Offset
+    {
+        /// The tag expression as the json gives it. The run parses it into `expression` against
+        /// the mesh's tags (topological_offset.cpp), which exist only once the mesh is read.
+        std::string selection;
+        ExpressionPtr expression;
+        /// The tags its band's cells take; none: ambient.
+        std::set<std::string> output_tags;
+        /// Absolute; if <= 0, init() derives it from target_distance_rel, relative to the bounding
+        /// box diagonal.
+        double target_distance = -1.;
+        double target_distance_rel = 0.01;
+    };
+    std::vector<Offset> offsets;
+    /// Every entry's output_tags: the tags the run adds to the mesh (init_from_image()).
     std::set<std::string> offset_output_tag;
     std::set<std::string> protected_tags;
     // The spec's defaults, as envelope_size below: init_input_complex_bvh() refuses offset_in on a
@@ -30,6 +46,9 @@ struct Parameters : public wmtk::OptimizerParameters
     // (dist_to_tetmesh) read an uninitialized offset_in as true on the Linux and Windows Debug CI.
     bool offset_in = false;
     bool offset_out = true;
+    /// The smallest entry's target_distance, resolved by init(): the run-wide reader's (front_conv
+    /// from front_conv_rel, min_edge_length, logs); each place of the optimization reads its own
+    /// piece's (TopoOffsetTetMesh::place_piece()).
     double target_distance;
     double target_distance_rel;
     // Turn a non-converged run into a hard error instead of a warning. Off by default: a run that
@@ -299,9 +318,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// DEBUG (2026-10-29), 3D, with DEBUG_output: every debug frame also writes <frame>_stencil.vtu,
     /// one point per stencil point of every offset face with its offset error. See the spec doc.
     bool debug_stencil = false;
-    /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
-    /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
-    bool allow_mult_comp = false;
     /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
     /// on a settled turn. "vertex": a front vertex's own |d - target_distance| exceeds
     /// front_conv; its sizing is halved. "vertex_edge" (the default): "vertex", and also both ends
@@ -371,15 +387,23 @@ struct Parameters : public wmtk::OptimizerParameters
 
     Parameters(const nlohmann::json& json_params)
     {
-        for (const std::string& tag : json_params["offset_output_tags"]) {
-            if (tag == "ambient") {
-                logger().warn(
-                    "'ambient' tag cannot be given explicitly to offset_output_tags, ignoring. To "
-                    "set offset to 'ambient', pass offset_output_tags=[].");
-                continue;
+        for (const nlohmann::json& o : json_params["offsets"]) {
+            Offset& entry = offsets.emplace_back();
+            entry.selection = o["selection"];
+            for (const std::string& tag : o["output_tags"]) {
+                if (tag == "ambient") {
+                    logger().warn(
+                        "'ambient' tag cannot be given explicitly to output_tags, ignoring. To "
+                        "set an offset to 'ambient', pass output_tags=[].");
+                    continue;
+                }
+                entry.output_tags.insert(tag);
+                offset_output_tag.insert(tag);
             }
-            offset_output_tag.insert(tag);
+            entry.target_distance = o["target_distance"];
+            entry.target_distance_rel = o["target_distance_rel"];
         }
+        if (offsets.empty()) log_and_throw_error("offsets: at least one offset is needed");
         for (const std::string& tag : json_params["protected_tags"]) {
             if (tag == "ambient") {
                 logger().warn("'ambient' tag cannot be protected, ignoring.");
@@ -389,8 +413,6 @@ struct Parameters : public wmtk::OptimizerParameters
         }
         offset_in = json_params["offset_in"];
         offset_out = json_params["offset_out"];
-        target_distance = json_params["target_distance"];
-        target_distance_rel = json_params["target_distance_rel"];
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
         optimize_offset = json_params["optimize_offset"];
         envelope_size = json_params["envelope_size"];
@@ -531,7 +553,6 @@ struct Parameters : public wmtk::OptimizerParameters
                 growth_mode);
         }
         foldover_angle = json_params["foldover_angle"];
-        allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex" &&
             settle_mark != "vertex_edge" && settle_mark != "vertex_split" &&
@@ -687,6 +708,24 @@ struct Parameters : public wmtk::OptimizerParameters
         // which the offset never reads: its envelope tolerance is m_envelope_eps, set on the mesh.
         init_lengths_from_diagonal((max_ - min_).norm());
 
+        // Each entry's own distance, absolute or relative; the run's is the smallest of them. A
+        // Parameters built by hand (the unit tests) has no entry and sets the run's directly.
+        for (size_t k = 0; k < offsets.size(); ++k) {
+            Offset& o = offsets[k];
+            if (o.target_distance > 0) {
+                o.target_distance_rel = o.target_distance / diag_l;
+            } else {
+                o.target_distance = o.target_distance_rel * diag_l;
+            }
+            if (!(o.target_distance > 0)) {
+                log_and_throw_error(
+                    "offsets[{}]: target_distance {} (target_distance_rel {}) is not positive",
+                    k,
+                    o.target_distance,
+                    o.target_distance_rel);
+            }
+            if (k == 0 || o.target_distance < target_distance) target_distance = o.target_distance;
+        }
         if (target_distance > 0) {
             target_distance_rel = target_distance / diag_l;
         } else {
@@ -704,7 +743,22 @@ struct Parameters : public wmtk::OptimizerParameters
         // The convergence epsilon, absolute or relative; relative to target_distance (resolved
         // above), the offset it measures. A growth stage changes target_distance later, never
         // this.
+        // Several entries of offsets: each piece's bar is front_conv_rel of its own distance. An
+        // absolute front_conv is one length for every piece, which entries of different distances
+        // would each need read in their own units; refused for those until it is (a global
+        // tolerance key, Uday 2026-11-09: "once things are working").
         if (front_conv > 0) {
+            for (const Offset& o : offsets) {
+                if (o.target_distance != target_distance) {
+                    log_and_throw_error(
+                        "front_conv {} (absolute) with offsets of different target distances ({} "
+                        "and {}): give front_conv_rel, each offset's bar that fraction of its own "
+                        "distance",
+                        front_conv,
+                        target_distance,
+                        o.target_distance);
+                }
+            }
             front_conv_rel = front_conv / target_distance;
         } else {
             front_conv = front_conv_rel * target_distance;

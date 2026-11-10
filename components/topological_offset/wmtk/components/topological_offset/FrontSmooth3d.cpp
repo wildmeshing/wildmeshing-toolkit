@@ -356,11 +356,6 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
     // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D).
     // EXPERIMENTAL_band_volume_rule "surface": no cell carries a band term.
     if (surface_energy()) return nullptr;
-    if (m_n_regions > 1 && !m_offset_params.allow_mult_comp) {
-        log_and_throw_error(
-            "the energy's band term reads one field, and this input has {} regions",
-            m_n_regions);
-    }
     std::vector<BandVolumeEnergy3D::Cell> cells;
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         if (!cell_is_offset_band(tid)) continue;
@@ -384,25 +379,26 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
         band_swept_faces(vid, m_vertex_attribute[vid].m_posf, swept_faces);
         if (swept_faces.empty()) return nullptr;
     }
+    // The ring's piece's distance, engine and integral (place_piece(); the run's and the whole
+    // complex's with one entry): the cells of a band vertex's ring are its piece's band.
+    const int piece = place_piece(&vid, 1);
+    const double delta = region_delta(piece);
+    const auto& band_exact = band_exact_for(piece);
     auto e = std::make_shared<BandVolumeEnergy3D>(
-        m_input_complex_envelope,
+        envelope_for(piece),
         m_input_complex_pad,
         std::move(cells),
         m_vertex_attribute[vid].m_posf,
-        m_offset_params.target_distance);
+        delta);
     if (swept_rule()) {
-        e->set_swept(
-            m_band_exact,
-            m_offset_params.target_distance,
-            std::move(swept_faces),
-            &m_swept_derivs);
+        e->set_swept(band_exact, delta, std::move(swept_faces), &m_swept_derivs);
         m_swept_model.local() = e;
         return e;
     }
 
     // EXPERIMENTAL_band_volume_rule "exact": each cell's closed-form integral, as band_cell_term().
     if (m_offset_params.band_volume_rule == "exact") {
-        e->set_exact_integral(m_band_exact, m_offset_params.target_distance);
+        e->set_exact_integral(band_exact, delta);
     }
     // EXPERIMENTAL_band_volume_rule "front_flux": the front form of the same term
     // (BandVolumeEnergy3D::set_front_flux()), over the band's boundary faces through vid. A face
@@ -451,7 +447,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
         for (const Rec& r : recs) {
             if (r.band == 1) faces.push_back(r.f);
         }
-        e->set_front_flux(m_band_exact, m_offset_params.target_distance, std::move(faces));
+        e->set_front_flux(band_exact, delta, std::move(faces));
     }
     return e;
 }

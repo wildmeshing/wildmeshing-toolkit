@@ -75,8 +75,8 @@ front onto the target and restoring the quality is the job of the
 
 ## How the band is built
 
-1. **The complex.** `offset_selection` picks the input complex: cells, and the faces, edges and
-   vertices between them.
+1. **The complex.** An offset's `selection` picks the input complex: cells, and the faces, edges
+   and vertices between them.
 2. **The embedding.** Cells are split so that no edge, face or tet outside the complex has all
    its vertices on it (the log says `Input complex/offset simplicially embedded: TRUE`).
 3. **The march.** Every edge with one end on the complex is split at the target distance from
@@ -100,10 +100,18 @@ The input on the left, the result on the right: drag to rotate, scroll to zoom; 
 
 ## Key settings
 
-### Which side: `offset_selection`, `offset_in`, `offset_out`
+### One entry per offset: `offsets`
 
-[`offset_selection`](../reference/topological_offset.md#offset_selection) names what to offset. A
-single tag name, as in the first run, is single body mode: the body is that region, and
+[`offsets`](../reference/topological_offset.md#offsets) is a list with one entry per offset,
+`{"selection": ..., "output_tags": [...], "target_distance": ...}`; only `selection` is
+required. The runs on this page have one entry. Several entries are independent offsets, each
+with its own band, output tags and distance, built in one march; entries that touch are
+refused. The other options are set once for the run.
+
+### Which side: `selection`, `offset_in`, `offset_out`
+
+An entry's `selection` names what to offset. A single tag name, as in the first run, is single
+body mode: the body is that region, and
 [`offset_out`](../reference/topological_offset.md#offset_out) (default true) and
 [`offset_in`](../reference/topological_offset.md#offset_in) (default false) say on which side of
 its boundary the band grows. At least one must be true.
@@ -119,23 +127,21 @@ its boundary the band grows. At least one must be true.
 | both | 4,970 | 0.0973 |
 
 Inside the bar the maximum marchable distance is 0.195, below the target, so the inward band
-starts at a quarter of the target and the optimization has to carry it the rest of the way. The
-default `offset_selection`, `!_`, left the example mesh unchanged: set it.
+starts at a quarter of the target and the optimization has to carry it the rest of the way.
 
 ### Expressions
 
-Any other [`offset_selection`](../reference/topological_offset.md#offset_selection) is an
-expression over tag names, with `&`, `|`, `!` and parentheses, as in simwild (`ambient` is the
-background). The complex is every tet whose tags satisfy it, and every face, edge and vertex
-whose surrounding tets' tags, together, satisfy it. The band grows on every side of the complex;
-`offset_in` and `offset_out` are not read. On `double_sphere.msh`, two overlapping spheres
-`tag_0` and `tag_1`, with a target of 0.05:
+Any other `selection` is an expression over tag names, with `&`, `|`, `!` and parentheses, as in
+simwild (`ambient` is the background). The complex is every tet whose tags satisfy it, and every
+face, edge and vertex whose surrounding tets' tags, together, satisfy it. The band grows on every
+side of the complex; `offset_in` and `offset_out` are not read. On `double_sphere.msh`, two
+overlapping spheres `tag_0` and `tag_1`, with a target of 0.05:
 
 ```python
 --8<-- "docs/examples/python/topological_offset.py:expressions"
 ```
 
-| `offset_selection` | the complex | band tets |
+| `selection` | the complex | band tets |
 |---|---|---|
 | `tag_0 & tag_1` | the overlap, a lens of tets | 2,716 |
 | `ambient & tag_0 & tag_1` | the circle where the two surfaces cross: 28 edges | 886 |
@@ -147,25 +153,25 @@ run stops with `the energy's band term needs an input complex of triangles only`
 ### Surfaces: `EnvelopeSurface` and face tags
 
 A `.msh` with an `EnvelopeSurface` triangle group (simwild writes one) has that group as a tag of
-its own name, and `offset_selection` can name it alone: the complex is the faces of the mesh that
-lie within [`envelope_size_rel`](../reference/topological_offset.md#envelope_size_rel) of the
-group, and the band grows on both sides of them. This is how to offset an open sheet. The log
+its own name, and an entry's `selection` can name it alone: the complex is the faces of the mesh
+that lie within [`envelope_size_rel`](../reference/topological_offset.md#envelope_size_rel) of
+the group, and the band grows on both sides of them. This is how to offset an open sheet. The log
 says how many faces carry it:
 
 ```text
 Surface group 'EnvelopeSurface' (tag 3): 330 triangles; 310 of the mesh's faces lie inside its envelope (eps 0.0836779) and carry the tag
 ```
 
-In `127891.msh` the group is the bar's own surface, so `"offset_selection": "EnvelopeSurface"`
+In `127891.msh` the group is the bar's own surface, so `"selection": "EnvelopeSurface"`
 gives the same 4,970 band tets as `offset_in` and `offset_out` together. A face tag (simwild's
 `input_type` `surface`) is selected by its name in the same way, with `optimize_offset` false
 only.
 
-### Tags of the band: `offset_output_tags`, `protected_tags`
+### Tags of the band: `output_tags`, `protected_tags`
 
-[`offset_output_tags`](../reference/topological_offset.md#offset_output_tags) (default
-`["newtag"]`) are the tags every band cell gets, replacing the tags it had; a name the mesh does
-not have is added as a new region. `[]` makes the band background, which carves a gap.
+An entry's `output_tags` (default `["newtag"]`) are the tags every cell of its band gets,
+replacing the tags it had; a name the mesh does not have is added as a new region. `[]` makes the
+band background, which carves a gap.
 [`protected_tags`](../reference/topological_offset.md#protected_tags) are kept on the band cells
 that have them, alongside the output tags. `ambient` can be neither (it is ignored, with a
 warning). On the two spheres, the band around `tag_0` runs through `tag_1`:
@@ -179,9 +185,8 @@ The band is 3,998 tets either way; `tag_1` keeps 3,539 tets without protection a
 
 ### The distance: `target_distance_rel`, `target_distance`
 
-[`target_distance_rel`](../reference/topological_offset.md#target_distance_rel) (default 0.01) is
-the target relative to the diagonal of the whole mesh's bounding box, background included;
-[`target_distance`](../reference/topological_offset.md#target_distance), when positive, replaces it
+An entry's `target_distance_rel` (default 0.01) is its target relative to the diagonal of the
+whole mesh's bounding box, background included; its `target_distance`, when positive, replaces it
 with an absolute length. The box of `127891.msh` has a diagonal of 83.7, so the default target is
 0.837, above the maximum marchable distance, 0.493: the march puts the front at 0.246, 0.29 of the
 target, and the optimization has to grow it. On this mesh, with the other options at their

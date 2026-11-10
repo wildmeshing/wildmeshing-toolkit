@@ -11,7 +11,7 @@ Step 3, ops:        tagged faces stay within eps of their input, both ways.
 
 simwild's guarantee is within eps of the inputs, not exact, so the checks are two-sided
 distances against eps (eps_rel times the bbox diagonal).
-Step 4, offset:     offset_selection names a face tag and grows a shell on both sides.
+Step 4, offset:     an offset's selection names a face tag and grows a shell on both sides.
 """
 from itertools import permutations
 
@@ -459,11 +459,12 @@ def test_remeshing_keeps_tagged_faces_within_eps():
 
 
 def test_offset_grows_a_shell_around_a_tagged_sheet():
-    """Step 4: offset_selection names the yellow faces. Every yellow face ends up between two
+    """Step 4: the offset's selection names the yellow faces. Every yellow face ends up between two
     shell tets, one on each side, and every shell tet touches yellow, so blue is not offset."""
     m = tagged_grid()
-    r = wm.topological_offset({"input": "m", "offset_selection": "yellow", "offset_output_tags": ["shell"],
-                               "target_distance": 0.1, "optimize_offset": False}, {"m": m})[0]["mesh"]
+    r = wm.topological_offset({"input": "m", "offsets": [{"selection": "yellow", "output_tags": ["shell"],
+                                                          "target_distance": 0.1}],
+                               "optimize_offset": False}, {"m": m})[0]["mesh"]
     V, shell = r["V"], rows(r, "tetrahedron", "shell")
     assert len(shell), "no shell"
     assert (to_rect(V[shell], SHEET).min(1) < 1e-9).all()
@@ -495,8 +496,9 @@ def test_offset_optimizes_around_a_tagged_sheet():
     run converges, and yellow (the input complex), blue and red's surface each stay within the
     offset's envelope (envelope_size_rel's default) of where they were. Refused until 2026-11-05;
     before the march carried the edge tags, yellow's open boundary moved up to 0.087 here."""
-    r = wm.topological_offset({"input": "m", "offset_selection": "yellow", "offset_output_tags": ["shell"],
-                               "target_distance": 0.1, "throw_on_nonconvergence": True},
+    r = wm.topological_offset({"input": "m", "offsets": [{"selection": "yellow", "output_tags": ["shell"],
+                                                          "target_distance": 0.1}],
+                               "throw_on_nonconvergence": True},
                               {"m": tagged_grid()})[0]["mesh"]
     eps = 1e-3 * np.linalg.norm([2, 2, 2])
     V = r["V"]

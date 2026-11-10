@@ -266,7 +266,7 @@ class MemoryIO(unittest.TestCase):
     def test_offset_and_manifold(self):
         meshes = {"tagged": tagged(cube(), "tetrahedron")}  # one tet until 2026-11-05
         self.run_memory("topological_offset", dict(input="tagged", optimize_offset=False,
-                                                  offset_selection="tag_0 & !tag_0",
+                                                  offsets=[{"selection": "tag_0 & !tag_0"}],
                                                   check_manifoldness=False, num_threads=1), meshes)
         outputs, _ = self.run_memory("manifold_extraction", dict(input="tagged", tag_selection="tag_0",
                                                                num_threads=1),
@@ -304,8 +304,9 @@ class MemoryIO(unittest.TestCase):
                             simplify=False, num_threads=1, length_rel=0.5, coarsen_pass=False),
             {"surface": surface()})
         meshes, _ = self.run_memory(
-            "topological_offset", dict(input="mesh", envelope="envelope", offset_selection="tag_0",
-                                       offset_output_tags=["offset"], optimize_offset=False,
+            "topological_offset", dict(input="mesh", envelope="envelope",
+                                       offsets=[{"selection": "tag_0", "output_tags": ["offset"]}],
+                                       optimize_offset=False,
                                        save_offset_correspondence=True, check_manifoldness=False,
                                        num_threads=1), meshes)
         self.run_memory("prismatic_mesh", dict(input="mesh", iterations=0), meshes)

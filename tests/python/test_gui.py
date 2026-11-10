@@ -117,7 +117,7 @@ def test_label_options_and_the_inputs_table(tmp_path, monkeypatch):
     assert b.label_problem("mesh", priority, "zz") is None
     b.add_stage("offset", "topological_offset")
     rules = b.spec("topological_offset")[0]
-    selection, protected = rules["/offset_selection"], rules["/protected_tags/*"]
+    selection, protected = rules["/offsets/*/selection"], rules["/protected_tags/*"]
     assert b.labels("offset") == ([], False)  # mesh has not run
     assert b.label_problem("offset", selection, "zz") is None
     # mesh made: a tet tagged box, a curve tagged wire.
@@ -129,7 +129,7 @@ def test_label_options_and_the_inputs_table(tmp_path, monkeypatch):
     assert b.label_problem("offset", selection, "box | zz") == "unknown label"
     assert b.label_problem("offset", selection, "box |").startswith("not a tag expression")
     assert b.label_problem("offset", protected, "zz") == "unknown label"
-    b.set_option("offset", "offset_selection", "box | zz")
+    b.set_option("offset", "offsets", [{"selection": "box | zz"}])
     b.set_option("offset", "protected_tags", ["wire", "zz"])
 
     drawn, red = set(), set()
@@ -141,7 +141,7 @@ def test_label_options_and_the_inputs_table(tmp_path, monkeypatch):
     monkeypatch.setattr(imgui, "TextColored", lambda c, text: (red.add(text), coloured(c, text)))
     gui.run_window(b, "mock")
     assert drawn >= {("mesh", "/input/*"), ("mesh", "/input_names/*"), ("mesh", "/input_type/*"),
-                     ("offset", "/offset_selection"), ("offset", "/protected_tags/*")}
+                     ("offset", "/offsets"), ("offset", "/protected_tags/*")}
     assert ("mesh", "/input") not in drawn  # the table draws its entries
     assert red == {"unknown label: the stage can name box, ambient, wire"}
 

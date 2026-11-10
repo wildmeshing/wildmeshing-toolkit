@@ -64,9 +64,9 @@ the two instead, see [below](#splitting-the-overlap-instead).
 
 ### 3. Carve the gap
 
-`topological_offset` with a single region name, `a`, grows a band of cells outward from `a`'s
-boundary and gives them the tags in `offset_output_tags`, in place of the ones they had: the band
-is cut out of `b` and of the background.
+`topological_offset` with a single region name, `a`, as its offset's `selection` grows a band of
+cells outward from `a`'s boundary and gives them the tags in the offset's `output_tags`, in place
+of the ones they had: the band is cut out of `b` and of the background.
 
 ```python
 --8<-- "docs/examples/python/workflow_regions.py:offset"

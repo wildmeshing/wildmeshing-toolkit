@@ -1328,7 +1328,7 @@ TEST_CASE("Offset accepts named tagged meshes", "[component_io]")
     add_tags(data, CellType::Tetrahedron);
     const auto result = topological_offset::topological_offset(
         {{"input", "tagged"},
-         {"offset_selection", "tag_0 & !tag_0"},
+         {"offsets", nlohmann::json::array({{{"selection", "tag_0 & !tag_0"}}})},
          {"optimize_offset", false},
          {"DEBUG_output", true}},
         {{"tagged", data}});
@@ -1553,8 +1553,8 @@ TEST_CASE(
     auto offset = topological_offset::topological_offset(
         {{"input", "mesh"},
          {"envelope", "envelope"},
-         {"offset_selection", "tag_0"},
-         {"offset_output_tags", {"offset"}},
+         {"offsets",
+          nlohmann::json::array({{{"selection", "tag_0"}, {"output_tags", {"offset"}}}})},
          {"optimize_offset", false},
          {"save_offset_correspondence", true},
          {"check_manifoldness", false},
@@ -1794,7 +1794,9 @@ TEST_CASE(
     compare_routes(
         [](auto&&... args) { return topological_offset::topological_offset(args...); },
         "topological_offset",
-        {{"offset_selection", "tag_0"}, {"optimize_offset", false}, {"num_threads", 1}},
+        {{"offsets", nlohmann::json::array({{{"selection", "tag_0"}}})},
+         {"optimize_offset", false},
+         {"num_threads", 1}},
         path,
         "tagged",
         {{"tagged", io::read_mesh(path)}});
@@ -2472,9 +2474,9 @@ TEST_CASE(
     WorkingDirectory cwd;
     const auto offset = topological_offset::topological_offset(
         {{"input", "m"},
-         {"offset_selection", "a"},
-         {"target_distance", 0.05},
-         {"offset_output_tags", {"off"}},
+         {"offsets",
+          nlohmann::json::array(
+              {{{"selection", "a"}, {"output_tags", {"off"}}, {"target_distance", 0.05}}})},
          {"optimize_offset", false},
          {"num_threads", 1}},
         {{"m", tags_only(two_tets_meshed({{"input", {"a", "b"}}}).first.at("mesh"))}});
@@ -2492,9 +2494,9 @@ namespace {
 const nlohmann::json offset_of_a = {
     {"input", "m"},
     {"envelope", "e"},
-    {"offset_selection", "a"},
-    {"target_distance", 0.05},
-    {"offset_output_tags", {"off"}},
+    {"offsets",
+     nlohmann::json::array(
+         {{{"selection", "a"}, {"output_tags", {"off"}}, {"target_distance", 0.05}}})},
     {"throw_on_nonconvergence", true},
     {"num_threads", 1}};
 } // namespace
@@ -2678,9 +2680,11 @@ TEST_CASE(
             {{"input", "m"},
              {"envelope", "e"},
              {"envelope_size", eps * (1 + 1e-9)},
-             {"offset_selection", selection},
-             {"target_distance", 0.05},
-             {"offset_output_tags", {selection + "_band"}},
+             {"offsets",
+              nlohmann::json::array(
+                  {{{"selection", selection},
+                    {"output_tags", {selection + "_band"}},
+                    {"target_distance", 0.05}}})},
              {"optimize_offset", false},
              {"num_threads", 1}},
             {{"m", tags_only(m)}, {"e", e}});
@@ -3692,9 +3696,9 @@ TEST_CASE(
     WorkingDirectory cwd;
     const MeshData tagged = tags_only(two_tets_meshed({{"input", {"a", "b"}}}).first.at("mesh"));
     const nlohmann::json options = {
-        {"offset_selection", "a"},
-        {"target_distance", 0.05},
-        {"offset_output_tags", {"off"}},
+        {"offsets",
+         nlohmann::json::array(
+             {{{"selection", "a"}, {"output_tags", {"off"}}, {"target_distance", 0.05}}})},
         {"optimize_offset", false},
         {"num_threads", 1}};
     auto memory_options = options;
@@ -3878,8 +3882,7 @@ TEST_CASE(
         produced.first.at("envelope"),
         {{"input", "m"},
          {"envelope_size", eps},
-         {"offset_selection", "p"},
-         {"target_distance", 0.1},
+         {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.1}}})},
          {"max_rounds", 1},
          {"num_threads", 1},
          {"throw_on_nonconvergence", false}},

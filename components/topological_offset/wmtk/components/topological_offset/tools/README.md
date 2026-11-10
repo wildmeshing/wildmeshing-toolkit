@@ -49,7 +49,7 @@ python3 make_disk2d.py 300 0.20 0.28 disk.msh
 Writes a MSH 4.1 ASCII disk domain with a concentric disk tagged `tag_0`. Everything is
 radially symmetric, so the offset is exactly an annulus and the closed region has area
 `pi*(R_inner + d)^2` -- which makes it easy to check a result rather than eyeball it. Use it
-with `offset_selection: "tag_0"`.
+with `offsets: [{"selection": "tag_0"}]`.
 
 Note the mesh has to resolve the offset: at `rings=300` over `R_domain=0.28` the spacing is
 ~9.3e-4, so an offset of 2e-3 is about two cells wide. Ask for less and the result is
@@ -71,9 +71,9 @@ mkdir -p runs/d10 && mv disk_offset.vtu runs/d10/out.vtu
 .venv/bin/python view_offset.py runs
 ```
 
-`disk_offset_example.json` is the config; edit `target_distance` for other widths. To compare
-several, give each its own `runs/<name>/out.vtu` and pass `runs` once -- every run becomes its
-own toggleable layer.
+`disk_offset_example.json` is the config; edit `offsets[0].target_distance` for other widths.
+To compare several, give each its own `runs/<name>/out.vtu` and pass `runs` once -- every run
+becomes its own toggleable layer.
 
 ### Checking the answer
 
