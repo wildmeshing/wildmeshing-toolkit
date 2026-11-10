@@ -6410,8 +6410,181 @@ TEST_CASE("point-offset-held-point-inside-the-band", "[offset][3d][.]")
     // 15th turn. With feature_envelope_ratio 10, q reaches 0.274, within the bar, and the run
     // converges. It is the contradiction check_no_vertex_on_both_surfaces() refuses at
     // construction for a vertex on the input complex (double_sphere with tag_1 protected throws
-    // there, 2026-11-09): a front vertex held where it cannot reach the level set.
+    // there, 2026-11-09): a front vertex held where it cannot reach the level set. Since
+    // 2026-11-10 the clean-up keeps q out of the band
+    // (label-cleanup-keeps-held-point-off-the-band); the run still does not converge (MEASURED, 15
+    // turns, exact and exact_swept: q never on the front, 2-6 folded faces on the boundary of q's
+    // cells), as the level set near q is not attainable without the band touching q: what the throw
+    // near a held object is for.
     require_point_offset_converges({{"p", {{4, 4, 4}}}, {"q", {{5, 4, 4}}}}, 0.3);
+}
+
+namespace {
+/// Per vertex of the result: whether a band cell (a tet tagged `band_tag`) has it as a corner.
+std::vector<char> band_touched(const MeshData& out, const std::string& band_tag = "newtag")
+{
+    const auto& tets = out.cells.at(CellType::Tetrahedron);
+    const auto& tags = tets.attributes.at("tags");
+    const auto it = std::find(tags.labels.begin(), tags.labels.end(), band_tag);
+    REQUIRE(it != tags.labels.end());
+    const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+    const auto member = tags.integers();
+    std::vector<char> touched(size_t(out.V.rows()), 0);
+    for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
+        if (member(r, col) == 0) continue;
+        for (int c = 0; c < 4; ++c) touched[size_t(tets.connectivity(r, c))] = 1;
+    }
+    return touched;
+}
+
+/// The result's curve vertices on the side sign(x) = `side` of the origin, nearest first: their
+/// |x| and whether a band cell touches them.
+std::vector<std::pair<double, bool>>
+curve_side(const MeshData& out, const std::vector<char>& touched, const int side)
+{
+    std::vector<Eigen::Index> vs;
+    const auto& edges = out.cells.at(CellType::Edge);
+    for (Eigen::Index r = 0; r < edges.connectivity.rows(); ++r) {
+        for (int c = 0; c < 2; ++c) vs.push_back(edges.connectivity(r, c));
+    }
+    std::sort(vs.begin(), vs.end());
+    vs.erase(std::unique(vs.begin(), vs.end()), vs.end());
+    std::vector<std::pair<double, bool>> side_vs;
+    for (const Eigen::Index v : vs) {
+        const double x = out.V(v, 0);
+        if (x * side > 0) side_vs.emplace_back(std::abs(x), touched[size_t(v)] != 0);
+    }
+    std::sort(side_vs.begin(), side_vs.end());
+    return side_vs;
+}
+} // namespace
+
+TEST_CASE("label-cleanup-keeps-held-point-off-the-band", "[offset][3d]" + release_only)
+{
+    // The construction's topology kept (the clean-up's held objects' test, 2026-11-10): q, a held
+    // point 0.25 from p and so inside p's level set at 0.3, is out of the band as constructed
+    // (the march traces to 0.125), and no band cell ever has it as a corner. MEASURED before the
+    // test, 15 turns: turn 1's clean-up took 6 of q's 30 cells into the band, so q joined the
+    // front; under exact_swept turn 11 took its last non-band cell and the band enclosed q.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule);
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", point_grid({{"p", {{4, 4, 4}}}, {"q", {{5, 4, 4}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched(out);
+    const Vector3d q = result_points(out).at("q").at(0);
+    Eigen::Index qv = 0;
+    for (Eigen::Index v = 1; v < out.V.rows(); ++v) {
+        if ((out.V.row(v).transpose() - q).norm() < (out.V.row(qv).transpose() - q).norm()) qv = v;
+    }
+    REQUIRE((out.V.row(qv).transpose() - q).norm() == 0.);
+    CHECK(touched[size_t(qv)] == 0);
+}
+
+TEST_CASE("label-cleanup-held-curves", "[offset][3d]" + release_only)
+{
+    // The construction's topology kept on held curves (the clean-up's held objects' test,
+    // 2026-11-10), p offset to 0.3:
+    //   a curve out of the band as constructed, 0.25 from p at its nearest (y = 0.25, x in
+    //     [-0.5, 0.5]), part of it inside the level set: no band cell touches it;
+    //   a curve through p (the x axis, x in [-0.75, 0.75]), in the band near p and crossing the
+    //     front once on each side: the crossing moves out along it -- the band reaches past the
+    //     march's 0.125, to the grid vertex at 0.25 -- and stays one crossing, the band's cells
+    //     touching a run of the curve from p outward and nothing beyond it.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    const bool through = GENERATE(false, true);
+    INFO(
+        "EXPERIMENTAL_band_volume_rule " << rule << ", curve "
+                                         << (through ? "through p" : "off the band"));
+    const GridPolyline curve =
+        through ? GridPolyline{{{1, 4, 4}}, {{7, 4, 4}}} : GridPolyline{{{2, 5, 4}}, {{6, 5, 4}}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", point_grid({{"p", {{4, 4, 4}}}}, {{"curve", curve}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched(out);
+    for (const int side : {-1, 1}) {
+        INFO("side " << side);
+        const auto vs = curve_side(out, touched, side);
+        REQUIRE(!vs.empty());
+        if (!through) {
+            for (const auto& [x, t] : vs) CHECK(!t);
+            continue;
+        }
+        size_t n_touched = 0;
+        while (n_touched < vs.size() && vs[n_touched].second) ++n_touched;
+        for (size_t k = n_touched; k < vs.size(); ++k) CHECK(!vs[k].second);
+        REQUIRE(n_touched > 0);
+        CHECK(vs[n_touched - 1].first >= 0.25);
+    }
+}
+
+TEST_CASE("label-cleanup-held-surfaces", "[offset][3d]" + release_only)
+{
+    // The construction's topology kept on held surfaces (the clean-up's held objects' test,
+    // 2026-11-10): p offset to 0.3 with a held surface 0.25 from it, which the band as
+    // constructed (the march traces to 0.125) does not touch, so no band cell ever has a corner
+    // on it -- the front stops a layer of cells short of it:
+    //   a region boundary, the plane x = 0.25 between region A (x < 0.25) and region B;
+    //   the box: p at x = -0.75, the wall x = -1 0.25 away.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    const bool box = GENERATE(false, true);
+    INFO(
+        "EXPERIMENTAL_band_volume_rule " << rule << ", "
+                                         << (box ? "the box" : "a region boundary"));
+    const std::array<int, 3> p =
+        box ? std::array<int, 3>{{1, 4, 4}} : std::array<int, 3>{{4, 4, 4}};
+    MeshData input = point_grid({{"p", p}});
+    if (!box) {
+        auto& tets = input.cells.at(CellType::Tetrahedron);
+        DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+        for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
+            double x = 0.;
+            for (int c = 0; c < 4; ++c) x += input.V(tets.connectivity(r, c), 0) / 4.;
+            tags(r, x > 0.25 ? 1 : 0) = 1;
+        }
+        tets.attributes["tags"] = {tags, {"A", "B"}};
+    }
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched(out);
+    const std::vector<char> held =
+        box ? std::vector<char>{} : band_touched(out, "B"); // the corners of region B's cells
+    size_t n_held = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        const bool on = box ? out.V(v, 0) == -1. : held[size_t(v)] != 0;
+        if (!on) continue;
+        ++n_held;
+        CHECK(touched[size_t(v)] == 0);
+    }
+    CHECK(n_held > 0);
 }
 
 TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")

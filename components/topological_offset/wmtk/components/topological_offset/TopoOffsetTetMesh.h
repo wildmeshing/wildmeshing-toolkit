@@ -763,6 +763,39 @@ public:
      * after the operation passes; a no-op with the key "off".
      */
     void label_cleanup(const std::string& where);
+    /**
+     * @name The held objects (2026-11-10)
+     * The input complex (label 1), the held curves (tagged edges) and points (anchors), the
+     * region boundaries and the box (the mesh boundary): the objects the optimization keeps the
+     * construction's topology on (label_cleanup()'s held objects' test). A held edge is tagged,
+     * of the input complex, or an edge of a held face; a held vertex is an anchor, of the input
+     * complex, or a corner of a held edge; so the held simplices are closed under taking faces.
+     * @{
+     */
+    bool held_object_face(const Tuple& f) const;
+    bool held_object_edge(size_t a, size_t b) const;
+    bool held_object_vertex(size_t v) const;
+    /// DEBUG_held_topology: per label, band then non-band, the number of connected components
+    /// and the Euler characteristic of the held simplices it touches, one copy per chamber (the
+    /// cells around a simplex joined across faces that are not held; see label_cleanup()).
+    /// With `vertex_touch`, also each held vertex's position and whether the band, the
+    /// non-band, touches it in some chamber: what a change is located by.
+    /// With `by_kind`, the same restricted to each kind of held object: the input complex, the
+    /// held curves and points, the region boundaries, the box (each with its faces).
+    std::array<int64_t, 4> held_topology_signature(
+        std::map<std::array<double, 3>, std::array<bool, 2>>* vertex_touch = nullptr,
+        std::array<std::array<int64_t, 4>, 4>* by_kind = nullptr) const;
+    /// DEBUG_held_topology: the signature against the last one; a change is logged, naming
+    /// `pass` and the turn. The first call (after the construction) is the baseline.
+    void held_topology_check(const std::string& pass);
+    std::optional<std::array<int64_t, 4>> m_held_topology;
+    std::map<std::array<double, 3>, std::array<bool, 2>> m_held_vertex_touch;
+    std::array<std::array<int64_t, 4>, 4> m_held_topology_by_kind{};
+    mutable std::vector<std::pair<size_t, Vector3d>> m_held_curve_band_components;
+    mutable std::array<size_t, 2> m_held_curve_counts{}, m_held_curve_counts_before{};
+    size_t m_held_stale_order2 = 0;
+    size_t m_held_topology_changes = 0;
+    /** @} */
     /// EXPERIMENTAL_band_volume_rule "surface": how much the face term changes if cell tid's
     /// label flips (band <-> background): + its faces shared with a cell of its own label (they
     /// become front faces), - its faces shared with a cell of the other label (they stop being
