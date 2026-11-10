@@ -811,7 +811,7 @@ void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
     if (m_has_parts) writer.add_cell_field("flood_fill", flood_fill);
     for (size_t j = 0; j < wn_per_input.size(); ++j) {
         // Named after the input when the caller supplied input_names, else numbered, as
-        // tetwild's save_paraview(); the .msh numbers them all (triwild.cpp), as its output_mesh().
+        // tetwild's save_paraview(); the .msh numbers them all (triwild.cpp), as tetwild's does.
         writer.add_cell_field(
             j < m_input_names.size() ? fmt::format("wn_{}", m_input_names[j])
                                      : fmt::format("wn_{}", j),

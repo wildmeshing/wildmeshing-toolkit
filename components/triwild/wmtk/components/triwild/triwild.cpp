@@ -1342,7 +1342,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // route in a file of its own, as the mesh file holds the mesh.
         if (!component_io.memory()) {
             // The .msh numbers each input's winding-number field, wn_0, wn_1, ..., as tetwild's
-            // _final.msh (TetWildMesh::output_mesh()) does; the memory route and the VTU name it
+            // _final.msh (tetwild.cpp) does; the memory route and the VTU name it
             // after the input (write_vtu()). All taken out before any is put back, so that a name
             // which is a number cannot overwrite another input's field.
             MeshData msh = component_io.result.first.at("mesh");

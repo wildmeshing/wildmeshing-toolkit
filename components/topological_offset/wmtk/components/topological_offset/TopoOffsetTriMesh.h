@@ -40,6 +40,13 @@ class VertexExtra2d
 {
 public:
     int label = 0;
+    /// The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set
+    /// at load (init_from_image()) and carried by the construction, which only splits, a new
+    /// vertex starting from none (marching_split_edge_before(), split_face_before()). The 3D twin
+    /// is VertexExtra::point_inputs, whose anchors take over from it; in 2D no anchor holds a
+    /// point, nothing moving one, and the output's point block is written from this
+    /// (collect_loaded_curves_and_points()).
+    InputSet point_inputs = 0;
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset boundary itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
@@ -401,6 +408,13 @@ public:
     bool m_has_envelope = false;
     MatrixXd m_V_envelope;
     MatrixXi m_F_envelope;
+
+    /// Edge tags, the tagged curves of a triangle mesh's edge block (triwild's and simwild's): bit
+    /// j of an edge's input set is m_edge_tag_names[j]. The 3D twin is
+    /// TopoOffsetTetMesh::m_face_tag_names, without its tag ids: no 2D selection names a curve,
+    /// and a curve may share its name with a region, as triwild names them
+    /// (SimWildMeshTri::m_edge_tag_names).
+    std::vector<std::string> m_edge_tag_names;
 
     /**
      * @brief SurfaceTagAttributes::m_surface_class: which of the two tracked surfaces an edge
@@ -2242,6 +2256,10 @@ public:
      * @param F_tags: #F by #physical groups tag matrix
      * @param V_env: #V_env by 2 EnvelopeSurface vertex matrix
      * @param F_env: #F_env by 2 EnvelopeSurface edge matrix
+     * @param E_tagged, E_tags, edge_tag_names, E_orientation: the tagged edges, as
+     * InputData's F_tagged, F_tags, face_tag_names and F_orientation give them in 2D
+     * @param point_vids: the input points' vertices (InputData::input_point_vids), each labelled
+     * by the base's m_input_point_labels, which the caller sets before this with m_point_names
      */
     void init_from_image(
         const MatrixXd& V,
@@ -2250,7 +2268,12 @@ public:
         const MatrixXd& V_env,
         const MatrixXi& F_env,
         const std::vector<std::string>& tag_names,
-        const std::string& curve_name = "");
+        const std::string& curve_name = "",
+        const MatrixXi& E_tagged = MatrixXi(),
+        const MatrixSi& E_tags = MatrixSi(),
+        const std::vector<std::string>& edge_tag_names = {},
+        const MatrixSi& E_orientation = MatrixSi(),
+        const std::vector<size_t>& point_vids = {});
 
     /**
      * @brief ensure ambient tag does not overlap any other tags in mesh.
