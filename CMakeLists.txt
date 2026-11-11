@@ -34,8 +34,10 @@ if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
         CCACHE_BASEDIR=${CMAKE_BINARY_DIR}
         CCACHE_SLOPPINESS=clang_index_store,include_file_ctime,include_file_mtime,locale,pch_defines,time_macros
     )
-    # A launcher given on the command line wins: -DCMAKE_CXX_COMPILER_LAUNCHER=sccache, as the
-    # Windows CI job passes, is not replaced by a ccache that happens to be on PATH.
+    # A launcher given on the command line wins. The Windows CI runners have Strawberry Perl's
+    # C:\Strawberry\c\bin\ccache.exe on PATH, and before this check it replaced the
+    # -DCMAKE_CXX_COMPILER_LAUNCHER=sccache the Windows jobs pass: every Windows build went through
+    # a ccache whose cache nothing saved, and sccache's stayed empty.
     foreach(lang IN ITEMS C CXX)
         if(NOT DEFINED CMAKE_${lang}_COMPILER_LAUNCHER)
             set(CMAKE_${lang}_COMPILER_LAUNCHER
