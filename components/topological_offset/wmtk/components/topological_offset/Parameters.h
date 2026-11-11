@@ -267,12 +267,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-12), 3D. The band term b(t) of a band cell in the energy
     /// (TopoOffsetTetMesh::band_cell_term()). "corner_bound": vol times the min over all input
     /// triangles P of the corner mean of (d_P - delta) / delta, an upper bound on the cell's part
-    /// of int_B (d - delta) / delta dV that no split raises. "exact" (the default): J_t / delta,
+    /// of int_B (d - delta) / delta dV that no split raises. "exact": J_t / delta,
     /// J_t = int_t (d - delta) dV in closed form (ExactBandIntegral); an upper bound only on its
     /// rule-(a) pieces. "front_flux": the operations as "exact", the front smoother's band term in
     /// the front form (flux of a field G with div G = d - delta through the band's boundary faces
     /// at the vertex, plus the bisector jumps D_t of its flagged cells). "exact_swept"
-    /// (2026-10-22): "exact"'s energy, but each operation's rule reads the band integral's exact
+    /// (2026-10-22; the default since 2026-11-10): "exact"'s energy, but each operation's rule reads the band integral's exact
     /// change where the band changes -- value() on the tets a moving vertex's boundary faces of
     /// the band sweep, or on the cone over a flip's changed faces -- instead of integrating whole
     /// cells before and after; the smoother searches on that same exact change (its derivatives
@@ -283,7 +283,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// front, L / front_conv^2 (L the bounding box diagonal) sum over the offset faces of
     /// (A_f / |S|) sum over the stencil of (d - target_distance)^2
     /// (TopoOffsetTetMesh::surface_face_term()). See the spec doc.
-    std::string band_volume_rule = "exact";
+    std::string band_volume_rule = "exact_swept";
     /// EXPERIMENTAL_band_volume_rule "surface" only: the settle test's stall threshold. O* = the
     /// max over the front's stencil points of (d - target_distance)^2; a turn is settled when O*
     /// < front_conv^2 or O*_prev - O* <= settle_stall_eps (O* - front_conv^2) -- TetWild's stall

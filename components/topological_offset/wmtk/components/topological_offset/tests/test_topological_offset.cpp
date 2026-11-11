@@ -4994,7 +4994,7 @@ TEST_CASE("surface-energy-keys", "[offset][3d]" + release_only)
         return spec_engine.inject_defaults(with_app(j), spec);
     };
     const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK(by_default.band_volume_rule == "exact");
+    CHECK(by_default.band_volume_rule == "exact_swept");
     CHECK(by_default.offset_amips_weight == 1.);
     CHECK(by_default.label_cleanup == "one_sided_at_target");
     CHECK(by_default.front_pocket_split);
