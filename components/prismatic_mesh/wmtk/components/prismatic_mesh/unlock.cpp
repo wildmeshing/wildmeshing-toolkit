@@ -100,8 +100,7 @@ bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double
             std::find(tet.begin(), tet.end(), v) != tet.end()) {
             if (!tet_volume_above_threshold(input.vertices, tet, 0)) return false;
             if (junction_tet_protected(input, tet)) return false;
-            if (input.rod_state &&
-                std::any_of(tet.begin(), tet.end(), [&](size_t w) {
+            if (input.rod_state && std::any_of(tet.begin(), tet.end(), [&](size_t w) {
                     return input.rod_state->protected_input.count(w) ||
                            input.rod_state->frozen_offset.count(w);
                 }))

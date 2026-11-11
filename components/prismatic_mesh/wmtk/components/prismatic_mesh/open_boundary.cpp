@@ -69,8 +69,7 @@ OpenBoundaryStatistics handle_open_boundaries(PrismaticMeshInput& input)
     stats.junction_vertices = input.junction_protection->centers.size();
     for (size_t tid : candidates) {
         const auto tet = input.mesh->oriented_tet_vids(tid);
-        if (input.rod_state &&
-            std::any_of(tet.begin(), tet.end(), [&](size_t v) {
+        if (input.rod_state && std::any_of(tet.begin(), tet.end(), [&](size_t v) {
                 return input.rod_state->input_vertices.count(v) || is_rod_offset_vertex(input, v);
             })) {
             ++stats.protected_candidate_tets;

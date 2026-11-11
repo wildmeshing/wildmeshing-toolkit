@@ -401,8 +401,7 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
             if (!same_component(input, a, b)) return;
             if (a > b) std::swap(a, b);
             double cost = 0;
-            if (input.rod_state &&
-                is_rod_offset_vertex(input, a)) {
+            if (input.rod_state && is_rod_offset_vertex(input, a)) {
                 const auto& retained = input.rod_state->retained_ring_vertices;
                 cost = (input.vertices.row(a) - input.vertices.row(b)).squaredNorm() +
                        (retained.count(a) || retained.count(b) ? 0. : 1e6);
@@ -425,8 +424,7 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
             // Prefer retaining the endpoint closest to the fixed target; try the opposite
             // direction if its geometry/topology cannot collapse safely.
             size_t survivor = endpoints[0], removed = endpoints[1];
-            if (input.rod_state &&
-                is_rod_offset_vertex(input, survivor)) {
+            if (input.rod_state && is_rod_offset_vertex(input, survivor)) {
                 if (!input.rod_state->retained_ring_vertices.count(survivor))
                     std::swap(survivor, removed);
             } else if (
