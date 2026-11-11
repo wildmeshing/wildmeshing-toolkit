@@ -86,7 +86,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             "save_offset_correspondence requires optimize_offset false: corr_input_vid is "
             "recorded by the march and not carried through the optimization");
     }
-    const std::string offset_selection_str = json_params["offset_selection"];
     bool check_manifoldness = json_params["check_manifoldness"];
 
     std::filesystem::path output_filename = params.output_path;
@@ -137,16 +136,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (!component_io.memory() && envelope && outputs.count("envelope"))
             io::write_mesh(output_filename.string() + "_envelope.msh", outputs.at("envelope"));
     };
-    // Input points (a tagged mesh's point block, as tetwild, triwild and simwild write it) would be
-    // dropped silently: the offset holds no point. Refused until carried. Feature curves (a tet
-    // mesh's edge block) are held (TopoOffsetTetMesh::hold_curves_and_points()).
-    if (!input_data.features.points.empty() || !input_data.input_point_vids.empty()) {
-        log_and_throw_error("topological_offset does not take input points (a point block) yet");
-    }
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (params.debug_output) {
         logger().info("====== input parameters =======");
-        logger().info("target_distance: {}", params.target_distance);
+        for (size_t k = 0; k < params.offsets.size(); ++k) {
+            logger().info(
+                "offsets[{}]: selection '{}', target_distance {}",
+                k,
+                params.offsets[k].selection,
+                params.offsets[k].target_distance);
+        }
         logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
         logger().info(
             "front_conv: {} ({} x target_distance)",
@@ -184,8 +183,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.envelope_name);
 
         // label input complex
-        mesh.m_offset_params.offset_selection =
-            expression_parser::parse(offset_selection_str, mesh.m_tag_name_to_id);
+        for (Parameters::Offset& o : mesh.m_offset_params.offsets)
+            o.expression = expression_parser::parse(o.selection, mesh.m_tag_name_to_id);
+        mesh.m_offset_params.parse_protected_tags(mesh.m_tag_name_to_id);
         mesh.label_input_complex();
 
         // check empty input
@@ -411,6 +411,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // group: its triangles are the first component's input, not a sheet of this mesh.
         const bool reference = input_data.envelope_reference.has_value();
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
+        // Before init_from_image(): the input points' labels, as simwild sets them, which it makes
+        // tags of and which the anchors keep (TopoOffsetTetMesh::hold_curves_and_points()).
+        mesh.m_point_names = input_data.point_names;
+        mesh.m_input_point_labels = input_data.input_point_labels;
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
@@ -453,11 +457,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 for (int j = 0; j < 3; ++j) F[i][j] = size_t(held.F(Eigen::Index(i), j));
             }
             mesh.set_input_curves(V, F, held.labels, &input_data.reference_curves);
+            // The input points' anchors on its points (TetOptimizerMesh::ReferencePoints).
+            mesh.set_reference_points(
+                input_data.reference_points,
+                input_data.reference_point_labels);
         }
 
         // label input complex
-        mesh.m_offset_params.offset_selection =
-            expression_parser::parse(offset_selection_str, mesh.m_tag_name_to_id);
+        for (Parameters::Offset& o : mesh.m_offset_params.offsets)
+            o.expression = expression_parser::parse(o.selection, mesh.m_tag_name_to_id);
+        mesh.m_offset_params.parse_protected_tags(mesh.m_tag_name_to_id);
         mesh.label_input_complex();
 
         // A correspondence handed on from an earlier offset is carried: its offset vertices keep

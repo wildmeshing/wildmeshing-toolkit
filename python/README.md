@@ -11,97 +11,34 @@ One package, `wildmeshing`:
   <checkpoint stem> ...` views saved stages. Needs polyscope (`pip install -e ".[viewer]"`).
 - `wildmeshing.pipeline`: a pipeline of components in one JSON file, run in memory, each stage
   cached under a key and saved only where asked (see [Pipelines](#pipelines)).
-- `wildmeshing.builder`: a window to build, run and view a pipeline: `python -m
-  wildmeshing.builder [<pipeline.json>]`. Needs polyscope.
+- `wildmeshing.gui`: a window to build, run and view a pipeline: `python -m
+  wildmeshing.gui [<pipeline.json>]`. Needs polyscope.
 
 The bindings are the compiled module `wildmeshing._core`, built from `python/src`; the
 pure-Python part of the package is `python/wildmeshing`.
 
-The mesh dictionaries and the two calling routes are specified in
-[docs/in-memory-io.md](../docs/in-memory-io.md).
+Installation, the two ways to call a component, mesh dictionaries, regions and every
+component's options are in the documentation:
+[installation](../docs/getting-started/installation.md#the-python-package),
+[calling components](../docs/getting-started/calling-components.md),
+[Python API](../docs/python-api.md), [regions](../docs/concepts/regions.md); the mesh
+dictionaries and both routes in full: [docs/in-memory-io.md](../docs/in-memory-io.md).
 
-## Installation
-
-From the repository root:
-
-```bash
-python -m pip install -e .              # the bindings
-python -m pip install -e ".[polyfem]"   # plus gmsh, scipy, h5py for polyfem_ops
-```
-
-Development alternative, reusing a CMake build. The build tree mirrors the package in
-`build/bin/wildmeshing`:
-
-```bash
-cmake -S . -B build -DWMTK_PYBIND=ON
-cmake --build build -j --target wildmeshing
-export PYTHONPATH=/path/to/wildmeshing-toolkit/build/bin
-```
-
-## Calling a component
-
-- `wm.<component>(options)`: the file route. Inputs and outputs are files, as on the command
-  line; `"output": "m1"` writes `m1.msh`.
-- `wm.<component>(options, meshes)`: the memory route. `meshes` maps names to mesh
-  dictionaries, inputs are given by name, nothing is written, and the call returns
-  `(outputs, report)`. `outputs["mesh"]` is the result.
-
-simwild takes a list of inputs, the other components a single one.
-
-```python
-import wildmeshing as wm
-
-# file route
-wm.simwild({"input": ["a.obj", "b.obj"], "input_names": ["a", "b"], "output": "m1"})
-
-# memory route
-m1, _ = wm.simwild({"input": ["a", "b"], "input_names": ["a", "b"]},
-                   {"a": wm.read_mesh("a.obj"), "b": wm.read_mesh("b.obj")})
-m2, _ = wm.simwild({"operation": "resolve_overlaps", "input": ["m"],
-                    "resolve_overlaps_tags": [["a", "b"]]},
-                   {"m": m1["mesh"]})
-```
-
-On the same input both routes give the same mesh. Only the cell order can differ: a `.msh`
-stores cells grouped by region.
-
-### Regions
-
-A tagged mesh keeps its regions in the top-dimensional cells' `tags` attribute: one UInt8 column
-per region, labelled by its name. A cell may belong to several regions. Components label the
-background `ambient`. Options select regions by expression: `"a & b"` (overlap), `"a | b"`,
-`"!a"`, parentheses.
-
-### Envelopes
+## Envelopes
 
 simwild returns `outputs["envelope"]`, the surface the mesh must stay close to, when it has
 one: the inputs it held the regions to, labelled by region, as tetwild and triwild return theirs.
-Pass it on explicitly; the next run holds the mesh to it at its own eps, so a chain stays within
-one eps of the original inputs. Without one, simwild derives an envelope from the regions.
+Pass it on explicitly (`m1` a simwild result); the next run holds the mesh to it at its own eps,
+so a chain stays within one eps of the original inputs. Without one, simwild derives an envelope
+from the regions.
 
 ```python
 m2, _ = wm.simwild({"operation": "remeshing", "input": ["m"], "envelope": "e"},
                    {"m": m1["mesh"], "e": m1["envelope"]})
 ```
 
-Operations that change regions return no envelope.
-
-## Files and checkpoints
-
-- `wm.read_mesh(path)` reads `.msh`, `.obj` and libigl's surface formats (`.stl`, `.off`, ...);
-  `wm.write_mesh(path, mesh)` writes `.msh` and `.vtu`. A `.msh` holds one mesh and nothing
-  else.
-- `wm.save(outputs, stem)` writes `stem.msh` for the output `mesh`, `stem_<name>.msh` for every
-  other output (`stem_envelope.msh`), and the record `stem.json`: each file's sha256. Given a
-  report, it also writes its histories (`stem_<key>.history`) and its other values in the record.
-  `wm.load(stem)` reads only the files the record lists, refuses one changed since, and returns
-  exactly the arrays `save` wrote, in the same order, so a pipeline resumed from a checkpoint
-  continues as it would have without one.
-
-```python
-wm.save(m2, "out/m2")
-m2 = wm.load("out/m2")
-```
+Operations that change regions do not read the envelope given; they return a new one, the
+interfaces of their result.
 
 ## Pipelines
 
@@ -129,16 +66,16 @@ installed compiled module. A stage whose key is unchanged comes from memory or f
 "<stem>"` also writes its checkpoint there. A file is used only for the key it was written for and
 while it hashes as written. Each stage's C++ log is kept next to its checkpoint.
 
-`python -m wildmeshing.builder bunny.json` edits the same file in a window: inputs, stages and
+`python -m wildmeshing.gui bunny.json` edits the same file in a window: inputs, stages and
 their options as each component's spec types them, a run in the background with the log, and a
 view of every stage (tags, envelopes, attributes, correspondences).
 
-A `prismatic_mesh` stage can name its regions with `input_tags` (the volume) and `offset_tags`
-(the bands). Until the C++ component reads these options, the pipeline rebuilds its input: the
-regions `tag_0` and `offset`, and vertex labels from the offsets' correspondence.
+A `prismatic_mesh` stage selects its regions with two tag expressions, `input_tags` (the volume) and
+`offset_tags` (the bands). Until the C++ component reads these options, the pipeline rebuilds its
+input: the regions `tag_0` and `offset`, and vertex labels from the offsets' correspondence.
 Original curve edges and sheet triangles are retained for rod classification. Set
 `"rod_mode": true` to include rod frame construction, and `"keep_background_mesh": true`
-to export the constrained background. The builder reads these options from the compiled
+to export the constrained background. The GUI reads these options from the compiled
 component's spec, so rebuild/reinstall the extension when updating the C++ implementation.
 `"relative_tet_volume_floor": 0.25` optionally limits collapse and smoothing moves to
 retain a quarter of every modified surviving tet's current volume, including background
@@ -150,33 +87,6 @@ report; regular optimization uses their input-root correspondence, while shared 
 vertices, input-volume vertices and affected junction stars stay fixed. This supports a
 valid mixed mesh through such interfaces, but does not independently prism-mesh every
 overlapping offset layer: extended overlaps can retain substantial tet regions.
-
-## Operations
-
-Full options in each component's spec.
-
-| Call | Does | Main options |
-|---|---|---|
-| `wm.simwild` on surfaces (`.obj`) | Tet mesh of closed surfaces, one region each | `input_names`, `eps_rel` |
-| `wm.triwild` on polylines | Triangle mesh of closed curves, one region each | `input_names`, `eps_rel` |
-| `simwild`, `"operation": "remeshing"` | Improve quality | `eps_rel`, `stop_energy` |
-| `simwild`, `"replace_tags"` | Replace regions (or overlaps) by others | `replace_tags_in`, `replace_tags_out` |
-| `simwild`, `"resolve_overlaps"` | Split each overlap between its two regions | `resolve_overlaps_tags` |
-| `simwild`, `"tag_priority"` | Keep only the highest-priority region per cell | `tag_priority` |
-| `simwild`, `"tight_seal_topo"` | Close gaps between regions | `tight_seal_tag_sets` |
-| `simwild`, `"keep_lcc"` | Keep the largest connected component | `keep_lcc_tags` |
-| `simwild`, `"fill_holes_topo"` | Fill a region's holes | `fill_holes_tags` |
-| `wm.topological_offset` | New region at a distance around a selection ([paper](https://dl.acm.org/doi/10.1145/3731157)) | `offset_selection`, `offset_output_tags`, `target_distance` |
-| `wm.manifold_extraction` | Make a selection manifold | `tag_selection`, `fill_tags` |
-
-```python
-m3, _ = wm.simwild({"operation": "replace_tags", "input": ["m"],
-                    "replace_tags_in": ["a & b"], "replace_tags_out": ["b"]},
-                   {"m": m2["mesh"]})
-m4, _ = wm.topological_offset({"input": "m", "offset_selection": "a",
-                               "offset_output_tags": ["gap"], "target_distance": 0.05},
-                              {"m": m3["mesh"]})
-```
 
 ## PolyFEM operations
 
@@ -208,22 +118,22 @@ region expressions; a bare string is a region's whole boundary.
 
 ## Type stubs
 
-`python/wildmeshing/_core.pyi` describes the compiled module for editors and type checkers, with
-the docstrings the components' specs give (`help(wm.qslim)`). Regenerate it after changing the
-bindings or a spec, from the repository root:
-
-```bash
-pip install pybind11-stubgen
-PYTHONPATH=build/bin python -m pybind11_stubgen wildmeshing._core -o python
-```
+`wildmeshing/_core.pyi` describes the compiled module for editors and type checkers, with the
+docstrings the components' specs give (`help(wm.qslim)`); `py.typed` tells them to read it. The
+build writes it from the module it has just built (`python/src/CMakeLists.txt`), so it always
+matches: a `pip install` on Python 3.10 or later, and a CMake build whose Python has
+`pybind11-stubgen` 3 and numpy. Not in git.
 
 ## Tests
 
-From the repository root:
+The Python tests are in `tests/python`, listed in
+[docs/developer/testing.md](../docs/developer/testing.md#python-tests). The pipeline's, the GUI's
+and the viewer's, from the repository root:
 
 ```bash
-python -m pytest python/tests
+python -m pytest tests/python/test_pipeline.py tests/python/test_gui.py tests/python/test_viewer.py
 ```
 
 The tests find the bindings in `build/bin` when the package is not installed. The PolyFEM
-end-to-end tests are skipped while those ops raise.
+operations' tests are in `tests/python/polyfem`, collected only with the polyfem extras installed;
+the end-to-end ones are skipped while those ops raise.

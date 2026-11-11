@@ -173,15 +173,14 @@ def test_an_edited_save_is_refused_and_the_stage_reruns(tmp_path, calls):
     assert not same(checkpoint.load(stem), {"mesh": mesh})
 
 
-def test_a_checkpoint_without_a_record_loads_as_before(tmp_path):
+def test_a_checkpoint_without_a_record_is_refused(tmp_path):
     write(tmp_path, [])
-    box = wm.read_mesh(str(tmp_path / "box.obj"))
     stem = str(tmp_path / "old")
-    wm.save({"mesh": box, "envelope": box}, stem)
+    wm.save({"mesh": wm.read_mesh(str(tmp_path / "box.obj"))}, stem)
     os.remove(f"{stem}.json")
-    back = wm.load(stem)
-    assert list(back) == ["mesh", "envelope"]
-    assert same(back["mesh"], wm.read_mesh(f"{stem}.msh")) and checkpoint.load_report(stem) == {}
+    for read in [wm.load, checkpoint.load_report]:
+        with pytest.raises(FileNotFoundError, match="no checkpoint record"):
+            read(stem)
 
 
 def test_the_log_holds_the_component_log(tmp_path):
@@ -240,15 +239,16 @@ def test_the_prismatic_input_is_rebuilt_from_the_regions_and_the_correspondence(
             "cells": {"tetrahedron": {"connectivity": np.array([[0, 1, 2, 3], [1, 2, 3, 4]]),
                                       "attributes": {"tags": {"values": [[1, 0, 0], [0, 1, 0]],
                                                               "labels": ["cube", "b", "ambient"]}}}}}
-    m = _prismatic_input(mesh, ["cube"], ["b"])
-    tags = m["cells"]["tetrahedron"]["attributes"]["tags"]
-    assert tags["labels"] == ["tag_0", "offset", "ambient"]
-    assert tags["values"].tolist() == [[1, 0, 0], [0, 1, 0]]
-    assert m["vertex_attributes"]["labels"]["values"].tolist() == [1, 1, 1, 1, 2]
-    with pytest.raises(ValueError, match="no region c"):
-        _prismatic_input(mesh, ["cube"], ["c"])
+    for offset in ["b", "b | ambient", "!cube"]:  # tag expressions, as the components read them
+        m = _prismatic_input(mesh, "cube", offset)
+        tags = m["cells"]["tetrahedron"]["attributes"]["tags"]
+        assert tags["labels"] == ["tag_0", "offset", "ambient"]
+        assert tags["values"].tolist() == [[1, 0, 0], [0, 1, 0]]
+        assert m["vertex_attributes"]["labels"]["values"].tolist() == [1, 1, 1, 1, 2]
+    with pytest.raises(ValueError, match="names a region"):
+        _prismatic_input(mesh, "cube", "c")
     with pytest.raises(ValueError, match="both"):
-        _prismatic_input(mesh, ["cube"], [])
+        _prismatic_input(mesh, "cube", "")
 
 
 def test_prismatic_adapter_preserves_original_curves_faces_and_layer_links():
@@ -261,7 +261,7 @@ def test_prismatic_adapter_preserves_original_curves_faces_and_layer_links():
                 "triangle": {"connectivity": np.array([[1,2,4]]), "attributes": {}},
                 "tetrahedron": {"connectivity": np.array([[0,1,2,3],[0,1,4,5]]),
                     "attributes": {"tags": {"values": [[1,0],[0,1]], "labels": ["cube","b"]}}}}}
-    converted = _prismatic_input(mesh, ["cube"], ["b"])
+    converted = _prismatic_input(mesh, "cube", "b")
     assert set(converted['cells']) == {'edge','triangle','tetrahedron'}
     assert np.array_equal(converted['cells']['edge']['connectivity'], [[0,1]])
     assert np.array_equal(converted['cells']['triangle']['connectivity'], [[1,2,4]])

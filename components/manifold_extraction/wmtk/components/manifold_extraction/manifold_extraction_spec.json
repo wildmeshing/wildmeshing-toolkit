@@ -28,7 +28,7 @@
   {
     "pointer": "/input",
     "type": "string",
-    "doc": "Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh. Tagged faces (2D: tagged edges) and feature curves are refused: they are not carried yet."
+    "doc": "Input mesh, .msh: a tagged triangle (2D) or tet (3D) mesh. Its triangle block is tagged faces (2D: its edge block, tagged edges), its edge block in 3D feature curves, its point block input points, as tetwild, triwild and simwild write them: each carried through the carving, which only splits, and written back as the same block of the result. In 3D they are held as topological_offset holds them -- the tagged faces in their labels' envelopes, the feature curves in their tubes, the points anchored; in 2D nothing moves them and nothing holds them. Until 2026-11 they were refused."
   },
   {
     "pointer": "/output",
@@ -45,6 +45,7 @@
   {
     "pointer": "/tag_selection",
     "type": "string",
+    "labels": "expression",
     "default": "tag_0",
     "doc": "Tag selection, the boundary of which is taken to be the input surface to make manifold. An expression of tags: names, &, |, ! and parentheses."
   },
@@ -57,6 +58,7 @@
   {
     "pointer": "/fill_tags/*",
     "type": "string",
+    "labels": "existing",
     "doc": "A tag."
   },
   {

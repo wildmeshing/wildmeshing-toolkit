@@ -2092,6 +2092,114 @@ TEST_CASE("exact-band-integral-hessian-needle", "[offset][exact_band]")
     CHECK(asym <= 1e-6);
 }
 
+namespace {
+// Two band cells of p70565 piece16 inward (delta 0.1786), exact_swept, 1 thread, 2026-10-28, with
+// the input triangles that have a corner within 0.2 (first) and 0.3 (second) of the cell's
+// centroid; V, then F as (a, b, c, face side), then the cell. A face of each cell holds an input
+// edge's line to rounding (face_line_derivs()). MEASURED before the fix, on these reduced inputs
+// as on the whole one: J finite, gradient and Hessian NaN at kv 0.
+struct LinePlaneCase
+{
+    double V[21];
+    int F[24];
+    double T[12];
+};
+const LinePlaneCase kLinePlane[] = {
+    {{22.876000000000001, -44.884900000000002, 1.00142,
+      23.107608162358254, -44.215547269468203, 1.7689960804796039,
+      23.440380411214317, -44.250271434237014, 0.49902000533766372,
+      23.97544217459836,  -43.762256131626096, 1.8805898016304914,
+      24.103991220806982, -44.43222492331401,  1.1161389055942517,
+      24.282160891417,    -43.604823471491891, 0.56359867825242449,
+      24.944674700251269, -43.565257072068924, 1.2220275005313537},
+     {0, 1, 4, -1, 0, 2, 4, 1, 1, 3, 4, -1, 2, 4, 5, -1, 3, 4, 6, 1, 4, 5, 6, 1},
+     {24.143863526301022,
+      -44.455924414576302,
+      1.1288134314368672,
+      23.749645160293674,
+      -44.397597778088134,
+      0.86799039394834876,
+      23.796993415605236,
+      -44.545393692485504,
+      1.0874591791956889,
+      24.103991220806982,
+      -44.43222492331401,
+      1.1161389055942517}},
+    {{0.22001896767108858,
+      -24.75,
+      1.2036464725956486,
+      0.67201078782484569,
+      -24.852658190300797,
+      1.6020424621430365,
+      0.77913236215666481,
+      -24.75,
+      0,
+      1.0260759911923594,
+      -24.75,
+      1.4604079164658161,
+      1.5823887647743906,
+      -25.162894144165843,
+      1.5,
+      1.8487656827495829,
+      -24.75,
+      1.5,
+      1.904753982048043,
+      -24.75,
+      0.74733002646225932},
+     {0, 1, 3, -1, 0, 2, 3, 1, 1, 3, 4, 1, 2, 3, 6, -1, 3, 4, 5, -1, 3, 5, 6, -1},
+     {0.84015015375021584,
+      -25.061062983725563,
+      1.4601979070921665,
+      1.0503213176699036,
+      -24.981577750148823,
+      1.5596383850481816,
+      0.97953078448436082,
+      -24.926720357640288,
+      1.3449547543545344,
+      0.85609061556037647,
+      -24.915388377531603,
+      1.5814093192852314}},
+};
+constexpr double kLinePlaneDelta = 0.17860000000000001;
+} // namespace
+
+TEST_CASE("exact-band-integral-line-in-face-plane", "[offset][exact_band]")
+{
+    FDSummary fs;
+    for (const LinePlaneCase& c : kLinePlane) {
+        Eigen::MatrixXd V(7, 3);
+        for (int i = 0; i < 7; ++i) V.row(i) << c.V[3 * i], c.V[3 * i + 1], c.V[3 * i + 2];
+        Eigen::MatrixXi F(6, 3);
+        std::vector<int8_t> side(6);
+        for (int i = 0; i < 6; ++i) {
+            F.row(i) << c.F[4 * i], c.F[4 * i + 1], c.F[4 * i + 2];
+            side[size_t(i)] = int8_t(c.F[4 * i + 3]);
+        }
+        const ExactBandIntegral eb(V, F, side, 1);
+        const Tet T = tet_of(c.T);
+        for (int kv = 0; kv < 4; ++kv) {
+            Vec3 G;
+            Eigen::Matrix3d H;
+            eb.value_grad_hess(T, kv, kLinePlaneDelta, G, H);
+            INFO("kv " << kv);
+            CHECK(G.allFinite());
+            CHECK(H.allFinite());
+            fs.add(fd(eb, T, kv, kLinePlaneDelta));
+        }
+    }
+    std::printf(
+        "exact-band-integral-line-in-face-plane: %d smooth corners: FD min over h, max: gradient "
+        "%.1e Hessian %.1e; %d kink corners: inward one-sided (h=1e-6) max %.1e\n",
+        fs.smooth,
+        fs.grad,
+        fs.hess,
+        fs.kinks,
+        fs.inward);
+    CHECK(fs.grad <= 1e-7);
+    CHECK(fs.hess <= 1e-4);
+    CHECK(fs.inward <= 2e-2);
+}
+
 /**
  * Hidden check of the "exact" rule's one-vertex Hessian on a stored band:
  * EXACT_HESS_STATE=<band>.bin ./wmtk_test_topological_offset "[.hess_states]". The file is the

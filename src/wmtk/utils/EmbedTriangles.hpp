@@ -171,4 +171,21 @@ void embed_triangles_in_tets(
     const EmbedFeaturesInput* features = nullptr,
     EmbedFeaturesResult* features_out = nullptr);
 
+/**
+ * @brief The oriented faces that appear in more than one of `tets`, sorted, once per repeat.
+ *
+ * Every face of every tet, its vertices in the order that faces out of the tet, rotated to start
+ * at the lowest id so a face has one spelling. Two positively oriented tets on either side of a
+ * face list it in opposite orders, so a repeat is two tets on one side of it: the output of an
+ * insertion is not consistently oriented. What a repeat does is the caller's -- tetwild throws,
+ * simwild warns (since 33fbfc9b70, which kept tetwild's throw) -- and both check every insertion.
+ *
+ * A sorted array rather than a std::set: 12 bytes per face instead of a 64-byte tree node. This
+ * runs over the whole arrangement while the insertion's output is still held, and on the largest
+ * tetwild inputs the set alone was over half a gigabyte (7e21a0d799; simwild kept the set until
+ * 2026-11). Vertex ids come from the remesher as uint32, so narrowing them is lossless.
+ */
+std::vector<std::array<uint32_t, 3>> repeated_oriented_faces(
+    const std::vector<std::array<size_t, 4>>& tets);
+
 } // namespace wmtk::utils

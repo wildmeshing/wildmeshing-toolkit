@@ -166,9 +166,11 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
         const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
         bool on_level = false;
         size_t steps = 0;
-        if (in1 != in2) {
-            on_level = in1 ? edge_split_sphere_trace(p1, p2, p_new, steps)
-                           : edge_split_sphere_trace(p2, p1, p_new, steps);
+        // The entry of offsets the inner end is on: its distance, its target, its mode.
+        const size_t k = offset_of(in1 ? cache.v1_id : cache.v2_id);
+        if (in1 != in2 && k < m_construction_traced.size() && m_construction_traced[k]) {
+            on_level = in1 ? edge_split_sphere_trace(k, p1, p2, p_new, steps)
+                           : edge_split_sphere_trace(k, p2, p1, p_new, steps);
         }
         m_marching_trace_steps += steps;
         m_marching_trace_steps_max = std::max(m_marching_trace_steps_max, steps);
@@ -255,18 +257,20 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
 }
 
 bool TopoOffsetTetMesh::edge_split_sphere_trace(
+    const size_t k,
     const Vector3d& p_in,
     const Vector3d& p_out,
     Vector3d& p_new,
     size_t& steps) const
 {
-    // Sphere tracing to D = m_construction_distance (target_distance, or the construction_mode
-    // fallback; see the marching): d is 1-Lipschitz, so from a point at distance d the level set
+    // Sphere tracing to D = m_construction_distances[k] (entry k's target_distance, or the
+    // construction_mode fallback; see the marching), on d the distance to entry k's complex
+    // (offset_distance()): d is 1-Lipschitz, so from a point at distance d the level set
     // d = D is at least D - d away in every direction, and stepping exactly that far along the
     // edge can never cross it. The step is positive while the trace has not converged
     // (D - d > tol), so t grows by more than tol each time and the loop ends within L / tol
     // steps, one way or the other.
-    const double D = m_construction_distance;
+    const double D = m_construction_distances[k];
     const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
     const Vector3d dir = p_out - p_in;
     const double L = dir.norm();
@@ -276,7 +280,7 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     double t = 0.;
     while (true) {
         const Vector3d p = p_in + t * u;
-        const double d = input_complex_distance(p);
+        const double d = offset_distance(k, p);
         ++steps;
         if (std::abs(d - D) <= tol) {
             p_new = p;

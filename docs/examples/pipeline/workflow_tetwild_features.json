@@ -1,0 +1,23 @@
+{
+  "inputs": {
+    "cube": "tetwild_features_cube.obj",
+    "curves": "tetwild_features_edges.obj",
+    "points": "tetwild_features_points.obj"
+  },
+  "stages": [
+    {
+      "name": "tet_mesh",
+      "component": "tetwild",
+      "options": {
+        "input": [
+          {"from": "cube", "output": "mesh"},
+          {"from": "curves", "output": "mesh"},
+          {"from": "points", "output": "mesh"}
+        ],
+        "filter": "tracked",
+        "stop_energy": 10,
+        "num_threads": 0
+      }
+    }
+  ]
+}

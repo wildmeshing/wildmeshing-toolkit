@@ -77,9 +77,7 @@ int main()
     auto [m3, r3] = topological_offset::topological_offset(
         json::parse(R"({
             "input": "m",
-            "offset_selection": "a",
-            "offset_output_tags": ["gap"],
-            "target_distance": 0.01,
+            "offsets": [{"selection": "a", "output_tags": ["gap"], "target_distance": 0.01}],
             "optimize_offset": false,
             "num_threads": 4
         })"),

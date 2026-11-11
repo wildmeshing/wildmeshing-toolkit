@@ -4,8 +4,10 @@ Each Python example runs as a script, in a directory of its own, with the exampl
 $WMTK_DATA. Each JSON example is copied into a directory of its own with the example meshes it
 names, and run with $WMTK_APP -j. A directory of JSON files is a chain: its files (with any other
 file there, say a points file) are copied into one directory and run in name order, each reading
-what the ones before it wrote. All must finish without an error. An example that a test of its own
-runs (a first line `# docs-example: tested by <test>`) is skipped here.
+what the ones before it wrote. Each pipeline file (wildmeshing.pipeline) is copied into a
+directory of its own with the example meshes its inputs name, and run with Pipeline.load().run().
+All must finish without an error. An example that a test of its own runs (a first line
+`# docs-example: tested by <test>`) is skipped here.
 
 Registered in ctest as doc_examples_python_json (docs/examples/CMakeLists.txt). By hand, from the
 repository root:
@@ -30,7 +32,7 @@ APP = os.environ.get("WMTK_APP", "")
 RUN_DIR = os.environ.get("WMTK_DOC_EXAMPLES_RUN_DIR")
 
 
-def tested_elsewhere(script):
+def _tested_elsewhere(script):
     with open(script) as f:
         return f.readline().startswith("# docs-example: tested by")
 
@@ -60,7 +62,7 @@ class DocsExamples(unittest.TestCase):
         self.assertTrue(scripts)
         env = dict(os.environ, WMTK_DATA=str(DATA))
         for script in scripts:
-            if tested_elsewhere(script):
+            if _tested_elsewhere(script):
                 continue
             with self.subTest(script=script.name):
                 cwd = self.run_dir("python_" + script.stem)
@@ -88,6 +90,21 @@ class DocsExamples(unittest.TestCase):
         for config in configs:
             with self.subTest(config=config.name):
                 self.run_configs([config], [config], self.run_dir("json_" + config.stem))
+
+    def test_pipelines(self):
+        pipelines = sorted(EXAMPLES.glob("pipeline/*.json"))
+        self.assertTrue(pipelines)
+        run = ("import sys; from wildmeshing.pipeline import Pipeline; "
+               "Pipeline.load(sys.argv[1]).run()")
+        for pipeline in pipelines:
+            with self.subTest(pipeline=pipeline.name):
+                cwd = self.run_dir("pipeline_" + pipeline.stem)
+                shutil.copy(pipeline, cwd)
+                for name in json.loads(pipeline.read_text())["inputs"].values():
+                    shutil.copy(DATA / name, cwd / name)
+                r = subprocess.run([sys.executable, "-c", run, pipeline.name], cwd=cwd,
+                                   capture_output=True, text=True)
+                self.assertEqual(r.returncode, 0, r.stdout[-4000:] + r.stderr[-4000:])
 
     @unittest.skipUnless(APP, "WMTK_APP is not set")
     def test_json_chains(self):

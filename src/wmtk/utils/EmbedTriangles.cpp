@@ -1237,4 +1237,32 @@ void embed_triangles_in_tets(
     }
 }
 
+std::vector<std::array<uint32_t, 3>> repeated_oriented_faces(
+    const std::vector<std::array<size_t, 4>>& tets)
+{
+    std::vector<std::array<uint32_t, 3>> oriented_faces;
+    oriented_faces.reserve(4 * tets.size());
+    for (const auto& t : tets) {
+        std::array<std::array<size_t, 3>, 4> faces = {{
+            {{t[1], t[3], t[2]}}, // opposite t[0]
+            {{t[0], t[2], t[3]}}, // opposite t[1]
+            {{t[0], t[3], t[1]}}, // opposite t[2]
+            {{t[0], t[1], t[2]}}, // opposite t[3]
+        }};
+        // Rotate vertex IDs in faces to start with the lowest vertex ID. This ensures that the
+        // same face is represented by the same set of vertex IDs, regardless of the order in
+        // which they appear in the tet.
+        for (auto& f : faces) {
+            std::rotate(f.begin(), std::min_element(f.begin(), f.end()), f.end());
+            oriented_faces.push_back({{uint32_t(f[0]), uint32_t(f[1]), uint32_t(f[2])}});
+        }
+    }
+    std::sort(oriented_faces.begin(), oriented_faces.end());
+    std::vector<std::array<uint32_t, 3>> repeated;
+    for (size_t i = 1; i < oriented_faces.size(); ++i) {
+        if (oriented_faces[i] == oriented_faces[i - 1]) repeated.push_back(oriented_faces[i]);
+    }
+    return repeated;
+}
+
 } // namespace wmtk::utils

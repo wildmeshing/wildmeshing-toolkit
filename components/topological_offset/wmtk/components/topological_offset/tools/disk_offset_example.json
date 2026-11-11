@@ -1,9 +1,7 @@
 {
     "application": "topological_offset",
     "input": "disk.msh",
-    "offset_selection": "tag_0",
-    "offset_output_tags": ["tag_1"],
-    "target_distance": 0.02,
+    "offsets": [{"selection": "tag_0", "output_tags": ["tag_1"], "target_distance": 0.02}],
     
     "save_vtu": true,
     "output": "disk_offset"

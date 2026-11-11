@@ -190,7 +190,8 @@ double TopoOffsetTetMesh::face_offset_term(
     const OffsetPotential3D& pot,
     const Vector3d& pa,
     const Vector3d& pb,
-    const Vector3d& pc) const
+    const Vector3d& pc,
+    const int piece) const
 {
     // THE face measure, and since 2026-09-24 the only one: the MEAN over the face's stencil of
     // the squared relative error, in units of the tolerance. At every stencil point q of
@@ -241,18 +242,22 @@ double TopoOffsetTetMesh::face_offset_term(
     // n == 0 only when stencil_order < 0, which the spec's min refuses; an unmeasurable sample
     // reads the whole face unmeasurable.
     if (unmeasurable || n == 0) return -1.;
-    if (!(m_offset_params.front_conv_frac() > 0.)) return std::numeric_limits<double>::infinity();
+    if (!(front_conv_frac_of(piece) > 0.)) return std::numeric_limits<double>::infinity();
     const double dn = double(n);
-    return offset_term_weight() * (mu ? wsum : sum / dn);
+    return offset_term_weight(piece) * (mu ? wsum : sum / dn);
 }
 
 double TopoOffsetTetMesh::face_offset_term(const size_t a, const size_t b, const size_t c) const
 {
+    // Several entries of offsets: the face's piece's bar (one entry: the run's).
+    const std::array<size_t, 3> f{{a, b, c}};
+    const int piece = m_offset_params.offsets.size() > 1 ? place_piece(f.data(), 3) : -1;
     return face_offset_term(
         potential_for_edge(a, b),
         m_vertex_attribute[a].m_posf,
         m_vertex_attribute[b].m_posf,
-        m_vertex_attribute[c].m_posf);
+        m_vertex_attribute[c].m_posf,
+        piece);
 }
 
 double TopoOffsetTetMesh::tet_energy(const size_t tid, const bool band_term) const
@@ -424,7 +429,7 @@ double TopoOffsetTetMesh::band_swept_change(
     if (x0 == x1) return 0.;
     std::vector<std::array<Vector3d, 2>> faces;
     band_swept_faces(vid, x0, faces);
-    return band_swept_sum(x0, x1, faces, st);
+    return band_swept_sum(place_piece(&vid, 1), x0, x1, faces, st);
 }
 
 void TopoOffsetTetMesh::band_swept_faces(
@@ -471,6 +476,7 @@ void TopoOffsetTetMesh::band_swept_faces(
 }
 
 double TopoOffsetTetMesh::band_swept_sum(
+    const int piece,
     const Vector3d& x0,
     const Vector3d& x1,
     const std::vector<std::array<Vector3d, 2>>& faces,
@@ -478,8 +484,8 @@ double TopoOffsetTetMesh::band_swept_sum(
 {
     // the function the smoother's search model evaluates too (BandVolumeEnergy3D::set_swept())
     return BandVolumeEnergy3D::swept_change(
-        *m_band_exact,
-        m_offset_params.target_distance,
+        *band_exact_for(piece),
+        region_delta(piece),
         x0,
         x1,
         faces,
@@ -521,17 +527,19 @@ double TopoOffsetTetMesh::band_chain_change(
     for (const auto& [v, n] : on) {
         if (n > on[apex]) apex = v;
     }
-    const double delta = m_offset_params.target_distance;
-    ExactBandIntegral::Stats local;
-    ExactBandIntegral::Stats* sp = st ? st : &local;
+    // value() through the value table unless `st` is given (BandVolumeEnergy3D::swept_change()),
+    // at the cells' piece's target distance and integral (place_piece(); the run's and the whole
+    // complex's with one entry)
+    const int piece = old_band.empty() ? -1 : place_piece(old_band.front().data(), 4);
+    const double delta = region_delta(piece);
+    const ExactBandIntegral& band_exact = *band_exact_for(piece);
     double s = 0.;
     for (const auto& [f, m] : dD) {
         if (m == 0 || std::find(f.begin(), f.end(), apex) != f.end()) continue; // a flat cone
         const Orientation o = orient3d(P(f[0]), P(f[1]), P(f[2]), P(apex)); // det[f - apex]
         if (o == Orientation::COPLANAR) continue;
         const double sign = o == Orientation::POSITIVE ? 1. : -1.;
-        s += double(m) * sign *
-             m_band_exact->value({{P(apex), P(f[0]), P(f[1]), P(f[2])}}, delta, sp);
+        s += double(m) * sign * band_exact.value({{P(apex), P(f[0]), P(f[1]), P(f[2])}}, delta, st);
     }
     return s / delta;
 }
@@ -556,6 +564,11 @@ bool TopoOffsetTetMesh::swept_accept(
     // See the declaration.
     ++c.solves;
     const Vector3d x1 = m_vertex_attribute[vid].m_posf;
+    // band_swept_change()'s faces, the same at every halving (band_swept_faces() does not read
+    // vid's position)
+    std::vector<std::array<Vector3d, 2>> faces;
+    band_swept_faces(vid, x0, faces);
+    const std::shared_ptr<const BandVolumeEnergy3D>& model = m_swept_model.local();
     for (int k = 0; k <= kSweptHalvings; ++k) {
         if (k > 0) {
             m_vertex_attribute[vid].m_posf = x0 + std::ldexp(1., -k) * (x1 - x0);
@@ -566,7 +579,18 @@ bool TopoOffsetTetMesh::swept_accept(
             for (const size_t t : ring) set_cell_quality(t, get_quality(tuple_from_tet(t)));
         }
         const double dA = tet_energy_sum(ring, false) - amips_before;
-        const double dB = band_swept_change(vid, x0, m_vertex_attribute[vid].m_posf);
+        const Vector3d& x = m_vertex_attribute[vid].m_posf;
+        double dB;
+        const int piece = place_piece(&vid, 1);
+        if (!(model && model->swept_value_at(
+                           *band_exact_for(piece),
+                           region_delta(piece),
+                           x0,
+                           x,
+                           faces,
+                           dB))) {
+            dB = band_swept_sum(piece, x0, x, faces);
+        }
         if (dA + dB <= 0.) { // a NaN refuses; a tie passes
             ++c.accepted[size_t(k)];
             return true;
@@ -1730,7 +1754,8 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
         // whole change of the face term (see collapse_before_vertex()).
         if (!cv.tie && surface_energy()) after += surface_term_at(v2_id);
         if (!cv.tie && swept_rule()) { // "exact_swept": the band term's change
-            after += band_swept_sum(cv.swept_x1, cv.swept_x2, cv.swept_faces);
+            after +=
+                band_swept_sum(place_piece(&v2_id, 1), cv.swept_x1, cv.swept_x2, cv.swept_faces);
         }
         if (cv.tie ? !scoreable : !(after <= cv.before + cv.surface_before)) { // a NaN refuses
             ++m_volume_reject_collapse;
@@ -2430,7 +2455,10 @@ void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const d
         // solid (input_complex_distance()).
         if (m_input_complex_envelope) cand.dist = input_complex_distance(cand.c);
         if (m_offset_potential && c_level > 0.) {
-            cand.phi_over_c = m_offset_potential->value(cand.c) / c_level;
+            const OffsetPotential3D& pot = m_offset_params.offsets.size() > 1
+                                               ? potential_for_region(place_piece(vs.data(), 4))
+                                               : *m_offset_potential;
+            cand.phi_over_c = pot.value(cand.c) / pot.target_level();
         }
 
         int best = kShort;
@@ -3053,8 +3081,13 @@ std::vector<bool> TopoOffsetTetMesh::band_vertex_mask() const
 
 double TopoOffsetTetMesh::band_vertex_distance_error(const size_t vid) const
 {
+    // At the vertex's piece's target distance, from its own piece (place_piece(); the run's and
+    // the whole complex with one entry).
     const Vector3d p = m_vertex_attribute[vid].m_posf;
-    return std::abs(input_complex_distance(p) - m_offset_params.target_distance);
+    if (m_offset_params.offsets.size() <= 1)
+        return std::abs(input_complex_distance(p) - m_offset_params.target_distance);
+    const int r = place_piece(&vid, 1);
+    return std::abs(std::sqrt(envelope_for(r)->squared_distance(p)) - region_delta(r));
 }
 
 double TopoOffsetTetMesh::band_vertex_residual(const size_t vid) const
@@ -3487,7 +3520,8 @@ double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
     if (!(level > 0.)) return std::numeric_limits<double>::infinity();
     const double r = front_vertex_relative_residual(vid);
     if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
-    const double bar = m_offset_params.front_conv_frac();
+    const double bar = m_offset_params.offsets.size() > 1 ? front_conv_frac_of(place_piece(&vid, 1))
+                                                          : m_offset_params.front_conv_frac();
     if (!(bar > 0.)) return std::numeric_limits<double>::infinity();
     return std::abs(r) / bar;
 }
@@ -3525,6 +3559,47 @@ Vector3d TopoOffsetTetMesh::front_vertex_field_gradient(const size_t vid) const
     return potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
 }
 
+int TopoOffsetTetMesh::nearest_piece(const Vector3d& p) const
+{
+    // See the declaration.
+    int best = -1;
+    double best_d = std::numeric_limits<double>::infinity();
+    for (size_t r = 0; r < m_region_envelopes.size(); ++r) {
+        const double d = m_region_envelopes[r]->squared_distance(p);
+        if (d < best_d) {
+            best_d = d;
+            best = int(r);
+        }
+    }
+    return best;
+}
+
+int TopoOffsetTetMesh::place_piece(const size_t* vids, const size_t n) const
+{
+    // See the declaration.
+    if (m_offset_params.offsets.size() <= 1 || m_region_potentials.empty()) return -1;
+    if (m_region_potentials.size() == 1) return 0;
+    int best = -1;
+    double best_delta = std::numeric_limits<double>::infinity();
+    const auto consider = [&](const int r) {
+        if (r >= 0 && region_delta(r) < best_delta) {
+            best_delta = region_delta(r);
+            best = r;
+        }
+    };
+    for (size_t i = 0; i < n; ++i) {
+        const int r = vertex_region(vids[i]);
+        if (r == -2) {
+            for (const size_t t : get_one_ring_tids_for_vertex(vids[i]))
+                consider(t < m_cell_region.size() ? m_cell_region[t] : -1);
+        } else {
+            consider(r);
+        }
+    }
+    if (best >= 0) return best;
+    return nearest_piece(m_vertex_attribute[vids[0]].m_posf);
+}
+
 void TopoOffsetTetMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band cells, seeded from every band cell
@@ -3534,18 +3609,7 @@ void TopoOffsetTetMesh::assign_band_regions(const bool log)
     m_cell_region.assign(tet_capacity(), -1);
     m_vertex_region.assign(vert_capacity(), -1);
     if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_envelopes.empty()) return;
-    const auto region_at = [&](const Vector3d& p) -> int {
-        int best = -1;
-        double best_d = std::numeric_limits<double>::infinity();
-        for (size_t r = 0; r < m_region_envelopes.size(); ++r) {
-            const double d = m_region_envelopes[r]->squared_distance(p);
-            if (d < best_d) {
-                best_d = d;
-                best = int(r);
-            }
-        }
-        return best;
-    };
+    const auto region_at = [&](const Vector3d& p) { return nearest_piece(p); };
     std::vector<size_t> queue;
     std::vector<int> piece_of_vertex(vert_capacity(), -3); // -3: not looked up yet
     for (const Tuple& t : get_tets()) {
@@ -3635,7 +3699,7 @@ void TopoOffsetTetMesh::log_front_profile(const size_t vid)
     if (!(g.norm() > 0.) || !g.allFinite()) return;
     const Vector3d n = g / g.norm();
     auto band = front_energy(vid);
-    const double delta = m_offset_params.target_distance;
+    const double delta = vertex_delta(vid);
     logger().info(
         "[front profile] worst vertex {} at ({:.5}, {:.5}, {:.5}), region {}, along the field "
         "direction n = ({:.4}, {:.4}, {:.4}); columns: s/delta | band term of the vertex's band "
@@ -3799,29 +3863,28 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         // bars over by it and -0.016..+0.020 bars by the exact max; they alone blocked the exit.
         // settle_mark "rms" and "vertex" only log outside_f and keep the former bound (the exact
         // structure exists for them only under band_volume_rule "exact").
+        // Several entries of offsets: each test at its place's own target distance and bar
+        // (place_delta(), front_conv_of()), its bars its own piece's; one entry: the run's.
         std::vector<size_t> corners;
         for (const auto& f : faces) {
+            const int piece_f = place_piece(f.data(), 3);
+            const double delta_f = region_delta(piece_f);
+            const double eps_f = front_conv_of(piece_f);
+            const Envelope& env_f = *envelope_for(piece_f);
             const std::array<Vector3d, 3> p = {
                 {m_vertex_attribute[f[0]].m_posf,
                  m_vertex_attribute[f[1]].m_posf,
                  m_vertex_attribute[f[2]].m_posf}};
-            const double inside = delta - min_triangle_distance(
-                                              *m_input_complex_envelope,
-                                              m_input_complex_pad,
-                                              p[0],
-                                              p[1],
-                                              p[2]);
-            const double outside = (m_band_exact && !rms_mode && !vertex_mode && !stencil_mode
-                                        ? m_band_exact->max_distance(p)
-                                        : min_max_corner_distance(
-                                              *m_input_complex_envelope,
-                                              m_input_complex_pad,
-                                              p.data(),
-                                              3)) -
-                                   delta;
-            max_inside = std::max(max_inside, inside / eps);
-            max_outside = std::max(max_outside, outside / eps);
-            const bool over_max = std::max(inside, outside) > eps;
+            const double inside =
+                delta_f - min_triangle_distance(env_f, m_input_complex_pad, p[0], p[1], p[2]);
+            const double outside =
+                (m_band_exact && !rms_mode && !vertex_mode && !stencil_mode
+                     ? band_exact_for(piece_f)->max_distance(p)
+                     : min_max_corner_distance(env_f, m_input_complex_pad, p.data(), 3)) -
+                delta_f;
+            max_inside = std::max(max_inside, inside / eps_f);
+            max_outside = std::max(max_outside, outside / eps_f);
+            const bool over_max = std::max(inside, outside) > eps_f;
             // EXPERIMENTAL_settle_mark "rms": the mean over f of (d - delta)^2 cos(theta) by the
             // 3-edge-midpoint rule, theta between f's normal out of the band and grad d (signed),
             // against front_conv^2 -- X_f against the bar energy of area(f), the area cancelling.
@@ -3836,15 +3899,15 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 }
             }
             const double q = face_mean_sq_cos(
-                *m_input_complex_envelope,
+                env_f,
                 m_input_complex_pad,
                 p[0],
                 p[1],
                 p[2],
                 n.normalized(),
-                delta);
-            const bool over_rms = bc >= 0 && q > eps * eps;
-            max_rms = std::max(max_rms, std::sqrt(std::max(q, 0.)) / eps);
+                delta_f);
+            const bool over_rms = bc >= 0 && q > eps_f * eps_f;
+            max_rms = std::max(max_rms, std::sqrt(std::max(q, 0.)) / eps_f);
             n_over_max += over_max;
             n_over_rms += over_rms;
             // EXPERIMENTAL_settle_mark "stencil": a point of f's stencil (face_stencil()) at or
@@ -3875,16 +3938,19 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         for (const auto& f : faces) front_vids.insert(front_vids.end(), f.begin(), f.end());
         wmtk::vector_unique(front_vids);
         n_front_vertices = front_vids.size();
-        const Envelope& env = *m_input_complex_envelope;
-        const auto level_set_error = [&](const Vector3d& x) {
+        const auto level_set_error = [&](const Vector3d& x, const int piece) {
+            const Envelope& env = *envelope_for(piece);
             return std::abs(
-                env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) - delta);
+                env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) -
+                region_delta(piece));
         };
         std::vector<char> vertex_over(edge_mode || split_mode ? vert_capacity() : 0, 0);
         for (const size_t v : front_vids) {
-            const double err = level_set_error(m_vertex_attribute[v].m_posf);
-            max_vertex = std::max(max_vertex, err / eps);
-            if (!(err > eps)) continue;
+            const int piece_v = place_piece(&v, 1);
+            const double eps_v = front_conv_of(piece_v);
+            const double err = level_set_error(m_vertex_attribute[v].m_posf, piece_v);
+            max_vertex = std::max(max_vertex, err / eps_v);
+            if (!(err > eps_v)) continue;
             ++n_over_vertex;
             if (!vertex_mode) continue;
             ++n_marked;
@@ -3913,10 +3979,13 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             n_front_edges = edges.size();
             for (const auto& e : edges) {
                 if (vertex_over[e[0]] || vertex_over[e[1]]) continue;
+                const int piece_e = place_piece(e.data(), 2);
+                const double eps_e = front_conv_of(piece_e);
                 const double err = level_set_error(
-                    0.5 * (m_vertex_attribute[e[0]].m_posf + m_vertex_attribute[e[1]].m_posf));
-                max_edge = std::max(max_edge, err / eps);
-                if (!(err > eps)) continue;
+                    0.5 * (m_vertex_attribute[e[0]].m_posf + m_vertex_attribute[e[1]].m_posf),
+                    piece_e);
+                max_edge = std::max(max_edge, err / eps_e);
+                if (!(err > eps_e)) continue;
                 ++n_edge_over;
                 bool at_floor = true;
                 for (const size_t v : e) {
@@ -3944,6 +4013,8 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             std::map<std::array<size_t, 2>, double> mid_err;
             for (const auto& f : faces) {
                 if (vertex_over[f[0]] || vertex_over[f[1]] || vertex_over[f[2]]) continue;
+                const int piece_f = place_piece(f.data(), 3);
+                const double eps_f = front_conv_of(piece_f);
                 std::array<size_t, 2> worst{{0, 0}};
                 double worst_err = -1.;
                 for (int j = 0; j < 3; ++j) {
@@ -3956,7 +4027,8 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                                      e,
                                      level_set_error(
                                          0.5 * (m_vertex_attribute[a].m_posf +
-                                                m_vertex_attribute[b].m_posf)))
+                                                m_vertex_attribute[b].m_posf),
+                                         piece_f))
                                  .first;
                     }
                     if (it->second > worst_err) {
@@ -3967,12 +4039,13 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 const double c_err = level_set_error(
                     (m_vertex_attribute[f[0]].m_posf + m_vertex_attribute[f[1]].m_posf +
                      m_vertex_attribute[f[2]].m_posf) /
-                    3.);
+                        3.,
+                    piece_f);
                 const double face_err = std::max(worst_err, c_err);
-                max_face = std::max(max_face, face_err / eps);
-                if (!(face_err > eps)) continue;
+                max_face = std::max(max_face, face_err / eps_f);
+                if (!(face_err > eps_f)) continue;
                 ++n_off_faces;
-                if (!(worst_err > eps)) ++n_off_centroid;
+                if (!(worst_err > eps_f)) ++n_off_centroid;
                 to_split.push_back(worst);
             }
             wmtk::vector_unique(to_split);
@@ -3998,18 +4071,15 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 std::array<Vector3d, 4> p;
                 for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vs[size_t(j)]].m_posf;
                 int64_t best = -1;
-                const double md = min_mean_distance(
-                    *m_input_complex_envelope,
-                    m_input_complex_pad,
-                    p.data(),
-                    4,
-                    best);
+                const int piece_t = place_piece(vs.data(), 4);
+                const Envelope& env = *envelope_for(piece_t);
+                const double md = min_mean_distance(env, m_input_complex_pad, p.data(), 4, best);
                 const Vector3d ctr = 0.25 * (p[0] + p[1] + p[2] + p[3]);
-                const Envelope& env = *m_input_complex_envelope;
                 const double dc =
                     env.primitive_distance(nearest_primitive(env, m_input_complex_pad, ctr), ctr);
-                max_gap = std::max(max_gap, (md - dc) / eps);
-                if (!(md - dc > eps)) continue;
+                const double eps_t = front_conv_of(piece_t);
+                max_gap = std::max(max_gap, (md - dc) / eps_t);
+                if (!(md - dc > eps_t)) continue;
                 ++n_gap_over;
                 bool at_floor = true;
                 for (const size_t v : vs) {
@@ -4446,8 +4516,8 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
         p[1],
         p[2],
         d,
-        m_offset_params.target_distance,
-        std::abs(d - m_offset_params.target_distance));
+        vertex_delta(vid),
+        std::abs(d - vertex_delta(vid)));
     logger().info(
         "\t  flags: on_offset {} on_input {} on_region {} on_bbox {} rounded {} | held {} "
         "| incident faces: {} offset, {} region, {} bbox | phi {:.6} (level {:.6}), "
@@ -4751,13 +4821,13 @@ void TopoOffsetTetMesh::turned_front_faces_at(
 // EXPERIMENTAL_band_volume_rule "surface": the face term (see the declarations)
 // ---------------------------------------------------------------------------------------------
 
-double TopoOffsetTetMesh::surface_term_weight() const
+double TopoOffsetTetMesh::surface_term_weight(const int piece) const
 {
     // L / front_conv_frac()^2, L the bounding box diagonal: L int (d - delta)^2 / front_conv^2 dS,
     // a volume like the AMIPS term, both integrands 1 at convergence. Unweighted since 2026-10-28
     // (Spencer: "the amips term has weight w_a, and the offset term has no weight. This way w_a is
     // the ratio between the two"); it was (1 - w) L / front_conv_frac()^2.
-    const double f = m_offset_params.front_conv_frac();
+    const double f = front_conv_frac_of(piece);
     return m_offset_params.diag_l / (f * f);
 }
 
@@ -4767,11 +4837,12 @@ double TopoOffsetTetMesh::surface_face_term(const size_t a, const size_t b, cons
     std::array<size_t, 3> v{{a, b, c}};
     std::sort(v.begin(), v.end());
     const auto& VA = std::as_const(m_vertex_attribute);
+    const int piece = m_offset_params.offsets.size() > 1 ? place_piece(v.data(), 3) : -1;
     return SurfaceOffsetError3D::face_value(
-        *m_offset_potential,
+        potential_for_face_vids(v[0], v[1], v[2]),
         face_stencil(),
         face_stencil_weights(),
-        surface_term_weight(),
+        surface_term_weight(piece),
         VA[v[0]].m_posf,
         VA[v[1]].m_posf,
         VA[v[2]].m_posf);
@@ -4806,7 +4877,10 @@ double TopoOffsetTetMesh::surface_integral_raw() const
 {
     // See the declaration: SurfaceOffsetError3D::face_value() with weight delta^2, so W A_f mean
     // r^2 = A_f mean (d - delta)^2, r = (d - delta) / delta; delta the running loop's
-    // target_distance. Per face on the mesh's threads, summed serially in face order.
+    // target_distance. Per face on the mesh's threads, summed serially in face order. Several
+    // entries of offsets: r on the face's own piece's field, relative to that piece's distance,
+    // and delta the run's, so the sum is in the run's units and front_conv^2 = (front_conv_rel
+    // delta)^2 bounds each face by its own piece's front_conv_rel.
     if (!m_offset_potential) return 0.;
     const auto& stencil = face_stencil();
     const std::vector<double>* point_weights = face_stencil_weights();
@@ -4817,10 +4891,10 @@ double TopoOffsetTetMesh::surface_integral_raw() const
     diagnostic_parallel_for(faces.size(), kDiagnosticChunk, [&](const size_t b, const size_t en) {
         for (size_t k = b; k < en; ++k) {
             e[k] = SurfaceOffsetError3D::face_value(
-                *m_offset_potential,
+                potential_for_face_vids(faces[k][0], faces[k][1], faces[k][2]),
                 stencil,
                 point_weights,
-                delta * delta,
+                run_units_scale(faces[k], delta) * run_units_scale(faces[k], delta),
                 VA[faces[k][0]].m_posf,
                 VA[faces[k][1]].m_posf,
                 VA[faces[k][2]].m_posf);
@@ -4856,11 +4930,15 @@ double TopoOffsetTetMesh::face_stencil_max_sq(const std::array<size_t, 3>& f) co
     const Vector3d& p0 = VA[f[0]].m_posf;
     const Vector3d& p1 = VA[f[1]].m_posf;
     const Vector3d& p2 = VA[f[2]].m_posf;
+    // Several entries of offsets: r on the face's piece's field, in the run's units, as in
+    // surface_integral_raw() (run_units_scale()).
+    const OffsetPotential3D& pot = potential_for_face_vids(f[0], f[1], f[2]);
+    const double scale = run_units_scale(f, delta);
     double m = 0.;
     for (const auto& w : face_stencil()) {
-        const double r = m_offset_potential->relative_residual(w[0] * p0 + w[1] * p1 + w[2] * p2);
+        const double r = pot.relative_residual(w[0] * p0 + w[1] * p1 + w[2] * p2);
         if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
-        m = std::max(m, (delta * r) * (delta * r));
+        m = std::max(m, (scale * r) * (scale * r));
     }
     return m;
 }
@@ -5018,7 +5096,9 @@ double TopoOffsetTetMesh::front_face_angle_to_field(
     const Vector3d& pb = m_vertex_attribute[b].m_posf;
     const Vector3d& pc = m_vertex_attribute[c].m_posf;
     const Vector3d x = (pa + pb + pc) / 3.;
-    const Envelope& env = *m_input_complex_envelope;
+    // The face's piece's engine (place_piece(); the whole complex's with one entry).
+    const std::array<size_t, 3> f{{a, b, c}};
+    const Envelope& env = *envelope_for(place_piece(f.data(), 3));
     const int64_t prim = nearest_primitive(env, m_input_complex_pad, x);
     if (prim < 0) return nan;
     Vector3d g;
@@ -5058,6 +5138,10 @@ const OffsetPotential3D& TopoOffsetTetMesh::potential_for_face(const Tuple& f) c
     size_t band = ta;
     if (!cell_is_offset_band(ta) && opp && cell_is_offset_band(opp->tid(*this)))
         band = opp->tid(*this);
+    if (m_offset_params.offsets.size() > 1) {
+        const auto vs = get_face_vids(f);
+        return potential_for_region(place_piece(vs.data(), 3));
+    }
     return potential_for_region(band < m_cell_region.size() ? m_cell_region[band] : -1);
 }
 
@@ -5694,7 +5778,6 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             "EXPERIMENTAL_band_volume_rule \"exact\", \"front_flux\" or \"surface\", "
             "EXPERIMENTAL_settle_mark \"max\", or DEBUG_output");
     }
-    const double delta = m_offset_params.target_distance;
     const auto label_of = [this](const size_t tid) { return m_tet_attribute[tid].label; };
 
     // A cell with a front face: one shared with a cell of the other of the two labels, band (2)
@@ -5762,14 +5845,20 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         }
         const std::array<size_t, 4> vs = oriented_tet_vids(tid);
         const bool band = cell_is_offset_band(tid);
+        // The cell's piece's target distance, its front_conv (front_conv_rel of it) and its
+        // integral (one entry: the run's and the whole complex's).
+        const int piece = place_piece(vs.data(), 4);
+        const double delta = region_delta(piece);
+        const double front_conv = front_conv_of(piece);
+        const ExactBandIntegral& band_exact = *band_exact_for(piece);
         std::array<Vector3d, 4> p;
         for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
-        if (!band && m_band_exact->distance_bound(p) < delta) return true;
+        if (!band && band_exact.distance_bound(p) < delta) return true;
         if (band) {
             const Vector3d c = (p[0] + p[1] + p[2] + p[3]) / 4.;
             double r = 0.;
             for (const Vector3d& q : p) r = std::max(r, (q - c).norm());
-            if (m_band_exact->distance(c) - r > delta) return true;
+            if (band_exact.distance(c) - r > delta) return true;
         }
         if (!tips && !at_target) return false;
         const int other = band ? 0 : 2;
@@ -5780,8 +5869,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         }
         if (tips ? faces != 3 : (faces < 1 || faces > 3)) return false;
         for (const Vector3d& q : p) {
-            if (!(std::abs(m_band_exact->distance(q) - delta) <= m_offset_params.front_conv))
-                return false;
+            if (!(std::abs(band_exact.distance(q) - delta) <= front_conv)) return false;
         }
         if (get_quality(tuple_from_tet(tid)) >= MAX_ENERGY) return false;
         // EXPERIMENTAL_band_volume_rule "surface": no cell carries an offset term, and the flip
@@ -6230,6 +6318,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             // The exact rules' value table, sized to the mesh as it is now (see
             // ExactBandIntegral::reserve_values()).
             if (m_band_exact) m_band_exact->reserve_values(2 * tet_capacity());
+            for (const auto& eb : m_region_band_exact) eb->reserve_values(2 * tet_capacity());
             const double energy_before_group = global_energy();
             // EXPERIMENTAL_band_volume_rule "surface": the settle test reads O*, the max over the
             // stencil points of (d - delta)^2 (stencil_max_sq_error()), not the energy.
@@ -6941,9 +7030,40 @@ void TopoOffsetTetMesh::linear_growth()
         m_offset_params.target_distance = d;
         init_offset_potential();
     };
+    // Several entries of offsets (m_growth_starts): stage k at each entry's own stage target, from
+    // its d_0 to its target_distance (region_delta() reads them, m_offset_levels); the run's
+    // target the smallest. One entry: target_distance itself, as before.
+    const bool several = !m_growth_starts.empty();
+    const auto set_stage = [&](const int k) {
+        if (!several) {
+            set_target(growth_stage_target(d0, delta, k, n));
+            return;
+        }
+        m_offset_levels.resize(m_growth_starts.size());
+        for (size_t e = 0; e < m_growth_starts.size(); ++e) {
+            m_offset_levels[e] = growth_stage_target(
+                m_growth_starts[e],
+                m_offset_params.offsets[e].target_distance,
+                k,
+                n);
+            logger().info(
+                "\t[incremental growth] stage {} / {}: offsets[{}] at {:.6g} (its target_distance "
+                "{:.6g})",
+                k,
+                n,
+                e,
+                m_offset_levels[e],
+                m_offset_params.offsets[e].target_distance);
+        }
+        set_target(*std::min_element(m_offset_levels.begin(), m_offset_levels.end()));
+    };
+    const auto set_final = [&]() {
+        m_offset_levels.clear();
+        set_target(delta);
+    };
     std::string done; // the stages before the last, for the last one's header
     for (int k = 0; k < n; ++k) {
-        set_target(growth_stage_target(d0, delta, k, n));
+        set_stage(k);
         m_frame_prefix = fmt::format("g{}", k);
         logger().info(
             "======== [incremental growth] stage {} / {}: target_distance {:.6g} ({:.4g}x "
@@ -6983,7 +7103,7 @@ void TopoOffsetTetMesh::linear_growth()
         if (!converged) {
             m_frame_prefix.clear();
             // The verdict and the report measure this mesh against target_distance itself.
-            set_target(delta);
+            set_final();
             logger().warn(
                 "[incremental growth] stage {} / {} at target_distance {:.6g} did not converge in "
                 "max_rounds {} turns: the run stops here, stages {}..{} not run; the verdict "
@@ -6999,7 +7119,7 @@ void TopoOffsetTetMesh::linear_growth()
         }
     }
     m_frame_prefix.clear();
-    set_target(delta);
+    set_final();
     logger().info(
         "======== [incremental growth] stage {} / {}: target_distance {:.6g}, the ordinary loop "
         "(converged before it: {}) ========",
@@ -7022,6 +7142,38 @@ void TopoOffsetTetMesh::smart_growth()
         m_offset_params.target_distance = d;
         init_offset_potential();
     };
+    // Several entries of offsets (m_growth_starts): one schedule per entry, from its d_0 to its
+    // target_distance, advanced in lockstep with sched below (the same successes and failures,
+    // so the same j and level): each loop at each entry's own target (m_offset_levels), the run's
+    // the smallest. One entry: sched alone, as before.
+    const bool several = !m_growth_starts.empty();
+    std::vector<SmartGrowthSchedule> entry_sched;
+    for (size_t e = 0; e < m_growth_starts.size(); ++e) {
+        entry_sched.push_back(
+            {m_growth_starts[e],
+             m_offset_params.offsets[e].target_distance,
+             m_offset_params.smart_growth_max_fails});
+    }
+    const auto set_targets = [&](const double d, const bool level0) {
+        if (!several) {
+            set_target(d);
+            return;
+        }
+        m_offset_levels.resize(entry_sched.size());
+        for (size_t e = 0; e < entry_sched.size(); ++e) {
+            const SmartGrowthSchedule& es = entry_sched[e];
+            m_offset_levels[e] = level0 ? m_growth_starts[e] : es.j == 0 ? es.delta : es.target();
+            logger().info(
+                "\t[smart growth] offsets[{}] at {:.6g} (its target_distance {:.6g})",
+                e,
+                m_offset_levels[e],
+                es.delta);
+        }
+        set_target(*std::min_element(m_offset_levels.begin(), m_offset_levels.end()));
+    };
+    const auto report_entries = [&](const bool ok) {
+        for (SmartGrowthSchedule& es : entry_sched) es.report(ok);
+    };
     // Parameters::init() refuses front_conv above target_distance itself; a smaller loop's target
     // below it is not refused, only said.
     const auto warn_front_conv = [&](const std::string& what) {
@@ -7036,7 +7188,7 @@ void TopoOffsetTetMesh::smart_growth()
     };
 
     // Level 0: the loop at d_0, from the front as the march left it.
-    set_target(d0);
+    set_targets(d0, /*level0=*/true);
     m_frame_prefix = "s0";
     logger().info(
         "======== [smart growth] level 0: target_distance {:.6g} ({:.4g}x target_distance {:.6g}), "
@@ -7073,7 +7225,7 @@ void TopoOffsetTetMesh::smart_growth()
         const double t = at_delta ? delta : sched.target();
         const int level = sched.level, attempt = sched.j + 1;
         const std::string label = fmt::format("smart growth level {} attempt {}", level, attempt);
-        set_target(t);
+        set_targets(t, /*level0=*/false);
         m_frame_prefix = fmt::format("s{}a{}", level, attempt);
         logger().info(
             "======== [smart growth] level {} attempt {}: target_distance {:.6g} ({:.4g}x "
@@ -7096,9 +7248,11 @@ void TopoOffsetTetMesh::smart_growth()
             /*turned_free=*/true);
         const int turns = m_iterations_used;
         const double base = sched.base;
+        report_entries(ok);
         switch (sched.report(ok)) {
         case SmartGrowthSchedule::Next::Done:
             m_frame_prefix.clear();
+            m_offset_levels.clear(); // each entry at its target_distance
             logger().info(
                 "[smart growth] target_distance {:.6g} reached: {}, level {} at it in {} turn(s); "
                 "{} failed attempt(s) reverted; {:.3g} s",

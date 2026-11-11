@@ -1,5 +1,5 @@
-"""wildmeshing.builder without a window (polyscope's mock backend): a pipeline built stage by stage
-through the builder's methods, run in its background thread, each stage reaching the viewer; an
+"""wildmeshing.gui without a window (polyscope's mock backend): a pipeline built stage by stage
+through the GUI's methods, run in its background thread, each stage reaching the viewer; an
 edit marking the stage and its readers, and the rerun running only those; every panel widget
 drawn, each tree node open, for each kind of option value (number, flag, choice, text, list,
 reference)."""
@@ -7,7 +7,7 @@ import pytest
 
 polyscope = pytest.importorskip("polyscope")
 import wildmeshing as wm  # noqa: E402
-from wildmeshing import builder, viewer  # noqa: E402
+from wildmeshing import gui, viewer  # noqa: E402
 from wildmeshing.pipeline import Pipeline  # noqa: E402
 
 
@@ -28,7 +28,7 @@ def run(b):
 def test_build_run_edit_and_draw(tmp_path, monkeypatch):
     monkeypatch.setattr(viewer, "OPEN_ALL", True)
     box(tmp_path)
-    b = builder.Builder(Pipeline([], str(tmp_path)), str(tmp_path / "p.json"))
+    b = gui.Gui(Pipeline([], str(tmp_path)), str(tmp_path / "p.json"))
     b.add_input("box", "box.obj")
     b.add_stage("remesh", "isotropic_remeshing")
     # The required options; the first stage reads the input.
@@ -56,7 +56,7 @@ def test_build_run_edit_and_draw(tmp_path, monkeypatch):
     value = b._value
     monkeypatch.setattr(b, "_value", lambda name, label, v, pointer, rules, unset=None: (
         drawn.add((name, pointer)), value(name, label, v, pointer, rules, unset))[1])
-    builder.run_window(b, "mock")  # three frames, nothing run yet
+    gui.run_window(b, "mock")  # three frames, nothing run yet
     assert drawn >= {("remesh", p) for p in ["/input", "/length_rel", "/max_iterations",
                                              "/use_sample_envelope", "/history_output"]} \
         | {("map", "/history"), ("map", "/operation"), ("simplify", "/eps_rel")}
@@ -65,6 +65,7 @@ def test_build_run_edit_and_draw(tmp_path, monkeypatch):
     assert [s["name"] for s in b.viewer.stages] == ["box", "remesh", "simplify", "map"]
     # The last stage with a mesh is shown alone; the tracking run after it has none to show.
     assert [s["shown"] for s in b.viewer.stages] == [False, False, True, True]
+    assert [s["folder"] for s in b.viewer.stages] == ["inputs", None, None, None]
     remesh = b.viewer.stages[1]
     (entry,) = remesh["correspondences"]  # the history's, its input found through the reference
     b.viewer._build(remesh, entry)
@@ -99,24 +100,78 @@ def test_build_run_edit_and_draw(tmp_path, monkeypatch):
     assert [s["name"] for s in b.viewer.stages] == ["cube", "remesh", "simplify"]
 
 
+def test_label_options_and_the_inputs_table(tmp_path, monkeypatch):
+    """A label option names the labels of the mesh the stage reads, marked once that mesh is
+    made; a stage naming its inputs lists their names and marks nothing; its per-input lists
+    are one table with `input`, a row added or removed in all of them."""
+    monkeypatch.setattr(viewer, "OPEN_ALL", True)
+    box(tmp_path)
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    b.add_input("box", "box.obj")
+    b.add_input("wire", "box.obj")
+    b.add_stage("mesh", "simwild")
+    b.set_option("mesh", "input_type", ["volume"])  # shorter than input: a "+" in its column
+    assert b.labels("mesh") == (["box", "wire"], False)  # its inputs' names, never all known
+    priority = b.spec("simwild")[0]["/tag_priority/*"]
+    assert priority["labels"] == "existing"  # the C++ spec's key, through wm.spec
+    assert b.label_problem("mesh", priority, "zz") is None
+    b.add_stage("offset", "topological_offset")
+    rules = b.spec("topological_offset")[0]
+    selection, protected = rules["/offsets/*/selection"], rules["/protected_tags"]
+    assert b.labels("offset") == ([], False)  # mesh has not run
+    assert b.label_problem("offset", selection, "zz") is None
+    # mesh made: a tet tagged box, a curve tagged wire.
+    b.pipeline.results["mesh"] = {"key": "k", "report": {}, "outputs": {"mesh": {"cells": {
+        "tetrahedron": {"attributes": {"tags": {"values": [[1, 0]], "labels": ["box", "ambient"]}}},
+        "edge": {"attributes": {"tags": {"values": [[1]], "labels": ["wire"]}}}}}}}
+    assert b.labels("offset") == (["box", "ambient", "wire"], True)
+    assert b.label_problem("offset", selection, "box | !wire") is None
+    assert b.label_problem("offset", selection, "box | zz") == "unknown label"
+    assert b.label_problem("offset", selection, "box |").startswith("not a tag expression")
+    assert b.label_problem("offset", protected, "zz") == "unknown label"
+    b.set_option("offset", "offsets", [{"selection": "box | zz"}])
+    b.set_option("offset", "protected_tags", "wire | zz")
+
+    drawn, red = set(), set()
+    value = b._value
+    monkeypatch.setattr(b, "_value", lambda name, label, v, pointer, rules, unset=None: (
+        drawn.add((name, pointer)), value(name, label, v, pointer, rules, unset))[1])
+    imgui = pytest.importorskip("polyscope.imgui")
+    coloured = imgui.TextColored
+    monkeypatch.setattr(imgui, "TextColored", lambda c, text: (red.add(text), coloured(c, text)))
+    gui.run_window(b, "mock")
+    assert drawn >= {("mesh", "/input/*"), ("mesh", "/input_names/*"), ("mesh", "/input_type/*"),
+                     ("offset", "/offsets"), ("offset", "/protected_tags")}
+    assert ("mesh", "/input") not in drawn  # the table draws its entries
+    assert red == {"unknown label: the stage can name box, ambient, wire"}
+
+    b.append_stage_input("mesh")
+    options = b.stage("mesh")["options"]
+    assert options["input"][2] == {"from": "wire", "output": "mesh"}
+    assert options["input_names"] == ["box", "wire", ""] and options["input_type"] == ["volume"]
+    b.remove_stage_input("mesh", 0)
+    assert [r["from"] for r in options["input"]] == ["wire", "wire"]
+    assert options["input_names"] == ["wire", ""] and options["input_type"] == []
+
+
 def test_a_failed_stage_is_marked_and_its_log_chosen(tmp_path, monkeypatch):
     box(tmp_path)
-    b = builder.Builder(Pipeline([], str(tmp_path)))
+    b = gui.Gui(Pipeline([], str(tmp_path)))
     b.add_input("box", "box.obj")
     b.add_stage("remesh", "isotropic_remeshing")
     b.set_option("remesh", "max_iterations", "two")  # the spec refuses a string
-    builder.run_window(b, "mock")
+    gui.run_window(b, "mock")
     run(b)
     assert b.status["remesh"] == "failed" and b.log_stage == "remesh"
 
 
 def test_a_picked_file_and_the_default_names(tmp_path, monkeypatch):
     box(tmp_path)
-    b = builder.Builder(Pipeline([], str(tmp_path)))
-    builder.run_window(b, "mock")
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    gui.run_window(b, "mock")
     assert b.new_input["name"] == ""  # no file yet
     picked = type("Done", (), {"stdout": str(tmp_path / "box.obj") + "\n"})
-    monkeypatch.setattr(builder.subprocess, "run", lambda *a, **k: picked)
+    monkeypatch.setattr(gui.subprocess, "run", lambda *a, **k: picked)
     b.pick_file("new").join()
     polyscope.show(1)
     assert b.new_input == {"name": "box", "file": "box.obj", "default": "box"}  # relative, stem
@@ -127,3 +182,19 @@ def test_a_picked_file_and_the_default_names(tmp_path, monkeypatch):
     b.add_stage(b.new["name"], "qslim")
     polyscope.show(1)
     assert b.new["name"] == "2_qslim"
+
+
+def test_a_tracking_stage_reads_the_last_history(tmp_path):
+    # Its history is the last one recorded above it, of a stage with history_output set; with
+    # none recorded, the option's default.
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    b.add_input("box", "box.obj")
+    b.add_stage("simplify", "qslim")
+    b.add_stage("map", "tracking")
+    assert b.stage("map")["options"]["history"] == ""
+    b.set_option("simplify", "history_output", "h")
+    b.add_stage("remesh", "isotropic_remeshing")
+    b.set_option("remesh", "history_output", "h")
+    b.add_stage("collapse", "shortest_edge_collapse")
+    b.add_stage("map_again", "tracking")
+    assert b.stage("map_again")["options"]["history"] == {"from": "remesh", "report": "history"}
