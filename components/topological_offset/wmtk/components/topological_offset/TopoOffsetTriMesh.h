@@ -46,6 +46,10 @@ public:
     /// operations carry. 3D keeps its labels by its carried edge labels (close_labels()); 2D's
     /// edge label (EdgeExtra2d::label) is not carried, and is read only before the optimization.
     int label = 0;
+    /// The entry of Parameters::offsets whose input complex this vertex is on (label 1), set by
+    /// label_input_complex(); -1 on every other vertex, a split's new vertex included. As
+    /// VertexExtra::offset in 3D.
+    int offset = -1;
     /// The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set
     /// at load (init_from_image()) and carried by the construction, which only splits, a new
     /// vertex starting from none (marching_split_edge_before(), split_face_before()), until
@@ -179,6 +183,36 @@ public:
      * its job -- the per-tag region envelopes (m_tag_envelopes) hold the complex in place.
      */
     std::shared_ptr<SimplicialComplexBVH> m_input_complex_bvh;
+    /// The distance from p to entry k of Parameters::offsets alone, as m_input_complex_bvh's
+    /// dist() for the whole complex: 0 inside the entry's faces, the distance to its primitives
+    /// elsewhere (infinite for an entry that selects nothing). The march traces each entry's edges
+    /// on it. One entry: m_input_complex_bvh itself. As TopoOffsetTetMesh::offset_distance().
+    double offset_distance(size_t k, const Vector2d& p) const;
+    /// offset_distance()'s engine for each entry, built by init_input_complex_bvh() only when
+    /// there are several: a BVH over the entry's rows of m_phi_* (its faces, segments and points);
+    /// null for an entry that selects nothing. 3D's OffsetQuery holds an envelope and a winding
+    /// number hierarchy for the inside test; 2D's BVH answers both (0 inside a face of the
+    /// complex), as m_input_complex_bvh does for the whole complex.
+    std::vector<std::shared_ptr<SimplicialComplexBVH>> m_offset_queries;
+    /// Per entry of Parameters::offsets: its complex has no faces (one entry: the whole complex).
+    /// init_input_complex_bvh(). As in 3D, where it means no triangles.
+    std::vector<bool> m_offset_curves;
+    bool offset_curves(const size_t k) const
+    {
+        return k < m_offset_curves.size() ? m_offset_curves[k] : m_phi_F.rows() == 0;
+    }
+    /// The entry of Parameters::offsets a complex vertex (label 1) is on: 0 when there is one, so
+    /// that a complex labelled by hand (the unit tests) is that entry's. As in 3D.
+    size_t offset_of(const size_t vid) const
+    {
+        return m_offset_params.offsets.size() <= 1 ? 0 : size_t(m_vertex_extra[vid].offset);
+    }
+    /// Entry k's target_distance; the run's when there is one entry, as offset_of(). As in 3D.
+    double offset_target(const size_t k) const
+    {
+        return m_offset_params.offsets.size() <= 1 ? m_offset_params.target_distance
+                                                   : m_offset_params.offsets[k].target_distance;
+    }
 
     /**
      * @brief The smooth offset potential, and with it the definition of the offset itself.
@@ -249,24 +283,36 @@ public:
                    ? *m_region_potentials[size_t(region)]
                    : *m_offset_potential;
     }
+    /// Several entries of Parameters::offsets: the field of the place's piece (place_piece()),
+    /// each piece's at its own distance; one entry: the band region's, as before. As in 3D.
     const OffsetPotential2D& potential_for(const size_t vid) const
     {
+        if (m_offset_params.offsets.size() > 1) return potential_for_region(place_piece(&vid, 1));
         return potential_for_region(vertex_region(vid));
     }
     /// The same selection as potential_for(), as the pointer the energies take a share of. Null
     /// only when m_offset_potential is, which the front placement paths test for.
     std::shared_ptr<const OffsetPotential2D> potential_ptr_for(const size_t vid) const
     {
-        const int r = vertex_region(vid);
+        const int r =
+            m_offset_params.offsets.size() > 1 ? place_piece(&vid, 1) : vertex_region(vid);
         return (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
                                                                   : m_offset_potential;
     }
     const OffsetPotential2D& potential_for_edge(const size_t va, const size_t vb) const
     {
+        if (m_offset_params.offsets.size() > 1) {
+            const std::array<size_t, 2> e{{va, vb}};
+            return potential_for_region(place_piece(e.data(), 2));
+        }
         return potential_for_region(edge_region(va, vb));
     }
     const OffsetPotential2D& potential_for_face(const size_t fid) const
     {
+        if (m_offset_params.offsets.size() > 1) {
+            const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+            return potential_for_region(place_piece(vs.data(), 3));
+        }
         return potential_for_region(fid < m_face_region.size() ? m_face_region[fid] : -1);
     }
     /**
@@ -285,27 +331,61 @@ public:
     /// m_phi_seg_region), as assign_band_regions() reads a seed's piece; -1 for none. 3D asks its
     /// per-piece envelopes (m_region_envelopes), which 2D does not build.
     int nearest_piece(const Vector2d& p) const;
-    /// Per piece of the input complex (m_n_regions): its entry of Parameters::offsets. All 0 in
-    /// 2D, whose march is the one-entry march (label_input_complex() refuses several entries); 3D
-    /// fills it from each entry's labelling (VertexExtra::offset), init_input_complex_bvh().
+    /// Per piece of the input complex (m_n_regions): the entry of Parameters::offsets it belongs
+    /// to, from its vertices' VertexExtra2d::offset (init_input_complex_bvh()). All 0 for one
+    /// entry. As in 3D.
     std::vector<int> m_region_offset;
-    /// Piece r's target distance: its entry's (m_region_offset); the run's (the smallest entry's)
-    /// for r < 0 and with one entry. 3D reads growth_mode's stage targets too (m_offset_levels);
-    /// 2D has no growth_mode.
+    /// Piece r's target distance: its entry's (m_region_offset), its growth_mode stage's while a
+    /// stage runs (m_offset_levels). The run's (the smallest entry's) for r < 0 and with one entry.
+    /// As in 3D.
     double region_delta(const int r) const
     {
         if (m_offset_params.offsets.size() <= 1 || r < 0 || size_t(r) >= m_region_offset.size())
             return m_offset_params.target_distance;
-        return m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
+        const size_t k = size_t(m_region_offset[size_t(r)]);
+        return m_offset_levels.empty() ? m_offset_params.offsets[k].target_distance
+                                       : m_offset_levels[k];
     }
+    /// Several entries, growth_mode: each entry's target in the stage running (region_delta());
+    /// empty outside the stages. One entry: the stages set target_distance itself. As in 3D.
+    std::vector<double> m_offset_levels;
+    /// Several entries, growth_mode: each entry's d_0, the distance its march traced to; its
+    /// target_distance where it traced to that, or could not trace (marching_tris()). As in 3D.
+    std::vector<double> m_growth_starts;
+    /// The target distance at a place (place_piece()). As in 3D.
+    double place_delta(const size_t* vids, const size_t n) const
+    {
+        return region_delta(place_piece(vids, n));
+    }
+    double vertex_delta(const size_t vid) const { return place_delta(&vid, 1); }
     /// front_conv at a place of piece r: front_conv_rel of its entry's target_distance, each piece
-    /// its own; front_conv itself with one entry. As in 3D.
+    /// its own (Parameters::init() refuses an absolute front_conv for entries of different
+    /// distances), fixed through growth_mode's stages as front_conv is for one entry; front_conv
+    /// itself with one entry. As in 3D.
     double front_conv_of(const int r) const
     {
         if (m_offset_params.offsets.size() <= 1 || r < 0 || size_t(r) >= m_region_offset.size())
             return m_offset_params.front_conv;
         return m_offset_params.front_conv_rel *
                m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
+    }
+    /// The bar as a fraction of piece r's current target (front_conv_frac() with one entry): the
+    /// unit of a relative residual read on piece r's field. As in 3D.
+    double front_conv_frac_of(const int r) const
+    {
+        if (m_offset_params.offsets.size() <= 1 || r < 0 || size_t(r) >= m_region_offset.size())
+            return m_offset_params.front_conv_frac();
+        return front_conv_of(r) / std::max(region_delta(r), 1e-16);
+    }
+    /// The factor that puts a relative residual of chord e's piece in the run's units, |d - delta|
+    /// for one entry: delta itself with one entry (`delta`, the run's), front_conv /
+    /// front_conv_frac_of(the chord's piece) with several, so that a run-wide measure in lengths
+    /// (edge_stencil_max_sq()) compared against front_conv^2 compares each chord's against its
+    /// own piece's bar. 3D's run_units_scale() on a face.
+    double run_units_scale(const std::array<size_t, 2>& e, const double delta) const
+    {
+        if (m_offset_params.offsets.size() <= 1) return delta;
+        return m_offset_params.front_conv / front_conv_frac_of(place_piece(e.data(), 2));
     }
 
     /**
@@ -423,13 +503,19 @@ public:
     void check_no_vertex_on_both_surfaces(const char* when) const;
 
     /// TriWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
-    /// init_optimize loop: it returns on convergence without the frozen-front final pass and
-    /// without deciding the verdict. `refine` false skips the halving. `label` names the loop in
-    /// its log. As in 3D.
-    void optimize_offset_loop(
+    /// init_optimize loop (and a growth_mode stage before the last): it returns on convergence
+    /// without the frozen-front final pass and without deciding the verdict. `refine` false skips
+    /// the halving. `label` names the loop in its log. `max_turns` > 0 caps the turns in place of
+    /// max_rounds (growth_mode "smart"'s attempts). `turned_free`: a converged turn with any
+    /// offset edge turned from the field (turned_edge_census()) ends the loop as not converged,
+    /// before the verdict and the final pass. Returns whether the loop converged (free of turned
+    /// edges when asked) within its turns. As in 3D.
+    bool optimize_offset_loop(
         bool final_stage = true,
         bool refine = true,
-        const std::string& label = std::string());
+        const std::string& label = std::string(),
+        int max_turns = 0,
+        bool turned_free = false);
     /**
      * @brief The loop's local_operations(ops): the 2D twin of TopoOffsetTetMesh::loop_group(),
      * the same passes in the same order. Under EXPERIMENTAL_front_pocket_split, the group's
@@ -558,8 +644,65 @@ public:
     /// init_optimize: optimize_offset() opens with a stencil_order loop without refinement. Set
     /// by marching_tris(), only when the target is beyond the maximum marchable distance.
     bool m_init_optimize = false;
-    /// Leads every debug frame label: i during the init_optimize loop, empty otherwise.
+    /// Leads every debug frame label: i during the init_optimize loop, g<k> during growth_mode
+    /// "linear"'s stage k < N, s0 / s<L>a<A> during growth_mode "smart"'s level 0 / level L's
+    /// attempt A, empty otherwise. As in 3D.
     std::string m_frame_prefix;
+    /// growth_mode "linear": stages k = 0..N (N = linear_growth_steps), stage k at
+    /// growth_stage_target(m_growth_start, target_distance, k, N). Before each stage
+    /// target_distance is set to its target and the field rebuilt on it (init_offset_potential());
+    /// stages before the last are optimize_offset_loop(false, true) to convergence, their frames
+    /// led by g<k>; stage N is the ordinary loop. A stage before the last that does not converge
+    /// stops the run there, target_distance and the field set back for the verdict. As in 3D.
+    void linear_growth();
+    /**
+     * @brief growth_mode "smart": which target to try next from the last converged distance,
+     * and what an attempt's result means. Pure, so it is unit-tested apart from the mesh. The 2D
+     * twin of TopoOffsetTetMesh::SmartGrowthSchedule, the same rule.
+     *
+     * From `base` (d_0, then each converged distance) the j-th try after j failures is at
+     * base + (delta - base) / 2^j: delta itself first. A success at delta is the end; a success
+     * below it becomes the new base (j and the failures start again); `max_fails` failures from
+     * one base give up.
+     */
+    struct SmartGrowthSchedule
+    {
+        double base; ///< the last converged distance
+        double delta; ///< target_distance
+        int max_fails; ///< smart_growth_max_fails
+        int j = 0; ///< failed attempts from base, so halvings of the step
+        int level = 1; ///< level 0 is the loop at d_0; each success below delta adds one
+        double target() const { return j == 0 ? delta : base + (delta - base) / std::ldexp(1., j); }
+        enum class Next { Done, Advance, Retry, GiveUp };
+        Next report(const bool converged)
+        {
+            if (converged) {
+                if (j == 0) return Next::Done;
+                base = target();
+                j = 0;
+                ++level;
+                return Next::Advance;
+            }
+            ++j;
+            return j >= max_fails ? Next::GiveUp : Next::Retry;
+        }
+    };
+    /// growth_mode "smart" (see the spec doc): the loop at d_0 up to max_rounds turns (throws when
+    /// it does not converge), then attempts of smart_growth_attempts turns each, as
+    /// SmartGrowthSchedule picks their targets, each judged converged and free of offset edges
+    /// turned from the field (optimize_offset_loop(..., turned_free true)). The attempt at
+    /// target_distance is the final stage: on success it runs the final pass and decides the
+    /// verdict. As in 3D, but for the revert: 3D stores the mesh (take_snapshot()) after level 0
+    /// and after every success and puts it back (restore_snapshot()) after every failure; the 2D
+    /// engine has no rebuild of a live mesh from an image -- 3D's restore is
+    /// TetMesh::init_with_isolated_vertices(), which clears the connectivity first, while
+    /// TriMesh::init() appends to it and its slot pools are private -- so in 2D a failed attempt
+    /// throws, naming the missing rebuild (a change to src/wmtk, Uday's to approve). A success
+    /// below target_distance needs no revert and advances as in 3D.
+    void smart_growth();
+    /// Stage k of n's target: d0 + k (delta - d0) / n, so d0 at k = 0, and delta itself at k = n
+    /// (not the formula, which rounding can leave a hair off it). As in 3D.
+    static double growth_stage_target(double d0, double delta, int k, int n);
 
     /// Max over the front vertices of ||grad F . n||, F the vertex's front objective
     /// (front_objective()). Logged as the loop's gradient reference.
@@ -991,10 +1134,11 @@ public:
     double settle_metric() const { return offset_energy(); }
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
     /// error in units of the tolerance. The weight of the front smoother's offset terms, and the
-    /// scale of edge_offset_term(). As in 3D.
-    double offset_term_weight() const
+    /// scale of edge_offset_term(). `piece`: the place's (place_piece()), whose bar it is in; -1,
+    /// the run's. As in 3D.
+    double offset_term_weight(const int piece = -1) const
     {
-        const double f = m_offset_params.front_conv_frac();
+        const double f = front_conv_frac_of(piece);
         return 1. / (f * f);
     }
 
@@ -1210,8 +1354,8 @@ public:
     /**
      * @brief Construction placement in the marching: sphere tracing along the edge from p_in (the
      * endpoint in the input complex, label != 0) towards p_out (the background endpoint) for the
-     * point where d(x) = D, D = m_construction_distance and d(x) the distance to the input
-     * complex through m_input_complex_bvh. From t = 0 the trace evaluates d at the current
+     * point where d(x) = D, D = m_construction_distances[k] (entry k's) and d(x) the distance to
+     * entry k's complex (offset_distance()). From t = 0 the trace evaluates d at the current
      * point and steps forward by D - d, the largest step that cannot cross the level set (d is
      * 1-Lipschitz); it stops when |d - D| <= sphere_trace_target_rel_tol x D and returns true
      * with p_new there. It returns
@@ -1223,6 +1367,7 @@ public:
      * Same as 3D.
      */
     bool edge_split_sphere_trace(
+        size_t k,
         const Vector2d& p_in,
         const Vector2d& p_out,
         Vector2d& p_new,
@@ -1232,9 +1377,20 @@ public:
     /// start of marching_tris().
     size_t m_marching_root_splits = 0, m_marching_midpoint_splits = 0;
     size_t m_marching_trace_steps = 0, m_marching_trace_steps_max = 0;
-    /// The distance the marching's sphere trace aims for: target_distance, or half the maximum
-    /// marchable distance under construction_mode "max_marchable_fallback" (see the marching).
+    /// The distance the marching's sphere trace aims for, per entry of Parameters::offsets: its
+    /// target_distance, or half its maximum marchable distance under construction_mode
+    /// "max_marchable_fallback" (see the marching). m_construction_traced[k] false: the entry's
+    /// marched edges are split at their midpoints instead. m_construction_distance is the
+    /// smallest, what the run-level readers take (growth_mode). As in 3D.
+    std::vector<double> m_construction_distances;
+    std::vector<bool> m_construction_traced;
     double m_construction_distance = 0.;
+    /// growth_mode "linear" / "smart": d_0, the distance the march traced the front to when that
+    /// is below target_distance (m_construction_distance, half the maximum marchable distance); 0
+    /// when growth_mode does not apply (none, a target the march traces to, no edge marched, or
+    /// the midpoint fallback). Several entries: the smallest entry's d_0 (m_growth_starts). Set by
+    /// marching_tris(), read by optimize_offset(). As in 3D.
+    double m_growth_start = 0.;
 
     /**
      * @brief Reject any collapse that violates the substructure link condition, and remember the
@@ -1731,6 +1887,12 @@ public:
     /// third corner). False, `n` unusable, where it cannot be measured: a degenerate edge, or no
     /// band face. 3D's front_face_out_normal().
     bool front_edge_out_normal(size_t a, size_t b, Vector2d& n) const;
+    /// front_edge_out_normal() with the edge's band face given: `band_fid`, a band face holding
+    /// the edge (no lookup, so it reads that face alone). 3D's front_face_out_normal_in().
+    bool front_edge_out_normal_in(size_t a, size_t b, size_t band_fid, Vector2d& n) const;
+    /// front_edge_field_angle() with the edge's band face given (front_edge_out_normal_in()). 3D's
+    /// front_face_field_angle_in().
+    double front_edge_field_angle_in(size_t a, size_t b, size_t band_fid) const;
     /**
      * @brief The field angle of offset edge (a, b): the angle, in degrees, between its unit
      * normal out of its band face (front_edge_out_normal()) and the field's unit normal at its
@@ -1742,12 +1904,54 @@ public:
      */
     double front_edge_field_angle(size_t a, size_t b) const;
     /// Per-vertex 0/1: 1 at every fold's vertex (count_folds()). The debug frames' offset_foldover
-    /// point field (write_vtu()) and the end-of-run [foldover] warning. Until the settle step of
-    /// the 2D lock-step port it was 1 where the two offset edges at a vertex were within 30
-    /// degrees of each other (an outer angle over 330 through either side) -- the opposite test
-    /// alone at a fixed angle, which called every ridge vertex a fold, as 3D's "real fold" did
-    /// before 2026-11-02.
+    /// point field (write_vtu()); until the growth step of the 2D lock-step port also the
+    /// end-of-run [foldover] warning, which the [turned edges] census replaced, as 3D's
+    /// [turned faces]. Until the settle step it was 1 where the two offset edges at a vertex were
+    /// within 30 degrees of each other (an outer angle over 330 through either side) -- the
+    /// opposite test alone at a fixed angle, which called every ridge vertex a fold, as 3D's
+    /// "real fold" did before 2026-11-02.
     std::vector<char> offset_surface_foldover_labels() const;
+    /// An offset edge turned from the field: front_edge_field_angle() > foldover_angle; an
+    /// unmeasurable edge is not one. A property of one edge, not a fold (fold_test(), which takes
+    /// an unmeasurable edge as turned). 3D's front_face_turned().
+    bool front_edge_turned(const size_t a, const size_t b) const
+    {
+        return front_edge_field_angle(a, b) > m_offset_params.foldover_angle;
+    }
+    /// The offset curve's edges turned from the field: over offset_surface_edges(), the edges
+    /// whose front_edge_field_angle() exceeds foldover_angle, the unmeasurable ones (NaN, not
+    /// counted as turned), and the worst angle with its edge's midpoint. The end-of-run
+    /// [turned edges] warning and growth_mode "smart"'s test read it. 3D's turned_face_census().
+    struct TurnedEdgeCensus
+    {
+        size_t n_turned = 0, n_edges = 0, n_unmeasured = 0;
+        double worst = 0.;
+        Vector2d worst_at = Vector2d::Zero();
+    };
+    TurnedEdgeCensus turned_edge_census() const;
+    /// growth_mode "individual_op_reject": a collapse or a smoothing move that raises the number of
+    /// offset edges turned from the field (front_edge_turned()) among the edges it changes is
+    /// refused. In the loops only: not in the final pass (m_freeze_front, 3D's TetWild pass), nor
+    /// before the march (the repulsion). As in 3D, whose rule also refuses a flip of the offset
+    /// surface: 2D's swap never flips the front (the base refuses every tracked edge,
+    /// swap_edge_before()), and an interior flip keeps each offset edge's band face on the same
+    /// side of it, so its normal and field angle, and so cannot change which edges are turned.
+    bool turned_reject_active() const
+    {
+        return m_offset_params.growth_mode == "individual_op_reject" && !m_freeze_front &&
+               !m_repulsion_potential;
+    }
+    /// The live offset edges through vid turned from the field (front_edge_field_angle() >
+    /// foldover_angle), as sorted vertex pairs, added to `out`. Reads vid's own face list and the
+    /// faces in it only, as vertex_has_live_offset_edge() does, so the operation hooks may ask it.
+    /// 3D's turned_front_faces_at().
+    void turned_front_edges_at(size_t vid, std::set<std::array<size_t, 2>>& out) const;
+    /// growth_mode "individual_op_reject": the turned edges through the collapse's two ends
+    /// before it (turned_front_edges_at()), per thread; -1 for no rule. As in 3D.
+    mutable wmtk::threading::enumerable_thread_specific<int> m_collapse_turned_before{-1};
+    /// Operations refused for raising the turned edges (turned_reject_active()), per operation
+    /// group; logged as [op reject]. As in 3D, which also counts flips (see turned_reject_active()).
+    mutable std::atomic<int> m_turned_reject_collapse{0}, m_turned_reject_smooth{0};
     void log_smooth_trace() const;
 
 
@@ -2080,8 +2284,12 @@ public:
      * The (a, b) form reads the field of the chord (potential_for_edge()).
      */
     double edge_offset_term(size_t a, size_t b) const;
-    double edge_offset_term(const OffsetPotential2D& pot, const Vector2d& pa, const Vector2d& pb)
-        const;
+    /// `piece`: the chord's (place_piece()), whose bar the measure is in; -1, the run's. As in 3D.
+    double edge_offset_term(
+        const OffsetPotential2D& pot,
+        const Vector2d& pa,
+        const Vector2d& pb,
+        int piece = -1) const;
     /// The field's outward unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector2d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a front vertex it
@@ -2769,8 +2977,8 @@ public:
     /**
      * @brief Put the optimization's frames on the run's single debug timeline (see
      * write_debug_frame()), labelled "r<turn><tag><pass>_<op>" / "r<turn><tag>_end", tag S in
-     * the loop and F in the final pass; led by m_frame_prefix (i during init_optimize). Same
-     * scheme as 3D.
+     * the loop and F in the final pass; led by m_frame_prefix (i during init_optimize, g<k> and
+     * s0 / s<L>a<A> during growth_mode's stages). Same scheme as 3D.
      */
     void write_smoothing_debug_output(const std::string& path) const override
     {
@@ -2852,10 +3060,14 @@ public:
      */
     bool ambient_assert();
 
-    /**
-     * @brief label input complex simplices as per boolean expression (or single body mode)
-     */
+    /// Label the input complex: the union of the complexes of Parameters::offsets, each entry's
+    /// vertices carrying its index (VertexExtra2d::offset). Refuses a vertex two entries select.
+    /// As in 3D.
     void label_input_complex();
+    /// Label entry k's complex alone (label 1) as per its boolean expression (or single body
+    /// mode), as label_input_complex() calls it on cleared labels; sets m_singlebody and
+    /// m_single_tag for that entry. As in 3D.
+    void label_offset(size_t k);
 
     /**
      * @brief check if the input complex is empty. Only valid after calling init_from_image(...).

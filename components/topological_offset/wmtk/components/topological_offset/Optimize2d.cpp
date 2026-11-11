@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -494,6 +495,18 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
 bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
 {
     const size_t v2_id = collapse_cache.local().v2_id;
+    // growth_mode "individual_op_reject": the edges through the survivor are every offset edge
+    // the collapse changed (it moves no vertex); refused, the engine rolls the collapse back, as
+    // for the energy rule below and in the same place, before the base's hook. As in 3D
+    // (collapse_after_connectivity()).
+    if (const int before = m_collapse_turned_before.local(); before >= 0) {
+        std::set<std::array<size_t, 2>> f;
+        turned_front_edges_at(v2_id, f);
+        if (int(f.size()) > before) {
+            ++m_turned_reject_collapse;
+            return false;
+        }
+    }
     // THE ENERGY RULE for a collapse (see tri_energy()): the sum of tri_energy() over the faces
     // the collapse changed -- the survivor's ring less v2's old faces outside v1's ring, which
     // keep their slots, corners and labels -- may not exceed the sum over v1's old ring
@@ -577,6 +590,20 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
     // interior can still pinch its two sides together while every tracked surface survives.
     if (!substructure_link_condition(t)) {
         return false;
+    }
+    // growth_mode "individual_op_reject": the turned edges through the two ends, for
+    // collapse_edge_after(); -1 (no rule) when neither end is on the front. As in 3D.
+    {
+        const auto& cc = collapse_cache.local();
+        int& turned = m_collapse_turned_before.local();
+        turned = -1;
+        if (turned_reject_active() &&
+            (m_vertex_extra[cc.v1_id].m_is_on_offset || m_vertex_extra[cc.v2_id].m_is_on_offset)) {
+            std::set<std::array<size_t, 2>> f;
+            turned_front_edges_at(cc.v1_id, f);
+            turned_front_edges_at(cc.v2_id, f);
+            turned = int(f.size());
+        }
     }
     // The energy rule's before-half is taken in collapse_before_vertex(), which the engine calls
     // before its scoring loop, so that collapse_quality_allowed() can refuse on it early.
@@ -1075,7 +1102,29 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     // only outside the final pass: smooth_before() refuses it while m_freeze_front is set. Every
     // other vertex goes through smooth_nonfront_vertex(), vetoed on the same sum. As in 3D.
     if (ve.m_is_on_offset) {
-        const bool ok = smooth_front_vertex(t);
+        // growth_mode "individual_op_reject": the turned offset edges through vid before the
+        // move, which may not raise them (every edge it changes goes through vid). As in 3D, but
+        // around smooth_front_vertex() rather than after its veto inside it, so that the 2D
+        // smoother's own edits (the exact_swept step) merge with this one: the same test at the
+        // same point of the move, after the veto passed. A move refused here was counted by
+        // DEBUG_crossings (log-only) and marked the released tube dirty (a needless refresh).
+        int turned_before = -1;
+        if (turned_reject_active()) {
+            std::set<std::array<size_t, 2>> f;
+            turned_front_edges_at(vid, f);
+            turned_before = int(f.size());
+        }
+        bool ok = smooth_front_vertex(t);
+        if (ok && turned_before >= 0) {
+            std::set<std::array<size_t, 2>> f;
+            turned_front_edges_at(vid, f);
+            if (int(f.size()) > turned_before) {
+                ++m_turned_reject_smooth;
+                --m_smooth_rejects.accepted;
+                ++m_smooth_rejects.quality;
+                ok = false;
+            }
+        }
         if (ok) ++m_smooth_trace.offset_accepted;
         return ok;
     }
@@ -1706,7 +1755,11 @@ void TopoOffsetTriMesh::log_refine_block_census(const std::string& when, const d
             cand.dist = (cand.c - Vector2d(foot.x(), foot.y())).norm();
         }
         if (m_offset_potential && c_level > 0.) {
-            cand.phi_over_c = potential_for_face(fid).value(cand.c) / c_level;
+            // Several entries of offsets: the face's piece's field over its own level, each piece
+            // at its own distance. As in 3D.
+            const OffsetPotential2D& pot = potential_for_face(fid);
+            cand.phi_over_c = pot.value(cand.c) /
+                              (m_offset_params.offsets.size() > 1 ? pot.target_level() : c_level);
         }
 
         int best = kShort; // the LEAST blocked of the three edges; `free` is best of all
@@ -2362,9 +2415,14 @@ double TopoOffsetTriMesh::band_vertex_distance_error(const size_t vid) const
 {
     // dist() pads a 2D point to 3D itself, and in 2D the complex's triangles lie in the
     // z = 0 plane, so a point inside the input complex reports 0 -- the same convention the
-    // 3D version gets from its inside-any-tet check.
+    // 3D version gets from its inside-any-tet check. Several entries of offsets: at the vertex's
+    // piece's target distance, from its own piece -- its integral's distance (band_exact_for(),
+    // 3D's envelope_for(): 2D builds no per-piece envelope). As in 3D.
     const Vector2d p = m_vertex_attribute[vid].m_posf;
-    return std::abs(m_input_complex_bvh->dist(VectorXd(p)) - m_offset_params.target_distance);
+    if (m_offset_params.offsets.size() <= 1 || !m_band_exact)
+        return std::abs(m_input_complex_bvh->dist(VectorXd(p)) - m_offset_params.target_distance);
+    const int r = place_piece(&vid, 1);
+    return std::abs(band_exact_for(r)->distance(p) - region_delta(r));
 }
 
 double TopoOffsetTriMesh::band_vertex_residual(const size_t vid) const
@@ -2797,7 +2855,8 @@ double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
     if (!(level > 0.)) return std::numeric_limits<double>::infinity();
     const double r = pot.relative_residual(m_vertex_attribute[vid].m_posf);
     if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
-    const double bar = m_offset_params.front_conv_frac();
+    const double bar = m_offset_params.offsets.size() > 1 ? front_conv_frac_of(place_piece(&vid, 1))
+                                                          : m_offset_params.front_conv_frac();
     if (!(bar > 0.)) return std::numeric_limits<double>::infinity();
     return std::abs(r) / bar;
 }
@@ -2805,7 +2864,8 @@ double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
 double TopoOffsetTriMesh::edge_offset_term(
     const OffsetPotential2D& pot,
     const Vector2d& pa,
-    const Vector2d& pb) const
+    const Vector2d& pb,
+    const int piece) const
 {
     // THE chord measure: the MEAN over the chord's stencil of the squared relative error, in
     // units of the tolerance. At every stencil point q of for_each_edge_sample():
@@ -2839,16 +2899,20 @@ double TopoOffsetTriMesh::edge_offset_term(
     // n == 0 only when stencil_order < 0, which the spec's min refuses; an unmeasurable sample
     // reads the whole chord unmeasurable.
     if (unmeasurable || n == 0) return -1.;
-    if (!(m_offset_params.front_conv_frac() > 0.)) return std::numeric_limits<double>::infinity();
-    return offset_term_weight() * (sum / double(n));
+    if (!(front_conv_frac_of(piece) > 0.)) return std::numeric_limits<double>::infinity();
+    return offset_term_weight(piece) * (sum / double(n));
 }
 
 double TopoOffsetTriMesh::edge_offset_term(const size_t a, const size_t b) const
 {
+    // Several entries of offsets: the chord's piece's bar (one entry: the run's). As in 3D.
+    const std::array<size_t, 2> e{{a, b}};
+    const int piece = m_offset_params.offsets.size() > 1 ? place_piece(e.data(), 2) : -1;
     return edge_offset_term(
         potential_for_edge(a, b),
         m_vertex_attribute[a].m_posf,
-        m_vertex_attribute[b].m_posf);
+        m_vertex_attribute[b].m_posf,
+        piece);
 }
 
 double TopoOffsetTriMesh::tri_energy(const size_t fid, const bool band_term) const
@@ -3184,7 +3248,7 @@ void TopoOffsetTriMesh::log_front_profile(const size_t vid)
     if (!(g.norm() > 0.) || !g.allFinite()) return;
     const Vector2d n = g / g.norm(); // toward the input for the smooth field, away for Euclidean
     auto band = front_energy(vid);
-    const double delta = m_offset_params.target_distance;
+    const double delta = vertex_delta(vid); // the vertex's piece's (one entry: the run's)
     logger().info(
         "[front profile] worst vertex {} at ({:.5}, {:.5}), region {}, along the field direction "
         "n = ({:.4}, {:.4}); columns: s/delta | band term of the vertex's band faces "
@@ -3285,10 +3349,10 @@ size_t TopoOffsetTriMesh::refine_front_by_halving(const std::vector<size_t>& ver
 double TopoOffsetTriMesh::edge_stencil_max_sq(const std::array<size_t, 2>& e) const
 {
     // See the declaration. (d - delta)^2 = (delta r)^2, r the potential's relative_residual() =
-    // (d - delta) / delta; with one entry of offsets (2D's march takes one) 3D's
-    // run_units_scale() is delta.
+    // (d - delta) / delta. Several entries of offsets: r on the chord's piece's field, in the
+    // run's units (run_units_scale()). As in 3D.
     if (!m_offset_potential) return 0.;
-    const double delta = m_offset_params.target_distance;
+    const double delta = run_units_scale(e, m_offset_params.target_distance);
     const OffsetPotential2D& pot = potential_for_edge(e[0], e[1]);
     double m = 0.;
     bool unmeasurable = false;
@@ -4005,8 +4069,8 @@ void TopoOffsetTriMesh::log_worst_dist_vertex() const
         p[0],
         p[1],
         d,
-        m_offset_params.target_distance,
-        std::abs(d - m_offset_params.target_distance));
+        vertex_delta(vid),
+        std::abs(d - vertex_delta(vid)));
     logger().info(
         "\t  flags: on_offset {} on_input {} on_region {} on_bbox {} rounded {} | boundary mask "
         "{:#x} | incident edges: {} offset, {} region, {} bbox | phi {:.6} (level {:.6}), "
@@ -4202,12 +4266,22 @@ bool TopoOffsetTriMesh::front_edge_out_normal(const size_t a, const size_t b, Ve
     // See the declaration. As 3D's front_face_out_normal().
     const int64_t bf = front_edge_band_face(a, b);
     if (bf < 0) return false;
+    return front_edge_out_normal_in(a, b, size_t(bf), n);
+}
+
+bool TopoOffsetTriMesh::front_edge_out_normal_in(
+    const size_t a,
+    const size_t b,
+    const size_t band_fid,
+    Vector2d& n) const
+{
+    // See the declaration. As 3D's front_face_out_normal_in().
     const Vector2d& pa = m_vertex_attribute[a].m_posf;
     const Vector2d d = m_vertex_attribute[b].m_posf - pa;
     n = Vector2d(-d.y(), d.x());
     if (!(n.norm() > 0.)) return false;
     n.normalize();
-    for (const size_t v : oriented_tri_vids(size_t(bf))) {
+    for (const size_t v : oriented_tri_vids(band_fid)) {
         if (v == a || v == b) continue;
         if (n.dot(pa - m_vertex_attribute[v].m_posf) < 0.) n = -n;
     }
@@ -4216,11 +4290,22 @@ bool TopoOffsetTriMesh::front_edge_out_normal(const size_t a, const size_t b, Ve
 
 double TopoOffsetTriMesh::front_edge_field_angle(const size_t a, const size_t b) const
 {
-    // See the declaration. As 3D's front_face_field_angle() and front_face_angle_to_field().
+    // See the declaration. As 3D's front_face_field_angle().
+    const int64_t bf = front_edge_band_face(a, b);
+    if (bf < 0) return std::numeric_limits<double>::quiet_NaN();
+    return front_edge_field_angle_in(a, b, size_t(bf));
+}
+
+double TopoOffsetTriMesh::front_edge_field_angle_in(
+    const size_t a,
+    const size_t b,
+    const size_t band_fid) const
+{
+    // See the declaration. As 3D's front_face_field_angle_in() and front_face_angle_to_field().
     const double nan = std::numeric_limits<double>::quiet_NaN();
     if (!m_band_exact) return nan;
     Vector2d n;
-    if (!front_edge_out_normal(a, b, n)) return nan;
+    if (!front_edge_out_normal_in(a, b, band_fid, n)) return nan;
     const Vector2d x = 0.5 * (m_vertex_attribute[a].m_posf + m_vertex_attribute[b].m_posf);
     // The edge's piece's integral (place_piece(); the whole complex's with one entry).
     const std::array<size_t, 2> e{{a, b}};
@@ -4266,6 +4351,70 @@ TopoOffsetTriMesh::FoldCount TopoOffsetTriMesh::count_folds(
         if (fold_vertices) fold_vertices->push_back(v);
     }
     return c;
+}
+
+TopoOffsetTriMesh::TurnedEdgeCensus TopoOffsetTriMesh::turned_edge_census() const
+{
+    // See the declaration. As 3D's turned_face_census().
+    TurnedEdgeCensus c;
+    for (const auto& e : offset_surface_edges()) {
+        ++c.n_edges;
+        const double ang = front_edge_field_angle(e[0], e[1]);
+        if (!std::isfinite(ang)) {
+            ++c.n_unmeasured;
+            continue;
+        }
+        if (!(ang > m_offset_params.foldover_angle)) continue;
+        ++c.n_turned;
+        if (ang > c.worst) {
+            c.worst = ang;
+            c.worst_at = 0.5 * (m_vertex_attribute[e[0]].m_posf + m_vertex_attribute[e[1]].m_posf);
+        }
+    }
+    return c;
+}
+
+void TopoOffsetTriMesh::turned_front_edges_at(
+    const size_t vid,
+    std::set<std::array<size_t, 2>>& out) const
+{
+    // See the declaration. The live offset edges through vid found as vertex_has_live_offset_edge()
+    // finds them, pairing the edges within vid's face list: an edge with one face in the list is
+    // on the domain boundary, the band's when that face is a band face.
+    const std::vector<size_t>& ring = get_one_ring_fids_for_vertex(vid);
+    struct Side
+    {
+        size_t other; ///< the edge's other end
+        size_t fid;
+    };
+    std::vector<Side> sides;
+    sides.reserve(2 * ring.size());
+    for (const size_t fid : ring) {
+        for (const size_t w : oriented_tri_vids(fid)) {
+            if (w != vid) sides.push_back({w, fid});
+        }
+    }
+    std::sort(sides.begin(), sides.end(), [](const Side& a, const Side& b) {
+        return a.other != b.other ? a.other < b.other : a.fid < b.fid;
+    });
+    for (size_t i = 0; i < sides.size();) {
+        size_t j = i + 1;
+        while (j < sides.size() && sides[j].other == sides[i].other) ++j;
+        const size_t fa = sides[i].fid;
+        int64_t band = -1;
+        if (j - i == 1) {
+            if (face_is_offset_band(fa)) band = int64_t(fa);
+        } else {
+            const size_t fb = sides[i + 1].fid;
+            const bool a = face_is_offset_band(fa), b = face_is_offset_band(fb);
+            if (a != b && !face_is_input_complex(a ? fb : fa)) band = int64_t(a ? fa : fb);
+        }
+        if (band >= 0 && front_edge_field_angle_in(vid, sides[i].other, size_t(band)) >
+                             m_offset_params.foldover_angle) {
+            out.insert({{std::min(vid, sides[i].other), std::max(vid, sides[i].other)}});
+        }
+        i = j;
+    }
 }
 
 std::vector<char> TopoOffsetTriMesh::offset_surface_foldover_labels() const
@@ -5799,10 +5948,12 @@ void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
             : std::string());
 }
 
-void TopoOffsetTriMesh::optimize_offset_loop(
+bool TopoOffsetTriMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
-    const std::string& label)
+    const std::string& label,
+    const int max_turns,
+    const bool turned_free)
 {
     // One loop: TriWild's operation groups (split / collapse / swap, each followed by smoothing)
     // with the front placed by the offset objective inside the smoothing passes. No offset tube
@@ -5812,7 +5963,7 @@ void TopoOffsetTriMesh::optimize_offset_loop(
     check_no_vertex_on_both_surfaces("construction");
     log_region_edge_mask_health("construction");
     audit_surface_containment("construction");
-    // Each loop judges its own (the init_optimize loop and the loop after it). As in 3D.
+    // Each loop judges its own target (the init_optimize loop, growth_mode's stages). As in 3D.
     m_unreachable_cells = 0;
     needle_scan("after construction, before the loop");
     assign_band_regions();
@@ -5831,7 +5982,10 @@ void TopoOffsetTriMesh::optimize_offset_loop(
         "\t[offset envelope] the loop's operations and smoothing do not hold the offset boundary "
         "to an envelope; the final pass does (eps {:.6g})",
         m_offset_params.offset_envelope);
-    const int budget = std::max(1, m_offset_params.max_rounds);
+    // max_turns > 0: growth_mode "smart"'s attempt (smart_growth_attempts) in place of max_rounds.
+    // As in 3D.
+    const int budget = max_turns > 0 ? max_turns : std::max(1, m_offset_params.max_rounds);
+    const char* budget_name = max_turns > 0 ? "smart_growth_attempts" : "max_rounds";
     // One turn is TriWild's operation groups, run here rather than through mesh_improvement() so
     // the released-boundary tube can be refreshed after every group. What mesh_improvement()
     // adds and is left out here on purpose is its stall response, which refines around the
@@ -5905,6 +6059,8 @@ void TopoOffsetTriMesh::optimize_offset_loop(
             const int energy_c0 = iter_cnt_collapse_energy_reject.load();
             const int energy_s0 = iter_cnt_swap_energy_reject.load();
             const int energy_p0 = iter_cnt_split_energy_reject.load();
+            const int fold_c0 = m_turned_reject_collapse.load(),
+                      fold_m0 = m_turned_reject_smooth.load();
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
             log_energy_step(it + 1, "start");
@@ -5941,6 +6097,17 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 iter_cnt_collapse_energy_reject.load(),
                 iter_cnt_swap_energy_reject.load(),
                 iter_cnt_split_energy_reject.load());
+            if (turned_reject_active()) {
+                // As in 3D, without its flips (turned_reject_active()).
+                logger().info(
+                    "\t[op reject] turn {} {} group: refused for raising the offset edges turned "
+                    "from the field (growth_mode individual_op_reject): {} collapses, {} "
+                    "smoothing moves",
+                    it + 1,
+                    group_names[gi],
+                    m_turned_reject_collapse.load() - fold_c0,
+                    m_turned_reject_smooth.load() - fold_m0);
+            }
         }
         consolidate_mesh();
         m_cross_valid = false; // DEBUG_crossings: consolidation renumbered the vertices
@@ -6141,8 +6308,29 @@ void TopoOffsetTriMesh::optimize_offset_loop(
             }
             if (m_offset_params.exit_no_folds && fc.folds > 0) resolved = false;
         }
-        // 3D judges growth_mode "smart"'s converged loop here (turned_face_census()); 2D has no
-        // growth_mode: the growth step of the 2D lock-step port.
+        // turned_free (growth_mode "smart"): a converged loop with an offset edge turned from the
+        // field has failed, judged here, before the verdict and the final pass, which it does not
+        // get. As in 3D.
+        if (resolved && turned_free) {
+            const TurnedEdgeCensus fc = turned_edge_census();
+            if (fc.n_turned > 0) {
+                logger().warn(
+                    "[{}] converged at target_distance {:.6g} after {} turn(s), but {} of {} "
+                    "offset edges are turned from the field (more than foldover_angle {} degrees "
+                    "from grad d; the worst {:.4g} degrees, at ({:.4}, {:.4}))",
+                    label,
+                    m_offset_params.target_distance,
+                    it + 1,
+                    fc.n_turned,
+                    fc.n_edges,
+                    m_offset_params.foldover_angle,
+                    fc.worst,
+                    fc.worst_at[0],
+                    fc.worst_at[1]);
+                refresh_released_envelope();
+                return false;
+            }
+        }
         if (resolved && !final_stage) {
             // The init_optimize loop ends here; the final pass and the verdict belong to the
             // ordinary loop that follows it.
@@ -6160,7 +6348,7 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 ec.n_vertices,
                 amips);
             refresh_released_envelope();
-            return;
+            return true;
         }
         if (resolved) {
             m_energy_verdict = ec;
@@ -6247,19 +6435,311 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 }
             }
             refresh_released_envelope();
-            return;
+            return true;
         }
     }
     check_level_set_reachable("the loop's end");
     logger().warn(
-        "The loop did not converge in {} turns (max_rounds){}",
+        "The loop did not converge in {} turns ({}){}",
         budget,
-        final_stage ? std::string()
-                    : fmt::format(
-                          " -- {} at target_distance {:.6g}; the run moves on",
-                          label,
-                          m_offset_params.target_distance));
+        budget_name,
+        label.empty() ? std::string()
+                      : fmt::format(
+                            " -- {} at target_distance {:.6g}",
+                            label,
+                            m_offset_params.target_distance));
     log_front_profile(energy_criterion().worst_vid);
+    return false;
+}
+
+double TopoOffsetTriMesh::growth_stage_target(
+    const double d0,
+    const double delta,
+    const int k,
+    const int n)
+{
+    return k >= n ? delta : d0 + double(k) * (delta - d0) / double(n);
+}
+
+void TopoOffsetTriMesh::linear_growth()
+{
+    // See the declaration and the spec doc (growth_mode "linear"). Between stages only
+    // target_distance changes, and what init_offset_potential() builds on it: the field, the
+    // per-piece fields, the exact integral. Every other reader of target_distance (the band term,
+    // the settle test, the measures, the front smoother) asks for it when it runs, and no pass is
+    // running here. As in 3D.
+    const double delta = m_offset_params.target_distance;
+    const double d0 = m_growth_start;
+    // growth_mode "individual_op_reject": d_0, then target_distance, nothing between.
+    const int n = m_offset_params.growth_mode == "linear" ? m_offset_params.linear_growth_steps : 1;
+    const auto set_target = [&](const double d) {
+        m_offset_params.target_distance = d;
+        init_offset_potential();
+    };
+    // Several entries of offsets (m_growth_starts): stage k at each entry's own stage target, from
+    // its d_0 to its target_distance (region_delta() reads them, m_offset_levels); the run's
+    // target the smallest. One entry: target_distance itself.
+    const bool several = !m_growth_starts.empty();
+    const auto set_stage = [&](const int k) {
+        if (!several) {
+            set_target(growth_stage_target(d0, delta, k, n));
+            return;
+        }
+        m_offset_levels.resize(m_growth_starts.size());
+        for (size_t e = 0; e < m_growth_starts.size(); ++e) {
+            m_offset_levels[e] = growth_stage_target(
+                m_growth_starts[e],
+                m_offset_params.offsets[e].target_distance,
+                k,
+                n);
+            logger().info(
+                "\t[incremental growth] stage {} / {}: offsets[{}] at {:.6g} (its target_distance "
+                "{:.6g})",
+                k,
+                n,
+                e,
+                m_offset_levels[e],
+                m_offset_params.offsets[e].target_distance);
+        }
+        set_target(*std::min_element(m_offset_levels.begin(), m_offset_levels.end()));
+    };
+    const auto set_final = [&]() {
+        m_offset_levels.clear();
+        set_target(delta);
+    };
+    std::string done; // the stages before the last, for the last one's header
+    for (int k = 0; k < n; ++k) {
+        set_stage(k);
+        m_frame_prefix = fmt::format("g{}", k);
+        logger().info(
+            "======== [incremental growth] stage {} / {}: target_distance {:.6g} ({:.4g}x "
+            "target_distance {:.6g}){} ========",
+            k,
+            n,
+            m_offset_params.target_distance,
+            m_offset_params.target_distance / delta,
+            delta,
+            k == 0 ? ", the distance the march traced to" : "");
+        // Parameters::init() refuses front_conv above target_distance itself; a stage's target
+        // below it is not refused, only said.
+        if (m_offset_params.front_conv > m_offset_params.target_distance) {
+            logger().warn(
+                "[incremental growth] stage {} / {}: front_conv {:.6g} exceeds the stage's "
+                "target_distance {:.6g}, so its tests read nearly every front vertex as within "
+                "the bar",
+                k,
+                n,
+                m_offset_params.front_conv,
+                m_offset_params.target_distance);
+        }
+        const bool converged = optimize_offset_loop(
+            /*final_stage=*/false,
+            /*refine=*/true,
+            fmt::format("incremental growth stage {} / {}", k, n));
+        // The loop sets m_iterations_used every turn, and a stage before the last has no final
+        // pass to reset it: its turns.
+        done += fmt::format(
+            "{}stage {} at {:.6g} in {} turn(s)",
+            k == 0 ? "" : ", ",
+            k,
+            m_offset_params.target_distance,
+            m_iterations_used);
+        m_converged = false;
+        m_energy_verdict.reset();
+        if (!converged) {
+            m_frame_prefix.clear();
+            // The verdict and the report measure this mesh against target_distance itself.
+            set_final();
+            logger().warn(
+                "[incremental growth] stage {} / {} at target_distance {:.6g} did not converge in "
+                "max_rounds {} turns: the run stops here, stages {}..{} not run; the verdict "
+                "measures this mesh against target_distance {:.6g}",
+                k,
+                n,
+                growth_stage_target(d0, delta, k, n),
+                m_offset_params.max_rounds,
+                k + 1,
+                n,
+                delta);
+            return;
+        }
+    }
+    m_frame_prefix.clear();
+    set_final();
+    logger().info(
+        "======== [incremental growth] stage {} / {}: target_distance {:.6g}, the ordinary loop "
+        "(converged before it: {}) ========",
+        n,
+        n,
+        delta,
+        done);
+    optimize_offset_loop();
+}
+
+void TopoOffsetTriMesh::smart_growth()
+{
+    // See the declaration and the spec doc (growth_mode "smart"). As in linear_growth(), only
+    // target_distance changes between loops, and what init_offset_potential() builds on it. As in
+    // 3D but for the revert (see the declaration).
+    const auto t0 = std::chrono::steady_clock::now();
+    const double delta = m_offset_params.target_distance;
+    const double d0 = m_growth_start;
+    const int attempts = m_offset_params.smart_growth_attempts;
+    const auto set_target = [&](const double d) {
+        m_offset_params.target_distance = d;
+        init_offset_potential();
+    };
+    // Several entries of offsets (m_growth_starts): one schedule per entry, from its d_0 to its
+    // target_distance, advanced in lockstep with sched below (the same successes and failures,
+    // so the same j and level): each loop at each entry's own target (m_offset_levels), the run's
+    // the smallest. One entry: sched alone.
+    const bool several = !m_growth_starts.empty();
+    std::vector<SmartGrowthSchedule> entry_sched;
+    for (size_t e = 0; e < m_growth_starts.size(); ++e) {
+        entry_sched.push_back(
+            {m_growth_starts[e],
+             m_offset_params.offsets[e].target_distance,
+             m_offset_params.smart_growth_max_fails});
+    }
+    const auto set_targets = [&](const double d, const bool level0) {
+        if (!several) {
+            set_target(d);
+            return;
+        }
+        m_offset_levels.resize(entry_sched.size());
+        for (size_t e = 0; e < entry_sched.size(); ++e) {
+            const SmartGrowthSchedule& es = entry_sched[e];
+            m_offset_levels[e] = level0 ? m_growth_starts[e] : es.j == 0 ? es.delta : es.target();
+            logger().info(
+                "\t[smart growth] offsets[{}] at {:.6g} (its target_distance {:.6g})",
+                e,
+                m_offset_levels[e],
+                es.delta);
+        }
+        set_target(*std::min_element(m_offset_levels.begin(), m_offset_levels.end()));
+    };
+    const auto report_entries = [&](const bool ok) {
+        for (SmartGrowthSchedule& es : entry_sched) es.report(ok);
+    };
+    // Parameters::init() refuses front_conv above target_distance itself; a smaller loop's target
+    // below it is not refused, only said.
+    const auto warn_front_conv = [&](const std::string& what) {
+        if (m_offset_params.front_conv > m_offset_params.target_distance) {
+            logger().warn(
+                "[smart growth] {}: front_conv {:.6g} exceeds its target_distance {:.6g}, so its "
+                "tests read nearly every front vertex as within the bar",
+                what,
+                m_offset_params.front_conv,
+                m_offset_params.target_distance);
+        }
+    };
+
+    // Level 0: the loop at d_0, from the front as the march left it.
+    set_targets(d0, /*level0=*/true);
+    m_frame_prefix = "s0";
+    logger().info(
+        "======== [smart growth] level 0: target_distance {:.6g} ({:.4g}x target_distance {:.6g}), "
+        "the distance the march traced to; up to max_rounds {} turns ========",
+        d0,
+        d0 / delta,
+        delta,
+        m_offset_params.max_rounds);
+    warn_front_conv("level 0");
+    if (!optimize_offset_loop(/*final_stage=*/false, /*refine=*/true, "smart growth level 0")) {
+        m_frame_prefix.clear();
+        log_and_throw_error(
+            "[smart growth] level 0 at the traced distance {:.6g} did not converge in max_rounds "
+            "{} turns",
+            d0,
+            m_offset_params.max_rounds);
+    }
+    m_converged = false;
+    m_energy_verdict.reset();
+    std::string history = fmt::format("level 0 at {:.6g} in {} turn(s)", d0, m_iterations_used);
+    // 3D stores the mesh here (take_snapshot()); 2D cannot put one back (see the declaration).
+    logger().info(
+        "[smart growth] level 0 converged at target_distance {:.6g} (#V {}, #F {}); 2D stores no "
+        "image of the mesh, so a failed attempt ends the run",
+        d0,
+        get_vertices().size(),
+        get_faces().size());
+    SmartGrowthSchedule sched{d0, delta, m_offset_params.smart_growth_max_fails};
+    for (;;) {
+        // j == 0 is target_distance itself, set exactly (not by the formula).
+        const bool at_delta = sched.j == 0;
+        const double t = at_delta ? delta : sched.target();
+        const int level = sched.level, attempt = sched.j + 1;
+        const std::string label = fmt::format("smart growth level {} attempt {}", level, attempt);
+        set_targets(t, /*level0=*/false);
+        m_frame_prefix = fmt::format("s{}a{}", level, attempt);
+        logger().info(
+            "======== [smart growth] level {} attempt {}: target_distance {:.6g} ({:.4g}x "
+            "target_distance {:.6g}), from the converged {:.6g}{}; up to smart_growth_attempts {} "
+            "turns, converged and free of turned edges to succeed ========",
+            level,
+            attempt,
+            t,
+            t / delta,
+            delta,
+            sched.base,
+            at_delta ? ", the final stage" : "",
+            attempts);
+        warn_front_conv(label);
+        const bool ok = optimize_offset_loop(
+            /*final_stage=*/at_delta,
+            /*refine=*/true,
+            label,
+            attempts,
+            /*turned_free=*/true);
+        const int turns = m_iterations_used;
+        const double base = sched.base;
+        report_entries(ok);
+        switch (sched.report(ok)) {
+        case SmartGrowthSchedule::Next::Done:
+            m_frame_prefix.clear();
+            m_offset_levels.clear(); // each entry at its target_distance
+            logger().info(
+                "[smart growth] target_distance {:.6g} reached: {}, level {} at it in {} turn(s); "
+                "{:.3g} s",
+                delta,
+                history,
+                level,
+                turns,
+                std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+            return;
+        case SmartGrowthSchedule::Next::Advance:
+            m_converged = false;
+            m_energy_verdict.reset();
+            history += fmt::format(", level {} at {:.6g} in {} turn(s)", level, t, turns);
+            logger().info(
+                "[smart growth] level {} converged at target_distance {:.6g} (attempt {}; #V {}, "
+                "#F {}), the next attempt is at target_distance {:.6g}",
+                level,
+                t,
+                attempt,
+                get_vertices().size(),
+                get_faces().size(),
+                delta);
+            break;
+        case SmartGrowthSchedule::Next::Retry:
+        case SmartGrowthSchedule::Next::GiveUp:
+            // 3D puts the stored mesh back here (restore_snapshot()) and tries again, halfway on
+            // Retry; 2D cannot (see the declaration).
+            m_frame_prefix.clear();
+            log_and_throw_error(
+                "[smart growth] level {} attempt {} at target_distance {:.6g} failed (not "
+                "converged in {} turn(s), or with turned edges; see above), and 2D cannot put the "
+                "mesh back at the converged {:.6g}: the 2D engine has no rebuild of a live mesh "
+                "from an image (3D's restore_snapshot(), TetMesh::init_with_isolated_vertices()); "
+                "converged before: {}",
+                level,
+                attempt,
+                t,
+                turns,
+                base,
+                history);
+        }
+    }
 }
 
 void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file)
@@ -6373,7 +6853,16 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             m_offset_params.target_distance,
             m_offset_params.stencil_order);
     }
-    optimize_offset_loop();
+    // growth_mode (see marching_tris()): "linear" in stages, the last of them the ordinary loop at
+    // target_distance; "smart" in attempts, the one that reaches target_distance its final stage.
+    // As in 3D.
+    if (m_growth_start > 0. && m_offset_params.growth_mode == "smart") {
+        smart_growth();
+    } else if (m_growth_start > 0.) {
+        linear_growth();
+    } else {
+        optimize_offset_loop();
+    }
 
     log_smooth_trace();
     logger().info(
@@ -6543,37 +7032,30 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         }
     }
 
-    // Folds of the offset curve, checked UNCONDITIONALLY -- a fold is a defect in the delivered
-    // mesh, not a debug curiosity, so it is reported whether or not debug_output wrote the
-    // per-vertex field. Run here, at the end of optimize_offset, so it describes the mesh the
-    // driver is about to write: after the finishing pass, not at the loop's verdict. A fold is
-    // fold_test()'s (count_folds()). 3D reports its offset faces turned from the field here
-    // instead ([turned faces], turned_face_census()), whose other readers are growth_mode's: the
-    // growth step of the 2D lock-step port.
+    // Offset edges turned from the field, checked UNCONDITIONALLY -- a defect in the delivered
+    // mesh, not a debug curiosity, so it is reported whether or not debug_output is on. Run here,
+    // at the end of optimize_offset, so it describes the mesh the driver is about to write: after
+    // the finishing pass, not at the loop's verdict. Reported for a run that did not converge too.
+    // An edge is turned when its normal, out of the band, is more than foldover_angle from the
+    // field's normal (front_edge_turned()). As 3D's [turned faces], but for its pointer to the
+    // debug frames' per-face field_angle_turned, which 2D's frames do not write per edge. Until the
+    // growth step of the 2D lock-step port this block counted the folds (fold_test()) as
+    // [foldover], the [exit folds] line's count.
     {
-        const std::vector<char> fold = offset_surface_foldover_labels();
-        size_t n_fold = 0;
-        size_t first = std::numeric_limits<size_t>::max();
-        for (size_t vid = 0; vid < fold.size(); ++vid) {
-            if (!fold[vid]) continue;
-            ++n_fold;
-            if (first == std::numeric_limits<size_t>::max()) first = vid;
-        }
-        if (n_fold > 0) {
-            const auto& p = m_vertex_attribute[first].m_posf;
+        const TurnedEdgeCensus fc = turned_edge_census();
+        if (fc.n_turned > 0) {
             logger().warn(
-                "[foldover] the offset curve has {} fold(s): a vertex whose two offset edges have "
-                "normals out of the band within foldover_angle {} degrees of opposite, one of the "
-                "two more than foldover_angle from the field's normal (grad d at its midpoint) or "
-                "not measurable. First at v{} ({:.4}, {:.4}). {}",
-                n_fold,
+                "[turned edges] {} of {} offset edges are turned from the field: their normal, "
+                "out of the band, is more than foldover_angle {} degrees from the field's normal "
+                "(grad d at the midpoint); the worst {:.4g} degrees, at ({:.4}, {:.4}). {} edge(s) "
+                "not measurable.",
+                fc.n_turned,
+                fc.n_edges,
                 m_offset_params.foldover_angle,
-                first,
-                p[0],
-                p[1],
-                m_offset_params.debug_output
-                    ? "The per-vertex flag offset_foldover is on the debug frames."
-                    : "Set DEBUG_output to get the per-vertex offset_foldover field.");
+                fc.worst,
+                fc.worst_at[0],
+                fc.worst_at[1],
+                fc.n_unmeasured);
         }
     }
 

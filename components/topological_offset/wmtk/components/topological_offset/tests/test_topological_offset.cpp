@@ -9920,3 +9920,978 @@ TEST_CASE("several-offsets-growth", "[offset][3d]" + release_only)
         CHECK(*std::max_element(d.begin(), d.end()) <= 1.15 * delta);
     }
 }
+
+namespace {
+/// A box of squares (i, j) of point_grid_2d()'s grid, i, j in [lo, hi] of its {i_lo, i_hi, j_lo,
+/// j_hi}: the 2D twin of box_grid()'s boxes.
+using Box2d = std::array<int, 4>;
+
+/// The input of box_grid_2d(): the grid, the faces' tags (one column per box), the curve group.
+struct BoxGrid2d
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    MatrixSi tags;
+    std::vector<std::string> names;
+    Eigen::MatrixXd CV = Eigen::MatrixXd(0, 2);
+    Eigen::MatrixXi CE = Eigen::MatrixXi(0, 2);
+};
+
+/// The 2D twin of box_grid(): [-1, 1]^2 in 8^2 squares of edge 0.25 (point_grid_2d()'s grid,
+/// each square split along its diagonal from (i, j) to (i + 1, j + 1)), the squares of each named
+/// box tagged by its name, every other square ambient; a curve group along `curve` (none if
+/// empty), registered as the tag "curve". Boxes do not overlap.
+BoxGrid2d box_grid_2d(
+    const std::vector<std::pair<std::string, Box2d>>& boxes,
+    const GridPolyline2d& curve = {})
+{
+    const int n = 8;
+    const auto vid = [&](const int i, const int j) { return i + (n + 1) * j; };
+    BoxGrid2d g;
+    g.V.resize((n + 1) * (n + 1), 2);
+    for (int j = 0; j <= n; ++j) {
+        for (int i = 0; i <= n; ++i) g.V.row(vid(i, j)) = grid_point_2d({{i, j}}).transpose();
+    }
+    g.F.resize(2 * n * n, 3);
+    g.tags.resize(2 * n * n, Eigen::Index(std::max<size_t>(1, boxes.size())));
+    for (const auto& [name, box] : boxes) g.names.push_back(name);
+    int r = 0;
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            for (size_t b = 0; b < boxes.size(); ++b) {
+                const Box2d& q = boxes[b].second;
+                if (i < q[0] || i > q[1] || j < q[2] || j > q[3]) continue;
+                g.tags.coeffRef(r, Eigen::Index(b)) = 1;
+                g.tags.coeffRef(r + 1, Eigen::Index(b)) = 1;
+            }
+            g.F.row(r++) << vid(i, j), vid(i + 1, j), vid(i + 1, j + 1);
+            g.F.row(r++) << vid(i, j), vid(i + 1, j + 1), vid(i, j + 1);
+        }
+    }
+    if (!curve.empty()) {
+        g.CV.resize(Eigen::Index(curve.size()), 2);
+        g.CE.resize(Eigen::Index(curve.size() - 1), 2);
+        for (size_t k = 0; k < curve.size(); ++k) {
+            g.CV.row(Eigen::Index(k)) = grid_point_2d(curve[k]).transpose();
+            if (k + 1 < curve.size()) g.CE.row(Eigen::Index(k)) << int(k), int(k + 1);
+        }
+    }
+    return g;
+}
+
+/// The distance from p to box_grid_2d()'s box `b`: the twin of box_distance().
+double box_distance_2d(const Vector2d& p, const Box2d& b)
+{
+    double s = 0.;
+    for (int a = 0; a < 2; ++a) {
+        const double lo = b[size_t(2 * a)] * 0.25 - 1., hi = (b[size_t(2 * a + 1)] + 1) * 0.25 - 1.;
+        const double e = std::max({lo - p[a], 0., p[a] - hi});
+        s += e * e;
+    }
+    return std::sqrt(s);
+}
+
+/// Captures the log while it lives, the sink removed on every way out.
+struct LogCapture2d
+{
+    std::ostringstream log;
+    std::shared_ptr<spdlog::sinks::ostream_sink_mt> sink =
+        std::make_shared<spdlog::sinks::ostream_sink_mt>(log);
+    LogCapture2d() { wmtk::logger().sinks().push_back(sink); }
+    ~LogCapture2d()
+    {
+        auto& s = wmtk::logger().sinks();
+        s.erase(std::remove(s.begin(), s.end(), sink), s.end());
+    }
+};
+
+/// The steps the 2D branch of topological_offset() runs (the app refuses the 2D offset), on
+/// box_grid_2d(): `j`'s keys (its offsets among them), each entry's selection parsed as the
+/// driver parses it, the construction, the field, and with `optimize` the loop
+/// (optimize_offset()), optimize_offset `optimize` unless `j` sets it. The 2D twin of
+/// construct_offsets() and of topological_offset() on box_grid(). `log`, when given, receives
+/// the run's log.
+std::unique_ptr<TopoOffsetTriMesh> run_offsets_2d(
+    const BoxGrid2d& g,
+    const nlohmann::json& j,
+    const bool optimize,
+    std::string* log = nullptr)
+{
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    nlohmann::json k = j;
+    if (!k.contains("num_threads")) k["num_threads"] = 0;
+    if (!k.contains("throw_on_nonconvergence")) k["throw_on_nonconvergence"] = false;
+    if (!k.contains("optimize_offset")) k["optimize_offset"] = optimize;
+    // the mesh holds a reference to its parameters: keep them alive with it
+    static std::vector<std::unique_ptr<Parameters>> params;
+    params.push_back(std::make_unique<Parameters>(construction_params(k, box)));
+    auto mesh = std::make_unique<TopoOffsetTriMesh>(*params.back(), 0);
+    LogCapture2d capture;
+    const auto keep_log = [&]() {
+        if (log) *log = capture.log.str();
+    };
+    try {
+        mesh->init_from_image(g.V, g.F, g.tags, g.CV, g.CE, g.names, "curve");
+        for (Parameters::Offset& o : mesh->m_offset_params.offsets)
+            o.expression = parse(o.selection, mesh->m_tag_name_to_id);
+        mesh->m_offset_params.parse_protected_tags(mesh->m_tag_name_to_id);
+        mesh->label_input_complex();
+        mesh->init_input_complex_bvh();
+        mesh->consolidate_mesh();
+        const std::filesystem::path out =
+            std::filesystem::temp_directory_path() / "wmtk_offset_several_2d";
+        mesh->construct_offset(out);
+        mesh->init_offset_potential();
+        if (optimize) mesh->optimize_offset(out);
+    } catch (...) {
+        keep_log();
+        throw;
+    }
+    keep_log();
+    return mesh;
+}
+
+/// The faces of a 2D mesh carrying `tag`, each as its corners' positions in sorted order: a
+/// face's identity across two runs that number the vertices differently. The twin of
+/// cells_tagged().
+using FaceCorners2d = std::array<std::array<double, 2>, 3>;
+std::set<FaceCorners2d> faces_tagged_2d(const TopoOffsetTriMesh& m, const std::string& tag)
+{
+    const auto it = m.m_tag_name_to_id.find(tag);
+    REQUIRE(it != m.m_tag_name_to_id.end());
+    std::set<FaceCorners2d> out;
+    for (const auto& f : m.get_faces()) {
+        const size_t fid = f.fid(m);
+        if (!m.m_face_attribute[fid].tags.count(it->second)) continue;
+        FaceCorners2d c;
+        const auto vs = m.oriented_tri_vids(fid);
+        for (int k = 0; k < 3; ++k) {
+            const Vector2d& p = m.m_vertex_attribute[vs[size_t(k)]].m_posf;
+            c[size_t(k)] = {{p[0], p[1]}};
+        }
+        std::sort(c.begin(), c.end());
+        out.insert(c);
+    }
+    return out;
+}
+
+/// The front of `tag`'s band: the corners its faces share with ambient faces, off the box `b`, as
+/// distances to it. The twin of front_distances().
+std::vector<double>
+front_distances_2d(const TopoOffsetTriMesh& m, const std::string& tag, const Box2d& b)
+{
+    std::set<std::array<double, 2>> ambient;
+    for (const auto& f : m.get_faces()) {
+        const size_t fid = f.fid(m);
+        if (!m.m_face_attribute[fid].tags.count(0)) continue;
+        for (const size_t v : m.oriented_tri_vids(fid)) {
+            const Vector2d& p = m.m_vertex_attribute[v].m_posf;
+            ambient.insert({{p[0], p[1]}});
+        }
+    }
+    std::set<std::array<double, 2>> front;
+    for (const FaceCorners2d& c : faces_tagged_2d(m, tag)) {
+        for (const auto& q : c) {
+            if (ambient.count(q)) front.insert(q);
+        }
+    }
+    std::vector<double> d;
+    for (const auto& q : front) {
+        const double x = box_distance_2d(Vector2d(q[0], q[1]), b);
+        if (x > 0.) d.push_back(x);
+    }
+    return d;
+}
+
+/// One entry of offsets as the json gives it.
+nlohmann::json offset_entry_2d(const std::string& selection, const double target)
+{
+    return {
+        {"selection", selection},
+        {"output_tags", {selection + "_band"}},
+        {"target_distance", target}};
+}
+
+/// Each front at its own target, as several-offsets-optimize-distances checks it: the mean within
+/// 5%, every front vertex within [0.95, 1.15] of it.
+void check_front_2d(
+    const TopoOffsetTriMesh& m,
+    const std::string& tag,
+    const Box2d& box,
+    const double delta)
+{
+    INFO(tag << " at " << delta);
+    const std::vector<double> d = front_distances_2d(m, tag, box);
+    REQUIRE(!d.empty());
+    double mean = 0.;
+    for (const double x : d) mean += x / double(d.size());
+    INFO(
+        "front mean " << mean << ", min " << *std::min_element(d.begin(), d.end()) << ", max "
+                      << *std::max_element(d.begin(), d.end()) << " over " << d.size()
+                      << " vertices");
+    CHECK(std::abs(mean - delta) <= 0.05 * delta);
+    CHECK(*std::min_element(d.begin(), d.end()) >= 0.95 * delta);
+    CHECK(*std::max_element(d.begin(), d.end()) <= 1.15 * delta);
+}
+} // namespace
+
+TEST_CASE("several-offsets-as-alone-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-as-alone, on the construction (the app refuses 2D): three
+    // bodies, each two squares from the next, offset in one march; each entry's band is the one a
+    // run of that entry alone makes -- the same faces at the same positions -- and takes its own
+    // output tags. Each entry decides its fallback itself (marching_tris()): every outer end is a
+    // grid edge (0.25) or more from its body, so a at 0.1 and c at 0.2 are traced to, and b at
+    // 0.3 falls back to half of 0.25.
+    const std::vector<std::pair<std::string, Box2d>> boxes = {
+        {"a", {{1, 2, 1, 2}}},
+        {"b", {{5, 6, 1, 2}}},
+        {"c", {{1, 2, 5, 6}}}};
+    const BoxGrid2d g = box_grid_2d(boxes);
+    const std::vector<double> D = {0.1, 0.3, 0.2};
+    nlohmann::json all = nlohmann::json::array();
+    for (size_t k = 0; k < boxes.size(); ++k) all.push_back(offset_entry_2d(boxes[k].first, D[k]));
+    std::string log;
+    const auto joint = run_offsets_2d(g, {{"offsets", all}}, false, &log);
+    // Each entry's own construction line, and its own trace.
+    CHECK(log.find("[construction] offsets[0]: construction_mode") != std::string::npos);
+    CHECK(log.find("[construction] offsets[2]: construction_mode") != std::string::npos);
+    CHECK(log.find("D = each entry's, above") != std::string::npos);
+    for (size_t k = 0; k < boxes.size(); ++k) {
+        const std::string band = boxes[k].first + "_band";
+        INFO("offsets[" << k << "] " << boxes[k].first << " at " << D[k]);
+        CHECK(joint->m_construction_distances[k] == (D[k] < 0.25 ? D[k] : 0.125));
+        const auto faces = faces_tagged_2d(*joint, band);
+        CHECK(!faces.empty());
+        const auto alone = run_offsets_2d(g, {{"offsets", nlohmann::json::array({all[k]})}}, false);
+        CHECK(faces == faces_tagged_2d(*alone, band));
+        const double traced = D[k] < 0.25 ? D[k] : 0.125;
+        size_t n_outer = 0;
+        for (const FaceCorners2d& c : faces) {
+            for (const auto& q : c) {
+                const double d = box_distance_2d(Vector2d(q[0], q[1]), boxes[k].second);
+                if (d == 0.) continue; // on the body
+                ++n_outer;
+                CHECK(std::abs(d - traced) <= 0.01 * traced);
+            }
+        }
+        CHECK(n_outer > 0);
+        // No band face of this entry carries another entry's output tag.
+        for (size_t o = 0; o < boxes.size(); ++o) {
+            if (o == k) continue;
+            for (const FaceCorners2d& c : faces_tagged_2d(*joint, boxes[o].first + "_band")) {
+                CHECK(faces.count(c) == 0);
+            }
+        }
+    }
+    // The comparison tells positions apart: a alone at c's distance is not a's band.
+    nlohmann::json a_at_c = all[0];
+    a_at_c["target_distance"] = D[2];
+    CHECK(
+        faces_tagged_2d(*joint, "a_band") !=
+        faces_tagged_2d(
+            *run_offsets_2d(g, {{"offsets", nlohmann::json::array({a_at_c})}}, false),
+            "a_band"));
+}
+
+TEST_CASE("several-offsets-touch-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-touch: entries that intersect are refused
+    // (label_input_complex()): b's squares next to a's share their vertices. One square apart,
+    // a's and b's vertices are joined by grid edges; the simplicial embedding splits them, and
+    // the two bands come out apart -- no vertex in both -- each within half of such an edge
+    // (0.125 from both), so a target of 0.1 is still traced to.
+    const auto run = [](const Box2d& b) {
+        return run_offsets_2d(
+            box_grid_2d({{"a", {{1, 2, 1, 2}}}, {"b", b}}),
+            {{"offsets",
+              nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.1)})}},
+            false);
+    };
+    REQUIRE_THROWS_WITH(run({{3, 4, 1, 2}}), Catch::Matchers::ContainsSubstring("share"));
+    const Box2d b = {{4, 5, 1, 2}};
+    std::unique_ptr<TopoOffsetTriMesh> out;
+    REQUIRE_NOTHROW(out = run(b));
+    std::set<std::array<double, 2>> corners_a;
+    for (const FaceCorners2d& c : faces_tagged_2d(*out, "a_band"))
+        corners_a.insert(c.begin(), c.end());
+    size_t n_b = 0, n_b_outer = 0;
+    for (const FaceCorners2d& c : faces_tagged_2d(*out, "b_band")) {
+        ++n_b;
+        for (const auto& q : c) {
+            CHECK(corners_a.count(q) == 0);
+            const double d = box_distance_2d(Vector2d(q[0], q[1]), b);
+            if (d > 0.) {
+                ++n_b_outer;
+                CHECK(std::abs(d - 0.1) <= 0.01 * 0.1);
+            }
+        }
+    }
+    CHECK(!corners_a.empty());
+    CHECK(n_b > 0);
+    CHECK(n_b_outer > 0);
+}
+
+TEST_CASE("several-offsets-absolute-front-conv-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-absolute-front-conv, on a 2D box: an absolute front_conv is
+    // one length for every piece; entries of different distances take front_conv_rel, each bar
+    // its own distance's fraction (Parameters::init(), shared). Equal distances keep it; the
+    // range of the second entry's distance, below, at and above the first's.
+    Eigen::MatrixXd V(2, 2);
+    V << 0, 0, 3, 4;
+    const auto with = [&](const double d1, const nlohmann::json& conv) {
+        nlohmann::json j = {
+            {"offsets",
+             nlohmann::json::array(
+                 {{{"selection", "a"}, {"target_distance", 0.5}},
+                  {{"selection", "b"}, {"target_distance", d1}}})}};
+        j.update(conv);
+        return construction_params(j, V);
+    };
+    for (const double d1 : {0.25, 0.6, 2.}) {
+        INFO("second entry at " << d1);
+        CHECK_THROWS(with(d1, {{"front_conv", 0.05}}));
+        const Parameters rel = with(d1, {{"front_conv_rel", 0.1}});
+        CHECK(rel.target_distance == std::min(0.5, d1)); // the run's: the smallest entry's
+        CHECK(rel.front_conv == Catch::Approx(0.1 * std::min(0.5, d1)));
+    }
+    const Parameters same = with(0.5, {{"front_conv", 0.05}});
+    CHECK(same.front_conv == 0.05);
+}
+
+TEST_CASE("several-offsets-solid-and-curve-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-solid-and-curve: entries of different kinds in one run, a
+    // solid (a face tag, entering as its boundary segments, with a side) and the curve group (a
+    // curve: segments, no side), each entry its own distance engine (init_input_complex_bvh(),
+    // offset_distance()). Each band is the one its entry makes alone. 3D also refuses one entry
+    // mixing the kinds ("a | rod"); 2D refuses no mix (its primitives are all segments and
+    // points), and the curve group in an expression selects no face, so 2D has no twin of that
+    // half.
+    const GridPolyline2d curve = {{{1, 6}}, {{2, 6}}, {{3, 6}}, {{4, 6}}, {{5, 6}}};
+    const BoxGrid2d g = box_grid_2d({{"a", {{1, 2, 1, 2}}}}, curve);
+    const nlohmann::json a = offset_entry_2d("a", 0.1);
+    const nlohmann::json r = offset_entry_2d("curve", 0.1);
+    const auto joint = run_offsets_2d(g, {{"offsets", nlohmann::json::array({a, r})}}, false);
+    CHECK(joint->m_offset_curves.size() == 2);
+    CHECK_FALSE(joint->offset_curves(0)); // the solid
+    CHECK(joint->offset_curves(1)); // the curve
+    CHECK(!faces_tagged_2d(*joint, "a_band").empty());
+    CHECK(!faces_tagged_2d(*joint, "curve_band").empty());
+    CHECK(
+        faces_tagged_2d(*joint, "a_band") ==
+        faces_tagged_2d(
+            *run_offsets_2d(g, {{"offsets", nlohmann::json::array({a})}}, false),
+            "a_band"));
+    CHECK(
+        faces_tagged_2d(*joint, "curve_band") ==
+        faces_tagged_2d(
+            *run_offsets_2d(g, {{"offsets", nlohmann::json::array({r})}}, false),
+            "curve_band"));
+}
+
+TEST_CASE("several-offsets-optimize-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-optimize: several entries run the optimization, an input
+    // complex of several connected pieces, each its entry's.
+    const auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", {{1, 2, 1, 2}}}, {"b", {{5, 6, 1, 2}}}}),
+        {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.1)})},
+         {"max_rounds", 1}},
+        true);
+    CHECK(mesh->m_region_offset == std::vector<int>{0, 1});
+    CHECK(!faces_tagged_2d(*mesh, "a_band").empty());
+    CHECK(!faces_tagged_2d(*mesh, "b_band").empty());
+}
+
+TEST_CASE("several-offsets-optimize-distances-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-optimize-distances: each piece its own target distance in
+    // the optimization -- its field, the band term's distance and integral, the settle tests' bar
+    // (front_conv_rel of its distance): place_piece(). Two boxes 0.5 apart, a at 0.1, b at 0.2:
+    // both fronts at their own targets and converged; then b one square at 0.3, above the
+    // maximum marchable distance (constructed at 0.125), a 0.5 away, whose band over the whole
+    // complex 3D measured reaching around a (each piece's own integral, init_band_exact()).
+    // Under EXPERIMENTAL_band_volume_rule "exact", the rule 3D's test passes with (at 31221e9291;
+    // at 455ab9ba66, exact_swept the default, 3D's fails). 2D's "exact_swept" decides as "exact"
+    // until its own step, so the two are the same 2D run today. Under the settle test (the
+    // default), whose tests read each piece's integral, and under the energy criterion
+    // (EXPERIMENTAL_settle_refinement false), whose chord and ring measures read each piece's
+    // field (init_region_potentials()).
+    const bool settle = GENERATE(true, false);
+    INFO("EXPERIMENTAL_settle_refinement " << settle);
+    const auto run = [&](const Box2d& a, const Box2d& b, const double db) {
+        return run_offsets_2d(
+            box_grid_2d({{"a", a}, {"b", b}}),
+            {{"offsets",
+              nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", db)})},
+             {"EXPERIMENTAL_band_volume_rule", "exact"},
+             {"EXPERIMENTAL_settle_refinement", settle},
+             {"max_rounds", 5}},
+            true);
+    };
+    {
+        const Box2d a = {{1, 2, 1, 2}}, b = {{5, 6, 1, 2}};
+        const auto mesh = run(a, b, 0.2);
+        CHECK(mesh->m_converged);
+        check_front_2d(*mesh, "a_band", a, 0.1);
+        check_front_2d(*mesh, "b_band", b, 0.2);
+    }
+    {
+        const Box2d a1 = {{1, 2, 3, 3}}, b1 = {{5, 5, 3, 3}};
+        const auto mesh = run(a1, b1, 0.3);
+        CHECK(mesh->m_converged);
+        check_front_2d(*mesh, "a_band", a1, 0.1);
+        check_front_2d(*mesh, "b_band", b1, 0.3);
+    }
+}
+
+TEST_CASE("several-offsets-solid-and-curve-optimize-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-solid-and-curve-optimize: the same two entries through the
+    // optimization, each piece its own field and integral, so the curve's band is not read
+    // against the solid's segments. Both bands at their targets: their front vertices within 10%
+    // of 0.1 from their own input.
+    const GridPolyline2d curve = {{{1, 6}}, {{2, 6}}, {{3, 6}}, {{4, 6}}, {{5, 6}}};
+    const auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", {{1, 2, 1, 2}}}}, curve),
+        {{"offsets",
+          nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("curve", 0.1)})},
+         {"max_rounds", 5}},
+        true);
+    const std::vector<double> da = front_distances_2d(*mesh, "a_band", {{1, 2, 1, 2}});
+    REQUIRE(!da.empty());
+    for (const double d : da) {
+        CHECK(d >= 0.09);
+        CHECK(d <= 0.11);
+    }
+    // the curve: x in [-0.75, 0.25] at y = 0.5
+    const auto curve_distance = [](const std::array<double, 2>& q) {
+        const double x = std::clamp(q[0], -0.75, 0.25);
+        return (Vector2d(q[0], q[1]) - Vector2d(x, 0.5)).norm();
+    };
+    std::set<std::array<double, 2>> ambient;
+    for (const auto& f : mesh->get_faces()) {
+        const size_t fid = f.fid(*mesh);
+        if (!mesh->m_face_attribute[fid].tags.count(0)) continue;
+        for (const size_t v : mesh->oriented_tri_vids(fid)) {
+            const Vector2d& p = mesh->m_vertex_attribute[v].m_posf;
+            ambient.insert({{p[0], p[1]}});
+        }
+    }
+    size_t n = 0;
+    for (const FaceCorners2d& c : faces_tagged_2d(*mesh, "curve_band")) {
+        for (const auto& q : c) {
+            if (!ambient.count(q)) continue;
+            ++n;
+            CHECK(curve_distance(q) >= 0.09);
+            CHECK(curve_distance(q) <= 0.11);
+        }
+    }
+    CHECK(n > 0);
+}
+
+TEST_CASE("several-offsets-growth-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-growth: growth_mode "linear" with several entries
+    // (linear_growth()), each entry from its own d_0 to its own target, one schedule. a one square
+    // at 0.1, traced to by the march, stays there; b one square at 0.4, above the maximum
+    // marchable distance 0.25 (constructed at 0.125), grows in linear_growth_steps stages
+    // 0.125 -> 0.4. Both converge at their own targets. Under EXPERIMENTAL_band_volume_rule
+    // "exact", the rule 3D's test passes with (it hangs at 455ab9ba66, exact_swept the default);
+    // 2D's "exact_swept" decides as "exact" until its own step.
+    const Box2d a = {{1, 1, 3, 3}}, b = {{5, 5, 3, 3}};
+    std::string log;
+    const auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", a}, {"b", b}}),
+        {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.4)})},
+         {"growth_mode", "linear"},
+         {"EXPERIMENTAL_band_volume_rule", "exact"},
+         {"max_rounds", 10}},
+        true,
+        &log);
+    INFO(log.substr(log.size() > 4000 ? log.size() - 4000 : 0));
+    CHECK(mesh->m_growth_starts.empty() == false);
+    CHECK(mesh->m_growth_starts == std::vector<double>{0.1, 0.125});
+    CHECK(mesh->m_offset_levels.empty()); // each entry at its target_distance after the stages
+    CHECK(
+        log.find("[growth] offsets[0]: from 0.1 to its target_distance 0.1 (no growth") !=
+        std::string::npos);
+    CHECK(
+        log.find("[growth] offsets[1]: from 0.125 to its target_distance 0.4") !=
+        std::string::npos);
+    CHECK(
+        log.find(
+            "[incremental growth] stage 1 / 4: offsets[1] at 0.19375 (its target_distance "
+            "0.4)") != std::string::npos);
+    CHECK(
+        log.find("[incremental growth] stage 1 / 4: offsets[0] at 0.1 (its target_distance 0.1)") !=
+        std::string::npos);
+    // Each stage's field for b's piece at b's stage target (region_delta() reads m_offset_levels;
+    // init_region_potentials() logs the level it builds at), a's at 0.1 throughout.
+    for (int k = 0; k <= 4; ++k) {
+        const double level = TopoOffsetTriMesh::growth_stage_target(0.125, 0.4, k, 4);
+        INFO("stage " << k << ": b at " << level);
+        CHECK(log.find(fmt::format(" points, level {} -- the band", level)) != std::string::npos);
+    }
+    CHECK(mesh->m_converged);
+    check_front_2d(*mesh, "a_band", a, 0.1);
+    check_front_2d(*mesh, "b_band", b, 0.4);
+}
+
+TEST_CASE("growth-mode-keys-2d", "[offset][2d]")
+{
+    // The 2D twin of growth-mode-keys: the keys are Parameters' (shared, read the same in both
+    // dimensions; growth-mode-keys checks their defaults and refusals), so this checks the 2D
+    // mesh's stage targets, TopoOffsetTriMesh::growth_stage_target(), as 3D's: stage k of n at
+    // d0 + k (delta - d0) / n, d0 at k = 0, delta itself at k = n; and that growth_mode reaches
+    // the 2D construction: d_0 is recorded (m_growth_start) for every mode but "none", only when
+    // the march traces below the target.
+    CHECK(TopoOffsetTriMesh::growth_stage_target(0.3, 0.7, 0, 1) == 0.3);
+    CHECK(TopoOffsetTriMesh::growth_stage_target(0.3, 0.7, 1, 1) == 0.7);
+    const std::vector<double> quarters = {0.5, 1., 1.5, 2., 2.5};
+    for (int k = 0; k <= 4; ++k) {
+        CHECK(TopoOffsetTriMesh::growth_stage_target(0.5, 2.5, k, 4) == quarters[size_t(k)]);
+    }
+    CHECK(TopoOffsetTriMesh::growth_stage_target(0.1, 0.9, 3, 3) == 0.9);
+    for (int k = 0; k < 7; ++k) {
+        CHECK(
+            TopoOffsetTriMesh::growth_stage_target(0.1, 0.9, k, 7) <
+            TopoOffsetTriMesh::growth_stage_target(0.1, 0.9, k + 1, 7));
+    }
+    // Two squares (the maximum marchable distance 0.25: d_0 = 0.125), at 0.2 (traced to: no
+    // growth) and at 0.4, under each mode, construction only; optimize_offset false records no
+    // growth (growth is the loop's), as in 3D.
+    const BoxGrid2d g = box_grid_2d({{"a", {{3, 4, 3, 4}}}});
+    for (const char* mode : {"none", "linear", "smart", "individual_op_reject"}) {
+        for (const double target : {0.2, 0.4}) {
+            for (const bool optimize : {false, true}) {
+                INFO("growth_mode " << mode << ", target " << target << ", optimize " << optimize);
+                std::string log;
+                const auto mesh = run_offsets_2d(
+                    g,
+                    {{"offsets", nlohmann::json::array({offset_entry_2d("a", target)})},
+                     {"growth_mode", mode},
+                     {"optimize_offset", optimize}},
+                    false,
+                    &log);
+                const bool grows = std::string(mode) != "none" && target > 0.25 && optimize;
+                CHECK(mesh->m_growth_start == (grows ? 0.125 : 0.));
+                CHECK(mesh->m_growth_starts.empty()); // one entry
+                if (std::string(mode) != "none" && optimize && !grows) {
+                    CHECK(
+                        log.find("not done: the march traces to target_distance itself") !=
+                        std::string::npos);
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("smart-growth-schedule-2d", "[offset][2d]")
+{
+    // The 2D twin of smart-growth-schedule (TopoOffsetTriMesh::SmartGrowthSchedule, the same
+    // rule): from base b the j-th try after j failures is at b + (delta - b) / 2^j, delta itself
+    // first; a success below delta becomes the new base and the next try is at delta again;
+    // max_fails failures from one base give up; a success at delta is the end.
+    using Schedule = TopoOffsetTriMesh::SmartGrowthSchedule;
+    using Next = Schedule::Next;
+    Schedule s{1., 9., 3};
+    CHECK(s.target() == 9.);
+    CHECK(s.report(false) == Next::Retry); // 9 failed
+    CHECK(s.target() == 5.); // 1 + 8 / 2
+    CHECK(s.report(false) == Next::Retry); // 5 failed
+    CHECK(s.target() == 3.); // 1 + 8 / 4
+    CHECK(s.report(true) == Next::Advance); // 3 converged: the new base
+    CHECK(s.base == 3.);
+    CHECK(s.level == 2);
+    CHECK(s.target() == 9.); // delta again
+    CHECK(s.report(false) == Next::Retry);
+    CHECK(s.target() == 6.); // 3 + 6 / 2
+    CHECK(s.report(true) == Next::Advance);
+    CHECK(s.target() == 9.);
+    CHECK(s.report(true) == Next::Done);
+
+    // The count is per base, and the max_fails-th failure gives up.
+    Schedule g{0., 1., 3};
+    CHECK(g.report(false) == Next::Retry);
+    CHECK(g.report(false) == Next::Retry);
+    CHECK(g.report(false) == Next::GiveUp);
+    Schedule h{0., 1., 2};
+    CHECK(h.report(false) == Next::Retry);
+    CHECK(h.report(true) == Next::Advance); // at 0.5
+    CHECK(h.report(false) == Next::Retry); // the count started again
+    CHECK(h.report(false) == Next::GiveUp);
+    CHECK(Schedule{0., 1., 1}.report(false) == Next::GiveUp);
+}
+
+TEST_CASE("turned-edges-at-vertex-2d", "[offset][2d]")
+{
+    // The 2D twin of turned-faces-at-vertex: growth_mode "individual_op_reject" counts the edges
+    // turned from the field per operation with turned_front_edges_at(), which reads one vertex's
+    // own face list (lock-safe in the operation passes). Over every vertex it must find exactly
+    // the turned edges turned_edge_census() finds over the whole offset curve
+    // (offset_surface_edges()). A square at 0.2, constructed, with one front vertex dragged to the
+    // input's centre, which turns its offset edges back toward the input: turned edges to find.
+    auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", {{3, 4, 3, 4}}}}),
+        {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.2)})}},
+        false);
+    mesh->label_offset_boundary(); // as optimize_offset() does before the loop
+    CHECK_FALSE(mesh->turned_reject_active()); // growth_mode "none"
+    const auto census_set = [&]() {
+        std::set<std::array<size_t, 2>> s;
+        for (const auto& e : mesh->offset_surface_edges()) {
+            if (mesh->front_edge_turned(e[0], e[1])) s.insert({{e[0], e[1]}});
+        }
+        return s;
+    };
+    const auto per_vertex_set = [&]() {
+        std::set<std::array<size_t, 2>> s;
+        for (const auto& v : mesh->get_vertices()) mesh->turned_front_edges_at(v.vid(*mesh), s);
+        return s;
+    };
+    CHECK(census_set().empty()); // as constructed
+    CHECK(per_vertex_set().empty());
+    CHECK(mesh->turned_edge_census().n_turned == 0);
+    CHECK(mesh->turned_edge_census().n_edges == mesh->offset_surface_edges().size());
+    size_t front = static_cast<size_t>(-1);
+    for (const auto& v : mesh->get_vertices()) {
+        if (mesh->m_vertex_extra[v.vid(*mesh)].m_is_on_offset) {
+            front = v.vid(*mesh);
+            break;
+        }
+    }
+    REQUIRE(front != static_cast<size_t>(-1));
+    mesh->set_vertex_position(front, Vector2d::Zero());
+    const auto census = census_set();
+    INFO(census.size() << " turned edges");
+    REQUIRE(!census.empty());
+    CHECK(per_vertex_set() == census);
+    CHECK(mesh->turned_edge_census().n_turned == census.size());
+    // Every turned edge found through the moved vertex goes through it.
+    std::set<std::array<size_t, 2>> at;
+    mesh->turned_front_edges_at(front, at);
+    CHECK(!at.empty());
+    for (const auto& e : at) CHECK((e[0] == front || e[1] == front));
+
+    // The rule is on in the loops of growth_mode "individual_op_reject" only.
+    mesh->m_offset_params.growth_mode = "individual_op_reject";
+    CHECK(mesh->turned_reject_active());
+    mesh->m_freeze_front = true;
+    CHECK_FALSE(mesh->turned_reject_active());
+    mesh->m_freeze_front = false;
+}
+
+TEST_CASE("growth-modes-in-the-loop-2d", "[offset][2d]" + release_only)
+{
+    // growth_mode through the 2D loop (optimize_offset()), a box of 2 x 2 squares at 0.35, beyond
+    // the maximum marchable distance 0.25, so the march traces to d_0 = 0.125:
+    //   - "linear" over linear_growth_steps 1, 2 and 4: N + 1 loops, stage k at
+    //     growth_stage_target(0.125, 0.35, k, N), each logged, the last the ordinary loop;
+    //   - "individual_op_reject": "linear" with one step, and an [op reject] line per operation
+    //     group in its loops, which refuse smoothing moves (MEASURED at 0.4: 9 and 2 in its last
+    //     loop's two turns);
+    //   - "smart": level 0 at d_0, then the attempt at 0.35 (the final stage), of up to 10 turns
+    //     (smart_growth_attempts; with the default 2 the attempt here is cut off) -- MEASURED
+    //     converged free of turned edges at 0.27 and 0.35, while at 0.3, 0.4, 0.45 and 0.5, on
+    //     this box and on one square, it converges in 2 turns with 1 to 3 chords at the box's
+    //     corners 37 to 47 degrees from the field, which fails it, and 2D cannot revert
+    //     (smart-growth-attempt-fails-2d);
+    //   - "none": no stage, the loop at 0.35.
+    // Each converges, its front at 0.35, the run's target set back to it. The front of a box of
+    // side 0.5 at 0.35 is a rounded square inside [-1, 1]^2.
+    struct Case
+    {
+        std::string mode;
+        int steps;
+    };
+    const Case c = GENERATE(
+        Case{"none", 4},
+        Case{"linear", 1},
+        Case{"linear", 2},
+        Case{"linear", 4},
+        Case{"individual_op_reject", 4},
+        Case{"smart", 4});
+    INFO("growth_mode " << c.mode << ", linear_growth_steps " << c.steps);
+    const double delta = 0.35;
+    nlohmann::json j = {
+        {"offsets", nlohmann::json::array({offset_entry_2d("a", delta)})},
+        {"growth_mode", c.mode},
+        {"max_rounds", 10}};
+    if (c.mode == "linear") j["linear_growth_steps"] = c.steps;
+    if (c.mode == "smart") j["smart_growth_attempts"] = 10;
+    std::string log;
+    const Box2d a = {{3, 4, 3, 4}};
+    const auto mesh = run_offsets_2d(box_grid_2d({{"a", a}}), j, true, &log);
+    INFO(log.substr(log.size() > 4000 ? log.size() - 4000 : 0));
+    CHECK(mesh->m_offset_params.target_distance == delta);
+    CHECK(mesh->m_growth_start == (c.mode == "none" ? 0. : 0.125));
+    if (c.mode == "linear" || c.mode == "individual_op_reject") {
+        const int n = c.mode == "linear" ? c.steps : 1;
+        CHECK(
+            log.find(
+                fmt::format(
+                    "[incremental growth] {} loops: at the traced distance 0.125",
+                    n + 1)) != std::string::npos);
+        for (int k = 0; k < n; ++k) {
+            CHECK(
+                log.find(
+                    fmt::format(
+                        "======== [incremental growth] stage {} / {}: target_distance {:.6g}",
+                        k,
+                        n,
+                        TopoOffsetTriMesh::growth_stage_target(0.125, delta, k, n))) !=
+                std::string::npos);
+        }
+        CHECK(
+            log.find(
+                fmt::format(
+                    "======== [incremental growth] stage {} / {}: target_distance 0.35, the "
+                    "ordinary "
+                    "loop",
+                    n,
+                    n)) != std::string::npos);
+    }
+    CHECK(
+        (log.find("[op reject] turn 1 ") != std::string::npos) ==
+        (c.mode == "individual_op_reject"));
+    if (c.mode == "individual_op_reject") {
+        // The rule acts: the smoothing moves it refused over the run's loops (MEASURED 90 here,
+        // no collapse; at 0.4, 9 and 2 in the last loop's two turns).
+        int refused = 0;
+        const std::string key = " collapses, ";
+        for (size_t at = log.find("[op reject] turn "); at != std::string::npos;
+             at = log.find("[op reject] turn ", at + 1)) {
+            const size_t c0 = log.find(key, at);
+            refused += std::stoi(log.substr(c0 + key.size()));
+        }
+        CHECK(refused > 0);
+    }
+    if (c.mode == "smart") {
+        CHECK(
+            log.find("======== [smart growth] level 0: target_distance 0.125") !=
+            std::string::npos);
+        CHECK(
+            log.find("======== [smart growth] level 1 attempt 1: target_distance 0.35") !=
+            std::string::npos);
+        CHECK(log.find("[smart growth] target_distance 0.35 reached") != std::string::npos);
+    }
+    if (c.mode == "none") CHECK(log.find("growth]") == std::string::npos);
+    CHECK(mesh->m_converged);
+    check_front_2d(*mesh, "a_band", a, delta);
+}
+
+TEST_CASE("smart-growth-attempt-fails-2d", "[offset][2d]" + release_only)
+{
+    // growth_mode "smart" in 2D cannot put the mesh back after a failed attempt (the 2D engine has
+    // no rebuild of a live mesh from an image; see smart_growth()), so the run stops with an
+    // error naming the missing rebuild, after level 0 converged at d_0 = 0.125. A box of 2 x 2
+    // squares, as in growth-modes-in-the-loop-2d, each way an attempt fails:
+    //   - the turn cap: one turn (smart_growth_attempts 1) at 0.35, where the front still moves;
+    //   - the turned test (turned_free): at 0.4 the attempt converges in 2 of its 10 turns with a
+    //     chord at a corner of the box 37.6 degrees from the field (MEASURED), over foldover_angle.
+    struct Case
+    {
+        double target;
+        int attempts;
+    };
+    const Case c = GENERATE(Case{0.35, 1}, Case{0.4, 10});
+    INFO("target " << c.target << ", smart_growth_attempts " << c.attempts);
+    std::string log;
+    REQUIRE_THROWS_WITH(
+        run_offsets_2d(
+            box_grid_2d({{"a", {{3, 4, 3, 4}}}}),
+            {{"offsets", nlohmann::json::array({offset_entry_2d("a", c.target)})},
+             {"growth_mode", "smart"},
+             {"smart_growth_attempts", c.attempts},
+             {"max_rounds", 10}},
+            true,
+            &log),
+        Catch::Matchers::ContainsSubstring("2D cannot put the mesh back at the converged 0.125"));
+    CHECK(
+        log.find("[smart growth] level 0 converged at target_distance 0.125") != std::string::npos);
+    CHECK(
+        (log.find("offset edges are turned from the field (more than foldover_angle") !=
+         std::string::npos) == (c.attempts > 1));
+}
+
+TEST_CASE("several-offsets-place-readers-2d", "[offset][2d]")
+{
+    // Several entries: every reader of a distance or a bar at a place reads its piece's
+    // (place_piece()): the piece's entry (m_region_offset), its target (region_delta(),
+    // vertex_delta()), its field (potential_for()), its bar (front_conv_of(): front_conv_rel of the
+    // entry's target_distance, fixed through growth_mode's stages; front_conv_frac_of(): that over
+    // the stage's target), the vertex measure (front_vertex_conv_ratio()), the vertex error
+    // (band_vertex_distance_error(), from its own piece) and the chord measure
+    // (edge_offset_term()). As in 3D. Two squares 0.5 apart, a at 0.1, b at 0.3 (constructed at
+    // 0.125), before the loop; then as in a growth stage with a at 0.1 and b at 0.2
+    // (m_offset_levels).
+    const Box2d a = {{1, 2, 1, 2}}, b = {{5, 6, 1, 2}};
+    auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", a}, {"b", b}}),
+        {{"offsets",
+          nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.3)})}},
+        false);
+    mesh->label_offset_boundary(); // as optimize_offset() does before the loop
+    mesh->assign_band_regions();
+    const double rel = mesh->m_offset_params.front_conv_rel;
+    REQUIRE(mesh->m_offset_params.target_distance == 0.1); // the run's: the smallest entry's
+    REQUIRE(mesh->m_region_offset.size() == 2);
+    // the front vertices of each band, by their distance to its box
+    std::array<std::vector<size_t>, 2> front;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (!mesh->m_vertex_extra[vid].m_is_on_offset) continue;
+        const Vector2d& p = mesh->m_vertex_attribute[vid].m_posf;
+        front[box_distance_2d(p, a) < box_distance_2d(p, b) ? 0 : 1].push_back(vid);
+    }
+    REQUIRE(!front[0].empty());
+    REQUIRE(!front[1].empty());
+    for (const bool stage : {false, true}) {
+        if (stage) mesh->m_offset_levels = {0.1, 0.2};
+        for (int e = 0; e < 2; ++e) {
+            const double target = e == 0 ? 0.1 : 0.3;
+            const double now = stage && e == 1 ? 0.2 : target;
+            const Box2d& box = e == 0 ? a : b;
+            INFO("entry " << e << (stage ? ", in a stage" : ""));
+            for (const size_t v : front[size_t(e)]) {
+                const int r = mesh->place_piece(&v, 1);
+                REQUIRE(r >= 0);
+                CHECK(mesh->m_region_offset[size_t(r)] == e);
+                CHECK(mesh->vertex_delta(v) == now);
+                CHECK(mesh->front_conv_of(r) == rel * target);
+                CHECK(mesh->front_conv_frac_of(r) == Catch::Approx(rel * target / now));
+                const Vector2d& p = mesh->m_vertex_attribute[v].m_posf;
+                CHECK(mesh->potential_for(v).delta() == target); // the fields stay built
+                CHECK(
+                    mesh->front_vertex_conv_ratio(v) ==
+                    Catch::Approx(
+                        std::abs(mesh->potential_for(v).relative_residual(p)) /
+                        (rel * target / now)));
+                CHECK(
+                    mesh->band_vertex_distance_error(v) ==
+                    Catch::Approx(std::abs(box_distance_2d(p, box) - now)).margin(1e-12));
+            }
+        }
+        // A chord of b's front: its measure in b's bar, the piece-less form in the run's.
+        for (const auto& c : mesh->offset_surface_edges()) {
+            const int r = mesh->place_piece(c.data(), 2);
+            if (r < 0 || mesh->m_region_offset[size_t(r)] != 1) continue;
+            const auto& VA = mesh->m_vertex_attribute;
+            const OffsetPotential2D& pot = mesh->potential_for_edge(c[0], c[1]);
+            const double in_piece =
+                mesh->edge_offset_term(pot, VA[c[0]].m_posf, VA[c[1]].m_posf, r);
+            const double in_run = mesh->edge_offset_term(pot, VA[c[0]].m_posf, VA[c[1]].m_posf);
+            CHECK(mesh->edge_offset_term(c[0], c[1]) == in_piece);
+            const double f = rel * 0.3 / (stage ? 0.2 : 0.3), f_run = rel;
+            CHECK(in_piece * f * f == Catch::Approx(in_run * f_run * f_run));
+        }
+    }
+}
+
+TEST_CASE("several-offsets-isolated-point-2d", "[offset][2d]")
+{
+    // hold_curves_and_points() per entry of offsets: the isolated points of every entry without
+    // faces (offset_curves()) are anchored at an input point's radius (feature_envelope_ratio x
+    // envelope_size), whatever the other entries hold. As in 3D. A point entry: "a & b", where
+    // the squares a and b touch at one corner, selects that vertex alone (label_offset()), beside
+    // a solid entry c. The corner is also a junction of the tracked region boundaries, anchored
+    // at the order-2 radius; the point keeps the smaller radius (anchor_feature_point()), so it
+    // is the feature radius when that is the smaller. The two ratios each against the other, and
+    // the point entry alone. Before the per-entry rule, an input complex with faces (c's)
+    // anchored no isolated point: the corner kept the order-2 radius.
+    struct Case
+    {
+        double feature, order2;
+    };
+    const Case c = GENERATE(Case{0.01, 1.}, Case{1., 0.01}, Case{1., 1.});
+    const bool with_solid = GENERATE(true, false);
+    INFO(
+        "feature_envelope_ratio " << c.feature << ", order2_envelope_ratio " << c.order2
+                                  << (with_solid ? ", beside the solid c" : ", alone"));
+    nlohmann::json offsets = nlohmann::json::array();
+    if (with_solid) offsets.push_back(offset_entry_2d("c", 0.1));
+    offsets.push_back(
+        {{"selection", "a & b"}, {"output_tags", {"p_band"}}, {"target_distance", 0.1}});
+    const auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", {{2, 2, 2, 2}}}, {"b", {{3, 3, 3, 3}}}, {"c", {{6, 6, 6, 6}}}}),
+        {{"offsets", offsets},
+         {"feature_envelope_ratio", c.feature},
+         {"order2_envelope_ratio", c.order2}},
+        false);
+    const size_t p = vertex_at_2d(*mesh, grid_point_2d({{3, 3}}));
+    CHECK(mesh->m_vertex_extra[p].label == 1);
+    CHECK(mesh->offset_of(p) == (with_solid ? 1 : 0));
+    CHECK(mesh->offset_curves(mesh->offset_of(p)));
+    REQUIRE(anchored_2d(*mesh, p));
+    const size_t f = mesh->m_feature_point_attribute[p].m_feature_point_id;
+    const double eps = mesh->m_offset_params.envelope_size;
+    CHECK(mesh->m_feature_point_radius[f] == std::min(c.feature, c.order2) * eps);
+    CHECK(!faces_tagged_2d(*mesh, "p_band").empty());
+    // c's corners are on its edges: no isolated point, and no junction either.
+    if (with_solid) {
+        CHECK_FALSE(mesh->offset_curves(0));
+        CHECK_FALSE(anchored_2d(*mesh, vertex_at_2d(*mesh, grid_point_2d({{6, 6}}))));
+    }
+}
+
+TEST_CASE("offsets-curve-in-expression-2d", "[offset][2d]")
+{
+    // The 2D twin of offsets-face-tags-in-expression: the curve group in an expression means what
+    // it means alone (label_offset()). "a | curve" is the solid a and the curve, one input -- a's
+    // faces and the curve's edges -- and its band the band of both; "a & curve" the curve's edges
+    // that bound a's faces. Until 2026-11 the curve group in an expression selected nothing,
+    // silently: no face carries it. An empty list makes no offset (Parameters, shared).
+    const auto label_1 = [](const TopoOffsetTriMesh& m) {
+        std::set<std::array<double, 2>> out;
+        for (const auto& v : m.get_vertices()) {
+            if (m.m_vertex_extra[v.vid(m)].label != 1) continue;
+            const Vector2d& p = m.m_vertex_attribute[v.vid(m)].m_posf;
+            out.insert({{p[0], p[1]}});
+        }
+        return out;
+    };
+    const auto at = [](const int i, const int j) {
+        const Vector2d p = grid_point_2d({{i, j}});
+        return std::array<double, 2>{{p[0], p[1]}};
+    };
+    const auto entry = [](const std::string& selection) {
+        return nlohmann::json::array(
+            {{{"selection", selection}, {"output_tags", {"band"}}, {"target_distance", 0.1}}});
+    };
+    {
+        // the curve 0.75 above a, x in [-0.75, 0.25] at y = 0.5
+        const BoxGrid2d g = box_grid_2d(
+            {{"a", {{1, 2, 1, 2}}}},
+            {{{1, 6}}, {{2, 6}}, {{3, 6}}, {{4, 6}}, {{5, 6}}});
+        const auto out = run_offsets_2d(g, {{"offsets", entry("a | curve")}}, false);
+        std::set<std::array<double, 2>> want;
+        for (int i = 1; i <= 3; ++i)
+            for (int j = 1; j <= 3; ++j) want.insert(at(i, j)); // a's 3 x 3 vertices
+        for (int i = 1; i <= 5; ++i) want.insert(at(i, 6)); // the curve's 5
+        CHECK(label_1(*out) == want);
+        // The band of the union: the bands each makes alone, together.
+        std::set<FaceCorners2d> both =
+            faces_tagged_2d(*run_offsets_2d(g, {{"offsets", entry("a")}}, false), "band");
+        for (const FaceCorners2d& c :
+             faces_tagged_2d(*run_offsets_2d(g, {{"offsets", entry("curve")}}, false), "band"))
+            both.insert(c);
+        CHECK(faces_tagged_2d(*out, "band") == both);
+    }
+    {
+        // the curve along a's top side and on past it, x in [-0.75, 0.25] at y = -0.25
+        const BoxGrid2d g = box_grid_2d(
+            {{"a", {{1, 2, 1, 2}}}},
+            {{{1, 3}}, {{2, 3}}, {{3, 3}}, {{4, 3}}, {{5, 3}}});
+        const auto out = run_offsets_2d(g, {{"offsets", entry("a & curve")}}, false);
+        CHECK(label_1(*out) == std::set<std::array<double, 2>>{at(1, 3), at(2, 3), at(3, 3)});
+    }
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    REQUIRE_THROWS_WITH(
+        construction_params({{"offsets", nlohmann::json::array()}}, box),
+        Catch::Matchers::ContainsSubstring("at least one offset"));
+}
