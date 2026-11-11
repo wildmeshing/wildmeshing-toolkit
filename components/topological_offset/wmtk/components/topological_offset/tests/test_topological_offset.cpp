@@ -7289,15 +7289,15 @@ Parameters cleanup_params_2d(const double target)
 /// Input points as (name, grid point (i, j)), the 2D twin of point_grid()'s point block.
 using GridPoints2d = std::vector<std::pair<std::string, std::array<int, 2>>>;
 
-/// The 2D twin of point_grid() and the 3D tests' construction, driven directly (the app refuses
-/// the 2D offset): [-1, 1]^2 in 8^2 squares of edge 0.25, each split along its diagonal from
-/// (i, j) to (i + 1, j + 1); every triangle ambient, or with `regions` tagged A (centroid
-/// x < 0.25) or B; a curve group along `curve` (none if empty); `points` the input points (a
-/// point block, each vertex under its name), as the 2D driver passes them; the grid point p the
-/// input complex, a point, labelled by hand (2D selects no point label yet). Constructed at
-/// `param`'s target -- the construction holds the points (hold_curves_and_points()) -- the field
-/// and the exact integral built, the optimization's labels set, as optimize_offset() sets them
-/// before the loop.
+/// The 2D twin of point_grid() and the 3D tests' construction, driven directly (the end-to-end
+/// twins drive the app, grid_2d()): [-1, 1]^2 in 8^2 squares of edge 0.25, each split along its
+/// diagonal from (i, j) to (i + 1, j + 1); every triangle ambient, or with `regions` tagged A
+/// (centroid x < 0.25) or B; a curve group along `curve` (none if empty); `points` the input
+/// points (a point block, each vertex under its name), as the 2D driver passes them; the grid
+/// point p the input complex, a point, labelled by hand (the app selects it by label, as 3D's).
+/// Constructed at `param`'s target -- the construction holds the points
+/// (hold_curves_and_points()) -- the field and the exact integral built, the optimization's labels
+/// set, as optimize_offset() sets them before the loop.
 std::unique_ptr<TopoOffsetTriMesh> point_grid_2d(
     Parameters& param,
     const std::array<int, 2>& p,
@@ -7410,7 +7410,8 @@ bool anchored_2d(const TopoOffsetTriMesh& m, const size_t v)
 TEST_CASE("hold-curves-and-points-2d", "[offset][2d]")
 {
     // What the construction holds (hold_curves_and_points()), the 2D twin of
-    // point-offset-point-label's holding, on the construction (the app refuses 2D): p, the
+    // point-offset-point-label's holding, on the construction (point-offset-point-label-2d runs
+    // it through the app): p, the
     // complex, offset to 0.2, q an input point 0.5 from it, out of the band, and an open curve
     // y = 0.5, x in [-0.5, 0.5]. Every input point is anchored with its label, selected or not,
     // in a ball of feature_envelope_ratio x envelope_size about where it was given; p as an input
@@ -8229,7 +8230,7 @@ TEST_CASE("settle-split-before-smoothing-2d", "[offset][2d][pocket_split]")
 }
 
 namespace {
-/// The 2D loop run on point_grid_2d() (the app refuses the 2D offset): p offset to `target` with
+/// The 2D loop run on point_grid_2d(), the mesh in hand: p offset to `target` with
 /// `j`'s keys besides, optimize_offset() as the driver calls it after the construction, its log
 /// captured. Returns the exception's message, or "" for none.
 std::string run_loop_2d(
@@ -8379,6 +8380,1029 @@ TEST_CASE("unreachable-level-set-throws-in-the-loop-2d", "[offset][2d]")
     } else {
         CHECK(what.find("the level set is out of reach") != std::string::npos);
         CHECK(what.find("[held objects] turn ") != std::string::npos);
+    }
+}
+
+namespace {
+/// The 2D twin of point_grid() and curve_grid(), as the driver reads it (a MeshData):
+/// [-1, 1]^2 in 8^2 squares of edge 0.25, each split along its diagonal from (i, j) to
+/// (i + 1, j + 1), point_grid_2d()'s triangles; each triangle under the name `region` gives its
+/// centroid, or ambient where it gives none (or no `region`); `curves`, grid polylines, as an
+/// edge block without tags -- the envelope, which the 2D offset holds as its curve group and
+/// selects by the envelope's name, "EnvelopeSurface" on the memory route (read_mesh_data()): the
+/// 2D input of a curve no region surrounds, 3D's edge tag one dimension down; `edge_tags`, a
+/// tagged edge block (2D's edge tags, the twin of 3D's face tags), each (name, polyline); and
+/// `points`, a point block, each vertex under its name, as triwild and simwild write their input
+/// points.
+using GridRegion2d = std::function<std::string(const Vector2d&)>;
+MeshData grid_2d(
+    const GridPoints2d& points,
+    const std::vector<GridPolyline2d>& curves = {},
+    const GridRegion2d& region = nullptr,
+    const std::vector<std::pair<std::string, GridPolyline2d>>& edge_tags = {})
+{
+    const int n = 8;
+    const auto vid = [&](const int i, const int j) { return i + (n + 1) * j; };
+    Eigen::MatrixXd V((n + 1) * (n + 1), 2);
+    for (int j = 0; j <= n; ++j) {
+        for (int i = 0; i <= n; ++i) V.row(vid(i, j)) = grid_point_2d({{i, j}}).transpose();
+    }
+    Eigen::MatrixXi F(2 * n * n, 3);
+    int r = 0;
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            F.row(r++) << vid(i, j), vid(i + 1, j), vid(i + 1, j + 1);
+            F.row(r++) << vid(i, j), vid(i + 1, j + 1), vid(i, j + 1);
+        }
+    }
+    MeshData m = io::geometry_data(V, F, CellType::Triangle);
+    std::vector<std::string> names{"ambient"};
+    std::vector<size_t> col(size_t(F.rows()), 0);
+    for (Eigen::Index f = 0; f < F.rows(); ++f) {
+        const Vector2d c = (V.row(F(f, 0)) + V.row(F(f, 1)) + V.row(F(f, 2))).transpose() / 3.;
+        const std::string name = region ? region(c) : std::string();
+        if (name.empty()) continue;
+        auto it = std::find(names.begin(), names.end(), name);
+        if (it == names.end()) it = names.insert(names.end(), name);
+        col[size_t(f)] = size_t(it - names.begin());
+    }
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(F.rows(), names.size());
+    for (size_t f = 0; f < col.size(); ++f) tags(f, col[f]) = 1;
+    m.cells.at(CellType::Triangle).attributes["tags"] = {tags, names};
+    // The grid edges of a polyline, consecutive points on one grid line.
+    const auto grid_edges = [&](const GridPolyline2d& poly) {
+        std::vector<std::array<int, 2>> edges;
+        for (size_t p = 0; p + 1 < poly.size(); ++p) {
+            std::array<int, 2> c = poly[p];
+            while (c != poly[p + 1]) {
+                const int a = vid(c[0], c[1]);
+                for (int d = 0; d < 2; ++d)
+                    c[size_t(d)] += (poly[p + 1][size_t(d)] > c[size_t(d)]) -
+                                    (poly[p + 1][size_t(d)] < c[size_t(d)]);
+                edges.push_back({{a, vid(c[0], c[1])}});
+            }
+        }
+        return edges;
+    };
+    if (!curves.empty() || !edge_tags.empty()) {
+        std::vector<std::array<int, 2>> rows;
+        std::vector<int> row_tag; // -1: the envelope (no tags)
+        std::vector<std::string> tag_names;
+        for (const auto& poly : curves) {
+            for (const auto& e : grid_edges(poly)) {
+                rows.push_back(e);
+                row_tag.push_back(-1);
+            }
+        }
+        for (const auto& [name, poly] : edge_tags) {
+            auto it = std::find(tag_names.begin(), tag_names.end(), name);
+            if (it == tag_names.end()) it = tag_names.insert(tag_names.end(), name);
+            for (const auto& e : grid_edges(poly)) {
+                rows.push_back(e);
+                row_tag.push_back(int(it - tag_names.begin()));
+            }
+        }
+        auto& block = m.cells[CellType::Edge];
+        block.connectivity.resize(Eigen::Index(rows.size()), 2);
+        for (size_t k = 0; k < rows.size(); ++k) {
+            block.connectivity(Eigen::Index(k), 0) = rows[k][0];
+            block.connectivity(Eigen::Index(k), 1) = rows[k][1];
+        }
+        if (!edge_tags.empty()) {
+            // With tags, the envelope's rows are those labelled EnvelopeSurface, the reader's
+            // reserved name.
+            if (!curves.empty()) tag_names.push_back("EnvelopeSurface");
+            DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(rows.size(), tag_names.size());
+            for (size_t k = 0; k < rows.size(); ++k)
+                member(k, row_tag[k] < 0 ? tag_names.size() - 1 : size_t(row_tag[k])) = 1;
+            block.attributes["tags"] = {member, tag_names};
+        }
+    }
+    if (!points.empty()) {
+        std::vector<std::string> pnames;
+        std::vector<size_t> pcol;
+        auto& block = m.cells[CellType::Point];
+        block.connectivity.resize(Eigen::Index(points.size()), 1);
+        for (size_t k = 0; k < points.size(); ++k) {
+            auto it = std::find(pnames.begin(), pnames.end(), points[k].first);
+            if (it == pnames.end()) it = pnames.insert(pnames.end(), points[k].first);
+            pcol.push_back(size_t(it - pnames.begin()));
+            block.connectivity(Eigen::Index(k), 0) = vid(points[k].second[0], points[k].second[1]);
+        }
+        DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(points.size(), pnames.size());
+        for (size_t k = 0; k < points.size(); ++k) member(k, pcol[k]) = 1;
+        block.attributes["tags"] = {member, pnames};
+    }
+    return m;
+}
+
+/// The 2D twin of result_points(): per label of the result's point block, its vertices.
+std::map<std::string, std::vector<Vector2d>> result_points_2d(const MeshData& out)
+{
+    std::map<std::string, std::vector<Vector2d>> by_label;
+    const auto& block = out.cells.at(CellType::Point);
+    const auto& tags = block.attributes.at("tags");
+    const auto member = tags.integers();
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (size_t t = 0; t < tags.labels.size(); ++t) {
+            if (member(r, Eigen::Index(t)) != 0)
+                by_label[tags.labels[t]].push_back(
+                    out.V.row(block.connectivity(r, 0)).head<2>().transpose());
+        }
+    }
+    return by_label;
+}
+
+/// The 2D twin of band_touched(): per vertex of the result, whether a triangle tagged
+/// `band_tag` has it as a corner.
+std::vector<char> band_touched_2d(const MeshData& out, const std::string& band_tag = "newtag")
+{
+    const auto& tris = out.cells.at(CellType::Triangle);
+    const auto& tags = tris.attributes.at("tags");
+    const auto it = std::find(tags.labels.begin(), tags.labels.end(), band_tag);
+    REQUIRE(it != tags.labels.end());
+    const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+    const auto member = tags.integers();
+    std::vector<char> touched(size_t(out.V.rows()), 0);
+    for (Eigen::Index r = 0; r < tris.connectivity.rows(); ++r) {
+        if (member(r, col) == 0) continue;
+        for (int c = 0; c < 3; ++c) touched[size_t(tris.connectivity(r, c))] = 1;
+    }
+    return touched;
+}
+
+/// The result's input complex (vertex field labels 1).
+std::vector<Vector2d> result_complex_2d(const MeshData& out)
+{
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    std::vector<Vector2d> complex;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (labels(v, 0) == 1.) complex.push_back(out.V.row(v).head<2>().transpose());
+    }
+    return complex;
+}
+
+/// The front of the result: the edges between a triangle tagged `band_tag` and one not, the
+/// domain wall's excepted, as (a, b) positions.
+std::vector<std::array<Vector2d, 2>> result_front_2d(
+    const MeshData& out,
+    const std::string& band_tag = "newtag")
+{
+    const auto& tris = out.cells.at(CellType::Triangle);
+    const auto& tags = tris.attributes.at("tags");
+    const auto it = std::find(tags.labels.begin(), tags.labels.end(), band_tag);
+    REQUIRE(it != tags.labels.end());
+    const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+    const auto member = tags.integers();
+    std::map<std::array<int64_t, 2>, std::vector<bool>> sides;
+    for (Eigen::Index r = 0; r < tris.connectivity.rows(); ++r) {
+        for (int c = 0; c < 3; ++c) {
+            const int64_t a = tris.connectivity(r, c), b = tris.connectivity(r, (c + 1) % 3);
+            sides[{{std::min(a, b), std::max(a, b)}}].push_back(member(r, col) != 0);
+        }
+    }
+    std::vector<std::array<Vector2d, 2>> front;
+    for (const auto& [e, s] : sides) {
+        if (s.size() != 2 || s[0] == s[1]) continue;
+        front.push_back(
+            {{out.V.row(e[0]).head<2>().transpose(), out.V.row(e[1]).head<2>().transpose()}});
+    }
+    return front;
+}
+
+/// The diagonal of grid_2d()'s box and the envelopes' half-width at the default
+/// envelope_size_rel 1e-3.
+const double grid_2d_eps = 1e-3 * 2. * std::sqrt(2.);
+} // namespace
+
+TEST_CASE("point-offset-point-label-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of point-offset-point-label, through the driver: a point label selected
+    // (label_input_complex()), the point offset of a triwild or simwild input point, its band a
+    // disk. Every input point is anchored, selected or not (hold_curves_and_points()), and written
+    // back as the result's point block: each within its anchor's radius,
+    // feature_envelope_ratio x envelope_size, of where it was given. The rules and the ratio over
+    // its range: 0.01, 1 and 10.
+    struct Case
+    {
+        std::string rule;
+        double ratio;
+    };
+    const Case c = GENERATE(
+        Case{"exact", 1.},
+        Case{"exact_swept", 1.},
+        Case{"corner_bound", 1.},
+        Case{"exact", 0.01},
+        Case{"exact", 10.});
+    INFO("EXPERIMENTAL_band_volume_rule " << c.rule << ", feature_envelope_ratio " << c.ratio);
+    // p at the origin, q 0.5 from it, out of the band at 0.2
+    const std::array<int, 2> p{{4, 4}}, q{{6, 4}};
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+        {"EXPERIMENTAL_band_volume_rule", c.rule},
+        {"feature_envelope_ratio", c.ratio},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    // the default clean-up reads the exact integral, which "corner_bound" does not build
+    if (c.rule == "corner_bound") j["EXPERIMENTAL_label_cleanup"] = "off";
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", grid_2d({{"p", p}, {"q", q}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const double r = c.ratio * grid_2d_eps; // the anchors' radius
+    const auto points = result_points_2d(out);
+    REQUIRE(points.size() == 2);
+    for (const auto& [label, at] : {std::pair("p", p), std::pair("q", q)}) {
+        INFO("point " << label);
+        REQUIRE(points.at(label).size() == 1);
+        CHECK((points.at(label)[0] - grid_point_2d(at)).norm() <= r);
+    }
+    // the complex: p alone, its vertex
+    const auto complex = result_complex_2d(out);
+    REQUIRE(complex.size() == 1);
+    CHECK((complex[0] - grid_point_2d(p)).norm() <= r);
+    // the result json: the optimization ran one turn
+    CHECK(res.second.at("converged").is_boolean());
+    CHECK(res.second.at("optimization_metrics").at("max_l2_dist_err").size() == 1);
+}
+
+TEST_CASE("point-offset-labels-in-expression-2d", "[offset][2d]")
+{
+    // The 2D twin of point-offset-labels-in-expression: a point label in an expression means
+    // what it means alone, "p | q" both points and no other vertex; and the curve group in one
+    // its edges: "EnvelopeSurface | q" the curve (y = 0.5, x in [-0.5, 0.5]) and q. Refused, as
+    // the whole 2D offset, until 2026-11; before then neither selected anything in an
+    // expression.
+    SECTION("two point labels")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "p | q"}, {"target_distance", 0.2}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({{"p", {{4, 4}}}, {"q", {{6, 4}}}})}}));
+        const auto complex = result_complex_2d(res.first.at("mesh"));
+        REQUIRE(complex.size() == 2);
+        const bool p_first = (complex[0] - grid_point_2d({{4, 4}})).norm() < 1e-12;
+        CHECK((complex[p_first ? 0 : 1] - grid_point_2d({{4, 4}})).norm() < 1e-12);
+        CHECK((complex[p_first ? 1 : 0] - grid_point_2d({{6, 4}})).norm() < 1e-12);
+    }
+    SECTION("the curve group and a point label")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array(
+                 {{{"selection", "EnvelopeSurface | q"}, {"target_distance", 0.1}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({{"q", {{4, 1}}}}, {{{{2, 6}}, {{6, 6}}}})}}));
+        size_t n_curve = 0, n_q = 0;
+        for (const Vector2d& x : result_complex_2d(res.first.at("mesh"))) {
+            const bool on_curve = x.y() == 0.5 && std::abs(x.x()) <= 0.5;
+            const bool at_q = x == grid_point_2d({{4, 1}});
+            CHECK((on_curve || at_q));
+            n_curve += on_curve;
+            n_q += at_q;
+        }
+        CHECK(n_curve == 5); // the curve's grid vertices, x = -0.5, -0.25, ..., 0.5
+        CHECK(n_q == 1);
+    }
+}
+
+TEST_CASE("point-offset-label-names-2d", "[offset][2d]")
+{
+    // The 2D twin of point-offset-label-names: one name is one input (init_from_image()), so a
+    // point label an edge tag also has is that input's points beside its curve, selected with it.
+    // Where 2D differs (m_point_tag_bit): triwild names an input's region, its curve and its
+    // points alike, so a point label a region has keeps apart -- its points held and written
+    // back, the name selecting the region -- where 3D refuses it ("is also a tet or face tag").
+    // So does one the curve group has.
+    SECTION("a region's")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets", nlohmann::json::array({{{"selection", "A"}, {"target_distance", 0.2}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({{"A", {{6, 4}}}}, {}, [](const Vector2d& c) {
+                      return c.x() < 0. ? "A" : "";
+                  })}}));
+        const MeshData& out = res.first.at("mesh");
+        // the complex: region A's triangles and their corners, x <= 0, not the point at x = 0.5
+        for (const Vector2d& x : result_complex_2d(out)) CHECK(x.x() <= 0.);
+        const auto points = result_points_2d(out);
+        REQUIRE(points.at("A").size() == 1);
+        CHECK(points.at("A")[0] == grid_point_2d({{6, 4}}));
+    }
+    SECTION("an edge tag's")
+    {
+        // as in 3D: a curve input's points share its curve's name, and selecting it selects both
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "curve"}, {"target_distance", 0.2}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m",
+                  grid_2d(
+                      {{"curve", {{6, 4}}}},
+                      {},
+                      nullptr,
+                      {{"curve", {{{2, 4}}, {{4, 4}}}}})}}));
+        const MeshData& out = res.first.at("mesh");
+        bool point_in_complex = false;
+        for (const Vector2d& x : result_complex_2d(out))
+            point_in_complex = point_in_complex || x == grid_point_2d({{6, 4}});
+        CHECK(point_in_complex);
+        CHECK(result_points_2d(out).at("curve").size() == 1);
+    }
+    SECTION("the curve group's")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "EnvelopeSurface"}, {"target_distance", 0.1}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({{"EnvelopeSurface", {{4, 1}}}}, {{{{2, 6}}, {{6, 6}}}})}}));
+        const MeshData& out = res.first.at("mesh");
+        for (const Vector2d& x : result_complex_2d(out)) CHECK(x.y() == 0.5);
+        CHECK(result_points_2d(out).at("EnvelopeSurface").size() == 1);
+    }
+}
+
+TEST_CASE("empty-input-complex-keeps-curves-and-points-2d", "[offset][2d]")
+{
+    // The 2D twin of empty-input-complex-keeps-curves-and-points: a selection naming a region
+    // with no triangle, so the input complex is empty and the run returns the mesh as loaded
+    // before anything is held (topological_offset.cpp). Its result keeps the input's edge block
+    // (2D's edge tags, the twin of 3D's face tags; 3D's edge block is codimension 2) and its
+    // point block, as a run with a band does.
+    MeshData input = grid_2d({{"p", {{4, 4}}}}, {}, nullptr, {{"curve", {{{2, 4}}, {{6, 4}}}}});
+    auto& tris = input.cells.at(CellType::Triangle);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tris.connectivity.rows(), 2);
+    tags.col(0).setOnes();
+    tris.attributes["tags"] = {tags, {"ambient", "nothing"}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "nothing"}, {"target_distance", 0.2}}})},
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    // the curve: the four grid edges from x = -0.5 to x = 0.5 on the x axis
+    REQUIRE(out.cells.count(CellType::Edge) == 1);
+    const auto& edges = out.cells.at(CellType::Edge);
+    CHECK(edges.attributes.at("tags").labels == std::vector<std::string>{"curve"});
+    CHECK(edges.connectivity.rows() == 4);
+    for (Eigen::Index r = 0; r < edges.connectivity.rows(); ++r) {
+        for (int c = 0; c < 2; ++c) {
+            const Vector2d x = out.V.row(edges.connectivity(r, c)).head<2>().transpose();
+            CHECK(std::abs(x[0]) <= 0.5);
+            CHECK(x[1] == 0.);
+        }
+    }
+    // the point, at the origin
+    REQUIRE(out.cells.count(CellType::Point) == 1);
+    const auto points = result_points_2d(out);
+    REQUIRE(points.size() == 1);
+    REQUIRE(points.at("p").size() == 1);
+    CHECK(points.at("p")[0] == grid_point_2d({{4, 4}}));
+}
+
+namespace {
+/// The 2D twin of rod_grid(), three regions meeting at both ends of a segment: grid_2d() with
+/// A (x < 0) and B (x > 0) in -0.5 <= y <= 0.5, ambient elsewhere. "A & B" is the segment x = 0,
+/// -0.5 <= y <= 0.5, four grid edges with both ends inside the domain, where A, B and ambient
+/// meet -- the rod of 3D's rod_grid(), one dimension down: a curve an expression selects, held as
+/// the region boundary it is (in the tubes of A and B), its ends anchored where three regions
+/// meet (hold_curves_and_points()).
+MeshData rod_grid_2d()
+{
+    return grid_2d({}, {}, [](const Vector2d& c) {
+        return std::abs(c.y()) > 0.5 ? "" : c.x() < 0. ? "A" : "B";
+    });
+}
+} // namespace
+
+TEST_CASE("curve-offset-region-boundary-held-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of curve-offset-rod-held: a curve offset (an input complex of segments), the
+    // band integral over segments, the curve held. The run must not throw, and the input complex
+    // in the result must lie in the tube around the input segment, its two ends still there. A 2D
+    // curve an expression selects is a region boundary, held in its regions' tubes (half-width
+    // envelope_size; 3D holds its codimension-2 curve in a feature tube of the same default
+    // width), its ends where three regions meet in balls of order2_envelope_ratio x
+    // envelope_size. One turn: every operation -- split, collapse, swap, smoothing -- runs over
+    // the curve.
+    const MeshData input = rod_grid_2d();
+    for (const std::string rule : {"exact", "exact_swept", "corner_bound"}) {
+        INFO("EXPERIMENTAL_band_volume_rule " << rule);
+        nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "A & B"}, {"target_distance", 0.2}}})},
+            {"EXPERIMENTAL_band_volume_rule", rule},
+            {"max_rounds", 1},
+            {"num_threads", 1},
+            {"throw_on_nonconvergence", false}};
+        // the default clean-up reads the exact integral, which "corner_bound" does not build
+        if (rule == "corner_bound") j["EXPERIMENTAL_label_cleanup"] = "off";
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(j, {{"m", input}}));
+        const MeshData& out = res.first.at("mesh");
+        size_t n_rod = 0;
+        bool end_lo = false, end_hi = false;
+        for (const Vector2d& p : result_complex_2d(out)) {
+            ++n_rod;
+            const double y = std::clamp(p[1], -0.5, 0.5);
+            CHECK((p - Vector2d(0, y)).norm() <= grid_2d_eps);
+            end_lo = end_lo || (p - Vector2d(0, -0.5)).norm() <= grid_2d_eps;
+            end_hi = end_hi || (p - Vector2d(0, 0.5)).norm() <= grid_2d_eps;
+        }
+        CHECK(n_rod >= 3);
+        CHECK(end_lo);
+        CHECK(end_hi);
+        // and the result's complex is the whole curve: every vertex in the tube carries label 1,
+        // the split pass's midpoints included (carried_vertex_label(); before it, 4 of the 9 did
+        // not)
+        const auto labels = out.vertex_attributes.at("labels").doubles();
+        size_t n_tube = 0;
+        for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+            const Vector2d p = out.V.row(v).head<2>().transpose();
+            if ((p - Vector2d(0, std::clamp(p[1], -0.5, 0.5))).norm() > grid_2d_eps) continue;
+            ++n_tube;
+            CHECK(labels(v, 0) == 1.);
+        }
+        CHECK(n_tube == n_rod);
+    }
+}
+
+TEST_CASE("curve-offset-refuses-offset-in-2d", "[offset][2d]")
+{
+    // The 2D twin of curve-offset-refuses-offset-in: a curve encloses no area
+    // (init_input_complex_bvh()).
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "A & B"}, {"target_distance", 0.2}}})},
+        {"offset_in", true},
+        {"offset_out", false},
+        {"num_threads", 1}};
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(j, {{"m", rod_grid_2d()}}),
+        Catch::Matchers::ContainsSubstring("enclose no area"));
+}
+
+TEST_CASE("curve-offset-curve-group-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of curve-offset-edge-tag: a curve no region surrounds, selected by name -- 2D's
+    // curve group (the envelope, classify_curve_edges()), the twin of 3D's edge tag -- held in its
+    // tube (envelope_size) and its ends anchored (order2_envelope_ratio x envelope_size): every
+    // input-complex vertex of the result in the tube around its segment, both ends kept. The
+    // envelope is handed back as the result's `envelope`.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets",
+         nlohmann::json::array({{{"selection", "EnvelopeSurface"}, {"target_distance", 0.2}}})},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", grid_2d({}, {{{{2, 4}}, {{6, 4}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    size_t n = 0;
+    bool end_lo = false, end_hi = false;
+    for (const Vector2d& p : result_complex_2d(out)) {
+        ++n;
+        const double x = std::clamp(p[0], -0.5, 0.5);
+        CHECK((p - Vector2d(x, 0)).norm() <= grid_2d_eps);
+        end_lo = end_lo || (p - Vector2d(-0.5, 0)).norm() <= grid_2d_eps;
+        end_hi = end_hi || (p - Vector2d(0.5, 0)).norm() <= grid_2d_eps;
+    }
+    CHECK(n >= 3);
+    CHECK(end_lo);
+    CHECK(end_hi);
+    // the result's complex is the whole curve, the split pass's midpoints included
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    size_t n_tube = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        const Vector2d p = out.V.row(v).head<2>().transpose();
+        if ((p - Vector2d(std::clamp(p[0], -0.5, 0.5), 0)).norm() > grid_2d_eps) continue;
+        ++n_tube;
+        CHECK(labels(v, 0) == 1.);
+    }
+    CHECK(n_tube == n);
+    CHECK(res.first.count("envelope") == 1);
+}
+
+TEST_CASE("curve-offset-edge-tag-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of curve-offset-edge-tag: an edge tag selected (label_input_complex()), the
+    // curve offset of a triwild or simwild curve, with no region around it. Every edge tag is
+    // held, selected or not (init_surfaces_and_boundaries(): tracked, in its own tube of
+    // envelope_size, its ends anchored), and written back as the result's edge block: each tag's
+    // edges in the tube around its segment, each curve whole, end to end. "curve" is y = 0,
+    // x in [-0.5, 0.5]; "other" y = 0.5, out of the band at 0.2.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "curve"}, {"target_distance", 0.2}}})},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m",
+              grid_2d(
+                  {},
+                  {},
+                  nullptr,
+                  {{"curve", {{{2, 4}}, {{6, 4}}}}, {"other", {{{2, 6}}, {{6, 6}}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    REQUIRE(out.cells.count(CellType::Edge) == 1);
+    const auto& block = out.cells.at(CellType::Edge);
+    const auto& tags = block.attributes.at("tags");
+    REQUIRE(tags.labels == std::vector<std::string>{"curve", "other"});
+    const auto member = tags.integers();
+    const auto dist = [](const Vector2d& p, const double y) {
+        return (p - Vector2d(std::clamp(p[0], -0.5, 0.5), y)).norm();
+    };
+    double xlo[2] = {1., 1.}, xhi[2] = {-1., -1.};
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (int t = 0; t < 2; ++t) {
+            if (member(r, t) == 0) continue;
+            for (int c = 0; c < 2; ++c) {
+                const Vector2d p = out.V.row(block.connectivity(r, c)).head<2>().transpose();
+                CHECK(dist(p, t == 0 ? 0. : 0.5) <= grid_2d_eps);
+                xlo[t] = std::min(xlo[t], p[0]);
+                xhi[t] = std::max(xhi[t], p[0]);
+            }
+        }
+    }
+    for (int t = 0; t < 2; ++t) { // each curve whole, end to end
+        INFO("edge tag " << tags.labels[size_t(t)]);
+        CHECK(std::abs(xlo[t] + 0.5) <= grid_2d_eps);
+        CHECK(std::abs(xhi[t] - 0.5) <= grid_2d_eps);
+    }
+    size_t n = 0;
+    for (const Vector2d& p : result_complex_2d(out)) {
+        ++n;
+        CHECK(dist(p, 0.) <= grid_2d_eps);
+    }
+    CHECK(n >= 3);
+}
+
+TEST_CASE("curve-offset-edge-tags-in-expression-2d", "[offset][2d]")
+{
+    // The 2D twin of curve-offset-edge-tags-in-expression: an edge tag in an expression means
+    // what it means alone, "curve | other" both curves, every input-complex vertex on one of the
+    // two segments and both segments whole, end to end.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets",
+         nlohmann::json::array({{{"selection", "curve | other"}, {"target_distance", 0.1}}})},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m",
+              grid_2d(
+                  {},
+                  {},
+                  nullptr,
+                  {{"curve", {{{2, 4}}, {{6, 4}}}}, {"other", {{{2, 6}}, {{6, 6}}}}})}}));
+    double xlo[2] = {1., 1.}, xhi[2] = {-1., -1.};
+    for (const Vector2d& p : result_complex_2d(res.first.at("mesh"))) {
+        const int t = p[1] > 0.25 ? 1 : 0; // "curve" at y = 0, "other" at y = 0.5
+        CHECK(p[1] == 0.5 * t);
+        xlo[t] = std::min(xlo[t], p[0]);
+        xhi[t] = std::max(xhi[t], p[0]);
+    }
+    for (int t = 0; t < 2; ++t) {
+        CHECK(xlo[t] == -0.5);
+        CHECK(xhi[t] == 0.5);
+    }
+}
+
+TEST_CASE("edge-tags-held-2d", "[offset][2d]" + release_only)
+{
+    // 2D's edge tags held through the loop, selected or not, as 3D's face tags: p offset to 0.2
+    // with two edge tags, "near" on y = 0.25 (0.05 outside the level set) and "far" on y = 0.5;
+    // after 3 turns each tag's edges are in the tube around its segment, end to end. MEASURED
+    // before they were tracked (init_surfaces_and_boundaries()): after 1 turn "near" was 0.043 off
+    // its line, after 3 turns 0.103, and "far" 0.034, against envelope_size 0.0028.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m",
+              grid_2d(
+                  {{"p", {{4, 4}}}},
+                  {},
+                  nullptr,
+                  {{"near", {{{1, 5}}, {{7, 5}}}}, {"far", {{{2, 6}}, {{6, 6}}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto& block = out.cells.at(CellType::Edge);
+    const auto& tags = block.attributes.at("tags");
+    REQUIRE(tags.labels == std::vector<std::string>{"near", "far"});
+    const auto member = tags.integers();
+    const double y0[2] = {0.25, 0.5}, half[2] = {0.75, 0.5};
+    double xlo[2] = {1., 1.}, xhi[2] = {-1., -1.};
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (int t = 0; t < 2; ++t) {
+            if (member(r, t) == 0) continue;
+            for (int c = 0; c < 2; ++c) {
+                const Vector2d p = out.V.row(block.connectivity(r, c)).head<2>().transpose();
+                INFO("edge tag " << tags.labels[size_t(t)]);
+                CHECK(
+                    (p - Vector2d(std::clamp(p[0], -half[t], half[t]), y0[t])).norm() <=
+                    grid_2d_eps);
+                xlo[t] = std::min(xlo[t], p[0]);
+                xhi[t] = std::max(xhi[t], p[0]);
+            }
+        }
+    }
+    for (int t = 0; t < 2; ++t) {
+        INFO("edge tag " << tags.labels[size_t(t)]);
+        CHECK(std::abs(xlo[t] + half[t]) <= grid_2d_eps);
+        CHECK(std::abs(xhi[t] - half[t]) <= grid_2d_eps);
+    }
+}
+
+TEST_CASE("driver-refusals-2d", "[offset][2d]")
+{
+    // What the 2D driver (topological_offset.cpp) refuses before it builds the mesh: several
+    // entries of offsets and a growth_mode, until the several-offsets and growth step of the 2D
+    // lock-step port; offset_field "smooth", as 3D refuses it; a labelled envelope reference,
+    // which 3D holds to and 2D cannot yet (the envelope-passing step of the port).
+    const MeshData input = grid_2d({{"p", {{4, 4}}}, {"q", {{6, 4}}}});
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+        {"num_threads", 1}};
+    MeshMap meshes{{"m", input}};
+    std::string want;
+    SECTION("several entries")
+    {
+        j["offsets"].push_back({{"selection", "q"}, {"target_distance", 0.1}});
+        want = "until the several-offsets and growth step";
+    }
+    SECTION("growth_mode")
+    {
+        j["growth_mode"] = "linear";
+        j["construction_mode"] = "max_marchable_fallback";
+        want = "until the several-offsets and growth step";
+    }
+    SECTION("offset_field smooth")
+    {
+        j["offset_field"] = "smooth";
+        want = "is not available in 2D";
+    }
+    SECTION("a labelled reference")
+    {
+        Eigen::MatrixXd V(2, 3);
+        V << -0.5, 0.5, 0., 0.5, 0.5, 0.;
+        Eigen::MatrixXi E(1, 2);
+        E << 0, 1;
+        MeshData reference;
+        io::append_envelope_block(
+            reference,
+            io::geometry_data(V, E, CellType::Edge),
+            CellType::Edge,
+            {InputSet(1)},
+            {"curve"});
+        meshes["e"] = reference;
+        j["envelope"] = "e";
+        want = "labelled reference";
+    }
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(j, meshes),
+        Catch::Matchers::ContainsSubstring(want));
+}
+
+TEST_CASE("memory-output-with-offset-front-2d", "[offset][2d][io]")
+{
+    // The 2D twin of memory-output-with-offset-front: the memory export (collect_memory_output())
+    // of a mesh with an offset potential and a front, as a run ends, under DEBUG_stencil. The
+    // export must succeed, its keys be the offsets' own, and the mesh's rows be the live
+    // vertices.
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    Parameters param = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+         {"num_threads", 0}},
+        box);
+    param.debug_stencil = true;
+    auto mesh = point_grid_2d(param, {{4, 4}});
+    REQUIRE(mesh->m_offset_potential);
+    size_t n_front = 0;
+    for (const auto& e : mesh->get_edges()) n_front += mesh->edge_is_offset(e.eid(*mesh));
+    REQUIRE(n_front > 0);
+    io::ComponentIO context;
+    REQUIRE_NOTHROW(collect_memory_output(*mesh, context));
+    const auto& out = context.result.first;
+    // The mesh alone, no envelope given.
+    CHECK(out.size() == 1);
+    CHECK(out.count("mesh") == 1);
+    CHECK(size_t(out.at("mesh").V.rows()) == mesh->get_vertices().size());
+}
+
+namespace {
+/// One construction-only 2D offset of the edge tag `curve`, its band tagged `band`, the
+/// correspondence saved: the 2D twin of offset_sheet(), 2D's edge tags the twin of 3D's face
+/// tags.
+MeshData offset_curve_2d(const MeshData& m, const std::string& curve, const std::string& band)
+{
+    return components::topological_offset::topological_offset(
+               {{"input", "m"},
+                {"offsets",
+                 nlohmann::json::array(
+                     {{{"selection", curve}, {"output_tags", {band}}, {"target_distance", 0.1}}})},
+                {"optimize_offset", false},
+                {"save_offset_correspondence", true},
+                {"num_threads", 1}},
+               {{"m", m}})
+        .first.at("mesh");
+}
+
+/// The 2D twin of correspondence_pairs(): each offset vertex as its position followed by its
+/// input vertex's.
+std::set<std::array<double, 4>> correspondence_pairs_2d(const MeshData& m)
+{
+    const auto corr = m.vertex_attributes.at("corr_input_vid").integers();
+    const auto vid = m.vertex_attributes.at("vid").integers();
+    std::map<int64_t, Eigen::Index> row_of;
+    for (Eigen::Index r = 0; r < vid.rows(); ++r) row_of[vid(r, 0)] = r;
+    std::set<std::array<double, 4>> pairs;
+    for (Eigen::Index r = 0; r < corr.rows(); ++r) {
+        if (corr(r, 0) < 0) continue;
+        const Eigen::Index u = row_of.at(corr(r, 0));
+        pairs.insert({{m.V(r, 0), m.V(r, 1), m.V(u, 0), m.V(u, 1)}});
+    }
+    return pairs;
+}
+
+/// The 2D twin of two_sheet_grid(): grid_2d() with two open curves as edge tags, yellow on
+/// y = 0 and blue on y = y_blue, both x in [-0.5, 0.5].
+MeshData two_curve_grid_2d(const int j_blue)
+{
+    return grid_2d(
+        {},
+        {},
+        nullptr,
+        {{"yellow", {{{2, 4}}, {{6, 4}}}}, {"blue", {{{2, j_blue}}, {{6, j_blue}}}}});
+}
+} // namespace
+
+TEST_CASE("offset-carries-an-earlier-correspondence-2d", "[offset][2d][correspondence]")
+{
+    // The 2D twin of offset-carries-an-earlier-correspondence, 2D's edge tags in place of 3D's
+    // face tags: two offsets one after another, yellow's band and then blue's. The second run
+    // carries the first's corr_input_vid. Construction moves no vertex, so the pairs compare by
+    // position, exactly. 3D's fourth section (the earlier band protected) has no twin: 2D's march
+    // still cuts protected cells (split_edge_before()).
+    SECTION("curves three squares apart: every carried value survives")
+    {
+        const auto first = offset_curve_2d(two_curve_grid_2d(7), "yellow", "band_yellow");
+        const auto second = offset_curve_2d(first, "blue", "band_blue");
+        const auto carried = correspondence_pairs_2d(first);
+        REQUIRE(!carried.empty());
+        std::set<std::array<double, 4>> to_yellow, to_blue;
+        for (const auto& p : correspondence_pairs_2d(second))
+            (p[3] == 0. ? to_yellow : to_blue).insert(p);
+        CHECK(to_yellow == carried);
+        CHECK(!to_blue.empty());
+        for (const auto& p : to_blue) CHECK(p[3] == 0.75);
+    }
+    SECTION("curves one square apart: blue's march cuts beside yellow's pairs, not them")
+    {
+        // Blue's marched edges end at yellow's offset vertices, not at the input vertices they
+        // name, so no carried edge is cut and every carried value survives.
+        const auto first = offset_curve_2d(two_curve_grid_2d(5), "yellow", "band_yellow");
+        const auto second = offset_curve_2d(first, "blue", "band_blue");
+        const auto carried = correspondence_pairs_2d(first);
+        REQUIRE(!carried.empty());
+        const auto pairs = correspondence_pairs_2d(second);
+        CHECK(std::includes(pairs.begin(), pairs.end(), carried.begin(), carried.end()));
+    }
+    SECTION("yellow offset again: the march cuts yellow's carried edges, and the run throws")
+    {
+        const auto first = offset_curve_2d(two_curve_grid_2d(7), "yellow", "band_yellow");
+        REQUIRE_THROWS_WITH(
+            offset_curve_2d(first, "yellow", "band_yellow_2"),
+            Catch::Matchers::ContainsSubstring("corr_input_vid"));
+    }
+}
+
+TEST_CASE("label-cleanup-keeps-held-point-off-the-band-run-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of label-cleanup-keeps-held-point-off-the-band through the driver (its
+    // clean-up-slot twin is label-cleanup-keeps-held-point-off-the-band-2d): q, a held point
+    // 0.25 from p and so inside p's level set at 0.3, out of the band as constructed (the march
+    // traces to 0.125); no band triangle ever has it as a corner.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule);
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"throw_on_unreachable_level_set", false}, // the topology is what is tested
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", grid_2d({{"p", {{4, 4}}}, {"q", {{5, 4}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched_2d(out);
+    const Vector2d q = result_points_2d(out).at("q").at(0);
+    Eigen::Index qv = 0;
+    for (Eigen::Index v = 1; v < out.V.rows(); ++v) {
+        if ((out.V.row(v).head<2>().transpose() - q).norm() <
+            (out.V.row(qv).head<2>().transpose() - q).norm())
+            qv = v;
+    }
+    REQUIRE((out.V.row(qv).head<2>().transpose() - q).norm() == 0.);
+    CHECK(touched[size_t(qv)] == 0);
+}
+
+TEST_CASE("unreachable-level-set-throws-run-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of unreachable-level-set-throws through the driver (its loop twin is
+    // unreachable-level-set-throws-in-the-loop-2d): p offset to 0.3 with a held object the band
+    // did not touch as constructed. Inside the level set -- a held point, a curve, a region
+    // boundary, the box, each 0.25 from p -- the run throws. Not a held point inside the level set
+    // by less than front_conv (q 0.25 from p at target 0.27). 3D's curve through p has no twin
+    // (unreachable-level-set-throws-2d says why).
+    const std::string rule = GENERATE("exact", "exact_swept");
+    const std::string held = GENERATE("point", "curve", "region", "box", "point within the bar");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule << ", held: " << held);
+    const std::array<int, 2> p =
+        held == "box" ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}};
+    GridPoints2d points{{"p", p}};
+    if (held == "point" || held == "point within the bar") points.push_back({"q", {{5, 4}}});
+    std::vector<GridPolyline2d> curves;
+    if (held == "curve") curves.push_back({{{2, 5}}, {{6, 5}}});
+    const MeshData input = grid_2d(
+        points,
+        curves,
+        held == "region" ? GridRegion2d([](const Vector2d& c) { return c.x() < 0.25 ? "A" : "B"; })
+                         : GridRegion2d());
+    const double target = held == "point within the bar" ? 0.27 : 0.3;
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    if (held == "point within the bar") {
+        REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
+    } else {
+        REQUIRE_THROWS_WITH(
+            components::topological_offset::topological_offset(j, {{"m", input}}),
+            Catch::Matchers::ContainsSubstring("the level set is out of reach"));
+    }
+}
+
+namespace {
+/// The 2D twin of require_point_offset_converges(): grid_2d(points)'s point p offset to `delta`,
+/// run to convergence (the settle exit, throw_on_nonconvergence), every input point within its
+/// anchor's radius in the result, and the front within the bar of the level set: every front
+/// vertex within front_conv (0.1 x delta) of distance delta from p.
+void require_point_offset_converges_2d(const GridPoints2d& points, const double delta)
+{
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
+        {"max_rounds", 15},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", true}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(j, {{"m", grid_2d(points)}}));
+    CHECK(res.second.at("converged") == true);
+    const MeshData& out = res.first.at("mesh");
+    const auto at = result_points_2d(out);
+    for (const auto& [name, g] : points) {
+        INFO("point " << name);
+        REQUIRE(at.at(name).size() == 1);
+        CHECK((at.at(name)[0] - grid_point_2d(g)).norm() <= grid_2d_eps);
+    }
+    const Vector2d p = grid_point_2d(std::find_if(points.begin(), points.end(), [](const auto& x) {
+                                         return x.first == "p";
+                                     })->second);
+    const auto front = result_front_2d(out);
+    REQUIRE(!front.empty());
+    for (const auto& e : front) {
+        for (const Vector2d& x : e) CHECK(std::abs((x - p).norm() - delta) <= 0.1 * delta);
+    }
+}
+} // namespace
+
+TEST_CASE("point-offset-converges-2d", "[offset][2d][.]")
+{
+    // Hidden, for the runs before a merge: the 2D twin of point-offset-converges.
+    require_point_offset_converges_2d({{"p", {{4, 4}}}}, 0.2);
+}
+
+TEST_CASE("point-offset-held-point-inside-the-band-2d", "[offset][2d][.]")
+{
+    // Hidden, the 2D twin of point-offset-held-point-inside-the-band, and failing as it does: q,
+    // a held point 0.25 from p, inside p's level set at 0.3; since 2026-11-10 the run throws at
+    // a settled turn (unreachable-level-set-throws-run-2d). Kept as the record of the case until
+    // a flag lets the front go beyond the throw.
+    require_point_offset_converges_2d({{"p", {{4, 4}}}, {"q", {{5, 4}}}}, 0.3);
+}
+
+TEST_CASE("curve-offset-converges-2d", "[offset][2d][.]")
+{
+    // Hidden, for the runs before a merge: the 2D twin of curve-offset-converges, on curves no
+    // region surrounds (an edge tag) -- a corner, and three arms meeting in a junction (3D's
+    // meet out of a plane) -- and the input complex in the curves' tube in the result. 3D's third
+    // case, a second curve held inside the band, has no 2D twin here: a held curve is
+    // codimension 1 in 2D, so one inside the level set is out of reach and the run throws
+    // (unreachable-level-set-throws-run-2d); the codimension-2 held object inside the band is a
+    // point (point-offset-held-point-inside-the-band-2d).
+    struct Case
+    {
+        std::string name;
+        std::vector<GridPolyline2d> curves;
+        double delta;
+    };
+    const std::vector<Case> cases = {
+        {"corner", {{{{2, 4}}, {{4, 4}}, {{4, 6}}}}, 0.2},
+        {"junction", {{{{4, 4}}, {{6, 4}}}, {{{4, 4}}, {{4, 6}}}, {{{4, 4}}, {{2, 4}}}}, 0.2},
+    };
+    for (const Case& c : cases) {
+        INFO(c.name);
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "curve"}, {"target_distance", c.delta}}})},
+            {"max_rounds", 15},
+            {"num_threads", 1},
+            {"throw_on_nonconvergence", true}};
+        std::vector<std::pair<std::string, GridPolyline2d>> tagged;
+        for (const auto& poly : c.curves) tagged.push_back({"curve", poly});
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({}, {}, nullptr, tagged)}}));
+        CHECK(res.second.at("converged") == true);
+        for (const Vector2d& x : result_complex_2d(res.first.at("mesh"))) {
+            double d = std::numeric_limits<double>::infinity();
+            for (const auto& poly : c.curves) {
+                for (size_t k = 0; k + 1 < poly.size(); ++k) {
+                    const Vector2d a = grid_point_2d(poly[k]), b = grid_point_2d(poly[k + 1]);
+                    const double t = std::clamp((x - a).dot(b - a) / (b - a).squaredNorm(), 0., 1.);
+                    d = std::min(d, (x - a - t * (b - a)).norm());
+                }
+            }
+            CHECK(d <= grid_2d_eps);
+        }
     }
 }
 

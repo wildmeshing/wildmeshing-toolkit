@@ -40,6 +40,11 @@ const CellTag TEMP_OFFSET_TRI_TAG_SET{TEMP_OFFSET_TRI_TAG};
 class VertexExtra2d
 {
 public:
+    /// The construction label: 1 on the input complex, 2 on a band triangle off it, 0 elsewhere.
+    /// The construction writes it; the optimization keeps it at every split's new vertex and every
+    /// collapse's survivor and link (TopoOffsetTriMesh::carried_vertex_label()), from what 2D's
+    /// operations carry. 3D keeps its labels by its carried edge labels (close_labels()); 2D's
+    /// edge label (EdgeExtra2d::label) is not carried, and is read only before the optimization.
     int label = 0;
     /// The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set
     /// at load (init_from_image()) and carried by the construction, which only splits, a new
@@ -68,6 +73,10 @@ public:
     /// into the output .msh by save_offset_correspondence; not maintained by the optimization.
     /// The 3D twin is VertexExtra::m_corr_input_vid.
     int64_t m_corr_input_vid = -1;
+    /// m_corr_input_vid came with the input, from an earlier offset (topological_offset.cpp), not
+    /// from this run's march. split_edge_before() throws rather than cut this vertex's edge to the
+    /// vertex it names. As VertexExtra::m_corr_carried in 3D.
+    bool m_corr_carried = false;
 
     /// Which split pass created this vertex, from wmtk::TriOptimizerMesh::m_op_epoch; 0 means not
     /// created by an optimization split. Read only by the needle diagnostics' per-vertex lines.
@@ -81,6 +90,8 @@ public:
 class EdgeExtra2d
 {
 public:
+    /// The construction label, as VertexExtra2d::label; not carried by the optimization's
+    /// operations, so read only before it (and by the label clean-up's flips, which rewrite it).
     int label = 0;
     /// The edge lies on the input's curve group (within its envelope): selectable as the complex
     /// by name, held in that group's tube. Re-derived by classify_curve_edges(); nothing
@@ -367,9 +378,9 @@ public:
      * held by nothing; the medium around it is plastic, see face_is_plastic().
      *
      * Either way build_boundary_envelopes() derives the masks and tubes from the mesh as it
-     * stands when called: at load (PerTag, before the complex is labelled), when deform_others
-     * switches the setup at construction, and fresh at the start of the final pass. The offset
-     * tube is separate and unchanged.
+     * stands when called: at load (PerTag, before the complex is labelled) and when deform_others
+     * switches the setup at construction; not at the final pass, which holds the region
+     * boundaries where the load did, as 3D's. The offset tube is separate and unchanged.
      */
     enum class EnvelopeSetup { PerTag, WallComplex };
     EnvelopeSetup envelope_setup() const
@@ -387,9 +398,8 @@ public:
     bool edge_is_complex_boundary(const Tuple& e) const;
     /// Rebuild every region-class tube and every vertex's boundary mask from the current mesh
     /// under `setup`. PerTag at load (the complex is not labelled yet), WallComplex when
-    /// deform_others switches it at
-    /// construction, envelope_setup() fresh at the final pass. The tracked-edge flags are left
-    /// alone: they are the topology the operations maintain. `when` labels the log line.
+    /// deform_others switches it at construction. The tracked-edge flags are left alone: they are
+    /// the topology the operations maintain. `when` labels the log line.
     void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
 
     /**
@@ -575,10 +585,53 @@ public:
 
     /// Edge tags, the tagged curves of a triangle mesh's edge block (triwild's and simwild's): bit
     /// j of an edge's input set is m_edge_tag_names[j]. The 3D twin is
-    /// TopoOffsetTetMesh::m_face_tag_names, without its tag ids: no 2D selection names a curve,
-    /// and a curve may share its name with a region, as triwild names them
-    /// (SimWildMeshTri::m_edge_tag_names).
+    /// TopoOffsetTetMesh::m_face_tag_names. Each has a tag id (m_edge_tag_id[j]), past every other
+    /// tag, whose mask bit and tube hold its edges (init_surfaces_and_boundaries(),
+    /// build_boundary_envelopes()), and which a selection (offsets) can name (m_edge_tag_bit: id
+    /// -> bit) -- unless a triangle tag, an output tag or the curve group has the name, as triwild
+    /// names an input's region and its curve alike (SimWildMeshTri::m_edge_tag_names): the name
+    /// then selects the region (3D refuses a face tag a tet tag has).
     std::vector<std::string> m_edge_tag_names;
+    std::vector<int64_t> m_edge_tag_id;
+    std::map<int64_t, int> m_edge_tag_bit;
+    /// The edge tags of edge `eid`: the bits of its input set below m_edge_tag_names.size().
+    InputSet edge_tag_set(const size_t eid) const
+    {
+        const size_t n = m_edge_tag_names.size();
+        const InputSet all = n >= 64 ? ~InputSet(0) : (InputSet(1) << n) - 1;
+        return m_edge_attribute[eid].input_set() & all;
+    }
+    /// Point labels, the input points' (a tagged mesh's point block): bit j is the base's
+    /// m_point_names[j], each name a tag id a selection (offsets) can name (m_point_tag_bit: id ->
+    /// bit), past every other tag and with no mask bit (m_tag_bit), an edge tag's id where the two
+    /// share a name, as in 3D. Where 2D differs: a label a triangle tag or the curve group already
+    /// names keeps apart, not selectable by the name, which selects the region (3D refuses the
+    /// name, "is also a tet or face tag"): triwild names an input's region, its curve and its
+    /// points alike, so 3D's refusal would refuse every triwild output with points in a closed
+    /// input. Every point is held and written back either way (hold_curves_and_points()).
+    std::map<int64_t, int> m_point_tag_bit;
+    /// The construction label of vertex `v` (VertexExtra2d::label) from what 2D's operations
+    /// carry: 1 if it is on the input complex (m_is_on_input: a split's midpoint the AND of its
+    /// ends, a collapse's survivor the OR), else 2 if a band triangle (face label 2, carried) has
+    /// it as a corner, else 0 -- the closure the construction labels by (marching_tris()). A
+    /// swap or a smoothing step changes none of the three. Until 2026-11-11 the optimization left
+    /// the label as the slot held it: MEASURED on a curve offset (the curve group or "A & B", one
+    /// turn), the result's input complex (labels 1) missed the 4 of its 9 vertices the split pass
+    /// made, which carry m_is_on_input. The AND over-claims on a chord between two complex
+    /// vertices that is no edge of the complex; MEASURED over "[2d]~[.]" (52 cases), 0 of the 16
+    /// splits with both ends on the complex were such a chord.
+    int carried_vertex_label(size_t v) const
+    {
+        if (m_vertex_extra[v].m_is_on_input) return 1;
+        for (const size_t fid : get_one_ring_fids_for_vertex(v)) {
+            if (m_face_extra[fid].label == 2) return 2;
+        }
+        return 0;
+    }
+    /// Whether vertex `vid` is an input point of label `bit`: by VertexExtra2d::point_inputs until
+    /// hold_curves_and_points() anchors the points, by its anchor's labels after. As
+    /// TopoOffsetTetMesh::vertex_has_point().
+    bool vertex_has_point(size_t vid, int bit) const;
 
     /**
      * @brief SurfaceTagAttributes::m_surface_class: which of the two tracked surfaces an edge
@@ -2896,9 +2949,17 @@ public:
     /// Set by hold_curves_and_points(): the anchors hold the input points, and the output's point
     /// block is written from them (io::collect_point_tags()). The 2D twin of
     /// TopoOffsetTetMesh::m_edge_tags_held, without its edge tags: 2D's (the edge block, on the
-    /// edges' input sets) are codimension 1, the twin of 3D's face tags, and are not tracked yet
-    /// (init_from_image()).
+    /// edges' input sets) are codimension 1, the twin of 3D's face tags, tracked and held from the
+    /// load on (init_from_image()).
     bool m_points_held = false;
+    /// After the loop: what hold_curves_and_points() and the load set up, measured rather than
+    /// assumed -- the 2D twin of TopoOffsetTetMesh::audit_input_curves(). The held curves (the
+    /// tracked region-class edges, the curve group's among them), those of them outside their
+    /// tube; for a complex without faces (a curve or point offset's), its vertices and those of
+    /// them on no held curve and no anchor (3D: its edges without the feature tag); and anchors
+    /// with no vertex in their ball (the base's feature_retention()). A warning iff there is a
+    /// defect.
+    void audit_input_curves() const;
 
     /// Marching triangles: every edge with one endpoint in the input complex (label 1/2) and the
     /// other in the background (label 0) is split -- where d(x) = target_distance along the edge,

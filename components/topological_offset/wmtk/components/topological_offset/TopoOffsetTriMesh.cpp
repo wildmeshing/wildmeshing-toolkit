@@ -93,6 +93,23 @@ void TopoOffsetTriMesh::init_from_image(
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
     }
 
+    // Edge tags (a triangle mesh's edge block): each a tag id past every other, with a mask bit
+    // and a tube of its own (build_boundary_envelopes()), as the curve group's -- the 2D twin of
+    // 3D's face tags (TopoOffsetTetMesh::init_from_image()), held as every tracked boundary is --
+    // and selectable by its name (m_edge_tag_bit) unless a triangle tag, an output tag or the
+    // curve group already has it, as triwild names an input's region and its curve alike: the
+    // name then selects the region. No triangle tag (m_tags_count stays).
+    m_edge_tag_bit.clear();
+    m_edge_tag_id.clear();
+    for (size_t j = 0; j < edge_tag_names.size(); ++j) {
+        const int64_t id = int64_t(m_tag_id_to_name.size());
+        m_tag_id_to_name[id] = edge_tag_names[j];
+        m_edge_tag_id.push_back(id);
+        if (m_tag_name_to_id.count(edge_tag_names[j])) continue;
+        m_tag_name_to_id[edge_tag_names[j]] = id;
+        m_edge_tag_bit[id] = int(j);
+    }
+
     // One mask bit per input tag, ambient included, in id order. Assigned here, once the maps are
     // complete and before init_surfaces_and_boundaries() seeds the vertex masks. Tags introduced
     // later (the band's output tag) get no bit: boundary membership is a property of the input
@@ -140,11 +157,13 @@ void TopoOffsetTriMesh::init_from_image(
     }
 
     // Edge tags, the tagged curves of a triangle mesh's edge block, on the edges' input sets, as
-    // the 3D face tags (TopoOffsetTetMesh::init_from_image()): the construction's splits carry
-    // them (marching_split_edge_after(), split_face_after()), and the output writes them back as
-    // its edge block. Not tracked: the tracked flags and their tubes are the optimization's, which
-    // no 2D route runs -- the offset refuses 2D, and manifold_extraction does not optimize. Until
-    // 2026-11 manifold_extraction refused them, and the 2D mesh took none.
+    // the 3D face tags (TopoOffsetTetMesh::init_from_image()): the construction's splits and the
+    // optimization's operations carry them, and the output writes them back as its edge block.
+    // Tracked and held in their tubes (init_surfaces_and_boundaries()), as 3D's face tags since
+    // 2026-11-05. Until 2026-11-11 they were not tracked, no 2D offset running the optimization:
+    // MEASURED (p offset to 0.2, edge tags on y = 0.25 and y = 0.5), after 1 turn the curve at
+    // 0.25 was 0.043 off its line (15 envelope_size), after 3 turns 0.103 and the other 0.034.
+    // Until 2026-11 manifold_extraction refused them, and the 2D mesh took none.
     m_edge_tag_names = edge_tag_names;
     for (Eigen::Index r = 0; r < E_tagged.rows(); ++r) {
         const std::array<size_t, 2> vids = {{size_t(E_tagged(r, 0)), size_t(E_tagged(r, 1))}};
@@ -157,9 +176,35 @@ void TopoOffsetTriMesh::init_from_image(
         attr.set_input_set(attr.input_set() | set);
         io::orient_tagged_row(attr, vids, set, E_orientation, r);
     }
-    // Point labels, the input points' (a tagged mesh's point block): each input point's vertex
-    // carries its label (VertexExtra2d::point_inputs) until hold_curves_and_points() anchors it,
-    // as in 3D: the vertex ids change before then (consolidate_mesh()).
+    // Point labels, the input points' (a tagged mesh's point block), as in 3D: bit j is
+    // m_point_names[j], set by the caller before this, each name a tag id a selection (offsets)
+    // can name (m_point_tag_bit), past every other tag. After m_tag_bit, above: a point label
+    // bounds no region, and takes no mask bit. A name a triangle tag or the curve group has keeps
+    // apart (see m_point_tag_bit; 3D refuses it). Until 2026-11 the 2D offset selected no point.
+    // One name is one input, as in 3D: a curve input's vertices on no segment are its points, so
+    // a label an edge tag also has shares its id, and selecting it selects both.
+    for (size_t j = 0; j < m_point_names.size(); ++j) {
+        const std::string& name = m_point_names[j];
+        int64_t id;
+        if (const auto it = m_tag_name_to_id.find(name); it != m_tag_name_to_id.end()) {
+            if (!m_edge_tag_bit.count(it->second)) {
+                logger().info(
+                    "Point label {} is also a triangle tag or the curve group: its points are "
+                    "held, and the name selects the region",
+                    name);
+                continue;
+            }
+            id = it->second;
+        } else {
+            id = int64_t(m_tag_id_to_name.size());
+            m_tag_id_to_name[id] = name;
+            m_tag_name_to_id[name] = id;
+        }
+        m_point_tag_bit[id] = int(j);
+    }
+    // Each input point's vertex carries its label (VertexExtra2d::point_inputs) until
+    // hold_curves_and_points() anchors it, as in 3D: the vertex ids change before then
+    // (consolidate_mesh()).
     if (m_input_point_labels.size() != point_vids.size()) {
         log_and_throw_error(
             "{} input points, {} labels",
@@ -194,13 +239,13 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
     logger().info("E = {}", edges.size());
 
     // Which edges are tracked region boundaries: an interior edge whose two faces carry different
-    // tag sets, an edge on the curve group, or a wall edge (no opposite face: the ambient region
-    // against the unmeshed outside). These flags are topology the operations maintain. Which
-    // tube holds an edge, and the vertex masks, are build_boundary_envelopes()'s.
+    // tag sets, an edge on the curve group or of an edge tag, or a wall edge (no opposite face: the
+    // ambient region against the unmeshed outside). These flags are topology the operations
+    // maintain. Which tube holds an edge, and the vertex masks, are build_boundary_envelopes()'s.
     size_t n_edges_tracked = 0;
     for (const Tuple& e : edges) {
         const size_t eid = e.eid(*this);
-        const bool on_curve = m_edge_extra[eid].on_curve;
+        const bool on_curve = m_edge_extra[eid].on_curve || edge_tag_set(eid) != 0;
         const std::optional<Tuple> f_opp = e.switch_face(*this);
         if (f_opp) {
             const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
@@ -317,8 +362,12 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
             // Whose boundary this edge is. Interior edge: every tag on exactly one side (the
             // symmetric difference; a tag present on both sides has no boundary here). Wall
             // edge: every tag of its one face, which is how ambient's tube comes to hold the
-            // box. The curve group's edges are in its tube too.
+            // box. The curve group's edges are in its tube too, and an edge tag's in its own.
             if (m_edge_extra[eid].on_curve) keys.insert(m_curve_tag);
+            const InputSet edge_tags = edge_tag_set(eid);
+            for (size_t j = 0; j < m_edge_tag_id.size(); ++j) {
+                if ((edge_tags >> j) & 1) keys.insert(m_edge_tag_id[j]);
+            }
             if (f_opp) {
                 const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
                 const auto& tag1 = m_face_attribute[f_opp->fid(*this)].tags;
@@ -450,11 +499,20 @@ void TopoOffsetTriMesh::classify_curve_edges()
         eps);
 }
 
+bool TopoOffsetTriMesh::vertex_has_point(const size_t vid, const int bit) const
+{
+    // See the declaration.
+    if (!m_points_held) return (m_vertex_extra[vid].point_inputs >> bit) & 1;
+    if (!m_track_feature_points) return false;
+    const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
+    return f < m_feature_point_inputs.size() && ((m_feature_point_inputs[f] >> bit) & 1);
+}
+
 void TopoOffsetTriMesh::label_input_complex()
 {
     classify_curve_edges(); // the mesh may have been refined since the last call
-    // One entry of offsets: the 2D offset, refused until it is brought into lock-step with 3D,
-    // has no several-entry march.
+    // One entry of offsets: 2D has no several-entry march until the several-offsets and growth
+    // step of the 2D lock-step port (the driver refuses several entries before this).
     if (m_offset_params.offsets.size() != 1)
         log_and_throw_error("2D: one entry of offsets, not {}", m_offset_params.offsets.size());
     // ensure all tags exist in map
@@ -494,6 +552,43 @@ void TopoOffsetTriMesh::label_input_complex()
             if (n == 0)
                 log_and_throw_error(
                     "offsets[0].selection names the curve group but no mesh edge lies on it");
+            mark_input_complex_vertices();
+            return;
+        }
+        const auto edge_bit = m_edge_tag_bit.find(m_single_tag);
+        const auto point_bit = m_point_tag_bit.find(m_single_tag);
+        if (edge_bit != m_edge_tag_bit.end() || point_bit != m_point_tag_bit.end()) {
+            // An edge tag, a point label, or both under one name: its edges and its points
+            // exactly, and their vertices -- a curve or point offset's input. The band grows all
+            // around it. As in 3D (TopoOffsetTetMesh::label_offset()), whose face tags are 2D's
+            // edge tags, selected as the curve group is.
+            size_t n = 0, n_points = 0;
+            if (edge_bit != m_edge_tag_bit.end()) {
+                for (const Tuple& e : get_edges()) {
+                    const size_t e_id = e.eid(*this);
+                    if (((edge_tag_set(e_id) >> edge_bit->second) & 1) == 0) continue;
+                    m_edge_extra[e_id].label = 1;
+                    m_vertex_extra[e.vid(*this)].label = 1;
+                    m_vertex_extra[e.switch_vertex(*this).vid(*this)].label = 1;
+                    ++n;
+                }
+            }
+            if (point_bit != m_point_tag_bit.end()) {
+                for (const Tuple& v : get_vertices()) {
+                    if (!vertex_has_point(v.vid(*this), point_bit->second)) continue;
+                    m_vertex_extra[v.vid(*this)].label = 1;
+                    ++n_points;
+                }
+            }
+            logger().info(
+                "Using '{}' as the complex: {} edges, {} points",
+                m_tag_id_to_name[m_single_tag],
+                n,
+                n_points);
+            if (n + n_points == 0)
+                log_and_throw_error(
+                    "offsets[0].selection names {} but no mesh edge or vertex carries it",
+                    m_tag_id_to_name[m_single_tag]);
             mark_input_complex_vertices();
             return;
         }
@@ -569,6 +664,36 @@ void TopoOffsetTriMesh::label_input_complex()
             }
         }
     } else { // not single body mode. must evaluate expression
+        // A simplex's tags: its triangles' tags, and the tags that sit on lower simplices -- an
+        // edge's edge tags and curve group (on_curve), a vertex's point labels -- on it or on an
+        // edge it bounds. So an edge tag, the curve group or a point label means in an expression
+        // what it means alone: "p | q" is both points, "curve | a" the curve and the region. As
+        // in 3D (TopoOffsetTetMesh::label_offset()), one dimension down: 3D's face tags and
+        // surface group are 2D's edge tags and curve group, 3D's edge tags and point labels 2D's
+        // point labels. Until 2026-11 none of them in an expression selected anything, silently.
+        std::map<size_t, CellTag> own_e, own_v; // the non-cell tags on each simplex
+        for (const Tuple& e : get_edges()) {
+            const size_t e_id = e.eid(*this);
+            CellTag ids;
+            if (m_curve_tag >= 0 && m_edge_extra[e_id].on_curve) ids.insert(m_curve_tag);
+            for (const auto& [id, bit] : m_edge_tag_bit) {
+                if ((edge_tag_set(e_id) >> bit) & 1) ids.insert(id);
+            }
+            if (ids.empty()) continue;
+            own_e[e_id].insert(ids.begin(), ids.end());
+            own_v[e.vid(*this)].insert(ids.begin(), ids.end());
+            own_v[e.switch_vertex(*this).vid(*this)].insert(ids.begin(), ids.end());
+        }
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            for (const auto& [id, bit] : m_point_tag_bit) {
+                if (vertex_has_point(vid, bit)) own_v[vid].insert(id);
+            }
+        }
+        const auto add_own = [](CellTag& tags, const std::map<size_t, CellTag>& own, size_t id) {
+            const auto it = own.find(id);
+            if (it != own.end()) tags.insert(it->second.begin(), it->second.end());
+        };
 
         // label faces
         auto faces = get_faces();
@@ -595,6 +720,7 @@ void TopoOffsetTriMesh::label_input_complex()
             }
 
             CellTag adj_tags = m_face_attribute[e.fid(*this)].tags;
+            add_own(adj_tags, own_e, e_id);
             auto other = e.switch_face(*this);
             if (other) {
                 for (const int64_t& tag : m_face_attribute[other.value().fid(*this)].tags) {
@@ -619,6 +745,7 @@ void TopoOffsetTriMesh::label_input_complex()
             }
 
             CellTag adj_tags;
+            add_own(adj_tags, own_v, v_id);
             auto one_ring_fids = get_one_ring_fids_for_vertex(v_id);
             for (const size_t& f_id : one_ring_fids) {
                 for (const int64_t& tag : m_face_attribute[f_id].tags) {
@@ -880,6 +1007,21 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     for (int i = 0; i < F.rows(); ++i) m_phi_face_region.push_back(comp_of[size_t(F(i, 0))]);
     m_phi_point_region.clear();
     for (const int p : P_phi) m_phi_point_region.push_back(comp_of[size_t(p)]);
+
+    // A complex of segments and points (a curve or point offset's input) bounds no area: there is
+    // no inside to offset into, and offset_in's label-1 faces, everything outside the selection
+    // (label_input_complex()), would be every face. Refused, before construction, as in 3D
+    // (TopoOffsetTetMesh::init_input_complex_bvh()). 3D's refusal of a complex mixing primitive
+    // kinds has no twin: 2D's field and integral read every kind of the extraction (the BVH and
+    // ExactBandIntegral2D take its segments and points beside the faces' boundary), where 3D's
+    // input envelope holds one kind.
+    if (m_phi_F.rows() == 0 && m_offset_params.offset_in) {
+        log_and_throw_error(
+            "offset_in: the input complex is {} segments and {} points, which enclose no area; a "
+            "curve or a point is offset outward only (offset_out)",
+            m_phi_E.rows(),
+            m_phi_P.size());
+    }
 }
 
 
@@ -1215,6 +1357,53 @@ void TopoOffsetTriMesh::hold_curves_and_points()
         point_vids.size(),
         feature_eps,
         n_anchors);
+}
+
+void TopoOffsetTriMesh::audit_input_curves() const
+{
+    // See the declaration. The held curves are the tracked region-class edges, held in their
+    // tags' tubes from the load on (3D: the feature-tagged edges in their tubes). A complex
+    // without faces is a curve's or a point's: each of its vertices (label 1, kept by the
+    // operations, carried_vertex_label()) is on a held curve or anchored, or nothing holds it.
+    // 3D counts the complex's edges without the feature tag; 2D's edge label is not carried, so
+    // the vertices are counted.
+    size_t tracked = 0, outside = 0, complex = 0, complex_free = 0;
+    std::vector<char> on_held(vert_capacity(), 0);
+    for (const Tuple& e : get_edges()) {
+        const size_t eid = e.eid(*this);
+        const EdgeAttributes& attr = m_edge_attribute[eid];
+        if (!attr.m_is_surface_fs || edge_is_offset(eid)) continue;
+        ++tracked;
+        const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+        on_held[a] = on_held[b] = 1;
+        outside += surface_segment_is_outside(a, b, attr);
+    }
+    if (m_phi_F.rows() == 0) {
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            if (m_vertex_extra[vid].label != 1) continue;
+            ++complex;
+            const bool anchored =
+                m_track_feature_points &&
+                m_feature_point_attribute[vid].m_feature_point_id != NO_FEATURE_POINT;
+            complex_free += !on_held[vid] && !anchored;
+        }
+    }
+    double worst = 0.;
+    const auto [kept, total] = feature_retention(&worst);
+    const bool defect = outside > 0 || complex_free > 0 || kept < total;
+    logger().log(
+        defect ? spdlog::level::warn : spdlog::level::info,
+        "\t[curves] after the loop: {} held curve edges, {} outside their tube; {} of the input "
+        "complex's {} vertices (a complex without faces) on no held curve and no anchor; {} of {} "
+        "anchors with a vertex in their ball (worst {:.3g} radii)",
+        tracked,
+        outside,
+        complex_free,
+        complex,
+        kept,
+        total,
+        worst);
 }
 
 size_t TopoOffsetTriMesh::flood_fill()

@@ -245,9 +245,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// as construction_mode says): the loop first converges under stencil_order without
     /// refinement, then under stencil_order with refinement. See the spec doc.
     bool init_optimize = false;
-    // 2D only: read by the 2D pipeline, which the app refuses until it is brought into lock-step
-    // with 3D. No JSON key; the default its key had. The stencil_order of the 2D init_optimize
-    // loop alone; -1 uses stencil_order there too.
+    // 2D only: read by the 2D pipeline. No JSON key; the default its key had. The stencil_order
+    // of the 2D init_optimize loop alone; -1 uses stencil_order there too.
     int init_optimize_stencil_order = -1;
     /// Smoothing passes before the march that push the outer ends of the marched edges out to
     /// 2 x target_distance; they stop early once every outer end is beyond target_distance +

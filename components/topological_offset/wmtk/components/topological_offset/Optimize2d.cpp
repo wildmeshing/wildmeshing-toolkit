@@ -723,6 +723,13 @@ void TopoOffsetTriMesh::collapse_after_vertex(const size_t v1_id, const size_t v
     // The survivor now carries both vertices' geometry, so it lies on the union of their
     // boundaries. See VertexExtra2d::m_boundary_mask.
     m_vertex_extra[v2_id].m_boundary_mask |= m_vertex_extra.at(v1_id).m_boundary_mask;
+    // The construction labels of the survivor and the link, the vertices whose triangles changed
+    // (carried_vertex_label()).
+    m_vertex_extra[v2_id].label = carried_vertex_label(v2_id);
+    for (const size_t w : m_collapse_edge_link.local()) {
+        if (w == v1_id || w == v2_id) continue;
+        m_vertex_extra[w].label = carried_vertex_label(w);
+    }
 
     // The base calls this only once a collapse has actually gone through.
     ++iter_cnt_collapse;
@@ -822,6 +829,8 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
             m_face_extra[fid].label = it->second;
         }
     }
+    // The construction label, from the flags and face labels just set (carried_vertex_label()).
+    m_vertex_extra[v_id].label = carried_vertex_label(v_id);
     return true; // the position itself is the base's business, and it is happy with it
 }
 
@@ -6205,12 +6214,18 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                     amips,
                     m_params.stop_energy);
                 m_round = it + 2;
-                // The whole envelope setup rebuilt fresh from the mesh as placement left it --
-                // the front's tube, and the region-class tubes per envelope_setup() -- and held
-                // for the entire pass; equilateral AMIPS alone: the plastic vertex path and the
-                // rest-shape term are both off.
+                // The front's tube, built from the front as placement left it and held for the
+                // entire pass; the region boundaries stay held in the tubes and masks the load
+                // built (m_tag_envelopes, never rebuilt), as 3D's final pass adds the front's
+                // envelope alone (build_final_envelopes(), 2b8de047ba). Equilateral AMIPS alone:
+                // the plastic vertex path and the rest-shape term are both off. Until 2026-11-11
+                // the region tubes and the vertex masks were rebuilt here from the tags and
+                // on_curve, which no operation carries: MEASURED on the mesh the loop leaves (p
+                // offset to 0.3, a held curve-group curve 0.5 from it, 3 to 8 turns, 5 runs), the
+                // rebuild put 1 to 4 of the curve's 7 to 9 tracked edges in its tube and took the
+                // curve bit off 1 to 8 of its 8 to 10 vertices; after 3 turns 4 of its 8 edges
+                // were held by nothing.
                 rebuild_offset_envelope();
-                build_boundary_envelopes("final pass", envelope_setup());
                 m_freeze_front = true;
                 const bool plastic_was = m_plastic_active;
                 m_plastic_active = false;
