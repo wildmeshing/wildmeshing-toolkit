@@ -43,9 +43,10 @@ public:
     int label = 0;
     /// The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set
     /// at load (init_from_image()) and carried by the construction, which only splits, a new
-    /// vertex starting from none (marching_split_edge_before(), split_face_before()). The 3D twin
-    /// is VertexExtra::point_inputs, whose anchors take over from it; in 2D no anchor holds a
-    /// point, nothing moving one, and the output's point block is written from this
+    /// vertex starting from none (marching_split_edge_before(), split_face_before()), until
+    /// hold_curves_and_points() anchors the points and clears it: from there on the anchors carry
+    /// them, through the operations, which do not carry this. As VertexExtra::point_inputs in 3D.
+    /// A mesh not held (an empty input complex) writes its point block from this
     /// (collect_loaded_curves_and_points()).
     InputSet point_inputs = 0;
     bool m_is_on_input = false; // on the input complex
@@ -420,15 +421,52 @@ public:
         bool refine = true,
         const std::string& label = std::string());
     /**
-     * @brief The loop's local_operations(ops), with EXPERIMENTAL_label_cleanup between the group's
-     * operation passes and its smoothing passes. The 2D twin of TopoOffsetTetMesh::loop_group(),
-     * which runs the clean-up on its EXPERIMENTAL_front_pocket_split path, right before the
-     * condition-1 splits that precede the first smoothing pass; 2D has no pocket splits yet (a
-     * later step of the 2D lock-step port), so the operation passes, the clean-up and the
-     * smoothing passes follow one another. The clean-up off, or a group without an operation
-     * pass: local_operations(ops), as before. `where` names the group in the [label cleanup] line.
+     * @brief The loop's local_operations(ops): the 2D twin of TopoOffsetTetMesh::loop_group(),
+     * the same passes in the same order. Under EXPERIMENTAL_front_pocket_split, the group's
+     * operation passes in one call, then EXPERIMENTAL_label_cleanup (with the held objects'
+     * check), then each of its ops[3] smoothing passes in a call of its own, front_pocket_split()
+     * right before each: the engine's group runs its operation pass straight into its smoothing
+     * passes, so it offers no point before a smoothing pass. Off: local_operations(ops), and no
+     * clean-up, which the parameters refuse without the pocket splits (Parameters). `where` names
+     * the group in the [label cleanup] and [pocket split] lines.
      */
     void loop_group(const std::array<int, 4>& ops, const std::string& where);
+    /**
+     * @brief EXPERIMENTAL_front_pocket_split: the 2D twin of
+     * TopoOffsetTetMesh::front_pocket_split(), one dimension down. Invariant: no cell is PINNED
+     * when a smoothing pass of the loop starts. A pinned cell is a triangle outside the input
+     * complex, band or not, whose three corners are all front vertices
+     * (VertexExtra2d::m_is_on_offset).
+     *
+     * Why, as in 3D: only smoothing moves vertices, and no vertex joins or leaves the front during
+     * a smoothing pass, so a triangle can only be flattened during smoothing, and only from one
+     * that is pinned when the pass starts. The offset term pulls a pinned triangle's three corners
+     * onto the level set, which then fixes its shape -- the chord of a curve and a third point on
+     * it, a sliver -- and where the level set curves the wrong way flattens it to zero area, a
+     * fold of the front; a triangle with a corner off the front has a vertex the AMIPS term alone
+     * moves, which keeps it shaped.
+     *
+     * How. Each pinned triangle has its longest edge that is not a front edge
+     * (edge_is_offset_surface_live() false) split by the loop's own split, the next longest when
+     * that is refused. The midpoint is off the front and a corner of both children, so such a
+     * split makes no pinned cell and removes one. A pinned triangle with all three edges on the
+     * front, a one-triangle component of its label, has no edge to split and is counted only:
+     * 3D's cell with all four faces on the offset surface. 3D's cell with all six edges but not
+     * all four faces on it, split on a face's edge, has no twin: a triangle's faces are its
+     * edges. EXPERIMENTAL_front_spanned_split (see the spec): every SPANNED edge -- both ends
+     * front vertices, not a front edge, no triangle at it in the input complex -- is split first,
+     * at its midpoint, off the front; the spanned triangle is the pinned one, and 3D's spanned
+     * face is 2D's spanned edge (codimension 1, every corner on the front, not on the front
+     * itself). Rescanned until nothing is left to split, at most kPocketMaxRounds rounds. One
+     * [pocket split] line, `where` naming the pass. A no-op with the key off and in the final
+     * pass (m_freeze_front; 3D: a TetWild pass).
+     */
+    void front_pocket_split(const std::string& where);
+    /// 3D's cap on front_pocket_split()'s rescans (TopoOffsetTetMesh::kPocketMaxRounds), the
+    /// same 10. In 2D a committed split makes no pinned cell and no spanned edge (its midpoint is
+    /// off the front) and removes at least one, so the rescans end on their own; the cap binds
+    /// only where the front flags are out of step with the labels (check_offset_membership()).
+    static constexpr int kPocketMaxRounds = 10;
     /**
      * @brief EXPERIMENTAL_label_cleanup (see the spec). The 2D twin of
      * TopoOffsetTetMesh::label_cleanup(), one dimension down: a cell is a triangle, its faces
@@ -1673,22 +1711,12 @@ public:
         return nullptr;
     }
 
-    /**
-     * @brief No per-vertex positional constraint. The per-tag envelopes close that hole
-     * structurally -- the same deletion 3D made to its lower-strata point refusal.
-     *
-     * An isolated point of the complex only ever arises where two or more selected tags meet (the
-     * boolean selection can only label an isolated simplex whose face star is tag-heterogeneous),
-     * so the edges radiating from it are tag boundaries and its boundary mask carries several
-     * bits. smoothing_containment_envelope() therefore hands the smoother an IntersectionEnvelope
-     * -- within eps of every curve it lies on -- which pins it to the junction, and the pull
-     * toward the most-violated member drags it back if it strays. Kept as the honest constant:
-     * the base's default asks the feature-point anchors, which this mesh never turns on.
-     */
-    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override
-    {
-        return true;
-    }
+    // smoothing_position_is_allowed(): the base's, the anchors' balls (hold_curves_and_points()),
+    // as in 3D. Until 2026-11-11 this mesh anchored nothing and answered true. An isolated point
+    // of a complex with faces arises only where two or more selected tags meet (the selection
+    // labels an isolated simplex only where its face star is tag-heterogeneous), so the edges at
+    // it are tag boundaries and the intersection of their tubes holds it
+    // (smoothing_containment_envelope()); one of a complex without faces is anchored.
 
     /**
      * @brief The offset boundary is the one tracked surface with no envelope, in either role.
@@ -2617,9 +2645,29 @@ public:
     //// overriden splits/invariants
 
     /// Construction, start to finish, on the input mesh as given: the simplicial embedding,
-    /// repulsion_smoothing() when asked for, marching_tris() and the offset tagging. The
-    /// optimization is optimize_offset(), which the driver calls afterwards.
+    /// hold_curves_and_points(), repulsion_smoothing() when asked for, marching_tris() and the
+    /// offset tagging. The optimization is optimize_offset(), which the driver calls afterwards.
     void construct_offset(const std::filesystem::path& output_file);
+    /// The held curves' points and the input points, as triwild and simwild hold theirs: the 2D
+    /// twin of TopoOffsetTetMesh::hold_curves_and_points(), one dimension down. A 2D held curve is
+    /// codimension 1, a tracked region boundary held in its tags' tube from the load on
+    /// (init_surfaces_and_boundaries(); the curve group among them), so what 3D tags and holds in
+    /// tubes here -- its order-2 edges and feature curves, codimension 2 -- is in 2D a point,
+    /// held by an anchor (the base's anchor_feature_points()): every vertex where the tracked
+    /// curves end (one tracked segment) or three or more meet, at order2_envelope_ratio x
+    /// envelope_size, 3D's order-2 edges; every input point (a point block,
+    /// VertexExtra2d::point_inputs), selected or not, with its label, at feature_envelope_ratio x
+    /// envelope_size, 3D's feature curves and points; and the isolated points of a complex
+    /// without faces (a curve's or a point's), at that radius, as in 3D. After the simplicial
+    /// embedding and before the repulsion and the march, so the front, which the march makes, is
+    /// never among them. From here on the anchors carry the input points (m_points_held).
+    void hold_curves_and_points();
+    /// Set by hold_curves_and_points(): the anchors hold the input points, and the output's point
+    /// block is written from them (io::collect_point_tags()). The 2D twin of
+    /// TopoOffsetTetMesh::m_edge_tags_held, without its edge tags: 2D's (the edge block, on the
+    /// edges' input sets) are codimension 1, the twin of 3D's face tags, and are not tracked yet
+    /// (init_from_image()).
+    bool m_points_held = false;
 
     /// Marching triangles: every edge with one endpoint in the input complex (label 1/2) and the
     /// other in the background (label 0) is split -- where d(x) = target_distance along the edge,

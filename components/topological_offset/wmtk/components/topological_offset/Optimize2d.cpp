@@ -4215,8 +4215,8 @@ void TopoOffsetTriMesh::held_topology_check(const std::string& pass)
 {
     // See the declaration; the 2D twin of TopoOffsetTetMesh::held_topology_check(), without its
     // stale order-2 tags: 2D has no order-2 edge tags (an order-2 simplex of a curve is a vertex,
-    // anchored by anchor_feature_points(), which the 2D offset never runs) and its construction
-    // untracks nothing (3D's untrack_covered_boundaries()), so no tag can go stale.
+    // anchored by hold_curves_and_points()) and its construction untracks nothing (3D's
+    // untrack_covered_boundaries()), so no anchor can go stale.
     if (!m_offset_params.debug_held_topology) return;
     std::map<std::array<double, 2>, std::array<bool, 2>> touch;
     std::array<std::array<int64_t, 4>, 4> by_kind{};
@@ -4987,23 +4987,216 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
 
 void TopoOffsetTriMesh::loop_group(const std::array<int, 4>& ops, const std::string& where)
 {
-    // See the declaration.
-    if (m_offset_params.label_cleanup == "off" || !(ops[0] > 0 || ops[1] > 0 || ops[2] > 0)) {
+    // See the declaration; TopoOffsetTetMesh::loop_group(), the same passes in the same order.
+    if (!m_offset_params.front_pocket_split) {
         local_operations(ops);
         return;
     }
-    local_operations({{ops[0], ops[1], ops[2], 0}});
-    label_cleanup(where);
-    held_topology_check("label_cleanup");
-    // DEBUG_output: the clean-up's own frame, so its flips are seen apart from the smoothing pass
-    // that follows it. As in 3D.
-    if (m_offset_params.debug_output) {
-        const std::string name = m_debug_pass_name;
-        m_debug_pass_name = "label_cleanup";
-        write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
-        m_debug_pass_name = name;
+    // EXPERIMENTAL_front_pocket_split: the same passes, one call for the operation passes and one
+    // per smoothing pass. Besides the splits this moves the rounding sweep from after the k-th
+    // smoothing pass to after each, and adds each call's lines. As in 3D.
+    if (ops[0] > 0 || ops[1] > 0 || ops[2] > 0) local_operations({{ops[0], ops[1], ops[2], 0}});
+    // EXPERIMENTAL_label_cleanup: after the operation passes (none in pre_smooth), before the
+    // pocket splits of the first smoothing pass. A flip with f = 1 edge on the other label (3D: 1
+    // or 2 faces) leaves the triangle with all three corners on the front -- a pinned cell, which
+    // those splits handle -- and a triangle flipped with f = 2 (3D's f = 3) was a pinned cell
+    // before its flip; the smoothing pass then moves the new front in the same turn. Under
+    // interleaved_smoothing this is once per group, else once per turn. As in 3D.
+    if (m_offset_params.label_cleanup != "off" && (ops[0] > 0 || ops[1] > 0 || ops[2] > 0)) {
+        label_cleanup(where);
+        held_topology_check("label_cleanup");
+        // DEBUG_output: the clean-up's own frame, so its flips are seen apart from the pocket
+        // splits and the smoothing pass that follow it. As in 3D.
+        if (m_offset_params.debug_output) {
+            const std::string name = m_debug_pass_name;
+            m_debug_pass_name = "label_cleanup";
+            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+            m_debug_pass_name = name;
+        }
     }
-    if (ops[3] > 0) local_operations({{0, 0, 0, ops[3]}});
+    for (int p = 0; p < ops[3]; ++p) {
+        front_pocket_split(fmt::format("{}, before smoothing pass {}", where, p + 1));
+        held_topology_check("pocket_split");
+        local_operations({{0, 0, 0, 1}});
+    }
+}
+
+void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
+{
+    // See the declaration; TopoOffsetTetMesh::front_pocket_split() one dimension down, whose
+    // measurements motivate it (cube_in at target 0.3: 174 folds, 152 on a pinned cell, without
+    // it; resolved at turn 3 with it). loop_group() calls this only with the key on; the key is
+    // tested here too so that the slot alone is a no-op with it off (the unit test drives the
+    // slot directly). Not in the final pass (m_freeze_front; 3D: a TetWild pass), which
+    // loop_group() does not run anyway.
+    if (!m_offset_params.front_pocket_split || m_freeze_front) return;
+    const auto len2 = [this](const std::array<size_t, 2>& e) {
+        return (m_vertex_attribute[e[0]].m_posf - m_vertex_attribute[e[1]].m_posf).squaredNorm();
+    };
+    const auto on_front = [this](const size_t v) { return m_vertex_extra[v].m_is_on_offset; };
+    const auto longest_first = [&](const std::array<size_t, 2>& a, const std::array<size_t, 2>& b) {
+        const double la = len2(a), lb = len2(b);
+        return la != lb ? la > lb : a < b;
+    };
+    // A pinned cell: its corners sorted (it names the triangle across the round's splits), and
+    // the edges to split it on, longest first (ties by vertex ids).
+    struct Pinned
+    {
+        std::array<size_t, 3> vids;
+        std::vector<std::array<size_t, 2>> edges;
+    };
+    // One scan of the live triangles. `no_edge`: pinned cells with all three edges on the front,
+    // which have no edge to split; `band`, when given: band triangles with all three corners on
+    // the front. 3D's count of cells with all six edges on the offset surface has no twin (see
+    // the declaration).
+    const auto scan = [&](size_t& no_edge, size_t* band) {
+        std::vector<Pinned> out;
+        no_edge = 0;
+        for (const Tuple& t : get_faces()) {
+            const size_t fid = t.fid(*this);
+            const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+            if (!std::all_of(vs.begin(), vs.end(), on_front)) continue;
+            if (face_is_input_complex(fid)) continue;
+            // A band triangle with all three corners on the front is the mirror case: at the
+            // offset term's optimum its corners lie on the level set too. Split the same way (an
+            // edge that is not a front edge is inside the band, so its midpoint is off the
+            // front); counted apart in the log. As in 3D.
+            if (face_is_offset_band(fid) && band) ++*band;
+            Pinned p;
+            p.vids = vs;
+            std::sort(p.vids.begin(), p.vids.end());
+            for (size_t j = 0; j < 3; ++j) {
+                const Tuple e = tuple_from_edge(fid, j);
+                if (edge_is_offset_surface_live(e)) continue;
+                std::array<size_t, 2> ev = get_edge_vids(e);
+                if (ev[0] > ev[1]) std::swap(ev[0], ev[1]);
+                p.edges.push_back(ev);
+            }
+            if (p.edges.empty()) {
+                // All three edges on the front: a one-triangle component of its label. A split
+                // would leave its boundary, every corner of it on the front, as it is, so it is
+                // counted only, as 3D counts its cell with all four faces on the offset surface.
+                ++no_edge;
+                continue;
+            }
+            std::sort(p.edges.begin(), p.edges.end(), longest_first);
+            out.push_back(std::move(p));
+        }
+        return out;
+    };
+    // Whether the triangle on these sorted corners is still live: an earlier split of the round
+    // may have split one of its edges, and so the triangle, already.
+    const auto alive = [this](const std::array<size_t, 3>& s) {
+        for (const size_t fid : get_incident_fids_for_edge(s[0], s[1])) {
+            std::array<size_t, 3> vs = oriented_tri_vids(fid);
+            std::sort(vs.begin(), vs.end());
+            if (vs == s) return true;
+        }
+        return false;
+    };
+    // EXPERIMENTAL_front_spanned_split: the spanned edges (see the declaration), split each round
+    // before the pinned cells, lowest dimension first. 3D's spanned faces, listed when their
+    // three edges are on the offset surface, are 2D's spanned edges themselves.
+    const auto off_input = [this](const std::vector<size_t>& fids) {
+        return !fids.empty() && std::none_of(fids.begin(), fids.end(), [this](const size_t f) {
+            return face_is_input_complex(f);
+        });
+    };
+    const auto scan_spanned = [&](std::vector<std::array<size_t, 2>>& edges) {
+        edges.clear();
+        if (!m_offset_params.front_spanned_split) return;
+        for (const Tuple& e : get_edges()) {
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            if (!on_front(a) || !on_front(b) || edge_is_offset_surface_live(e)) continue;
+            if (!off_input(get_incident_fids_for_edge(a, b))) continue;
+            edges.push_back({{std::min(a, b), std::max(a, b)}});
+        }
+    };
+    // The loop's own split (split_edge(): labels, tags, sizing and rests as in the split pass).
+    // 3D skips its longest-edge order here (m_pocket_splitting); 2D's split has no such order.
+    const auto split_one = [this](const std::array<size_t, 2>& e) {
+        const Tuple t = std::get<0>(tuple_from_edge(e));
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+        std::vector<Tuple> new_tris;
+        return split_edge(t, new_tris);
+    };
+    // 3D splits here first the edges its last settled turn listed (EXPERIMENTAL_settle_mark
+    // "vertex_split"); 2D has no settle test yet, and the settle step of the 2D lock-step port
+    // adds them.
+    size_t n_band = 0, no_edge = 0;
+    std::vector<Pinned> pinned = scan(no_edge, &n_band);
+    std::vector<std::array<size_t, 2>> sp_edges;
+    scan_spanned(sp_edges);
+    const size_t found = pinned.size() + no_edge, found_no_edge = no_edge;
+    const size_t found_edges = sp_edges.size();
+    size_t n_split = 0, n_refused = 0, n_split_edges = 0;
+    int rounds = 0;
+    bool cap = false;
+    while (!pinned.empty() || !sp_edges.empty()) {
+        if (rounds == kPocketMaxRounds) {
+            cap = true;
+            break;
+        }
+        ++rounds;
+        size_t split_now = 0;
+        for (const std::array<size_t, 2>& e : sp_edges) {
+            if (get_incident_fids_for_edge(e[0], e[1]).empty()) continue; // split already
+            if (split_one(e)) {
+                ++split_now;
+                ++n_split_edges;
+            } else {
+                ++n_refused;
+            }
+        }
+        for (const Pinned& p : pinned) {
+            if (!alive(p.vids)) continue;
+            for (const std::array<size_t, 2>& e : p.edges) {
+                if (split_one(e)) {
+                    ++split_now;
+                    break;
+                }
+                ++n_refused;
+            }
+        }
+        n_split += split_now;
+        // Every triangle a split of an edge off the front makes has the off-front midpoint as a
+        // corner, so a rescan finds the cells and edges whose splits were all refused; with none
+        // committed it finds the same ones.
+        if (split_now == 0) break;
+        pinned = scan(no_edge, nullptr);
+        scan_spanned(sp_edges);
+    }
+    if (cap) {
+        logger().warn(
+            "\t[pocket split] {}: the cap of {} rounds stopped the rescans with {} pinned cells "
+            "left that have an edge to split",
+            where,
+            kPocketMaxRounds,
+            pinned.size());
+    }
+    logger().info(
+        "\t[pocket split] {}: pinned cells (outside the input complex, all three corners on the "
+        "front) {}, of which {} with all three edges on the front | edges split {} in {} "
+        "round(s), split attempts refused {} | left: {} with all three edges on the front (not "
+        "split), {} with an edge off it (every split refused, or the cap) | of the pinned cells "
+        "found, band cells {}{}",
+        where,
+        found,
+        found_no_edge,
+        n_split,
+        rounds,
+        n_refused,
+        no_edge,
+        pinned.size(),
+        n_band,
+        m_offset_params.front_spanned_split
+            ? fmt::format(
+                  " | spanned edges (both ends on the front, not a front edge) found {}, split "
+                  "{}; left {}",
+                  found_edges,
+                  n_split_edges,
+                  sp_edges.size())
+            : std::string());
 }
 
 void TopoOffsetTriMesh::optimize_offset_loop(
@@ -5087,7 +5280,9 @@ void TopoOffsetTriMesh::optimize_offset_loop(
         if (/* adaptive_smoothing */ false) {
             smooth_group_to_convergence("pre_smooth");
         } else {
-            local_operations({{0, 0, 0, k}});
+            // Through loop_group(), as in 3D: the pocket splits precede each of its smoothing
+            // passes too.
+            loop_group({{0, 0, 0, k}}, "pre_smooth");
         }
         refresh_released_envelope();
     }
@@ -5108,7 +5303,8 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
                 smooth_group_to_convergence(group_names[gi]);
             } else {
-                // EXPERIMENTAL_label_cleanup between the operation passes and the smoothing.
+                // The operation passes, EXPERIMENTAL_label_cleanup, and the pocket splits before
+                // each smoothing pass. As in 3D.
                 loop_group(groups[gi], fmt::format("turn {} {} group", it + 1, group_names[gi]));
             }
             refresh_released_envelope(); // the smoothing in this group moved the boundaries

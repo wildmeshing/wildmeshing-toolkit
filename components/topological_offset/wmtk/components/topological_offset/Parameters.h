@@ -109,11 +109,14 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Half-width of the tube that holds the order-2 edges of the held surfaces -- their rims and
     /// non-manifold edges -- as a fraction of envelope_size, and the radius of the anchors where
     /// those curves end or three or more meet. 1, as tetwild's and simwild's key of the same name.
+    /// 2D: the radius of the anchors where the held curves end or three or more meet
+    /// (TopoOffsetTriMesh::hold_curves_and_points()).
     double order2_envelope_ratio = 1.0;
     /// Half-width of the tube that holds the input complex's own curves -- a curve offset's
     /// segments (TopoOffsetTetMesh::hold_curves_and_points()) -- as a fraction of envelope_size,
     /// and the radius of the anchors where they end or three or more meet, and of its points. 1,
-    /// as tetwild's and simwild's key of the same name.
+    /// as tetwild's and simwild's key of the same name. 2D: the radius of the input points'
+    /// anchors and of a complex's isolated points (TopoOffsetTriMesh::hold_curves_and_points()).
     double feature_envelope_ratio = 1.0;
 
     // ---- the smooth offset potential ----
@@ -157,10 +160,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// before (TopoOffsetTetMesh / TopoOffsetTriMesh::held_topology_check(); see the spec).
     bool debug_held_topology = false;
     /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
-    /// split every pinned cell until none is left (TopoOffsetTetMesh::front_pocket_split()).
+    /// split every pinned cell until none is left (TopoOffsetTetMesh /
+    /// TopoOffsetTriMesh::front_pocket_split()).
     bool front_pocket_split = true;
     /// EXPERIMENTAL_front_spanned_split (see the spec): front_pocket_split() splits spanned edges
-    /// and faces too, not only pinned cells.
+    /// and faces (2D: edges) too, not only pinned cells.
     bool front_spanned_split = true;
     /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a fold
     /// (TopoOffsetTetMesh::fold_test()) remains.

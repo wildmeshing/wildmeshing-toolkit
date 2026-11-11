@@ -158,8 +158,8 @@ void TopoOffsetTriMesh::init_from_image(
         io::orient_tagged_row(attr, vids, set, E_orientation, r);
     }
     // Point labels, the input points' (a tagged mesh's point block): each input point's vertex
-    // carries its label (VertexExtra2d::point_inputs), as in 3D until the anchors take over,
-    // which in 2D none does.
+    // carries its label (VertexExtra2d::point_inputs) until hold_curves_and_points() anchors it,
+    // as in 3D: the vertex ids change before then (consolidate_mesh()).
     if (m_input_point_labels.size() != point_vids.size()) {
         log_and_throw_error(
             "{} input points, {} labels",
@@ -1126,6 +1126,11 @@ void TopoOffsetTriMesh::construct_offset(const std::filesystem::path& output_fil
         write_debug_frame("simplicial_embedding");
     }
 
+    // The points, once: the complex is labelled and embedded, and nothing has moved yet. As in
+    // 3D, after the envelopes (2D's built at load, init_surfaces_and_boundaries()) and before
+    // the repulsion and the march.
+    hold_curves_and_points();
+
     // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
     repulsion_smoothing();
 
@@ -1150,6 +1155,65 @@ void TopoOffsetTriMesh::construct_offset(const std::filesystem::path& output_fil
     }
 
     assert(ambient_assert());
+}
+
+void TopoOffsetTriMesh::hold_curves_and_points()
+{
+    // See the declaration; TopoOffsetTetMesh::hold_curves_and_points() one dimension down. 3D's
+    // order-2 edges and feature curves are 2D's points, so there are no tubes to build here and
+    // no edge to tag: the base's anchor_feature_points() anchors the order-2 vertices of the
+    // tracked curves, which init_surfaces_and_boundaries() tracked at load (holds_order2_vertex():
+    // one tracked segment or three and more), and the input points. 3D's tubes around a
+    // reference's curves (init_reference_feature_tubes()) have no 2D twin: a held point's
+    // reference is the base's m_reference_points, which anchor_feature_points() centres the
+    // point's ball on, and the 2D offset has no reference route yet.
+    const double order2_eps = m_envelope_eps * m_offset_params.order2_envelope_ratio;
+    const double feature_eps = m_envelope_eps * m_offset_params.feature_envelope_ratio;
+
+    // The input points: one per vertex and label of VertexExtra2d::point_inputs, selected or not,
+    // with their labels (m_input_point_labels), which their anchors keep and the output's point
+    // block writes. From here on their anchors carry them. As in 3D.
+    std::vector<size_t> point_vids;
+    std::vector<int> point_labels;
+    std::vector<char> is_input_point(vert_capacity(), 0);
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        InputSet& bits = m_vertex_extra[vid].point_inputs;
+        for (int j = 0; j < int(SurfaceTagAttributes::max_inputs); ++j) {
+            if (((bits >> j) & 1) == 0) continue;
+            point_vids.push_back(vid);
+            point_labels.push_back(j);
+            is_input_point[vid] = 1;
+        }
+        bits = 0;
+    }
+    m_input_point_labels = point_labels;
+    size_t n_anchors = anchor_feature_points(point_vids, order2_eps, feature_eps);
+    if (m_phi_F.rows() == 0) {
+        // A complex's isolated points, its vertices on none of its edges, that are no input
+        // point: anchored where they are, at an input point's radius, as in 3D (an order-2 vertex
+        // among them keeps the smaller radius, anchor_feature_point()). One entry of offsets
+        // (label_input_complex()), so 3D's several-entry case does not arise.
+        std::vector<char> on_edge(vert_capacity(), 0);
+        for (const Tuple& e : get_edges()) {
+            if (m_edge_extra[e.eid(*this)].label != 1) continue;
+            on_edge[e.vid(*this)] = on_edge[e.switch_vertex(*this).vid(*this)] = 1;
+        }
+        for (const Tuple& t : get_vertices()) {
+            const size_t vid = t.vid(*this);
+            if (m_vertex_extra[vid].label != 1 || on_edge[vid] || is_input_point[vid]) continue;
+            enable_feature_point_tracking();
+            n_anchors += anchor_feature_point(vid, feature_eps);
+        }
+    }
+    m_points_held = true;
+    logger().info(
+        "\t[curves] the tracked curves' ends and junctions (radius {:.6g}), {} input points and "
+        "the complex's isolated points (radius {:.6g}): {} anchored",
+        order2_eps,
+        point_vids.size(),
+        feature_eps,
+        n_anchors);
 }
 
 size_t TopoOffsetTriMesh::flood_fill()

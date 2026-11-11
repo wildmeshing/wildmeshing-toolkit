@@ -5249,6 +5249,283 @@ TEST_CASE("spanned-split-edge", "[offset][3d][pocket_split]")
     CHECK_FALSE(mesh->m_vertex_extra[n_verts0].m_is_on_offset);
 }
 
+namespace {
+/// The 2D twin of pocket_mesh(): the triangle P = (o, x, y), o = (0, 0), x = (1, 0), y = (0, 1),
+/// outside the band (label 0) and face 0. On the edge of P on the line where coordinate a is 0,
+/// for each axis a in `axes`, sits a band blob: the triangle on that edge with its apex u 0.5
+/// beyond the edge's midpoint, coned from its own centroid e into three band triangles (label 2);
+/// axis 2 stands for P's third edge (x, y), its apex u = (1, 1). No two blobs overlap, and every
+/// blob triangle has e, which is on no front edge, as a corner. The front
+/// (edge_is_offset_surface_live()) is each blob's edge against P and its two edges on the domain
+/// boundary. Vertex ids: o 0, x 1, y 2, then u and e of each blob in turn. A piece cut out of a
+/// domain, as pocket_mesh()'s: no edge tracked, so no vertex is held. The front flags are derived
+/// from the labels (refresh_offset_membership()), and every split is the loop's
+/// (EdgeSplitMode::Optimization). `cone`: P is instead coned from its centroid c (vertex 3, before
+/// the blobs) into three triangles, so no triangle of P is pinned while P's edges stay where they
+/// were.
+std::unique_ptr<TopoOffsetTriMesh>
+pocket_mesh_2d(Parameters& param, const std::vector<int>& axes, const bool cone = false)
+{
+    std::vector<Vector2d> pos = {Vector2d(0., 0.), Vector2d(1., 0.), Vector2d(0., 1.)};
+    std::vector<std::array<int, 3>> F = {{{0, 1, 2}}};
+    std::vector<int> labels = {0};
+    if (cone) {
+        pos.push_back(Vector2d(1. / 3., 1. / 3.));
+        F = {{{0, 1, 3}}, {{1, 2, 3}}, {{2, 0, 3}}};
+        labels = {0, 0, 0};
+    }
+    for (const int a : axes) {
+        // The edge of P on the line coordinate a = 0, or (x, y) for a = 2.
+        const std::array<int, 2> f = a == 0   ? std::array<int, 2>{{0, 2}}
+                                     : a == 1 ? std::array<int, 2>{{0, 1}}
+                                              : std::array<int, 2>{{1, 2}};
+        const Vector2d& p0 = pos[size_t(f[0])];
+        const Vector2d& p1 = pos[size_t(f[1])];
+        Vector2d u = (p0 + p1) / 2.;
+        if (a < 2) {
+            u[a] = -0.5;
+        } else {
+            u = Vector2d(1., 1.);
+        }
+        const Vector2d e = (p0 + p1 + u) / 3.;
+        const int iu = int(pos.size()), ie = iu + 1;
+        pos.push_back(u);
+        pos.push_back(e);
+        F.push_back({{f[0], f[1], ie}});
+        F.push_back({{f[0], iu, ie}});
+        F.push_back({{f[1], iu, ie}});
+        labels.insert(labels.end(), 3, 2);
+    }
+    Eigen::MatrixXd V(int(pos.size()), 2);
+    for (size_t i = 0; i < pos.size(); ++i) V.row(int(i)) = pos[i].transpose();
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
+    auto mesh = energy_mesh_2d(param, V, F, labels, line_field());
+    for (const auto& e : mesh->get_edges()) {
+        mesh->m_edge_attribute[e.eid(*mesh)].m_is_surface_fs = false;
+    }
+    for (const auto& v : mesh->get_vertices()) {
+        mesh->m_vertex_attribute[v.vid(*mesh)].m_is_on_surface = false;
+        mesh->refresh_offset_membership(v.vid(*mesh));
+    }
+    mesh->m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Optimization;
+    return mesh;
+}
+
+/// Whether the edge (a, b) is on the front (edge_is_offset_surface_live()).
+bool front_edge_2d(const TopoOffsetTriMesh& m, const size_t a, const size_t b)
+{
+    return m.edge_is_offset_surface_live(std::get<0>(m.tuple_from_edge({{a, b}})));
+}
+
+/// The pinned cells, counted from the definition: outside the input complex, all three corners
+/// front vertices (m_is_on_offset).
+size_t count_pinned_2d(const TopoOffsetTriMesh& m)
+{
+    size_t n = 0;
+    for (const auto& f : m.get_faces()) {
+        const size_t fid = f.fid(m);
+        if (m.face_is_input_complex(fid)) continue;
+        const auto vs = m.oriented_tri_vids(fid);
+        if (std::all_of(vs.begin(), vs.end(), [&](const size_t v) {
+                return m.m_vertex_extra[v].m_is_on_offset;
+            })) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+/// The spanned edges (front_pocket_split()'s EXPERIMENTAL_front_spanned_split): both ends front
+/// vertices, not a front edge, no triangle at it in the input complex.
+size_t count_spanned_edges_2d(const TopoOffsetTriMesh& m)
+{
+    size_t n = 0;
+    for (const auto& e : m.get_edges()) {
+        const size_t a = e.vid(m), b = e.switch_vertex(m).vid(m);
+        if (!m.m_vertex_extra[a].m_is_on_offset || !m.m_vertex_extra[b].m_is_on_offset) continue;
+        if (m.edge_is_offset_surface_live(e)) continue;
+        const auto fids = m.get_incident_fids_for_edge(a, b);
+        if (std::any_of(fids.begin(), fids.end(), [&](const size_t f) {
+                return m.face_is_input_complex(f);
+            })) {
+            continue;
+        }
+        ++n;
+    }
+    return n;
+}
+
+/// Whether every vertex's front flag is what the labels say (offset_membership_mismatches()).
+bool front_flags_live_2d(const TopoOffsetTriMesh& m)
+{
+    const auto mismatches = m.offset_membership_mismatches();
+    return mismatches.first == 0 && mismatches.second == 0;
+}
+
+/// The vertex at the midpoint of (x, y), (0.5, 0.5) exactly: a split of (x, y) made it.
+size_t midpoint_xy_2d(const TopoOffsetTriMesh& m)
+{
+    size_t found = std::numeric_limits<size_t>::max();
+    for (const auto& v : m.get_vertices()) {
+        if (m.m_vertex_attribute[v.vid(m)].m_posf == Vector2d(0.5, 0.5)) found = v.vid(m);
+    }
+    REQUIRE(found != std::numeric_limits<size_t>::max());
+    return found;
+}
+
+/// The live triangles as sorted corner arrays, sorted: the connectivity, independent of face ids.
+std::vector<std::array<size_t, 3>> sorted_cells_2d(const TopoOffsetTriMesh& m)
+{
+    std::vector<std::array<size_t, 3>> cells;
+    for (const auto& f : m.get_faces()) {
+        auto vs = m.oriented_tri_vids(f.fid(m));
+        std::sort(vs.begin(), vs.end());
+        cells.push_back(vs);
+    }
+    std::sort(cells.begin(), cells.end());
+    return cells;
+}
+} // namespace
+
+TEST_CASE("pocket-split-pinned-cell-2d", "[offset][2d][pocket_split]")
+{
+    // The 2D twin of pocket-split-pinned-cell: one pinned triangle with one edge off the front. P
+    // with blobs on its edges y = 0 and x = 0, so o and x are on the one front edge (o, x) of P
+    // and o and y on the other, and the edge (x, y) is on neither. The slot splits (x, y), whose
+    // only triangle is P; both children have the midpoint, off the front, as a corner, so no
+    // pinned cell is left, and the front, none of whose edges is the split edge, is the same set
+    // of edges. (x, y) is a spanned edge too, so with EXPERIMENTAL_front_spanned_split on (the
+    // default) the spanned pass splits it, and off the pinned pass does: both.
+    const bool spanned = GENERATE(false, true);
+    INFO("EXPERIMENTAL_front_spanned_split " << spanned);
+    Parameters param;
+    param.front_spanned_split = spanned;
+    auto mesh = pocket_mesh_2d(param, {1, 0});
+    mesh->m_offset_params.front_pocket_split = true;
+    // The premises: P is the one pinned cell, and (x, y) is its one edge off the front.
+    REQUIRE(count_pinned_2d(*mesh) == 1);
+    for (size_t i = 0; i < 3; ++i) {
+        for (size_t j = i + 1; j < 3; ++j) {
+            INFO("edge " << i << " " << j);
+            REQUIRE(front_edge_2d(*mesh, i, j) == !(i == 1 && j == 2));
+        }
+    }
+    REQUIRE(front_flags_live_2d(*mesh));
+    const auto edges0 = mesh->offset_surface_edges();
+    const size_t n_cells0 = mesh->get_faces().size(), n_verts0 = mesh->get_vertices().size();
+
+    mesh->front_pocket_split("test");
+
+    CHECK(count_pinned_2d(*mesh) == 0);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(front_flags_live_2d(*mesh));
+    CHECK(mesh->offset_surface_edges() == edges0);
+    // One split, of (x, y), on the domain boundary: one vertex, off the front, and one triangle
+    // more, and the edge is gone.
+    CHECK(mesh->get_vertices().size() == n_verts0 + 1);
+    CHECK(mesh->get_faces().size() == n_cells0 + 1);
+    CHECK(mesh->get_incident_fids_for_edge(1, 2).empty());
+    CHECK_FALSE(mesh->m_vertex_extra[midpoint_xy_2d(*mesh)].m_is_on_offset);
+}
+
+TEST_CASE("pocket-split-front-cell-2d", "[offset][2d][pocket_split]")
+{
+    // The 2D stand-in for pocket-split-six-edge-cell. 3D splits a pinned cell whose six edges
+    // are on the offset surface on an edge of its one face that is not, which 2D cannot have: a
+    // triangle's faces are its edges, so a pinned triangle with no edge off the front has all its
+    // faces on the front, 3D's cell with all four faces on the offset surface, a one-cell
+    // component of its label, which the slot counts and leaves. P with blobs on all three edges:
+    // the one pinned cell, nothing split, the mesh unchanged.
+    Parameters param;
+    auto mesh = pocket_mesh_2d(param, {0, 1, 2});
+    mesh->m_offset_params.front_pocket_split = true;
+    REQUIRE(count_pinned_2d(*mesh) == 1);
+    for (size_t i = 0; i < 3; ++i) {
+        for (size_t j = i + 1; j < 3; ++j) REQUIRE(front_edge_2d(*mesh, i, j));
+    }
+    REQUIRE(count_spanned_edges_2d(*mesh) == 0);
+    REQUIRE(front_flags_live_2d(*mesh));
+    const auto cells0 = sorted_cells_2d(*mesh);
+    const auto edges0 = mesh->offset_surface_edges();
+    const size_t n_verts0 = mesh->get_vertices().size();
+
+    mesh->front_pocket_split("test");
+
+    CHECK(count_pinned_2d(*mesh) == 1);
+    CHECK(mesh->get_vertices().size() == n_verts0);
+    CHECK(sorted_cells_2d(*mesh) == cells0);
+    CHECK(mesh->offset_surface_edges() == edges0);
+}
+
+TEST_CASE("pocket-split-key-off-2d", "[offset][2d][pocket_split]")
+{
+    // The 2D twin of pocket-split-key-off: with EXPERIMENTAL_front_pocket_split false the slot is
+    // a no-op, and so it is in the final pass (m_freeze_front; 3D: a TetWild pass) with the key
+    // on: the first fixture's pinned cell stays and the mesh is unchanged.
+    Parameters param;
+    param.front_pocket_split = false;
+    auto mesh = pocket_mesh_2d(param, {1, 0});
+    REQUIRE_FALSE(mesh->m_offset_params.front_pocket_split);
+    REQUIRE(count_pinned_2d(*mesh) == 1);
+    const auto cells0 = sorted_cells_2d(*mesh);
+    const auto edges0 = mesh->offset_surface_edges();
+    const size_t n_verts0 = mesh->get_vertices().size();
+    const auto unchanged = [&]() {
+        CHECK(count_pinned_2d(*mesh) == 1);
+        CHECK(mesh->get_vertices().size() == n_verts0);
+        CHECK(sorted_cells_2d(*mesh) == cells0);
+        CHECK(mesh->offset_surface_edges() == edges0);
+    };
+
+    mesh->front_pocket_split("test");
+    unchanged();
+
+    mesh->m_offset_params.front_pocket_split = true;
+    mesh->m_freeze_front = true;
+    mesh->front_pocket_split("test");
+    unchanged();
+    mesh->m_freeze_front = false;
+}
+
+TEST_CASE("spanned-split-edge-2d", "[offset][2d][pocket_split]")
+{
+    // The 2D twin of spanned-split-edge: EXPERIMENTAL_front_spanned_split on a spanned edge with
+    // no pinned cell. The first fixture with P coned from its centroid c, so (x, y) is still not
+    // a front edge while its triangle (x, y, c) has c off the front (3D's (x, z) has two cells;
+    // this one is on the domain boundary). The pinned-cell split alone leaves it; with the key,
+    // the slot splits (x, y), and the front is the same set of edges.
+    Parameters param;
+    param.front_spanned_split = false;
+    auto mesh = pocket_mesh_2d(param, {1, 0}, true);
+    mesh->m_offset_params.front_pocket_split = true;
+    REQUIRE(count_pinned_2d(*mesh) == 0);
+    REQUIRE_FALSE(front_edge_2d(*mesh, 1, 2));
+    REQUIRE(mesh->get_incident_fids_for_edge(1, 2).size() == 1);
+    REQUIRE(count_spanned_edges_2d(*mesh) == 1);
+    REQUIRE(front_flags_live_2d(*mesh));
+    const auto edges0 = mesh->offset_surface_edges();
+    const auto cells0 = sorted_cells_2d(*mesh);
+    const size_t n_cells0 = mesh->get_faces().size(), n_verts0 = mesh->get_vertices().size();
+
+    mesh->front_pocket_split("test"); // key off: nothing pinned, nothing split
+    CHECK(sorted_cells_2d(*mesh) == cells0);
+    CHECK(count_spanned_edges_2d(*mesh) == 1);
+
+    mesh->m_offset_params.front_spanned_split = true;
+    mesh->front_pocket_split("test");
+
+    CHECK(count_spanned_edges_2d(*mesh) == 0);
+    CHECK(count_pinned_2d(*mesh) == 0);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(front_flags_live_2d(*mesh));
+    CHECK(mesh->offset_surface_edges() == edges0);
+    // One split, of (x, y): one vertex, off the front, and one triangle more; the edge is gone.
+    CHECK(mesh->get_vertices().size() == n_verts0 + 1);
+    CHECK(mesh->get_faces().size() == n_cells0 + 1);
+    CHECK(mesh->get_incident_fids_for_edge(1, 2).empty());
+    CHECK_FALSE(mesh->m_vertex_extra[midpoint_xy_2d(*mesh)].m_is_on_offset);
+}
+
 TEST_CASE("surface-offset-error-3d", "[offset][3d]")
 {
     // EXPERIMENTAL_band_volume_rule "surface": SurfaceOffsetError3D, a front vertex's part of the
@@ -7009,18 +7286,24 @@ Parameters cleanup_params_2d(const double target)
         box);
 }
 
+/// Input points as (name, grid point (i, j)), the 2D twin of point_grid()'s point block.
+using GridPoints2d = std::vector<std::pair<std::string, std::array<int, 2>>>;
+
 /// The 2D twin of point_grid() and the 3D tests' construction, driven directly (the app refuses
 /// the 2D offset): [-1, 1]^2 in 8^2 squares of edge 0.25, each split along its diagonal from
 /// (i, j) to (i + 1, j + 1); every triangle ambient, or with `regions` tagged A (centroid
-/// x < 0.25) or B; a curve group along `curve` (none if empty); the grid point p the input
-/// complex, a point, labelled by hand (2D selects no point label yet). Constructed at `param`'s
-/// target, the field and the exact integral built, the optimization's labels set, as
-/// optimize_offset() sets them before the loop.
+/// x < 0.25) or B; a curve group along `curve` (none if empty); `points` the input points (a
+/// point block, each vertex under its name), as the 2D driver passes them; the grid point p the
+/// input complex, a point, labelled by hand (2D selects no point label yet). Constructed at
+/// `param`'s target -- the construction holds the points (hold_curves_and_points()) -- the field
+/// and the exact integral built, the optimization's labels set, as optimize_offset() sets them
+/// before the loop.
 std::unique_ptr<TopoOffsetTriMesh> point_grid_2d(
     Parameters& param,
     const std::array<int, 2>& p,
     const GridPolyline2d& curve = {},
-    const bool regions = false)
+    const bool regions = false,
+    const GridPoints2d& points = {})
 {
     const int n = 8;
     const auto vid = [&](const int i, const int j) { return i + (n + 1) * j; };
@@ -7050,6 +7333,16 @@ std::unique_ptr<TopoOffsetTriMesh> point_grid_2d(
         if (k + 1 < curve.size()) CE.row(Eigen::Index(k)) << int(k), int(k + 1);
     }
     auto mesh = std::make_unique<TopoOffsetTriMesh>(param, 0);
+    // The point block, as the 3D driver sets it before init_from_image(): the names, and per
+    // point its vertex and the index of its name.
+    std::vector<size_t> point_vids;
+    for (const auto& [name, at] : points) {
+        auto it = std::find(mesh->m_point_names.begin(), mesh->m_point_names.end(), name);
+        if (it == mesh->m_point_names.end())
+            it = mesh->m_point_names.insert(mesh->m_point_names.end(), name);
+        mesh->m_input_point_labels.push_back(int(it - mesh->m_point_names.begin()));
+        point_vids.push_back(size_t(vid(at[0], at[1])));
+    }
     mesh->init_from_image(
         V,
         F,
@@ -7057,7 +7350,12 @@ std::unique_ptr<TopoOffsetTriMesh> point_grid_2d(
         CV,
         CE,
         regions ? std::vector<std::string>{"A", "B"} : std::vector<std::string>{"a"},
-        "curve");
+        "curve",
+        Eigen::MatrixXi(),
+        MatrixSi(),
+        {},
+        MatrixSi(),
+        point_vids);
     mesh->m_vertex_extra[size_t(vid(p[0], p[1]))].label = 1;
     mesh->mark_input_complex_vertices();
     mesh->init_input_complex_bvh();
@@ -7101,27 +7399,126 @@ size_t vertex_at_2d(const TopoOffsetTriMesh& m, const Vector2d& x)
     return found;
 }
 
-/// q, 0.25 from the origin p, held: anchored by the base's feature-point anchors, as every
-/// input point is in 3D (the 2D offset anchors none yet).
-size_t anchor_q_2d(TopoOffsetTriMesh& m)
+/// Whether vertex v is anchored (hold_curves_and_points()).
+bool anchored_2d(const TopoOffsetTriMesh& m, const size_t v)
 {
-    const size_t q = vertex_at_2d(m, grid_point_2d({{5, 4}}));
-    m.enable_feature_point_tracking();
-    REQUIRE(m.anchor_feature_point(q, m.m_offset_params.envelope_size));
-    return q;
+    return m.m_track_feature_points &&
+           m.m_feature_point_attribute[v].m_feature_point_id != TriOptimizerMesh::NO_FEATURE_POINT;
 }
 } // namespace
+
+TEST_CASE("hold-curves-and-points-2d", "[offset][2d]")
+{
+    // What the construction holds (hold_curves_and_points()), the 2D twin of
+    // point-offset-point-label's holding, on the construction (the app refuses 2D): p, the
+    // complex, offset to 0.2, q an input point 0.5 from it, out of the band, and an open curve
+    // y = 0.5, x in [-0.5, 0.5]. Every input point is anchored with its label, selected or not,
+    // in a ball of feature_envelope_ratio x envelope_size about where it was given; p as an input
+    // point or, labelled by hand alone, as an isolated point of a complex without faces, at the
+    // same radius; the curve's two ends, where a held curve ends, in balls of
+    // order2_envelope_ratio x envelope_size; nothing else, the march's vertices included. The
+    // result's point block, written from the anchors, has each input point at its vertex. The two
+    // ratios over their range, each against the other: 0.01, 1 and 10.
+    struct Case
+    {
+        double feature, order2;
+    };
+    const Case c = GENERATE(Case{0.01, 10.}, Case{1., 1.}, Case{10., 0.01});
+    const bool p_input = GENERATE(true, false);
+    INFO(
+        "feature_envelope_ratio " << c.feature << ", order2_envelope_ratio " << c.order2 << ", p "
+                                  << (p_input ? "an input point" : "the complex alone"));
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    Parameters param = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+         {"EXPERIMENTAL_label_cleanup", "one_sided"},
+         {"feature_envelope_ratio", c.feature},
+         {"order2_envelope_ratio", c.order2},
+         {"num_threads", 0}},
+        box);
+    GridPoints2d points{{"q", {{6, 4}}}};
+    if (p_input) points.insert(points.begin(), GridPoints2d::value_type{"p", {{4, 4}}});
+    auto mesh = point_grid_2d(param, {{4, 4}}, {{{2, 6}}, {{6, 6}}}, false, points);
+    REQUIRE(mesh->m_points_held);
+    const double eps = param.envelope_size;
+    struct Anchor
+    {
+        Vector2d at;
+        double radius;
+        std::string label; // empty: no input point
+    };
+    const std::vector<Anchor> want = {
+        {grid_point_2d({{4, 4}}), c.feature * eps, p_input ? "p" : ""},
+        {grid_point_2d({{6, 4}}), c.feature * eps, "q"},
+        {grid_point_2d({{2, 6}}), c.order2 * eps, ""},
+        {grid_point_2d({{6, 6}}), c.order2 * eps, ""}};
+    size_t n_anchored = 0;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        CHECK(mesh->m_vertex_extra[vid].point_inputs == 0); // the anchors carry them now
+        if (!anchored_2d(*mesh, vid)) continue;
+        ++n_anchored;
+        const Vector2d x = mesh->m_vertex_attribute[vid].m_posf;
+        INFO("anchor at (" << x.x() << ", " << x.y() << ")");
+        const auto it =
+            std::find_if(want.begin(), want.end(), [&](const Anchor& a) { return a.at == x; });
+        REQUIRE(it != want.end());
+        const size_t f = mesh->m_feature_point_attribute[vid].m_feature_point_id;
+        CHECK(mesh->m_feature_points[f] == it->at);
+        CHECK(mesh->m_feature_point_radius[f] == it->radius);
+        // The smoother keeps it in its ball (smoothing_position_is_allowed(), the base's; this
+        // mesh answered true until it anchored anything).
+        CHECK(mesh->smoothing_position_is_allowed(vid, it->at + Vector2d(it->radius / 2., 0.)));
+        CHECK_FALSE(
+            mesh->smoothing_position_is_allowed(vid, it->at + Vector2d(2. * it->radius, 0.)));
+        const InputSet labels =
+            f < mesh->m_feature_point_inputs.size() ? mesh->m_feature_point_inputs[f] : 0;
+        if (it->label.empty()) {
+            CHECK(labels == 0);
+        } else {
+            const auto& names = mesh->m_point_names;
+            const size_t bit =
+                size_t(std::find(names.begin(), names.end(), it->label) - names.begin());
+            REQUIRE(bit < names.size());
+            CHECK(labels == (InputSet(1) << bit));
+        }
+    }
+    CHECK(n_anchored == want.size());
+    // The result's point block, from the anchors.
+    io::ComponentIO context;
+    collect_memory_output(*mesh, context);
+    const MeshData& out = context.result.first.at("mesh");
+    const auto& block = out.cells.at(CellType::Point);
+    const auto& tags = block.attributes.at("tags");
+    const auto member = tags.integers();
+    std::map<std::string, std::vector<Vector2d>> at;
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (size_t t = 0; t < tags.labels.size(); ++t) {
+            if (member(r, Eigen::Index(t)) != 0)
+                at[tags.labels[t]].push_back(out.V.row(block.connectivity(r, 0)).transpose());
+        }
+    }
+    CHECK(at.size() == points.size());
+    for (const auto& [name, g] : points) {
+        INFO("point " << name);
+        REQUIRE(at[name].size() == 1);
+        CHECK(at[name][0] == grid_point_2d(g));
+    }
+}
 
 TEST_CASE("label-cleanup-keeps-held-point-off-the-band-2d", "[offset][2d]")
 {
     // The 2D twin of label-cleanup-keeps-held-point-off-the-band, on the clean-up slot itself
-    // (the 2D loop has no 3D-twin energy yet): q, a held point 0.25 from p and so inside p's
-    // level set at 0.3, is out of the band as constructed (the march traces to 0.125). The
+    // (the 2D loop has no 3D-twin energy yet): q, a held point -- an input point, anchored by the
+    // construction (hold_curves_and_points()), as in 3D -- 0.25 from p and so inside p's level
+    // set at 0.3, is out of the band as constructed (the march traces to 0.125). The
     // clean-up takes in the triangles at the front wholly inside the level set, and none with q
     // as a corner; the held objects' contact topology is unchanged.
     Parameters param = cleanup_params_2d(0.3);
-    auto mesh = point_grid_2d(param, {{4, 4}});
-    const size_t q = anchor_q_2d(*mesh);
+    auto mesh = point_grid_2d(param, {{4, 4}}, {}, false, {{"q", {{5, 4}}}});
+    const size_t q = vertex_at_2d(*mesh, grid_point_2d({{5, 4}}));
+    REQUIRE(anchored_2d(*mesh, q)); // an input point: the construction held it
     REQUIRE(band_touched_2d(*mesh)[q] == 0);
     const size_t band0 = band_count_2d(*mesh);
     const auto signature0 = mesh->held_topology_signature();
@@ -7240,12 +7637,14 @@ TEST_CASE("unreachable-level-set-throws-2d", "[offset][2d]")
     const std::string held = GENERATE("point", "curve", "region", "box", "point within the bar");
     INFO("held: " << held);
     Parameters param = cleanup_params_2d(held == "point within the bar" ? 0.27 : 0.3);
+    const bool point = held == "point" || held == "point within the bar";
     auto mesh = point_grid_2d(
         param,
         held == "box" ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}},
         held == "curve" ? GridPolyline2d{{{2, 5}}, {{6, 5}}} : GridPolyline2d{},
-        held == "region");
-    if (held == "point" || held == "point within the bar") anchor_q_2d(*mesh);
+        held == "region",
+        point ? GridPoints2d{{"q", {{5, 4}}}} : GridPoints2d{});
+    if (point) REQUIRE(anchored_2d(*mesh, vertex_at_2d(*mesh, grid_point_2d({{5, 4}}))));
     mesh->label_cleanup("test");
     if (held == "point within the bar") {
         REQUIRE_NOTHROW(mesh->check_level_set_reachable("test"));
@@ -7275,7 +7674,7 @@ TEST_CASE("label-cleanup-modes-2d", "[offset][2d]")
          {"EXPERIMENTAL_band_volume_rule", rule},
          {"num_threads", 0}},
         box);
-    auto mesh = point_grid_2d(param, {{4, 4}});
+    auto mesh = point_grid_2d(param, {{4, 4}}, {}, false, {{"q", {{5, 4}}}});
     if (mode == "energy_decrease") {
         // Parameters refuses it outside "surface"; set past that, the 2D clean-up refuses it.
         mesh->m_offset_params.label_cleanup = mode;
@@ -7284,7 +7683,8 @@ TEST_CASE("label-cleanup-modes-2d", "[offset][2d]")
             Catch::Matchers::ContainsSubstring("has no 2D port"));
         return;
     }
-    const size_t q = anchor_q_2d(*mesh);
+    const size_t q = vertex_at_2d(*mesh, grid_point_2d({{5, 4}}));
+    REQUIRE(anchored_2d(*mesh, q)); // an input point: the construction held it
     REQUIRE(band_touched_2d(*mesh)[q] == 0);
     const auto signature0 = mesh->held_topology_signature();
     REQUIRE_NOTHROW(mesh->label_cleanup("test"));
