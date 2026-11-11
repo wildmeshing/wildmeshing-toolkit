@@ -427,24 +427,25 @@ double TopoOffsetTetMesh::band_swept_change(
 {
     // See EXACT SWEPT CHANGE.
     if (x0 == x1) return 0.;
-    std::vector<std::array<Vector3d, 2>> faces;
-    band_swept_faces(vid, x0, faces);
-    return band_swept_sum(place_piece(&vid, 1), x0, x1, faces, st);
+    std::vector<SweptFacesOfPiece> pieces;
+    band_swept_faces(vid, x0, pieces);
+    return band_swept_sum(x0, x1, pieces, st);
 }
 
 void TopoOffsetTetMesh::band_swept_faces(
     const size_t vid,
     const Vector3d& x0,
-    std::vector<std::array<Vector3d, 2>>& faces) const
+    std::vector<SweptFacesOfPiece>& pieces) const
 {
-    // Each boundary face of B through vid belongs to one band cell, the cell across it not a
-    // band cell (or none: the domain wall).
+    // Each boundary face of B_r through vid belongs to one cell of B_r, the cell across it not
+    // one (EXACT SWEPT CHANGE, several entries).
     using wmtk::utils::predicates::orient3d;
     using wmtk::utils::predicates::Orientation;
-    faces.clear();
+    pieces.clear();
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         if (!cell_is_offset_band(tid)) continue;
         const std::array<size_t, 4> vids = oriented_tet_vids(tid);
+        const int r = place_piece(vids.data(), 4);
         for (int i = 0; i < 4; ++i) {
             const size_t p = vids[size_t(i)];
             if (p == vid) continue; // the face opposite vid does not hold it
@@ -458,44 +459,89 @@ void TopoOffsetTetMesh::band_swept_faces(
             } else if (const std::optional<Tuple> sw = ft.switch_tetrahedron(*this)) {
                 o = int64_t(sw->tid(*this));
             }
-            if (o >= 0 && cell_is_offset_band(size_t(o))) continue; // inside B
+            if (o >= 0 && cell_is_offset_band(size_t(o)) &&
+                place_piece(oriented_tet_vids(size_t(o)).data(), 4) == r) {
+                continue; // inside B_r
+            }
             std::array<size_t, 2> ab;
             int k = 0;
             for (const size_t u : f) {
                 if (u != vid) ab[size_t(k++)] = u;
             }
             Vector3d A = m_vertex_attribute[ab[0]].m_posf, B = m_vertex_attribute[ab[1]].m_posf;
-            // (A - x0) x (B - x0) out of B, away from the fourth corner: orient3d positive
+            // (A - x0) x (B - x0) out of B_r, away from the fourth corner: orient3d positive
             // (Shewchuk's sign)
             const Orientation out = orient3d(x0, A, B, m_vertex_attribute[p].m_posf);
             if (out == Orientation::COPLANAR) continue; // a flat cell at x0 bounds nothing
             if (out != Orientation::POSITIVE) std::swap(A, B);
-            faces.push_back({{A, B}});
+            auto it = std::find_if(pieces.begin(), pieces.end(), [&](const SweptFacesOfPiece& q) {
+                return q.piece == r;
+            });
+            if (it == pieces.end()) it = pieces.insert(pieces.end(), SweptFacesOfPiece{r, {}});
+            it->faces.push_back({{A, B}});
         }
     }
 }
 
 double TopoOffsetTetMesh::band_swept_sum(
-    const int piece,
     const Vector3d& x0,
     const Vector3d& x1,
-    const std::vector<std::array<Vector3d, 2>>& faces,
+    const std::vector<SweptFacesOfPiece>& pieces,
     ExactBandIntegral::Stats* st) const
 {
-    // the function the smoother's search model evaluates too (BandVolumeEnergy3D::set_swept())
-    return BandVolumeEnergy3D::swept_change(
-        *band_exact_for(piece),
-        region_delta(piece),
-        x0,
-        x1,
-        faces,
-        st);
+    // the function the smoother's search model evaluates too (BandVolumeEnergy3D::set_swept()),
+    // per piece
+    double s = 0.;
+    for (const SweptFacesOfPiece& q : pieces) {
+        s += BandVolumeEnergy3D::swept_change(
+            *band_exact_for(q.piece),
+            region_delta(q.piece),
+            x0,
+            x1,
+            q.faces,
+            st);
+    }
+    return s;
+}
+
+std::vector<std::pair<size_t, int>> TopoOffsetTetMesh::band_cell_pieces(
+    const std::vector<size_t>& tids) const
+{
+    std::vector<std::pair<size_t, int>> out;
+    for (const size_t tid : tids) {
+        if (cell_is_offset_band(tid))
+            out.push_back({tid, place_piece(oriented_tet_vids(tid).data(), 4)});
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+double TopoOffsetTetMesh::band_relabel_change(
+    const std::vector<size_t>& tids,
+    const std::vector<std::pair<size_t, int>>& before) const
+{
+    // See the declaration and EXACT SWEPT CHANGE, several entries.
+    if (m_offset_params.offsets.size() <= 1) return 0.;
+    double s = 0.;
+    for (const size_t tid : tids) {
+        if (!cell_is_offset_band(tid)) continue;
+        const auto it = std::lower_bound(
+            before.begin(),
+            before.end(),
+            std::pair<size_t, int>{tid, std::numeric_limits<int>::min()});
+        if (it == before.end() || it->first != tid) continue;
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const int r = place_piece(vs.data(), 4);
+        if (r != it->second) s += band_cell_term(vs, r) - band_cell_term(vs, it->second);
+    }
+    return s;
 }
 
 double TopoOffsetTetMesh::band_chain_change(
     const std::vector<std::array<size_t, 4>>& old_band,
     const std::vector<std::array<size_t, 4>>& new_band,
-    ExactBandIntegral::Stats* st) const
+    ExactBandIntegral::Stats* st,
+    const int piece) const
 {
     // See EXACT SWEPT CHANGE: dD = sum of the new band cells' outward faces less the old ones',
     // each face as its sorted vertex triple with the multiplicity of that orientation.
@@ -528,9 +574,7 @@ double TopoOffsetTetMesh::band_chain_change(
         if (n > on[apex]) apex = v;
     }
     // value() through the value table unless `st` is given (BandVolumeEnergy3D::swept_change()),
-    // at the cells' piece's target distance and integral (place_piece(); the run's and the whole
-    // complex's with one entry)
-    const int piece = old_band.empty() ? -1 : place_piece(old_band.front().data(), 4);
+    // at the cells' piece's target distance and integral
     const double delta = region_delta(piece);
     const ExactBandIntegral& band_exact = *band_exact_for(piece);
     double s = 0.;
@@ -548,10 +592,23 @@ double TopoOffsetTetMesh::swap_swept_change(
     const std::vector<std::array<size_t, 4>>& new_band,
     const bool flip)
 {
-    // See the declaration: an interior swap gives every new cell the ring's one label, so B
-    // keeps its region and its boundary
-    if (!flip) return 0.;
-    return band_chain_change(m_swap_record.local().old_band, new_band);
+    // See the declaration: an interior swap gives every new cell the ring's one label, so where
+    // every band cell is of one piece B_r keeps its region and its boundary
+    const SwapRecord& rec = m_swap_record.local();
+    std::vector<int> new_piece;
+    for (const auto& t : new_band) new_piece.push_back(place_piece(t.data(), 4));
+    const int r = !rec.old_piece.empty() ? rec.old_piece.front()
+                  : new_piece.empty()    ? -1
+                                         : new_piece.front();
+    bool one = true;
+    for (const int q : rec.old_piece) one = one && q == r;
+    for (const int q : new_piece) one = one && q == r;
+    if (one) return flip ? band_chain_change(rec.old_band, new_band, nullptr, r) : 0.;
+    double s = 0.;
+    for (size_t i = 0; i < new_band.size(); ++i) s += band_cell_term(new_band[i], new_piece[i]);
+    for (size_t i = 0; i < rec.old_band.size(); ++i)
+        s -= band_cell_term(rec.old_band[i], rec.old_piece[i]);
+    return s;
 }
 
 bool TopoOffsetTetMesh::swept_accept(
@@ -564,11 +621,15 @@ bool TopoOffsetTetMesh::swept_accept(
     // See the declaration.
     ++c.solves;
     const Vector3d x1 = m_vertex_attribute[vid].m_posf;
-    // band_swept_change()'s faces, the same at every halving (band_swept_faces() does not read
-    // vid's position)
-    std::vector<std::array<Vector3d, 2>> faces;
-    band_swept_faces(vid, x0, faces);
-    const std::shared_ptr<const BandVolumeEnergy3D>& model = m_swept_model.local();
+    // band_swept_change()'s faces, the same at every halving (band_swept_faces() reads vid's
+    // position only for the pieces), and the ring's pieces, read with vid at x0, where the move
+    // starts (place_piece() reads a cell's first corner's position where no corner has a piece)
+    std::vector<SweptFacesOfPiece> pieces;
+    m_vertex_attribute[vid].m_posf = x0;
+    band_swept_faces(vid, x0, pieces);
+    const std::vector<std::pair<size_t, int>> ring_pieces = band_cell_pieces(ring);
+    m_vertex_attribute[vid].m_posf = x1;
+    const std::vector<std::shared_ptr<const BandVolumeEnergy3D>>& models = m_swept_model.local();
     for (int k = 0; k <= kSweptHalvings; ++k) {
         if (k > 0) {
             m_vertex_attribute[vid].m_posf = x0 + std::ldexp(1., -k) * (x1 - x0);
@@ -580,16 +641,17 @@ bool TopoOffsetTetMesh::swept_accept(
         }
         const double dA = tet_energy_sum(ring, false) - amips_before;
         const Vector3d& x = m_vertex_attribute[vid].m_posf;
-        double dB;
-        const int piece = place_piece(&vid, 1);
-        if (!(model && model->swept_value_at(
-                           *band_exact_for(piece),
-                           region_delta(piece),
-                           x0,
-                           x,
-                           faces,
-                           dB))) {
-            dB = band_swept_sum(piece, x0, x, faces);
+        double dB = band_relabel_change(ring, ring_pieces);
+        for (size_t i = 0; i < pieces.size(); ++i) {
+            const SweptFacesOfPiece& q = pieces[i];
+            const ExactBandIntegral& eb = *band_exact_for(q.piece);
+            const double delta = region_delta(q.piece);
+            double d;
+            if (!(i < models.size() && models[i] &&
+                  models[i]->swept_value_at(eb, delta, x0, x, q.faces, d))) {
+                d = BandVolumeEnergy3D::swept_change(eb, delta, x0, x, q.faces);
+            }
+            dB += d;
         }
         if (dA + dB <= 0.) { // a NaN refuses; a tie passes
             ++c.accepted[size_t(k)];
@@ -749,6 +811,15 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
     // on the real cells in swap_after_cells(), so it needs no record beyond band_cancels.
     if (current_op_kind() != OpKind::swap_32) swap_record_fill(false);
     m_swap_record.local().band_cancels = band_cancels; // after the fill, which clears it
+    // "exact_swept": the band cells the swap replaces and their pieces (swap_swept_change())
+    if (swept_rule()) {
+        SwapRecord& rec = m_swap_record.local();
+        for (const size_t t : tids) {
+            if (!cell_is_offset_band(t)) continue;
+            rec.old_band.push_back(oriented_tet_vids(t));
+            rec.old_piece.push_back(place_piece(rec.old_band.back().data(), 4));
+        }
+    }
     return true;
 }
 
@@ -870,11 +941,13 @@ bool TopoOffsetTetMesh::swap_before_surface(
     if (current_op_kind() != OpKind::swap_32)
         swap_record_fill(true); // as in swap_before_interior()
     m_swap_record.local().band_cancels = band_cancels; // after the fill, which clears it
-    // "exact_swept": the band cells the flip replaces (swap_swept_change())
+    // "exact_swept": the band cells the flip replaces and their pieces (swap_swept_change())
     if (swept_rule()) {
+        SwapRecord& rec = m_swap_record.local();
         for (const size_t t : tids) {
-            if (cell_is_offset_band(t))
-                m_swap_record.local().old_band.push_back(oriented_tet_vids(t));
+            if (!cell_is_offset_band(t)) continue;
+            rec.old_band.push_back(oriented_tet_vids(t));
+            rec.old_piece.push_back(place_piece(rec.old_band.back().data(), 4));
         }
     }
 
@@ -1012,7 +1085,7 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     // term's change from the position at its first call on this vertex; every other move is
     // accepted by swept_accept() (EXACT SWEPT CHANGE), from the ring's AMIPS part before
     const bool swept = swept_rule();
-    if (swept) m_swept_stored.local().first = vid;
+    if (swept) m_swept_stored.local().vid = vid;
     const double amips_before = swept && !projected ? tet_energy_sum(ring, false) : 0.;
     const double before =
         projected || swept ? 0. : tet_energy_sum(ring) + (surface ? surface_term_at(vid) : 0.);
@@ -1573,14 +1646,18 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
             wmtk::vector_unique(f1);
             for (const auto& f : f1) cv.surface_before += surface_face_term(f[0], f[1], f[2]);
         }
-        // "exact_swept": v1's boundary faces of B, for the band term's change, v1 moving onto v2
-        // in all its cells (EXACT SWEPT CHANGE; the cells through v2 go flat). The collapse
-        // changes no cell's label: v1's other cells keep theirs in their own slots.
+        // "exact_swept": v1's boundary faces of each B_r, for the band term's change, v1 moving
+        // onto v2 in all its cells (EXACT SWEPT CHANGE; the cells through v2 go flat), and the
+        // pieces of v1's band cells. The collapse changes no cell's label: v1's other cells keep
+        // theirs in their own slots; their pieces can change, v2 replacing v1 among their corners
+        // (band_relabel_change()).
         cv.swept_faces.clear();
+        cv.swept_pieces.clear();
         if (swept_rule()) {
             cv.swept_x1 = m_vertex_attribute[v1_id].m_posf;
             cv.swept_x2 = m_vertex_attribute[v2_id].m_posf;
             band_swept_faces(v1_id, cv.swept_x1, cv.swept_faces);
+            cv.swept_pieces = band_cell_pieces(ring1);
         }
         // use_rest_pose: the cells the collapse changes are v1's cells without v2, each keeping
         // its label; when they and the whole ring are plastic, the collapse is an exact tie
@@ -1754,8 +1831,10 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
         // whole change of the face term (see collapse_before_vertex()).
         if (!cv.tie && surface_energy()) after += surface_term_at(v2_id);
         if (!cv.tie && swept_rule()) { // "exact_swept": the band term's change
-            after +=
-                band_swept_sum(place_piece(&v2_id, 1), cv.swept_x1, cv.swept_x2, cv.swept_faces);
+            // v1's cells that v2 joins keep their slots: the change of their pieces
+            // (band_relabel_change()) reads them in v2's ring, where v2's other cells have none
+            after += band_swept_sum(cv.swept_x1, cv.swept_x2, cv.swept_faces) +
+                     band_relabel_change(get_one_ring_tids_for_vertex(v2_id), cv.swept_pieces);
         }
         if (cv.tie ? !scoreable : !(after <= cv.before + cv.surface_before)) { // a NaN refuses
             ++m_volume_reject_collapse;

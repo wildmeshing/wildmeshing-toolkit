@@ -434,8 +434,10 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
                 // (1)
                 if (!(sw->value(xv) == mesh->band_swept_change(0, x0, x))) ++value_mismatch;
                 {
-                    std::vector<std::array<Vec3, 2>> faces;
-                    mesh->band_swept_faces(0, x0, faces);
+                    std::vector<TopoOffsetTetMesh::SweptFacesOfPiece> pieces;
+                    mesh->band_swept_faces(0, x0, pieces);
+                    REQUIRE(pieces.size() == 1); // one entry: piece -1 alone, with a face (sw)
+                    const std::vector<std::array<Vec3, 2>>& faces = pieces.front().faces;
                     const ExactBandIntegral& eb = *mesh->m_band_exact;
                     const double delta = mesh->m_offset_params.target_distance;
                     double E = std::nan("");
@@ -548,8 +550,10 @@ TEST_CASE("exact-swept-search-model", "[offset][exact_swept]")
         REQUIRE(sw);
         // face rule (a) by hand: the band's boundary faces through the vertex, the crossed pieces
         // labelled by value()'s rule (a) (ExactBandIntegral::CurvedBisectorRuleA)
-        std::vector<std::array<Vec3, 2>> faces;
-        mesh->band_swept_faces(0, x0, faces);
+        std::vector<TopoOffsetTetMesh::SweptFacesOfPiece> pieces;
+        mesh->band_swept_faces(0, x0, pieces);
+        REQUIRE(pieces.size() == 1); // one entry: piece -1 alone
+        const std::vector<std::array<Vec3, 2>>& faces = pieces.front().faces;
         const double delta = mesh->m_offset_params.target_distance;
         // the faces' grad and (Hs) hess_swept, over delta
         const auto fra = [&](const Vec3& x, Vec3& g, Eigen::Matrix3d& Hs, int& parts) {

@@ -939,6 +939,30 @@ public:
      * MEASURED, every accepted operation's swept change against the change of its cells' sum of
      * value(): within 1.2e-18 on the cube, up to 2.1e-3 where a rule-(a) piece is involved).
      *
+     * Several entries (Parameters::offsets): each band face t integrates its own piece's
+     * integrand, r(t) = place_piece() of its corners (band_cell_term()), so E* / delta is the sum
+     * over the pieces r of E*_r / delta_r, E*_r = int_{B_r} (d_r - delta_r) dA, B_r the band
+     * faces of piece r, and the change is the sum of each B_r's:
+     *   - a vertex move: the boundary edges of B_r through v -- the face across not a band face
+     *     of piece r, so an edge between band faces of two pieces bounds both -- each swept
+     *     triangle integrated as its face's piece (band_swept_edges(), one list per piece, the
+     *     pieces read where the move starts). A face whose piece the operation changes (its
+     *     corners' pieces, a collapse replacing one; or, where no corner has one, nearest_piece()
+     *     of its first corner's position) adds b_{r1}(t) - b_{r0}(t) on the face after the
+     *     operation (band_relabel_change()).
+     *   - a swap whose faces, old and new, are not all of one piece: the change of its faces'
+     *     own terms, sum of b(t) over the new less the old.
+     * With one entry every face is piece -1, and every change is the one above, bit for bit.
+     * MEASURED (several-offsets-optimize-distances-2d, its case a one square at 0.1, b one at
+     * 0.3, 0.5 apart), each change against the change of its faces' band_cell_term(): with the
+     * moving vertex's piece read for every edge and an edge between band faces of two pieces
+     * read as inside B, one smoothing move was off -- vertex 309, made since the pieces were
+     * assigned, read a's piece (nearest_piece() of its position) while its three band faces
+     * read b's: -3.81e-3 against their +4.12e-5, accepted -- and b's front ended at 0.278
+     * against the check's 0.285 ("exact" passes); in several-offsets-growth-2d 12 of 353
+     * collapses in one pass (7 decided otherwise). Now none is off (to 1e-9 of the terms), and
+     * both pass.
+     *
      * Where 2D differs: the projected step. The 2D engine has no ring hook (3D's
      * smoothing_ring_energy() takes each projected candidate's swept change), so the position the
      * engine's projected step keeps -- a vertex held on a region boundary, front or not -- is
@@ -949,28 +973,48 @@ public:
     /// "exact_swept" (EXACT SWEPT CHANGE).
     bool swept_rule() const { return m_offset_params.band_volume_rule == "exact_swept"; }
     /// EXACT SWEPT CHANGE: dE* / delta for vid moving from x0 to x1, the boundary edges of B
-    /// through vid read from the mesh (labels, connectivity, the other corners' positions). `st`
+    /// through vid read from the mesh (labels, connectivity, the other corners' positions), each
+    /// piece's faces as theirs; the change of a face's piece aside (band_relabel_change()). `st`
     /// collects value()'s statistics (rule-(a) pieces) when given. As 3D's.
     double band_swept_change(
         size_t vid,
         const Vector2d& x0,
         const Vector2d& x1,
         ExactBandIntegral2D::Stats* st = nullptr) const;
+    /// EXACT SWEPT CHANGE, several entries: the boundary edges of B_r through a vertex, B_r the
+    /// band faces of piece r (place_piece() of the face; -1, the only one, with one entry).
+    struct SweptEdgesOfPiece
+    {
+        int piece = -1;
+        std::vector<BandVolumeEnergy2D::SweptEdge> edges;
+    };
     /// band_swept_change() in two halves, as 3D's band_swept_faces() and band_swept_sum(): the
-    /// boundary edges of B through vid, each ordered out of B at x0 (no value() call), and the
-    /// sum over them for a move x0 -> x1. A boundary edge has one band face at it, the face
-    /// across it not a band face (or none: the domain wall).
-    void band_swept_edges(
-        size_t vid,
-        const Vector2d& x0,
-        std::vector<BandVolumeEnergy2D::SweptEdge>& edges) const;
-    /// `piece`: the moving vertex's (place_piece()), whose distance and integral it reads.
+    /// boundary edges of each B_r through vid, each ordered out of B_r at x0 (no value() call),
+    /// one list per piece in the order the ring first meets it, and the sum over them for a move
+    /// x0 -> x1, each list at its piece's distance and integral. A boundary edge of B_r has one
+    /// face of B_r at it, the face across it not one (another piece's, no band face, or none:
+    /// the domain wall). The pieces are read on the mesh as it is (place_piece()).
+    void band_swept_edges(size_t vid, const Vector2d& x0, std::vector<SweptEdgesOfPiece>& pieces)
+        const;
     double band_swept_sum(
-        int piece,
         const Vector2d& x0,
         const Vector2d& x1,
-        const std::vector<BandVolumeEnergy2D::SweptEdge>& edges,
+        const std::vector<SweptEdgesOfPiece>& pieces,
         ExactBandIntegral2D::Stats* st = nullptr) const;
+    /// EXACT SWEPT CHANGE: the band faces among fids with their pieces (place_piece()), sorted,
+    /// read before an operation for band_relabel_change().
+    std::vector<std::pair<size_t, int>> band_face_pieces(const std::vector<size_t>& fids) const;
+    /// EXACT SWEPT CHANGE: the change of the band term where an operation changed a face's piece:
+    /// the sum over the band faces t among fids whose piece r1 now is not the r0 `before` gives
+    /// them of b_{r1}(t) - b_{r0}(t), t as it now is; 0 with one entry.
+    double band_relabel_change(
+        const std::vector<size_t>& fids,
+        const std::vector<std::pair<size_t, int>>& before) const;
+    /// "exact_swept": a swap's band term change, the faces it made `made` (EXACT SWEPT CHANGE):
+    /// 0 where its faces, old (m_swap_old_band) and new, are all of one piece -- 2D's only swap
+    /// is the interior flip, which keeps B_r's region and boundary -- and the sum of the new
+    /// band faces' band_cell_term() less the old's, each at its piece, where they are not.
+    double swap_swept_change(const std::vector<size_t>& made) const;
     /// "exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is,
     /// 3D's swept_accept(). The move stands iff the ring's AMIPS change (tri_energy_sum(ring,
     /// false) - amips_before) plus band_swept_change() is <= 0 (a tie passes, a NaN refuses); if
@@ -979,8 +1023,9 @@ public:
     /// which vid's ring has no inverted face are an intersection of half-planes, so they are valid
     /// too (tested anyway, exactly). Counts into c. At a position where the solve's search model
     /// took its last value, the model's value is the change (BandVolumeEnergy2D::swept_value_at(),
-    /// the same function of the same inputs). `halvings`: kSweptHalvings, 3D's; 0 after the
-    /// engine's projected step (EXACT SWEPT CHANGE, where 2D differs).
+    /// the same function of the same inputs), each piece's model its piece's. The edges and the
+    /// faces' pieces are read with vid at x0, where the move starts. `halvings`: kSweptHalvings,
+    /// 3D's; 0 after the engine's projected step (EXACT SWEPT CHANGE, where 2D differs).
     static constexpr int kSweptHalvings = 4;
     struct SweptCounters
     {
@@ -997,9 +1042,10 @@ public:
     /// swept_accept()'s counts: front moves, other moves (3D's two), and the moves the engine's
     /// projected step made (2D only; 3D's projected step is judged in its ring hook).
     mutable SweptCounters m_swept_front, m_swept_nonfront, m_swept_projected;
-    /// "exact_swept": the search model band_volume_energy_at() built last on this thread, for
-    /// swept_accept(). As 3D's.
-    mutable wmtk::threading::enumerable_thread_specific<std::shared_ptr<const BandVolumeEnergy2D>>
+    /// "exact_swept": the search models band_volume_energy_at() built last on this thread, one per
+    /// piece in band_swept_edges()'s order, for swept_accept(). As 3D's.
+    mutable wmtk::threading::enumerable_thread_specific<
+        std::vector<std::shared_ptr<const BandVolumeEnergy2D>>>
         m_swept_model;
     /// "exact_swept": the smoother's search model's derivative evaluations, by kind, per pass
     /// (BandVolumeEnergy2D::set_swept()). As 3D's.
@@ -1042,17 +1088,21 @@ public:
      */
     double band_cell_term(const std::array<size_t, 3>& vids) const
     {
-        if (band_rule_exact()) {
-            const std::array<Vector2d, 3> p = {
-                {m_vertex_attribute[vids[0]].m_posf,
-                 m_vertex_attribute[vids[1]].m_posf,
-                 m_vertex_attribute[vids[2]].m_posf}};
-            const int r = place_piece(vids.data(), 3);
-            const double delta = region_delta(r);
-            return band_exact_for(r)->value(p, delta) / delta;
-        }
+        if (band_rule_exact()) return band_cell_term(vids, place_piece(vids.data(), 3));
         int64_t best = -1;
         return band_cell_corner_bound(vids, best);
+    }
+    /// band_cell_term()'s J_t / delta ("exact" and the rules that take its term) at piece r's
+    /// distance and integral, whatever the face's piece: EXACT SWEPT CHANGE's change of a face's
+    /// piece.
+    double band_cell_term(const std::array<size_t, 3>& vids, const int r) const
+    {
+        const std::array<Vector2d, 3> p = {
+            {m_vertex_attribute[vids[0]].m_posf,
+             m_vertex_attribute[vids[1]].m_posf,
+             m_vertex_attribute[vids[2]].m_posf}};
+        const double delta = region_delta(r);
+        return band_exact_for(r)->value(p, delta) / delta;
     }
     /// The band rule band_cell_term() and the smoother's band term (band_volume_energy_at())
     /// read: true for "exact" and the rules that take its term in 2D ("exact_swept",
@@ -1427,12 +1477,14 @@ public:
         /// band_term_cancels() over v1's ring: both sums leave the band term out.
         bool band_cancels = false;
         std::vector<size_t> v2_only;
-        /// "exact_swept": v1's boundary edges of B (band_swept_edges()) and the two positions,
-        /// taken on the mesh before; the change is integrated in collapse_edge_after(), for the
-        /// collapses that pass the engine's tests (3D MEASURED integrating it before the inversion
-        /// test that refuses most attempts: the collapse pass 35.0 s against "exact"'s 3.6 s).
-        std::vector<BandVolumeEnergy2D::SweptEdge> swept_edges;
+        /// "exact_swept": v1's boundary edges of each B_r (band_swept_edges()), the two
+        /// positions, and the pieces of v1's band faces (band_face_pieces()), taken on the mesh
+        /// before; the change is integrated in collapse_edge_after(), for the collapses that pass
+        /// the engine's tests (3D MEASURED integrating it before the inversion test that refuses
+        /// most attempts: the collapse pass 35.0 s against "exact"'s 3.6 s).
+        std::vector<SweptEdgesOfPiece> swept_edges;
         Vector2d swept_x1 = Vector2d::Zero(), swept_x2 = Vector2d::Zero();
+        std::vector<std::pair<size_t, int>> swept_pieces;
     };
     mutable wmtk::threading::enumerable_thread_specific<CollapseVolume> m_collapse_volume;
 
@@ -1819,6 +1871,11 @@ public:
     mutable wmtk::threading::enumerable_thread_specific<double> m_swap_energy_before;
     /// band_term_cancels() over the two faces, for both sums (3D's SwapRecord::band_cancels).
     mutable wmtk::threading::enumerable_thread_specific<bool> m_swap_band_cancels;
+    /// "exact_swept": the band faces the flip replaces, each with its piece (place_piece()), for
+    /// a flip whose faces are not all of one piece (EXACT SWEPT CHANGE; 3D's SwapRecord::old_band).
+    mutable wmtk::threading::enumerable_thread_specific<
+        std::vector<std::pair<std::array<size_t, 3>, int>>>
+        m_swap_old_band;
     /// The live offset-boundary edges incident to vid, deduplicated. The 3D twin is
     /// offset_surface_faces_live_at().
     std::vector<Tuple> offset_surface_edges_live_at(size_t vid) const;

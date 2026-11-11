@@ -241,8 +241,12 @@ TEST_CASE("exact-swept-identities-2d", "[offset][exact_swept][2d]")
             ++n_moves;
             {
                 // mixed: boundary edges of B through the vertex swept both ways
-                std::vector<BandVolumeEnergy2D::SweptEdge> edges;
-                mesh->band_swept_edges(0, x0, edges);
+                std::vector<TopoOffsetTriMesh::SweptEdgesOfPiece> pieces;
+                mesh->band_swept_edges(0, x0, pieces);
+                REQUIRE(pieces.size() <= 1); // one entry: piece -1 alone
+                const std::vector<BandVolumeEnergy2D::SweptEdge> edges =
+                    pieces.empty() ? std::vector<BandVolumeEnergy2D::SweptEdge>{}
+                                   : pieces.front().edges;
                 int pos = 0, neg = 0;
                 for (const auto& f : edges) {
                     const auto o = f.x_first ? wmtk::utils::predicates::orient2d(x0, f.a, x1)
@@ -423,8 +427,10 @@ TEST_CASE("exact-swept-search-model-2d", "[offset][exact_swept][2d]")
                 // (1)
                 if (!(sw->value(xv) == mesh->band_swept_change(0, x0, x))) ++value_mismatch;
                 {
-                    std::vector<BandVolumeEnergy2D::SweptEdge> edges;
-                    mesh->band_swept_edges(0, x0, edges);
+                    std::vector<TopoOffsetTriMesh::SweptEdgesOfPiece> pieces;
+                    mesh->band_swept_edges(0, x0, pieces);
+                    REQUIRE(pieces.size() == 1); // one entry: piece -1 alone, with an edge (sw)
+                    const std::vector<BandVolumeEnergy2D::SweptEdge>& edges = pieces.front().edges;
                     const ExactBandIntegral2D& eb = *mesh->m_band_exact;
                     const double delta = mesh->m_offset_params.target_distance;
                     double E = std::nan("");
@@ -529,8 +535,10 @@ TEST_CASE("exact-swept-search-model-2d", "[offset][exact_swept][2d]")
         const auto sw = energy_at(*mesh, "exact_swept");
         REQUIRE(ex);
         REQUIRE(sw);
-        std::vector<BandVolumeEnergy2D::SweptEdge> edges;
-        mesh->band_swept_edges(0, x0, edges);
+        std::vector<TopoOffsetTriMesh::SweptEdgesOfPiece> pieces;
+        mesh->band_swept_edges(0, x0, pieces);
+        REQUIRE(pieces.size() == 1); // one entry: piece -1 alone
+        const std::vector<BandVolumeEnergy2D::SweptEdge>& edges = pieces.front().edges;
         REQUIRE(edges.size() == 2);
         const double delta = mesh->m_offset_params.target_distance;
         const auto pair_at = [](const BandVolumeEnergy2D::SweptEdge& f, const Vec2& y) {
@@ -716,8 +724,10 @@ TEST_CASE("exact-swept-search-model-2d", "[offset][exact_swept][2d]")
         auto mesh = make_mesh(param, pts, F, L, in);
         const auto sw = energy_at(*mesh, "exact_swept");
         REQUIRE(sw);
-        std::vector<BandVolumeEnergy2D::SweptEdge> edges;
-        mesh->band_swept_edges(0, x0, edges);
+        std::vector<TopoOffsetTriMesh::SweptEdgesOfPiece> pieces;
+        mesh->band_swept_edges(0, x0, pieces);
+        REQUIRE(pieces.size() == 1); // one entry: piece -1 alone
+        const std::vector<BandVolumeEnergy2D::SweptEdge>& edges = pieces.front().edges;
         REQUIRE(edges.size() == 2);
         // the premises: on the edge to p6 = (0.5, -0.5) the point is nearer at a third of the way
         // from x0 and the segment at its midpoint
@@ -799,8 +809,10 @@ TEST_CASE("exact-swept-search-model-2d", "[offset][exact_swept][2d]")
         const auto sw = energy_at(*mesh, "exact_swept");
         REQUIRE(ex);
         REQUIRE(sw);
-        std::vector<BandVolumeEnergy2D::SweptEdge> edges;
-        mesh->band_swept_edges(0, x0, edges);
+        std::vector<TopoOffsetTriMesh::SweptEdgesOfPiece> pieces;
+        mesh->band_swept_edges(0, x0, pieces);
+        REQUIRE(pieces.size() == 1); // one entry: piece -1 alone
+        const std::vector<BandVolumeEnergy2D::SweptEdge>& edges = pieces.front().edges;
         REQUIRE(edges.size() == 2);
         for (const auto& f : edges) REQUIRE(f.a.y() == 0.);
         Vec2 g, ge;

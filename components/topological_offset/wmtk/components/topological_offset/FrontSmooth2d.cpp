@@ -245,8 +245,10 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::band_volume_en
     const size_t vid) const
 {
     // band_cell_term() of each band face of the ring, x moving (BandVolumeEnergy2D): the face's
-    // other two corners in its winding after vid.
+    // other two corners in its winding after vid, and under "exact_swept" its piece.
+    const bool swept = swept_rule();
     std::vector<BandVolumeEnergy2D::Cell> cells;
+    std::vector<int> cell_piece;
     for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
         if (!face_is_offset_band(fid)) continue;
         const std::array<size_t, 3> vs = oriented_tri_vids(fid);
@@ -257,17 +259,42 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::band_volume_en
         c.q1 = m_vertex_attribute[vs[size_t((k + 1) % 3)]].m_posf;
         c.q2 = m_vertex_attribute[vs[size_t((k + 2) % 3)]].m_posf;
         cells.push_back(c);
+        if (swept) cell_piece.push_back(place_piece(vs.data(), 3));
     }
     if (cells.empty()) return nullptr;
     const bool exact = band_rule_exact(); // refuses a rule with no 2D port, as band_cell_term()
     // EXPERIMENTAL_band_volume_rule "exact_swept": the search model is the function the move is
-    // judged on (BandVolumeEnergy2D::set_swept()), over the boundary edges of B through vid in the
-    // list and order swept_accept() reads (band_swept_edges()). None: no band term, the move's
-    // band change being 0. As in 3D.
-    std::vector<BandVolumeEnergy2D::SweptEdge> swept_edges;
-    if (swept_rule()) {
-        band_swept_edges(vid, m_vertex_attribute[vid].m_posf, swept_edges);
-        if (swept_edges.empty()) return nullptr;
+    // judged on (BandVolumeEnergy2D::set_swept()): one per piece r, over the boundary edges of
+    // B_r through vid in the lists and order swept_accept() reads (band_swept_edges()), with the
+    // ring's band faces of piece r and r's distance and integral, summed where there are several
+    // (EXACT SWEPT CHANGE, several entries). None: no band term, the move's band change being 0.
+    // As in 3D.
+    if (swept) {
+        std::vector<SweptEdgesOfPiece> pieces;
+        band_swept_edges(vid, m_vertex_attribute[vid].m_posf, pieces);
+        auto& models = m_swept_model.local();
+        models.clear();
+        if (pieces.empty()) return nullptr;
+        auto sum = pieces.size() > 1 ? std::make_shared<optimization::EnergySum>() : nullptr;
+        std::shared_ptr<BandVolumeEnergy2D> e;
+        for (SweptEdgesOfPiece& q : pieces) {
+            std::vector<BandVolumeEnergy2D::Cell> cq;
+            for (size_t i = 0; i < cells.size(); ++i) {
+                if (cell_piece[i] == q.piece) cq.push_back(cells[i]);
+            }
+            const double delta = region_delta(q.piece);
+            const auto& band_exact = band_exact_for(q.piece);
+            e = std::make_shared<BandVolumeEnergy2D>(
+                band_exact,
+                std::move(cq),
+                m_vertex_attribute[vid].m_posf,
+                delta);
+            e->set_swept(band_exact, delta, std::move(q.edges), &m_swept_derivs);
+            models.push_back(e);
+            if (sum) sum->add_energy(e);
+        }
+        if (sum) return sum;
+        return e;
     }
     // The ring's piece's distance and integral (place_piece(); the run's and the whole complex's
     // with one entry): the faces of a band vertex's ring are its piece's band. As in 3D.
@@ -279,11 +306,6 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::band_volume_en
         std::move(cells),
         m_vertex_attribute[vid].m_posf,
         delta);
-    if (swept_rule()) {
-        e->set_swept(band_exact, delta, std::move(swept_edges), &m_swept_derivs);
-        m_swept_model.local() = e;
-        return e;
-    }
     // EXPERIMENTAL_band_volume_rule "exact": each face's closed-form integral, as
     // band_cell_term(); "front_flux" takes it too, as band_cell_term() does. 3D gives
     // "front_flux" its front form (BandVolumeEnergy3D::set_front_flux()), not ported.

@@ -166,6 +166,16 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
     const bool band_cancels = band_term_cancels(fids);
     m_swap_band_cancels.local() = band_cancels;
     m_swap_energy_before.local() = tri_energy_sum(fids, !band_cancels);
+    // "exact_swept": the band faces the flip replaces, with their pieces (swap_swept_change())
+    if (swept_rule()) {
+        auto& old = m_swap_old_band.local();
+        old.clear();
+        for (const size_t fid : fids) {
+            if (!face_is_offset_band(fid)) continue;
+            const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+            old.push_back({vs, place_piece(vs.data(), 3)});
+        }
+    }
     return true;
 }
 
@@ -478,10 +488,10 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
         ++m_repulsion_embed_refused;
         return false;
     }
-    // "exact_swept": the band term's change is 0, every 2D swap being interior (EXACT SWEPT
-    // CHANGE; 3D's swap_swept_change() of an interior swap), so the two sums, without the band
-    // term (band_term_cancels()), are the whole rule.
-    const double after = tri_energy_sum(made, !m_swap_band_cancels.local());
+    // "exact_swept": the two sums, without the band term (band_term_cancels()), plus the band
+    // term's change (swap_swept_change()).
+    double after = tri_energy_sum(made, !m_swap_band_cancels.local());
+    if (swept_rule()) after += swap_swept_change(made);
     if (!(after < m_swap_energy_before.local())) {
         ++iter_cnt_swap_energy_reject; // a NaN refuses
         return false;
@@ -531,8 +541,10 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
             after += tri_energy(fid, !cv.band_cancels);
         }
         if (swept_rule()) { // "exact_swept": the band term's change
-            after +=
-                band_swept_sum(place_piece(&v2_id, 1), cv.swept_x1, cv.swept_x2, cv.swept_edges);
+            // v1's faces that v2 joins keep their slots: the change of their pieces
+            // (band_relabel_change()) reads them in v2's ring, where v2's other faces have none
+            after += band_swept_sum(cv.swept_x1, cv.swept_x2, cv.swept_edges) +
+                     band_relabel_change(get_one_ring_fids_for_vertex(v2_id), cv.swept_pieces);
         }
         if (!(after <= cv.before)) { // a NaN refuses
             ++iter_cnt_collapse_energy_reject;
@@ -634,14 +646,18 @@ bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t 
         // faces are ring1's faces without v2, in their own slots with their own labels.
         cv.band_cancels = band_term_cancels(ring1);
         cv.before = tri_energy_sum(ring1, !cv.band_cancels);
-        // "exact_swept": v1's boundary edges of B, for the band term's change, v1 moving onto v2
-        // in all its faces (EXACT SWEPT CHANGE; the faces through v2 go flat). The collapse
-        // changes no face's label: v1's other faces keep theirs in their own slots. As 3D.
+        // "exact_swept": v1's boundary edges of each B_r, for the band term's change, v1 moving
+        // onto v2 in all its faces (EXACT SWEPT CHANGE; the faces through v2 go flat), and the
+        // pieces of v1's band faces. The collapse changes no face's label: v1's other faces keep
+        // theirs in their own slots; their pieces can change, v2 replacing v1 among their
+        // corners (band_relabel_change()). As 3D.
         cv.swept_edges.clear();
+        cv.swept_pieces.clear();
         if (swept_rule()) {
             cv.swept_x1 = m_vertex_attribute[v1_id].m_posf;
             cv.swept_x2 = m_vertex_attribute[v2_id].m_posf;
             band_swept_edges(v1_id, cv.swept_x1, cv.swept_edges);
+            cv.swept_pieces = band_face_pieces(ring1);
         }
         std::sort(ring1.begin(), ring1.end());
         cv.v2_only.clear();
@@ -2940,59 +2956,123 @@ double TopoOffsetTriMesh::band_swept_change(
 {
     // See EXACT SWEPT CHANGE.
     if (x0 == x1) return 0.;
-    std::vector<BandVolumeEnergy2D::SweptEdge> edges;
-    band_swept_edges(vid, x0, edges);
-    return band_swept_sum(place_piece(&vid, 1), x0, x1, edges, st);
+    std::vector<SweptEdgesOfPiece> pieces;
+    band_swept_edges(vid, x0, pieces);
+    return band_swept_sum(x0, x1, pieces, st);
 }
 
 void TopoOffsetTriMesh::band_swept_edges(
     const size_t vid,
     const Vector2d& x0,
-    std::vector<BandVolumeEnergy2D::SweptEdge>& edges) const
+    std::vector<SweptEdgesOfPiece>& pieces) const
 {
-    // Each boundary edge of B through vid belongs to one band face, the face across it not a band
-    // face (or none: the domain wall). As 3D's band_swept_faces().
+    // Each boundary edge of B_r through vid belongs to one face of B_r, the face across it not
+    // one (EXACT SWEPT CHANGE, several entries). As 3D's band_swept_faces().
     using wmtk::utils::predicates::orient2d;
     using wmtk::utils::predicates::Orientation;
-    edges.clear();
+    pieces.clear();
     for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
         if (!face_is_offset_band(fid)) continue;
         const std::array<size_t, 3> vs = oriented_tri_vids(fid);
         int k = 0;
         while (k < 3 && vs[size_t(k)] != vid) ++k;
         if (k == 3) continue;
+        const int r = place_piece(vs.data(), 3);
         for (int j = 1; j <= 2; ++j) { // the edge (vid, a), p the face's third corner
             const size_t a = vs[size_t((k + j) % 3)], p = vs[size_t((k + 3 - j) % 3)];
             bool inside = false;
             for (const size_t o : get_incident_fids_for_edge(vid, a)) {
-                if (o != fid && face_is_offset_band(o)) inside = true; // inside B
+                if (o == fid || !face_is_offset_band(o)) continue;
+                if (place_piece(oriented_tri_vids(o).data(), 3) == r) inside = true; // inside B_r
             }
             if (inside) continue;
-            // the pair ordered with its normal rot_cw(second - first) out of B, away from the
+            // the pair ordered with its normal rot_cw(second - first) out of B_r, away from the
             // face's third corner p: p on the pair's left, orient2d positive
             const Orientation side =
                 orient2d(x0, m_vertex_attribute[a].m_posf, m_vertex_attribute[p].m_posf);
             if (side == Orientation::COLLINEAR) continue; // a flat face at x0 bounds nothing
-            edges.push_back({m_vertex_attribute[a].m_posf, side == Orientation::POSITIVE});
+            auto it = std::find_if(pieces.begin(), pieces.end(), [&](const SweptEdgesOfPiece& q) {
+                return q.piece == r;
+            });
+            if (it == pieces.end()) it = pieces.insert(pieces.end(), SweptEdgesOfPiece{r, {}});
+            it->edges.push_back({m_vertex_attribute[a].m_posf, side == Orientation::POSITIVE});
         }
     }
 }
 
 double TopoOffsetTriMesh::band_swept_sum(
-    const int piece,
     const Vector2d& x0,
     const Vector2d& x1,
-    const std::vector<BandVolumeEnergy2D::SweptEdge>& edges,
+    const std::vector<SweptEdgesOfPiece>& pieces,
     ExactBandIntegral2D::Stats* st) const
 {
-    // the function the smoother's search model evaluates too (BandVolumeEnergy2D::set_swept())
-    return BandVolumeEnergy2D::swept_change(
-        *band_exact_for(piece),
-        region_delta(piece),
-        x0,
-        x1,
-        edges,
-        st);
+    // the function the smoother's search model evaluates too (BandVolumeEnergy2D::set_swept()),
+    // per piece
+    double s = 0.;
+    for (const SweptEdgesOfPiece& q : pieces) {
+        s += BandVolumeEnergy2D::swept_change(
+            *band_exact_for(q.piece),
+            region_delta(q.piece),
+            x0,
+            x1,
+            q.edges,
+            st);
+    }
+    return s;
+}
+
+std::vector<std::pair<size_t, int>> TopoOffsetTriMesh::band_face_pieces(
+    const std::vector<size_t>& fids) const
+{
+    std::vector<std::pair<size_t, int>> out;
+    for (const size_t fid : fids) {
+        if (face_is_offset_band(fid))
+            out.push_back({fid, place_piece(oriented_tri_vids(fid).data(), 3)});
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+double TopoOffsetTriMesh::band_relabel_change(
+    const std::vector<size_t>& fids,
+    const std::vector<std::pair<size_t, int>>& before) const
+{
+    // See the declaration and EXACT SWEPT CHANGE, several entries.
+    if (m_offset_params.offsets.size() <= 1) return 0.;
+    double s = 0.;
+    for (const size_t fid : fids) {
+        if (!face_is_offset_band(fid)) continue;
+        const auto it = std::lower_bound(
+            before.begin(),
+            before.end(),
+            std::pair<size_t, int>{fid, std::numeric_limits<int>::min()});
+        if (it == before.end() || it->first != fid) continue;
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int r = place_piece(vs.data(), 3);
+        if (r != it->second) s += band_cell_term(vs, r) - band_cell_term(vs, it->second);
+    }
+    return s;
+}
+
+double TopoOffsetTriMesh::swap_swept_change(const std::vector<size_t>& made) const
+{
+    // See the declaration.
+    const auto& old = m_swap_old_band.local();
+    std::vector<std::pair<std::array<size_t, 3>, int>> nb;
+    for (const size_t fid : made) {
+        if (!face_is_offset_band(fid)) continue;
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        nb.push_back({vs, place_piece(vs.data(), 3)});
+    }
+    const int r = !old.empty() ? old.front().second : nb.empty() ? -1 : nb.front().second;
+    bool one = true;
+    for (const auto& t : old) one = one && t.second == r;
+    for (const auto& t : nb) one = one && t.second == r;
+    if (one) return 0.;
+    double s = 0.;
+    for (const auto& t : nb) s += band_cell_term(t.first, t.second);
+    for (const auto& t : old) s -= band_cell_term(t.first, t.second);
+    return s;
 }
 
 bool TopoOffsetTriMesh::swept_accept(
@@ -3006,11 +3086,15 @@ bool TopoOffsetTriMesh::swept_accept(
     // See the declaration.
     ++c.solves;
     const Vector2d x1 = m_vertex_attribute[vid].m_posf;
-    // band_swept_change()'s edges, the same at every halving (band_swept_edges() does not read
-    // vid's position)
-    std::vector<BandVolumeEnergy2D::SweptEdge> edges;
-    band_swept_edges(vid, x0, edges);
-    const std::shared_ptr<const BandVolumeEnergy2D>& model = m_swept_model.local();
+    // band_swept_change()'s edges, the same at every halving (band_swept_edges() reads vid's
+    // position only for the pieces), and the ring's pieces, read with vid at x0, where the move
+    // starts (place_piece() reads a face's first corner's position where no corner has a piece)
+    std::vector<SweptEdgesOfPiece> pieces;
+    m_vertex_attribute[vid].m_posf = x0;
+    band_swept_edges(vid, x0, pieces);
+    const std::vector<std::pair<size_t, int>> ring_pieces = band_face_pieces(ring);
+    m_vertex_attribute[vid].m_posf = x1;
+    const std::vector<std::shared_ptr<const BandVolumeEnergy2D>>& models = m_swept_model.local();
     for (int k = 0; k <= halvings; ++k) {
         if (k > 0) {
             m_vertex_attribute[vid].m_posf = x0 + std::ldexp(1., -k) * (x1 - x0);
@@ -3022,16 +3106,17 @@ bool TopoOffsetTriMesh::swept_accept(
         }
         const double dA = tri_energy_sum(ring, false) - amips_before;
         const Vector2d& x = m_vertex_attribute[vid].m_posf;
-        double dB;
-        const int piece = place_piece(&vid, 1);
-        if (!(model && model->swept_value_at(
-                           *band_exact_for(piece),
-                           region_delta(piece),
-                           x0,
-                           x,
-                           edges,
-                           dB))) {
-            dB = band_swept_sum(piece, x0, x, edges);
+        double dB = band_relabel_change(ring, ring_pieces);
+        for (size_t i = 0; i < pieces.size(); ++i) {
+            const SweptEdgesOfPiece& q = pieces[i];
+            const ExactBandIntegral2D& eb = *band_exact_for(q.piece);
+            const double delta = region_delta(q.piece);
+            double d;
+            if (!(i < models.size() && models[i] &&
+                  models[i]->swept_value_at(eb, delta, x0, x, q.edges, d))) {
+                d = BandVolumeEnergy2D::swept_change(eb, delta, x0, x, q.edges);
+            }
+            dB += d;
         }
         if (dA + dB <= 0.) { // a NaN refuses; a tie passes
             ++c.accepted[size_t(k)];

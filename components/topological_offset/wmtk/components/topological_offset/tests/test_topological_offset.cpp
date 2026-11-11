@@ -10308,9 +10308,9 @@ TEST_CASE("several-offsets-optimize-distances-2d", "[offset][2d]" + release_only
     // both fronts at their own targets and converged; then b one square at 0.3, above the
     // maximum marchable distance (constructed at 0.125), a 0.5 away, whose band over the whole
     // complex 3D measured reaching around a (each piece's own integral, init_band_exact()).
-    // Under EXPERIMENTAL_band_volume_rule "exact", the rule 3D's test passes with (at 31221e9291;
-    // at 455ab9ba66, exact_swept the default, 3D's fails). 2D's "exact_swept" decides as "exact"
-    // until its own step, so the two are the same 2D run today. Under the settle test (the
+    // Under EXPERIMENTAL_band_volume_rule "exact_swept", the default, each piece's swept change
+    // (TopoOffsetTriMesh, EXACT SWEPT CHANGE, several entries): read at the moving vertex's piece,
+    // b's front ended at 0.278 (3D's at 0.252 from 455ab9ba66). Under the settle test (the
     // default), whose tests read each piece's integral, and under the energy criterion
     // (EXPERIMENTAL_settle_refinement false), whose chord and ring measures read each piece's
     // field (init_region_potentials()).
@@ -10321,7 +10321,6 @@ TEST_CASE("several-offsets-optimize-distances-2d", "[offset][2d]" + release_only
             box_grid_2d({{"a", a}, {"b", b}}),
             {{"offsets",
               nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", db)})},
-             {"EXPERIMENTAL_band_volume_rule", "exact"},
              {"EXPERIMENTAL_settle_refinement", settle},
              {"max_rounds", 5}},
             true);
@@ -10394,15 +10393,14 @@ TEST_CASE("several-offsets-growth-2d", "[offset][2d]" + release_only)
     // at 0.1, traced to by the march, stays there; b one square at 0.4, above the maximum
     // marchable distance 0.25 (constructed at 0.125), grows in linear_growth_steps stages
     // 0.125 -> 0.4. Both converge at their own targets. Under EXPERIMENTAL_band_volume_rule
-    // "exact", the rule 3D's test passes with (it hangs at 455ab9ba66, exact_swept the default);
-    // 2D's "exact_swept" decides as "exact" until its own step.
+    // "exact_swept", the default, each piece's swept change (TopoOffsetTriMesh, EXACT SWEPT
+    // CHANGE, several entries; 3D's hung at 455ab9ba66 without it).
     const Box2d a = {{1, 1, 3, 3}}, b = {{5, 5, 3, 3}};
     std::string log;
     const auto mesh = run_offsets_2d(
         box_grid_2d({{"a", a}, {"b", b}}),
         {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.4)})},
          {"growth_mode", "linear"},
-         {"EXPERIMENTAL_band_volume_rule", "exact"},
          {"max_rounds", 10}},
         true,
         &log);
@@ -11096,15 +11094,13 @@ TEST_CASE("several-offsets-optimize-distances-run-2d", "[offset][2d]" + release_
     // target distance in the optimization (place_piece()). Two boxes 0.5 apart, a at 0.1, b at
     // 0.2: both fronts at their own targets and converged; then b one square at 0.3, above the
     // maximum marchable distance (constructed at 0.125), a 0.5 away (each piece its own
-    // integral). Under EXPERIMENTAL_band_volume_rule "exact", as
-    // several-offsets-optimize-distances-2d (the rule 3D's test passes with; under exact_swept,
-    // 455ab9ba66's default, 3D's fails).
+    // integral). Under EXPERIMENTAL_band_volume_rule "exact_swept", the default, each piece's
+    // swept change, as several-offsets-optimize-distances-2d.
     const auto run = [](const Box2d& a, const Box2d& b, const double db) {
         return run_offsets_driver_2d(
             box_mesh_2d({{"a", a}, {"b", b}}),
             {{"offsets",
               nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", db)})},
-             {"EXPERIMENTAL_band_volume_rule", "exact"},
              {"max_rounds", 5}});
     };
     {
@@ -11200,14 +11196,13 @@ TEST_CASE("several-offsets-growth-run-2d", "[offset][2d]" + release_only)
     // distance 0.25 (constructed at 0.125), grows in linear_growth_steps stages 0.125 -> 0.4. Both
     // converge at their own targets. The result json's offset_level is the run-wide euclidean
     // field's level, 1: d in units of target_distance (EuclideanOffsetPotential2D, m_c = 1, as
-    // 3D's). Under EXPERIMENTAL_band_volume_rule "exact", as several-offsets-growth-2d (3D's test
-    // hangs under exact_swept, 455ab9ba66's default).
+    // 3D's). Under EXPERIMENTAL_band_volume_rule "exact_swept", the default, each piece's swept
+    // change, as several-offsets-growth-2d.
     const Box2d a = {{1, 1, 3, 3}}, b = {{5, 5, 3, 3}};
     const ComponentResult res = run_offsets_driver_2d(
         box_mesh_2d({{"a", a}, {"b", b}}),
         {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.4)})},
          {"growth_mode", "linear"},
-         {"EXPERIMENTAL_band_volume_rule", "exact"},
          {"max_rounds", 10}});
     CHECK(res.second.value("converged", false));
     CHECK(res.second.at("offset_level").get<double>() == Catch::Approx(1.));
