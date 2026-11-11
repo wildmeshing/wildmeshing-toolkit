@@ -3,6 +3,7 @@
 #include <wmtk/io/DataWriter.hpp>
 #include "junction_protection.hpp"
 #include "rod_mesh.hpp"
+#include "thickness_smoothing.hpp"
 
 #include <jse/jse.h>
 #include <algorithm>
@@ -85,51 +86,25 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     background.max_operations = json_params["background_remeshing_max_operations"].get<int>();
     background.max_attempts = json_params["background_remeshing_max_attempts"].get<int>();
     const bool rod_mode = json_params["rod_mode"].get<bool>();
-    const int64_t corner_preview_vid = json_params["rod_corner_preview_vid"].get<int64_t>();
-    if (corner_preview_vid >= 0 && (!rod_mode || !json_params["prism_dominant"].get<bool>()))
-        log_and_throw_error("rod_corner_preview_vid requires rod_mode and prism_dominant.");
     std::optional<PrismDominantMesh> hybrid;
     if (ignore_background) discard_background_mesh(input);
     initialize_junction_protection(input);
     if (rod_mode) {
-        if (corner_preview_vid >= 0 && (background.enabled || jacobian.iterations > 0))
-            log_and_throw_error(
-                "rod_mode uses frame construction; background_remeshing and "
-                "jacobian_smoothing_iterations are surface optimizer options.");
         RodOptions rod;
         rod.radius = json_params["rod_radius"].get<double>();
         rod.thicknessratio = json_params["thicknessratio"].get<double>();
         rod.iterations = optimization.iterations;
         rod.min_tet_volume = optimization.min_tet_volume;
-        rod.axial_split = json_params["rod_axial_split"].get<bool>();
-        if (corner_preview_vid >= 0) {
-            prepare_rod_mesh(input, rod);
-            auto preview = construct_rod_corner_buffer(
-                input,
-                corner_preview_vid,
-                json_params["rod_buffer_max_angle"].get<double>(),
-                json_params["rod_buffer_max_subdivision"].get<int>());
-            input = std::move(preview.input);
-            hybrid = std::move(preview.hybrid);
-            logger().info(
-                "Rod corner preview exports an isolated buffer patch; source background is "
-                "unchanged.");
-        } else {
-            preprocess_rod_mesh(input, rod);
-            auto domain_options = optimization;
-            // Output filtering preserves background validity constraints unless
-            // they were explicitly disabled before preprocessing.
-            domain_options.keep_background_mesh = !ignore_background;
-            prism_main(input, json_params["thicknessratio"].get<double>(), domain_options);
-        }
+        preprocess_rod_mesh(input, rod);
+        auto domain_options = optimization;
+        domain_options.keep_background_mesh = !ignore_background;
+        prism_main(input, rod.thicknessratio, domain_options);
     } else
         prism_main(input, json_params["thicknessratio"].get<double>(), optimization);
     if (!hybrid && json_params["prism_dominant"].get<bool>())
         hybrid = build_prism_dominant_mesh(input, optimization.min_tet_volume);
     if (rod_mode && hybrid) {
-        if (corner_preview_vid < 0 && input.rod_state->options.axial_split)
-            split_rod_intervals(input, *hybrid);
-        if (corner_preview_vid < 0) finalize_rod_terminal_frames(input, *hybrid);
+        finalize_rod_ends(input, *hybrid);
         hybrid->report["rod"] = input.rod_state->report;
     }
     const int transition_iterations = json_params["transition_smoothing_iterations"].get<int>();
@@ -143,6 +118,17 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             optimization.min_tet_volume,
             transition_iterations);
     }
+    const int thickness_iterations = json_params["thickness_smoothing_iterations"].get<int>();
+    if (thickness_iterations < 0 || thickness_iterations > 200)
+        log_and_throw_error("thickness_smoothing_iterations must be in [0,200].");
+    if (thickness_iterations > 0) {
+        if (!hybrid) log_and_throw_error("Thickness smoothing requires prism_dominant.");
+        smooth_thickness_and_prisms(
+            input,
+            *hybrid,
+            optimization.min_tet_volume,
+            thickness_iterations);
+    }
     if (hybrid) hybrid->report["ignore_background_mesh"] = ignore_background;
     if (component_io.memory()) {
         MeshMap raw;
@@ -151,7 +137,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input,
             "mesh.vtu",
             hybrid ? &*hybrid : nullptr,
-            !rod_mode || corner_preview_vid >= 0 || optimization.keep_background_mesh,
+            !rod_mode || optimization.keep_background_mesh,
             &raw,
             &hybrid_report);
         component_io.result.first = io::named_outputs(std::move(raw));
@@ -165,7 +151,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input,
             output_path,
             hybrid ? &*hybrid : nullptr,
-            !rod_mode || corner_preview_vid >= 0 || optimization.keep_background_mesh);
+            !rod_mode || optimization.keep_background_mesh);
         if (rod_mode) {
             auto report_path =
                 output_path.parent_path() / (output_path.stem().string() + "_rod.json");

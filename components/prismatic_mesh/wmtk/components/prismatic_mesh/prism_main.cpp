@@ -219,7 +219,8 @@ void prism_main(
         optimization.background_remeshing.enabled);
     optimize_prismatic_mesh(input, optimization);
     verify_junction_one_rings(input);
-    refresh_rod_prism_candidates(input);
+    if (input.rod_state)
+        input.rod_state->report["tau_after_shared_optimization"] = analyze_rod_tau(input);
     smooth_prism_jacobians(input, optimization.min_tet_volume, optimization.jacobian_smoothing);
     fixed_background_tets.insert(
         fixed_background_tets.end(),
@@ -232,7 +233,7 @@ void prism_main(
         construct_rod_frame_topology(input);
         const auto& report = input.rod_state->report["frame_topology_construction"];
         if (report.is_null() || report["fiber_tets_after"] == 0 ||
-            (report["collapses"] == 0 && report["split_collapses"] == 0))
+            (report["collapses"] == 0 && report["degree_splits"] == 0))
             break;
     }
     size_t background_count = 0;

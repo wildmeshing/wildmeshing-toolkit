@@ -209,43 +209,6 @@ void write_prismatic_mesh(
         cell_fields.emplace("background_transition", std::move(background_transition));
     }
     add_targets(point_fields, input, vertex_rows);
-    if (input.rod_state && hybrid) {
-        VectorXd terminal_vertices = VectorXd::Zero(n), terminal_cells = VectorXd::Zero(nc);
-        for (size_t i = 0; i < n; ++i)
-            terminal_vertices[i] = input.rod_state->terminal_frame_vertices.count(vertex_rows[i]);
-        for (size_t i = 0; i < nc; ++i)
-            terminal_cells[i] = input.rod_state->terminal_prism_cells.count(cell_rows[i]);
-        point_fields.emplace("rod_terminal_frame", std::move(terminal_vertices));
-        cell_fields.emplace("rod_terminal_prism", std::move(terminal_cells));
-    }
-    if (input.junction_protection) {
-        const auto& protection = *input.junction_protection;
-        VectorXd no_collapse(n), connection_kind(n), connection_ring(nc);
-        for (size_t i = 0; i < n; ++i) {
-            const size_t v = vertex_rows[i];
-            no_collapse[i] = protection.offset_vertices.count(v);
-            connection_kind[i] =
-                (protection.rod_shell_vertices.count(v) || protection.rod_joint_vertices.count(v)) +
-                2 * protection.shell_terminal_vertices.count(v) +
-                4 * protection.layered_centers.count(v);
-        }
-        for (size_t i = 0; i < nc; ++i) {
-            if (hybrid) {
-                const auto& cell = hybrid->cells[cell_rows[i]];
-                connection_ring[i] =
-                    std::any_of(cell.vertices.begin(), cell.vertices.end(), [&](size_t v) {
-                        return protection.centers.count(v);
-                    });
-            } else {
-                std::array<size_t, 4> tet;
-                for (size_t j = 0; j < 4; ++j) tet[j] = input.tetrahedra(cell_rows[i], j);
-                connection_ring[i] = junction_tet_protected(input, tet);
-            }
-        }
-        point_fields.emplace("no_collapse", std::move(no_collapse));
-        point_fields.emplace("connection_kind", std::move(connection_kind));
-        cell_fields.emplace("connection_one_ring", std::move(connection_ring));
-    }
     if (hybrid && hybrid->report.contains("marked_offset_source_vids")) {
         const auto marked = hybrid->report["marked_offset_source_vids"].get<std::set<int64_t>>();
         VectorXd marks(n);

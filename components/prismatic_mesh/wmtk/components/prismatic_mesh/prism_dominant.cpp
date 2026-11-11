@@ -762,7 +762,6 @@ std::vector<Candidate> discover_candidates(
     std::vector<Candidate> candidates;
     std::vector<std::vector<size_t>> claims(input.tetrahedra.rows());
     std::vector<std::array<size_t, 6>> columns;
-    if (input.rod_state) columns = input.rod_state->columns;
     for (const auto& f : bijective)
         columns.push_back(
             {static_cast<size_t>(input.corr_input_vertex[f[0]]),
@@ -885,7 +884,348 @@ PrismaticMeshInput reconstruction_state(const PrismaticMeshInput& input)
 }
 } // namespace
 
-PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double min_tet_volume)
+namespace {
+struct WholeRodLayer
+{
+    std::array<size_t, 2> axis;
+    std::set<size_t> cavity;
+    std::vector<Candidate> sectors;
+    std::vector<size_t> solution;
+    std::vector<detail::BackgroundQuad> exterior;
+    std::string reason;
+    double minimum_j = std::numeric_limits<double>::infinity();
+};
+
+std::map<Tri, Tri> layer_boundary(const Decomposition& tets)
+{
+    std::map<Tri, std::vector<Tri>> owners;
+    for (const auto& t : tets)
+        for (const auto& f : tet_faces(t)) owners[sorted(f)].push_back(f);
+    std::map<Tri, Tri> boundary;
+    for (const auto& [key, fs] : owners) {
+        require(fs.size() <= 2, "nonmanifold rod-layer partition");
+        if (fs.size() == 1)
+            boundary.emplace(key, fs[0]);
+        else
+            require(!same_orientation(fs[0], fs[1]), "inconsistent rod-layer partition");
+    }
+    return boundary;
+}
+
+PrismDominantMesh build_whole_rod_layers(PrismaticMeshInput& input, double floor)
+{
+    auto& state = *input.rod_state;
+    state.report["interface_swaps"] = align_rod_interfaces_by_swaps(input, floor);
+    const auto original_faces = source_faces(input);
+    std::map<std::array<size_t, 2>, std::set<size_t>> cavities;
+    for (size_t tid = 0; tid < size_t(input.tetrahedra.rows()); ++tid) {
+        if (input.offset_tet_tags[tid] != 1) continue;
+        std::set<int64_t> parents;
+        for (size_t v : source_tet(input, tid))
+            parents.insert(
+                input.vertex_tags[v] == 1   ? int64_t(v)
+                : input.vertex_tags[v] == 2 ? input.corr_input_vertex[v]
+                                            : -1);
+        if (parents.size() == 2 && *parents.begin() >= 0)
+            cavities[{size_t(*parents.begin()), size_t(*parents.rbegin())}].insert(tid);
+    }
+    std::vector<WholeRodLayer> layers;
+    for (const auto& axis : state.input_edges) {
+        WholeRodLayer layer;
+        layer.axis = axis;
+        const auto reject = [&](const std::string& reason) { layer.reason = reason; };
+        if (!state.vertex_frame.count(axis[0]) || !state.vertex_frame.count(axis[1])) {
+            reject("endpoint_region_not_a_ring");
+            layers.push_back(std::move(layer));
+            continue;
+        }
+        const auto& lo = state.frames[state.vertex_frame.at(axis[0])].ring;
+        const auto& hi = state.frames[state.vertex_frame.at(axis[1])].ring;
+        if (lo.size() < 3 || lo.size() != hi.size()) {
+            reject("unequal_ring_degree");
+            layers.push_back(std::move(layer));
+            continue;
+        }
+        layer.cavity = cavities[sorted(axis)];
+        if (layer.cavity.empty()) {
+            reject("empty_layer_region");
+            layers.push_back(std::move(layer));
+            continue;
+        }
+        Decomposition old;
+        bool protected_cell = false;
+        for (size_t tid : layer.cavity) {
+            old.push_back(source_tet(input, tid));
+            protected_cell |= junction_tet_protected(input, old.back());
+        }
+        if (protected_cell) {
+            reject("protected_connection");
+            layers.push_back(std::move(layer));
+            continue;
+        }
+        const auto boundary = layer_boundary(old);
+        std::map<Tri, Tri> caps;
+        std::set<Tri> old_exterior;
+        for (const auto& [key, f] : boundary) {
+            if (std::all_of(f.begin(), f.end(), [&](size_t v) {
+                    return input.vertex_tags[v] == 2;
+                }))
+                old_exterior.insert(key);
+            else
+                caps.emplace(key, f);
+        }
+        std::map<Tri, Tri> new_caps;
+        std::set<Tri> covered_exterior;
+        std::map<Quad, std::vector<std::pair<size_t, int>>> quad_users;
+        for (size_t k = 0; k < lo.size(); ++k) {
+            Candidate c;
+            c.prism.type = HybridCellType::Prism;
+            c.prism.vertices =
+                {axis[0], lo[k], lo[(k + 1) % lo.size()], axis[1], hi[k], hi[(k + 1) % hi.size()]};
+            if (!(minimum_prism_jacobian(input.vertices, c.prism).determinant > 0)) {
+                std::swap(c.prism.vertices[1], c.prism.vertices[2]);
+                std::swap(c.prism.vertices[4], c.prism.vertices[5]);
+            }
+            const double jac = minimum_prism_jacobian(input.vertices, c.prism).determinant;
+            if (!(std::isfinite(jac) && jac > 0)) reject("nonpositive_native_prism_jacobian");
+            layer.minimum_j = std::min(layer.minimum_j, jac);
+            c.partition = true;
+            c.positive = true;
+            c.selected = -1;
+            c.splits = decompositions(c.prism);
+            c.admissible_splits = 0;
+            for (size_t d = 0; d < c.splits.size(); ++d) {
+                c.split_sides.push_back(patches(c.prism, c.splits[d]));
+                if (std::all_of(c.splits[d].begin(), c.splits[d].end(), [&](const Tet& t) {
+                        return tet_volume_above_threshold(input.vertices, t, floor);
+                    }))
+                    c.admissible_splits |= 1u << d;
+            }
+            const auto fs = cell_faces(c.prism);
+            for (int side = 0; side < 3; ++side) {
+                const auto& f = fs[side + 2];
+                const Quad q = {f[0], f[1], f[2], f[3]};
+                quad_users[sorted(q)].push_back({k, side});
+                if (!std::all_of(f.begin(), f.end(), [&](size_t v) {
+                        return input.vertex_tags[v] == 2;
+                    }))
+                    continue; // Internal radial quad: old tet faces impose NO constraint.
+                std::vector<Tri> triangles;
+                bool has_background = false;
+                for (const auto& [key, old_f] : boundary) {
+                    if (!std::all_of(key.begin(), key.end(), [&](size_t v) {
+                            return std::find(f.begin(), f.end(), v) != f.end();
+                        }))
+                        continue;
+                    triangles.push_back(key);
+                    covered_exterior.insert(key);
+                }
+                // A free exterior may be retriangulated to the ring product surface.
+                // With background, the exterior must be paired with valid pyramids.
+                for (const auto& t : old_exterior)
+                    for (size_t tid : original_faces.at(t).tets)
+                        if (!layer.cavity.count(tid)) has_background = true;
+                if (has_background) {
+                    if (triangles.size() != 2)
+                        reject("external_front_retriangulation_required");
+                    else {
+                        const auto pair = sorted(std::array<Tri, 2>{triangles[0], triangles[1]});
+                        for (size_t d = 0; d < c.splits.size(); ++d)
+                            if (c.split_sides[d][side].triangles != pair)
+                                c.boundary_splits &= ~(1u << d);
+                        layer.exterior.push_back({q, pair});
+                    }
+                }
+            }
+            for (int side = 0; side < 2; ++side) {
+                Tri f = {fs[side][0], fs[side][1], fs[side][2]};
+                new_caps.emplace(sorted(f), f);
+            }
+            layer.sectors.push_back(std::move(c));
+        }
+        if (caps.size() != new_caps.size())
+            reject("external_end_cap_mismatch");
+        else
+            for (const auto& [key, f] : caps) {
+                const auto found = new_caps.find(key);
+                if (found == new_caps.end() || !same_orientation(f, found->second))
+                    reject("external_end_cap_mismatch");
+            }
+        // A free boundary can change; any interface to a retained volume must match.
+        for (const auto& t : old_exterior)
+            if (original_faces.at(t).tets.size() != 1 && !covered_exterior.count(t))
+                reject("external_front_retriangulation_required");
+        std::vector<Interface> interfaces;
+        for (const auto& [q, users] : quad_users) {
+            if (users.size() == 2)
+                interfaces.push_back(
+                    {users[0].first, users[1].first, users[0].second, users[1].second});
+            else if (users.size() != 1)
+                reject("nonmanifold_layer_quads");
+        }
+        if (layer.reason.empty()) {
+            size_t failure = 0, decisions = 0;
+            bool limited = false;
+            if (!solve_splits(
+                    layer.sectors,
+                    interfaces,
+                    layer.solution,
+                    failure,
+                    decisions,
+                    limited))
+                reject(
+                    limited ? "reference_split_search_limit"
+                            : "no_positive_compatible_reference_split");
+        }
+        layers.push_back(std::move(layer));
+    }
+    std::vector<std::vector<detail::BackgroundQuad>> groups;
+    for (const auto& layer : layers)
+        groups.push_back(
+            layer.reason.empty() ? layer.exterior : std::vector<detail::BackgroundQuad>{});
+    std::vector<std::string> pyramid_reasons;
+    auto background = detail::plan_atomic_rod_layer_pyramids(input, groups, floor, pyramid_reasons);
+    for (size_t i = 0; i < layers.size(); ++i)
+        if (layers[i].reason.empty() && !pyramid_reasons[i].empty())
+            layers[i].reason = "external_pyramid_" + pyramid_reasons[i];
+
+    std::set<size_t> removed;
+    for (const auto& layer : layers)
+        if (layer.reason.empty()) removed.insert(layer.cavity.begin(), layer.cavity.end());
+    auto reference = reconstruction_state(input);
+    std::vector<Tet> new_tets;
+    std::vector<int> regions, bands;
+    std::map<size_t, size_t> old_to_new;
+    PrismDominantMesh result;
+    auto append_tet = [&](const Tet& t, int region, int band) {
+        const size_t tid = new_tets.size();
+        new_tets.push_back(t);
+        regions.push_back(region);
+        bands.push_back(band);
+        return tid;
+    };
+    for (size_t tid = 0; tid < size_t(input.tetrahedra.rows()); ++tid) {
+        if (removed.count(tid)) continue;
+        const auto t = source_tet(input, tid);
+        const size_t row = append_tet(t, input.input_cells[tid], input.offset_tet_tags[tid]);
+        old_to_new[tid] = row;
+        result.cells.push_back({HybridCellType::Tetrahedron, {t.begin(), t.end()}, {row}});
+    }
+    size_t prism_candidate = 0, accepted = 0;
+    nlohmann::json entries = nlohmann::json::array();
+    std::map<std::string, size_t> reasons;
+    for (auto& layer : layers) {
+        nlohmann::json entry = {
+            {"input_vertex_ids",
+             {input.source_vertex_ids[layer.axis[0]], input.source_vertex_ids[layer.axis[1]]}},
+            {"accepted", layer.reason.empty()},
+            {"reason", layer.reason},
+            {"sectors", layer.sectors.size()},
+            {"minimum_native_prism_det_j",
+             std::isfinite(layer.minimum_j) ? nlohmann::json(layer.minimum_j)
+                                            : nlohmann::json(nullptr)}};
+        if (layer.reason.empty()) {
+            ++accepted;
+            for (size_t k = 0; k < layer.sectors.size(); ++k) {
+                auto cell = layer.sectors[k].prism;
+                cell.prism_candidate = prism_candidate++;
+                const size_t original = *layer.cavity.begin();
+                for (const auto& t : layer.sectors[k].splits[layer.solution[k]])
+                    cell.source_tets.push_back(append_tet(t, input.input_cells[original], 1));
+                result.cells.push_back(std::move(cell));
+            }
+        } else
+            ++reasons[layer.reason];
+        entries.push_back(std::move(entry));
+    }
+    reference.tetrahedra.resize(new_tets.size(), 4);
+    for (size_t i = 0; i < new_tets.size(); ++i)
+        for (int j = 0; j < 4; ++j) reference.tetrahedra(i, j) = new_tets[i][j];
+    reference.input_cells = std::move(regions);
+    reference.offset_tet_tags = std::move(bands);
+    for (auto& [q, plan] : background.accepted)
+        for (auto& tid : plan.cavity) tid = old_to_new.at(tid);
+    result.source_tet_to_cell.assign(new_tets.size(), std::numeric_limits<size_t>::max());
+    for (size_t ci = 0; ci < result.cells.size(); ++ci)
+        for (size_t tid : result.cells[ci].source_tets) result.source_tet_to_cell[tid] = ci;
+    detail::apply_background_pyramids(reference, result, background);
+    validate_prism_dominant_mesh(reference, result, floor);
+    // A kept background volume must preserve the complete outer domain boundary.
+    if (!background.accepted.empty()) {
+        const auto final_faces = source_faces(reference);
+        std::map<Tri, Tri> before, after;
+        for (const auto& [q, f] : original_faces)
+            if (f.tets.size() == 1) before[q] = f.oriented[0];
+        for (const auto& [q, f] : final_faces)
+            if (f.tets.size() == 1) after[q] = f.oriented[0];
+        require(
+            before.size() == after.size(),
+            "whole-layer builder changes background domain boundary");
+        for (const auto& [q, f] : before)
+            require(
+                after.count(q) && same_orientation(f, after.at(q)),
+                "whole-layer builder changes domain orientation");
+    }
+    size_t band_tets = 0, bg_tets = 0, bg_pyramids = 0, input_tets = 0;
+    for (const auto& cell : result.cells) {
+        if (cell.type == HybridCellType::Pyramid) ++bg_pyramids;
+        if (cell.type != HybridCellType::Tetrahedron) continue;
+        const size_t tid = cell.source_tets.front();
+        if (reference.offset_tet_tags[tid] == 1)
+            ++band_tets;
+        else if (reference.input_cells[tid] == 1)
+            ++input_tets;
+        else
+            ++bg_tets;
+    }
+    result.report = {
+        {"method", "atomic_ring_to_ring_rod_layers"},
+        {"prisms", prism_candidate},
+        {"pyramids", bg_pyramids},
+        {"shell_pyramids", 0},
+        {"background_pyramids", bg_pyramids},
+        {"band_tetrahedra", band_tets},
+        {"input_tetrahedra", input_tets},
+        {"background_tetrahedra", bg_tets},
+        {"accepted_layers", accepted},
+        {"rejected_layers", layers.size() - accepted},
+        {"layer_rejections", reasons},
+        {"layers", entries},
+        {"output_cells", result.cells.size()},
+        {"source_tetrahedra", reference.tetrahedra.rows()},
+        {"background_pyramid_reconstruction", background.report},
+        {"marker_updates", 0},
+        {"marked_offset_source_vids", nlohmann::json::array()},
+        {"checks",
+         {{"source_partition", true},
+          {"conforming_faces", true},
+          {"consistent_face_orientation", true},
+          {"global_prism_jacobians_positive", true},
+          {"reference_tetrahedra_positive", true},
+          {"layer_internal_old_tet_faces_ignored", true},
+          {"layer_atomic_acceptance", true}}}};
+    result.report["interface_swaps"] = state.report["interface_swaps"];
+    result.report["junction_protection"] = junction_protection_report(input);
+    std::vector<Tet> tets(reference.tetrahedra.rows());
+    for (size_t i = 0; i < tets.size(); ++i) tets[i] = source_tet(reference, i);
+    auto mesh = std::make_unique<TetMesh>();
+    mesh->init_with_isolated_vertices(reference.vertices.rows(), tets);
+    require(mesh->check_mesh_connectivity_validity(), "invalid whole-layer reference mesh");
+    reference.mesh = std::move(mesh);
+    label_offset_faces(reference);
+    input = std::move(reference);
+    logger().info(
+        "Atomic rod layers: {}/{} accepted, {} prisms, {} band tets, {} background pyramids",
+        accepted,
+        layers.size(),
+        prism_candidate,
+        band_tets,
+        bg_pyramids);
+    return result;
+}
+} // namespace
+
+static PrismDominantMesh build_shell_hybrid(PrismaticMeshInput& input, double min_tet_volume)
 {
     require(std::isfinite(min_tet_volume) && min_tet_volume >= 0, "invalid volume floor");
     initialize_junction_protection(input);
@@ -1348,4 +1688,97 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double mi
         result.report["background_remeshing"] = input.background_remeshing_report;
     return result;
 }
+PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double floor)
+{
+    if (!input.rod_state) return build_shell_hybrid(input, floor);
+    auto rods = build_whole_rod_layers(input, floor);
+    bool has_shell = false;
+    for (size_t i = 0; i < size_t(input.tetrahedra.rows()) && !has_shell; ++i) {
+        if (input.offset_tet_tags[i] != 1) continue;
+        size_t input_corners = 0;
+        for (size_t v : source_tet(input, i)) input_corners += input.vertex_tags[v] == 1;
+        has_shell = input_corners >= 3;
+    }
+    if (!has_shell) return rods;
+    auto shells = build_shell_hybrid(input, floor);
+    std::set<size_t> reserved;
+    std::vector<HybridCell> retained;
+    int64_t next_candidate = 0;
+    for (const auto& cell : shells.cells)
+        next_candidate = std::max(next_candidate, cell.prism_candidate + 1);
+    for (const auto& cell : rods.cells) {
+        if (cell.type == HybridCellType::Tetrahedron) continue;
+        require(
+            matches_reference(input, cell),
+            "shell pass changed a reserved rod prism/pyramid partition");
+        for (size_t tid : cell.source_tets)
+            require(reserved.insert(tid).second, "overlapping reserved rod cells");
+        retained.push_back(cell);
+        if (retained.back().prism_candidate >= 0) retained.back().prism_candidate += next_candidate;
+    }
+    PrismDominantMesh result;
+    for (auto& cell : shells.cells) {
+        size_t overlap = 0;
+        for (size_t tid : cell.source_tets) overlap += reserved.count(tid);
+        if (overlap) {
+            require(
+                cell.type == HybridCellType::Tetrahedron && cell.source_tets.size() == 1,
+                "shell cell overlaps a reserved rod native cell");
+            continue;
+        }
+        result.cells.push_back(std::move(cell));
+    }
+    result.cells.insert(result.cells.end(), retained.begin(), retained.end());
+    result.source_tet_to_cell.assign(input.tetrahedra.rows(), std::numeric_limits<size_t>::max());
+    size_t prisms = 0, pyramids = 0, band_tets = 0, volume_tets = 0, bg_tets = 0, bg_pyramids = 0;
+    for (size_t ci = 0; ci < result.cells.size(); ++ci) {
+        const auto& cell = result.cells[ci];
+        for (size_t tid : cell.source_tets) {
+            require(
+                result.source_tet_to_cell[tid] == std::numeric_limits<size_t>::max(),
+                "mixed cell ownership overlap");
+            result.source_tet_to_cell[tid] = ci;
+        }
+        if (cell.type == HybridCellType::Prism)
+            ++prisms;
+        else if (cell.type == HybridCellType::Pyramid) {
+            ++pyramids;
+            bg_pyramids += cell.background_transition;
+        } else if (input.offset_tet_tags[cell.source_tets[0]] == 1)
+            ++band_tets;
+        else if (input.input_cells[cell.source_tets[0]] == 1)
+            ++volume_tets;
+        else
+            ++bg_tets;
+    }
+    validate_prism_dominant_mesh(input, result, floor);
+    result.report = shells.report;
+    result.report["method"] = "atomic_region_rod_layers_composed_with_shell_prisms";
+    result.report["atomic_rod_layers"] = rods.report;
+    result.report["shell_reconstruction"] = shells.report;
+    result.report["interface_swaps"] =
+        rods.report.value("interface_swaps", nlohmann::json::object());
+    result.report["prisms"] = prisms;
+    result.report["pyramids"] = pyramids;
+    result.report["shell_pyramids"] = pyramids - bg_pyramids;
+    result.report["background_pyramids"] = bg_pyramids;
+    result.report["band_tetrahedra"] = band_tets;
+    result.report["input_tetrahedra"] = volume_tets;
+    result.report["background_tetrahedra"] = bg_tets;
+    result.report["output_cells"] = result.cells.size();
+    result.report["source_tetrahedra"] = input.tetrahedra.rows();
+    result.report["checks"]["atomic_rod_cells_preserved_during_shell_reconstruction"] = true;
+    result.report["checks"]["mixed_interfaces_validated_together"] = true;
+    result.report["marked_offset_source_vids"] =
+        shells.report.value("marked_offset_source_vids", nlohmann::json::array());
+    logger().info(
+        "Mixed region strategy: {} native rod prisms, {} total prisms, {} band tets, {} background "
+        "pyramids",
+        rods.report["prisms"].get<size_t>(),
+        prisms,
+        band_tets,
+        bg_pyramids);
+    return result;
+}
+
 } // namespace wmtk::components::prismatic_mesh

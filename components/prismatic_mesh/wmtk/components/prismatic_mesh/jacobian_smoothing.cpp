@@ -300,7 +300,7 @@ void smooth_prism_jacobians(
         for (size_t v = 0; v < incident.size(); ++v) {
             if (incident[v].empty() || input.vertex_tags[v] != 2) continue;
             if (!junction_collapse_allowed(input, v)) continue;
-            if (input.rod_state && input.rod_state->options.unified_optimization &&
+            if (input.rod_state &&
                 (is_rod_offset_vertex(input, v) || input.rod_state->frozen_offset.count(v)))
                 continue;
             double worst = std::numeric_limits<double>::infinity();

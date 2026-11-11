@@ -100,7 +100,7 @@ bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double
             std::find(tet.begin(), tet.end(), v) != tet.end()) {
             if (!tet_volume_above_threshold(input.vertices, tet, 0)) return false;
             if (junction_tet_protected(input, tet)) return false;
-            if (input.rod_state && input.rod_state->options.unified_optimization &&
+            if (input.rod_state &&
                 std::any_of(tet.begin(), tet.end(), [&](size_t w) {
                     return input.rod_state->protected_input.count(w) ||
                            input.rod_state->frozen_offset.count(w);
@@ -231,7 +231,7 @@ UnlockStatistics unlock_tau22(PrismaticMeshInput& input, double min_tet_volume)
         if (!found) continue;
         const size_t tid = *found;
         if (!classify_tau22(input, tid)) continue;
-        if (input.rod_state && input.rod_state->options.unified_optimization) {
+        if (input.rod_state) {
             const auto t = input.mesh->oriented_tet_vids(tid);
             if (std::any_of(t.begin(), t.end(), [&](size_t v) {
                     return is_rod_offset_vertex(input, v);

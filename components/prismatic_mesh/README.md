@@ -1,252 +1,93 @@
 # Prismatic mesh input
 
-## Mixed shell and rod construction prototype
+## Rod rings in mixed volume/shell/rod meshes
 
-The opt-in `rod_mode` enables rod preparation inside a **shared shell/rod
-optimizer**. Its construction may contain curves, sheets and input solids, with
-explicit input labels and `corr_input_vid`. For example:
+`rod_mode` uses original vertex correspondence to construct rods. The same
+input may contain curves, sheets and fixed input volume. For example:
 
 ```json
 {
   "application": "prismatic_mesh",
-  "input": "rod_construction.vtu",
-  "output": "rod_result.vtu",
+  "input": "construction.vtu",
+  "output": "result.vtu",
   "rod_mode": true,
   "rod_radius": 0.04,
-  "rod_axial_split": true,
   "iterations": 5,
   "prism_dominant": true,
   "keep_background_mesh": true,
+  "thickness_smoothing_iterations": 60,
   "export_input_and_shell": true
 }
 ```
 
-The VTU input needs `labels`, `vid`, `corr_input_vid`, `tag_0` (zero on a pure rod),
-and `offset_tag`. MSH uses the existing `offset`/`ambient` physical groups and
-explicit vertex labels/correspondence. Input volume is retained unchanged.
-Rod edges are maximal input edges without input triangle/solid cofaces; ordinary
-sheet and solid edges are not mistaken for rods. Rod attachment vertices shared
-with faces/solids protect their complete band one-rings. `rod_radius` is an absolute length; zero uses `thicknessratio` times the
-mean centerline edge length. `iterations` bounds preparation cleanup and the shared
-collapse/smoothing iterations. Preparation aligns rod topology/frames without
-relocating original vertices. Shell targets and distinct per-ring-vertex rod
-targets then populate the same `target_positions` array. The shared collapse
-queue retains rod ring vertices and prioritizes collapses towards them; the
-shared single-vertex smoother reads each vertex target and checks its full star.
-Shell and rod prism candidates are collected together for one reconstruction.
+The input supplies `labels`, `vid`, `corr_input_vid`, `tag_0` and `offset_tag`.
+Input coordinates and volume cells stay fixed. Rod edges are maximal input edges
+without input face/solid cofaces. Attachments and branch joints preserve their
+original band one-rings and offset points. At a free end, the correspondence
+boundary of its disk region supplies the terminal ring. A complete planar prism
+fan defines a flat end; its exterior offset cap is returned to background.
+Unsuccessful endpoint fans retain their supplied valid tet caps.
 
-The centerline graph classifies degree-one endpoints and degree-greater-than-two
-joints. Only non-rod attachments and branching joints hold their one-rings. A free
-endpoint stops path traversal but receives an ordinary terminal frame and attempts
-prisms up to that section. A rod with two attached ends keeps both connection stars;
-a rod with one attached end protects only that end. Isolated closed rods have no
-endpoint protection: an arbitrary traversal start supplies the same material frame
-at both ends of the periodic frame sequence, and the closing interval is matched
-and validated like every other interval. Degree-two vertices, including sharp corners,
-participate in frame matching without an angle threshold; unsuccessful prism
-conversions retain their valid tet subdivision.
-Each rod stores a continuous directed edge path. Edge frames follow this path
-and their cyclic material phases are aligned by quaternion transport. Every input
-vertex frame is the equal-weight mean of its incident edge quaternions: endpoints
-copy their edge pose, degree-two vertices use sign-aligned SLERP at 0.5, and
-higher-valence joints use the principal-eigenvector quaternion mean. Section ring
-windings follow the resulting vertex normal, including at right-angle corners.
-Complete cyclic edge links define frame sectors; a frame's offset correspondence
-must name one of that edge's endpoints. If a free terminal section has no edge link,
-its cyclic rim is recovered from the lateral offset front's correspondence boundary.
-The free end's complete circular material frame is defined in the normal plane through
-the input endpoint. After reconstruction and optional axial splitting, every triangular
-sector of that terminal disk must be the face of a real, positive-Jacobian prism.
-Only after that check can the old offset construction's exterior cone be returned to
-background. Thus the material ends on a full prism section; a historical pointed offset
-cap does not remain a rod tet cap. Full-domain connectivity, positions, exterior boundary
-and volume stay unchanged. Band-only output omits the exterior background cap.
-The `terminal_frames` report records disk-sector checks and returned cap cells;
-`rod_terminal_frame` and `rod_terminal_prism` expose the verified end in VTU/MSH fields.
-Missing or incompatible sectors are explicitly reported and are never hidden by removing
-the neighboring material. Existing non-rod attachments and branching joints retain their
-protected connection stars.
-Same-parent ring splits raise eligible
-frame degrees to the maximum on each rod. These splits include all incident
-background tets. If that target is blocked, a valid existing section remains available
-for neighbors of the same degree; only incompatible intervals fall back. Missing regular
-sections can be recovered from correspondence boundaries when neither adjacent edge link
-owns the section. Redundant same-parent vertices may then collapse, preserving
-joint one-rings. Frame vertex identities are provisional: the regular fiber
-constructor can replace them during checked collapses, rebuild the actual edge
-links, and split the resulting rings back to the common degree. Tau22 cleanup uses checked local split/collapse
-operations; unresolved or incompatible links remain tetrahedral.
+The rod pipeline has one construction path:
 
-Circular section targets use these averaged vertex poses and their normal planes.
-Only cyclic ring indexing is fitted; no independent vertex phase optimization
-overrides the incident-edge mean. A single cyclic
-matching between adjacent sections determines the product connectivity. Geometry moves
-backtrack against **all supplied background cells**, even when the output omits
-background. Blocked targets are reported rather than forced through the mesh.
+1. Group offset-front vertices by their original input correspondence. Collapse
+   legal same-region surface edges until each ordinary region is a single cycle.
+   Surface link, region topology and complete band/background volume checks apply.
+   Protected endpoints of candidate collapse edges are excluded. Regions that
+   remain triangular patches are reported and retain their tets.
+2. Use the maximum valid ring degree on each rod as its target. Split deficient
+   ring edges, including their background cofaces. No new centerline sections are
+   inserted. Original correspondence is preserved; inserted offset points inherit
+   their ring's input parent.
+3. Build directed centerline frame fields. Each vertex frame is the equal-weight
+   quaternion mean of its incident edge frames. Transport the circular reference
+   direction through the averaged vertex planes, snap the terminal phase to a
+   degree slot and distribute its residual by arc length. Failed transport paths
+   retain their initial poses and record the reason.
+4. Orient each ring and fit its cyclic origin to the transported frame. Adjacent
+   rings connect the same material slot `k -> k`; later fitting preserves these
+   labels. One rod layer contains every sector between a pair of rings.
+5. Insert missing exterior correspondence edges by local surface swaps. Both
+   incident volume stars are reconstructed together with positive tets, unchanged
+   vertices and an identical combined cavity boundary. A bounded search may try
+   pure-background 2-3 swaps first. Complete layer repairs commit together; failed
+   repairs roll back.
+6. Construct all sector prisms of a layer together. Old intra-layer tet faces do
+   not constrain construction. Native prism Jacobians, positive compatible new
+   reference splits, actual external caps and retained background interfaces are
+   checked. Background requires a valid pyramid cavity for every exterior quad;
+   a failed layer retains tets without propagating vertex marks to its neighbors.
+7. Reconstruct shell prisms and shell pyramid/tet transitions with the existing
+   shell converter. Native rod cells and their background pyramids are reserved;
+   the combined mixed mesh is validated for complete source ownership, positive
+   native cells and matching oriented interfaces.
+8. Check free terminal rings against every actual prism cap. Reclassify exterior
+   same-parent cap tets only when the full fan matches and the cap has no other
+   band interface. Input coordinates and reference connectivity stay fixed.
 
-Equal degree alone does not align an annulus's triangulation. Before hybrid
-conversion, diagonal exchanges construct a consistent cyclic correspondence
-between its two rings. Each exchange reconstructs its complete band/background
-cavity with positive tets and the identical oriented cavity boundary. Background
-kernel points support either diagonal; when possible, a band-side 2-3 exchange
-returns the thin outer wedge to background instead. Frame planes are projected
-only when every incident band and background tet stays positive. This stage
-constructs the tau21/tau32 column partitions; the later three-tet matching check
-validates the constructed columns. `frame_topology_construction`,
-`annulus_diagonal_exchanges`, `planar_frames`, and `tau_after_frame_construction`
-record its results, and the final frame report uses the updated ring vertices.
+`rod_radius` is an absolute radius; zero uses `thicknessratio` times the mean
+centerline edge length. Optional final `thickness_smoothing_iterations` fits rod
+radius/section planes and shell normal thickness while improving native prism
+AMIPS. Input/protected points, correspondence and connectivity stay fixed.
+Tet and pyramid shape quality is not optimized: positivity alone permits very
+poor shapes. The final smoothing stage is opt-in and defaults to zero.
 
-Constructed columns use tau21/tau32 reference tets. The existing prism Jacobian,
-quad-interface and background-pyramid checks determine which columns can merge.
-`rod_axial_split` inserts a midpoint input vertex and an equivalent circular frame
-as one private construction, assigning new correspondence before building its two
-halves. It reconstructs the neighboring background interfaces at the same time.
-Only complete, compatible intervals are split; rejected proposals retain the
-validated existing representation. There is no separate shell-edge presplit pass.
+`ignore_background_mesh: true` explicitly removes exterior cells before
+preparation and all optimization/conversion checks, retaining input volume and
+band. It overrides `keep_background_mesh`. Otherwise the supplied background
+participates in geometric validity even if the output filters exterior cells.
 
-For an explicit comparison without background constraints, set
-`"ignore_background_mesh": true`. This removes exterior tetrahedra before rod
-preparation and omits background from optimization and hybrid reconstruction;
-input volume and offset band remain. It overrides `keep_background_mesh`, and the
-discarded background is not reattached. In the normal shared path,
-`keep_background_mesh: false` only filters output and retains validity checks.
+Reports include `vertex_regions`, `target_degrees`, `ring_edge_splits`,
+`frames`, `frame_mapping`, `frame_topology_rounds`, and per-layer acceptance
+reasons. Mixed conversion nests rod-layer and shell reconstruction reports.
+`construction_region` cell values distinguish fixed volume/background (0), shell
+band (1), rod band (2) and shared transitions (3). `rod_region` distinguishes
+prisms (1), other band tets (2), branch-joint tets (3) and other band cells (4).
+The input-and-shell export omits background cells while retaining the same native
+cells, coordinates and reference decompositions.
 
-This is a conservative prototype: arbitrary tau22 configurations or incompatible
-section triangulations are not guaranteed to normalize, and protected joint/attachment
-ports and incompatible regions retain tets. Free caps do not force a tet one-ring.
-Background-remeshing and Jacobian-smoothing options can
-run in the shared optimizer; all background participates even when output omits it. Unmatched sectors retain their
-valid tet subdivision, with conforming pyramid transitions where needed.
-
-`<output_stem>_rod.json` records graph classification, frame degrees, blocked fits,
-tau counts/parent checks, candidate counts and midpoint-frame results. These
-diagnostics also include `rod_paths` with `edge_order`, `from_vid`, and `to_vid`,
-endpoint kinds, ordered `frame_sequence`, shared periodic-frame status and closing
-interval candidate counts. `free_endpoint_source_vids` distinguishes unprotected
-terminal points; each section's `edge_index` also covers recovered terminal frames,
-and each selected section exports its vertex normal and ordered `ring_vids`.
-`edge_frames` and `vertex_frames` export the quaternions and incidence lists
-needed to independently verify every original vertex mean. The memory
-route returns the same diagnostics under `report["rod"]`; hybrid exports also
-include them under `report["hybrid"]["rod"]`. Existing surface mode is the default.
-
-Rod volume exports also carry cell fields for visualization: `joint_one_ring` is
-1 on band tets incident to an actual joint vertex and 0 elsewhere. `rod_region`
-separates background (0), prisms (1), other band tets (2), joint one-ring tets (3),
-and other band cells such as transition pyramids (4). Color by `rod_region` in
-ParaView to distinguish joint one-rings from the remaining tet transitions.
-
-`construction_region` distinguishes background/input volume (0), shell band (1),
-rod band (2), and mixed rod/shell transitions (3). `rod_region` retains its original
-cell-kind coloring for compatibility.
-
-Mixed-input fixtures are under `mydata/mixed_shell_rod/20261109` (connected
-solid/sheet/rod attachments, conforming stellar offset construction) and its
-`native_components` subdirectory (disjoint native curve and solid/sheet offset
-components welded across an unchanged background grid plane before one optimizer).
-The upstream `topological_offset` currently refuses triangles together with free
-segments in one distance-query complex. These fixtures test a supplied mixed
-construction; they do not change that upstream restriction.
-
-### Fixed-frame corner buffer experiment
-
-Set `rod_corner_preview_vid` to a degree-two input source ID to export an isolated
-curve-only corner patch instead of the full mesh. `rod_buffer_max_angle` (default 15 degrees)
-sets the initial SLERP sampling step. `rod_buffer_max_subdivision` defaults to 3:
-after a failed geometric construction, both side layer counts double, up to three
-additional binary refinement levels. Each side also has a 128-layer budget.
-The corner position and full local pose are fixed;
-the two outer interfaces keep their existing coordinates and source IDs. New
-input centers lie on the original two segments, with correspondence assigned to
-their rings during construction. The reference mesh has three positive tets per
-prism and is checked with the normal hybrid validator.
-
-The fixed corner pose is always the mean of the two incident edge frames,
-including when no eligible offset ring was selected at that vertex. It is not
-recovered from an individual ring or offset plane. The complete quaternion,
-including material twist, is retained. Outer cyclic index origins may be shifted
-to choose the closest equivalent indexing before interpolation.
-
-This preview constructs actual local volume cells; it does **not** replace the
-old background cavity or merge the patch into the full mesh. Diagnostics state
-`background_integrated: false`. Source mesh and ordinary rod-mode output remain
-unchanged. A valid prism construction is accepted as soon as its Jacobians,
-reference tet split and hybrid interfaces pass. Both compatible input-apex
-reference splits are tried. When the subdivision budget is exhausted, the
-preview returns the unchanged local reference tets with `status: tet_fallback`.
-`subdivision_attempts` records every tested depth and its failure reason.
-Invalid arguments still report errors. The turn angle does not exclude a corner.
-
-For the crossing-quads trial:
-
-```sh
-./build/app/wmtk_app -j mydata/rod_cross_quads/20261105/prism/diagnostics/corner_buffers/config_1154.json
-```
-
-The crossing-quads experiment also has a full integration driver:
-
-```sh
-/Users/cavers/miniconda3/bin/python experiments/rod_cross_quads/integrate_corner_buffers.py
-```
-
-It reruns the native rod pipeline and attempts every turn in the curve (or the
-explicit `--corners` list), then replaces successful local band/background cavities.
-Each new shell quad receives a positive background pyramid. TetGen fills the
-remaining background with boundary splitting disabled (`-pYQz`); the driver
-requires the output boundary triangles to equal the input triangles exactly.
-It also checks the replacement cavity's oriented boundary and volume with exact
-rational arithmetic, retains all cells outside the cavities, and runs the full
-mesh audit. This is an experiment driver; ordinary `rod_mode` does not invoke an
-external background tetrahedralizer automatically.
-Failed requests leave their original global regions intact; background integration
-also uses a private snapshot and rolls back on failure. Use `--max-subdivision 3`
-to set the refinement budget. `corner_buffer_attempts.json` records successful
-buffers and all tet fallbacks; `corner_buffer_integration.json` contains only
-the patches actually integrated into the full mesh.
-
-The driver expects `build/rod_corner_tools/tetgen` or `--tetgen <executable>`.
-This experiment used [libigl/tetgen](https://github.com/libigl/tetgen) revision
-`e05aca7df74e3f531bc35733ed87d36d437266c5`, compiled as a standalone tool. The
-downloaded source and license are cached under `build/rod_corner_tools/src`.
-To reproduce the quads, offsets, native prisms and integrated corners together,
-run the crossing-quads generator with `--corner-buffer` (implies `--prism`).
-
-The corrected incident-edge-average results are under
-`mydata/rod_cross_quads/20261105/prism/corner_vertex_averaged`:
-`result.vtu` includes background; `result_input_shell.vtu` contains the rod.
-All eight corners produce valid prism buffers and integrate with background.
-The full mesh contains 816 prisms, 816 background pyramids and 404 band tets
-(including 124 protected joint one-ring tets). The independent audit verifies all
-69 original vertex quaternion means, exact positive reference tets, conforming
-hybrid interfaces and exact domain volume 27. `corner_418_averaged_frame.png`
-shows the corrected vertex pose and actual buffer cells. The earlier
-`corner_buffered_bounded` snapshot predates the vertex-frame correction.
-`corner_buffer` marks the added corner prisms and reconstructed background by
-their original corner ID. `preview.png` colors the new prisms blue, while
-`corner_fallback` marks the original tets retained after failed corner attempts.
-`corner_subdivision_depth` records the tested/accepted depth on these cells.
-`background_section.png` shows the actual reference mesh through corner 1154.
-
-Native mixed-element AMIPS is available with:
-
-```sh
-/Users/cavers/miniconda3/bin/python experiments/rod_cross_quads/analyze_element_amips.py
-```
-
-It evaluates each actual four-node tet, six-node prism or five-node pyramid using
-`F = J_physical * inverse(J_ideal)` and `AMIPS = ||F||^2 / det(F)^(2/3)`.
-The ideal prism has an equilateral unit triangle and unit height; the ideal
-square pyramid has eight equal unit edges and height `1/sqrt(2)`. All ideal
-elements score 3. `amips_element` is the maximum over the element. Prism maxima
-use the triangle-vertex paths and the stationary roots in height; pyramid maxima
-use the four collapsed-square corner paths, analytically canceling the ideal
-map's apex collapse. The evaluator checks ideal elements, similarity invariance,
-inverted-element rejection and shape-function Jacobians by finite differences.
-
-`result_element_amips.vtu` preserves the complete mixed connectivity, and
-`element_amips_quality.json` records the references, method and statistics.
-`analyze_amips.py` provides a separate diagnostic of the stored reference tet
-decomposition; those values are not the native prism/pyramid element scores.
+Ring-edge splitting changes circumferential degree; centerline edges and input
+vertices stay fixed.
 
 ## Surface construction
 
@@ -831,6 +672,41 @@ into scalar fields `tet_decomposition_0` through `tet_decomposition_11`: Gmsh vi
 supports 1, 3 or 9 components. The local corner indices remain zero-based and padded with -1.
 The `cell_type` attribute keeps its VTK values (10/13/14); the actual MSH element types are
 4/6/7. Elements are grouped by region and type, with their attributes reordered together.
+
+### Final thickness and prism smoothing
+
+`thickness_smoothing_iterations` enables a geometry pass **after** hybrid construction,
+flat terminal sections and optional transition smoothing. The default
+is `0`; use e.g. `60` to enable it (allowed range `0..200`). It requires `prism_dominant`.
+
+The physical targets reuse the construction parameters: shell distance along the component's
+unit optimal normal is `thicknessratio * input_average_edge_length`; a rod frame uses
+`rod_radius` (or the existing automatically derived radius) and its material-frame plane.
+Unassigned rod surface vertices use distance to their incident source centerline segment.
+Shell tangential coordinates and rod section angles remain available for shape improvement,
+with a weak tether to the existing material slots. Already attained shell thickness and rod
+radius/plane constraints are preserved, rather than traded for shape quality.
+
+The shape objective is squared **native prism AMIPS**, normalized to `3` for an equilateral
+unit prism. Its maximum is evaluated on the three triangle-corner paths, including roots of
+the cubic stationarity equation in height. No tetrahedral surrogate is used. The maximum
+over prisms cannot exceed its value on entry. This is a constrained local optimizer; it may
+stop with thickness residuals or uneven prism quality when no further feasible step is found.
+
+The pass solves for offset displacements together. Linearized cell inequalities are projected
+in a block Hessian metric; nonlinear volume/Jacobian corrections then release neighboring
+free offsets that would block a pointwise target move. Every accepted step rechecks exact
+reference-tet positivity, both pyramid decompositions, and the global native prism Jacobian.
+Tets and pyramids have **no shape-quality objective**. A positive `min_tet_volume` is respected
+by changed band tets and pyramid decompositions; an existing below-floor source cell is held
+unchanged. No relative tet-quality or relative-volume floor is introduced.
+
+Input vertices, protected offsets, non-offset background points, connectivity, source IDs and
+correspondence stay fixed. Protected positions are those on entry to this pass. The hybrid
+report's `thickness_smoothing` records physical errors and prism quality before/after, accepted
+step history, the stop reason and validation. Tet quality may worsen while remaining valid;
+improving it is a separate task. Existing pre-construction frame-fit diagnostics describe the
+earlier stage; use this final-stage report for the exported geometry's thickness errors.
 
 Supported **input** VTU: a single UnstructuredGrid piece with four-node tetrahedra, ASCII or
 uncompressed inline base64 arrays, UInt32/UInt64 binary headers and either byte order.

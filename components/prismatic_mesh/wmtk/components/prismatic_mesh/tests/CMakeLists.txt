@@ -19,4 +19,6 @@ target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE
     test_unlock.cpp
     test_prism_dominant.cpp
     test_rod_mesh.cpp
+    test_rod_frame_mapping.cpp
+    test_thickness_smoothing.cpp
 )
