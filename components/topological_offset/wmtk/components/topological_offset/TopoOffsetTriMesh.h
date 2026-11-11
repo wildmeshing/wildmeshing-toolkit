@@ -16,6 +16,7 @@
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include "ExactBandIntegral2D.hpp"
 #include "OffsetPotential.hpp"
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
@@ -256,6 +257,44 @@ public:
     {
         return potential_for_region(fid < m_face_region.size() ? m_face_region[fid] : -1);
     }
+    /**
+     * @brief Several entries of Parameters::offsets, each piece its entry's target distance: the
+     * piece of the input complex a place reads its distance, its bar and its exact integral from.
+     * The 2D twin of TopoOffsetTetMesh::place_piece(). A place is given by its vertices (a vertex,
+     * an edge, a face). The piece of the band they are in (m_vertex_region); where two pieces
+     * meet -- vertices of two, or a vertex on band faces of two (-2) -- the one of them with the
+     * smaller distance; off every band, or on vertices not assigned yet (an operation's new
+     * vertex, until assign_band_regions() runs again), the nearest piece (nearest_piece()). -1
+     * with one entry, or before the per-piece fields exist: the whole complex's field and
+     * integral and the run's distance.
+     */
+    int place_piece(const size_t* vids, size_t n) const;
+    /// The piece nearest to p: that of the input-complex BVH's nearest feature (m_phi_vert_region,
+    /// m_phi_seg_region), as assign_band_regions() reads a seed's piece; -1 for none. 3D asks its
+    /// per-piece envelopes (m_region_envelopes), which 2D does not build.
+    int nearest_piece(const Vector2d& p) const;
+    /// Per piece of the input complex (m_n_regions): its entry of Parameters::offsets. All 0 in
+    /// 2D, whose march is the one-entry march (label_input_complex() refuses several entries); 3D
+    /// fills it from each entry's labelling (VertexExtra::offset), init_input_complex_bvh().
+    std::vector<int> m_region_offset;
+    /// Piece r's target distance: its entry's (m_region_offset); the run's (the smallest entry's)
+    /// for r < 0 and with one entry. 3D reads growth_mode's stage targets too (m_offset_levels);
+    /// 2D has no growth_mode.
+    double region_delta(const int r) const
+    {
+        if (m_offset_params.offsets.size() <= 1 || r < 0 || size_t(r) >= m_region_offset.size())
+            return m_offset_params.target_distance;
+        return m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
+    }
+    /// front_conv at a place of piece r: front_conv_rel of its entry's target_distance, each piece
+    /// its own; front_conv itself with one entry. As in 3D.
+    double front_conv_of(const int r) const
+    {
+        if (m_offset_params.offsets.size() <= 1 || r < 0 || size_t(r) >= m_region_offset.size())
+            return m_offset_params.front_conv;
+        return m_offset_params.front_conv_rel *
+               m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
+    }
 
     /**
      * @brief One containment envelope per input tag, ambient included. Both phases.
@@ -380,6 +419,86 @@ public:
         bool final_stage = true,
         bool refine = true,
         const std::string& label = std::string());
+    /**
+     * @brief The loop's local_operations(ops), with EXPERIMENTAL_label_cleanup between the group's
+     * operation passes and its smoothing passes. The 2D twin of TopoOffsetTetMesh::loop_group(),
+     * which runs the clean-up on its EXPERIMENTAL_front_pocket_split path, right before the
+     * condition-1 splits that precede the first smoothing pass; 2D has no pocket splits yet (a
+     * later step of the 2D lock-step port), so the operation passes, the clean-up and the
+     * smoothing passes follow one another. The clean-up off, or a group without an operation
+     * pass: local_operations(ops), as before. `where` names the group in the [label cleanup] line.
+     */
+    void loop_group(const std::array<int, 4>& ops, const std::string& where);
+    /**
+     * @brief EXPERIMENTAL_label_cleanup (see the spec). The 2D twin of
+     * TopoOffsetTetMesh::label_cleanup(), one dimension down: a cell is a triangle, its faces
+     * are edges. The one exception to labels being fixed after construction: a triangle on the
+     * band / non-band interface whose own geometry puts it on the other side of the level set
+     * takes the other label, where the flip keeps the topology of both labels and of every held
+     * object. Invariant: the number of connected components (edge adjacency) of the band and of
+     * the non-band region is the same before and after; a change throws.
+     *
+     * Serial passes in fid order over the triangles with a front edge, reading the current
+     * labels, until a pass flips nothing; positions do not move, and a triangle's side test
+     * reads its own corners alone, so a triangle flips at most once and the passes end. After
+     * each flip every value derived from labels at the triangle's closure is re-derived (the
+     * closed labels, the front class of its edges, the front flags of its corners); after the
+     * passes the band-region map. One [label cleanup] line. Called by loop_group() after the
+     * operation passes; a no-op with the key "off". 2D runs "one_sided" only: the other modes
+     * read a triangle's band term b(t), which 2D's tri_energy() does not carry yet, and are
+     * refused (see the definition).
+     */
+    void label_cleanup(const std::string& where);
+    /**
+     * @name The level set out of reach
+     * The last clean-up's non-band triangles wholly inside the level set (the one-sided side
+     * test) that the held objects' test kept out of the band. At the loop's end
+     * check_level_set_reachable() throws on them (warns under throw_on_unreachable_level_set
+     * false), as in 3D; 3D also checks at a settled turn, which 2D has not yet (the settle step).
+     * @{
+     */
+    void check_level_set_reachable(const std::string& when);
+    size_t m_unreachable_cells = 0;
+    std::string m_unreachable_where;
+    /** @} */
+    /**
+     * @name The held objects
+     * The 2D twins of TopoOffsetTetMesh's: the input complex, the held points (the base's
+     * anchors), the region boundaries (the curve group's edges among them: 2D tracks and holds
+     * the curve group as it does a region boundary) and the box (the mesh boundary) -- the
+     * objects the optimization keeps the construction's topology on (label_cleanup()'s held
+     * objects' test). In 2D a held object is a point or a curve: the codimension-1 held simplices,
+     * which part the triangles around a vertex into chambers, are edges (3D: faces), and a held
+     * point is a vertex (3D's held curves and points: edges and vertices). A held edge is on the
+     * mesh boundary, an edge of a face of the input complex, or a tracked region boundary; a held
+     * vertex is on the input complex, an anchor, or a corner of a held edge; so the held
+     * simplices are closed under taking faces. Read off what 2D's operations carry -- the face
+     * labels, m_is_on_input and the edge tracking -- not off the construction labels of edges and
+     * vertices, which 2D's operations do not carry (split_adjust_position()), unlike 3D's
+     * (close_labels()).
+     * @{
+     */
+    bool held_object_edge(const Tuple& e) const;
+    bool held_object_vertex(size_t v) const;
+    /// DEBUG_held_topology: per label, band then non-band, the number of connected components
+    /// and the Euler characteristic of the held simplices it touches, one copy per chamber (the
+    /// triangles around a simplex joined across edges that are not held; see label_cleanup()).
+    /// With `vertex_touch`, also each held vertex's position and whether the band, the non-band,
+    /// touches it in some chamber. With `by_kind`, the same restricted to each kind of held
+    /// object: the input complex, the held points, the region boundaries, the box. As in 3D.
+    std::array<int64_t, 4> held_topology_signature(
+        std::map<std::array<double, 2>, std::array<bool, 2>>* vertex_touch = nullptr,
+        std::array<std::array<int64_t, 4>, 4>* by_kind = nullptr) const;
+    /// DEBUG_held_topology: the signature against the last one; a change is logged, naming
+    /// `pass` and the turn. The first call (after the construction) is the baseline.
+    void held_topology_check(const std::string& pass);
+    std::optional<std::array<int64_t, 4>> m_held_topology;
+    std::map<std::array<double, 2>, std::array<bool, 2>> m_held_vertex_touch;
+    std::array<std::array<int64_t, 4>, 4> m_held_topology_by_kind{};
+    mutable std::vector<std::pair<size_t, Vector2d>> m_held_curve_band_components;
+    mutable std::array<size_t, 2> m_held_curve_counts{}, m_held_curve_counts_before{};
+    size_t m_held_topology_changes = 0;
+    /** @} */
 
     /// init_optimize: optimize_offset() opens with a stencil_order loop without refinement. Set
     /// by marching_tris(), only when the target is beyond the maximum marchable distance.
@@ -2316,6 +2435,32 @@ public:
     MatrixXi m_phi_E;
     MatrixXi m_phi_F; ///< the complex faces, in the same vertex index space (for per-region BVHs)
     std::vector<int> m_phi_P;
+    /// Per row (a, b) of m_phi_E: the sign of orient2d(a, b, x) for x in the label-1 region it
+    /// bounds (+1: the row's normal, b - a turned clockwise, points out of the region), 0 for an
+    /// isolated segment of the complex. The 2D twin of TopoOffsetTetMesh::m_phi_F_inner; the
+    /// exact integral's offset side reads it.
+    std::vector<int8_t> m_phi_E_inner;
+
+    /**
+     * @brief The exact band integral over the input's segments and points (ExactBandIntegral2D,
+     * on m_phi_V, m_phi_E, m_phi_P, m_phi_E_inner), built only where something reads it, as 3D's
+     * TopoOffsetTetMesh::init_band_exact(): the band rules "exact", "front_flux" and
+     * "exact_swept", "surface" with a label clean-up, settle_mark "max", DEBUG_output. The label
+     * clean-up reads its distance() and distance_bound(). init_offset_potential() calls it.
+     * The 2D integral has neither 3D's value table nor its bisector search (prepare_front_flux()).
+     */
+    void init_band_exact();
+    std::shared_ptr<const ExactBandIntegral2D> m_band_exact;
+    /// Several entries of Parameters::offsets: one exact integral per piece of the input complex,
+    /// over its own primitives (init_band_exact()); empty otherwise. As in 3D.
+    std::vector<std::shared_ptr<const ExactBandIntegral2D>> m_region_band_exact;
+    /// The exact integral a place of piece r reads (place_piece()): its piece's, with several
+    /// entries; m_band_exact, the whole complex's, otherwise. As in 3D.
+    const std::shared_ptr<const ExactBandIntegral2D>& band_exact_for(const int r) const
+    {
+        return (r >= 0 && size_t(r) < m_region_band_exact.size()) ? m_region_band_exact[size_t(r)]
+                                                                  : m_band_exact;
+    }
 
     //// overriden splits/invariants
     bool split_edge_before(const Tuple& t) override;

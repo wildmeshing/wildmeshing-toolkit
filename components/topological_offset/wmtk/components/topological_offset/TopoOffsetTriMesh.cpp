@@ -806,29 +806,44 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     // complex triangles' edges with exactly one incident complex triangle. Outside the region, the
     // only place an offset exists, distance to the region and to its boundary are the same number.
     std::map<simplex::Edge, int> boundary_count;
+    std::map<simplex::Edge, size_t> boundary_opposite; // a boundary edge's face's third vertex
     for (size_t fi = 0; fi < complex_faces.size(); ++fi) {
         const auto vs = complex_faces[fi].vertices();
-        for (const simplex::Edge e :
-             {simplex::Edge(vs[0], vs[1]),
-              simplex::Edge(vs[1], vs[2]),
-              simplex::Edge(vs[0], vs[2])}) {
+        for (int k = 0; k < 3; ++k) {
+            const simplex::Edge e(vs[size_t((k + 1) % 3)], vs[size_t((k + 2) % 3)]);
             ++boundary_count[e];
+            boundary_opposite[e] = vs[size_t(k)];
         }
     }
 
     // Every primitive's region is its own vertices' region: a primitive cannot span two pieces.
     std::vector<Eigen::Vector2i> phi_segs;
     std::vector<int64_t> phi_seg_region;
+    m_phi_E_inner.clear();
     for (const auto& [e_simp, count] : boundary_count) {
         if (count != 1) continue; // interior to the complex: carries no boundary geometry
         const auto vs = e_simp.vertices();
         phi_segs.emplace_back(v_index_map[vs[0]], v_index_map[vs[1]]);
         phi_seg_region.push_back(comp_of[size_t(phi_segs.back()[0])]);
+        // The row's orientation against the region it bounds (its face's third vertex), exact,
+        // as 3D's orient3d against the bounding tet's fourth vertex: the row's vertex order is the
+        // edge's sorted ids, not the region's.
+        m_phi_E_inner.push_back(int8_t(
+            wmtk::utils::predicates::orient2d(
+                Vector2d(V.row(int(v_index_map[vs[0]])).transpose()),
+                Vector2d(V.row(int(v_index_map[vs[1]])).transpose()),
+                Vector2d(V.row(int(v_index_map[boundary_opposite.at(e_simp)])).transpose()))));
     }
     for (int i = 0; i < E.rows(); ++i) { // isolated edges of the complex
         phi_segs.emplace_back(E(i, 0), E(i, 1));
         phi_seg_region.push_back(comp_of[size_t(E(i, 0))]);
+        m_phi_E_inner.push_back(0); // bounds no region
     }
+    // Each piece's entry of offsets (region_delta(), front_conv_of(), band_exact_for()). One
+    // entry: every piece is entry 0's. 3D fills it per entry, its march offsetting every entry as
+    // if it were the only one; 2D's march is the one-entry march, label_input_complex() refusing
+    // several entries, so 0 is every piece's entry.
+    m_region_offset.assign(size_t(m_n_regions), 0);
 
     MatrixXi E_phi(phi_segs.size(), 2);
     for (size_t i = 0; i < phi_segs.size(); ++i) {
@@ -890,6 +905,7 @@ void TopoOffsetTriMesh::init_offset_potential()
             n_input_segments,
             m_phi_P.size());
         init_region_potentials(m_offset_params.target_distance, 0.);
+        init_band_exact();
         return;
     }
 
@@ -923,6 +939,90 @@ void TopoOffsetTriMesh::init_offset_potential()
         delta,
         effective_factor);
     init_region_potentials(delta, effective_factor);
+}
+
+void TopoOffsetTriMesh::init_band_exact()
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::init_band_exact(), built under the
+    // same conditions. The band rules' term reads its value() (the energy step of the 2D
+    // lock-step port), the label clean-up its distance() and distance_bound().
+    const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
+                            m_offset_params.band_volume_rule == "front_flux" ||
+                            m_offset_params.band_volume_rule == "exact_swept";
+    const bool surface_cleanup =
+        m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";
+    if (!(exact_rule || surface_cleanup ||
+          (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
+          m_offset_params.debug_output)) {
+        return;
+    }
+    // The band is on the offset side of the input only (ExactBandIntegral2D's class doc), and
+    // that side is outside the label-1 faces whichever way the offset goes: they are the
+    // selection for offset_out and everything outside the selection for offset_in
+    // (label_input_complex()), and the band grows away from them. A segment's side is its
+    // orient2d against the label-1 face it bounds (m_phi_E_inner), so sigma is +1 for both
+    // directions; both or neither: no side. A complex without faces (a curve, a point) bounds no
+    // region: no side, the band all around it. As in 3D, whose oriented volume the area below
+    // twins: the label-1 faces' boundary oriented by them must enclose a positive area.
+    const bool curves = m_phi_F.rows() == 0;
+    const int sigma = curves || m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
+    if (curves) {
+        logger().info(
+            "\tExact band integral: {} segments and {} points, no offset side",
+            m_phi_E.rows(),
+            m_phi_P.size());
+    } else {
+        double area2 = 0.;
+        for (int i = 0; i < m_phi_E.rows(); ++i) {
+            const Vector2d a = m_phi_V.row(m_phi_E(i, 0)).head<2>().transpose();
+            const Vector2d b = m_phi_V.row(m_phi_E(i, 1)).head<2>().transpose();
+            area2 += double(m_phi_E_inner[size_t(i)]) * (a.x() * b.y() - a.y() * b.x());
+        }
+        logger().log(
+            area2 > 0. ? spdlog::level::info : spdlog::level::warn,
+            "\tExact band integral: offset side {} (sigma {}), the label-1 faces' boundary "
+            "oriented by them encloses area {}",
+            sigma > 0 ? "outside the label-1 faces" : "none",
+            sigma,
+            area2 / 2.);
+    }
+    m_band_exact =
+        std::make_shared<ExactBandIntegral2D>(m_phi_V, m_phi_E, m_phi_P, m_phi_E_inner, sigma);
+    // Several entries of offsets: one integral per piece, over the piece's own primitives, which
+    // a band cell reads (band_exact_for()). MEASURED in 3D (2026-11-09, two boxes a and b 0.5
+    // apart, a at 0.1, b at 0.3, 5 turns): over the whole complex b's band reached around a, its
+    // front vertices up to 1.05 from b and 0.12 from a. Unreachable in 2D until its march takes
+    // several entries (label_input_complex()).
+    m_region_band_exact.clear();
+    if (m_offset_params.offsets.size() > 1) {
+        for (size_t r = 0; r < size_t(m_n_regions); ++r) {
+            // The rows of the piece, as init_region_potentials() takes them: a row of unknown
+            // piece goes to every piece.
+            const auto mine = [&](const int64_t region) {
+                return region < 0 || region == int64_t(r);
+            };
+            std::vector<int> erows, prows;
+            for (int i = 0; i < m_phi_E.rows(); ++i)
+                if (mine(m_phi_seg_region[size_t(i)])) erows.push_back(i);
+            for (size_t i = 0; i < m_phi_P.size(); ++i)
+                if (mine(m_phi_point_region[i])) prows.push_back(int(i));
+            bool piece_faces = false;
+            for (int i = 0; i < m_phi_F.rows(); ++i)
+                piece_faces = piece_faces || mine(m_phi_face_region[size_t(i)]);
+            MatrixXi E_r(erows.size(), 2);
+            std::vector<int8_t> inner_r;
+            for (size_t i = 0; i < erows.size(); ++i) {
+                E_r.row(int(i)) = m_phi_E.row(erows[i]);
+                inner_r.push_back(m_phi_E_inner[size_t(erows[i])]);
+            }
+            std::vector<int> P_r;
+            for (const int i : prows) P_r.push_back(m_phi_P[size_t(i)]);
+            const int sigma_r =
+                !piece_faces || m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
+            m_region_band_exact.push_back(
+                std::make_shared<ExactBandIntegral2D>(m_phi_V, E_r, P_r, inner_r, sigma_r));
+        }
+    }
 }
 
 void TopoOffsetTriMesh::init_region_potentials(const double delta, const double effective_factor)

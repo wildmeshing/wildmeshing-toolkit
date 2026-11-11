@@ -6639,6 +6639,277 @@ TEST_CASE("unreachable-level-set-throws", "[offset][3d]" + release_only)
     }
 }
 
+namespace {
+/// The 2D twin of grid_point(): grid point (i, j) of point_grid_2d().
+Vector2d grid_point_2d(const std::array<int, 2>& c)
+{
+    return Vector2d(c[0] * 0.25 - 1, c[1] * 0.25 - 1);
+}
+
+/// A curve as grid points (i, j) of point_grid_2d(), consecutive ones on one grid line: the 2D
+/// twin of GridPolyline.
+using GridPolyline2d = std::vector<std::array<int, 2>>;
+
+/// The clean-up tests' Parameters in 2D: p offset to `target`, the clean-up "one_sided", the one
+/// mode 2D runs until its per-cell energy carries the band term.
+Parameters cleanup_params_2d(const double target)
+{
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    return construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}})},
+         {"EXPERIMENTAL_label_cleanup", "one_sided"},
+         {"num_threads", 0}},
+        box);
+}
+
+/// The 2D twin of point_grid() and the 3D tests' construction, driven directly (the app refuses
+/// the 2D offset): [-1, 1]^2 in 8^2 squares of edge 0.25, each split along its diagonal from
+/// (i, j) to (i + 1, j + 1); every triangle ambient, or with `regions` tagged A (centroid
+/// x < 0.25) or B; a curve group along `curve` (none if empty); the grid point p the input
+/// complex, a point, labelled by hand (2D selects no point label yet). Constructed at `param`'s
+/// target, the field and the exact integral built, the optimization's labels set, as
+/// optimize_offset() sets them before the loop.
+std::unique_ptr<TopoOffsetTriMesh> point_grid_2d(
+    Parameters& param,
+    const std::array<int, 2>& p,
+    const GridPolyline2d& curve = {},
+    const bool regions = false)
+{
+    const int n = 8;
+    const auto vid = [&](const int i, const int j) { return i + (n + 1) * j; };
+    Eigen::MatrixXd V((n + 1) * (n + 1), 2);
+    for (int j = 0; j <= n; ++j) {
+        for (int i = 0; i <= n; ++i) V.row(vid(i, j)) = grid_point_2d({{i, j}}).transpose();
+    }
+    Eigen::MatrixXi F(2 * n * n, 3);
+    int r = 0;
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            F.row(r++) << vid(i, j), vid(i + 1, j), vid(i + 1, j + 1);
+            F.row(r++) << vid(i, j), vid(i + 1, j + 1), vid(i, j + 1);
+        }
+    }
+    MatrixSi tags(F.rows(), regions ? 2 : 1);
+    if (regions) {
+        for (Eigen::Index f = 0; f < F.rows(); ++f) {
+            const double x = (V(F(f, 0), 0) + V(F(f, 1), 0) + V(F(f, 2), 0)) / 3.;
+            tags.coeffRef(f, x > 0.25 ? 1 : 0) = 1;
+        }
+    }
+    Eigen::MatrixXd CV(Eigen::Index(curve.size()), 2);
+    Eigen::MatrixXi CE(curve.empty() ? 0 : Eigen::Index(curve.size() - 1), 2);
+    for (size_t k = 0; k < curve.size(); ++k) {
+        CV.row(Eigen::Index(k)) = grid_point_2d(curve[k]).transpose();
+        if (k + 1 < curve.size()) CE.row(Eigen::Index(k)) << int(k), int(k + 1);
+    }
+    auto mesh = std::make_unique<TopoOffsetTriMesh>(param, 0);
+    mesh->init_from_image(
+        V,
+        F,
+        tags,
+        CV,
+        CE,
+        regions ? std::vector<std::string>{"A", "B"} : std::vector<std::string>{"a"},
+        "curve");
+    mesh->m_vertex_extra[size_t(vid(p[0], p[1]))].label = 1;
+    mesh->mark_input_complex_vertices();
+    mesh->init_input_complex_bvh();
+    mesh->consolidate_mesh();
+    mesh->construct_offset(std::filesystem::temp_directory_path() / "wmtk_offset_cleanup_2d");
+    mesh->init_offset_potential();
+    mesh->label_offset_boundary();
+    REQUIRE(mesh->m_band_exact != nullptr);
+    return mesh;
+}
+
+/// The 2D twin of band_touched(): per vertex, whether a band triangle has it as a corner.
+std::vector<char> band_touched_2d(const TopoOffsetTriMesh& m)
+{
+    std::vector<char> touched(m.vert_capacity(), 0);
+    for (const auto& f : m.get_faces()) {
+        const size_t fid = f.fid(m);
+        if (!m.face_is_offset_band(fid)) continue;
+        for (const size_t v : m.oriented_tri_vids(fid)) touched[v] = 1;
+    }
+    return touched;
+}
+
+/// The band's triangles.
+size_t band_count_2d(const TopoOffsetTriMesh& m)
+{
+    size_t n = 0;
+    for (const auto& f : m.get_faces()) n += m.face_is_offset_band(f.fid(m)) ? 1 : 0;
+    return n;
+}
+
+/// The vertex at x exactly.
+size_t vertex_at_2d(const TopoOffsetTriMesh& m, const Vector2d& x)
+{
+    size_t found = std::numeric_limits<size_t>::max();
+    for (const auto& v : m.get_vertices()) {
+        if (m.m_vertex_attribute[v.vid(m)].m_posf == x) found = v.vid(m);
+    }
+    INFO("a vertex at (" << x.x() << ", " << x.y() << ")");
+    REQUIRE(found != std::numeric_limits<size_t>::max());
+    return found;
+}
+
+/// q, 0.25 from the origin p, held: anchored by the base's feature-point anchors, as every
+/// input point is in 3D (the 2D offset anchors none yet).
+size_t anchor_q_2d(TopoOffsetTriMesh& m)
+{
+    const size_t q = vertex_at_2d(m, grid_point_2d({{5, 4}}));
+    m.enable_feature_point_tracking();
+    REQUIRE(m.anchor_feature_point(q, m.m_offset_params.envelope_size));
+    return q;
+}
+} // namespace
+
+TEST_CASE("label-cleanup-keeps-held-point-off-the-band-2d", "[offset][2d]")
+{
+    // The 2D twin of label-cleanup-keeps-held-point-off-the-band, on the clean-up slot itself
+    // (the 2D loop has no 3D-twin energy yet): q, a held point 0.25 from p and so inside p's
+    // level set at 0.3, is out of the band as constructed (the march traces to 0.125). The
+    // clean-up takes in the triangles at the front wholly inside the level set, and none with q
+    // as a corner; the held objects' contact topology is unchanged.
+    Parameters param = cleanup_params_2d(0.3);
+    auto mesh = point_grid_2d(param, {{4, 4}});
+    const size_t q = anchor_q_2d(*mesh);
+    REQUIRE(band_touched_2d(*mesh)[q] == 0);
+    const size_t band0 = band_count_2d(*mesh);
+    const auto signature0 = mesh->held_topology_signature();
+    mesh->label_cleanup("test");
+    CHECK(band_count_2d(*mesh) > band0); // the clean-up took triangles in, elsewhere
+    CHECK(band_touched_2d(*mesh)[q] == 0);
+    CHECK(mesh->held_topology_signature() == signature0);
+}
+
+TEST_CASE("label-cleanup-held-curves-2d", "[offset][2d]")
+{
+    // The 2D twin of label-cleanup-held-curves, p offset to 0.3. A 2D held curve -- the curve
+    // group, tracked and held in its tube as a region boundary is -- is codimension 1, as a 3D
+    // held surface is; 3D's held curves are codimension 2:
+    //   a curve out of the band as constructed, 0.25 from p at its nearest (y = 0.25, x in
+    //     [-0.5, 0.5]), part of it inside the level set: no band triangle touches it;
+    //   a curve through p (the x axis, x in [-0.75, 0.75]), crossed by the front at the march's
+    //     0.125 on each side: the crossing is never lost, and it stays where it is -- its vertex
+    //     is on a held boundary and on the front, which eligibility refuses, as 3D's does for a
+    //     region boundary -- so the band touches a run of the curve from p to the crossing and
+    //     nothing beyond it. (3D's crossing moves along its codimension-2 curve.)
+    const bool through = GENERATE(false, true);
+    INFO("curve " << (through ? "through p" : "off the band"));
+    Parameters param = cleanup_params_2d(0.3);
+    const GridPolyline2d curve =
+        through ? GridPolyline2d{{{1, 4}}, {{7, 4}}} : GridPolyline2d{{{2, 5}}, {{6, 5}}};
+    auto mesh = point_grid_2d(param, {{4, 4}}, curve);
+    const size_t band0 = band_count_2d(*mesh);
+    const auto signature0 = mesh->held_topology_signature();
+    mesh->label_cleanup("test");
+    const auto touched = band_touched_2d(*mesh);
+    const double y0 = through ? 0. : 0.25, half = through ? 0.75 : 0.5;
+    // The curve's vertices (x, touched).
+    std::vector<std::pair<double, bool>> on_curve;
+    for (const auto& v : mesh->get_vertices()) {
+        const Vector2d& x = mesh->m_vertex_attribute[v.vid(*mesh)].m_posf;
+        if (x.y() == y0 && std::abs(x.x()) <= half)
+            on_curve.emplace_back(x.x(), touched[v.vid(*mesh)] != 0);
+    }
+    REQUIRE(!on_curve.empty());
+    if (!through) {
+        CHECK(band_count_2d(*mesh) > band0); // the clean-up took triangles in, elsewhere
+        for (const auto& [x, t] : on_curve) CHECK(!t);
+    }
+    for (const int side : {-1, 1}) {
+        if (!through) break;
+        INFO("side " << side);
+        // The curve's vertices on the side sign(x) = side of p, nearest first.
+        std::vector<std::pair<double, bool>> vs;
+        for (const auto& [x, t] : on_curve) {
+            if (x * side > 0) vs.emplace_back(std::abs(x), t);
+        }
+        std::sort(vs.begin(), vs.end());
+        REQUIRE(!vs.empty());
+        size_t n_touched = 0;
+        while (n_touched < vs.size() && vs[n_touched].second) ++n_touched;
+        for (size_t k = n_touched; k < vs.size(); ++k) CHECK(!vs[k].second);
+        REQUIRE(n_touched > 0);
+        CHECK(vs[n_touched - 1].first < 0.25); // the crossing, where the march put it
+    }
+    CHECK(mesh->held_topology_signature() == signature0);
+}
+
+TEST_CASE("label-cleanup-held-boundaries-2d", "[offset][2d]")
+{
+    // The 2D twin of label-cleanup-held-surfaces (3D's held surfaces, codimension 1, are lines
+    // in 2D): p offset to 0.3 with a held boundary 0.25 from it, which the band as constructed
+    // (the march traces to 0.125) does not touch, so no band triangle ever has a corner on it --
+    // the front stops a layer of triangles short of it:
+    //   a region boundary, the line x = 0.25 between region A (x < 0.25) and region B;
+    //   the box: p at x = -0.75, the wall x = -1 0.25 away.
+    const bool box = GENERATE(false, true);
+    INFO((box ? "the box" : "a region boundary"));
+    Parameters param = cleanup_params_2d(0.3);
+    auto mesh = point_grid_2d(
+        param,
+        box ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}},
+        {},
+        !box);
+    // The held vertices: on the wall, or the corners of region B's triangles.
+    std::vector<char> held(mesh->vert_capacity(), 0);
+    for (const auto& f : mesh->get_faces()) {
+        const size_t fid = f.fid(*mesh);
+        const bool b =
+            !box && mesh->m_face_attribute[fid].tags.count(mesh->m_tag_name_to_id.at("B")) > 0;
+        for (const size_t v : mesh->oriented_tri_vids(fid)) {
+            if (b || (box && mesh->m_vertex_attribute[v].m_posf.x() == -1.)) held[v] = 1;
+        }
+    }
+    const size_t band0 = band_count_2d(*mesh);
+    const auto signature0 = mesh->held_topology_signature();
+    mesh->label_cleanup("test");
+    CHECK(band_count_2d(*mesh) > band0); // the clean-up took triangles in, elsewhere
+    const auto touched = band_touched_2d(*mesh);
+    size_t n_held = 0;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (!held[vid]) continue;
+        ++n_held;
+        CHECK(touched[vid] == 0);
+    }
+    CHECK(n_held > 0);
+    CHECK(mesh->held_topology_signature() == signature0);
+}
+
+TEST_CASE("unreachable-level-set-throws-2d", "[offset][2d]")
+{
+    // The 2D twin of unreachable-level-set-throws, on the clean-up slot and the check the loop
+    // makes at its end (check_level_set_reachable()): p offset to 0.3 with a held object the band
+    // did not touch as constructed, inside the level set -- a held point, a curve, a region
+    // boundary, the box, each 0.25 from p -- throws. Not a held point inside the level set by
+    // less than front_conv (q 0.25 from p at target 0.27: 0.02 inside, front_conv 0.027): a front
+    // passing outside it is within the bar. 3D's curve through p, whose crossing the clean-up
+    // moves along it, has no twin here: a 2D curve is codimension 1, and the clean-up keeps its
+    // crossing where it is (label-cleanup-held-curves-2d).
+    const std::string held = GENERATE("point", "curve", "region", "box", "point within the bar");
+    INFO("held: " << held);
+    Parameters param = cleanup_params_2d(held == "point within the bar" ? 0.27 : 0.3);
+    auto mesh = point_grid_2d(
+        param,
+        held == "box" ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}},
+        held == "curve" ? GridPolyline2d{{{2, 5}}, {{6, 5}}} : GridPolyline2d{},
+        held == "region");
+    if (held == "point" || held == "point within the bar") anchor_q_2d(*mesh);
+    mesh->label_cleanup("test");
+    if (held == "point within the bar") {
+        REQUIRE_NOTHROW(mesh->check_level_set_reachable("test"));
+    } else {
+        REQUIRE_THROWS_WITH(
+            mesh->check_level_set_reachable("test"),
+            Catch::Matchers::ContainsSubstring("the level set is out of reach"));
+    }
+}
+
 TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
 {
     // Hidden until the junction is fixed: neither variant converges reliably without it, so it

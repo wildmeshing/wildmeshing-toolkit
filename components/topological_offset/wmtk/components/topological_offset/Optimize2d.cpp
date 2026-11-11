@@ -12,6 +12,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <queue>
 #include <set>
 #include <vector>
@@ -1170,6 +1171,9 @@ void TopoOffsetTriMesh::crossing_snapshot(
 void TopoOffsetTriMesh::update_attributes()
 {
     TriOptimizerMesh::update_attributes();
+    // DEBUG_held_topology: after every pass of the base (split, collapse, swap, smoothing), once
+    // the baseline is taken. As in 3D.
+    if (m_held_topology) held_topology_check(m_debug_pass_name);
     if (!m_offset_params.debug_crossings || m_round <= 0) return;
     const std::string& p = m_debug_pass_name;
     if (p == "split" || p == "collapse" || p == "swap") {
@@ -2821,6 +2825,45 @@ double TopoOffsetTriMesh::max_tri_energy(const std::vector<size_t>& fids) const
     return m;
 }
 
+int TopoOffsetTriMesh::nearest_piece(const Vector2d& p) const
+{
+    // See the declaration.
+    if (!m_input_complex_bvh) return -1;
+    Vector2d foot, seg_normal;
+    bool on_corner = false;
+    int feature = -1;
+    m_input_complex_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature);
+    if (feature < 0) return -1;
+    const std::vector<int64_t>& src = on_corner ? m_phi_vert_region : m_phi_seg_region;
+    return size_t(feature) < src.size() ? int(src[size_t(feature)]) : -1;
+}
+
+int TopoOffsetTriMesh::place_piece(const size_t* vids, const size_t n) const
+{
+    // See the declaration. As in 3D, m_face_region in place of m_cell_region.
+    if (m_offset_params.offsets.size() <= 1 || m_region_potentials.empty()) return -1;
+    if (m_region_potentials.size() == 1) return 0;
+    int best = -1;
+    double best_delta = std::numeric_limits<double>::infinity();
+    const auto consider = [&](const int r) {
+        if (r >= 0 && region_delta(r) < best_delta) {
+            best_delta = region_delta(r);
+            best = r;
+        }
+    };
+    for (size_t i = 0; i < n; ++i) {
+        const int r = vertex_region(vids[i]);
+        if (r == -2) {
+            for (const size_t f : get_one_ring_fids_for_vertex(vids[i]))
+                consider(f < m_face_region.size() ? m_face_region[f] : -1);
+        } else {
+            consider(r);
+        }
+    }
+    if (best >= 0) return best;
+    return nearest_piece(m_vertex_attribute[vids[0]].m_posf);
+}
+
 void TopoOffsetTriMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band faces, seeded from every band face
@@ -2835,15 +2878,7 @@ void TopoOffsetTriMesh::assign_band_regions(const bool log)
     // the pieces' separation from any other. Re-derived rather than carried, because nothing
     // propagates a region index through split and collapse -- the same reason
     // classify_curve_edges() re-derives on_curve.
-    const auto region_at = [&](const Vector2d& p) -> int {
-        Vector2d foot, seg_normal;
-        bool on_corner = false;
-        int feature = -1;
-        m_input_complex_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature);
-        if (feature < 0) return -1;
-        const std::vector<int64_t>& src = on_corner ? m_phi_vert_region : m_phi_seg_region;
-        return size_t(feature) < src.size() ? int(src[size_t(feature)]) : -1;
-    };
+    const auto region_at = [&](const Vector2d& p) { return nearest_piece(p); };
     std::vector<size_t> queue;
     // The seed is a complex VERTEX (label 1) on a band face, not a band face across an edge from
     // a complex FACE: the face rule seeds nothing on a curve or point complex, which has no
@@ -4013,6 +4048,979 @@ void TopoOffsetTriMesh::write_debug_pvd() const
     }
 }
 
+bool TopoOffsetTriMesh::held_object_edge(const Tuple& e) const
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::held_object_face(). An edge of a
+    // face of the input complex, where 3D asks the face's own label: 2D's operations carry the
+    // face labels, not the edge labels. An isolated edge of the complex is a tracked boundary (a
+    // tag boundary or the curve group, init_surfaces_and_boundaries()) or on the mesh boundary.
+    const std::optional<Tuple> o = e.switch_face(*this);
+    if (!o) return true; // the mesh boundary
+    if (m_face_extra[e.fid(*this)].label == 1 || m_face_extra[o->fid(*this)].label == 1)
+        return true;
+    return edge_is_region(e.eid(*this));
+}
+
+bool TopoOffsetTriMesh::held_object_vertex(const size_t v) const
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::held_object_vertex() and
+    // held_object_edge(), whose held edges are 2D's held vertices. On the input complex by
+    // m_is_on_input, which 2D's operations carry (3D: the vertex's label).
+    if (m_vertex_extra[v].m_is_on_input) return true;
+    if (m_track_feature_points &&
+        m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT) {
+        return true;
+    }
+    for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
+        if (held_object_edge(e)) return true;
+    }
+    return false;
+}
+
+std::array<int64_t, 4> TopoOffsetTriMesh::held_topology_signature(
+    std::map<std::array<double, 2>, std::array<bool, 2>>* vertex_touch,
+    std::array<std::array<int64_t, 4>, 4>* by_kind) const
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::held_topology_signature(). The held
+    // simplices by sorted corners: the held edges with their corners, the input-complex and
+    // anchored vertices.
+    std::map<std::vector<size_t>, size_t> index;
+    std::vector<std::vector<size_t>> simplices;
+    // the kinds a simplex belongs to: 1 the input complex, 2 the held points (3D: the held curves
+    // and points; 2D's held curves, the curve group, are codimension 1 and kind 4), 4 the region
+    // boundaries, 8 the box -- a corner of a held edge takes its kind
+    std::vector<uint8_t> kinds;
+    const auto add = [&](std::vector<size_t> sigma, const uint8_t kind) {
+        std::sort(sigma.begin(), sigma.end());
+        const auto [it, fresh] = index.emplace(sigma, simplices.size());
+        if (fresh) {
+            simplices.push_back(sigma);
+            kinds.push_back(0);
+        }
+        kinds[it->second] |= kind;
+    };
+    for (const Tuple& f : get_faces()) {
+        const size_t fid = f.fid(*this);
+        for (int k = 0; k < 3; ++k) {
+            const Tuple e = tuple_from_edge(fid, size_t(k));
+            if (!held_object_edge(e)) continue;
+            const std::array<size_t, 2> ev = get_edge_vids(e);
+            const std::optional<Tuple> o = e.switch_face(*this);
+            const uint8_t kind =
+                !o                                                                         ? 8
+                : (m_face_extra[fid].label == 1 || m_face_extra[o->fid(*this)].label == 1) ? 1
+                                                                                           : 4;
+            add({ev[0], ev[1]}, kind);
+            add({ev[0]}, kind);
+            add({ev[1]}, kind);
+        }
+        for (const size_t v : oriented_tri_vids(fid)) {
+            const uint8_t kind =
+                (m_vertex_extra[v].m_is_on_input ? 1 : 0) |
+                (m_track_feature_points &&
+                         m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT
+                     ? 2
+                     : 0);
+            if (kind) add({v}, kind);
+        }
+    }
+    // Each simplex's chambers: its triangles, joined across the edges through it that are not
+    // held. A held edge is its own chamber wall, so each of its triangles is a chamber.
+    std::vector<std::map<size_t, int>> chamber_of(simplices.size());
+    std::vector<std::vector<std::array<bool, 2>>> touched(simplices.size()); // band, non-band
+    std::vector<size_t> first(simplices.size() + 1, 0); // element ids: first[i] + chamber
+    for (size_t i = 0; i < simplices.size(); ++i) {
+        const std::vector<size_t>& sigma = simplices[i];
+        const std::vector<size_t> star = sigma.size() == 1
+                                             ? get_one_ring_fids_for_vertex(sigma[0])
+                                             : get_incident_fids_for_edge(sigma[0], sigma[1]);
+        for (const size_t c0 : star) {
+            if (chamber_of[i].count(c0)) continue;
+            const int k = int(touched[i].size());
+            touched[i].push_back({{false, false}});
+            std::vector<size_t> stack{c0};
+            chamber_of[i][c0] = k;
+            while (!stack.empty()) {
+                const size_t c = stack.back();
+                stack.pop_back();
+                const int l = m_face_extra[c].label;
+                touched[i][size_t(k)][0] = touched[i][size_t(k)][0] || l == 2;
+                touched[i][size_t(k)][1] = touched[i][size_t(k)][1] || l == 0;
+                for (int j = 0; j < 3; ++j) {
+                    const Tuple e = tuple_from_edge(c, size_t(j));
+                    const std::array<size_t, 2> ev = get_edge_vids(e);
+                    const bool through = std::all_of(sigma.begin(), sigma.end(), [&](size_t x) {
+                        return ev[0] == x || ev[1] == x;
+                    });
+                    if (!through || held_object_edge(e)) continue;
+                    const size_t n = e.switch_face(*this)->fid(*this);
+                    if (chamber_of[i].emplace(n, k).second) stack.push_back(n);
+                }
+            }
+        }
+        first[i + 1] = first[i] + touched[i].size();
+        if (vertex_touch && sigma.size() == 1) {
+            const Vector2d& x = m_vertex_attribute[sigma[0]].m_posf;
+            std::array<bool, 2>& t = (*vertex_touch)[{{x[0], x[1]}}];
+            for (const auto& k : touched[i]) {
+                t[0] = t[0] || k[0];
+                t[1] = t[1] || k[1];
+            }
+        }
+    }
+    // Per label: union-find over the touched elements, each edge joined to its corners' elements
+    // (the corner's chamber holding the edge's triangle); components and the Euler
+    // characteristic.
+    const auto compute = [&](const uint8_t mask) {
+        std::array<int64_t, 4> out{};
+        for (int label = 0; label < 2; ++label) {
+            std::vector<size_t> root(first.back());
+            std::iota(root.begin(), root.end(), size_t(0));
+            const auto find = [&root](size_t x) {
+                while (root[x] != x) x = root[x] = root[root[x]];
+                return x;
+            };
+            int64_t chi = 0;
+            for (size_t i = 0; i < simplices.size(); ++i) {
+                const std::vector<size_t>& sigma = simplices[i];
+                if (!(kinds[i] & mask)) continue;
+                for (size_t k = 0; k < touched[i].size(); ++k) {
+                    if (!touched[i][k][size_t(label)]) continue;
+                    chi += sigma.size() == 2 ? -1 : 1;
+                    if (sigma.size() == 1) continue;
+                    size_t cell = chamber_of[i].begin()->first; // the chamber's triangle
+                    for (const auto& [fid, kk] : chamber_of[i]) {
+                        if (size_t(kk) == k) {
+                            cell = fid;
+                            break;
+                        }
+                    }
+                    for (const size_t x : sigma) {
+                        const auto it = index.find(std::vector<size_t>{x});
+                        if (it == index.end()) continue;
+                        const size_t r = it->second;
+                        if (!(kinds[r] & mask)) continue;
+                        const int kr = chamber_of[r].at(cell);
+                        if (!touched[r][size_t(kr)][size_t(label)]) continue;
+                        root[find(first[i] + k)] = find(first[r] + size_t(kr));
+                    }
+                }
+            }
+            int64_t b0 = 0;
+            for (size_t i = 0; i < simplices.size(); ++i) {
+                if (!(kinds[i] & mask)) continue;
+                for (size_t k = 0; k < touched[i].size(); ++k) {
+                    if (touched[i][k][size_t(label)] && find(first[i] + k) == first[i] + k) ++b0;
+                }
+            }
+            out[size_t(2 * label)] = b0;
+            out[size_t(2 * label + 1)] = chi;
+            // DEBUG_held_topology, held points, the band: each component's vertex count and
+            // centroid, logged where the topology changed.
+            if (mask == 2 && label == 0 && m_offset_params.debug_held_topology) {
+                std::map<size_t, std::pair<size_t, Vector2d>> comp;
+                for (size_t i = 0; i < simplices.size(); ++i) {
+                    if (!(kinds[i] & mask) || simplices[i].size() != 1) continue;
+                    for (size_t k = 0; k < touched[i].size(); ++k) {
+                        if (!touched[i][k][0]) continue;
+                        auto& [n, c] =
+                            comp.try_emplace(find(first[i] + k), 0, Vector2d::Zero()).first->second;
+                        ++n;
+                        c += m_vertex_attribute[simplices[i][0]].m_posf;
+                    }
+                }
+                m_held_curve_counts = {{0, 0}};
+                for (size_t i = 0; i < simplices.size(); ++i) {
+                    if (kinds[i] & 2) ++m_held_curve_counts[simplices[i].size() == 1 ? 0 : 1];
+                }
+                m_held_curve_band_components.clear();
+                for (const auto& [r, nc] : comp) {
+                    m_held_curve_band_components.emplace_back(
+                        nc.first,
+                        nc.second / double(nc.first));
+                }
+            }
+        }
+        return out;
+    };
+    if (by_kind) {
+        for (int k = 0; k < 4; ++k) (*by_kind)[size_t(k)] = compute(uint8_t(1 << k));
+    }
+    return compute(0xFF);
+}
+
+void TopoOffsetTriMesh::held_topology_check(const std::string& pass)
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::held_topology_check(), without its
+    // stale order-2 tags: 2D has no order-2 edge tags (an order-2 simplex of a curve is a vertex,
+    // anchored by anchor_feature_points(), which the 2D offset never runs) and its construction
+    // untracks nothing (3D's untrack_covered_boundaries()), so no tag can go stale.
+    if (!m_offset_params.debug_held_topology) return;
+    std::map<std::array<double, 2>, std::array<bool, 2>> touch;
+    std::array<std::array<int64_t, 4>, 4> by_kind{};
+    const std::array<int64_t, 4> s = held_topology_signature(&touch, &by_kind);
+    if (!m_held_topology) {
+        logger().info(
+            "\t[held topology] {}: baseline -- the band touches the held objects in {} "
+            "component(s), Euler characteristic {}; the non-band in {}, {}",
+            pass,
+            s[0],
+            s[1],
+            s[2],
+            s[3]);
+    } else if (s != *m_held_topology) {
+        ++m_held_topology_changes;
+        const std::array<int64_t, 4>& o = *m_held_topology;
+        logger().warn(
+            "\t[held topology] {} (turn {}): the held objects' contact topology changed -- band "
+            "{} -> {} component(s), Euler characteristic {} -> {}; non-band {} -> {}, {} -> {} "
+            "({} change(s) so far)",
+            pass,
+            m_round,
+            o[0],
+            s[0],
+            o[1],
+            s[1],
+            o[2],
+            s[2],
+            o[3],
+            s[3],
+            m_held_topology_changes);
+        // Where: the held vertices whose touch changed, matched by position (a collapse moves
+        // one vertex onto another, so the survivor keeps a position the map had), and those
+        // gone or new.
+        size_t n_changed = 0, n_gone = 0, n_new = 0;
+        std::string at;
+        for (const auto& [x, t] : touch) {
+            const auto it = m_held_vertex_touch.find(x);
+            if (it == m_held_vertex_touch.end()) {
+                ++n_new;
+                continue;
+            }
+            if (it->second == t) continue;
+            if (++n_changed <= 6) {
+                at += fmt::format(
+                    " ({:.4g}, {:.4g}) band {}->{} non-band {}->{};",
+                    x[0],
+                    x[1],
+                    int(it->second[0]),
+                    int(t[0]),
+                    int(it->second[1]),
+                    int(t[1]));
+            }
+        }
+        for (const auto& [x, t] : m_held_vertex_touch) n_gone += touch.count(x) ? 0 : 1;
+        logger().warn(
+            "\t[held topology] {}: {} held vertices changed touch,{} {} gone, {} new",
+            pass,
+            n_changed,
+            at,
+            n_gone,
+            n_new);
+        const char* kind_names[4] = {
+            "input complex",
+            "held points",
+            "region boundaries and the curve group",
+            "box"};
+        for (int k = 0; k < 4; ++k) {
+            const auto& a = m_held_topology_by_kind[size_t(k)];
+            const auto& b = by_kind[size_t(k)];
+            if (a == b) continue;
+            if (k == 1) {
+                std::string where;
+                for (const auto& [n, c] : m_held_curve_band_components) {
+                    where += fmt::format(" {} at ({:.3g}, {:.3g});", n, c[0], c[1]);
+                }
+                logger().warn(
+                    "\t[held topology] {}: the band's components on held points, vertices and "
+                    "centroid:{} | held point vertices {} -> {}",
+                    pass,
+                    where,
+                    m_held_curve_counts_before[0],
+                    m_held_curve_counts[0]);
+            }
+            logger().warn(
+                "\t[held topology] {}: {} -- band {} -> {} component(s), Euler characteristic {} "
+                "-> {}; non-band {} -> {}, {} -> {}",
+                pass,
+                kind_names[k],
+                a[0],
+                b[0],
+                a[1],
+                b[1],
+                a[2],
+                b[2],
+                a[3],
+                b[3]);
+        }
+    }
+    m_held_topology = s;
+    m_held_topology_by_kind = by_kind;
+    m_held_curve_counts_before = m_held_curve_counts;
+    m_held_vertex_touch = std::move(touch);
+}
+
+void TopoOffsetTriMesh::check_level_set_reachable(const std::string& when)
+{
+    // See the declaration. As in 3D, word for word.
+    if (m_unreachable_cells == 0) return;
+    const std::string msg = fmt::format(
+        "[held objects] {}: the level set is out of reach without the band touching a held object "
+        "it did not touch as constructed -- the label clean-up keeps {} non-band cell(s) wholly "
+        "inside the level set out of the band, the first at {} (throw_on_unreachable_level_set "
+        "false warns and goes on)",
+        when,
+        m_unreachable_cells,
+        m_unreachable_where);
+    if (m_offset_params.throw_on_unreachable_level_set) log_and_throw_error("{}", msg);
+    logger().warn("\t{}", msg);
+}
+
+void TopoOffsetTriMesh::label_cleanup(const std::string& where)
+{
+    // EXPERIMENTAL_label_cleanup (see the spec and the declaration): the 2D twin of
+    // TopoOffsetTetMesh::label_cleanup(), whose measurements motivate it (cube_in, target 0.45,
+    // 5% tolerance: thin non-band cells left beyond the level set, E 1.2e-7 above its optimum
+    // against a settle bar of 3.5e-5, so nothing removed them). Not in the final pass
+    // (m_freeze_front; 3D: a TetWild pass), which loop_group() does not run anyway.
+    const std::string& mode = m_offset_params.label_cleanup;
+    if (mode == "off" || m_freeze_front) return;
+    // "one_sided_tips" and "one_sided_at_target" flip a triangle near the level set by the sign
+    // of its band term b(t) -- 3D's band_cell_term(), J_t / delta under the exact rules --
+    // because, a non-plastic cell's AMIPS term not reading its label, the flip changes E by
+    // exactly +-b(t). 2D's tri_energy() carries the front chords' terms instead, so that is not
+    // its change of E; "energy_decrease" reads the "surface" rule's face term, which 2D has not
+    // either. Refused until the energy step of the 2D lock-step port: there the 2D tip is a
+    // triangle with two edges on the other label (3D: three faces), the at-target rule takes one
+    // or two (3D: one to three), each with its corners within front_conv of the level set.
+    if (mode != "one_sided") {
+        log_and_throw_error(
+            "EXPERIMENTAL_label_cleanup \"{}\" in 2D: it flips by a triangle's band term (or the "
+            "\"surface\" rule's edge terms), which the 2D per-cell energy (tri_energy()) does not "
+            "carry yet; 2D runs \"one_sided\" or \"off\"",
+            mode);
+    }
+    // one_sided reads d through the exact integral's searches (init_offset_potential() builds it).
+    if (!m_band_exact) {
+        log_and_throw_error(
+            "EXPERIMENTAL_label_cleanup \"one_sided\" reads the distance to the input through the "
+            "exact band integral, which this run did not build: it needs "
+            "EXPERIMENTAL_band_volume_rule \"exact\", \"front_flux\", \"exact_swept\" or "
+            "\"surface\", EXPERIMENTAL_settle_mark \"max\", or DEBUG_output");
+    }
+    const auto label_of = [this](const size_t fid) { return m_face_extra[fid].label; };
+
+    // A triangle with a front edge: one shared with a triangle of the other of the two labels,
+    // band (2) and non-band (0), neither of them the input complex (1).
+    const auto has_front_face = [&](const size_t fid) {
+        const int l = label_of(fid);
+        if (l == 1) return false;
+        for (int j = 0; j < 3; ++j) {
+            const std::optional<Tuple> o = tuple_from_edge(fid, size_t(j)).switch_face(*this);
+            if (o && label_of(o->fid(*this)) != 1 && label_of(o->fid(*this)) != l) return true;
+        }
+        return false;
+    };
+
+    // THE SIDE TEST: whether t's own corners put it on the other label's side. It reads nothing
+    // the clean-up changes (no vertex moves), so a triangle's answer is the same in every pass
+    // and a flipped triangle is never asked to flip back: it flips at most once, and the passes
+    // end. As in 3D:
+    //   one_sided: non-band -> band iff U(t) < delta, U = ExactBandIntegral2D::distance_bound(),
+    //     the min over the input's segments and points P of the max of d_P over t's corners, an
+    //     upper bound of d on t (d <= d_P, d_P convex), so d < delta on all of t. band -> non-band
+    //     iff L(t) > delta, L = d(c) - max_k |v_k - c|, c the centroid: a lower bound of d on t (d
+    //     is 1-Lipschitz, and the point of t farthest from c is a corner). L <= d <= U: the two
+    //     exclude each other.
+    //   one_sided_tips, one_sided_at_target: refused above.
+    const auto wants_flip = [&](const size_t fid) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const bool band = face_is_offset_band(fid);
+        // The triangle's piece's target distance and integral (one entry: the run's and the
+        // whole complex's).
+        const int piece = place_piece(vs.data(), 3);
+        const double delta = region_delta(piece);
+        const ExactBandIntegral2D& band_exact = *band_exact_for(piece);
+        std::array<Vector2d, 3> p;
+        for (int k = 0; k < 3; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+        if (!band && band_exact.distance_bound(p) < delta) return true;
+        if (band) {
+            const Vector2d c = (p[0] + p[1] + p[2]) / 3.;
+            double r = 0.;
+            for (const Vector2d& q : p) r = std::max(r, (q - c).norm());
+            if (band_exact.distance(c) - r > delta) return true;
+        }
+        return false;
+    };
+
+    // ELIGIBILITY: two labels only, so that the topology test sees everything t touches. Every
+    // triangle sharing a vertex with t is band or non-band (no input-complex triangle) and not
+    // plastic (its AMIPS term would read the label). And no corner of t is where a held boundary
+    // -- a tag boundary, the curve group or the box (vertex_is_on_region()) -- and the front
+    // already meet (m_is_on_offset): only the construction makes such contact, where its edges
+    // between band and non-band are both held and front and carry the offset class, which the
+    // held objects' test cannot see. Every other corner, on the input complex, a held point, a
+    // held boundary or the box, the held objects' test decides. As in 3D (2026-11-10).
+    const auto eligible = [&](const size_t fid) {
+        for (const size_t v : oriented_tri_vids(fid)) {
+            if (vertex_is_on_region(v) && m_vertex_extra[v].m_is_on_offset) return false;
+            for (const size_t s : get_one_ring_fids_for_vertex(v)) {
+                const int l = label_of(s);
+                if ((l != 0 && l != 2) || face_is_plastic(s)) return false;
+            }
+        }
+        return true;
+    };
+
+    // THE TOPOLOGY TEST, 3D's one dimension down. f = the edges of t shared with a triangle of
+    // the other label, the one t would take:
+    //   f = 0: refused (t would start a new piece, or the front would pinch at a vertex);
+    //   f = 1: refused if the corner opposite that edge is in a triangle of the other label;
+    //   f = 2: allowed (the third edge becomes front);
+    //   f = 3: refused (t is a whole piece by itself; the flip deletes it).
+    // An allowed flip has the other label meet t in exactly its f edges, an arc, so taking t in
+    // keeps that label's topology. 3D tests, for f = 1 and 2, the simplex of t off the other
+    // label's faces (the opposite corner, the edge joining the two opposite corners); in 2D only
+    // f = 1 has one, and f = 2 is 3D's f = 3. t's own label, which loses t, meets t in its 3 - f
+    // edges and also, for f = 2, in the common corner of the two other-label edges when that is
+    // in another triangle of t's label. Not tested: on a manifold front it cannot happen (a front
+    // vertex where t's label meets twice); such a flip throws (`odd`), and the component check
+    // below catches a split. Returns f.
+    const auto topology = [&](const size_t fid, bool& allow, bool& odd) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int self = label_of(fid), other = self == 2 ? 0 : 2;
+        std::vector<size_t> opp_other, opp_self; // the corner opposite each edge, by its far side
+        for (int j = 0; j < 3; ++j) {
+            const Tuple e = tuple_from_edge(fid, size_t(j));
+            const std::array<size_t, 2> ev = get_edge_vids(e);
+            size_t opp = vs[0];
+            for (const size_t v : vs) {
+                if (v != ev[0] && v != ev[1]) opp = v;
+            }
+            const std::optional<Tuple> o = e.switch_face(*this);
+            (o && label_of(o->fid(*this)) == other ? opp_other : opp_self).push_back(opp);
+        }
+        const auto at_vertex = [&](const size_t v, const int l) {
+            for (const size_t s : get_one_ring_fids_for_vertex(v)) {
+                if (s != fid && label_of(s) == l) return true;
+            }
+            return false;
+        };
+        const int f = int(opp_other.size());
+        allow = false;
+        odd = false;
+        if (f == 1) allow = !at_vertex(opp_other[0], other);
+        if (f == 2) {
+            allow = true;
+            odd = at_vertex(opp_self[0], self);
+        }
+        return f;
+    };
+
+    // THE HELD OBJECTS' TEST, 3D's (2026-11-10) one dimension down. The invariant: the
+    // optimization keeps the topology the construction gave the band, the non-band AND every
+    // held object -- the input complex, the held points (anchors), the region boundaries and the
+    // curve group, the box -- as if the front moved by a deformation of the domain that maps each
+    // held object onto itself. The topology test above keeps the first two; this keeps the rest.
+    // A held simplex sigma of t's closure has CHAMBERS: the triangles around it, joined across
+    // the edges through sigma that are not held (a held edge's two sides are two chambers). Per
+    // chamber, sigma is touched by a label when the chamber has a triangle of it. Switching t from
+    // label s to o changes only the chamber holding t, for the held simplices of t's closure X:
+    // o touches each of them after, and s leaves those whose chamber had no other triangle of s.
+    // Allowed iff both changes are simple:
+    //   the set o touches grows by X attached along A, the part of X o touched before: allowed
+    //     iff A -> X is a homotopy equivalence (per component of X, A meets it, connected, with
+    //     the same Euler characteristic) -- a held point o did not touch, alone in X, fails;
+    //   the set s touches loses Y, the part of X only t gave it: allowed iff cl(Y) \ Y -> cl(Y)
+    //     is one -- a held point whose last triangle of s is t fails.
+    // X lies on t's boundary, a circle (3D: a sphere), so its parts are graphs, and for graphs
+    // components and Euler characteristic decide the homotopy type exactly. So a held point's
+    // chamber status never changes, a crossing of the front with a held curve or boundary moves
+    // along it but is never born or lost, and the front never newly touches a held object: it
+    // stops a layer of triangles short of one it did not touch as constructed. MEASURED in 3D
+    // before it (held point q 0.25 from p, target 0.3): turn 1's clean-up took 6 of q's 30 cells
+    // into the band, so q joined the front; under exact_swept turn 11 took q's last non-band cell
+    // and the band enclosed q.
+    const auto held_face = [&](const Tuple& e) { return held_object_edge(e); };
+    // The tag the flipped triangle takes, of the label it joins. The band: the one tag set of the
+    // band triangles at t's corners (two pieces' bands, of two tag sets, refuse). The non-band:
+    // that of t's non-band edge neighbours across edges that are not held (a held edge's far side
+    // is another region); they must agree, and there must be one. As in 3D.
+    const auto joined_tag = [&](const size_t fid, CellTag& tag) {
+        const int o = label_of(fid) == 2 ? 0 : 2;
+        const CellTag* found = nullptr;
+        if (o == 2) {
+            for (const size_t v : oriented_tri_vids(fid)) {
+                for (const size_t s : get_one_ring_fids_for_vertex(v)) {
+                    if (label_of(s) != 2) continue;
+                    const CellTag& tg = m_face_attribute[s].tags;
+                    if (found && *found != tg) return false;
+                    found = &tg;
+                }
+            }
+        } else {
+            for (int k = 0; k < 3; ++k) {
+                const Tuple e = tuple_from_edge(fid, size_t(k));
+                if (held_face(e)) continue;
+                const size_t n = e.switch_face(*this)->fid(*this);
+                if (label_of(n) != o) continue;
+                const CellTag& tg = m_face_attribute[n].tags;
+                if (found && *found != tg) return false;
+                found = &tg;
+            }
+        }
+        if (!found) return false;
+        tag = *found;
+        return true;
+    };
+    const auto edge_has = [](const std::array<size_t, 2>& ev, const size_t x) {
+        return ev[0] == x || ev[1] == x;
+    };
+    // The chamber of sigma holding t: whether it has a triangle of label o, and one of label s
+    // other than t.
+    const auto chamber = [&](const size_t fid,
+                             const std::vector<size_t>& sigma,
+                             const int s,
+                             const int o,
+                             bool& o_in,
+                             bool& s_other) {
+        o_in = s_other = false;
+        std::vector<size_t> seen{fid}, stack{fid};
+        while (!stack.empty()) {
+            const size_t c = stack.back();
+            stack.pop_back();
+            if (c != fid) {
+                o_in = o_in || label_of(c) == o;
+                s_other = s_other || label_of(c) == s;
+            }
+            for (int k = 0; k < 3; ++k) {
+                const Tuple e = tuple_from_edge(c, size_t(k));
+                const std::array<size_t, 2> ev = get_edge_vids(e);
+                if (!std::all_of(sigma.begin(), sigma.end(), [&](size_t x) {
+                        return edge_has(ev, x);
+                    })) {
+                    continue;
+                }
+                if (held_face(e)) continue;
+                const size_t n = e.switch_face(*this)->fid(*this);
+                if (std::find(seen.begin(), seen.end(), n) != seen.end()) continue;
+                seen.push_back(n);
+                stack.push_back(n);
+            }
+        }
+    };
+    const auto held_allows = [&](const size_t fid) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int s = label_of(fid), o = s == 2 ? 0 : 2;
+        // X: the held simplices of t's closure, each as the local indices (0..2) of its corners
+        // -- closed, as a held edge's corners are held.
+        std::vector<std::vector<int>> X;
+        for (int i = 0; i < 3; ++i) {
+            if (held_object_vertex(vs[size_t(i)])) X.push_back({i});
+        }
+        for (int k = 0; k < 3; ++k) {
+            const Tuple e = tuple_from_edge(fid, size_t(k));
+            if (!held_face(e)) continue;
+            const std::array<size_t, 2> ev = get_edge_vids(e);
+            std::vector<int> c;
+            for (int i = 0; i < 3; ++i) {
+                if (edge_has(ev, vs[size_t(i)])) c.push_back(i);
+            }
+            X.push_back(c);
+        }
+        if (X.empty()) return true;
+        std::vector<char> touched(X.size()), loses(X.size());
+        for (size_t x = 0; x < X.size(); ++x) {
+            std::vector<size_t> sigma;
+            for (const int i : X[x]) sigma.push_back(vs[size_t(i)]);
+            bool o_in = false, s_other = false;
+            chamber(fid, sigma, s, o, o_in, s_other);
+            touched[x] = o_in;
+            loses[x] = !s_other;
+        }
+        // Whether the closed part P of the closed set Q (flags over X) includes into Q as a
+        // homotopy equivalence: per component of Q, P meets it, is connected there, and has the
+        // same Euler characteristic.
+        const auto equivalent = [&](const std::vector<char>& inQ, const std::vector<char>& inP) {
+            const auto components = [&](const std::vector<char>& in) {
+                std::array<int, 3> r{{0, 1, 2}};
+                const auto root = [&r](int a) {
+                    while (r[size_t(a)] != a) a = r[size_t(a)];
+                    return a;
+                };
+                for (size_t x = 0; x < X.size(); ++x) {
+                    if (in[x] && X[x].size() == 2) r[size_t(root(X[x][0]))] = root(X[x][1]);
+                }
+                for (int a = 0; a < 3; ++a) r[size_t(a)] = root(a);
+                return r;
+            };
+            const std::array<int, 3> rq = components(inQ), rp = components(inP);
+            for (int c = 0; c < 3; ++c) {
+                bool is_root = false;
+                for (size_t x = 0; x < X.size(); ++x) {
+                    is_root = is_root || (inQ[x] && X[x].size() == 1 && rq[size_t(X[x][0])] == c);
+                }
+                if (!is_root) continue;
+                int chi_q = 0, chi_p = 0, p_root = -1;
+                bool p_connected = true;
+                for (size_t x = 0; x < X.size(); ++x) {
+                    if (!inQ[x] || rq[size_t(X[x][0])] != c) continue;
+                    const int sign = X[x].size() == 2 ? -1 : 1;
+                    chi_q += sign;
+                    if (!inP[x]) continue;
+                    chi_p += sign;
+                    if (X[x].size() == 1) {
+                        const int pr = rp[size_t(X[x][0])];
+                        if (p_root < 0) p_root = pr;
+                        p_connected = p_connected && pr == p_root;
+                    }
+                }
+                if (p_root < 0 || !p_connected || chi_p != chi_q) return false;
+            }
+            return true;
+        };
+        const std::vector<char> all(X.size(), 1);
+        if (std::find(touched.begin(), touched.end(), 0) != touched.end() &&
+            !equivalent(all, touched)) {
+            return false;
+        }
+        if (std::find(loses.begin(), loses.end(), 1) != loses.end()) {
+            std::vector<char> closure(X.size(), 0), rest(X.size(), 0);
+            for (size_t y = 0; y < X.size(); ++y) {
+                if (!loses[y]) continue;
+                for (size_t x = 0; x < X.size(); ++x) {
+                    const bool face_of_y = std::all_of(X[x].begin(), X[x].end(), [&](int i) {
+                        return std::find(X[y].begin(), X[y].end(), i) != X[y].end();
+                    });
+                    if (face_of_y) closure[x] = 1;
+                }
+            }
+            for (size_t x = 0; x < X.size(); ++x) rest[x] = closure[x] && !loses[x];
+            if (!equivalent(closure, rest)) return false;
+        }
+        return true;
+    };
+
+    // The one-sided side test's non-band half (wants_flip()): d < the piece's target on all of
+    // t, so the band reaches the level set only through t. A triangle held objects keep out, so,
+    // makes the level set out of reach (check_level_set_reachable()). As in 3D.
+    const auto inside_level_set = [&](const size_t fid) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int piece = place_piece(vs.data(), 3);
+        const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
+        if (!be) return false;
+        std::array<Vector2d, 3> p;
+        for (int k = 0; k < 3; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+        return be->distance_bound(p) < region_delta(piece);
+    };
+    // A held vertex's kind and position, for the message. 2D tracks the curve group as it
+    // tracks a region boundary (init_surfaces_and_boundaries()), and nothing carries which of
+    // the two an edge is through the operations, so they are one kind here.
+    const auto describe_held = [&](const size_t v) -> std::string {
+        const bool anchored = m_track_feature_points &&
+                              m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT;
+        const char* kind = m_vertex_extra[v].m_is_on_input                ? "the input complex"
+                           : anchored                                     ? "an anchored point"
+                           : !m_vertex_attribute[v].on_bbox_faces.empty() ? "the box"
+                           : m_vertex_extra[v].m_is_on_region ? "a region boundary or a held curve"
+                                                              : "the mesh boundary";
+        const Vector2d& x = m_vertex_attribute[v].m_posf;
+        return fmt::format("{} at ({:.4g}, {:.4g})", kind, x[0], x[1]);
+    };
+    // How deep inside the level set t's held corners lie: the max over them of the piece's target
+    // minus d, and the deepest one's kind and position. Within front_conv of the level set a front
+    // passing outside the held object is already within the bar, so only a held object deeper
+    // than that makes the level set out of reach. As in 3D (MEASURED there: double_sphere with
+    // tag_1 held, a refused cell's held corner 0.001 inside against front_conv 0.005 threw at
+    // turn 5 before the depth rule; the held point, 0.05 inside against 0.03, throws).
+    const auto held_depth = [&](const size_t fid) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int piece = place_piece(vs.data(), 3);
+        const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
+        double depth = -std::numeric_limits<double>::infinity();
+        size_t deepest = vs[0];
+        for (const size_t v : vs) {
+            if (!be || !held_object_vertex(v)) continue;
+            const double dv = region_delta(piece) - be->distance(m_vertex_attribute[v].m_posf);
+            if (dv > depth) {
+                depth = dv;
+                deepest = v;
+            }
+        }
+        return std::pair<double, std::string>(
+            depth,
+            fmt::format("{}, {:.4g} inside the level set", describe_held(deepest), depth));
+    };
+
+    // A flip, and everything derived from t's label, which lives on t's closure: the closed labels
+    // of its edges and corners (2 where some triangle holding it is band, else 0; a simplex of
+    // the input complex keeps its 1), the front class of its three edges -- the only edges whose
+    // two sides change -- and the front flags of its three corners, the only vertices on those
+    // edges. The base's union flag m_is_on_surface is raised for a corner that joins the front, as
+    // label_offset_boundary() raises it; it is never cleared. As in 3D; 2D's vertex order is read
+    // live (TriMesh::get_order_of_vertex()), so there is no stored order to re-derive.
+    const auto any_band = [this](const std::vector<size_t>& fids) {
+        return std::any_of(fids.begin(), fids.end(), [this](const size_t s) {
+            return face_is_offset_band(s);
+        });
+    };
+    const auto flip = [&](const size_t fid, const CellTag& tag) {
+        // A held edge of t becoming front would be contact with a held object the held objects'
+        // test forbids, and its class rewritten below: a bug, so it throws.
+        std::array<bool, 3> front_before{};
+        for (int j = 0; j < 3; ++j) {
+            front_before[size_t(j)] = edge_is_offset_surface_live(tuple_from_edge(fid, size_t(j)));
+        }
+        m_face_extra[fid].label = label_of(fid) == 2 ? 0 : 2;
+        m_face_attribute[fid].tags = tag;
+        for (int j = 0; j < 3; ++j) {
+            const Tuple e = tuple_from_edge(fid, size_t(j));
+            const size_t eid = e.eid(*this);
+            if (!front_before[size_t(j)] && held_face(e) && edge_is_offset_surface_live(e)) {
+                log_and_throw_error(
+                    "[label cleanup] {}: triangle {} makes held edge {} front, which the held "
+                    "objects' test forbids",
+                    where,
+                    fid,
+                    eid);
+            }
+            int& le = m_edge_extra[eid].label;
+            if (le != 1) {
+                const std::array<size_t, 2> ev = get_edge_vids(e);
+                le = any_band(get_incident_fids_for_edge(ev[0], ev[1])) ? 2 : 0;
+            }
+            if (edge_is_offset_surface_live(e)) {
+                m_edge_attribute[eid].m_is_surface_fs = true;
+                m_edge_attribute[eid].m_surface_class = OFFSET_SURFACE_CLASS;
+            } else if (m_edge_attribute[eid].m_surface_class == OFFSET_SURFACE_CLASS) {
+                m_edge_attribute[eid].m_is_surface_fs = false;
+                m_edge_attribute[eid].m_surface_class = 0; // left at 0 off the surface
+            }
+        }
+        for (const size_t v : oriented_tri_vids(fid)) {
+            int& lv = m_vertex_extra[v].label;
+            if (lv != 1) lv = any_band(get_one_ring_fids_for_vertex(v)) ? 2 : 0;
+            refresh_offset_membership(v);
+            if (m_vertex_extra[v].m_is_on_offset) m_vertex_attribute[v].m_is_on_surface = true;
+        }
+    };
+
+    // THE INVARIANT'S MEASURES: connected components of one label's triangles under edge
+    // adjacency, and front vertices on more than two front edges (where the label changes more
+    // than twice around the vertex; 3D: front edges on more than two front faces).
+    const auto label_components = [this](const int l) {
+        std::vector<size_t> parent(tri_capacity());
+        std::iota(parent.begin(), parent.end(), size_t(0));
+        const auto root = [&parent](size_t x) {
+            while (parent[x] != x) {
+                parent[x] = parent[parent[x]];
+                x = parent[x];
+            }
+            return x;
+        };
+        size_t n = 0;
+        for (const Tuple& t : get_faces()) {
+            const size_t fid = t.fid(*this);
+            if (m_face_extra[fid].label != l) continue;
+            ++n;
+            for (int j = 0; j < 3; ++j) {
+                const std::optional<Tuple> o = tuple_from_edge(fid, size_t(j)).switch_face(*this);
+                if (!o || m_face_extra[o->fid(*this)].label != l) continue;
+                const size_t a = root(fid), b = root(o->fid(*this));
+                if (a != b) {
+                    parent[a] = b;
+                    --n;
+                }
+            }
+        }
+        return n;
+    };
+    const auto nonmanifold_front_vertices = [this]() {
+        std::map<size_t, int> n;
+        for (const std::array<size_t, 2>& e : offset_surface_edges()) { // sorted pairs
+            ++n[e[0]];
+            ++n[e[1]];
+        }
+        size_t c = 0;
+        for (const auto& vk : n) c += vk.second > 2 ? 1 : 0;
+        return c;
+    };
+    // E: the sum of tri_energy() over the live triangles, as 3D's global_energy() sums
+    // tet_energy() -- 2D's present energy until the energy step makes tri_energy() its twin.
+    const auto energy = [this]() {
+        double e = 0.;
+        for (const Tuple& f : get_faces()) e += tri_energy(f.fid(*this));
+        return e;
+    };
+
+    const double e0 = energy();
+    const size_t band0 = label_components(2), non0 = label_components(0);
+    const size_t nm0 = nonmanifold_front_vertices();
+    std::vector<char> flipped(tri_capacity(), 0);
+    size_t to_band = 0, to_non = 0, n_odd = 0;
+    int passes = 0;
+    // The last pass's verdicts: that pass flips nothing, so they are what the clean-up leaves.
+    size_t n_cand = 0, n_want = 0, n_skip = 0, n_refused_held = 0, n_refused_tag = 0;
+    size_t n_unreachable = 0; // of n_refused_held: non-band and wholly inside the level set
+    std::string unreachable_where;
+    std::array<size_t, 4> n_refused{}; // by f
+    for (;;) {
+        ++passes;
+        std::vector<size_t> cands;
+        for (const Tuple& t : get_faces()) {
+            if (has_front_face(t.fid(*this))) cands.push_back(t.fid(*this));
+        }
+        std::sort(cands.begin(), cands.end());
+        n_cand = cands.size();
+        n_want = 0;
+        n_skip = 0;
+        n_refused_held = 0;
+        n_refused_tag = 0;
+        n_unreachable = 0;
+        unreachable_where.clear();
+        n_refused.fill(0);
+        size_t n_now = 0;
+        // The tests are pure reads, so the order they are asked in decides only what is counted:
+        // the side test first, so that the counts are of triangles on the other side.
+        for (const size_t fid : cands) {
+            if (!wants_flip(fid)) continue;
+            ++n_want;
+            if (!eligible(fid)) {
+                ++n_skip;
+                continue;
+            }
+            bool allow = false, odd = false;
+            const int f = topology(fid, allow, odd);
+            if (!allow) {
+                ++n_refused[size_t(f)];
+                continue;
+            }
+            if (!held_allows(fid)) {
+                ++n_refused_held;
+                if (!face_is_offset_band(fid) && inside_level_set(fid)) {
+                    const auto [depth, at] = held_depth(fid);
+                    const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+                    if (depth > front_conv_of(place_piece(vs.data(), 3)) && n_unreachable++ == 0) {
+                        unreachable_where = at;
+                    }
+                }
+                continue;
+            }
+            CellTag tag;
+            if (!joined_tag(fid, tag)) {
+                ++n_refused_tag;
+                continue;
+            }
+            if (flipped[fid]) {
+                log_and_throw_error(
+                    "[label cleanup] {}: triangle {} flips a second time; its side test reads its "
+                    "own corners alone, which the clean-up does not move",
+                    where,
+                    fid);
+            }
+            // The topology test reads the label the triangle joins only; on a manifold front the
+            // old label cannot meet the triangle again (as in 3D: throw rather than count it).
+            if (odd) {
+                log_and_throw_error(
+                    "[label cleanup] {}: triangle {} (f = {}) passes the topology test, but its "
+                    "old "
+                    "label meets it again at a front vertex, which the test does not read",
+                    where,
+                    fid,
+                    f);
+            }
+            flipped[fid] = 1;
+            ++(face_is_offset_band(fid) ? to_non : to_band);
+            n_odd += odd ? 1 : 0;
+            flip(fid, tag);
+            ++n_now;
+        }
+        if (n_now == 0) break;
+    }
+    m_unreachable_cells = n_unreachable;
+    m_unreachable_where = unreachable_where;
+    double e1 = e0;
+    size_t band1 = band0, non1 = non0, nm1 = nm0;
+    if (to_band + to_non > 0) {
+        // What reads the front beyond the flipped triangles' closure: the band-region map,
+        // rebuilt as each turn rebuilds it; DEBUG_crossings' snapshot, taken here so that the
+        // smoothing pass is compared with the front it starts from.
+        assign_band_regions(/*log=*/false);
+        if (m_offset_params.debug_crossings && m_round > 0) {
+            crossing_snapshot("label cleanup", true, true);
+        }
+        check_offset_membership("label cleanup"); // perform_sanity_checks only
+        e1 = energy();
+        band1 = label_components(2);
+        non1 = label_components(0);
+        nm1 = nonmanifold_front_vertices();
+    }
+    logger().info(
+        "\t[label cleanup] {}: {} | {} pass(es), flipped non-band -> band {}, band -> non-band {} "
+        "({} of them with f = 2 where the old label meets the triangle again, at a front vertex, "
+        "not tested) | left after the last pass: {} triangles with a front edge, {} on the other "
+        "side by the side test, of which {} skipped for eligibility, refused by topology f=0 {}, "
+        "f=1 {}, f=3 {}, by the held objects {} ({} wholly inside the level set), for no single "
+        "tag {} | E {:.9g} -> {:.9g} | components (edge adjacency) band {} -> {}, non-band {} -> "
+        "{} | non-manifold front vertices (on more than two front edges) {} -> {}",
+        where,
+        mode,
+        passes,
+        to_band,
+        to_non,
+        n_odd,
+        n_cand,
+        n_want,
+        n_skip,
+        n_refused[0],
+        n_refused[1],
+        n_refused[3],
+        n_refused_held,
+        n_unreachable,
+        n_refused_tag,
+        e0,
+        e1,
+        band0,
+        band1,
+        non0,
+        non1,
+        nm0,
+        nm1);
+    if (band1 != band0 || non1 != non0) {
+        log_and_throw_error(
+            "[label cleanup] {}: the flips changed the topology -- band components {} -> {}, "
+            "non-band components {} -> {} -- which the topology test forbids, a bug ({} flips had "
+            "the old label meeting the triangle again, which the test does not read)",
+            where,
+            band0,
+            band1,
+            non0,
+            non1,
+            n_odd);
+    }
+}
+
+void TopoOffsetTriMesh::loop_group(const std::array<int, 4>& ops, const std::string& where)
+{
+    // See the declaration.
+    if (m_offset_params.label_cleanup == "off" || !(ops[0] > 0 || ops[1] > 0 || ops[2] > 0)) {
+        local_operations(ops);
+        return;
+    }
+    local_operations({{ops[0], ops[1], ops[2], 0}});
+    label_cleanup(where);
+    held_topology_check("label_cleanup");
+    // DEBUG_output: the clean-up's own frame, so its flips are seen apart from the smoothing pass
+    // that follows it. As in 3D.
+    if (m_offset_params.debug_output) {
+        const std::string name = m_debug_pass_name;
+        m_debug_pass_name = "label_cleanup";
+        write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        m_debug_pass_name = name;
+    }
+    if (ops[3] > 0) local_operations({{0, 0, 0, ops[3]}});
+}
+
 void TopoOffsetTriMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
@@ -4026,6 +5034,8 @@ void TopoOffsetTriMesh::optimize_offset_loop(
     check_no_vertex_on_both_surfaces("construction");
     log_region_edge_mask_health("construction");
     audit_surface_containment("construction");
+    // Each loop judges its own (the init_optimize loop and the loop after it). As in 3D.
+    m_unreachable_cells = 0;
     needle_scan("after construction, before the loop");
     assign_band_regions();
     m_front_gradient_reference = front_gradient_linf();
@@ -4112,7 +5122,8 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
                 smooth_group_to_convergence(group_names[gi]);
             } else {
-                local_operations(groups[gi]);
+                // EXPERIMENTAL_label_cleanup between the operation passes and the smoothing.
+                loop_group(groups[gi], fmt::format("turn {} {} group", it + 1, group_names[gi]));
             }
             refresh_released_envelope(); // the smoothing in this group moved the boundaries
             // Per group, so a containment violation is attributed to the pass that made it
@@ -4275,6 +5286,10 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 ec.max_ring,
                 n);
         }
+        // 3D checks the level set's reach here too, at a settled turn (settle_refinement_turn()
+        // sets m_turn_settled; check_level_set_reachable()), where the clean-up's refusals are no
+        // longer the front on its way. 2D has no settle test yet: the settle step of the 2D
+        // lock-step port adds that call here; until then only the loop's end checks.
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
         // turn's final state, so what it carries is the sizing field the halving just lowered.
         if (m_offset_params.debug_output) {
@@ -4370,6 +5385,7 @@ void TopoOffsetTriMesh::optimize_offset_loop(
             return;
         }
     }
+    check_level_set_reachable("the loop's end");
     logger().warn(
         "The loop did not converge in {} turns (max_rounds){}",
         budget,
@@ -4396,6 +5412,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // The baseline the propagation has to hold from here on: label_offset_boundary() marks the
     // flag from the construction labels; this asks the live label test the same question.
     check_offset_membership("construction");
+    held_topology_check("construction"); // DEBUG_held_topology's baseline
 
     // deform_others: from here on, other input regions deform instead of being envelope-held.
     // deform_others was removed on the 3D-only branch spenbert/offsets-cleanup (2026-10-13); its

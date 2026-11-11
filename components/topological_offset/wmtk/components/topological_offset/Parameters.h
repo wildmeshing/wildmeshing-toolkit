@@ -91,8 +91,9 @@ struct Parameters : public wmtk::OptimizerParameters
     // misses the target is still a usable offset, and the warnings name the criterion that failed.
     // Integration tests set it true so a convergence regression fails rather than warns.
     bool throw_on_nonconvergence;
-    /// 3D (2026-11-10): throw when the level set is out of reach without the band touching a
-    /// held object (TopoOffsetTetMesh::check_level_set_reachable()); false warns. See the spec.
+    /// 3D (2026-11-10), 2D (2026-11-11): throw when the level set is out of reach without the band
+    /// touching a held object (TopoOffsetTetMesh / TopoOffsetTriMesh::check_level_set_reachable());
+    /// false warns. See the spec.
     bool throw_on_unreachable_level_set = true;
     /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
     /// called and the constructed band is written as the result.
@@ -162,7 +163,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
     /// Log-only: after every operation pass, the held objects' contact topology against the pass
-    /// before (TopoOffsetTetMesh::held_topology_check(); see the spec).
+    /// before (TopoOffsetTetMesh / TopoOffsetTriMesh::held_topology_check(); see the spec).
     bool debug_held_topology = false;
     /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
     /// split every pinned cell until none is left (TopoOffsetTetMesh::front_pocket_split()).
@@ -185,7 +186,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
     /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off", "one_sided",
     /// "one_sided_tips", "one_sided_at_target" (the default) or "energy_decrease" (it needs
-    /// band_volume_rule "surface").
+    /// band_volume_rule "surface"). 2D (TopoOffsetTriMesh::label_cleanup()): "off" and
+    /// "one_sided"; it refuses the others until its per-cell energy carries the band term.
     std::string label_cleanup = "one_sided_at_target";
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
