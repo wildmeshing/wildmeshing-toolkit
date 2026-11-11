@@ -172,20 +172,32 @@ The first build clones the data repository into `data/`.
 ## In CI
 
 [`.github/workflows/continuous.yml`](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/.github/workflows/continuous.yml)
-runs on every pull request and every push to `main`, in eight jobs:
+runs on every pull request and every push to `main`, in nine jobs:
 
 | Job (check name) | Runner | Configs |
 |---|---|---|
 | `Linux` | `ubuntu-latest` | Debug, Release |
 | `Linux arm64` | `ubuntu-24.04-arm` | Debug, Release |
+| `Linux per-input orientation` | `ubuntu-latest` | Release |
 | `macos-latest` | `macos-latest` | Debug, Release |
 | `Windows 2025 (VS 2026)` | `windows-2025-vs2026` | Debug, Release |
 
-A check is named after its job and config, as in `Linux (Release)`.
+A check is named after its job and config, as in `Linux (Release)`. A new push to a pull request
+cancels the run of the previous one.
 
-Each job configures with `CMAKE_BUILD_TYPE` set to its config, builds with two jobs (`make -j2`;
-Ninja on Windows) behind a compiler cache (ccache; sccache on Windows), and runs
-`ctest --verbose --output-on-failure`, one test at a time (`CTEST_PARALLEL_LEVEL: 1`). So:
+Each job configures with `CMAKE_BUILD_TYPE` set to its config, builds with as many jobs as the
+runner has cores (`make`; Ninja on Windows) behind a compiler cache (ccache; sccache on
+Windows), and runs `ctest --verbose --output-on-failure`, one test per core
+(`CTEST_PARALLEL_LEVEL`: 4, 3 on macOS). So a test that writes files must write them in a
+directory of its own, or under names no other test uses; the long ones carry a `COST`, so they
+start first. The
+Debug builds use `-g1` (`-g` makes the cache several times larger), and the Windows builds no
+debug information at all.
+
+The compiler cache is restored from the newest one of the same runner and config, and saved
+right after the build, whether the build or the tests pass or not; ccache is first trimmed to
+the entries the build used, and sccache is capped at 1 GB. The Windows jobs fail when the compile
+commands do not go through sccache. So:
 
 - every job runs the library, component and memory-route tests, with the `release_only` cases
   in the Release jobs only;

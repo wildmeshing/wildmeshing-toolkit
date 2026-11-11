@@ -34,10 +34,14 @@ if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
         CCACHE_BASEDIR=${CMAKE_BINARY_DIR}
         CCACHE_SLOPPINESS=clang_index_store,include_file_ctime,include_file_mtime,locale,pch_defines,time_macros
     )
+    # A launcher given on the command line wins: -DCMAKE_CXX_COMPILER_LAUNCHER=sccache, as the
+    # Windows CI job passes, is not replaced by a ccache that happens to be on PATH.
     foreach(lang IN ITEMS C CXX)
-        set(CMAKE_${lang}_COMPILER_LAUNCHER
-            ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
-        )
+        if(NOT DEFINED CMAKE_${lang}_COMPILER_LAUNCHER)
+            set(CMAKE_${lang}_COMPILER_LAUNCHER
+                ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
+            )
+        endif()
     endforeach()
 endif()
 

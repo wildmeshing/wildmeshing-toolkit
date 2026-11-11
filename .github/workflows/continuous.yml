@@ -19,9 +19,22 @@ on:
         type: boolean
         default: false
 
+# A new push to a pull request cancels the run of the previous one. Pushes to main and manual runs
+# each get a group of their own (the run id), so they are never cancelled.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+# Compiler caches. Each job restores the newest cache of its runner and config, and saves it right
+# after the build -- whether the build or the tests pass or not, so a failing pull request still
+# leaves the next push its objects. ccache is trimmed first to the entries this build used: the
+# repository's 10 GB of Actions cache holds every job's, and stale entries pushed main's out.
+#
+# Tests run in parallel, one per core (CTEST_PARALLEL_LEVEL per job). Long tests carry a COST
+# (tests/CMakeLists.txt, components/cmake/add_component_test.cmake, docs/examples/CMakeLists.txt)
+# so they start first.
 env:
   CTEST_OUTPUT_ON_FAILURE: ON
-  CTEST_PARALLEL_LEVEL: 1
 
 jobs:
   ####################
@@ -56,6 +69,9 @@ jobs:
             config: Release
             integration_tests_flag: *integration_tests_on
             name: Linux arm64
+    env:
+      # The runners have 4 cores.
+      CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -70,36 +86,56 @@ jobs:
           # tests/python/test_tracking.py); python3-pytest: and the pipeline's
           # (tests/python/test_pipeline.py).
           sudo apt-get -o Acquire::Retries=3 install ccache python3-numpy python3-pytest
-          echo 'CACHE_PATH=~/.cache/ccache' >> "$GITHUB_ENV"
+          echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
 
       # runner.arch keeps the x86-64 and arm64 jobs apart: runner.os is "Linux" for both, so
       # without it the two jobs of one config shared a cache, each restoring the other's objects
       # (no use across architectures) and saving them again.
-      - name: Cache Build
-        id: cache-build
-        uses: actions/cache@v5
+      - name: Restore ccache
+        id: restore-cache
+        uses: actions/cache/restore@v5
         with:
-          path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.config }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.config }}-cache
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.config }}-${{ github.sha }}
+          restore-keys: ccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.config }}-
 
       - name: Prepare ccache
         run: |
-          # ccache --max-size=20.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
+          # What the build uses from here on survives the trim below.
+          echo "CCACHE_SINCE=$(date +%s)" >> "$GITHUB_ENV"
 
+      # ccache through CMakeLists.txt's launcher, which finds it on PATH and sets its base
+      # directory and sloppiness. Debug builds with -g1 (functions and line tables, no
+      # variables): enough for the backtrace step below, and a cache several times smaller.
       - name: Configure
         run: |
           mkdir -p build
           cd build
           cmake .. \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -DCMAKE_C_FLAGS_DEBUG=-g1 -DCMAKE_CXX_FLAGS_DEBUG=-g1 \
             -DWMTK_BUILD_DOC_EXAMPLES=${{ matrix.config == 'Release' && 'ON' || 'OFF' }} \
             ${{ matrix.integration_tests_flag }}
 
       - name: Build
-        run: cd build; make -j2; ccache --show-stats
+        id: build
+        run: cd build; make -j"$(nproc)"; ccache --show-stats
+
+      - name: Trim ccache
+        if: always() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure')
+        run: |
+          ccache --evict-older-than "$(( $(date +%s) - CCACHE_SINCE + 60 ))s"
+          ccache --show-stats
+
+      - name: Save ccache
+        if: >-
+          always() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure') &&
+          steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
       - name: Tests
         run: cd build; ctest --verbose --output-on-failure
@@ -146,6 +182,10 @@ jobs:
   LinuxPerInputOrientation:
     name: Linux per-input orientation (Release)
     runs-on: ubuntu-latest
+    env:
+      WMTK_ORIENTATION_TESTS: >-
+        wmtk_tests wmtk_component_io_tests wmtk_test_tetwild wmtk_test_triwild wmtk_test_simwild
+        wmtk_test_topological_offset
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -156,42 +196,70 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -o Acquire::Retries=3 install ccache
-          echo 'CACHE_PATH=~/.cache/ccache' >> "$GITHUB_ENV"
+          echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
 
-      - name: Cache Build
-        id: cache-build
-        uses: actions/cache@v5
+      - name: Restore ccache
+        id: restore-cache
+        uses: actions/cache/restore@v5
         with:
-          path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ runner.arch }}-Release-orientation-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ runner.arch }}-Release-orientation-cache
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ runner.arch }}-Release-orientation-${{ github.sha }}
+          restore-keys: ccache-${{ runner.os }}-${{ runner.arch }}-Release-orientation-
+
+      - name: Prepare ccache
+        run: |
+          ccache -V && ccache --show-stats && ccache --zero-stats
+          echo "CCACHE_SINCE=$(date +%s)" >> "$GITHUB_ENV"
 
       - name: Configure
         run: |
           mkdir -p build
           cd build
           cmake .. \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=Release \
             -DWMTK_PER_INPUT_ORIENTATION=ON
 
       - name: Build
+        id: build
         run: |
           cd build
-          make -j2 wmtk_tests wmtk_component_io_tests wmtk_test_tetwild wmtk_test_triwild \
-            wmtk_test_simwild wmtk_test_topological_offset
+          make -j"$(nproc)" $WMTK_ORIENTATION_TESTS
           ccache --show-stats
 
+      - name: Trim ccache
+        if: always() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure')
+        run: |
+          ccache --evict-older-than "$(( $(date +%s) - CCACHE_SINCE + 60 ))s"
+          ccache --show-stats
+
+      - name: Save ccache
+        if: >-
+          always() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure') &&
+          steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+
+      # One binary per core, each into its own log, printed one group each once all are done;
+      # every binary runs, and the step fails if any did.
       - name: Tests
         run: |
           cd build
-          for t in wmtk_tests wmtk_component_io_tests wmtk_test_tetwild wmtk_test_triwild \
-            wmtk_test_simwild wmtk_test_topological_offset; do
-            bin=$(find . -type f -perm -u+x -name "$t" | head -1)
+          mkdir -p orientation-logs
+          printf '%s\n' $WMTK_ORIENTATION_TESTS | xargs -P"$(nproc)" -I{} sh -c '
+            bin=$(find . -type f -perm -u+x -name "{}" | head -1)
+            "$bin" --allow-running-no-tests > "orientation-logs/{}.log" 2>&1
+            echo $? > "orientation-logs/{}.rc"'
+          failed=0
+          for t in $WMTK_ORIENTATION_TESTS; do
             echo "::group::$t"
-            "$bin" --allow-running-no-tests
+            cat "orientation-logs/$t.log"
             echo "::endgroup::"
+            rc=$(cat "orientation-logs/$t.rc")
+            if [ "$rc" != 0 ]; then echo "::error::$t failed (exit code $rc)"; failed=1; fi
           done
+          exit $failed
 
   ####################
   # MacOS
@@ -211,6 +279,9 @@ jobs:
             config: Release
             integration_tests_flag: *integration_tests_on
 
+    env:
+      # macos-latest has 3 cores.
+      CTEST_PARALLEL_LEVEL: 3
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -220,33 +291,50 @@ jobs:
       - name: Dependencies
         run: |
           brew install ccache
-          echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
+          echo "CCACHE_DIR=$HOME/Library/Caches/ccache" >> "$GITHUB_ENV"
 
-      - name: Cache Build
-        id: cache-build
-        uses: actions/cache@v5
+      - name: Restore ccache
+        id: restore-cache
+        uses: actions/cache/restore@v5
         with:
-          path: ${{ env.CACHE_PATH }}
-          key: ${{ matrix.os }}-${{ matrix.config }}-cache-${{ github.sha }}
-          restore-keys: ${{ matrix.os }}-${{ matrix.config }}-cache
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.config }}-${{ github.sha }}
+          restore-keys: ccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.config }}-
 
       - name: Prepare ccache
         run: |
-          # ccache --max-size=20.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
+          echo "CCACHE_SINCE=$(date +%s)" >> "$GITHUB_ENV"
 
+      # As on Linux: ccache through CMakeLists.txt's launcher, Debug with -g1.
       - name: Configure
         run: |
           mkdir -p build
           cd build
           cmake .. \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -DCMAKE_C_FLAGS_DEBUG=-g1 -DCMAKE_CXX_FLAGS_DEBUG=-g1 \
             -DWMTK_BUILD_DOC_EXAMPLES=${{ matrix.config == 'Release' && 'ON' || 'OFF' }} \
             ${{ matrix.integration_tests_flag }}
 
       - name: Build
-        run: cd build; make -j2; ccache --show-stats
+        id: build
+        run: cd build; make -j"$(sysctl -n hw.ncpu)"; ccache --show-stats
+
+      - name: Trim ccache
+        if: always() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure')
+        run: |
+          ccache --evict-older-than "$(( $(date +%s) - CCACHE_SINCE + 60 ))s"
+          ccache --show-stats
+
+      - name: Save ccache
+        if: >-
+          always() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure') &&
+          steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
       - name: Tests
         run: cd build; ctest --verbose --output-on-failure
@@ -295,6 +383,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SCCACHE_IDLE_TIMEOUT: "12000"
+      # sccache cannot be trimmed to the entries a build used, as ccache is on Linux and macOS:
+      # this caps what each Windows job keeps in the repository's 10 GB of Actions cache.
+      SCCACHE_CACHE_SIZE: 1G
+      # The runners have 4 cores.
+      CTEST_PARALLEL_LEVEL: 4
     strategy:
       fail-fast: false
       matrix:
@@ -327,38 +420,85 @@ jobs:
         run: |
           "SCCACHE_DIR=${env:LOCALAPPDATA}\Mozilla\sccache" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Cache build
-        id: cache-build
-        uses: actions/cache@v5
+      - name: Restore sccache
+        id: restore-cache
+        uses: actions/cache/restore@v5
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ matrix.config }}-cache
+          key: sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.config }}-${{ github.sha }}
+          restore-keys: sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.config }}-
 
       - name: Prepare sccache
         run: |
-          sccache --max-size=1.0G
           sccache -V && sccache --show-stats && sccache --zero-stats
 
+      # No debug information (CMAKE_MSVC_DEBUG_INFORMATION_FORMAT empty): sccache cannot cache
+      # /Zi, the Debug default, and /Z7 objects make a cache several times larger. Nothing in
+      # these jobs reads the debug information.
       - name: Configure
         shell: cmd
         run: |
           call "${{ matrix.vs_path }}" -arch=x64
           cmake -G Ninja ^
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
-            -DCMAKE_POLICY_DEFAULT_CMP0141=NEW ^
-            -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded ^
+            -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
             -DWMTK_BUILD_DOC_EXAMPLES=${{ matrix.config == 'Release' && 'ON' || 'OFF' }} ^
             ${{ matrix.integration_tests_flag }} ^
             -B build ^
             -S .
 
+      # Until this check existed the Windows jobs compiled everything, every run, and nothing
+      # said so: sccache logged no compilation at all and its cache directory was never created,
+      # so the cache step had nothing to save. Fail here, before the build, when the compile
+      # commands do not go through sccache.
+      - name: Check the compiler launcher
+        run: |
+          $launcher = Select-String -Path build\build.ninja -Pattern '^\s+LAUNCHER = (.+)$' | Select-Object -First 1
+          Write-Output "ccache on PATH: $((Get-Command ccache -ErrorAction SilentlyContinue).Source)"
+          if (-not $launcher -or $launcher.Matches[0].Groups[1].Value -notmatch 'sccache') {
+            Write-Output "::error::The compile commands do not go through sccache: $($launcher.Line)"
+            exit 1
+          }
+          Write-Output "Compile launcher: $($launcher.Matches[0].Groups[1].Value.Trim())"
+
       - name: Build
+        id: build
         shell: cmd
         run: |
           call "${{ matrix.vs_path }}" -arch=x64
-          cmake --build build -j2 && sccache --show-stats
+          cmake --build build --parallel %NUMBER_OF_PROCESSORS% && sccache --show-stats
+
+      # A build that compiled nothing through sccache fails, rather than passing with an empty
+      # cache; one sccache could not cache much of warns.
+      - name: Check sccache
+        run: |
+          $s = (sccache --show-stats --stats-format=json | ConvertFrom-Json).stats
+          $requests = $s.compile_requests
+          $uncacheable = $s.requests_not_cacheable
+          Write-Output "sccache: $requests compile requests, $uncacheable not cacheable"
+          if ($requests -eq 0) {
+            Write-Output "::error::sccache saw no compilation: the build did not go through it"
+            exit 1
+          }
+          if ($uncacheable -gt $requests / 10) {
+            Write-Output "::warning::sccache could not cache $uncacheable of $requests compilations (see the stats above)"
+          }
+
+      # Stopped before the cache is saved, so it has written everything out.
+      - name: Stop sccache
+        if: always() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure')
+        run: sccache --stop-server
+
+      - name: Save sccache
+        if: >-
+          always() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure') &&
+          steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
       - name: Tests
         run: |
