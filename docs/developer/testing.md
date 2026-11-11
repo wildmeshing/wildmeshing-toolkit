@@ -203,9 +203,10 @@ commands do not go through sccache. So:
   in the Release jobs only;
 - the Release jobs add `-DWMTK_BUILD_INTEGRATION_TESTS=ON` and `-DWMTK_BUILD_DOC_EXAMPLES=ON`,
   and run every listed integration config and the documentation's C++ examples;
-- the Linux jobs install `python3-numpy`, so they run the registered Python tests, and in
-  Release the Python and JSON examples; the other jobs run them if the interpreter CMake finds
-  has NumPy.
+- the Linux jobs install `python3-numpy`, so they run the registered Python tests; the
+  `Linux arm64 (Release)` job also runs the Python and JSON examples (`Linux (Release)` leaves
+  them out with `ctest -E`: they were its longest test). The macOS and Windows jobs run the
+  Python tests and examples if the interpreter CMake finds has NumPy.
 
 When the tests fail on Linux or macOS, a last step re-runs the component test executables under
 gdb or lldb and prints the backtrace of every thread, for a crash that leaves only a signal in

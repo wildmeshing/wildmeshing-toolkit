@@ -56,6 +56,12 @@ jobs:
             config: Release
             integration_tests_flag: &integration_tests_on "-DWMTK_BUILD_INTEGRATION_TESTS=ON"
             name: Linux
+            # The documentation's Python and JSON examples run in the arm64 Release job only.
+            # On x86-64 they were the longest test of the run, 11 minutes alone and 31 beside
+            # the other tests (the runners' four vCPUs gain little from running tests side by
+            # side); arm64 runs them in 19 beside the others. Every Release job still runs the
+            # C++ examples.
+            ctest_args: -E "^doc_examples_python_json$"
           # arm64 runners. Until these existed the matrix covered Linux only on x86-64 and
           # arm64 only on macOS, so no job compiled the combination -- which is exactly where
           # a `char` signedness bug in VolumeRemesher hid: `char` is signed on x86-64 and on
@@ -138,7 +144,7 @@ jobs:
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
       - name: Tests
-        run: cd build; ctest --verbose --output-on-failure
+        run: cd build; ctest --verbose --output-on-failure ${{ matrix.ctest_args }}
 
       # A crash in CI otherwise reports a bare signal and nothing else: Catch2 prints
       # "SIGILL - Illegal instruction signal" and the name of the test that was running, with no
