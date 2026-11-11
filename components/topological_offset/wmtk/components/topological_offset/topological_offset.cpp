@@ -140,22 +140,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // The 3D branch below, one dimension down, step for step; where 2D differs the comment
         // says why.
         logger().info("Input mesh (2D trimesh): {}", input_path);
-        // Several entries of offsets, and growth_mode: the several-offsets and growth step of the
-        // 2D lock-step port, not yet here. 2D's march and loop are the one-entry ones
-        // (label_input_complex() refuses several entries), and its loop has no growth stages: a
-        // growth_mode would run as "none", silently.
-        if (params.offsets.size() > 1) {
-            log_and_throw_error(
-                "2D: {} entries of offsets; the 2D offset takes one until the several-offsets and "
-                "growth step of the 2D lock-step port",
-                params.offsets.size());
-        }
-        if (params.growth_mode != "none") {
-            log_and_throw_error(
-                "2D: growth_mode \"{}\"; the 2D offset runs \"none\" until the several-offsets and "
-                "growth step of the 2D lock-step port",
-                params.growth_mode);
-        }
+        // Several entries of offsets and growth_mode run as in 3D, in the mesh's own steps below:
+        // each entry labelled alone (label_input_complex()), its march, field and integral its
+        // own, and the growth stages and attempts in optimize_offset() (linear_growth(),
+        // smart_growth()). Where 2D differs: growth_mode "smart" cannot put the mesh back after a
+        // failed attempt (TriMesh has no rebuild of a live mesh from an image), so a failed
+        // attempt throws (TopoOffsetTriMesh::smart_growth()).
         // As in 3D: the energy's band term reads the euclidean distance to the input's segments
         // (ExactBandIntegral2D), and the smooth field has no band term of its own yet.
         if (params.offset_field != "euclidean") {
