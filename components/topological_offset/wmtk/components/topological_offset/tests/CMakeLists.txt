@@ -11,6 +11,7 @@ set(SRC_FILES
     test_topological_offset.cpp
     test_offset_potential.cpp
     test_exact_band_integral.cpp
+    test_exact_band_integral_2d.cpp
     test_exact_band_front.cpp
     test_exact_swept.cpp
     exact_band_integral_data.hpp
