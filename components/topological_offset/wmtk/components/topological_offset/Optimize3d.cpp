@@ -6564,23 +6564,43 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
         return be->distance_bound(p) < region_delta(piece);
     };
-    // The first held corner of t: its kind and position, for the message.
-    const auto describe_held = [&](const size_t tid) {
-        for (const size_t v : oriented_tet_vids(tid)) {
-            if (!held_object_vertex(v)) continue;
-            const bool anchored =
-                m_track_feature_points &&
-                m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT;
-            const char* kind = m_vertex_extra[v].label == 1 ? "the input complex"
-                               : anchored
-                                   ? "an anchored point (an input point, a curve end or a junction)"
-                               : !m_vertex_attribute[v].on_bbox_faces.empty() ? "the box"
-                               : m_vertex_extra[v].m_is_on_region             ? "a region boundary"
-                                                                              : "a held curve";
-            const Vector3d& x = m_vertex_attribute[v].m_posf;
-            return fmt::format("{} at ({:.4g}, {:.4g}, {:.4g})", kind, x[0], x[1], x[2]);
+    // A held vertex's kind and position, for the message.
+    const auto describe_held = [&](const size_t v) -> std::string {
+        const bool anchored = m_track_feature_points &&
+                              m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT;
+        const char* kind = m_vertex_extra[v].label == 1 ? "the input complex"
+                           : anchored
+                               ? "an anchored point (an input point, a curve end or a junction)"
+                           : !m_vertex_attribute[v].on_bbox_faces.empty() ? "the box"
+                           : m_vertex_extra[v].m_is_on_region             ? "a region boundary"
+                                                                          : "a held curve";
+        const Vector3d& x = m_vertex_attribute[v].m_posf;
+        return fmt::format("{} at ({:.4g}, {:.4g}, {:.4g})", kind, x[0], x[1], x[2]);
+    };
+    // How deep inside the level set t's held corners lie: the max over them of the piece's target
+    // minus d, and the deepest one's kind and position. Within front_conv of the level set a front
+    // passing outside the held object is already within the bar, so only a held object deeper
+    // than that makes the level set out of reach (MEASURED, double_sphere with tag_1 held, 4
+    // threads, exact_swept: a refused cell's held corner on tag_1's surface 0.001 inside, against
+    // front_conv 0.005, threw at turn 5 before this; the held point, 0.05 inside against 0.03,
+    // throws).
+    const auto held_depth = [&](const size_t tid) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const int piece = place_piece(vs.data(), 4);
+        const std::shared_ptr<const ExactBandIntegral>& be = band_exact_for(piece);
+        double depth = -std::numeric_limits<double>::infinity();
+        size_t deepest = vs[0];
+        for (const size_t v : vs) {
+            if (!be || !held_object_vertex(v)) continue;
+            const double dv = region_delta(piece) - be->distance(m_vertex_attribute[v].m_posf);
+            if (dv > depth) {
+                depth = dv;
+                deepest = v;
+            }
         }
-        return std::string("a held object");
+        return std::pair<double, std::string>(
+            depth,
+            fmt::format("{}, {:.4g} inside the level set", describe_held(deepest), depth));
     };
 
     // A flip, and everything derived from t's label, which lives on t's closure: the closed labels
@@ -6736,8 +6756,12 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             }
             if (!held_allows(tid)) {
                 ++n_refused_held;
-                if (!cell_is_offset_band(tid) && inside_level_set(tid) && n_unreachable++ == 0) {
-                    unreachable_where = describe_held(tid);
+                if (!cell_is_offset_band(tid) && inside_level_set(tid)) {
+                    const auto [depth, where] = held_depth(tid);
+                    if (depth > front_conv_of(place_piece(oriented_tet_vids(tid).data(), 4)) &&
+                        n_unreachable++ == 0) {
+                        unreachable_where = where;
+                    }
                 }
                 continue;
             }

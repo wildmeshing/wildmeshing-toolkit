@@ -6597,14 +6597,17 @@ TEST_CASE("unreachable-level-set-throws", "[offset][3d]" + release_only)
     // a held object the band did not touch as constructed. Inside the level set -- a held point,
     // a curve, a region boundary, the box, each 0.25 from p -- the run throws at a settled turn
     // or at the loop's end (MEASURED: the held point at turn 2). A curve the band crosses as
-    // constructed (through p) is reachable by moving the crossing along it: no throw.
+    // constructed (through p) is reachable by moving the crossing along it: no throw. Nor a held
+    // point inside the level set by less than front_conv (q 0.25 from p at target 0.27: 0.02
+    // inside, front_conv 0.027): a front passing outside it is within the bar.
     const std::string rule = GENERATE("exact", "exact_swept");
-    const std::string held = GENERATE("point", "curve", "region", "box", "curve through p");
+    const std::string held =
+        GENERATE("point", "curve", "region", "box", "curve through p", "point within the bar");
     INFO("EXPERIMENTAL_band_volume_rule " << rule << ", held: " << held);
     const std::array<int, 3> p =
         held == "box" ? std::array<int, 3>{{1, 4, 4}} : std::array<int, 3>{{4, 4, 4}};
     std::vector<std::pair<std::string, std::array<int, 3>>> points{{"p", p}};
-    if (held == "point") points.push_back({"q", {{5, 4, 4}}});
+    if (held == "point" || held == "point within the bar") points.push_back({"q", {{5, 4, 4}}});
     std::vector<std::pair<std::string, GridPolyline>> curves;
     if (held == "curve") curves.push_back({"curve", {{{2, 5, 4}}, {{6, 5, 4}}}});
     if (held == "curve through p") curves.push_back({"curve", {{{1, 4, 4}}, {{7, 4, 4}}}});
@@ -6619,14 +6622,15 @@ TEST_CASE("unreachable-level-set-throws", "[offset][3d]" + release_only)
         }
         tets.attributes["tags"] = {tags, {"A", "B"}};
     }
+    const double target = held == "point within the bar" ? 0.27 : 0.3;
     const nlohmann::json j = {
         {"input", "m"},
-        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}})},
         {"EXPERIMENTAL_band_volume_rule", rule},
         {"max_rounds", 3},
         {"num_threads", 1},
         {"throw_on_nonconvergence", false}};
-    if (held == "curve through p") {
+    if (held == "curve through p" || held == "point within the bar") {
         REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
     } else {
         REQUIRE_THROWS_WITH(
