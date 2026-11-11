@@ -1,9 +1,8 @@
 [build-system]
 # pybind11-stubgen and numpy write the type stub wildmeshing/_core.pyi from the module just built
-# (python/src/CMakeLists.txt); pybind11-stubgen 3 needs Python 3.10, so a 3.9 build has no stub.
+# (python/src/CMakeLists.txt).
 requires = ["scikit-build-core>=1.1", "pybind11>=2.11", "setuptools-scm>=8",
-            "pybind11-stubgen==3.0.0; python_version >= '3.10'",
-            "numpy; python_version >= '3.10'"]
+            "pybind11-stubgen==3.0.0", "numpy"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -13,7 +12,9 @@ name = "wildmeshing"
 dynamic = ["version"]
 description = "Python bindings for WildMeshingToolkit"
 readme = "README.md"
-requires-python = ">=3.9"
+# 3.9 reached its end of life in October 2025; cibuildwheel builds a wheel for every CPython this
+# allows.
+requires-python = ">=3.10"
 dependencies = ["numpy>=1.23"]
 license = { file = "LICENSE" }
 authors = [{ name = "WildMeshingToolkit" }]
@@ -36,12 +37,24 @@ skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*", "cp3??
 
 # Smoke-test every built wheel on its target platform/Python: install it into an
 # isolated environment and check dispatch, the NumPy memory interface and the pipeline
-# (the GUI's and the viewer's tests skip there: no polyscope). These need no external test data. The data-driven Python tests run in the Build workflow
-# (.github/workflows/continuous.yml), through ctest.
-# Volume.test_regions_kept is left to the Build workflow: it maps points through a mesh SimWild
-# builds with 4 threads, a different mesh every run, and a few of those meshes give a round trip
-# off by about 1e-3 (it failed one wheel build), a tracking question, not a packaging one.
+# (the GUI's and the viewer's tests skip there: no polyscope). These need no external test data.
+# The data-driven Python tests run in the Build workflow (.github/workflows/continuous.yml),
+# through ctest.
+#
+# test_tracking.py runs on the newest Python only (the override below): its cases run whole
+# tetwild and simwild pipelines, about 45 of the minute the set takes, and the compiled code they
+# go through is the same in every wheel of a platform; what differs between Python versions, the
+# module's bindings, the other files reach. Volume.test_regions_kept is left to the Build
+# workflow: it maps points through a mesh SimWild builds with 4 threads, a different mesh every
+# run, and a few of those meshes give a round trip off by about 1e-3 (it failed one wheel build),
+# a tracking question, not a packaging one.
 test-requires = "pytest"
+test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py {project}/tests/python/test_pipeline.py {project}/tests/python/test_gui.py {project}/tests/python/test_viewer.py"
+
+# The newest CPython, with the tracking tests (see test-command above). Move it to the next
+# version when one is added.
+[[tool.cibuildwheel.overrides]]
+select = "cp315-*"
 test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py {project}/tests/python/test_tracking.py {project}/tests/python/test_pipeline.py {project}/tests/python/test_gui.py {project}/tests/python/test_viewer.py -k \"not test_regions_kept\""
 
 [tool.cibuildwheel.linux]

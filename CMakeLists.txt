@@ -22,6 +22,16 @@ else()
     endif()
 endif()
 
+# Python builds (scikit-build-core): object files outside CMakeFiles/. scikit-build-core deletes the
+# build directory's top-level CMakeFiles/ whenever it builds in a new isolated environment, which
+# cibuildwheel does for every Python version, and with it the objects of the targets this file
+# defines (the toolkit library, metis, GKlib): each wheel recompiled them. CMake's SHORT strategy
+# (4.2 and later; older versions ignore it) keeps every target's objects in .o/ instead. Not with
+# Visual Studio, whose object directories are outside CMakeFiles/ already.
+if(DEFINED SKBUILD AND NOT CMAKE_GENERATOR MATCHES "^Visual Studio")
+    set(CMAKE_INTERMEDIATE_DIR_STRATEGY SHORT CACHE STRING "Naming of target intermediate directories")
+endif()
+
 # Enable ccache if available
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
