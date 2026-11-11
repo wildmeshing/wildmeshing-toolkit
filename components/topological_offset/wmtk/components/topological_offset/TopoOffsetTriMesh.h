@@ -458,8 +458,10 @@ public:
      * at its midpoint, off the front; the spanned triangle is the pinned one, and 3D's spanned
      * face is 2D's spanned edge (codimension 1, every corner on the front, not on the front
      * itself). Rescanned until nothing is left to split, at most kPocketMaxRounds rounds. One
-     * [pocket split] line, `where` naming the pass. A no-op with the key off and in the final
-     * pass (m_freeze_front; 3D: a TetWild pass).
+     * [pocket split] line, `where` naming the pass. Before all of it, the chords the last settled
+     * turn listed under EXPERIMENTAL_settle_mark "vertex_split" (m_settle_split_edges) are split,
+     * with one [settle split] line, as in 3D. A no-op with the key off and in the final pass
+     * (m_freeze_front; 3D: a TetWild pass).
      */
     void front_pocket_split(const std::string& where);
     /// 3D's cap on front_pocket_split()'s rescans (TopoOffsetTetMesh::kPocketMaxRounds), the
@@ -467,6 +469,10 @@ public:
     /// off the front) and removes at least one, so the rescans end on their own; the cap binds
     /// only where the front flags are out of step with the labels (check_offset_membership()).
     static constexpr int kPocketMaxRounds = 10;
+    /// EXPERIMENTAL_settle_mark "vertex_split": the front chords the last settled turn chose to
+    /// split (settle_refinement_turn()); front_pocket_split() splits them and clears the list. As
+    /// in 3D, whose list holds front edges of its faces.
+    std::vector<std::array<size_t, 2>> m_settle_split_edges;
     /**
      * @brief EXPERIMENTAL_label_cleanup (see the spec). The 2D twin of
      * TopoOffsetTetMesh::label_cleanup(), one dimension down: a cell is a triangle, its faces
@@ -489,14 +495,16 @@ public:
     /**
      * @name The level set out of reach
      * The last clean-up's non-band triangles wholly inside the level set (the one-sided side
-     * test) that the held objects' test kept out of the band. At the loop's end
-     * check_level_set_reachable() throws on them (warns under throw_on_unreachable_level_set
-     * false), as in 3D; 3D also checks at a settled turn, which 2D has not yet (the settle step).
+     * test) that the held objects' test kept out of the band. At a settled turn and at the loop's
+     * end check_level_set_reachable() throws on them (warns under throw_on_unreachable_level_set
+     * false), as in 3D.
      * @{
      */
     void check_level_set_reachable(const std::string& when);
     size_t m_unreachable_cells = 0;
     std::string m_unreachable_where;
+    /// The last settle test's verdict (settle_refinement_turn()).
+    bool m_turn_settled = false;
     /** @} */
     /**
      * @name The held objects
@@ -898,6 +906,36 @@ public:
     }
     /// The sum of tri_energy() over `fids`, in their order: what every rule compares.
     double tri_energy_sum(const std::vector<size_t>& fids, bool band_term = true) const;
+    /// E, the sum of tri_energy() over every live face (get_faces() order): the [band volume
+    /// energy] lines' and the label clean-up's. 3D's global_energy(), without its "surface" face
+    /// terms, which 2D refuses (band_cell_term()).
+    double global_energy() const;
+    /// The offset energy: band_cell_term() summed over the band faces, E without its AMIPS term.
+    /// What the settle test compares (settle_metric(), settle_refinement_turn()): E's AMIPS term
+    /// changes wherever the mesh is improved, the front moving or not. As in 3D, whose
+    /// measurement motivates it (2026-10-14, the cube outward: splits raised E through the AMIPS
+    /// term by 0.7-3.6 bar energies per turn).
+    double offset_energy() const;
+    /// E's two parts over the live faces, {the AMIPS term (with the repulsion term, 0 in the
+    /// loop), the band term}, summed in get_faces() order; E is their sum. A band face is
+    /// evaluated as cell_energy(vids, A, false) and band_cell_term(vids) apart, not tri_energy()
+    /// and band_cell_term(), which would evaluate the band term twice. 3D's energy_parts(); where
+    /// 2D differs: serial (3D evaluates the cells on its threads, diagnostic_parallel_for(), and
+    /// sums them in the same order; 2D has no such helper).
+    std::pair<double, double> energy_parts() const;
+    /// "[energy step] turn N <step>: E | AMIPS term | band term" (energy_parts()), the line
+    /// ~/Developer/wmtk_outputs/plot_energy.py plots. Logged at each operation group's start
+    /// ("start", a baseline), as in 3D. Where 2D differs: 3D also logs one per smoothing pass from
+    /// the engine's end-of-pass hook (TetOptimizerMesh::smoothing_pass_done()), which the 2D
+    /// engine has not; the turn is passed for the same reason (3D keeps it in a member the hook
+    /// reads).
+    void log_energy_step(int turn, const char* step) const;
+    /// What the settle test compares turn to turn: offset_energy(), as 3D's under the volume
+    /// rules. 3D's other metrics -- O* (the EXPERIMENTAL_settle_test "stall" test with
+    /// settle_stall_eps) and O_g ("bar") -- are the "surface" rule's, which Parameters.h refuses
+    /// under every other rule and 2D refuses itself (band_cell_term()): they have no 2D twin
+    /// until "surface" has one.
+    double settle_metric() const { return offset_energy(); }
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
     /// error in units of the tolerance. The weight of the front smoother's offset terms, and the
     /// scale of edge_offset_term(). As in 3D.
@@ -1597,24 +1635,65 @@ public:
     void check_offset_membership(const char* when) const;
 
     /**
-     * @brief Per-vertex 0/1: has the offset curve folded back on itself at this vertex? Debug
-     * frame diagnostic; see write_vtu(). Costs one pass over the live offset edges, no field
-     * evaluation.
-     *
-     * A vertex on the offset curve carries two live offset edges. Measured through either
-     * side, the angle between them is 180 degrees where the curve is straight and 360 where the
-     * two edges lie on top of each other with that side pinched to nothing. Over
-     * FOLDOVER_OUTER_ANGLE_DEG through EITHER side is the fold, and the vertex gets 1.
-     *
-     * Which side is pinched is deliberately not determined; see the 3D twin, where the measured
-     * folds pinch the background rather than the band. Since the two sides sum to 360, the test
-     * is simply that the unsigned angle is under 360 minus the threshold. Vertices without
-     * exactly two live offset edges are left 0, as are degenerate edges: this is a diagnostic,
-     * and a number it cannot measure is not a fold.
-     *
-     * The 3D twin is TopoOffsetTetMesh::offset_surface_foldover_labels(), which asks the same
-     * question of an offset-surface EDGE's two faces and marks that edge's two endpoints.
+     * @brief The fold predicate, the one test of what a fold is: the 2D twin of
+     * TopoOffsetTetMesh::fold_test(), one dimension down. A vertex of the offset curve with
+     * exactly two offset edges, their normals out of the band n0 and n1, is a fold when the
+     * normals are within `angle` (foldover_angle) of opposite -- the two edges lying on top of
+     * each other, the tip of a zero-area sheet -- and at least one of the two edges is turned
+     * from the field: its angle to the field's normal, field_angle(0) or field_angle(1)
+     * (front_edge_field_angle()), over `angle`, or not measurable (NaN), so that nothing
+     * unmeasured passes for no fold. Two opposite edges that both follow the field are no fold but
+     * a ridge vertex (3D's ridge edge): the front following a corner of the level set sharper
+     * than `angle`, which is where it belongs. field_angle is asked only of an opposite pair. The
+     * normals' orientation does not decide the opposite test: n0 . n1 is minus the cosine of
+     * the angle between the two edges' directions from the vertex, whichever side the band is on,
+     * so a sheet of the band and one of the background are caught alike.
      */
+    enum class FoldTest { none, ridge_vertex, fold };
+    template <typename FieldAngle>
+    static FoldTest fold_test(
+        const Vector2d& n0,
+        const Vector2d& n1,
+        const FieldAngle& field_angle,
+        const double angle)
+    {
+        if (!(n0.dot(n1) < -std::cos(angle * M_PI / 180.))) return FoldTest::none;
+        const double a0 = field_angle(0), a1 = field_angle(1);
+        return !(a0 <= angle) || !(a1 <= angle) ? FoldTest::fold : FoldTest::ridge_vertex;
+    }
+    /// The vertices of the offset curve with exactly two offset edges, sorted by fold_test(): the
+    /// folds, and the ridge vertices with the largest field angle among their edges.
+    /// `fold_vertices`, when given, receives every fold's vertex. 3D's count_folds(), whose
+    /// folds are edges with two offset faces; as there, an offset edge on the domain boundary is
+    /// left out (3D's offset_face_normal_out_of_band() reads a face's two cells).
+    struct FoldCount
+    {
+        size_t folds = 0, ridge_vertices = 0;
+        double ridge_max_angle = 0.;
+    };
+    FoldCount count_folds(std::vector<size_t>* fold_vertices = nullptr) const;
+    /// The band face carrying offset edge (a, b); -1 for none. 3D's front_face_band_cell().
+    int64_t front_edge_band_face(size_t a, size_t b) const;
+    /// Offset edge (a, b)'s unit normal in `n`, turned out of its band face (away from the face's
+    /// third corner). False, `n` unusable, where it cannot be measured: a degenerate edge, or no
+    /// band face. 3D's front_face_out_normal().
+    bool front_edge_out_normal(size_t a, size_t b, Vector2d& n) const;
+    /**
+     * @brief The field angle of offset edge (a, b): the angle, in degrees, between its unit
+     * normal out of its band face (front_edge_out_normal()) and the field's unit normal at its
+     * midpoint, the gradient of the distance d to the input (the edge's piece's exact integral,
+     * ExactBandIntegral2D::distance()). 0 where the edge faces along the field, 180 where it faces
+     * back toward the input. NaN where it cannot be measured: no band face, a degenerate edge, no
+     * exact integral, or a zero gradient. 3D's front_face_field_angle(), its input envelope's
+     * nearest primitive being 2D's integral's.
+     */
+    double front_edge_field_angle(size_t a, size_t b) const;
+    /// Per-vertex 0/1: 1 at every fold's vertex (count_folds()). The debug frames' offset_foldover
+    /// point field (write_vtu()) and the end-of-run [foldover] warning. Until the settle step of
+    /// the 2D lock-step port it was 1 where the two offset edges at a vertex were within 30
+    /// degrees of each other (an outer angle over 330 through either side) -- the opposite test
+    /// alone at a fixed angle, which called every ridge vertex a fold, as 3D's "real fold" did
+    /// before 2026-11-02.
     std::vector<char> offset_surface_foldover_labels() const;
     void log_smooth_trace() const;
 
@@ -2380,6 +2459,52 @@ public:
     /// front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over
     /// the bar. The 3D twin has the same pair.
     size_t refine_front_by_halving(const std::vector<size_t>& vertices);
+    /**
+     * @brief EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): the 2D twin of
+     * TopoOffsetTetMesh::settle_refinement_turn(), front chords in place of offset faces. Settled
+     * when the offset energy (offset_energy(), no AMIPS) fell by less than the bar energy
+     * b = front_conv^2 L / (2 target_distance) since `e_prev` (the offset energy at the end of
+     * the previous turn, turn 1: before its first group; set to the offset energy now), L the
+     * front's length: the offset term's excess for a front lying front_conv beyond the level set,
+     * per unit length int_0^front_conv s / delta ds (3D: A, the front's area). Only a settled turn
+     * marks the front by EXPERIMENTAL_settle_mark and halves the corners it marks, when
+     * `refine_now`; "vertex_split" lists chords for front_pocket_split() instead
+     * (m_settle_split_edges). Logs the turn's [settle] line. Returns settled and nothing marked:
+     * the loop's exit.
+     *
+     * The marks, one dimension down (a front chord f = (a, b) is 3D's front face; d the distance
+     * to the input's segments and points, read through the face's piece's exact integral,
+     * band_exact_for(place_piece()), 3D's envelope_for()):
+     *   - "max": max(inside_f, outside_f) > front_conv, inside_f = delta - min over f of d
+     *     (ExactBandIntegral2D::min_distance(), exact), outside_f = max over f of d - delta
+     *     (ExactBandIntegral2D::max_distance()); under the other marks outside_f is the former
+     *     bound, min over P of the max of d_P at f's ends (distance_bound()), logged only.
+     *   - "rms": the mean over f of (d - delta)^2 (n . grad d), n f's normal out of the band, by
+     *     the 2-point Gauss rule, over front_conv^2. Where 2D differs: 3D takes a triangle's
+     *     3-edge-midpoint rule; both are the fewest-point rules with positive weights exact for
+     *     quadratics on their simplex, so exact where d is affine along f.
+     *   - "vertex": |d(v) - delta| > front_conv at a front vertex v; its own scalar is halved.
+     *   - "vertex_edge": "vertex", and both ends of a chord whose ends are within front_conv and
+     *     whose midpoint is not are halved, not holding the exit. 3D tests the edges of its front
+     *     faces; 2D's front edges are its chords.
+     *   - "vertex_split": "vertex", and such a chord (ends within, midpoint not) is listed to be
+     *     split. 3D lists the worst-midpoint edge of a face whose corners are within but an edge
+     *     midpoint or its centroid is not; a chord's one edge is itself and its centroid its
+     *     midpoint, so 2D's "vertex_edge" and "vertex_split" test the same points and differ in
+     *     the remedy alone, as 3D's do.
+     *   - "stencil": a point of f's stencil (for_each_edge_sample()) at or beyond front_conv, or
+     *     unmeasurable (edge_stencil_max_sq()). 3D reads its interior face stencil
+     *     (EXPERIMENTAL_stencil_type); 2D's chord stencil holds the ends.
+     * EXPERIMENTAL_gap_refinement as in 3D: a band face with a front corner whose corner mean
+     * (ExactBandIntegral2D::min_mean_distance()) exceeds d at its centroid by front_conv has its
+     * corners halved, and holds the exit.
+     */
+    bool settle_refinement_turn(int turn, double& e_prev, bool refine_now);
+    /// The max over front chord e's stencil points (for_each_edge_sample()) of (d - delta)^2, as
+    /// (delta r)^2, r the field's relative_residual() on e's piece (potential_for_edge()); +inf
+    /// when a point is unmeasurable, 0 without a potential. EXPERIMENTAL_settle_mark "stencil"'s
+    /// test; 3D's face_stencil_max_sq().
+    double edge_stencil_max_sq(const std::array<size_t, 2>& e) const;
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),
@@ -2723,7 +2848,9 @@ public:
      * "exact_swept", "surface" with a label clean-up, settle_mark "max", DEBUG_output -- and, where
      * 2D differs, "corner_bound": its min over the input's primitives
      * (ExactBandIntegral2D::min_mean_distance()) is 3D's search on the input envelope, which 2D
-     * does not have. The label clean-up reads its distance() and distance_bound().
+     * does not have; and EXPERIMENTAL_settle_refinement under every settle_mark, whose tests 3D
+     * runs on that envelope (settle_refinement_turn()). The label clean-up reads its distance()
+     * and distance_bound(), the fold count its distance() with the gradient.
      * init_offset_potential() calls it. The 2D integral has neither 3D's value table nor its
      * bisector search (prepare_front_flux()).
      */

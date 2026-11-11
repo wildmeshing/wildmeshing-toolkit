@@ -952,10 +952,11 @@ void TopoOffsetTriMesh::init_band_exact()
     const bool surface_cleanup =
         m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";
     // "corner_bound": its min over the input's primitives (band_cell_corner_bound()), which 3D
-    // takes from its input envelope, built for every rule; 2D has no such envelope.
+    // takes from its input envelope, built for every rule; 2D has no such envelope. For the same
+    // reason EXPERIMENTAL_settle_refinement under every settle_mark: its tests read d through it
+    // (settle_refinement_turn(); 3D: through its input envelope, the integral for "max" only).
     const bool corner_bound = m_offset_params.band_volume_rule == "corner_bound";
-    if (!(exact_rule || surface_cleanup || corner_bound ||
-          (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
+    if (!(exact_rule || surface_cleanup || corner_bound || m_offset_params.settle_refinement ||
           m_offset_params.debug_output)) {
         return;
     }
@@ -2120,11 +2121,10 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
         NST(packed[r.vid], 0) = r.status;
     }
 
-    // Collapsed-foldover flag, as point data: 1 where the offset curve has folded back on
-    // itself at this vertex (outer angle over the threshold), 0 elsewhere. DEBUG ONLY --
-    // computed only under debug_output, so a plain save_vtu run writes it as all 0 rather than
-    // paying for the curve walk. Packed like every other point field here, through `packed`.
-    // See offset_surface_foldover_labels() for what the angle is and how its side is decided.
+    // Fold flag, as point data: 1 at every fold's vertex (offset_surface_foldover_labels(), the
+    // fold predicate fold_test()), 0 elsewhere. DEBUG ONLY -- computed only under debug_output,
+    // so a plain save_vtu run writes it as all 0 rather than paying for the curve walk and its
+    // field angles. Packed like every other point field here, through `packed`.
     Eigen::MatrixXd FOLD(vs.size(), 1);
     FOLD.setZero();
     if (m_offset_params.debug_output) {

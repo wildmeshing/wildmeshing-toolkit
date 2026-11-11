@@ -480,6 +480,156 @@ TEST_CASE("exact-band-integral-2d-derivatives", "[exact_band_integral_2d]")
     check_derivs("L, band inside", L_shape(), -1, 0.25, 12);
 }
 
+namespace {
+/// d(x) by brute force over the input's segments and points (reference()'s integrand).
+double brute_distance(const Input& in, const Vector2d& x)
+{
+    double m = std::numeric_limits<double>::infinity();
+    for (Eigen::Index r = 0; r < in.E.rows(); ++r) {
+        m = std::min(
+            m,
+            seg_dist(x, in.V.row(in.E(r, 0)).transpose(), in.V.row(in.E(r, 1)).transpose()));
+    }
+    for (const int p : in.P) m = std::min(m, (x - Vector2d(in.V.row(p).transpose())).norm());
+    return m;
+}
+
+/// The segments max_distance() is checked on: two corners of Gen's random triangles at the scales
+/// r (centred uniformly, at an input vertex, across an input segment), and per input segment
+/// (a, b), with n its unit normal and u its direction, segments at the angles theta = 0, 1e-12,
+/// 1e-8, 1e-4 (radians) to
+///   - the line through a along n, a side line of the segment's slab region, through it (at 0:
+///     ON the region's boundary line, which counts as inside it) and 1e-9 off it;
+///   - the segment's own line, 1e-3 above it, where |n.(x - a)| has its kink at theta's crossing;
+/// and one degenerate segment (both ends one point).
+std::vector<std::array<Vector2d, 2>> max_segments(const Input& in, const int trials)
+{
+    std::vector<std::array<Vector2d, 2>> out;
+    Gen gen(in);
+    for (const double r : {0.02, 0.2, 1.}) {
+        for (int k = 0; k < trials; ++k) {
+            const Tri t = gen.next(k, r);
+            out.push_back({{t[0], t[1]}});
+        }
+    }
+    for (const auto& [a, b] : gen.segs) {
+        const Vector2d u = (b - a).normalized(), n(-u.y(), u.x());
+        for (const double th : {0., 1e-12, 1e-8, 1e-4}) {
+            const Vector2d dn = std::cos(th) * n + std::sin(th) * u;
+            const Vector2d du = std::cos(th) * u - std::sin(th) * n;
+            for (const double off : {0., 1e-9}) {
+                const Vector2d c = a + off * u + 0.1 * n;
+                out.push_back({{c - 0.3 * dn, c + 0.3 * dn}});
+            }
+            const Vector2d c = 0.5 * (a + b) + 1e-3 * n;
+            out.push_back({{c - 0.3 * du, c + 0.3 * du}});
+        }
+    }
+    out.push_back({{Vector2d(0.3, -0.2), Vector2d(0.3, -0.2)}});
+    return out;
+}
+
+/// max_distance(), min_distance(), distance_bound() and distance() with its gradient on
+/// max_segments(), against d by brute force at N + 1 equally spaced points of each segment f, L
+/// its length. Units: eps (|x| + L), the rounding unit of a distance at coordinates |x|.
+///  - upper bound: the sampled max never exceeds max_distance();
+///  - exact: where no rule-(a) piece gives the max, max_distance() is within L / (2N) of the
+///    sampled max (d is 1-Lipschitz: the true max lies within L / (2N) of a sample) and d at
+///    the returned point is the max; with rule (a), d there is at most the max;
+///  - U = distance_bound(f) >= the max;
+///  - min_distance() is at most the sampled min and within L / (2N) of it (0 where f crosses
+///    the input);
+///  - distance(x, grad) is distance(x) bit for bit, and d(x - (d/2) grad) = d/2: moving toward
+///    the foot the foot stays nearest, so d falls exactly by the step (in units eps (|x| + 1),
+///    d's rounding on the input's coordinates).
+void check_max(const char* name, const Input& in, const int trials)
+{
+    constexpr double EPS = std::numeric_limits<double>::epsilon();
+    constexpr int N = 4000;
+    const ExactBandIntegral2D eb(in.V, in.E, in.P);
+    int n_exact = 0, n_ra = 0, n_cross = 0;
+    double w_ub = -std::numeric_limits<double>::infinity(), w_tight = 0., w_at = 0., w_min = 0.;
+    double w_grad = 0.;
+    for (const auto& f : max_segments(in, trials)) {
+        const double L = (f[1] - f[0]).norm();
+        const double xs = std::max(f[0].cwiseAbs().maxCoeff(), f[1].cwiseAbs().maxCoeff());
+        const double unit = EPS * (xs + L);
+        INFO(
+            name << ": f = (" << f[0].x() << ", " << f[0].y() << ") (" << f[1].x() << ", "
+                 << f[1].y() << ")");
+        ExactBandIntegral2D::MaxInfo info;
+        double m = 0.;
+        REQUIRE_NOTHROW(m = eb.max_distance(f, &info));
+        double smax = -std::numeric_limits<double>::infinity();
+        double smin = std::numeric_limits<double>::infinity();
+        for (int i = 0; i <= N; ++i) {
+            const Vector2d x = f[0] + (double(i) / N) * (f[1] - f[0]);
+            const double d = brute_distance(in, x);
+            smax = std::max(smax, d);
+            smin = std::min(smin, d);
+            Vector2d g;
+            const double dg = eb.distance(x, g);
+            CHECK(dg == eb.distance(x));
+            if (i % 400 == 0 && dg > 1e-6) {
+                const double e = std::abs(eb.distance(Vector2d(x - 0.5 * dg * g)) - 0.5 * dg);
+                // in units of eps (|x| + 1): d at x rounds on the input's coordinates, O(1)
+                const double ux = EPS * (x.cwiseAbs().maxCoeff() + 1.);
+                CHECK(e <= 64. * ux);
+                w_grad = std::max(w_grad, e / ux);
+            }
+        }
+        CHECK(smax - m <= 64. * unit);
+        w_ub = std::max(w_ub, (smax - m) / unit);
+        CHECK(info.U == eb.distance_bound(f));
+        CHECK(info.U >= m - 64. * unit);
+        const double d_at = brute_distance(in, info.at);
+        if (info.rule_a) {
+            ++n_ra;
+            CHECK(d_at - m <= 64. * unit);
+        } else {
+            ++n_exact;
+            const double slack = L / (2. * N) + 64. * unit;
+            CHECK(m - smax <= slack);
+            CHECK(std::abs(d_at - m) <= 64. * unit);
+            if (L > 0.) w_tight = std::max(w_tight, (m - smax) / (L / (2. * N)));
+            w_at = std::max(w_at, std::abs(d_at - m) / unit);
+        }
+        const double mn = eb.min_distance(f);
+        n_cross += mn == 0.;
+        CHECK(mn <= smin + 64. * unit);
+        CHECK(smin - mn <= L / (2. * N) + 64. * unit);
+        if (L > 0.) w_min = std::max(w_min, (smin - mn) / (L / (2. * N)));
+    }
+    std::printf(
+        "  %-10s %3d exact, %3d rule (a), %3d crossing the input | sampled max - max %+.2f eps "
+        "units | exact: (max - sampled max) / (L / 2N) %.3f, |d(at) - max| %.2f eps units | "
+        "(sampled min - min) / (L / 2N) %.3f | d(x - (d/2) grad) - d/2 %.2f eps units\n",
+        name,
+        n_exact,
+        n_ra,
+        n_cross,
+        w_ub,
+        w_tight,
+        w_at,
+        w_min,
+        w_grad);
+}
+} // namespace
+
+TEST_CASE("exact-band-integral-2d-max-distance", "[exact_band_integral_2d]")
+{
+    // ExactBandIntegral2D::max_distance(), the 2D twin of exact-band-max-distance and
+    // exact-band-max-distance-parallel (the max over a front segment, for the settle test's
+    // outside_f), against dense sampling in place of 3D's Python data; with min_distance(),
+    // distance_bound() and distance() with its gradient, the settle test's other readings.
+    // check_max() states the checks; the measured worsts are printed.
+    std::printf("exact-band-integral-2d-max-distance\n");
+    check_max("segment", polyline({{-0.5, 0.1}, {0.7, -0.2}}, false), 30);
+    check_max("points", three_points(), 30);
+    check_max("polyline", open_polyline(), 30);
+    check_max("L", L_shape(), 30);
+}
+
 TEST_CASE("exact-band-integral-2d-hessian-contact", "[exact_band_integral_2d]")
 {
     // 3D's exact-band-integral-hessian-contact one dimension down: t's edge (x, o) runs through

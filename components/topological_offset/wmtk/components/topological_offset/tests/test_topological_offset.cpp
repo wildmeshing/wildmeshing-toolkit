@@ -7757,6 +7757,631 @@ TEST_CASE("exact-swept-smoothing-held-on-another-region-2d", "[offset][2d]")
         worst_rise);
 }
 
+TEST_CASE("fold-test-2d", "[offset][2d]")
+{
+    // The 2D twin of fold-test: the fold predicate (TopoOffsetTriMesh::fold_test()) over the
+    // whole range of foldover_angle. Edge 1's normal out of the band is +y; edge 2's is (sin phi,
+    // cos phi), 180 - phi degrees from opposite. A fold: the normals within `angle` of opposite
+    // and one edge turned from the field (its field angle over `angle`, or NaN); two opposite
+    // edges both along the field are a ridge vertex; edges not opposite are neither, and the
+    // field is not asked of them.
+    using FT = TopoOffsetTriMesh::FoldTest;
+    const Vector2d n1(0., 1.);
+    const auto n2 = [](const double deg) {
+        const double r = deg * M_PI / 180.;
+        return Vector2d(std::sin(r), std::cos(r));
+    };
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for (const double angle : {1., 10., 29., 30., 31., 45., 90., 120., 170., 179.}) {
+        INFO("foldover_angle " << angle);
+        int asked = 0;
+        const auto test = [&](const double phi, const double a0, const double a1) {
+            asked = 0;
+            const auto field = [&](const int k) {
+                ++asked;
+                return k == 0 ? a0 : a1;
+            };
+            return TopoOffsetTriMesh::fold_test(n1, n2(phi), field, angle);
+        };
+        const double within = 180. - 0.5 * angle, beyond = 0.5 * (180. - angle);
+        const double along = 0.5 * angle, turned = 0.5 * (angle + 180.);
+        CHECK(test(beyond, turned, turned) == FT::none);
+        CHECK(asked == 0);
+        CHECK(test(within, along, along) == FT::ridge_vertex);
+        CHECK(test(within, angle, angle) == FT::ridge_vertex); // exactly `angle` is not over it
+        CHECK(test(within, turned, along) == FT::fold);
+        CHECK(test(within, along, turned) == FT::fold);
+        CHECK(test(within, nan, along) == FT::fold); // unmeasured is never taken for no fold
+        CHECK(test(within, along, nan) == FT::fold);
+        CHECK(test(180., turned, turned) == FT::fold); // flat onto each other
+    }
+}
+
+TEST_CASE("front-edge-field-angle-2d", "[offset][2d]")
+{
+    // The 2D twin of foldover-face-angle's mesh half: front_edge_field_angle(), the angle between
+    // an offset edge's normal, out of its band face, and grad d at its midpoint. One band
+    // triangle (0, 1), (1, 1), (0, 2) over the input segment y = 0, x in [-10, 10]
+    // (energy_mesh_2d()), where grad d = (0, 1): the edge (0, 1)-(1, 1) faces back at the input
+    // (180 degrees), (0, 1)-(0, 2) across the field (90), (1, 1)-(0, 2) along it at 45. Either
+    // order of an edge's ends. Not a band face, or no exact integral: NaN.
+    Parameters param;
+    Eigen::MatrixXd V(3, 2);
+    V << 0., 1., 1., 1., 0., 2.;
+    auto mesh = energy_mesh_2d(param, V, {{{0, 1, 2}}}, {2}, line_field());
+    CHECK(mesh->front_edge_band_face(0, 1) == 0);
+    CHECK(mesh->front_edge_field_angle(0, 1) == Catch::Approx(180.).margin(1e-9));
+    CHECK(mesh->front_edge_field_angle(1, 0) == Catch::Approx(180.).margin(1e-9));
+    CHECK(mesh->front_edge_field_angle(0, 2) == Catch::Approx(90.).margin(1e-9));
+    CHECK(mesh->front_edge_field_angle(2, 1) == Catch::Approx(45.).margin(1e-9));
+    mesh->m_face_extra[0].label = 0;
+    CHECK(mesh->front_edge_band_face(1, 2) == -1);
+    CHECK(std::isnan(mesh->front_edge_field_angle(1, 2)));
+    mesh->m_face_extra[0].label = 2;
+    mesh->m_band_exact.reset();
+    CHECK(std::isnan(mesh->front_edge_field_angle(1, 2)));
+}
+
+TEST_CASE("count-folds-2d", "[offset][2d]")
+{
+    // count_folds() and offset_surface_foldover_labels() on a vertex V where two offset edges
+    // nearly coincide, over foldover_angle's range. The input is the points P1 = (-a, 0) and P2
+    // = (a, 0), and V = (0, h) is at delta = 0.5 from both (a = delta cos 3deg); A and B lie on the
+    // circles about P1 and P2, 4 degrees on from V, so the chords VA and VB follow the level set
+    // d = delta into its corner at V, their normals out of the band 10 degrees from opposite.
+    // Band triangles (P1, P2, V), (P1, V, A), (P2, B, V), and the background triangle (V, B, A)
+    // in the corner; VA and VB are V's two offset edges (the others are on the domain boundary,
+    // which the count leaves out, as 3D's does). The field angles, by hand from the nearest input
+    // point at each chord's midpoint, decide with the opposite test:
+    //   - P1 and P2: both chords along the field (0 degrees): a ridge vertex once foldover_angle
+    //     is over 10 degrees, never a fold;
+    //   - P1 alone: VB faces back at it (170 degrees): a fold for foldover_angle in (10, 170),
+    //     a ridge vertex above;
+    //   - P1 and P2 with the labels swapped (the thin background corner is the band): both
+    //     chords face back (180 degrees), a fold above 10 degrees -- the sheet of the band caught
+    //     as the sheet of the background is.
+    const double delta = 0.5, beta = 3. * M_PI / 180., gamma = 4. * M_PI / 180.;
+    const Vector2d P1(-delta * std::cos(beta), 0.), P2(delta * std::cos(beta), 0.);
+    const Vector2d Vv(0., delta * std::sin(beta));
+    const Vector2d A = P1 + delta * Vector2d(std::cos(beta + gamma), std::sin(beta + gamma));
+    const Vector2d B = P2 + delta * Vector2d(-std::cos(beta + gamma), std::sin(beta + gamma));
+    Eigen::MatrixXd V(5, 2);
+    V << P1.transpose(), P2.transpose(), Vv.transpose(), A.transpose(), B.transpose();
+    const size_t iV = 2;
+    for (const std::string inputs : {"P1 and P2", "P1", "P1 and P2, labels swapped"}) {
+        const bool swapped = inputs == "P1 and P2, labels swapped";
+        Parameters param;
+        auto mesh = energy_mesh_2d(
+            param,
+            V,
+            {{{0, 1, 2}}, {{0, 2, 3}}, {{1, 4, 2}}, {{2, 4, 3}}},
+            swapped ? std::vector<int>{0, 0, 0, 2} : std::vector<int>{2, 2, 2, 0},
+            line_field());
+        // The input: the points alone (no segment), as init_band_exact() builds it.
+        const bool two = inputs != "P1";
+        mesh->m_phi_V.resize(two ? 2 : 1, 2);
+        mesh->m_phi_V.row(0) = P1.transpose();
+        if (two) mesh->m_phi_V.row(1) = P2.transpose();
+        mesh->m_phi_E.resize(0, 2);
+        mesh->m_phi_E_inner.clear();
+        mesh->m_phi_P = two ? std::vector<int>{0, 1} : std::vector<int>{0};
+        mesh->init_band_exact();
+        // The chords' normals out of the band and their field angles, by hand.
+        const auto unit_angle = [](const Vector2d& u, const Vector2d& v) {
+            return std::atan2(std::abs(u.x() * v.y() - u.y() * v.x()), u.dot(v)) * 180. / M_PI;
+        };
+        const auto by_hand = [&](const Vector2d& e, const Vector2d& away, const Vector2d& mid) {
+            Vector2d n(-e.y(), e.x());
+            n.normalize();
+            if (n.dot(-away) < 0.) n = -n;
+            Vector2d g = mid - P1;
+            if (two && (mid - P2).norm() < g.norm()) g = mid - P2;
+            return std::pair<Vector2d, double>{n, unit_angle(n, g)};
+        };
+        // VA's band face's third corner is P1 (B when swapped), VB's P2 (A).
+        const auto [nA, fA] = by_hand(A - Vv, (swapped ? B : P1) - Vv, 0.5 * (Vv + A));
+        const auto [nB, fB] = by_hand(B - Vv, (swapped ? A : P2) - Vv, 0.5 * (Vv + B));
+        CHECK(mesh->front_edge_field_angle(iV, 3) == Catch::Approx(fA).margin(1e-9));
+        CHECK(mesh->front_edge_field_angle(iV, 4) == Catch::Approx(fB).margin(1e-9));
+        const double opposite = 180. - unit_angle(nA, nB); // how far from opposite
+        CHECK(opposite == Catch::Approx(10.).margin(1e-9));
+        for (const double angle : {1., 5., 9., 11., 30., 90., 150., 169., 171., 179.}) {
+            INFO(inputs << ", foldover_angle " << angle << ", field angles " << fA << ", " << fB);
+            mesh->m_offset_params.foldover_angle = angle;
+            const bool opp = opposite < angle;
+            const bool turned = fA > angle || fB > angle;
+            std::vector<size_t> fv;
+            const auto fc = mesh->count_folds(&fv);
+            CHECK(fc.folds == (opp && turned ? 1u : 0u));
+            CHECK(fc.ridge_vertices == (opp && !turned ? 1u : 0u));
+            CHECK(fv == (opp && turned ? std::vector<size_t>{iV} : std::vector<size_t>{}));
+            const auto labels = mesh->offset_surface_foldover_labels();
+            for (size_t v = 0; v < labels.size(); ++v) {
+                CHECK(labels[v] == (v == iV && opp && turned ? 1 : 0));
+            }
+            if (opp && !turned) {
+                CHECK(fc.ridge_max_angle == Catch::Approx(std::max(fA, fB)).margin(1e-9));
+            }
+        }
+    }
+}
+
+TEST_CASE("energy-sums-2d", "[offset][2d]")
+{
+    // The 2D twin of surface-energy-sums' volume half: global_energy() is the sum of tri_energy()
+    // over the live faces in get_faces() order; offset_energy() the sum of band_cell_term() over
+    // the band faces, and the settle test's metric; energy_parts() splits E into the two, its
+    // band part the offset energy. On the constructed 8 x 8 grid, p offset to 0.3, under every
+    // 2D band rule.
+    const std::string rule = GENERATE("exact", "exact_swept", "corner_bound");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule);
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    Parameters param = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+         {"EXPERIMENTAL_band_volume_rule", rule},
+         // Parameters refuses the default clean-up beside "corner_bound"
+         {"EXPERIMENTAL_label_cleanup", rule == "corner_bound" ? "off" : "one_sided_at_target"},
+         {"num_threads", 0}},
+        box);
+    auto mesh = point_grid_2d(param, {{4, 4}});
+    double e = 0., band = 0.;
+    size_t n_band = 0;
+    for (const auto& f : mesh->get_faces()) {
+        const size_t fid = f.fid(*mesh);
+        e += mesh->tri_energy(fid);
+        if (!mesh->face_is_offset_band(fid)) continue;
+        ++n_band;
+        band += mesh->band_cell_term(mesh->oriented_tri_vids(fid));
+    }
+    REQUIRE(n_band > 0);
+    CHECK(mesh->global_energy() == e);
+    CHECK(mesh->offset_energy() == band);
+    CHECK(mesh->settle_metric() == band);
+    CHECK(band != 0.);
+    const auto [a_part, b_part] = mesh->energy_parts();
+    CHECK(b_part == band);
+    CHECK(a_part + b_part == Catch::Approx(e).epsilon(1e-12));
+}
+
+namespace {
+/// The settle tests' fixture: the constructed 8 x 8 grid (point_grid_2d()), p = (0, 0), the
+/// input complex, offset to `target`, the input the point alone, so d(x) = |x|.
+std::unique_ptr<TopoOffsetTriMesh> settle_grid_2d(Parameters& param)
+{
+    auto mesh = point_grid_2d(param, {{4, 4}});
+    mesh->m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Optimization;
+    return mesh;
+}
+Parameters settle_params_2d(const double target)
+{
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    return construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}})},
+         {"num_threads", 0}},
+        box);
+}
+} // namespace
+
+TEST_CASE("settle-marks-2d", "[offset][2d]")
+{
+    // The 2D twin of settle-mark-stencil, for every EXPERIMENTAL_settle_mark. On the fixture
+    // (settle_grid_2d(), d = |x|), each mark's measure per front chord or vertex is computed here
+    // from d alone: "max" max(delta - min over the chord of |x|, max of |x| at its ends - delta);
+    // "rms" the 2-point Gauss mean of (|x| - delta)^2 n.(x / |x|), n the chord's normal out of
+    // its band face; "stencil" the max over the chord's stencil of (delta r)^2 from the field;
+    // "vertex" | |v| - delta |; "vertex_edge" and "vertex_split" add the chords whose ends are
+    // within front_conv and whose midpoint is not. T is the max of the measure that holds the
+    // exit. One turn of the settle test (e_prev = the offset energy, so the turn settles) with
+    // front_conv set (a) just above T: exit; (b) just below: no exit, every corner the mark names
+    // halved; refine_now false at (b): the same verdict, nothing halved; (c) a turn whose offset
+    // energy fell by twice the bar energy: not settled, no exit, nothing halved. "vertex_edge" at
+    // (a) halves the ends of the chords whose midpoint is over and still exits; "vertex_split" at
+    // (a) lists exactly those chords (m_settle_split_edges) and exits. At two targets: 0.3, where
+    // the march traces the front short of the level set (every vertex 0.175 off), and 0.1, where
+    // it puts every front vertex on it: there the vertex marks' T is 0, (a) runs at half the
+    // chords' midpoint max and (b) has no front_conv to run at.
+    const double target = GENERATE(0.3, 0.1);
+    const std::string mark =
+        GENERATE("max", "rms", "stencil", "vertex", "vertex_edge", "vertex_split");
+    INFO("target " << target << ", EXPERIMENTAL_settle_mark " << mark);
+    Parameters param = settle_params_2d(target);
+    auto mesh = settle_grid_2d(param);
+    mesh->m_offset_params.settle_mark = mark;
+    const double delta = mesh->m_offset_params.target_distance;
+    const auto edges = mesh->offset_surface_edges();
+    REQUIRE(!edges.empty());
+    const auto pos = [&](const size_t v) { return mesh->m_vertex_attribute[v].m_posf; };
+    const auto seg_d = [](const Vector2d& a, const Vector2d& b) { // min over ab of |x|
+        const Vector2d ab = b - a;
+        const double t = std::clamp(-a.dot(ab) / ab.squaredNorm(), 0., 1.);
+        return (a + t * ab).norm();
+    };
+    // Per chord: the max mark, the rms mean, the stencil max, the midpoint error.
+    std::vector<double> m_max(edges.size()), m_rms(edges.size()), m_sten(edges.size());
+    std::vector<double> m_mid(edges.size());
+    for (size_t k = 0; k < edges.size(); ++k) {
+        const Vector2d a = pos(edges[k][0]), b = pos(edges[k][1]);
+        m_max[k] = std::max(delta - seg_d(a, b), std::max(a.norm(), b.norm()) - delta);
+        m_mid[k] = std::abs((0.5 * (a + b)).norm() - delta);
+        Vector2d n;
+        REQUIRE(mesh->front_edge_out_normal(edges[k][0], edges[k][1], n));
+        double q = 0.;
+        const double h = 0.5 / std::sqrt(3.);
+        for (const double w : {0.5 - h, 0.5 + h}) {
+            const Vector2d x = (1. - w) * a + w * b;
+            q += 0.5 * (x.norm() - delta) * (x.norm() - delta) * n.dot(x / x.norm());
+        }
+        m_rms[k] = std::sqrt(std::max(q, 0.));
+        double s = 0.;
+        const OffsetPotential2D& pot = mesh->potential_for_edge(edges[k][0], edges[k][1]);
+        mesh->for_each_edge_sample(a, b, [&](const Vector2d& x, double, double) {
+            const double r = pot.relative_residual(x);
+            REQUIRE(std::isfinite(r));
+            s = std::max(s, (delta * r) * (delta * r));
+        });
+        CHECK(mesh->edge_stencil_max_sq(edges[k]) == s);
+        m_sten[k] = std::sqrt(s);
+    }
+    std::set<size_t> front;
+    for (const auto& e : edges) front.insert(e.begin(), e.end());
+    std::map<size_t, double> m_vtx;
+    for (const size_t v : front) m_vtx[v] = std::abs(pos(v).norm() - delta);
+    double v_max = 0.;
+    for (const auto& [v, x] : m_vtx) v_max = std::max(v_max, x);
+    const bool vertex_marks = mark == "vertex" || mark == "vertex_edge" || mark == "vertex_split";
+    const std::vector<double>& chord_measure = mark == "max"   ? m_max
+                                               : mark == "rms" ? m_rms
+                                                               : m_sten;
+    const double T =
+        vertex_marks ? v_max : *std::max_element(chord_measure.begin(), chord_measure.end());
+    const double mid_max = *std::max_element(m_mid.begin(), m_mid.end());
+    // At 0.1 the march puts every front vertex on the level set, |v| = 0.1 exactly: no front_conv
+    // > 0 marks a vertex, so (a) is at half the midpoint max and (b) has no front_conv to run at.
+    const bool on_level_set = vertex_marks && T == 0.;
+    REQUIRE((T > 0. || on_level_set));
+    REQUIRE(mid_max > 0.);
+    const double fc_a = on_level_set ? 0.5 * mid_max : T * (1. + 1e-6);
+    std::printf(
+        "  settle-marks-2d target %g %-12s %zu chords, %zu front vertices: T %.6g (max vertex "
+        "%.6g, max midpoint %.6g)\n",
+        target,
+        mark.c_str(),
+        edges.size(),
+        front.size(),
+        T,
+        v_max,
+        mid_max);
+
+    // The corners the mark names at front_conv fc, and the chords "vertex_split" lists.
+    const auto named = [&](const double fc, std::vector<std::array<size_t, 2>>* split) {
+        std::set<size_t> c;
+        if (!vertex_marks) {
+            for (size_t k = 0; k < edges.size(); ++k) {
+                const bool over = mark == "stencil" ? !(m_sten[k] * m_sten[k] < fc * fc)
+                                  : mark == "rms"   ? m_rms[k] * m_rms[k] > fc * fc
+                                                    : m_max[k] > fc;
+                if (over) c.insert(edges[k].begin(), edges[k].end());
+            }
+            return c;
+        }
+        for (const auto& [v, x] : m_vtx) {
+            if (x > fc) c.insert(v);
+        }
+        for (size_t k = 0; k < edges.size(); ++k) {
+            const auto& e = edges[k];
+            if (m_vtx[e[0]] > fc || m_vtx[e[1]] > fc || !(m_mid[k] > fc)) continue;
+            if (mark == "vertex_edge") c.insert(e.begin(), e.end());
+            if (mark == "vertex_split" && split) split->push_back(e);
+        }
+        return c;
+    };
+    const size_t nv = mesh->vert_capacity();
+    std::vector<double> s0(nv);
+    for (size_t v = 0; v < nv; ++v) s0[v] = mesh->m_vertex_attribute[v].m_sizing_scalar;
+    const double s_floor = std::max(
+        mesh->m_offset_params.min_sizing_scalar,
+        mesh->m_offset_params.min_edge_length / mesh->m_params.l);
+    double length = 0.;
+    for (const auto& e : edges) length += (pos(e[1]) - pos(e[0])).norm();
+    struct Turn
+    {
+        bool exit = false, settled = false;
+        size_t lowered = 0, not_halved = 0, corners = 0;
+        std::vector<std::array<size_t, 2>> split, want_split;
+    };
+    const auto turn = [&](const double fc, const bool refine, const double fall_in_bars) {
+        mesh->m_offset_params.front_conv = fc;
+        mesh->m_settle_split_edges = {{{0, 0}}}; // a marker: kept unless the turn assigns it
+        const double bar = fc * fc * length / (2. * delta);
+        double e_prev = mesh->settle_metric() + fall_in_bars * bar;
+        Turn t;
+        t.exit = mesh->settle_refinement_turn(1, e_prev, refine);
+        t.settled = mesh->m_turn_settled;
+        const std::set<size_t> c = named(fc, &t.want_split);
+        t.corners = c.size();
+        for (size_t v = 0; v < nv; ++v) {
+            double& s = mesh->m_vertex_attribute[v].m_sizing_scalar;
+            if (s < s0[v]) ++t.lowered;
+            if (c.count(v) && !(s <= std::max(0.5 * s0[v], s_floor))) ++t.not_halved;
+            s = s0[v]; // put back for the next turn
+        }
+        t.split = mesh->m_settle_split_edges;
+        return t;
+    };
+    const std::vector<std::array<size_t, 2>> marker = {{{0, 0}}};
+    {
+        const Turn a = turn(fc_a, true, 0.);
+        CHECK(a.settled);
+        CHECK(a.exit);
+        CHECK(a.not_halved == 0);
+        if (mark == "vertex_edge") {
+            CHECK(a.lowered >= a.corners); // the chord marks refine, and do not hold the exit
+        } else {
+            CHECK(a.corners == 0);
+            CHECK(a.lowered == 0);
+        }
+        // A settled turn that refines assigns the list, empty but under "vertex_split".
+        CHECK(a.split == a.want_split);
+        if (mark == "vertex_edge" || mark == "vertex_split") {
+            INFO(
+                "chords with both ends within and the midpoint over: "
+                << a.corners << " corners, " << a.want_split.size() << " chords");
+            CHECK((mark == "vertex_edge" ? a.corners : a.want_split.size()) > 0);
+        }
+    }
+    if (!on_level_set) {
+        const Turn b = turn(T * (1. - 1e-6), true, 0.);
+        CHECK(b.settled);
+        CHECK_FALSE(b.exit);
+        CHECK(b.corners > 0);
+        CHECK(b.not_halved == 0);
+        CHECK(b.lowered >= b.corners);
+        CHECK(b.split == b.want_split);
+        const Turn b0 = turn(T * (1. - 1e-6), false, 0.);
+        CHECK(b0.settled);
+        CHECK_FALSE(b0.exit);
+        CHECK(b0.lowered == 0);
+        CHECK(b0.split == marker);
+    }
+    {
+        const Turn c = turn(fc_a, true, 2.);
+        CHECK_FALSE(c.settled);
+        CHECK_FALSE(c.exit);
+        CHECK(c.lowered == 0);
+        CHECK(c.split == marker);
+        // Half a bar's fall: settled.
+        CHECK(turn(fc_a, false, 0.5).settled);
+    }
+}
+
+TEST_CASE("settle-gap-refinement-2d", "[offset][2d]")
+{
+    // EXPERIMENTAL_gap_refinement on the settle test, the 2D twin of its 3D rule: a band face with
+    // a front corner whose corner mean of d exceeds d at its centroid by more than front_conv is
+    // refined and holds the exit. On settle_grid_2d() at 0.1 (d = |x|, so the corner mean is the
+    // mean of the corners' |x|), under settle_mark "vertex": with front_conv between the vertex
+    // test's max V and the gap's max G, the exit is held by the gap test alone (on), not held
+    // (off); above both, exit.
+    Parameters param = settle_params_2d(0.1);
+    auto mesh = settle_grid_2d(param);
+    mesh->m_offset_params.settle_mark = "vertex";
+    const auto pos = [&](const size_t v) { return mesh->m_vertex_attribute[v].m_posf; };
+    std::set<size_t> front;
+    for (const auto& e : mesh->offset_surface_edges()) front.insert(e.begin(), e.end());
+    double v_max = 0., g_max = 0.;
+    const double delta = mesh->m_offset_params.target_distance;
+    for (const size_t v : front) v_max = std::max(v_max, std::abs(pos(v).norm() - delta));
+    for (const auto& f : mesh->get_faces()) {
+        const size_t fid = f.fid(*mesh);
+        if (!mesh->face_is_offset_band(fid)) continue;
+        const auto vs = mesh->oriented_tri_vids(fid);
+        if (!front.count(vs[0]) && !front.count(vs[1]) && !front.count(vs[2])) continue;
+        const double md = (pos(vs[0]).norm() + pos(vs[1]).norm() + pos(vs[2]).norm()) / 3.;
+        g_max = std::max(g_max, md - ((pos(vs[0]) + pos(vs[1]) + pos(vs[2])) / 3.).norm());
+    }
+    std::printf("  settle-gap-refinement-2d: vertex max %.6g, gap max %.6g\n", v_max, g_max);
+    REQUIRE(g_max > 2. * v_max);
+    const auto exit_at = [&](const double fc, const bool gap) {
+        mesh->m_offset_params.front_conv = fc;
+        mesh->m_offset_params.gap_refinement = gap;
+        double e_prev = mesh->settle_metric();
+        return mesh->settle_refinement_turn(1, e_prev, false);
+    };
+    const double between = 0.5 * (v_max + g_max);
+    CHECK_FALSE(exit_at(between, true));
+    CHECK(exit_at(between, false));
+    CHECK(exit_at(g_max * (1. + 1e-6), true));
+    CHECK_FALSE(exit_at(g_max * (1. - 1e-6), true));
+}
+
+TEST_CASE("settle-split-before-smoothing-2d", "[offset][2d][pocket_split]")
+{
+    // EXPERIMENTAL_settle_mark "vertex_split": the chords a settled turn lists
+    // (m_settle_split_edges) are split by the next front_pocket_split(), before its pinned cells,
+    // and the list is cleared; a listed chord gone already is skipped. On settle_grid_2d() at
+    // 0.3, front_conv between the vertex test's max and the chords' midpoint max.
+    Parameters param = settle_params_2d(0.3);
+    auto mesh = settle_grid_2d(param);
+    mesh->m_offset_params.settle_mark = "vertex_split";
+    const auto pos = [&](const size_t v) { return mesh->m_vertex_attribute[v].m_posf; };
+    const double delta = mesh->m_offset_params.target_distance;
+    const auto edges = mesh->offset_surface_edges();
+    double v_max = 0., mid_max = 0.;
+    for (const auto& e : edges) {
+        for (const size_t v : e) v_max = std::max(v_max, std::abs(pos(v).norm() - delta));
+        mid_max = std::max(mid_max, std::abs((0.5 * (pos(e[0]) + pos(e[1]))).norm() - delta));
+    }
+    REQUIRE(mid_max > v_max);
+    mesh->m_offset_params.front_conv = 0.5 * (v_max + mid_max);
+    double e_prev = mesh->settle_metric();
+    CHECK(mesh->settle_refinement_turn(1, e_prev, true)); // the vertex test passes: exit
+    const auto listed = mesh->m_settle_split_edges;
+    REQUIRE(!listed.empty());
+    for (const auto& e : listed) REQUIRE(!mesh->get_incident_fids_for_edge(e[0], e[1]).empty());
+    // A listed pair that is no edge (gone): skipped. Two corners of the box, far from the front.
+    mesh->m_settle_split_edges.push_back(
+        {{vertex_at_2d(*mesh, Vector2d(-1., -1.)), vertex_at_2d(*mesh, Vector2d(1., 1.))}});
+    mesh->front_pocket_split("test");
+    CHECK(mesh->m_settle_split_edges.empty());
+    for (const auto& e : listed) CHECK(mesh->get_incident_fids_for_edge(e[0], e[1]).empty());
+}
+
+namespace {
+/// The 2D loop run on point_grid_2d() (the app refuses the 2D offset): p offset to `target` with
+/// `j`'s keys besides, optimize_offset() as the driver calls it after the construction, its log
+/// captured. Returns the exception's message, or "" for none.
+std::string run_loop_2d(
+    const double target,
+    const nlohmann::json& j,
+    std::string& log_out,
+    const std::array<int, 2>& p = {{4, 4}},
+    const GridPolyline2d& curve = {},
+    const bool regions = false,
+    const GridPoints2d& points = {},
+    std::unique_ptr<TopoOffsetTriMesh>* keep = nullptr)
+{
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    nlohmann::json k = j;
+    k["offsets"] = nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}});
+    k["num_threads"] = 0;
+    k["throw_on_nonconvergence"] = false;
+    auto param = std::make_unique<Parameters>(construction_params(k, box));
+    auto mesh = point_grid_2d(*param, p, curve, regions, points);
+    std::ostringstream log;
+    const auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(log);
+    wmtk::logger().sinks().push_back(sink);
+    std::string what;
+    try {
+        mesh->optimize_offset(std::filesystem::temp_directory_path() / "wmtk_offset_loop_2d");
+    } catch (const std::exception& e) {
+        what = e.what();
+    }
+    wmtk::logger().sinks().pop_back();
+    log_out = log.str();
+    if (keep) {
+        // the mesh holds a reference to its parameters: keep them alive with it
+        static std::vector<std::unique_ptr<Parameters>> params;
+        params.push_back(std::move(param));
+        *keep = std::move(mesh);
+    }
+    return what;
+}
+} // namespace
+
+TEST_CASE("settle-exit-2d", "[offset][2d]")
+{
+    // The 2D loop's convergence and exit, as 3D's: p offset to 0.3, max_rounds 8, front_conv_rel
+    // 0.2, where the energy criterion passes at turn 1 (ring measure 0.46x the bar) while the
+    // front there has folds: MEASURED (the band-area smoother, 0471dbf2de), 2 at turn 1 -- a
+    // blade of two non-band triangles whose tip, 0.278 from p (inside the level set by 0.37
+    // front_conv), meets two offset edges 14 degrees apart and 84 degrees from the field -- and
+    // none at turn 2. 3D's twin (point_grid() p at 0.3, the same keys) MEASURED the same: turn 1
+    // passes the energy criterion with 1 fold, held, exit at turn 2. The fixture needs turn 1's
+    // folds (REQUIRE): the smoother before 0471dbf2de left none there, and the energy criterion
+    // exited at turn 1 with EXPERIMENTAL_exit_no_folds on.
+    //   - EXPERIMENTAL_settle_refinement off, EXPERIMENTAL_exit_no_folds off: the energy
+    //     criterion's exit at turn 1, the [exit folds] line saying the key is off;
+    //   - settle off, exit_no_folds on: turn 1 passes the exit test and is held for the folds;
+    //     the exit comes later;
+    //   - settle on (the default): every turn logs its [settle] line; turn 1 does not settle (the
+    //     construction's front moves by more than the bar energy), so the loop exits later, at a
+    //     settled turn with nothing marked, and the verdict's front half is that exit ("[settle]
+    //     verdict: front resolved"), with exit_no_folds on or off.
+    // Every group logs its [band volume energy] E line and its [energy step] baseline, every turn
+    // its [exit folds] count.
+    const bool settle = GENERATE(true, false);
+    const bool no_folds = GENERATE(true, false);
+    INFO(
+        "EXPERIMENTAL_settle_refinement " << settle << ", EXPERIMENTAL_exit_no_folds " << no_folds);
+    std::string log;
+    std::unique_ptr<TopoOffsetTriMesh> mesh;
+    const std::string what = run_loop_2d(
+        0.3,
+        {{"max_rounds", 8},
+         {"front_conv_rel", 0.2},
+         {"EXPERIMENTAL_settle_refinement", settle},
+         {"EXPERIMENTAL_exit_no_folds", no_folds}},
+        log,
+        {{4, 4}},
+        {},
+        false,
+        {},
+        &mesh);
+    INFO(log.substr(log.size() > 6000 ? log.size() - 6000 : 0));
+    REQUIRE(what.empty());
+    CHECK(mesh->m_converged);
+    CHECK(mesh->m_energy_verdict.has_value());
+    const int turns = mesh->m_iterations_used;
+    const auto line_of = [&](const std::string& head) {
+        const size_t at = log.find(head);
+        return at == std::string::npos ? std::string() : log.substr(at, log.find('\n', at) - at);
+    };
+    CHECK(log.find("[band volume energy] turn 1 ops group: E ") != std::string::npos);
+    CHECK(log.find("[energy step] turn 1 start: E ") != std::string::npos);
+    // The exit turn has no fold, but where EXPERIMENTAL_exit_no_folds is off and the energy
+    // criterion exits at turn 1 with its folds.
+    if (settle || no_folds) {
+        CHECK(
+            line_of("[exit folds] turn " + std::to_string(turns) + ": ") ==
+            "[exit folds] turn " + std::to_string(turns) + ": folds 0");
+    }
+    // Turn 1's folds, which the fixture needs.
+    const std::string folds1 = line_of("[exit folds] turn 1: folds ");
+    REQUIRE(!folds1.empty());
+    REQUIRE(std::stoi(folds1.substr(std::string("[exit folds] turn 1: folds ").size())) > 0);
+    CHECK((log.find("[settle] turn 1:") != std::string::npos) == settle);
+    CHECK((log.find("[settle] verdict: front resolved") != std::string::npos) == settle);
+    if (!settle) {
+        CHECK((turns == 1) == !no_folds);
+        CHECK(
+            folds1.find(
+                no_folds ? " -- the exit test passes; held for the folds"
+                         : " -- the exit test passes; EXPERIMENTAL_exit_no_folds is off") !=
+            std::string::npos);
+    } else {
+        CHECK(turns > 1);
+        CHECK(folds1.find(" -- ") == std::string::npos); // turn 1 did not pass the exit test
+        CHECK(
+            line_of("[settle] turn 1: ").find("settled no -- no chord test") != std::string::npos);
+        CHECK(
+            line_of("[settle] turn " + std::to_string(turns) + ": ")
+                .find("settled yes | marked 0 ") != std::string::npos);
+    }
+}
+
+TEST_CASE("unreachable-level-set-throws-in-the-loop-2d", "[offset][2d]")
+{
+    // The 2D twin of unreachable-level-set-throws, through the loop: p offset to 0.3 with a held
+    // object the band did not touch as constructed, inside the level set -- a held point, a curve,
+    // a region boundary, the box, each 0.25 from p -- throws at a settled turn
+    // (check_level_set_reachable() after settle_refinement_turn()): a loop that resolves never
+    // reaches the loop's end, where the only other check is. Not a held point inside the level
+    // set by less than front_conv (q 0.25 from p at 0.27): a front passing outside it is within
+    // the bar, and the run resolves.
+    const std::string held = GENERATE("point", "curve", "region", "box", "point within the bar");
+    INFO("held: " << held);
+    const bool point = held == "point" || held == "point within the bar";
+    std::string log;
+    const std::string what = run_loop_2d(
+        held == "point within the bar" ? 0.27 : 0.3,
+        {{"max_rounds", 8}},
+        log,
+        held == "box" ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}},
+        held == "curve" ? GridPolyline2d{{{2, 5}}, {{6, 5}}} : GridPolyline2d{},
+        held == "region",
+        point ? GridPoints2d{{"q", {{5, 4}}}} : GridPoints2d{});
+    INFO(log.substr(log.size() > 6000 ? log.size() - 6000 : 0));
+    if (held == "point within the bar") {
+        CHECK(what.empty());
+    } else {
+        CHECK(what.find("the level set is out of reach") != std::string::npos);
+        CHECK(what.find("[held objects] turn ") != std::string::npos);
+    }
+}
+
 TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
 {
     // Hidden until the junction is fixed: neither variant converges reliably without it, so it

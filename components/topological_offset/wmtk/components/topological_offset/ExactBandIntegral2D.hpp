@@ -157,15 +157,16 @@ public:
      * takes grad d from the band side (-n) unless it is the offset side of a sided segment.
      *
      * f's parts, labelled as value() labels the pieces of a thin swept triangle over f (3D's
-     * label_face()): f cut by the candidates' regions into spans with member sets (inside first
-     * where f lies on a region's line, as 3D's face partition), the members pruned on the span's
-     * ends, then one member, all edges (split by their lines, then by their bisectors), all
-     * vertices (split by their perpendicular bisectors), or rule (a): the span split by the
-     * members' side lines, each part labelled by the member of smallest int_part d_g phi ds (the
-     * first on a tie), a part where the lines disagree taking the side of the member nearest at
-     * its centroid in that limit (below). So summed over the boundary edges, grad at x is the
-     * exact derivative at x of the band change "exact_swept" judges a move from x on, where
-     * value() and these labels cut alike. `rule_a`: the number of parts labelled by rule (a).
+     * label_face()): f cut by the candidates' regions into spans with member sets (max_distance()'s
+     * partition: inside first where f lies on a region's line, as 3D's face partition), the
+     * members pruned on the span's ends, then one member, all edges (split by their lines, then by
+     * their bisectors), all vertices (split by their perpendicular bisectors), or rule (a): the
+     * span split by the members' side lines, each part labelled by the member of smallest int_part
+     * d_g phi ds (the first on a tie), a part where the lines disagree taking the side of the
+     * member nearest at its centroid in that limit (below). So summed over the boundary edges,
+     * grad at x is the exact derivative at x of the band change "exact_swept" judges a move from
+     * x on, where value() and these labels cut alike. `rule_a`: the number of parts labelled by
+     * rule (a).
      *
      * Where 2D differs, and why:
      *  - a curved bisector never throws: the parts are always labelled by rule (a), 3D's
@@ -194,11 +195,67 @@ public:
 
     /// d(x), the distance to the nearest segment or point.
     double distance(const Eigen::Vector2d& x) const { return upper_bound(&x, 1); }
+    /// d(x), distance(x) bit for bit, and its gradient in `grad`: (x - y) / d(x), y the foot of x
+    /// on the first primitive at the min (segments, then points, in row order); zero where d(x) =
+    /// 0. 3D's Envelope::primitive_distance() on nearest_primitive(), the gradient 3D's settle
+    /// mark "rms" and its field angle read (TopoOffsetTriMesh::front_edge_field_angle()).
+    double distance(const Eigen::Vector2d& x, Eigen::Vector2d& grad) const;
     /// U(t): min over the primitives of the max of their distance over t's corners, >= d on t.
     double distance_bound(const std::array<Eigen::Vector2d, 3>& t) const
     {
         return upper_bound(t.data(), 3);
     }
+    /// U(f) of a segment: min over the primitives P of the max of d_P at f's two ends, >= d on f
+    /// (d_P is convex). 3D's min_max_corner_distance() on a front face: the settle test's former
+    /// outside_f bound (TopoOffsetTriMesh::settle_refinement_turn()).
+    double distance_bound(const std::array<Eigen::Vector2d, 2>& f) const
+    {
+        return upper_bound(f.data(), 2);
+    }
+    /// min over the segment f of d: the min over ALL primitives P of the distance between P and
+    /// f, 0 where they cross. 3D's min_triangle_distance() (Envelope::
+    /// primitive_triangle_distance()), the settle test's inside_f; where 2D differs: 3D searches
+    /// its input envelope in a grown box, the 2D input has no envelope over its primitives, and
+    /// this scans them all as upper_bound() does. The crossing is decided by exact orient2d signs
+    /// (Envelope::primitive_segment_distance()'s test), never on rounding; otherwise the distance
+    /// is the min over the four ends of the end-to-segment distance (a contact without a crossing
+    /// is an end at distance 0), not the Envelope's clamped closest pair of the two lines, which
+    /// cancels where the segments are near parallel (the measurement is in the .cpp).
+    double min_distance(const std::array<Eigen::Vector2d, 2>& f) const;
+
+    /// What max_distance() found besides the max (3D's MaxInfo, without its edge_split_pieces:
+    /// 3D's exact split of all-edge pieces is the skew-line case, which a 2D edge, 3D's face here,
+    /// never is).
+    struct MaxInfo
+    {
+        Eigen::Vector2d at = Eigen::Vector2d::Zero(); ///< a point of f where the max is attained
+        bool rule_a = false; ///< the max came from a rule-(a) piece: an upper bound there
+        double U = 0.; ///< distance_bound(f), the former settle bound
+        int candidates = 0, pieces = 0, rule_a_pieces = 0;
+    };
+
+    /**
+     * @brief max over the segment f of d: 3D's max_distance() over a front triangle one dimension
+     * down, the settle test's outside_f under EXPERIMENTAL_settle_mark "max". f is cut by the
+     * candidates' local regions as a triangle is (the same search, region tests, tolerances and
+     * scale rule; a segment in place of 3D's planar ring), and d is convex wherever one member's
+     * distance is d, so on each piece the max is at an end of the piece:
+     *  - one member: the max of d_g at the piece's two ends, exact;
+     *  - members all edges, or all vertices: split by the members' lines and then by the
+     *    bisectors of their (then affine) distances, or by the vertices' perpendicular bisectors,
+     *    each sub-piece one affine or point distance, exact (3D's all-faces and all-vertices
+     *    cases);
+     *  - otherwise (rule (a): an edge and a vertex not its own, whose bisector is a parabola): min
+     *    over members g of the max of d_g at the piece's ends, an upper bound (d <= d_g).
+     * The max over the pieces is exact up to rounding unless it comes from a rule-(a) piece;
+     * never below the true max. As in 3D, a segment lying ON a region's boundary line counts as
+     * inside that region (a point of the line is in both closed regions): a duplicated piece
+     * cannot lower a max, a lost one can.
+     *
+     * Throws (with f in hex floats) if the pieces do not tile f, or leave more of f outside every
+     * region, than the tolerances allow (3D's checks on areas, here on lengths).
+     */
+    double max_distance(const std::array<Eigen::Vector2d, 2>& f, MaxInfo* info = nullptr) const;
     /// The band term's corner bound (EXPERIMENTAL_band_volume_rule "corner_bound",
     /// TopoOffsetTriMesh::band_cell_corner_bound()): min over ALL primitives P of (1/n) sum_i
     /// d_P(t_i), n points, and the minimiser in `best`, the lowest index on a tie (segments, then
@@ -246,10 +303,23 @@ private:
     struct Work;
     /// The candidates in t's frame and the convex pieces of t with member sets; false: t is flat.
     bool partition(const std::array<Eigen::Vector2d, 3>& t, Work& w, Stats* stats) const;
+    /// Per-call scratch of a segment's partition (SegWork) and of its labelled parts (EdgeWork,
+    /// 3D's FaceWork), defined in the .cpp.
+    struct SegWork;
     struct EdgeWork;
+    /// f's partition, max_distance()'s and label_edge()'s (3D's tri_partition(), which serves
+    /// max_distance() and label_face()): the candidates in f's frame (origin its midpoint) and the
+    /// pieces of f with member sets.
+    void seg_partition(const std::array<Eigen::Vector2d, 2>& f, SegWork& w) const;
+    /// The checks of value() on f's pieces, on lengths (3D's check_face_pieces()).
+    void check_segment_pieces(
+        const std::array<Eigen::Vector2d, 2>& f,
+        const SegWork& w,
+        const char* who) const;
     /// front_edge_derivs()'s labelled parts of f, rule (a)'s integrals weighted by the hat
-    /// function of corner kv (3D's tri_partition() and label_face()); nothing for a point.
-    void label_edge(const std::array<Eigen::Vector2d, 2>& f, int kv, EdgeWork& w) const;
+    /// function of corner kv (3D's label_face()): seg_partition(), its checks, then the labels;
+    /// no parts for a point.
+    void label_edge(const std::array<Eigen::Vector2d, 2>& f, int kv, EdgeWork& ew) const;
     /// value(), and with kv >= 0 value_grad_hess() (want_value false: grad_hess(), J not summed).
     double evaluate(
         const std::array<Eigen::Vector2d, 3>& t,

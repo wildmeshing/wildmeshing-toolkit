@@ -1,6 +1,7 @@
 #include "ExactBandIntegral2D.hpp"
 
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -38,14 +39,17 @@ Vec2 rot_cw(const Vec2& a)
     return Vec2(a.y(), -a.x());
 }
 
-/// The partition's tolerance budget and rounding scale (3D's Ctx, without its timers), and an edge
-/// partition's direction and cap (3D's face partition's ring_n and ring_cap; seg_tol()).
+/// The partition's tolerance budget and rounding scale (3D's Ctx, without its timers and the
+/// planes its face partition keeps: a Span names the lines that cut it).
 struct Ctx
 {
     double* tol_cut = nullptr;
     double* tol_any = nullptr;
     double scale = 0.;
-    const Eigen::Vector2d* seg_t = nullptr;
+    /// A segment's partition only (seg_partition(), 3D's face partition): the segment's unit
+    /// direction, and the most one decision adds to the budget (seg_tol(); 3D's ring_n and
+    /// ring_cap). Null for a triangle.
+    const Vec2* seg_t = nullptr;
     double seg_cap = 0.;
 };
 
@@ -602,6 +606,257 @@ std::string cell_string(const std::array<Vec2, 3>& T, const double delta)
 }
 
 // ------------------------------------------------------------------------------------------------
+// A front segment's partition (3D's face partition, seg_partition()): the segment cut by the
+// candidates' local regions as a triangle is, a segment in place of 3D's planar ring; every
+// function below is 3D's of the same name with a p (pclip, pclassify, psplit, ...) one dimension
+// down. As 3D's tri_partition() serves its max_distance() and its label_face(), this one serves
+// the exact max of d over a front segment (max_distance(), the settle loop's max test) and the
+// labelled parts of a band boundary edge (label_edge(), for front_edge_derivs()). One difference
+// from the triangle, as in 3D: a segment can lie ON a region's boundary line (both ends within tol
+// of it), which a triangle cannot except as a flat sliver. A point of that line belongs to both
+// closed regions, so the segment counts as inside the half-plane (sclassify, ssplit test the
+// inside first; the triangle's classify tests the outside first). Duplicated pieces cannot lower
+// a max, lost ones can.
+//
+// A piece of f is a Span: an interval of f, and per end the unit normal of the line that cut f
+// there, out of the piece (zero at an end of f), which front_edge_derivs()' cut terms read. 3D's
+// rings keep no normals and find a cut edge's plane among the partition's recorded planes
+// (Ctx::planes); a span's ends are made by its own clips, which name the line.
+// ------------------------------------------------------------------------------------------------
+
+struct Span
+{
+    std::array<Vec2, 2> y; ///< the ends, in f's direction
+    std::array<Vec2, 2> g{{Vec2::Zero(), Vec2::Zero()}}; ///< per end its cut line's normal
+    double max_abs() const { return std::max(maxabs(y[0]), maxabs(y[1])); }
+};
+
+/// ring_tol(): what a decision of tolerance tol against the line of unit normal g adds to a
+/// segment partition's budget (Ctx::tol_cut, Ctx::tol_any): tol / sin(theta), theta the angle
+/// between that line and the segment (sin(theta) = |g.t|, t Ctx::seg_t), at most Ctx::seg_cap and
+/// never below tol; tol itself outside a segment partition. The strip |g.x - h| <= tol meets the
+/// segment's line in an interval 2 tol / sin(theta) long, so a decision at tol moves a piece's
+/// end that far along the segment, not tol. See check_segment_pieces().
+double seg_tol(const Ctx& cx, const Vec2& g, const double tol)
+{
+    if (!cx.seg_t) return tol;
+    const double sin_theta = std::abs(g.dot(*cx.seg_t));
+    return std::max(tol, std::min(tol / sin_theta, cx.seg_cap));
+}
+
+/// _pclip: the span S cut by {g.x <= h}, |g| = 1; Same (S inside up to tol, `out` untouched),
+/// None (nothing inside) or New (the inside part in `out`, its ends in S's order, the cut end's
+/// normal g): clip()'s rules on one segment. Past the two tests one end is more than tol inside
+/// and the other more than tol outside, so no end is snapped onto the line (3D's snap acts on a
+/// ring's other vertices); the crossing is computed from the inside end, and a part whose ends
+/// are within tol (max norm) is one point, no piece (clean_ring()).
+Cut sclip(const Span& S, const Vec2& g, const double h, Span& out, const Ctx& cx)
+{
+    const double tol = 16 * EPS * (std::abs(h) + std::max(S.max_abs(), cx.scale));
+    const double budget = seg_tol(cx, g, tol);
+    if (cx.tol_any) *cx.tol_any += budget;
+    const double s[2] = {S.y[0].dot(g) - h, S.y[1].dot(g) - h};
+    if (std::max(s[0], s[1]) <= tol) return Cut::Same;
+    if (std::min(s[0], s[1]) >= -tol) return Cut::None;
+    const int a = s[0] < 0. ? 0 : 1, b = 1 - a; // a inside, b outside
+    const Vec2 yc = S.y[size_t(a)] + (s[a] / (s[a] - s[b])) * (S.y[size_t(b)] - S.y[size_t(a)]);
+    if (cx.tol_cut) *cx.tol_cut += budget;
+    if (maxabs(yc - S.y[size_t(a)]) <= tol) return Cut::None;
+    out = S;
+    out.y[size_t(b)] = yc;
+    out.g[size_t(b)] = g;
+    return Cut::New;
+}
+
+/// R = sclip(R, g, h) in place (_pclip_keep); false if None (R then unusable).
+bool sclip_inplace(Span& R, const Vec2& g, const double h, Span& tmp, const Ctx& cx)
+{
+    const Cut c = sclip(R, g, h, tmp, cx);
+    if (c == Cut::None) return false;
+    if (c == Cut::New) std::swap(R, tmp);
+    return true;
+}
+
+/// _pclassify: as classify, the inside tested first.
+Side sclassify(const Span& S, const std::pair<Vec2, double>* H, const int nh, const Ctx& cx)
+{
+    const double ma = std::max(S.max_abs(), cx.scale);
+    bool s_in = true;
+    for (int i = 0; i < nh; ++i) {
+        const Vec2& g = H[i].first;
+        const double h = H[i].second;
+        const double s0 = S.y[0].dot(g) - h, s1 = S.y[1].dot(g) - h;
+        const double tol = 16 * EPS * (std::abs(h) + ma);
+        if (cx.tol_any) *cx.tol_any += seg_tol(cx, g, tol);
+        if (std::max(s0, s1) <= tol) continue;
+        if (std::min(s0, s1) >= -tol) return Side::Out;
+        s_in = false;
+    }
+    return s_in ? Side::In : Side::Split;
+}
+
+/// _psplit: the part of S inside all of H (R; false if None) and the parts outside.
+bool ssplit(
+    const Span& S,
+    const std::pair<Vec2, double>* H,
+    const int nh,
+    Span& R,
+    std::vector<Span>& outside,
+    const Ctx& cx)
+{
+    R = S;
+    Span tmp;
+    for (int i = 0; i < nh; ++i) {
+        const Vec2& g = H[i].first;
+        const double h = H[i].second;
+        const double tol = 16 * EPS * (std::abs(h) + std::max(R.max_abs(), cx.scale));
+        if (std::max(R.y[0].dot(g) - h, R.y[1].dot(g) - h) <= tol) continue; // inside, on it too
+        const Cut c = sclip(R, -g, -h, tmp, cx);
+        if (c == Cut::Same) outside.push_back(R);
+        if (c == Cut::New) outside.push_back(tmp);
+        if (!sclip_inplace(R, g, h, tmp, cx)) return false;
+    }
+    return true;
+}
+
+/// _pfaces_min_pieces with the edges' lines for the faces' planes (edges_min_pieces() on a
+/// segment): sub-spans with one affine distance W.x - c each; `piece(R, W, c)`. max_distance()'s,
+/// apart from label_edge()'s edges_min_spans() as 3D's max_distance() is from label_face()'s
+/// resolve(): a span on an edge's line or on a bisector is kept on both of its sides here (a
+/// duplicated piece cannot lower a max, a lost one can), where a label takes it once (counted
+/// twice, it doubles an integral).
+template <typename F>
+void sedges_min_pieces(
+    const Span& R0,
+    const std::vector<const Loc*>& edges,
+    const Ctx& cx,
+    F&& piece)
+{
+    struct Cell
+    {
+        Span C;
+        std::vector<double> sg;
+    };
+    std::vector<Cell> cells(1);
+    cells[0].C = R0;
+    Span tmp;
+    for (const Loc* f : edges) {
+        const Vec2& n = f->dir;
+        const Vec2& a0 = f->p;
+        std::vector<Cell> next;
+        for (const Cell& cl : cells) {
+            for (const double s : {1., -1.}) { // keep s n.(x - a0) >= 0
+                const Cut c = sclip(cl.C, -s * n, -s * n.dot(a0), tmp, cx);
+                if (c == Cut::None) continue;
+                Cell nc;
+                nc.C = c == Cut::Same ? cl.C : tmp;
+                nc.sg = cl.sg;
+                nc.sg.push_back(s);
+                next.push_back(std::move(nc));
+            }
+        }
+        cells = std::move(next);
+    }
+    const size_t nf = edges.size();
+    std::vector<Vec2> W(nf);
+    std::vector<double> cc(nf);
+    Span R;
+    for (const Cell& cl : cells) {
+        for (size_t i = 0; i < nf; ++i) { // d_i = W_i . x - c_i
+            W[i] = cl.sg[i] * edges[i]->dir;
+            cc[i] = cl.sg[i] * edges[i]->dir.dot(edges[i]->p);
+        }
+        for (size_t i = 0; i < nf; ++i) {
+            R = cl.C;
+            bool alive = true;
+            for (size_t j = 0; j < nf && alive; ++j) {
+                if (j == i) continue;
+                const Vec2 w = W[i] - W[j];
+                const double rhs = cc[i] - cc[j];
+                if (w.norm() <= 1e-14) { // parallel lines: the nearer wins (the lower on a tie)
+                    if (parallel_edge_loses(rhs, cc[i], cc[j], i, j, cx)) alive = false;
+                    continue;
+                }
+                const double nw = w.norm();
+                alive = sclip_inplace(R, w / nw, rhs / nw, tmp, cx);
+            }
+            if (alive) piece(R, W[i], cc[i]);
+        }
+    }
+}
+
+/// _pvertices_min_pieces: one nearest vertex per sub-span; `piece(R, v)`. max_distance()'s, apart
+/// from label_edge()'s vertices_min_spans() (sedges_min_pieces()).
+template <typename F>
+void svertices_min_pieces(
+    const Span& R0,
+    const std::vector<const Loc*>& verts,
+    const Ctx& cx,
+    F&& piece)
+{
+    Span R, tmp;
+    for (size_t i = 0; i < verts.size(); ++i) {
+        const Vec2& vi = verts[i]->p;
+        R = R0;
+        bool alive = true;
+        for (size_t j = 0; j < verts.size() && alive; ++j) {
+            if (j == i) continue;
+            const Vec2& vj = verts[j]->p;
+            const Vec2 w = 2. * (vj - vi);
+            const double nw = w.norm();
+            alive = sclip_inplace(R, w / nw, (vj.dot(vj) - vi.dot(vi)) / nw, tmp, cx);
+        }
+        if (alive) piece(R, vi);
+    }
+}
+
+struct SegPiece
+{
+    Span R;
+    std::vector<int> S; // member candidates
+};
+
+/// The segment's ends in hex floats, bit exact, for the error messages (as cell_string).
+std::string seg_string(const std::array<Vec2, 2>& f)
+{
+    std::string s = "f =";
+    char buf[96];
+    for (const Vec2& p : f) {
+        std::snprintf(buf, sizeof(buf), " (%a, %a)", p[0], p[1]);
+        s += buf;
+    }
+    return s;
+}
+
+/// Whether segments pq and ab cross, each one's ends strictly on the two sides of the other's
+/// line, by exact orient2d signs: Envelope.cpp's segments_cross(), file-local there. A contact
+/// (an end on the other segment, or a collinear overlap) is not a crossing here; it is an end
+/// at distance 0, which the ends' distances find.
+bool segments_cross(const Vec2& p, const Vec2& q, const Vec2& a, const Vec2& b)
+{
+    using wmtk::utils::predicates::orient2d;
+    const int sa = int(orient2d(p, q, a)), sb = int(orient2d(p, q, b));
+    if (sa * sb >= 0) return false;
+    const int sp = int(orient2d(a, b, p)), sq = int(orient2d(a, b, q));
+    return sp * sq < 0;
+}
+
+/// The distance between segments pq and ab that do not cross: the min of the four distances
+/// from an end of one to the other (two segments of the plane that do not cross have an end of
+/// one in a closest pair; a point is a zero-length segment). Where 2D differs from the
+/// Envelope's segment_distance() (Ericson's closest pair of the two lines, clamped), which this
+/// replaces here: that closest pair cancels where the segments are near parallel. MEASURED
+/// (exact-band-integral-2d-max-distance, a chord of length 0.6 at 1e-12 rad to an input
+/// segment, 1e-3 from it): it returned the far end's distance, 1e-3 + 3.0e-13, against the true
+/// 1e-3 - 3.0e-13, 2700 eps units over.
+double seg_seg_dist(const Vec2& p, const Vec2& q, const Vec2& a, const Vec2& b)
+{
+    return std::min(
+        std::min(point_seg_dist(p, a, b), point_seg_dist(q, a, b)),
+        std::min(point_seg_dist(a, p, q), point_seg_dist(b, p, q)));
+}
+
+// ------------------------------------------------------------------------------------------------
 // The elementary pieces and their boundary integrals (3D's Elem, piece_value, moments,
 // cut_integral). Kind 0: phi = dir.x - c (affine); kind 2: phi = |x - p|.
 // ------------------------------------------------------------------------------------------------
@@ -826,100 +1081,16 @@ double cut_value(const Vec2& y, const Elem& e, const double l0, const Vec2& g0)
 }
 
 // ------------------------------------------------------------------------------------------------
-// An edge's partition (3D's face partition one dimension down: ring_tol(), pclip(), pclassify(),
-// psplit() and label_face()'s helpers), for front_edge_derivs(). A part of f is a Span: an
-// interval of f, and per end the unit normal of the line that cut f there, out of the part (zero
-// at an end of f). 3D's rings keep no normals and find a cut edge's plane among the partition's
-// recorded planes (Ctx::planes); a span's ends are made by its own clips, which name the line.
+// The labelled parts of a band boundary edge f (3D's label_face()'s helpers one dimension down),
+// for front_edge_derivs(): seg_partition()'s pieces of f, each split where its members' distances
+// meet and labelled with its nearest member, the offset side kept.
 // ------------------------------------------------------------------------------------------------
-
-struct Span
-{
-    std::array<Vec2, 2> y; ///< the ends, in f's direction
-    std::array<Vec2, 2> g{{Vec2::Zero(), Vec2::Zero()}}; ///< per end its cut line's normal
-    double max_abs() const { return std::max(maxabs(y[0]), maxabs(y[1])); }
-};
-
-/// ring_tol(): what a decision of tolerance tol against the line of unit normal g adds to an edge
-/// partition's budget: tol / |g.t|, t f's unit direction (Ctx::seg_t) -- the strip |g.x - h| <= tol
-/// meets f's line in an interval 2 tol / |g.t| long -- at most Ctx::seg_cap and never below tol;
-/// tol itself outside an edge partition.
-double seg_tol(const Ctx& cx, const Vec2& g, const double tol)
-{
-    if (!cx.seg_t) return tol;
-    return std::max(tol, std::min(tol / std::abs(g.dot(*cx.seg_t)), cx.seg_cap));
-}
-
-/// pclip(): S cut by {g.x <= h}, |g| = 1: Same (S inside up to tol, `out` untouched), None
-/// (nothing inside, or a part no longer than tol: clean_ring()'s), or New (in `out`, the cut
-/// end's normal g), the crossing computed from the inside end.
-Cut sclip(const Span& S, const Vec2& g, const double h, Span& out, const Ctx& cx)
-{
-    const double tol = 16 * EPS * (std::abs(h) + std::max(S.max_abs(), cx.scale));
-    const double budget = seg_tol(cx, g, tol);
-    if (cx.tol_any) *cx.tol_any += budget;
-    const double s[2] = {S.y[0].dot(g) - h, S.y[1].dot(g) - h};
-    if (std::max(s[0], s[1]) <= tol) return Cut::Same;
-    if (std::min(s[0], s[1]) >= -tol) return Cut::None;
-    const int a = s[0] < 0. ? 0 : 1, b = 1 - a;
-    const Vec2 yc = S.y[size_t(a)] + (s[a] / (s[a] - s[b])) * (S.y[size_t(b)] - S.y[size_t(a)]);
-    if (cx.tol_cut) *cx.tol_cut += budget;
-    if (maxabs(yc - S.y[size_t(a)]) <= tol) return Cut::None;
-    out = S;
-    out.y[size_t(b)] = yc;
-    out.g[size_t(b)] = g;
-    return Cut::New;
-}
 
 /// Whether S lies on the line g.x = h, up to sclip()'s tol: inside both of its half-planes.
 bool on_line(const Span& S, const Vec2& g, const double h, const Ctx& cx)
 {
     const double tol = 16 * EPS * (std::abs(h) + std::max(S.max_abs(), cx.scale));
     return std::abs(S.y[0].dot(g) - h) <= tol && std::abs(S.y[1].dot(g) - h) <= tol;
-}
-
-/// pclassify(): as classify(), the inside tested first (a span on a region's line is inside it).
-Side sclassify(const Span& S, const std::pair<Vec2, double>* H, const int nh, const Ctx& cx)
-{
-    const double ma = std::max(S.max_abs(), cx.scale);
-    bool s_in = true;
-    for (int i = 0; i < nh; ++i) {
-        const Vec2& g = H[i].first;
-        const double h = H[i].second;
-        const double s0 = S.y[0].dot(g) - h, s1 = S.y[1].dot(g) - h;
-        const double tol = 16 * EPS * (std::abs(h) + ma);
-        if (cx.tol_any) *cx.tol_any += seg_tol(cx, g, tol);
-        if (std::max(s0, s1) <= tol) continue;
-        if (std::min(s0, s1) >= -tol) return Side::Out;
-        s_in = false;
-    }
-    return s_in ? Side::In : Side::Split;
-}
-
-/// psplit(): the part of S inside all of H (R; false if none) and the parts outside.
-bool ssplit(
-    const Span& S,
-    const std::pair<Vec2, double>* H,
-    const int nh,
-    Span& R,
-    std::vector<Span>& outside,
-    const Ctx& cx)
-{
-    R = S;
-    Span tmp;
-    for (int i = 0; i < nh; ++i) {
-        const Vec2& g = H[i].first;
-        const double h = H[i].second;
-        const double tol = 16 * EPS * (std::abs(h) + std::max(R.max_abs(), cx.scale));
-        if (std::max(R.y[0].dot(g) - h, R.y[1].dot(g) - h) <= tol) continue; // inside, on it too
-        const Cut c = sclip(R, -g, -h, tmp, cx);
-        if (c == Cut::Same) outside.push_back(R);
-        if (c == Cut::New) outside.push_back(tmp);
-        const Cut k = sclip(R, g, h, tmp, cx);
-        if (k == Cut::None) return false;
-        if (k == Cut::New) R = tmp;
-    }
-    return true;
 }
 
 /// A labelled part of f: its span and its integrand d, an Elem without its polygon (kind 0 the
@@ -982,7 +1153,8 @@ void labeled_span(
 /// edges_min_pieces() on a span: split by the edges' lines (each |.| then affine; a span on a
 /// line is one sign cell, as labeled_span() keeps it), then by the bisectors of the affine
 /// distances; `piece(R, W, c, i, sg)` per sub-span. A span on the bisector of two members goes to
-/// the lower one, parallel_edge_loses()'s tie.
+/// the lower one, parallel_edge_loses()'s tie. max_distance()'s sedges_min_pieces() keeps such a
+/// span on both sides (see there).
 template <typename F>
 void edges_min_spans(const Span& Q, const std::vector<const Loc*>& edges, const Ctx& cx, F&& piece)
 {
@@ -1179,18 +1351,6 @@ size_t nearest_member_span(
     return best;
 }
 
-/// f's corners in hex floats, bit exact, for the error messages (3D's face_string()).
-std::string edge_string(const std::array<Vec2, 2>& f)
-{
-    std::string s = "f =";
-    char buf[96];
-    for (const Vec2& p : f) {
-        std::snprintf(buf, sizeof(buf), " (%a, %a)", p[0], p[1]);
-        s += buf;
-    }
-    return s;
-}
-
 } // namespace
 
 // ------------------------------------------------------------------------------------------------
@@ -1377,6 +1537,272 @@ double ExactBandIntegral2D::primitive_distance(
         if (d > 0. && !interior) *hess = (Eigen::Matrix2d::Identity() - u * u.transpose()) / d;
     }
     return d;
+}
+
+double ExactBandIntegral2D::distance(const Eigen::Vector2d& x, Eigen::Vector2d& grad) const
+{
+    // upper_bound(&x, 1)'s scan and point_seg_dist()'s arithmetic, keeping the first minimiser's
+    // offset x - y: the value is distance(x) bit for bit.
+    double m = std::numeric_limits<double>::infinity();
+    Vec2 r_min = Vec2::Zero();
+    for (size_t f = 0; f < m_SA.size(); ++f) {
+        const Vec2& A = m_SA[f];
+        const Vec2 d = m_SB[f] - A;
+        const double dd = d.dot(d);
+        const double s = dd > 0. ? std::clamp((x - A).dot(d) / dd, 0., 1.) : 0.;
+        const Vec2 r = x - A - s * d;
+        const double dist = r.norm();
+        if (dist < m) {
+            m = dist;
+            r_min = r;
+        }
+    }
+    grad = m > 0. ? Vec2(r_min / m) : Vec2::Zero();
+    return m;
+}
+
+double ExactBandIntegral2D::min_distance(const std::array<Eigen::Vector2d, 2>& f) const
+{
+    // See the declaration: Envelope::primitive_segment_distance() on every primitive.
+    double m = std::numeric_limits<double>::infinity();
+    for (size_t k = 0; k < m_SA.size(); ++k) {
+        if (segments_cross(m_SA[k], m_SB[k], f[0], f[1])) return 0.;
+        m = std::min(m, seg_seg_dist(m_SA[k], m_SB[k], f[0], f[1]));
+    }
+    return m;
+}
+
+struct ExactBandIntegral2D::SegWork
+{
+    Vec2 c0; ///< the local origin: f's midpoint
+    Span S0; ///< f in local coordinates
+    std::vector<Loc> loc; ///< the candidate features, local
+    std::vector<int> cand; ///< their feature indices
+    std::vector<std::pair<Vec2, double>> hs; ///< their half-planes, local
+    double U = 0.;
+    double tol_cut = 0., tol_any = 0.; ///< the partition's tolerance budget (Ctx)
+    double scale = 0.; ///< the rounding scale (Ctx::scale)
+    std::vector<SegPiece> pieces; ///< the partition of f with member sets
+};
+
+void ExactBandIntegral2D::seg_partition(const std::array<Eigen::Vector2d, 2>& f, SegWork& w) const
+{
+    Ctx cx;
+    w.tol_cut = w.tol_any = 0.;
+    cx.tol_cut = &w.tol_cut;
+    cx.tol_any = &w.tol_any;
+    // step 0 as partition()'s on f's two ends, the origin c0 f's midpoint (3D: the face's
+    // centroid). U >= d on f, so every feature nearest at a point of f is within U of f's box.
+    w.c0 = (f[0] + f[1]) / 2.;
+    w.S0 = Span();
+    w.S0.y = {{Vec2(f[0] - w.c0), Vec2(f[1] - w.c0)}};
+    const Vec2 tlo = f[0].cwiseMin(f[1]), thi = f[0].cwiseMax(f[1]);
+    w.U = upper_bound(f.data(), 2);
+    const double r = w.U * (1 + 1e-12);
+    w.cand.clear();
+    w.loc.clear();
+    w.hs.clear();
+    w.scale = 0.;
+    for (size_t gi = 0; gi < m_feat.size(); ++gi) {
+        const Feature& ft = m_feat[gi];
+        if (!(box_dist(ft.lo, ft.hi, tlo, thi) <= r)) continue;
+        w.cand.push_back(int(gi));
+        Loc l;
+        l.kind = ft.kind;
+        l.p = ft.p - w.c0;
+        l.dir = ft.dir;
+        l.h_begin = int(w.hs.size());
+        for (int i = ft.h_begin; i < ft.h_end; ++i) {
+            const auto& [g, q] = m_hs[size_t(i)];
+            w.hs.push_back({g, g.dot(q - w.c0)});
+            w.scale = std::max(w.scale, maxabs(q - w.c0));
+        }
+        l.h_end = int(w.hs.size());
+        w.loc.push_back(l);
+    }
+    for (const Vec2& p : f) w.scale = std::max(w.scale, maxabs(p - w.c0));
+    cx.scale = w.scale;
+    // The segment's direction, and the cap of one decision's share of the budget (seg_tol()):
+    // half its length L, so check_segment_pieces() charges a capped decision at most the whole
+    // segment (3D: A / (2 D), the whole face). A point keeps the plain tol.
+    const Vec2 d = w.S0.y[1] - w.S0.y[0];
+    const double L = d.norm();
+    const Vec2 t = L > 0. ? Vec2(d / L) : Vec2::Zero();
+    if (L > 0.) {
+        cx.seg_t = &t;
+        cx.seg_cap = L / 2.;
+    }
+
+    // step 1: the pieces of f with constant member sets
+    std::vector<SegPiece>& pieces = w.pieces;
+    std::vector<SegPiece> next;
+    pieces.assign(1, SegPiece());
+    pieces[0].R = w.S0;
+    std::vector<Span> outs;
+    for (int k = 0; k < int(w.loc.size()); ++k) {
+        const std::pair<Vec2, double>* H = w.hs.data() + w.loc[size_t(k)].h_begin;
+        const int nh = w.loc[size_t(k)].h_end - w.loc[size_t(k)].h_begin;
+        next.clear();
+        for (SegPiece& pc : pieces) {
+            const Side st = sclassify(pc.R, H, nh, cx);
+            if (st == Side::In) {
+                pc.S.push_back(k);
+                next.push_back(std::move(pc));
+            } else if (st == Side::Out) {
+                next.push_back(std::move(pc));
+            } else {
+                SegPiece in;
+                outs.clear();
+                if (ssplit(pc.R, H, nh, in.R, outs, cx)) {
+                    in.S = pc.S;
+                    in.S.push_back(k);
+                    next.push_back(std::move(in));
+                }
+                for (Span& ro : outs) {
+                    SegPiece o;
+                    o.R = ro;
+                    o.S = pc.S;
+                    next.push_back(std::move(o));
+                }
+            }
+        }
+        std::swap(pieces, next);
+    }
+}
+
+void ExactBandIntegral2D::check_segment_pieces(
+    const std::array<Eigen::Vector2d, 2>& f,
+    const SegWork& w,
+    const char* who) const
+{
+    // The checks of value(), on lengths (3D's check_face_pieces()). A cutting clip moves a part's
+    // end only within the strip |g.x - h| <= sqrt(2) tol (the crossing to rounding, and a part
+    // merged into a point at tol in the max norm), and a decision taken with a tolerance
+    // misplaces at most the strip of half-width tol. A strip of half-width s meets f's line in an
+    // interval 2 s / sin(theta) long, theta the angle between the two lines: tol_cut and tol_any
+    // sum tol / sin(theta) (seg_tol(), capped). A piece's length, the norm of the difference of
+    // two points within D of the origin (D f's length), rounds by at most 4 eps D (an over-bound:
+    // sqrt(2) eps D / 2 for the difference, 2 eps of the norm), 3D's fan-sum bound on one term.
+    double len_sum = 0., empty_len = 0.;
+    size_t n_empty = 0;
+    for (const SegPiece& pc : w.pieces) {
+        const double l = (pc.R.y[1] - pc.R.y[0]).norm();
+        len_sum += l;
+        if (pc.S.empty()) {
+            empty_len += l;
+            ++n_empty;
+        }
+    }
+    const double L0 = (w.S0.y[1] - w.S0.y[0]).norm();
+    const double rho = 4. * EPS * (f[1] - f[0]).norm();
+    const double rho_all = rho * double(w.pieces.size() + 1), rho_empty = rho * double(n_empty);
+    const double tile_bound = 2. * std::sqrt(2.) * w.tol_cut + rho_all;
+    const double empty_bound = 2. * (w.tol_any + std::sqrt(2.) * w.tol_cut) + rho_empty;
+    if (!(empty_len <= empty_bound)) {
+        log_and_throw_error(
+            "ExactBandIntegral2D::{}: pieces outside every local region, length {} of {} (bound "
+            "{}) | {}",
+            who,
+            empty_len,
+            L0,
+            empty_bound,
+            seg_string(f));
+    }
+    if (!(std::abs(len_sum - L0) <= tile_bound)) {
+        log_and_throw_error(
+            "ExactBandIntegral2D::{}: pieces do not tile f: {} vs {} (bound {}) | {}",
+            who,
+            len_sum,
+            L0,
+            tile_bound,
+            seg_string(f));
+    }
+}
+
+double ExactBandIntegral2D::max_distance(const std::array<Eigen::Vector2d, 2>& f, MaxInfo* info)
+    const
+{
+    SegWork w;
+    seg_partition(f, w);
+    Ctx cx; // the sub-pieces' clips: no tolerance budget (as 3D's)
+    cx.scale = w.scale;
+    const std::vector<Loc>& loc = w.loc;
+    double best = -std::numeric_limits<double>::infinity();
+    Vec2 at = Vec2::Zero();
+    bool ra_best = false;
+    int rule_a_pieces = 0;
+    std::vector<int> S;
+    std::vector<const Loc*> members;
+    for (const SegPiece& pc : w.pieces) {
+        if (pc.S.empty()) continue;
+        S = pc.S;
+        if (S.size() > 1) S = prune_points({pc.R.y[0], pc.R.y[1]}, S, loc);
+        bool all_edges = true, all_verts = true;
+        members.clear();
+        for (const int k : S) {
+            members.push_back(&loc[size_t(k)]);
+            all_edges = all_edges && loc[size_t(k)].kind == 1;
+            all_verts = all_verts && loc[size_t(k)].kind == 2;
+        }
+        // the max over a segment's two ends of a convex function (first maximiser, as 3D's)
+        double val = -std::numeric_limits<double>::infinity();
+        Vec2 x = Vec2::Zero();
+        const auto take = [&](const Span& R, auto&& dist) {
+            for (const Vec2& p : R.y) {
+                const double dv = dist(p);
+                if (dv > val) {
+                    val = dv;
+                    x = p;
+                }
+            }
+        };
+        bool ra = false;
+        if (S.size() == 1) {
+            take(pc.R, [&](const Vec2& p) { return d_feat(*members[0], p); });
+        } else if (all_edges) {
+            sedges_min_pieces(
+                pc.R,
+                members,
+                cx,
+                [&](const Span& Rs, const Vec2& W, const double c) {
+                    take(Rs, [&](const Vec2& p) { return p.dot(W) - c; });
+                });
+        } else if (all_verts) {
+            svertices_min_pieces(pc.R, members, cx, [&](const Span& Rs, const Vec2& v) {
+                take(Rs, [&](const Vec2& p) { return (p - v).norm(); });
+            });
+        } else { // rule (a): min over g of max over the piece of d_g >= max over the piece of d
+            double vmin = std::numeric_limits<double>::infinity();
+            Vec2 xmin = Vec2::Zero();
+            for (const Loc* g : members) {
+                val = -std::numeric_limits<double>::infinity();
+                take(pc.R, [&](const Vec2& p) { return d_feat(*g, p); });
+                if (val < vmin) {
+                    vmin = val;
+                    xmin = x;
+                }
+            }
+            val = vmin;
+            x = xmin;
+            ra = true;
+            ++rule_a_pieces;
+        }
+        if (val > best) {
+            best = val;
+            at = x;
+            ra_best = ra;
+        }
+    }
+    check_segment_pieces(f, w, "max_distance");
+    if (info) {
+        info->at = at + w.c0;
+        info->rule_a = ra_best;
+        info->U = w.U;
+        info->candidates = int(loc.size());
+        info->pieces = int(w.pieces.size());
+        info->rule_a_pieces = rule_a_pieces;
+    }
+    return best;
 }
 
 struct ExactBandIntegral2D::Work
@@ -1870,15 +2296,8 @@ void ExactBandIntegral2D::grad_hess(
 
 struct ExactBandIntegral2D::EdgeWork
 {
-    Vec2 c0; ///< the local origin: f's midpoint
-    std::array<Vec2, 2> F; ///< f in local coordinates
-    std::vector<Loc> loc; ///< the candidate features, local
-    std::vector<int> cand; ///< their feature indices
-    std::vector<std::pair<Vec2, double>> hs; ///< their half-planes, local
-    double U = 0.;
-    double tol_cut = 0., tol_any = 0.; ///< the partition's tolerance budget (Ctx)
-    double scale = 0.; ///< the rounding scale (Ctx::scale)
-    Vec2 n = Vec2::Zero(); ///< f's unit normal rot_cw(F[1] - F[0]) / |.|; zero for a point
+    SegWork w; ///< f's partition
+    Vec2 n = Vec2::Zero(); ///< f's unit normal rot_cw(S0[1] - S0[0]) / |.|; zero for a point
     std::vector<SpanPart> parts; ///< the labelled parts on the offset side
     int rule_a = 0; ///< parts labelled by rule (a)
 };
@@ -1886,128 +2305,28 @@ struct ExactBandIntegral2D::EdgeWork
 void ExactBandIntegral2D::label_edge(
     const std::array<Eigen::Vector2d, 2>& f,
     const int kv,
-    EdgeWork& w) const
+    EdgeWork& ew) const
 {
-    w.parts.clear();
-    w.rule_a = 0;
-    w.n.setZero();
-    // step 0: candidates in local coordinates, origin c0 = f's midpoint (partition()'s; 3D's
-    // tri_partition() takes the face's centroid)
-    w.c0 = 0.5 * (f[0] + f[1]);
-    const Vec2& c0 = w.c0;
-    w.F = {{Vec2(f[0] - c0), Vec2(f[1] - c0)}};
-    const double L = (f[1] - f[0]).norm();
+    // 3D's label_face(): max_distance()'s partition and checks, then the labels.
+    SegWork& w = ew.w;
+    ew.parts.clear();
+    ew.rule_a = 0;
+    ew.n.setZero();
+    seg_partition(f, w);
+    check_segment_pieces(f, w, "front_edge_derivs");
+    const Vec2 d = w.S0.y[1] - w.S0.y[0];
+    const double L = d.norm();
     if (!(L > 0.)) return; // a point: no length
-    const Vec2 flo = f[0].cwiseMin(f[1]), fhi = f[0].cwiseMax(f[1]);
-    w.U = upper_bound(f.data(), 2);
-    const double r = w.U * (1 + 1e-12);
-    w.cand.clear();
-    w.loc.clear();
-    w.hs.clear();
-    w.scale = 0.;
-    for (size_t gi = 0; gi < m_feat.size(); ++gi) {
-        const Feature& ft = m_feat[gi];
-        if (!(box_dist(ft.lo, ft.hi, flo, fhi) <= r)) continue;
-        w.cand.push_back(int(gi));
-        Loc l;
-        l.kind = ft.kind;
-        l.p = ft.p - c0;
-        l.dir = ft.dir;
-        l.h_begin = int(w.hs.size());
-        for (int i = ft.h_begin; i < ft.h_end; ++i) {
-            const auto& [g, q] = m_hs[size_t(i)];
-            w.hs.push_back({g, g.dot(q - c0)});
-            w.scale = std::max(w.scale, maxabs(q - c0));
-        }
-        l.h_end = int(w.hs.size());
-        w.loc.push_back(l);
-    }
-    for (const Vec2& p : f) w.scale = std::max(w.scale, maxabs(p - c0));
-    const Vec2 t = (w.F[1] - w.F[0]) / L;
-    w.n = rot_cw(t);
-    // The cap of one decision's share of the budget (seg_tol()): L / 2, so that a capped decision
-    // is charged f's length in the checks below (3D: A / (2 D), the face's area there).
-    Ctx cx;
-    w.tol_cut = w.tol_any = 0.;
-    cx.tol_cut = &w.tol_cut;
-    cx.tol_any = &w.tol_any;
-    cx.scale = w.scale;
-    cx.seg_t = &t;
-    cx.seg_cap = 0.5 * L;
-
-    // step 1: the spans of f with constant member sets (tri_partition()'s)
-    std::vector<std::pair<Span, std::vector<int>>> pieces(1), next;
-    pieces[0].first.y = w.F;
-    std::vector<Span> outs;
-    for (int k = 0; k < int(w.loc.size()); ++k) {
-        const std::pair<Vec2, double>* H = w.hs.data() + w.loc[size_t(k)].h_begin;
-        const int nh = w.loc[size_t(k)].h_end - w.loc[size_t(k)].h_begin;
-        next.clear();
-        for (auto& pc : pieces) {
-            const Side st = sclassify(pc.first, H, nh, cx);
-            if (st == Side::In) {
-                pc.second.push_back(k);
-                next.push_back(std::move(pc));
-            } else if (st == Side::Out) {
-                next.push_back(std::move(pc));
-            } else {
-                Span in;
-                outs.clear();
-                if (ssplit(pc.first, H, nh, in, outs, cx)) {
-                    std::vector<int> S = pc.second;
-                    S.push_back(k);
-                    next.push_back({in, std::move(S)});
-                }
-                for (const Span& so : outs) next.push_back({so, pc.second});
-            }
-        }
-        std::swap(pieces, next);
-    }
-
-    // 3D's check_face_pieces() on lengths. A cutting clip moves a part's end only within the strip
-    // |g.x - h| <= sqrt(2) tol, a decision taken with a tolerance misplaces at most the strip of
-    // half-width tol, and a strip of half-width s meets f's line in 2 s / |g.t| of it: tol_cut and
-    // tol_any sum tol / |g.t| (seg_tol(), capped). A length rounds by at most 4 eps L.
-    {
-        double len_sum = 0., empty = 0., rho_all = 4. * EPS * L, rho_empty = 0.;
-        for (const auto& [S, mem] : pieces) {
-            const double len = (S.y[1] - S.y[0]).norm();
-            len_sum += len;
-            rho_all += 4. * EPS * L;
-            if (mem.empty()) {
-                empty += len;
-                rho_empty += 4. * EPS * L;
-            }
-        }
-        const double tile_bound = 2. * std::sqrt(2.) * w.tol_cut + rho_all;
-        const double empty_bound = 2. * (w.tol_any + std::sqrt(2.) * w.tol_cut) + rho_empty;
-        if (!(empty <= empty_bound)) {
-            log_and_throw_error(
-                "ExactBandIntegral2D::front_edge_derivs: parts outside every local region, "
-                "length {} of {} (bound {}) | {}",
-                empty,
-                L,
-                empty_bound,
-                edge_string(f));
-        }
-        if (!(std::abs(len_sum - L) <= tile_bound)) {
-            log_and_throw_error(
-                "ExactBandIntegral2D::front_edge_derivs: parts do not tile f: {} vs {} (bound {}) "
-                "| {}",
-                len_sum,
-                L,
-                tile_bound,
-                edge_string(f));
-        }
-    }
+    ew.n = rot_cw(Vec2(d / L));
+    const Vec2& c0 = w.c0;
 
     // The labelled parts (label_face(); value()'s classification of a piece's members, on the
     // span). The sub-spans' clips take no tolerance budget, as 3D's.
     Ctx lc;
     lc.scale = w.scale;
     const std::vector<Loc>& loc = w.loc;
-    const Vec2& xk = w.F[size_t(kv)];
-    const Vec2& bk = w.F[size_t(1 - kv)];
+    const Vec2& xk = w.S0.y[size_t(kv)];
+    const Vec2& bk = w.S0.y[size_t(1 - kv)];
     const Vec2 g0 = (xk - bk) / (xk - bk).squaredNorm(); // lam = l0 + g0.y: 1 at x, 0 at the end
     const double l0 = -g0.dot(bk);
     const bool side = m_sigma != 0;
@@ -2023,9 +2342,11 @@ void ExactBandIntegral2D::label_edge(
     std::vector<const Loc*> members;
     std::vector<SidePlane> planes;
     std::vector<SpanSidePart> sparts;
-    for (const auto& [R, S0] : pieces) {
-        if (S0.empty()) continue;
-        const std::vector<int> S = S0.size() > 1 ? prune_points({R.y[0], R.y[1]}, S0, loc) : S0;
+    for (const SegPiece& pc : w.pieces) {
+        if (pc.S.empty()) continue;
+        const Span& R = pc.R;
+        const std::vector<int> S =
+            pc.S.size() > 1 ? prune_points({R.y[0], R.y[1]}, pc.S, loc) : pc.S;
         bool all_edges = true, all_verts = true;
         members.clear();
         planes.clear();
@@ -2036,7 +2357,7 @@ void ExactBandIntegral2D::label_edge(
             all_verts = all_verts && loc[size_t(k)].kind == 2;
         }
         if (S.size() == 1) {
-            labeled_span(R, loc[size_t(S[0])], planes[0], m_sigma, lc, w.parts);
+            labeled_span(R, loc[size_t(S[0])], planes[0], m_sigma, lc, ew.parts);
         } else if (all_edges) {
             edges_min_spans(
                 R,
@@ -2054,11 +2375,11 @@ void ExactBandIntegral2D::label_edge(
                     sp.e.dir = W;
                     sp.e.c = c;
                     sp.far = sided;
-                    w.parts.push_back(std::move(sp));
+                    ew.parts.push_back(std::move(sp));
                 });
         } else if (all_verts) {
             vertices_min_spans(R, members, lc, [&](const Span& Rs, const Vec2&, const int i) {
-                labeled_span(Rs, *members[size_t(i)], planes[size_t(i)], m_sigma, lc, w.parts);
+                labeled_span(Rs, *members[size_t(i)], planes[size_t(i)], m_sigma, lc, ew.parts);
             });
         } else {
             // rule (a), as value() takes it on the thin swept triangle over R: split by the
@@ -2091,10 +2412,10 @@ void ExactBandIntegral2D::label_edge(
                     log_and_throw_error(
                         "ExactBandIntegral2D::front_edge_derivs: rule (a) on a curved piece: no "
                         "member's integral is a number | {}",
-                        edge_string(f));
+                        seg_string(f));
                 }
-                labeled_span(sp.R, loc[size_t(bkk)], SidePlane(), m_sigma, lc, w.parts);
-                ++w.rule_a;
+                labeled_span(sp.R, loc[size_t(bkk)], SidePlane(), m_sigma, lc, ew.parts);
+                ++ew.rule_a;
             }
         }
     }
@@ -2113,16 +2434,17 @@ void ExactBandIntegral2D::front_edge_derivs(
     grad.setZero();
     hess.setZero();
     if (hess_swept) hess_swept->setZero();
-    EdgeWork w;
-    label_edge(f, kv, w);
-    if (rule_a) *rule_a = w.rule_a;
-    const Vec2& n = w.n;
+    EdgeWork ew;
+    label_edge(f, kv, ew);
+    if (rule_a) *rule_a = ew.rule_a;
+    const SegWork& w = ew.w;
+    const Vec2& n = ew.n;
     if (n.isZero(0.)) return; // a point: no length, every term 0
-    // lam = l0 + g0.y, the hat function of x = F[kv] along f: 1 there, 0 at the other end b.
-    // N = rot_cw(F1 - F0), |N| = |b - x|, dN/dx = -Rcw for kv = 0, +Rcw for kv = 1 (Rcw v =
+    // lam = l0 + g0.y, the hat function of x = f[kv] along f: 1 there, 0 at the other end b.
+    // N = rot_cw(f1 - f0), |N| = |b - x|, dN/dx = -Rcw for kv = 0, +Rcw for kv = 1 (Rcw v =
     // rot_cw(v)).
-    const Vec2& x = w.F[size_t(kv)];
-    const Vec2& b = w.F[size_t(1 - kv)];
+    const Vec2& x = w.S0.y[size_t(kv)];
+    const Vec2& b = w.S0.y[size_t(1 - kv)];
     const Vec2 g0 = (x - b) / (x - b).squaredNorm();
     const double l0 = -g0.dot(b);
     const double nN = (b - x).norm();
@@ -2131,13 +2453,13 @@ void ExactBandIntegral2D::front_edge_derivs(
     const Eigen::Matrix2d dN = kv == 0 ? Eigen::Matrix2d(-Rcw) : Rcw;
     const auto lam = [&](const Vec2& y) { return l0 + g0.dot(y); };
     // a part on the input (d = 0 at both ends): grad d from the band side (declaration)
-    const double tolS = 64 * EPS * (std::max(maxabs(w.F[0]), maxabs(w.F[1])) + maxabs(w.c0));
+    const double tolS = 64 * EPS * (w.S0.max_abs() + maxabs(w.c0));
     double gi = 0.;
     Vec2 P2 = Vec2::Zero();
     Eigen::Matrix2d Hcut = Eigen::Matrix2d::Zero();
     Vec2 Qcut =
         Vec2::Zero(); // hess_swept's: - sum g_c lam^2 (d - delta) / |g_c,f| (Hcut = n (x) Qcut)
-    for (const SpanPart& pt : w.parts) {
+    for (const SpanPart& pt : ew.parts) {
         const Vec2& y1 = pt.S.y[0];
         const Vec2& y2 = pt.S.y[1];
         const double len = (y2 - y1).norm();
