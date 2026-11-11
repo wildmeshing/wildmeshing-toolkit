@@ -9,6 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <functional>
@@ -2069,6 +2070,17 @@ std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
     mesh->init_from_image(V, Fm, Tags, V_env_dummy, F_env_dummy, {"a"});
+    // A piece cut out of a domain, as 3D's energy_mesh(): its outer edges stand for interior
+    // edges, not the domain wall, which a run holds to ambient's envelope. Untracked, and with no
+    // boundary mask, so no vertex is held.
+    for (const auto& e : mesh->get_edges()) {
+        mesh->m_edge_attribute[e.eid(*mesh)].m_is_surface_fs = false;
+    }
+    for (size_t v = 0; v < size_t(V.rows()); ++v) {
+        mesh->m_vertex_attribute[v].m_is_on_surface = false;
+        mesh->m_vertex_extra[v].m_is_on_region = false;
+        mesh->m_vertex_extra[v].m_boundary_mask = 0;
+    }
     for (size_t i = 0; i < F.size(); ++i) {
         std::array<size_t, 3> want{
             {size_t(Fm(int(i), 0)), size_t(Fm(int(i), 1)), size_t(Fm(int(i), 2))}};
@@ -2105,12 +2117,12 @@ Eigen::MatrixXd fan_vertices()
 
 } // namespace
 
-TEST_CASE("stencil-energy-2d-is-the-sum-of-edge-terms", "[offset][2d]")
+TEST_CASE("edge-term-is-the-stencil-mean-2d", "[offset][2d]")
 {
-    // The 2D front smoother's offset term at offset_term_weight() is, chord by chord, the chord
-    // measure O(e): checked against the definition computed by hand from the same stencil, and
-    // against edge_offset_term(), at stencil orders 0 (ends only), 1 and 2, with three chords
-    // around the moving vertex placed above and below the level set.
+    // The 2D twin of face-term-is-the-stencil-mean: edge_offset_term(), the chord measure the
+    // exit, the refinement and the frames read, is its definition computed by hand from the
+    // stencil for_each_edge_sample() visits, at stencil orders 0 (ends only), 1 and 2, with three
+    // chords around a vertex placed above and below the level set. 2D has the one stencil type.
     Parameters param;
     param.target_distance = kEnergyDelta;
     param.front_conv = kEnergyConv;
@@ -2123,23 +2135,13 @@ TEST_CASE("stencil-energy-2d-is-the-sum-of-edge-terms", "[offset][2d]")
     const std::vector<Vector2d> others = {{0.4, 0.61}, {-0.25, 0.44}, {0.05, 0.37}};
     for (const int k : {0, 1, 2}) {
         mesh.m_offset_params.stencil_order = k;
-        std::vector<StencilEnergy2D::Edge> edges;
         double by_hand = 0., by_term = 0.;
         for (const Vector2d& q1 : others) {
-            StencilEnergy2D::Edge e;
-            e.q1 = q1;
-            mesh.for_each_edge_sample(x, q1, [&](const Vector2d&, double a, double b) {
-                e.samples.push_back({a, b});
-            });
-            edges.push_back(e);
             by_hand += edge_term_by_hand(mesh, *pot, x, q1);
             by_term += mesh.edge_offset_term(*pot, x, q1);
         }
-        StencilEnergy2D energy(pot, edges, mesh.offset_term_weight());
-        Eigen::VectorXd xv = x;
         INFO("stencil_order " << k);
         CHECK(by_hand > 10.); // the fixture really is off the level set
-        CHECK(energy.value(xv) == Catch::Approx(by_hand).epsilon(1e-12));
         CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
     }
 }
@@ -2349,99 +2351,218 @@ TEST_CASE("exact-band-offset-side-inward-and-outward-2d", "[offset][2d][exact_ba
     }
 }
 
-TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d][.]")
+TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
 {
-    // Hidden until step 3 of the 2D lock-step port (the smoother on the new energy): since step 2
-    // the energy is the band-area energy (tri_energy()), while the smoother still minimises the
-    // stencil energy (smoothing_extra_energy()), so the identity below fails by design; step 3
-    // rewrites this test as the twin of 3D's, on amips3_energy()'s and band_volume_energy_at()'s
-    // 2D twins, and moves it back.
-    // The 2D twin of smoothing-objective-is-the-ring-energy: at every vertex, the objective the
-    // shared smoother minimises (smoothing_extra_energy(); every caller passes w_amips 0) is the
-    // sum of tri_energy() over the vertex's ring, up to the terms that do not move with the vertex
-    // -- the ring's front chords that do not have it as an end. Checked on the per-tri-energy
-    // fixture by moving each vertex that carries the offset term (or is on no front chord) to three
-    // nearby positions: objective minus ring sum must not change, and the shared smoother's
-    // per-cell comparison (smoothing_cell_energy()) is tri_energy(). The w AMIPS part's gradient
-    // and Hessian against central differences too. At w = 1 and at the default w.
-    const Eigen::MatrixXd V = fan_vertices();
-    const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
-    for (const double w : {1., Parameters().offset_amips_weight}) {
-        Parameters param;
-        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
-        param.offset_amips_weight = w;
-        const auto pot = line_field();
-        auto mesh = energy_mesh_2d(
-            param,
-            V,
-            {{{o, r0, r1}}, {{o, r1, r2}}, {{o, r2, r3}}, {{o, r3, r0}}},
-            {2, 2, 0, 1},
-            pot);
-        // What label_offset_boundary() and the operations maintain in a run: an end of a live
-        // front chord.
-        for (size_t v = 0; v < 5; ++v) mesh->refresh_offset_membership(v);
-        REQUIRE(mesh->m_vertex_extra[size_t(o)].m_is_on_offset);
-        REQUIRE(!mesh->m_vertex_extra[size_t(r3)].m_is_on_offset);
-        for (size_t v = 0; v < 5; ++v) {
-            const bool front = mesh->vertex_carries_offset_term(v);
-            // A front vertex an envelope pins (here: one on the domain wall, held by its tag's
-            // envelope) carries no offset term, so its chords' terms do move with it and are not in
-            // its objective; the identity is the carrying vertices' and the off-front ones'.
-            if (!front && mesh->m_vertex_extra[v].m_is_on_offset) continue;
-            const std::vector<size_t> ring = mesh->get_one_ring_fids_for_vertex(v);
-            const auto ring_energy = [&]() {
-                double s = 0.;
-                for (const size_t fid : ring) s += mesh->tri_energy(fid);
-                return s;
-            };
-            INFO("w " << w << ", vertex " << v << (front ? " (front)" : ""));
-            const auto energy = mesh->smoothing_extra_energy(v);
-            const Vector2d x0 = mesh->m_vertex_attribute[v].m_posf;
-            Eigen::VectorXd xv = x0;
-            const double d0 = energy->value(xv) - ring_energy();
-            for (const Vector2d& dx :
-                 {Vector2d(0.01, 0.), Vector2d(0., -0.008), Vector2d(-0.004, 0.006)}) {
-                mesh->set_vertex_position(v, x0 + dx);
-                for (const size_t fid : ring) REQUIRE(!mesh->is_inverted(fid));
-                xv = x0 + dx;
-                const double e = energy->value(xv);
-                CHECK(
-                    e - ring_energy() ==
-                    Catch::Approx(d0).margin(1e-9 * std::max(1., std::abs(e))));
-                for (const size_t fid : ring) {
-                    const double q = mesh->get_quality(fid);
-                    CHECK(mesh->smoothing_cell_energy(fid, q) == mesh->tri_energy(fid));
+    // The 2D twin of smoothing-objective-is-the-ring-energy. One energy for the smoother and the
+    // rules: at every vertex not held on the input, the objective the shared smoother minimises
+    // (smoothing_extra_energy(); every caller passes w_amips 0, so the smoother adds no AMIPS term
+    // of its own) is the sum of tri_energy() over the vertex's ring -- every term of which moves
+    // with the vertex. Two fixtures: the per-tri-energy fan (front vertices o, r0, r1, r2; r3 on
+    // no front chord and in no band face), and a star of six band faces around a vertex inside
+    // the band beyond the segment's end, where d is curved, which is on no front chord but
+    // carries the band term of all six. Each vertex is moved to three nearby positions; the
+    // objective's gradient and Hessian against central differences. Under both band rules,
+    // "corner_bound" and "exact", at (w, s) = (1, 3), where both terms matter, and the default w
+    // at 100. Under "exact" the star's band term does not move with its inner vertex: the six
+    // faces tile the star, whose union is fixed; it is checked to keep its value and to have no
+    // derivatives. Where 2D differs: 3D leaves that constant out of the objective (BAND TERM
+    // THAT CANCELS, band_term_cancels(), false in 2D), 2D keeps it, so the objective there is the
+    // ring sum itself; no plastic case (no 2D face's energy reads a rest, tri_energy()); no ring
+    // hook to check (the 2D engine has none, tri_energy()).
+    const Eigen::MatrixXd V1 = fan_vertices();
+    const std::vector<std::array<int, 3>> F1 = {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 4}}, {{0, 4, 1}}};
+    // Beyond the end (10, 0), where d is the distance to the end and curved: above the segment's
+    // interior d is affine, the band term's corner mean is exact there, and the sum over a closed
+    // star would not move with its inner vertex at all -- as under "exact", anywhere.
+    Eigen::MatrixXd V2(7, 2);
+    V2 << 0.01, -0.02, // the inner vertex
+        0.31, 0.03, // arms, counter-clockwise
+        0.17, 0.27, //
+        -0.15, 0.24, //
+        -0.29, -0.04, //
+        -0.12, -0.28, //
+        0.2, -0.22;
+    V2.rowwise() += (kLineEnd + Vector2d(0.6, 0.1)).transpose();
+    std::vector<std::array<int, 3>> F2;
+    for (int i = 1; i <= 6; ++i) F2.push_back({{0, i, i % 6 + 1}});
+    struct Fixture
+    {
+        const Eigen::MatrixXd& V;
+        const std::vector<std::array<int, 3>>& F;
+        std::vector<int> labels;
+        size_t not_front; ///< the one vertex on no front chord
+        bool has_band_ring; ///< whether that vertex's ring holds band faces
+    };
+    const std::vector<Fixture> fixtures = {
+        {V1, F1, {2, 2, 0, 1}, 4, false},
+        {V2, F2, std::vector<int>(6, 2), 0, true}};
+    double worst_part[2][2] = {{0., 0.}, {0., 0.}}; // AMIPS, band: gradient, Hessian
+    int n_at_floor = 0;
+    for (size_t fi = 0; fi < fixtures.size(); ++fi) {
+        const Fixture& fx = fixtures[fi];
+        for (const auto& [rule, w, s] : std::vector<std::tuple<std::string, double, double>>{
+                 {"corner_bound", 1., 3.},
+                 {"corner_bound", Parameters().offset_amips_weight, 100.},
+                 {"exact", 1., 3.},
+                 {"exact", Parameters().offset_amips_weight, 100.}}) {
+            Parameters param;
+            param.band_volume_rule = rule;
+            param.offset_amips_weight = w;
+            param.stop_energy = s;
+            const auto pot = line_field();
+            auto mesh = energy_mesh_2d(param, fx.V, fx.F, fx.labels, pot);
+            // What label_offset_boundary() and the operations maintain in a run: an end of a live
+            // front chord.
+            for (size_t v = 0; v < size_t(fx.V.rows()); ++v) mesh->refresh_offset_membership(v);
+            for (size_t v = 0; v < size_t(fx.V.rows()); ++v) {
+                const std::vector<size_t> ring = mesh->get_one_ring_fids_for_vertex(v);
+                const auto ring_energy = [&]() {
+                    double e = 0.;
+                    for (const size_t fid : ring) e += mesh->tri_energy(fid);
+                    return e;
+                };
+                const bool front = mesh->vertex_carries_offset_term(v);
+                INFO(
+                    "fixture " << fi << ", " << rule << ", w " << w << ", s " << s << ", vertex "
+                               << v << (front ? " (front)" : ""));
+                REQUIRE(front == (v != fx.not_front));
+                REQUIRE(!mesh->smoothing_containment_envelope(v)); // no envelope holds it
+                if (v == fx.not_front) {
+                    REQUIRE((mesh->band_volume_energy_at(v) != nullptr) == fx.has_band_ring);
                 }
-            }
-            mesh->set_vertex_position(v, x0);
+                const auto energy = mesh->smoothing_extra_energy(v);
+                // Under "exact", fixture 1's inner vertex: its ring's band term does not move with
+                // it. 2D's objective keeps it (band_term_cancels() is false in 2D).
+                const bool band_fixed = rule == "exact" && v == fx.not_front && fx.has_band_ring;
+                REQUIRE(!mesh->band_term_cancels(ring));
+                const auto band = band_fixed ? mesh->band_volume_energy_at(v) : nullptr;
+                const Vector2d x0 = mesh->m_vertex_attribute[v].m_posf;
+                Eigen::VectorXd xv = x0;
+                const double e0 = energy->value(xv);
+                const double b0 = band ? band->value(xv) : 0.;
+                const double d0 = e0 - ring_energy();
+                CHECK(d0 == Catch::Approx(0.).margin(1e-12 * std::max(1., std::abs(e0))));
+                if (band) CHECK(std::abs(b0) > 1e-3); // the constant is not 0
+                for (const Vector2d& dx :
+                     {Vector2d(0.01, 0.), Vector2d(0., -0.008), Vector2d(-0.004, 0.006)}) {
+                    mesh->set_vertex_position(v, x0 + dx);
+                    for (const size_t fid : ring) REQUIRE(!mesh->is_inverted(fid));
+                    xv = x0 + dx;
+                    const double e = energy->value(xv);
+                    CHECK(
+                        e - ring_energy() ==
+                        Catch::Approx(d0).margin(1e-12 * std::max(1., std::abs(e))));
+                    if (band) {
+                        CHECK(
+                            band->value(xv) ==
+                            Catch::Approx(b0).margin(1e-12 * std::max(1., std::abs(b0))));
+                    }
+                }
+                mesh->set_vertex_position(v, x0);
 
-            // The w AMIPS part's derivatives against central differences.
-            const auto amips = mesh->amips_energy(v);
-            const double h = 1e-6;
-            Eigen::VectorXd g(2);
-            Eigen::MatrixXd H(2, 2);
-            xv = x0;
-            amips->gradient(xv, g);
-            amips->hessian(xv, H);
-            for (int i = 0; i < 2; ++i) {
-                Eigen::VectorXd xp = xv, xm = xv;
-                xp[i] += h;
-                xm[i] -= h;
-                const double fd = (amips->value(xp) - amips->value(xm)) / (2. * h);
-                // An absolute floor besides the relative one: at r1 the ring's AMIPS is stationary
-                // (|g| ~ 1e-14, the difference ~ 1e-10 of round-off), where a margin relative to
-                // |g| alone is zero.
-                CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * std::max(g.norm(), w)));
-                Eigen::VectorXd gp(2), gm(2);
-                amips->gradient(xp, gp);
-                amips->gradient(xm, gm);
-                for (int j = 0; j < 2; ++j) {
-                    const double fdh = (gp[j] - gm[j]) / (2. * h);
-                    CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
+                // The objective's derivatives against central differences. Besides 3D's margins,
+                // the differences' own rounding floor, 50 eps |E| / h: at w 1, s 100 the AMIPS
+                // term's weight is 1e-6, and where the band term's gradient cancels (fixture 0's
+                // o, with r0, o and r2 on one line; fixture 1's inner vertex under "exact") |g| is
+                // ~3e-6 against |E| ~ 0.1, whose value differences round at ~1e-11.
+                const double h = 1e-6;
+                Eigen::VectorXd g(2);
+                Eigen::MatrixXd H(2, 2);
+                xv = x0;
+                energy->gradient(xv, g);
+                energy->hessian(xv, H);
+                const double fd_floor = 50. * 2.2e-16 * std::abs(e0) / h;
+                if (band) {
+                    // The constant band part has no derivatives, to the margins the central
+                    // differences allow.
+                    Eigen::VectorXd gb(2);
+                    Eigen::MatrixXd Hb(2, 2);
+                    band->gradient(xv, gb);
+                    band->hessian(xv, Hb);
+                    CHECK(gb.norm() <= 1e-7 * g.norm());
+                    CHECK(Hb.norm() <= 1e-6 * H.norm());
+                }
+                for (int i = 0; i < 2; ++i) {
+                    Eigen::VectorXd xp = xv, xm = xv;
+                    xp[i] += h;
+                    xm[i] -= h;
+                    const double fd = (energy->value(xp) - energy->value(xm)) / (2. * h);
+                    CHECK(
+                        g[i] == Catch::Approx(fd).epsilon(1e-6).margin(
+                                    std::max(1e-7 * g.norm(), fd_floor)));
+                    Eigen::VectorXd gp(2), gm(2);
+                    energy->gradient(xp, gp);
+                    energy->gradient(xm, gm);
+                    for (int j = 0; j < 2; ++j) {
+                        const double fdh = (gp[j] - gm[j]) / (2. * h);
+                        CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
+                    }
+                }
+                // Beyond 3D's test: each part on its own, the AMIPS term (amips3_energy()) and the
+                // band term (band_volume_energy_at()), so a part small beside the other is judged
+                // at its own scale: |fd - g| <= 1e-6 |g| + floor_g and |fd - H| <= 1e-5 |H| +
+                // floor_H, with the differences' rounding floors, 50 eps |E| / h from the part's
+                // value and 50 eps |E| / (L h) from its gradient, whose face terms are about
+                // |E| / L and may cancel (L the longest edge at v). The relative errors of the
+                // parts whose |g| is above 1e3 floor_g are printed; the others' gradient is 0 to
+                // rounding (the band part at fixture 0's o).
+                double L = 0.;
+                for (const size_t fid : ring) {
+                    for (const size_t u : mesh->oriented_tri_vids(fid)) {
+                        L = std::max(L, (mesh->m_vertex_attribute[u].m_posf - x0).norm());
+                    }
+                }
+                std::vector<std::shared_ptr<polysolve::nonlinear::Problem>> parts = {
+                    mesh->amips3_energy(v)};
+                if (!band_fixed) {
+                    if (const auto bv = mesh->band_volume_energy_at(v)) parts.push_back(bv);
+                }
+                for (size_t pi = 0; pi < parts.size(); ++pi) {
+                    auto& part = *parts[pi];
+                    Eigen::VectorXd gq(2);
+                    Eigen::MatrixXd Hq(2, 2);
+                    part.gradient(xv, gq);
+                    part.hessian(xv, Hq);
+                    const double floor_g = 50. * 2.2e-16 * std::abs(part.value(xv)) / h;
+                    const double floor_H = floor_g / L;
+                    Eigen::Vector2d fg;
+                    Eigen::Matrix2d fH;
+                    for (int i = 0; i < 2; ++i) {
+                        Eigen::VectorXd xp = xv, xm = xv, gp(2), gm(2);
+                        xp[i] += h;
+                        xm[i] -= h;
+                        fg[i] = (part.value(xp) - part.value(xm)) / (2. * h);
+                        part.gradient(xp, gp);
+                        part.gradient(xm, gm);
+                        fH.col(i) = (gp - gm) / (2. * h);
+                    }
+                    const double dg = (fg - Eigen::Vector2d(gq)).norm();
+                    const double dH = (fH - Eigen::Matrix2d(Hq)).norm();
+                    INFO(
+                        (pi == 0 ? "AMIPS" : "band")
+                        << " part: |fd - g| " << dg << " of |g| " << gq.norm() << ", |fd - H| "
+                        << dH << " of |H| " << Hq.norm());
+                    CHECK(dg <= 1e-6 * gq.norm() + floor_g);
+                    CHECK(dH <= 1e-5 * Hq.norm() + floor_H);
+                    if (gq.norm() > 1e3 * floor_g) {
+                        worst_part[pi][0] = std::max(worst_part[pi][0], dg / gq.norm());
+                        worst_part[pi][1] = std::max(worst_part[pi][1], dH / Hq.norm());
+                    } else {
+                        ++n_at_floor;
+                    }
                 }
             }
         }
     }
+    std::printf(
+        "smoothing-objective-is-the-ring-energy-2d: max relative error, AMIPS part: gradient %.1e "
+        "Hessian %.1e; band part: gradient %.1e Hessian %.1e; %d parts with |g| at the rounding "
+        "floor\n",
+        worst_part[0][0],
+        worst_part[0][1],
+        worst_part[1][0],
+        worst_part[1][1],
+        n_at_floor);
 }
 
 TEST_CASE("swap-candidate-record", "[offset][3d]")

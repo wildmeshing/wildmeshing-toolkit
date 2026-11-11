@@ -626,6 +626,13 @@ public:
      * The engine's own AMIPS rules for collapses and swaps are off: collapse_quality_allowed()
      * and swap_quality_allowed() admit everything, and this energy decides in their place.
      *
+     * THE SMOOTHER minimises the vertex's part of E (smoothing_extra_energy()): the AMIPS term
+     * over its ring (amips3_energy()) and, unless an input envelope holds the vertex on the input
+     * (vertex_is_held_on_input()), the band term of its band faces (band_volume_energy_at()).
+     * Every move is then judged by the ring's sum of this energy, after its solve
+     * (smooth_front_vertex(), smooth_nonfront_vertex()). As in 3D, but for the held vertices'
+     * projected step (below).
+     *
      * WHERE 2D DIFFERS FROM 3D'S RULES, and why:
      *   - No TetWild rules (3D's m_op_rules) and no TetWild pass (3D's m_tetwild_pass): 2D has no
      *     optimize_construction pass, and its final pass (m_freeze_front) is the frozen-front pass
@@ -697,8 +704,7 @@ public:
      */
     double band_cell_term(const std::array<size_t, 3>& vids) const
     {
-        const std::string& rule = m_offset_params.band_volume_rule;
-        if (rule == "exact" || rule == "front_flux" || rule == "exact_swept") {
+        if (band_rule_exact()) {
             const std::array<Vector2d, 3> p = {
                 {m_vertex_attribute[vids[0]].m_posf,
                  m_vertex_attribute[vids[1]].m_posf,
@@ -707,14 +713,23 @@ public:
             const double delta = region_delta(r);
             return band_exact_for(r)->value(p, delta) / delta;
         }
+        int64_t best = -1;
+        return band_cell_corner_bound(vids, best);
+    }
+    /// The band rule band_cell_term() and the smoother's band term (band_volume_energy_at())
+    /// read: true for "exact" and the rules that take its term in 2D ("exact_swept",
+    /// "front_flux"), false for "corner_bound"; any other rule has no 2D port and throws.
+    bool band_rule_exact() const
+    {
+        const std::string& rule = m_offset_params.band_volume_rule;
+        if (rule == "exact" || rule == "front_flux" || rule == "exact_swept") return true;
         if (rule != "corner_bound") {
             log_and_throw_error(
                 "EXPERIMENTAL_band_volume_rule \"{}\" has no 2D port: the 2D energy takes "
                 "\"corner_bound\", \"exact\", \"exact_swept\" or \"front_flux\"",
                 rule);
         }
-        int64_t best = -1;
-        return band_cell_corner_bound(vids, best);
+        return false;
     }
     /// band_cell_term()'s corner bound, with its minimising primitive in `best`: the face's
     /// unsigned area (the face is valid wherever this is read) times (md - delta) / delta, md the
@@ -1760,11 +1775,10 @@ public:
      * tri_energy()).
      */
     bool smooth_nonfront_vertex(const Tuple& t);
-    /// w AMIPS over vid's one-ring (optimization::AMIPSEnergy2D, the engine's own quality), w =
-    /// offset_amips_weight: the smoother's AMIPS part. Not yet the energy's AMIPS term, (w / s^3)
-    /// area AMIPS^3 (cell_energy()): the 3D twin, amips3_energy() (CubedAMIPSEnergy3D), is step 3
-    /// of the 2D port (the smoother on the new energy).
-    std::shared_ptr<polysolve::nonlinear::Problem> amips_energy(size_t vid) const;
+    /// The energy's AMIPS term over vid's one-ring, (w / s^3) sum area AMIPS^3
+    /// (band_amips_weight(), area_amips3()), in the smoother's form (CubedAMIPSEnergy2D). As in
+    /// 3D.
+    std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;
     /// ||grad F|| at front vertex vid along its move direction, F the objective
     /// smooth_front_vertex() minimises. +inf if unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
@@ -1796,10 +1810,10 @@ public:
      *
      * Every reader of the chord measure goes through it: the logs print its root,
      * energy_criterion()'s exit, refinement and ring measures, and the debug frames'
-     * front_err_ratio and front_ring_ratio. Not part of the energy (tri_energy()), as 3D's face
-     * measure is not; the front smoother's offset term (StencilEnergy2D) still sums it until step
-     * 3 of the 2D port. -1 when unmeasurable (a sample whose relative_residual() is not finite,
-     * which the euclidean field never has), +inf when the bar is not positive.
+     * front_err_ratio and front_ring_ratio. Not part of the energy (tri_energy()) nor of the
+     * smoother's objective, as 3D's face measure is not. -1 when unmeasurable (a sample whose
+     * relative_residual() is not finite, which the euclidean field never has), +inf when the bar
+     * is not positive.
      *
      * The (a, b) form reads the field of the chord (potential_for_edge()).
      */
@@ -1809,17 +1823,31 @@ public:
     /// The field's outward unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector2d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a front vertex it
-    /// places against the offset term (smoothing_extra_energy()): w AMIPS over the one-ring
-    /// (amips_energy()), the rest-shape AMIPS of its plastic faces (rest_energy_for_vertex(),
+    /// places against the offset term (smoothing_extra_energy()): the AMIPS term over the one-ring
+    /// (amips3_energy()), the rest-shape AMIPS of its plastic faces (rest_energy_for_vertex(),
     /// null without the plastic medium), and front_energy(). What
-    /// front_vertex_normal_gradient() differentiates. As in 3D, where the AMIPS part is cubed.
+    /// front_vertex_normal_gradient() differentiates. As in 3D.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
+    /// Whether vid is held on the input complex: on it (m_is_on_input) and held by an input
+    /// envelope (a boundary mask, the one smoothing_containment_envelope() holds it to). There d =
+    /// 0 and has a kink, so the band term is left out of vid's objective (smoothing_extra_energy())
+    /// and a front vertex there cannot be placed at target_distance. A vertex held only by another
+    /// region's boundary, the domain wall's among them, has neither: d is smooth there, so it
+    /// carries the term and slides along that boundary to the level set. The 3D twin's rule, and
+    /// its measurement (TopoOffsetTetMesh::vertex_is_held_on_input(): with every region boundary
+    /// held, as 2D holds every one, the front could not settle where it meets another region).
+    bool vertex_is_held_on_input(const size_t vid) const
+    {
+        return m_vertex_extra[vid].m_is_on_input && vertex_boundary_mask(vid) != 0;
+    }
     /// Whether the smoother places vid against the offset term: a front vertex, outside the
-    /// frozen-front final pass, that no input envelope also pins.
+    /// frozen-front final pass, not held on the input complex (vertex_is_held_on_input()). As in
+    /// 3D. Until the smoother's step of the 2D port, a front vertex any envelope held carried no
+    /// offset term.
     bool vertex_carries_offset_term(const size_t vid) const
     {
         return !m_freeze_front && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
-               vertex_boundary_mask(vid) == 0;
+               !vertex_is_held_on_input(vid);
     }
     /// The AMIPS weight the rest-shape term uses at vid: offset_amips_weight for a vertex placed
     /// against the offset term, the engine's w_amips factor otherwise. As in 3D.
@@ -1828,29 +1856,38 @@ public:
         if (vertex_carries_offset_term(vid)) return m_offset_params.offset_amips_weight;
         return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
     }
-    /// THE smoothing objective at vid, for every vertex the shared smoother places. Until step 3
-    /// of the 2D port it is the energy tri_energy() had before step 2, w AMIPS + O over vid's
-    /// ring (O the chord terms, edge_offset_term()), not the energy the rules compare (3D's
-    /// objective is vid's part of E: amips3_energy() and band_volume_energy_at()).
-    /// w AMIPS over the ring (amips_energy()) for every vertex -- the smoother adds
-    /// no AMIPS term of its own, every caller passing opts.w_amips 0 -- plus the offset terms of
-    /// the front chords at vid when it is a front vertex the loop places (front_energy(); null in
-    /// the final pass and for a front vertex an input envelope also pins), or, in the passes
-    /// before the march, a repulsion vertex's term once per ring face that carries it
-    /// (repulsion_energy(), repulsion_cell_term()). Under deform_others
-    /// the rest-shape AMIPS of the deformable faces in the ring is added. As in 3D.
+    /// THE smoothing objective at vid, for every vertex the shared smoother places: vid's part of
+    /// the energy E, the sum of tri_energy() over vid's ring up to the terms that do not move with
+    /// vid. The AMIPS term over the ring (amips3_energy()) for every vertex -- the smoother adds no
+    /// AMIPS term of its own, every caller passing opts.w_amips 0 -- plus the band term of the
+    /// ring's band faces (band_volume_energy_at(); through front_energy() for a front vertex the
+    /// loop places) unless an input envelope holds vid on the input (vertex_is_held_on_input()),
+    /// or, in the passes before the march, a repulsion vertex's term once per ring face that
+    /// carries it (repulsion_energy(), repulsion_cell_term()). Under deform_others the rest-shape
+    /// AMIPS of the deformable faces in the ring is added. As in 3D, where TetWild's rules give
+    /// null (2D has none, see tri_energy()).
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
         auto sum = std::make_shared<optimization::EnergySum>();
-        sum->add_energy(amips_energy(vid));
+        sum->add_energy(amips3_energy(vid));
         // Before the march (repulsion_smoothing()) there is no front and nothing is plastic.
         if (is_repulsion_vertex(vid)) {
             sum->add_energy(repulsion_energy(vid));
             return sum;
         }
         if (vertex_carries_offset_term(vid)) {
-            sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
+            sum->add_energy(front_energy(vid));
+        } else if (!vertex_is_held_on_input(vid)) {
+            // E's band term moves with this vertex too -- except a vertex held on the input,
+            // where d = 0 and has a kink: the Newton step along the input's normal is set by AMIPS
+            // alone and lands far off, and the projected step discards the normal motion anyway.
+            // 3D MEASURED (2026-10-09, cube, serial, 3 turns): with the term those solves took
+            // 24.6 Newton iterations and ~20 line-search trials per iteration, without it 3.9 and
+            // 1. E still guards the move: smooth_nonfront_vertex() vetoes on the ring's sum. 3D
+            // leaves the term out under "exact" where it cancels over the ring
+            // (band_term_cancels()), which 2D never finds (see there).
+            if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
         }
         if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
         return sum;
@@ -1912,13 +1949,13 @@ public:
     /// shared smoother weights its AMIPS term at vid (smoother_amips_weight()); null when the
     /// ring has none.
     std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
-    /// The offset term for a front vertex, at offset_term_weight(): StencilEnergy2D over its
-    /// incident live front chords, whose value is sum_e O(e) (edge_offset_term()); not a term of
-    /// the energy since step 2 of the 2D port, until step 3 replaces it. Defined in
-    /// FrontSmooth2d.cpp.
-    std::shared_ptr<polysolve::nonlinear::Problem> front_energy(
-        size_t vid,
-        const std::shared_ptr<const OffsetPotential2D>& pot) const;
+    /// The offset term for a front vertex: the band term of its band faces
+    /// (band_volume_energy_at()), in an EnergySum, empty when it has none. Defined in
+    /// FrontSmooth2d.cpp. As in 3D.
+    std::shared_ptr<polysolve::nonlinear::Problem> front_energy(size_t vid) const;
+    /// The band term (band_cell_term()) of vid's band faces with vid moving (BandVolumeEnergy2D),
+    /// null when vid has none. Defined in FrontSmooth2d.cpp. As in 3D.
+    std::shared_ptr<polysolve::nonlinear::Problem> band_volume_energy_at(size_t vid) const;
 
     /// Samples per front chord; see for_each_edge_sample().
     int stencil_order() const { return m_offset_params.stencil_order; }
@@ -2013,10 +2050,6 @@ public:
      * (stencil_points_per_edge()). The ends are in it on purpose: the quantity sampled is a
      * distance to the level set, which at an end is that vertex's own placement error (see
      * edge_offset_term()).
-     *
-     * The weights are handed out for the front smoother: with the moving vertex x as p0, a
-     * sample is wa*x + wb*p1, so it moves by wa per unit of x; StencilEnergy2D keeps the weights
-     * fixed while the points slide with x (stencil_edge_at() in FrontSmooth2d.cpp).
      *
      * Takes positions rather than a Tuple: a reader may pass a chord's ends in either order.
      */
@@ -2153,10 +2186,8 @@ public:
         ///
         ///     r_v = sqrt( (1/n_v) sum_e O(e) ),   O(e) = edge_offset_term()
         ///
-        /// every chord weighted equally: the front smoother's own offset term at v
-        /// (StencilEnergy2D at offset_term_weight() is sum_e O(e) = n_v r_v^2). A vertex with any
-        /// unmeasurable incident chord has no ring measure (n_rings_unmeasurable; the chord itself
-        /// is already in n_unmeasurable).
+        /// every chord weighted equally. A vertex with any unmeasurable incident chord has no
+        /// ring measure (n_rings_unmeasurable; the chord itself is already in n_unmeasurable).
         bool ring_exit = false; ///< front_measure "vertex_ring"
         static const char* ring_name() { return "ring measure"; }
         double max_ring = 0., sum_ring = 0.; ///< ratios to the bar (1 = bar)

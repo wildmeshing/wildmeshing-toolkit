@@ -885,11 +885,13 @@ bool TopoOffsetTriMesh::smooth_vertex_2d_counted(
     return ok;
 }
 
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::amips_energy(
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::amips3_energy(
     const size_t vid) const
 {
     // See the declaration. The faces exactly as the shared smoother assembles them for its own
-    // AMIPS term (smooth_vertex_2d()): the moving vertex first, winding preserved.
+    // AMIPS term (smooth_vertex_2d()): the moving vertex first, winding preserved. 3D's plastic
+    // cells (use_rest_pose, VolAMIPSEnergy3D against a stamped rest) have no twin: no 2D face's
+    // energy reads a rest (tri_energy()).
     std::vector<std::array<double, 6>> cells;
     for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
         const std::array<size_t, 3> vs = oriented_tri_vids(fid);
@@ -904,9 +906,8 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::amips_energy(
         }
         cells.push_back(c);
     }
-    return std::make_shared<optimization::AMIPSEnergy2D>(
-        std::move(cells),
-        m_offset_params.offset_amips_weight);
+    // (w / s^3) sum area AMIPS^3, the energy's AMIPS term -- an area, as the band term is.
+    return std::make_shared<CubedAMIPSEnergy2D>(std::move(cells), band_amips_weight());
 }
 
 bool TopoOffsetTriMesh::smooth_nonfront_vertex(const Tuple& t)
@@ -2737,10 +2738,9 @@ double TopoOffsetTriMesh::edge_offset_term(
     //          = (signed distance from q to the level set, along the field) / front_conv
     //
     // and the chord's term is mean of r^2, so 1 exactly at the bar; its root is the "Nx the bar"
-    // figure the logs print. One arithmetic for every reader: the front smoother
-    // (StencilEnergy2D, which sums the same r^2 over the same stencil with the same 1/bar^2,
-    // until step 3 of the 2D port), the exit and refinement (energy_criterion()) and the debug
-    // frames; not the energy (tri_energy()), as in 3D. The
+    // figure the logs print. One arithmetic for every reader: the exit and refinement
+    // (energy_criterion()) and the debug frames; not the energy (tri_energy()) nor the smoother's
+    // objective, as in 3D. The
     // stencil contains the chord's ENDS, where a distance to the level set is that vertex's own
     // placement error, so this one number covers both the vertex and the chord. The 3D twin is
     // face_offset_term(); see there for why the field is asked rather than (Phi(q) - c)/c formed
@@ -2932,9 +2932,8 @@ void TopoOffsetTriMesh::assign_band_regions(const bool log)
 
 void TopoOffsetTriMesh::log_front_profile(const size_t vid)
 {
-    // Diagnostic: the stencil offset term of one vertex along its normal, against its own-point
-    // term alone, at 21 points across +-delta/2. Logged once, on non-convergence, for the worst
-    // vertex. As in 3D.
+    // Diagnostic: the band term of one vertex's band faces along its normal, at 21 points across
+    // +-delta/2. Logged once, on non-convergence, for the worst vertex. As in 3D.
     if (vid == static_cast<size_t>(-1) || vid >= m_vertex_attribute.size() || !m_offset_potential)
         return;
     const int region = vertex_region(vid);
@@ -2943,14 +2942,12 @@ void TopoOffsetTriMesh::log_front_profile(const size_t vid)
     Vector2d g = pot->gradient(x0);
     if (!(g.norm() > 0.) || !g.allFinite()) return;
     const Vector2d n = g / g.norm(); // toward the input for the smooth field, away for Euclidean
-    auto stencil = front_energy(vid, pot);
-    OffsetEnergy2D own_point(pot, offset_term_weight(), true, true);
+    auto band = front_energy(vid);
     const double delta = m_offset_params.target_distance;
     logger().info(
         "[front profile] worst vertex {} at ({:.5}, {:.5}), region {}, along the field direction "
-        "n = ({:.4}, {:.4}); columns: s/delta | own-point term (the vertex's squared residual at "
-        "its own position, in units of the bar) | stencil minus own point | stencil offset term "
-        "(front_energy(): the incident front chords' stencil terms, no AMIPS)",
+        "n = ({:.4}, {:.4}); columns: s/delta | band term of the vertex's band faces "
+        "(front_energy(), no AMIPS)",
         vid,
         x0.x(),
         x0.y(),
@@ -2962,9 +2959,7 @@ void TopoOffsetTriMesh::log_front_profile(const size_t vid)
         const Vector2d x = x0 + sd * delta * n;
         Eigen::VectorXd xv(2);
         xv << x.x(), x.y();
-        const double F = stencil->value(xv);
-        const double Fo = own_point.value(xv);
-        logger().info("[front profile] {:+.2f} | {:.6g} | {:.6g} | {:.6g}", sd, Fo, F - Fo, F);
+        logger().info("[front profile] {:+.2f} | {:.6g}", sd, band->value(xv));
     }
 }
 

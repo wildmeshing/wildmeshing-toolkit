@@ -151,6 +151,16 @@ public:
     /// has no envelope over its primitives, and this scans them all as upper_bound() does. The
     /// result is the same min either way.
     double min_mean_distance(const Eigen::Vector2d* t, int n, int64_t& best) const;
+    /// d_P(x), primitive P alone (min_mean_distance()'s index and arithmetic), with its gradient
+    /// and Hessian in x: Envelope::primitive_distance()'s 2D derivatives, (x - foot) / d, and 0
+    /// on a segment's interior (d affine there), (I - u u^T) / d at an end or a point; both 0 at
+    /// d = 0. The corner bound's derivatives (BandVolumeEnergy2D) read them, as 3D's read the
+    /// input envelope's.
+    double primitive_distance(
+        int64_t P,
+        const Eigen::Vector2d& x,
+        Eigen::Vector2d* grad = nullptr,
+        Eigen::Matrix2d* hess = nullptr) const;
 
     size_t num_segments() const { return size_t(m_nE); }
     size_t num_vertices() const { return m_feat.size() - size_t(m_nE); }

@@ -978,6 +978,32 @@ double ExactBandIntegral2D::min_mean_distance(const Eigen::Vector2d* t, const in
     return m;
 }
 
+double ExactBandIntegral2D::primitive_distance(
+    const int64_t P,
+    const Eigen::Vector2d& x,
+    Eigen::Vector2d* grad,
+    Eigen::Matrix2d* hess) const
+{
+    // See the declaration. The value and the foot are point_seg_dist()'s; the foot's kind is its
+    // clamp's.
+    const Vec2& A = m_SA[size_t(P)];
+    const Vec2& B = m_SB[size_t(P)];
+    const double d = point_seg_dist(x, A, B);
+    if (!grad && !hess) return d;
+    const Vec2 ab = B - A;
+    const double dd = ab.dot(ab);
+    const double s = dd > 0. ? (x - A).dot(ab) / dd : 0.;
+    const bool interior = dd > 0. && s > 0. && s < 1.;
+    const Vec2 foot = A + std::clamp(s, 0., 1.) * ab;
+    const Vec2 u = d > 0. ? Vec2((x - foot) / d) : Vec2::Zero();
+    if (grad) *grad = u;
+    if (hess) {
+        hess->setZero();
+        if (d > 0. && !interior) *hess = (Eigen::Matrix2d::Identity() - u * u.transpose()) / d;
+    }
+    return d;
+}
+
 struct ExactBandIntegral2D::Work
 {
     Vec2 c0; ///< the local origin: t's centroid

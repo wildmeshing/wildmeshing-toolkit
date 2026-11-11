@@ -2,6 +2,7 @@
 #include "ExactBandIntegral.hpp"
 
 #include <wmtk/utils/AMIPS.h>
+#include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/orient.hpp>
 #include <wmtk/utils/predicates.hpp>
@@ -1796,135 +1797,289 @@ void BandVolumeEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
 }
 
 // ---------------------------------------------------------------------------------------------
-// StencilEnergy2D
+// CubedAMIPSEnergy2D
 // ---------------------------------------------------------------------------------------------
 
-StencilEnergy2D::StencilEnergy2D(
-    const std::shared_ptr<const OffsetPotential2D>& potential,
-    std::vector<Edge> edges,
-    const double weight,
-    const bool gauss_newton)
-    : m_potential(potential)
-    , m_edges(std::move(edges))
+CubedAMIPSEnergy2D::CubedAMIPSEnergy2D(
+    std::vector<std::array<double, 6>> cells,
+    const double weight)
+    : m_cells(std::move(cells))
     , m_weight(weight)
-    , m_gauss_newton(gauss_newton)
-    , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
 {}
 
-const std::vector<StencilEnergy2D::Reading>& StencilEnergy2D::readings_at(
+namespace {
+/// A face of CubedAMIPSEnergy2D with the moving vertex placed at x.
+std::array<double, 6> cubed_amips_face_at(std::array<double, 6> c, const Eigen::VectorXd& x)
+{
+    c[0] = x[0];
+    c[1] = x[1];
+    return c;
+}
+
+/// area AMIPS^3 of a CubedAMIPSEnergy2D face (moving vertex x first) with AMIPS a (first power)
+/// and its derivatives ga, ha in x: f = (sqrt3/4) T a^2, T = (2/3) sum over the three edges of
+/// |e|^2, grad T = (4/3) (2 x - p1 - p2), hess T = (8/3) I. The area never comes from a
+/// determinant: AMIPS2D = T / det(J) gives area = (sqrt3/4) T / a (see
+/// TopoOffsetTriMesh::area_amips3()). The 2D twin of cubed_amips_vol_term(). need: 0 value,
+/// 1 + gradient, 2 + Hessian.
+double cubed_amips_area_term(
+    const std::array<double, 6>& c,
+    const double a,
+    const Eigen::Vector2d& ga,
+    const Eigen::Matrix2d& ha,
+    const int need,
+    Eigen::Vector2d& g,
+    Eigen::Matrix2d& h)
+{
+    const Eigen::Vector2d p[3] = {
+        Eigen::Vector2d(c[0], c[1]),
+        Eigen::Vector2d(c[2], c[3]),
+        Eigen::Vector2d(c[4], c[5])};
+    double T = 0.;
+    for (int i = 0; i < 3; ++i)
+        for (int j = i + 1; j < 3; ++j) T += (p[i] - p[j]).squaredNorm();
+    T *= 2. / 3.;
+    const double k = std::sqrt(3.) / 4.;
+    const double f = k * T * a * a;
+    if (need >= 1) {
+        const Eigen::Vector2d gT = (4. / 3.) * (2. * p[0] - p[1] - p[2]);
+        g = k * (a * a * gT + 2. * T * a * ga);
+        if (need >= 2) {
+            h = k * (2. * a * (gT * ga.transpose() + ga * gT.transpose()) +
+                     (8. / 3.) * a * a * Eigen::Matrix2d::Identity() +
+                     2. * T * (ga * ga.transpose() + a * ha));
+        }
+    }
+    return f;
+}
+} // namespace
+
+void CubedAMIPSEnergy2D::at_point(const TVector& x)
+{
+    // CubedAMIPSEnergy3D::at_point()'s cache: a call at the bitwise-same point reuses what was
+    // computed there.
+    if (m_x_set && std::memcmp(x.data(), m_x.data(), 2 * sizeof(double)) == 0) return;
+    m_x = x.head<2>();
+    m_x_set = true;
+    m_value_set = m_grad_set = false;
+    m_a.resize(m_cells.size());
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        m_a[k] = wmtk::AMIPS2D_energy(cubed_amips_face_at(m_cells[k], x));
+    }
+}
+
+double CubedAMIPSEnergy2D::value(const TVector& x)
+{
+    at_point(x);
+    if (m_value_set) return m_value;
+    double res = 0.;
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        Eigen::Vector2d g;
+        Eigen::Matrix2d h;
+        res += cubed_amips_area_term(
+            cubed_amips_face_at(m_cells[k], x),
+            m_a[k],
+            Eigen::Vector2d::Zero(),
+            Eigen::Matrix2d::Zero(),
+            0,
+            g,
+            h);
+    }
+    m_value = m_weight * res;
+    m_value_set = true;
+    return m_value;
+}
+
+void CubedAMIPSEnergy2D::gradient(const TVector& x, TVector& gradv)
+{
+    at_point(x);
+    if (m_grad_set) {
+        gradv = m_grad;
+        return;
+    }
+    gradv.setZero(2);
+    Eigen::Vector2d g;
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const auto c = cubed_amips_face_at(m_cells[k], x);
+        wmtk::AMIPS2D_jacobian(c, g);
+        Eigen::Vector2d gf;
+        Eigen::Matrix2d hf;
+        cubed_amips_area_term(c, m_a[k], g, Eigen::Matrix2d::Zero(), 1, gf, hf);
+        gradv += gf;
+    }
+    gradv *= m_weight;
+    m_grad = gradv;
+    m_grad_set = true;
+}
+
+void CubedAMIPSEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    at_point(x);
+    hessian.setZero(2, 2);
+    Eigen::Vector2d g;
+    Eigen::Matrix2d h;
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const auto c = cubed_amips_face_at(m_cells[k], x);
+        wmtk::AMIPS2D_jacobian(c, g);
+        wmtk::AMIPS2D_hessian(c, h);
+        Eigen::Vector2d gf;
+        Eigen::Matrix2d hf;
+        cubed_amips_area_term(c, m_a[k], g, h, 2, gf, hf);
+        hessian += hf;
+    }
+    hessian *= m_weight;
+}
+
+bool CubedAMIPSEnergy2D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
+{
+    // The engine's AMIPSEnergy2D::is_step_valid: the moved vertex may not invert a face.
+    const Eigen::Vector2d p0 = x1.head(2);
+    for (const auto& c : m_cells) {
+        if (!wmtk::utils::orient2d(p0, Eigen::Vector2d(c[2], c[3]), Eigen::Vector2d(c[4], c[5]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// ---------------------------------------------------------------------------------------------
+// BandVolumeEnergy2D
+// ---------------------------------------------------------------------------------------------
+
+BandVolumeEnergy2D::BandVolumeEnergy2D(
+    std::shared_ptr<const ExactBandIntegral2D> prims,
+    std::vector<Cell> cells,
+    const Eigen::Vector2d& x0,
+    const double delta)
+    : m_prims(std::move(prims))
+    , m_delta(delta)
+    , m_cells(std::move(cells))
+{
+    for (Cell& c : m_cells) {
+        const Eigen::Vector2d u = c.q1 - x0, v = c.q2 - x0;
+        if (u.x() * v.y() - u.y() * v.x() < 0.) std::swap(c.q1, c.q2);
+    }
+    m_min_md.assign(m_cells.size(), 0.);
+    m_min_tri.assign(m_cells.size(), -1);
+}
+
+void BandVolumeEnergy2D::set_exact_integral(
+    std::shared_ptr<const ExactBandIntegral2D> eb,
+    const double delta)
+{
+    m_eb = std::move(eb);
+    m_delta = delta;
+    m_eb_val_set = m_eb_der_set = false;
+}
+
+void BandVolumeEnergy2D::exact_minima(const Eigen::Vector2d& x) const
+{
+    if (m_min_set && std::memcmp(x.data(), m_min_x.data(), 2 * sizeof(double)) == 0) return;
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const Cell& c = m_cells[k];
+        const std::array<Eigen::Vector2d, 3> pts = {{x, c.q1, c.q2}};
+        int64_t P = -1;
+        m_min_md[k] = m_prims->min_mean_distance(pts.data(), 3, P);
+        m_min_tri[k] = P;
+    }
+    m_min_x = x;
+    m_min_set = true;
+}
+
+double BandVolumeEnergy2D::eval(
     const Eigen::Vector2d& x,
-    const bool need_dr) const
+    const int need,
+    Eigen::Vector2d& g,
+    Eigen::Matrix2d& H) const
 {
-    if (m_readings_valid && x == m_readings_x && (m_readings_have_dr || !need_dr)) {
-        return m_readings;
-    }
-    m_readings.clear();
-    for (const Edge& e : m_edges) {
-        for (const Sample& sm : e.samples) {
-            const Eigen::Vector2d p = sm.a * x + sm.b * e.q1;
-            Reading rd;
-            double v;
-            Eigen::Vector2d g;
-            if (need_dr) {
-                m_potential->value_gradient(p, v, g);
-            } else {
-                v = m_potential->value(p);
+    const auto same = [&](const Eigen::Vector2d& y) {
+        return std::memcmp(x.data(), y.data(), 2 * sizeof(double)) == 0;
+    };
+    if (m_eb) {
+        // EXPERIMENTAL_band_volume_rule "exact": per face J_t / delta with x a corner of t
+        if (need == 0) {
+            if (!(m_eb_val_set && same(m_eb_val_x))) {
+                double E = 0.;
+                for (const Cell& c : m_cells)
+                    E += m_eb->value({{x, c.q1, c.q2}}, m_delta) / m_delta;
+                m_eb_E = E;
+                m_eb_val_x = x;
+                m_eb_val_set = true;
             }
-            if (std::isfinite(v)) {
-                rd.r = (v - m_c) / m_c;
-                rd.r_ok = true;
-                if (need_dr && g.allFinite()) {
-                    rd.dr = g / m_c;
-                    rd.dr_ok = true;
-                }
-            }
-            m_readings.push_back(rd);
+            g.setZero();
+            H.setZero();
+            return m_eb_E;
         }
+        if (!(m_eb_der_set && same(m_eb_der_x))) {
+            m_eb_g.setZero();
+            m_eb_H.setZero();
+            for (const Cell& c : m_cells) {
+                Eigen::Vector2d gc;
+                Eigen::Matrix2d hc;
+                // grad_hess(): value_grad_hess() without its J (unread here)
+                m_eb->grad_hess({{x, c.q1, c.q2}}, 0, m_delta, gc, hc);
+                m_eb_g += gc / m_delta;
+                m_eb_H += hc / m_delta;
+            }
+            m_eb_der_x = x;
+            m_eb_der_set = true;
+        }
+        g = m_eb_g;
+        H = m_eb_H;
+        // the value is value()'s; gradient() and hessian() do not read it
+        return m_eb_val_set && same(m_eb_val_x) ? m_eb_E : std::numeric_limits<double>::quiet_NaN();
     }
-    m_readings_x = x;
-    m_readings_valid = true;
-    m_readings_have_dr = need_dr;
-    return m_readings;
-}
-
-double StencilEnergy2D::value(const TVector& xv)
-{
-    const Eigen::Vector2d x = xv.head(2);
-    const std::vector<Reading>& rds = readings_at(x, false);
+    // Per face the min over all primitives of the corner mean of r_P, the three corners being x
+    // and the face's two fixed ones.
+    exact_minima(x);
     double E = 0.;
-    size_t k = 0;
-    for (const Edge& e : m_edges) {
-        double s = 0.;
-        size_t n = 0;
-        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok) continue;
-            s += rd.r * rd.r;
-            ++n;
-        }
-        if (n > 0) E += s / double(n);
-    }
-    return m_weight * E;
-}
-
-void StencilEnergy2D::gradient(const TVector& xv, TVector& gradv)
-{
-    const Eigen::Vector2d x = xv.head(2);
-    const std::vector<Reading>& rds = readings_at(x, true);
-    gradv = Eigen::VectorXd::Zero(2);
-    Eigen::Vector2d g = Eigen::Vector2d::Zero();
-    size_t k = 0;
-    for (const Edge& e : m_edges) {
-        Eigen::Vector2d ge = Eigen::Vector2d::Zero();
-        size_t n = 0;
-        // d/dx of r(q_i)^2 is 2 r dr . dq_i/dx and dq_i/dx = a_i I, so the moving vertex's own
-        // barycentric weight is the whole chain rule. An end sample of the other vertex has
-        // a_i = 0 and so contributes to the value but not to the gradient.
-        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok || !rd.dr_ok) continue;
-            ge += (2. * e.samples[i].a * rd.r) * rd.dr;
-            ++n;
-        }
-        if (n > 0) g += ge / double(n);
-    }
-    gradv = m_weight * g;
-}
-
-void StencilEnergy2D::hessian(const TVector& xv, MatrixXd& hess)
-{
-    const Eigen::Vector2d x = xv.head(2);
-    const std::vector<Reading>& rds = readings_at(x, true);
-    Eigen::Matrix2d H = Eigen::Matrix2d::Zero();
-    size_t k = 0;
-    for (const Edge& e : m_edges) {
-        // EXACT Hessian of r^2 unless gauss_newton: 2 a_i^2 (dr dr^T + r hess Phi / c). Until
-        // 2026-09-28 the second term was dropped (Gauss-Newton, PSD by construction; kept as
-        // gauss_newton = true). Measured on the 3D twin of this term, since removed: 28-30% of
-        // the front solves on the cube (target 1e-2, tolerance 1e-4) converged only linearly --
-        // |grad|/|grad_0| at 1e-2..1e-5 after the 10-iteration cap -- near its rounded edges,
-        // where r is still large and hess Phi is the offset surface's curvature. With the term: 2%
-        // at the cap, mean 2.8 iterations instead of 4.6, 98% stopped on the relative gradient
-        // tolerance, smoothing time unchanged, placement unchanged. The term is indefinite where
-        // r < 0 (inside the level set); polysolve's Newton regularises there.
-        Eigen::Matrix2d He = Eigen::Matrix2d::Zero();
-        size_t n = 0;
-        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok || !rd.dr_ok) continue;
-            const Sample& sm = e.samples[i];
-            const double a = sm.a;
-            He += (2. * a * a) * (rd.dr * rd.dr.transpose());
-            if (!m_gauss_newton) {
-                const Eigen::Vector2d p = a * x + sm.b * e.q1;
-                const Eigen::Matrix2d Hphi = m_potential->hessian(p);
-                if (Hphi.allFinite()) He += (2. * a * a * rd.r / m_c) * Hphi;
+    g.setZero();
+    H.setZero();
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const Cell& c = m_cells[k];
+        const Eigen::Vector2d e = c.q2 - c.q1;
+        const Eigen::Vector2d N(e.y(), -e.x()); // e turned clockwise
+        const double area = (c.q1 - x).dot(N) / 2.;
+        const Eigen::Vector2d garea = -N / 2.;
+        const int64_t P = m_min_tri[k];
+        if (P < 0) continue;
+        const double best = (m_min_md[k] - m_delta) / m_delta;
+        E += area * best;
+        if (need >= 1) {
+            Eigen::Vector2d gd;
+            Eigen::Matrix2d hd;
+            m_prims->primitive_distance(P, x, &gd, need >= 2 ? &hd : nullptr);
+            const Eigen::Vector2d gm = gd / (3. * m_delta);
+            g += best * garea + area * gm;
+            if (need >= 2) {
+                H += garea * gm.transpose() + gm * garea.transpose() + area * hd / (3. * m_delta);
             }
-            ++n;
         }
-        if (n > 0) H += He / double(n);
     }
-    hess = m_weight * H;
+    return E;
+}
+
+double BandVolumeEnergy2D::value(const TVector& xv)
+{
+    Eigen::Vector2d g;
+    Eigen::Matrix2d H;
+    return eval(xv.head(2), 0, g, H);
+}
+
+void BandVolumeEnergy2D::gradient(const TVector& xv, TVector& gradv)
+{
+    Eigen::Vector2d g;
+    Eigen::Matrix2d H;
+    eval(xv.head(2), 1, g, H);
+    gradv = g;
+}
+
+void BandVolumeEnergy2D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    Eigen::Vector2d g;
+    Eigen::Matrix2d H;
+    eval(xv.head(2), 2, g, H);
+    hess = H;
 }
 
 // ---------------------------------------------------------------------------------------------

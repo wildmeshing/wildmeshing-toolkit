@@ -3,13 +3,16 @@
 // polygon itself (t clipped by a fan triangulation of it, not the pseudonormal test the integral
 // uses); and its derivatives against finite differences, as test_exact_band_integral.cpp's fd()
 // does for 3D.
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <wmtk/components/topological_offset/ExactBandIntegral2D.hpp>
+#include <wmtk/components/topological_offset/OffsetPotential.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <random>
 
 using namespace wmtk::components::topological_offset;
@@ -509,4 +512,456 @@ TEST_CASE("exact-band-integral-2d-hessian-contact", "[exact_band_integral_2d]")
             CHECK(h <= 1e-4);
         }
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// BandVolumeEnergy2D, the 2D front smoother's band term: the 2D twins of band-volume-exact-min
+// (test_offset_potential.cpp) and exact-band-integral-energy (test_exact_band_integral.cpp), over
+// a range of rings: around input vertices, across segments and anywhere near the input, at three
+// scales, with and without a nearly flat face.
+// ---------------------------------------------------------------------------------------------
+
+namespace {
+
+/// An open fan of faces (x0, q_i, q_i+1), i < n - 1, around x0: n = 4..7 arms at the angles
+/// 2 pi i / n, each jittered by up to 0.3 of a gap (every gap below 145 degrees), radii in
+/// [0.5, 1.5] r; or, with `needle`, four arms whose first gap is 179.8 degrees, so the face over
+/// it is nearly flat (its height about 1.7e-3 of r). Open, as a front vertex's band faces are:
+/// over a closed star of band faces the exact term does not move with x at all (its union is
+/// fixed), nor the corner bound where one primitive's distance is affine on the star, and their
+/// derivatives are rounding, which central differences cannot judge.
+struct Star
+{
+    Vector2d x0;
+    std::vector<BandVolumeEnergy2D::Cell> cells;
+};
+Star star_at(std::mt19937& rng, const Vector2d& c, const double r, const bool needle)
+{
+    std::uniform_real_distribution<double> U(0., 1.);
+    const double pi = std::acos(-1.);
+    const double base = 2. * pi * U(rng);
+    std::vector<double> ang;
+    if (needle) {
+        ang = {0., 179.8, 250., 320.};
+        for (double& a : ang) a = base + a * pi / 180.;
+    } else {
+        const int n = 4 + int(U(rng) * 4.) % 4;
+        for (int i = 0; i < n; ++i)
+            ang.push_back(base + 2. * pi * (i + 0.3 * (2. * U(rng) - 1.)) / n);
+    }
+    std::vector<Vector2d> q;
+    for (const double a : ang) {
+        const double rad = needle ? r : r * (0.5 + U(rng));
+        q.push_back(c + rad * Vector2d(std::cos(a), std::sin(a)));
+    }
+    Star st;
+    st.x0 = c;
+    for (size_t i = 0; i + 1 < q.size(); ++i) st.cells.push_back({q[i], q[i + 1]});
+    return st;
+}
+
+/// The shortest height of x over its faces' fixed edges: the length on which the term varies
+/// with x, besides the distance from x to the input.
+double min_height(const Vector2d& x, const std::vector<BandVolumeEnergy2D::Cell>& cells)
+{
+    double h = std::numeric_limits<double>::infinity();
+    for (const auto& c : cells) {
+        h = std::min(h, std::abs(cross(c.q1 - x, c.q2 - x)) / (c.q2 - c.q1).norm());
+    }
+    return h;
+}
+
+/// The corner bound of one face (TopoOffsetTriMesh::band_cell_corner_bound()'s arithmetic):
+/// unsigned area times (min mean - delta) / delta.
+double corner_rule(const ExactBandIntegral2D& eb, const Tri& t, const double delta)
+{
+    int64_t best = -1;
+    const double md = eb.min_mean_distance(t.data(), 3, best);
+    return std::abs(area2(t)) / 2. * ((md - delta) / delta);
+}
+
+/// `e`'s gradient g and Hessian H at x against central differences (the gradient from the value,
+/// the Hessian from the gradient) at the steps h = hmin * 1e-2 .. 1e-6 that `accept` admits,
+/// hmin the length on which the term varies: the errors |fd - g| and |fd - H| in fd()'s units
+/// S / L and S / L^2 (S the term's scale, L the fan's longest edge), each the min over h, as fd()
+/// takes them (the differences' truncation falls with h and their rounding grows, at a rate set by
+/// value()'s own conditioning). Not relative to |g|: g is exactly 0 where the fan's edges through x
+/// lie where the term's integrand is 0 (a band clipped by the offset side). And at h = 1e-4 hmin
+/// the kink measure |H_fwd - H_bwd| / |H| (one-sided differences of the gradient), above 1e-3
+/// where grad e has a kink at x.
+struct EnergyFD
+{
+    double grad = 1e300, hess = 1e300, kink = 0.;
+    Vector2d g, fd_g; ///< for the messages: g and its difference at the best step
+};
+template <typename Accept>
+EnergyFD energy_fd(
+    polysolve::nonlinear::Problem& e,
+    const Vector2d& x,
+    const double hmin,
+    const double S,
+    const double L,
+    Accept&& accept)
+{
+    EnergyFD out;
+    Eigen::VectorXd xv = x, g0;
+    Eigen::MatrixXd H0;
+    e.gradient(xv, g0);
+    e.hessian(xv, H0);
+    out.g = g0;
+    for (const double f : {1e-2, 1e-3, 1e-4, 1e-5, 1e-6}) {
+        const double h = f * hmin;
+        if (!accept(h)) continue;
+        Vector2d fg;
+        Eigen::Matrix2d fH, Hf, Hb;
+        for (int i = 0; i < 2; ++i) {
+            Eigen::VectorXd xp = xv, xm = xv, gp, gm;
+            xp[i] += h;
+            xm[i] -= h;
+            fg[i] = (e.value(xp) - e.value(xm)) / (2. * h);
+            e.gradient(xp, gp);
+            e.gradient(xm, gm);
+            fH.col(i) = (gp - gm) / (2. * h);
+            Hf.col(i) = (gp - g0) / h;
+            Hb.col(i) = (g0 - gm) / h;
+        }
+        const double eg = (fg - Vector2d(g0)).norm() * L / S;
+        if (eg < out.grad) out.grad = eg, out.fd_g = fg;
+        out.hess = std::min(out.hess, (fH - Eigen::Matrix2d(H0)).norm() * L * L / S);
+        if (f == 1e-4) out.kink = (Hf - Hb).norm() / std::max(fH.norm(), 1e-300);
+    }
+    return out;
+}
+
+/// The fan's longest edge, through x or not.
+double fan_length(const Vector2d& x, const std::vector<BandVolumeEnergy2D::Cell>& cells)
+{
+    double L = 0.;
+    for (const auto& c : cells) L = std::max(L, longest({{x, c.q1, c.q2}}));
+    return L;
+}
+
+/// The position the derivatives are checked at: x0 moved by a tenth of the smaller of 0.1 r and
+/// x0's shortest height over its faces, so every face stays valid (as the smoother keeps it).
+Vector2d near_x0(std::mt19937& rng, const Star& st, const double r)
+{
+    std::uniform_real_distribution<double> U(-1., 1.);
+    return st.x0 + 0.1 * std::min(0.1 * r, min_height(st.x0, st.cells)) * Vector2d(U(rng), U(rng));
+}
+
+} // namespace
+
+TEST_CASE("band-area-exact-min-2d", "[exact_band_integral_2d]")
+{
+    // The 2D twin of band-volume-exact-min. ExactBandIntegral2D::min_mean_distance() is the min
+    // over ALL primitives (segments, then points) of the corner mean of d_P (brute force over
+    // primitive_distance(), lowest index on a tie), and primitive_distance() is the distance to
+    // the segment or point with central-difference derivatives; the face term built on the min is
+    // an upper bound on a dense integral and no split raises it; and BandVolumeEnergy2D has its
+    // value and derivatives, over the range of rings above. The derivatives' thresholds are
+    // fd()'s, 3D's exact-band-integral-derivatives' (gradient 1e-7, Hessian 1e-4, in units S / L
+    // and S / L^2); the measured maxima are printed.
+    const double delta = 0.25;
+    std::mt19937 rng(23);
+    std::uniform_real_distribution<double> U(-1., 1.);
+    Input mixed = open_polyline(); // segments and points: the polyline's, and three more points
+    mixed.V.conservativeResize(mixed.V.rows() + 3, 2);
+    mixed.V.bottomRows(3) << 0.3, 0.8, -0.7, -0.9, 0.9, -0.6;
+    mixed.P = {int(mixed.V.rows()) - 3, int(mixed.V.rows()) - 2, int(mixed.V.rows()) - 1};
+    const std::vector<std::pair<const char*, Input>> inputs = {
+        {"L", L_shape()},
+        {"points", three_points()},
+        {"polyline and points", mixed}};
+
+    SECTION("the min over all primitives, and primitive_distance()")
+    {
+        for (const auto& item : inputs) {
+            const char* name = item.first;
+            const Input& in = item.second; // a reference, not a binding: the lambda captures it
+            INFO(name);
+            const ExactBandIntegral2D eb(in.V, in.E, in.P);
+            const int64_t n_prim = int64_t(in.E.rows()) + int64_t(in.P.size());
+            const auto prim_ends = [&](const int64_t P) {
+                if (P < int64_t(in.E.rows())) {
+                    return std::pair<Vector2d, Vector2d>{
+                        in.V.row(in.E(P, 0)).transpose(),
+                        in.V.row(in.E(P, 1)).transpose()};
+                }
+                const Vector2d v = in.V.row(in.P[size_t(P - in.E.rows())]).transpose();
+                return std::pair<Vector2d, Vector2d>{v, v};
+            };
+            for (int k = 0; k < 300; ++k) {
+                const Vector2d c(1.4 * U(rng), 1.4 * U(rng));
+                Tri q;
+                for (auto& p : q) p = c + 0.3 * Vector2d(U(rng), U(rng));
+                double want = std::numeric_limits<double>::infinity();
+                int64_t wbest = -1;
+                for (int64_t P = 0; P < n_prim; ++P) {
+                    double sum = 0.;
+                    for (const Vector2d& p : q) sum += eb.primitive_distance(P, p);
+                    sum /= 3;
+                    if (sum < want) want = sum, wbest = P;
+                    const auto [a, b] = prim_ends(P);
+                    CHECK(
+                        eb.primitive_distance(P, q[0]) ==
+                        Catch::Approx(a == b ? (q[0] - a).norm() : seg_dist(q[0], a, b))
+                            .epsilon(1e-14));
+                }
+                int64_t best = -1;
+                CHECK(eb.min_mean_distance(q.data(), 3, best) == want);
+                CHECK(best == wbest);
+            }
+            // The derivatives in a segment's interior region, at an end and at a point.
+            double worst_g = 0., worst_h = 0.;
+            for (int k = 0; k < 200; ++k) {
+                const Vector2d p(1.4 * U(rng), 1.4 * U(rng));
+                const int64_t P = int64_t(k) % n_prim;
+                const double d = eb.primitive_distance(P, p);
+                if (!(d > 1e-3)) continue; // a kink at the primitive itself
+                Vector2d g;
+                Eigen::Matrix2d H;
+                eb.primitive_distance(P, p, &g, &H);
+                const double h = 1e-6;
+                for (int j = 0; j < 2; ++j) {
+                    Vector2d pp = p, pm = p, gp, gm;
+                    pp[j] += h;
+                    pm[j] -= h;
+                    const double fd =
+                        (eb.primitive_distance(P, pp) - eb.primitive_distance(P, pm)) / (2. * h);
+                    worst_g = std::max(worst_g, std::abs(fd - g[j]));
+                    eb.primitive_distance(P, pp, &gp);
+                    eb.primitive_distance(P, pm, &gm);
+                    worst_h = std::max(worst_h, ((gp - gm) / (2. * h) - H.col(j)).norm() * d);
+                }
+            }
+            std::printf(
+                "band-area-exact-min-2d, %s: primitive_distance() derivatives, max error: "
+                "gradient %.1e, Hessian %.1e (times d)\n",
+                name,
+                worst_g,
+                worst_h);
+            CHECK(worst_g <= 1e-6);
+            CHECK(worst_h <= 1e-5);
+        }
+    }
+    SECTION("an upper bound, and no split raises it")
+    {
+        const Input in = L_shape();
+        const ExactBandIntegral2D eb(in.V, in.E, in.P);
+        Gen gen(in);
+        int checked = 0;
+        for (int k = 0; k < 60; ++k) {
+            const Tri t = gen.next(k, 0.1);
+            const double u = corner_rule(eb, t, delta);
+            // the dense integral of (d - delta) / delta, no offset side (the corner bound has none)
+            const double dense = reference(in, 0, t, delta, 200) / delta;
+            const double tol = 1e-6 * std::abs(area2(t));
+            INFO("trial " << k << " bound " << u << " dense " << dense);
+            CHECK(u >= dense - tol);
+            for (int ia = 0; ia < 3; ++ia) {
+                const int ib = (ia + 1) % 3;
+                const Vector2d mid = 0.5 * (t[size_t(ia)] + t[size_t(ib)]);
+                Tri c1 = t, c2 = t;
+                c1[size_t(ib)] = mid;
+                c2[size_t(ia)] = mid;
+                CHECK(
+                    corner_rule(eb, c1, delta) + corner_rule(eb, c2, delta) <=
+                    u + 1e-12 * std::max(1., std::abs(u)));
+            }
+            ++checked;
+        }
+        CHECK(checked == 60);
+    }
+    SECTION("BandVolumeEnergy2D: value and derivatives")
+    {
+        double worst_g = 0., worst_h = 0.;
+        int n = 0, n_switch = 0;
+        for (const auto& [name, in] : inputs) {
+            const auto eb = std::make_shared<const ExactBandIntegral2D>(in.V, in.E, in.P);
+            Gen gen(in);
+            for (const double r : {1e-3, 0.03, 0.3}) {
+                for (int k = 0; k < 24; ++k) {
+                    const Tri t0 = gen.next(k, r); // a centre near a vertex, a segment or anywhere
+                    const Star st = star_at(rng, t0[0], r, k % 4 == 3);
+                    BandVolumeEnergy2D energy(eb, st.cells, st.x0, delta);
+                    const Vector2d x = near_x0(rng, st, r);
+                    const Eigen::VectorXd xv = x;
+                    double want = 0.;
+                    for (const auto& c : st.cells)
+                        want += corner_rule(*eb, {{x, c.q1, c.q2}}, delta);
+                    INFO(name << ", r " << r << ", ring " << k << ", x " << x.transpose());
+                    CHECK(
+                        energy.value(xv) ==
+                        Catch::Approx(want).epsilon(1e-12).margin(1e-15 * r * r));
+                    const double hmin =
+                        std::min(min_height(x, st.cells), std::max(eb->distance(x), 1e-3 * r));
+                    // the minimisers at x and x +- h: a switch puts a kink between them, and that
+                    // step is not taken -- unless x's minimiser still attains the min there to
+                    // rounding, a tie between primitives whose distances agree at all three
+                    // corners (two segments ending at one input vertex, every corner in that
+                    // vertex's region), which rounding breaks either way
+                    int n_steps = 0;
+                    const auto same = [&](const double h) {
+                        for (const auto& c : st.cells) {
+                            int64_t b0 = -1, b1 = -1;
+                            const Tri tc = {{x, c.q1, c.q2}};
+                            eb->min_mean_distance(tc.data(), 3, b0);
+                            for (int i = 0; i < 2; ++i) {
+                                for (const double sg : {-1., 1.}) {
+                                    Tri ts = tc;
+                                    ts[0][i] += sg * h;
+                                    const double m1 = eb->min_mean_distance(ts.data(), 3, b1);
+                                    if (b1 == b0) continue;
+                                    double m0 = 0.;
+                                    for (const Vector2d& p : ts)
+                                        m0 += eb->primitive_distance(b0, p);
+                                    if (!(m0 / 3. - m1 <= 1e-15 * m1)) return false;
+                                }
+                            }
+                        }
+                        ++n_steps;
+                        return true;
+                    };
+                    // S = sum_t A_t (md_t + delta) / delta, the corner bound's twin of fd()'s
+                    // I + delta A
+                    double S = 0.;
+                    for (const auto& c : st.cells) {
+                        const Tri tc = {{x, c.q1, c.q2}};
+                        int64_t best = -1;
+                        S += std::abs(area2(tc)) / 2. *
+                             ((eb->min_mean_distance(tc.data(), 3, best) + delta) / delta);
+                    }
+                    const EnergyFD f = energy_fd(energy, x, hmin, S, fan_length(x, st.cells), same);
+                    if (f.grad == 1e300) {
+                        ++n_switch;
+                        continue;
+                    }
+                    INFO(
+                        "gradient error " << f.grad << ", Hessian error " << f.hess << ", hmin "
+                                          << hmin << " (" << n_steps << " steps), g "
+                                          << f.g.transpose() << ", fd " << f.fd_g.transpose());
+                    CHECK(f.grad <= 1e-7);
+                    CHECK(f.hess <= 1e-4);
+                    worst_g = std::max(worst_g, f.grad);
+                    worst_h = std::max(worst_h, f.hess);
+                    ++n;
+                }
+            }
+        }
+        std::printf(
+            "band-area-exact-min-2d: BandVolumeEnergy2D corner bound, %d rings (%d skipped, a "
+            "minimiser switching within h), max error (S / L, S / L^2): gradient %.1e Hessian "
+            "%.1e\n",
+            n,
+            n_switch,
+            worst_g,
+            worst_h);
+        CHECK(n > 150);
+    }
+}
+
+TEST_CASE("exact-band-integral-energy-2d", "[exact_band_integral_2d]")
+{
+    // The 2D twin of exact-band-integral-energy: EXPERIMENTAL_band_volume_rule "exact" in the
+    // smoother. BandVolumeEnergy2D's value is sum_t J_t / delta (ExactBandIntegral2D::value(), what
+    // band_cell_term() reads), its gradient and Hessian sum_t of value_grad_hess() / delta in the
+    // moving vertex x; equal bit for bit to those sums, whatever the order of the calls (each
+    // keeps the last point's), and consistent with central differences -- over the range of rings
+    // above, on a segment, on points and on the L with its offset side both ways. A ring with a
+    // kink of grad J at x (|H_fwd - H_bwd| / |H| above 1e-3: a kink of d along an edge through x,
+    // where H is the one-sided limit) is counted, its Hessian not checked. The derivatives'
+    // thresholds are fd()'s, 3D's exact-band-integral-derivatives' (gradient 1e-7, Hessian 1e-4,
+    // in units S / L and S / L^2); the measured maxima are printed.
+    struct Case
+    {
+        const char* name;
+        Input in;
+        int sigma;
+    };
+    const std::vector<Case> cases = {
+        {"segment", polyline({{-0.5, 0.1}, {0.7, -0.2}}, false), 0},
+        {"points", three_points(), 0},
+        {"L, band outside", L_shape(), 1},
+        {"L, band inside", L_shape(), -1}};
+    const double delta = 0.25;
+    std::mt19937 rng(41);
+    double worst_g = 0., worst_h = 0.;
+    int n = 0, n_kink = 0;
+    for (const Case& cs : cases) {
+        const auto eb = std::make_shared<const ExactBandIntegral2D>(
+            cs.in.V,
+            cs.in.E,
+            cs.in.P,
+            cs.in.side,
+            cs.sigma);
+        Gen gen(cs.in);
+        for (const double r : {1e-3, 0.03, 0.3}) {
+            for (int k = 0; k < 12; ++k) {
+                const Tri t0 = gen.next(k, r);
+                const Star st = star_at(rng, t0[0], r, k % 4 == 3);
+                BandVolumeEnergy2D energy(eb, st.cells, st.x0, delta);
+                energy.set_exact_integral(eb, delta);
+                const Vector2d x = near_x0(rng, st, r);
+                const Eigen::VectorXd xv = x;
+                double want = 0.;
+                Vector2d gwant = Vector2d::Zero();
+                Eigen::Matrix2d hwant = Eigen::Matrix2d::Zero();
+                for (auto c : st.cells) {
+                    // the constructor's orientation: q1, q2 swapped where the area at x0 is
+                    // negative
+                    if (cross(c.q1 - st.x0, c.q2 - st.x0) < 0.) std::swap(c.q1, c.q2);
+                    want += eb->value({{x, c.q1, c.q2}}, delta) / delta;
+                    Vector2d gc;
+                    Eigen::Matrix2d hc;
+                    eb->value_grad_hess({{x, c.q1, c.q2}}, 0, delta, gc, hc);
+                    gwant += gc / delta;
+                    hwant += hc / delta;
+                }
+                INFO(cs.name << ", r " << r << ", ring " << k << ", x " << x.transpose());
+                Eigen::VectorXd g;
+                Eigen::MatrixXd H;
+                energy.gradient(xv, g); // derivatives first, then the value, then again
+                CHECK(energy.value(xv) == want);
+                energy.hessian(xv, H);
+                CHECK(Vector2d(g) == gwant);
+                CHECK(Eigen::Matrix2d(H) == hwant);
+                CHECK(energy.value(xv) == want);
+                const double hmin =
+                    std::min(min_height(x, st.cells), std::max(eb->distance(x), 1e-3 * r));
+                // S = sum_t (I_t + delta A_t) / delta, fd()'s units for E = sum_t J_t / delta
+                double S = 0.;
+                for (const auto& c : st.cells) {
+                    const Tri tc = {{x, c.q1, c.q2}};
+                    S += (eb->value(tc, 0.) + delta * std::abs(area2(tc)) / 2.) / delta;
+                }
+                const EnergyFD f =
+                    energy_fd(energy, x, hmin, S, fan_length(x, st.cells), [](double) {
+                        return true;
+                    });
+                INFO(
+                    "gradient error " << f.grad << ", kink " << f.kink << ", hmin " << hmin
+                                      << ", g " << f.g.transpose() << ", fd " << f.fd_g.transpose()
+                                      << ", value " << want);
+                CHECK(f.grad <= 1e-7);
+                worst_g = std::max(worst_g, f.grad);
+                if (f.kink > 1e-3) {
+                    ++n_kink;
+                    continue;
+                }
+                INFO("Hessian error " << f.hess);
+                CHECK(f.hess <= 1e-4);
+                worst_h = std::max(worst_h, f.hess);
+                ++n;
+            }
+        }
+    }
+    std::printf(
+        "exact-band-integral-energy-2d: %d rings (%d more with a kink at x), max error (S / L, "
+        "S / L^2): "
+        "gradient %.1e Hessian %.1e\n",
+        n,
+        n_kink,
+        worst_g,
+        worst_h);
+    CHECK(n > 100);
 }
