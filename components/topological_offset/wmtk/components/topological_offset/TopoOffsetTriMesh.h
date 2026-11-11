@@ -687,23 +687,119 @@ public:
      *     pass a flip that lowers E while raising AMIPS never reaches the rule -- the failure 3D
      *     measured before its case search scored E (tet_energy(), CANDIDATE CELLS). A direct
      *     swap_edge() reaches it. The fix is in the shared engine, not made here.
-     *   - BAND TERM THAT CANCELS (band_term_cancels()) is false for every operation.
+     *   - BAND TERM THAT CANCELS (band_term_cancels()) is false for every operation but under
+     *     "exact_swept", where every rule adds the band term's exact change instead (EXACT SWEPT
+     *     CHANGE below), as in 3D.
      *   - use_rest_pose: no 2D plastic face reads a rest here; 2D's plastic medium is
      *     deform_others', hard-wired off (envelope_setup()).
      */
     double tri_energy(size_t fid, bool band_term = true) const;
     /// Whether an operation whose old faces are `fids` leaves the band term unchanged exactly, so
-    /// its sums leave it out; see TopoOffsetTetMesh::tet_energy(), BAND TERM THAT CANCELS. False:
-    ///  - "exact_swept" (3D: true, every rule adding the band term's exact change): step 4 of the
-    ///    2D port, EXACT SWEPT CHANGE. Until then "exact_swept"'s decisions are "exact"'s.
-    ///  - "exact": 3D also needs every old and new cell clear of the input's curved bisectors,
-    ///    which it tests with the integral's front-flux reach (ExactBandIntegral::
+    /// its sums leave it out; see TopoOffsetTetMesh::tet_energy(), BAND TERM THAT CANCELS.
+    ///  - "exact_swept": true, as in 3D: every operation's sums leave the band term out, and its
+    ///    rule adds the band term's exact change (EXACT SWEPT CHANGE below).
+    ///  - "exact": false. 3D also needs every old and new cell clear of the input's curved
+    ///    bisectors, which it tests with the integral's front-flux reach (ExactBandIntegral::
     ///    prepare_front_flux(), front_flux_flag()); ExactBandIntegral2D has none, being
     ///    "front_flux"'s machinery, which is not ported. Without it every sum carries the band
     ///    term, which is E itself. 3D MEASURED reading it as 0 (cube, target 1e-2, bar 1e-4,
     ///    front_flux, 15 turns, serial): 0 of those decisions flipped, 19% of the run saved.
-    ///  - "corner_bound": as in 3D, its per-face bound changes with the faces.
-    bool band_term_cancels(const std::vector<size_t>& /*fids*/) const { return false; }
+    ///  - "corner_bound": false, as in 3D, its per-face bound changes with the faces.
+    bool band_term_cancels(const std::vector<size_t>& /*fids*/) const { return swept_rule(); }
+    /**
+     * EXACT SWEPT CHANGE (EXPERIMENTAL_band_volume_rule "exact_swept", 3D's default since
+     * 455ab9ba66): the 2D twin of TopoOffsetTetMesh's. The energy is "exact"'s -- b(t) = J_t /
+     * delta, J_t = ExactBandIntegral2D::value() -- but an operation's rule does not integrate its
+     * faces before and after: it compares the AMIPS terms of the faces it changes
+     * (band_term_cancels() is true for every one) plus the CHANGE of the band term E* / delta,
+     * E* = int_B (d - delta) dA, B the union of the band faces, which lives only where B changes
+     * and is integrated exactly there by value() on small triangles:
+     *   - a vertex v moving from x0 to x1 (smoothing, a collapse's v1 moving onto v2): dE* = sum
+     *     over the edges f of the boundary of B through v of sign_f value(conv(x0, x1, a_f)), a_f
+     *     f's other end, sign_f = +1 where B grows (x1 beyond f, away from the band face f
+     *     bounds). Why: a band face t = [v, a, p] moved to [x1, a, p] differs from [x0, a, p] by
+     *     the 2-chain [x0, x1, a] - [x0, x1, p] (the boundary of the 3-simplex [x0, x1, a, p] is
+     *     a 2-cycle, and a 2-cycle in the plane integrates every function to 0), one oriented
+     *     triangle per edge of t through v, each edge as it bounds t. Over the band faces the
+     *     edges between two of them cancel; the boundary edges of B are left, each with the
+     *     oriented triangle [x0, x1, a_f], whose integral is sign_f times the unsigned one. Exact
+     *     for mixed signs and for any move that inverts no face; a collapse's faces through v2
+     *     become flat and drop out the same way. A vertex on no boundary edge of B: 0.
+     *   - a swap: 0. 2D's only swap is the interior flip (the engine refuses every tracked edge,
+     *     so both faces share one label, which the new faces keep), which keeps B's region and
+     *     boundary; 3D's band_chain_change() serves its surface flips, which 2D does not have.
+     *   - a split: 0 (the children tile the parents, labels inherited).
+     * The decisions read these changes; tri_energy(), the label clean-up and every whole-mesh sum
+     * read "exact"'s J_t. Where value() takes rule (a)'s bound on a curved piece, the bound
+     * depends on the face, and the swept change is not the difference of the faces' bounds (3D
+     * MEASURED, every accepted operation's swept change against the change of its cells' sum of
+     * value(): within 1.2e-18 on the cube, up to 2.1e-3 where a rule-(a) piece is involved).
+     *
+     * Where 2D differs: the projected step. The 2D engine has no ring hook (3D's
+     * smoothing_ring_energy() takes each projected candidate's swept change), so the position the
+     * engine's projected step keeps -- a vertex held on a region boundary, front or not -- is
+     * tested after the step, at that position alone (swept_accept() with no halving): the halved
+     * positions lie on the chord, off the boundary the step projects onto. 3D's arrangement before
+     * its hook, measured there: 5,270 of 21,687 held moves refused (cube, 7 turns).
+     */
+    /// "exact_swept" (EXACT SWEPT CHANGE).
+    bool swept_rule() const { return m_offset_params.band_volume_rule == "exact_swept"; }
+    /// EXACT SWEPT CHANGE: dE* / delta for vid moving from x0 to x1, the boundary edges of B
+    /// through vid read from the mesh (labels, connectivity, the other corners' positions). `st`
+    /// collects value()'s statistics (rule-(a) pieces) when given. As 3D's.
+    double band_swept_change(
+        size_t vid,
+        const Vector2d& x0,
+        const Vector2d& x1,
+        ExactBandIntegral2D::Stats* st = nullptr) const;
+    /// band_swept_change() in two halves, as 3D's band_swept_faces() and band_swept_sum(): the
+    /// boundary edges of B through vid, each ordered out of B at x0 (no value() call), and the
+    /// sum over them for a move x0 -> x1. A boundary edge has one band face at it, the face
+    /// across it not a band face (or none: the domain wall).
+    void band_swept_edges(
+        size_t vid,
+        const Vector2d& x0,
+        std::vector<BandVolumeEnergy2D::SweptEdge>& edges) const;
+    /// `piece`: the moving vertex's (place_piece()), whose distance and integral it reads.
+    double band_swept_sum(
+        int piece,
+        const Vector2d& x0,
+        const Vector2d& x1,
+        const std::vector<BandVolumeEnergy2D::SweptEdge>& edges,
+        ExactBandIntegral2D::Stats* st = nullptr) const;
+    /// "exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is,
+    /// 3D's swept_accept(). The move stands iff the ring's AMIPS change (tri_energy_sum(ring,
+    /// false) - amips_before) plus band_swept_change() is <= 0 (a tie passes, a NaN refuses); if
+    /// not, the step is halved toward x0 and tested again, up to `halvings` times, then refused.
+    /// The halved positions are on the segment between two valid positions, and the positions at
+    /// which vid's ring has no inverted face are an intersection of half-planes, so they are valid
+    /// too (tested anyway, exactly). Counts into c. At a position where the solve's search model
+    /// took its last value, the model's value is the change (BandVolumeEnergy2D::swept_value_at(),
+    /// the same function of the same inputs). `halvings`: kSweptHalvings, 3D's; 0 after the
+    /// engine's projected step (EXACT SWEPT CHANGE, where 2D differs).
+    static constexpr int kSweptHalvings = 4;
+    struct SweptCounters
+    {
+        std::atomic<size_t> solves{0}, refused{0};
+        std::array<std::atomic<size_t>, kSweptHalvings + 1> accepted{};
+    };
+    bool swept_accept(
+        size_t vid,
+        const std::vector<size_t>& ring,
+        const Vector2d& x0,
+        double amips_before,
+        SweptCounters& c,
+        int halvings = kSweptHalvings);
+    /// swept_accept()'s counts: front moves, other moves (3D's two), and the moves the engine's
+    /// projected step made (2D only; 3D's projected step is judged in its ring hook).
+    mutable SweptCounters m_swept_front, m_swept_nonfront, m_swept_projected;
+    /// "exact_swept": the search model band_volume_energy_at() built last on this thread, for
+    /// swept_accept(). As 3D's.
+    mutable wmtk::threading::enumerable_thread_specific<std::shared_ptr<const BandVolumeEnergy2D>>
+        m_swept_model;
+    /// "exact_swept": the smoother's search model's derivative evaluations, by kind, per pass
+    /// (BandVolumeEnergy2D::set_swept()). As 3D's.
+    mutable BandVolumeEnergy2D::SweptDerivCounts m_swept_derivs;
     /// area AMIPS^3 of a valid face from its AMIPS and edge lengths, never from a determinant: the
     /// 2D twin of TopoOffsetTetMesh::vol_amips3(). AMIPS2D = tr / det(J), J the map from the unit
     /// equilateral triangle, gives area = (sqrt3/4) det J = (sqrt3/4) tr / AMIPS, so area AMIPS^3
@@ -1076,14 +1172,20 @@ public:
     /// The collapse energy rule's before-half, per thread (collapse_before_vertex()): the sum of
     /// tri_energy() over v1's ring, the faces the collapse reshapes or removes, and the faces of
     /// v2's ring outside it, sorted, which keep their slots, corners and labels and so their
-    /// energy. The 3D twin is CollapseVolume, less its "surface", "exact_swept" and use_rest_pose
-    /// fields (not ported, see tri_energy()).
+    /// energy. The 3D twin is CollapseVolume, less its "surface" and use_rest_pose fields (not
+    /// ported, see tri_energy()).
     struct CollapseVolume
     {
         double before = 0.;
         /// band_term_cancels() over v1's ring: both sums leave the band term out.
         bool band_cancels = false;
         std::vector<size_t> v2_only;
+        /// "exact_swept": v1's boundary edges of B (band_swept_edges()) and the two positions,
+        /// taken on the mesh before; the change is integrated in collapse_edge_after(), for the
+        /// collapses that pass the engine's tests (3D MEASURED integrating it before the inversion
+        /// test that refuses most attempts: the collapse pass 35.0 s against "exact"'s 3.6 s).
+        std::vector<BandVolumeEnergy2D::SweptEdge> swept_edges;
+        Vector2d swept_x1 = Vector2d::Zero(), swept_x2 = Vector2d::Zero();
     };
     mutable wmtk::threading::enumerable_thread_specific<CollapseVolume> m_collapse_volume;
 
@@ -1914,7 +2016,9 @@ public:
             // 24.6 Newton iterations and ~20 line-search trials per iteration, without it 3.9 and
             // 1. E still guards the move: smooth_nonfront_vertex() vetoes on the ring's sum. 3D
             // leaves the term out under "exact" where it cancels over the ring
-            // (band_term_cancels()), which 2D never finds (see there).
+            // (band_term_cancels()), which 2D never finds under "exact" (see there); under
+            // "exact_swept" the term is the search model, null where no boundary edge of B
+            // passes through vid (band_volume_energy_at()), as in 3D.
             if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
         }
         if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);

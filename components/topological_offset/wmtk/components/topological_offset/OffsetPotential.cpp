@@ -1953,6 +1953,7 @@ BandVolumeEnergy2D::BandVolumeEnergy2D(
     const double delta)
     : m_prims(std::move(prims))
     , m_delta(delta)
+    , m_x0(x0)
     , m_cells(std::move(cells))
 {
     for (Cell& c : m_cells) {
@@ -1970,6 +1971,183 @@ void BandVolumeEnergy2D::set_exact_integral(
     m_eb = std::move(eb);
     m_delta = delta;
     m_eb_val_set = m_eb_der_set = false;
+}
+
+double BandVolumeEnergy2D::swept_change(
+    const ExactBandIntegral2D& eb,
+    const double delta,
+    const Eigen::Vector2d& x0,
+    const Eigen::Vector2d& x1,
+    const std::vector<SweptEdge>& edges,
+    ExactBandIntegral2D::Stats* st)
+{
+    // See the declaration. f's pair at x0 is (x0, a) or (a, x0), its normal rot_cw(second -
+    // first) out of B, so B grows where x1 lies on the pair's right: orient2d negative (3D:
+    // sign((x1 - x0) . (A - x0) x (B - x0)) = -orient3d(x0, A, B, x1)).
+    using wmtk::utils::predicates::orient2d;
+    using wmtk::utils::predicates::Orientation;
+    if (x0 == x1) return 0.;
+    double s = 0.;
+    for (const SweptEdge& f : edges) {
+        const Orientation mv = f.x_first ? orient2d(x0, f.a, x1) : orient2d(f.a, x0, x1);
+        if (mv == Orientation::COLLINEAR) continue; // a flat swept triangle
+        const double sign = mv == Orientation::POSITIVE ? -1. : 1.;
+        s += sign * eb.value({{x0, x1, f.a}}, delta, st);
+    }
+    return s / delta;
+}
+
+void BandVolumeEnergy2D::set_swept(
+    std::shared_ptr<const ExactBandIntegral2D> eb,
+    const double delta,
+    std::vector<SweptEdge> edges,
+    SweptDerivCounts* counts)
+{
+    m_eb = std::move(eb);
+    m_delta = delta;
+    m_sw = true;
+    m_sw_edges = std::move(edges);
+    m_sw_counts = counts;
+    m_eb_val_set = m_eb_der_set = false;
+}
+
+bool BandVolumeEnergy2D::swept_value_at(
+    const ExactBandIntegral2D& eb,
+    const double delta,
+    const Eigen::Vector2d& x0,
+    const Eigen::Vector2d& x1,
+    const std::vector<SweptEdge>& edges,
+    double& E) const
+{
+    // See the declaration.
+    const auto same = [](const Eigen::Vector2d& a, const Eigen::Vector2d& b) {
+        return std::memcmp(a.data(), b.data(), 2 * sizeof(double)) == 0;
+    };
+    if (!m_sw || !m_eb_val_set || m_eb.get() != &eb || !(m_delta == delta) ||
+        !same(m_eb_val_x, x1) || !same(m_x0, x0) || edges.size() != m_sw_edges.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < edges.size(); ++i) {
+        if (!same(edges[i].a, m_sw_edges[i].a) || edges[i].x_first != m_sw_edges[i].x_first) {
+            return false;
+        }
+    }
+    E = m_eb_E;
+    return true;
+}
+
+double BandVolumeEnergy2D::sw_eval(
+    const Eigen::Vector2d& x,
+    const int need,
+    Eigen::Vector2d& g,
+    Eigen::Matrix2d& H) const
+{
+    // EXPERIMENTAL_band_volume_rule "exact_swept" (set_swept()), 3D's sw_eval()
+    const auto same = [&](const Eigen::Vector2d& y) {
+        return std::memcmp(x.data(), y.data(), 2 * sizeof(double)) == 0;
+    };
+    if (need == 0) {
+        if (!(m_eb_val_set && same(m_eb_val_x))) {
+            ExactBandIntegral2D::Stats st; // its rule-(a) pieces
+            m_eb_E = swept_change(*m_eb, m_delta, m_x0, x, m_sw_edges, &st);
+            m_eb_val_rule_a = st.rule_a_pieces > 0;
+            m_eb_val_x = x;
+            m_eb_val_set = true;
+        }
+        g.setZero();
+        H.setZero();
+        return m_eb_E;
+    }
+    if (!(m_eb_der_set && same(m_eb_der_x))) {
+        m_eb_g.setZero();
+        m_eb_H.setZero();
+        bool ring = false, rule_a = false, swept = false;
+        // As 3D's: where rule (a) labels a part, the edges' grad at x is the derivative of the
+        // band change judged from x, and summed over the edges it is a gradient only where every
+        // edge's parts take their neighbours' labels: a swept triangle's derivative is its flux
+        // through f and through its side (x0, x), and two neighbouring swept triangles' side
+        // fluxes cancel only where they integrate the same d. So the model takes the derivatives
+        // of its own value there: at x0 (the swept triangles flat, their sides of no length) the
+        // edges' grad and their hess_swept; elsewhere the swept triangles' grad_hess() in x, when
+        // an edge holds a rule-(a) part or a swept triangle a rule-(a) piece (the value at x,
+        // computed there first by the solver's line search).
+        const bool at_x0 = same(m_x0);
+        const bool tris_rule_a = !at_x0 && m_eb_val_set && same(m_eb_val_x) && m_eb_val_rule_a;
+        Eigen::Matrix2d H0 = Eigen::Matrix2d::Zero();
+        // f's pair at a position y, ordered with its normal out of B, and x's slot in it
+        const auto pair_at = [](const SweptEdge& f, const Eigen::Vector2d& y) {
+            return f.x_first ? std::array<Eigen::Vector2d, 2>{{y, f.a}}
+                             : std::array<Eigen::Vector2d, 2>{{f.a, y}};
+        };
+        if (!tris_rule_a) {
+            try {
+                for (const SweptEdge& f : m_sw_edges) {
+                    Eigen::Vector2d gf;
+                    Eigen::Matrix2d hf, h0;
+                    int ra = 0;
+                    m_eb->front_edge_derivs(
+                        pair_at(f, x),
+                        m_delta,
+                        f.x_first ? 0 : 1,
+                        gf,
+                        hf,
+                        &ra,
+                        at_x0 ? &h0 : nullptr);
+                    rule_a = rule_a || ra > 0;
+                    m_eb_g += gf / m_delta;
+                    m_eb_H += hf / m_delta;
+                    if (at_x0) H0 += h0 / m_delta;
+                }
+            } catch (const std::runtime_error&) {
+                ring = true;
+            }
+        }
+        if (!ring && rule_a && at_x0) {
+            m_eb_H = H0;
+            swept = true;
+        } else if (!ring && (tris_rule_a || rule_a)) {
+            // the swept triangles' (swept_change()'s signs and corner order), in their corner x
+            using wmtk::utils::predicates::orient2d;
+            using wmtk::utils::predicates::Orientation;
+            m_eb_g.setZero();
+            m_eb_H.setZero();
+            for (const SweptEdge& f : m_sw_edges) {
+                const Orientation mv = f.x_first ? orient2d(m_x0, f.a, x) : orient2d(f.a, m_x0, x);
+                if (mv == Orientation::COLLINEAR) continue;
+                const double sign = mv == Orientation::POSITIVE ? -1. : 1.;
+                Eigen::Vector2d gc;
+                Eigen::Matrix2d hc;
+                m_eb->grad_hess({{m_x0, x, f.a}}, 1, m_delta, gc, hc);
+                m_eb_g += sign * gc / m_delta;
+                m_eb_H += sign * hc / m_delta;
+            }
+            swept = true;
+        }
+        if (ring) {
+            // the "exact" rule's derivatives (eval()), the edges' having thrown
+            m_eb_g.setZero();
+            m_eb_H.setZero();
+            for (const Cell& c : m_cells) {
+                Eigen::Vector2d gc;
+                Eigen::Matrix2d hc;
+                m_eb->grad_hess({{x, c.q1, c.q2}}, 0, m_delta, gc, hc);
+                m_eb_g += gc / m_delta;
+                m_eb_H += hc / m_delta;
+            }
+        }
+        if (m_sw_counts) {
+            ++m_sw_counts->evals;
+            if (rule_a) ++m_sw_counts->rule_a;
+            if (swept) ++(at_x0 ? m_sw_counts->swept_x0 : m_sw_counts->swept_tris);
+            if (ring) ++m_sw_counts->ring_cells;
+        }
+        m_eb_der_x = x;
+        m_eb_der_set = true;
+    }
+    g = m_eb_g;
+    H = m_eb_H;
+    // the value is the value path's; gradient() and hessian() do not read it
+    return m_eb_val_set && same(m_eb_val_x) ? m_eb_E : std::numeric_limits<double>::quiet_NaN();
 }
 
 void BandVolumeEnergy2D::exact_minima(const Eigen::Vector2d& x) const
@@ -1992,6 +2170,7 @@ double BandVolumeEnergy2D::eval(
     Eigen::Vector2d& g,
     Eigen::Matrix2d& H) const
 {
+    if (m_sw) return sw_eval(x, need, g, H);
     const auto same = [&](const Eigen::Vector2d& y) {
         return std::memcmp(x.data(), y.data(), 2 * sizeof(double)) == 0;
     };

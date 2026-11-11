@@ -1107,9 +1107,8 @@ private:
  * 3D's two speed devices, proved bit-equal to a min_mean_distance() call per cell and evaluation
  * (the two together MEASURED there: smoothing 68 s -> 15 s on the cube, the output
  * bit-identical); 2D keeps the other, the last point's minima, and makes that call otherwise.
- * No 2D measurement asks for the ball yet. "front_flux" and "exact_swept" have no 2D model:
- * under both the 2D energy is "exact"'s (band_cell_term()), and so is this term until the
- * exact_swept step of the 2D port.
+ * No 2D measurement asks for the ball yet. "front_flux" has no 2D model: its term is "exact"'s
+ * here (band_cell_term()). "exact_swept" has 3D's search model (set_swept()).
  */
 class BandVolumeEnergy2D : public polysolve::nonlinear::Problem
 {
@@ -1143,10 +1142,87 @@ public:
     void solution_changed(const TVector& new_x) override {}
     /// EXPERIMENTAL_band_volume_rule "exact": each face's term is J_t / delta (see the class doc).
     void set_exact_integral(std::shared_ptr<const ExactBandIntegral2D> eb, double delta);
+    /// A boundary edge of the band B through the moving vertex x, the 2D twin of a 3D boundary
+    /// face's (a_f, b_f): its other end a, and the pair it makes with x ordered so that the pair's
+    /// normal rot_cw(second - first) points out of B: (x, a) when x_first, (a, x) otherwise
+    /// (TopoOffsetTriMesh::band_swept_edges()). 3D orders a face by its two other corners; an
+    /// edge has one, so the order is this flag.
+    struct SweptEdge
+    {
+        Eigen::Vector2d a;
+        bool x_first = true;
+    };
+    /// "exact_swept": the band term's change for the vertex moving from x0 to x1, 3D's
+    ///     dE* / delta = ( sum over f of sign_f value(conv(x0, x1, a_f), delta) ) / delta,
+    /// f the boundary edges of the band B through the vertex (`edges`), sign_f +1 where B grows:
+    /// -1 where x1 lies on the left of f's pair at x0 (exact orient2d), +1 on its right, a flat
+    /// swept triangle skipped (TopoOffsetTriMesh, EXACT SWEPT CHANGE). value() with `st` when given.
+    /// The one function both the decisions (TopoOffsetTriMesh::band_swept_sum()) and the smoother's
+    /// search model (set_swept()) evaluate. Where 2D differs: no value table and no partitions
+    /// kept (`keep`), the 2D integral having neither (ExactBandIntegral2D's class doc); 3D's are
+    /// speed devices (the table MEASURED there: 58% of the collapses' swept tets repeated within a
+    /// pass).
+    static double swept_change(
+        const ExactBandIntegral2D& eb,
+        double delta,
+        const Eigen::Vector2d& x0,
+        const Eigen::Vector2d& x1,
+        const std::vector<SweptEdge>& edges,
+        ExactBandIntegral2D::Stats* st = nullptr);
+    /// set_swept()'s counts, 3D's SweptDerivCounts: the search model's derivative evaluations, of
+    /// them those with an edge part labelled by rule (a), those taken from the swept triangles
+    /// (grad_hess(), at x != x0) and those whose Hessian is the edges' hess_swept (at x0), and
+    /// those taken from the ring's band faces (front_edge_derivs() threw).
+    struct SweptDerivCounts
+    {
+        std::atomic<size_t> evals{0}, rule_a{0}, swept_tris{0}, swept_x0{0}, ring_cells{0};
+    };
+    /**
+     * @brief EXPERIMENTAL_band_volume_rule "exact_swept": the smoother's search model is the
+     * function the move is judged on (TopoOffsetTriMesh::swept_accept()), 3D's
+     * BandVolumeEnergy3D::set_swept() one dimension down. Its value at x is swept_change(x0, x)
+     * over `edges`, x0 the position at construction: (E(B(x)) - E(B(x0))) / delta, E(B) =
+     * int_B chi (d - delta) dA, exactly where value() integrates every piece exactly. Its gradient
+     * and Hessian are E(B)'s at x: the sum over the edges of ExactBandIntegral2D::
+     * front_edge_derivs() / delta. Each edge's normal stays out of B at every x the solver
+     * evaluates, where no ring face is inverted. Defined at x = x0 too.
+     *
+     * Where an edge holds a part labelled by rule (a), or a swept triangle a rule-(a) piece, the
+     * derivatives are those of the judged change itself, as 3D's: at x0 the edges' gradient and
+     * their hess_swept, elsewhere the sum over the swept triangles of sign_f
+     * ExactBandIntegral2D::grad_hess(conv(x0, x, a_f), 1) / delta. Where front_edge_derivs()
+     * throws (its parts do not tile the edge), the "exact" rule's: the sum over the ring's band
+     * faces of grad_hess(t, 0) / delta. Every derivative evaluation is counted into `counts`. The
+     * last point's value, and its gradient and Hessian, are kept. See 3D's set_swept() for the
+     * measurements behind each branch (the edges' derivatives at x with rule (a) are no gradient:
+     * 3D's summed Hessian 1e-2 or more asymmetric in 449 of 3416 solves).
+     *
+     * Where 2D differs: the swept triangles' derivatives partition them again (3D reads the
+     * partitions its value made, a speed device; the 2D integral keeps none).
+     */
+    void set_swept(
+        std::shared_ptr<const ExactBandIntegral2D> eb,
+        double delta,
+        std::vector<SweptEdge> edges,
+        SweptDerivCounts* counts);
+    /// "exact_swept": the search model's last value, when it was taken for the move x0 -> x1 over
+    /// `edges` -- the model's integral, delta, x0 and edges, and its last value's x, equal to them
+    /// bit for bit -- so swept_change() of those inputs (TopoOffsetTriMesh::swept_accept()); false
+    /// otherwise. As 3D's.
+    bool swept_value_at(
+        const ExactBandIntegral2D& eb,
+        double delta,
+        const Eigen::Vector2d& x0,
+        const Eigen::Vector2d& x1,
+        const std::vector<SweptEdge>& edges,
+        double& E) const;
 
 private:
     /// need: 0 value, 1 + gradient, 2 + Hessian.
     double eval(const Eigen::Vector2d& x, int need, Eigen::Vector2d& g, Eigen::Matrix2d& H) const;
+    /// The "exact_swept" model's value / derivatives at x (eval()).
+    double sw_eval(const Eigen::Vector2d& x, int need, Eigen::Vector2d& g, Eigen::Matrix2d& H)
+        const;
     /// m_min_md and m_min_tri at x (see the class doc).
     void exact_minima(const Eigen::Vector2d& x) const;
     std::shared_ptr<const ExactBandIntegral2D> m_prims;
@@ -1165,6 +1241,14 @@ private:
     mutable double m_eb_E = 0.;
     mutable Eigen::Vector2d m_eb_g = Eigen::Vector2d::Zero();
     mutable Eigen::Matrix2d m_eb_H = Eigen::Matrix2d::Zero();
+    /// "exact_swept": a swept triangle from x0 to m_eb_val_x had a piece labelled by rule (a)
+    mutable bool m_eb_val_rule_a = false;
+    /// set_swept(): on, the boundary edges of B through x, and the counts.
+    bool m_sw = false;
+    std::vector<SweptEdge> m_sw_edges;
+    SweptDerivCounts* m_sw_counts = nullptr;
+    /// The moving vertex's position at construction.
+    Eigen::Vector2d m_x0 = Eigen::Vector2d::Zero();
 
     std::vector<Cell> m_cells;
 };

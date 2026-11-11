@@ -7692,6 +7692,71 @@ TEST_CASE("label-cleanup-modes-2d", "[offset][2d]")
     CHECK(mesh->held_topology_signature() == signature0);
 }
 
+TEST_CASE("exact-swept-smoothing-held-on-another-region-2d", "[offset][2d]")
+{
+    // The 2D twin of exact-swept-front-vertex-held-on-another-region, on the constructed band:
+    // p on the boundary between regions A and B (x = 0.25), held, offset to 0.3 (the march traces
+    // to 0.125, half the grid's edge), so the front vertices on that boundary take the engine's
+    // projected step and then the swept test at its position
+    // (swept_accept() with no halving, TopoOffsetTriMesh EXACT SWEPT CHANGE, where 2D differs);
+    // the others the swept test with halvings. Two sweeps of the shared smoother over every
+    // vertex (smooth_vertex()) under "exact_swept": no move raises E, the sum of tri_energy()
+    // with "exact"'s band term (the input a point: every piece exact, so the swept change is E's
+    // band change), and the swept tests ran on front, other and projected-step moves.
+    Parameters param = cleanup_params_2d(0.3);
+    param.band_volume_rule = "exact_swept";
+    auto mesh = point_grid_2d(param, {{5, 4}}, {}, true);
+    size_t held_front = 0;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (mesh->m_vertex_extra[vid].m_is_on_offset && mesh->smoothing_energy_envelope(vid)) {
+            ++held_front;
+        }
+    }
+    REQUIRE(held_front > 0); // the premise: the front crosses the held boundary
+    const auto energy = [&]() {
+        double e = 0., scale = 0.;
+        for (const auto& f : mesh->get_faces()) {
+            const double t = mesh->tri_energy(f.fid(*mesh));
+            e += t;
+            scale += std::abs(t);
+        }
+        return std::pair<double, double>(e, scale);
+    };
+    double worst_rise = 0.;
+    size_t moved = 0, tried = 0;
+    for (int sweep = 0; sweep < 2; ++sweep) {
+        for (const auto& v : mesh->get_vertices()) {
+            const auto [e0, scale] = energy();
+            const Vector2d x0 = mesh->m_vertex_attribute[v.vid(*mesh)].m_posf;
+            ++tried;
+            if (!mesh->smooth_vertex(v)) continue;
+            moved += mesh->m_vertex_attribute[v.vid(*mesh)].m_posf != x0;
+            worst_rise = std::max(worst_rise, (energy().first - e0) / scale);
+        }
+    }
+    const size_t front = mesh->m_swept_front.solves.load();
+    const size_t other = mesh->m_swept_nonfront.solves.load();
+    const size_t projected = mesh->m_swept_projected.solves.load();
+    CHECK(front > 0);
+    CHECK(other > 0);
+    CHECK(projected > 0);
+    CHECK(moved > 0);
+    CHECK(worst_rise <= 1e-13);
+    std::printf(
+        "exact-swept-smoothing-held-on-another-region-2d: %zu held front vertices; %zu of %zu "
+        "smooths moved; swept tests: front %zu, other %zu, projected step %zu (refused %zu); "
+        "largest rise of E %.1e of its scale\n",
+        held_front,
+        moved,
+        tried,
+        front,
+        other,
+        projected,
+        mesh->m_swept_projected.refused.load(),
+        worst_rise);
+}
+
 TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
 {
     // Hidden until the junction is fixed: neither variant converges reliably without it, so it

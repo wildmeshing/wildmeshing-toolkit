@@ -136,6 +136,62 @@ public:
         Eigen::Vector2d& grad,
         Eigen::Matrix2d& hess) const;
 
+    /**
+     * @brief The band integral's dependence through one boundary edge of the band, for the
+     * motion of its corner kv (the other fixed): the 2D twin of ExactBandIntegral::
+     * front_face_derivs() under a CurvedBisectorRuleA, EXPERIMENTAL_band_volume_rule
+     * "exact_swept"'s search model (BandVolumeEnergy2D::set_swept()). f = (f0, f1) ordered so
+     * that its normal n = rot_cw(f1 - f0) / |.| points out of the band, x = f[kv]:
+     *     grad = n int_f chi (d - delta) phi ds,
+     *     hess = n (x) int_f chi phi^2 grad d ds + (int_f chi (d - delta) phi ds / |N|) dN/dx
+     *            - sum over cut points c: n (x) g_c (d - delta)(c) phi(c)^2 / |g_c,f|,
+     *     hess_swept = (n (x) Q + Q (x) n) / 2,
+     *            Q = int_f chi phi^2 grad d ds - sum over c: g_c (d - delta)(c) phi(c)^2 / |g_c,f|,
+     * phi the hat function of x along f, chi the offset side's indicator, N = rot_cw(f1 - f0),
+     * the cut points the ends of f's parts that are not ends of f, each with its part's own
+     * integrand (g_c the normal of the line that cut f there, out of the part, g_c,f its part
+     * along f). As in 3D: summed over the band's boundary edges through x, grad and hess are the
+     * band integral's gradient and Hessian in x (Reynolds' transport theorem, no medial-axis
+     * term, d being Lipschitz); hess_swept is the Hessian at w = 0 of the integral over the swept
+     * triangle conv(x, x + w, f[1 - kv]) signed by w.n, its labels f's; a part of f on the input
+     * takes grad d from the band side (-n) unless it is the offset side of a sided segment.
+     *
+     * f's parts, labelled as value() labels the pieces of a thin swept triangle over f (3D's
+     * label_face()): f cut by the candidates' regions into spans with member sets (inside first
+     * where f lies on a region's line, as 3D's face partition), the members pruned on the span's
+     * ends, then one member, all edges (split by their lines, then by their bisectors), all
+     * vertices (split by their perpendicular bisectors), or rule (a): the span split by the
+     * members' side lines, each part labelled by the member of smallest int_part d_g phi ds (the
+     * first on a tie), a part where the lines disagree taking the side of the member nearest at
+     * its centroid in that limit (below). So summed over the boundary edges, grad at x is the
+     * exact derivative at x of the band change "exact_swept" judges a move from x on, where
+     * value() and these labels cut alike. `rule_a`: the number of parts labelled by rule (a).
+     *
+     * Where 2D differs, and why:
+     *  - a curved bisector never throws: the parts are always labelled by rule (a), 3D's
+     *    behaviour under a CurvedBisectorRuleA, which "exact_swept"'s search model always opens;
+     *    3D's throwing mode serves "front_flux", which has no 2D port. So no CurvedBisectorRuleA:
+     *    the corner whose hat function weighs rule (a)'s integrals is kv;
+     *  - the centroid that decides a part whose members' side lines disagree is the thin swept
+     *    triangle's in the limit, the phi-weighted centroid of the span, where 3D's label_face()
+     *    takes the face part's own area centroid: value() decides by the swept part's centroid,
+     *    which lies over the phi-weighted one;
+     *  - no labelled parts are kept between calls (3D's FaceParts) and there is no front_face():
+     *    the 2D integral keeps no partitions (class doc) and has no front form;
+     *  - a span lying on a bisector line takes its lower member, as value() breaks a tie between
+     *    parallel lines (3D's resolve() keeps both sides of a ring on a bisector plane).
+     * Throws (f in hex floats) if the parts do not tile f, or leave more of f outside every
+     * region, than the tolerances allow (3D's check_face_pieces(), on lengths).
+     */
+    void front_edge_derivs(
+        const std::array<Eigen::Vector2d, 2>& f,
+        double delta,
+        int kv,
+        Eigen::Vector2d& grad,
+        Eigen::Matrix2d& hess,
+        int* rule_a = nullptr,
+        Eigen::Matrix2d* hess_swept = nullptr) const;
+
     /// d(x), the distance to the nearest segment or point.
     double distance(const Eigen::Vector2d& x) const { return upper_bound(&x, 1); }
     /// U(t): min over the primitives of the max of their distance over t's corners, >= d on t.
@@ -190,6 +246,10 @@ private:
     struct Work;
     /// The candidates in t's frame and the convex pieces of t with member sets; false: t is flat.
     bool partition(const std::array<Eigen::Vector2d, 3>& t, Work& w, Stats* stats) const;
+    struct EdgeWork;
+    /// front_edge_derivs()'s labelled parts of f, rule (a)'s integrals weighted by the hat
+    /// function of corner kv (3D's tri_partition() and label_face()); nothing for a point.
+    void label_edge(const std::array<Eigen::Vector2d, 2>& f, int kv, EdgeWork& w) const;
     /// value(), and with kv >= 0 value_grad_hess() (want_value false: grad_hess(), J not summed).
     double evaluate(
         const std::array<Eigen::Vector2d, 3>& t,

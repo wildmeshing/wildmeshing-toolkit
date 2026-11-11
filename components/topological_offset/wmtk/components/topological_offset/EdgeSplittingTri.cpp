@@ -58,11 +58,10 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
             c.parent_flatness = std::min(c.parent_flatness, face_flatness(fid));
         }
         // EXPERIMENTAL_split_energy_gate: the parents' sum of tri_energy(), which
-        // split_edge_after() compares the children's against. "exact_swept": 3D leaves the band
-        // term out of both sums, a split leaving B and its band term unchanged; step 4 of the 2D
-        // port. As in 3D.
+        // split_edge_after() compares the children's against. "exact_swept": the AMIPS terms
+        // alone, a split leaving B and its band term unchanged (EXACT SWEPT CHANGE). As in 3D.
         if (m_offset_params.split_energy_gate) {
-            m_split_energy_before.local() = tri_energy_sum(parents);
+            m_split_energy_before.local() = tri_energy_sum(parents, !swept_rule());
         }
         return TriOptimizerMesh::split_edge_before(t);
     }
@@ -205,10 +204,12 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
         // a band filled with a tag used elsewhere would relabel that other region as offset.
         // EXPERIMENTAL_split_energy_gate: the children's tri_energy() -- every face at the new
         // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
-        // engine rolls a refused split back. As in 3D.
+        // engine rolls a refused split back. "exact_swept": the AMIPS terms alone, as before the
+        // split. As in 3D.
         if (m_offset_params.split_energy_gate &&
-            !(tri_energy_sum(get_one_ring_fids_for_vertex(t.switch_vertex(*this).vid(*this))) <
-              m_split_energy_before.local())) {
+            !(tri_energy_sum(
+                  get_one_ring_fids_for_vertex(t.switch_vertex(*this).vid(*this)),
+                  !swept_rule()) < m_split_energy_before.local())) {
             ++iter_cnt_split_energy_reject;
             return false;
         }

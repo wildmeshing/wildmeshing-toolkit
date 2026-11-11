@@ -38,13 +38,15 @@ Vec2 rot_cw(const Vec2& a)
     return Vec2(a.y(), -a.x());
 }
 
-/// The partition's tolerance budget and rounding scale (3D's Ctx, without its timers and the
-/// face partition's fields).
+/// The partition's tolerance budget and rounding scale (3D's Ctx, without its timers), and an edge
+/// partition's direction and cap (3D's face partition's ring_n and ring_cap; seg_tol()).
 struct Ctx
 {
     double* tol_cut = nullptr;
     double* tol_any = nullptr;
     double scale = 0.;
+    const Eigen::Vector2d* seg_t = nullptr;
+    double seg_cap = 0.;
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -361,14 +363,14 @@ void split(
     }
 }
 
-/// _prune_members: drop g if its lower bound on the piece is >= another member's upper bound (it
-/// cannot attain the minimum there); changes no value.
+/// _prune_points: drop g if its lower bound over the points Vq is >= another member's upper bound
+/// (it cannot attain the minimum on their hull); changes no value.
 std::vector<int>
-prune_members(const Poly& Q, const std::vector<int>& S, const std::vector<Loc>& loc)
+prune_points(const std::vector<Vec2>& Vq, const std::vector<int>& S, const std::vector<Loc>& loc)
 {
     std::vector<std::pair<double, double>> b;
     b.reserve(S.size());
-    for (const int k : S) b.push_back(bounds(loc[size_t(k)], Q.V));
+    for (const int k : S) b.push_back(bounds(loc[size_t(k)], Vq));
     double ubmin = std::numeric_limits<double>::infinity();
     for (const auto& lu : b) ubmin = std::min(ubmin, lu.second);
     std::vector<int> kept;
@@ -376,6 +378,13 @@ prune_members(const Poly& Q, const std::vector<int>& S, const std::vector<Loc>& 
         if (b[i].first < ubmin || b[i].second == ubmin) kept.push_back(S[i]);
     }
     return kept;
+}
+
+/// _prune_members: prune_points() over the piece's vertices.
+std::vector<int>
+prune_members(const Poly& Q, const std::vector<int>& S, const std::vector<Loc>& loc)
+{
+    return prune_points(Q.V, S, loc);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -814,6 +823,372 @@ double cut_value(const Vec2& y, const Elem& e, const double l0, const Vec2& g0)
     const double l = l0 + g0.dot(y);
     const double phi = e.kind == 0 ? e.dir.dot(y) - e.c : (y - e.p).norm();
     return l * l * phi;
+}
+
+// ------------------------------------------------------------------------------------------------
+// An edge's partition (3D's face partition one dimension down: ring_tol(), pclip(), pclassify(),
+// psplit() and label_face()'s helpers), for front_edge_derivs(). A part of f is a Span: an
+// interval of f, and per end the unit normal of the line that cut f there, out of the part (zero
+// at an end of f). 3D's rings keep no normals and find a cut edge's plane among the partition's
+// recorded planes (Ctx::planes); a span's ends are made by its own clips, which name the line.
+// ------------------------------------------------------------------------------------------------
+
+struct Span
+{
+    std::array<Vec2, 2> y; ///< the ends, in f's direction
+    std::array<Vec2, 2> g{{Vec2::Zero(), Vec2::Zero()}}; ///< per end its cut line's normal
+    double max_abs() const { return std::max(maxabs(y[0]), maxabs(y[1])); }
+};
+
+/// ring_tol(): what a decision of tolerance tol against the line of unit normal g adds to an edge
+/// partition's budget: tol / |g.t|, t f's unit direction (Ctx::seg_t) -- the strip |g.x - h| <= tol
+/// meets f's line in an interval 2 tol / |g.t| long -- at most Ctx::seg_cap and never below tol;
+/// tol itself outside an edge partition.
+double seg_tol(const Ctx& cx, const Vec2& g, const double tol)
+{
+    if (!cx.seg_t) return tol;
+    return std::max(tol, std::min(tol / std::abs(g.dot(*cx.seg_t)), cx.seg_cap));
+}
+
+/// pclip(): S cut by {g.x <= h}, |g| = 1: Same (S inside up to tol, `out` untouched), None
+/// (nothing inside, or a part no longer than tol: clean_ring()'s), or New (in `out`, the cut
+/// end's normal g), the crossing computed from the inside end.
+Cut sclip(const Span& S, const Vec2& g, const double h, Span& out, const Ctx& cx)
+{
+    const double tol = 16 * EPS * (std::abs(h) + std::max(S.max_abs(), cx.scale));
+    const double budget = seg_tol(cx, g, tol);
+    if (cx.tol_any) *cx.tol_any += budget;
+    const double s[2] = {S.y[0].dot(g) - h, S.y[1].dot(g) - h};
+    if (std::max(s[0], s[1]) <= tol) return Cut::Same;
+    if (std::min(s[0], s[1]) >= -tol) return Cut::None;
+    const int a = s[0] < 0. ? 0 : 1, b = 1 - a;
+    const Vec2 yc = S.y[size_t(a)] + (s[a] / (s[a] - s[b])) * (S.y[size_t(b)] - S.y[size_t(a)]);
+    if (cx.tol_cut) *cx.tol_cut += budget;
+    if (maxabs(yc - S.y[size_t(a)]) <= tol) return Cut::None;
+    out = S;
+    out.y[size_t(b)] = yc;
+    out.g[size_t(b)] = g;
+    return Cut::New;
+}
+
+/// Whether S lies on the line g.x = h, up to sclip()'s tol: inside both of its half-planes.
+bool on_line(const Span& S, const Vec2& g, const double h, const Ctx& cx)
+{
+    const double tol = 16 * EPS * (std::abs(h) + std::max(S.max_abs(), cx.scale));
+    return std::abs(S.y[0].dot(g) - h) <= tol && std::abs(S.y[1].dot(g) - h) <= tol;
+}
+
+/// pclassify(): as classify(), the inside tested first (a span on a region's line is inside it).
+Side sclassify(const Span& S, const std::pair<Vec2, double>* H, const int nh, const Ctx& cx)
+{
+    const double ma = std::max(S.max_abs(), cx.scale);
+    bool s_in = true;
+    for (int i = 0; i < nh; ++i) {
+        const Vec2& g = H[i].first;
+        const double h = H[i].second;
+        const double s0 = S.y[0].dot(g) - h, s1 = S.y[1].dot(g) - h;
+        const double tol = 16 * EPS * (std::abs(h) + ma);
+        if (cx.tol_any) *cx.tol_any += seg_tol(cx, g, tol);
+        if (std::max(s0, s1) <= tol) continue;
+        if (std::min(s0, s1) >= -tol) return Side::Out;
+        s_in = false;
+    }
+    return s_in ? Side::In : Side::Split;
+}
+
+/// psplit(): the part of S inside all of H (R; false if none) and the parts outside.
+bool ssplit(
+    const Span& S,
+    const std::pair<Vec2, double>* H,
+    const int nh,
+    Span& R,
+    std::vector<Span>& outside,
+    const Ctx& cx)
+{
+    R = S;
+    Span tmp;
+    for (int i = 0; i < nh; ++i) {
+        const Vec2& g = H[i].first;
+        const double h = H[i].second;
+        const double tol = 16 * EPS * (std::abs(h) + std::max(R.max_abs(), cx.scale));
+        if (std::max(R.y[0].dot(g) - h, R.y[1].dot(g) - h) <= tol) continue; // inside, on it too
+        const Cut c = sclip(R, -g, -h, tmp, cx);
+        if (c == Cut::Same) outside.push_back(R);
+        if (c == Cut::New) outside.push_back(tmp);
+        const Cut k = sclip(R, g, h, tmp, cx);
+        if (k == Cut::None) return false;
+        if (k == Cut::New) R = tmp;
+    }
+    return true;
+}
+
+/// A labelled part of f: its span and its integrand d, an Elem without its polygon (kind 0 the
+/// affine W.x - c of an edge member on one side of its line, kind 2 |x - p| of a vertex member);
+/// `far`: an edge member's part kept as the offset side of its line (3D's Field::far).
+struct SpanPart
+{
+    Span S;
+    Elem e;
+    bool far = false;
+};
+
+/// labeled(): the parts of R on which g's distance is one smooth function, on the offset side. An
+/// edge member is split by its line into its two affine sides, of which only the offset side is
+/// kept when it has a side line (sp), both otherwise; a span lying on the line (inside both clips
+/// up to tol) is one part, not two (3D MEASURED on its rings: counted twice, a front face on the
+/// input doubled int (d - delta) phi). A vertex part is clipped by its side line.
+void labeled_span(
+    const Span& R,
+    const Loc& g,
+    const SidePlane& sp,
+    const int sigma,
+    const Ctx& cx,
+    std::vector<SpanPart>& out)
+{
+    const bool side = sigma != 0 && sp.has;
+    Span C;
+    if (g.kind == 1) {
+        const Vec2& n = g.dir;
+        const double hn = n.dot(g.p);
+        for (const double s : {1., -1.}) { // keep s n.(x - a0) >= 0
+            if (side && !(double(sigma) * s * n.dot(sp.N) > 0.)) continue; // the far side
+            const Cut c = sclip(R, -s * n, -s * hn, C, cx);
+            if (c == Cut::None) continue;
+            SpanPart p;
+            p.S = c == Cut::Same ? R : C;
+            p.e.kind = 0;
+            p.e.dir = s * n;
+            p.e.c = s * hn;
+            p.far = side;
+            out.push_back(std::move(p));
+            if (c == Cut::Same) break;
+        }
+        return;
+    }
+    SpanPart p;
+    p.e.kind = 2;
+    p.e.p = g.p;
+    if (!side) {
+        p.S = R;
+        out.push_back(std::move(p));
+        return;
+    }
+    const Cut c = sclip(R, -double(sigma) * sp.N, -double(sigma) * sp.N.dot(sp.ql), C, cx);
+    if (c == Cut::None) return;
+    p.S = c == Cut::Same ? R : C;
+    out.push_back(std::move(p));
+}
+
+/// edges_min_pieces() on a span: split by the edges' lines (each |.| then affine; a span on a
+/// line is one sign cell, as labeled_span() keeps it), then by the bisectors of the affine
+/// distances; `piece(R, W, c, i, sg)` per sub-span. A span on the bisector of two members goes to
+/// the lower one, parallel_edge_loses()'s tie.
+template <typename F>
+void edges_min_spans(const Span& Q, const std::vector<const Loc*>& edges, const Ctx& cx, F&& piece)
+{
+    struct Cell
+    {
+        Span C;
+        std::vector<double> sg;
+    };
+    std::vector<Cell> cells(1);
+    cells[0].C = Q;
+    Span tmp;
+    for (const Loc* f : edges) {
+        const Vec2& n = f->dir;
+        const Vec2& a0 = f->p;
+        std::vector<Cell> next;
+        for (const Cell& cl : cells) {
+            for (const double s : {1., -1.}) { // keep s n.(x - a0) >= 0
+                const Cut c = sclip(cl.C, -s * n, -s * n.dot(a0), tmp, cx);
+                if (c == Cut::None) continue;
+                Cell nc;
+                nc.C = c == Cut::Same ? cl.C : tmp;
+                nc.sg = cl.sg;
+                nc.sg.push_back(s);
+                next.push_back(std::move(nc));
+                if (c == Cut::Same) break;
+            }
+        }
+        cells = std::move(next);
+    }
+    const size_t nf = edges.size();
+    std::vector<Vec2> W(nf);
+    std::vector<double> cc(nf);
+    Span R;
+    for (const Cell& cl : cells) {
+        for (size_t i = 0; i < nf; ++i) { // d_i = W_i . x - c_i
+            W[i] = cl.sg[i] * edges[i]->dir;
+            cc[i] = cl.sg[i] * edges[i]->dir.dot(edges[i]->p);
+        }
+        for (size_t i = 0; i < nf; ++i) {
+            R = cl.C;
+            bool alive = true;
+            for (size_t j = 0; j < nf && alive; ++j) {
+                if (j == i) continue;
+                const Vec2 w = W[i] - W[j];
+                const double rhs = cc[i] - cc[j];
+                const double nw = w.norm();
+                if (nw <= 1e-14) { // parallel lines: the nearer wins (the lower on a tie)
+                    if (parallel_edge_loses(rhs, cc[i], cc[j], i, j, cx)) alive = false;
+                    continue;
+                }
+                const Cut c = sclip(R, w / nw, rhs / nw, tmp, cx);
+                if (c == Cut::None) {
+                    alive = false;
+                } else if (c == Cut::New) {
+                    R = tmp;
+                } else if (j < i && on_line(R, w / nw, rhs / nw, cx)) {
+                    alive = false;
+                }
+            }
+            if (alive) piece(R, W[i], cc[i], int(i), cl.sg[i]);
+        }
+    }
+}
+
+/// vertices_min_pieces() on a span: split by the perpendicular bisectors of the points; `piece(R,
+/// v, i)` per sub-span with its nearest vertex v. A span on a bisector goes to the lower vertex.
+template <typename F>
+void vertices_min_spans(
+    const Span& Q,
+    const std::vector<const Loc*>& verts,
+    const Ctx& cx,
+    F&& piece)
+{
+    Span R, tmp;
+    for (size_t i = 0; i < verts.size(); ++i) {
+        const Vec2& vi = verts[i]->p;
+        R = Q;
+        bool alive = true;
+        for (size_t j = 0; j < verts.size() && alive; ++j) {
+            if (j == i) continue;
+            const Vec2& vj = verts[j]->p;
+            const Vec2 w = 2. * (vj - vi);
+            const double nw = w.norm();
+            const double rhs = (vj.dot(vj) - vi.dot(vi)) / nw;
+            const Cut c = sclip(R, w / nw, rhs, tmp, cx);
+            if (c == Cut::None) {
+                alive = false;
+            } else if (c == Cut::New) {
+                R = tmp;
+            } else if (j < i && on_line(R, w / nw, rhs, cx)) {
+                alive = false;
+            }
+        }
+        if (alive) piece(R, vi, int(i));
+    }
+}
+
+/// side_split() on a span: parts with, per member, whether the part is on that member's side
+/// line's offset side; the offset-side part of a cut first.
+struct SpanSidePart
+{
+    Span R;
+    std::vector<char> on;
+};
+void span_side_split(
+    const Span& Q,
+    const std::vector<SidePlane>& planes,
+    const int sigma,
+    std::vector<SpanSidePart>& parts,
+    const Ctx& cx)
+{
+    parts.assign(1, SpanSidePart());
+    parts[0].R = Q;
+    std::vector<SpanSidePart> next;
+    Span in, out;
+    for (const SidePlane& sp : planes) {
+        next.clear();
+        for (SpanSidePart& c : parts) {
+            const Cut k =
+                sp.has ? sclip(c.R, -double(sigma) * sp.N, -double(sigma) * sp.N.dot(sp.ql), in, cx)
+                       : Cut::Same; // side_clip(): every point counts
+            if (k == Cut::Same || k == Cut::None) {
+                c.on.push_back(k == Cut::Same);
+                next.push_back(std::move(c));
+                continue;
+            }
+            SpanSidePart a;
+            a.R = in;
+            a.on = c.on;
+            a.on.push_back(1);
+            const Cut ko =
+                sclip(c.R, double(sigma) * sp.N, double(sigma) * sp.N.dot(sp.ql), out, cx);
+            next.push_back(std::move(a));
+            if (ko == Cut::None) continue;
+            SpanSidePart b;
+            b.R = ko == Cut::Same ? c.R : out;
+            b.on = std::move(c.on);
+            b.on.push_back(0);
+            next.push_back(std::move(b));
+        }
+        std::swap(parts, next);
+    }
+}
+
+/// int over the span R of d_g lam ds, lam = l0 + g0.x: rule (a)'s integral over the thin swept
+/// triangle's part above R, in the limit and up to its height (3D's label_face() int_d_phi). An
+/// edge member over its two affine sides.
+double span_int_d_lam(const Span& R, const Loc& g, const double l0, const Vec2& g0, const Ctx& cx)
+{
+    Elem e;
+    double P1 = 0.;
+    Vec2 P2;
+    if (!(maxabs(R.y[1] - R.y[0]) > 0.)) return 0.;
+    if (g.kind == 2) {
+        e.kind = 2;
+        e.p = g.p;
+        moments(R.y[0], R.y[1], e, l0, g0, P1, P2);
+        return P1;
+    }
+    double s = 0.;
+    Span C;
+    for (const double sg : {1., -1.}) {
+        const Cut c = sclip(R, -sg * g.dir, -sg * g.dir.dot(g.p), C, cx);
+        if (c == Cut::None) continue;
+        const Span& P = c == Cut::Same ? R : C;
+        e.kind = 0;
+        e.dir = sg * g.dir;
+        e.c = sg * g.dir.dot(g.p);
+        moments(P.y[0], P.y[1], e, l0, g0, P1, P2);
+        s += P1;
+        if (c == Cut::Same) break;
+    }
+    return s;
+}
+
+/// nearest_member() for a rule-(a) part over the span R whose members' side lines disagree: the
+/// member nearest at the centroid of the thin swept triangle's part above R, in the limit -- R's
+/// points weighted by the part's height, the hat function lam = l0 + g0.x of the moving corner.
+size_t nearest_member_span(
+    const Span& R,
+    const std::vector<const Loc*>& members,
+    const double l0,
+    const Vec2& g0)
+{
+    const double l1 = l0 + g0.dot(R.y[0]), l2 = l0 + g0.dot(R.y[1]);
+    const double tau = l1 + l2 > 0. ? (l1 + 2. * l2) / (3. * (l1 + l2)) : 0.5;
+    const Vec2 c = R.y[0] + tau * (R.y[1] - R.y[0]);
+    size_t best = 0;
+    double dmin = std::numeric_limits<double>::infinity();
+    for (size_t m = 0; m < members.size(); ++m) {
+        const double dm = d_feat(*members[m], c);
+        if (dm < dmin) dmin = dm, best = m;
+    }
+    return best;
+}
+
+/// f's corners in hex floats, bit exact, for the error messages (3D's face_string()).
+std::string edge_string(const std::array<Vec2, 2>& f)
+{
+    std::string s = "f =";
+    char buf[96];
+    for (const Vec2& p : f) {
+        std::snprintf(buf, sizeof(buf), " (%a, %a)", p[0], p[1]);
+        s += buf;
+    }
+    return s;
 }
 
 } // namespace
@@ -1491,6 +1866,328 @@ void ExactBandIntegral2D::grad_hess(
     Eigen::Matrix2d& hess) const
 {
     evaluate(t, delta, kv, &grad, &hess, false, nullptr);
+}
+
+struct ExactBandIntegral2D::EdgeWork
+{
+    Vec2 c0; ///< the local origin: f's midpoint
+    std::array<Vec2, 2> F; ///< f in local coordinates
+    std::vector<Loc> loc; ///< the candidate features, local
+    std::vector<int> cand; ///< their feature indices
+    std::vector<std::pair<Vec2, double>> hs; ///< their half-planes, local
+    double U = 0.;
+    double tol_cut = 0., tol_any = 0.; ///< the partition's tolerance budget (Ctx)
+    double scale = 0.; ///< the rounding scale (Ctx::scale)
+    Vec2 n = Vec2::Zero(); ///< f's unit normal rot_cw(F[1] - F[0]) / |.|; zero for a point
+    std::vector<SpanPart> parts; ///< the labelled parts on the offset side
+    int rule_a = 0; ///< parts labelled by rule (a)
+};
+
+void ExactBandIntegral2D::label_edge(
+    const std::array<Eigen::Vector2d, 2>& f,
+    const int kv,
+    EdgeWork& w) const
+{
+    w.parts.clear();
+    w.rule_a = 0;
+    w.n.setZero();
+    // step 0: candidates in local coordinates, origin c0 = f's midpoint (partition()'s; 3D's
+    // tri_partition() takes the face's centroid)
+    w.c0 = 0.5 * (f[0] + f[1]);
+    const Vec2& c0 = w.c0;
+    w.F = {{Vec2(f[0] - c0), Vec2(f[1] - c0)}};
+    const double L = (f[1] - f[0]).norm();
+    if (!(L > 0.)) return; // a point: no length
+    const Vec2 flo = f[0].cwiseMin(f[1]), fhi = f[0].cwiseMax(f[1]);
+    w.U = upper_bound(f.data(), 2);
+    const double r = w.U * (1 + 1e-12);
+    w.cand.clear();
+    w.loc.clear();
+    w.hs.clear();
+    w.scale = 0.;
+    for (size_t gi = 0; gi < m_feat.size(); ++gi) {
+        const Feature& ft = m_feat[gi];
+        if (!(box_dist(ft.lo, ft.hi, flo, fhi) <= r)) continue;
+        w.cand.push_back(int(gi));
+        Loc l;
+        l.kind = ft.kind;
+        l.p = ft.p - c0;
+        l.dir = ft.dir;
+        l.h_begin = int(w.hs.size());
+        for (int i = ft.h_begin; i < ft.h_end; ++i) {
+            const auto& [g, q] = m_hs[size_t(i)];
+            w.hs.push_back({g, g.dot(q - c0)});
+            w.scale = std::max(w.scale, maxabs(q - c0));
+        }
+        l.h_end = int(w.hs.size());
+        w.loc.push_back(l);
+    }
+    for (const Vec2& p : f) w.scale = std::max(w.scale, maxabs(p - c0));
+    const Vec2 t = (w.F[1] - w.F[0]) / L;
+    w.n = rot_cw(t);
+    // The cap of one decision's share of the budget (seg_tol()): L / 2, so that a capped decision
+    // is charged f's length in the checks below (3D: A / (2 D), the face's area there).
+    Ctx cx;
+    w.tol_cut = w.tol_any = 0.;
+    cx.tol_cut = &w.tol_cut;
+    cx.tol_any = &w.tol_any;
+    cx.scale = w.scale;
+    cx.seg_t = &t;
+    cx.seg_cap = 0.5 * L;
+
+    // step 1: the spans of f with constant member sets (tri_partition()'s)
+    std::vector<std::pair<Span, std::vector<int>>> pieces(1), next;
+    pieces[0].first.y = w.F;
+    std::vector<Span> outs;
+    for (int k = 0; k < int(w.loc.size()); ++k) {
+        const std::pair<Vec2, double>* H = w.hs.data() + w.loc[size_t(k)].h_begin;
+        const int nh = w.loc[size_t(k)].h_end - w.loc[size_t(k)].h_begin;
+        next.clear();
+        for (auto& pc : pieces) {
+            const Side st = sclassify(pc.first, H, nh, cx);
+            if (st == Side::In) {
+                pc.second.push_back(k);
+                next.push_back(std::move(pc));
+            } else if (st == Side::Out) {
+                next.push_back(std::move(pc));
+            } else {
+                Span in;
+                outs.clear();
+                if (ssplit(pc.first, H, nh, in, outs, cx)) {
+                    std::vector<int> S = pc.second;
+                    S.push_back(k);
+                    next.push_back({in, std::move(S)});
+                }
+                for (const Span& so : outs) next.push_back({so, pc.second});
+            }
+        }
+        std::swap(pieces, next);
+    }
+
+    // 3D's check_face_pieces() on lengths. A cutting clip moves a part's end only within the strip
+    // |g.x - h| <= sqrt(2) tol, a decision taken with a tolerance misplaces at most the strip of
+    // half-width tol, and a strip of half-width s meets f's line in 2 s / |g.t| of it: tol_cut and
+    // tol_any sum tol / |g.t| (seg_tol(), capped). A length rounds by at most 4 eps L.
+    {
+        double len_sum = 0., empty = 0., rho_all = 4. * EPS * L, rho_empty = 0.;
+        for (const auto& [S, mem] : pieces) {
+            const double len = (S.y[1] - S.y[0]).norm();
+            len_sum += len;
+            rho_all += 4. * EPS * L;
+            if (mem.empty()) {
+                empty += len;
+                rho_empty += 4. * EPS * L;
+            }
+        }
+        const double tile_bound = 2. * std::sqrt(2.) * w.tol_cut + rho_all;
+        const double empty_bound = 2. * (w.tol_any + std::sqrt(2.) * w.tol_cut) + rho_empty;
+        if (!(empty <= empty_bound)) {
+            log_and_throw_error(
+                "ExactBandIntegral2D::front_edge_derivs: parts outside every local region, "
+                "length {} of {} (bound {}) | {}",
+                empty,
+                L,
+                empty_bound,
+                edge_string(f));
+        }
+        if (!(std::abs(len_sum - L) <= tile_bound)) {
+            log_and_throw_error(
+                "ExactBandIntegral2D::front_edge_derivs: parts do not tile f: {} vs {} (bound {}) "
+                "| {}",
+                len_sum,
+                L,
+                tile_bound,
+                edge_string(f));
+        }
+    }
+
+    // The labelled parts (label_face(); value()'s classification of a piece's members, on the
+    // span). The sub-spans' clips take no tolerance budget, as 3D's.
+    Ctx lc;
+    lc.scale = w.scale;
+    const std::vector<Loc>& loc = w.loc;
+    const Vec2& xk = w.F[size_t(kv)];
+    const Vec2& bk = w.F[size_t(1 - kv)];
+    const Vec2 g0 = (xk - bk) / (xk - bk).squaredNorm(); // lam = l0 + g0.y: 1 at x, 0 at the end
+    const double l0 = -g0.dot(bk);
+    const bool side = m_sigma != 0;
+    const auto side_plane = [&](const int k) {
+        SidePlane sp;
+        if (!side) return sp;
+        const size_t gi = size_t(w.cand[size_t(k)]);
+        sp.has = m_side_has[gi];
+        sp.N = m_side_n[gi];
+        sp.ql = m_side_q[gi] - c0;
+        return sp;
+    };
+    std::vector<const Loc*> members;
+    std::vector<SidePlane> planes;
+    std::vector<SpanSidePart> sparts;
+    for (const auto& [R, S0] : pieces) {
+        if (S0.empty()) continue;
+        const std::vector<int> S = S0.size() > 1 ? prune_points({R.y[0], R.y[1]}, S0, loc) : S0;
+        bool all_edges = true, all_verts = true;
+        members.clear();
+        planes.clear();
+        for (const int k : S) {
+            members.push_back(&loc[size_t(k)]);
+            planes.push_back(side_plane(k));
+            all_edges = all_edges && loc[size_t(k)].kind == 1;
+            all_verts = all_verts && loc[size_t(k)].kind == 2;
+        }
+        if (S.size() == 1) {
+            labeled_span(R, loc[size_t(S[0])], planes[0], m_sigma, lc, w.parts);
+        } else if (all_edges) {
+            edges_min_spans(
+                R,
+                members,
+                lc,
+                [&](const Span& Rs, const Vec2& W, const double c, const int i, const double sg) {
+                    const SidePlane& p = planes[size_t(i)];
+                    const bool sided = side && p.has;
+                    if (sided && double(m_sigma) * sg * members[size_t(i)]->dir.dot(p.N) <= 0.) {
+                        return; // the far side
+                    }
+                    SpanPart sp;
+                    sp.S = Rs;
+                    sp.e.kind = 0;
+                    sp.e.dir = W;
+                    sp.e.c = c;
+                    sp.far = sided;
+                    w.parts.push_back(std::move(sp));
+                });
+        } else if (all_verts) {
+            vertices_min_spans(R, members, lc, [&](const Span& Rs, const Vec2&, const int i) {
+                labeled_span(Rs, *members[size_t(i)], planes[size_t(i)], m_sigma, lc, w.parts);
+            });
+        } else {
+            // rule (a), as value() takes it on the thin swept triangle over R: split by the
+            // members' side lines, each part the member of smallest integral among those putting
+            // it on the offset side (the first on a tie), a part where they disagree the side of
+            // the member nearest at its centroid
+            if (side) {
+                span_side_split(R, planes, m_sigma, sparts, lc);
+            } else {
+                sparts.assign(1, SpanSidePart());
+                sparts[0].R = R;
+                sparts[0].on.assign(S.size(), 1);
+            }
+            for (const SpanSidePart& sp : sparts) {
+                bool all = true, any = false;
+                for (const char o : sp.on) {
+                    all = all && o;
+                    any = any || o;
+                }
+                if (!all && !any) continue;
+                if (!all && !sp.on[nearest_member_span(sp.R, members, l0, g0)]) continue;
+                double best = std::numeric_limits<double>::infinity();
+                int bkk = -1;
+                for (size_t q = 0; q < S.size(); ++q) { // ascending: the lowest on a tie
+                    if (!sp.on[q]) continue;
+                    const double v = span_int_d_lam(sp.R, loc[size_t(S[q])], l0, g0, lc);
+                    if (v < best) best = v, bkk = S[q];
+                }
+                if (bkk < 0) {
+                    log_and_throw_error(
+                        "ExactBandIntegral2D::front_edge_derivs: rule (a) on a curved piece: no "
+                        "member's integral is a number | {}",
+                        edge_string(f));
+                }
+                labeled_span(sp.R, loc[size_t(bkk)], SidePlane(), m_sigma, lc, w.parts);
+                ++w.rule_a;
+            }
+        }
+    }
+}
+
+void ExactBandIntegral2D::front_edge_derivs(
+    const std::array<Eigen::Vector2d, 2>& f,
+    const double delta,
+    const int kv,
+    Eigen::Vector2d& grad,
+    Eigen::Matrix2d& hess,
+    int* rule_a,
+    Eigen::Matrix2d* hess_swept) const
+{
+    // See the declaration; 3D's front_face_derivs() one dimension down.
+    grad.setZero();
+    hess.setZero();
+    if (hess_swept) hess_swept->setZero();
+    EdgeWork w;
+    label_edge(f, kv, w);
+    if (rule_a) *rule_a = w.rule_a;
+    const Vec2& n = w.n;
+    if (n.isZero(0.)) return; // a point: no length, every term 0
+    // lam = l0 + g0.y, the hat function of x = F[kv] along f: 1 there, 0 at the other end b.
+    // N = rot_cw(F1 - F0), |N| = |b - x|, dN/dx = -Rcw for kv = 0, +Rcw for kv = 1 (Rcw v =
+    // rot_cw(v)).
+    const Vec2& x = w.F[size_t(kv)];
+    const Vec2& b = w.F[size_t(1 - kv)];
+    const Vec2 g0 = (x - b) / (x - b).squaredNorm();
+    const double l0 = -g0.dot(b);
+    const double nN = (b - x).norm();
+    Eigen::Matrix2d Rcw;
+    Rcw << 0., 1., -1., 0.;
+    const Eigen::Matrix2d dN = kv == 0 ? Eigen::Matrix2d(-Rcw) : Rcw;
+    const auto lam = [&](const Vec2& y) { return l0 + g0.dot(y); };
+    // a part on the input (d = 0 at both ends): grad d from the band side (declaration)
+    const double tolS = 64 * EPS * (std::max(maxabs(w.F[0]), maxabs(w.F[1])) + maxabs(w.c0));
+    double gi = 0.;
+    Vec2 P2 = Vec2::Zero();
+    Eigen::Matrix2d Hcut = Eigen::Matrix2d::Zero();
+    Vec2 Qcut =
+        Vec2::Zero(); // hess_swept's: - sum g_c lam^2 (d - delta) / |g_c,f| (Hcut = n (x) Qcut)
+    for (const SpanPart& pt : w.parts) {
+        const Vec2& y1 = pt.S.y[0];
+        const Vec2& y2 = pt.S.y[1];
+        const double len = (y2 - y1).norm();
+        if (!(len > 0.)) continue;
+        const Elem& e = pt.e;
+        const double int_lam = 0.5 * len * (lam(y1) + lam(y2));
+        double p1 = 0.;
+        Vec2 p2 = Vec2::Zero();
+        moments(y1, y2, e, l0, g0, p1, p2);
+        gi += p1 - delta * int_lam;
+        if (e.kind == 0) {
+            // Without a side both affine sides are parts, and a part lying on the line takes the
+            // side labeled_span() met first; grad d is then the band side's, -n (n out of the
+            // band). With a side the part IS the offset side, the side the band is on: its own W.
+            const double on =
+                std::max(std::abs(e.dir.dot(y1) - e.c), std::abs(e.dir.dot(y2) - e.c));
+            if (!pt.far && on <= tolS) p2 = -n * (p2.dot(e.dir));
+        }
+        P2 += p2;
+        // The cut terms (value_grad_hess()'s cut points, front_face_derivs()' cut edges): an end
+        // of a part that is not an end of f lies on a line that cut f there, fixed in space, so it
+        // slides along f as x moves, and the part's chi (d - delta) there adds
+        //     - n (x) g_c / |g_c,f| lam^2 (d - delta),
+        // g_c the line's normal out of the part. Where the part across the end has the same
+        // integrand there (d continuous, both on the offset side) the two terms cancel; where it
+        // jumps they leave the jump's: the offset side's clip and the ends of a part labelled by
+        // rule (a). A line parallel to f does not slide along it; a rounding sliver of a part is
+        // skipped (its neighbours' terms pair up across it), as 3D's.
+        double ma = w.scale;
+        ma = std::max(ma, std::max(maxabs(y1), maxabs(y2)));
+        const double tolc = 64 * EPS * ma;
+        if (len <= 1e3 * tolc) continue;
+        for (int k = 0; k < 2; ++k) {
+            const Vec2& gc = pt.S.g[size_t(k)];
+            if (gc.isZero(0.)) continue; // an end of f
+            const Vec2 gp = gc - gc.dot(n) * n;
+            if (gp.norm() <= 1e-12) continue;
+            const Vec2& y = pt.S.y[size_t(k)];
+            const double l = lam(y);
+            const double P3 = cut_value(y, e, l0, g0) - delta * l * l;
+            Hcut -= n * gc.transpose() * (P3 / gp.norm());
+            Qcut -= gc * (P3 / gp.norm());
+        }
+    }
+    grad = gi * n;
+    hess = n * P2.transpose() + (gi / nN) * dN + Hcut;
+    if (hess_swept) {
+        const Vec2 Q = P2 + Qcut;
+        *hess_swept = 0.5 * (n * Q.transpose() + Q * n.transpose());
+    }
 }
 
 } // namespace wmtk::components::topological_offset
