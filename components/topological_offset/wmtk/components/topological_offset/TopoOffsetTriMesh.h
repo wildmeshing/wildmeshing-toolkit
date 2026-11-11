@@ -444,9 +444,8 @@ public:
      * each flip every value derived from labels at the triangle's closure is re-derived (the
      * closed labels, the front class of its edges, the front flags of its corners); after the
      * passes the band-region map. One [label cleanup] line. Called by loop_group() after the
-     * operation passes; a no-op with the key "off". 2D runs "one_sided" only: the other modes
-     * read a triangle's band term b(t), which 2D's tri_energy() does not carry yet, and are
-     * refused (see the definition).
+     * operation passes; a no-op with the key "off". "energy_decrease" reads the "surface" rule's
+     * face term, which 2D has not, and is refused (see the definition).
      */
     void label_cleanup(const std::string& where);
     /**
@@ -578,50 +577,178 @@ public:
     ~TopoOffsetTriMesh() override = default;
 
     /**
-     * @brief THE per-cell energy, read from the mesh as it is -- labels, neighbours and positions,
-     * nothing hypothetical. The 2D twin of TopoOffsetTetMesh::tet_energy().
+     * @brief THE per-face energy E(t), read from the mesh as it is -- the face's corners and its
+     * label, nothing hypothetical. E = the sum of E(t) over the live faces is the one energy of
+     * the 2D loop. The 2D twin of TopoOffsetTetMesh::tet_energy(), term for term:
      *
-     *     E(t) = w A(t) + [t is band] * sum over the live front chords e of t of O(e)
-     *     O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
+     *     tri_energy(t) = cell_energy(oriented_tri_vids(t), get_quality(t),
+     *                                 face_is_offset_band(t))
      *
-     * A(t) is the base's TriOptimizerMesh::get_quality(), the AMIPS2D the engine stores as the
-     * face quality (3D stores AMIPS^3 there, which is why its energy reads AMIPS^3); its
-     * MAX_ENERGY (unscoreable) passes through unchanged, and w is offset_amips_weight
-     * (weighted_amips()). q_i are the N points of e's stencil_order stencil
-     * (for_each_edge_sample()) on the field of e's band face (potential_for_face()), e's ends
-     * sorted so that a chord's term does not depend on which face or which operation reads it. O is
-     * edge_offset_term(), the squared chord measure in units of the tolerance, 1 at the bar. With
-     * no field yet (m_offset_potential null) E = w A.
+     *     cell_energy(vids, A, band) = MAX_ENERGY                          if A >= MAX_ENERGY
+     *                                = (w / s^3) area A^3 + [band] b(vids)  otherwise
      *
-     * An unmeasurable chord makes the face MAX_ENERGY, the engine's own "unscoreable". THE BAND
-     * SIDE CARRIES THE CHORD: only a band face (face_is_offset_band()) adds terms, and a live front
-     * chord has exactly one band side (edge_is_offset_surface_live()), so every front chord is
-     * counted once.
+     * w = offset_amips_weight, s = stop_energy (optimization_stop_metric()), so a face at the stop
+     * energy costs about w area. A is the base's TriOptimizerMesh::get_quality(): the AMIPS the 2D
+     * engine stores as the face quality and compares with stop_energy, the first power (3D's
+     * engine stores AMIPS^3 and compares its cube root); its MAX_ENERGY (unscoreable) is the
+     * face's energy. area A^3 is area_amips3(), from the exact AMIPS and the edge lengths, never
+     * from a determinant. b is band_cell_term(): the band face's part of int_B (d - delta) / delta
+     * dA, B the union of the band faces -- exactly ("exact"), or as an upper bound that no split
+     * raises ("corner_bound"). Both terms are areas, so E converges under refinement. Before the
+     * march, while the repulsion runs (m_repulsion_potential set), a face also carries
+     * repulsion_cell_term(); there is no band then. A face's energy depends on its own three
+     * corners and its label alone: an operation changes the energy of the faces it changes and
+     * of no other.
      *
-     * WHERE IT IS COMPARED: the collapse rule (collapse_before_vertex() / collapse_edge_after(),
-     * early half collapse_quality_allowed()), the swap rule (swap_edge_before() /
-     * swap_edge_after(), early half swap_quality_allowed()), the smoother's projected step and
-     * veto (smoothing_cell_energy()) and the front and interior vetoes. The engine's stored face
-     * quality stays AMIPS2D and every engine diagnostic reads it unchanged.
+     * WHY THE CUBE, AS IN 3D, AND NOT THE STORED QUALITY'S FIRST POWER. At fixed edge lengths
+     * AMIPS2D = tr(J^T J) / det J and area = (sqrt3/4) det J, so area A^p grows like A^(p-1) as a
+     * face flattens: p = 1 (area times the stored quality, the literal reading of 3D's "vol times
+     * the stored AMIPS^3") is constant there and no barrier; p = 3 grows like A^2 (3D's vol A^3
+     * like A^(3/2)). 3D MEASURED the non-barrier (EXPERIMENTAL_amips_pow, 679a0f7ead, removed):
+     * vol AMIPS, which falls as a cell flattens, let the pre-march TetWild pass's first smoothing
+     * pass take max AMIPS from 19.9 to 8e15 on 126196.
+     *
+     * WHERE IT IS COMPARED: always as the SUM of tri_energy() over the faces an operation changes,
+     * before against after, the faces summed in the same order each time:
+     *   - Collapse: before = the sum over v1's ring (collapse_before_vertex()); after = the sum
+     *     over the survivor's ring less v2's old faces outside v1's ring, which keep their corners
+     *     and labels (collapse_edge_after()). Refused unless after <= before (a tie passes, a NaN
+     *     refuses). Not in coarsening.
+     *   - Swap (the 2D flip, (a,b,c) + (a,b,d) -> (a,c,d) + (b,c,d), always interior: the engine
+     *     refuses every tracked edge, so both faces share one label, which the new faces keep):
+     *     before = the sum over the two faces (swap_edge_before()); refused unless the sum over
+     *     the two new faces is STRICTLY below it (swap_edge_after()). Strict, so a swap pass
+     *     terminates.
+     *   - Smoothing (smooth_front_vertex(), smooth_nonfront_vertex(), smooth_repulsion_vertex()):
+     *     the sum over the vertex's ring after the move may not exceed the sum before.
+     *   - Split: no rule, unless EXPERIMENTAL_split_energy_gate (the children's sum strictly below
+     *     the parents').
+     * The engine's own AMIPS rules for collapses and swaps are off: collapse_quality_allowed()
+     * and swap_quality_allowed() admit everything, and this energy decides in their place.
+     *
+     * WHERE 2D DIFFERS FROM 3D'S RULES, and why:
+     *   - No TetWild rules (3D's m_op_rules) and no TetWild pass (3D's m_tetwild_pass): 2D has no
+     *     optimize_construction pass, and its final pass (m_freeze_front) is the frozen-front pass
+     *     3D replaced; its operations read this energy, band term included.
+     *   - The projected step: the 2D engine has no smoothing_ring_energy() hook (3D's, added to
+     *     the 3D engine with 8c2416e117), so a vertex held on a surface takes the engine's
+     *     projected step on the ring's max AMIPS (the engine's own smoothing_cell_energy()), and
+     *     smooth_nonfront_vertex() vetoes it on the ring's sum after the solve: 3D's arrangement
+     *     before that hook (b0d16c4928). MEASURED in 3D then (cube, target 1e-2, bar 1e-4,
+     *     serial, 7 turns): the veto refused 5,270 of 21,687 held moves.
+     *   - The swap pass: the 2D engine's scheduler (TriOptimizerMesh::swap_all_edges()) drops a
+     *     flip whose max AMIPS does not fall by more than 1e-5 before swap_edge_before() is asked
+     *     (is_weight_up_to_date on swap_weight()); 3D's orders by length and drops none. So in a
+     *     pass a flip that lowers E while raising AMIPS never reaches the rule -- the failure 3D
+     *     measured before its case search scored E (tet_energy(), CANDIDATE CELLS). A direct
+     *     swap_edge() reaches it. The fix is in the shared engine, not made here.
+     *   - BAND TERM THAT CANCELS (band_term_cancels()) is false for every operation.
+     *   - use_rest_pose: no 2D plastic face reads a rest here; 2D's plastic medium is
+     *     deform_others', hard-wired off (envelope_setup()).
      */
-    double tri_energy(size_t fid) const;
-    /// tri_energy() with the face's AMIPS given, as the shared smoother has just computed it.
-    double tri_energy(size_t fid, double amips) const;
-    /// The shared smoother's per-face comparison -- its projected step for a vertex held on a
-    /// surface, and its quality veto -- is the per-cell energy, so every smoothing test judges a
-    /// move by the energy the smoother minimises (smoothing_extra_energy()). As in 3D.
-    double smoothing_cell_energy(const size_t fid, const double quality) const override
+    double tri_energy(size_t fid, bool band_term = true) const;
+    /// Whether an operation whose old faces are `fids` leaves the band term unchanged exactly, so
+    /// its sums leave it out; see TopoOffsetTetMesh::tet_energy(), BAND TERM THAT CANCELS. False:
+    ///  - "exact_swept" (3D: true, every rule adding the band term's exact change): step 4 of the
+    ///    2D port, EXACT SWEPT CHANGE. Until then "exact_swept"'s decisions are "exact"'s.
+    ///  - "exact": 3D also needs every old and new cell clear of the input's curved bisectors,
+    ///    which it tests with the integral's front-flux reach (ExactBandIntegral::
+    ///    prepare_front_flux(), front_flux_flag()); ExactBandIntegral2D has none, being
+    ///    "front_flux"'s machinery, which is not ported. Without it every sum carries the band
+    ///    term, which is E itself. 3D MEASURED reading it as 0 (cube, target 1e-2, bar 1e-4,
+    ///    front_flux, 15 turns, serial): 0 of those decisions flipped, 19% of the run saved.
+    ///  - "corner_bound": as in 3D, its per-face bound changes with the faces.
+    bool band_term_cancels(const std::vector<size_t>& /*fids*/) const { return false; }
+    /// area AMIPS^3 of a valid face from its AMIPS and edge lengths, never from a determinant: the
+    /// 2D twin of TopoOffsetTetMesh::vol_amips3(). AMIPS2D = tr / det(J), J the map from the unit
+    /// equilateral triangle, gives area = (sqrt3/4) det J = (sqrt3/4) tr / AMIPS, so area AMIPS^3
+    /// = (sqrt3/4) tr AMIPS^2, tr = tr(J^T J) = (2/3) sum over the three edges of |e|^2 (no
+    /// cancellation). See vol_amips3() for the 3D measurement: a nearly flat tet whose double
+    /// determinant came out 0 was priced at 0 against an exact 1.7e21.
+    double area_amips3(const std::array<size_t, 3>& vids, const double amips) const
     {
-        return tri_energy(fid, quality);
+        double tr = 0.;
+        for (int i = 0; i < 3; ++i) {
+            tr += (m_vertex_attribute[vids[size_t(i)]].m_posf -
+                   m_vertex_attribute[vids[size_t((i + 1) % 3)]].m_posf)
+                      .squaredNorm();
+        }
+        tr *= 2. / 3.;
+        return std::sqrt(3.) / 4. * tr * amips * amips;
     }
-    /// The AMIPS part of the energy: offset_amips_weight times AMIPS, the MAX_ENERGY sentinel
-    /// (unscoreable) passed through unscaled so that it stays the largest value anywhere.
-    double weighted_amips(const double amips) const
+    /**
+     * @brief b(t), one band face's part of int_B (d - delta) / delta dA. The 2D twin of
+     * TopoOffsetTetMesh::band_cell_term(), d the distance to the input's segments and points
+     * (ExactBandIntegral2D's primitives), delta = target_distance:
+     *   - "exact" (and "exact_swept", whose energy it is): J_t / delta, J_t = int_t (d - delta) dA
+     *     in closed form (ExactBandIntegral2D::value()) -- exact up to rounding, an upper bound
+     *     only on the pieces where an edge's and a vertex's regions meet on a parabola (rule (a)).
+     *   - "corner_bound": area times the min over ALL input primitives P of the corner mean of
+     *     (d_P - delta) / delta (band_cell_corner_bound()) -- an upper bound on the exact part (d
+     *     <= d_P, and the convex d_P lies below its linear interpolant) that no split raises; see
+     *     the 3D twin for the measurements behind the corner bound and the min over all.
+     * "front_flux" takes "exact"'s J_t / delta, as in 3D, where the front form changes how the
+     * smoother evaluates the band term, not the term; the front form itself is not ported (open:
+     * whether "front_flux" survives the planned flag clean-up). "surface" puts no term on a face
+     * (3D: cell_energy() skips it, every rule adding the front's face terms beside), and its face
+     * terms are not ported: refused here, at the first band face, rather than read as a corner
+     * bound. The face's own piece's distance and integral (place_piece(); the run's and the whole
+     * complex's with one entry), as 3D's.
+     */
+    double band_cell_term(const std::array<size_t, 3>& vids) const
     {
-        return amips >= MAX_ENERGY ? amips : m_offset_params.offset_amips_weight * amips;
+        const std::string& rule = m_offset_params.band_volume_rule;
+        if (rule == "exact" || rule == "front_flux" || rule == "exact_swept") {
+            const std::array<Vector2d, 3> p = {
+                {m_vertex_attribute[vids[0]].m_posf,
+                 m_vertex_attribute[vids[1]].m_posf,
+                 m_vertex_attribute[vids[2]].m_posf}};
+            const int r = place_piece(vids.data(), 3);
+            const double delta = region_delta(r);
+            return band_exact_for(r)->value(p, delta) / delta;
+        }
+        if (rule != "corner_bound") {
+            log_and_throw_error(
+                "EXPERIMENTAL_band_volume_rule \"{}\" has no 2D port: the 2D energy takes "
+                "\"corner_bound\", \"exact\", \"exact_swept\" or \"front_flux\"",
+                rule);
+        }
+        int64_t best = -1;
+        return band_cell_corner_bound(vids, best);
     }
-    /// Max of tri_energy() over `fids` (0 for none): the number every rule above compares.
-    double max_tri_energy(const std::vector<size_t>& fids) const;
+    /// band_cell_term()'s corner bound, with its minimising primitive in `best`: the face's
+    /// unsigned area (the face is valid wherever this is read) times (md - delta) / delta, md the
+    /// min mean (ExactBandIntegral2D::min_mean_distance(), 3D's min_mean_distance() on its input
+    /// envelope, which 2D does not have) on the face's piece.
+    double band_cell_corner_bound(const std::array<size_t, 3>& vids, int64_t& best) const
+    {
+        const int r = place_piece(vids.data(), 3);
+        const double delta = region_delta(r);
+        std::array<Vector2d, 3> p;
+        for (int j = 0; j < 3; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
+        const Vector2d u = p[1] - p[0], v = p[2] - p[0];
+        const double area = std::abs(u.x() * v.y() - u.y() * v.x()) / 2.;
+        const double md = band_exact_for(r)->min_mean_distance(p.data(), 3, best);
+        return area * ((md - delta) / delta);
+    }
+    /// The AMIPS term's weight, w / s^3 (w = offset_amips_weight, s = stop_energy): the term is
+    /// w area (AMIPS / s)^3, about w area for a face at the stop energy. As in 3D.
+    double band_amips_weight() const
+    {
+        const double s = optimization_stop_metric();
+        return m_offset_params.offset_amips_weight / (s * s * s);
+    }
+    /// One face's energy from its corners, its AMIPS and its band label; see tri_energy().
+    double cell_energy(const std::array<size_t, 3>& vids, const double amips, const bool band) const
+    {
+        if (amips >= MAX_ENERGY) return MAX_ENERGY;
+        double a = band_amips_weight() * area_amips3(vids, amips);
+        if (band) a += band_cell_term(vids);
+        if (m_repulsion_potential) a += repulsion_cell_term(vids);
+        return a;
+    }
+    /// The sum of tri_energy() over `fids`, in their order: what every rule compares.
+    double tri_energy_sum(const std::vector<size_t>& fids, bool band_term = true) const;
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
     /// error in units of the tolerance. The weight of the front smoother's offset terms, and the
     /// scale of edge_offset_term(). As in 3D.
@@ -801,10 +928,15 @@ public:
     /// Operations refused because they would have left an offset-boundary chord over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// The energy rules (see tri_energy()): collapses refused for raising the max energy over
-    /// the survivor's ring, swaps for not strictly lowering it over the faces they make.
-    mutable std::atomic<int> iter_cnt_collapse_energy_reject{0}; // both halves count here
+    /// The energy rules (see tri_energy()): collapses refused for raising E over the faces they
+    /// change, swaps for not strictly lowering it, and under EXPERIMENTAL_split_energy_gate splits
+    /// for not strictly lowering it. 3D's m_volume_reject_collapse / _swap / _split.
+    mutable std::atomic<int> iter_cnt_collapse_energy_reject{0};
     mutable std::atomic<int> iter_cnt_swap_energy_reject{0};
+    mutable std::atomic<int> iter_cnt_split_energy_reject{0};
+    /// EXPERIMENTAL_split_energy_gate: the split in flight's parents' sum of tri_energy(), taken
+    /// in split_edge_before() and compared in split_edge_after(). As in 3D.
+    mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
     /// Splits of an offset-boundary edge: offered, accepted. Real attempts only: a screened
     /// pass's dry runs are not counted.
     std::atomic<int> iter_cnt_split_offset_before{0};
@@ -872,8 +1004,8 @@ public:
      * surface or the bbox, which is the right rule for tetwild and simwild but not here: the
      * offset region is a thin band, and a collapse with only one endpoint on the boundary can
      * still pinch its two sides together and make the region non-manifold. The offset asks
-     * unconditionally. The energy rule's before-half is taken in collapse_before_vertex(), which
-     * the base calls before its scoring loop. As in 3D.
+     * unconditionally. The energy rule's before-half is taken in collapse_before_vertex(). As in
+     * 3D.
      */
     bool collapse_edge_before(const Tuple& t) override;
     /**
@@ -888,6 +1020,19 @@ public:
      * now is.
      */
     bool collapse_edge_after(const Tuple& t) override;
+    /// The collapse energy rule's before-half, per thread (collapse_before_vertex()): the sum of
+    /// tri_energy() over v1's ring, the faces the collapse reshapes or removes, and the faces of
+    /// v2's ring outside it, sorted, which keep their slots, corners and labels and so their
+    /// energy. The 3D twin is CollapseVolume, less its "surface", "exact_swept" and use_rest_pose
+    /// fields (not ported, see tri_energy()).
+    struct CollapseVolume
+    {
+        double before = 0.;
+        /// band_term_cancels() over v1's ring: both sums leave the band term out.
+        bool band_cancels = false;
+        std::vector<size_t> v2_only;
+    };
+    mutable wmtk::threading::enumerable_thread_specific<CollapseVolume> m_collapse_volume;
 
     /**
      * @brief Reject a flip whose new edge already exists, and cache the energy rule's
@@ -899,8 +1044,8 @@ public:
      */
     bool swap_edge_before(const Tuple& t) override;
 
-    /// THE ENERGY RULE for a swap (see tri_energy()): the max of tri_energy() over the two faces
-    /// the flip made must be STRICTLY below the max over the two it replaced
+    /// THE ENERGY RULE for a swap (see tri_energy()): the sum of tri_energy() over the two faces
+    /// the flip made must be STRICTLY below the sum over the two it replaced
     /// (m_swap_energy_before). The 3D twin is swap_after_cells().
     bool swap_edge_after(const Tuple& t) override;
     bool collapse_before_vertex(size_t v1, size_t v2) override;
@@ -1063,7 +1208,7 @@ public:
         optimization::NewtonCounters& newton,
         bool* solved = nullptr);
     /// The front veto (smooth_front_vertex()): moves whose Newton solve succeeded and reached
-    /// the veto, and how many it refused for raising the ring's max tri_energy. Reported and
+    /// the veto, and how many it refused for raising the ring's sum of tri_energy(). Reported and
     /// reset per pass beside the Newton counters.
     std::atomic<size_t> m_front_veto_asked{0}, m_front_veto_fired{0};
     /// The repulsion passes and rounds (repulsion_smoothing()), set only while they run: the
@@ -1252,21 +1397,6 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// The collapse energy rule's before-half: the max of tri_energy() over the one-rings of v1
-    /// and v2, cached by collapse_before_vertex() and compared by collapse_edge_after().
-    mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_energy_before;
-    /// offset_collapse_changed_cells: the collapse in flight's before-energies, for the rule over
-    /// the changed faces only (collapse_edge_after()). ring1_max is the max of tri_energy() over
-    /// v1's ring, every face of which the collapse reshapes or removes; v2_only holds
-    /// (fid, tri_energy) of the faces of v2's ring outside v1's ring, sorted by fid: the collapse
-    /// leaves their slots and vertices alone, so one of them changes energy only through a front
-    /// chord relabelled across it, and an unchanged one is in neither max. As in 3D.
-    struct CollapseCells
-    {
-        double ring1_max = 0.;
-        std::vector<std::pair<size_t, double>> v2_only;
-    };
-    mutable wmtk::threading::enumerable_thread_specific<CollapseCells> m_collapse_cells;
     /**
      * @brief The link of the collapsed edge, captured in collapse_before_vertex(): the only
      * vertices besides v2 whose offset membership a collapse can change.
@@ -1278,12 +1408,15 @@ public:
      * gone by collapse_after_vertex(), which is where the refresh runs. As in 3D.
      */
     mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
-    /// The swap energy rule's before-half: the max of tri_energy() over the two faces the flip
-    /// replaces, cached by swap_edge_before() and compared by swap_edge_after() and, early, by
-    /// swap_quality_allowed(). The 3D twin is SwapEnergyBefore, which also carries the band cells
-    /// beyond a 3-2 flip's faces; a 2D flip replaces two faces with two over the same quad, every
-    /// quad edge keeping its outer face, so there is no "outside" to add.
+    /// The swap energy rule's before-half: the sum of tri_energy() over the two faces the flip
+    /// replaces, cached by swap_edge_before() and compared by swap_edge_after(). A face's energy
+    /// is its own corners' and label's, so no face outside the two changes energy. 3D's
+    /// m_swap_energy_before; 3D's SwapRecord, which the 4-4 / 5-6 case search and the face swap's
+    /// gate read candidate cells' labels from, has no 2D twin: 2D's only swap has no candidate
+    /// cells, its rule reading the two new faces on the mesh.
     mutable wmtk::threading::enumerable_thread_specific<double> m_swap_energy_before;
+    /// band_term_cancels() over the two faces, for both sums (3D's SwapRecord::band_cancels).
+    mutable wmtk::threading::enumerable_thread_specific<bool> m_swap_band_cancels;
     /// The live offset-boundary edges incident to vid, deduplicated. The 3D twin is
     /// offset_surface_faces_live_at().
     std::vector<Tuple> offset_surface_edges_live_at(size_t vid) const;
@@ -1612,24 +1745,25 @@ public:
     bool smooth_front_vertex(const Tuple& t);
     /**
      * @brief A repulsion vertex in the passes and rounds before the march (repulsion_smoothing()):
-     * the shared smoother at the front's options, against the sum of the per-tri energy over its
-     * ring -- w AMIPS, and O(v) once for every ring face that carries it (repulsion_energy(),
-     * repulsion_cell_term()); under offset_front_smooth_veto, the max of the per-tri energy over
-     * its ring may not rise. See FrontSmooth2d.cpp.
+     * the shared smoother at the front's options, against the AMIPS and O(v) once for every ring
+     * face that carries it (repulsion_energy(), repulsion_cell_term()); the sum of tri_energy()
+     * over its ring may not rise. See FrontSmooth2d.cpp. As in 3D.
      */
     bool smooth_repulsion_vertex(const Tuple& t);
     /**
      * @brief Every vertex off the front (and off the plastic medium): the shared smoother with
-     * TriWild's options (TriOptimizerMesh::smooth_after()), except that it minimises the per-cell
-     * energy -- smoothing_extra_energy(), w AMIPS over the ring, the smoother adding no AMIPS
-     * term of its own -- and the veto compares the max of tri_energy() over the ring, under the
-     * same key (offset_smooth_veto) and on the same vertices as the engine's AMIPS veto it
-     * replaces. See Optimize2d.cpp.
+     * TriWild's options (TriOptimizerMesh::smooth_after()), except that it minimises
+     * smoothing_extra_energy() -- the smoother adding no AMIPS term of its own -- and the engine's
+     * AMIPS veto is replaced by the energy's: the sum of tri_energy() over the ring may not rise,
+     * on every vertex, those held on a surface included. See Optimize2d.cpp. As in 3D, except
+     * that a vertex held on a surface is vetoed too (the engine has no ring hook, see
+     * tri_energy()).
      */
     bool smooth_nonfront_vertex(const Tuple& t);
-    /// w AMIPS over vid's one-ring, the per-cell energy's AMIPS part in the smoother's form
-    /// (optimization::AMIPSEnergy2D, the engine's own quality), w = offset_amips_weight. The 3D
-    /// twin is amips3_energy(), AMIPS^3 being the 3D engine's quality.
+    /// w AMIPS over vid's one-ring (optimization::AMIPSEnergy2D, the engine's own quality), w =
+    /// offset_amips_weight: the smoother's AMIPS part. Not yet the energy's AMIPS term, (w / s^3)
+    /// area AMIPS^3 (cell_energy()): the 3D twin, amips3_energy() (CubedAMIPSEnergy3D), is step 3
+    /// of the 2D port (the smoother on the new energy).
     std::shared_ptr<polysolve::nonlinear::Problem> amips_energy(size_t vid) const;
     /// ||grad F|| at front vertex vid along its move direction, F the objective
     /// smooth_front_vertex() minimises. +inf if unmeasurable.
@@ -1661,14 +1795,13 @@ public:
      * tolerance, 1 at the bar. The 2D twin of TopoOffsetTetMesh::face_offset_term().
      *
      * Every reader of the chord measure goes through it: the logs print its root,
-     * energy_criterion()'s exit, refinement and ring measures, the debug frames' front_err_ratio
-     * and front_ring_ratio, and the per-cell energy tri_energy(), which adds it to the band face
-     * of every live front chord. -1 when unmeasurable (a sample whose relative_residual() is not
-     * finite, which the euclidean field never has), +inf when the bar is not positive.
+     * energy_criterion()'s exit, refinement and ring measures, and the debug frames'
+     * front_err_ratio and front_ring_ratio. Not part of the energy (tri_energy()), as 3D's face
+     * measure is not; the front smoother's offset term (StencilEnergy2D) still sums it until step
+     * 3 of the 2D port. -1 when unmeasurable (a sample whose relative_residual() is not finite,
+     * which the euclidean field never has), +inf when the bar is not positive.
      *
-     * The (a, b) form reads the field of the chord (potential_for_edge()); the energy passes its
-     * band face's field and its ends sorted, so a chord's term does not depend on which face or
-     * which operation asks for it.
+     * The (a, b) form reads the field of the chord (potential_for_edge()).
      */
     double edge_offset_term(size_t a, size_t b) const;
     double edge_offset_term(const OffsetPotential2D& pot, const Vector2d& pa, const Vector2d& pb)
@@ -1695,9 +1828,11 @@ public:
         if (vertex_carries_offset_term(vid)) return m_offset_params.offset_amips_weight;
         return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
     }
-    /// THE smoothing objective at vid, for every vertex the shared smoother places: the per-cell
-    /// energy tri_energy() = w AMIPS + O summed over vid's ring, up to the terms that do not
-    /// move with vid. w AMIPS over the ring (amips_energy()) for every vertex -- the smoother adds
+    /// THE smoothing objective at vid, for every vertex the shared smoother places. Until step 3
+    /// of the 2D port it is the energy tri_energy() had before step 2, w AMIPS + O over vid's
+    /// ring (O the chord terms, edge_offset_term()), not the energy the rules compare (3D's
+    /// objective is vid's part of E: amips3_energy() and band_volume_energy_at()).
+    /// w AMIPS over the ring (amips_energy()) for every vertex -- the smoother adds
     /// no AMIPS term of its own, every caller passing opts.w_amips 0 -- plus the offset terms of
     /// the front chords at vid when it is a front vertex the loop places (front_energy(); null in
     /// the final pass and for a front vertex an input envelope also pins), or, in the passes
@@ -1778,8 +1913,9 @@ public:
     /// ring has none.
     std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
     /// The offset term for a front vertex, at offset_term_weight(): StencilEnergy2D over its
-    /// incident live front chords, whose value is sum_e O(e), the terms the per-cell energy
-    /// carries. Defined in FrontSmooth2d.cpp.
+    /// incident live front chords, whose value is sum_e O(e) (edge_offset_term()); not a term of
+    /// the energy since step 2 of the 2D port, until step 3 replaces it. Defined in
+    /// FrontSmooth2d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> front_energy(
         size_t vid,
         const std::shared_ptr<const OffsetPotential2D>& pot) const;
@@ -1882,8 +2018,7 @@ public:
      * sample is wa*x + wb*p1, so it moves by wa per unit of x; StencilEnergy2D keeps the weights
      * fixed while the points slide with x (stencil_edge_at() in FrontSmooth2d.cpp).
      *
-     * Takes positions rather than a Tuple: edge_offset_term() reads a chord's ends in sorted
-     * order (see tri_energy()).
+     * Takes positions rather than a Tuple: a reader may pass a chord's ends in either order.
      */
     template <typename Visit>
     void for_each_edge_sample(const Vector2d& p0, const Vector2d& p1, Visit&& visit) const
@@ -2019,10 +2154,9 @@ public:
         ///     r_v = sqrt( (1/n_v) sum_e O(e) ),   O(e) = edge_offset_term()
         ///
         /// every chord weighted equally: the front smoother's own offset term at v
-        /// (StencilEnergy2D at offset_term_weight() is sum_e O(e) = n_v r_v^2), the same chords'
-        /// terms the per-cell energy tri_energy() carries. A vertex with any unmeasurable incident
-        /// chord has no ring measure (n_rings_unmeasurable; the chord itself is already in
-        /// n_unmeasurable).
+        /// (StencilEnergy2D at offset_term_weight() is sum_e O(e) = n_v r_v^2). A vertex with any
+        /// unmeasurable incident chord has no ring measure (n_rings_unmeasurable; the chord itself
+        /// is already in n_unmeasurable).
         bool ring_exit = false; ///< front_measure "vertex_ring"
         static const char* ring_name() { return "ring measure"; }
         double max_ring = 0., sum_ring = 0.; ///< ratios to the bar (1 = bar)
@@ -2223,45 +2357,23 @@ public:
     void log_refine_block_census(const std::string& when, double filter_energy) const;
 
     /**
-     * @brief The energy rule's EARLY half, on the engine's lower bound.
-     *
-     * The engine scores each reshaped face before the collapse exists and hands its AMIPS in as
-     * `q`. tri_energy() of that face is weighted_amips(q) plus a non-negative chord term, so q
-     * alone above the before-maximum (collapse_before_vertex()) already decides: the rule that
-     * collapse_edge_after() applies on the real faces would refuse too. Refusing here costs
-     * nothing; refusing there costs the collapse and its rollback. Same rule, same counter,
-     * applied as soon as it can be. The engine's own `ring_max` (AMIPS over v1's ring) is not
-     * read; TriWild's exemption for an unrounded v1 is kept. Off with offset_collapse_veto. As in
-     * 3D.
+     * @brief Admits every collapse: switches off the engine's own AMIPS collapse rule (`q` the
+     * AMIPS of a reshaped face, `ring_max` that of v1's ring), so the energy decides in its place
+     * -- the sum of tri_energy() over the faces the collapse changes, before
+     * (collapse_before_vertex()) against after (collapse_edge_after()). The AMIPS bound cannot
+     * refuse early: the energy is a sum, and a face's AMIPS term can rise while the sum falls. As
+     * 3D's loop rules; 2D has no TetWild rules (see tri_energy()).
      */
-    bool collapse_quality_allowed(size_t v1, size_t /*v2*/, double q, double /*ring_max*/)
-        const override
-    {
-        if (!m_offset_params.offset_collapse_veto || !m_vertex_attribute.at(v1).m_is_rounded) {
-            return true;
-        }
-        if (weighted_amips(q) <= m_collapse_energy_before.local()) return true;
-        ++iter_cnt_collapse_energy_reject;
-        return false;
-    }
+    bool collapse_quality_allowed(size_t, size_t, double, double) const override { return true; }
 
     /**
-     * @brief The energy rule's EARLY half for a swap, on the engine's lower bound.
-     *
-     * `after` is the largest AMIPS over the two new faces. tri_energy() of a face is
-     * weighted_amips() of its AMIPS plus a non-negative chord term, so `after` not strictly below
-     * the before-maximum (swap_edge_before()) already decides what swap_edge_after() would decide
-     * on the real faces: refused. The engine's `before` (stored AMIPS of the old faces) is not
-     * read. Off with offset_swap_veto. A 2D swap never flips the offset boundary (the engine
-     * refuses every tracked edge), so `is_surface_flip` is always false. As in 3D.
+     * @brief Admits every swap: switches off the engine's own AMIPS swap rule (`after` the
+     * largest AMIPS over the two new faces, `before` that of the old ones), so the energy decides
+     * in its place, in swap_edge_after(). The AMIPS bound cannot refuse early, as for the
+     * collapse. A 2D swap never flips the offset boundary (the engine refuses every tracked edge),
+     * so `is_surface_flip` is always false. As 3D's loop rules.
      */
-    bool swap_quality_allowed(double after, double /*before*/, bool) const override
-    {
-        if (!m_offset_params.offset_swap_veto) return true;
-        if (weighted_amips(after) < m_swap_energy_before.local()) return true;
-        ++iter_cnt_swap_energy_reject;
-        return false;
-    }
+    bool swap_quality_allowed(double, double, bool) const override { return true; }
 
     mutable std::atomic<size_t> m_deg_split_created{0};
     size_t m_deg_prev_split_created = 0;
@@ -2445,9 +2557,12 @@ public:
      * @brief The exact band integral over the input's segments and points (ExactBandIntegral2D,
      * on m_phi_V, m_phi_E, m_phi_P, m_phi_E_inner), built only where something reads it, as 3D's
      * TopoOffsetTetMesh::init_band_exact(): the band rules "exact", "front_flux" and
-     * "exact_swept", "surface" with a label clean-up, settle_mark "max", DEBUG_output. The label
-     * clean-up reads its distance() and distance_bound(). init_offset_potential() calls it.
-     * The 2D integral has neither 3D's value table nor its bisector search (prepare_front_flux()).
+     * "exact_swept", "surface" with a label clean-up, settle_mark "max", DEBUG_output -- and, where
+     * 2D differs, "corner_bound": its min over the input's primitives
+     * (ExactBandIntegral2D::min_mean_distance()) is 3D's search on the input envelope, which 2D
+     * does not have. The label clean-up reads its distance() and distance_bound().
+     * init_offset_potential() calls it. The 2D integral has neither 3D's value table nor its
+     * bisector search (prepare_front_flux()).
      */
     void init_band_exact();
     std::shared_ptr<const ExactBandIntegral2D> m_band_exact;

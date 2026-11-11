@@ -951,7 +951,10 @@ void TopoOffsetTriMesh::init_band_exact()
                             m_offset_params.band_volume_rule == "exact_swept";
     const bool surface_cleanup =
         m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";
-    if (!(exact_rule || surface_cleanup ||
+    // "corner_bound": its min over the input's primitives (band_cell_corner_bound()), which 3D
+    // takes from its input envelope, built for every rule; 2D has no such envelope.
+    const bool corner_bound = m_offset_params.band_volume_rule == "corner_bound";
+    if (!(exact_rule || surface_cleanup || corner_bound ||
           (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
           m_offset_params.debug_output)) {
         return;
@@ -1192,12 +1195,12 @@ void TopoOffsetTriMesh::repulsion_smoothing()
     // The march traces every marched edge to target_distance only if every outer end is farther
     // than it (the maximum marchable distance, see marching_tris()); otherwise it falls back to
     // half that distance and the loop has to carry the front out. These passes push the outer
-    // ends out first, under one per-tri energy: w AMIPS plus, for each corner v of the face that
-    // is an outer end within it (repulsion_cell_term()), O(v) = (max(0, 2 delta - d(v)) /
+    // ends out first, under one per-tri energy: its AMIPS term plus, for each corner v of the face
+    // that is an outer end within it (repulsion_cell_term()), O(v) = (max(0, 2 delta - d(v)) /
     // front_conv)^2 -- one-sided, so an outer end already beyond 2 delta is left to AMIPS, and
     // 2 delta so that the march at delta splits each edge with room to spare (the fallback's "half
     // the maximum marchable distance" run backwards). The smoother minimises its sum over a
-    // vertex's ring, the vetoes and the rounds' collapses and swaps compare its max, as in the
+    // vertex's ring, the vetoes and the rounds' collapses and swaps compare its sum, as in the
     // loop. An outer end that an envelope holds carries no term. First up to
     // repulsion_smoothing_passes smoothing passes, then up to repulsion_rounds rounds of the
     // loop's operations (see below); both stop once every outer end is beyond delta + front_conv,

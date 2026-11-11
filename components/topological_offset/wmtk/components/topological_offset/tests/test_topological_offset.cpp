@@ -1965,23 +1965,63 @@ TEST_CASE("stencil-order-point-counts-2d", "[offset][2d]")
 }
 
 // ---------------------------------------------------------------------------------------------
-// The 2D per-cell energy (TopoOffsetTriMesh::tri_energy()) and the 2D front smoother's offset
-// term, on the 2D twin of the 3D fixtures: the euclidean distance to a long segment on the x axis,
-// at level delta = 0.5, so relative_residual(q) = (|y| - 0.5) / 0.5 above the segment's interior;
-// front_conv = 0.01 (front_conv_frac() 0.02).
+// The 2D per-cell energy (TopoOffsetTriMesh::tri_energy()), its rules, and the 2D front
+// smoother's offset term, on the 2D twin of the 3D fixtures: the euclidean distance to a long
+// segment on the x axis, at level delta = 0.5, so relative_residual(q) = (|y| - 0.5) / 0.5 above
+// the segment's interior, where d is affine and the band term's corner mean is exact. Beyond its
+// end (10, 0) -- x > 10 -- d is the distance to the end, curved, and the corner mean is an upper
+// bound that depends on how a region is cut into faces: the swap fixture sits there. front_conv =
+// 0.01 (front_conv_frac() 0.02).
 // ---------------------------------------------------------------------------------------------
 
 namespace {
 
+const Vector2d kLineEnd(10., 0.);
+
+/// The segment's ends.
+Eigen::MatrixXd line_vertices()
+{
+    Eigen::MatrixXd SV(2, 2);
+    SV << -10., 0., kLineEnd.x(), kLineEnd.y();
+    return SV;
+}
+
 std::shared_ptr<EuclideanOffsetPotential2D> line_field()
 {
     auto bvh = std::make_shared<SimplicialComplexBVH>();
-    MatrixXd SV(2, 2);
-    SV << -10., 0., 10., 0.;
     MatrixXi SE(1, 2);
     SE << 0, 1;
-    bvh->init(SV, MatrixXi(0, 4), MatrixXi(0, 3), SE, MatrixXi(0, 1));
+    bvh->init(line_vertices(), MatrixXi(0, 4), MatrixXi(0, 3), SE, MatrixXi(0, 1));
     return std::make_shared<EuclideanOffsetPotential2D>(bvh, kEnergyDelta);
+}
+
+/// The distance to the segment at a point above its interior or beyond its end (10, 0), the two
+/// regions the fixtures use.
+double line_distance(const Vector2d& q)
+{
+    if (q.x() > kLineEnd.x()) return (q - kLineEnd).norm();
+    return std::abs(q.y());
+}
+
+/// The band term b(t) the energy definition states, computed here from the corners: unsigned area
+/// times (mean corner distance - delta) / delta (one segment, so the min over primitives is that
+/// segment). The 2D twin of band_term_by_hand().
+double band_term_by_hand_2d(const std::array<Vector2d, 3>& p)
+{
+    const Vector2d u = p[1] - p[0], v = p[2] - p[0];
+    const double area = std::abs(u.x() * v.y() - u.y() * v.x()) / 2.;
+    double mean = 0.;
+    for (const Vector2d& q : p) mean += line_distance(q) / 3.;
+    return area * (mean - kEnergyDelta) / kEnergyDelta;
+}
+
+/// The face's corner positions, in the mesh's order.
+std::array<Vector2d, 3> corners_2d(const TopoOffsetTriMesh& m, const size_t fid)
+{
+    const auto vs = m.oriented_tri_vids(fid);
+    std::array<Vector2d, 3> p;
+    for (int j = 0; j < 3; ++j) p[size_t(j)] = m.m_vertex_attribute[vs[size_t(j)]].m_posf;
+    return p;
 }
 
 /// The chord term O(e) the energy definition states, from the stencil for_each_edge_sample()
@@ -2002,8 +2042,9 @@ double edge_term_by_hand(
     return s / double(n);
 }
 
-/// The 2D fan fixture: four faces around o, labelled band, band, background, input complex.
-/// Face i is row i of F, which the caller relies on to look up faces.
+/// A 2D mesh of the given faces with the given construction labels on the segment's field and
+/// band term (the 2D twin of energy_mesh()). Face i is row i of F, which the caller relies on to
+/// look up faces.
 std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
     Parameters& param,
     const Eigen::MatrixXd& V,
@@ -2014,6 +2055,7 @@ std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
     param.target_distance = kEnergyDelta;
     param.front_conv = kEnergyConv;
     param.stencil_order = 1;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
     auto mesh = std::make_unique<TopoOffsetTriMesh>(param, 0);
     Eigen::MatrixXi Fm(F.size(), 3);
     for (size_t i = 0; i < F.size(); ++i) {
@@ -2038,6 +2080,14 @@ std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
         mesh->m_face_extra[i].label = labels[i];
     }
     mesh->m_offset_potential = pot;
+    // The band term's primitives on the same segment, built as a run builds them
+    // (TopoOffsetTriMesh::init_band_exact()): a lone segment, which bounds no region.
+    mesh->m_phi_V = line_vertices();
+    mesh->m_phi_E.resize(1, 2);
+    mesh->m_phi_E << 0, 1;
+    mesh->m_phi_E_inner = {0};
+    mesh->init_band_exact();
+    REQUIRE(mesh->m_band_exact != nullptr);
     return mesh;
 }
 
@@ -2057,8 +2107,8 @@ Eigen::MatrixXd fan_vertices()
 
 TEST_CASE("stencil-energy-2d-is-the-sum-of-edge-terms", "[offset][2d]")
 {
-    // The 2D front smoother's offset term at offset_term_weight() is, chord by chord, the per-cell
-    // energy's O(e): checked against the definition computed by hand from the same stencil, and
+    // The 2D front smoother's offset term at offset_term_weight() is, chord by chord, the chord
+    // measure O(e): checked against the definition computed by hand from the same stencil, and
     // against edge_offset_term(), at stencil orders 0 (ends only), 1 and 2, with three chords
     // around the moving vertex placed above and below the level set.
     Parameters param;
@@ -2096,41 +2146,216 @@ TEST_CASE("stencil-energy-2d-is-the-sum-of-edge-terms", "[offset][2d]")
 
 TEST_CASE("per-tri-energy", "[offset][2d]")
 {
-    // The 2D twin of per-tet-energy. Four faces around o: f0 = (o, r0, r1) and f1 = (o, r1, r2)
-    // band, f2 = (o, r2, r3) background, f3 = (o, r3, r0) input complex. The band's front chords
-    // are the ones with background or nothing across: f0's (r0, r1) on the domain boundary ((o, r0)
-    // has the complex across, (o, r1) the band), and f1's (r1, r2) on the boundary plus (o, r2)
-    // against the background. Every face off the band is its weighted AMIPS alone. At w = 1 and at
-    // the default w.
+    // The 2D twin of per-tet-energy: tri_energy() against its definition computed by hand,
+    // (w / s^3) area AMIPS^3 for every face, plus the band term b = area (mean corner d - delta) /
+    // delta for a band face; MAX_ENERGY for an inverted face (the 2D engine scores a flat or
+    // inverted face MAX_ENERGY). Four faces around o: f0 = (o, r0, r1) and f1 = (o, r1, r2) band,
+    // f2 = (o, r2, r3) background, f3 = (o, r3, r0) input complex. At (w, s) = (1, stop_energy 3),
+    // where both terms matter, (1, 100) and the default w at 100. Under both band rules,
+    // "corner_bound" and "exact": above the segment's interior d is affine, so the exact integral
+    // of d over a face is its area times the corner mean. The area by hand is the determinant's;
+    // the energy's comes from the AMIPS and the edge lengths (area_amips3()).
     const Eigen::MatrixXd V = fan_vertices();
     const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
-    for (const double w : {1., Parameters().offset_amips_weight}) {
+    const std::vector<int> labels = {2, 2, 0, 1};
+    for (const auto& [rule, w, s] : std::vector<std::tuple<std::string, double, double>>{
+             {"corner_bound", 1., 3.},
+             {"corner_bound", 1., 100.},
+             {"corner_bound", Parameters().offset_amips_weight, 100.},
+             {"exact", 1., 3.},
+             {"exact", 1., 100.},
+             {"exact", Parameters().offset_amips_weight, 100.}}) {
         Parameters param;
-        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
+        param.band_volume_rule = rule;
         param.offset_amips_weight = w;
+        param.stop_energy = s;
         const auto pot = line_field();
         auto mesh = energy_mesh_2d(
             param,
             V,
             {{{o, r0, r1}}, {{o, r1, r2}}, {{o, r2, r3}}, {{o, r3, r0}}},
-            {2, 2, 0, 1},
+            labels,
             pot);
-        const auto P = [&](int i) { return Vector2d(V.row(i)); };
-        const auto O = [&](int i, int j) { return edge_term_by_hand(*mesh, *pot, P(i), P(j)); };
-        const std::array<double, 4> extra = {{O(r0, r1), O(r1, r2) + O(o, r2), 0., 0.}};
         for (size_t fid = 0; fid < 4; ++fid) {
             // The engine's face quality, AMIPS2D from the positions.
-            const double base = mesh->TriOptimizerMesh::get_quality(fid);
-            REQUIRE(base < TriOptimizerMesh::MAX_ENERGY);
-            INFO("w " << w << ", face " << fid);
-            CHECK(mesh->tri_energy(fid) == Catch::Approx(w * base + extra[fid]).epsilon(1e-12));
-            if (fid < 2) CHECK(extra[fid] > 1.); // the front chords really are off the level set
+            const double a = mesh->TriOptimizerMesh::get_quality(fid);
+            REQUIRE(a < TriOptimizerMesh::MAX_ENERGY);
+            const auto p = corners_2d(*mesh, fid);
+            const Vector2d u = p[1] - p[0], v = p[2] - p[0];
+            const double area = std::abs(u.x() * v.y() - u.y() * v.x()) / 2.;
+            const double want = w / (s * s * s) * area * a * a * a +
+                                (labels[fid] == 2 ? band_term_by_hand_2d(p) : 0.);
+            INFO(rule << ", w " << w << ", s " << s << ", face " << fid);
+            CHECK(mesh->tri_energy(fid) == Catch::Approx(want).epsilon(1e-10));
+            if (labels[fid] == 2) CHECK(std::abs(band_term_by_hand_2d(p)) > 1e-3);
+            // Without the band term (what an operation's sums read where it cancels): the AMIPS
+            // term alone.
+            CHECK(
+                mesh->tri_energy(fid, false) ==
+                Catch::Approx(w / (s * s * s) * area * a * a * a).epsilon(1e-10));
+        }
+        // An inverted face: r3 across the line through r0, o and r2 turns faces 2 and 3 over.
+        mesh->set_vertex_position(size_t(r3), Vector2d(0., 0.75));
+        for (const size_t fid : {size_t(2), size_t(3)}) {
+            REQUIRE(mesh->TriOptimizerMesh::get_quality(fid) >= TriOptimizerMesh::MAX_ENERGY);
+            CHECK(mesh->tri_energy(fid) == TriOptimizerMesh::MAX_ENERGY);
         }
     }
 }
 
-TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
+TEST_CASE("swap-edge-2d-on-energy", "[offset][2d]")
 {
+    // The 2D twin of swap-face-gate-on-energy, on 2D's only swap, the edge flip: the rule
+    // (TopoOffsetTriMesh::swap_edge_after()) compares the sum of the energy over the two new faces
+    // with the sum over the two old ones, not AMIPS. Two equilateral triangles glued on (a, b),
+    // beyond the segment's end, their axis (c, d) on the ray from the end: AMIPS is 2 on both, its
+    // minimum, so the flip raises AMIPS and the engine's AMIPS rule (switched off,
+    // swap_quality_allowed()) would refuse it. d, the distance to the end, is linear along the
+    // axis and convex across it, so the band term's corner mean -- the integral of the linear
+    // interpolant of d -- is lower when the faces share (c, d) than when they share (a, b): with
+    // both faces band the energy's sum falls and the rule admits the flip. With both faces
+    // background the energy is the AMIPS term alone and the flip is refused. That is
+    // "corner_bound". Under "exact" the band term is the integral of d over the faces' union, which
+    // the flip keeps: the band sums agree, the energy rises with AMIPS, and the flip is refused on
+    // the band too. The whole engine swap runs (TriMesh::swap_edge()); the engine's swap pass,
+    // whose scheduler drops a flip that does not lower max AMIPS, is not involved.
+    const auto pot = line_field();
+    const double h = 0.2, k = std::sqrt(3.) * h;
+    const Vector2d m = kLineEnd + Vector2d(0.6, 0.);
+    Eigen::MatrixXd V(4, 2);
+    V.row(0) = (m + Vector2d(0., h)).transpose(); // a
+    V.row(1) = (m - Vector2d(0., h)).transpose(); // b
+    V.row(2) = (m + Vector2d(k, 0.)).transpose(); // c, on the ray from the end
+    V.row(3) = (m - Vector2d(k, 0.)).transpose(); // d, on the ray from the end
+    const int a = 0, b = 1, c = 2, d = 3;
+    const std::vector<std::array<int, 3>> FA = {{{a, b, c}}, {{b, a, d}}};
+    const std::vector<std::array<int, 3>> FB = {{{c, d, a}}, {{d, c, b}}};
+
+    for (const auto& [rule, x] : std::vector<std::pair<std::string, int>>{
+             {"corner_bound", 2},
+             {"corner_bound", 0},
+             {"exact", 2},
+             {"exact", 0}}) {
+        INFO(rule << ", label " << x);
+        const bool admits = rule == "corner_bound" && x == 2;
+        Parameters pa, pb;
+        pa.band_volume_rule = pb.band_volume_rule = rule;
+        auto A = energy_mesh_2d(pa, V, FA, {x, x}, pot);
+        auto B = energy_mesh_2d(pb, V, FB, {x, x}, pot);
+        // The engine's AMIPS rules admit everything (3D's loop rules, op-rules-switch).
+        CHECK(A->collapse_quality_allowed(0, 1, 1e30, 2.));
+        CHECK(A->swap_quality_allowed(1e30, 2., false));
+        double amips_a = 0., amips_b = 0., energy_a = 0., energy_b = 0., band_a = 0., band_b = 0.;
+        for (size_t f = 0; f < 2; ++f) {
+            amips_a = std::max(amips_a, A->TriOptimizerMesh::get_quality(f));
+            energy_a += A->tri_energy(f);
+            band_a += A->tri_energy(f) - A->tri_energy(f, false);
+            amips_b = std::max(amips_b, B->TriOptimizerMesh::get_quality(f));
+            energy_b += B->tri_energy(f);
+            band_b += B->tri_energy(f) - B->tri_energy(f, false);
+        }
+        // The premises: AMIPS alone refuses this flip, and the energy admits it on the band under
+        // "corner_bound" alone. Under "exact" the band sums agree.
+        REQUIRE(amips_a == Catch::Approx(2.).epsilon(1e-9));
+        REQUIRE(amips_b > amips_a);
+        REQUIRE((energy_b < energy_a) == admits);
+        if (rule == "exact" && x == 2) {
+            CHECK(std::abs(band_a) > 1e-4);
+            CHECK(band_b == Catch::Approx(band_a).margin(1e-12 * std::max(1., std::abs(band_a))));
+        }
+
+        const auto [edge, eid] = A->tuple_from_edge(std::array<size_t, 2>{{size_t(a), size_t(b)}});
+        (void)eid;
+        const int refused0 = A->iter_cnt_swap_energy_reject.load();
+        std::vector<TopoOffsetTriMesh::Tuple> new_faces;
+        CHECK(A->swap_edge(edge, new_faces) == admits);
+        CHECK(A->iter_cnt_swap_energy_reject.load() - refused0 == (admits ? 0 : 1));
+        if (!admits) continue;
+        double energy_new = 0.;
+        size_t n_new = 0;
+        for (const auto& f : A->get_faces()) {
+            const auto vs = A->oriented_tri_vids(f.fid(*A));
+            CHECK(std::count(vs.begin(), vs.end(), size_t(c)) == 1);
+            CHECK(std::count(vs.begin(), vs.end(), size_t(d)) == 1);
+            energy_new += A->tri_energy(f.fid(*A));
+            ++n_new;
+        }
+        CHECK(n_new == 2);
+        CHECK(energy_new == Catch::Approx(energy_b).epsilon(1e-12));
+    }
+}
+
+TEST_CASE("exact-band-offset-side-inward-and-outward-2d", "[offset][2d][exact_band]")
+{
+    // The 2D twin of exact-band-offset-side-inward-and-outward: the exact rule's band integral
+    // counts the offset side of the input only (ExactBandIntegral2D's class doc), and the band is
+    // outside the label-1 region for both directions: that region is the selection for offset_out
+    // and everything outside it for offset_in. On a 3 x 3 grid of unit squares with the center
+    // square as tag_0, a triangle just inside tag_0 and its mirror just outside, both within delta
+    // of the edge x = 0.5: the band side gives the unclipped integral, the other side 0.
+    Eigen::MatrixXd V(16, 2);
+    const auto vid = [](int i, int j) { return i + 4 * j; };
+    for (int j = 0; j < 4; ++j) {
+        for (int i = 0; i < 4; ++i) V.row(vid(i, j)) << i - 1.5, j - 1.5;
+    }
+    std::vector<std::array<int, 3>> F;
+    std::vector<int> center;
+    for (int j = 0; j < 3; ++j) {
+        for (int i = 0; i < 3; ++i) {
+            if (i == 1 && j == 1) center.push_back(int(F.size()));
+            F.push_back({{vid(i, j), vid(i + 1, j), vid(i + 1, j + 1)}}); // counter-clockwise
+            if (i == 1 && j == 1) center.push_back(int(F.size()));
+            F.push_back({{vid(i, j), vid(i + 1, j + 1), vid(i, j + 1)}});
+        }
+    }
+    Eigen::MatrixXi Fm(int(F.size()), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        for (int j = 0; j < 3; ++j) Fm(int(i), j) = F[i][size_t(j)];
+    }
+    MatrixSi Tags(int(F.size()), 1);
+    for (const int f : center) Tags.coeffRef(f, 0) = 1;
+
+    const double delta = 0.2;
+    const std::array<Vector2d, 3> inside = {{{0.45, -0.1}, {0.45, 0.1}, {0.35, 0.}}};
+    std::array<Vector2d, 3> outside = inside;
+    for (Vector2d& q : outside) q.x() = 1. - q.x();
+
+    for (const bool inward : {true, false}) {
+        Parameters param;
+        param.offset_in = inward;
+        param.offset_out = !inward;
+        param.offset_field = "euclidean";
+        param.band_volume_rule = "exact";
+        param.target_distance = delta;
+        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
+        TopoOffsetTriMesh mesh(param, 0);
+        MatrixXd V_env;
+        MatrixXi F_env;
+        mesh.init_from_image(V, Fm, Tags, V_env, F_env, {"tag_0"});
+        select_offset(mesh, "tag_0");
+        mesh.label_input_complex();
+        mesh.init_input_complex_bvh();
+        mesh.init_offset_potential();
+        REQUIRE(mesh.m_band_exact);
+        const ExactBandIntegral2D plain(mesh.m_phi_V, mesh.m_phi_E, mesh.m_phi_P);
+        const auto& band = inward ? inside : outside;
+        const auto& far_side = inward ? outside : inside;
+        INFO((inward ? "offset_in" : "offset_out"));
+        const double J_band = mesh.m_band_exact->value(band, delta);
+        CHECK(J_band < 0.);
+        CHECK(J_band == plain.value(band, delta));
+        CHECK(mesh.m_band_exact->value(far_side, delta) == 0.);
+        CHECK(plain.value(far_side, delta) < 0.);
+    }
+}
+
+TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d][.]")
+{
+    // Hidden until step 3 of the 2D lock-step port (the smoother on the new energy): since step 2
+    // the energy is the band-area energy (tri_energy()), while the smoother still minimises the
+    // stencil energy (smoothing_extra_energy()), so the identity below fails by design; step 3
+    // rewrites this test as the twin of 3D's, on amips3_energy()'s and band_volume_energy_at()'s
+    // 2D twins, and moves it back.
     // The 2D twin of smoothing-objective-is-the-ring-energy: at every vertex, the objective the
     // shared smoother minimises (smoothing_extra_energy(); every caller passes w_amips 0) is the
     // sum of tri_energy() over the vertex's ring, up to the terms that do not move with the vertex
@@ -6908,6 +7133,42 @@ TEST_CASE("unreachable-level-set-throws-2d", "[offset][2d]")
             mesh->check_level_set_reachable("test"),
             Catch::Matchers::ContainsSubstring("the level set is out of reach"));
     }
+}
+
+TEST_CASE("label-cleanup-modes-2d", "[offset][2d]")
+{
+    // EXPERIMENTAL_label_cleanup's band-term modes in 2D, now that its per-cell energy carries the
+    // band term (tri_energy()): "one_sided_tips" and "one_sided_at_target" (the default) run on the
+    // fixture of label-cleanup-keeps-held-point-off-the-band-2d and keep what "one_sided" keeps
+    // there -- q out of the band, the held objects' contact topology. Under "exact" and
+    // "exact_swept" (the default rule). "energy_decrease", which reads the "surface" rule's face
+    // term, has no 2D port and is refused.
+    const std::string mode = GENERATE("one_sided_tips", "one_sided_at_target", "energy_decrease");
+    const std::string rule = GENERATE("exact", "exact_swept");
+    INFO(mode << ", " << rule);
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    Parameters param = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+         {"EXPERIMENTAL_label_cleanup", mode == "energy_decrease" ? "one_sided" : mode},
+         {"EXPERIMENTAL_band_volume_rule", rule},
+         {"num_threads", 0}},
+        box);
+    auto mesh = point_grid_2d(param, {{4, 4}});
+    if (mode == "energy_decrease") {
+        // Parameters refuses it outside "surface"; set past that, the 2D clean-up refuses it.
+        mesh->m_offset_params.label_cleanup = mode;
+        REQUIRE_THROWS_WITH(
+            mesh->label_cleanup("test"),
+            Catch::Matchers::ContainsSubstring("has no 2D port"));
+        return;
+    }
+    const size_t q = anchor_q_2d(*mesh);
+    REQUIRE(band_touched_2d(*mesh)[q] == 0);
+    const auto signature0 = mesh->held_topology_signature();
+    REQUIRE_NOTHROW(mesh->label_cleanup("test"));
+    CHECK(band_touched_2d(*mesh)[q] == 0);
+    CHECK(mesh->held_topology_signature() == signature0);
 }
 
 TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")

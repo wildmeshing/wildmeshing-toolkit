@@ -147,18 +147,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// sides -- so which form the code uses is a matter of where the division sits, not of what
     /// is being asked.
     double front_conv_frac() const { return front_conv / std::max(target_distance, 1e-16); }
-    // 2D only: read by the 2D pipeline, which the app refuses until it is brought into lock-step
-    // with 3D. No JSON key; each keeps the default its key had. The 2D energy rule of collapses
-    // and swaps, the 2D front vertices' smoothing veto, and the 2D collapse rule over the changed
-    // cells (TopoOffsetTriMesh). The 2D non-front veto reads the engine's smooth_quality_veto,
-    // which keeps the engine's default, true, the default of the key offset_smooth_veto that set
-    // it. 3D's rules are always on and read none of these (TopoOffsetTetMesh::tet_energy()).
-    bool offset_collapse_veto = true, offset_swap_veto = true;
-    bool offset_front_smooth_veto = false;
-    bool offset_collapse_changed_cells = true;
-    /// The weight w of AMIPS in the per-cell energy: in 3D the energy's AMIPS term,
-    /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
-    /// tri_energy = w AMIPS + the offset terms. See the spec.
+    /// The weight w of AMIPS in the per-cell energy: the energy's AMIPS term, in 3D
+    /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()), in 2D
+    /// (w / stop_energy^3) area AMIPS^3 (TopoOffsetTriMesh::cell_energy()). See the spec.
     double offset_amips_weight = 1.;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
@@ -186,8 +177,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
     /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off", "one_sided",
     /// "one_sided_tips", "one_sided_at_target" (the default) or "energy_decrease" (it needs
-    /// band_volume_rule "surface"). 2D (TopoOffsetTriMesh::label_cleanup()): "off" and
-    /// "one_sided"; it refuses the others until its per-cell energy carries the band term.
+    /// band_volume_rule "surface"). 2D (TopoOffsetTriMesh::label_cleanup()): every mode but
+    /// "energy_decrease", whose "surface" face term 2D has not.
     std::string label_cleanup = "one_sided_at_target";
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
@@ -213,8 +204,8 @@ struct Parameters : public wmtk::OptimizerParameters
     // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
     // the quantity measured is a distance to the level set rather than an interpolation error and
     // so is not identically zero there. Raising it costs a Phi value per sample in
-    // energy_criterion() and the frames, and in 2D also in the operations' energy rules
-    // (TopoOffsetTriMesh::tri_energy()) and every front solve; the 3D energy has no face term.
+    // energy_criterion() and the frames, and in 2D also in every front solve (its stencil energy,
+    // until the 2D smoother is ported); neither energy has a face or chord term.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::for_each_edge_sample.
     // That is EXPERIMENTAL_stencil_type "subdivision", the default; the other types (3D) have
     // their own lattices, below.
@@ -266,7 +257,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
-    /// EXPERIMENTAL (2026-10-12), 3D. The band term b(t) of a band cell in the energy
+    /// EXPERIMENTAL (2026-10-12), 3D; 2D (2026-11-11, TopoOffsetTriMesh::band_cell_term(), area
+    /// for vol): "corner_bound", "exact", and "exact_swept" and "front_flux" as "exact"'s energy
+    /// with "exact"'s decisions. The band term b(t) of a band cell in the energy
     /// (TopoOffsetTetMesh::band_cell_term()). "corner_bound": vol times the min over all input
     /// triangles P of the corner mean of (d_P - delta) / delta, an upper bound on the cell's part
     /// of int_B (d - delta) / delta dV that no split raises. "exact": J_t / delta,

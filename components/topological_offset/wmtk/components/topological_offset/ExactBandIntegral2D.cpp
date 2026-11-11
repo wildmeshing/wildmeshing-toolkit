@@ -963,6 +963,21 @@ double ExactBandIntegral2D::upper_bound(const Eigen::Vector2d* t, const int n) c
     return m;
 }
 
+double ExactBandIntegral2D::min_mean_distance(const Eigen::Vector2d* t, const int n, int64_t& best)
+    const
+{
+    double m = std::numeric_limits<double>::infinity();
+    best = -1;
+    for (size_t f = 0; f < m_SA.size(); ++f) {
+        double s = 0.;
+        for (int i = 0; i < n; ++i) s += point_seg_dist(t[i], m_SA[f], m_SB[f]);
+        s /= n;
+        // increasing index, so a tie keeps the lowest
+        if (s < m) m = s, best = int64_t(f);
+    }
+    return m;
+}
+
 struct ExactBandIntegral2D::Work
 {
     Vec2 c0; ///< the local origin: t's centroid

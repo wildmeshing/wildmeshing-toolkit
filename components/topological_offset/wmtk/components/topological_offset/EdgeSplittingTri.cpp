@@ -50,11 +50,19 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         // came from a parent that was already unscoreable, or from a healthy one.
         c.parent_q_max = -1.;
         c.parent_flatness = 1.;
-        for (const size_t fid : get_incident_fids_for_edge(t)) {
+        const std::vector<size_t> parents = get_incident_fids_for_edge(t);
+        for (const size_t fid : parents) {
             const size_t apex = simplex_from_face(fid).opposite_vertex(edge).id();
             c.face_label[apex] = m_face_extra[fid].label;
             c.parent_q_max = std::max(c.parent_q_max, get_quality(fid));
             c.parent_flatness = std::min(c.parent_flatness, face_flatness(fid));
+        }
+        // EXPERIMENTAL_split_energy_gate: the parents' sum of tri_energy(), which
+        // split_edge_after() compares the children's against. "exact_swept": 3D leaves the band
+        // term out of both sums, a split leaving B and its band term unchanged; step 4 of the 2D
+        // port. As in 3D.
+        if (m_offset_params.split_energy_gate) {
+            m_split_energy_before.local() = tri_energy_sum(parents);
         }
         return TriOptimizerMesh::split_edge_before(t);
     }
@@ -195,6 +203,15 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
         // The labels of the faces this split created were carried from their parents by
         // split_after_vertex(), which the base calls above. Never re-derive them from the tags:
         // a band filled with a tag used elsewhere would relabel that other region as offset.
+        // EXPERIMENTAL_split_energy_gate: the children's tri_energy() -- every face at the new
+        // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
+        // engine rolls a refused split back. As in 3D.
+        if (m_offset_params.split_energy_gate &&
+            !(tri_energy_sum(get_one_ring_fids_for_vertex(t.switch_vertex(*this).vid(*this))) <
+              m_split_energy_before.local())) {
+            ++iter_cnt_split_energy_reject;
+            return false;
+        }
         ++iter_cnt_split;
         if (m_vertex_extra[t.switch_vertex(*this).vid(*this)].m_is_on_offset) {
             ++iter_cnt_split_offset;

@@ -143,6 +143,14 @@ public:
     {
         return upper_bound(t.data(), 3);
     }
+    /// The band term's corner bound (EXPERIMENTAL_band_volume_rule "corner_bound",
+    /// TopoOffsetTriMesh::band_cell_corner_bound()): min over ALL primitives P of (1/n) sum_i
+    /// d_P(t_i), n points, and the minimiser in `best`, the lowest index on a tie (segments, then
+    /// points, in row order). 3D's min_mean_distance(), whose sum, order and comparison it keeps;
+    /// where 2D differs: 3D searches the input envelope's primitives in a grown box, the 2D input
+    /// has no envelope over its primitives, and this scans them all as upper_bound() does. The
+    /// result is the same min either way.
+    double min_mean_distance(const Eigen::Vector2d* t, int n, int64_t& best) const;
 
     size_t num_segments() const { return size_t(m_nE); }
     size_t num_vertices() const { return m_feat.size() - size_t(m_nE); }

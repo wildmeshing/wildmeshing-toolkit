@@ -55,11 +55,12 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
 {
     // See the header: the shared smoother with the offset's options. The whole objective arrives
     // through smoothing_extra_energy() -- w AMIPS over the ring and the offset terms at
-    // offset_term_weight(), tri_energy()'s two parts -- and w_amips 0 keeps the smoother from
-    // adding an AMIPS term of its own; a front vertex an input envelope pins carries no offset
-    // term. The smoother holds a front vertex to no envelope (see
-    // smoothing_containment_envelope()), so neither the projected path nor the containment check
-    // applies -- solve, exact inversion test, then the veto on tri_energy() below. As in 3D.
+    // offset_term_weight() (the stencil energy, not yet tri_energy()'s terms: step 3 of the 2D
+    // port) -- and w_amips 0 keeps the smoother from adding an AMIPS term of its own; a front
+    // vertex an input envelope pins carries no offset term. The smoother holds a front vertex to
+    // no envelope (see smoothing_containment_envelope()), so neither the projected path nor the
+    // containment check applies -- solve, exact inversion test, then the veto on tri_energy()
+    // below. As in 3D.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
     opts.w_amips = 0.;
@@ -71,16 +72,16 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
     // ring's shape on the way to the level set: off. The veto below is on the energy instead.
     opts.quality_veto = false;
     polysolve::nonlinear::Solver& solver = smoothing_solver();
-    // THE FRONT SMOOTHER'S VETO (see tri_energy()): the max of tri_energy() over the vertex's
-    // one-ring may not rise, under offset_front_smooth_veto. A tie passes. Read before the solve
-    // and after it, on the mesh: a smoothing move changes no label and moves one vertex, so the
-    // one-ring holds every face whose energy it can change. Refused, TriMesh::smooth_vertex()
-    // rolls back the position and the ring's stored qualities. The smoother has counted the move
-    // accepted by then; it is recounted as a quality refusal, so the counters still partition the
-    // attempts.
+    // THE FRONT SMOOTHER'S VETO (see tri_energy()), on every solve: the sum of tri_energy() over
+    // the vertex's one-ring may not rise. A tie passes, as in the engine's AMIPS veto. Read
+    // before the solve and after it, on the mesh: a smoothing move changes no label and moves one
+    // vertex, so the one-ring holds every face whose energy it can change. Refused,
+    // TriMesh::smooth_vertex() rolls back the position and the ring's stored qualities. The
+    // smoother has counted the move accepted by then; it is recounted as a quality refusal, so
+    // the counters still partition the attempts. "exact_swept": 3D accepts by the band term's
+    // exact change (swept_accept()); step 4 of the 2D port. As in 3D.
     const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
-    const bool veto = m_offset_params.offset_front_smooth_veto;
-    const double before = veto ? max_tri_energy(ring) : 0.;
+    const double before = tri_energy_sum(ring);
     // DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of every
     // vertex that shares a front chord with it -- before the solve.
     std::vector<size_t> nb;
@@ -117,8 +118,8 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
         ++m_front_grad_abs[size_t(bin(cr.gradNorm, -14))];
         ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
     }
-    if (veto) ++m_front_veto_asked;
-    if (veto && !(max_tri_energy(ring) <= before)) { // a NaN refuses
+    ++m_front_veto_asked;
+    if (!(tri_energy_sum(ring) <= before)) { // a NaN refuses
         ++m_front_veto_fired;
         --m_smooth_rejects.accepted;
         ++m_smooth_rejects.quality;
@@ -155,17 +156,16 @@ bool TopoOffsetTriMesh::smooth_repulsion_vertex(const Tuple& t)
     opts.two_stage = false;
     opts.quality_veto = false;
     smoothing_solver();
-    // The front veto's rule (see tri_energy()): the max of the per-tri energy over the ring --
+    // The front veto's rule (see tri_energy()): the sum of the per-tri energy over the ring --
     // which includes the repulsion terms of the faces that carry them, O(v) among them -- may
     // not rise (a tie passes). Read before the solve and after it; refused,
-    // TriMesh::smooth_vertex() rolls the move back.
+    // TriMesh::smooth_vertex() rolls the move back. As in 3D.
     const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
-    const bool veto = m_offset_params.offset_front_smooth_veto;
-    const double before = veto ? max_tri_energy(ring) : 0.;
+    const double before = tri_energy_sum(ring);
     const bool ok = smooth_vertex_2d_counted(t, opts, m_newton_repulsion);
     if (!ok) return false;
-    if (veto) ++m_repulsion_veto_asked;
-    if (veto && !(max_tri_energy(ring) <= before)) { // a NaN refuses
+    ++m_repulsion_veto_asked;
+    if (!(tri_energy_sum(ring) <= before)) { // a NaN refuses
         ++m_repulsion_veto_fired;
         --m_smooth_rejects.accepted;
         ++m_smooth_rejects.quality;
@@ -252,8 +252,8 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::front_energy(
 {
     // 1 / front_conv_frac()^2: the squared relative error (Phi - c)/c becomes the squared error
     // in units of the tolerance, so the term below is sum_e O(e) -- for the euclidean field the
-    // very terms the per-cell energy tri_energy() carries on these chords' band faces, and the
-    // ring measure's n_v r_v^2. As in 3D.
+    // ring measure's n_v r_v^2. Not the energy's band term (tri_energy()) until step 3 of the 2D
+    // port.
     const double w_off = offset_term_weight();
     auto sum = std::make_shared<optimization::EnergySum>();
     // THE offset term, and the only one: the mean squared relative error over each incident
