@@ -308,7 +308,10 @@ void AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0)
     double helper_84 = helper_66 * helper_82;
     double helper_85 = -helper_32 - helper_48 + helper_53;
     double helper_86 = 1.0 / helper_85;
-    double helper_87 = helper_86 * pow(pow(helper_85, 2), -0.333333333333333);
+    // pow(pow(helper_85, 2), -1/3) is helper_56: helper_85 = -helper_32 - helper_48 + helper_53
+    // is exactly -helper_54 (IEEE negation is exact and round-to-nearest is symmetric, so
+    // (-a) - b + c == -((a + b) - c) bit for bit), and squaring drops the sign.
+    double helper_87 = helper_86 * helper_56;
     double helper_88 = 0.707106781186548 * helper_6;
     double helper_89 = 0.707106781186548 * helper_27;
     double helper_90 = helper_88 - helper_89;
