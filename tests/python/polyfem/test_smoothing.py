@@ -1,19 +1,25 @@
 """Tier 2 — end-to-end Laplacian smoothing: fair a staircase tag_0/ambient
-interface (2D) and verify roughness drops while the mesh stays valid.
-Needs PolyFEM. Also exercises the 2D pipeline path of minimum_separation."""
+interface (2D) and verify roughness drops while the mesh stays valid; and the
+same smoothing in process (smooth) against PolyFEM_bin. Needs PolyFEM."""
 import numpy as np
 import pytest
 
-from wildmeshing.polyfem_ops import minimum_separation as ms
-from wildmeshing.polyfem_ops.laplacian_smoothing import run as ls_run
+import wildmeshing as wm
+from wildmeshing.polyfem_ops.laplacian_smoothing import laplacian_smoothing, smooth
 
-from conftest import needs_polyfem
-
-pytestmark = pytest.mark.skip(reason="the op raises until its options interface lands")
+from conftest import needs_in_process, needs_polyfem
 from geo import (interface_polyline_2d, polyline_length, roughness_2d,
                  signed_volumes)
 
 SEL = {"region": "tag_0", "filter": "ambient"}
+OPTIONS = {
+    "interfaces": [SEL],
+    "use_fitting": True,
+    "use_laplacian": True,
+    "weight_laplacian": 1e3,
+    "normalize_penalties": True,
+    "scale": 1e-3,
+}
 
 
 @needs_polyfem
@@ -23,17 +29,8 @@ def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path):
     len0 = polyline_length(coords0, edges0)
     assert rough0 > np.pi, "fixture should start visibly jagged"
 
-    out_msh = tmp_path / "smoothed.msh"
-    ls_run({
-        "input_msh": str(jagged2d),
-        "interfaces": [SEL],
-        "useFitting": True,
-        "useLaplacian": True,
-        "weight_laplacian": 1e3,
-        "normalizePenalties": True,
-        "scale": 1e-3,
-        "output_msh": str(out_msh),
-    }, out_dir=tmp_path / "smooth")
+    out_msh = tmp_path / "smooth" / "smoothed.msh"
+    laplacian_smoothing(dict(OPTIONS, input=str(jagged2d), output=str(out_msh.with_suffix(""))))
 
     assert out_msh.exists()
 
@@ -54,3 +51,28 @@ def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path):
     assert edges1.shape == edges0.shape
     moved = np.linalg.norm(coords1 - coords0, axis=1)
     assert moved.max() < 2.0, f"max node displacement {moved.max():.2f}"
+
+
+@needs_in_process
+@needs_polyfem
+@pytest.mark.parametrize("fixture", ["jagged2d", "boxes3d"])
+def test_smooth_in_process_matches_polyfem_bin(fixture, request, tmp_path, monkeypatch):
+    """smooth() on the mesh dictionary moves the vertices as laplacian_smoothing()
+    moves them through PolyFEM_bin, and writes no files."""
+    msh = request.getfixturevalue(fixture)
+    out_msh = tmp_path / "file" / "smoothed.msh"
+    laplacian_smoothing(dict(OPTIONS, input=str(msh), output=str(out_msh.with_suffix(""))))
+
+    memory = tmp_path / "memory"
+    memory.mkdir()
+    monkeypatch.chdir(memory)
+    mesh = wm.read_mesh(msh)
+    meshes, report = smooth(dict(OPTIONS, input="m"), {"m": mesh})
+    assert list(memory.iterdir()) == []
+
+    smoothed = meshes["mesh"]
+    file_V = wm.read_mesh(out_msh)["V"]
+    assert report["max_displacement"] > 0.1      # mesh units: it did smooth
+    np.testing.assert_allclose(smoothed["V"], file_V, rtol=0, atol=1e-9)
+    for cell, block in mesh["cells"].items():    # all but the vertices as they were
+        np.testing.assert_array_equal(smoothed["cells"][cell]["connectivity"], block["connectivity"])

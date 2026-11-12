@@ -583,7 +583,6 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
             "dhat": init_dhat,
             "alpha_t": cfg.get("alpha_t", OPT_DEFAULTS["alpha_t"]),
             "alpha_n": cfg.get("alpha_n", OPT_DEFAULTS["alpha_n"]),
-            "use_rest_shape_measure": cfg.get("use_rest_shape_measure", True),
             "use_adaptive_dhat": cfg.get("use_adaptive_dhat", False),
             "collision_pairs": collision_pairs,
             "collision_mesh": {
@@ -633,9 +632,6 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
                 "advanced": {"reorder_nodes": True}
             }
         },
-        "input": {
-            "data": {}
-        }
     }
 
     if soft:
@@ -674,6 +670,54 @@ def _write_deformed_msh(msh_path: str, deformed: np.ndarray,
 
 _RED = "\033[31m"
 _RESET = "\033[0m"
+
+
+def _reduce_prims(prim_tags: dict, prim_nodes: dict, ambient_like_tags=()) -> tuple:
+    """Split a multi-tag mesh's prims ({key: tag names}, {key: vertex tuple})
+    into the 2-body polyfem mesh's (ambient prims, body prims), as
+    _write_polyfem_reduced_msh classifies them."""
+    ambient_like = set(ambient_like_tags) | {"ambient"}
+    ambient_prims: list = []
+    body_prims: list = []
+    for key, tags in prim_tags.items():
+        ordered = prim_nodes[key]
+        has_ambient = "ambient" in tags
+        non_ambient = tags - ambient_like
+        if has_ambient and non_ambient:
+            msg = (
+                f"Element with vertices {sorted(ordered)} has both 'ambient' "
+                f"and non-ambient tags {sorted(non_ambient)} — forbidden "
+                f"in polyfem mesh reduction"
+            )
+            print(f"{_RED}ERROR:{_RESET} {msg}", file=sys.stderr)
+            raise ValueError(msg)
+        if tags and not non_ambient:  # all tags ambient-like → ambient
+            ambient_prims.append(ordered)
+        elif non_ambient:
+            body_prims.append(ordered)
+        # else: tagless prim — skip
+    return ambient_prims, body_prims
+
+
+def reduced_mesh(mesh, ambient_like_tags=()) -> tuple:
+    """_write_polyfem_reduced_msh's mesh, in memory, from a TaggedMesh: returns
+    (PolyFEM fem mesh group, material tags, name_to_tag, tag_to_count,
+    tag_to_volume), the group as PolyFEM reads the file (every vertex; the
+    ambient cells, body 1, then the body cells, body 2) and the rest as
+    get_mesh_info returns them for the file."""
+    ambient, body = _reduce_prims(mesh.prim_tags, mesh.prim_nodes, ambient_like_tags)
+    npp = mesh.mesh_dim + 1
+    cells = np.array(ambient + body, dtype=np.int64).reshape(-1, npp)
+    body_ids = np.r_[np.ones(len(ambient), dtype=np.int64), np.full(len(body), 2, dtype=np.int64)]
+    tag_to_count, tag_to_volume = {}, {}
+    for tag in (1, 2):
+        v = mesh.coords[cells[body_ids == tag]]          # (cells, npp, dim)
+        edges = v[:, 1:] - v[:, :1]
+        tag_to_count[tag] = len(v)
+        tag_to_volume[tag] = float(np.abs(np.linalg.det(edges)).sum()
+                                   / (6.0 if mesh.mesh_dim == 3 else 2.0)) if len(v) else 0.0
+    group = {"vertices": mesh.coords, "cells": cells, "body_ids": body_ids}
+    return group, [1, 2], {"ambient": 1, "body": 2}, tag_to_count, tag_to_volume
 
 
 def _write_polyfem_reduced_msh(input_msh: str, output_msh: str,
@@ -729,26 +773,8 @@ def _write_polyfem_reduced_msh(input_msh: str, output_msh: str,
                     if vt not in vtuple_to_nodes:
                         vtuple_to_nodes[vt] = ordered
 
-        ambient_like = set(ambient_like_tags) | {"ambient"}
-        ambient_prims: list = []
-        body_prims: list = []
-        for vt, tags in vtuple_to_tags.items():
-            has_ambient = "ambient" in tags
-            non_ambient = tags - ambient_like
-            if has_ambient and non_ambient:
-                msg = (
-                    f"Element with vertices {sorted(vt)} has both 'ambient' "
-                    f"and non-ambient tags {sorted(non_ambient)} — forbidden "
-                    f"in polyfem mesh reduction"
-                )
-                print(f"{_RED}ERROR:{_RESET} {msg}", file=sys.stderr)
-                raise ValueError(msg)
-            ordered = vtuple_to_nodes[vt]
-            if tags and not non_ambient:  # all tags ambient-like → ambient
-                ambient_prims.append(ordered)
-            elif non_ambient:
-                body_prims.append(ordered)
-            # else: tagless prim — skip
+        ambient_prims, body_prims = _reduce_prims(
+            vtuple_to_tags, vtuple_to_nodes, ambient_like_tags)
 
         gmsh.clear()
         gmsh.model.add("polyfem_reduced_input")
