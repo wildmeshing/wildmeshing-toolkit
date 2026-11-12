@@ -1,8 +1,9 @@
-# IPC Toolkit (https://github.com/wildmeshing/ipc-toolkit)
+# IPC Toolkit (https://github.com/ipc-sim/ipc-toolkit)
 # License: MIT
 #
-# Public mirror of fsichetti/ipc-toolkit@upstream-merge, published in the wildmeshing
-# organisation with the author's permission. What wmtk uses from it is the `esp` subtree: the
+# Upstream, at polyfem's pin, so a build with both has one ipc. The esp work wmtk used to take
+# from the wildmeshing mirror of fsichetti/ipc-toolkit@upstream-merge (626e27e1) is upstream as
+# "Extremum Sum Potential (#259)", 7017fa9d. What wmtk uses from it is the `esp` subtree: the
 # Extremum-Sum Potential evaluated at arbitrary points (ArbitraryPointESP) and its analytic
 # gradient and Hessian, which the topological_offset component evaluates as its offset field.
 #
@@ -35,8 +36,8 @@ include(geogram)
 include(CPM)
 CPMAddPackage(
     NAME ipc_toolkit
-    GITHUB_REPOSITORY wildmeshing/ipc-toolkit
-    GIT_TAG 626e27e11ac64c68f1e00859fec86c4688fde51c
+    GITHUB_REPOSITORY ipc-sim/ipc-toolkit
+    GIT_TAG dff05854d74617f1e21ccb2bb321c45d7b4c6802
     OPTIONS
     "IPC_TOOLKIT_BUILD_TESTS OFF"
     "IPC_TOOLKIT_BUILD_PYTHON OFF"
@@ -85,7 +86,7 @@ endforeach()
 
 # ipc-toolkit compiles itself for the CPU of whatever machine ran cmake: its cmake/find/FindSIMD
 # settles on -march=native for GCC and for Clang >= 15, publishes it as the SIMD_CXX_FLAGS cache
-# variable, and (as of 626e27e1) applies it as
+# variable, and (as of 626e27e1, and still at dff05854) applies it as
 #
 #   target_compile_options(ipc_toolkit PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${SIMD_CXX_FLAGS}>")
 #

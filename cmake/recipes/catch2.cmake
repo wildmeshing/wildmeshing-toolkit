@@ -23,7 +23,7 @@ include(CPM)
 CPMAddPackage(
     NAME catch2
     GITHUB_REPOSITORY catchorg/Catch2
-    GIT_TAG v3.3.2
+    GIT_TAG v3.13.0 # polyfem's pin
 )
 
 set_target_properties(Catch2 PROPERTIES FOLDER third_party)

@@ -18,7 +18,8 @@
 #
 # on both Debug and Release. PoissonRecon is compiled unconditionally in geogram's third_party
 # CMakeLists -- there is no option that excludes it -- so the version is the only lever. Upstream
-# DELETED that header in v1.9.10, which is why this pins it there and nowhere else.
+# DELETED that header in v1.9.10, so the pin may not go below it. It is at 1.10.1, polyfem's pin,
+# so a build with both has one geogram.
 #
 # The alternative was IPC_TOOLKIT_WITH_GEOGRAM OFF, which does build. It is rejected because it is
 # not free: ipc falls back to its analytic distance-type classification, and the exact path is the
@@ -43,7 +44,7 @@
 # Pick the static platform matching what geogram would have detected. Each pair differs only in
 # the VORPALINE_BUILD_DYNAMIC line, except on Linux off x86, where geogram has no static
 # "nonx86" platform: Linux64-gcc-aarch64 is Linux64-gcc without the -m64 that aarch64 g++
-# rejects (its GEO_OS_LINUX_AARCH64 define is read nowhere in 1.9.10), and clang, which accepts
+# rejects (its GEO_OS_LINUX_AARCH64 define is read nowhere in 1.10.1), and clang, which accepts
 # -m64 on any 64-bit target, gets Linux64-clang. Windows needs nothing: geogram's MSVC and MinGW
 # defaults (Win-vs-generic, Win64-gcc) are static already. A "-dynamic" value already in the
 # cache -- from geogram's own detection in an earlier configure of the same build directory -- is
@@ -84,7 +85,7 @@ endif()
 
 include(CPM)
 CPMAddPackage(
-    URI "gh:BrunoLevy/geogram@1.9.10"
+    URI "gh:BrunoLevy/geogram@1.10.1"
     OPTIONS
         "GEOGRAM_WITH_GRAPHICS OFF"
         "GEOGRAM_WITH_LEGACY_NUMERICS OFF"
