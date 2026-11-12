@@ -546,13 +546,15 @@ public:
      * (edge_is_offset_surface_live() false) split by the loop's own split, the next longest when
      * that is refused. The midpoint is off the front and a corner of both children, so such a
      * split makes no pinned cell and removes one. A pinned triangle with all three edges on the
-     * front, a one-triangle component of its label, has no edge to split and is counted only:
-     * 3D's cell with all four faces on the offset surface. 3D's cell with all six edges but not
-     * all four faces on it, split on a face's edge, has no twin: a triangle's faces are its
-     * edges. EXPERIMENTAL_front_spanned_split (see the spec): every SPANNED edge -- both ends
-     * front vertices, not a front edge, no triangle at it in the input complex -- is split first,
-     * at its midpoint, off the front; the spanned triangle is the pinned one, and 3D's spanned
-     * face is 2D's spanned edge (codimension 1, every corner on the front, not on the front
+     * front, a one-triangle component of its label, has no such edge: it is split on its longest
+     * front edge, and the next round splits the edge from that midpoint (on the front) to the
+     * third corner, an edge off the front of both children -- a vertex off the front inside it,
+     * as 3D's six-edge split puts one on a face (see the scan in Optimize2d.cpp for the
+     * measurement); 3D's twin is its cell with all four faces on the offset surface.
+     * EXPERIMENTAL_front_spanned_split (see the spec): every SPANNED edge -- both
+     * ends front vertices, not a front edge, no triangle at it in the input complex -- is split
+     * first, at its midpoint, off the front; the spanned triangle is the pinned one, and 3D's
+     * spanned face is 2D's spanned edge (codimension 1, every corner on the front, not on the front
      * itself). Rescanned until nothing is left to split, at most kPocketMaxRounds rounds. One
      * [pocket split] line, `where` naming the pass. Before all of it, the chords the last settled
      * turn listed under EXPERIMENTAL_settle_mark "vertex_split" (m_settle_split_edges) are split,
@@ -561,8 +563,11 @@ public:
      */
     void front_pocket_split(const std::string& where);
     /// 3D's cap on front_pocket_split()'s rescans (TopoOffsetTetMesh::kPocketMaxRounds), the
-    /// same 10. In 2D a committed split makes no pinned cell and no spanned edge (its midpoint is
-    /// off the front) and removes at least one, so the rescans end on their own; the cap binds
+    /// same 10. In 2D a committed split of an edge off the front makes no pinned cell and no
+    /// spanned edge (its midpoint is off the front) and removes at least one; a split of an
+    /// all-front triangle's front edge removes it (and the triangle across, if that one is
+    /// all-front too) and makes at most four pinned cells, each with one edge off the front. So
+    /// the all-front count falls, then the rest, and the rescans end on their own; the cap binds
     /// only where the front flags are out of step with the labels (check_offset_membership()).
     static constexpr int kPocketMaxRounds = 10;
     /// EXPERIMENTAL_settle_mark "vertex_split": the front chords the last settled turn chose to

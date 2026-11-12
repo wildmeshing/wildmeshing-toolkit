@@ -5831,20 +5831,21 @@ void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
         const double la = len2(a), lb = len2(b);
         return la != lb ? la > lb : a < b;
     };
-    // A pinned cell: its corners sorted (it names the triangle across the round's splits), and
-    // the edges to split it on, longest first (ties by vertex ids).
+    // A pinned cell: its corners sorted (it names the triangle across the round's splits), the
+    // edges to split it on, longest first (ties by vertex ids), and whether all three of its
+    // edges are on the front (then they are the edges to split it on).
     struct Pinned
     {
         std::array<size_t, 3> vids;
         std::vector<std::array<size_t, 2>> edges;
+        bool all_front = false;
     };
-    // One scan of the live triangles. `no_edge`: pinned cells with all three edges on the front,
-    // which have no edge to split; `band`, when given: band triangles with all three corners on
-    // the front. 3D's count of cells with all six edges on the offset surface has no twin (see
-    // the declaration).
-    const auto scan = [&](size_t& no_edge, size_t* band) {
+    // One scan of the live triangles. `all_front`: pinned cells with all three edges on the
+    // front; `band`, when given: band triangles with all three corners on the front. 3D's count
+    // of cells with all six edges on the offset surface has no twin (see the declaration).
+    const auto scan = [&](size_t& all_front, size_t* band) {
         std::vector<Pinned> out;
-        no_edge = 0;
+        all_front = 0;
         for (const Tuple& t : get_faces()) {
             const size_t fid = t.fid(*this);
             const std::array<size_t, 3> vs = oriented_tri_vids(fid);
@@ -5866,11 +5867,27 @@ void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
                 p.edges.push_back(ev);
             }
             if (p.edges.empty()) {
-                // All three edges on the front: a one-triangle component of its label. A split
-                // would leave its boundary, every corner of it on the front, as it is, so it is
-                // counted only, as 3D counts its cell with all four faces on the offset surface.
-                ++no_edge;
-                continue;
+                // All three edges on the front: a one-triangle component of its label, the one
+                // pinned cell with no edge off the front. It is split on its longest front edge
+                // instead: the midpoint is on the front, and the edge from it to the third
+                // corner, off the front with both ends on it, is an edge of both children, each
+                // then a pinned cell with that one edge to split, which the next round splits
+                // (with EXPERIMENTAL_front_spanned_split, as a spanned edge first) -- a vertex off
+                // the front inside the triangle, a corner of all four of its descendants
+                // (simplicial_embedding()'s face split, made of two of the loop's edge splits, as
+                // 3D's six-edge split). Before, it was counted and left. MEASURED then
+                // (triwild20k_184874 at 0.9 delta_1, 2026-11-12): turn 1's collapse pass left a
+                // hole of the band as one such triangle, the smoothing pass after it flattened it
+                // to zero area at d = 0.34 delta, and it stayed there for all 30 turns (the label
+                // clean-up keeps every component, so it could not remove it). 3D's twin: its cell
+                // with all four faces on the offset surface.
+                p.all_front = true;
+                ++all_front;
+                for (size_t j = 0; j < 3; ++j) {
+                    std::array<size_t, 2> ev = get_edge_vids(tuple_from_edge(fid, j));
+                    if (ev[0] > ev[1]) std::swap(ev[0], ev[1]);
+                    p.edges.push_back(ev);
+                }
             }
             std::sort(p.edges.begin(), p.edges.end(), longest_first);
             out.push_back(std::move(p));
@@ -5941,11 +5958,11 @@ void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
             n_gone,
             n_no);
     }
-    size_t n_band = 0, no_edge = 0;
-    std::vector<Pinned> pinned = scan(no_edge, &n_band);
+    size_t n_band = 0, all_front = 0;
+    std::vector<Pinned> pinned = scan(all_front, &n_band);
     std::vector<std::array<size_t, 2>> sp_edges;
     scan_spanned(sp_edges);
-    const size_t found = pinned.size() + no_edge, found_no_edge = no_edge;
+    const size_t found = pinned.size(), found_all_front = all_front;
     const size_t found_edges = sp_edges.size();
     size_t n_split = 0, n_refused = 0, n_split_edges = 0;
     int rounds = 0;
@@ -5978,10 +5995,11 @@ void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
         }
         n_split += split_now;
         // Every triangle a split of an edge off the front makes has the off-front midpoint as a
-        // corner, so a rescan finds the cells and edges whose splits were all refused; with none
-        // committed it finds the same ones.
+        // corner, so a rescan finds the cells and edges whose splits were all refused, and the
+        // children of an all-front triangle's front-edge split, each with its one edge off the
+        // front; with none committed it finds the same ones.
         if (split_now == 0) break;
-        pinned = scan(no_edge, nullptr);
+        pinned = scan(all_front, nullptr);
         scan_spanned(sp_edges);
     }
     if (cap) {
@@ -5992,20 +6010,22 @@ void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
             kPocketMaxRounds,
             pinned.size());
     }
+    const size_t left_all_front = size_t(
+        std::count_if(pinned.begin(), pinned.end(), [](const Pinned& p) { return p.all_front; }));
     logger().info(
         "\t[pocket split] {}: pinned cells (outside the input complex, all three corners on the "
         "front) {}, of which {} with all three edges on the front | edges split {} in {} "
-        "round(s), split attempts refused {} | left: {} with all three edges on the front (not "
-        "split), {} with an edge off it (every split refused, or the cap) | of the pinned cells "
-        "found, band cells {}{}",
+        "round(s), split attempts refused {} | left (every split refused, or the cap): {} with "
+        "all three edges on the front, {} with an edge off it | of the pinned cells found, band "
+        "cells {}{}",
         where,
         found,
-        found_no_edge,
+        found_all_front,
         n_split,
         rounds,
         n_refused,
-        no_edge,
-        pinned.size(),
+        left_all_front,
+        pinned.size() - left_all_front,
         n_band,
         m_offset_params.front_spanned_split
             ? fmt::format(

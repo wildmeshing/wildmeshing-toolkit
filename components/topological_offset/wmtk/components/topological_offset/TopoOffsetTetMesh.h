@@ -741,8 +741,10 @@ public:
      * pinned cell and removes at least one. A pinned cell with all six edges on the offset surface
      * has instead the longest edge of one of its faces that is not an offset face split: its two
      * children are pinned, each with an edge off the offset surface, which the next round splits.
-     * A pinned cell with all four faces on the offset surface has no edge to split and is counted
-     * only. Rescanned until no pinned cell has an edge to split, at most kPocketMaxRounds rounds.
+     * A pinned cell with all four faces on the offset surface, a one-cell component of its label,
+     * has its longest edge split: both children have all six edges on the offset surface and the
+     * face between them off it, and the next rounds split them as above. Rescanned until nothing
+     * is left to split, at most kPocketMaxRounds rounds.
      * One [pocket split] line, `where` naming the pass. A no-op with the key off and in a TetWild
      * pass. The measurements: the spec doc.
      */

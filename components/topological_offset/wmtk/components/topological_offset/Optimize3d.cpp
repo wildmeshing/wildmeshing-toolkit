@@ -5529,20 +5529,21 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         return (m_vertex_attribute[e[0]].m_posf - m_vertex_attribute[e[1]].m_posf).squaredNorm();
     };
     // A pinned cell: its corners sorted (it names the cell across the round's splits), the edges
-    // to split it on, longest first (ties by vertex ids), and whether all six of its edges are on
-    // the offset surface.
+    // to split it on, longest first (ties by vertex ids), and whether all six of its edges, and
+    // all four of its faces, are on the offset surface.
     struct Pinned
     {
         std::array<size_t, 4> vids;
         std::vector<std::array<size_t, 2>> edges;
         bool six = false;
+        bool four = false;
     };
-    // One scan of the live cells. `no_face`: pinned cells with all four faces on the offset
-    // surface, which have no edge to split; `six` and `band`, when given: pinned cells with all
-    // six edges on it, and band cells with all four corners on the front.
-    const auto scan = [&](size_t& no_face, size_t* six, size_t* band) {
+    // One scan of the live cells. `four_face`: pinned cells with all four faces on the offset
+    // surface; `six` and `band`, when given: pinned cells with all six edges on it, and band
+    // cells with all four corners on the front.
+    const auto scan = [&](size_t& four_face, size_t* six, size_t* band) {
         std::vector<Pinned> out;
-        no_face = 0;
+        four_face = 0;
         for (const Tuple& t : get_tets()) {
             const size_t tid = t.tid(*this);
             const std::array<size_t, 4> vs = oriented_tet_vids(tid);
@@ -5579,13 +5580,11 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
                 // the cell's descendants. That is simplicial_embedding()'s face split, made of
                 // the loop's own edge splits; the component's face split hooks are the
                 // construction's (they write no m_is_on_offset, no rest, no exact fallback).
-                // A cell with all four faces on the offset surface is a one-cell component of
-                // its label; a split would leave its boundary, every corner of it on the front,
-                // as it is, so it is counted only. MEASURED before this (cube_in, target 0.3,
-                // 7 turns): 176 such cells over the passes (31 distinct; 102 band, 74 not), every
-                // one with exactly three faces on the offset surface, their shared corner on
-                // exactly three offset faces and in no other cell of the cell's label -- a cell
-                // alone under a front vertex of valence 3 -- and all 176 left unsplit.
+                // MEASURED before this (cube_in, target 0.3, 7 turns): 176 such cells over the
+                // passes (31 distinct; 102 band, 74 not), every one with exactly three faces on
+                // the offset surface, their shared corner on exactly three offset faces and in no
+                // other cell of the cell's label -- a cell alone under a front vertex of valence
+                // 3 -- and all 176 left unsplit.
                 p.six = true;
                 if (six) ++*six;
                 for (int j = 0; j < 4; ++j) {
@@ -5601,8 +5600,21 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
                     }
                 }
                 if (p.edges.empty()) {
-                    ++no_face;
-                    continue;
+                    // All four faces on the offset surface: a one-cell component of its label,
+                    // with no face to split on. It is split on its longest edge instead (on the
+                    // offset surface, so the midpoint m is on the front): the face (m, c, d)
+                    // between its two children, c and d its other corners, is not an offset face
+                    // and has its three edges on the offset surface, so both children are cells
+                    // with all six edges on it, which the next rounds split as above -- a vertex
+                    // off the front inside the cell. Before, it was counted and left. MEASURED
+                    // then on the 2D twin (TopoOffsetTriMesh::front_pocket_split(); 2026-11-12):
+                    // a hole of the band left as one such triangle was flattened by the smoothing
+                    // pass after it and stayed flat for the run.
+                    p.four = true;
+                    ++four_face;
+                    for (int i = 0; i < 4; ++i) {
+                        for (int j = i + 1; j < 4; ++j) p.edges.push_back({{p.vids[i], p.vids[j]}});
+                    }
                 }
             }
             std::sort(p.edges.begin(), p.edges.end(), [&](const auto& a, const auto& b) {
@@ -5719,12 +5731,12 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
             n_gone,
             n_no);
     }
-    size_t n_band = 0, n_six = 0, no_face = 0;
-    std::vector<Pinned> pinned = scan(no_face, &n_six, &n_band);
+    size_t n_band = 0, n_six = 0, four_face = 0;
+    std::vector<Pinned> pinned = scan(four_face, &n_six, &n_band);
     std::vector<std::array<size_t, 2>> sp_edges;
     std::vector<SpannedFace> sp_faces;
     scan_spanned(sp_edges, sp_faces);
-    const size_t found = pinned.size() + no_face, found_no_face = no_face;
+    const size_t found = pinned.size(), found_four_face = four_face;
     const size_t found_edges = sp_edges.size(), found_faces = sp_faces.size();
     size_t n_split = 0, n_refused = 0, n_split_edges = 0, n_split_faces = 0;
     const long waits0 = m_split_order_waits.load();
@@ -5769,11 +5781,12 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         }
         n_split += split_now;
         // Every cell a split of an edge off the offset surface makes has the off-front midpoint
-        // as a corner; a split of an edge on it (a cell with all six edges there) leaves two
-        // children with one edge off it. So a rescan finds those children and the cells whose
-        // splits were all refused; with none committed it finds the same ones.
+        // as a corner; a split of an edge on it leaves two children with one edge off it (a cell
+        // with all six edges there) or with all six edges there and one face off it (a cell with
+        // all four faces there). So a rescan finds those children and the cells whose splits
+        // were all refused; with none committed it finds the same ones.
         if (split_now == 0) break;
-        pinned = scan(no_face, nullptr, nullptr);
+        pinned = scan(four_face, nullptr, nullptr);
         scan_spanned(sp_edges, sp_faces);
     }
     if (cap) {
@@ -5784,27 +5797,28 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
             kPocketMaxRounds,
             pinned.size());
     }
-    const size_t left_six_split =
+    const size_t left_six =
         size_t(std::count_if(pinned.begin(), pinned.end(), [](const Pinned& p) { return p.six; }));
+    const size_t left_four =
+        size_t(std::count_if(pinned.begin(), pinned.end(), [](const Pinned& p) { return p.four; }));
     logger().info(
         "\t[pocket split] {}: pinned cells (outside the input complex, all four corners on the "
         "front) {}, of which {} with all six edges on the offset surface ({} with all four faces "
         "on it) | edges split {} in {} round(s), split attempts refused {} ({} by the "
-        "longest-edge order) | left: {} with all six edges on the offset surface ({} with all "
-        "four faces on it, not split; {} every split refused, or the cap), {} with an edge off "
-        "it (every split refused, or the cap) | of the pinned cells found, band cells {}{}",
+        "longest-edge order) | left (every split refused, or the cap): {} with all six edges on "
+        "the offset surface ({} with all four faces on it), {} with an edge off it | of the "
+        "pinned cells found, band cells {}{}",
         where,
         found,
         n_six,
-        found_no_face,
+        found_four_face,
         n_split,
         rounds,
         n_refused,
         m_split_order_waits.load() - waits0,
-        no_face + left_six_split,
-        no_face,
-        left_six_split,
-        pinned.size() - left_six_split,
+        left_six,
+        left_four,
+        pinned.size() - left_six,
         n_band,
         m_offset_params.front_spanned_split
             ? fmt::format(

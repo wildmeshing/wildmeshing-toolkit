@@ -4939,9 +4939,10 @@ namespace {
 /// P = (o, x, y, z) -- o the origin, x, y, z the unit points on the axes -- is background
 /// (label 0) and tet 0. On the face of P in the plane where coordinate a is 0, for each axis a in
 /// `axes`, sits a band blob: the tet on that face with its apex u 0.5 beyond the face's centroid,
-/// coned from its own centroid e into four band cells (label 2). A blob lies where coordinate a
-/// is <= 0 and the other two are >= 0, so no two cells overlap, and every blob cell has e, which
-/// is on no offset face, as a corner. The offset surface (face_is_offset_surface_live()) is each
+/// coned from its own centroid e into four band cells (label 2); axis 3 stands for P's fourth
+/// face (x, y, z), its apex u = (1, 1, 1). A blob lies where coordinate a is <= 0 and the other
+/// two are >= 0 (axis 3: where x + y + z >= 1, all three >= 0), so no two cells overlap, and every
+/// blob cell has e, which is on no offset face, as a corner. The offset surface (face_is_offset_surface_live()) is each
 /// blob's face against P and its three faces on the domain boundary. Vertex ids: o 0, x 1, y 2,
 /// z 3, then u and e of each blob in turn. The front flags are derived from the labels
 /// (refresh_offset_membership()), and every split is the loop's (EdgeSplitMode::Optimization).
@@ -4963,17 +4964,22 @@ pocket_mesh(Parameters& param, const std::vector<int>& axes, const bool cone = f
         labels = {0, 0, 0, 0};
     }
     for (const int a : axes) {
-        // The face of P in the plane coordinate a = 0: every corner but the one on axis a.
+        // The face of P in the plane coordinate a = 0: every corner but the one on axis a; for
+        // a = 3, (x, y, z).
         std::array<int, 3> f{};
         int n = 0;
         for (int i = 0; i < 4; ++i) {
-            if (i != a + 1) f[size_t(n++)] = i;
+            if (i != (a + 1) % 4) f[size_t(n++)] = i;
         }
         const Vector3d& p0 = pos[size_t(f[0])];
         const Vector3d& p1 = pos[size_t(f[1])];
         const Vector3d& p2 = pos[size_t(f[2])];
         Vector3d u = (p0 + p1 + p2) / 3.;
-        u[a] = -0.5;
+        if (a < 3) {
+            u[a] = -0.5;
+        } else {
+            u = Vector3d(1., 1., 1.);
+        }
         const Vector3d e = (p0 + p1 + p2 + u) / 4.;
         const int iu = int(pos.size()), ie = iu + 1;
         pos.push_back(u);
@@ -5184,6 +5190,64 @@ TEST_CASE("pocket-split-six-edge-cell", "[offset][3d][pocket_split]")
              (holds(to_q, p) && has_face(faces0, to_q))));
     }
     CHECK(with_m == 2 * through_pq);
+}
+
+TEST_CASE("pocket-split-four-face-cell", "[offset][3d][pocket_split]")
+{
+    // A pinned cell with all four faces on the offset surface, a one-cell component of its label:
+    // P with blobs on all four faces. Round 1 splits its longest edge, (x, y) (ties by vertex
+    // ids), at m = (0.5, 0.5, 0), on the offset surface; both children have all six edges on it
+    // and the face (o, m, z) between them off it, whose longest edge (m, z) round 2 splits at
+    // m' = (0.25, 0.25, 0.5), on the offset surface too (by the spanned-face pass with
+    // EXPERIMENTAL_front_spanned_split on, else by the six-edge split: both); round 3 splits
+    // (o, m') at n = (0.125, 0.125, 0.25), off it. Left: no pinned cell, and n, off the front, a
+    // corner of P's descendants alone. (x, y) is in P and two cells of each blob on (o, x, y) and
+    // (x, y, z); (m, z) in two of P's descendants and two of the blob on (x, y, z); (o, m') in
+    // four of P's: 13 cells more.
+    const bool spanned = GENERATE(false, true);
+    INFO("EXPERIMENTAL_front_spanned_split " << spanned);
+    Parameters param;
+    param.front_spanned_split = spanned;
+    auto mesh = pocket_mesh(param, {0, 1, 2, 3});
+    mesh->m_offset_params.front_pocket_split = true;
+    // The premises: P is the one pinned cell, and its six edges and four faces are on the offset
+    // surface.
+    REQUIRE(count_pinned(*mesh) == 1);
+    for (size_t i = 0; i < 4; ++i) {
+        for (size_t j = i + 1; j < 4; ++j) REQUIRE(mesh->edge_is_offset_surface_live(i, j));
+    }
+    const auto faces0 = mesh->offset_surface_faces();
+    for (const auto& f :
+         std::vector<std::array<size_t, 3>>{{{0, 1, 2}}, {{0, 1, 3}}, {{0, 2, 3}}, {{1, 2, 3}}}) {
+        REQUIRE(has_face(faces0, f));
+    }
+    REQUIRE(front_flags_live(*mesh));
+    const size_t n_cells0 = mesh->get_tets().size(), n_verts0 = mesh->get_vertices().size();
+
+    mesh->front_pocket_split("test");
+
+    CHECK(count_pinned(*mesh) == 0);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(front_flags_live(*mesh));
+    CHECK(mesh->get_vertices().size() == n_verts0 + 3);
+    CHECK(mesh->get_tets().size() == n_cells0 + 13);
+    const auto at = [&](const Vector3d& x) {
+        for (const TetMesh::Tuple& v : mesh->get_vertices()) {
+            if (mesh->m_vertex_attribute[v.vid(*mesh)].m_posf == x) return v.vid(*mesh);
+        }
+        return std::numeric_limits<size_t>::max();
+    };
+    const size_t m = at(Vector3d(0.5, 0.5, 0.)), m2 = at(Vector3d(0.25, 0.25, 0.5)),
+                 n = at(Vector3d(0.125, 0.125, 0.25));
+    REQUIRE(m != std::numeric_limits<size_t>::max());
+    REQUIRE(m2 != std::numeric_limits<size_t>::max());
+    REQUIRE(n != std::numeric_limits<size_t>::max());
+    CHECK(mesh->m_vertex_extra[m].m_is_on_offset);
+    CHECK(mesh->m_vertex_extra[m2].m_is_on_offset);
+    CHECK_FALSE(mesh->m_vertex_extra[n].m_is_on_offset);
+    for (const size_t t : mesh->get_one_ring_tids_for_vertex(n)) {
+        CHECK(mesh->m_tet_attribute[t].label == 0);
+    }
 }
 
 TEST_CASE("pocket-split-key-off", "[offset][3d][pocket_split]")
@@ -5434,31 +5498,63 @@ TEST_CASE("pocket-split-pinned-cell-2d", "[offset][2d][pocket_split]")
 
 TEST_CASE("pocket-split-front-cell-2d", "[offset][2d][pocket_split]")
 {
-    // The 2D stand-in for pocket-split-six-edge-cell. 3D splits a pinned cell whose six edges
-    // are on the offset surface on an edge of its one face that is not, which 2D cannot have: a
-    // triangle's faces are its edges, so a pinned triangle with no edge off the front has all its
-    // faces on the front, 3D's cell with all four faces on the offset surface, a one-cell
-    // component of its label, which the slot counts and leaves. P with blobs on all three edges:
-    // the one pinned cell, nothing split, the mesh unchanged.
+    // A pinned triangle with all three edges on the front, a one-triangle component of its label
+    // (3D's cell with all four faces on the offset surface): the slot splits it as 3D's six-edge
+    // split splits a face, with two of the loop's edge splits. P with blobs on all three edges:
+    // the one pinned cell, no edge of it off the front. Round 1 splits its longest front edge,
+    // (x, y), at m = (0.5, 0.5), on the front; both children of P are pinned with the one edge
+    // (o, m) off the front, a spanned edge, which round 2 splits at c = (0.25, 0.25), off the
+    // front (by the spanned pass with EXPERIMENTAL_front_spanned_split on, else by the pinned
+    // pass: both). Left: no pinned cell; P's four descendants, all non-band, around c; the front
+    // the same curve, (x, y) now (x, m) and (m, y). The front edges are tracked as the offset
+    // class here, as the loop tracks them (the fixture tracks none): a split takes the midpoint's
+    // front flag from the split edge's class (split_after_vertex()), which a front-edge split
+    // reads.
+    const bool spanned = GENERATE(false, true);
+    INFO("EXPERIMENTAL_front_spanned_split " << spanned);
     Parameters param;
+    param.front_spanned_split = spanned;
     auto mesh = pocket_mesh_2d(param, {0, 1, 2});
     mesh->m_offset_params.front_pocket_split = true;
+    for (const auto& e : mesh->get_edges()) {
+        if (!mesh->edge_is_offset_surface_live(e)) continue;
+        auto& a = mesh->m_edge_attribute[e.eid(*mesh)];
+        a.m_is_surface_fs = true;
+        a.m_surface_class = TopoOffsetTriMesh::OFFSET_SURFACE_CLASS;
+    }
     REQUIRE(count_pinned_2d(*mesh) == 1);
     for (size_t i = 0; i < 3; ++i) {
         for (size_t j = i + 1; j < 3; ++j) REQUIRE(front_edge_2d(*mesh, i, j));
     }
     REQUIRE(count_spanned_edges_2d(*mesh) == 0);
     REQUIRE(front_flags_live_2d(*mesh));
-    const auto cells0 = sorted_cells_2d(*mesh);
-    const auto edges0 = mesh->offset_surface_edges();
-    const size_t n_verts0 = mesh->get_vertices().size();
+    const size_t n_edges0 = mesh->offset_surface_edges().size();
+    const size_t n_cells0 = mesh->get_faces().size(), n_verts0 = mesh->get_vertices().size();
 
     mesh->front_pocket_split("test");
 
-    CHECK(count_pinned_2d(*mesh) == 1);
-    CHECK(mesh->get_vertices().size() == n_verts0);
-    CHECK(sorted_cells_2d(*mesh) == cells0);
-    CHECK(mesh->offset_surface_edges() == edges0);
+    CHECK(count_pinned_2d(*mesh) == 0);
+    CHECK(count_spanned_edges_2d(*mesh) == 0);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(front_flags_live_2d(*mesh));
+    // Two splits: m and c; (x, y) splits P and its blob triangle, (o, m) both children of P.
+    CHECK(mesh->get_vertices().size() == n_verts0 + 2);
+    CHECK(mesh->get_faces().size() == n_cells0 + 4);
+    CHECK(mesh->get_incident_fids_for_edge(1, 2).empty());
+    const size_t m = midpoint_xy_2d(*mesh);
+    CHECK(mesh->m_vertex_extra[m].m_is_on_offset);
+    CHECK(mesh->offset_surface_edges().size() == n_edges0 + 1);
+    CHECK(front_edge_2d(*mesh, 1, m));
+    CHECK(front_edge_2d(*mesh, m, 2));
+    size_t c = std::numeric_limits<size_t>::max();
+    for (const auto& v : mesh->get_vertices()) {
+        if (mesh->m_vertex_attribute[v.vid(*mesh)].m_posf == Vector2d(0.25, 0.25)) c = v.vid(*mesh);
+    }
+    REQUIRE(c != std::numeric_limits<size_t>::max());
+    CHECK_FALSE(mesh->m_vertex_extra[c].m_is_on_offset);
+    const auto ring = mesh->get_one_ring_fids_for_vertex(c);
+    CHECK(ring.size() == 4);
+    for (const size_t f : ring) CHECK_FALSE(mesh->face_is_offset_band(f));
 }
 
 TEST_CASE("pocket-split-key-off-2d", "[offset][2d][pocket_split]")
