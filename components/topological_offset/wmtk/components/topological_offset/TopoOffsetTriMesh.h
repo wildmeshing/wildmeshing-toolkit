@@ -2333,14 +2333,22 @@ public:
     {
         return containment_for(vertex_boundary_mask(vid), /*on_offset=*/false);
     }
-    /// The smoother holds every tracked segment at the vertex to that one envelope, whatever the
-    /// segment: the per-vertex answer above, not the base's per-segment one.
+    /// The smoother holds each tracked segment at a vertex to its own containment, the base's
+    /// per-segment answer (surface_envelope_for_edge() above): a held segment to its labels'
+    /// tubes, a front segment to none in the loop. As 3D's per-face answer since 2fa364b98c
+    /// (2026-11-03). Until 2026-11-12 every tracked segment at a held vertex was held to that
+    /// vertex's envelope, front segments included, so at a crossing of the front with a held
+    /// boundary -- where the front edges leave the held tube -- every move of the crossing vertex
+    /// was refused. MEASURED (two overlapping disks, the curves, tag_0 offset to 0.2, tag_1 held):
+    /// the crossing vertex's solve moved it 0.021 along tag_1, lowering E, and the containment
+    /// refused it on every turn from 7 to 200, its front edge to a vertex 0.0076 off tag_1 being
+    /// outside the 0.0034 tube.
     std::shared_ptr<Envelope> smoothing_containment_envelope(
-        const size_t vid,
-        const std::array<size_t, 2>& /*edge*/,
-        const EdgeAttributes& /*attr*/) const override
+        const size_t /*vid*/,
+        const std::array<size_t, 2>& edge,
+        const EdgeAttributes& attr) const override
     {
-        return smoothing_containment_envelope(vid);
+        return surface_envelope_for_edge(edge, attr);
     }
 
     /**
