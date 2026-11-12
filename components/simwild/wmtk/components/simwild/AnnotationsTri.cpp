@@ -998,6 +998,28 @@ void SimWildMeshTri::tight_seal_geom(
                      : std::string("all tags"),
             tags);
 
+        // DEBUG_output: the mesh after J is found, before anything is filled: join_region marks
+        // J's faces, join_component numbers J's components (as above; -1 outside J), and
+        // join_filled marks the components that are filled. Written before the boundary check
+        // below, which may throw.
+        if (m_params.debug_output) {
+            std::vector<double> join(tri_capacity(), 0.), component(tri_capacity(), -1.),
+                to_fill(tri_capacity(), 0.);
+            for (const size_t id : J_faces) {
+                join[id] = 1.;
+                component[id] = comp_id[id];
+            }
+            for (const ConnectedComponent& comp : components_seal) {
+                for (const size_t id : comp.cells) {
+                    to_fill[id] = 1.;
+                }
+            }
+            write_vtu(
+                fmt::format("debug_{}_join_regions", m_debug_print_counter++),
+                nullptr,
+                {{"join_region", join}, {"join_component", component}, {"join_filled", to_fill}});
+        }
+
         // J may not touch the mesh's boundary at all, not even at a vertex, in any component: the
         // topology of a region that reaches the boundary is much harder to reason about.
         const size_t n_on_boundary = tight_seal_cells_on_boundary(J_faces);

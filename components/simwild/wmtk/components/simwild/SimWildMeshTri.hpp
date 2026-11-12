@@ -251,7 +251,11 @@ public:
     size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
 
-    void write_vtu(const std::string& path, MeshMap* output = nullptr) const;
+    /// `cell_fields`: extra cell fields, each a name and a value per face id (missing ids write 0).
+    void write_vtu(
+        const std::string& path,
+        MeshMap* output = nullptr,
+        const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields = {}) const;
     void write_vtu_with_energies(const std::string& path) const;
 
 public:

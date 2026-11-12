@@ -792,7 +792,10 @@ size_t SimWildMeshTri::refine_sizing_around_worst(double)
 }
 
 
-void SimWildMeshTri::write_vtu(const std::string& path, MeshMap* output) const
+void SimWildMeshTri::write_vtu(
+    const std::string& path,
+    MeshMap* output,
+    const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields) const
 {
     if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
@@ -819,10 +822,15 @@ void SimWildMeshTri::write_vtu(const std::string& path, MeshMap* output) const
     VectorXd amips(tri_capacity());
     VectorXd amips_target(tri_capacity());
     VectorXd amips_rel(tri_capacity());
+    std::vector<VectorXd> extra(cell_fields.size(), VectorXd::Zero(tri_capacity()));
 
     int index = 0;
     for (const Tuple& t : faces) {
         size_t tid = t.fid(*this);
+        for (size_t k = 0; k < cell_fields.size(); ++k) {
+            const std::vector<double>& values = cell_fields[k].second;
+            extra[k][index] = tid < values.size() ? values[tid] : 0.;
+        }
         for (size_t j = 0; j < m_tags_count; ++j) {
             tags[j](index, 0) = m_face_attribute[tid].tags.count(j) ? 1 : 0;
         }
@@ -859,6 +867,9 @@ void SimWildMeshTri::write_vtu(const std::string& path, MeshMap* output) const
     writer->add_cell_field("quality", amips);
     writer->add_cell_field("quality_target", amips_target);
     writer->add_cell_field("quality_rel", amips_rel);
+    for (size_t k = 0; k < cell_fields.size(); ++k) {
+        writer->add_cell_field(cell_fields[k].first, extra[k]);
+    }
     writer->add_field("sizing_field", v_sizing_field);
     writer->add_field("is_rounded", v_rounded);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
