@@ -347,16 +347,18 @@ public:
      * lie on R is split at its centroid, then each edge outside R joining two vertices of R at its
      * midpoint. Without it, a gap one face wide would be in J at any distance, every vertex of R
      * counting as inside. Then J is found in three steps.
-     *  1. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
+     *  1. The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere
+     *     traced, then bisected to the level).
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
-     *  2. The vertices' labels (tight seal v2 note, section 2), with tol = trace_rel_tol x
-     *     the mesh's bounding box diagonal (also the tolerance of both sphere traces). A vertex of R is ON if d(v, S) <= distance/2 + tol, else IN (R lies in the
-     *     closing; S, linear in each face, can pass closer to R than the level set). Any other
-     *     vertex is IN if it is in R + B and d(v, S) >= distance/2 + tol, else OUT. Every face
-     *     outside R with an IN or ON vertex is processed: each of its edges from an IN vertex to
-     *     an OUT one is split where it leaves J, at d(x, S) = distance/2, sphere traced from the
-     *     IN end (to within tol), the new vertex ON; and J is the processed faces whose vertices
-     *     are all IN or ON.
+     *  2. The vertices' labels (tight seal v2 note, section 2), with tol = trace_rel_tol x the
+     *     mesh's bounding box diagonal (also the tolerance of both sphere traces). A vertex of R
+     *     is ON if d(v, S) <= distance/2 + tol, else IN (R lies in the closing; S, linear in each
+     *     face, can pass closer to R than the level set). Any other vertex is IN if it is in
+     *     R + B and d(v, S) >= distance/2 + tol, else OUT. The faces outside R whose vertices are
+     *     all IN or ON are marked. Each edge from an IN vertex to an OUT one is split where it
+     *     leaves J, at d(x, S) = distance/2 + tol, the labels' level (sphere traced from the IN
+     *     end, then bisected), and of the faces it makes, those touching its IN end are marked and
+     *     the others not; the new vertex takes no label. J is the marked faces.
      *  3. The connected components of J, through edges.
      * The colors: fill selection k (two or more) is color k; a face outside J satisfying it has
      * that color (a face of J is no color, whatever its tags). A component borders a color if one
@@ -446,10 +448,11 @@ private:
         std::vector<CornerLabels>* corner_labels = nullptr);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
     /// as a BVH of segments. On each edge of a face outside R (region < 0) between a vertex with
-    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
-    /// from the near end (to within tol, on R's side); the crossings of each face are joined into
-    /// its cut segment. Returns false if S is empty; n_traced: edges traced, n_failed: traces that left
-    /// their edge (the far end is taken).
+    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is where dist_R = radius:
+    /// sphere traced from the near end, each step at least tol, then bisected
+    /// (tight_seal::level_crossing). The crossings of each face are joined into its cut segment.
+    /// Returns false if S is empty; n_traced: edges traced, n_failed: those with no crossing found
+    /// (the far end is taken).
     bool tight_seal_dilation_surface_bvh(
         const std::vector<size_t>& fids,
         const std::vector<int>& region,

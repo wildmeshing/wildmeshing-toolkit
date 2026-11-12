@@ -779,7 +779,8 @@ void SimWildMesh::tight_seal_geom(
 
         // 1. The dilation surface S, the level set d(x, R) = d/2 (the boundary of R + B),
         // traced on the edges that cross it and joined in each tet. The closing is the part
-        // of R + B at least d/2 from S, so J ends where d(x, S) falls to d/2.
+        // of R + B at least d/2 from S, so J ends where d(x, S) falls to d/2 (to d/2 + tol, with
+        // the tolerance of step 2).
         SimpleBVH::BVH bvh_S;
         size_t n_S_traced = 0;
         size_t n_S_failed = 0;
@@ -794,8 +795,8 @@ void SimWildMesh::tight_seal_geom(
             n_S_traced,
             n_S_failed);
         logger().info(
-            "tight_seal_geom: dilation surface traced on {} edges to d(x, R) = d/2 ({} left "
-            "the edge)",
+            "tight_seal_geom: dilation surface found on {} edges where d(x, R) = d/2 ({} with no "
+            "crossing found, their far end taken)",
             n_S_traced,
             n_S_failed);
         const std::function<double(const Vector3d&)> dist_S = [&](const Vector3d& p) {
@@ -808,17 +809,15 @@ void SimWildMesh::tight_seal_geom(
         // R), but S, joined linearly in each tet, may pass closer to R than the level set, so a
         // vertex of R where the closing's boundary runs along R is ON whatever the rounding. Any
         // other vertex is IN if it lies in R + B (d(v, R) < d/2) at least d/2 + tol from S,
-        // and OUT otherwise. Every tet outside R with an IN or ON vertex is processed: each of
-        // its edges from an IN vertex to an OUT one is split where d(x, S) falls to d/2, sphere
-        // traced from the IN end (d(x, S) is 1-Lipschitz, so a step of d(x, S) - d/2 cannot cross
-        // the level set, and the trace stops within the tolerance of it), and the new vertex is
-        // ON. An edge from an ON vertex is not split: the trace from it stops at once. J is then
-        // the processed tets whose vertices are all IN or ON; `inside` holds both.
+        // and OUT otherwise; `inside` holds IN and ON. Edges from an IN vertex to an OUT one are
+        // then split where d(x, S) falls to d/2 + tol, the same level (sphere traced from the IN
+        // end, then bisected; tight_seal::level_crossing), as below.
         std::vector<char> inside(vert_capacity(), 0);
         size_t n_in = 0; // IN, not a vertex of R
-        // DEBUG_output: each vertex's label, 0 OUT, 1 ON, 2 IN, for the join-region frame. The op
-        // itself needs no more than `inside`: the trace from an ON vertex of R stops at once.
-        std::vector<char> label;
+        // DEBUG_output: each vertex's label, 0 OUT, 1 ON, 2 IN (-1 for a vertex a split makes,
+        // which takes none), for the join-region frame. The op itself needs no more than
+        // `inside`: the trace from an ON vertex of R stops at once.
+        std::vector<int> label;
         if (m_params.debug_output) {
             label.assign(vert_capacity(), 0);
         }
@@ -842,18 +841,21 @@ void SimWildMesh::tight_seal_geom(
             "tight_seal_geom: {} vertices off R are IN, at least d/2 + tol from S; every "
             "vertex of R is IN or ON",
             n_in);
-        std::vector<size_t> to_process;
-        for (const size_t tid : tids) {
-            const auto vs = oriented_tet_vids(tid);
-            if (region[tid] < 0 &&
-                (inside[vs[0]] || inside[vs[1]] || inside[vs[2]] || inside[vs[3]])) {
-                to_process.push_back(tid);
-            }
-        }
-        // the edges J's boundary crosses: from inside to outside
+        // Marked: the tets outside R whose vertices are all IN or ON. Then each edge from an
+        // inside vertex to an OUT one is split where d(x, S) falls to d/2 + tol, and of the tets it
+        // makes, those touching its inside end are marked and the others not; the new vertex
+        // takes no label. An edge from an ON vertex is not split: the trace from it stops at once.
+        // J is then the marked tets.
+        std::unordered_set<size_t> marked;
         std::vector<simplex::Edge> split_edges;
-        for (const size_t tid : to_process) {
+        for (const size_t tid : tids) {
+            if (region[tid] >= 0) {
+                continue;
+            }
             const auto vs = oriented_tet_vids(tid);
+            if (inside[vs[0]] && inside[vs[1]] && inside[vs[2]] && inside[vs[3]]) {
+                marked.insert(tid);
+            }
             for (const auto& [a, b] : tight_seal::tet_edges) {
                 if (inside[vs[a]] != inside[vs[b]]) {
                     split_edges.emplace_back(vs[a], vs[b]);
@@ -861,9 +863,8 @@ void SimWildMesh::tight_seal_geom(
             }
         }
         vector_unique(split_edges);
+        const size_t n_marked = marked.size();
 
-        // the processed tets, kept up to date as their edges are split
-        std::unordered_set<size_t> processed(to_process.begin(), to_process.end());
         Vector3d trace_point;
         Vector3d trace_dir;
         // linear along the edge, zero at the traced point, so the split lands on it
@@ -872,54 +873,60 @@ void SimWildMesh::tight_seal_geom(
         };
         size_t n_split = 0;
         size_t n_not_split = 0;
+        std::unordered_set<size_t> unmarked; // the tracked split's set; marks are set below
         for (const simplex::Edge& e : split_edges) {
             const auto [e0, e1] = e.vertices();
-            const Vector3d a = pos(inside[e0] ? e0 : e1);
-            const Vector3d b = pos(inside[e0] ? e1 : e0);
-            const double L = (b - a).norm();
-            trace_dir = (b - a) / L;
-            // No split if the inside end is already on the level set (within the tolerance)
-            // or below it (a vertex of R), or the trace leaves the edge.
-            const auto t = tight_seal::sphere_trace(dist_S, a, trace_dir, L, radius, tol, false);
-            if (!t || !(*t > 0.)) {
+            const size_t in_end = inside[e0] ? e0 : e1;
+            const Vector3d a = pos(in_end);
+            const Vector3d b = pos(in_end == e0 ? e1 : e0);
+            trace_dir = (b - a) / (b - a).norm();
+            // Split where d(x, S) falls to d/2 + tol, the labels' level: an IN end is at least
+            // there, an OUT one below it. No split from an ON end (a vertex of R at most there).
+            const std::optional<Vector3d> crossing =
+                tight_seal::level_crossing(dist_S, a, b, radius + tol, tol, false);
+            if (!crossing || !((*crossing - a).dot(trace_dir) > 0.)) {
                 ++n_not_split;
                 continue;
             }
-            trace_point = a + *t * trace_dir;
-            const size_t v_new = tight_seal_split_tracked(e, processed, filled);
+            trace_point = *crossing;
+            const std::vector<size_t> parents = get_incident_tids_for_edge(e0, e1);
+            const size_t v_new = tight_seal_split_tracked(e, unmarked, filled);
             if (v_new == size_t(-1)) {
-                ++n_not_split;
+                ++n_not_split; // refused: the tets and their marks are as they were
                 continue;
             }
             ++n_split;
-            if (v_new >= inside.size()) {
-                inside.resize(v_new + 1, 0);
+            for (const size_t id : parents) {
+                marked.erase(id);
             }
-            inside[v_new] = 1; // ON: on the level set, J's boundary
+            for (const size_t id : get_one_ring_tids_for_vertex(v_new)) {
+                const auto vs = oriented_tet_vids(id);
+                if (std::find(vs.begin(), vs.end(), in_end) != vs.end()) {
+                    marked.insert(id);
+                } else {
+                    marked.erase(id);
+                }
+            }
             if (m_params.debug_output) {
                 if (v_new >= label.size()) {
                     label.resize(v_new + 1, 0);
                 }
-                label[v_new] = 1;
+                label[v_new] = -1;
             }
         }
         m_voronoi_split_fn = nullptr;
 
-        std::vector<size_t> J_tets;
-        in_J.assign(tet_capacity(), 0);
-        for (const size_t tid : processed) {
-            const auto vs = oriented_tet_vids(tid);
-            if (inside[vs[0]] && inside[vs[1]] && inside[vs[2]] && inside[vs[3]]) {
-                J_tets.push_back(tid);
-                in_J[tid] = 1;
-            }
-        }
+        std::vector<size_t> J_tets(marked.begin(), marked.end());
         std::sort(J_tets.begin(), J_tets.end());
+        in_J.assign(tet_capacity(), 0);
+        for (const size_t id : J_tets) {
+            in_J[id] = 1;
+        }
         logger().info(
-            "tight_seal_geom: processed {} tets, split {} edges where d(x, S) falls to d/2 "
-            "({} not split: the trace started on the level set or below it, or left the edge, "
-            "or the split was refused); J holds {} tets",
-            to_process.size(),
+            "tight_seal_geom: marked {} tets with every vertex IN or ON, split {} edges where "
+            "d(x, S) falls to d/2 + tol and marked their tets at the inside end ({} not split: the "
+            "inside end was ON, or the split was refused); J holds {} tets",
+            n_marked,
             n_split,
             n_not_split,
             J_tets.size());

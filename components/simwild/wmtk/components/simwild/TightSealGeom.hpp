@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -32,34 +33,6 @@ double bvh_distance(const SimpleBVH::BVH& bvh, const Vector2d& p);
 double bvh_distance(const SimpleBVH::BVH& bvh, const Vector3d& p);
 
 /**
- * @brief Sphere tracing of a 1-Lipschitz function f along a + t dir, t in [0, L), towards the
- * level set f = level.
- *
- * From a point at f, the level set is at least |f - level| away in every direction, so a step
- * that long along the segment cannot cross it. `from_below`: f(a) < level and each step is
- * level - f; otherwise f(a) > level and each step is f - level. Returns the first t (of a + t dir)
- * where |f - level| <= tol, or nothing if the trace leaves [0, L) first: past the far end, the
- * level set is not on the segment; behind a, f(a) is already beyond the level.
- */
-std::optional<double> sphere_trace(
-    const std::function<double(const Vector2d&)>& f,
-    const Vector2d& a,
-    const Vector2d& dir,
-    double L,
-    double level,
-    double tol,
-    bool from_below);
-std::optional<double> sphere_trace(
-    const std::function<double(const Vector3d&)>& f,
-    const Vector3d& a,
-    const Vector3d& dir,
-    double L,
-    double level,
-    double tol,
-    bool from_below);
-
-
-/**
  * @brief The point of a simplex where k distance functions, each interpolated linearly from its
  * values at the simplex's k corners, are all equal: for a triangle (k = 3) the triple point of
  * three regions, for a tet (k = 4) the quadruple point of four (tight seal v2 note, section 4a-i).
@@ -68,6 +41,60 @@ std::optional<double> sphere_trace(
  * or nothing if the system is singular. The point lies inside the simplex if all are > 0.
  */
 std::optional<Eigen::VectorXd> equal_distances_point(const Eigen::MatrixXd& D);
+
+/**
+ * @brief Where a 1-Lipschitz f reaches `level` along the segment [a, b], coming from a, which is
+ * below the level if `from_below` (f(a) < level), else above it (f(a) > level).
+ *
+ * Sphere traced from a, each step |f - level| + step_floor (at least step_floor, so the trace ends;
+ * no step goes more than step_floor past the level), until f is at the level or past it; the last
+ * step is then bisected to the level. Nothing if f(a) is not on the side `from_below` gives, or if
+ * f stays on that side up to b.
+ */
+template <typename V>
+std::optional<V> level_crossing(
+    const std::function<double(const V&)>& f,
+    const V& a,
+    const V& b,
+    const double level,
+    const double step_floor,
+    const bool from_below)
+{
+    const auto before = [&](const double v) { return from_below ? v < level : v > level; };
+    double v = f(a);
+    if (!before(v)) {
+        return std::nullopt;
+    }
+    const double L = (b - a).norm();
+    const V dir = (b - a) / L;
+    double t_prev = 0.;
+    double t = 0.;
+    while (before(v)) {
+        t_prev = t;
+        t += std::abs(v - level) + step_floor;
+        if (t >= L) {
+            t = L;
+            v = f(b);
+            if (before(v)) {
+                return std::nullopt;
+            }
+            break;
+        }
+        v = f(a + t * dir);
+    }
+    // f(t_prev) before the level, f(t) at it or past it
+    double lo = t_prev;
+    double hi = t;
+    for (int i = 0; i < 50; ++i) {
+        const double m = (lo + hi) / 2;
+        if (before(f(a + m * dir))) {
+            lo = m;
+        } else {
+            hi = m;
+        }
+    }
+    return V(a + ((lo + hi) / 2) * dir);
+}
 
 /// The point of the segment [a, b] where f changes sign, by bisection, given f(a) < 0 <= f(b).
 template <typename V>

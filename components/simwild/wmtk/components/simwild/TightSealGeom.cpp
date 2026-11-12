@@ -70,55 +70,6 @@ double bvh_distance(const SimpleBVH::BVH& bvh, const Vector3d& p)
     return std::sqrt(sq_dist);
 }
 
-namespace {
-
-template <typename Vec>
-std::optional<double> sphere_trace_impl(
-    const std::function<double(const Vec&)>& f,
-    const Vec& a,
-    const Vec& dir,
-    const double L,
-    const double level,
-    const double tol,
-    const bool from_below)
-{
-    double t = 0.;
-    while (t < L && t >= 0.) {
-        const double v = f(a + t * dir);
-        if (std::abs(v - level) <= tol) {
-            return t;
-        }
-        t += from_below ? level - v : v - level;
-    }
-    return std::nullopt;
-}
-
-} // namespace
-
-std::optional<double> sphere_trace(
-    const std::function<double(const Vector2d&)>& f,
-    const Vector2d& a,
-    const Vector2d& dir,
-    const double L,
-    const double level,
-    const double tol,
-    const bool from_below)
-{
-    return sphere_trace_impl(f, a, dir, L, level, tol, from_below);
-}
-
-std::optional<double> sphere_trace(
-    const std::function<double(const Vector3d&)>& f,
-    const Vector3d& a,
-    const Vector3d& dir,
-    const double L,
-    const double level,
-    const double tol,
-    const bool from_below)
-{
-    return sphere_trace_impl(f, a, dir, L, level, tol, from_below);
-}
-
 std::pair<size_t, int> split_fill_label(
     const CornerLabels& corners,
     const std::function<const std::vector<size_t>&(size_t)>& ties)
@@ -391,8 +342,8 @@ bool SimWildMeshTri::tight_seal_dilation_surface_bvh(
         return m_vertex_attribute[vid].m_posf;
     };
     const auto in_U = [&](const size_t v) { return dist_R_at[v] >= radius; };
-    // the point of edge (v_out, v_in) where d(x, R) reaches d/2, v_in being in U; v_in itself if
-    // the trace leaves the edge
+    // the point of edge (v_out, v_in) where d(x, R) is d/2, v_in being in U (sphere traced from
+    // v_out, then bisected; tight_seal::level_crossing); v_in itself if no crossing is found
     std::map<simplex::Edge, Vector2d> traced;
     const auto crossing = [&](const size_t v_out, const size_t v_in) -> Vector2d {
         const simplex::Edge e(v_out, v_in);
@@ -400,14 +351,12 @@ bool SimWildMeshTri::tight_seal_dilation_surface_bvh(
         if (it != traced.end()) {
             return it->second;
         }
-        const Vector2d a = pos(v_out);
-        const double L = (pos(v_in) - a).norm();
-        const Vector2d dir = (pos(v_in) - a) / L;
-        const auto t = tight_seal::sphere_trace(dist_R, a, dir, L, radius, tol, true);
-        if (!t) {
+        const std::optional<Vector2d> x =
+            tight_seal::level_crossing(dist_R, pos(v_out), pos(v_in), radius, tol, true);
+        if (!x) {
             ++n_failed;
         }
-        return traced[e] = t ? Vector2d(a + *t * dir) : pos(v_in);
+        return traced[e] = x ? *x : pos(v_in);
     };
     std::vector<Vector2d> segments;
     for (const size_t fid : fids) {
@@ -1157,8 +1106,8 @@ bool SimWildMesh::tight_seal_dilation_surface_bvh(
         return m_vertex_attribute[vid].m_posf;
     };
     const auto in_U = [&](const size_t v) { return dist_R_at[v] >= radius; };
-    // the point of edge (v_out, v_in) where d(x, R) reaches d/2, v_in being in U; v_in itself if
-    // the trace leaves the edge
+    // the point of edge (v_out, v_in) where d(x, R) is d/2, v_in being in U (sphere traced from
+    // v_out, then bisected; tight_seal::level_crossing); v_in itself if no crossing is found
     std::map<simplex::Edge, Vector3d> traced;
     const auto crossing = [&](const size_t v_out, const size_t v_in) -> Vector3d {
         const simplex::Edge e(v_out, v_in);
@@ -1166,14 +1115,12 @@ bool SimWildMesh::tight_seal_dilation_surface_bvh(
         if (it != traced.end()) {
             return it->second;
         }
-        const Vector3d a = pos(v_out);
-        const double L = (pos(v_in) - a).norm();
-        const Vector3d dir = (pos(v_in) - a) / L;
-        const auto t = tight_seal::sphere_trace(dist_R, a, dir, L, radius, tol, true);
-        if (!t) {
+        const std::optional<Vector3d> x =
+            tight_seal::level_crossing(dist_R, pos(v_out), pos(v_in), radius, tol, true);
+        if (!x) {
             ++n_failed;
         }
-        return traced[e] = t ? Vector3d(a + *t * dir) : pos(v_in);
+        return traced[e] = x ? *x : pos(v_in);
     };
     std::vector<Vector3d> triangles;
     for (const size_t tid : tids) {

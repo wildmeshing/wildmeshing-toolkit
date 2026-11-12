@@ -368,10 +368,11 @@ private:
         std::vector<CornerLabels>* corner_labels = nullptr);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
     /// as a BVH of triangles. On each edge of a tet outside R (region < 0) between a vertex with
-    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
-    /// from the near end (to within tol, on R's side); the crossings of each tet are joined into
-    /// its cut polygon (a triangle or a quad, in two triangles). Returns false if S is empty; n_traced: edges traced, n_failed: traces that left
-    /// their edge (the far end is taken).
+    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is where dist_R = radius:
+    /// sphere traced from the near end, each step at least tol, then bisected
+    /// (tight_seal::level_crossing). The crossings of each tet are joined into its cut polygon (a triangle or a quad, in two triangles).
+    /// Returns false if S is empty; n_traced: edges traced, n_failed: those with no crossing found
+    /// (the far end is taken).
     bool tight_seal_dilation_surface_bvh(
         const std::vector<size_t>& tids,
         const std::vector<int>& region,
@@ -403,8 +404,8 @@ private:
     /// A round marks each edge whose ends' labels differ if, at the point where the distances to
     /// those two are equal (not on an end), another color of the component is nearest; then each
     /// face with three labels whose edges are all unmarked if, at its triple point (where the three
-    /// distances, interpolated linearly over the face, are equal; tight_seal::equal_distances_point)
-    /// inside it, another color is nearest. Every marked face is split at its point, then every
+    /// distances, interpolated linearly over the face, are equal;
+    /// tight_seal::equal_distances_point) inside it, another color is nearest. Every marked face is split at its point, then every
     /// marked edge at its: each new vertex shows the color found nearest there. The first round
     /// looks at every edge and face of the components, each later one only at those touching a
     /// vertex the last made. It stops when nothing is marked, or warns after `max_rounds`.
@@ -669,16 +670,18 @@ public:
      * on R is split at its centroid, then each face outside R whose three edges do, then each edge
      * outside R joining two vertices of R at its midpoint. Without it, a gap one tet wide would be
      * in J at any distance, every vertex of R counting as inside. Then J is found in three steps.
-     *  1. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
+     *  1. The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere
+     *     traced, then bisected to the level).
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
-     *  2. The vertices' labels (tight seal v2 note, section 2), with tol = trace_rel_tol x
-     *     the mesh's bounding box diagonal (also the tolerance of both sphere traces). A vertex of R is ON if d(v, S) <= distance/2 + tol, else IN (R lies in the
-     *     closing; S, linear in each tet, can pass closer to R than the level set). Any other
-     *     vertex is IN if it is in R + B and d(v, S) >= distance/2 + tol, else OUT. Every tet
-     *     outside R with an IN or ON vertex is processed: each of its edges from an IN vertex to
-     *     an OUT one is split where it leaves J, at d(x, S) = distance/2, sphere traced from the
-     *     IN end (to within tol), the new vertex ON; and J is the processed tets whose vertices
-     *     are all IN or ON.
+     *  2. The vertices' labels (tight seal v2 note, section 2), with tol = trace_rel_tol x the
+     *     mesh's bounding box diagonal (also the tolerance of both sphere traces). A vertex of R
+     *     is ON if d(v, S) <= distance/2 + tol, else IN (R lies in the closing; S, linear in each
+     *     tet, can pass closer to R than the level set). Any other vertex is IN if it is in
+     *     R + B and d(v, S) >= distance/2 + tol, else OUT. The tets outside R whose vertices are
+     *     all IN or ON are marked. Each edge from an IN vertex to an OUT one is split where it
+     *     leaves J, at d(x, S) = distance/2 + tol, the labels' level (sphere traced from the IN
+     *     end, then bisected), and of the tets it makes, those touching its IN end are marked and
+     *     the others not; the new vertex takes no label. J is the marked tets.
      *  3. The connected components of J, through faces.
      * The colors: fill selection k (two or more) is color k; a tet outside J satisfying it has that
      * color (a tet of J is no color, whatever its tags). A component borders a color if one of its
