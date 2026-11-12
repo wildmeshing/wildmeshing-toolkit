@@ -751,7 +751,22 @@ void SimWildMeshTri::tight_seal_geom(
             dR[vid] = on_R[vid] ? 0. : dist_R(pos(vid));
         }
 
-        const double tol = trace_rel_tol * radius;
+        // The tolerance of both sphere traces and of the vertices' labels below: trace_rel_tol x
+        // the mesh's bounding box diagonal, independent of the distance (tight seal v2 note,
+        // section 2).
+        Vector2d box_lo = Vector2d::Constant(std::numeric_limits<double>::infinity());
+        Vector2d box_hi = -box_lo;
+        for (const Tuple& t : get_vertices()) {
+            box_lo = box_lo.cwiseMin(pos(t.vid(*this)));
+            box_hi = box_hi.cwiseMax(pos(t.vid(*this)));
+        }
+        const double diagonal = (box_hi - box_lo).norm();
+        const double tol = trace_rel_tol * diagonal;
+        logger().info(
+            "tight_seal_geom: tolerance {} ({} x the bounding box diagonal {})",
+            tol,
+            trace_rel_tol,
+            diagonal);
 
         // 1. The dilation surface S, the level set d(x, R) = d/2 (the boundary of R + B),
         // traced on the edges that cross it and joined in each face. The closing is the part
@@ -780,10 +795,10 @@ void SimWildMeshTri::tight_seal_geom(
         };
 
         // 2. The vertices' labels (tight seal v2 note, section 2). A vertex of R is ON if
-        // d(v, S) <= (1 + tol) x d/2, else IN: R lies in the closing (each point of S is d/2 from
+        // d(v, S) <= d/2 + tol, else IN: R lies in the closing (each point of S is d/2 from
         // R), but S, joined linearly in each face, may pass closer to R than the level set, so a
         // vertex of R where the closing's boundary runs along R is ON whatever the rounding. Any
-        // other vertex is IN if it lies in R + B (d(v, R) < d/2) at least (1 + tol) x d/2 from S,
+        // other vertex is IN if it lies in R + B (d(v, R) < d/2) at least d/2 + tol from S,
         // and OUT otherwise. Every face outside R with an IN or ON vertex is processed: each of
         // its edges from an IN vertex to an OUT one is split where d(x, S) falls to d/2, sphere
         // traced from the IN end (d(x, S) is 1-Lipschitz, so a step of d(x, S) - d/2 cannot cross
@@ -803,7 +818,7 @@ void SimWildMeshTri::tight_seal_geom(
             n_in += inside[vid];
         }
         logger().info(
-            "tight_seal_geom: {} vertices off R are IN, at least (1 + tol) x d/2 from S; every "
+            "tight_seal_geom: {} vertices off R are IN, at least d/2 + tol from S; every "
             "vertex of R is IN or ON",
             n_in);
         std::vector<size_t> to_process;

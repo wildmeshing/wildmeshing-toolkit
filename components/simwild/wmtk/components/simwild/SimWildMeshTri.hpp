@@ -348,7 +348,7 @@ public:
      *  1. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
      *  2. The vertices' labels (tight seal v2 note, section 2), with tol = trace_rel_tol x
-     *     distance/2. A vertex of R is ON if d(v, S) <= distance/2 + tol, else IN (R lies in the
+     *     the mesh's bounding box diagonal (also the tolerance of both sphere traces). A vertex of R is ON if d(v, S) <= distance/2 + tol, else IN (R lies in the
      *     closing; S, linear in each face, can pass closer to R than the level set). Any other
      *     vertex is IN if it is in R + B and d(v, S) >= distance/2 + tol, else OUT. Every face
      *     outside R with an IN or ON vertex is processed: each of its edges from an IN vertex to
@@ -378,7 +378,7 @@ public:
         const std::vector<ExprPtr>& fill_selections,
         const std::vector<CellTag>& fill_tags,
         double distance,
-        double trace_rel_tol = 0.01,
+        double trace_rel_tol = 0.001,
         int64_t min_regions = 2,
         bool sanity = false,
         int64_t max_preprocessing_rounds = 10);
