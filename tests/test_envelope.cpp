@@ -1100,3 +1100,51 @@ TEST_CASE("min over a 2D box's primitives is the BVH's nearest distance", "[enve
         CHECK(env.nearest_point(p, q) == Catch::Approx(m_box * m_box).margin(1e-12));
     }
 }
+
+// The sampled triangle envelope accepts a triangle when every sample is within eps2's radius,
+// eps - sampling_dist/sqrt(3), of the input; for that to keep the whole triangle within eps,
+// every point of it must be within sampling_dist/sqrt(3) of a sample. TetWild's lattice sampler
+// did not ensure it (gaps of up to 0.92 sampling_dist in thin triangles); check the grid's
+// covering radius on random triangles of every shape, densely.
+TEST_CASE("sampleTriangle covers the triangle within sampling_dist / sqrt(3)", "[envelope]")
+{
+    std::mt19937_64 rng(4242);
+    std::uniform_real_distribution<double> U(-1, 1);
+    const double s = 0.37;
+    const double bound = s / std::sqrt(3.0) * (1 + 1e-9);
+    double worst = 0;
+    for (int t = 0; t < 2000; ++t) {
+        std::array<Eigen::Vector3d, 3> tri;
+        const double scale = 0.2 + 3.0 * std::abs(U(rng)); // up to ~9 sampling distances
+        for (auto& v : tri) v = scale * Eigen::Vector3d(U(rng), U(rng), U(rng));
+        if (t % 3 == 1) {
+            // thin: the third vertex close to the line of the first two
+            tri[2] = tri[0] + std::abs(U(rng)) * (tri[1] - tri[0]) +
+                     1e-3 * scale * Eigen::Vector3d(U(rng), U(rng), U(rng));
+        } else if (t % 3 == 2) {
+            // needle: two vertices close together
+            tri[1] = tri[0] + 0.05 * s * Eigen::Vector3d(U(rng), U(rng), U(rng));
+        }
+        std::vector<Eigen::Vector3d> ps;
+        sampleTriangle(tri, ps, s);
+        REQUIRE(!ps.empty());
+        constexpr int m = 60; // check points: a barycentric grid of 60 steps
+        for (int j = 0; j <= m; ++j) {
+            for (int i = 0; i + j <= m; ++i) {
+                const Eigen::Vector3d q = tri[0] + (double(i) / m) * (tri[1] - tri[0]) +
+                                          (double(j) / m) * (tri[2] - tri[0]);
+                double d = std::numeric_limits<double>::max();
+                for (const auto& p : ps) d = std::min(d, (p - q).norm());
+                worst = std::max(worst, d / s);
+                if (d > bound) {
+                    INFO(
+                        "triangle " << t << ": a point at " << d / s
+                                    << " sampling_dist from every sample");
+                    REQUIRE(d <= bound);
+                }
+            }
+        }
+    }
+    INFO("worst covering radius " << worst << " sampling_dist");
+    CHECK(worst <= 1 / std::sqrt(3.0) + 1e-9);
+}

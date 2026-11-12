@@ -43,87 +43,61 @@ struct ReleaseIfLarge
 };
 } // namespace
 
-// From TetWild
+// Samples a triangle so that every point of it is within sampling_dist / sqrt(3) of a sample --
+// the covering radius the sampled envelope's shrunk radius (eps2) is built on.
+//
+// The samples are a uniform barycentric grid of n divisions: its cells are the triangle scaled by
+// 1/n, so they are covered by their own vertices within c/n, c being the triangle's covering
+// radius by its vertices. That is its circumradius when it is acute (the circumcentre is the
+// farthest point from all three) and at most half its longest edge otherwise (the farthest points
+// lie on the longest edge, where the perpendicular bisector of a shorter edge meets it, no farther
+// than its midpoint). n = ceil(sqrt(3) c / sampling_dist) makes c/n at most sampling_dist /
+// sqrt(3); a triangle already covered by its vertices is just them.
+//
+// It replaces TetWild's lattice sampler, whose covering radius was not what the shrink assumed:
+// it left gaps of up to 0.92 sampling_dist (in thin triangles, where it returned before sampling
+// the short edges) and 0.71 sampling_dist elsewhere, so a triangle passing every sample could
+// reach about 1.34 eps from the input. The grid takes more samples than that lattice (a grid in
+// the triangle's own shape is less dense than an equilateral lattice), most on thin triangles.
+//
+// Row by row from vs[0], so consecutive samples are neighbours (is_outside's BVH walk is hinted
+// by the previous one).
 void sampleTriangle(
     const std::array<Vector3d, 3>& vs,
     std::vector<Vector3d>& ps,
     const double sampling_dist)
 {
-    double sqrt3_2 = std::sqrt(3) / 2;
-
-    std::array<double, 3> ls;
-    for (int i = 0; i < 3; i++) {
-        ls[i] = (vs[i] - vs[(i + 1) % 3]).squaredNorm();
-    }
-    auto min_max = std::minmax_element(ls.begin(), ls.end());
-    int min_i = min_max.first - ls.begin();
-    int max_i = min_max.second - ls.begin();
-    double N = sqrt(ls[max_i]) / sampling_dist;
-    if (N <= 1) {
+    const double ab = (vs[1] - vs[0]).squaredNorm();
+    const double bc = (vs[2] - vs[1]).squaredNorm();
+    const double ca = (vs[0] - vs[2]).squaredNorm();
+    const double longest = std::max({ab, bc, ca});
+    // The squared covering radius by the vertices: (longest / 2)^2 unless acute, else R^2 =
+    // ab bc ca / (16 area^2) with 16 area^2 = 4 |(b - a) x (c - a)|^2.
+    const double c2 = 2 * longest >= ab + bc + ca
+                          ? longest / 4
+                          : ab * bc * ca / (4 * (vs[1] - vs[0]).cross(vs[2] - vs[0]).squaredNorm());
+    // n = ceil(sqrt(3) c / sampling_dist), at least 1 (a NaN gives 1: the vertices). The factor
+    // above 1 absorbs the rounding of c.
+    const double divisions = std::ceil(std::sqrt(3 * c2) * (1 + 1e-12) / sampling_dist);
+    const int n = divisions >= 1 ? int(divisions) : 1;
+    if (n == 1) {
         for (int i = 0; i < 3; i++) ps.push_back(vs[i]);
         return;
     }
-    if (N == int(N)) N -= 1;
-
-    Vector3d v0 = vs[max_i];
-    Vector3d v1 = vs[(max_i + 1) % 3];
-    Vector3d v2 = vs[(max_i + 2) % 3];
-
-    Vector3d n_v0v1 = (v1 - v0).normalized();
-    for (int n = 0; n <= N; n++) {
-        ps.push_back(v0 + n_v0v1 * sampling_dist * n);
-    }
-    ps.push_back(v1);
-
-    double h = (((v2 - v0).dot(v1 - v0) * (v1 - v0) / ls[max_i] + v0) - v2).norm();
-    int M = h / (sqrt3_2 * sampling_dist);
-    if (M < 1) {
-        ps.push_back(v2);
-        return;
-    }
-
-    Vector3d n_v0v2 = (v2 - v0).normalized();
-    Vector3d n_v1v2 = (v2 - v1).normalized();
-    auto sin_v0 = (((v2 - v0).cross(v1 - v0))).norm() / ((v0 - v2).norm() * (v0 - v1).norm());
-    auto tan_v0 = (((v2 - v0).cross(v1 - v0))).norm() / ((v2 - v0).dot(v1 - v0));
-    auto tan_v1 = (((v2 - v1).cross(v0 - v1))).norm() / ((v2 - v1).dot(v0 - v1));
-    auto sin_v1 = (((v2 - v1).cross(v0 - v1))).norm() / ((v1 - v2).norm() * (v0 - v1).norm());
-
-    for (int m = 1; m <= M; m++) {
-        int n = sqrt3_2 / tan_v0 * m + 0.5;
-        int n1 = sqrt3_2 / tan_v0 * m;
-        if (m % 2 == 0 && n == n1) {
-            n += 1;
-        }
-        Vector3d v0_m = v0 + m * sqrt3_2 * sampling_dist / sin_v0 * n_v0v2;
-        Vector3d v1_m = v1 + m * sqrt3_2 * sampling_dist / sin_v1 * n_v1v2;
-        if ((v0_m - v1_m).norm() <= sampling_dist) break;
-
-        double delta_d = ((n + (m % 2) / 2.0) - m * sqrt3_2 / tan_v0) * sampling_dist;
-        Vector3d v = v0_m + delta_d * n_v0v1;
-        int N1 = (v - v1_m).norm() / sampling_dist;
-        for (int i = 0; i <= N1; i++) {
-            ps.push_back(v + i * n_v0v1 * sampling_dist);
-        }
-    }
-    ps.push_back(v2);
-
-    // sample edges
-    N = sqrt(ls[(max_i + 1) % 3]) / sampling_dist;
-    if (N > 1) {
-        if (N == int(N)) N -= 1;
-        Vector3d n_v1v2 = (v2 - v1).normalized();
-        for (int n = 1; n <= N; n++) {
-            ps.push_back(v1 + n_v1v2 * sampling_dist * n);
-        }
-    }
-
-    N = sqrt(ls[(max_i + 2) % 3]) / sampling_dist;
-    if (N > 1) {
-        if (N == int(N)) N -= 1;
-        Vector3d n_v2v0 = (v0 - v2).normalized();
-        for (int n = 1; n <= N; n++) {
-            ps.push_back(v2 + n_v2v0 * sampling_dist * n);
+    const Vector3d e1 = vs[1] - vs[0];
+    const Vector3d e2 = vs[2] - vs[0];
+    ps.reserve(ps.size() + size_t(n + 1) * size_t(n + 2) / 2);
+    for (int j = 0; j <= n; ++j) {
+        for (int i = 0; i + j <= n; ++i) {
+            if (i + j == n) {
+                // The far edge (vs[1], vs[2]) and its ends exactly, not up to rounding.
+                ps.push_back(
+                    j == 0   ? vs[1]
+                    : j == n ? vs[2]
+                             : Vector3d(vs[1] + (double(j) / n) * (vs[2] - vs[1])));
+            } else {
+                ps.push_back(vs[0] + (double(i) / n) * e1 + (double(j) / n) * e2);
+            }
         }
     }
 }
@@ -197,8 +171,8 @@ void Envelope::init(
         m_exact_built = true;
     }
 
-    // sampleTriangle lays samples on a triangular lattice of spacing `sampling_dist`, whose
-    // covering radius is sampling_dist / sqrt(3): every point of the triangle is within that
+    // sampleTriangle places its samples so that every point of the triangle is within
+    // sampling_dist / sqrt(3) of one (their covering radius): every point of the triangle is within that
     // distance of some sample. So for "every sample is inside" to imply "the whole triangle
     // is inside the true eps-envelope", the per-sample test has to use the shrunk radius
     //
