@@ -59,6 +59,9 @@ function(add_component_test COMPONENT_NAME)
     # hide: it is how a case too slow for the Debug jobs (Windows Debug above all) is found, and
     # tagged release_only in its file.
     add_test(NAME ${COMPONENT_TEST_NAME} COMMAND ${COMPONENT_TEST_NAME} --allow-running-no-tests --durations yes)
+    # COST: a whole component's cases in one entry, the longest a few minutes (tetwild,
+    # topological_offset), so a parallel ctest starts these before the single-case entries.
+    set_tests_properties(${COMPONENT_TEST_NAME} PROPERTIES COST 100)
     wmtk_copy_dll(${COMPONENT_TEST_NAME})
 
 endfunction()
