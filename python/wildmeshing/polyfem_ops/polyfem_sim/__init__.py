@@ -387,7 +387,7 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
         print(f"  bodies: {name_to_tag}")
     if id_map["selections"]:
         print(f"  surface selections: "
-              f"{ {' ∩ '.join(sorted(k)): v for k, v in id_map['selections'].items()} }")
+              f"{ {' ∩ '.join(sorted(r for r in k if r)): v for k, v in id_map['selections'].items()} }")
 
     sim_json = build_polyfem_sim_json(
         cfg, msh_path, out_dir, name_to_tag, id_map, mesh_dim,
