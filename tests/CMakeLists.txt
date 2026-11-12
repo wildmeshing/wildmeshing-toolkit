@@ -55,8 +55,9 @@ wmtk_copy_dll(wmtk_tests)
 catch_discover_tests(wmtk_tests)
 
 # Eigen's heap across units built with different vectorization (cmake/recipes/eigen.cmake): a unit
-# with the build's settings, one with EIGEN_DONT_VECTORIZE as ipc-toolkit exports it, and, with an
-# x86 compiler that takes the flags, one built for AVX2. Its own executable, linking Eigen alone:
+# with the build's settings, one with EIGEN_DONT_VECTORIZE as ipc-toolkit exports it with its SIMD
+# on (cmake/recipes/ipc_toolkit.cmake turns that off), and, with an x86 compiler that takes the
+# flags, one built for AVX2. Its own executable, linking Eigen alone:
 # the AVX unit's copies of Eigen's inline functions may stand in for the others', and nothing else
 # should run them.
 add_executable(wmtk_test_eigen_heap

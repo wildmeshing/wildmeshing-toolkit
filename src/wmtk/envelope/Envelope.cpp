@@ -806,12 +806,13 @@ namespace {
 // between two segments (Ericson, Real-Time Collision Detection 5.1.5 and 5.1.9), and an exact
 // crossing test of a segment against a triangle or, in 2D, another segment.
 //
-// The same arithmetic does not give the same bits in every target. A component compiled with
-// EIGEN_DONT_VECTORIZE -- which ipc-toolkit exports PUBLIC (cmake/recipes/ipc_toolkit.cmake) to
-// everything that links it -- sums a 3-vector dot product as x0 y0 + (x1 y1 + x2 y2), and this
-// file, vectorized, as (x0 y0 + x1 y1) + x2 y2. MEASURED on arm64: the two dot() differ in 31% of
-// random pairs, norm() in 12%. Nothing here depends on either order; a caller that compares these
-// results with a copy of the arithmetic built there must allow for rounding.
+// The same arithmetic does not give the same bits under every Eigen configuration. A unit compiled
+// with EIGEN_DONT_VECTORIZE -- which ipc-toolkit exports PUBLIC when its SIMD is on, as
+// cmake/recipes/ipc_toolkit.cmake no longer has it -- sums a 3-vector dot product as
+// x0 y0 + (x1 y1 + x2 y2), and this file, vectorized, as (x0 y0 + x1 y1) + x2 y2. MEASURED on
+// arm64: the two dot() differ in 31% of random pairs, norm() in 12%. Nothing here depends on
+// either order; a caller that compares these results with a copy of the arithmetic built there
+// must allow for rounding.
 
 /// The point of triangle abc closest to p and the feature it lies on (Ericson, Real-Time
 /// Collision Detection 5.1.5): kind 0 a vertex, 1 an edge of direction `edge`, 2 the interior.

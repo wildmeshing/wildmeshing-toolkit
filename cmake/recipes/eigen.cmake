@@ -61,12 +61,13 @@ endif()
 # from both worlds arbitrarily and a caller built for 8-byte alignment hands its stack slot to a
 # callee built for 16.
 #
-# That is not hypothetical here. ipc-toolkit exports EIGEN_DONT_VECTORIZE PUBLIC (see
-# recipes/ipc_toolkit.cmake), which zeroes the inferred alignment -- but only for the targets
-# that link it. Core wildmeshing_toolkit does not link it and kept 16. The result was Eigen's
-# unaligned-array assert aborting wmtk_test_manifold_extraction and wmtk_test_topological_offset
-# on every platform in both Debug and Release, inside to_rational(), a function neither the
-# offset nor ipc has anything to do with.
+# That was not hypothetical here. ipc-toolkit, with its SIMD on, exports EIGEN_DONT_VECTORIZE
+# PUBLIC, which zeroes the inferred alignment -- but only for the targets that link it
+# (recipes/ipc_toolkit.cmake now turns its SIMD off). Core wildmeshing_toolkit does not link it
+# and kept 16. The result was Eigen's unaligned-array assert aborting
+# wmtk_test_manifold_extraction and wmtk_test_topological_offset on every platform in both Debug
+# and Release, inside to_rational(), a function neither the offset nor ipc has anything to do
+# with.
 #
 # Setting the two macros explicitly wins over the inference (ConfigureVectorization.h guards its
 # default with #ifndef), so every TU gets the same layout no matter what else it defines. 16 is
