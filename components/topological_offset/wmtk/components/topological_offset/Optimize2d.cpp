@@ -847,11 +847,21 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
     const auto& e = split_cache.local().old_e_attrs;
     m_vertex_extra[v_id].m_is_on_offset =
         e.m_is_surface_fs && e.m_surface_class == OFFSET_SURFACE_CLASS;
-    // Class 0 covers the input complex AND every other region boundary, so the two flags are
-    // narrowed from the ENDPOINTS rather than read off the class: a midpoint is on the complex
-    // only if the whole edge was, which is the same AND rule the boundary mask follows.
+    // A midpoint is on the input complex only if the whole edge was: both ends on it AND the edge
+    // itself in it -- an edge of an input-complex face (a filled complex), or a tracked edge that
+    // is not the front (a curve of the complex; class 0 covers the input complex and every other
+    // region boundary, so the ends narrow it). The ends alone over-claim on a chord: an untracked
+    // edge between two input vertices, inside no input face. MEASURED before (triwild20k_172573
+    // at 0.9 delta_1, 2026-11-12): chords across the slot of a hairpin, between its two legs,
+    // gave midpoints flagged on the input up to 0.94 (2.3 delta) off it, held objects in the band
+    // that the label clean-up then refused to flip around. Still over-claimed: a tracked region
+    // boundary that is not in the complex, between two of its vertices (the ends' AND did too).
+    // 3D reads the split edge's own label (close_labels()), which has neither case.
+    bool on_input_face = false;
+    for (const auto& kv : c.face_label) on_input_face = on_input_face || kv.second == 1;
     m_vertex_extra[v_id].m_is_on_input =
-        m_vertex_extra[c.v1_id].m_is_on_input && m_vertex_extra[c.v2_id].m_is_on_input;
+        m_vertex_extra[c.v1_id].m_is_on_input && m_vertex_extra[c.v2_id].m_is_on_input &&
+        (on_input_face || (e.m_is_surface_fs && e.m_surface_class != OFFSET_SURFACE_CLASS));
     // ... but m_is_on_region is the split edge's own class, not an endpoint AND: a bare AND
     // over-claims on a chord whose two ends happen to share a region, which is what the mask gate
     // exists to prevent. 3D reads is_edge_on_region() for the same reason.

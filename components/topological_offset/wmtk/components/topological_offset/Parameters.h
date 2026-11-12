@@ -813,6 +813,34 @@ struct Parameters : public wmtk::OptimizerParameters
                 target_distance);
         }
 
+        // The held surfaces -- the input complex, the region boundaries and the box -- may move
+        // within envelope_size, and the offset is measured to front_conv: an envelope wider than
+        // the bar lets the input the band is grown from drift farther than the offset's own
+        // accuracy, so the bar cannot be met where the offset has detail at that scale. Refused
+        // rather than narrowed (Uday 2026-11-12): the config states the envelope. front_conv is
+        // the smallest bar (several entries: front_conv_rel of the smallest distance). MEASURED
+        // before (triwild20k_172573 at 0.9 delta_1, delta 0.414, front_conv 0.041, envelope_size
+        // 1.76 from the default envelope_size_rel 1e-3): the input curves, held to 4.3 delta,
+        // became chords across a hairpin's bend inside a 0.09-wide gap of the offset, and the run
+        // stuck there for 80 turns; at envelope_size 0.035 it converged in 18. The two are
+        // compared up to the rounding of the products that resolve them (a config giving them
+        // equal must not be refused by an ulp).
+        if (envelope_size > front_conv * (1. + 1e-12)) {
+            log_and_throw_error(
+                "envelope_size {} ({} x the bounding box diagonal {}) is wider than the bar "
+                "front_conv {} ({} x target_distance {}): the input complex and the other held "
+                "surfaces could move farther than the offset is measured to. Set envelope_size_rel "
+                "<= {} (or envelope_size <= {}), or a coarser front_conv_rel",
+                envelope_size,
+                envelope_size_rel,
+                diag_l,
+                front_conv,
+                front_conv_rel,
+                target_distance,
+                front_conv / diag_l,
+                front_conv);
+        }
+
         // The offset surface's envelope is envelope_size's (no key of its own since 2026-10-20);
         // the two fields only for the 2D code, which still reads them.
         offset_envelope = envelope_size;

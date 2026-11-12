@@ -5250,6 +5250,70 @@ TEST_CASE("pocket-split-four-face-cell", "[offset][3d][pocket_split]")
     }
 }
 
+TEST_CASE("split-midpoint-on-input", "[offset][3d]")
+{
+    // The 3D twin of split-midpoint-on-input-2d. 3D gives the midpoint the split edge's own label
+    // (close_labels()), so a chord between two input vertices has its midpoint off the input.
+    // P = (o, x, y, z), background, with input-complex blobs (label 1) on its faces (o, x, y) and
+    // (o, y, z): all four corners are on the input. (x, z) is an edge of P alone, a chord; (x, y)
+    // an edge of the blob on (o, x, y).
+    const bool chord = GENERATE(true, false);
+    INFO("split edge " << (chord ? "(x, z), a chord" : "(x, y), an edge of the complex"));
+    Parameters param;
+    auto mesh = pocket_mesh(param, {2, 0});
+    std::vector<size_t> all;
+    for (const TetMesh::Tuple& t : mesh->get_tets()) {
+        const size_t tid = t.tid(*mesh);
+        if (tid > 0) mesh->m_tet_attribute[tid].label = 1;
+        all.push_back(tid);
+    }
+    mesh->close_labels(all);
+    for (size_t v = 0; v < 4; ++v) REQUIRE(mesh->m_vertex_extra[v].m_is_on_input);
+    const std::array<size_t, 2> e =
+        chord ? std::array<size_t, 2>{{1, 3}} : std::array<size_t, 2>{{1, 2}};
+    std::vector<TetMesh::Tuple> new_edges;
+    REQUIRE(mesh->split_edge(mesh->tuple_from_edge(e), new_edges));
+    const Vector3d mid =
+        (mesh->m_vertex_attribute[e[0]].m_posf + mesh->m_vertex_attribute[e[1]].m_posf) / 2.;
+    size_t m = std::numeric_limits<size_t>::max();
+    for (const TetMesh::Tuple& v : mesh->get_vertices()) {
+        if (mesh->m_vertex_attribute[v.vid(*mesh)].m_posf == mid) m = v.vid(*mesh);
+    }
+    REQUIRE(m != std::numeric_limits<size_t>::max());
+    CHECK(mesh->m_vertex_extra[m].m_is_on_input == !chord);
+}
+
+TEST_CASE("envelope-wider-than-the-bar-refused", "[offset]")
+{
+    // Parameters::init() refuses an envelope_size wider than front_conv (Uday 2026-11-12): the
+    // held surfaces, the input complex among them, may move within envelope_size, and the offset
+    // is measured to front_conv. Equal is allowed, in the absolute form and in the relative one
+    // (the medium simple-shape cases: target_distance_rel 1e-2, front_conv_rel 0.1,
+    // envelope_size_rel 1e-3, equal up to the rounding of the products). With several offsets the
+    // bar is the smallest distance's.
+    Eigen::MatrixXd V(2, 2);
+    V << 0., 0., 1., 1.;
+    const auto with = [](nlohmann::json offsets, nlohmann::json more) {
+        nlohmann::json j = {{"offsets", offsets}, {"front_conv_rel", 0.1}};
+        j.update(more);
+        return j;
+    };
+    const nlohmann::json one =
+        nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", 0.1}}});
+    const nlohmann::json two = nlohmann::json::array(
+        {{{"selection", "tag_0"}, {"target_distance", 0.1}},
+         {{"selection", "tag_1"}, {"target_distance", 0.3}}});
+    const auto refused = Catch::Matchers::ContainsSubstring("is wider than the bar");
+    CHECK_THROWS_WITH(construction_params(with(one, {{"envelope_size", 0.02}}), V), refused);
+    CHECK_NOTHROW(construction_params(with(one, {{"envelope_size", 0.01}}), V));
+    CHECK_THROWS_WITH(construction_params(with(two, {{"envelope_size", 0.02}}), V), refused);
+    CHECK_NOTHROW(construction_params(with(two, {{"envelope_size", 0.01}}), V));
+    const nlohmann::json rel =
+        nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance_rel", 1e-2}}});
+    CHECK_NOTHROW(construction_params(with(rel, {{"envelope_size_rel", 1e-3}}), V));
+    CHECK_THROWS_WITH(construction_params(with(rel, {{"envelope_size_rel", 2e-3}}), V), refused);
+}
+
 TEST_CASE("pocket-split-key-off", "[offset][3d][pocket_split]")
 {
     // With EXPERIMENTAL_front_pocket_split false the slot is a no-op, and so it is in a TetWild
@@ -5555,6 +5619,40 @@ TEST_CASE("pocket-split-front-cell-2d", "[offset][2d][pocket_split]")
     const auto ring = mesh->get_one_ring_fids_for_vertex(c);
     CHECK(ring.size() == 4);
     for (const size_t f : ring) CHECK_FALSE(mesh->face_is_offset_band(f));
+}
+
+TEST_CASE("split-midpoint-on-input-2d", "[offset][2d]")
+{
+    // A split's midpoint is on the input complex only if the split edge is in it: both ends on
+    // the complex AND the edge an edge of an input-complex face, or a tracked edge that is not the
+    // front (a curve of the complex). The unit square as two triangles; its diagonal (0, 2) joins
+    // two input vertices, and is split. As a chord -- untracked, between two background triangles
+    // -- the midpoint is NOT on the input (the ends' AND alone said it was: triwild20k_172573's
+    // hairpin chords, flagged up to 2.3 delta off the input). Tracked, or between two
+    // input-complex triangles, it is.
+    const int label = GENERATE(0, 1);
+    const bool tracked = GENERATE(false, true);
+    INFO("face label " << label << ", the diagonal tracked " << tracked);
+    Parameters param;
+    Eigen::MatrixXd V(4, 2);
+    V << 0., 0., 1., 0., 1., 1., 0., 1.;
+    auto mesh = energy_mesh_2d(param, V, {{{0, 1, 2}}, {{0, 2, 3}}}, {label, label}, line_field());
+    mesh->m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Optimization;
+    for (size_t v = 0; v < 4; ++v) mesh->m_vertex_extra[v].m_is_on_input = v == 0 || v == 2;
+    const TriMesh::Tuple diag = std::get<0>(mesh->tuple_from_edge({{0, 2}}));
+    if (tracked) {
+        auto& a = mesh->m_edge_attribute[diag.eid(*mesh)];
+        a.m_is_surface_fs = true;
+        a.m_surface_class = 0;
+    }
+    std::vector<TriMesh::Tuple> new_tris;
+    REQUIRE(mesh->split_edge(diag, new_tris));
+    size_t m = std::numeric_limits<size_t>::max();
+    for (const auto& v : mesh->get_vertices()) {
+        if (mesh->m_vertex_attribute[v.vid(*mesh)].m_posf == Vector2d(0.5, 0.5)) m = v.vid(*mesh);
+    }
+    REQUIRE(m != std::numeric_limits<size_t>::max());
+    CHECK(mesh->m_vertex_extra[m].m_is_on_input == (label == 1 || tracked));
 }
 
 TEST_CASE("pocket-split-key-off-2d", "[offset][2d][pocket_split]")
