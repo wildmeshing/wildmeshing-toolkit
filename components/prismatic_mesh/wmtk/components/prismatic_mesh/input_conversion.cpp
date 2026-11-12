@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <wmtk/io/ComponentIO.hpp>
 #include "prismatic_mesh.hpp"
+#include "read_mesh.hpp"
 
 namespace wmtk::components::prismatic_mesh {
 namespace {
@@ -79,7 +80,6 @@ PrismaticMeshInput load_prismatic_data(const MeshData& data)
                 for (int j = 0; j < 4; ++j) labels(block.connectivity(i, j), 0) = 1;
         for (int i = 0; i < n; ++i)
             if (corr(i, 0) >= 0) {
-                require(labels(i, 0) != 1, "correspondence on input-volume vertex");
                 labels(i, 0) = 2;
             }
     }
@@ -114,21 +114,24 @@ PrismaticMeshInput load_prismatic_data(const MeshData& data)
         if (label == 2) result.offset_vertices.push_back(i);
         require(label == 2 || target == -1, "correspondence on a non-offset vertex");
     }
-    for (size_t i : result.offset_vertices) {
-        const auto it = id_to_row.find(result.corr_input_vid[i]);
-        require(it != id_to_row.end(), "offset vertex has missing or unknown input correspondence");
-        require(
-            result.vertex_tags[it->second] == 1,
-            "correspondence target is not an input vertex");
-        result.corr_input_vertex[i] = static_cast<int64_t>(it->second);
-        result.input_to_offset_vertices[it->second].push_back(i);
-    }
-
     for (int i = 0; i < m; ++i) {
         result.input_cells.push_back(static_cast<int>(integer(input_v[i], 0, 1, "tag_0")));
         const auto band = integer(offset_v[i], -1, 1, "offset_tag");
         result.offset_tet_tags.push_back(band == 1 ? 1 : -1);
     }
+    for (const auto& [type, b] : data.cells) {
+        if (type == CellType::Edge)
+            for (int i = 0; i < b.connectivity.rows(); ++i)
+                result.source_edges.push_back(
+                    {size_t(b.connectivity(i, 0)), size_t(b.connectivity(i, 1))});
+        if (type == CellType::Triangle)
+            for (int i = 0; i < b.connectivity.rows(); ++i)
+                result.source_faces.push_back(
+                    {size_t(b.connectivity(i, 0)),
+                     size_t(b.connectivity(i, 1)),
+                     size_t(b.connectivity(i, 2))});
+    }
+    detail::resolve_layered_correspondence(result);
     result.mesh = std::make_unique<TetMesh>();
     result.mesh->init_with_isolated_vertices(n, tets);
     return result;

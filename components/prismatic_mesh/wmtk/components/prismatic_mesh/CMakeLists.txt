@@ -17,13 +17,22 @@ set(SRC_FILES
     write_msh.hpp
     write_msh.cpp
     prism_main.cpp
+    rod_mesh.hpp
+    rod_mesh.cpp
+    rod_ends.cpp
+    rod_frame_mapping.cpp
+    rod_interface_swaps.cpp
     open_boundary.cpp
+    junction_protection.hpp
+    junction_protection.cpp
     background_pyramids.hpp
     background_pyramids.cpp
     prism_dominant.cpp
     prism_jacobian.hpp
     prism_jacobian.cpp
     jacobian_smoothing.cpp
+    thickness_smoothing.hpp
+    thickness_smoothing.cpp
     target_positions.cpp
     background_remeshing.hpp
     background_remeshing.cpp

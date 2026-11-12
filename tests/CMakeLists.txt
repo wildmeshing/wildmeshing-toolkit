@@ -105,7 +105,8 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
     # time for elements. Set on discovery rather than with set_tests_properties, because
     # catch_discover_tests registers the test at build time, when a configure-time property
     # call has nothing to attach to.
-    catch_discover_tests(wmtk_integration_tests PROPERTIES TIMEOUT 7200)
+    # COST: one of the longest tests (5 to 7 minutes), so a parallel ctest starts it first.
+    catch_discover_tests(wmtk_integration_tests PROPERTIES TIMEOUT 7200 COST 300)
 
 endif()
 # wmtk_app ends a failed run with its error and exit code 1, not with an abort: an unknown

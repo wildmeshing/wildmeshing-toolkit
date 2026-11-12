@@ -171,11 +171,15 @@ TEST_CASE("interface reconstruction filters bad splits of Jacobian-valid sheared
         REQUIRE(hybrid.report["retriangulated_prisms"] == 0);
         REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 216);
     } else {
-        REQUIRE(count(hybrid, HybridCellType::Prism) > 0);
-        REQUIRE(count(hybrid, HybridCellType::Pyramid) > 0);
-        // Incompatible transition directions must expand the retained region
-        // rather than select an inverted alternative that satisfies only topology.
-        REQUIRE(hybrid.report["direction_region_expansions"].get<size_t>() > 0);
+        // A valid wedge does not guarantee a valid pyramid in the direction fixed
+        // by its mark. Strong shear must update those corners rather than admit
+        // an inverted pyramid or an unsafe alternative tet decomposition.
+        REQUIRE_FALSE(hybrid.report["marker_updates"].empty());
+        REQUIRE(
+            std::any_of(
+                hybrid.report["marker_updates"].begin(),
+                hybrid.report["marker_updates"].end(),
+                [](const auto& update) { return update["reason"] == "invalid_pyramid_jacobian"; }));
     }
     for (const auto& t : data.mesh->get_tets())
         REQUIRE(tet_volume_above_threshold(data.vertices, data.mesh->oriented_tet_vids(t), 0));
@@ -390,7 +394,7 @@ TEST_CASE("bijective offset triangle produces a prism while input and background
     check_partition(data, hybrid);
 }
 
-TEST_CASE("a transition blocked by original core tets expands the retained tet region")
+TEST_CASE("required collapse-edge marks retain the local unmatched tet region")
 {
     // The extra two band tets expose a repeated-correspondence offset face (5,6,7).
     // Only corner 5 of the regular prism touches it; its opposite quad remains a quad.
@@ -400,7 +404,8 @@ TEST_CASE("a transition blocked by original core tets expands the retained tet r
     REQUIRE(count(hybrid, HybridCellType::Prism) == 0);
     REQUIRE(count(hybrid, HybridCellType::Pyramid) == 0);
     REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 5);
-    REQUIRE(hybrid.report["direction_region_expansions"] == 1);
+    REQUIRE(hybrid.report["direction_region_expansions"] == 0);
+    REQUIRE(hybrid.report["marker_updates"].empty());
     REQUIRE(hybrid.report["unassigned_band_tets_retained"] == 2);
     check_partition(data, hybrid);
 }
@@ -495,7 +500,7 @@ TEST_CASE("prism Jacobians are checked between the caps as well as at the corner
     check_partition(data, hybrid);
 }
 
-TEST_CASE("a zero sampled prism Jacobian retains positive source tetrahedra")
+TEST_CASE("a zero sampled prism Jacobian recovers through an oriented pyramid")
 {
     auto data = fixture();
     // The input corner (0,0,0) has a horizontal extrusion direction, while the
@@ -505,7 +510,10 @@ TEST_CASE("a zero sampled prism Jacobian retains positive source tetrahedra")
         REQUIRE(tet_volume_above_threshold(data.vertices, data.mesh->oriented_tet_vids(t), 0));
     const auto hybrid = build_prism_dominant_mesh(data, 0);
     REQUIRE(hybrid.report["candidate_rejections"]["invalid_prism_jacobian"] == 1);
-    REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 3);
+    REQUIRE(count(hybrid, HybridCellType::Pyramid) == 1);
+    REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 1);
+    REQUIRE(hybrid.report["marker_updates"].size() == 1);
+    REQUIRE(hybrid.report["marker_updates"][0]["reason"] == "invalid_prism_jacobian");
     check_partition(data, hybrid);
 }
 
@@ -523,18 +531,58 @@ TEST_CASE("a small unmatched shell tet does not prevent other prisms from being 
     check_partition(data, hybrid);
 }
 
-TEST_CASE("a fixed lateral interface expands the input-apex transition region")
+TEST_CASE("marked boundary columns rebuild pyramids and update invalid pyramid corners")
+{
+    // The extra tet shares only the input-to-offset edge (1,4). Its all-equal
+    // correspondence face marks corner 4, without imposing a lateral interface.
+    auto data = fixture({{2, -1, 1}, {2, 0, 1}}, {{1, 4, 6, 7}}, {1, 1});
+    bool shear = false;
+    SECTION("a planar open boundary may change diagonal for the aligned pyramid") {}
+    SECTION("a valid prism can have an invalid pyramid in the marked direction")
+    {
+        shear = true;
+        for (Eigen::Index i = 0; i < data.vertices.rows(); ++i)
+            data.vertices(i, 0) -= 2 * data.vertices(i, 1) * data.vertices(i, 2);
+    }
+    const auto positions = data.vertices;
+    const auto original = data.tetrahedra;
+    const auto hybrid = build_prism_dominant_mesh(data, 0);
+    REQUIRE(data.vertices == positions);
+    REQUIRE(count(hybrid, HybridCellType::Prism) == 0);
+    if (!shear) {
+        REQUIRE(count(hybrid, HybridCellType::Pyramid) == 1);
+        REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 2);
+        REQUIRE(data.tetrahedra != original);
+        REQUIRE(hybrid.report["marker_updates"].empty());
+        const auto pyramid =
+            std::find_if(hybrid.cells.begin(), hybrid.cells.end(), [](const auto& c) {
+                return c.type == HybridCellType::Pyramid;
+            });
+        REQUIRE(pyramid->vertices[4] == 1);
+    } else {
+        REQUIRE(count(hybrid, HybridCellType::Pyramid) == 0);
+        REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 4);
+        REQUIRE(hybrid.report["marker_iterations"] == 2);
+        REQUIRE(hybrid.report["marker_updates"].size() == 1);
+        REQUIRE(hybrid.report["marker_updates"][0]["reason"] == "invalid_pyramid_jacobian");
+        REQUIRE(hybrid.report["direction_fallbacks"].empty());
+    }
+    check_partition(data, hybrid);
+}
+
+TEST_CASE("a fixed lateral interface initializes collapse-edge marks")
 {
     auto data = fixture({{-1, 1, 0.5}}, {{0, 2, 5, 6}});
     data.offset_tet_tags[3] = -1;
     auto hybrid = build_prism_dominant_mesh(data, 0);
-    REQUIRE(hybrid.report["initial_special_offset_vertices"] == 0);
+    REQUIRE(hybrid.report["initial_special_offset_vertices"] == 2);
     REQUIRE(hybrid.report["quad_constraints_added"].get<size_t>() >= 1);
-    REQUIRE(hybrid.report["compatibility_passes"].get<size_t>() >= 2);
+    REQUIRE(hybrid.report["marker_iterations"] == 1);
     REQUIRE(count(hybrid, HybridCellType::Prism) == 0);
     REQUIRE(count(hybrid, HybridCellType::Pyramid) == 0);
     REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 4);
-    REQUIRE(hybrid.report["direction_region_expansions"] == 1);
+    REQUIRE(hybrid.report["direction_region_expansions"] == 0);
+    REQUIRE(hybrid.report["marker_updates"].empty());
     check_partition(data, hybrid);
 }
 
@@ -777,7 +825,7 @@ TEST_CASE("a positive offset-apex pyramid is rejected by the uniform input-apex 
     REQUIRE_THROWS(validate_prism_dominant_mesh(data, hybrid, 0));
 }
 
-TEST_CASE("an invalid prism expands the tetrahedral region into its neighbor")
+TEST_CASE("an invalid prism recovers through a pyramid while preserving its valid neighbor")
 {
     auto data =
         fixture({{1, 1, 0}, {1, 1, 1}}, {{1, 6, 2, 5}, {1, 6, 5, 7}, {1, 4, 7, 5}}, {-1, 6});
@@ -787,8 +835,10 @@ TEST_CASE("an invalid prism expands the tetrahedral region into its neighbor")
         REQUIRE(tet_volume_above_threshold(data.vertices, data.mesh->oriented_tet_vids(t), 0));
     const auto hybrid = build_prism_dominant_mesh(data, 0);
     REQUIRE(hybrid.report["candidate_rejections"]["invalid_prism_jacobian"] == 1);
-    REQUIRE(hybrid.report["fully_tetrahedral_candidates"] == 2);
-    REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 6);
+    REQUIRE(hybrid.report["fully_tetrahedral_candidates"] == 0);
+    REQUIRE(count(hybrid, HybridCellType::Prism) == 1);
+    REQUIRE(count(hybrid, HybridCellType::Pyramid) == 1);
+    REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 1);
     check_partition(data, hybrid);
 }
 
@@ -825,8 +875,8 @@ TEST_CASE("hybrid validation rejects duplicate or missing source ownership")
 
 TEST_CASE("conflicting fixed interfaces terminate by retaining the original prism regions")
 {
-    // Both prisms touch fixed lateral tets. Input-apex transitions cannot create the
-    // required prism-derived buffer here; expansion must restore the original regions.
+    // Both prisms touch fixed lateral tets. The required interface-edge marks
+    // determine tet regions at initialization, without a propagated buffer.
     auto data = fixture(
         {{0, -1, 0}, {0, -1, 1}, {1, -1, 0.5}, {-1, 1, 0.5}},
         {{0, 6, 1, 4}, {0, 6, 4, 7}, {0, 3, 7, 4}, {6, 1, 4, 8}, {0, 2, 5, 9}},
@@ -836,7 +886,8 @@ TEST_CASE("conflicting fixed interfaces terminate by retaining the original pris
     const auto hybrid = build_prism_dominant_mesh(data, 0);
     REQUIRE(count(hybrid, HybridCellType::Pyramid) == 0);
     REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 8);
-    REQUIRE(hybrid.report["compatibility_passes"].get<size_t>() >= 3);
+    REQUIRE(hybrid.report["marker_iterations"] == 1);
+    REQUIRE(hybrid.report["marker_updates"].empty());
     for (size_t tid : {0, 1, 2})
         REQUIRE(hybrid.cells[hybrid.source_tet_to_cell[tid]].type == HybridCellType::Tetrahedron);
     check_partition(data, hybrid);

@@ -239,7 +239,7 @@ TEST_CASE("open boundary separates sheet target components and retains unmarked 
         REQUIRE(data.offset_tet_tags == std::vector<int>{1, 1, -1, -1});
 }
 
-TEST_CASE("T junction vertices protect their complete one-rings before open boundary trimming")
+TEST_CASE("three boundary fans do not protect a connection without a receiving interior fan")
 {
     // Three two-sided input triangles meet along {0,1}. The last three tets are
     // tau31s: two touch just one junction endpoint; the last only touches input 2.
@@ -256,13 +256,10 @@ TEST_CASE("T junction vertices protect their complete one-rings before open boun
     const auto tets = data.tetrahedra;
     const auto stats = handle_open_boundaries(data);
     REQUIRE(stats.open_boundary_edges == 6);
-    REQUIRE(stats.junction_vertices == 2);
+    REQUIRE(stats.junction_vertices == 0);
     REQUIRE(stats.candidate_tets == 9);
-    REQUIRE(stats.protected_candidate_tets == 8);
-    REQUIRE(stats.unmarked_tets == 1);
-    REQUIRE(data.offset_tet_tags == std::vector<int>{1, 1, 1, 1, 1, 1, 1, 1, -1});
+    REQUIRE(stats.protected_candidate_tets == 0);
+    REQUIRE(stats.unmarked_tets == 3);
+    REQUIRE(data.offset_tet_tags == std::vector<int>{1, 1, 1, 1, 1, 1, -1, -1, -1});
     REQUIRE(data.tetrahedra == tets);
-    for (size_t junction : {0, 1})
-        for (size_t tid : data.mesh->get_one_ring_tids_for_vertex(junction))
-            REQUIRE(data.offset_tet_tags[tid] == 1);
 }

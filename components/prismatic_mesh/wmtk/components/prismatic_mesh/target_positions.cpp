@@ -1,4 +1,6 @@
+#include "junction_protection.hpp"
 #include "prismatic_mesh.hpp"
+#include "rod_mesh.hpp"
 
 #include <Eigen/Geometry>
 #include <Eigen/LU>
@@ -287,5 +289,7 @@ void evaluate_target_positions(PrismaticMeshInput& input, double thicknessratio)
         singular_count,
         input.input_average_edge_length,
         input.target_thickness);
+    apply_rod_targets(input);
+    apply_junction_targets(input);
 }
 } // namespace wmtk::components::prismatic_mesh

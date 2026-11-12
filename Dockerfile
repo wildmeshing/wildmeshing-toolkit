@@ -30,12 +30,13 @@ RUN --mount=type=cache,target=/root/.ccache \
     cmake -S . -B build \
     -DWMTK_WITH_CCACHE=ON \
     -DWMTK_PYBIND=OFF \
+    -DBUILD_TESTING=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_DEBUGNOSYMBOLS=""
 
-# Build WMTK using ccache
+# Build only the application the image runs (BUILD_TESTING=OFF above leaves out the tests too).
 RUN --mount=type=cache,target=/root/.ccache \
-    cmake --build build -j"$(nproc)"
+    cmake --build build -j"$(nproc)" --target wmtk_app
 
 # Runtime working directory
 WORKDIR /data
