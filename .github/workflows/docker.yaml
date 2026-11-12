@@ -9,6 +9,9 @@ on:
     tags:
       - "v*"
 
+# No layer cache: `COPY . .` changes with every commit, so only the apt layer before it could be
+# reused, and the exported layers took about 0.9 GB of the repository's 10 GB of Actions cache per
+# push to main, pushing the compiler caches of the Build workflow out.
 jobs:
   build-and-push-standard:
     runs-on: ubuntu-latest
@@ -33,13 +36,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Cache Docker layers
-        uses: actions/cache@v5
-        with:
-          path: /tmp/.buildx-cache
-          key: docker-${{ runner.os }}-${{ github.sha }}
-          restore-keys: docker-${{ runner.os }}-
-
       - name: Build and Push Standard Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -51,8 +47,6 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/wmtk:latest
             ${{ secrets.DOCKER_USERNAME }}/wmtk:${{ github.sha }}
             ${{ github.ref_type == 'tag' && format('{0}/wmtk:{1}', secrets.DOCKER_USERNAME, github.ref_name) || '' }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           platforms: linux/amd64
 
       - name: Test Standard Docker Image

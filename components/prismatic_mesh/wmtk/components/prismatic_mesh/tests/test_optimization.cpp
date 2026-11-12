@@ -113,6 +113,48 @@ TEST_CASE("exact volume checks reject inversion degeneracy and equality at the t
     REQUIRE_FALSE(tet_volume_above_threshold(data.vertices, tet, 0));
 }
 
+TEST_CASE("the last smoothing sweep is followed by an exhaustive checked collapse")
+{
+    const double h = std::sqrt(3.) / 2;
+    MatrixXd points(7, 3);
+    points << 0, 0, -.3, 0, 0, .3, 1, 0, 0, -.5, h, 0, -.5, -h, 0, 2, 4 * h, -2, -4, 0, 2;
+    auto data = make_mesh(
+        points,
+        {{0, 1, 2, 3},
+         {0, 1, 3, 4},
+         {0, 1, 4, 2},
+         {0, 2, 3, 5},
+         {0, 3, 4, 5},
+         {0, 4, 2, 5},
+         {1, 3, 2, 6},
+         {1, 4, 3, 6},
+         {1, 2, 4, 6}},
+        {0, 1},
+        2,
+        Vector3d::Zero());
+    // One endpoint is blocked by a background cell, the other by a band cell.
+    // Their shared target is feasible once the two vertices have been smoothed.
+    data.offset_tet_tags[3] = data.offset_tet_tags[4] = data.offset_tet_tags[5] = -1;
+    REQUIRE(data.mesh->link_condition(data.mesh->tuple_from_edge({0, 1})));
+    REQUIRE_FALSE(try_collapse_offset_edge(data, 0, 1, 0));
+    REQUIRE_FALSE(try_collapse_offset_edge(data, 1, 0, 0));
+    const auto fixed = data.vertices.bottomRows(5).eval();
+    OptimizationOptions options;
+    options.iterations = 1;
+    options.keep_background_mesh = true;
+    optimize_prismatic_mesh(data, options);
+    REQUIRE(data.optimization_iterations.size() == 1);
+    REQUIRE(data.optimization_iterations[0].collapses == 1);
+    REQUIRE(data.offset_vertices == std::vector<size_t>{0});
+    REQUIRE(data.vertices.row(0) == Eigen::RowVector3d::Zero());
+    REQUIRE(data.vertices.bottomRows(5) == fixed);
+    REQUIRE(data.tetrahedra.rows() == 6);
+    REQUIRE(std::count(data.offset_tet_tags.begin(), data.offset_tet_tags.end(), -1) == 3);
+    for (const auto& t : data.mesh->get_tets())
+        REQUIRE(tet_volume_above_threshold(data.vertices, data.mesh->oriented_tet_vids(t), 0));
+    REQUIRE(data.mesh->check_mesh_connectivity_validity());
+}
+
 TEST_CASE("collapse preserves component correspondence tags fixed targets and synchronized cells")
 {
     auto data = collapse_fixture();
@@ -245,6 +287,18 @@ TEST_CASE("collapse rejects different components input vertices and failed link 
     REQUIRE(single.mesh->get_tets().size() == 1);
 }
 
+TEST_CASE("relative collapse safeguards prevent nearly flattened background survivors")
+{
+    auto data = collapse_fixture(.9);
+    data.offset_tet_tags = {-1, -1, 1, 1, -1, -1};
+    data.relative_tet_volume_floor = .25;
+    const auto tets = data.tetrahedra.eval();
+    REQUIRE_FALSE(try_collapse_offset_edge(data, 3, 5, 0));
+    REQUIRE(data.tetrahedra == tets);
+    data.relative_tet_volume_floor = 0;
+    REQUIRE(try_collapse_offset_edge(data, 3, 5, 0));
+}
+
 TEST_CASE("collapse can delete small tets and preserve unchanged small survivor tets")
 {
     auto data = collapse_fixture();
@@ -274,6 +328,17 @@ TEST_CASE("smoothing may raise an existing small positive tet above the operatio
     REQUIRE(smooth_offset_vertex(data, 3, 0.05, 8) == 1);
     REQUIRE(data.vertices(3, 2) == 1);
     check_synced(data, 0.05);
+}
+
+TEST_CASE("relative smoothing safeguards include background cells without an absolute cutoff")
+{
+    auto data = smooth_fixture(Vector3d(0, 0, 1e-12));
+    data.offset_tet_tags[0] = -1;
+    REQUIRE(smooth_offset_vertex(data, 3, 0, 40, .25) == .5);
+    REQUIRE(data.vertices(3, 2) > .5);
+    REQUIRE_THROWS(smooth_offset_vertex(data, 3, 0, 40, 1));
+    auto original = smooth_fixture(Vector3d(0, 0, 1e-12));
+    REQUIRE(smooth_offset_vertex(original, 3, 0, 40) == 1);
 }
 
 TEST_CASE("smoothing uses only positive-volume checks for incident background cells")

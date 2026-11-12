@@ -22,6 +22,16 @@ else()
     endif()
 endif()
 
+# Python builds (scikit-build-core): object files outside CMakeFiles/. scikit-build-core deletes the
+# build directory's top-level CMakeFiles/ whenever it builds in a new isolated environment, which
+# cibuildwheel does for every Python version, and with it the objects of the targets this file
+# defines (the toolkit library, metis, GKlib): each wheel recompiled them. CMake's SHORT strategy
+# (4.2 and later; older versions ignore it) keeps every target's objects in .o/ instead. Not with
+# Visual Studio, whose object directories are outside CMakeFiles/ already.
+if(DEFINED SKBUILD AND NOT CMAKE_GENERATOR MATCHES "^Visual Studio")
+    set(CMAKE_INTERMEDIATE_DIR_STRATEGY SHORT CACHE STRING "Naming of target intermediate directories")
+endif()
+
 # Enable ccache if available
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -34,10 +44,16 @@ if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
         CCACHE_BASEDIR=${CMAKE_BINARY_DIR}
         CCACHE_SLOPPINESS=clang_index_store,include_file_ctime,include_file_mtime,locale,pch_defines,time_macros
     )
+    # A launcher given on the command line wins. The Windows CI runners have Strawberry Perl's
+    # C:\Strawberry\c\bin\ccache.exe on PATH, and before this check it replaced the
+    # -DCMAKE_CXX_COMPILER_LAUNCHER=sccache the Windows jobs pass: every Windows build went through
+    # a ccache whose cache nothing saved, and sccache's stayed empty.
     foreach(lang IN ITEMS C CXX)
-        set(CMAKE_${lang}_COMPILER_LAUNCHER
-            ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
-        )
+        if(NOT DEFINED CMAKE_${lang}_COMPILER_LAUNCHER)
+            set(CMAKE_${lang}_COMPILER_LAUNCHER
+                ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
+            )
+        endif()
     endforeach()
 endif()
 

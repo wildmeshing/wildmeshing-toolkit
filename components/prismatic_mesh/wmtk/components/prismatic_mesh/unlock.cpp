@@ -1,4 +1,6 @@
+#include "junction_protection.hpp"
 #include "prismatic_mesh.hpp"
+#include "rod_mesh.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -95,9 +97,15 @@ bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double
         parents.emplace(sorted(tet), tid);
         for (int j = 0; j < 4; ++j) candidate.tetrahedra(i, j) = static_cast<int>(tet[j]);
         if (std::find(tet.begin(), tet.end(), u) != tet.end() &&
-            std::find(tet.begin(), tet.end(), v) != tet.end() &&
-            !tet_volume_above_threshold(input.vertices, tet, 0))
-            return false;
+            std::find(tet.begin(), tet.end(), v) != tet.end()) {
+            if (!tet_volume_above_threshold(input.vertices, tet, 0)) return false;
+            if (junction_tet_protected(input, tet)) return false;
+            if (input.rod_state && std::any_of(tet.begin(), tet.end(), [&](size_t w) {
+                    return input.rod_state->protected_input.count(w) ||
+                           input.rod_state->frozen_offset.count(w);
+                }))
+                return false;
+        }
     }
     // x must be the newly allocated slot, not a pre-existing isolated vertex.
     candidate.mesh = make_mesh(x, candidate.tetrahedra);
@@ -145,6 +153,11 @@ bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double
     candidate.vertex_component_ids = input.vertex_component_ids;
     candidate.vertex_component_ids.push_back(cid);
     candidate.corr_input_vid = input.corr_input_vid;
+    candidate.source_edges = input.source_edges;
+    candidate.source_faces = input.source_faces;
+    candidate.layered_junction_vertices = input.layered_junction_vertices;
+    candidate.layered_correspondence_report = input.layered_correspondence_report;
+    candidate.relative_tet_volume_floor = input.relative_tet_volume_floor;
     candidate.corr_input_vid.push_back(input.source_vertex_ids[u]);
     candidate.corr_input_vertex = input.corr_input_vertex;
     candidate.corr_input_vertex.push_back(static_cast<int64_t>(u));
@@ -154,6 +167,8 @@ bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double
     if (!candidate.fixed_background_vertices.empty())
         candidate.fixed_background_vertices.push_back(false);
     candidate.offset_components = input.offset_components;
+    candidate.rod_state = input.rod_state;
+    candidate.junction_protection = input.junction_protection;
     candidate.offset_components[cid].vertices.push_back(x);
     candidate.offset_vertices = input.offset_vertices;
     candidate.offset_vertices.push_back(x);
@@ -215,6 +230,13 @@ UnlockStatistics unlock_tau22(PrismaticMeshInput& input, double min_tet_volume)
         if (!found) continue;
         const size_t tid = *found;
         if (!classify_tau22(input, tid)) continue;
+        if (input.rod_state) {
+            const auto t = input.mesh->oriented_tet_vids(tid);
+            if (std::any_of(t.begin(), t.end(), [&](size_t v) {
+                    return is_rod_offset_vertex(input, v);
+                }))
+                continue; // Rod tau normalization is performed before frame targets are fixed.
+        }
         ++stats.attempted;
         if (try_unlock_tau22(input, tid, 0, min_tet_volume) ||
             try_unlock_tau22(input, tid, 1, min_tet_volume)) {

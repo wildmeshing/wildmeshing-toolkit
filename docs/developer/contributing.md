@@ -117,8 +117,9 @@ git tag v2.0.1 && git push origin v2.0.1
   (`pyproject.toml`). There is no version number to edit. A build from a commit after a tag is
   `2.0.1.devN+g<hash>`.
 - Wheels are built for macOS arm64, Linux x86_64 and arm64, and Windows x86_64, for every CPython
-  cibuildwheel supports from 3.9 on, plus the source distribution. Each wheel is installed and
-  smoke-tested on its platform before anything is published.
+  cibuildwheel supports from 3.10 on, plus the source distribution. Each wheel is installed and
+  smoke-tested on its platform before anything is published (the tracking tests on the newest
+  Python only: `[tool.cibuildwheel]` in `pyproject.toml`).
 - The files go to [PyPI](https://pypi.org/project/wildmeshing/), and a GitHub Release is created
   with the same files and notes generated from the pull requests merged since the previous
   version tag. The Docker image is also pushed as `wmtk:<tag>`. A tag that is not a version

@@ -1,4 +1,5 @@
 #include "background_pyramids.hpp"
+#include "junction_protection.hpp"
 
 #include <Eigen/Geometry>
 #include <Eigen/LU>
@@ -93,6 +94,7 @@ std::string make_plan(
     const std::map<Edge, std::vector<size_t>>& edge_stars,
     const std::set<size_t>& claimed,
     double floor,
+    int growth,
     BackgroundPyramidPlan& plan)
 {
     std::array<size_t, 2> targets;
@@ -147,6 +149,24 @@ std::string make_plan(
             return "non_path_edge_link";
     }
     if (endpoints != expected) return "non_path_edge_link";
+    // A rod front exchange may need to expand past the original diagonal star.
+    // Grow only across background faces, never through a protected connection,
+    // material band, input volume, claimed cavity or region boundary.
+    for (int layer = 0; layer < growth; ++layer) {
+        auto expanded = cavity;
+        for (size_t tid : cavity)
+            for (const auto& f : faces(tet(input, tid)))
+                for (const auto& [neighbor, orientation] : all_faces.at(sorted(f))) {
+                    if (claimed.count(neighbor) || input.input_cells[neighbor] == 1 ||
+                        input.offset_tet_tags[neighbor] == 1 ||
+                        input.input_cells[neighbor] != input.input_cells[targets[0]] ||
+                        input.offset_tet_tags[neighbor] != input.offset_tet_tags[targets[0]] ||
+                        junction_tet_protected(input, tet(input, neighbor)))
+                        continue;
+                    expanded.insert(neighbor);
+                }
+        cavity = std::move(expanded);
+    }
     std::vector<Tri> boundary;
     std::set<size_t> vertices;
     std::map<Edge, size_t> boundary_edges;
@@ -233,10 +253,13 @@ std::string make_plan(
 BackgroundPyramidPlans plan_background_pyramids(
     const PrismaticMeshInput& input,
     const std::vector<BackgroundQuad>& quads,
-    double min_volume)
+    double min_volume,
+    int max_cavity_growth)
 {
     if (!std::isfinite(min_volume) || min_volume < 0)
         throw std::runtime_error("background pyramids: invalid volume floor");
+    if (max_cavity_growth < 0 || max_cavity_growth > 2)
+        throw std::runtime_error("background pyramids: invalid cavity growth limit");
     FaceOwners all_faces;
     std::map<Edge, std::vector<size_t>> edge_stars;
     for (size_t tid = 0; tid < size_t(input.tetrahedra.rows()); ++tid) {
@@ -250,17 +273,24 @@ BackgroundPyramidPlans plan_background_pyramids(
     std::set<Quad> seen;
     std::set<size_t> claimed;
     std::map<std::string, size_t> rejections;
+    size_t grown_cavities = 0;
     for (const auto& quad : quads) {
         const auto key = sorted(quad.vertices);
         if (!seen.insert(key).second) continue;
         BackgroundPyramidPlan plan;
-        const auto reason =
-            make_plan(input, quad, all_faces, edge_stars, claimed, min_volume, plan);
+        std::string reason;
+        int growth = 0;
+        for (; growth <= max_cavity_growth; ++growth) {
+            reason =
+                make_plan(input, quad, all_faces, edge_stars, claimed, min_volume, growth, plan);
+            if (reason != "no_positive_common_kernel") break;
+        }
         if (!reason.empty()) {
             if (reason != "not_background_interface") ++rejections[reason];
             continue;
         }
         claimed.insert(plan.cavity.begin(), plan.cavity.end());
+        grown_cavities += growth > 0;
         result.accepted.emplace(key, std::move(plan));
     }
     result.report = {
@@ -269,6 +299,8 @@ BackgroundPyramidPlans plan_background_pyramids(
         {"applied", 0},
         {"solver", "normalized four-variable max-clearance LP; active-set enumeration"},
         {"max_constraints", 64},
+        {"max_cavity_growth", max_cavity_growth},
+        {"grown_cavities", grown_cavities},
         {"min_tet_volume", min_volume},
         {"regions", nlohmann::json::array()}};
     return result;
@@ -394,4 +426,57 @@ void apply_background_pyramids(
     plans.report["exact_positive_tets_and_pyramid_corners"] = true;
     plans.report["exact_cavity_volume_preserved"] = true;
 }
+BackgroundPyramidPlans plan_atomic_rod_layer_pyramids(
+    const PrismaticMeshInput& input,
+    const std::vector<std::vector<BackgroundQuad>>& layers,
+    double floor,
+    std::vector<std::string>& reasons)
+{
+    FaceOwners all_faces;
+    std::map<Edge, std::vector<size_t>> edge_stars;
+    for (size_t tid = 0; tid < size_t(input.tetrahedra.rows()); ++tid) {
+        const auto t = tet(input, tid);
+        for (const auto& f : faces(t)) all_faces[sorted(f)].push_back({tid, f});
+        if (input.offset_tet_tags[tid] == 1 || input.input_cells[tid] == 1) continue;
+        for (int a = 0; a < 4; ++a)
+            for (int b = a + 1; b < 4; ++b) edge_stars[sorted(Edge{t[a], t[b]})].push_back(tid);
+    }
+    BackgroundPyramidPlans result;
+    std::set<size_t> claimed;
+    std::map<std::string, size_t> rejected;
+    reasons.assign(layers.size(), "");
+    for (size_t i = 0; i < layers.size(); ++i) {
+        auto transaction = claimed;
+        std::map<Quad, BackgroundPyramidPlan> plans;
+        for (const auto& quad : layers[i]) {
+            BackgroundPyramidPlan plan;
+            std::string reason;
+            for (int growth = 0; growth <= 2; ++growth) {
+                reason =
+                    make_plan(input, quad, all_faces, edge_stars, transaction, floor, growth, plan);
+                if (reason != "no_positive_common_kernel") break;
+            }
+            if (!reason.empty()) {
+                reasons[i] = reason;
+                ++rejected[reason];
+                break;
+            }
+            transaction.insert(plan.cavity.begin(), plan.cavity.end());
+            plans.emplace(sorted(quad.vertices), std::move(plan));
+        }
+        if (!reasons[i].empty()) continue; // Roll back every cavity in a failed layer.
+        claimed = std::move(transaction);
+        for (auto& [q, plan] : plans) result.accepted.emplace(q, std::move(plan));
+    }
+    result.report = {
+        {"method", "atomic_per_rod_layer"},
+        {"feasible_disjoint_cavities", result.accepted.size()},
+        {"rejections", rejected},
+        {"applied", 0},
+        {"max_cavity_growth", 2},
+        {"min_tet_volume", floor},
+        {"regions", nlohmann::json::array()}};
+    return result;
+}
+
 } // namespace wmtk::components::prismatic_mesh::detail

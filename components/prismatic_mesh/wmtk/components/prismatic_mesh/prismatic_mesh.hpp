@@ -7,10 +7,14 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
 namespace wmtk::components::prismatic_mesh {
+
+struct RodMeshState;
+struct JunctionProtection;
 
 struct OffsetComponent
 {
@@ -47,6 +51,7 @@ struct OptimizationOptions
     // Background optimization and unchanged background tets only require positive volume.
     double min_tet_volume = 0; // strictly positive signed volume; optional absolute floor
     int smoothing_max_backtracks = 40; // try alpha=1, then halve at most this many times
+    double relative_tet_volume_floor = 0; // optional per-move floor relative to each star tet
     bool keep_background_mesh = false; // include exterior tets in optimization validity checks
     JacobianSmoothingOptions jacobian_smoothing;
     BackgroundRemeshingOptions background_remeshing;
@@ -101,6 +106,11 @@ struct PrismaticMeshInput
     std::vector<int64_t> corr_input_vertex; // resolved mesh row, or -1
     std::vector<size_t> input_vertices;
     std::vector<size_t> offset_vertices;
+    // Original maximal simplices can share vertices with an earlier offset layer.
+    std::vector<std::array<size_t, 2>> source_edges;
+    std::vector<std::array<size_t, 3>> source_faces;
+    std::set<size_t> layered_junction_vertices;
+    nlohmann::json layered_correspondence_report;
     std::vector<std::vector<size_t>> input_to_offset_vertices; // indexed by mesh row
     std::vector<int> input_cells; // tag_0
     std::vector<int> offset_tet_tags; // 1: offset band, -1: other; derived from VTU offset_tag
@@ -118,9 +128,14 @@ struct PrismaticMeshInput
     MatrixXd target_positions; // singular/non-offset entries retain current positions
     double input_average_edge_length = 0; // unique edges of the input surface in the band
     double target_thickness = 0;
+    double relative_tet_volume_floor = 0;
     std::vector<OptimizationIteration> optimization_iterations;
     nlohmann::json jacobian_smoothing_report;
     nlohmann::json background_remeshing_report;
+    // Optional rod preparation/targets in the shared mixed-dimensional optimizer.
+    std::shared_ptr<RodMeshState> rod_state;
+    // Connection-point one-rings; independent of ordinary nonmanifold crossings.
+    std::shared_ptr<JunctionProtection> junction_protection;
 };
 
 enum class HybridCellType : int { Tetrahedron = 10, Prism = 13, Pyramid = 14 };
@@ -181,6 +196,9 @@ void write_prismatic_mesh(
 // Keep band tetrahedra in their original order and filter cell attributes with them.
 // Vertex arrays/IDs stay unchanged; unused vertices are inactive in the rebuilt TetMesh.
 void keep_offset_band(PrismaticMeshInput& input);
+// Explicitly remove exterior cells before preprocessing/optimization while keeping
+// all input volume and offset-band cells. The removed background is not reattached.
+void discard_background_mesh(PrismaticMeshInput& input);
 // Preprocess the full construction mesh before extracting the band or computing targets.
 // Candidates are band tets incident to either endpoint of an open input edge. Only clears
 // offset_tet_tags to -1; connectivity, coordinates, input volume and vertex labels stay intact.
@@ -208,7 +226,8 @@ double smooth_offset_vertex(
     PrismaticMeshInput& input,
     size_t vertex,
     double min_tet_volume,
-    int max_backtracks);
+    int max_backtracks,
+    double relative_volume_floor = 0);
 void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOptions& options);
 std::optional<Tau22Element> classify_tau22(const PrismaticMeshInput& input, size_t tet_id);
 // side=0: split(input a,offset b), then collapse(x->offset a); side=1: symmetric.

@@ -1,4 +1,6 @@
+#include "junction_protection.hpp"
 #include "prismatic_mesh.hpp"
+#include "rod_mesh.hpp"
 
 #include <algorithm>
 #include <map>
@@ -31,6 +33,7 @@ bool is_volume_edge(const PrismaticMeshInput& input, const Edge& edge)
 
 OpenBoundaryStatistics handle_open_boundaries(PrismaticMeshInput& input)
 {
+    initialize_junction_protection(input);
     // A shell input face has three input vertices and at least one incident band cell.
     // get_faces() visits it once even when the sheet has band cells on both sides.
     std::map<Edge, size_t> face_counts;
@@ -48,9 +51,8 @@ OpenBoundaryStatistics handle_open_boundaries(PrismaticMeshInput& input)
     }
 
     std::set<Edge> boundary_edges;
-    std::set<size_t> boundary_vertices, junction_vertices;
+    std::set<size_t> boundary_vertices;
     for (const auto& [edge, count] : face_counts) {
-        if (count >= 3) junction_vertices.insert(edge.begin(), edge.end());
         if (count != 1 || is_volume_edge(input, edge)) continue;
         boundary_edges.insert(edge);
         boundary_vertices.insert(edge.begin(), edge.end());
@@ -64,14 +66,18 @@ OpenBoundaryStatistics handle_open_boundaries(PrismaticMeshInput& input)
                 candidates.insert(tid);
 
     OpenBoundaryStatistics stats{boundary_edges.size(), candidates.size(), 0};
-    stats.junction_vertices = junction_vertices.size();
+    stats.junction_vertices = input.junction_protection->centers.size();
     for (size_t tid : candidates) {
         const auto tet = input.mesh->oriented_tet_vids(tid);
-        // T junctions take priority over every removal rule. Any tet containing a
-        // junction input vertex belongs to its protected complete one-ring.
-        if (std::any_of(tet.begin(), tet.end(), [&](size_t v) {
-                return junction_vertices.count(v);
+        if (input.rod_state && std::any_of(tet.begin(), tet.end(), [&](size_t v) {
+                return input.rod_state->input_vertices.count(v) || is_rod_offset_vertex(input, v);
             })) {
+            ++stats.protected_candidate_tets;
+            continue;
+        }
+        // Only connection-point stars take priority over the trimming rules.
+        // A regular X crossing is not a terminal connection and is not protected.
+        if (junction_tet_protected(input, tet)) {
             ++stats.protected_candidate_tets;
             continue;
         }
@@ -116,7 +122,7 @@ OpenBoundaryStatistics handle_open_boundaries(PrismaticMeshInput& input)
     }
     logger().info(
         "Open boundary: {} input edges, {} candidate shell tetrahedra, {} unmarked as background; "
-        "{} junction vertices protect {} candidate tetrahedra",
+        "{} connection vertices protect {} candidate tetrahedra",
         stats.open_boundary_edges,
         stats.candidate_tets,
         stats.unmarked_tets,

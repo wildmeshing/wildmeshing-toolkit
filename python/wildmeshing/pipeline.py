@@ -64,7 +64,9 @@ OPTIONS = {"prismatic_mesh": [
 
 def _prismatic_input(mesh, input_tags, offset_tags):
     """The mesh as prismatic_mesh reads it: regions tag_0, offset and ambient, and vertex labels 1
-    on the input volume and on every correspondence target, 2 on every vertex with one."""
+    on the input volume and on every correspondence target, 2 on every vertex with one.
+    Keep original lower-dimensional simplices and raw layer links: C++ resolves shared
+    roles as protected junctions without moving the original source geometry."""
     if not input_tags or not offset_tags:
         raise ValueError("prismatic_mesh: give both input_tags and offset_tags")
     attributes = mesh.get("vertex_attributes", {})
@@ -93,12 +95,14 @@ def _prismatic_input(mesh, input_tags, offset_tags):
     vertex[np.unique(tets["connectivity"][tag_0])] = 1
     vertex[[row[c] for c in corr[corr >= 0]]] = 1
     vertex[corr >= 0] = 2
+    cells = {kind: block for kind, block in mesh["cells"].items() if kind in ("edge", "triangle")}
+    cells["tetrahedron"] = {"connectivity": tets["connectivity"], "attributes": {
+        "tags": {"values": np.stack([tag_0, band, ~(tag_0 | band)], 1).astype(np.uint8),
+                 "labels": ["tag_0", "offset", "ambient"]}}}
     return {"V": mesh["V"],
             "vertex_attributes": {"vid": {"values": vid}, "corr_input_vid": {"values": corr},
                                   "labels": {"values": vertex}},
-            "cells": {"tetrahedron": {"connectivity": tets["connectivity"], "attributes": {
-                "tags": {"values": np.stack([tag_0, band, ~(tag_0 | band)], 1).astype(np.uint8),
-                         "labels": ["tag_0", "offset", "ambient"]}}}}}
+            "cells": cells}
 
 _module_hash = None
 

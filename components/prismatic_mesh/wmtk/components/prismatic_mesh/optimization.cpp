@@ -1,10 +1,13 @@
 #include "background_remeshing.hpp"
+#include "junction_protection.hpp"
 #include "prismatic_mesh.hpp"
+#include "rod_mesh.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <set>
+#include <tuple>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
@@ -47,6 +50,16 @@ bool volume_above(
 bool active(const PrismaticMeshInput& input, size_t v)
 {
     return v < input.mesh->vert_capacity() && !input.mesh->get_one_ring_tids_for_vertex(v).empty();
+}
+
+double relative_floor(const MatrixXd& vertices, const std::array<size_t, 4>& t, double ratio)
+{
+    if (ratio == 0) return 0;
+    Eigen::Matrix<long double, 3, 3> e;
+    for (int j = 0; j < 3; ++j)
+        for (int k = 0; k < 3; ++k)
+            e(j, k) = static_cast<long double>(vertices(t[j + 1], k)) - vertices(t[0], k);
+    return std::max(0., static_cast<double>(ratio * e.determinant() / 6));
 }
 
 bool same_component(const PrismaticMeshInput& input, size_t a, size_t b)
@@ -144,6 +157,8 @@ std::optional<CollapsePreflight> collapse_preflight(
 {
     validate_threshold(min_tet_volume);
     if (!same_component(input, removed, survivor)) return std::nullopt;
+    if (!rod_collapse_allowed(input, removed, survivor)) return std::nullopt;
+    if (!junction_collapse_allowed(input, removed)) return std::nullopt;
     const auto& star = input.mesh->get_one_ring_tids_for_vertex(removed);
     bool is_edge = false;
     CollapsePreflight result;
@@ -166,9 +181,12 @@ std::optional<CollapsePreflight> collapse_preflight(
         // cells must meet the operation's floor; background only needs positive volume.
         if (!contains(tet, removed)) continue;
         modified.insert(tid);
+        const double safeguard =
+            relative_floor(input.vertices, tet, input.relative_tet_volume_floor);
         for (auto& v : tet)
             if (v == removed) v = survivor;
-        const double floor = input.offset_tet_tags.at(tid) == 1 ? min_tet_volume : 0;
+        const double floor =
+            std::max(input.offset_tet_tags.at(tid) == 1 ? min_tet_volume : 0, safeguard);
         if (!volume_above(input.vertices, tet, floor)) {
             if (!collect_background || input.offset_tet_tags.at(tid) == 1 ||
                 input.input_cells.at(tid) == 1)
@@ -222,10 +240,18 @@ bool try_collapse_offset_edge_impl(
     // Check the actual result before changing external attributes. If a core connectivity
     // change ever differs from the preflight prediction, restore the original snapshot.
     for (size_t tid : input.mesh->get_one_ring_tids_for_vertex(survivor)) {
+        std::array<size_t, 4> original;
+        for (int j = 0; j < 4; ++j) original[j] = input.tetrahedra(tid, j);
+        const double safeguard =
+            modified.count(tid)
+                ? relative_floor(input.vertices, original, input.relative_tet_volume_floor)
+                : 0;
         if (!volume_above(
                 input.vertices,
                 input.mesh->oriented_tet_vids(tid),
-                modified.count(tid) && input.offset_tet_tags.at(tid) == 1 ? min_tet_volume : 0)) {
+                std::max(
+                    modified.count(tid) && input.offset_tet_tags.at(tid) == 1 ? min_tet_volume : 0,
+                    safeguard))) {
             rebuild_mesh(input);
             return false;
         }
@@ -274,34 +300,47 @@ double smooth_offset_vertex(
     PrismaticMeshInput& input,
     size_t vertex,
     double min_tet_volume,
-    int max_backtracks)
+    int max_backtracks,
+    double relative_volume_floor)
 {
     validate_threshold(min_tet_volume);
+    if (!std::isfinite(relative_volume_floor) || relative_volume_floor < 0 ||
+        relative_volume_floor >= 1)
+        log_and_throw_error("relative_tet_volume_floor must be in [0,1).");
     if (max_backtracks < 0 || max_backtracks > 60) {
         log_and_throw_error("smoothing_max_backtracks must be between 0 and 60.");
     }
     if (!active(input, vertex) || input.vertex_tags.at(vertex) != 2 ||
         input.vertex_component_ids.at(vertex) < 0 || input.singular_vertex_tags.at(vertex) != 0)
         return 0;
-    const auto& component = input.offset_components.at(input.vertex_component_ids[vertex]);
-    if (component.singular) return 0;
+    if (!junction_collapse_allowed(input, vertex)) return 0;
     const Vector3d start = input.vertices.row(vertex);
-    const Vector3d target = component.target_position;
+    const Vector3d target = input.target_positions.row(vertex);
     if (!start.allFinite() || !target.allFinite() || start == target) return 0;
     const auto& star = input.mesh->get_one_ring_tids_for_vertex(vertex);
+    std::vector<double> floors;
     for (size_t tid : star) {
         if (!volume_above(input.vertices, input.mesh->oriented_tet_vids(tid), 0)) return 0;
+        double floor = input.offset_tet_tags.at(tid) == 1 ? min_tet_volume : 0;
+        floor = std::max(
+            floor,
+            relative_floor(
+                input.vertices,
+                input.mesh->oriented_tet_vids(tid),
+                relative_volume_floor));
+        floors.push_back(floor);
     }
     double alpha = 1;
     for (int backtrack = 0; backtrack <= max_backtracks; ++backtrack, alpha *= 0.5) {
         const Vector3d candidate = alpha == 1 ? target : (1 - alpha) * start + alpha * target;
         if (!candidate.allFinite() || candidate == start) return 0;
         bool valid = true;
+        size_t star_index = 0;
         for (size_t tid : star) {
             if (!volume_above(
                     input.vertices,
                     input.mesh->oriented_tet_vids(tid),
-                    input.offset_tet_tags.at(tid) == 1 ? min_tet_volume : 0,
+                    floors[star_index++],
                     vertex,
                     candidate)) {
                 valid = false;
@@ -312,7 +351,7 @@ double smooth_offset_vertex(
         // Topology is unchanged, so all existing link relations are unchanged. A tet's
         // determinant is affine along this single-vertex segment: valid endpoints also
         // ensure no inversion along the accepted straight-line move. Shell endpoints must
-        // exceed the operation's floor; background endpoints only need positive volume.
+        // exceed the operation's floor; background also honors the optional relative floor.
         input.vertices.row(vertex) = candidate.transpose();
         return alpha;
     }
@@ -322,6 +361,10 @@ double smooth_offset_vertex(
 void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOptions& options)
 {
     validate_threshold(options.min_tet_volume);
+    input.relative_tet_volume_floor = options.relative_tet_volume_floor;
+    if (!std::isfinite(options.relative_tet_volume_floor) ||
+        options.relative_tet_volume_floor < 0 || options.relative_tet_volume_floor >= 1)
+        log_and_throw_error("relative_tet_volume_floor must be in [0,1).");
     if (options.iterations < 0) log_and_throw_error("iterations must be nonnegative.");
     if (options.smoothing_max_backtracks < 0 || options.smoothing_max_backtracks > 60) {
         log_and_throw_error("smoothing_max_backtracks must be between 0 and 60.");
@@ -353,11 +396,17 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
     auto collapse_pass = [&](OptimizationIteration& stats,
                              std::set<std::array<size_t, 2>>* accepted = nullptr) {
         const size_t starting_collapses = stats.collapses;
-        std::set<std::array<size_t, 2>> pending;
+        std::set<std::tuple<double, size_t, size_t>> pending;
         auto enqueue = [&](size_t a, size_t b) {
             if (!same_component(input, a, b)) return;
             if (a > b) std::swap(a, b);
-            pending.insert({a, b});
+            double cost = 0;
+            if (input.rod_state && is_rod_offset_vertex(input, a)) {
+                const auto& retained = input.rod_state->retained_ring_vertices;
+                cost = (input.vertices.row(a) - input.vertices.row(b)).squaredNorm() +
+                       (retained.count(a) || retained.count(b) ? 0. : 1e6);
+            }
+            pending.emplace(cost, a, b);
         };
         // Enumerate candidates through the offset vertices, not all background edges.
         for (size_t v : input.offset_vertices) {
@@ -366,7 +415,8 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
                 for (size_t w : input.mesh->oriented_tet_vids(tid)) enqueue(v, w);
         }
         while (!pending.empty()) {
-            auto endpoints = *pending.begin();
+            const auto [priority, a, b] = *pending.begin();
+            std::array<size_t, 2> endpoints{a, b};
             pending.erase(pending.begin());
             if (!same_component(input, endpoints[0], endpoints[1])) continue;
             const auto& component =
@@ -374,7 +424,11 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
             // Prefer retaining the endpoint closest to the fixed target; try the opposite
             // direction if its geometry/topology cannot collapse safely.
             size_t survivor = endpoints[0], removed = endpoints[1];
-            if (!component.singular &&
+            if (input.rod_state && is_rod_offset_vertex(input, survivor)) {
+                if (!input.rod_state->retained_ring_vertices.count(survivor))
+                    std::swap(survivor, removed);
+            } else if (
+                !component.singular &&
                 (input.vertices.row(removed).transpose() - component.target_position)
                         .squaredNorm() <
                     (input.vertices.row(survivor).transpose() - component.target_position)
@@ -421,13 +475,13 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
                 ++stats.singular_skipped;
                 continue;
             }
-            const auto& component = input.offset_components.at(input.vertex_component_ids[v]);
-            if (Vector3d(input.vertices.row(v)) == component.target_position) continue;
+            if (input.vertices.row(v) == input.target_positions.row(v)) continue;
             if (smooth_offset_vertex(
                     input,
                     v,
                     options.min_tet_volume,
-                    options.smoothing_max_backtracks) > 0) {
+                    options.smoothing_max_backtracks,
+                    options.relative_tet_volume_floor) > 0) {
                 ++stats.smoothed_vertices;
             } else
                 ++stats.smoothing_failures;
@@ -479,6 +533,19 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
             stats.unlock.unlocked,
             stats.unlock.remaining);
     }
+    // The last smoothing sweep can make an edge collapsible. Exhaust those
+    // operations at the final positions before handing the band to reconstruction.
+    OptimizationIteration cleanup;
+    collapse_pass(cleanup);
+    if (!input.optimization_iterations.empty()) {
+        auto& last = input.optimization_iterations.back();
+        last.collapses += cleanup.collapses;
+        last.collapse_attempts += cleanup.collapse_attempts;
+    }
+    logger().info(
+        "Final post-smoothing collapse: {} accepted / {} candidate edges",
+        cleanup.collapses,
+        cleanup.collapse_attempts);
     label_offset_faces(input);
 }
 } // namespace wmtk::components::prismatic_mesh

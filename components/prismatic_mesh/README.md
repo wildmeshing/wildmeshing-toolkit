@@ -1,5 +1,96 @@
 # Prismatic mesh input
 
+## Rod rings in mixed volume/shell/rod meshes
+
+`rod_mode` uses original vertex correspondence to construct rods. The same
+input may contain curves, sheets and fixed input volume. For example:
+
+```json
+{
+  "application": "prismatic_mesh",
+  "input": "construction.vtu",
+  "output": "result.vtu",
+  "rod_mode": true,
+  "rod_radius": 0.04,
+  "iterations": 5,
+  "prism_dominant": true,
+  "keep_background_mesh": true,
+  "thickness_smoothing_iterations": 60,
+  "export_input_and_shell": true
+}
+```
+
+The input supplies `labels`, `vid`, `corr_input_vid`, `tag_0` and `offset_tag`.
+Input coordinates and volume cells stay fixed. Rod edges are maximal input edges
+without input face/solid cofaces. Attachments and branch joints preserve their
+original band one-rings and offset points. At a free end, the correspondence
+boundary of its disk region supplies the terminal ring. A complete planar prism
+fan defines a flat end; its exterior offset cap is returned to background.
+Unsuccessful endpoint fans retain their supplied valid tet caps.
+
+The rod pipeline has one construction path:
+
+1. Group offset-front vertices by their original input correspondence. Collapse
+   legal same-region surface edges until each ordinary region is a single cycle.
+   Surface link, region topology and complete band/background volume checks apply.
+   Protected endpoints of candidate collapse edges are excluded. Regions that
+   remain triangular patches are reported and retain their tets.
+2. Use the maximum valid ring degree on each rod as its target. Split deficient
+   ring edges, including their background cofaces. No new centerline sections are
+   inserted. Original correspondence is preserved; inserted offset points inherit
+   their ring's input parent.
+3. Build directed centerline frame fields. Each vertex frame is the equal-weight
+   quaternion mean of its incident edge frames. Transport the circular reference
+   direction through the averaged vertex planes, snap the terminal phase to a
+   degree slot and distribute its residual by arc length. Failed transport paths
+   retain their initial poses and record the reason.
+4. Orient each ring and fit its cyclic origin to the transported frame. Adjacent
+   rings connect the same material slot `k -> k`; later fitting preserves these
+   labels. One rod layer contains every sector between a pair of rings.
+5. Insert missing exterior correspondence edges by local surface swaps. Both
+   incident volume stars are reconstructed together with positive tets, unchanged
+   vertices and an identical combined cavity boundary. A bounded search may try
+   pure-background 2-3 swaps first. Complete layer repairs commit together; failed
+   repairs roll back.
+6. Construct all sector prisms of a layer together. Old intra-layer tet faces do
+   not constrain construction. Native prism Jacobians, positive compatible new
+   reference splits, actual external caps and retained background interfaces are
+   checked. Background requires a valid pyramid cavity for every exterior quad;
+   a failed layer retains tets without propagating vertex marks to its neighbors.
+7. Reconstruct shell prisms and shell pyramid/tet transitions with the existing
+   shell converter. Native rod cells and their background pyramids are reserved;
+   the combined mixed mesh is validated for complete source ownership, positive
+   native cells and matching oriented interfaces.
+8. Check free terminal rings against every actual prism cap. Reclassify exterior
+   same-parent cap tets only when the full fan matches and the cap has no other
+   band interface. Input coordinates and reference connectivity stay fixed.
+
+`rod_radius` is an absolute radius; zero uses `thicknessratio` times the mean
+centerline edge length. Optional final `thickness_smoothing_iterations` fits rod
+radius/section planes and shell normal thickness while improving native prism
+AMIPS. Input/protected points, correspondence and connectivity stay fixed.
+Tet and pyramid shape quality is not optimized: positivity alone permits very
+poor shapes. The final smoothing stage is opt-in and defaults to zero.
+
+`ignore_background_mesh: true` explicitly removes exterior cells before
+preparation and all optimization/conversion checks, retaining input volume and
+band. It overrides `keep_background_mesh`. Otherwise the supplied background
+participates in geometric validity even if the output filters exterior cells.
+
+Reports include `vertex_regions`, `target_degrees`, `ring_edge_splits`,
+`frames`, `frame_mapping`, `frame_topology_rounds`, and per-layer acceptance
+reasons. Mixed conversion nests rod-layer and shell reconstruction reports.
+`construction_region` cell values distinguish fixed volume/background (0), shell
+band (1), rod band (2) and shared transitions (3). `rod_region` distinguishes
+prisms (1), other band tets (2), branch-joint tets (3) and other band cells (4).
+The input-and-shell export omits background cells while retaining the same native
+cells, coordinates and reference decompositions.
+
+Ring-edge splitting changes circumferential degree; centerline edges and input
+vertices stay fixed.
+
+## Surface construction
+
 Run from the repository root:
 
 ```sh
@@ -219,11 +310,69 @@ including on two-sided sheets. Input-volume membership is checked before filteri
 Candidates are band tets in the union of the two input endpoint stars, so they include
 configurations with only one input vertex.
 
-T junctions take priority over removal: an input edge with at least three incident shell
-input triangles marks both endpoints as junction vertices. Their **complete tet one-rings**
-are preserved, including every candidate tet incident to either vertex, so open-boundary
-trimming does not remove the junction neighborhood. This also protects higher-valence
-shell junctions. It is a local preservation rule, not a proof that every target normal is valid.
+Protection uses curve endpoints, not an interior-fan classification. Count incident
+input surface triangles per edge: one identifies an input open-boundary edge; more than
+two identifies a shell-intersection edge. A shell-intersection graph vertex with degree
+one is an endpoint. Protect its one-ring only if it is not an input open-boundary vertex.
+Interior vertices along X or T intersection lines are not protected merely by their
+nonmanifold incidence. Rod ends attached to non-rod faces/solids and branching rod
+joints protect their connection stars, including attachments on shell open boundaries.
+Free rod ends and isolated loops have no protected one-ring. Path stops are classified
+separately from protection, so free ends still terminate graph traversal safely.
+The open-boundary exclusion applies only to shell-curve endpoints.
+
+`initialize_junction_protection()` captures each connection point's band-tet one-ring
+before rod preprocessing or open-boundary trimming. Collapse cannot remove an offset
+vertex belonging to those original cells; unlock and rod preprocessing cannot split or
+collapse a cell containing a protected center. A check after shared optimization verifies
+that every original protected tet's connectivity survives. This is a no-collapse rule,
+not a blanket freeze of all nonmanifold vertices or of all vertices with the same parent.
+The protected offset vertices retain their distinct original positions instead of following
+a shared component target that assumes they can collapse. Target smoothing and optional
+Jacobian smoothing skip these vertices; ordinary vertices continue to optimize. Existing
+rod-attachment/joint constraints still apply separately.
+The hybrid report's `junction_protection` records the two kinds of centers, original
+protected-cell count, no-collapse offset vertices and connectivity verification result.
+Output fields `connection_kind` (1 protected rod attachment/joint, 2 off-boundary shell-curve end, 3 both),
+`no_collapse` and `connection_one_ring` make the protected region inspectable.
+
+Set `"transition_smoothing_iterations": 8` for optional geometry relaxation after hybrid
+reconstruction (default 0, range 0--100; requires `prism_dominant`). The no-collapse mask
+still protects topology, while protected and marked outer offset vertices and one adjacent
+surface ring may move. Input points and completed rod-prism frames remain fixed. First,
+inward correspondence rays relax toward the convex envelope of the input vertex's active
+one-ring, computed from an immutable snapshot. Then a bounded local descent reduces squared
+positive signed heights across oriented surface hinges. This penalizes concave folds without
+flattening already convex parts. It is a local objective, not a guarantee of global convexity
+when the fixed input or interface requires concavity.
+
+Each move preserves exact-positive reference tets, the volume floor for modified band tets,
+both pyramid decompositions and analytic global prism Jacobians. Reference tet determinants
+and minimum native Jacobians retain at least 25% of their pre-smoothing values.
+Native tet/pyramid AMIPS cannot exceed the greater of 10
+and its initial value; prisms use a conservative native AMIPS bound from the maximum corner
+Frobenius norm and the global minimum determinant. Total motion is limited to half a local
+mean surface edge length; fairing retains at least half the initial column's projection along
+its original direction. Failed moves backtrack or leave the point unchanged.
+
+The `transition_smoothing` report records before/after coordinates, concavity energy and
+the safeguards. Reconstruction-only position/boundary checks are distinguished from final
+geometry, since this stage intentionally adjusts the offset boundary. The no-collapse and
+connection fields continue to describe topology protection even when those coordinates move.
+
+Stacked offset constructions may use the same vertex as one layer's offset and another
+layer's source. The readers retain the raw source/target links in
+`junction_protection.layered_correspondence`, compose chains to their original input root,
+and protect the shared vertices, affected descendants and source-volume offset vertices as
+junction stars. Cyclic or unresolved chains remain errors. Source curve/sheet simplices
+provided by the memory input are retained; a shared vertex keeps its original geometry
+without being relabeled as an ordinary input vertex. Existing volume vertices also remain
+fixed even when they carry offset correspondence. Protected junction cofaces with composed
+parents are counted separately from invalid ordinary rod cofaces.
+
+This is a conservative union-band policy, not a separate role/optimizer per offset layer.
+Large or extended overlaps can remain mostly tetrahedral. `connection_kind` uses bit 4 for
+these layered junction centers, alongside bits 1 (rod connection) and 2 (shell terminal).
 
 The type `tau^n_m` counts offset vertices (`n`) and their distinct input identifiers (`m`).
 The pass unmarks `tau^2_1` only when the edge between its two input vertices is on the open
@@ -278,6 +427,11 @@ or reference geometry, not during this fixed-target optimization.
 **collapse → unlock → smoothing**. Set
 `iterations` to 0 to export the input volume, initial band and target fields without
 moving/collapsing them.
+For a positive iteration count, a final exhaustive collapse pass runs after the
+last smoothing sweep. This consumes edges that became admissible at the final
+positions before hybrid marking; otherwise they would seed unnecessary
+pyramid/tet transitions. It uses the same correspondence, protection, link and
+volume checks, and its counts are included in the last optimization record.
 Each round attempts edges whose endpoints are both offset vertices in the same component
 and with the same correspondence. A successful collapse keeps one endpoint's position,
 source ID, correspondence and component. The endpoint nearer the fixed target is preferred;
@@ -385,15 +539,20 @@ exactly one of the six standard three-tet
 prism triangulations in the current mesh. Source tetrahedra cannot belong to two output cells.
 Unmatched or overlapping candidates remain tetrahedral.
 
-Vertices touching a repeated-correspondence boundary triangle seed the tet region. A candidate
-with one affected offset corner uses a pyramid plus a tet, with the **pyramid apex always on
-the input side**. Its quadrilateral base is the opposite prism side. Candidates with two or
-three affected corners become three tetrahedra. Tets outside matched candidates remain fixed
-except for accepted background transition cavities described below.
-A shell pyramid's lateral triangular interfaces within the band require a prism-derived
-transition region; a direct interface to an unmatched band tet core expands the retained
-region to create that buffer. Matching triangular interfaces to background tets are allowed.
-The input triangular caps and their adjacent input-volume tetrahedra stay unchanged.
+Offset vertices carry a binary transition mark. On a repeated-correspondence boundary face,
+only the two endpoints of each same-correspondence edge are marked; the other corner of an
+`(a,a,b)` triangle is not a collapse seed. Only the protected endpoints described above mark their complete one-ring columns
+as tet regions. A regular nonmanifold crossing is not automatically marked or locked.
+An unmatched/fixed triangular interface without an accepted background pyramid marks its
+offset edge endpoints at initialization.
+
+Each offset triangle determines its column's output shape: zero marked corners produces a
+prism; one produces an input-apex pyramid plus a tet; two or three produces a tet region.
+The unique marked corner fixes the pyramid direction: for marked `a'` on input/offset
+triangles `abc` / `a'b'c'`, the pyramid has base `bcc'b'`, apex `a`, and the remainder is
+`aa'b'c'`. A conforming direct triangular interface between a shell pyramid and an unmatched
+band tet is valid; no extra prism-derived tet buffer is required. The input triangular caps
+and their adjacent input-volume tetrahedra stay unchanged.
 
 When background is retained, each candidate lateral quad may instead receive a background
 pyramid. Its two reference triangles must each have one band and one background owner.
@@ -436,30 +595,40 @@ changes a split, each newly introduced tet must exceed `min_tet_volume`; origina
 tets only need positive volume. Both candidate pyramid decompositions still require all tets
 above `min_tet_volume`, using the same exact rational predicate as optimization. Templates
 are oriented on reference cells; negative signs are never repaired with absolute values.
-A failed prism Jacobian check adds its offset corners to the retained-region seeds and keeps
-its original tets. Existing small positive band tets may remain or be grouped into a
-Jacobian-valid prism without turning the operation floor into a program failure.
+A failed prism Jacobian check marks one previously unmarked offset corner on the column
+edge with the lowest Jacobian. A failed pyramid check marks the offset corner associated
+with its worst base-corner Jacobian; all four normalized pyramid corner determinants are
+checked by requiring both tetrahedral decompositions to be positive. Geometry failures,
+volume-floor failures and a missing positive pyramid/remainder split have distinct reasons.
+Marks are monotone and affected shapes are reconstructed until the prism and pyramid
+checks pass. Existing small positive band tets may remain or be grouped into a valid prism
+without turning the operation floor into a program failure.
 
-Prisms and prism-derived tet regions can select a new three-tet decomposition to satisfy the
-input-apex pyramids. Each shared quadrilateral carries a single diagonal constraint, used on
-both sides even when both output cells keep the quad. Interfaces to unmatched/fixed tetrahedra
-and exterior boundary triangles keep their original triangulations. The six choices per prism
-are filtered by their tet volumes, these constraints and the choices compatible with an
-input-apex pyramid. A Jacobian-valid prism can therefore offer fewer than six admissible splits.
-Constraint propagation followed by deterministic search selects a consistent assignment,
-preferentially preserving original splits. If it cannot find one, an affected transition region
-is frozen to its original tets, all three offset corners extend the tet-region seeds, and the
-frontier is reconstructed. Each failed attempt freezes a new region, so fallback terminates.
-Search uses at most 10,000 states per attempt; reaching that limit conservatively expands the
-retained region and is recorded separately, rather than claiming the constraints are infeasible.
+Prisms and matched tet regions can select any positive three-tet decomposition to satisfy
+pyramid side orientations. Tet regions participate in the same solve rather than retaining
+an incompatible old diagonal. Each shared quadrilateral carries one consistent reference
+diagonal, including quad/quad interfaces. Interfaces to fixed/unmatched cells retain their
+triangulations. An exterior quad can change diagonal only when exact predicates certify
+that it is planar and strictly convex. Validation checks its two-triangle coverage and
+oriented four-edge boundary, so this changes the triangulation without changing the domain
+geometry; nonplanar exterior patches remain fixed.
 
-Output shape changes only progress from prism to pyramid+tet to all tets. Flexible prism-derived
-tet regions can change their internal diagonals during reconstruction; frozen original regions
-cannot. A quad facing two triangles forces its neighbor to downgrade, and this propagates until
-all output interfaces agree. Feasible background pyramid reservations satisfy a lateral quad
-without forcing this downgrade. The final reference tetrahedral mesh is built privately and
-committed to `PrismaticMeshInput` only after validation. Existing vertex coordinates, IDs,
-correspondence, normals and targets, input cells and non-cavity background cells remain unchanged.
+Constraint propagation followed by deterministic search selects a positive joint assignment,
+preferentially retaining original splits. If these fixed interfaces admit no positive joint
+assignment, one additional offset corner of the affected one-mark transition is marked and
+reported as `no_compatible_positive_transition`, separately from a Jacobian failure. This
+is a remaining conservative fallback for fixed/nonplanar interfaces, not a proof of an
+invalid pyramid Jacobian. Search uses at most 10,000 states per attempt and records a search
+limit separately. No failed solve freezes a whole column or automatically marks all three
+corners. Every unsuccessful iteration adds a new mark, so the marking loop terminates.
+Unmatched tet cores themselves are not remeshed in this pass.
+
+The final reference tetrahedral mesh is built privately and committed only after validation.
+Existing vertex coordinates, IDs, correspondence, normals and targets, input cells and
+non-cavity background cells remain unchanged. The output point field `transition_mark` is
+0/1 on offset vertices and -1 on other vertices. The hybrid report includes
+`marker_iterations`, per-corner `marker_updates` with reasons, `marked_offset_source_vids`,
+`flexible_planar_exterior_quads`, and `interface_reconstruction_updates`.
 
 The hybrid JSON report records the Jacobian sample positions, minimum sampled determinant
 among output prisms, `invalid_prism_jacobian` rejections, and the histogram
@@ -503,6 +672,41 @@ into scalar fields `tet_decomposition_0` through `tet_decomposition_11`: Gmsh vi
 supports 1, 3 or 9 components. The local corner indices remain zero-based and padded with -1.
 The `cell_type` attribute keeps its VTK values (10/13/14); the actual MSH element types are
 4/6/7. Elements are grouped by region and type, with their attributes reordered together.
+
+### Final thickness and prism smoothing
+
+`thickness_smoothing_iterations` enables a geometry pass **after** hybrid construction,
+flat terminal sections and optional transition smoothing. The default
+is `0`; use e.g. `60` to enable it (allowed range `0..200`). It requires `prism_dominant`.
+
+The physical targets reuse the construction parameters: shell distance along the component's
+unit optimal normal is `thicknessratio * input_average_edge_length`; a rod frame uses
+`rod_radius` (or the existing automatically derived radius) and its material-frame plane.
+Unassigned rod surface vertices use distance to their incident source centerline segment.
+Shell tangential coordinates and rod section angles remain available for shape improvement,
+with a weak tether to the existing material slots. Already attained shell thickness and rod
+radius/plane constraints are preserved, rather than traded for shape quality.
+
+The shape objective is squared **native prism AMIPS**, normalized to `3` for an equilateral
+unit prism. Its maximum is evaluated on the three triangle-corner paths, including roots of
+the cubic stationarity equation in height. No tetrahedral surrogate is used. The maximum
+over prisms cannot exceed its value on entry. This is a constrained local optimizer; it may
+stop with thickness residuals or uneven prism quality when no further feasible step is found.
+
+The pass solves for offset displacements together. Linearized cell inequalities are projected
+in a block Hessian metric; nonlinear volume/Jacobian corrections then release neighboring
+free offsets that would block a pointwise target move. Every accepted step rechecks exact
+reference-tet positivity, both pyramid decompositions, and the global native prism Jacobian.
+Tets and pyramids have **no shape-quality objective**. A positive `min_tet_volume` is respected
+by changed band tets and pyramid decompositions; an existing below-floor source cell is held
+unchanged. No relative tet-quality or relative-volume floor is introduced.
+
+Input vertices, protected offsets, non-offset background points, connectivity, source IDs and
+correspondence stay fixed. Protected positions are those on entry to this pass. The hybrid
+report's `thickness_smoothing` records physical errors and prism quality before/after, accepted
+step history, the stop reason and validation. Tet quality may worsen while remaining valid;
+improving it is a separate task. Existing pre-construction frame-fit diagnostics describe the
+earlier stage; use this final-stage report for the exported geometry's thickness errors.
 
 Supported **input** VTU: a single UnstructuredGrid piece with four-node tetrahedra, ASCII or
 uncompressed inline base64 arrays, UInt32/UInt64 binary headers and either byte order.
