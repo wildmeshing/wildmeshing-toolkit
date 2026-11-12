@@ -7735,10 +7735,14 @@ TEST_CASE("label-cleanup-held-curves-2d", "[offset][2d]")
     //   a curve out of the band as constructed, 0.25 from p at its nearest (y = 0.25, x in
     //     [-0.5, 0.5]), part of it inside the level set: no band triangle touches it;
     //   a curve through p (the x axis, x in [-0.75, 0.75]), crossed by the front at the march's
-    //     0.125 on each side: the crossing is never lost, and it stays where it is -- its vertex
-    //     is on a held boundary and on the front, which eligibility refuses, as 3D's does for a
-    //     region boundary -- so the band touches a run of the curve from p to the crossing and
-    //     nothing beyond it. (3D's crossing moves along its codimension-2 curve.)
+    //     0.125 on each side: the crossing is never lost, and the clean-up slides it along the
+    //     curve (THE CROSSING SLIDE: the two triangles across the curve's next edge take the band
+    //     together, each wholly inside the level set), so it never moves back and stays inside
+    //     the level set, and the band touches a run of the curve from p to the crossing and
+    //     nothing beyond it. MEASURED (2026-11-12): on x < 0 it slides to 0.25; on x > 0 it stays
+    //     at 0.125, the far triangle across (0.125, 0)-(0.25, 0) having the corner (0.25, 0.25)
+    //     0.354 from p, outside the level set. Until then eligibility refused every corner on a
+    //     held boundary and the front, and both crossings stayed at 0.125.
     const bool through = GENERATE(false, true);
     INFO("curve " << (through ? "through p" : "off the band"));
     Parameters param = cleanup_params_2d(0.3);
@@ -7776,7 +7780,11 @@ TEST_CASE("label-cleanup-held-curves-2d", "[offset][2d]")
         while (n_touched < vs.size() && vs[n_touched].second) ++n_touched;
         for (size_t k = n_touched; k < vs.size(); ++k) CHECK(!vs[k].second);
         REQUIRE(n_touched > 0);
-        CHECK(vs[n_touched - 1].first < 0.25); // the crossing, where the march put it
+        // The crossing: never behind where the march put it, inside the level set, and on x < 0
+        // slid (both triangles across the curve's next edge inside the level set).
+        CHECK(vs[n_touched - 1].first >= 0.125);
+        CHECK(vs[n_touched - 1].first < 0.3);
+        if (side < 0) CHECK(vs[n_touched - 1].first > 0.125);
     }
     CHECK(mesh->held_topology_signature() == signature0);
 }
