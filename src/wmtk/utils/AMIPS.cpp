@@ -152,7 +152,9 @@ void AMIPS_jacobian(const std::array<double, 12>& T, Eigen::Vector3d& result_0)
     double helper_38 = helper_4 - helper_6;
     double helper_39 = helper_23 * helper_3 - helper_24 * (helper_32 - helper_37) -
                        helper_38 * (helper_16 * helper_36 - helper_20 * helper_31);
-    double helper_40 = pow(pow(helper_39, 2), -0.333333333333333);
+    // d^(-2/3) as 1/cbrt(d^2), as AMIPS_energy computes it, instead of the generated
+    // pow(d^2, -0.333333333333333), whose exponent is not -1/3.
+    double helper_40 = 1.0 / std::cbrt(helper_39 * helper_39);
     double helper_41 = 0.707106781186548 * helper_10 - 0.707106781186548 * helper_12;
     double helper_42 = 0.707106781186548 * helper_26 - 0.707106781186548 * helper_28;
     double helper_43 = 0.5 * helper_21 + 0.5 * helper_5;
@@ -274,7 +276,7 @@ void AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0)
     double helper_53 = helper_49 * helper_52;
     double helper_54 = helper_32 + helper_48 - helper_53;
     double helper_55 = pow(helper_54, 2);
-    double helper_56 = pow(helper_55, -0.333333333333333);
+    double helper_56 = 1.0 / std::cbrt(helper_55); // see helper_40 in AMIPS_jacobian
     double helper_57 = 1.0 * helper_27 - 3.0 * helper_4 + 1.0 * helper_6 + 1.0 * helper_8;
     double helper_58 = 0.707106781186548 * helper_13;
     double helper_59 = 0.707106781186548 * helper_15;
