@@ -1,10 +1,11 @@
 """tight_seal_geom: what a fill does.
 
-Each part of the join region is split along the regions nearest its cells' corners, a cell
-sharing a facet with a region labelling that facet's corners with it, and each resulting cell is
-labelled from its corners, with no topology test; a part may border any number of regions. The
-operation throws if the join region touches the mesh boundary, even at a vertex.
-tight_seal_geom_spatial_selection is on hold: anything but its default throws.
+The region given by tight_seal_geom_input_selection is closed; each part of the join region that
+borders enough colors (tight_seal_geom_fill_selections) is split along the colors nearest its
+cells' corners, a cell sharing a facet with a colored cell labelling that facet's corners with
+it, and each resulting cell gets its color's tags (tight_seal_geom_fill_tags) added to its own,
+with no topology test. The operation throws if the join region touches the mesh boundary, even at
+a vertex, or if a cell beside it satisfies several fill selections.
 
 Needs the wildmeshing bindings; no external data."""
 import itertools
@@ -173,24 +174,50 @@ def _components_and_euler(cells):
 TAGS = ["a", "b", "c", "d"]
 
 
-def test_needs_two_tags():
-    with pytest.raises(Exception, match="two or more tags"):
-        _seal(_four_bodies(), tags=["a"])
+def _colors(tags):
+    """Close the union of `tags`, each tag a color that adds itself."""
+    return {"input_selection": " | ".join(tags), "fill_selections": list(tags),
+            "fill_tags": [[t] for t in tags]}
+
+
+def test_needs_an_input_selection():
+    with pytest.raises(Exception, match="tight_seal_geom_input_selection"):
+        _seal(_four_bodies(), fill_selections=TAGS, fill_tags=[[t] for t in TAGS])
+
+
+def test_needs_two_fill_selections():
+    with pytest.raises(Exception, match="two or more"):
+        _seal(_four_bodies(), input_selection="a | b", fill_selections=["a"], fill_tags=[["a"]])
+
+
+def test_needs_one_fill_tag_set_per_fill_selection():
+    with pytest.raises(Exception, match="one tag set per"):
+        _seal(_four_bodies(), input_selection="a | b", fill_selections=["a", "b"],
+              fill_tags=[["a"]])
+
+
+def test_fill_tags_cannot_hold_ambient():
+    with pytest.raises(Exception, match="ambient"):
+        _seal(_four_bodies(), input_selection="a | b", fill_selections=["a", "b"],
+              fill_tags=[["a"], ["ambient"]])
+
+
+def test_ambiguous_fill_selections_throw():
+    # the cells of b beside the hole satisfy both "a | b" and "b"
+    with pytest.raises(Exception, match="ambiguous"):
+        _seal(_four_bodies(), input_selection="a | b | c | d",
+              fill_selections=["a | b", "b", "c", "d"], fill_tags=[["a"], ["b"], ["c"], ["d"]])
 
 
 def test_min_regions_below_two_refused():
     with pytest.raises(Exception):
-        _seal(_four_bodies(), selection="detected", min_regions=1)
+        _seal(_four_bodies(), **_colors(TAGS), min_regions=1)
 
 
-@pytest.mark.parametrize("options", [
-    {"tags": TAGS},
-    {"selection": "detected"},
-    {"selection": "detected", "min_regions": 4},
-])
-def test_fills_a_part_of_any_number_of_regions(options):
+@pytest.mark.parametrize("min_regions", [2, 4])
+def test_fills_a_part_of_any_number_of_colors(min_regions):
     mesh = _four_bodies()
-    out = _seal(mesh, **options)
+    out = _seal(mesh, **_colors(TAGS), min_regions=min_regions)
     # the whole hole goes, each side of it to the bar beside it
     for tag in TAGS:
         assert _area(out, tag) == pytest.approx(_area(mesh, tag) + 1)
@@ -199,21 +226,21 @@ def test_fills_a_part_of_any_number_of_regions(options):
 
 def test_max_preprocessing_rounds_below_zero_refused():
     with pytest.raises(Exception):
-        _seal(_four_bodies(), selection="detected", max_preprocessing_rounds=-1)
+        _seal(_four_bodies(), **_colors(TAGS), max_preprocessing_rounds=-1)
 
 
 @pytest.mark.parametrize("rounds", [0, 1, 10])
 def test_max_preprocessing_rounds_taken(rounds):
     # the hole's sides are each nearest one bar, so the preprocessing has nothing to split here
     mesh = _four_bodies()
-    out = _seal(mesh, selection="detected", max_preprocessing_rounds=rounds)
+    out = _seal(mesh, **_colors(TAGS), max_preprocessing_rounds=rounds)
     for tag in TAGS:
         assert _area(out, tag) == pytest.approx(_area(mesh, tag) + 1)
 
 
 def test_min_regions_above_what_a_part_borders_fills_nothing():
     mesh = _four_bodies()
-    out = _seal(mesh, selection="detected", min_regions=5)
+    out = _seal(mesh, **_colors(TAGS), min_regions=5)
     for tag in TAGS:
         assert _area(out, tag) == pytest.approx(_area(mesh, tag))
 
@@ -221,41 +248,54 @@ def test_min_regions_above_what_a_part_borders_fills_nothing():
 @pytest.mark.parametrize("mesh", [_gap_to_the_boundary, _diamond_on_the_boundary])
 def test_join_region_on_the_mesh_boundary_throws(mesh):
     with pytest.raises(Exception, match="touches the mesh boundary"):
-        _seal(mesh(), selection="detected", distance=4.0)
+        _seal(mesh(), **_colors(["a", "b"]), distance=4.0)
 
 
 def test_part_left_alone_on_the_mesh_boundary_throws_too():
-    # a body one cell from the wall: the strip between borders one region and would not be filled
+    # a body one cell from the wall: the strip between borders one color and would not be filled
     def tag_of(x, y):
         if 2 < y < 6:
             return "a" if 1 < x < 4 else ("b" if 8 < x < 14 else None)
         return None
     with pytest.raises(Exception, match=r"touches the mesh boundary.* 0 of them in parts to fill"):
-        _seal(_grid_mesh(16, 8, tag_of), selection="detected")
+        _seal(_grid_mesh(16, 8, tag_of), **_colors(["a", "b"]))
 
 
-def test_spatial_selection_default_keeps_everything():
+def test_fill_tags_are_added_to_a_cells_own():
+    # the band of c across the gap is outside the closed region and no color: its cells are
+    # filled like ambient ones and keep c
     mesh = _gap_with_another_tag()
-    default = _seal(mesh, tags=["a", "b"])
-    everything = _seal(mesh, tags=["a", "b"], spatial_selection="_|!_")
-    assert np.array_equal(default["V"], everything["V"])
-    assert np.array_equal(
-        default["cells"]["triangle"]["connectivity"], everything["cells"]["triangle"]["connectivity"])
-    assert np.array_equal(
-        default["cells"]["triangle"]["attributes"]["tags"]["values"],
-        everything["cells"]["triangle"]["attributes"]["tags"]["values"])
+    out = _seal(mesh, **_colors(["a", "b"]))
+    assert _area(out, "c") == pytest.approx(_area(mesh, "c"))
+    c = {frozenset(map(tuple, corners.tolist())) for corners in _tagged(out, "c")}
+    for tag in ["a", "b"]:
+        assert any(frozenset(map(tuple, corners.tolist())) in c for corners in _tagged(out, tag))
 
 
-@pytest.mark.parametrize("selection", ["_", "_ & !_", "c", "!_ | _"])
-def test_spatial_selection_is_on_hold(selection):
-    with pytest.raises(Exception, match="on hold"):
-        _seal(_gap_with_another_tag(), tags=["a", "b"], spatial_selection=selection)
+def test_fill_tags_may_be_new_and_several():
+    mesh = _two_bodies_3_apart(2)
+    out = _seal(mesh, input_selection="a | b", fill_selections=["a", "b"],
+                fill_tags=[["a", "seal"], ["b", "seal"]], distance=3.5)
+    gained = _area(out, "a") - _area(mesh, "a") + _area(out, "b") - _area(mesh, "b")
+    assert gained > 0
+    assert _area(out, "seal") == pytest.approx(gained)
+
+
+def test_a_color_outside_the_closed_region():
+    # ambient beside the join region is a color too: the fill nearest it adds no tag
+    mesh = _two_bodies_3_apart(2)
+    two = _seal(mesh, **_colors(["a", "b"]), distance=3.5)
+    three = _seal(mesh, input_selection="a | b", fill_selections=["a", "b", "_"],
+                  fill_tags=[["a"], ["b"], []], distance=3.5)
+    def gained(out):
+        return _area(out, "a") - _area(mesh, "a") + _area(out, "b") - _area(mesh, "b")
+    assert 0 < gained(three) < gained(two)
 
 
 @pytest.mark.parametrize("dim", [2, 3])
 def test_fill_follows_the_bisector(dim):
     mesh = _two_bodies_3_apart(dim)
-    out = _seal(mesh, tags=["a", "b"], distance=3.5)
+    out = _seal(mesh, **_colors(["a", "b"]), distance=3.5)
     a = _tagged(out, "a")[:, :, 0]
     b = _tagged(out, "b")[:, :, 0]
     filled_a = a[a.max(axis=1) > 4 + 1e-9]  # the cells of a beyond its body
@@ -285,20 +325,20 @@ def _region_facets(mesh, tags):
 
 
 @pytest.mark.parametrize("case", ["four_bodies", "two_bodies_2d", "two_bodies_3d"])
-def test_a_cell_on_a_region_takes_that_region(case):
+def test_a_cell_on_a_color_takes_that_color(case):
     mesh, tags, distance = {
         "four_bodies": (_four_bodies(), TAGS, 2.5),
         "two_bodies_2d": (_two_bodies_3_apart(2), ["a", "b"], 3.5),
         "two_bodies_3d": (_two_bodies_3_apart(3), ["a", "b"], 3.5),
     }[case]
-    out = _seal(mesh, tags=tags, distance=distance)
+    out = _seal(mesh, **_colors(tags), distance=distance)
     facets, own = _region_facets(mesh, tags)
     seen = 0
     for tag in tags:
         for corners in _tagged(out, tag):
             points = [tuple(c) for c in corners.tolist()]
             if frozenset(points) in own:
-                continue  # a region's own cell, not one the fill labelled
+                continue  # a color's own cell, not one the fill labelled
             for facet in itertools.combinations(points, len(points) - 1):
                 if frozenset(facet) in facets:
                     assert facets[frozenset(facet)] == tag

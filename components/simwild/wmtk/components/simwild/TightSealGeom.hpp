@@ -22,9 +22,6 @@
  */
 namespace wmtk::components::simwild::tight_seal {
 
-/// Whether `tag` is the tag named "ambient".
-bool is_ambient(const std::map<int64_t, std::string>& tag_id_to_name, int64_t tag);
-
 /// BVH of segments, given as consecutive pairs of points. Returns false if there are none.
 bool segments_bvh(const std::vector<Vector2d>& vertices, SimpleBVH::BVH& bvh);
 /// BVH of triangles, given as consecutive triples of points. Returns false if there are none.

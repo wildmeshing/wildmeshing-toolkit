@@ -130,7 +130,7 @@ ExternalProject_Add(
     # reads offset_selection and target_distance_rel.
     # 86e0f2a (2026-11-10, data2 main) merges #16 and holds both.
     #
-    GIT_TAG 86e0f2a1ae34ad364e83a646010486fa4add05ac
+    GIT_TAG 249bca74d572f9cb9d819603d386d34a10dcfc87
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

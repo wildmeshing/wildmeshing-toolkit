@@ -576,30 +576,33 @@ void SimWildMesh::tight_seal_topo(
 }
 
 void SimWildMesh::tight_seal_geom(
-    const std::vector<int64_t>& listed_tags,
+    const ExprPtr& input_selection,
+    const std::vector<ExprPtr>& fill_selections,
+    const std::vector<CellTag>& fill_tags,
     const double distance,
     const double trace_rel_tol,
-    const std::string& selection,
     const int64_t min_regions,
     const bool sanity,
-    const int64_t max_preprocessing_rounds,
-    const ExprPtr& spatial_selection)
+    const int64_t max_preprocessing_rounds)
 {
-    const bool detected = selection == "detected";
-    if (!detected && selection != "explicit") {
-        log_and_throw_error(
-            "tight_seal_geom: selection must be \"explicit\" or \"detected\". Input was {}",
-            selection);
+    if (!input_selection) {
+        log_and_throw_error("tight_seal_geom needs an input selection");
     }
-    if (detected && min_regions < 2) {
+    if (fill_selections.size() < 2) {
+        log_and_throw_error(
+            "tight_seal_geom needs two or more fill selections. Input was {}",
+            fill_selections.size());
+    }
+    if (fill_tags.size() != fill_selections.size()) {
+        log_and_throw_error(
+            "tight_seal_geom needs one fill tag set per fill selection: {} selections, {} tag "
+            "sets",
+            fill_selections.size(),
+            fill_tags.size());
+    }
+    if (min_regions < 2) {
         log_and_throw_error(
             "tight_seal_geom: min_regions must be at least 2. Input was {}",
-            min_regions);
-    }
-    if (!detected && min_regions != 2) {
-        logger().warn(
-            "tight_seal_geom: min_regions {} is ignored with selection \"explicit\", which fills "
-            "the parts that border every listed tag",
             min_regions);
     }
     if (max_preprocessing_rounds < 0) {
@@ -607,39 +610,10 @@ void SimWildMesh::tight_seal_geom(
             "tight_seal_geom: max_preprocessing_rounds must be at least 0. Input was {}",
             max_preprocessing_rounds);
     }
-    // the tags of the regions: the listed ones, or every tag but ambient that some tet has alone
-    std::vector<int64_t> tags;
-    if (detected) {
-        if (!listed_tags.empty()) {
-            logger().warn(
-                "tight_seal_geom: selection \"detected\" ignores the listed tags {}",
-                listed_tags);
-        }
-        CellTag found;
-        for (const Tuple& t : get_tets()) {
-            const CellTag& tag = m_tet_attribute[t.tid(*this)].tags;
-            if (tag.size() == 1 && !tight_seal::is_ambient(m_tag_id_to_name, *tag.begin())) {
-                found.insert(*tag.begin());
-            }
-        }
-        tags.assign(found.begin(), found.end());
-    } else {
-        tags = listed_tags;
-        if (tags.size() < 2) {
-            log_and_throw_error("tight_seal_geom needs two or more tags. Input was {}", tags);
-        }
-        if (CellTag(tags.begin(), tags.end()).size() != tags.size()) {
-            log_and_throw_error("tight_seal_geom needs distinct tags. Input was {}", tags);
-        }
-        for (const int64_t tag : tags) {
-            if (tight_seal::is_ambient(m_tag_id_to_name, tag)) {
-                log_and_throw_error("tight_seal_geom cannot seal ambient. Input was {}", tags);
-            }
-        }
-    }
-    const size_t n = tags.size();
-    // the number of regions a component must border to be filled: min_regions, or all n listed
-    const size_t needed = detected ? size_t(min_regions) : n;
+    // the colors of the fill, one per fill selection, and how many a component must border to be
+    // filled
+    const size_t n = fill_selections.size();
+    const size_t needed = size_t(min_regions);
     if (!(distance > 0)) {
         log_and_throw_error("tight_seal_geom needs a positive distance. Input was {}", distance);
     }
@@ -658,26 +632,32 @@ void SimWildMesh::tight_seal_geom(
         return m_vertex_attribute[vid].m_posf;
     };
 
-    // The region of a tet: i for the tets of R_i (tagged tags[i] and nothing else), -1 for E. By
-    // tag, so it holds for the tets the splits below make.
-    const auto region_of = [&](const size_t tid) {
-        const CellTag& tag = m_tet_attribute[tid].tags;
-        if (tag.size() != 1) {
-            return -1;
-        }
-        const auto it = std::find(tags.begin(), tags.end(), *tag.begin());
-        return it == tags.end() ? -1 : int(it - tags.begin());
+    // R, the region closed to find the join region: the tets the input selection holds for.
+    // A tet's color for the fill: the one fill selection it satisfies, -1 if none, -2 if
+    // several. Both by tag, so they hold for the tets the splits below make.
+    const auto in_R = [&](const size_t tid) {
+        return input_selection->eval(m_tet_attribute[tid].tags);
     };
-    std::vector<bool> region_found(n, false);
+    const std::function<int(size_t)> color_of = [&](const size_t tid) {
+        const CellTag& tag = m_tet_attribute[tid].tags;
+        int found = -1;
+        for (size_t k = 0; k < n; ++k) {
+            if (fill_selections[k]->eval(tag)) {
+                if (found >= 0) {
+                    return -2;
+                }
+                found = int(k);
+            }
+        }
+        return found;
+    };
+    bool can_seal = false;
     for (const Tuple& t : get_tets()) {
-        const int r = region_of(t.tid(*this));
-        if (r >= 0) {
-            region_found[r] = true;
+        if (in_R(t.tid(*this))) {
+            can_seal = true;
+            break;
         }
     }
-    const bool can_seal =
-        n >= needed &&
-        std::find(region_found.begin(), region_found.end(), false) == region_found.end();
 
     // 0. R, the union of the regions, is made simplicially embedded
     // (wmtk/utils/SimplicialEmbedding.hpp): each tet outside R whose four faces lie on R is split
@@ -690,7 +670,7 @@ void SimWildMesh::tight_seal_geom(
         const wmtk::utils::TetComplex R_complex{
             [&](const size_t vid) {
                 for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-                    if (region_of(tid) >= 0) {
+                    if (in_R(tid)) {
                         return true;
                     }
                 }
@@ -699,20 +679,20 @@ void SimWildMesh::tight_seal_geom(
             [&](const Tuple& e) {
                 for (const Tuple& t :
                      get_incident_tets_for_edge(e.vid(*this), switch_vertex(e).vid(*this))) {
-                    if (region_of(t.tid(*this)) >= 0) {
+                    if (in_R(t.tid(*this))) {
                         return true;
                     }
                 }
                 return false;
             },
             [&](const Tuple& f) {
-                if (region_of(f.tid(*this)) >= 0) {
+                if (in_R(f.tid(*this))) {
                     return true;
                 }
                 const auto opp = f.switch_tetrahedron(*this);
-                return opp.has_value() && region_of(opp->tid(*this)) >= 0;
+                return opp.has_value() && in_R(opp->tid(*this));
             },
-            [&](const Tuple& t) { return region_of(t.tid(*this)) >= 0; }};
+            [&](const Tuple& t) { return in_R(t.tid(*this)); }};
         const wmtk::utils::SimplicialEmbeddingStats emb =
             wmtk::utils::simplicial_embedding(*this, R_complex);
         logger().info(
@@ -734,7 +714,7 @@ void SimWildMesh::tight_seal_geom(
     for (const Tuple& t : get_tets()) {
         const size_t tid = t.tid(*this);
         tids.push_back(tid);
-        region[tid] = region_of(tid);
+        region[tid] = in_R(tid) ? 0 : -1;
     }
 
     // m_voronoi_split_fn places the vertex of each split below (split_adjust_position)
@@ -746,28 +726,19 @@ void SimWildMesh::tight_seal_geom(
     // check.
     std::vector<char> filled(tet_capacity(), 0);
 
-    std::vector<SimpleBVH::BVH> region_bvhs(n);
+    std::vector<SimpleBVH::BVH> color_bvhs(n);
     std::vector<ConnectedComponent> components_seal;
-    // the regions each sealed component is filled with, in increasing order
-    std::vector<std::vector<size_t>> components_regions;
-    if (n < needed) {
+    // the colors each sealed component is filled with, in increasing order
+    std::vector<std::vector<size_t>> components_colors;
+    // in_J[id]: the tet is in the join region J (in any component, filled or not)
+    std::vector<char> in_J;
+    // the tets beside J that satisfy several fill selections
+    std::vector<size_t> ambiguous;
+    if (!can_seal) {
         logger().warn(
-            "tight_seal_geom: only {} tags other than ambient are some tet's only tag, fewer than "
-            "min_regions {}, nothing to seal",
-            n,
-            needed);
-    } else if (std::find(region_found.begin(), region_found.end(), false) != region_found.end()) {
-        logger().warn(
-            "tight_seal_geom: a tag in {} has no tet tagged with it alone, nothing to seal",
-            tags);
+            "tight_seal_geom: no tet satisfies the input selection {}, nothing to seal",
+            input_selection->to_string());
     } else {
-        for (size_t i = 0; i < n; ++i) {
-            tight_seal_boundary_bvh(
-                tids,
-                [&](const size_t tid) { return region[tid] == int(i); },
-                region_bvhs[i]);
-        }
-
         // The distance to R, the union of the R_i: from outside R, the distance to its boundary.
         // dR at every vertex, 0 on R's own tets.
         SimpleBVH::BVH bvh_R;
@@ -908,7 +879,7 @@ void SimWildMesh::tight_seal_geom(
         m_voronoi_split_fn = nullptr;
 
         std::vector<size_t> J_tets;
-        std::vector<char> in_J(tet_capacity(), 0);
+        in_J.assign(tet_capacity(), 0);
         for (const size_t tid : processed) {
             const auto vs = oriented_tet_vids(tid);
             if (inside[vs[0]] && inside[vs[1]] && inside[vs[2]] && inside[vs[3]]) {
@@ -927,30 +898,11 @@ void SimWildMesh::tight_seal_geom(
             J_tets.size());
 
 
-        // The spatial selection keeps the tets of J whose tags satisfy it, every tet by
-        // default, before J is split into its components.
-        if (spatial_selection) {
-            const size_t n_before = J_tets.size();
-            std::vector<size_t> kept;
-            for (const size_t id : J_tets) {
-                if (spatial_selection->eval(m_tet_attribute[id].tags)) {
-                    kept.push_back(id);
-                } else {
-                    in_J[id] = 0;
-                }
-            }
-            J_tets = std::move(kept);
-            logger().info(
-                "tight_seal_geom: the spatial selection {} keeps {} of the {} tets of J",
-                spatial_selection->to_string(),
-                J_tets.size(),
-                n_before);
-        }
-
-        // 3. Connected components of J (through faces); keep the ones that share a face with
-        // every R_i (with detected tags: with min_regions R_i or more, which the component is
-        // then filled with). Regions are found by tag (region_of): the tets made by the splits
-        // above have no entry in `region`.
+        // 3. Connected components of J (through faces). A component borders a color if one of
+        // its tets shares a face with a tet outside J of that color (a tet of J
+        // is no color, whatever its tags); it is filled, with the colors it borders, if it borders
+        // min_regions of them or more. A tet beside J satisfying several fill selections is an
+        // error, reported below.
         std::vector<int> comp_id(tet_capacity(), -1);
         size_t n_components = 0;
         for (const size_t tid : J_tets) {
@@ -971,11 +923,16 @@ void SimWildMesh::tight_seal_geom(
                         continue;
                     }
                     const size_t nbr = t_opp->tid(*this);
-                    const int r = region_of(nbr);
-                    if (r >= 0) {
-                        borders[r] = true;
+                    if (!in_J[nbr]) {
+                        const int k = color_of(nbr);
+                        if (k >= 0) {
+                            borders[size_t(k)] = true;
+                        } else if (k == -2) {
+                            ambiguous.push_back(nbr);
+                        }
+                        continue;
                     }
-                    if (!in_J[nbr] || comp_id[nbr] != -1) {
+                    if (comp_id[nbr] != -1) {
                         continue;
                     }
                     comp_id[nbr] = int(n_components);
@@ -983,36 +940,29 @@ void SimWildMesh::tight_seal_geom(
                 }
             }
             ++n_components;
-            std::vector<size_t> comp_regions;
-            for (size_t i = 0; i < n; ++i) {
-                if (borders[i]) {
-                    comp_regions.push_back(i);
+            std::vector<size_t> comp_colors;
+            for (size_t k = 0; k < n; ++k) {
+                if (borders[k]) {
+                    comp_colors.push_back(k);
                 }
             }
-            if (comp_regions.size() >= needed) {
-                if (detected) {
-                    std::vector<int64_t> comp_tags;
-                    for (const size_t i : comp_regions) {
-                        comp_tags.push_back(tags[i]);
-                    }
-                    logger().info(
-                        "tight_seal_geom: component {} ({} tets) borders tags {}",
-                        components_seal.size(),
-                        comp.cells.size(),
-                        comp_tags);
-                }
+            if (comp_colors.size() >= needed) {
+                logger().info(
+                    "tight_seal_geom: component {} ({} tets) borders colors {}",
+                    components_seal.size(),
+                    comp.cells.size(),
+                    comp_colors);
                 std::sort(comp.cells.begin(), comp.cells.end());
                 components_seal.push_back(std::move(comp));
-                components_regions.push_back(std::move(comp_regions));
+                components_colors.push_back(std::move(comp_colors));
             }
         }
         logger().info(
-            "tight_seal_geom: J has {} components; {} of them border {} {}",
+            "tight_seal_geom: J has {} components; {} of them border {} colors or more and "
+            "are filled",
             n_components,
             components_seal.size(),
-            detected ? fmt::format("{} or more of the detected tags", needed)
-                     : std::string("all tags"),
-            tags);
+            needed);
 
         // DEBUG_output: the mesh after J is found, before anything is filled: join_region marks
         // J's tets, join_component numbers J's components (as above; -1 outside J), and
@@ -1036,6 +986,30 @@ void SimWildMesh::tight_seal_geom(
                 {{"join_region", join}, {"join_component", component}, {"join_filled", to_fill}});
         }
 
+        // The fill selections must not be ambiguous beside J, in any component.
+        if (!ambiguous.empty()) {
+            std::sort(ambiguous.begin(), ambiguous.end());
+            ambiguous.erase(std::unique(ambiguous.begin(), ambiguous.end()), ambiguous.end());
+            const CellTag& tag = m_tet_attribute[ambiguous.front()].tags;
+            std::vector<std::string> names;
+            for (const int64_t t : tag) {
+                const auto it = m_tag_id_to_name.find(t);
+                names.push_back(it != m_tag_id_to_name.end() ? it->second : std::to_string(t));
+            }
+            std::vector<std::string> satisfied;
+            for (size_t k = 0; k < n; ++k) {
+                if (fill_selections[k]->eval(tag)) {
+                    satisfied.push_back(fill_selections[k]->to_string());
+                }
+            }
+            log_and_throw_error(
+                "tight_seal_geom: the fill selections are ambiguous: {} tets beside the "
+                "join region satisfy more than one of them; one with tags {} satisfies {}",
+                ambiguous.size(),
+                names,
+                satisfied);
+        }
+
         // J may not touch the mesh's boundary at all, not even at a vertex, in any component: the
         // topology of a region that reaches the boundary is much harder to reason about.
         const size_t n_on_boundary = tight_seal_cells_on_boundary(J_tets);
@@ -1052,16 +1026,40 @@ void SimWildMesh::tight_seal_geom(
                 J_tets.size(),
                 n_to_fill);
         }
+
+        // The distance to each color the components to fill border: from outside its tets,
+        // the distance to their boundary. A tet of J is no color, whatever its tags.
+        std::vector<char> color_used(n, 0);
+        for (const std::vector<size_t>& colors : components_colors) {
+            for (const size_t k : colors) {
+                color_used[k] = 1;
+            }
+        }
+        std::vector<size_t> all_ids;
+        for (const Tuple& t : get_tets()) {
+            all_ids.push_back(t.tid(*this));
+        }
+        for (size_t k = 0; k < n; ++k) {
+            if (color_used[k]) {
+                tight_seal_boundary_bvh(
+                    all_ids,
+                    [&](const size_t id) { return !in_J[id] && color_of(id) == int(k); },
+                    color_bvhs[k]);
+            }
+        }
     }
 
     // Each component is preprocessed, then split as its tets' own labels of their corners
-    // require, and each tet then takes a region from its corners' labels (tight_seal_split_fill).
+    // require, and each tet then takes a color from its corners' labels and gets that color's
+    // fill tags added to its own (tight_seal_split_fill).
     std::vector<CellTag> tags_before_fill;
     tight_seal_split_fill(
         components_seal,
-        components_regions,
-        tags,
-        region_bvhs,
+        components_colors,
+        fill_tags,
+        color_bvhs,
+        color_of,
+        in_J,
         max_preprocessing_rounds,
         filled,
         tags_before_fill);
@@ -1072,11 +1070,11 @@ void SimWildMesh::tight_seal_geom(
     tight_seal_topology_check(filled, tags_before_fill);
 
     // Sanity checks, on the output alone rather than on the components above: no tet is
-    // inverted; each filled tet carries exactly one of the regions' tags; and each part of the
-    // filled tets, connected through faces, borders two regions or more. A part bordering a
-    // single region would be a concave feature of that body, filled.
+    // inverted; each filled tet carries one of the fill tag sets; and each part of the filled
+    // tets, connected through faces, borders two colors or more. A part bordering a
+    // single color would be a concave feature of that body, filled.
     if (sanity) {
-        tight_seal_geom_sanity(tags, filled);
+        tight_seal_geom_sanity(fill_tags, color_of, filled);
     }
 
     m_F_envelope.clear();
