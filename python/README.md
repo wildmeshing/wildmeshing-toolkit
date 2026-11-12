@@ -90,14 +90,19 @@ overlapping offset layer: extended overlaps can retain substantial tet regions.
 
 ## PolyFEM operations
 
-`minimum_separation`, `laplacian_smoothing` and `polyfem_sim` (full simulation) run on files:
-a `.msh` in, a `.msh` out. Write a memory result with `wm.save` first.
+`minimum_separation` and `laplacian_smoothing` take their options (`spec.json` next to each) as a
+component does; `polyfem_sim` takes its own configuration.
 
-`minimum_separation` and `laplacian_smoothing` raise for now: their options (`spec.json`) are not
-wired to the engine yet. Planned: `minimum_separation(options)`, validated against its spec like
-a component.
+- In this process, on mesh dictionaries, writing no files: `minimum_separation.separate(options,
+  meshes)`, `laplacian_smoothing.smooth(options, meshes)` and `polyfem_sim.simulate(cfg, mesh)`.
+  They need a wildmeshing built with `WMTK_WITH_POLYFEM`.
+- On files, a `.msh` in and a `.msh` out (write a memory result with `wm.save` first):
+  `minimum_separation(options)`, `laplacian_smoothing(options)` and `polyfem_sim.run(cfg)`.
+  `minimum_separation` solves in this process here too, so it needs `WMTK_WITH_POLYFEM`: each of
+  its solves starts from the last one it accepted, which PolyFEM_bin has no input for.
 
-They find PolyFEM only through `POLYFEM_BIN`, and raise if it is unset:
+`laplacian_smoothing(options)` and `polyfem_sim.run` run PolyFEM_bin, found only through
+`POLYFEM_BIN`; they raise if it is unset:
 
 ```bash
 export POLYFEM_BIN=/path/to/polyfem/build/PolyFEM_bin

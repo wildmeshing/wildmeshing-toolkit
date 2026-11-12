@@ -1,0 +1,69 @@
+diff --git a/cmake/recipes/nfg.cmake b/cmake/recipes/nfg.cmake
+index d2e859f..ed385ef 100644
+--- a/cmake/recipes/nfg.cmake
++++ b/cmake/recipes/nfg.cmake
+@@ -7,7 +7,7 @@ endif()
+ include(CPM)
+ CPMAddPackage(
+ 	NAME NFG
+-	GIT_TAG f1df171345e91eeccea3c8b1e3f703a9fe27fca3
++	GIT_TAG aeec97547a67dc6904ab84b39b15d20c6d62f65a
+ 	GITHUB_REPOSITORY MarcoAttene/NFG
+ )
+ 
+diff --git a/include/tight/Interval.hpp b/include/tight/Interval.hpp
+index 5736010..2ae8b39 100644
+--- a/include/tight/Interval.hpp
++++ b/include/tight/Interval.hpp
+@@ -11,8 +11,8 @@ namespace tight {
+ 		std::numeric_limits<double>::max_digits10 + 1);
+ 
+ 	class Interval {
+-		interval_number data;
+-		Interval(const interval_number &o) : data(o) {}
++		NFG::interval_number data;
++		Interval(const NFG::interval_number &o) : data(o) {}
+ 
+ 		public:
+ 		static void init();
+diff --git a/src/Interval.cpp b/src/Interval.cpp
+index 93bb77c..91d1ba8 100644
+--- a/src/Interval.cpp
++++ b/src/Interval.cpp
+@@ -25,8 +25,8 @@ static inline double down(double x) {
+ 	return -y;
+ }
+ 
+-void tight::Interval::init() { setFPUModeToRoundUP(); };
+-void tight::Interval::deinit() { setFPUModeToRoundNEAR(); };
++void tight::Interval::init() { NFG::setFPUModeToRoundUP(); };
++void tight::Interval::deinit() { NFG::setFPUModeToRoundNEAR(); };
+ 
+ // sqrt is supported by NFG
+ tight::Interval tight::sqrt(const Interval &x) {
+@@ -723,8 +723,8 @@ std::pair<tight::Interval, bool> tight::atan2(const Interval &y, const Interval
+ /* Create from long rationals */
+ // These conversions are not fast, only accurate.
+ 
+-static bignatural parseNatural(const std::string &s) {
+-	bignatural n = 0u;
++static NFG::bignatural parseNatural(const std::string &s) {
++	NFG::bignatural n = 0u;
+ 	for (const char c : s) {
+ 		n *= 10u;
+ 		switch(c) {
+@@ -744,10 +744,11 @@ static bignatural parseNatural(const std::string &s) {
+ 	}
+ 	return n;
+ }
+-tight::Interval intervalFromRational(const bignatural &&p, const bignatural &&q, signed char sign) {
+-	bigrational r {p, q, sign};
++tight::Interval intervalFromRational(const NFG::bignatural &&p, const NFG::bignatural &&q, signed char sign) {
++	// NFG's constructor takes the sign as given, without canonicalizing: zero must have sign 0.
++	NFG::bigrational r {p, q, p.empty() ? 0 : sign};
+ 	double d = r.get_d(); //truncated
+-	if (bigrational(d) == r) return d;
++	if (NFG::bigrational(d) == r) return d;
+ 	else if (sign >= 0) return tight::Interval(d, d+TINY);
+ 	else return tight::Interval(down(d), d);
+ }

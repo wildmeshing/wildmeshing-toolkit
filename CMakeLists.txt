@@ -85,6 +85,11 @@ option(WMTK_DEBUG_BRUTE_FORCE_OPS "Validate each TriMesh operation against a bru
 # where inputs coincide, and tagged meshes carry each input's count (`orientation`). 32 bytes more
 # per face record, 43 instead of 11.
 option(WMTK_PER_INPUT_ORIENTATION "One orientation count per input on each tracked face (32 bytes more per face record)" OFF)
+
+# PolyFEM built in, for the Python module's in-process simulation (python/src/polyfem_bindings.cpp).
+# It also turns on polysolve's sparse solvers and libigl's predicates (recipes/polysolve.cmake,
+# recipes/libigl.cmake).
+option(WMTK_WITH_POLYFEM "Build PolyFEM in, for in-process simulation from Python" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -113,6 +118,9 @@ include(nanoflann)
 include(polysolve)
 
 include(simple_bvh)
+if(WMTK_WITH_POLYFEM)
+    include(polyfem)
+endif()
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
