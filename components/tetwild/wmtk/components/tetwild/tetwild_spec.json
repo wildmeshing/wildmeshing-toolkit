@@ -238,8 +238,8 @@
   {
     "pointer": "/skip_winding_number",
     "type": "bool",
-    "default": false,
-    "doc": "Skip the finalize-phase winding numbers of the input: the whole input's (winding_number_input) and each input's (wn_<i>). They are needed to filter the outside region (filter != 'none') and are otherwise written only as output annotation fields, which are then left out. Ignored (with a warning) when filter != 'none', which requires them."
+    "default": true,
+    "doc": "Skip the finalize-phase winding numbers of the input: the whole input's (winding_number_input) and each input's (wn_<i>). The filter needs them unless filter is 'none', and computes them regardless of this flag; otherwise they are written only as output annotation fields, and computing them is a large part of finalize on an open or many-input surface. Default true since 2026-11: set false to have the fields written with filter 'none'."
   },
   {
     "pointer": "/compute_tracked_winding_number",
