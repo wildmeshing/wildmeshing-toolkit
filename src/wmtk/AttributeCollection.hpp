@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>
+#include <limits>
+
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 
@@ -24,12 +27,16 @@ public:
     virtual ~AbstractAttributeContainer() = default;
     virtual void move(size_t from, size_t to) {};
     virtual void resize(size_t) = 0;
-    /// Resets every entry from `first` to the end of the storage to a default-constructed value.
-    /// consolidate_mesh() calls it on the spare region past the compacted live range: move()
-    /// leaves its source intact, so without this those slots would still hold the records
+    /// Resets the entries in [first, last) -- clamped to the storage -- to a default-constructed
+    /// value. consolidate_mesh() calls it on the spare region past the compacted live range:
+    /// move() leaves its source intact, so without this those slots would still hold the records
     /// compacted out of them, and the next operation handed one would inherit a dead simplex's
-    /// attributes.
-    virtual void reset_from(size_t first) = 0;
+    /// attributes. Only the slots handed out since the last consolidation can hold anything
+    /// (slots are handed out from the bottom, and the storage never shrinks), so that is all it
+    /// resets: the whole tail was the size of the largest mesh ever held, every iteration.
+    virtual void reset_range(size_t first, size_t last) = 0;
+    /// Resets every entry from `first` to the end of the storage.
+    void reset_from(size_t first) { reset_range(first, std::numeric_limits<size_t>::max()); }
     virtual void clear() = 0;
     virtual void rollback() = 0;
     virtual void begin_protect() = 0;
@@ -58,9 +65,10 @@ struct AttributeCollection : public AbstractAttributeContainer
     {
         if (s > m_attributes.size()) m_attributes.resize(s);
     }
-    void reset_from(size_t first) override
+    void reset_range(size_t first, size_t last) override
     {
-        for (size_t i = first; i < m_attributes.size(); ++i) m_attributes[i] = T{};
+        last = std::min(last, m_attributes.size());
+        for (size_t i = first; i < last; ++i) m_attributes[i] = T{};
     }
     void clear() override { m_attributes.clear(); }
 
@@ -152,9 +160,9 @@ public:
     {
         for (auto* c : m_children) c->resize(s);
     }
-    void reset_from(size_t first) override
+    void reset_range(size_t first, size_t last) override
     {
-        for (auto* c : m_children) c->reset_from(first);
+        for (auto* c : m_children) c->reset_range(first, last);
     }
     void clear() override
     {

@@ -8,6 +8,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -139,6 +140,7 @@ void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& 
     m_tet_connectivity.resize(tcap);
     m_vertex_connectivity.set_live(n_vertices);
     m_tet_connectivity.set_live(tets.size());
+    m_attr_tail_clean = false;
     for (int i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -177,6 +179,7 @@ void TetMesh::init_with_isolated_vertices(
     m_tet_connectivity.resize(tcap);
     m_vertex_connectivity.set_live(n_vertices);
     m_tet_connectivity.set_live(tets.size());
+    m_attr_tail_clean = false;
     for (size_t i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -1043,6 +1046,11 @@ std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_edge(const Tuple& t) 
 
 void TetMesh::consolidate_mesh()
 {
+    // The slots handed out since the last consolidation: past them the attributes are already
+    // default (see reset_range), unless the mesh was initialized since (m_attr_tail_clean).
+    constexpr size_t kAll = std::numeric_limits<size_t>::max();
+    const size_t v_used = m_attr_tail_clean ? vert_capacity() : kAll;
+    const size_t t_used = m_attr_tail_clean ? tet_capacity() : kAll / 6;
     auto v_cnt = 0;
     std::vector<size_t> map_v_ids(vert_capacity(), -1);
     for (auto i = 0; i < vert_capacity(); i++) {
@@ -1118,20 +1126,21 @@ void TetMesh::consolidate_mesh()
     // as fresh.
     if (p_vertex_attrs) {
         p_vertex_attrs->resize(vcap);
-        p_vertex_attrs->reset_from(v_cnt);
+        p_vertex_attrs->reset_range(v_cnt, v_used);
     }
     if (p_edge_attrs) {
         p_edge_attrs->resize(6 * tcap);
-        p_edge_attrs->reset_from(6 * t_cnt);
+        p_edge_attrs->reset_range(6 * t_cnt, 6 * t_used);
     }
     if (p_face_attrs) {
         p_face_attrs->resize(4 * tcap);
-        p_face_attrs->reset_from(4 * t_cnt);
+        p_face_attrs->reset_range(4 * t_cnt, 4 * t_used);
     }
     if (p_tet_attrs) {
         p_tet_attrs->resize(tcap);
-        p_tet_attrs->reset_from(t_cnt);
+        p_tet_attrs->reset_range(t_cnt, t_used);
     }
+    m_attr_tail_clean = true;
 
     assert(check_mesh_connectivity_validity());
 }
