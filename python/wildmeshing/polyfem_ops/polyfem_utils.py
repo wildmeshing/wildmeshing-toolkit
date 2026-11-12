@@ -444,6 +444,19 @@ PARAVIEW_DEFAULTS = {
 }
 
 
+def mesh_group_resources(name: str, group: dict, mesh_type: str = "fem") -> tuple:
+    """_core.polyfem_simulate's (resources, attributes) for one of PolyFEM's mesh
+    groups named `name`: `group` is {field: array}, PolyFEM's fields of the
+    mesh_type (fem: vertices, cells, body_ids, boundary_elements, boundary_ids;
+    surface: vertices, points, edges, faces)."""
+    from .. import _core
+    resources = {f"{name}/{field}": np.asarray(values) for field, values in group.items()}
+    attributes = {name: {"schema_version": _core.POLYFEM_MESH_SCHEMA_VERSION,
+                         "mesh_type": mesh_type,
+                         "dimension": int(np.asarray(group["vertices"]).shape[1])}}
+    return resources, attributes
+
+
 def geometry_block(mesh_path, scale, transformation=None,
                    surface_selection=None) -> dict:
     """Polyfem geometry entry: mesh + transformation ({"scale": scale}
