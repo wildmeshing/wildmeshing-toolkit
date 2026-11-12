@@ -121,8 +121,8 @@ region expressions; a bare string is a region's whole boundary.
 `wildmeshing/_core.pyi` describes the compiled module for editors and type checkers, with the
 docstrings the components' specs give (`help(wm.qslim)`); `py.typed` tells them to read it. The
 build writes it from the module it has just built (`python/src/CMakeLists.txt`), so it always
-matches: a `pip install` on Python 3.10 or later, and a CMake build whose Python has
-`pybind11-stubgen` 3 and numpy. Not in git.
+matches: every `pip install`, and a CMake build whose Python has `pybind11-stubgen` 3 and numpy.
+Not in git.
 
 ## Tests
 
