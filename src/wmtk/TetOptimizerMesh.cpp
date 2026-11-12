@@ -6,6 +6,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
+#include <wmtk/threading/dynamic_parallel_for.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EmbedTriangles.hpp>
 #include <wmtk/utils/FeatureInputs.hpp>
@@ -537,22 +538,42 @@ std::tuple<double, double> TetOptimizerMesh::get_max_avg_energy()
     // });
     // std::ofstream large_tet("large_energy_tet.obj");
 
-    for (int i = 0; i < tet_capacity(); i++) {
-        auto tup = tuple_from_tet(i);
-        if (!tup.is_valid(*this)) continue;
-        // auto vs = oriented_tet_vertices(tup);
-
-        auto q = cell_quality(tup.tid(*this));
-        max_energy = std::max(max_energy, q);
-        // if (q > 1e6) {
-        //     for (auto v : vs) {
-        //         large_tet << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
-        //                   << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
-        //                   << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
-        //     }
-        // }
-        avg_energy += std::cbrt(q);
-        cnt++;
+    if (NUM_THREADS <= 1) {
+        for (int i = 0; i < tet_capacity(); i++) {
+            auto tup = tuple_from_tet(i);
+            if (!tup.is_valid(*this)) continue;
+            auto q = cell_quality(tup.tid(*this));
+            max_energy = std::max(max_energy, q);
+            avg_energy += std::cbrt(q);
+            cnt++;
+        }
+    } else {
+        // Threaded runs: once per iteration over every tet, it was a serial step of the loop.
+        // Per-chunk maxima and sums, combined in chunk order, so the result does not depend on
+        // the thread count -- though the sum is grouped differently from the serial loop's.
+        constexpr size_t chunk = 16384;
+        const size_t n = size_t(tet_capacity());
+        struct Part
+        {
+            double max = -1., sum = 0.;
+            int cnt = 0;
+        };
+        std::vector<Part> parts((n + chunk - 1) / chunk);
+        threading::dynamic_parallel_for(n, NUM_THREADS, chunk, [&](size_t b, size_t e) {
+            Part& p = parts[b / chunk];
+            for (size_t i = b; i < e; ++i) {
+                if (!tuple_from_tet(i).is_valid(*this)) continue;
+                const double q = cell_quality(i);
+                p.max = std::max(p.max, q);
+                p.sum += std::cbrt(q);
+                p.cnt++;
+            }
+        });
+        for (const Part& p : parts) {
+            max_energy = std::max(max_energy, p.max);
+            avg_energy += p.sum;
+            cnt += p.cnt;
+        }
     }
 
     avg_energy /= cnt;

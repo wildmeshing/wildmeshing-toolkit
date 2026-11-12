@@ -2,16 +2,29 @@
 
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/threading/collector.hpp>
+#include <wmtk/threading/dynamic_parallel_for.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <cstdint>
 #include <deque>
+#include <memory>
 #include <mutex>
 #include <utility>
 #include <vector>
 
 namespace wmtk {
+
+namespace detail {
+/// A small number fixed per thread, for picking a stripe of per-thread state.
+inline size_t thread_stripe()
+{
+    static std::atomic<size_t> next{0};
+    thread_local const size_t id = next.fetch_add(1, std::memory_order_relaxed);
+    return id;
+}
+} // namespace detail
 
 /**
  * Run `executor` on `ops` until a pass produces no successful operation, but between
@@ -62,17 +75,25 @@ size_t run_localized_to_convergence(
     uint64_t round = 0;
     // A failure is recorded by its operation's rank among the registered names rather than by
     // the name itself: a pass can fail on most of its candidates, and a std::string per entry
-    // is 32 of the 72 bytes. edit_operation_maps is a std::map, so its keys are already sorted
-    // and the rank is a binary search; it is read-only while the pass runs.
+    // is 32 of the 72 bytes. edit_operation_maps is read-only while the pass runs.
     std::vector<Op> op_names;
     op_names.reserve(executor.edit_operation_maps.size());
     for (const auto& kv : executor.edit_operation_maps) {
         op_names.push_back(kv.first);
     }
-    // A deque rather than a vector-backed collector: most candidates of a pass can fail, and a
-    // vector growing by doubling to that size holds its old and new buffer at once.
-    std::mutex failures_mutex;
-    std::deque<std::pair<uint32_t, Tuple>> failures;
+    // The failures, recorded by on_fail on whichever thread fails an operation -- in a screened
+    // pass that is millions of refusals per round, reported in parallel. Each thread appends to
+    // a stripe of its own, so the lock it takes is uncontended; one list behind one mutex was
+    // taken for every refusal. A serial pass records on one stripe, in failure order. Deques
+    // rather than vectors: most candidates of a pass can fail, and a vector growing by doubling
+    // to that size holds its old and new buffer at once.
+    struct alignas(64) Stripe
+    {
+        std::mutex mutex;
+        std::deque<std::pair<uint32_t, Tuple>> list;
+    };
+    constexpr size_t kStripes = 64;
+    const auto stripes = std::make_unique<Stripe[]>(kStripes);
 
     auto edge_epoch = [&vertex_epoch](const Mesh& m_, const Tuple& t) -> uint64_t {
         const size_t a = t.vid(m_);
@@ -103,30 +124,44 @@ size_t run_localized_to_convergence(
             }
             return tups;
         };
-    executor.on_fail = [&failures, &failures_mutex, &op_names](const Mesh&, Op op, const Tuple& t) {
-        const auto it = std::lower_bound(op_names.begin(), op_names.end(), op);
-        assert(it != op_names.end() && *it == op);
-        std::lock_guard<std::mutex> lock(failures_mutex);
-        failures.emplace_back(static_cast<uint32_t>(it - op_names.begin()), t);
+    executor.on_fail = [&stripes, &op_names](const Mesh&, Op op, const Tuple& t) {
+        uint32_t k = 0;
+        while (k < op_names.size() && op_names[k] != op) ++k;
+        assert(k < op_names.size());
+        Stripe& s = stripes[detail::thread_stripe() % kStripes];
+        std::lock_guard<std::mutex> lock(s.mutex);
+        s.list.emplace_back(k, t);
     };
 
     size_t total_success = 0;
+    std::vector<uint8_t> retry;
+    std::vector<uint32_t> list_id(op_names.size());
     do {
         ++round;
-        failures.clear();
         // Handed over, so the executor frees the list once it has queued it.
         executor(m, std::move(ops));
         total_success += static_cast<size_t>(executor.get_cnt_success());
         ops.clear();
-        for (const auto& pr : failures) {
-            const Tuple& t = pr.second;
-            if (!t.is_valid(m)) {
-                continue;
+        for (size_t k = 0; k < op_names.size(); ++k) list_id[k] = ops.name_id(op_names[k]);
+        for (size_t i = 0; i < kStripes; ++i) {
+            auto& failures = stripes[i].list;
+            // Retry only a failure whose neighborhood a success of this round modified. Reads
+            // only, so in parallel; queued below in failure order.
+            retry.assign(failures.size(), 0);
+            threading::dynamic_parallel_for(
+                failures.size(),
+                executor.num_threads,
+                4096,
+                [&](size_t b, size_t e) {
+                    for (size_t j = b; j < e; ++j) {
+                        const Tuple& t = failures[j].second;
+                        retry[j] = t.is_valid(m) && edge_epoch(m, t) == round;
+                    }
+                });
+            for (size_t j = 0; j < failures.size(); ++j) {
+                if (retry[j]) ops.emplace_back_id(list_id[failures[j].first], failures[j].second);
             }
-            // retry only if this failure's neighborhood was modified during this round
-            if (edge_epoch(m, t) == round) {
-                ops.emplace_back(op_names[pr.first], t);
-            }
+            std::deque<std::pair<uint32_t, Tuple>>().swap(failures);
         }
     } while (executor.get_cnt_success() > 0 && !ops.empty() &&
              (max_passes == 0 || round < max_passes));

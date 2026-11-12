@@ -487,6 +487,11 @@ private:
     }
 
     SlotPool<VertexConnectivity> m_vertex_connectivity;
+    /// Whether every attribute entry past the live slots is default -- true from the end of a
+    /// consolidation until the mesh is (re)initialized, which may leave the records of a larger
+    /// earlier mesh up there. consolidate_mesh() then resets only the slots handed out since,
+    /// and otherwise the whole tail.
+    bool m_attr_tail_clean = false;
     SlotPool<TriangleConnectivity> m_tri_connectivity;
     double m_preallocation_factor = 6.0;
     bool m_use_link_condition = true;
