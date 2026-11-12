@@ -2,9 +2,11 @@
 """
 polyfem_sim — build a PolyFEM simulation.json from a Python config
 and run PolyFEM on it. Pairs with the boundary-extraction outputs
-(`m_sim.msh` + `m_bdry_selection.txt` + `m_bdry_selection_id_map.txt`):
-materials and BCs are given by physical-group / tag NAME (e.g. "tag_0",
-"tag_0 & ambient") and resolved to polyfem integer ids via the id_map.
+(`m_sim.msh` + `m_bdry_selection.txt` + `m_bdry_selection_id_map.txt`),
+or with a mesh written from msh_boundary_extractor.simulation_mesh, whose
+selections are physical groups of the mesh itself (no selection file, no
+id_map): materials and BCs are given by physical-group / tag NAME (e.g.
+"tag_0", "tag_0 & ambient") and resolved to polyfem integer ids.
 
 Config (dict):
   input_msh          : str   — boundary-extracted _sim.msh
@@ -23,7 +25,8 @@ Config (dict):
                                may use "selection": "tag_0 & ambient" (or a
                                list of names) instead of "id"
   initial_conditions : dict  — pass-through; "id" is the volumetric body id
-                               from the boundary-extraction output_groups
+                               from the boundary-extraction output_groups,
+                               or a body's tag name
   contact / time / solver / output / space : dict — optional pass-through
   save_vtu           : bool  — emit paraview .vtu/.pvd (default True)
   save_restart       : bool  — write state.hdf5/restart.json checkpoints so
@@ -177,6 +180,21 @@ def parse_id_map(path: str) -> dict:
                     selections[(m.group(2), m.group(3))] = int(m.group(1))
     return {"bodies": bodies, "selections": selections}
 
+def msh_selections(msh_path: str, mesh_dim: int) -> dict:
+    """The selections of a mesh written from simulation_mesh: its facet
+    physical groups (2D: edges), named as the id_map names them. Returns
+    {(region, filter|None): surface id}, as parse_id_map's "selections"."""
+    sel_re = re.compile(r"^region='([^']*)'(?:\s+filter='([^']*)')?$")
+    selections: dict = {}
+    gmsh.initialize()
+    gmsh.open(str(msh_path))
+    for d, ptag in gmsh.model.getPhysicalGroups(dim=mesh_dim - 1):
+        m = sel_re.match(gmsh.model.getPhysicalName(d, ptag))
+        if m:
+            selections[(m.group(1), m.group(2))] = int(ptag)
+    gmsh.finalize()
+    return selections
+
 def _resolve_bc_list(bc_list: list, selection_map: dict) -> list:
     """Resolve named surface selections to polyfem ids in a list of BC items.
     Items may carry `"selection": {"region": expr, "filter": expr?}` instead
@@ -209,7 +227,7 @@ def _resolve_bc_list(bc_list: list, selection_map: dict) -> list:
 
 def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
                             name_to_tag: dict, id_map: dict,
-                            mesh_dim: int) -> dict:
+                            mesh_dim: int, selections_in_mesh: bool = False) -> dict:
     scale = cfg.get("scale", SIM_DEFAULTS["scale"])
     save_vtu = cfg.get("save_vtu", SIM_DEFAULTS["save_vtu"])
     save_restart = cfg.get("save_restart", SIM_DEFAULTS["save_restart"])
@@ -254,7 +272,7 @@ def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
     # works as before, and users who want translation / rotation / a flipped
     # axis (e.g. {"scale": [1, -1, 1]}) just set transformation directly.
     sel_file = cfg.get("input_selection") or cfg.get("selection_file")
-    if sel_file is None:
+    if sel_file is None and not selections_in_mesh:
         sel_default = msh_path.parent / (
             msh_path.stem.removesuffix("_sim") + "_bdry_selection.txt"
             if msh_path.stem.endswith("_sim")
@@ -276,7 +294,18 @@ def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
         "solver": deep_merge(SIM_SECTION_DEFAULTS["solver"], cfg.get("solver", {})),
     }
     if "initial_conditions" in cfg:
-        j["initial_conditions"] = cfg["initial_conditions"]
+        # An item's "id" may be a body's tag name, as materials keys may.
+        def body(it):
+            if not (isinstance(it, dict) and isinstance(it.get("id"), str)):
+                return it
+            if it["id"] not in name_to_tag:
+                raise ValueError(
+                    f"initial_conditions id '{it['id']}' is not a physical group in "
+                    f"the mesh. Available: {sorted(name_to_tag)}")
+            return dict(it, id=name_to_tag[it["id"]])
+        j["initial_conditions"] = {
+            key: [body(it) for it in items] if isinstance(items, list) else items
+            for key, items in cfg["initial_conditions"].items()}
 
     # Pass-through sections (skip the ones with defaults; keep this loop for
     # any future top-level section the user wants to inject).
@@ -328,33 +357,41 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
 
     polyfem = _polyfem_bin()
 
+    _, mesh_dim, name_to_tag, _, _ = get_mesh_info(str(msh_path))
+
     # id_map: explicit cfg["id_map"] wins; else derive from input_selection
-    # (replace ".txt" with "_id_map.txt"); else fall back to the mesh stem.
+    # (replace ".txt" with "_id_map.txt"); else the mesh's own selections
+    # (simulation_mesh), with any selection file or id_map next to it an
+    # older run's; else fall back to the mesh stem.
     id_map_path = cfg.get("id_map")
     sel_cfg = cfg.get("input_selection") or cfg.get("selection_file")
+    mesh_selections = (msh_selections(msh_path, mesh_dim)
+                       if id_map_path is None and sel_cfg is None else {})
     if id_map_path is None and sel_cfg is not None:
         sel_path = Path(sel_cfg)
         id_map_path = sel_path.with_name(sel_path.stem + "_id_map.txt")
-    if id_map_path is None:
-        stem = msh_path.stem
-        if stem.endswith("_sim"):
-            stem = stem[: -len("_sim")]
-        id_map_path = msh_path.parent / f"{stem}_bdry_selection_id_map.txt"
-    id_map_path = Path(id_map_path)
-    id_map = (parse_id_map(str(id_map_path))
-              if id_map_path.exists() else {"bodies": {}, "selections": {}})
-
-    _, mesh_dim, name_to_tag, _, _ = get_mesh_info(str(msh_path))
+    if mesh_selections:
+        id_map = {"bodies": {}, "selections": mesh_selections}
+    else:
+        if id_map_path is None:
+            stem = msh_path.stem
+            if stem.endswith("_sim"):
+                stem = stem[: -len("_sim")]
+            id_map_path = msh_path.parent / f"{stem}_bdry_selection_id_map.txt"
+        id_map_path = Path(id_map_path)
+        id_map = (parse_id_map(str(id_map_path))
+                  if id_map_path.exists() else {"bodies": {}, "selections": {}})
 
     print(f"\n[polyfem_sim] mesh: {msh_path} (dim={mesh_dim})")
     if name_to_tag:
         print(f"  bodies: {name_to_tag}")
     if id_map["selections"]:
         print(f"  surface selections: "
-              f"{ {' ∩ '.join(sorted(k)): v for k, v in id_map['selections'].items()} }")
+              f"{ {' ∩ '.join(sorted(r for r in k if r)): v for k, v in id_map['selections'].items()} }")
 
     sim_json = build_polyfem_sim_json(
-        cfg, msh_path, out_dir, name_to_tag, id_map, mesh_dim)
+        cfg, msh_path, out_dir, name_to_tag, id_map, mesh_dim,
+        selections_in_mesh=bool(mesh_selections))
 
     sim_json_path = sim_in_dir / "simulation.json"
 

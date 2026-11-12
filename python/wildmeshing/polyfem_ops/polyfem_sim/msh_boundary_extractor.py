@@ -65,6 +65,93 @@ def _sel_desc(sel: dict) -> str:
     return desc
 
 
+def simulation_mesh(mesh: dict, bodies: list, selections: list) -> dict:
+    """The simulation mesh of a tagged mesh dictionary (wm.read_mesh, wm.load):
+    the cells of `bodies`, their vertices renumbered in order, and the faces
+    (2D: edges) of each selection as a tag named _sel_desc(selection).
+
+    Faces are selected as extract_boundary_selection_from_groups selects them:
+    interior faces whose inside cell satisfies `region`, whose outside cell
+    does not and, when a filter is given, satisfies `filter`. wm.write_mesh
+    writes every tag as a physical group, which PolyFEM reads as body ids
+    (cells) and boundary ids (faces); polyfem_sim finds both by name, so no
+    selection file or id map is needed. A selection takes no "id": the
+    writer numbers the groups.
+    """
+    if "tetrahedron" in mesh["cells"]:
+        cell, face_cell, k = "tetrahedron", "triangle", 3
+    elif "triangle" in mesh["cells"]:
+        cell, face_cell, k = "triangle", "edge", 2
+    else:
+        raise ValueError("simulation_mesh: the mesh has no tetrahedra or triangles")
+    block = mesh["cells"][cell]
+    C = np.asarray(block["connectivity"], dtype=np.int64)
+    labels = list(block["attributes"]["tags"]["labels"])
+    M = np.asarray(block["attributes"]["tags"]["values"]) != 0
+
+    if any(isinstance(s, dict) and "id" in s for s in selections):
+        raise ValueError("simulation_mesh: a selection takes no 'id'; the mesh's "
+                         "physical groups number the selections")
+    selections, _ = assign_selection_ids(selections)
+    names = set(bodies)
+    for sel in selections:
+        sel["_region"], region_names = parse_expression(sel["region"])
+        sel["_filter"], filter_names = (parse_expression(sel["filter"])
+                                        if sel["filter"] is not None else (None, set()))
+        names |= region_names | filter_names
+    unknown = sorted(names - set(labels))
+    if unknown:
+        raise ValueError(f"simulation_mesh: {unknown} are not tags of the mesh; tags: {labels}")
+
+    body_cols = [labels.index(b) for b in bodies]
+    in_bodies = M[:, body_cols].sum(axis=1)
+    if (in_bodies > 1).any():
+        raise ValueError(f"simulation_mesh: {int((in_bodies > 1).sum())} cells are in two bodies")
+    keep = in_bodies == 1
+    used = np.unique(C[keep])
+    new_id = np.full(len(mesh["V"]), -1, dtype=np.int64)
+    new_id[used] = np.arange(len(used))
+
+    # Every face of every cell, in the extractor's vertex order; an interior
+    # face is a sorted vertex set that two cells have.
+    local = list(combinations(range(C.shape[1]), k))
+    F = C[:, local].reshape(-1, k)
+    owner = np.repeat(np.arange(len(C)), len(local))
+    _, inv, count = np.unique(np.sort(F, axis=1), axis=0,
+                              return_inverse=True, return_counts=True)
+    order = np.argsort(inv.reshape(-1), kind="stable")
+    start = np.cumsum(count) - count
+    interior = np.flatnonzero(count == 2)
+    a, b = owner[order[start[interior]]], owner[order[start[interior] + 1]]
+    rep = F[order[start[interior]]]
+    whole = (new_id[rep] >= 0).all(axis=1)
+
+    # The predicates once per distinct tag set; a mesh has few.
+    sets, cell_set = np.unique(M, axis=0, return_inverse=True)
+    cell_set = cell_set.reshape(-1)
+    set_names = [{labels[j] for j in np.flatnonzero(row)} for row in sets]
+    member = np.zeros((len(interior), len(selections)), dtype=np.uint8)
+    for i, sel in enumerate(selections):
+        r = np.array([sel["_region"](n) for n in set_names])[cell_set]
+        f = (np.ones(len(C), dtype=bool) if sel["_filter"] is None
+             else np.array([sel["_filter"](n) for n in set_names])[cell_set])
+        member[:, i] = ((r[a] & ~r[b] & f[b]) | (r[b] & ~r[a] & f[a])) & whole
+        print(f"  Selection ({_sel_desc(sel)}): {int(member[:, i].sum())} "
+              f"{'facets' if k == 3 else 'edges'}")
+    faces = member.any(axis=1)
+
+    print(f"  Bodies {list(bodies)}: {int(keep.sum())} of {len(C)} cells, "
+          f"{len(used)} of {len(mesh['V'])} vertices")
+    cells = {cell: {"connectivity": new_id[C[keep]],
+                    "attributes": {"tags": {"values": M[keep][:, body_cols].astype(np.uint8),
+                                            "labels": list(bodies)}}}}
+    if selections:
+        cells[face_cell] = {"connectivity": new_id[rep[faces]],
+                            "attributes": {"tags": {"values": member[faces],
+                                                    "labels": [_sel_desc(s) for s in selections]}}}
+    return {"V": np.asarray(mesh["V"])[used], "vertex_attributes": {}, "cells": cells}
+
+
 def extract_boundary_selection_from_groups(
         input_path: str,
         boundary_output: str,
