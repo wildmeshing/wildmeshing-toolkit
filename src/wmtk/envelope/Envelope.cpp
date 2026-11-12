@@ -1172,4 +1172,53 @@ void Envelope::init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const do
     }
 }
 
+bool Envelope::first_sample_outside(const std::array<Eigen::Vector3d, 3>& tri) const
+{
+    if (disabled || use_exact || empty() || !m_bvh) return false;
+    static thread_local std::vector<Vector3d> ps;
+    const ReleaseIfLarge release{ps};
+    ps.clear();
+    sampleTriangle(tri, ps, sampling_dist);
+    if (ps.empty()) return false;
+    // The same first step as is_outside's loop: the middle sample, without a hint.
+    double sq_dist = std::numeric_limits<double>::max();
+    Vector3d nearest;
+    int prev_facet = -1;
+    m_bvh->facet_in_envelope_with_hint(ps[ps.size() / 2], eps2, prev_facet, nearest, sq_dist);
+    return sq_dist > eps2;
+}
+
+bool Envelope::any_outside(std::vector<TriangleQuery>& queries)
+{
+    if (queries.size() > 1) {
+        for (const auto& [env, tri] : queries) {
+            if (env->first_sample_outside(tri)) return true;
+        }
+        // Farthest centroid first, on the exact envelopes; the others keep their place (key 0),
+        // as stable_sort leaves equal keys in order.
+        thread_local std::vector<std::pair<double, size_t>> keys;
+        keys.clear();
+        for (size_t i = 0; i < queries.size(); ++i) {
+            const auto& [env, tri] = queries[i];
+            const bool exact = env->use_exact && !env->disabled && !env->empty() && env->m_bvh &&
+                               env->m_kind == Kind::Triangles3d;
+            keys.emplace_back(
+                exact ? env->squared_distance(Eigen::Vector3d((tri[0] + tri[1] + tri[2]) / 3.0))
+                      : 0.0,
+                i);
+        }
+        std::stable_sort(keys.begin(), keys.end(), [](const auto& a, const auto& b) {
+            return a.first > b.first;
+        });
+        for (const auto& [key, i] : keys) {
+            if (queries[i].first->is_outside(queries[i].second)) return true;
+        }
+        return false;
+    }
+    for (const auto& [env, tri] : queries) {
+        if (env->is_outside(tri)) return true;
+    }
+    return false;
+}
+
 } // namespace wmtk
