@@ -11,6 +11,12 @@ target_link_libraries(wildmeshing PUBLIC
     pybind11_json
     nlohmann_json::nlohmann_json
 )
+# PolyFEM in process (polyfem_bindings.cpp): with WMTK_WITH_POLYFEM only.
+if(WMTK_WITH_POLYFEM)
+    target_sources(wildmeshing PRIVATE polyfem_bindings.cpp)
+    target_link_libraries(wildmeshing PRIVATE polyfem::polyfem)
+    target_compile_definitions(wildmeshing PRIVATE WMTK_WITH_POLYFEM)
+endif()
 # The component registry (components_*.hpp), which components/CMakeLists.txt generates in app/
 # for wmtk_app, the integration tests and this module.
 target_include_directories(wildmeshing PRIVATE "${PROJECT_SOURCE_DIR}/app")

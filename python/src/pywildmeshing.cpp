@@ -23,6 +23,10 @@ namespace wmtk::python {
 #define WMTK_PYTHON_BINDINGS(name) void bind_##name(pybind11::module_& module);
 #include <components_python.hpp>
 #undef WMTK_PYTHON_BINDINGS
+#ifdef WMTK_WITH_POLYFEM
+// polyfem_bindings.cpp: polyfem_simulate.
+void bind_polyfem(pybind11::module_& module);
+#endif
 } // namespace wmtk::python
 
 namespace {
@@ -154,4 +158,7 @@ PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
 #define WMTK_PYTHON_BINDINGS(name) wmtk::python::bind_##name(m);
 #include <components_python.hpp>
 #undef WMTK_PYTHON_BINDINGS
+#ifdef WMTK_WITH_POLYFEM
+    wmtk::python::bind_polyfem(m);
+#endif
 }

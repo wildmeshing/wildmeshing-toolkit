@@ -53,8 +53,9 @@ import re
 from pathlib import Path
 
 import gmsh
+import numpy as np
 
-from ..polyfem_utils import (PARAVIEW_DEFAULTS, deep_merge,
+from ..polyfem_utils import (PARAVIEW_DEFAULTS, deep_merge, mesh_group_resources,
                              polyfem_bin as _polyfem_bin,
                              geometry_block, get_mesh_info,
                              run_streaming)
@@ -180,16 +181,19 @@ def parse_id_map(path: str) -> dict:
                     selections[(m.group(2), m.group(3))] = int(m.group(1))
     return {"bodies": bodies, "selections": selections}
 
+# A selection's name in a simulation mesh (msh_boundary_extractor._sel_desc).
+_SELECTION_NAME = re.compile(r"^region='([^']*)'(?:\s+filter='([^']*)')?$")
+
+
 def msh_selections(msh_path: str, mesh_dim: int) -> dict:
     """The selections of a mesh written from simulation_mesh: its facet
     physical groups (2D: edges), named as the id_map names them. Returns
     {(region, filter|None): surface id}, as parse_id_map's "selections"."""
-    sel_re = re.compile(r"^region='([^']*)'(?:\s+filter='([^']*)')?$")
     selections: dict = {}
     gmsh.initialize()
     gmsh.open(str(msh_path))
     for d, ptag in gmsh.model.getPhysicalGroups(dim=mesh_dim - 1):
-        m = sel_re.match(gmsh.model.getPhysicalName(d, ptag))
+        m = _SELECTION_NAME.match(gmsh.model.getPhysicalName(d, ptag))
         if m:
             selections[(m.group(1), m.group(2))] = int(ptag)
     gmsh.finalize()
@@ -346,7 +350,7 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
 
     out_dir = Path(out_dir) if out_dir is not None else (
         msh_path.parent / "sim")
-    # Mirror minimum_separation's layout: generated polyfem inputs go to
+    # Generated polyfem inputs go to
     # in_dirname/, everything polyfem writes (vtu/pvd, log, restart/state)
     # to out_dirname/. Override the names e.g. to "input"/"output" when
     # out_dir is already a per-simulation folder.
@@ -463,6 +467,111 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
             f"last Finished line: {last!r}")
 
     return out_dir
+
+
+# ---------------------------------------------------------------------------
+# In process (wildmeshing built with WMTK_WITH_POLYFEM)
+# ---------------------------------------------------------------------------
+
+# The name the simulation JSON's geometry gives the mesh simulate() hands PolyFEM.
+MESH_RESOURCE = "simulation_mesh"
+
+
+def in_process() -> bool:
+    """Whether this wildmeshing runs PolyFEM in process (built with WMTK_WITH_POLYFEM)."""
+    from ... import _core
+    return hasattr(_core, "polyfem_simulate")
+
+
+def polyfem_mesh(mesh: dict) -> tuple:
+    """PolyFEM's mesh group of a simulation mesh dictionary (simulation_mesh),
+    numbered as from the file: wm.write_mesh numbers the physical groups of the
+    faces (2D: edges) first, then of the cells, each in label order, and PolyFEM
+    gives a face the first of its groups. So the selections are 1..S and the
+    bodies S+1..S+B. Returns (group, mesh_dim, name_to_tag, selections), the
+    last as msh_selections returns them."""
+    if "tetrahedron" in mesh["cells"]:
+        cell, face_cell, mesh_dim = "tetrahedron", "triangle", 3
+    elif "triangle" in mesh["cells"]:
+        cell, face_cell, mesh_dim = "triangle", "edge", 2
+    else:
+        raise ValueError("polyfem_mesh: the mesh has no tetrahedra or triangles")
+    cells = mesh["cells"][cell]
+    faces = mesh["cells"].get(face_cell)
+    sel_labels = list(faces["attributes"]["tags"]["labels"]) if faces else []
+    body_labels = list(cells["attributes"]["tags"]["labels"])
+    in_body = np.asarray(cells["attributes"]["tags"]["values"]) != 0
+    if (in_body.sum(axis=1) != 1).any():
+        raise ValueError("polyfem_mesh: every cell must be in exactly one body")
+    # PolyFEM's mesh keeps as many coordinates as its cells have dimensions, as its
+    # .msh reader does.
+    group = {"vertices": np.asarray(mesh["V"], dtype=float)[:, :mesh_dim],
+             "cells": np.asarray(cells["connectivity"], dtype=np.int64),
+             "body_ids": len(sel_labels) + 1 + in_body.argmax(axis=1)}
+    if sel_labels:
+        member = np.asarray(faces["attributes"]["tags"]["values"]) != 0
+        selected = member.any(axis=1)
+        group["boundary_elements"] = np.asarray(faces["connectivity"], dtype=np.int64)[selected]
+        group["boundary_ids"] = 1 + member[selected].argmax(axis=1)
+    name_to_tag = {name: len(sel_labels) + 1 + i for i, name in enumerate(body_labels)}
+    selections = {}
+    for i, label in enumerate(sel_labels):
+        m = _SELECTION_NAME.match(label)
+        if m:
+            selections[(m.group(1), m.group(2))] = i + 1
+    return group, mesh_dim, name_to_tag, selections
+
+
+def simulate(cfg: dict, mesh: dict, out_dir=None, step_callback=None,
+             out_dirname: str = "sim_output") -> np.ndarray:
+    """Run cfg's simulation, as run() does, in this process, on a simulation
+    mesh dictionary (simulation_mesh) instead of a mesh file. cfg is run()'s,
+    without input_msh, input_selection and id_map. Needs a wildmeshing built
+    with WMTK_WITH_POLYFEM (in_process()).
+
+    Returns the final displacement at the rows of mesh["V"], in PolyFEM's
+    units (after cfg's scale and transformation); step_callback(step,
+    displacement) is called after each time step.
+
+    Files: without out_dir, none. save_vtu and save_restart are off, and PolyFEM's
+    per-step output (output.advanced.save_time_sequence) too unless cfg's output
+    sets it. With out_dir, PolyFEM writes into out_dir/out_dirname what run()
+    has it write. There is no resume in process."""
+    from ... import _core
+    if not hasattr(_core, "polyfem_simulate"):
+        raise RuntimeError(
+            "polyfem_sim.simulate: this wildmeshing is built without PolyFEM "
+            "(WMTK_WITH_POLYFEM); use run() with a mesh file")
+    for key in ("input_msh", "input_selection", "selection_file", "id_map"):
+        if key in cfg:
+            raise ValueError(f"polyfem_sim.simulate: '{key}' is for run(); the mesh is the argument")
+    group, mesh_dim, name_to_tag, selections = polyfem_mesh(mesh)
+    cfg = dict(cfg)
+    if out_dir is None:
+        for key in ("save_vtu", "save_restart"):
+            if cfg.get(key):
+                raise ValueError(f"polyfem_sim.simulate: {key} writes files; give an out_dir")
+            cfg[key] = False
+    sim_json = build_polyfem_sim_json(
+        cfg, Path(MESH_RESOURCE), out_dir, name_to_tag,
+        {"bodies": {}, "selections": selections}, mesh_dim, selections_in_mesh=True)
+    output = sim_json["output"]
+    if out_dir is None:
+        output["advanced"] = deep_merge({"save_time_sequence": False}, output.get("advanced", {}))
+    else:
+        # As run() passes PolyFEM_bin -o.
+        sim_out_dir = Path(out_dir).resolve() / out_dirname
+        sim_out_dir.mkdir(parents=True, exist_ok=True)
+        output["directory"] = str(sim_out_dir)
+
+    print(f"\n[polyfem_sim] in process (dim={mesh_dim})")
+    if name_to_tag:
+        print(f"  bodies: {name_to_tag}")
+    if selections:
+        print(f"  surface selections: "
+              f"{ {' ∩ '.join(sorted(k for k in sel if k)): v for sel, v in selections.items()} }")
+    resources, attributes = mesh_group_resources(MESH_RESOURCE, group)
+    return _core.polyfem_simulate(sim_json, resources, attributes, step_callback)["displacement"]
 
 
 # ---------------------------------------------------------------------------

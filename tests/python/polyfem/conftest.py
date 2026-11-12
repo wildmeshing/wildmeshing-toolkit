@@ -22,6 +22,16 @@ needs_polyfem = pytest.mark.skipif(
     reason="export POLYFEM_BIN=/path/to/PolyFEM_bin to run the polyfem tests")
 
 
+def _in_process() -> bool:
+    from wildmeshing import _core
+    return hasattr(_core, "polyfem_simulate")
+
+
+# PolyFEM in this process: a wildmeshing built with WMTK_WITH_POLYFEM.
+needs_in_process = pytest.mark.skipif(
+    not _in_process(), reason="wildmeshing is built without WMTK_WITH_POLYFEM")
+
+
 # --------------------------------------------------------------------------
 # Mesh writers
 # --------------------------------------------------------------------------
