@@ -538,18 +538,29 @@ bool smooth_vertex_3d(
     if (VA[vid].m_is_on_surface) {
         const auto& FA_read = std::as_const(m.m_face_attribute);
         const simplex::SimplexCollection surf = m.get_surface_faces_for_vertex(vid);
+        // Every face around the vertex inside its containment envelope, asked in
+        // Envelope::any_outside's order.
+        thread_local std::vector<Envelope::TriangleQuery> queries;
+        thread_local std::vector<std::shared_ptr<Envelope>> envelopes; // keeps them alive
+        queries.clear();
+        envelopes.clear();
         for (const simplex::Face& f : surf.faces()) {
             const auto& fv = f.vertices();
             const size_t fid = std::get<1>(m.tuple_from_face(fv));
-            const std::shared_ptr<Envelope> check_env =
+            std::shared_ptr<Envelope> check_env =
                 m.smoothing_containment_envelope(vid, fv, FA_read[fid]);
             if (!check_env) continue;
-            const std::array<Eigen::Vector3d, 3> face = {
-                {VA_read[fv[0]].m_posf, VA_read[fv[1]].m_posf, VA_read[fv[2]].m_posf}};
-            if (check_env->is_outside(face)) {
-                if (counters) ++counters->envelope;
-                return false;
-            }
+            queries.emplace_back(
+                check_env.get(),
+                std::array<Eigen::Vector3d, 3>{
+                    {VA_read[fv[0]].m_posf, VA_read[fv[1]].m_posf, VA_read[fv[2]].m_posf}});
+            envelopes.push_back(std::move(check_env));
+        }
+        const bool outside = Envelope::any_outside(queries);
+        envelopes.clear();
+        if (outside) {
+            if (counters) ++counters->envelope;
+            return false;
         }
     }
 
