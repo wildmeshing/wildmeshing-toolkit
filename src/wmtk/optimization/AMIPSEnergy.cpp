@@ -20,6 +20,7 @@ AMIPSEnergy2D::TVector AMIPSEnergy2D::initial_position() const
 double AMIPSEnergy2D::value(const TVector& x)
 {
     assert(x.size() == 2);
+    if (m_last_value.matches(x)) return m_last_value.result;
 
     double res = 0;
     for (size_t i = 0; i < m_cells.size(); ++i) {
@@ -28,12 +29,17 @@ double AMIPSEnergy2D::value(const TVector& x)
         c[1] = x[1];
         res += wmtk::AMIPS2D_energy(c);
     }
-    return m_weight * res;
+    m_last_value.store(x, m_weight * res);
+    return m_last_value.result;
 }
 
 void AMIPSEnergy2D::gradient(const TVector& x, TVector& gradv)
 {
     assert(x.size() == 2);
+    if (m_last_gradient.matches(x)) {
+        gradv = m_last_gradient.result;
+        return;
+    }
     gradv.resize(2);
     gradv.setZero();
 
@@ -47,6 +53,7 @@ void AMIPSEnergy2D::gradient(const TVector& x, TVector& gradv)
     }
 
     gradv *= m_weight;
+    m_last_gradient.store(x, gradv);
 }
 
 void AMIPSEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
@@ -97,6 +104,7 @@ AMIPSEnergy3D::TVector AMIPSEnergy3D::initial_position() const
 double AMIPSEnergy3D::value(const TVector& x)
 {
     assert(x.size() == 3);
+    if (m_last_value.matches(x)) return m_last_value.result;
 
     double res = 0;
     for (size_t i = 0; i < m_cells.size(); ++i) {
@@ -106,12 +114,17 @@ double AMIPSEnergy3D::value(const TVector& x)
         c[2] = x[2];
         res += wmtk::AMIPS_energy(c);
     }
-    return m_weight * res;
+    m_last_value.store(x, m_weight * res);
+    return m_last_value.result;
 }
 
 void AMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
 {
     assert(x.size() == 3);
+    if (m_last_gradient.matches(x)) {
+        gradv = m_last_gradient.result;
+        return;
+    }
     gradv.resize(3);
     gradv.setZero();
 
@@ -126,6 +139,7 @@ void AMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
     }
 
     gradv *= m_weight;
+    m_last_gradient.store(x, gradv);
 }
 
 void AMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)

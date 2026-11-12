@@ -12,6 +12,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <Eigen/Core>
+#include <algorithm>
 
 #include <array>
 #include <atomic>
@@ -1430,6 +1431,55 @@ public:
      * @return std::vector<size_t> a vecotr of unique one-ring vids
      */
     std::vector<size_t> get_one_ring_vids_for_vertex(size_t vid) const;
+
+    /**
+     * @brief Calls f(eid) once for each edge incident to vid, eid being the id Tuple::eid() gives
+     * that edge, until f returns true; returns whether it did.
+     *
+     * Tuple::eid() names an edge by the lowest tet holding both its vertices. m_conn_tets is
+     * sorted, so walking vid's tets in order, the first one that holds a neighbour u is that
+     * tet: one pass over the fan, with no one-ring sort and no set intersection per neighbour.
+     * Edges come in fan order, not neighbour order.
+     */
+    template <typename F>
+    bool for_each_incident_edge_eid(size_t vid, F&& f) const
+    {
+        // local edge id (as in m_local_edges) of the tet's local vertices a, b
+        static constexpr int local_edge[4][4] = {
+            {-1, 0, 2, 3},
+            {0, -1, 1, 4},
+            {2, 1, -1, 5},
+            {3, 4, 5, -1}};
+        constexpr size_t n_inline = 64;
+        size_t inline_seen[n_inline];
+        std::vector<size_t> heap_seen;
+        size_t n_seen = 0;
+        const auto seen = [&](size_t u) {
+            const size_t* b = heap_seen.empty() ? inline_seen : heap_seen.data();
+            return std::find(b, b + n_seen, u) != b + n_seen;
+        };
+        const auto add = [&](size_t u) {
+            if (heap_seen.empty() && n_seen == n_inline) {
+                heap_seen.assign(inline_seen, inline_seen + n_inline);
+            }
+            if (heap_seen.empty()) {
+                inline_seen[n_seen] = u;
+            } else {
+                heap_seen.push_back(u);
+            }
+            ++n_seen;
+        };
+        for (const size_t t : m_vertex_connectivity[vid].m_conn_tets) {
+            const auto& tet = m_tet_connectivity[t];
+            const int a = tet.find(vid);
+            for (int k = 0; k < 4; ++k) {
+                if (k == a || seen(tet[k])) continue;
+                add(tet[k]);
+                if (f(t * 6 + size_t(local_edge[a][k]))) return true;
+            }
+        }
+        return false;
+    }
     /**
      * @brief Duplicate of the function TetMesh::get_one_ring_vids_for_vertex
      *

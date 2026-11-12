@@ -11,15 +11,17 @@ message(STATUS "Third-party: creating target 'polysolve::polysolve'")
 # set(POLYSOLVE_WITH_ACCELERATE OFF CACHE BOOL "Enable Apple Accelerate" FORCE)
 
 include(CPM)
-# 1b01e6cec1 (polysolve#109) is the Eigen 5 fix, one commit after the previous pin 231f7e8: the
-# old forward declaration that gave Eigen::SparseQR a default ordering named its parameter
-# _MatrixType, and MSVC resolves that default against the parameter names of Eigen's own
-# definition, which Eigen 5 renamed to MatrixType_.
+# polysolve main 623a7ea plus polysolve#126, which adds /advanced/track_info: off (see
+# wmtk/optimization/solver.hpp), a solve skips its info json and timings, about a third of a Newton
+# solve of a few unknowns, with the same iterates. Move to the merge commit once #126 is in.
+# Since the previous pin (1b01e6c, the Eigen 5 fix) main also gained an MPI option that defaults to
+# ON off Windows, hence POLYSOLVE_WITH_MPI OFF below.
 CPMAddPackage(
     NAME polysolve
     GITHUB_REPOSITORY polyfem/polysolve
-    GIT_TAG 1b01e6cec13c6813ae48846d1f98654bbbf1402b
+    GIT_TAG 98d2db24d9d1b7313d5ae75599d641ce650a2627
     OPTIONS
+    "POLYSOLVE_WITH_MPI OFF"
     "POLYSOLVE_WITH_ACCELERATE OFF"
     "POLYSOLVE_WITH_CHOLMOD OFF"
     "POLYSOLVE_WITH_UMFPACK OFF"
