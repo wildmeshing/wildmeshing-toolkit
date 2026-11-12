@@ -344,14 +344,15 @@ TEST_CASE("features-tube-keeps-a-bent-curve", "[test_remeshing][features]" + rel
         if (tube) m.set_feature_envelope(eps);
         m.uniform_remeshing(1.2, 3);
         REQUIRE(m.check_mesh_connectivity_validity());
-        double far = 0;
+        double farthest = 0;
         for (const auto& e : m.feature_edges()) {
-            far = std::max({far, off(m.vertex_attrs[e[0]].pos), off(m.vertex_attrs[e[1]].pos)});
+            farthest =
+                std::max({farthest, off(m.vertex_attrs[e[0]].pos), off(m.vertex_attrs[e[1]].pos)});
         }
         if (tube) {
-            CHECK(far <= eps);
+            CHECK(farthest <= eps);
         } else {
-            CHECK(far > 0.1);
+            CHECK(farthest > 0.1);
         }
     }
 }

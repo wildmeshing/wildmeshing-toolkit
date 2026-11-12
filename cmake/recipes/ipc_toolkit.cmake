@@ -1,8 +1,9 @@
-# IPC Toolkit (https://github.com/wildmeshing/ipc-toolkit)
+# IPC Toolkit (https://github.com/ipc-sim/ipc-toolkit)
 # License: MIT
 #
-# Public mirror of fsichetti/ipc-toolkit@upstream-merge, published in the wildmeshing
-# organisation with the author's permission. What wmtk uses from it is the `esp` subtree: the
+# Upstream, at polyfem's pin, so a build with both has one ipc. The esp work wmtk used to take
+# from the wildmeshing mirror of fsichetti/ipc-toolkit@upstream-merge (626e27e1) is upstream as
+# "Extremum Sum Potential (#259)", 7017fa9d. What wmtk uses from it is the `esp` subtree: the
 # Extremum-Sum Potential evaluated at arbitrary points (ArbitraryPointESP) and its analytic
 # gradient and Hessian, which the topological_offset component evaluates as its offset field.
 #
@@ -35,43 +36,38 @@ include(geogram)
 include(CPM)
 CPMAddPackage(
     NAME ipc_toolkit
-    GITHUB_REPOSITORY wildmeshing/ipc-toolkit
-    GIT_TAG 626e27e11ac64c68f1e00859fec86c4688fde51c
+    GITHUB_REPOSITORY ipc-sim/ipc-toolkit
+    GIT_TAG dff05854d74617f1e21ccb2bb321c45d7b4c6802
     OPTIONS
     "IPC_TOOLKIT_BUILD_TESTS OFF"
     "IPC_TOOLKIT_BUILD_PYTHON OFF"
     "IPC_TOOLKIT_WITH_CUDA OFF"
+    "IPC_TOOLKIT_WITH_SIMD OFF"
 )
 
-# ipc-toolkit's SIMD branch ends with
+# SIMD OFF, so that every binary has one Eigen configuration. ipc-toolkit's SIMD branch compiles
+# it for the host CPU (its FindSIMD settles on -march=native) and ends with
 #
-# target_compile_definitions(ipc_toolkit PUBLIC EIGEN_DONT_VECTORIZE=1)
+#   target_compile_definitions(ipc_toolkit PUBLIC EIGEN_DONT_VECTORIZE=1)
 #
-# -- PUBLIC, with a comment saying the author does not know why making it private crashes. It
-# is not optional for us either: esp, the subtree wmtk actually uses, carries a
-# static_assert(packet_traits<double>::size == 1, "Eigen vectorization is NOT disabled!") in
-# ESPCollisionTemplate's constructor, so building it with vectorization on does not
-# compile. IPC_TOOLKIT_WITH_SIMD must therefore stay at its default ON.
+# which reaches only what links ipc: the topological_offset component and, through it, wmtk_app,
+# the Python module, manifold_extraction and (WMTK_WITH_POLYFEM) polyfem. Core
+# wildmeshing_toolkit and the other components stay vectorized. The two halves then instantiate
+# the same Eigen templates with different arithmetic under the same names, the linker keeps one
+# copy of each, and which arithmetic tetwild or simwild runs depends on the link order. The Python
+# module with polyfem built in links polyfem first: on macOS, core wmtk, tetwild and simwild took
+# 25 Eigen functions (among them ColPivHouseholderQR<Matrix3d>::computeInPlace and
+# general_matrix_vector_product) and 103 igl ones from polyfem's scalar objects, and
+# tetwild_thingi_100827, tetwild_thingi_366725 and simwild_double_sphere_notop_3d no longer
+# matched wmtk_app (smoothing's Newton solves took other iteration counts).
 #
-# On its own that definition splits the build's Eigen ABI in half, because it reaches only the
-# targets that link ipc while core wildmeshing_toolkit keeps the aligned layout -- which cost a
-# day of green-looking local runs and red CI. recipes/eigen.cmake pins
-# EIGEN_MAX_STATIC_ALIGN_BYTES for everyone precisely so that this definition can no longer do
-# that: the pin wins over Eigen's inference, so ipc gets the scalar packets it demands while
-# every fixed-size Eigen type keeps one alignment across the whole binary.
-#
-# That pin is load-bearing, and the symptom if it is lost is an alignment abort in tests that
-# have nothing to do with either the offset or ipc. Check it here, next to the cause.
-get_target_property(WMTK_EIGEN_DEFS Eigen3_Eigen INTERFACE_COMPILE_DEFINITIONS)
-
-if(NOT WMTK_EIGEN_DEFS MATCHES "EIGEN_MAX_STATIC_ALIGN_BYTES")
-    message(FATAL_ERROR
-        "Eigen3::Eigen is missing the EIGEN_MAX_STATIC_ALIGN_BYTES pin from "
-        "cmake/recipes/eigen.cmake. Without it ipc-toolkit's PUBLIC EIGEN_DONT_VECTORIZE gives "
-        "the targets that link ipc a different alignment for Vector2d/Vector4d/Vector3r than "
-        "the rest of the build, and Eigen's unaligned-array assert aborts "
-        "wmtk_test_manifold_extraction and wmtk_test_topological_offset.")
-endif()
+# With SIMD off ipc defines no Eigen macro and adds no instruction-set flag, so the whole build is
+# vectorized, as core wmtk already was. Measured on macOS against SIMD on: none of the 53
+# deterministic registered integration configs changes its output (tetwild_octocat and
+# tetwild_crown run on 10 threads), and all 55 match between the Python module and wmtk_app. The
+# cost is ipc's xsimd kernels (distances, barrier, tangent bases): ipc uses its scalar code for
+# them. The wildmeshing fork's esp (626e27e1) static_asserted that Eigen vectorization was off,
+# which kept SIMD on; upstream's (7017fa9d, here at dff05854) does not.
 
 # ipc-toolkit links its hash-map backends PRIVATE, but leaks them through the PUBLIC header
 # ipc/utils/unordered_map_and_set.hpp, so any consumer including it fails to find
@@ -80,50 +76,5 @@ endif()
 foreach(IPC_LEAKED_DEP IN ITEMS tsl::robin_map absl::hash)
     if(TARGET ${IPC_LEAKED_DEP})
         target_link_libraries(ipc_toolkit PUBLIC ${IPC_LEAKED_DEP})
-    endif()
-endforeach()
-
-# ipc-toolkit compiles itself for the CPU of whatever machine ran cmake: its cmake/find/FindSIMD
-# settles on -march=native for GCC and for Clang >= 15, publishes it as the SIMD_CXX_FLAGS cache
-# variable, and (as of 626e27e1) applies it as
-#
-#   target_compile_options(ipc_toolkit PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${SIMD_CXX_FLAGS}>")
-#
-# PUBLIC, so it also reaches everything that links the topological_offset component: wmtk_app, the
-# Python module, manifold_extraction and the test binaries. An object built that way carries the
-# instruction set of the machine that produced it, so it is only valid there. CI hands such objects
-# between runners through ccache -- whose hash covers the command line and the sources but not the
-# CPU -- and an object restored onto a runner whose CPU lacks one of its instructions dies with
-# SIGILL: in wmtk_test_topological_offset and wmtk_test_manifold_extraction inside an inline spdlog
-# function, and in wmtk_test_topological_offset inside ipc::CollisionMesh's constructor.
-# recipes/volumeremesher.cmake does the same thing for the same class of problem, one step further
-# on (there the flags were PUBLIC and split Eigen's alignment across the binary).
-#
-# Strip the flags from the TARGET, not from SIMD_CXX_FLAGS. Emptying the variable looks tidier and
-# breaks the build: ipc's CMakeLists.txt reads
-#
-#   find_package(SIMD)
-#   if (SIMD_CXX_FLAGS) ... else() set(IPC_TOOLKIT_WITH_SIMD OFF CACHE BOOL "Enable SIMD" FORCE)
-#
-# so an empty value turns SIMD off, and with it the EIGEN_DONT_VECTORIZE definition that
-# esp's static_assert demands (see the block above).
-#
-# Strip both COMPILE_OPTIONS and INTERFACE_COMPILE_OPTIONS, and match the flag inside the generator
-# expression, not only at the start of an option. Through 3a76d751 ipc added it PRIVATE and bare,
-# which a filter anchored at ^-march= removed; against 626e27e1's form that filter matched nothing,
-# silently, and the SIGILL came back. Both sides, because ipc's headers carry xsimd batch types
-# (ipc/utils/simd.hpp), so ipc and the code including them have to agree on the instruction set.
-# The STATUS line names what came off, so a configure log shows whether the strip worked.
-set(_ipc_isa_regex "(^|:)(-m(arch|tune)=|-mavx|-mfma|-msse|/arch:)")
-foreach(_ipc_prop COMPILE_OPTIONS INTERFACE_COMPILE_OPTIONS)
-    get_target_property(_ipc_opts ipc_toolkit ${_ipc_prop})
-    if(_ipc_opts)
-        set(_ipc_isa_opts "${_ipc_opts}")
-        list(FILTER _ipc_isa_opts INCLUDE REGEX "${_ipc_isa_regex}")
-        list(FILTER _ipc_opts EXCLUDE REGEX "${_ipc_isa_regex}")
-        set_target_properties(ipc_toolkit PROPERTIES ${_ipc_prop} "${_ipc_opts}")
-        if(_ipc_isa_opts)
-            message(STATUS "Third-party: ipc_toolkit ${_ipc_prop}: stripped ${_ipc_isa_opts}")
-        endif()
     endif()
 endforeach()
