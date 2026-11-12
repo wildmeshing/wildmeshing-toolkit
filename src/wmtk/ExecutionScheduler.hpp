@@ -11,6 +11,7 @@
 
 // clang-format off
 #include <array>
+#include <cstring>
 #include <deque>
 #include <iterator>
 #include <functional>
@@ -237,6 +238,10 @@ struct ExecutePass
     /// refusals in a serial run (defects, see above).
     size_t waits() const { return m_waits.load(); }
     size_t wait_defects() const { return m_wait_defects.load(); }
+    /// Over every call on this executor: failures reported without running the operation,
+    /// because it was an exact copy of the operation run just before it, which failed (see
+    /// run_single_queue). They are included in the fail count.
+    size_t repeated_failures() const { return m_repeated_failures.load(); }
 
     ExecutionPolicy policy;
 
@@ -1005,6 +1010,14 @@ private:
                 return std::tie(weight, op, tup, retry, key) <
                        std::tie(b.weight, b.op, b.tup, b.retry, b.key);
             }
+
+            // Every field equal, the weight bit for bit. (Tuple orders every one of its integer
+            // fields, so neither being less is equality; the TriMesh one has no operator==.)
+            bool identical(const Elem& b) const
+            {
+                return std::memcmp(&weight, &b.weight, sizeof(weight)) == 0 && op == b.op &&
+                       retry == b.retry && !(tup < b.tup) && !(b.tup < tup) && key == b.key;
+            }
         };
         // Each task owns its queue outright -- it is seeded before any thread starts, and the
         // task both pops from it and pushes its renewed operations back into it -- so those need
@@ -1022,6 +1035,7 @@ private:
         std::atomic<bool> stop(false);
         cnt_success = 0;
         cnt_fail = 0;
+        const size_t repeated_before = m_repeated_failures.load();
 
         // queue_key bookkeeping (see must_wait). `track` when an element is queued, `done` when
         // it is tried or dropped; both no-ops for the untracked key 0.
@@ -1082,16 +1096,19 @@ private:
             std::atomic_int& fail_total;
             std::atomic<size_t>& lock_failure_total;
             std::atomic<size_t>& overflow_total;
+            std::atomic<size_t>& repeated_total;
             int success = 0;
             int fail = 0;
             size_t lock_failure = 0;
             size_t overflow = 0;
+            size_t repeated = 0;
             ~CountFlusher()
             {
                 success_total.fetch_add(success, std::memory_order_relaxed);
                 fail_total.fetch_add(fail, std::memory_order_relaxed);
                 lock_failure_total.fetch_add(lock_failure, std::memory_order_relaxed);
                 overflow_total.fetch_add(overflow, std::memory_order_relaxed);
+                repeated_total.fetch_add(repeated, std::memory_order_relaxed);
             }
         };
 
@@ -1112,7 +1129,12 @@ private:
                                     const bool serial,
                                     SlotBudget* budget,
                                     std::vector<Elem>* carry) {
-            CountFlusher counts{cnt_success, cnt_fail, lock_failures, overflowed};
+            CountFlusher counts{
+                cnt_success,
+                cnt_fail,
+                lock_failures,
+                overflowed,
+                m_repeated_failures};
 
             Elem ele_in_queue;
             // Operations that lost a race for their ring wait here rather than going straight
@@ -1129,6 +1151,15 @@ private:
             // rediscovered. A bounded window gives the conflict time to clear without letting
             // the operation go stale. 0 = only when the queue empties.
             size_t since_refill = 0;
+            // The last operation this loop ran, if it failed. In a serial run nothing but this
+            // loop changes the mesh, and a failed operation rolls back what it touched, so an
+            // exact copy of it popped next would fail again on the same mesh. Such copies are
+            // common: a renewal queues an operation again each time a neighbour succeeds, and
+            // the order being total, equal elements pop back to back. The copy is reported as
+            // failed -- on_fail and the counts see it exactly as if it had run -- but not run.
+            // Not in a parallel task, where other tasks change the mesh between two pops.
+            Elem last_failed;
+            bool have_last_failed = false;
             const auto refill = [&] {
                 for (auto& e : second_chance) {
                     Q.emplace(std::move(e));
@@ -1242,23 +1273,32 @@ private:
                                 return;
                             }
                         }
-                        const auto usage_before = AppMesh::slot_usage_of_this_thread();
-                        auto newtup = (*op_fn[op])(m, tup);
-                        done(key);
-                        if (budget != nullptr) {
-                            const auto usage = AppMesh::slot_usage_of_this_thread();
-                            budget->cells -= usage.cells - usage_before.cells;
-                            budget->verts -= usage.verts - usage_before.verts;
-                            budget->progressed = true;
+                        const bool repeat =
+                            serial && have_last_failed && ele_in_queue.identical(last_failed);
+                        std::optional<std::vector<Tuple>> newtup;
+                        if (!repeat) {
+                            const auto usage_before = AppMesh::slot_usage_of_this_thread();
+                            newtup = (*op_fn[op])(m, tup);
+                            if (budget != nullptr) {
+                                const auto usage = AppMesh::slot_usage_of_this_thread();
+                                budget->cells -= usage.cells - usage_before.cells;
+                                budget->verts -= usage.verts - usage_before.verts;
+                                budget->progressed = true;
+                            }
                         }
+                        done(key);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
+                            have_last_failed = false;
                             renewed_tuples = renew_neighbor_tuples(m, op_str, newtup.value());
                             counts.success++;
                             if (track_live_success) {
                                 live_success.fetch_add(1, std::memory_order_relaxed);
                             }
                         } else {
+                            last_failed = ele_in_queue;
+                            have_last_failed = true;
+                            counts.repeated += repeat;
                             on_fail(m, op_str, tup);
                             counts.fail++;
                         }
@@ -1448,6 +1488,11 @@ private:
                 (int)cnt_success + (int)cnt_fail,
                 (int)cnt_success,
                 (int)cnt_fail);
+            if (const size_t r = m_repeated_failures.load() - repeated_before; r > 0) {
+                logger().debug(
+                    "  {} failures repeated the operation run just before, not re-run",
+                    r);
+            }
             if (st.rounds > 1) {
                 logger().info(
                     "  parallel region ran in {} rounds (storage grown between them)",
@@ -1623,6 +1668,7 @@ private:
     QueuedCount m_queued;
     std::atomic<size_t> m_waits = 0;
     std::atomic<size_t> m_wait_defects = 0;
+    std::atomic<size_t> m_repeated_failures = 0;
     /// A screened call's finished operations that were not counted as queued (see
     /// check_queued_drained()); written by the calling thread only.
     size_t m_untracked_done = 0;
