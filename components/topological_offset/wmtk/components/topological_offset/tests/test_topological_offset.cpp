@@ -23,6 +23,7 @@
 #include <tuple>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
+#include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
@@ -9883,6 +9884,114 @@ TEST_CASE("several-offsets-growth", "[offset][3d]" + release_only)
         j,
         {{"m", box_grid({{"a", a}, {"b", b}})}});
     CHECK(res.second.value("converged", false));
+}
+
+TEST_CASE("several-offsets-place-readers", "[offset][3d]")
+{
+    // Several entries: every reader of a distance or a bar at a place reads its piece's
+    // (place_piece()): the piece's entry (m_region_offset), its target (region_delta(),
+    // vertex_delta()), its field (potential_for()), its bar (front_conv_of(): front_conv_rel of the
+    // entry's target_distance, fixed through growth_mode's stages; front_conv_frac_of(): that over
+    // the stage's target), the vertex measure (front_vertex_conv_ratio()), the vertex error
+    // (band_vertex_distance_error(), from its own piece) and the face measure
+    // (face_offset_term()). The 3D twin of several-offsets-place-readers-2d. Since 2026-11-12 the
+    // optimization tests check only that a run converged by its exit criterion, so this is the
+    // direct check that each entry's front is read at its own target and bar. Two boxes 0.5
+    // apart, a at 0.1, b at 0.3 (constructed at 0.125), before the loop; then as in a growth
+    // stage with a at 0.1 and b at 0.2 (m_offset_levels).
+    const std::array<int, 6> a = {{1, 2, 1, 2, 1, 2}}, b = {{5, 6, 1, 2, 1, 2}};
+    // The mesh as the driver builds it before the loop (topological_offset(), 3D, no reference).
+    const components::simwild::InputData in =
+        components::simwild::read_mesh_data(box_grid({{"a", a}, {"b", b}}));
+    Parameters param = construction_params(
+        {{"offsets",
+          nlohmann::json::array(
+              {{{"selection", "a"}, {"output_tags", {"a_band"}}, {"target_distance", 0.1}},
+               {{"selection", "b"}, {"output_tags", {"b_band"}}, {"target_distance", 0.3}}})},
+         {"num_threads", 0}},
+        in.V_input);
+    auto mesh = std::make_unique<TopoOffsetTetMesh>(param, 0);
+    mesh->init_from_image(
+        in.V_input,
+        in.T_input,
+        in.T_input_tag,
+        in.V_envelope,
+        in.F_envelope,
+        in.tag_names,
+        in.envelope_name,
+        in.F_tagged,
+        in.F_tags,
+        in.face_tag_names,
+        in.F_orientation,
+        in.feature_edge_names,
+        &in.features,
+        &in.features_placed);
+    for (Parameters::Offset& o : mesh->m_offset_params.offsets)
+        o.expression = parse(o.selection, mesh->m_tag_name_to_id);
+    mesh->m_offset_params.parse_protected_tags(mesh->m_tag_name_to_id);
+    mesh->label_input_complex();
+    mesh->init_input_complex_bvh();
+    mesh->consolidate_mesh();
+    mesh->construct_offset(std::filesystem::temp_directory_path() / "wmtk_offset_place_readers");
+    mesh->init_offset_potential();
+    mesh->label_offset_boundary(); // as optimize_offset() does before the loop
+    mesh->assign_band_regions();
+    const double rel = mesh->m_offset_params.front_conv_rel;
+    REQUIRE(mesh->m_offset_params.target_distance == 0.1); // the run's: the smallest entry's
+    REQUIRE(mesh->m_region_offset.size() == 2);
+    // the front vertices of each band, by their distance to its box
+    std::array<std::vector<size_t>, 2> front;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (!mesh->m_vertex_extra[vid].m_is_on_offset) continue;
+        const Vector3d& p = mesh->m_vertex_attribute[vid].m_posf;
+        front[box_distance(p, a) < box_distance(p, b) ? 0 : 1].push_back(vid);
+    }
+    REQUIRE(!front[0].empty());
+    REQUIRE(!front[1].empty());
+    for (const bool stage : {false, true}) {
+        if (stage) mesh->m_offset_levels = {0.1, 0.2};
+        for (int e = 0; e < 2; ++e) {
+            const double target = e == 0 ? 0.1 : 0.3;
+            const double now = stage && e == 1 ? 0.2 : target;
+            const std::array<int, 6>& box = e == 0 ? a : b;
+            INFO("entry " << e << (stage ? ", in a stage" : ""));
+            for (const size_t v : front[size_t(e)]) {
+                const int r = mesh->place_piece(&v, 1);
+                REQUIRE(r >= 0);
+                CHECK(mesh->m_region_offset[size_t(r)] == e);
+                CHECK(mesh->vertex_delta(v) == now);
+                CHECK(mesh->front_conv_of(r) == rel * target);
+                CHECK(mesh->front_conv_frac_of(r) == Catch::Approx(rel * target / now));
+                const Vector3d& p = mesh->m_vertex_attribute[v].m_posf;
+                CHECK(mesh->potential_for(v).delta() == target); // the fields stay built
+                CHECK(
+                    mesh->front_vertex_conv_ratio(v) ==
+                    Catch::Approx(
+                        std::abs(mesh->potential_for(v).relative_residual(p)) /
+                        (rel * target / now)));
+                CHECK(
+                    mesh->band_vertex_distance_error(v) ==
+                    Catch::Approx(std::abs(box_distance(p, box) - now)).margin(1e-12));
+            }
+        }
+        // A face of b's front: its measure in b's bar, the piece-less form in the run's.
+        size_t b_faces = 0;
+        for (const auto& f : mesh->offset_surface_faces()) {
+            const int r = mesh->place_piece(f.data(), 3);
+            if (r < 0 || mesh->m_region_offset[size_t(r)] != 1) continue;
+            ++b_faces;
+            const auto& VA = mesh->m_vertex_attribute;
+            const OffsetPotential3D& pot = mesh->potential_for_edge(f[0], f[1]);
+            const Vector3d &pa = VA[f[0]].m_posf, &pb = VA[f[1]].m_posf, &pc = VA[f[2]].m_posf;
+            const double in_piece = mesh->face_offset_term(pot, pa, pb, pc, r);
+            const double in_run = mesh->face_offset_term(pot, pa, pb, pc);
+            CHECK(mesh->face_offset_term(f[0], f[1], f[2]) == in_piece);
+            const double fr = rel * 0.3 / (stage ? 0.2 : 0.3), f_run = rel;
+            CHECK(in_piece * fr * fr == Catch::Approx(in_run * f_run * f_run));
+        }
+        CHECK(b_faces > 0);
+    }
 }
 
 namespace {
