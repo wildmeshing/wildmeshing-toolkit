@@ -73,6 +73,20 @@ view of every stage (tags, envelopes, attributes, correspondences).
 A `prismatic_mesh` stage selects its regions with two tag expressions, `input_tags` (the volume) and
 `offset_tags` (the bands). Until the C++ component reads these options, the pipeline rebuilds its
 input: the regions `tag_0` and `offset`, and vertex labels from the offsets' correspondence.
+Original curve edges and sheet triangles are retained for rod classification. Set
+`"rod_mode": true` to include rod frame construction, and `"keep_background_mesh": true`
+to export the constrained background. The GUI reads these options from the compiled
+component's spec, so rebuild/reinstall the extension when updating the C++ implementation.
+`"relative_tet_volume_floor": 0.25` optionally limits collapse and smoothing moves to
+retain a quarter of every modified surviving tet's current volume, including background
+(default 0). Deleted collapse cells are excluded.
+
+Stacked correspondences such as `new_offset → old_offset → original_input` are handled
+conservatively as protected junction fibers. The original links are recorded in the hybrid
+report; regular optimization uses their input-root correspondence, while shared curve/sheet
+vertices, input-volume vertices and affected junction stars stay fixed. This supports a
+valid mixed mesh through such interfaces, but does not independently prism-mesh every
+overlapping offset layer: extended overlaps can retain substantial tet regions.
 
 ## PolyFEM operations
 

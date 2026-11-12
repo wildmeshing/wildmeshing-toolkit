@@ -1,5 +1,7 @@
 #include "background_remeshing.hpp"
+#include "junction_protection.hpp"
 #include "prismatic_mesh.hpp"
+#include "rod_mesh.hpp"
 
 #include <algorithm>
 #include <wmtk/utils/Logger.hpp>
@@ -73,6 +75,29 @@ void keep_offset_band(PrismaticMeshInput& input)
     input.jacobian_smoothing_report = nullptr;
     input.background_remeshing_report = nullptr;
     input.fixed_background_vertices.clear();
+}
+
+void discard_background_mesh(PrismaticMeshInput& input)
+{
+    std::vector<PreservedCell> volume;
+    const size_t original_count = input.tetrahedra.rows();
+    for (size_t i = 0; i < input.input_cells.size(); ++i) {
+        if (input.input_cells[i] != 1 || input.offset_tet_tags[i] == 1) continue;
+        PreservedCell cell;
+        for (int j = 0; j < 4; ++j) cell.vertices[j] = input.tetrahedra(i, j);
+        cell.input_tag = input.input_cells[i];
+        cell.offset_tag = input.offset_tet_tags[i];
+        cell.original_tet_id = i;
+        volume.push_back(cell);
+    }
+    keep_offset_band(input);
+    append_cells(input, volume);
+    logger().info(
+        "Background disabled: removed {} tetrahedra; retained {} input-volume and {} band "
+        "tetrahedra",
+        original_count - input.tetrahedra.rows(),
+        volume.size(),
+        input.tetrahedra.rows() - volume.size());
 }
 
 void label_offset_faces(PrismaticMeshInput& input)
@@ -193,6 +218,9 @@ void prism_main(
         optimization.keep_background_mesh,
         optimization.background_remeshing.enabled);
     optimize_prismatic_mesh(input, optimization);
+    verify_junction_one_rings(input);
+    if (input.rod_state)
+        input.rod_state->report["tau_after_shared_optimization"] = analyze_rod_tau(input);
     smooth_prism_jacobians(input, optimization.min_tet_volume, optimization.jacobian_smoothing);
     fixed_background_tets.insert(
         fixed_background_tets.end(),
@@ -201,6 +229,13 @@ void prism_main(
     append_cells(input, fixed_background_tets);
     input.fixed_background_vertices.clear();
     if (!fixed_background_tets.empty()) label_offset_faces(input);
+    for (int round = 0; input.rod_state && round < optimization.iterations; ++round) {
+        construct_rod_frame_topology(input);
+        const auto& report = input.rod_state->report["frame_topology_construction"];
+        if (report.is_null() || report["fiber_tets_after"] == 0 ||
+            (report["collapses"] == 0 && report["degree_splits"] == 0))
+            break;
+    }
     size_t background_count = 0;
     for (size_t i = 0; i < input.offset_tet_tags.size(); ++i)
         if (input.offset_tet_tags[i] != 1 && input.input_cells[i] != 1) ++background_count;

@@ -223,15 +223,6 @@ PrismaticMeshInput detail::load_prismatic_vtu(const std::filesystem::path& path)
         if (label == 2) result.offset_vertices.push_back(i);
         require(label == 2 || target == -1, "correspondence on a non-offset vertex");
     }
-    for (size_t i : result.offset_vertices) {
-        const auto it = id_to_row.find(result.corr_input_vid[i]);
-        require(it != id_to_row.end(), "offset vertex has missing or unknown input correspondence");
-        require(
-            result.vertex_tags[it->second] == 1,
-            "correspondence target is not an input vertex");
-        result.corr_input_vertex[i] = static_cast<int64_t>(it->second);
-        result.input_to_offset_vertices[it->second].push_back(i);
-    }
     const auto* cd = child(piece, "CellData");
     const auto input = reader.read(array(cd, "tag_0"), m);
     const auto offset = reader.read(array(cd, "offset_tag"), m);
@@ -240,6 +231,7 @@ PrismaticMeshInput detail::load_prismatic_vtu(const std::filesystem::path& path)
         const auto band = integer(offset[i], -1, 1, "offset_tag");
         result.offset_tet_tags.push_back(band == 1 ? 1 : -1);
     }
+    resolve_layered_correspondence(result);
     result.mesh = std::make_unique<TetMesh>();
     result.mesh->init_with_isolated_vertices(n, tets);
     return result;

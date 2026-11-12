@@ -1,9 +1,14 @@
 #include "prismatic_mesh.hpp"
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
+#include "junction_protection.hpp"
+#include "rod_mesh.hpp"
+#include "thickness_smoothing.hpp"
 
 #include <jse/jse.h>
 #include <algorithm>
+#include <fstream>
+#include <iomanip>
 #include <prismatic_mesh_spec.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
@@ -60,10 +65,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         std::count(input.input_cells.begin(), input.input_cells.end(), 1),
         std::count(input.offset_tet_tags.begin(), input.offset_tet_tags.end(), 1));
     OptimizationOptions optimization;
+    const bool ignore_background = json_params["ignore_background_mesh"].get<bool>();
     optimization.iterations = json_params["iterations"].get<int>();
-    optimization.keep_background_mesh = json_params["keep_background_mesh"].get<bool>();
+    optimization.keep_background_mesh =
+        json_params["keep_background_mesh"].get<bool>() && !ignore_background;
     optimization.min_tet_volume = json_params["min_tet_volume"].get<double>();
     optimization.smoothing_max_backtracks = json_params["smoothing_max_backtracks"].get<int>();
+    optimization.relative_tet_volume_floor = json_params["relative_tet_volume_floor"].get<double>();
+    input.relative_tet_volume_floor = optimization.relative_tet_volume_floor;
     auto& jacobian = optimization.jacobian_smoothing;
     jacobian.iterations = json_params["jacobian_smoothing_iterations"].get<int>();
     jacobian.target = json_params["jacobian_target"].get<double>();
@@ -76,10 +85,51 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     background.quality_threshold = json_params["background_quality_threshold"].get<double>();
     background.max_operations = json_params["background_remeshing_max_operations"].get<int>();
     background.max_attempts = json_params["background_remeshing_max_attempts"].get<int>();
-    prism_main(input, json_params["thicknessratio"].get<double>(), optimization);
+    const bool rod_mode = json_params["rod_mode"].get<bool>();
     std::optional<PrismDominantMesh> hybrid;
-    if (json_params["prism_dominant"].get<bool>())
+    if (ignore_background) discard_background_mesh(input);
+    initialize_junction_protection(input);
+    if (rod_mode) {
+        RodOptions rod;
+        rod.radius = json_params["rod_radius"].get<double>();
+        rod.thicknessratio = json_params["thicknessratio"].get<double>();
+        rod.iterations = optimization.iterations;
+        rod.min_tet_volume = optimization.min_tet_volume;
+        preprocess_rod_mesh(input, rod);
+        auto domain_options = optimization;
+        domain_options.keep_background_mesh = !ignore_background;
+        prism_main(input, rod.thicknessratio, domain_options);
+    } else
+        prism_main(input, json_params["thicknessratio"].get<double>(), optimization);
+    if (!hybrid && json_params["prism_dominant"].get<bool>())
         hybrid = build_prism_dominant_mesh(input, optimization.min_tet_volume);
+    if (rod_mode && hybrid) {
+        finalize_rod_ends(input, *hybrid);
+        hybrid->report["rod"] = input.rod_state->report;
+    }
+    const int transition_iterations = json_params["transition_smoothing_iterations"].get<int>();
+    if (transition_iterations < 0 || transition_iterations > 100)
+        log_and_throw_error("transition_smoothing_iterations must be in [0,100].");
+    if (transition_iterations > 0) {
+        if (!hybrid) log_and_throw_error("Transition smoothing requires prism_dominant.");
+        smooth_transition_regions(
+            input,
+            *hybrid,
+            optimization.min_tet_volume,
+            transition_iterations);
+    }
+    const int thickness_iterations = json_params["thickness_smoothing_iterations"].get<int>();
+    if (thickness_iterations < 0 || thickness_iterations > 200)
+        log_and_throw_error("thickness_smoothing_iterations must be in [0,200].");
+    if (thickness_iterations > 0) {
+        if (!hybrid) log_and_throw_error("Thickness smoothing requires prism_dominant.");
+        smooth_thickness_and_prisms(
+            input,
+            *hybrid,
+            optimization.min_tet_volume,
+            thickness_iterations);
+    }
+    if (hybrid) hybrid->report["ignore_background_mesh"] = ignore_background;
     if (component_io.memory()) {
         MeshMap raw;
         nlohmann::json hybrid_report;
@@ -87,7 +137,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input,
             "mesh.vtu",
             hybrid ? &*hybrid : nullptr,
-            true,
+            !rod_mode || optimization.keep_background_mesh,
             &raw,
             &hybrid_report);
         component_io.result.first = io::named_outputs(std::move(raw));
@@ -95,8 +145,19 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             {"jacobian_smoothing", input.jacobian_smoothing_report},
             {"background_remeshing", input.background_remeshing_report}};
         if (hybrid) component_io.result.second["hybrid"] = std::move(hybrid_report);
-    } else
-        write_prismatic_mesh(input, output_path, hybrid ? &*hybrid : nullptr);
+        if (rod_mode) component_io.result.second["rod"] = input.rod_state->report;
+    } else {
+        write_prismatic_mesh(
+            input,
+            output_path,
+            hybrid ? &*hybrid : nullptr,
+            !rod_mode || optimization.keep_background_mesh);
+        if (rod_mode) {
+            auto report_path =
+                output_path.parent_path() / (output_path.stem().string() + "_rod.json");
+            std::ofstream(report_path) << std::setw(2) << input.rod_state->report << '\n';
+        }
+    }
     logger().info("Wrote result mesh: {}", output_path.string());
     for (const auto& out : extra_outputs) {
         if (component_io.memory()) {

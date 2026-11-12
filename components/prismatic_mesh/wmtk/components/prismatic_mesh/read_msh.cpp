@@ -262,7 +262,6 @@ PrismaticMeshInput load_prismatic_msh(const std::filesystem::path& path)
                 for (auto v : tets[i]) result.vertex_tags[v] = 1;
         for (size_t i = 0; i < n; ++i) {
             if (result.corr_input_vid[i] < 0) continue;
-            require(result.vertex_tags[i] != 1, "correspondence on an input-volume vertex");
             result.vertex_tags[i] = 2;
         }
     }
@@ -278,17 +277,7 @@ PrismaticMeshInput load_prismatic_msh(const std::filesystem::path& path)
         else
             require(result.corr_input_vid[i] == -1, "correspondence on a non-offset vertex");
     }
-    for (auto v : result.offset_vertices) {
-        const auto it = source_rows.find(result.corr_input_vid[v]);
-        require(
-            it != source_rows.end(),
-            "offset vertex has missing or unknown input correspondence");
-        require(
-            result.vertex_tags[it->second] == 1,
-            "correspondence target is not an input vertex");
-        result.corr_input_vertex[v] = static_cast<int64_t>(it->second);
-        result.input_to_offset_vertices[it->second].push_back(v);
-    }
+    resolve_layered_correspondence(result);
     result.mesh = std::make_unique<TetMesh>();
     result.mesh->init_with_isolated_vertices(n, tets);
     return result;
