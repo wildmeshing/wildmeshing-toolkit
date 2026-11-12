@@ -484,7 +484,7 @@
     "pointer": "/DEBUG_output",
     "type": "bool",
     "default": false,
-    "doc": "Write the mesh as debug_{}.vtu after every operation. tight_seal_geom also writes debug_{}_join_regions.vtu once it has found its join region J, before filling: cell fields join_region (1 on J's cells), join_component (the number of the J component, connected through faces in 3D and edges in 2D; -1 outside J) and join_filled (1 on the components that are filled)."
+    "doc": "Write the mesh as debug_{}.vtu after every operation. tight_seal_geom also writes debug_{}_join_regions.vtu once it has found its join region J, before filling: cell fields join_region (1 on J's cells), join_component (the number of the J component, connected through faces in 3D and edges in 2D; -1 outside J) and join_filled (1 on the components that are filled); vertex field join_label, each vertex's label in finding J: 0 OUT, 1 ON, 2 IN."
   },
   {
     "pointer": "/DEBUG_sanity_checks",

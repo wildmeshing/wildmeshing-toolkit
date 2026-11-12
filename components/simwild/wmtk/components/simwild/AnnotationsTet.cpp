@@ -816,15 +816,27 @@ void SimWildMesh::tight_seal_geom(
         // the processed tets whose vertices are all IN or ON; `inside` holds both.
         std::vector<char> inside(vert_capacity(), 0);
         size_t n_in = 0; // IN, not a vertex of R
+        // DEBUG_output: each vertex's label, 0 OUT, 1 ON, 2 IN, for the join-region frame. The op
+        // itself needs no more than `inside`: the trace from an ON vertex of R stops at once.
+        std::vector<char> label;
+        if (m_params.debug_output) {
+            label.assign(vert_capacity(), 0);
+        }
         for (const Tuple& t : get_vertices()) {
             const size_t vid = t.vid(*this);
             if (on_R[vid]) {
                 inside[vid] = 1;
+                if (m_params.debug_output) {
+                    label[vid] = dist_S(pos(vid)) <= radius + tol ? 1 : 2;
+                }
                 continue;
             }
             const double ds = dR[vid] < radius ? dist_S(pos(vid)) : 0.;
             inside[vid] = ds >= radius + tol;
             n_in += inside[vid];
+            if (m_params.debug_output) {
+                label[vid] = inside[vid] ? 2 : 0;
+            }
         }
         logger().info(
             "tight_seal_geom: {} vertices off R are IN, at least d/2 + tol from S; every "
@@ -884,6 +896,12 @@ void SimWildMesh::tight_seal_geom(
                 inside.resize(v_new + 1, 0);
             }
             inside[v_new] = 1; // ON: on the level set, J's boundary
+            if (m_params.debug_output) {
+                if (v_new >= label.size()) {
+                    label.resize(v_new + 1, 0);
+                }
+                label[v_new] = 1;
+            }
         }
         m_voronoi_split_fn = nullptr;
 
@@ -973,7 +991,8 @@ void SimWildMesh::tight_seal_geom(
             components_seal.size(),
             needed);
 
-        // DEBUG_output: the mesh after J is found, before anything is filled: join_region marks
+        // DEBUG_output: the mesh after J is found, before anything is filled. Vertex field
+        // join_label: 0 OUT, 1 ON, 2 IN (step 2). Cell fields: join_region marks
         // J's tets, join_component numbers J's components (as above; -1 outside J), and
         // join_filled marks the components that are filled. Written before the boundary check
         // below, which may throw.
@@ -992,7 +1011,8 @@ void SimWildMesh::tight_seal_geom(
             write_vtu(
                 fmt::format("debug_{}_join_regions", m_debug_print_counter++),
                 nullptr,
-                {{"join_region", join}, {"join_component", component}, {"join_filled", to_fill}});
+                {{"join_region", join}, {"join_component", component}, {"join_filled", to_fill}},
+                {{"join_label", std::vector<double>(label.begin(), label.end())}});
         }
 
         // The fill selections must not be ambiguous beside J, in any component.

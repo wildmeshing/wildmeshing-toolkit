@@ -795,7 +795,8 @@ size_t SimWildMeshTri::refine_sizing_around_worst(double)
 void SimWildMeshTri::write_vtu(
     const std::string& path,
     MeshMap* output,
-    const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields) const
+    const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields,
+    const std::vector<std::pair<std::string, std::vector<double>>>& vertex_fields) const
 {
     if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
@@ -872,6 +873,13 @@ void SimWildMeshTri::write_vtu(
     }
     writer->add_field("sizing_field", v_sizing_field);
     writer->add_field("is_rounded", v_rounded);
+    for (const auto& [name, values] : vertex_fields) {
+        VectorXd field = VectorXd::Zero(vert_capacity());
+        for (size_t v = 0; v < values.size() && v < size_t(field.size()); ++v) {
+            field[v] = values[v];
+        }
+        writer->add_field(name, field);
+    }
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // surface

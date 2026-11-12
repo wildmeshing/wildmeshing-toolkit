@@ -577,11 +577,13 @@ public:
     bool is_order_2_edge(const Tuple& e) const;
     bool is_order_2_edge(const std::array<size_t, 2>& e) const;
 
-    /// `cell_fields`: extra cell fields, each a name and a value per tet id (missing ids write 0).
+    /// `cell_fields`: extra cell fields, each a name and a value per tet id (missing ids write 0);
+    /// `vertex_fields` likewise per vertex id.
     void write_vtu(
         const std::string& path,
         MeshMap* output = nullptr,
-        const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields = {});
+        const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields = {},
+        const std::vector<std::pair<std::string, std::vector<double>>>& vertex_fields = {});
 
     void write_surface(const std::string& path) const;
 

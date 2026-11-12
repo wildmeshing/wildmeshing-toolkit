@@ -648,7 +648,8 @@ void union_uf(int u, int v, std::vector<int>& parent)
 void SimWildMesh::write_vtu(
     const std::string& path,
     MeshMap* output,
-    const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields)
+    const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields,
+    const std::vector<std::pair<std::string, std::vector<double>>>& vertex_fields)
 {
     if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
@@ -770,6 +771,13 @@ void SimWildMesh::write_vtu(
     writer.add_field("vid", v_id);
     writer.add_field("is_rounded", v_is_rounded);
     writer.add_field("is_false_surface", v_is_false_surface);
+    for (const auto& [name, values] : vertex_fields) {
+        VectorXd field = VectorXd::Zero(vert_capacity());
+        for (size_t v = 0; v < values.size() && v < size_t(field.size()); ++v) {
+            field[v] = values[v];
+        }
+        writer.add_field(name, field);
+    }
     writer.write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
