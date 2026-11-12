@@ -321,10 +321,11 @@ protected:
     /// theirs, and every old edge keeps its feature tags. Refused if a child is inverted.
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
-    /// A tet split puts the new vertex at the tet's centroid, in doubles, so every corner must be
-    /// rounded. The four children take the tet's attributes and its four faces and six edges keep
-    /// theirs; the six faces inside it are new. Refused if a child is inverted. Only
-    /// tight_seal_geom's simplicial embedding of its regions splits tets.
+    /// A tet split puts the new vertex at m_tet_split_position (the tet's centroid if unset), in
+    /// doubles, so every corner must be rounded. The four children take the tet's attributes and
+    /// its four faces and six edges keep theirs; the six faces inside it are new. Refused if a
+    /// child is inverted. Only tight_seal_geom splits tets (its simplicial embedding of the
+    /// regions, and split_fill).
     bool split_tet_before(const Tuple& t) override;
     bool split_tet_after(const Tuple& t) override;
 
@@ -383,31 +384,46 @@ private:
         size_t& n_failed) const;
     /// How many of `tids` have a vertex on the mesh's boundary, a face with no tet beyond it.
     size_t tight_seal_cells_on_boundary(const std::vector<size_t>& tids) const;
-    /// Split tet tid at its centroid, keeping `cells`, `filled`, `cell_group` and `corner_labels`
-    /// up to date as tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was
-    /// refused.
+    /// Split tet tid at p, keeping `cells`, `filled`, `cell_group` and `corner_labels` up to date
+    /// as tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused.
     size_t tight_seal_split_tet_tracked(
         size_t tid,
+        const Vector3d& p,
         std::unordered_set<size_t>& cells,
         std::vector<char>& filled,
         std::vector<int>* cell_group = nullptr,
         std::vector<CornerLabels>* corner_labels = nullptr);
-    /// tight_seal_geom's "split_fill" mode. Each tet of `components` labels its corners: a corner
-    /// takes the nearest of the component's regions (the first on an exact tie), except that the
+    /// tight_seal_geom's fill of `components`.
+    ///
+    /// First, up to `max_rounds` rounds of preprocessing (tight seal v2 note, section 4a), with
+    /// each vertex labelled by the nearest of its component's regions (the first on an exact tie).
+    /// A round marks each edge whose ends' labels differ if, at the point where the distances to
+    /// those two are equal (not on an end), another region of the component is nearest; then each
+    /// face with three labels whose edges are all unmarked if, at its triple point (where the three
+    /// distances, interpolated linearly over the face, are equal; tight_seal::equal_distances_point)
+    /// inside it, another region is nearest. Every marked face is split at its point, then every
+    /// marked edge at its: each new vertex shows the region found nearest there. The first round
+    /// looks at every edge and face of the components, each later one only at those touching a
+    /// vertex the last made. It stops when nothing is marked, or warns after `max_rounds`.
+    ///
+    /// Then each tet labels its corners: a corner takes its nearest region, except that the
     /// corners of a face the tet shares with a region's tet take that region (a tet has at most
     /// one such face, the regions' union being simplicially embedded). From these labels, all
-    /// taken before any split: the tets with three or four labels are split at their centroid,
-    /// then the faces with three in a tet holding them at theirs, then the edges whose ends differ
-    /// in a tet holding them where the distances to the two labels are equal (not if that falls on
-    /// an end). Each child keeps its parent's labels of the corners it keeps, a new vertex has
-    /// none, and each tet of the components then takes a region by tight_seal::split_fill_label.
-    /// tags_before[id] gets the tags of each tet it labels (filled[id] set) as they were before.
-    /// No topology is checked.
+    /// taken before any split: the tets with four labels are split (at their quadruple point if it
+    /// lies inside the tet, else the centroid), then the faces with three in a tet holding them
+    /// (at their triple point if it lies inside the face, else the centroid), then the edges whose
+    /// ends differ in a tet holding them where the distances to the two labels are equal (not if
+    /// that falls on an end). A tet with three labels is not split itself, only its two faces with
+    /// three and its five edges whose ends differ. Each child keeps its
+    /// parent's labels of the corners it keeps, a new vertex has none, and each tet of the
+    /// components then takes a region by tight_seal::split_fill_label. tags_before[id] gets the
+    /// tags of each tet it labels (filled[id] set) as they were before. No topology is checked.
     void tight_seal_split_fill(
         const std::vector<ConnectedComponent>& components,
         const std::vector<std::vector<size_t>>& components_regions,
         const std::vector<int64_t>& tags,
         const std::vector<SimpleBVH::BVH>& region_bvhs,
+        int64_t max_rounds,
         std::vector<char>& filled,
         std::vector<CellTag>& tags_before);
     /// tight_seal_geom's topology check: for each tag the fill added to or took from a tet, warns
@@ -433,6 +449,9 @@ private:
     // split_face(), cleared after.
     std::optional<Vector3d> m_face_split_position;
     size_t m_last_face_split_vertex = 0;
+    // Where split_tet() puts the new vertex; the tet's centroid if unset. Set before split_tet(),
+    // cleared after.
+    std::optional<Vector3d> m_tet_split_position;
     // split_face_before() to split_face_after(). Face splits are serial (only tight_seal_geom
     // makes them).
     struct FaceSplitCache
@@ -655,9 +674,9 @@ public:
      * The operation throws if a tet of J has a vertex on the mesh's boundary, in any component,
      * filled or not. Regions more than distance/2 from the boundary keep J off it.
      * Each component (connected through faces, so two touching at an edge or a vertex are filled
-     * separately) is then split as its tets' own labels of their corners require, and each
-     * resulting tet takes the region its corners' labels give (tight_seal_split_fill). No
-     * topology is checked.
+     * separately) is then preprocessed, in at most `max_preprocessing_rounds` rounds (0: none),
+     * split as its tets' own labels of their corners require, and each resulting tet takes the
+     * region its corners' labels give (tight_seal_split_fill). No topology is checked.
      *
      * `selection` "explicit": the regions are `tags`, two or more, which may not hold ambient
      * (the tag named "ambient"). "detected": `tags` is ignored (with a warning if it is not
@@ -680,6 +699,7 @@ public:
         const std::string& selection = "explicit",
         int64_t min_regions = 2,
         bool sanity = false,
+        int64_t max_preprocessing_rounds = 10,
         const ExprPtr& spatial_selection = nullptr);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);

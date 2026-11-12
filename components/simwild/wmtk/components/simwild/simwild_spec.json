@@ -83,6 +83,7 @@
       "tight_seal_geom_selection",
       "tight_seal_geom_min_regions",
       "tight_seal_geom_sanity",
+      "tight_seal_geom_max_preprocessing_rounds",
       "tight_seal_geom_spatial_selection",
       "keep_lcc_tags",
       "keep_lcc_num",
@@ -646,7 +647,7 @@
       "explicit",
       "detected"
     ],
-    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders at least tight_seal_geom_min_regions regions (shares an edge with them in 2D, a face in 3D) is filled with those it borders, so parts may be filled with different tags. A part is filled thus: each cell of it labels its corners, a corner taking the nearest of the part's regions (the first of them on an exact tie), except that the corners of a facet (edge in 2D, face in 3D) the cell shares with a cell of one of those regions take that region; a cell has at most one such facet, the regions being simplicially embedded first. From these labels, all taken before any split, the part's tets with three or four distinct labels are split at their centroid (in 2D, its triangles with three), then its faces with three distinct labels in a tet holding them at theirs (3D), then its edges whose ends have different labels in a cell holding them, where the distances to the two labels are equal (found by bisection; not if that falls on an end). A cell made by a split keeps its parent's labels of the corners it keeps; a new vertex has none. Each cell of the part then takes its corners' label if they agree; else the one region within a tie (1e-10 of the bounding box diagonal) of the nearest at every labelled corner; else, on an exact tie between regions, the first of them. No topology is checked."
+    "doc": "For tight_seal_geom: which regions are sealed. \"explicit\": those of tight_seal_geom_tags; a part is filled if it borders all of them. \"detected\": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders at least tight_seal_geom_min_regions regions (shares an edge with them in 2D, a face in 3D) is filled with those it borders, so parts may be filled with different tags. A part is filled thus. First it is preprocessed, in at most tight_seal_geom_max_preprocessing_rounds rounds, with each vertex labelled by the nearest of the part's regions (the first of them on an exact tie): a round marks each edge whose ends' labels differ if, where the distances to those two are equal, another of the part's regions is nearest, and each face with three labels and no marked edge if, at its triple point (where the three distances, interpolated linearly over the face, are equal) inside it, another region is nearest; it splits the marked faces at those points, then the marked edges at theirs, so each new vertex shows the region found nearest there; each later round looks only at the edges and faces touching a vertex the last one made. Then each cell of the part labels its corners, a corner taking its nearest region, except that the corners of a facet (edge in 2D, face in 3D) the cell shares with a cell of one of those regions take that region; a cell has at most one such facet, the regions being simplicially embedded first. From these labels, all taken before any split, the part's tets with four distinct labels are split at their quadruple point (where the four distances, interpolated linearly over the tet, are equal; a tet with three is not split itself, only its faces and edges), then its faces with three distinct labels in a cell holding them (in 2D, its triangles) at their triple point, a tet or face whose point lies outside it at its centroid, then its edges whose ends have different labels in a cell holding them, where the distances to the two labels are equal (found by bisection; not if that falls on an end). A cell made by a split keeps its parent's labels of the corners it keeps; a new vertex has none. Each cell of the part then takes its corners' label if they agree; else the one region within a tie (1e-10 of the bounding box diagonal) of the nearest at every labelled corner; else, on an exact tie between regions, the first of them. No topology is checked."
   },
   {
     "pointer": "/tight_seal_geom_min_regions",
@@ -660,6 +661,13 @@
     "type": "bool",
     "default": false,
     "doc": "For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell carries other than one region's tag, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two regions, which would be a concave feature of one body, filled. For tests; the integration tests set it."
+  },
+  {
+    "pointer": "/tight_seal_geom_max_preprocessing_rounds",
+    "type": "int",
+    "default": 10,
+    "min": 0,
+    "doc": "For tight_seal_geom: the most rounds of the fill's preprocessing (see tight_seal_geom_selection), which splits an edge or face of a part at the point where its own labels' regions are equally near if another region is nearer there, so that a tet with three labels is crossed by their triple line and one with four holds their quadruple point. It stops earlier once nothing is marked, and warns if this many rounds leave something marked. 0 turns it off."
   },
   {
     "pointer": "/tight_seal_geom_spatial_selection",

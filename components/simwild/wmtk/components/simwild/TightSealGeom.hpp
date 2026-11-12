@@ -62,6 +62,31 @@ std::optional<double> sphere_trace(
     bool from_below);
 
 
+/**
+ * @brief The point of a simplex where k distance functions, each interpolated linearly from its
+ * values at the simplex's k corners, are all equal: for a triangle (k = 3) the triple point of
+ * three regions, for a tet (k = 4) the quadruple point of four (tight seal v2 note, section 4a-i).
+ *
+ * D(r, c) is function r at corner c. Returns the point's barycentric coordinates (they sum to 1),
+ * or nothing if the system is singular. The point lies inside the simplex if all are > 0.
+ */
+std::optional<Eigen::VectorXd> equal_distances_point(const Eigen::MatrixXd& D);
+
+/// The point of the segment [a, b] where f changes sign, by bisection, given f(a) < 0 <= f(b).
+template <typename V>
+V bisect_sign_change(const std::function<double(const V&)>& f, V a, V b)
+{
+    for (int i = 0; i < 50; ++i) {
+        const V m = (a + b) / 2;
+        if (f(m) < 0) {
+            a = m;
+        } else {
+            b = m;
+        }
+    }
+    return (a + b) / 2;
+}
+
 /// The six edges of a tet, as pairs of its local vertex indices.
 inline constexpr std::array<std::array<int, 2>, 6> tet_edges = {
     {{{0, 1}}, {{0, 2}}, {{0, 3}}, {{1, 2}}, {{1, 3}}, {{2, 3}}}};

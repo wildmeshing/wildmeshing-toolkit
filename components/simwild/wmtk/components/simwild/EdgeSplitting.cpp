@@ -202,7 +202,7 @@ bool SimWildMesh::split_tet_before(const Tuple& t)
         centroid += m_vertex_attribute[v].m_posf / 4;
         c.sizing_scalar += m_vertex_attribute[v].m_sizing_scalar / 4;
     }
-    c.position = centroid;
+    c.position = m_tet_split_position.value_or(centroid);
     c.partition_id = m_vertex_attribute[c.v[0]].partition_id;
     c.on_bbox_faces = m_vertex_attribute[c.v[0]].on_bbox_faces;
     for (int k = 1; k < 4; ++k) {

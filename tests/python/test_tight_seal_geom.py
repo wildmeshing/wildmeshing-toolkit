@@ -197,6 +197,20 @@ def test_fills_a_part_of_any_number_of_regions(options):
         assert _components_and_euler(_cells(out, tag)) == (1, 1)
 
 
+def test_max_preprocessing_rounds_below_zero_refused():
+    with pytest.raises(Exception):
+        _seal(_four_bodies(), selection="detected", max_preprocessing_rounds=-1)
+
+
+@pytest.mark.parametrize("rounds", [0, 1, 10])
+def test_max_preprocessing_rounds_taken(rounds):
+    # the hole's sides are each nearest one bar, so the preprocessing has nothing to split here
+    mesh = _four_bodies()
+    out = _seal(mesh, selection="detected", max_preprocessing_rounds=rounds)
+    for tag in TAGS:
+        assert _area(out, tag) == pytest.approx(_area(mesh, tag) + 1)
+
+
 def test_min_regions_above_what_a_part_borders_fills_nothing():
     mesh = _four_bodies()
     out = _seal(mesh, selection="detected", min_regions=5)

@@ -582,6 +582,7 @@ void SimWildMesh::tight_seal_geom(
     const std::string& selection,
     const int64_t min_regions,
     const bool sanity,
+    const int64_t max_preprocessing_rounds,
     const ExprPtr& spatial_selection)
 {
     const bool detected = selection == "detected";
@@ -600,6 +601,11 @@ void SimWildMesh::tight_seal_geom(
             "tight_seal_geom: min_regions {} is ignored with selection \"explicit\", which fills "
             "the parts that border every listed tag",
             min_regions);
+    }
+    if (max_preprocessing_rounds < 0) {
+        log_and_throw_error(
+            "tight_seal_geom: max_preprocessing_rounds must be at least 0. Input was {}",
+            max_preprocessing_rounds);
     }
     // the tags of the regions: the listed ones, or every tag but ambient that some tet has alone
     std::vector<int64_t> tags;
@@ -1048,14 +1054,15 @@ void SimWildMesh::tight_seal_geom(
         }
     }
 
-    // Each component is split as its tets' own labels of their corners require, and each tet
-    // then takes a region from its corners' labels (tight_seal_split_fill).
+    // Each component is preprocessed, then split as its tets' own labels of their corners
+    // require, and each tet then takes a region from its corners' labels (tight_seal_split_fill).
     std::vector<CellTag> tags_before_fill;
     tight_seal_split_fill(
         components_seal,
         components_regions,
         tags,
         region_bvhs,
+        max_preprocessing_rounds,
         filled,
         tags_before_fill);
 

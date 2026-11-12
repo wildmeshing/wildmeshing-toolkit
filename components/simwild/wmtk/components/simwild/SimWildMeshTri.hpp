@@ -359,9 +359,9 @@ public:
      * The operation throws if a face of J has a vertex on the mesh's boundary, in any component,
      * filled or not. Regions more than distance/2 from the boundary keep J off it.
      * Each component (connected through edges, so two touching at a vertex are filled
-     * separately) is then split as its faces' own labels of their corners require, and each
-     * resulting face takes the region its corners' labels give (tight_seal_split_fill). No
-     * topology is checked.
+     * separately) is then preprocessed, in at most `max_preprocessing_rounds` rounds (0: none),
+     * split as its faces' own labels of their corners require, and each resulting face takes the
+     * region its corners' labels give (tight_seal_split_fill). No topology is checked.
      *
      * `selection` "explicit": the regions are `tags`, two or more, which may not hold ambient
      * (the tag named "ambient"). "detected": `tags` is ignored (with a warning if it is not
@@ -384,6 +384,7 @@ public:
         const std::string& selection = "explicit",
         int64_t min_regions = 2,
         bool sanity = false,
+        int64_t max_preprocessing_rounds = 10,
         const ExprPtr& spatial_selection = nullptr);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
@@ -463,21 +464,31 @@ private:
         size_t& n_failed) const;
     /// How many of `fids` have a vertex on the mesh's boundary, a edge with no face beyond it.
     size_t tight_seal_cells_on_boundary(const std::vector<size_t>& fids) const;
-    /// tight_seal_geom's "split_fill" mode, in 2D. Each face of `components` labels its corners:
-    /// a corner takes the nearest of the component's regions (the first on an exact tie), except
-    /// that the ends of an edge the face shares with a region's face take that region (a face has
-    /// at most one such edge, the regions' union being simplicially embedded). From these labels,
-    /// all taken before any split: the faces with three labels are split at their centroid, then
-    /// the edges whose ends differ in a face holding them where the distances to the two labels
-    /// are equal (not if that falls on an end). Each child keeps its parent's labels of the
-    /// corners it keeps, a new vertex has none, and each face of the components then takes a
-    /// region by tight_seal::split_fill_label. tags_before[id] gets the tags of each face it
-    /// labels (filled[id] set) as they were before. No topology is checked.
+    /// tight_seal_geom's fill of `components`, in 2D; as SimWildMesh::tight_seal_split_fill, with
+    /// faces for tets and no faces of tets. First up to `max_rounds` rounds of preprocessing,
+    /// each vertex labelled by the nearest of its component's regions (the first on an exact
+    /// tie): a round marks each edge whose ends' labels differ if, where the distances to those
+    /// two are equal (not on an end), another region of the component is nearest; then each face
+    /// with three labels whose edges are all unmarked if, at its triple point inside it (where the
+    /// three distances, interpolated linearly over the face, are equal), another region is
+    /// nearest. Every marked face is split at its point, then every marked edge at its; the first
+    /// round looks at every edge and face, each later one only at those touching a vertex the
+    /// last made, until nothing is marked (or a warning after `max_rounds`). Then each face
+    /// labels its corners: a corner takes its nearest region, except that the ends of an edge the
+    /// face shares with a region's face take that region (a face has at most one such edge, the
+    /// regions' union being simplicially embedded). From these labels, all taken before any
+    /// split: the faces with three labels are split at their triple point if it lies inside them
+    /// (else the centroid), then the edges whose ends differ in a face holding them where the
+    /// distances to the two labels are equal (not if that falls on an end). Each child keeps its
+    /// parent's labels of the corners it keeps, a new vertex has none, and each face of the
+    /// components then takes a region by tight_seal::split_fill_label. tags_before[id] gets the
+    /// tags of each face it labels (filled[id] set) as they were before. No topology is checked.
     void tight_seal_split_fill(
         const std::vector<ConnectedComponent>& components,
         const std::vector<std::vector<size_t>>& components_regions,
         const std::vector<int64_t>& tags,
         const std::vector<SimpleBVH::BVH>& region_bvhs,
+        int64_t max_rounds,
         std::vector<char>& filled,
         std::vector<CellTag>& tags_before);
     /// tight_seal_geom's topology check, as SimWildMesh::tight_seal_topology_check, with faces
