@@ -993,40 +993,35 @@ bool TopoOffsetTriMesh::smooth_nonfront_vertex(const Tuple& t)
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
     opts.quality_veto = false;
     // The rule is E itself: the sum of tri_energy() over the ring may not rise (a tie passes, a
-    // NaN refuses), on every vertex. 3D exempts a vertex held on a surface, whose projected step
-    // already compares that sum through the engine's ring hook (smoothing_ring_energy()); the 2D
-    // engine has none, its projected step comparing the ring's max AMIPS, so here the veto judges
-    // that vertex's move too (see tri_energy()). A smoothing move changes no label and moves one
-    // vertex, so the ring holds every face whose energy it can change.
+    // NaN refuses). A vertex held on a region boundary takes the engine's projected step, whose
+    // acceptance is that rule already (smoothing_ring_energy(): strictly below), so it needs no
+    // veto here; the engine's own condition (smooth_vertex_2d(): a pull envelope under the
+    // projected mode; 3D also asks m_is_on_surface, which its engine asks). Every other vertex is
+    // vetoed after its solve. A smoothing move changes no label and moves one vertex, so the ring
+    // holds every face whose energy it can change. As 3D's.
     const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
     const Vector2d x0 = m_vertex_attribute[vid].m_posf;
-    // "exact_swept": every move is accepted by swept_accept() (EXACT SWEPT CHANGE), from the
-    // ring's AMIPS part before, as 3D's. A move of the engine's projected step (the engine's own
-    // condition, smooth_vertex_2d(): a pull envelope under the projected mode; 3D also asks
-    // m_is_on_surface, which its engine asks) is tested at its position alone, without halving
-    // (EXACT SWEPT CHANGE, where 2D differs); 3D's hook judges it inside the step.
-    const bool swept = swept_rule();
     const bool projected =
         opts.smoothing_mode == optimization::SmoothVertexOptions::SmoothingMode::Projected &&
         smoothing_energy_envelope(vid) != nullptr;
-    const double amips_before = swept ? tri_energy_sum(ring, false) : 0.;
-    const double before = swept ? 0. : tri_energy_sum(ring);
+    // "exact_swept": the projected step compares smoothing_ring_energy(), which takes the band
+    // term's change from the position at its first call on this vertex; every other move is
+    // accepted by swept_accept() (EXACT SWEPT CHANGE), from the ring's AMIPS part before
+    const bool swept = swept_rule();
+    if (swept) m_swept_stored.local().vid = vid;
+    const double amips_before = swept && !projected ? tri_energy_sum(ring, false) : 0.;
+    const double before = projected || swept ? 0. : tri_energy_sum(ring);
     // BAND TERM THAT CANCELS (tri_energy()) for the move, tested at the old position and the new
     // one, as 3D's smooth_nonfront_vertex(); false in 2D (band_term_cancels()) but under
     // "exact_swept", which compares its own sums above.
-    const bool cancels_before = !swept && band_term_cancels(ring);
+    const bool cancels_before = !projected && !swept && band_term_cancels(ring);
     const double before_no_band = cancels_before ? tri_energy_sum(ring, false) : 0.;
     if (!smooth_vertex_2d_counted(t, opts, m_newton)) {
         return false;
     }
+    if (projected) return true;
     if (swept) {
-        if (!swept_accept(
-                vid,
-                ring,
-                x0,
-                amips_before,
-                projected ? m_swept_projected : m_swept_nonfront,
-                projected ? 0 : kSweptHalvings)) {
+        if (!swept_accept(vid, ring, x0, amips_before, m_swept_nonfront)) {
             --m_smooth_rejects.accepted;
             ++m_smooth_rejects.quality;
             return false;
@@ -1295,8 +1290,7 @@ void TopoOffsetTriMesh::log_smoothing_pass_accounting()
         m_front_veto_fired.exchange(0),
         m_front_veto_asked.exchange(0));
     if (swept_rule()) {
-        // "exact_swept": swept_accept()'s outcomes, front and other moves apart, as 3D's, and the
-        // moves of the engine's projected step, which 3D judges in its ring hook
+        // "exact_swept": swept_accept()'s outcomes, front and other moves apart, as 3D's
         for (auto* c : {&m_swept_front, &m_swept_nonfront}) {
             logger().info(
                 "\t[exact_swept] {} moves: {} solves, accepted at full step {}, after 1 / 2 / 3 / "
@@ -1310,12 +1304,6 @@ void TopoOffsetTriMesh::log_smoothing_pass_accounting()
                 c->accepted[4].exchange(0),
                 c->refused.exchange(0));
         }
-        logger().info(
-            "\t[exact_swept] projected-step moves (held on a boundary, tested at the step's "
-            "position, no halving): {} solves, accepted {}, refused {}",
-            m_swept_projected.solves.exchange(0),
-            m_swept_projected.accepted[0].exchange(0),
-            m_swept_projected.refused.exchange(0));
         logger().info(
             "\t[exact_swept] search model derivatives: {} evaluations, {} with an edge part "
             "labelled by rule (a) (a curved bisector), {} from the swept triangles, {} at x0 with "
@@ -2308,13 +2296,10 @@ void TopoOffsetTriMesh::needle_forensics() const
             if (got) {
                 const Tuple& et = std::get<0>(*got);
                 const bool surf = is_edge_on_surface(et);
-                const double sw = swap_weight(et);
                 swap_info = fmt::format(
-                    "on_surface {} (swap {}) | swap_weight {:.6g} (pass needs > 1e-5 -> {})",
+                    "on_surface {} (swap {})",
                     surf,
-                    surf ? "REFUSED outright" : "allowed",
-                    sw,
-                    sw > 1e-5 ? "would swap" : "REFUSED");
+                    surf ? "REFUSED outright" : "allowed");
             }
             logger().warn(
                 "[forensics]   edge {}-{} len {:.6g} | collapse gate {:.6g} -> {} | split gate "
@@ -3080,8 +3065,7 @@ bool TopoOffsetTriMesh::swept_accept(
     const std::vector<size_t>& ring,
     const Vector2d& x0,
     const double amips_before,
-    SweptCounters& c,
-    const int halvings)
+    SweptCounters& c)
 {
     // See the declaration.
     ++c.solves;
@@ -3095,7 +3079,7 @@ bool TopoOffsetTriMesh::swept_accept(
     const std::vector<std::pair<size_t, int>> ring_pieces = band_face_pieces(ring);
     m_vertex_attribute[vid].m_posf = x1;
     const std::vector<std::shared_ptr<const BandVolumeEnergy2D>>& models = m_swept_model.local();
-    for (int k = 0; k <= halvings; ++k) {
+    for (int k = 0; k <= kSweptHalvings; ++k) {
         if (k > 0) {
             m_vertex_attribute[vid].m_posf = x0 + std::ldexp(1., -k) * (x1 - x0);
             m_vertex_attribute[vid].set_pos_to_posf();
@@ -5181,8 +5165,8 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
         log_and_throw_error(
             "EXPERIMENTAL_label_cleanup \"one_sided\" reads the distance to the input through the "
             "exact band integral, which this run did not build: it needs "
-            "EXPERIMENTAL_band_volume_rule \"corner_bound\", \"exact\", \"front_flux\", "
-            "\"exact_swept\" or \"surface\", EXPERIMENTAL_settle_mark \"max\", or DEBUG_output");
+            "EXPERIMENTAL_band_volume_rule \"corner_bound\", \"exact\", \"exact_swept\" or "
+            "\"surface\", EXPERIMENTAL_settle_mark \"max\", or DEBUG_output");
     }
     const auto label_of = [this](const size_t fid) { return m_face_extra[fid].label; };
 
@@ -6537,6 +6521,51 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
     return false;
 }
 
+TopoOffsetTriMesh::MeshSnapshot TopoOffsetTriMesh::take_snapshot()
+{
+    // See the declaration.
+    if (m_track_feature_points) {
+        log_and_throw_error(
+            "take_snapshot: feature-point tracking is on, and the image does not hold its "
+            "collection");
+    }
+    consolidate_mesh();
+    MeshSnapshot s;
+    s.n_vertices = vert_capacity();
+    const size_t n_faces = tri_capacity();
+    s.faces.resize(n_faces);
+    for (size_t f = 0; f < n_faces; ++f) s.faces[f] = oriented_tri_vids(f);
+    // The live slots of a collection, [0, n): consolidate_mesh() packed them there.
+    const auto head = [](const auto& c, const size_t n) {
+        return std::vector(c.m_attributes.begin(), c.m_attributes.begin() + std::ptrdiff_t(n));
+    };
+    s.vertex = head(m_vertex_attribute, s.n_vertices);
+    s.vertex_extra = head(m_vertex_extra, s.n_vertices);
+    s.edge = head(m_edge_attribute, 3 * n_faces);
+    s.edge_extra = head(m_edge_extra, 3 * n_faces);
+    s.face = head(m_face_attribute, n_faces);
+    s.face_extra = head(m_face_extra, n_faces);
+    restore_snapshot(s);
+    return s;
+}
+
+void TopoOffsetTriMesh::restore_snapshot(const MeshSnapshot& s)
+{
+    // See the declaration. init_with_isolated_vertices() leaves every collection cleared and
+    // sized to the new capacity, at least the live count, so the copies fit.
+    init_with_isolated_vertices(s.n_vertices, s.faces);
+    const auto put = [](auto& c, const auto& v) {
+        std::copy(v.begin(), v.end(), c.m_attributes.begin());
+    };
+    put(m_vertex_attribute, s.vertex);
+    put(m_vertex_extra, s.vertex_extra);
+    put(m_edge_attribute, s.edge);
+    put(m_edge_extra, s.edge_extra);
+    put(m_face_attribute, s.face);
+    put(m_face_extra, s.face_extra);
+    assign_band_regions(/*log=*/false);
+}
+
 double TopoOffsetTriMesh::growth_stage_target(
     const double d0,
     const double delta,
@@ -6665,7 +6694,7 @@ void TopoOffsetTriMesh::smart_growth()
 {
     // See the declaration and the spec doc (growth_mode "smart"). As in linear_growth(), only
     // target_distance changes between loops, and what init_offset_potential() builds on it. As in
-    // 3D but for the revert (see the declaration).
+    // 3D.
     const auto t0 = std::chrono::steady_clock::now();
     const double delta = m_offset_params.target_distance;
     const double d0 = m_growth_start;
@@ -6741,14 +6770,15 @@ void TopoOffsetTriMesh::smart_growth()
     m_converged = false;
     m_energy_verdict.reset();
     std::string history = fmt::format("level 0 at {:.6g} in {} turn(s)", d0, m_iterations_used);
-    // 3D stores the mesh here (take_snapshot()); 2D cannot put one back (see the declaration).
+    MeshSnapshot snap = take_snapshot();
     logger().info(
-        "[smart growth] level 0 converged at target_distance {:.6g} (#V {}, #F {}); 2D stores no "
-        "image of the mesh, so a failed attempt ends the run",
+        "[smart growth] level 0 converged at target_distance {:.6g}; the mesh is stored (#V {}, "
+        "#F {})",
         d0,
         get_vertices().size(),
         get_faces().size());
     SmartGrowthSchedule sched{d0, delta, m_offset_params.smart_growth_max_fails};
+    int n_reverted = 0;
     for (;;) {
         // j == 0 is target_distance itself, set exactly (not by the formula).
         const bool at_delta = sched.j == 0;
@@ -6785,20 +6815,22 @@ void TopoOffsetTriMesh::smart_growth()
             m_offset_levels.clear(); // each entry at its target_distance
             logger().info(
                 "[smart growth] target_distance {:.6g} reached: {}, level {} at it in {} turn(s); "
-                "{:.3g} s",
+                "{} failed attempt(s) reverted; {:.3g} s",
                 delta,
                 history,
                 level,
                 turns,
+                n_reverted,
                 std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
             return;
         case SmartGrowthSchedule::Next::Advance:
             m_converged = false;
             m_energy_verdict.reset();
             history += fmt::format(", level {} at {:.6g} in {} turn(s)", level, t, turns);
+            snap = take_snapshot();
             logger().info(
-                "[smart growth] level {} converged at target_distance {:.6g} (attempt {}; #V {}, "
-                "#F {}), the next attempt is at target_distance {:.6g}",
+                "[smart growth] level {} converged at target_distance {:.6g} (attempt {}); the "
+                "mesh is stored (#V {}, #F {}), the next attempt is at target_distance {:.6g}",
                 level,
                 t,
                 attempt,
@@ -6808,21 +6840,36 @@ void TopoOffsetTriMesh::smart_growth()
             break;
         case SmartGrowthSchedule::Next::Retry:
         case SmartGrowthSchedule::Next::GiveUp:
-            // 3D puts the stored mesh back here (restore_snapshot()) and tries again, halfway on
-            // Retry; 2D cannot (see the declaration).
-            m_frame_prefix.clear();
-            log_and_throw_error(
+            ++n_reverted;
+            m_converged = false;
+            m_energy_verdict.reset();
+            restore_snapshot(snap);
+            logger().warn(
                 "[smart growth] level {} attempt {} at target_distance {:.6g} failed (not "
-                "converged in {} turn(s), or with turned edges; see above), and 2D cannot put the "
-                "mesh back at the converged {:.6g}: the 2D engine has no rebuild of a live mesh "
-                "from an image (3D's restore_snapshot(), TetMesh::init_with_isolated_vertices()); "
-                "converged before: {}",
+                "converged in {} turn(s), or with turned edges; see above): the mesh is back at "
+                "the converged {:.6g} (#V {}, #F {}){}",
                 level,
                 attempt,
                 t,
                 turns,
                 base,
-                history);
+                get_vertices().size(),
+                get_faces().size(),
+                sched.j < m_offset_params.smart_growth_max_fails
+                    ? fmt::format("; next attempt at {:.6g}", sched.target())
+                    : std::string());
+            if (sched.j >= m_offset_params.smart_growth_max_fails) {
+                m_frame_prefix.clear();
+                log_and_throw_error(
+                    "[smart growth] {} attempts from the converged distance {:.6g} failed "
+                    "(smart_growth_max_fails), the last at target_distance {:.6g}; converged "
+                    "before: {}",
+                    m_offset_params.smart_growth_max_fails,
+                    base,
+                    t,
+                    history);
+            }
+            break;
         }
     }
 }

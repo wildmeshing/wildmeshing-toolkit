@@ -120,7 +120,7 @@ TEST_CASE(
     REQUIRE(canonical_faces(tri) == canonical_faces(sim));
     const auto tri_diagonal = std::get<0>(tri.tuple_from_edge(std::array<size_t, 2>{{0, 2}}));
     const auto sim_diagonal = std::get<0>(sim.tuple_from_edge(std::array<size_t, 2>{{0, 2}}));
-    REQUIRE(sim.swap_weight(sim_diagonal) == tri.swap_weight(tri_diagonal));
+    REQUIRE(sim.get_length2(sim_diagonal) == tri.get_length2(tri_diagonal));
 
     // Intentionally serial and ordered: TriWild is the oracle, then SimWild starts from its
     // untouched identical mesh. Running concurrently would turn a disagreement into a race.

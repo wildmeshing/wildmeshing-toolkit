@@ -304,6 +304,16 @@ public:
      * @param tris triangle connectivity
      */
     void init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& tris);
+    /**
+     * Generate the connectivity anew: the connectivity, its slot pools and every attribute
+     * collection are cleared first, then built as init() builds them, and a vertex in no triangle
+     * is marked removed. The 2D counterpart of TetMesh::init_with_isolated_vertices(), and what
+     * rebuilds a live mesh from an image of it: init() keeps the old slots, so on a live mesh it
+     * appends to the old fans and leaves stale removal flags.
+     */
+    void init_with_isolated_vertices(
+        size_t n_vertices,
+        const std::vector<std::array<size_t, 3>>& tris);
 
     /**
      * @brief Generate the connectivity of the mesh from an IGL-style F matrix.

@@ -1200,7 +1200,6 @@ void TopoOffsetTriMesh::init_band_exact()
     // same conditions. The band rules' term reads its value() (the energy step of the 2D
     // lock-step port), the label clean-up its distance() and distance_bound().
     const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
-                            m_offset_params.band_volume_rule == "front_flux" ||
                             m_offset_params.band_volume_rule == "exact_swept";
     const bool surface_cleanup =
         m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";

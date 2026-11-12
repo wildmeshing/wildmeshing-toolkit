@@ -2391,6 +2391,50 @@ void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& 
     if (p_face_attrs) p_face_attrs->resize(tcap);
 }
 
+void TriMesh::init_with_isolated_vertices(
+    size_t n_vertices,
+    const std::vector<std::array<size_t, 3>>& tris)
+{
+    // See the declaration. As TetMesh::init_with_isolated_vertices(): clear, then build. Each fan
+    // is filled in increasing fid order, so it is sorted, as every fan is kept.
+    const size_t vcap = reserved_capacity(n_vertices);
+    const size_t tcap = reserved_capacity(tris.size());
+    m_vertex_connectivity.clear();
+    m_vertex_connectivity.resize(vcap);
+    m_tri_connectivity.clear();
+    m_tri_connectivity.resize(tcap);
+    m_vertex_connectivity.set_live(n_vertices);
+    m_tri_connectivity.set_live(tris.size());
+    for (size_t i = 0; i < tris.size(); i++) {
+        m_tri_connectivity[i].m_indices = tris[i];
+        for (int j = 0; j < 3; j++) {
+            assert(tris[i][j] < vert_capacity());
+            m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
+        }
+    }
+    for (size_t i = 0; i < vert_capacity(); i++) {
+        if (m_vertex_connectivity[i].m_conn_tris.empty()) {
+            m_vertex_connectivity[i].m_is_removed = true;
+        }
+    }
+
+    resize_mutex(vcap);
+
+    // Resize user class attributes to the preallocated capacity, cleared first.
+    if (p_vertex_attrs) {
+        p_vertex_attrs->clear();
+        p_vertex_attrs->resize(vcap);
+    }
+    if (p_edge_attrs) {
+        p_edge_attrs->clear();
+        p_edge_attrs->resize(tcap * 3);
+    }
+    if (p_face_attrs) {
+        p_face_attrs->clear();
+        p_face_attrs->resize(tcap);
+    }
+}
+
 void wmtk::TriMesh::init(const MatrixXi& F)
 {
     size_t n_vertices = F.maxCoeff() + 1;

@@ -837,10 +837,9 @@ TEST_CASE("exact-swept-accept-2d", "[offset][exact_swept][2d]")
     // The rules that read the swept change, on the square coned to a vertex at the square's
     // corner, across its side and across the valley's bisector, random labels:
     //  (1) swept_accept(): a move that raises the AMIPS terms plus the swept change at full step
-    //      and lowers it at a halving stands at the first such halving, counted there; with no
-    //      halving allowed (the projected step's) it is refused; and its decision is the "exact"
-    //      rule's, the ring's sum of tri_energy(), at every position tested (the swept change is
-    //      exact here);
+    //      and lowers it at a halving stands at the first such halving, counted there; and its
+    //      decision is the "exact" rule's, the ring's sum of tri_energy(), at every position
+    //      tested (the swept change is exact here);
     //  (2) the collapse rule (collapse_before_vertex(), collapse_edge_after()) through the engine's
     //      collapse_edge(): under "exact_swept" each collapse of the vertex onto a ring vertex is
     //      decided as under "exact", the same result mesh; the AMIPS terms alone (the swept term
@@ -870,7 +869,7 @@ TEST_CASE("exact-swept-accept-2d", "[offset][exact_swept][2d]")
     };
     for (const Fixture& fx : fixtures) {
         // (1)
-        int found = 0, at_halving = 0, refused_without = 0, disagree = 0;
+        int found = 0, at_halving = 0, disagree = 0;
         for (int trial = 0; trial < 200 && found < 8; ++trial) {
             std::vector<Vec2> pts;
             std::vector<std::array<int, 3>> F;
@@ -912,24 +911,17 @@ TEST_CASE("exact-swept-accept-2d", "[offset][exact_swept][2d]")
             } else {
                 ++disagree;
             }
-            TopoOffsetTriMesh::SweptCounters c0;
-            mesh->set_vertex_position(0, x1);
-            if (!mesh->swept_accept(0, ring, x0, amips0, c0, 0) && c0.refused == 1) {
-                ++refused_without;
-            }
         }
         INFO(fx.name);
         CHECK(found > 0);
         CHECK(at_halving == found);
-        CHECK(refused_without == found);
         CHECK(disagree == 0);
         std::printf(
             "  (1) %s: %d moves rising at full step and falling at a halving: %d kept at the "
-            "first such halving, %d refused without halving\n",
+            "first such halving\n",
             fx.name,
             found,
-            at_halving,
-            refused_without);
+            at_halving);
         // (2)
         int n_coll = 0, same = 0, accepted = 0, amips_only_differs = 0;
         for (int trial = 0; trial < 40; ++trial) {

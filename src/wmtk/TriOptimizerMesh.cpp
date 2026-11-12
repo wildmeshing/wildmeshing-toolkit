@@ -296,39 +296,22 @@ size_t TriOptimizerMesh::swap_all_edges()
     logger().info("edge swap prepare time: {:.4}s", timer.getElapsedTimeInSec());
 
     size_t total_success = 0;
+    // As 3D's (TetOptimizerMesh::swap_all_edges_32()): every edge is tried, longest first, and
+    // the acceptance rule alone decides (swap_edge_after(): swap_quality_allowed(), strictly
+    // lower). Until 2026-11-12 the pass ordered the edges by their flip's gain in max AMIPS and
+    // dropped any flip whose gain was not above 1e-5, a threshold with no recorded reason (it came
+    // with the 2D image simulation, 2026-02). The gain order also kept a flip that a derived
+    // class's own rule accepts but max AMIPS does not (topological_offset's energy) from ever
+    // reaching that rule.
     run_pass(*this, PassLock::EdgeRing, "", [&](auto& executor, auto& mesh) {
         executor.renew_neighbor_tuples = renew_swap_neighbors;
         executor.priority = [](const TriOptimizerMesh& m, std::string, const Tuple& e) {
-            return m.swap_weight(e);
-        };
-        executor.should_renew = [](auto val) { return val > 0; };
-        executor.is_weight_up_to_date = [](const TriOptimizerMesh& m, auto& ele) {
-            auto& [val, _, e] = ele;
-            const double w = m.swap_weight(e);
-            return (w > 1e-5) && ((w - val) * (w - val) < 1e-8);
+            return m.get_length2(e);
         };
         total_success = run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
     });
 
     return total_success;
-}
-
-double TriOptimizerMesh::swap_weight(const Tuple& t) const
-{
-    const SmartTuple tt(*this, t);
-    const auto t_opp = tt.switch_face();
-    if (!t_opp || is_edge_on_surface(t)) {
-        return std::numeric_limits<double>::lowest();
-    }
-
-    const size_t v0 = tt.vid();
-    const size_t v1 = tt.switch_vertex().vid();
-    const size_t v2 = tt.switch_edge().switch_vertex().vid();
-    const size_t v3 = t_opp.value().switch_edge().switch_vertex().vid();
-
-    const double q_before = std::max(get_quality({{v0, v1, v2}}), get_quality({{v0, v3, v1}}));
-    const double q_after = std::max(get_quality({{v0, v3, v2}}), get_quality({{v2, v3, v1}}));
-    return q_before - q_after;
 }
 
 bool TriOptimizerMesh::swap_edge_before(const Tuple& t)

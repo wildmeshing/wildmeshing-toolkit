@@ -25,10 +25,9 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
     // AMIPS term of its own; a front vertex held on the input carries no band term. A front vertex
     // on no region boundary is held to no envelope (see smoothing_energy_envelope()), so neither
     // the projected path nor the containment check applies -- solve, exact inversion test, then
-    // the veto on tri_energy() below. As in 3D. Where 2D differs: a front vertex held on a region
-    // boundary takes the engine's projected step, which compares the ring's max AMIPS (the 2D
-    // engine has no ring hook, see tri_energy()), and then this veto; 3D's projected step compares
-    // the ring's sum itself.
+    // the veto on tri_energy() below. A front vertex held on a region boundary takes the engine's
+    // projected step, which compares the ring's sum itself (smoothing_ring_energy()), and then
+    // this veto. As in 3D.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
     opts.w_amips = 0.;
@@ -48,15 +47,13 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
     // smoother has counted the move accepted by then; it is recounted as a quality refusal, so
     // the counters still partition the attempts. "exact_swept": the AMIPS part alone before, and
     // the move accepted by swept_accept(), the band term's exact change with halvings. As in 3D.
-    // Where 2D differs: a front vertex held on a region boundary takes the engine's projected
-    // step (the engine's condition: a pull envelope, the options' default projected mode), whose
-    // position is tested alone, without halving (EXACT SWEPT CHANGE, where 2D differs).
     const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
     const Vector2d x0 = m_vertex_attribute[vid].m_posf;
     const bool swept = swept_rule();
-    const bool projected =
-        opts.smoothing_mode == optimization::SmoothVertexOptions::SmoothingMode::Projected &&
-        smoothing_energy_envelope(vid) != nullptr;
+    // "exact_swept": the vertex smoothed, for smoothing_ring_energy(), as smooth_nonfront_vertex()
+    // records it: a front vertex held on a region boundary takes the engine's projected step,
+    // which reads it. As 3D's.
+    if (swept) m_swept_stored.local().vid = vid;
     const double before = tri_energy_sum(ring, !swept);
     // DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of every
     // vertex that shares a front chord with it -- before the solve.
@@ -95,13 +92,7 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
         ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
     }
     ++m_front_veto_asked;
-    if (swept ? !swept_accept(
-                    vid,
-                    ring,
-                    x0,
-                    before,
-                    projected ? m_swept_projected : m_swept_front,
-                    projected ? 0 : kSweptHalvings)
+    if (swept ? !swept_accept(vid, ring, x0, before, m_swept_front)
               : !(tri_energy_sum(ring) <= before)) { // a NaN refuses
         ++m_front_veto_fired;
         --m_smooth_rejects.accepted;

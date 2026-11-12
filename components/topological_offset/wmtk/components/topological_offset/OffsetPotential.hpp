@@ -1107,8 +1107,8 @@ private:
  * 3D's two speed devices, proved bit-equal to a min_mean_distance() call per cell and evaluation
  * (the two together MEASURED there: smoothing 68 s -> 15 s on the cube, the output
  * bit-identical); 2D keeps the other, the last point's minima, and makes that call otherwise.
- * No 2D measurement asks for the ball yet. "front_flux" has no 2D model: its term is "exact"'s
- * here (band_cell_term()). "exact_swept" has 3D's search model (set_swept()).
+ * No 2D measurement asks for the ball yet. "front_flux" has no 2D model and is refused
+ * (band_rule_exact()). "exact_swept" has 3D's search model (set_swept()).
  */
 class BandVolumeEnergy2D : public polysolve::nonlinear::Problem
 {

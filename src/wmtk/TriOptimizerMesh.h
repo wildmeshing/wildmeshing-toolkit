@@ -638,7 +638,6 @@ public:
      * same path as TriWild.
      */
     size_t swap_all_edges();
-    double swap_weight(const Tuple& t) const;
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
@@ -744,14 +743,42 @@ public:
 
     /**
      * @brief The number the shared smoother compares for one face, given the face's quality at
-     * the position being tested: the projected step's candidate test and the quality veto take
-     * the max of this over the ring. The quality itself by default, so TriWild and SimWild
-     * compare exactly what they compared before. The 3D twin is
+     * the position being tested: the quality veto takes the max of this over the ring, and the
+     * default smoothing_ring_energy() is the same max. The quality itself by default, so TriWild
+     * and SimWild compare exactly what they compared before. The 3D twin is
      * TetOptimizerMesh::smoothing_cell_energy.
      */
     virtual double smoothing_cell_energy(const size_t /*fid*/, const double quality) const
     {
         return quality;
+    }
+
+    /**
+     * @brief The number the shared smoother's projected step compares for a whole one-ring: a
+     * vertex held on a curve takes the first projected candidate whose value is strictly below
+     * the value before the move.
+     *
+     * `stored` true: the ring before the move, read from the stored face qualities; it is asked
+     * before the solve moves the vertex, so the mesh as it is is that ring too. `stored` false: the
+     * ring at the candidate position, every face of it already tested for inversion.
+     *
+     * By default the max over the ring of smoothing_cell_energy() -- what the projected step
+     * compared before this hook existed -- so TriWild and SimWild are unchanged. An application
+     * whose rules compare a sum of a per-face energy over the faces a move changes overrides it
+     * with that sum, so that the projected step picks its candidate by the same rule. The 3D twin
+     * is TetOptimizerMesh::smoothing_ring_energy (since 2026-10-12); 2D since 2026-11-12.
+     */
+    virtual double smoothing_ring_energy(const std::vector<size_t>& ring, const bool stored) const
+    {
+        double m = 0.;
+        for (const size_t fid : ring) {
+            m = std::max(
+                m,
+                smoothing_cell_energy(
+                    fid,
+                    stored ? m_face_attribute[fid].m_quality : get_quality(fid)));
+        }
+        return m;
     }
 
     double active_quality_threshold() const
