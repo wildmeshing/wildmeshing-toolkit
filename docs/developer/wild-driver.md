@@ -170,7 +170,7 @@ if one of its vertices was in the region a successful operation renewed during t
 |---|---|---|---|---|
 | split | every edge, `edge_split` | the longest | its length changed since it was queued, or it is not due: shorter than 4/3 of the target length times the sizing (`splitting_l2`), and not a forced split | edge two-ring |
 | collapse | every edge, both ways, `edge_collapse` | the shortest | its length changed, or, with the length gate, it is longer than 4/5 of the target length times the sizing (`collapsing_l2`) | edge two-ring |
-| swap, 2D | every edge, `edge_swap` | the largest drop in max energy (`swap_weight`) | its drop changed, or is under 1e-5 | edge two-ring |
+| swap, 2D | every edge, `edge_swap` | the longest edge | | edge two-ring |
 | swap, 3D | every edge, as `edge_swap`, `edge_swap_44` and `edge_swap_56`; then every face, `face_swap` | the longest edge | | edge two-ring; face two-ring for face swaps |
 | smoothing | every vertex; with `skip_good_regions`, only the vertices of cells whose energy is at least `skip_good_regions_margin` times the stop energy, and every tracked-surface vertex | | | vertex one-ring, or none (colored) |
 

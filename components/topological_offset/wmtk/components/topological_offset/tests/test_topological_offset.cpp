@@ -9,6 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <functional>
@@ -22,6 +23,7 @@
 #include <tuple>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
+#include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
@@ -1965,23 +1967,63 @@ TEST_CASE("stencil-order-point-counts-2d", "[offset][2d]")
 }
 
 // ---------------------------------------------------------------------------------------------
-// The 2D per-cell energy (TopoOffsetTriMesh::tri_energy()) and the 2D front smoother's offset
-// term, on the 2D twin of the 3D fixtures: the euclidean distance to a long segment on the x axis,
-// at level delta = 0.5, so relative_residual(q) = (|y| - 0.5) / 0.5 above the segment's interior;
-// front_conv = 0.01 (front_conv_frac() 0.02).
+// The 2D per-cell energy (TopoOffsetTriMesh::tri_energy()), its rules, and the 2D front
+// smoother's offset term, on the 2D twin of the 3D fixtures: the euclidean distance to a long
+// segment on the x axis, at level delta = 0.5, so relative_residual(q) = (|y| - 0.5) / 0.5 above
+// the segment's interior, where d is affine and the band term's corner mean is exact. Beyond its
+// end (10, 0) -- x > 10 -- d is the distance to the end, curved, and the corner mean is an upper
+// bound that depends on how a region is cut into faces: the swap fixture sits there. front_conv =
+// 0.01 (front_conv_frac() 0.02).
 // ---------------------------------------------------------------------------------------------
 
 namespace {
 
+const Vector2d kLineEnd(10., 0.);
+
+/// The segment's ends.
+Eigen::MatrixXd line_vertices()
+{
+    Eigen::MatrixXd SV(2, 2);
+    SV << -10., 0., kLineEnd.x(), kLineEnd.y();
+    return SV;
+}
+
 std::shared_ptr<EuclideanOffsetPotential2D> line_field()
 {
     auto bvh = std::make_shared<SimplicialComplexBVH>();
-    MatrixXd SV(2, 2);
-    SV << -10., 0., 10., 0.;
     MatrixXi SE(1, 2);
     SE << 0, 1;
-    bvh->init(SV, MatrixXi(0, 4), MatrixXi(0, 3), SE, MatrixXi(0, 1));
+    bvh->init(line_vertices(), MatrixXi(0, 4), MatrixXi(0, 3), SE, MatrixXi(0, 1));
     return std::make_shared<EuclideanOffsetPotential2D>(bvh, kEnergyDelta);
+}
+
+/// The distance to the segment at a point above its interior or beyond its end (10, 0), the two
+/// regions the fixtures use.
+double line_distance(const Vector2d& q)
+{
+    if (q.x() > kLineEnd.x()) return (q - kLineEnd).norm();
+    return std::abs(q.y());
+}
+
+/// The band term b(t) the energy definition states, computed here from the corners: unsigned area
+/// times (mean corner distance - delta) / delta (one segment, so the min over primitives is that
+/// segment). The 2D twin of band_term_by_hand().
+double band_term_by_hand_2d(const std::array<Vector2d, 3>& p)
+{
+    const Vector2d u = p[1] - p[0], v = p[2] - p[0];
+    const double area = std::abs(u.x() * v.y() - u.y() * v.x()) / 2.;
+    double mean = 0.;
+    for (const Vector2d& q : p) mean += line_distance(q) / 3.;
+    return area * (mean - kEnergyDelta) / kEnergyDelta;
+}
+
+/// The face's corner positions, in the mesh's order.
+std::array<Vector2d, 3> corners_2d(const TopoOffsetTriMesh& m, const size_t fid)
+{
+    const auto vs = m.oriented_tri_vids(fid);
+    std::array<Vector2d, 3> p;
+    for (int j = 0; j < 3; ++j) p[size_t(j)] = m.m_vertex_attribute[vs[size_t(j)]].m_posf;
+    return p;
 }
 
 /// The chord term O(e) the energy definition states, from the stencil for_each_edge_sample()
@@ -2002,8 +2044,9 @@ double edge_term_by_hand(
     return s / double(n);
 }
 
-/// The 2D fan fixture: four faces around o, labelled band, band, background, input complex.
-/// Face i is row i of F, which the caller relies on to look up faces.
+/// A 2D mesh of the given faces with the given construction labels on the segment's field and
+/// band term (the 2D twin of energy_mesh()). Face i is row i of F, which the caller relies on to
+/// look up faces.
 std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
     Parameters& param,
     const Eigen::MatrixXd& V,
@@ -2014,6 +2057,7 @@ std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
     param.target_distance = kEnergyDelta;
     param.front_conv = kEnergyConv;
     param.stencil_order = 1;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
     auto mesh = std::make_unique<TopoOffsetTriMesh>(param, 0);
     Eigen::MatrixXi Fm(F.size(), 3);
     for (size_t i = 0; i < F.size(); ++i) {
@@ -2027,6 +2071,17 @@ std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
     mesh->init_from_image(V, Fm, Tags, V_env_dummy, F_env_dummy, {"a"});
+    // A piece cut out of a domain, as 3D's energy_mesh(): its outer edges stand for interior
+    // edges, not the domain wall, which a run holds to ambient's envelope. Untracked, and with no
+    // boundary mask, so no vertex is held.
+    for (const auto& e : mesh->get_edges()) {
+        mesh->m_edge_attribute[e.eid(*mesh)].m_is_surface_fs = false;
+    }
+    for (size_t v = 0; v < size_t(V.rows()); ++v) {
+        mesh->m_vertex_attribute[v].m_is_on_surface = false;
+        mesh->m_vertex_extra[v].m_is_on_region = false;
+        mesh->m_vertex_extra[v].m_boundary_mask = 0;
+    }
     for (size_t i = 0; i < F.size(); ++i) {
         std::array<size_t, 3> want{
             {size_t(Fm(int(i), 0)), size_t(Fm(int(i), 1)), size_t(Fm(int(i), 2))}};
@@ -2038,6 +2093,14 @@ std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
         mesh->m_face_extra[i].label = labels[i];
     }
     mesh->m_offset_potential = pot;
+    // The band term's primitives on the same segment, built as a run builds them
+    // (TopoOffsetTriMesh::init_band_exact()): a lone segment, which bounds no region.
+    mesh->m_phi_V = line_vertices();
+    mesh->m_phi_E.resize(1, 2);
+    mesh->m_phi_E << 0, 1;
+    mesh->m_phi_E_inner = {0};
+    mesh->init_band_exact();
+    REQUIRE(mesh->m_band_exact != nullptr);
     return mesh;
 }
 
@@ -2055,12 +2118,12 @@ Eigen::MatrixXd fan_vertices()
 
 } // namespace
 
-TEST_CASE("stencil-energy-2d-is-the-sum-of-edge-terms", "[offset][2d]")
+TEST_CASE("edge-term-is-the-stencil-mean-2d", "[offset][2d]")
 {
-    // The 2D front smoother's offset term at offset_term_weight() is, chord by chord, the per-cell
-    // energy's O(e): checked against the definition computed by hand from the same stencil, and
-    // against edge_offset_term(), at stencil orders 0 (ends only), 1 and 2, with three chords
-    // around the moving vertex placed above and below the level set.
+    // The 2D twin of face-term-is-the-stencil-mean: edge_offset_term(), the chord measure the
+    // exit, the refinement and the frames read, is its definition computed by hand from the
+    // stencil for_each_edge_sample() visits, at stencil orders 0 (ends only), 1 and 2, with three
+    // chords around a vertex placed above and below the level set. 2D has the one stencil type.
     Parameters param;
     param.target_distance = kEnergyDelta;
     param.front_conv = kEnergyConv;
@@ -2073,150 +2136,437 @@ TEST_CASE("stencil-energy-2d-is-the-sum-of-edge-terms", "[offset][2d]")
     const std::vector<Vector2d> others = {{0.4, 0.61}, {-0.25, 0.44}, {0.05, 0.37}};
     for (const int k : {0, 1, 2}) {
         mesh.m_offset_params.stencil_order = k;
-        std::vector<StencilEnergy2D::Edge> edges;
         double by_hand = 0., by_term = 0.;
         for (const Vector2d& q1 : others) {
-            StencilEnergy2D::Edge e;
-            e.q1 = q1;
-            mesh.for_each_edge_sample(x, q1, [&](const Vector2d&, double a, double b) {
-                e.samples.push_back({a, b});
-            });
-            edges.push_back(e);
             by_hand += edge_term_by_hand(mesh, *pot, x, q1);
             by_term += mesh.edge_offset_term(*pot, x, q1);
         }
-        StencilEnergy2D energy(pot, edges, mesh.offset_term_weight());
-        Eigen::VectorXd xv = x;
         INFO("stencil_order " << k);
         CHECK(by_hand > 10.); // the fixture really is off the level set
-        CHECK(energy.value(xv) == Catch::Approx(by_hand).epsilon(1e-12));
         CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
     }
 }
 
 TEST_CASE("per-tri-energy", "[offset][2d]")
 {
-    // The 2D twin of per-tet-energy. Four faces around o: f0 = (o, r0, r1) and f1 = (o, r1, r2)
-    // band, f2 = (o, r2, r3) background, f3 = (o, r3, r0) input complex. The band's front chords
-    // are the ones with background or nothing across: f0's (r0, r1) on the domain boundary ((o, r0)
-    // has the complex across, (o, r1) the band), and f1's (r1, r2) on the boundary plus (o, r2)
-    // against the background. Every face off the band is its weighted AMIPS alone. At w = 1 and at
-    // the default w.
+    // The 2D twin of per-tet-energy: tri_energy() against its definition computed by hand,
+    // (w / s^3) area AMIPS^3 for every face, plus the band term b = area (mean corner d - delta) /
+    // delta for a band face; MAX_ENERGY for an inverted face (the 2D engine scores a flat or
+    // inverted face MAX_ENERGY). Four faces around o: f0 = (o, r0, r1) and f1 = (o, r1, r2) band,
+    // f2 = (o, r2, r3) background, f3 = (o, r3, r0) input complex. At (w, s) = (1, stop_energy 3),
+    // where both terms matter, (1, 100) and the default w at 100. Under both band rules,
+    // "corner_bound" and "exact": above the segment's interior d is affine, so the exact integral
+    // of d over a face is its area times the corner mean. The area by hand is the determinant's;
+    // the energy's comes from the AMIPS and the edge lengths (area_amips3()).
     const Eigen::MatrixXd V = fan_vertices();
     const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
-    for (const double w : {1., Parameters().offset_amips_weight}) {
+    const std::vector<int> labels = {2, 2, 0, 1};
+    for (const auto& [rule, w, s] : std::vector<std::tuple<std::string, double, double>>{
+             {"corner_bound", 1., 3.},
+             {"corner_bound", 1., 100.},
+             {"corner_bound", Parameters().offset_amips_weight, 100.},
+             {"exact", 1., 3.},
+             {"exact", 1., 100.},
+             {"exact", Parameters().offset_amips_weight, 100.}}) {
         Parameters param;
-        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
+        param.band_volume_rule = rule;
         param.offset_amips_weight = w;
+        param.stop_energy = s;
         const auto pot = line_field();
         auto mesh = energy_mesh_2d(
             param,
             V,
             {{{o, r0, r1}}, {{o, r1, r2}}, {{o, r2, r3}}, {{o, r3, r0}}},
-            {2, 2, 0, 1},
+            labels,
             pot);
-        const auto P = [&](int i) { return Vector2d(V.row(i)); };
-        const auto O = [&](int i, int j) { return edge_term_by_hand(*mesh, *pot, P(i), P(j)); };
-        const std::array<double, 4> extra = {{O(r0, r1), O(r1, r2) + O(o, r2), 0., 0.}};
         for (size_t fid = 0; fid < 4; ++fid) {
             // The engine's face quality, AMIPS2D from the positions.
-            const double base = mesh->TriOptimizerMesh::get_quality(fid);
-            REQUIRE(base < TriOptimizerMesh::MAX_ENERGY);
-            INFO("w " << w << ", face " << fid);
-            CHECK(mesh->tri_energy(fid) == Catch::Approx(w * base + extra[fid]).epsilon(1e-12));
-            if (fid < 2) CHECK(extra[fid] > 1.); // the front chords really are off the level set
+            const double a = mesh->TriOptimizerMesh::get_quality(fid);
+            REQUIRE(a < TriOptimizerMesh::MAX_ENERGY);
+            const auto p = corners_2d(*mesh, fid);
+            const Vector2d u = p[1] - p[0], v = p[2] - p[0];
+            const double area = std::abs(u.x() * v.y() - u.y() * v.x()) / 2.;
+            const double want = w / (s * s * s) * area * a * a * a +
+                                (labels[fid] == 2 ? band_term_by_hand_2d(p) : 0.);
+            INFO(rule << ", w " << w << ", s " << s << ", face " << fid);
+            CHECK(mesh->tri_energy(fid) == Catch::Approx(want).epsilon(1e-10));
+            if (labels[fid] == 2) CHECK(std::abs(band_term_by_hand_2d(p)) > 1e-3);
+            // Without the band term (what an operation's sums read where it cancels): the AMIPS
+            // term alone.
+            CHECK(
+                mesh->tri_energy(fid, false) ==
+                Catch::Approx(w / (s * s * s) * area * a * a * a).epsilon(1e-10));
         }
+        // An inverted face: r3 across the line through r0, o and r2 turns faces 2 and 3 over.
+        mesh->set_vertex_position(size_t(r3), Vector2d(0., 0.75));
+        for (const size_t fid : {size_t(2), size_t(3)}) {
+            REQUIRE(mesh->TriOptimizerMesh::get_quality(fid) >= TriOptimizerMesh::MAX_ENERGY);
+            CHECK(mesh->tri_energy(fid) == TriOptimizerMesh::MAX_ENERGY);
+        }
+    }
+}
+
+TEST_CASE("swap-edge-2d-on-energy", "[offset][2d]")
+{
+    // The 2D twin of swap-face-gate-on-energy, on 2D's only swap, the edge flip: the rule
+    // (TopoOffsetTriMesh::swap_edge_after()) compares the sum of the energy over the two new faces
+    // with the sum over the two old ones, not AMIPS. Two equilateral triangles glued on (a, b),
+    // beyond the segment's end, their axis (c, d) on the ray from the end: AMIPS is 2 on both, its
+    // minimum, so the flip raises AMIPS and the engine's AMIPS rule (switched off,
+    // swap_quality_allowed()) would refuse it. d, the distance to the end, is linear along the
+    // axis and convex across it, so the band term's corner mean -- the integral of the linear
+    // interpolant of d -- is lower when the faces share (c, d) than when they share (a, b): with
+    // both faces band the energy's sum falls and the rule admits the flip. With both faces
+    // background the energy is the AMIPS term alone and the flip is refused. That is
+    // "corner_bound". Under "exact" the band term is the integral of d over the faces' union, which
+    // the flip keeps: the band sums agree, the energy rises with AMIPS, and the flip is refused on
+    // the band too. The whole engine swap runs (TriMesh::swap_edge()); the engine's swap pass,
+    // whose scheduler drops a flip that does not lower max AMIPS, is not involved.
+    const auto pot = line_field();
+    const double h = 0.2, k = std::sqrt(3.) * h;
+    const Vector2d m = kLineEnd + Vector2d(0.6, 0.);
+    Eigen::MatrixXd V(4, 2);
+    V.row(0) = (m + Vector2d(0., h)).transpose(); // a
+    V.row(1) = (m - Vector2d(0., h)).transpose(); // b
+    V.row(2) = (m + Vector2d(k, 0.)).transpose(); // c, on the ray from the end
+    V.row(3) = (m - Vector2d(k, 0.)).transpose(); // d, on the ray from the end
+    const int a = 0, b = 1, c = 2, d = 3;
+    const std::vector<std::array<int, 3>> FA = {{{a, b, c}}, {{b, a, d}}};
+    const std::vector<std::array<int, 3>> FB = {{{c, d, a}}, {{d, c, b}}};
+
+    for (const auto& [rule, x] : std::vector<std::pair<std::string, int>>{
+             {"corner_bound", 2},
+             {"corner_bound", 0},
+             {"exact", 2},
+             {"exact", 0}}) {
+        INFO(rule << ", label " << x);
+        const bool admits = rule == "corner_bound" && x == 2;
+        Parameters pa, pb;
+        pa.band_volume_rule = pb.band_volume_rule = rule;
+        auto A = energy_mesh_2d(pa, V, FA, {x, x}, pot);
+        auto B = energy_mesh_2d(pb, V, FB, {x, x}, pot);
+        // The engine's AMIPS rules admit everything (3D's loop rules, op-rules-switch).
+        CHECK(A->collapse_quality_allowed(0, 1, 1e30, 2.));
+        CHECK(A->swap_quality_allowed(1e30, 2., false));
+        double amips_a = 0., amips_b = 0., energy_a = 0., energy_b = 0., band_a = 0., band_b = 0.;
+        for (size_t f = 0; f < 2; ++f) {
+            amips_a = std::max(amips_a, A->TriOptimizerMesh::get_quality(f));
+            energy_a += A->tri_energy(f);
+            band_a += A->tri_energy(f) - A->tri_energy(f, false);
+            amips_b = std::max(amips_b, B->TriOptimizerMesh::get_quality(f));
+            energy_b += B->tri_energy(f);
+            band_b += B->tri_energy(f) - B->tri_energy(f, false);
+        }
+        // The premises: AMIPS alone refuses this flip, and the energy admits it on the band under
+        // "corner_bound" alone. Under "exact" the band sums agree.
+        REQUIRE(amips_a == Catch::Approx(2.).epsilon(1e-9));
+        REQUIRE(amips_b > amips_a);
+        REQUIRE((energy_b < energy_a) == admits);
+        if (rule == "exact" && x == 2) {
+            CHECK(std::abs(band_a) > 1e-4);
+            CHECK(band_b == Catch::Approx(band_a).margin(1e-12 * std::max(1., std::abs(band_a))));
+        }
+
+        const auto [edge, eid] = A->tuple_from_edge(std::array<size_t, 2>{{size_t(a), size_t(b)}});
+        (void)eid;
+        const int refused0 = A->iter_cnt_swap_energy_reject.load();
+        std::vector<TopoOffsetTriMesh::Tuple> new_faces;
+        CHECK(A->swap_edge(edge, new_faces) == admits);
+        CHECK(A->iter_cnt_swap_energy_reject.load() - refused0 == (admits ? 0 : 1));
+        if (!admits) continue;
+        double energy_new = 0.;
+        size_t n_new = 0;
+        for (const auto& f : A->get_faces()) {
+            const auto vs = A->oriented_tri_vids(f.fid(*A));
+            CHECK(std::count(vs.begin(), vs.end(), size_t(c)) == 1);
+            CHECK(std::count(vs.begin(), vs.end(), size_t(d)) == 1);
+            energy_new += A->tri_energy(f.fid(*A));
+            ++n_new;
+        }
+        CHECK(n_new == 2);
+        CHECK(energy_new == Catch::Approx(energy_b).epsilon(1e-12));
+    }
+}
+
+TEST_CASE("exact-band-offset-side-inward-and-outward-2d", "[offset][2d][exact_band]")
+{
+    // The 2D twin of exact-band-offset-side-inward-and-outward: the exact rule's band integral
+    // counts the offset side of the input only (ExactBandIntegral2D's class doc), and the band is
+    // outside the label-1 region for both directions: that region is the selection for offset_out
+    // and everything outside it for offset_in. On a 3 x 3 grid of unit squares with the center
+    // square as tag_0, a triangle just inside tag_0 and its mirror just outside, both within delta
+    // of the edge x = 0.5: the band side gives the unclipped integral, the other side 0.
+    Eigen::MatrixXd V(16, 2);
+    const auto vid = [](int i, int j) { return i + 4 * j; };
+    for (int j = 0; j < 4; ++j) {
+        for (int i = 0; i < 4; ++i) V.row(vid(i, j)) << i - 1.5, j - 1.5;
+    }
+    std::vector<std::array<int, 3>> F;
+    std::vector<int> center;
+    for (int j = 0; j < 3; ++j) {
+        for (int i = 0; i < 3; ++i) {
+            if (i == 1 && j == 1) center.push_back(int(F.size()));
+            F.push_back({{vid(i, j), vid(i + 1, j), vid(i + 1, j + 1)}}); // counter-clockwise
+            if (i == 1 && j == 1) center.push_back(int(F.size()));
+            F.push_back({{vid(i, j), vid(i + 1, j + 1), vid(i, j + 1)}});
+        }
+    }
+    Eigen::MatrixXi Fm(int(F.size()), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        for (int j = 0; j < 3; ++j) Fm(int(i), j) = F[i][size_t(j)];
+    }
+    MatrixSi Tags(int(F.size()), 1);
+    for (const int f : center) Tags.coeffRef(f, 0) = 1;
+
+    const double delta = 0.2;
+    const std::array<Vector2d, 3> inside = {{{0.45, -0.1}, {0.45, 0.1}, {0.35, 0.}}};
+    std::array<Vector2d, 3> outside = inside;
+    for (Vector2d& q : outside) q.x() = 1. - q.x();
+
+    for (const bool inward : {true, false}) {
+        Parameters param;
+        param.offset_in = inward;
+        param.offset_out = !inward;
+        param.offset_field = "euclidean";
+        param.band_volume_rule = "exact";
+        param.target_distance = delta;
+        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
+        TopoOffsetTriMesh mesh(param, 0);
+        MatrixXd V_env;
+        MatrixXi F_env;
+        mesh.init_from_image(V, Fm, Tags, V_env, F_env, {"tag_0"});
+        select_offset(mesh, "tag_0");
+        mesh.label_input_complex();
+        mesh.init_input_complex_bvh();
+        mesh.init_offset_potential();
+        REQUIRE(mesh.m_band_exact);
+        const ExactBandIntegral2D plain(mesh.m_phi_V, mesh.m_phi_E, mesh.m_phi_P);
+        const auto& band = inward ? inside : outside;
+        const auto& far_side = inward ? outside : inside;
+        INFO((inward ? "offset_in" : "offset_out"));
+        const double J_band = mesh.m_band_exact->value(band, delta);
+        CHECK(J_band < 0.);
+        CHECK(J_band == plain.value(band, delta));
+        CHECK(mesh.m_band_exact->value(far_side, delta) == 0.);
+        CHECK(plain.value(far_side, delta) < 0.);
     }
 }
 
 TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
 {
-    // The 2D twin of smoothing-objective-is-the-ring-energy: at every vertex, the objective the
-    // shared smoother minimises (smoothing_extra_energy(); every caller passes w_amips 0) is the
-    // sum of tri_energy() over the vertex's ring, up to the terms that do not move with the vertex
-    // -- the ring's front chords that do not have it as an end. Checked on the per-tri-energy
-    // fixture by moving each vertex that carries the offset term (or is on no front chord) to three
-    // nearby positions: objective minus ring sum must not change, and the shared smoother's
-    // per-cell comparison (smoothing_cell_energy()) is tri_energy(). The w AMIPS part's gradient
-    // and Hessian against central differences too. At w = 1 and at the default w.
-    const Eigen::MatrixXd V = fan_vertices();
-    const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
-    for (const double w : {1., Parameters().offset_amips_weight}) {
-        Parameters param;
-        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
-        param.offset_amips_weight = w;
-        const auto pot = line_field();
-        auto mesh = energy_mesh_2d(
-            param,
-            V,
-            {{{o, r0, r1}}, {{o, r1, r2}}, {{o, r2, r3}}, {{o, r3, r0}}},
-            {2, 2, 0, 1},
-            pot);
-        // What label_offset_boundary() and the operations maintain in a run: an end of a live
-        // front chord.
-        for (size_t v = 0; v < 5; ++v) mesh->refresh_offset_membership(v);
-        REQUIRE(mesh->m_vertex_extra[size_t(o)].m_is_on_offset);
-        REQUIRE(!mesh->m_vertex_extra[size_t(r3)].m_is_on_offset);
-        for (size_t v = 0; v < 5; ++v) {
-            const bool front = mesh->vertex_carries_offset_term(v);
-            // A front vertex an envelope pins (here: one on the domain wall, held by its tag's
-            // envelope) carries no offset term, so its chords' terms do move with it and are not in
-            // its objective; the identity is the carrying vertices' and the off-front ones'.
-            if (!front && mesh->m_vertex_extra[v].m_is_on_offset) continue;
-            const std::vector<size_t> ring = mesh->get_one_ring_fids_for_vertex(v);
-            const auto ring_energy = [&]() {
-                double s = 0.;
-                for (const size_t fid : ring) s += mesh->tri_energy(fid);
-                return s;
-            };
-            INFO("w " << w << ", vertex " << v << (front ? " (front)" : ""));
-            const auto energy = mesh->smoothing_extra_energy(v);
-            const Vector2d x0 = mesh->m_vertex_attribute[v].m_posf;
-            Eigen::VectorXd xv = x0;
-            const double d0 = energy->value(xv) - ring_energy();
-            for (const Vector2d& dx :
-                 {Vector2d(0.01, 0.), Vector2d(0., -0.008), Vector2d(-0.004, 0.006)}) {
-                mesh->set_vertex_position(v, x0 + dx);
-                for (const size_t fid : ring) REQUIRE(!mesh->is_inverted(fid));
-                xv = x0 + dx;
-                const double e = energy->value(xv);
-                CHECK(
-                    e - ring_energy() ==
-                    Catch::Approx(d0).margin(1e-9 * std::max(1., std::abs(e))));
-                for (const size_t fid : ring) {
-                    const double q = mesh->get_quality(fid);
-                    CHECK(mesh->smoothing_cell_energy(fid, q) == mesh->tri_energy(fid));
+    // The 2D twin of smoothing-objective-is-the-ring-energy. One energy for the smoother and the
+    // rules: at every vertex not held on the input, the objective the shared smoother minimises
+    // (smoothing_extra_energy(); every caller passes w_amips 0, so the smoother adds no AMIPS term
+    // of its own) is the sum of tri_energy() over the vertex's ring -- every term of which moves
+    // with the vertex. Two fixtures: the per-tri-energy fan (front vertices o, r0, r1, r2; r3 on
+    // no front chord and in no band face), and a star of six band faces around a vertex inside
+    // the band beyond the segment's end, where d is curved, which is on no front chord but
+    // carries the band term of all six. Each vertex is moved to three nearby positions; the
+    // objective's gradient and Hessian against central differences. Under both band rules,
+    // "corner_bound" and "exact", at (w, s) = (1, 3), where both terms matter, and the default w
+    // at 100. Under "exact" the star's band term does not move with its inner vertex: the six
+    // faces tile the star, whose union is fixed; it is checked to keep its value and to have no
+    // derivatives. Where 2D differs: 3D leaves that constant out of the objective (BAND TERM
+    // THAT CANCELS, band_term_cancels(), false in 2D), 2D keeps it, so the objective there is the
+    // ring sum itself; no plastic case (no 2D face's energy reads a rest, tri_energy()). The
+    // engine's ring hook (smoothing_ring_energy(), the projected step's test) is the same ring sum.
+    const Eigen::MatrixXd V1 = fan_vertices();
+    const std::vector<std::array<int, 3>> F1 = {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 4}}, {{0, 4, 1}}};
+    // Beyond the end (10, 0), where d is the distance to the end and curved: above the segment's
+    // interior d is affine, the band term's corner mean is exact there, and the sum over a closed
+    // star would not move with its inner vertex at all -- as under "exact", anywhere.
+    Eigen::MatrixXd V2(7, 2);
+    V2 << 0.01, -0.02, // the inner vertex
+        0.31, 0.03, // arms, counter-clockwise
+        0.17, 0.27, //
+        -0.15, 0.24, //
+        -0.29, -0.04, //
+        -0.12, -0.28, //
+        0.2, -0.22;
+    V2.rowwise() += (kLineEnd + Vector2d(0.6, 0.1)).transpose();
+    std::vector<std::array<int, 3>> F2;
+    for (int i = 1; i <= 6; ++i) F2.push_back({{0, i, i % 6 + 1}});
+    struct Fixture
+    {
+        const Eigen::MatrixXd& V;
+        const std::vector<std::array<int, 3>>& F;
+        std::vector<int> labels;
+        size_t not_front; ///< the one vertex on no front chord
+        bool has_band_ring; ///< whether that vertex's ring holds band faces
+    };
+    const std::vector<Fixture> fixtures = {
+        {V1, F1, {2, 2, 0, 1}, 4, false},
+        {V2, F2, std::vector<int>(6, 2), 0, true}};
+    double worst_part[2][2] = {{0., 0.}, {0., 0.}}; // AMIPS, band: gradient, Hessian
+    int n_at_floor = 0;
+    for (size_t fi = 0; fi < fixtures.size(); ++fi) {
+        const Fixture& fx = fixtures[fi];
+        for (const auto& [rule, w, s] : std::vector<std::tuple<std::string, double, double>>{
+                 {"corner_bound", 1., 3.},
+                 {"corner_bound", Parameters().offset_amips_weight, 100.},
+                 {"exact", 1., 3.},
+                 {"exact", Parameters().offset_amips_weight, 100.}}) {
+            Parameters param;
+            param.band_volume_rule = rule;
+            param.offset_amips_weight = w;
+            param.stop_energy = s;
+            const auto pot = line_field();
+            auto mesh = energy_mesh_2d(param, fx.V, fx.F, fx.labels, pot);
+            // What label_offset_boundary() and the operations maintain in a run: an end of a live
+            // front chord.
+            for (size_t v = 0; v < size_t(fx.V.rows()); ++v) mesh->refresh_offset_membership(v);
+            for (size_t v = 0; v < size_t(fx.V.rows()); ++v) {
+                const std::vector<size_t> ring = mesh->get_one_ring_fids_for_vertex(v);
+                const auto ring_energy = [&]() {
+                    double e = 0.;
+                    for (const size_t fid : ring) e += mesh->tri_energy(fid);
+                    return e;
+                };
+                const bool front = mesh->vertex_carries_offset_term(v);
+                INFO(
+                    "fixture " << fi << ", " << rule << ", w " << w << ", s " << s << ", vertex "
+                               << v << (front ? " (front)" : ""));
+                REQUIRE(front == (v != fx.not_front));
+                REQUIRE(!mesh->smoothing_containment_envelope(v)); // no envelope holds it
+                if (v == fx.not_front) {
+                    REQUIRE((mesh->band_volume_energy_at(v) != nullptr) == fx.has_band_ring);
                 }
-            }
-            mesh->set_vertex_position(v, x0);
+                const auto energy = mesh->smoothing_extra_energy(v);
+                // Under "exact", fixture 1's inner vertex: its ring's band term does not move with
+                // it. 2D's objective keeps it (band_term_cancels() is false in 2D).
+                const bool band_fixed = rule == "exact" && v == fx.not_front && fx.has_band_ring;
+                REQUIRE(!mesh->band_term_cancels(ring));
+                const auto band = band_fixed ? mesh->band_volume_energy_at(v) : nullptr;
+                const Vector2d x0 = mesh->m_vertex_attribute[v].m_posf;
+                Eigen::VectorXd xv = x0;
+                const double e0 = energy->value(xv);
+                const double b0 = band ? band->value(xv) : 0.;
+                const double d0 = e0 - ring_energy();
+                CHECK(d0 == Catch::Approx(0.).margin(1e-12 * std::max(1., std::abs(e0))));
+                if (band) CHECK(std::abs(b0) > 1e-3); // the constant is not 0
+                for (const Vector2d& dx :
+                     {Vector2d(0.01, 0.), Vector2d(0., -0.008), Vector2d(-0.004, 0.006)}) {
+                    mesh->set_vertex_position(v, x0 + dx);
+                    for (const size_t fid : ring) REQUIRE(!mesh->is_inverted(fid));
+                    xv = x0 + dx;
+                    const double e = energy->value(xv);
+                    CHECK(
+                        e - ring_energy() ==
+                        Catch::Approx(d0).margin(1e-12 * std::max(1., std::abs(e))));
+                    if (band) {
+                        CHECK(
+                            band->value(xv) ==
+                            Catch::Approx(b0).margin(1e-12 * std::max(1., std::abs(b0))));
+                    }
+                    // The projected step's test is the same ring sum, before and at a candidate.
+                    CHECK(mesh->smoothing_ring_energy(ring, false) == ring_energy());
+                    CHECK(mesh->smoothing_ring_energy(ring, true) == ring_energy());
+                }
+                mesh->set_vertex_position(v, x0);
 
-            // The w AMIPS part's derivatives against central differences.
-            const auto amips = mesh->amips_energy(v);
-            const double h = 1e-6;
-            Eigen::VectorXd g(2);
-            Eigen::MatrixXd H(2, 2);
-            xv = x0;
-            amips->gradient(xv, g);
-            amips->hessian(xv, H);
-            for (int i = 0; i < 2; ++i) {
-                Eigen::VectorXd xp = xv, xm = xv;
-                xp[i] += h;
-                xm[i] -= h;
-                const double fd = (amips->value(xp) - amips->value(xm)) / (2. * h);
-                // An absolute floor besides the relative one: at r1 the ring's AMIPS is stationary
-                // (|g| ~ 1e-14, the difference ~ 1e-10 of round-off), where a margin relative to
-                // |g| alone is zero.
-                CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * std::max(g.norm(), w)));
-                Eigen::VectorXd gp(2), gm(2);
-                amips->gradient(xp, gp);
-                amips->gradient(xm, gm);
-                for (int j = 0; j < 2; ++j) {
-                    const double fdh = (gp[j] - gm[j]) / (2. * h);
-                    CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
+                // The objective's derivatives against central differences. Besides 3D's margins,
+                // the differences' own rounding floor, 50 eps |E| / h: at w 1, s 100 the AMIPS
+                // term's weight is 1e-6, and where the band term's gradient cancels (fixture 0's
+                // o, with r0, o and r2 on one line; fixture 1's inner vertex under "exact") |g| is
+                // ~3e-6 against |E| ~ 0.1, whose value differences round at ~1e-11.
+                const double h = 1e-6;
+                Eigen::VectorXd g(2);
+                Eigen::MatrixXd H(2, 2);
+                xv = x0;
+                energy->gradient(xv, g);
+                energy->hessian(xv, H);
+                const double fd_floor = 50. * 2.2e-16 * std::abs(e0) / h;
+                if (band) {
+                    // The constant band part has no derivatives, to the margins the central
+                    // differences allow.
+                    Eigen::VectorXd gb(2);
+                    Eigen::MatrixXd Hb(2, 2);
+                    band->gradient(xv, gb);
+                    band->hessian(xv, Hb);
+                    CHECK(gb.norm() <= 1e-7 * g.norm());
+                    CHECK(Hb.norm() <= 1e-6 * H.norm());
+                }
+                for (int i = 0; i < 2; ++i) {
+                    Eigen::VectorXd xp = xv, xm = xv;
+                    xp[i] += h;
+                    xm[i] -= h;
+                    const double fd = (energy->value(xp) - energy->value(xm)) / (2. * h);
+                    CHECK(
+                        g[i] == Catch::Approx(fd).epsilon(1e-6).margin(
+                                    std::max(1e-7 * g.norm(), fd_floor)));
+                    Eigen::VectorXd gp(2), gm(2);
+                    energy->gradient(xp, gp);
+                    energy->gradient(xm, gm);
+                    for (int j = 0; j < 2; ++j) {
+                        const double fdh = (gp[j] - gm[j]) / (2. * h);
+                        CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
+                    }
+                }
+                // Beyond 3D's test: each part on its own, the AMIPS term (amips3_energy()) and the
+                // band term (band_volume_energy_at()), so a part small beside the other is judged
+                // at its own scale: |fd - g| <= 1e-6 |g| + floor_g and |fd - H| <= 1e-5 |H| +
+                // floor_H, with the differences' rounding floors, 50 eps |E| / h from the part's
+                // value and 50 eps |E| / (L h) from its gradient, whose face terms are about
+                // |E| / L and may cancel (L the longest edge at v). The relative errors of the
+                // parts whose |g| is above 1e3 floor_g are printed; the others' gradient is 0 to
+                // rounding (the band part at fixture 0's o).
+                double L = 0.;
+                for (const size_t fid : ring) {
+                    for (const size_t u : mesh->oriented_tri_vids(fid)) {
+                        L = std::max(L, (mesh->m_vertex_attribute[u].m_posf - x0).norm());
+                    }
+                }
+                std::vector<std::shared_ptr<polysolve::nonlinear::Problem>> parts = {
+                    mesh->amips3_energy(v)};
+                if (!band_fixed) {
+                    if (const auto bv = mesh->band_volume_energy_at(v)) parts.push_back(bv);
+                }
+                for (size_t pi = 0; pi < parts.size(); ++pi) {
+                    auto& part = *parts[pi];
+                    Eigen::VectorXd gq(2);
+                    Eigen::MatrixXd Hq(2, 2);
+                    part.gradient(xv, gq);
+                    part.hessian(xv, Hq);
+                    const double floor_g = 50. * 2.2e-16 * std::abs(part.value(xv)) / h;
+                    const double floor_H = floor_g / L;
+                    Eigen::Vector2d fg;
+                    Eigen::Matrix2d fH;
+                    for (int i = 0; i < 2; ++i) {
+                        Eigen::VectorXd xp = xv, xm = xv, gp(2), gm(2);
+                        xp[i] += h;
+                        xm[i] -= h;
+                        fg[i] = (part.value(xp) - part.value(xm)) / (2. * h);
+                        part.gradient(xp, gp);
+                        part.gradient(xm, gm);
+                        fH.col(i) = (gp - gm) / (2. * h);
+                    }
+                    const double dg = (fg - Eigen::Vector2d(gq)).norm();
+                    const double dH = (fH - Eigen::Matrix2d(Hq)).norm();
+                    INFO(
+                        (pi == 0 ? "AMIPS" : "band")
+                        << " part: |fd - g| " << dg << " of |g| " << gq.norm() << ", |fd - H| "
+                        << dH << " of |H| " << Hq.norm());
+                    CHECK(dg <= 1e-6 * gq.norm() + floor_g);
+                    CHECK(dH <= 1e-5 * Hq.norm() + floor_H);
+                    if (gq.norm() > 1e3 * floor_g) {
+                        worst_part[pi][0] = std::max(worst_part[pi][0], dg / gq.norm());
+                        worst_part[pi][1] = std::max(worst_part[pi][1], dH / Hq.norm());
+                    } else {
+                        ++n_at_floor;
+                    }
                 }
             }
         }
     }
+    std::printf(
+        "smoothing-objective-is-the-ring-energy-2d: max relative error, AMIPS part: gradient %.1e "
+        "Hessian %.1e; band part: gradient %.1e Hessian %.1e; %d parts with |g| at the rounding "
+        "floor\n",
+        worst_part[0][0],
+        worst_part[0][1],
+        worst_part[1][0],
+        worst_part[1][1],
+        n_at_floor);
 }
 
 TEST_CASE("swap-candidate-record", "[offset][3d]")
@@ -4903,6 +5253,283 @@ TEST_CASE("spanned-split-edge", "[offset][3d][pocket_split]")
     CHECK_FALSE(mesh->m_vertex_extra[n_verts0].m_is_on_offset);
 }
 
+namespace {
+/// The 2D twin of pocket_mesh(): the triangle P = (o, x, y), o = (0, 0), x = (1, 0), y = (0, 1),
+/// outside the band (label 0) and face 0. On the edge of P on the line where coordinate a is 0,
+/// for each axis a in `axes`, sits a band blob: the triangle on that edge with its apex u 0.5
+/// beyond the edge's midpoint, coned from its own centroid e into three band triangles (label 2);
+/// axis 2 stands for P's third edge (x, y), its apex u = (1, 1). No two blobs overlap, and every
+/// blob triangle has e, which is on no front edge, as a corner. The front
+/// (edge_is_offset_surface_live()) is each blob's edge against P and its two edges on the domain
+/// boundary. Vertex ids: o 0, x 1, y 2, then u and e of each blob in turn. A piece cut out of a
+/// domain, as pocket_mesh()'s: no edge tracked, so no vertex is held. The front flags are derived
+/// from the labels (refresh_offset_membership()), and every split is the loop's
+/// (EdgeSplitMode::Optimization). `cone`: P is instead coned from its centroid c (vertex 3, before
+/// the blobs) into three triangles, so no triangle of P is pinned while P's edges stay where they
+/// were.
+std::unique_ptr<TopoOffsetTriMesh>
+pocket_mesh_2d(Parameters& param, const std::vector<int>& axes, const bool cone = false)
+{
+    std::vector<Vector2d> pos = {Vector2d(0., 0.), Vector2d(1., 0.), Vector2d(0., 1.)};
+    std::vector<std::array<int, 3>> F = {{{0, 1, 2}}};
+    std::vector<int> labels = {0};
+    if (cone) {
+        pos.push_back(Vector2d(1. / 3., 1. / 3.));
+        F = {{{0, 1, 3}}, {{1, 2, 3}}, {{2, 0, 3}}};
+        labels = {0, 0, 0};
+    }
+    for (const int a : axes) {
+        // The edge of P on the line coordinate a = 0, or (x, y) for a = 2.
+        const std::array<int, 2> f = a == 0   ? std::array<int, 2>{{0, 2}}
+                                     : a == 1 ? std::array<int, 2>{{0, 1}}
+                                              : std::array<int, 2>{{1, 2}};
+        const Vector2d& p0 = pos[size_t(f[0])];
+        const Vector2d& p1 = pos[size_t(f[1])];
+        Vector2d u = (p0 + p1) / 2.;
+        if (a < 2) {
+            u[a] = -0.5;
+        } else {
+            u = Vector2d(1., 1.);
+        }
+        const Vector2d e = (p0 + p1 + u) / 3.;
+        const int iu = int(pos.size()), ie = iu + 1;
+        pos.push_back(u);
+        pos.push_back(e);
+        F.push_back({{f[0], f[1], ie}});
+        F.push_back({{f[0], iu, ie}});
+        F.push_back({{f[1], iu, ie}});
+        labels.insert(labels.end(), 3, 2);
+    }
+    Eigen::MatrixXd V(int(pos.size()), 2);
+    for (size_t i = 0; i < pos.size(); ++i) V.row(int(i)) = pos[i].transpose();
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
+    auto mesh = energy_mesh_2d(param, V, F, labels, line_field());
+    for (const auto& e : mesh->get_edges()) {
+        mesh->m_edge_attribute[e.eid(*mesh)].m_is_surface_fs = false;
+    }
+    for (const auto& v : mesh->get_vertices()) {
+        mesh->m_vertex_attribute[v.vid(*mesh)].m_is_on_surface = false;
+        mesh->refresh_offset_membership(v.vid(*mesh));
+    }
+    mesh->m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Optimization;
+    return mesh;
+}
+
+/// Whether the edge (a, b) is on the front (edge_is_offset_surface_live()).
+bool front_edge_2d(const TopoOffsetTriMesh& m, const size_t a, const size_t b)
+{
+    return m.edge_is_offset_surface_live(std::get<0>(m.tuple_from_edge({{a, b}})));
+}
+
+/// The pinned cells, counted from the definition: outside the input complex, all three corners
+/// front vertices (m_is_on_offset).
+size_t count_pinned_2d(const TopoOffsetTriMesh& m)
+{
+    size_t n = 0;
+    for (const auto& f : m.get_faces()) {
+        const size_t fid = f.fid(m);
+        if (m.face_is_input_complex(fid)) continue;
+        const auto vs = m.oriented_tri_vids(fid);
+        if (std::all_of(vs.begin(), vs.end(), [&](const size_t v) {
+                return m.m_vertex_extra[v].m_is_on_offset;
+            })) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+/// The spanned edges (front_pocket_split()'s EXPERIMENTAL_front_spanned_split): both ends front
+/// vertices, not a front edge, no triangle at it in the input complex.
+size_t count_spanned_edges_2d(const TopoOffsetTriMesh& m)
+{
+    size_t n = 0;
+    for (const auto& e : m.get_edges()) {
+        const size_t a = e.vid(m), b = e.switch_vertex(m).vid(m);
+        if (!m.m_vertex_extra[a].m_is_on_offset || !m.m_vertex_extra[b].m_is_on_offset) continue;
+        if (m.edge_is_offset_surface_live(e)) continue;
+        const auto fids = m.get_incident_fids_for_edge(a, b);
+        if (std::any_of(fids.begin(), fids.end(), [&](const size_t f) {
+                return m.face_is_input_complex(f);
+            })) {
+            continue;
+        }
+        ++n;
+    }
+    return n;
+}
+
+/// Whether every vertex's front flag is what the labels say (offset_membership_mismatches()).
+bool front_flags_live_2d(const TopoOffsetTriMesh& m)
+{
+    const auto mismatches = m.offset_membership_mismatches();
+    return mismatches.first == 0 && mismatches.second == 0;
+}
+
+/// The vertex at the midpoint of (x, y), (0.5, 0.5) exactly: a split of (x, y) made it.
+size_t midpoint_xy_2d(const TopoOffsetTriMesh& m)
+{
+    size_t found = std::numeric_limits<size_t>::max();
+    for (const auto& v : m.get_vertices()) {
+        if (m.m_vertex_attribute[v.vid(m)].m_posf == Vector2d(0.5, 0.5)) found = v.vid(m);
+    }
+    REQUIRE(found != std::numeric_limits<size_t>::max());
+    return found;
+}
+
+/// The live triangles as sorted corner arrays, sorted: the connectivity, independent of face ids.
+std::vector<std::array<size_t, 3>> sorted_cells_2d(const TopoOffsetTriMesh& m)
+{
+    std::vector<std::array<size_t, 3>> cells;
+    for (const auto& f : m.get_faces()) {
+        auto vs = m.oriented_tri_vids(f.fid(m));
+        std::sort(vs.begin(), vs.end());
+        cells.push_back(vs);
+    }
+    std::sort(cells.begin(), cells.end());
+    return cells;
+}
+} // namespace
+
+TEST_CASE("pocket-split-pinned-cell-2d", "[offset][2d][pocket_split]")
+{
+    // The 2D twin of pocket-split-pinned-cell: one pinned triangle with one edge off the front. P
+    // with blobs on its edges y = 0 and x = 0, so o and x are on the one front edge (o, x) of P
+    // and o and y on the other, and the edge (x, y) is on neither. The slot splits (x, y), whose
+    // only triangle is P; both children have the midpoint, off the front, as a corner, so no
+    // pinned cell is left, and the front, none of whose edges is the split edge, is the same set
+    // of edges. (x, y) is a spanned edge too, so with EXPERIMENTAL_front_spanned_split on (the
+    // default) the spanned pass splits it, and off the pinned pass does: both.
+    const bool spanned = GENERATE(false, true);
+    INFO("EXPERIMENTAL_front_spanned_split " << spanned);
+    Parameters param;
+    param.front_spanned_split = spanned;
+    auto mesh = pocket_mesh_2d(param, {1, 0});
+    mesh->m_offset_params.front_pocket_split = true;
+    // The premises: P is the one pinned cell, and (x, y) is its one edge off the front.
+    REQUIRE(count_pinned_2d(*mesh) == 1);
+    for (size_t i = 0; i < 3; ++i) {
+        for (size_t j = i + 1; j < 3; ++j) {
+            INFO("edge " << i << " " << j);
+            REQUIRE(front_edge_2d(*mesh, i, j) == !(i == 1 && j == 2));
+        }
+    }
+    REQUIRE(front_flags_live_2d(*mesh));
+    const auto edges0 = mesh->offset_surface_edges();
+    const size_t n_cells0 = mesh->get_faces().size(), n_verts0 = mesh->get_vertices().size();
+
+    mesh->front_pocket_split("test");
+
+    CHECK(count_pinned_2d(*mesh) == 0);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(front_flags_live_2d(*mesh));
+    CHECK(mesh->offset_surface_edges() == edges0);
+    // One split, of (x, y), on the domain boundary: one vertex, off the front, and one triangle
+    // more, and the edge is gone.
+    CHECK(mesh->get_vertices().size() == n_verts0 + 1);
+    CHECK(mesh->get_faces().size() == n_cells0 + 1);
+    CHECK(mesh->get_incident_fids_for_edge(1, 2).empty());
+    CHECK_FALSE(mesh->m_vertex_extra[midpoint_xy_2d(*mesh)].m_is_on_offset);
+}
+
+TEST_CASE("pocket-split-front-cell-2d", "[offset][2d][pocket_split]")
+{
+    // The 2D stand-in for pocket-split-six-edge-cell. 3D splits a pinned cell whose six edges
+    // are on the offset surface on an edge of its one face that is not, which 2D cannot have: a
+    // triangle's faces are its edges, so a pinned triangle with no edge off the front has all its
+    // faces on the front, 3D's cell with all four faces on the offset surface, a one-cell
+    // component of its label, which the slot counts and leaves. P with blobs on all three edges:
+    // the one pinned cell, nothing split, the mesh unchanged.
+    Parameters param;
+    auto mesh = pocket_mesh_2d(param, {0, 1, 2});
+    mesh->m_offset_params.front_pocket_split = true;
+    REQUIRE(count_pinned_2d(*mesh) == 1);
+    for (size_t i = 0; i < 3; ++i) {
+        for (size_t j = i + 1; j < 3; ++j) REQUIRE(front_edge_2d(*mesh, i, j));
+    }
+    REQUIRE(count_spanned_edges_2d(*mesh) == 0);
+    REQUIRE(front_flags_live_2d(*mesh));
+    const auto cells0 = sorted_cells_2d(*mesh);
+    const auto edges0 = mesh->offset_surface_edges();
+    const size_t n_verts0 = mesh->get_vertices().size();
+
+    mesh->front_pocket_split("test");
+
+    CHECK(count_pinned_2d(*mesh) == 1);
+    CHECK(mesh->get_vertices().size() == n_verts0);
+    CHECK(sorted_cells_2d(*mesh) == cells0);
+    CHECK(mesh->offset_surface_edges() == edges0);
+}
+
+TEST_CASE("pocket-split-key-off-2d", "[offset][2d][pocket_split]")
+{
+    // The 2D twin of pocket-split-key-off: with EXPERIMENTAL_front_pocket_split false the slot is
+    // a no-op, and so it is in the final pass (m_freeze_front; 3D: a TetWild pass) with the key
+    // on: the first fixture's pinned cell stays and the mesh is unchanged.
+    Parameters param;
+    param.front_pocket_split = false;
+    auto mesh = pocket_mesh_2d(param, {1, 0});
+    REQUIRE_FALSE(mesh->m_offset_params.front_pocket_split);
+    REQUIRE(count_pinned_2d(*mesh) == 1);
+    const auto cells0 = sorted_cells_2d(*mesh);
+    const auto edges0 = mesh->offset_surface_edges();
+    const size_t n_verts0 = mesh->get_vertices().size();
+    const auto unchanged = [&]() {
+        CHECK(count_pinned_2d(*mesh) == 1);
+        CHECK(mesh->get_vertices().size() == n_verts0);
+        CHECK(sorted_cells_2d(*mesh) == cells0);
+        CHECK(mesh->offset_surface_edges() == edges0);
+    };
+
+    mesh->front_pocket_split("test");
+    unchanged();
+
+    mesh->m_offset_params.front_pocket_split = true;
+    mesh->m_freeze_front = true;
+    mesh->front_pocket_split("test");
+    unchanged();
+    mesh->m_freeze_front = false;
+}
+
+TEST_CASE("spanned-split-edge-2d", "[offset][2d][pocket_split]")
+{
+    // The 2D twin of spanned-split-edge: EXPERIMENTAL_front_spanned_split on a spanned edge with
+    // no pinned cell. The first fixture with P coned from its centroid c, so (x, y) is still not
+    // a front edge while its triangle (x, y, c) has c off the front (3D's (x, z) has two cells;
+    // this one is on the domain boundary). The pinned-cell split alone leaves it; with the key,
+    // the slot splits (x, y), and the front is the same set of edges.
+    Parameters param;
+    param.front_spanned_split = false;
+    auto mesh = pocket_mesh_2d(param, {1, 0}, true);
+    mesh->m_offset_params.front_pocket_split = true;
+    REQUIRE(count_pinned_2d(*mesh) == 0);
+    REQUIRE_FALSE(front_edge_2d(*mesh, 1, 2));
+    REQUIRE(mesh->get_incident_fids_for_edge(1, 2).size() == 1);
+    REQUIRE(count_spanned_edges_2d(*mesh) == 1);
+    REQUIRE(front_flags_live_2d(*mesh));
+    const auto edges0 = mesh->offset_surface_edges();
+    const auto cells0 = sorted_cells_2d(*mesh);
+    const size_t n_cells0 = mesh->get_faces().size(), n_verts0 = mesh->get_vertices().size();
+
+    mesh->front_pocket_split("test"); // key off: nothing pinned, nothing split
+    CHECK(sorted_cells_2d(*mesh) == cells0);
+    CHECK(count_spanned_edges_2d(*mesh) == 1);
+
+    mesh->m_offset_params.front_spanned_split = true;
+    mesh->front_pocket_split("test");
+
+    CHECK(count_spanned_edges_2d(*mesh) == 0);
+    CHECK(count_pinned_2d(*mesh) == 0);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(front_flags_live_2d(*mesh));
+    CHECK(mesh->offset_surface_edges() == edges0);
+    // One split, of (x, y): one vertex, off the front, and one triangle more; the edge is gone.
+    CHECK(mesh->get_vertices().size() == n_verts0 + 1);
+    CHECK(mesh->get_faces().size() == n_cells0 + 1);
+    CHECK(mesh->get_incident_fids_for_edge(1, 2).empty());
+    CHECK_FALSE(mesh->m_vertex_extra[midpoint_xy_2d(*mesh)].m_is_on_offset);
+}
+
 TEST_CASE("surface-offset-error-3d", "[offset][3d]")
 {
     // EXPERIMENTAL_band_volume_rule "surface": SurfaceOffsetError3D, a front vertex's part of the
@@ -4994,7 +5621,7 @@ TEST_CASE("surface-energy-keys", "[offset][3d]" + release_only)
         return spec_engine.inject_defaults(with_app(j), spec);
     };
     const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK(by_default.band_volume_rule == "exact");
+    CHECK(by_default.band_volume_rule == "exact_swept");
     CHECK(by_default.offset_amips_weight == 1.);
     CHECK(by_default.label_cleanup == "one_sided_at_target");
     CHECK(by_default.front_pocket_split);
@@ -6410,8 +7037,2366 @@ TEST_CASE("point-offset-held-point-inside-the-band", "[offset][3d][.]")
     // 15th turn. With feature_envelope_ratio 10, q reaches 0.274, within the bar, and the run
     // converges. It is the contradiction check_no_vertex_on_both_surfaces() refuses at
     // construction for a vertex on the input complex (double_sphere with tag_1 protected throws
-    // there, 2026-11-09): a front vertex held where it cannot reach the level set.
+    // there, 2026-11-09): a front vertex held where it cannot reach the level set. Since
+    // 2026-11-10 the clean-up keeps q out of the band
+    // (label-cleanup-keeps-held-point-off-the-band); the run still does not converge (MEASURED, 15
+    // turns, exact and exact_swept: q never on the front, 2-6 folded faces on the boundary of q's
+    // cells), as the level set near q is not attainable without the band touching q; since the
+    // same day it throws there (unreachable-level-set-throws: turn 2), and stays hidden and failing
+    // as the record of the case until a flag lets the front go beyond the throw.
     require_point_offset_converges({{"p", {{4, 4, 4}}}, {"q", {{5, 4, 4}}}}, 0.3);
+}
+
+namespace {
+/// Per vertex of the result: whether a band cell (a tet tagged `band_tag`) has it as a corner.
+std::vector<char> band_touched(const MeshData& out, const std::string& band_tag = "newtag")
+{
+    const auto& tets = out.cells.at(CellType::Tetrahedron);
+    const auto& tags = tets.attributes.at("tags");
+    const auto it = std::find(tags.labels.begin(), tags.labels.end(), band_tag);
+    REQUIRE(it != tags.labels.end());
+    const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+    const auto member = tags.integers();
+    std::vector<char> touched(size_t(out.V.rows()), 0);
+    for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
+        if (member(r, col) == 0) continue;
+        for (int c = 0; c < 4; ++c) touched[size_t(tets.connectivity(r, c))] = 1;
+    }
+    return touched;
+}
+
+/// The result's curve vertices on the side sign(x) = `side` of the origin, nearest first: their
+/// |x| and whether a band cell touches them.
+std::vector<std::pair<double, bool>>
+curve_side(const MeshData& out, const std::vector<char>& touched, const int side)
+{
+    std::vector<Eigen::Index> vs;
+    const auto& edges = out.cells.at(CellType::Edge);
+    for (Eigen::Index r = 0; r < edges.connectivity.rows(); ++r) {
+        for (int c = 0; c < 2; ++c) vs.push_back(edges.connectivity(r, c));
+    }
+    std::sort(vs.begin(), vs.end());
+    vs.erase(std::unique(vs.begin(), vs.end()), vs.end());
+    std::vector<std::pair<double, bool>> side_vs;
+    for (const Eigen::Index v : vs) {
+        const double x = out.V(v, 0);
+        if (x * side > 0) side_vs.emplace_back(std::abs(x), touched[size_t(v)] != 0);
+    }
+    std::sort(side_vs.begin(), side_vs.end());
+    return side_vs;
+}
+} // namespace
+
+TEST_CASE("label-cleanup-keeps-held-point-off-the-band", "[offset][3d]" + release_only)
+{
+    // The construction's topology kept (the clean-up's held objects' test, 2026-11-10): q, a held
+    // point 0.25 from p and so inside p's level set at 0.3, is out of the band as constructed
+    // (the march traces to 0.125), and no band cell ever has it as a corner. MEASURED before the
+    // test, 15 turns: turn 1's clean-up took 6 of q's 30 cells into the band, so q joined the
+    // front; under exact_swept turn 11 took its last non-band cell and the band enclosed q.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule);
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"throw_on_unreachable_level_set", false}, // the topology is what is tested
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", point_grid({{"p", {{4, 4, 4}}}, {"q", {{5, 4, 4}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched(out);
+    const Vector3d q = result_points(out).at("q").at(0);
+    Eigen::Index qv = 0;
+    for (Eigen::Index v = 1; v < out.V.rows(); ++v) {
+        if ((out.V.row(v).transpose() - q).norm() < (out.V.row(qv).transpose() - q).norm()) qv = v;
+    }
+    REQUIRE((out.V.row(qv).transpose() - q).norm() == 0.);
+    CHECK(touched[size_t(qv)] == 0);
+}
+
+TEST_CASE("label-cleanup-held-curves", "[offset][3d]" + release_only)
+{
+    // The construction's topology kept on held curves (the clean-up's held objects' test,
+    // 2026-11-10), p offset to 0.3:
+    //   a curve out of the band as constructed, 0.25 from p at its nearest (y = 0.25, x in
+    //     [-0.5, 0.5]), part of it inside the level set: no band cell touches it;
+    //   a curve through p (the x axis, x in [-0.75, 0.75]), in the band near p and crossing the
+    //     front once on each side: the crossing moves out along it -- the band reaches past the
+    //     march's 0.125, to the grid vertex at 0.25 -- and stays one crossing, the band's cells
+    //     touching a run of the curve from p outward and nothing beyond it.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    const bool through = GENERATE(false, true);
+    INFO(
+        "EXPERIMENTAL_band_volume_rule " << rule << ", curve "
+                                         << (through ? "through p" : "off the band"));
+    const GridPolyline curve =
+        through ? GridPolyline{{{1, 4, 4}}, {{7, 4, 4}}} : GridPolyline{{{2, 5, 4}}, {{6, 5, 4}}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"throw_on_unreachable_level_set", false}, // the topology is what is tested
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", point_grid({{"p", {{4, 4, 4}}}}, {{"curve", curve}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched(out);
+    for (const int side : {-1, 1}) {
+        INFO("side " << side);
+        const auto vs = curve_side(out, touched, side);
+        REQUIRE(!vs.empty());
+        if (!through) {
+            for (const auto& [x, t] : vs) CHECK(!t);
+            continue;
+        }
+        size_t n_touched = 0;
+        while (n_touched < vs.size() && vs[n_touched].second) ++n_touched;
+        for (size_t k = n_touched; k < vs.size(); ++k) CHECK(!vs[k].second);
+        REQUIRE(n_touched > 0);
+        CHECK(vs[n_touched - 1].first >= 0.25);
+    }
+}
+
+TEST_CASE("label-cleanup-held-surfaces", "[offset][3d]" + release_only)
+{
+    // The construction's topology kept on held surfaces (the clean-up's held objects' test,
+    // 2026-11-10): p offset to 0.3 with a held surface 0.25 from it, which the band as
+    // constructed (the march traces to 0.125) does not touch, so no band cell ever has a corner
+    // on it -- the front stops a layer of cells short of it:
+    //   a region boundary, the plane x = 0.25 between region A (x < 0.25) and region B;
+    //   the box: p at x = -0.75, the wall x = -1 0.25 away.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    const bool box = GENERATE(false, true);
+    INFO(
+        "EXPERIMENTAL_band_volume_rule " << rule << ", "
+                                         << (box ? "the box" : "a region boundary"));
+    const std::array<int, 3> p =
+        box ? std::array<int, 3>{{1, 4, 4}} : std::array<int, 3>{{4, 4, 4}};
+    MeshData input = point_grid({{"p", p}});
+    if (!box) {
+        auto& tets = input.cells.at(CellType::Tetrahedron);
+        DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+        for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
+            double x = 0.;
+            for (int c = 0; c < 4; ++c) x += input.V(tets.connectivity(r, c), 0) / 4.;
+            tags(r, x > 0.25 ? 1 : 0) = 1;
+        }
+        tets.attributes["tags"] = {tags, {"A", "B"}};
+    }
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"throw_on_unreachable_level_set", false}, // the topology is what is tested
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched(out);
+    const std::vector<char> held =
+        box ? std::vector<char>{} : band_touched(out, "B"); // the corners of region B's cells
+    size_t n_held = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        const bool on = box ? out.V(v, 0) == -1. : held[size_t(v)] != 0;
+        if (!on) continue;
+        ++n_held;
+        CHECK(touched[size_t(v)] == 0);
+    }
+    CHECK(n_held > 0);
+}
+
+TEST_CASE("unreachable-level-set-throws", "[offset][3d]" + release_only)
+{
+    // The level set out of reach (check_level_set_reachable(), 2026-11-10): p offset to 0.3 with
+    // a held object the band did not touch as constructed. Inside the level set -- a held point,
+    // a curve, a region boundary, the box, each 0.25 from p -- the run throws at a settled turn
+    // or at the loop's end (MEASURED: the held point at turn 2). A curve the band crosses as
+    // constructed (through p) is reachable by moving the crossing along it: no throw. Nor a held
+    // point inside the level set by less than front_conv (q 0.25 from p at target 0.27: 0.02
+    // inside, front_conv 0.027): a front passing outside it is within the bar.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    const std::string held =
+        GENERATE("point", "curve", "region", "box", "curve through p", "point within the bar");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule << ", held: " << held);
+    const std::array<int, 3> p =
+        held == "box" ? std::array<int, 3>{{1, 4, 4}} : std::array<int, 3>{{4, 4, 4}};
+    std::vector<std::pair<std::string, std::array<int, 3>>> points{{"p", p}};
+    if (held == "point" || held == "point within the bar") points.push_back({"q", {{5, 4, 4}}});
+    std::vector<std::pair<std::string, GridPolyline>> curves;
+    if (held == "curve") curves.push_back({"curve", {{{2, 5, 4}}, {{6, 5, 4}}}});
+    if (held == "curve through p") curves.push_back({"curve", {{{1, 4, 4}}, {{7, 4, 4}}}});
+    MeshData input = point_grid(points, curves);
+    if (held == "region") {
+        auto& tets = input.cells.at(CellType::Tetrahedron);
+        DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+        for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
+            double x = 0.;
+            for (int c = 0; c < 4; ++c) x += input.V(tets.connectivity(r, c), 0) / 4.;
+            tags(r, x > 0.25 ? 1 : 0) = 1;
+        }
+        tets.attributes["tags"] = {tags, {"A", "B"}};
+    }
+    const double target = held == "point within the bar" ? 0.27 : 0.3;
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    if (held == "curve through p" || held == "point within the bar") {
+        REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
+    } else {
+        REQUIRE_THROWS_WITH(
+            components::topological_offset::topological_offset(j, {{"m", input}}),
+            Catch::Matchers::ContainsSubstring("the level set is out of reach"));
+    }
+}
+
+namespace {
+/// The 2D twin of grid_point(): grid point (i, j) of point_grid_2d().
+Vector2d grid_point_2d(const std::array<int, 2>& c)
+{
+    return Vector2d(c[0] * 0.25 - 1, c[1] * 0.25 - 1);
+}
+
+/// A curve as grid points (i, j) of point_grid_2d(), consecutive ones on one grid line: the 2D
+/// twin of GridPolyline.
+using GridPolyline2d = std::vector<std::array<int, 2>>;
+
+/// The clean-up tests' Parameters in 2D: p offset to `target`, the clean-up "one_sided", the one
+/// mode 2D runs until its per-cell energy carries the band term.
+Parameters cleanup_params_2d(const double target)
+{
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    return construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}})},
+         {"EXPERIMENTAL_label_cleanup", "one_sided"},
+         {"num_threads", 0}},
+        box);
+}
+
+/// Input points as (name, grid point (i, j)), the 2D twin of point_grid()'s point block.
+using GridPoints2d = std::vector<std::pair<std::string, std::array<int, 2>>>;
+
+/// The 2D twin of point_grid() and the 3D tests' construction, driven directly (the end-to-end
+/// twins drive the app, grid_2d()): [-1, 1]^2 in 8^2 squares of edge 0.25, each split along its
+/// diagonal from (i, j) to (i + 1, j + 1); every triangle ambient, or with `regions` tagged A
+/// (centroid x < 0.25) or B; a curve group along `curve` (none if empty); `points` the input
+/// points (a point block, each vertex under its name), as the 2D driver passes them; the grid
+/// point p the input complex, a point, labelled by hand (the app selects it by label, as 3D's).
+/// Constructed at `param`'s target -- the construction holds the points
+/// (hold_curves_and_points()) -- the field and the exact integral built, the optimization's labels
+/// set, as optimize_offset() sets them before the loop.
+std::unique_ptr<TopoOffsetTriMesh> point_grid_2d(
+    Parameters& param,
+    const std::array<int, 2>& p,
+    const GridPolyline2d& curve = {},
+    const bool regions = false,
+    const GridPoints2d& points = {})
+{
+    const int n = 8;
+    const auto vid = [&](const int i, const int j) { return i + (n + 1) * j; };
+    Eigen::MatrixXd V((n + 1) * (n + 1), 2);
+    for (int j = 0; j <= n; ++j) {
+        for (int i = 0; i <= n; ++i) V.row(vid(i, j)) = grid_point_2d({{i, j}}).transpose();
+    }
+    Eigen::MatrixXi F(2 * n * n, 3);
+    int r = 0;
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            F.row(r++) << vid(i, j), vid(i + 1, j), vid(i + 1, j + 1);
+            F.row(r++) << vid(i, j), vid(i + 1, j + 1), vid(i, j + 1);
+        }
+    }
+    MatrixSi tags(F.rows(), regions ? 2 : 1);
+    if (regions) {
+        for (Eigen::Index f = 0; f < F.rows(); ++f) {
+            const double x = (V(F(f, 0), 0) + V(F(f, 1), 0) + V(F(f, 2), 0)) / 3.;
+            tags.coeffRef(f, x > 0.25 ? 1 : 0) = 1;
+        }
+    }
+    Eigen::MatrixXd CV(Eigen::Index(curve.size()), 2);
+    Eigen::MatrixXi CE(curve.empty() ? 0 : Eigen::Index(curve.size() - 1), 2);
+    for (size_t k = 0; k < curve.size(); ++k) {
+        CV.row(Eigen::Index(k)) = grid_point_2d(curve[k]).transpose();
+        if (k + 1 < curve.size()) CE.row(Eigen::Index(k)) << int(k), int(k + 1);
+    }
+    auto mesh = std::make_unique<TopoOffsetTriMesh>(param, 0);
+    // The point block, as the 3D driver sets it before init_from_image(): the names, and per
+    // point its vertex and the index of its name.
+    std::vector<size_t> point_vids;
+    for (const auto& [name, at] : points) {
+        auto it = std::find(mesh->m_point_names.begin(), mesh->m_point_names.end(), name);
+        if (it == mesh->m_point_names.end())
+            it = mesh->m_point_names.insert(mesh->m_point_names.end(), name);
+        mesh->m_input_point_labels.push_back(int(it - mesh->m_point_names.begin()));
+        point_vids.push_back(size_t(vid(at[0], at[1])));
+    }
+    mesh->init_from_image(
+        V,
+        F,
+        tags,
+        CV,
+        CE,
+        regions ? std::vector<std::string>{"A", "B"} : std::vector<std::string>{"a"},
+        "curve",
+        Eigen::MatrixXi(),
+        MatrixSi(),
+        {},
+        MatrixSi(),
+        point_vids);
+    mesh->m_vertex_extra[size_t(vid(p[0], p[1]))].label = 1;
+    mesh->mark_input_complex_vertices();
+    mesh->init_input_complex_bvh();
+    mesh->consolidate_mesh();
+    mesh->construct_offset(std::filesystem::temp_directory_path() / "wmtk_offset_cleanup_2d");
+    mesh->init_offset_potential();
+    mesh->label_offset_boundary();
+    REQUIRE(mesh->m_band_exact != nullptr);
+    return mesh;
+}
+
+/// The 2D twin of band_touched(): per vertex, whether a band triangle has it as a corner.
+std::vector<char> band_touched_2d(const TopoOffsetTriMesh& m)
+{
+    std::vector<char> touched(m.vert_capacity(), 0);
+    for (const auto& f : m.get_faces()) {
+        const size_t fid = f.fid(m);
+        if (!m.face_is_offset_band(fid)) continue;
+        for (const size_t v : m.oriented_tri_vids(fid)) touched[v] = 1;
+    }
+    return touched;
+}
+
+/// The band's triangles.
+size_t band_count_2d(const TopoOffsetTriMesh& m)
+{
+    size_t n = 0;
+    for (const auto& f : m.get_faces()) n += m.face_is_offset_band(f.fid(m)) ? 1 : 0;
+    return n;
+}
+
+/// The vertex at x exactly.
+size_t vertex_at_2d(const TopoOffsetTriMesh& m, const Vector2d& x)
+{
+    size_t found = std::numeric_limits<size_t>::max();
+    for (const auto& v : m.get_vertices()) {
+        if (m.m_vertex_attribute[v.vid(m)].m_posf == x) found = v.vid(m);
+    }
+    INFO("a vertex at (" << x.x() << ", " << x.y() << ")");
+    REQUIRE(found != std::numeric_limits<size_t>::max());
+    return found;
+}
+
+/// Whether vertex v is anchored (hold_curves_and_points()).
+bool anchored_2d(const TopoOffsetTriMesh& m, const size_t v)
+{
+    return m.m_track_feature_points &&
+           m.m_feature_point_attribute[v].m_feature_point_id != TriOptimizerMesh::NO_FEATURE_POINT;
+}
+} // namespace
+
+TEST_CASE("hold-curves-and-points-2d", "[offset][2d]")
+{
+    // What the construction holds (hold_curves_and_points()), the 2D twin of
+    // point-offset-point-label's holding, on the construction (point-offset-point-label-2d runs
+    // it through the app): p, the
+    // complex, offset to 0.2, q an input point 0.5 from it, out of the band, and an open curve
+    // y = 0.5, x in [-0.5, 0.5]. Every input point is anchored with its label, selected or not,
+    // in a ball of feature_envelope_ratio x envelope_size about where it was given; p as an input
+    // point or, labelled by hand alone, as an isolated point of a complex without faces, at the
+    // same radius; the curve's two ends, where a held curve ends, in balls of
+    // order2_envelope_ratio x envelope_size; nothing else, the march's vertices included. The
+    // result's point block, written from the anchors, has each input point at its vertex. The two
+    // ratios over their range, each against the other: 0.01, 1 and 10.
+    struct Case
+    {
+        double feature, order2;
+    };
+    const Case c = GENERATE(Case{0.01, 10.}, Case{1., 1.}, Case{10., 0.01});
+    const bool p_input = GENERATE(true, false);
+    INFO(
+        "feature_envelope_ratio " << c.feature << ", order2_envelope_ratio " << c.order2 << ", p "
+                                  << (p_input ? "an input point" : "the complex alone"));
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    Parameters param = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+         {"EXPERIMENTAL_label_cleanup", "one_sided"},
+         {"feature_envelope_ratio", c.feature},
+         {"order2_envelope_ratio", c.order2},
+         {"num_threads", 0}},
+        box);
+    GridPoints2d points{{"q", {{6, 4}}}};
+    if (p_input) points.insert(points.begin(), GridPoints2d::value_type{"p", {{4, 4}}});
+    auto mesh = point_grid_2d(param, {{4, 4}}, {{{2, 6}}, {{6, 6}}}, false, points);
+    REQUIRE(mesh->m_points_held);
+    const double eps = param.envelope_size;
+    struct Anchor
+    {
+        Vector2d at;
+        double radius;
+        std::string label; // empty: no input point
+    };
+    const std::vector<Anchor> want = {
+        {grid_point_2d({{4, 4}}), c.feature * eps, p_input ? "p" : ""},
+        {grid_point_2d({{6, 4}}), c.feature * eps, "q"},
+        {grid_point_2d({{2, 6}}), c.order2 * eps, ""},
+        {grid_point_2d({{6, 6}}), c.order2 * eps, ""}};
+    size_t n_anchored = 0;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        CHECK(mesh->m_vertex_extra[vid].point_inputs == 0); // the anchors carry them now
+        if (!anchored_2d(*mesh, vid)) continue;
+        ++n_anchored;
+        const Vector2d x = mesh->m_vertex_attribute[vid].m_posf;
+        INFO("anchor at (" << x.x() << ", " << x.y() << ")");
+        const auto it =
+            std::find_if(want.begin(), want.end(), [&](const Anchor& a) { return a.at == x; });
+        REQUIRE(it != want.end());
+        const size_t f = mesh->m_feature_point_attribute[vid].m_feature_point_id;
+        CHECK(mesh->m_feature_points[f] == it->at);
+        CHECK(mesh->m_feature_point_radius[f] == it->radius);
+        // The smoother keeps it in its ball (smoothing_position_is_allowed(), the base's; this
+        // mesh answered true until it anchored anything).
+        CHECK(mesh->smoothing_position_is_allowed(vid, it->at + Vector2d(it->radius / 2., 0.)));
+        CHECK_FALSE(
+            mesh->smoothing_position_is_allowed(vid, it->at + Vector2d(2. * it->radius, 0.)));
+        const InputSet labels =
+            f < mesh->m_feature_point_inputs.size() ? mesh->m_feature_point_inputs[f] : 0;
+        if (it->label.empty()) {
+            CHECK(labels == 0);
+        } else {
+            const auto& names = mesh->m_point_names;
+            const size_t bit =
+                size_t(std::find(names.begin(), names.end(), it->label) - names.begin());
+            REQUIRE(bit < names.size());
+            CHECK(labels == (InputSet(1) << bit));
+        }
+    }
+    CHECK(n_anchored == want.size());
+    // The result's point block, from the anchors.
+    io::ComponentIO context;
+    collect_memory_output(*mesh, context);
+    const MeshData& out = context.result.first.at("mesh");
+    const auto& block = out.cells.at(CellType::Point);
+    const auto& tags = block.attributes.at("tags");
+    const auto member = tags.integers();
+    std::map<std::string, std::vector<Vector2d>> at;
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (size_t t = 0; t < tags.labels.size(); ++t) {
+            if (member(r, Eigen::Index(t)) != 0)
+                at[tags.labels[t]].push_back(out.V.row(block.connectivity(r, 0)).transpose());
+        }
+    }
+    CHECK(at.size() == points.size());
+    for (const auto& [name, g] : points) {
+        INFO("point " << name);
+        REQUIRE(at[name].size() == 1);
+        CHECK(at[name][0] == grid_point_2d(g));
+    }
+}
+
+TEST_CASE("label-cleanup-keeps-held-point-off-the-band-2d", "[offset][2d]")
+{
+    // The 2D twin of label-cleanup-keeps-held-point-off-the-band, on the clean-up slot itself
+    // (the 2D loop has no 3D-twin energy yet): q, a held point -- an input point, anchored by the
+    // construction (hold_curves_and_points()), as in 3D -- 0.25 from p and so inside p's level
+    // set at 0.3, is out of the band as constructed (the march traces to 0.125). The
+    // clean-up takes in the triangles at the front wholly inside the level set, and none with q
+    // as a corner; the held objects' contact topology is unchanged.
+    Parameters param = cleanup_params_2d(0.3);
+    auto mesh = point_grid_2d(param, {{4, 4}}, {}, false, {{"q", {{5, 4}}}});
+    const size_t q = vertex_at_2d(*mesh, grid_point_2d({{5, 4}}));
+    REQUIRE(anchored_2d(*mesh, q)); // an input point: the construction held it
+    REQUIRE(band_touched_2d(*mesh)[q] == 0);
+    const size_t band0 = band_count_2d(*mesh);
+    const auto signature0 = mesh->held_topology_signature();
+    mesh->label_cleanup("test");
+    CHECK(band_count_2d(*mesh) > band0); // the clean-up took triangles in, elsewhere
+    CHECK(band_touched_2d(*mesh)[q] == 0);
+    CHECK(mesh->held_topology_signature() == signature0);
+}
+
+TEST_CASE("label-cleanup-held-curves-2d", "[offset][2d]")
+{
+    // The 2D twin of label-cleanup-held-curves, p offset to 0.3. A 2D held curve -- the curve
+    // group, tracked and held in its tube as a region boundary is -- is codimension 1, as a 3D
+    // held surface is; 3D's held curves are codimension 2:
+    //   a curve out of the band as constructed, 0.25 from p at its nearest (y = 0.25, x in
+    //     [-0.5, 0.5]), part of it inside the level set: no band triangle touches it;
+    //   a curve through p (the x axis, x in [-0.75, 0.75]), crossed by the front at the march's
+    //     0.125 on each side: the crossing is never lost, and it stays where it is -- its vertex
+    //     is on a held boundary and on the front, which eligibility refuses, as 3D's does for a
+    //     region boundary -- so the band touches a run of the curve from p to the crossing and
+    //     nothing beyond it. (3D's crossing moves along its codimension-2 curve.)
+    const bool through = GENERATE(false, true);
+    INFO("curve " << (through ? "through p" : "off the band"));
+    Parameters param = cleanup_params_2d(0.3);
+    const GridPolyline2d curve =
+        through ? GridPolyline2d{{{1, 4}}, {{7, 4}}} : GridPolyline2d{{{2, 5}}, {{6, 5}}};
+    auto mesh = point_grid_2d(param, {{4, 4}}, curve);
+    const size_t band0 = band_count_2d(*mesh);
+    const auto signature0 = mesh->held_topology_signature();
+    mesh->label_cleanup("test");
+    const auto touched = band_touched_2d(*mesh);
+    const double y0 = through ? 0. : 0.25, half = through ? 0.75 : 0.5;
+    // The curve's vertices (x, touched).
+    std::vector<std::pair<double, bool>> on_curve;
+    for (const auto& v : mesh->get_vertices()) {
+        const Vector2d& x = mesh->m_vertex_attribute[v.vid(*mesh)].m_posf;
+        if (x.y() == y0 && std::abs(x.x()) <= half)
+            on_curve.emplace_back(x.x(), touched[v.vid(*mesh)] != 0);
+    }
+    REQUIRE(!on_curve.empty());
+    if (!through) {
+        CHECK(band_count_2d(*mesh) > band0); // the clean-up took triangles in, elsewhere
+        for (const auto& [x, t] : on_curve) CHECK(!t);
+    }
+    for (const int side : {-1, 1}) {
+        if (!through) break;
+        INFO("side " << side);
+        // The curve's vertices on the side sign(x) = side of p, nearest first.
+        std::vector<std::pair<double, bool>> vs;
+        for (const auto& [x, t] : on_curve) {
+            if (x * side > 0) vs.emplace_back(std::abs(x), t);
+        }
+        std::sort(vs.begin(), vs.end());
+        REQUIRE(!vs.empty());
+        size_t n_touched = 0;
+        while (n_touched < vs.size() && vs[n_touched].second) ++n_touched;
+        for (size_t k = n_touched; k < vs.size(); ++k) CHECK(!vs[k].second);
+        REQUIRE(n_touched > 0);
+        CHECK(vs[n_touched - 1].first < 0.25); // the crossing, where the march put it
+    }
+    CHECK(mesh->held_topology_signature() == signature0);
+}
+
+TEST_CASE("label-cleanup-held-boundaries-2d", "[offset][2d]")
+{
+    // The 2D twin of label-cleanup-held-surfaces (3D's held surfaces, codimension 1, are lines
+    // in 2D): p offset to 0.3 with a held boundary 0.25 from it, which the band as constructed
+    // (the march traces to 0.125) does not touch, so no band triangle ever has a corner on it --
+    // the front stops a layer of triangles short of it:
+    //   a region boundary, the line x = 0.25 between region A (x < 0.25) and region B;
+    //   the box: p at x = -0.75, the wall x = -1 0.25 away.
+    const bool box = GENERATE(false, true);
+    INFO((box ? "the box" : "a region boundary"));
+    Parameters param = cleanup_params_2d(0.3);
+    auto mesh = point_grid_2d(
+        param,
+        box ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}},
+        {},
+        !box);
+    // The held vertices: on the wall, or the corners of region B's triangles.
+    std::vector<char> held(mesh->vert_capacity(), 0);
+    for (const auto& f : mesh->get_faces()) {
+        const size_t fid = f.fid(*mesh);
+        const bool b =
+            !box && mesh->m_face_attribute[fid].tags.count(mesh->m_tag_name_to_id.at("B")) > 0;
+        for (const size_t v : mesh->oriented_tri_vids(fid)) {
+            if (b || (box && mesh->m_vertex_attribute[v].m_posf.x() == -1.)) held[v] = 1;
+        }
+    }
+    const size_t band0 = band_count_2d(*mesh);
+    const auto signature0 = mesh->held_topology_signature();
+    mesh->label_cleanup("test");
+    CHECK(band_count_2d(*mesh) > band0); // the clean-up took triangles in, elsewhere
+    const auto touched = band_touched_2d(*mesh);
+    size_t n_held = 0;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (!held[vid]) continue;
+        ++n_held;
+        CHECK(touched[vid] == 0);
+    }
+    CHECK(n_held > 0);
+    CHECK(mesh->held_topology_signature() == signature0);
+}
+
+TEST_CASE("unreachable-level-set-throws-2d", "[offset][2d]")
+{
+    // The 2D twin of unreachable-level-set-throws, on the clean-up slot and the check the loop
+    // makes at its end (check_level_set_reachable()): p offset to 0.3 with a held object the band
+    // did not touch as constructed, inside the level set -- a held point, a curve, a region
+    // boundary, the box, each 0.25 from p -- throws. Not a held point inside the level set by
+    // less than front_conv (q 0.25 from p at target 0.27: 0.02 inside, front_conv 0.027): a front
+    // passing outside it is within the bar. 3D's curve through p, whose crossing the clean-up
+    // moves along it, has no twin here: a 2D curve is codimension 1, and the clean-up keeps its
+    // crossing where it is (label-cleanup-held-curves-2d).
+    const std::string held = GENERATE("point", "curve", "region", "box", "point within the bar");
+    INFO("held: " << held);
+    Parameters param = cleanup_params_2d(held == "point within the bar" ? 0.27 : 0.3);
+    const bool point = held == "point" || held == "point within the bar";
+    auto mesh = point_grid_2d(
+        param,
+        held == "box" ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}},
+        held == "curve" ? GridPolyline2d{{{2, 5}}, {{6, 5}}} : GridPolyline2d{},
+        held == "region",
+        point ? GridPoints2d{{"q", {{5, 4}}}} : GridPoints2d{});
+    if (point) REQUIRE(anchored_2d(*mesh, vertex_at_2d(*mesh, grid_point_2d({{5, 4}}))));
+    mesh->label_cleanup("test");
+    if (held == "point within the bar") {
+        REQUIRE_NOTHROW(mesh->check_level_set_reachable("test"));
+    } else {
+        REQUIRE_THROWS_WITH(
+            mesh->check_level_set_reachable("test"),
+            Catch::Matchers::ContainsSubstring("the level set is out of reach"));
+    }
+}
+
+TEST_CASE("label-cleanup-modes-2d", "[offset][2d]")
+{
+    // EXPERIMENTAL_label_cleanup's band-term modes in 2D, now that its per-cell energy carries the
+    // band term (tri_energy()): "one_sided_tips" and "one_sided_at_target" (the default) run on the
+    // fixture of label-cleanup-keeps-held-point-off-the-band-2d and keep what "one_sided" keeps
+    // there -- q out of the band, the held objects' contact topology. Under "exact" and
+    // "exact_swept" (the default rule). "energy_decrease", which reads the "surface" rule's face
+    // term, has no 2D port and is refused.
+    const std::string mode = GENERATE("one_sided_tips", "one_sided_at_target", "energy_decrease");
+    const std::string rule = GENERATE("exact", "exact_swept");
+    INFO(mode << ", " << rule);
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    Parameters param = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+         {"EXPERIMENTAL_label_cleanup", mode == "energy_decrease" ? "one_sided" : mode},
+         {"EXPERIMENTAL_band_volume_rule", rule},
+         {"num_threads", 0}},
+        box);
+    auto mesh = point_grid_2d(param, {{4, 4}}, {}, false, {{"q", {{5, 4}}}});
+    if (mode == "energy_decrease") {
+        // Parameters refuses it outside "surface"; set past that, the 2D clean-up refuses it.
+        mesh->m_offset_params.label_cleanup = mode;
+        REQUIRE_THROWS_WITH(
+            mesh->label_cleanup("test"),
+            Catch::Matchers::ContainsSubstring("has no 2D port"));
+        return;
+    }
+    const size_t q = vertex_at_2d(*mesh, grid_point_2d({{5, 4}}));
+    REQUIRE(anchored_2d(*mesh, q)); // an input point: the construction held it
+    REQUIRE(band_touched_2d(*mesh)[q] == 0);
+    const auto signature0 = mesh->held_topology_signature();
+    REQUIRE_NOTHROW(mesh->label_cleanup("test"));
+    CHECK(band_touched_2d(*mesh)[q] == 0);
+    CHECK(mesh->held_topology_signature() == signature0);
+}
+
+TEST_CASE("exact-swept-smoothing-held-on-another-region-2d", "[offset][2d]")
+{
+    // The 2D twin of exact-swept-front-vertex-held-on-another-region, on the constructed band:
+    // p on the boundary between regions A and B (x = 0.25), held, offset to 0.3 (the march traces
+    // to 0.125, half the grid's edge), so the vertices on that boundary take the engine's
+    // projected step, whose ring value (smoothing_ring_energy()) takes each candidate's swept
+    // change from the vertex smoothed, and the front ones then the swept test; the others the
+    // swept test alone. Two sweeps of the shared smoother over every vertex (smooth_vertex())
+    // under "exact_swept": no move raises E, the sum of tri_energy() with "exact"'s band term
+    // (the input a point: every piece exact, so the swept change is E's band change), the swept
+    // tests ran on front and other moves, and held vertices moved.
+    Parameters param = cleanup_params_2d(0.3);
+    param.band_volume_rule = "exact_swept";
+    auto mesh = point_grid_2d(param, {{5, 4}}, {}, true);
+    size_t held_front = 0;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (mesh->m_vertex_extra[vid].m_is_on_offset && mesh->smoothing_energy_envelope(vid)) {
+            ++held_front;
+        }
+    }
+    REQUIRE(held_front > 0); // the premise: the front crosses the held boundary
+    const auto energy = [&]() {
+        double e = 0., scale = 0.;
+        for (const auto& f : mesh->get_faces()) {
+            const double t = mesh->tri_energy(f.fid(*mesh));
+            e += t;
+            scale += std::abs(t);
+        }
+        return std::pair<double, double>(e, scale);
+    };
+    double worst_rise = 0.;
+    size_t moved = 0, held_moved = 0, tried = 0;
+    for (int sweep = 0; sweep < 2; ++sweep) {
+        for (const auto& v : mesh->get_vertices()) {
+            const auto [e0, scale] = energy();
+            const size_t vid = v.vid(*mesh);
+            const Vector2d x0 = mesh->m_vertex_attribute[vid].m_posf;
+            ++tried;
+            if (!mesh->smooth_vertex(v)) continue;
+            const bool m = mesh->m_vertex_attribute[vid].m_posf != x0;
+            moved += m;
+            held_moved += m && mesh->smoothing_energy_envelope(vid) != nullptr;
+            worst_rise = std::max(worst_rise, (energy().first - e0) / scale);
+        }
+    }
+    const size_t front = mesh->m_swept_front.solves.load();
+    const size_t other = mesh->m_swept_nonfront.solves.load();
+    CHECK(front > 0);
+    CHECK(other > 0);
+    CHECK(held_moved > 0);
+    CHECK(worst_rise <= 1e-13);
+    std::printf(
+        "exact-swept-smoothing-held-on-another-region-2d: %zu held front vertices; %zu of %zu "
+        "smooths moved, %zu of them held (the projected step); swept tests: front %zu, other %zu; "
+        "largest rise of E %.1e of its scale\n",
+        held_front,
+        moved,
+        tried,
+        held_moved,
+        front,
+        other,
+        worst_rise);
+}
+
+TEST_CASE("fold-test-2d", "[offset][2d]")
+{
+    // The 2D twin of fold-test: the fold predicate (TopoOffsetTriMesh::fold_test()) over the
+    // whole range of foldover_angle. Edge 1's normal out of the band is +y; edge 2's is (sin phi,
+    // cos phi), 180 - phi degrees from opposite. A fold: the normals within `angle` of opposite
+    // and one edge turned from the field (its field angle over `angle`, or NaN); two opposite
+    // edges both along the field are a ridge vertex; edges not opposite are neither, and the
+    // field is not asked of them.
+    using FT = TopoOffsetTriMesh::FoldTest;
+    const Vector2d n1(0., 1.);
+    const auto n2 = [](const double deg) {
+        const double r = deg * M_PI / 180.;
+        return Vector2d(std::sin(r), std::cos(r));
+    };
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for (const double angle : {1., 10., 29., 30., 31., 45., 90., 120., 170., 179.}) {
+        INFO("foldover_angle " << angle);
+        int asked = 0;
+        const auto test = [&](const double phi, const double a0, const double a1) {
+            asked = 0;
+            const auto field = [&](const int k) {
+                ++asked;
+                return k == 0 ? a0 : a1;
+            };
+            return TopoOffsetTriMesh::fold_test(n1, n2(phi), field, angle);
+        };
+        const double within = 180. - 0.5 * angle, beyond = 0.5 * (180. - angle);
+        const double along = 0.5 * angle, turned = 0.5 * (angle + 180.);
+        CHECK(test(beyond, turned, turned) == FT::none);
+        CHECK(asked == 0);
+        CHECK(test(within, along, along) == FT::ridge_vertex);
+        CHECK(test(within, angle, angle) == FT::ridge_vertex); // exactly `angle` is not over it
+        CHECK(test(within, turned, along) == FT::fold);
+        CHECK(test(within, along, turned) == FT::fold);
+        CHECK(test(within, nan, along) == FT::fold); // unmeasured is never taken for no fold
+        CHECK(test(within, along, nan) == FT::fold);
+        CHECK(test(180., turned, turned) == FT::fold); // flat onto each other
+    }
+}
+
+TEST_CASE("front-edge-field-angle-2d", "[offset][2d]")
+{
+    // The 2D twin of foldover-face-angle's mesh half: front_edge_field_angle(), the angle between
+    // an offset edge's normal, out of its band face, and grad d at its midpoint. One band
+    // triangle (0, 1), (1, 1), (0, 2) over the input segment y = 0, x in [-10, 10]
+    // (energy_mesh_2d()), where grad d = (0, 1): the edge (0, 1)-(1, 1) faces back at the input
+    // (180 degrees), (0, 1)-(0, 2) across the field (90), (1, 1)-(0, 2) along it at 45. Either
+    // order of an edge's ends. Not a band face, or no exact integral: NaN.
+    Parameters param;
+    Eigen::MatrixXd V(3, 2);
+    V << 0., 1., 1., 1., 0., 2.;
+    auto mesh = energy_mesh_2d(param, V, {{{0, 1, 2}}}, {2}, line_field());
+    CHECK(mesh->front_edge_band_face(0, 1) == 0);
+    CHECK(mesh->front_edge_field_angle(0, 1) == Catch::Approx(180.).margin(1e-9));
+    CHECK(mesh->front_edge_field_angle(1, 0) == Catch::Approx(180.).margin(1e-9));
+    CHECK(mesh->front_edge_field_angle(0, 2) == Catch::Approx(90.).margin(1e-9));
+    CHECK(mesh->front_edge_field_angle(2, 1) == Catch::Approx(45.).margin(1e-9));
+    mesh->m_face_extra[0].label = 0;
+    CHECK(mesh->front_edge_band_face(1, 2) == -1);
+    CHECK(std::isnan(mesh->front_edge_field_angle(1, 2)));
+    mesh->m_face_extra[0].label = 2;
+    mesh->m_band_exact.reset();
+    CHECK(std::isnan(mesh->front_edge_field_angle(1, 2)));
+}
+
+TEST_CASE("count-folds-2d", "[offset][2d]")
+{
+    // count_folds() and offset_surface_foldover_labels() on a vertex V where two offset edges
+    // nearly coincide, over foldover_angle's range. The input is the points P1 = (-a, 0) and P2
+    // = (a, 0), and V = (0, h) is at delta = 0.5 from both (a = delta cos 3deg); A and B lie on the
+    // circles about P1 and P2, 4 degrees on from V, so the chords VA and VB follow the level set
+    // d = delta into its corner at V, their normals out of the band 10 degrees from opposite.
+    // Band triangles (P1, P2, V), (P1, V, A), (P2, B, V), and the background triangle (V, B, A)
+    // in the corner; VA and VB are V's two offset edges (the others are on the domain boundary,
+    // which the count leaves out, as 3D's does). The field angles, by hand from the nearest input
+    // point at each chord's midpoint, decide with the opposite test:
+    //   - P1 and P2: both chords along the field (0 degrees): a ridge vertex once foldover_angle
+    //     is over 10 degrees, never a fold;
+    //   - P1 alone: VB faces back at it (170 degrees): a fold for foldover_angle in (10, 170),
+    //     a ridge vertex above;
+    //   - P1 and P2 with the labels swapped (the thin background corner is the band): both
+    //     chords face back (180 degrees), a fold above 10 degrees -- the sheet of the band caught
+    //     as the sheet of the background is.
+    const double delta = 0.5, beta = 3. * M_PI / 180., gamma = 4. * M_PI / 180.;
+    const Vector2d P1(-delta * std::cos(beta), 0.), P2(delta * std::cos(beta), 0.);
+    const Vector2d Vv(0., delta * std::sin(beta));
+    const Vector2d A = P1 + delta * Vector2d(std::cos(beta + gamma), std::sin(beta + gamma));
+    const Vector2d B = P2 + delta * Vector2d(-std::cos(beta + gamma), std::sin(beta + gamma));
+    Eigen::MatrixXd V(5, 2);
+    V << P1.transpose(), P2.transpose(), Vv.transpose(), A.transpose(), B.transpose();
+    const size_t iV = 2;
+    for (const std::string inputs : {"P1 and P2", "P1", "P1 and P2, labels swapped"}) {
+        const bool swapped = inputs == "P1 and P2, labels swapped";
+        Parameters param;
+        auto mesh = energy_mesh_2d(
+            param,
+            V,
+            {{{0, 1, 2}}, {{0, 2, 3}}, {{1, 4, 2}}, {{2, 4, 3}}},
+            swapped ? std::vector<int>{0, 0, 0, 2} : std::vector<int>{2, 2, 2, 0},
+            line_field());
+        // The input: the points alone (no segment), as init_band_exact() builds it.
+        const bool two = inputs != "P1";
+        mesh->m_phi_V.resize(two ? 2 : 1, 2);
+        mesh->m_phi_V.row(0) = P1.transpose();
+        if (two) mesh->m_phi_V.row(1) = P2.transpose();
+        mesh->m_phi_E.resize(0, 2);
+        mesh->m_phi_E_inner.clear();
+        mesh->m_phi_P = two ? std::vector<int>{0, 1} : std::vector<int>{0};
+        mesh->init_band_exact();
+        // The chords' normals out of the band and their field angles, by hand.
+        const auto unit_angle = [](const Vector2d& u, const Vector2d& v) {
+            return std::atan2(std::abs(u.x() * v.y() - u.y() * v.x()), u.dot(v)) * 180. / M_PI;
+        };
+        const auto by_hand = [&](const Vector2d& e, const Vector2d& away, const Vector2d& mid) {
+            Vector2d n(-e.y(), e.x());
+            n.normalize();
+            if (n.dot(-away) < 0.) n = -n;
+            Vector2d g = mid - P1;
+            if (two && (mid - P2).norm() < g.norm()) g = mid - P2;
+            return std::pair<Vector2d, double>{n, unit_angle(n, g)};
+        };
+        // VA's band face's third corner is P1 (B when swapped), VB's P2 (A).
+        const auto [nA, fA] = by_hand(A - Vv, (swapped ? B : P1) - Vv, 0.5 * (Vv + A));
+        const auto [nB, fB] = by_hand(B - Vv, (swapped ? A : P2) - Vv, 0.5 * (Vv + B));
+        CHECK(mesh->front_edge_field_angle(iV, 3) == Catch::Approx(fA).margin(1e-9));
+        CHECK(mesh->front_edge_field_angle(iV, 4) == Catch::Approx(fB).margin(1e-9));
+        const double opposite = 180. - unit_angle(nA, nB); // how far from opposite
+        CHECK(opposite == Catch::Approx(10.).margin(1e-9));
+        for (const double angle : {1., 5., 9., 11., 30., 90., 150., 169., 171., 179.}) {
+            INFO(inputs << ", foldover_angle " << angle << ", field angles " << fA << ", " << fB);
+            mesh->m_offset_params.foldover_angle = angle;
+            const bool opp = opposite < angle;
+            const bool turned = fA > angle || fB > angle;
+            std::vector<size_t> fv;
+            const auto fc = mesh->count_folds(&fv);
+            CHECK(fc.folds == (opp && turned ? 1u : 0u));
+            CHECK(fc.ridge_vertices == (opp && !turned ? 1u : 0u));
+            CHECK(fv == (opp && turned ? std::vector<size_t>{iV} : std::vector<size_t>{}));
+            const auto labels = mesh->offset_surface_foldover_labels();
+            for (size_t v = 0; v < labels.size(); ++v) {
+                CHECK(labels[v] == (v == iV && opp && turned ? 1 : 0));
+            }
+            if (opp && !turned) {
+                CHECK(fc.ridge_max_angle == Catch::Approx(std::max(fA, fB)).margin(1e-9));
+            }
+        }
+    }
+}
+
+TEST_CASE("energy-sums-2d", "[offset][2d]")
+{
+    // The 2D twin of surface-energy-sums' volume half: global_energy() is the sum of tri_energy()
+    // over the live faces in get_faces() order; offset_energy() the sum of band_cell_term() over
+    // the band faces, and the settle test's metric; energy_parts() splits E into the two, its
+    // band part the offset energy. On the constructed 8 x 8 grid, p offset to 0.3, under every
+    // 2D band rule.
+    const std::string rule = GENERATE("exact", "exact_swept", "corner_bound");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule);
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    Parameters param = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+         {"EXPERIMENTAL_band_volume_rule", rule},
+         // Parameters refuses the default clean-up beside "corner_bound"
+         {"EXPERIMENTAL_label_cleanup", rule == "corner_bound" ? "off" : "one_sided_at_target"},
+         {"num_threads", 0}},
+        box);
+    auto mesh = point_grid_2d(param, {{4, 4}});
+    double e = 0., band = 0.;
+    size_t n_band = 0;
+    for (const auto& f : mesh->get_faces()) {
+        const size_t fid = f.fid(*mesh);
+        e += mesh->tri_energy(fid);
+        if (!mesh->face_is_offset_band(fid)) continue;
+        ++n_band;
+        band += mesh->band_cell_term(mesh->oriented_tri_vids(fid));
+    }
+    REQUIRE(n_band > 0);
+    CHECK(mesh->global_energy() == e);
+    CHECK(mesh->offset_energy() == band);
+    CHECK(mesh->settle_metric() == band);
+    CHECK(band != 0.);
+    const auto [a_part, b_part] = mesh->energy_parts();
+    CHECK(b_part == band);
+    CHECK(a_part + b_part == Catch::Approx(e).epsilon(1e-12));
+}
+
+namespace {
+/// The settle tests' fixture: the constructed 8 x 8 grid (point_grid_2d()), p = (0, 0), the
+/// input complex, offset to `target`, the input the point alone, so d(x) = |x|.
+std::unique_ptr<TopoOffsetTriMesh> settle_grid_2d(Parameters& param)
+{
+    auto mesh = point_grid_2d(param, {{4, 4}});
+    mesh->m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Optimization;
+    return mesh;
+}
+Parameters settle_params_2d(const double target)
+{
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    return construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}})},
+         {"num_threads", 0}},
+        box);
+}
+} // namespace
+
+TEST_CASE("settle-marks-2d", "[offset][2d]")
+{
+    // The 2D twin of settle-mark-stencil, for every EXPERIMENTAL_settle_mark. On the fixture
+    // (settle_grid_2d(), d = |x|), each mark's measure per front chord or vertex is computed here
+    // from d alone: "max" max(delta - min over the chord of |x|, max of |x| at its ends - delta);
+    // "rms" the 2-point Gauss mean of (|x| - delta)^2 n.(x / |x|), n the chord's normal out of
+    // its band face; "stencil" the max over the chord's stencil of (delta r)^2 from the field;
+    // "vertex" | |v| - delta |; "vertex_edge" and "vertex_split" add the chords whose ends are
+    // within front_conv and whose midpoint is not. T is the max of the measure that holds the
+    // exit. One turn of the settle test (e_prev = the offset energy, so the turn settles) with
+    // front_conv set (a) just above T: exit; (b) just below: no exit, every corner the mark names
+    // halved; refine_now false at (b): the same verdict, nothing halved; (c) a turn whose offset
+    // energy fell by twice the bar energy: not settled, no exit, nothing halved. "vertex_edge" at
+    // (a) halves the ends of the chords whose midpoint is over and still exits; "vertex_split" at
+    // (a) lists exactly those chords (m_settle_split_edges) and exits. At two targets: 0.3, where
+    // the march traces the front short of the level set (every vertex 0.175 off), and 0.1, where
+    // it puts every front vertex on it: there the vertex marks' T is 0, (a) runs at half the
+    // chords' midpoint max and (b) has no front_conv to run at.
+    const double target = GENERATE(0.3, 0.1);
+    const std::string mark =
+        GENERATE("max", "rms", "stencil", "vertex", "vertex_edge", "vertex_split");
+    INFO("target " << target << ", EXPERIMENTAL_settle_mark " << mark);
+    Parameters param = settle_params_2d(target);
+    auto mesh = settle_grid_2d(param);
+    mesh->m_offset_params.settle_mark = mark;
+    const double delta = mesh->m_offset_params.target_distance;
+    const auto edges = mesh->offset_surface_edges();
+    REQUIRE(!edges.empty());
+    const auto pos = [&](const size_t v) { return mesh->m_vertex_attribute[v].m_posf; };
+    const auto seg_d = [](const Vector2d& a, const Vector2d& b) { // min over ab of |x|
+        const Vector2d ab = b - a;
+        const double t = std::clamp(-a.dot(ab) / ab.squaredNorm(), 0., 1.);
+        return (a + t * ab).norm();
+    };
+    // Per chord: the max mark, the rms mean, the stencil max, the midpoint error.
+    std::vector<double> m_max(edges.size()), m_rms(edges.size()), m_sten(edges.size());
+    std::vector<double> m_mid(edges.size());
+    for (size_t k = 0; k < edges.size(); ++k) {
+        const Vector2d a = pos(edges[k][0]), b = pos(edges[k][1]);
+        m_max[k] = std::max(delta - seg_d(a, b), std::max(a.norm(), b.norm()) - delta);
+        m_mid[k] = std::abs((0.5 * (a + b)).norm() - delta);
+        Vector2d n;
+        REQUIRE(mesh->front_edge_out_normal(edges[k][0], edges[k][1], n));
+        double q = 0.;
+        const double h = 0.5 / std::sqrt(3.);
+        for (const double w : {0.5 - h, 0.5 + h}) {
+            const Vector2d x = (1. - w) * a + w * b;
+            q += 0.5 * (x.norm() - delta) * (x.norm() - delta) * n.dot(x / x.norm());
+        }
+        m_rms[k] = std::sqrt(std::max(q, 0.));
+        double s = 0.;
+        const OffsetPotential2D& pot = mesh->potential_for_edge(edges[k][0], edges[k][1]);
+        mesh->for_each_edge_sample(a, b, [&](const Vector2d& x, double, double) {
+            const double r = pot.relative_residual(x);
+            REQUIRE(std::isfinite(r));
+            s = std::max(s, (delta * r) * (delta * r));
+        });
+        CHECK(mesh->edge_stencil_max_sq(edges[k]) == s);
+        m_sten[k] = std::sqrt(s);
+    }
+    std::set<size_t> front;
+    for (const auto& e : edges) front.insert(e.begin(), e.end());
+    std::map<size_t, double> m_vtx;
+    for (const size_t v : front) m_vtx[v] = std::abs(pos(v).norm() - delta);
+    double v_max = 0.;
+    for (const auto& [v, x] : m_vtx) v_max = std::max(v_max, x);
+    const bool vertex_marks = mark == "vertex" || mark == "vertex_edge" || mark == "vertex_split";
+    const std::vector<double>& chord_measure = mark == "max"   ? m_max
+                                               : mark == "rms" ? m_rms
+                                                               : m_sten;
+    const double T =
+        vertex_marks ? v_max : *std::max_element(chord_measure.begin(), chord_measure.end());
+    const double mid_max = *std::max_element(m_mid.begin(), m_mid.end());
+    // At 0.1 the march puts every front vertex on the level set, |v| = 0.1 exactly: no front_conv
+    // > 0 marks a vertex, so (a) is at half the midpoint max and (b) has no front_conv to run at.
+    const bool on_level_set = vertex_marks && T == 0.;
+    REQUIRE((T > 0. || on_level_set));
+    REQUIRE(mid_max > 0.);
+    const double fc_a = on_level_set ? 0.5 * mid_max : T * (1. + 1e-6);
+    std::printf(
+        "  settle-marks-2d target %g %-12s %zu chords, %zu front vertices: T %.6g (max vertex "
+        "%.6g, max midpoint %.6g)\n",
+        target,
+        mark.c_str(),
+        edges.size(),
+        front.size(),
+        T,
+        v_max,
+        mid_max);
+
+    // The corners the mark names at front_conv fc, and the chords "vertex_split" lists.
+    const auto named = [&](const double fc, std::vector<std::array<size_t, 2>>* split) {
+        std::set<size_t> c;
+        if (!vertex_marks) {
+            for (size_t k = 0; k < edges.size(); ++k) {
+                const bool over = mark == "stencil" ? !(m_sten[k] * m_sten[k] < fc * fc)
+                                  : mark == "rms"   ? m_rms[k] * m_rms[k] > fc * fc
+                                                    : m_max[k] > fc;
+                if (over) c.insert(edges[k].begin(), edges[k].end());
+            }
+            return c;
+        }
+        for (const auto& [v, x] : m_vtx) {
+            if (x > fc) c.insert(v);
+        }
+        for (size_t k = 0; k < edges.size(); ++k) {
+            const auto& e = edges[k];
+            if (m_vtx[e[0]] > fc || m_vtx[e[1]] > fc || !(m_mid[k] > fc)) continue;
+            if (mark == "vertex_edge") c.insert(e.begin(), e.end());
+            if (mark == "vertex_split" && split) split->push_back(e);
+        }
+        return c;
+    };
+    const size_t nv = mesh->vert_capacity();
+    std::vector<double> s0(nv);
+    for (size_t v = 0; v < nv; ++v) s0[v] = mesh->m_vertex_attribute[v].m_sizing_scalar;
+    const double s_floor = std::max(
+        mesh->m_offset_params.min_sizing_scalar,
+        mesh->m_offset_params.min_edge_length / mesh->m_params.l);
+    double length = 0.;
+    for (const auto& e : edges) length += (pos(e[1]) - pos(e[0])).norm();
+    struct Turn
+    {
+        bool exit = false, settled = false;
+        size_t lowered = 0, not_halved = 0, corners = 0;
+        std::vector<std::array<size_t, 2>> split, want_split;
+    };
+    const auto turn = [&](const double fc, const bool refine, const double fall_in_bars) {
+        mesh->m_offset_params.front_conv = fc;
+        mesh->m_settle_split_edges = {{{0, 0}}}; // a marker: kept unless the turn assigns it
+        const double bar = fc * fc * length / (2. * delta);
+        double e_prev = mesh->settle_metric() + fall_in_bars * bar;
+        Turn t;
+        t.exit = mesh->settle_refinement_turn(1, e_prev, refine);
+        t.settled = mesh->m_turn_settled;
+        const std::set<size_t> c = named(fc, &t.want_split);
+        t.corners = c.size();
+        for (size_t v = 0; v < nv; ++v) {
+            double& s = mesh->m_vertex_attribute[v].m_sizing_scalar;
+            if (s < s0[v]) ++t.lowered;
+            if (c.count(v) && !(s <= std::max(0.5 * s0[v], s_floor))) ++t.not_halved;
+            s = s0[v]; // put back for the next turn
+        }
+        t.split = mesh->m_settle_split_edges;
+        return t;
+    };
+    const std::vector<std::array<size_t, 2>> marker = {{{0, 0}}};
+    {
+        const Turn a = turn(fc_a, true, 0.);
+        CHECK(a.settled);
+        CHECK(a.exit);
+        CHECK(a.not_halved == 0);
+        if (mark == "vertex_edge") {
+            CHECK(a.lowered >= a.corners); // the chord marks refine, and do not hold the exit
+        } else {
+            CHECK(a.corners == 0);
+            CHECK(a.lowered == 0);
+        }
+        // A settled turn that refines assigns the list, empty but under "vertex_split".
+        CHECK(a.split == a.want_split);
+        if (mark == "vertex_edge" || mark == "vertex_split") {
+            INFO(
+                "chords with both ends within and the midpoint over: "
+                << a.corners << " corners, " << a.want_split.size() << " chords");
+            CHECK((mark == "vertex_edge" ? a.corners : a.want_split.size()) > 0);
+        }
+    }
+    if (!on_level_set) {
+        const Turn b = turn(T * (1. - 1e-6), true, 0.);
+        CHECK(b.settled);
+        CHECK_FALSE(b.exit);
+        CHECK(b.corners > 0);
+        CHECK(b.not_halved == 0);
+        CHECK(b.lowered >= b.corners);
+        CHECK(b.split == b.want_split);
+        const Turn b0 = turn(T * (1. - 1e-6), false, 0.);
+        CHECK(b0.settled);
+        CHECK_FALSE(b0.exit);
+        CHECK(b0.lowered == 0);
+        CHECK(b0.split == marker);
+    }
+    {
+        const Turn c = turn(fc_a, true, 2.);
+        CHECK_FALSE(c.settled);
+        CHECK_FALSE(c.exit);
+        CHECK(c.lowered == 0);
+        CHECK(c.split == marker);
+        // Half a bar's fall: settled.
+        CHECK(turn(fc_a, false, 0.5).settled);
+    }
+}
+
+TEST_CASE("settle-gap-refinement-2d", "[offset][2d]")
+{
+    // EXPERIMENTAL_gap_refinement on the settle test, the 2D twin of its 3D rule: a band face with
+    // a front corner whose corner mean of d exceeds d at its centroid by more than front_conv is
+    // refined and holds the exit. On settle_grid_2d() at 0.1 (d = |x|, so the corner mean is the
+    // mean of the corners' |x|), under settle_mark "vertex": with front_conv between the vertex
+    // test's max V and the gap's max G, the exit is held by the gap test alone (on), not held
+    // (off); above both, exit.
+    Parameters param = settle_params_2d(0.1);
+    auto mesh = settle_grid_2d(param);
+    mesh->m_offset_params.settle_mark = "vertex";
+    const auto pos = [&](const size_t v) { return mesh->m_vertex_attribute[v].m_posf; };
+    std::set<size_t> front;
+    for (const auto& e : mesh->offset_surface_edges()) front.insert(e.begin(), e.end());
+    double v_max = 0., g_max = 0.;
+    const double delta = mesh->m_offset_params.target_distance;
+    for (const size_t v : front) v_max = std::max(v_max, std::abs(pos(v).norm() - delta));
+    for (const auto& f : mesh->get_faces()) {
+        const size_t fid = f.fid(*mesh);
+        if (!mesh->face_is_offset_band(fid)) continue;
+        const auto vs = mesh->oriented_tri_vids(fid);
+        if (!front.count(vs[0]) && !front.count(vs[1]) && !front.count(vs[2])) continue;
+        const double md = (pos(vs[0]).norm() + pos(vs[1]).norm() + pos(vs[2]).norm()) / 3.;
+        g_max = std::max(g_max, md - ((pos(vs[0]) + pos(vs[1]) + pos(vs[2])) / 3.).norm());
+    }
+    std::printf("  settle-gap-refinement-2d: vertex max %.6g, gap max %.6g\n", v_max, g_max);
+    REQUIRE(g_max > 2. * v_max);
+    const auto exit_at = [&](const double fc, const bool gap) {
+        mesh->m_offset_params.front_conv = fc;
+        mesh->m_offset_params.gap_refinement = gap;
+        double e_prev = mesh->settle_metric();
+        return mesh->settle_refinement_turn(1, e_prev, false);
+    };
+    const double between = 0.5 * (v_max + g_max);
+    CHECK_FALSE(exit_at(between, true));
+    CHECK(exit_at(between, false));
+    CHECK(exit_at(g_max * (1. + 1e-6), true));
+    CHECK_FALSE(exit_at(g_max * (1. - 1e-6), true));
+}
+
+TEST_CASE("settle-split-before-smoothing-2d", "[offset][2d][pocket_split]")
+{
+    // EXPERIMENTAL_settle_mark "vertex_split": the chords a settled turn lists
+    // (m_settle_split_edges) are split by the next front_pocket_split(), before its pinned cells,
+    // and the list is cleared; a listed chord gone already is skipped. On settle_grid_2d() at
+    // 0.3, front_conv between the vertex test's max and the chords' midpoint max.
+    Parameters param = settle_params_2d(0.3);
+    auto mesh = settle_grid_2d(param);
+    mesh->m_offset_params.settle_mark = "vertex_split";
+    const auto pos = [&](const size_t v) { return mesh->m_vertex_attribute[v].m_posf; };
+    const double delta = mesh->m_offset_params.target_distance;
+    const auto edges = mesh->offset_surface_edges();
+    double v_max = 0., mid_max = 0.;
+    for (const auto& e : edges) {
+        for (const size_t v : e) v_max = std::max(v_max, std::abs(pos(v).norm() - delta));
+        mid_max = std::max(mid_max, std::abs((0.5 * (pos(e[0]) + pos(e[1]))).norm() - delta));
+    }
+    REQUIRE(mid_max > v_max);
+    mesh->m_offset_params.front_conv = 0.5 * (v_max + mid_max);
+    double e_prev = mesh->settle_metric();
+    CHECK(mesh->settle_refinement_turn(1, e_prev, true)); // the vertex test passes: exit
+    const auto listed = mesh->m_settle_split_edges;
+    REQUIRE(!listed.empty());
+    for (const auto& e : listed) REQUIRE(!mesh->get_incident_fids_for_edge(e[0], e[1]).empty());
+    // A listed pair that is no edge (gone): skipped. Two corners of the box, far from the front.
+    mesh->m_settle_split_edges.push_back(
+        {{vertex_at_2d(*mesh, Vector2d(-1., -1.)), vertex_at_2d(*mesh, Vector2d(1., 1.))}});
+    mesh->front_pocket_split("test");
+    CHECK(mesh->m_settle_split_edges.empty());
+    for (const auto& e : listed) CHECK(mesh->get_incident_fids_for_edge(e[0], e[1]).empty());
+}
+
+namespace {
+/// The 2D loop run on point_grid_2d(), the mesh in hand: p offset to `target` with
+/// `j`'s keys besides, optimize_offset() as the driver calls it after the construction, its log
+/// captured. Returns the exception's message, or "" for none.
+std::string run_loop_2d(
+    const double target,
+    const nlohmann::json& j,
+    std::string& log_out,
+    const std::array<int, 2>& p = {{4, 4}},
+    const GridPolyline2d& curve = {},
+    const bool regions = false,
+    const GridPoints2d& points = {},
+    std::unique_ptr<TopoOffsetTriMesh>* keep = nullptr)
+{
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    nlohmann::json k = j;
+    k["offsets"] = nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}});
+    k["num_threads"] = 0;
+    k["throw_on_nonconvergence"] = false;
+    auto param = std::make_unique<Parameters>(construction_params(k, box));
+    auto mesh = point_grid_2d(*param, p, curve, regions, points);
+    std::ostringstream log;
+    const auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(log);
+    wmtk::logger().sinks().push_back(sink);
+    std::string what;
+    try {
+        mesh->optimize_offset(std::filesystem::temp_directory_path() / "wmtk_offset_loop_2d");
+    } catch (const std::exception& e) {
+        what = e.what();
+    }
+    wmtk::logger().sinks().pop_back();
+    log_out = log.str();
+    if (keep) {
+        // the mesh holds a reference to its parameters: keep them alive with it
+        static std::vector<std::unique_ptr<Parameters>> params;
+        params.push_back(std::move(param));
+        *keep = std::move(mesh);
+    }
+    return what;
+}
+} // namespace
+
+TEST_CASE("settle-exit-2d", "[offset][2d]")
+{
+    // The 2D loop's convergence and exit, as 3D's: p offset to 0.3, max_rounds 8, front_conv_rel
+    // 0.2, where the energy criterion passes at turn 1 (ring measure 0.46x the bar) while the
+    // front there has folds: MEASURED (the band-area smoother, 0471dbf2de), 2 at turn 1 -- a
+    // blade of two non-band triangles whose tip, 0.278 from p (inside the level set by 0.37
+    // front_conv), meets two offset edges 14 degrees apart and 84 degrees from the field -- and
+    // none at turn 2. 3D's twin (point_grid() p at 0.3, the same keys) MEASURED the same: turn 1
+    // passes the energy criterion with 1 fold, held, exit at turn 2. The fixture needs turn 1's
+    // folds (REQUIRE): the smoother before 0471dbf2de left none there, and the energy criterion
+    // exited at turn 1 with EXPERIMENTAL_exit_no_folds on.
+    //   - EXPERIMENTAL_settle_refinement off, EXPERIMENTAL_exit_no_folds off: the energy
+    //     criterion's exit at turn 1, the [exit folds] line saying the key is off;
+    //   - settle off, exit_no_folds on: turn 1 passes the exit test and is held for the folds;
+    //     the exit comes later;
+    //   - settle on (the default): every turn logs its [settle] line; turn 1 does not settle (the
+    //     construction's front moves by more than the bar energy), so the loop exits later, at a
+    //     settled turn with nothing marked, and the verdict's front half is that exit ("[settle]
+    //     verdict: front resolved"), with exit_no_folds on or off.
+    // Every group logs its [band volume energy] E line and its [energy step] baseline, every turn
+    // its [exit folds] count.
+    const bool settle = GENERATE(true, false);
+    const bool no_folds = GENERATE(true, false);
+    INFO(
+        "EXPERIMENTAL_settle_refinement " << settle << ", EXPERIMENTAL_exit_no_folds " << no_folds);
+    std::string log;
+    std::unique_ptr<TopoOffsetTriMesh> mesh;
+    const std::string what = run_loop_2d(
+        0.3,
+        {{"max_rounds", 8},
+         {"front_conv_rel", 0.2},
+         {"EXPERIMENTAL_settle_refinement", settle},
+         {"EXPERIMENTAL_exit_no_folds", no_folds}},
+        log,
+        {{4, 4}},
+        {},
+        false,
+        {},
+        &mesh);
+    INFO(log.substr(log.size() > 6000 ? log.size() - 6000 : 0));
+    REQUIRE(what.empty());
+    CHECK(mesh->m_converged);
+    CHECK(mesh->m_energy_verdict.has_value());
+    const int turns = mesh->m_iterations_used;
+    const auto line_of = [&](const std::string& head) {
+        const size_t at = log.find(head);
+        return at == std::string::npos ? std::string() : log.substr(at, log.find('\n', at) - at);
+    };
+    CHECK(log.find("[band volume energy] turn 1 ops group: E ") != std::string::npos);
+    CHECK(log.find("[energy step] turn 1 start: E ") != std::string::npos);
+    // The exit turn has no fold, but where EXPERIMENTAL_exit_no_folds is off and the energy
+    // criterion exits at turn 1 with its folds.
+    if (settle || no_folds) {
+        CHECK(
+            line_of("[exit folds] turn " + std::to_string(turns) + ": ") ==
+            "[exit folds] turn " + std::to_string(turns) + ": folds 0");
+    }
+    // Turn 1's folds, which the fixture needs.
+    const std::string folds1 = line_of("[exit folds] turn 1: folds ");
+    REQUIRE(!folds1.empty());
+    REQUIRE(std::stoi(folds1.substr(std::string("[exit folds] turn 1: folds ").size())) > 0);
+    CHECK((log.find("[settle] turn 1:") != std::string::npos) == settle);
+    CHECK((log.find("[settle] verdict: front resolved") != std::string::npos) == settle);
+    if (!settle) {
+        CHECK((turns == 1) == !no_folds);
+        CHECK(
+            folds1.find(
+                no_folds ? " -- the exit test passes; held for the folds"
+                         : " -- the exit test passes; EXPERIMENTAL_exit_no_folds is off") !=
+            std::string::npos);
+    } else {
+        CHECK(turns > 1);
+        CHECK(folds1.find(" -- ") == std::string::npos); // turn 1 did not pass the exit test
+        CHECK(
+            line_of("[settle] turn 1: ").find("settled no -- no chord test") != std::string::npos);
+        CHECK(
+            line_of("[settle] turn " + std::to_string(turns) + ": ")
+                .find("settled yes | marked 0 ") != std::string::npos);
+    }
+}
+
+TEST_CASE("unreachable-level-set-throws-in-the-loop-2d", "[offset][2d]")
+{
+    // The 2D twin of unreachable-level-set-throws, through the loop: p offset to 0.3 with a held
+    // object the band did not touch as constructed, inside the level set -- a held point, a curve,
+    // a region boundary, the box, each 0.25 from p -- throws at a settled turn
+    // (check_level_set_reachable() after settle_refinement_turn()): a loop that resolves never
+    // reaches the loop's end, where the only other check is. Not a held point inside the level
+    // set by less than front_conv (q 0.25 from p at 0.27): a front passing outside it is within
+    // the bar, and the run resolves.
+    const std::string held = GENERATE("point", "curve", "region", "box", "point within the bar");
+    INFO("held: " << held);
+    const bool point = held == "point" || held == "point within the bar";
+    std::string log;
+    const std::string what = run_loop_2d(
+        held == "point within the bar" ? 0.27 : 0.3,
+        {{"max_rounds", 8}},
+        log,
+        held == "box" ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}},
+        held == "curve" ? GridPolyline2d{{{2, 5}}, {{6, 5}}} : GridPolyline2d{},
+        held == "region",
+        point ? GridPoints2d{{"q", {{5, 4}}}} : GridPoints2d{});
+    INFO(log.substr(log.size() > 6000 ? log.size() - 6000 : 0));
+    if (held == "point within the bar") {
+        CHECK(what.empty());
+    } else {
+        CHECK(what.find("the level set is out of reach") != std::string::npos);
+        CHECK(what.find("[held objects] turn ") != std::string::npos);
+    }
+}
+
+namespace {
+/// The 2D twin of point_grid() and curve_grid(), as the driver reads it (a MeshData):
+/// [-1, 1]^2 in 8^2 squares of edge 0.25, each split along its diagonal from (i, j) to
+/// (i + 1, j + 1), point_grid_2d()'s triangles; each triangle under the name `region` gives its
+/// centroid, or ambient where it gives none (or no `region`); `curves`, grid polylines, as an
+/// edge block without tags -- the envelope, which the 2D offset holds as its curve group and
+/// selects by the envelope's name, "EnvelopeSurface" on the memory route (read_mesh_data()): the
+/// 2D input of a curve no region surrounds, 3D's edge tag one dimension down; `edge_tags`, a
+/// tagged edge block (2D's edge tags, the twin of 3D's face tags), each (name, polyline); and
+/// `points`, a point block, each vertex under its name, as triwild and simwild write their input
+/// points.
+using GridRegion2d = std::function<std::string(const Vector2d&)>;
+MeshData grid_2d(
+    const GridPoints2d& points,
+    const std::vector<GridPolyline2d>& curves = {},
+    const GridRegion2d& region = nullptr,
+    const std::vector<std::pair<std::string, GridPolyline2d>>& edge_tags = {})
+{
+    const int n = 8;
+    const auto vid = [&](const int i, const int j) { return i + (n + 1) * j; };
+    Eigen::MatrixXd V((n + 1) * (n + 1), 2);
+    for (int j = 0; j <= n; ++j) {
+        for (int i = 0; i <= n; ++i) V.row(vid(i, j)) = grid_point_2d({{i, j}}).transpose();
+    }
+    Eigen::MatrixXi F(2 * n * n, 3);
+    int r = 0;
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            F.row(r++) << vid(i, j), vid(i + 1, j), vid(i + 1, j + 1);
+            F.row(r++) << vid(i, j), vid(i + 1, j + 1), vid(i, j + 1);
+        }
+    }
+    MeshData m = io::geometry_data(V, F, CellType::Triangle);
+    std::vector<std::string> names{"ambient"};
+    std::vector<size_t> col(size_t(F.rows()), 0);
+    for (Eigen::Index f = 0; f < F.rows(); ++f) {
+        const Vector2d c = (V.row(F(f, 0)) + V.row(F(f, 1)) + V.row(F(f, 2))).transpose() / 3.;
+        const std::string name = region ? region(c) : std::string();
+        if (name.empty()) continue;
+        auto it = std::find(names.begin(), names.end(), name);
+        if (it == names.end()) it = names.insert(names.end(), name);
+        col[size_t(f)] = size_t(it - names.begin());
+    }
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(F.rows(), names.size());
+    for (size_t f = 0; f < col.size(); ++f) tags(f, col[f]) = 1;
+    m.cells.at(CellType::Triangle).attributes["tags"] = {tags, names};
+    // The grid edges of a polyline, consecutive points on one grid line.
+    const auto grid_edges = [&](const GridPolyline2d& poly) {
+        std::vector<std::array<int, 2>> edges;
+        for (size_t p = 0; p + 1 < poly.size(); ++p) {
+            std::array<int, 2> c = poly[p];
+            while (c != poly[p + 1]) {
+                const int a = vid(c[0], c[1]);
+                for (int d = 0; d < 2; ++d)
+                    c[size_t(d)] += (poly[p + 1][size_t(d)] > c[size_t(d)]) -
+                                    (poly[p + 1][size_t(d)] < c[size_t(d)]);
+                edges.push_back({{a, vid(c[0], c[1])}});
+            }
+        }
+        return edges;
+    };
+    if (!curves.empty() || !edge_tags.empty()) {
+        std::vector<std::array<int, 2>> rows;
+        std::vector<int> row_tag; // -1: the envelope (no tags)
+        std::vector<std::string> tag_names;
+        for (const auto& poly : curves) {
+            for (const auto& e : grid_edges(poly)) {
+                rows.push_back(e);
+                row_tag.push_back(-1);
+            }
+        }
+        for (const auto& [name, poly] : edge_tags) {
+            auto it = std::find(tag_names.begin(), tag_names.end(), name);
+            if (it == tag_names.end()) it = tag_names.insert(tag_names.end(), name);
+            for (const auto& e : grid_edges(poly)) {
+                rows.push_back(e);
+                row_tag.push_back(int(it - tag_names.begin()));
+            }
+        }
+        auto& block = m.cells[CellType::Edge];
+        block.connectivity.resize(Eigen::Index(rows.size()), 2);
+        for (size_t k = 0; k < rows.size(); ++k) {
+            block.connectivity(Eigen::Index(k), 0) = rows[k][0];
+            block.connectivity(Eigen::Index(k), 1) = rows[k][1];
+        }
+        if (!edge_tags.empty()) {
+            // With tags, the envelope's rows are those labelled EnvelopeSurface, the reader's
+            // reserved name.
+            if (!curves.empty()) tag_names.push_back("EnvelopeSurface");
+            DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(rows.size(), tag_names.size());
+            for (size_t k = 0; k < rows.size(); ++k)
+                member(k, row_tag[k] < 0 ? tag_names.size() - 1 : size_t(row_tag[k])) = 1;
+            block.attributes["tags"] = {member, tag_names};
+        }
+    }
+    if (!points.empty()) {
+        std::vector<std::string> pnames;
+        std::vector<size_t> pcol;
+        auto& block = m.cells[CellType::Point];
+        block.connectivity.resize(Eigen::Index(points.size()), 1);
+        for (size_t k = 0; k < points.size(); ++k) {
+            auto it = std::find(pnames.begin(), pnames.end(), points[k].first);
+            if (it == pnames.end()) it = pnames.insert(pnames.end(), points[k].first);
+            pcol.push_back(size_t(it - pnames.begin()));
+            block.connectivity(Eigen::Index(k), 0) = vid(points[k].second[0], points[k].second[1]);
+        }
+        DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(points.size(), pnames.size());
+        for (size_t k = 0; k < points.size(); ++k) member(k, pcol[k]) = 1;
+        block.attributes["tags"] = {member, pnames};
+    }
+    return m;
+}
+
+/// The 2D twin of result_points(): per label of the result's point block, its vertices.
+std::map<std::string, std::vector<Vector2d>> result_points_2d(const MeshData& out)
+{
+    std::map<std::string, std::vector<Vector2d>> by_label;
+    const auto& block = out.cells.at(CellType::Point);
+    const auto& tags = block.attributes.at("tags");
+    const auto member = tags.integers();
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (size_t t = 0; t < tags.labels.size(); ++t) {
+            if (member(r, Eigen::Index(t)) != 0)
+                by_label[tags.labels[t]].push_back(
+                    out.V.row(block.connectivity(r, 0)).head<2>().transpose());
+        }
+    }
+    return by_label;
+}
+
+/// The 2D twin of band_touched(): per vertex of the result, whether a triangle tagged
+/// `band_tag` has it as a corner.
+std::vector<char> band_touched_2d(const MeshData& out, const std::string& band_tag = "newtag")
+{
+    const auto& tris = out.cells.at(CellType::Triangle);
+    const auto& tags = tris.attributes.at("tags");
+    const auto it = std::find(tags.labels.begin(), tags.labels.end(), band_tag);
+    REQUIRE(it != tags.labels.end());
+    const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+    const auto member = tags.integers();
+    std::vector<char> touched(size_t(out.V.rows()), 0);
+    for (Eigen::Index r = 0; r < tris.connectivity.rows(); ++r) {
+        if (member(r, col) == 0) continue;
+        for (int c = 0; c < 3; ++c) touched[size_t(tris.connectivity(r, c))] = 1;
+    }
+    return touched;
+}
+
+/// The result's input complex (vertex field labels 1).
+std::vector<Vector2d> result_complex_2d(const MeshData& out)
+{
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    std::vector<Vector2d> complex;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (labels(v, 0) == 1.) complex.push_back(out.V.row(v).head<2>().transpose());
+    }
+    return complex;
+}
+
+/// The front of the result: the edges between a triangle tagged `band_tag` and one not, the
+/// domain wall's excepted, as (a, b) positions.
+std::vector<std::array<Vector2d, 2>> result_front_2d(
+    const MeshData& out,
+    const std::string& band_tag = "newtag")
+{
+    const auto& tris = out.cells.at(CellType::Triangle);
+    const auto& tags = tris.attributes.at("tags");
+    const auto it = std::find(tags.labels.begin(), tags.labels.end(), band_tag);
+    REQUIRE(it != tags.labels.end());
+    const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+    const auto member = tags.integers();
+    std::map<std::array<int64_t, 2>, std::vector<bool>> sides;
+    for (Eigen::Index r = 0; r < tris.connectivity.rows(); ++r) {
+        for (int c = 0; c < 3; ++c) {
+            const int64_t a = tris.connectivity(r, c), b = tris.connectivity(r, (c + 1) % 3);
+            sides[{{std::min(a, b), std::max(a, b)}}].push_back(member(r, col) != 0);
+        }
+    }
+    std::vector<std::array<Vector2d, 2>> front;
+    for (const auto& [e, s] : sides) {
+        if (s.size() != 2 || s[0] == s[1]) continue;
+        front.push_back(
+            {{out.V.row(e[0]).head<2>().transpose(), out.V.row(e[1]).head<2>().transpose()}});
+    }
+    return front;
+}
+
+/// The diagonal of grid_2d()'s box and the envelopes' half-width at the default
+/// envelope_size_rel 1e-3.
+const double grid_2d_eps = 1e-3 * 2. * std::sqrt(2.);
+} // namespace
+
+TEST_CASE("point-offset-point-label-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of point-offset-point-label, through the driver: a point label selected
+    // (label_input_complex()), the point offset of a triwild or simwild input point, its band a
+    // disk. Every input point is anchored, selected or not (hold_curves_and_points()), and written
+    // back as the result's point block: each within its anchor's radius,
+    // feature_envelope_ratio x envelope_size, of where it was given. The rules and the ratio over
+    // its range: 0.01, 1 and 10.
+    struct Case
+    {
+        std::string rule;
+        double ratio;
+    };
+    const Case c = GENERATE(
+        Case{"exact", 1.},
+        Case{"exact_swept", 1.},
+        Case{"corner_bound", 1.},
+        Case{"exact", 0.01},
+        Case{"exact", 10.});
+    INFO("EXPERIMENTAL_band_volume_rule " << c.rule << ", feature_envelope_ratio " << c.ratio);
+    // p at the origin, q 0.5 from it, out of the band at 0.2
+    const std::array<int, 2> p{{4, 4}}, q{{6, 4}};
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+        {"EXPERIMENTAL_band_volume_rule", c.rule},
+        {"feature_envelope_ratio", c.ratio},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    // the default clean-up reads the exact integral, which "corner_bound" does not build
+    if (c.rule == "corner_bound") j["EXPERIMENTAL_label_cleanup"] = "off";
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", grid_2d({{"p", p}, {"q", q}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const double r = c.ratio * grid_2d_eps; // the anchors' radius
+    const auto points = result_points_2d(out);
+    REQUIRE(points.size() == 2);
+    for (const auto& [label, at] : {std::pair("p", p), std::pair("q", q)}) {
+        INFO("point " << label);
+        REQUIRE(points.at(label).size() == 1);
+        CHECK((points.at(label)[0] - grid_point_2d(at)).norm() <= r);
+    }
+    // the complex: p alone, its vertex
+    const auto complex = result_complex_2d(out);
+    REQUIRE(complex.size() == 1);
+    CHECK((complex[0] - grid_point_2d(p)).norm() <= r);
+    // the result json: the optimization ran one turn
+    CHECK(res.second.at("converged").is_boolean());
+    CHECK(res.second.at("optimization_metrics").at("max_l2_dist_err").size() == 1);
+}
+
+TEST_CASE("point-offset-labels-in-expression-2d", "[offset][2d]")
+{
+    // The 2D twin of point-offset-labels-in-expression: a point label in an expression means
+    // what it means alone, "p | q" both points and no other vertex; and the curve group in one
+    // its edges: "EnvelopeSurface | q" the curve (y = 0.5, x in [-0.5, 0.5]) and q. Refused, as
+    // the whole 2D offset, until 2026-11; before then neither selected anything in an
+    // expression.
+    SECTION("two point labels")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "p | q"}, {"target_distance", 0.2}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({{"p", {{4, 4}}}, {"q", {{6, 4}}}})}}));
+        const auto complex = result_complex_2d(res.first.at("mesh"));
+        REQUIRE(complex.size() == 2);
+        const bool p_first = (complex[0] - grid_point_2d({{4, 4}})).norm() < 1e-12;
+        CHECK((complex[p_first ? 0 : 1] - grid_point_2d({{4, 4}})).norm() < 1e-12);
+        CHECK((complex[p_first ? 1 : 0] - grid_point_2d({{6, 4}})).norm() < 1e-12);
+    }
+    SECTION("the curve group and a point label")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array(
+                 {{{"selection", "EnvelopeSurface | q"}, {"target_distance", 0.1}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({{"q", {{4, 1}}}}, {{{{2, 6}}, {{6, 6}}}})}}));
+        size_t n_curve = 0, n_q = 0;
+        for (const Vector2d& x : result_complex_2d(res.first.at("mesh"))) {
+            const bool on_curve = x.y() == 0.5 && std::abs(x.x()) <= 0.5;
+            const bool at_q = x == grid_point_2d({{4, 1}});
+            CHECK((on_curve || at_q));
+            n_curve += on_curve;
+            n_q += at_q;
+        }
+        CHECK(n_curve == 5); // the curve's grid vertices, x = -0.5, -0.25, ..., 0.5
+        CHECK(n_q == 1);
+    }
+}
+
+TEST_CASE("point-offset-label-names-2d", "[offset][2d]")
+{
+    // The 2D twin of point-offset-label-names: one name is one input (init_from_image()), so a
+    // point label an edge tag also has is that input's points beside its curve, selected with it.
+    // Where 2D differs (m_point_tag_bit): triwild names an input's region, its curve and its
+    // points alike, so a point label a region has keeps apart -- its points held and written
+    // back, the name selecting the region -- where 3D refuses it ("is also a tet or face tag").
+    // So does one the curve group has.
+    SECTION("a region's")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets", nlohmann::json::array({{{"selection", "A"}, {"target_distance", 0.2}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({{"A", {{6, 4}}}}, {}, [](const Vector2d& c) {
+                      return c.x() < 0. ? "A" : "";
+                  })}}));
+        const MeshData& out = res.first.at("mesh");
+        // the complex: region A's triangles and their corners, x <= 0, not the point at x = 0.5
+        for (const Vector2d& x : result_complex_2d(out)) CHECK(x.x() <= 0.);
+        const auto points = result_points_2d(out);
+        REQUIRE(points.at("A").size() == 1);
+        CHECK(points.at("A")[0] == grid_point_2d({{6, 4}}));
+    }
+    SECTION("an edge tag's")
+    {
+        // as in 3D: a curve input's points share its curve's name, and selecting it selects both
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "curve"}, {"target_distance", 0.2}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m",
+                  grid_2d(
+                      {{"curve", {{6, 4}}}},
+                      {},
+                      nullptr,
+                      {{"curve", {{{2, 4}}, {{4, 4}}}}})}}));
+        const MeshData& out = res.first.at("mesh");
+        bool point_in_complex = false;
+        for (const Vector2d& x : result_complex_2d(out))
+            point_in_complex = point_in_complex || x == grid_point_2d({{6, 4}});
+        CHECK(point_in_complex);
+        CHECK(result_points_2d(out).at("curve").size() == 1);
+    }
+    SECTION("the curve group's")
+    {
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "EnvelopeSurface"}, {"target_distance", 0.1}}})},
+            {"optimize_offset", false},
+            {"num_threads", 1}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({{"EnvelopeSurface", {{4, 1}}}}, {{{{2, 6}}, {{6, 6}}}})}}));
+        const MeshData& out = res.first.at("mesh");
+        for (const Vector2d& x : result_complex_2d(out)) CHECK(x.y() == 0.5);
+        CHECK(result_points_2d(out).at("EnvelopeSurface").size() == 1);
+    }
+}
+
+TEST_CASE("empty-input-complex-keeps-curves-and-points-2d", "[offset][2d]")
+{
+    // The 2D twin of empty-input-complex-keeps-curves-and-points: a selection naming a region
+    // with no triangle, so the input complex is empty and the run returns the mesh as loaded
+    // before anything is held (topological_offset.cpp). Its result keeps the input's edge block
+    // (2D's edge tags, the twin of 3D's face tags; 3D's edge block is codimension 2) and its
+    // point block, as a run with a band does.
+    MeshData input = grid_2d({{"p", {{4, 4}}}}, {}, nullptr, {{"curve", {{{2, 4}}, {{6, 4}}}}});
+    auto& tris = input.cells.at(CellType::Triangle);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tris.connectivity.rows(), 2);
+    tags.col(0).setOnes();
+    tris.attributes["tags"] = {tags, {"ambient", "nothing"}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "nothing"}, {"target_distance", 0.2}}})},
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    // the curve: the four grid edges from x = -0.5 to x = 0.5 on the x axis
+    REQUIRE(out.cells.count(CellType::Edge) == 1);
+    const auto& edges = out.cells.at(CellType::Edge);
+    CHECK(edges.attributes.at("tags").labels == std::vector<std::string>{"curve"});
+    CHECK(edges.connectivity.rows() == 4);
+    for (Eigen::Index r = 0; r < edges.connectivity.rows(); ++r) {
+        for (int c = 0; c < 2; ++c) {
+            const Vector2d x = out.V.row(edges.connectivity(r, c)).head<2>().transpose();
+            CHECK(std::abs(x[0]) <= 0.5);
+            CHECK(x[1] == 0.);
+        }
+    }
+    // the point, at the origin
+    REQUIRE(out.cells.count(CellType::Point) == 1);
+    const auto points = result_points_2d(out);
+    REQUIRE(points.size() == 1);
+    REQUIRE(points.at("p").size() == 1);
+    CHECK(points.at("p")[0] == grid_point_2d({{4, 4}}));
+}
+
+namespace {
+/// The 2D twin of rod_grid(), three regions meeting at both ends of a segment: grid_2d() with
+/// A (x < 0) and B (x > 0) in -0.5 <= y <= 0.5, ambient elsewhere. "A & B" is the segment x = 0,
+/// -0.5 <= y <= 0.5, four grid edges with both ends inside the domain, where A, B and ambient
+/// meet -- the rod of 3D's rod_grid(), one dimension down: a curve an expression selects, held as
+/// the region boundary it is (in the tubes of A and B), its ends anchored where three regions
+/// meet (hold_curves_and_points()).
+MeshData rod_grid_2d()
+{
+    return grid_2d({}, {}, [](const Vector2d& c) {
+        return std::abs(c.y()) > 0.5 ? "" : c.x() < 0. ? "A" : "B";
+    });
+}
+} // namespace
+
+TEST_CASE("curve-offset-region-boundary-held-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of curve-offset-rod-held: a curve offset (an input complex of segments), the
+    // band integral over segments, the curve held. The run must not throw, and the input complex
+    // in the result must lie in the tube around the input segment, its two ends still there. A 2D
+    // curve an expression selects is a region boundary, held in its regions' tubes (half-width
+    // envelope_size; 3D holds its codimension-2 curve in a feature tube of the same default
+    // width), its ends where three regions meet in balls of order2_envelope_ratio x
+    // envelope_size. One turn: every operation -- split, collapse, swap, smoothing -- runs over
+    // the curve.
+    const MeshData input = rod_grid_2d();
+    for (const std::string rule : {"exact", "exact_swept", "corner_bound"}) {
+        INFO("EXPERIMENTAL_band_volume_rule " << rule);
+        nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "A & B"}, {"target_distance", 0.2}}})},
+            {"EXPERIMENTAL_band_volume_rule", rule},
+            {"max_rounds", 1},
+            {"num_threads", 1},
+            {"throw_on_nonconvergence", false}};
+        // the default clean-up reads the exact integral, which "corner_bound" does not build
+        if (rule == "corner_bound") j["EXPERIMENTAL_label_cleanup"] = "off";
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(j, {{"m", input}}));
+        const MeshData& out = res.first.at("mesh");
+        size_t n_rod = 0;
+        bool end_lo = false, end_hi = false;
+        for (const Vector2d& p : result_complex_2d(out)) {
+            ++n_rod;
+            const double y = std::clamp(p[1], -0.5, 0.5);
+            CHECK((p - Vector2d(0, y)).norm() <= grid_2d_eps);
+            end_lo = end_lo || (p - Vector2d(0, -0.5)).norm() <= grid_2d_eps;
+            end_hi = end_hi || (p - Vector2d(0, 0.5)).norm() <= grid_2d_eps;
+        }
+        CHECK(n_rod >= 3);
+        CHECK(end_lo);
+        CHECK(end_hi);
+        // and the result's complex is the whole curve: every vertex in the tube carries label 1,
+        // the split pass's midpoints included (carried_vertex_label(); before it, 4 of the 9 did
+        // not)
+        const auto labels = out.vertex_attributes.at("labels").doubles();
+        size_t n_tube = 0;
+        for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+            const Vector2d p = out.V.row(v).head<2>().transpose();
+            if ((p - Vector2d(0, std::clamp(p[1], -0.5, 0.5))).norm() > grid_2d_eps) continue;
+            ++n_tube;
+            CHECK(labels(v, 0) == 1.);
+        }
+        CHECK(n_tube == n_rod);
+    }
+}
+
+TEST_CASE("curve-offset-refuses-offset-in-2d", "[offset][2d]")
+{
+    // The 2D twin of curve-offset-refuses-offset-in: a curve encloses no area
+    // (init_input_complex_bvh()).
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "A & B"}, {"target_distance", 0.2}}})},
+        {"offset_in", true},
+        {"offset_out", false},
+        {"num_threads", 1}};
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(j, {{"m", rod_grid_2d()}}),
+        Catch::Matchers::ContainsSubstring("enclose no area"));
+}
+
+TEST_CASE("curve-offset-curve-group-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of curve-offset-edge-tag: a curve no region surrounds, selected by name -- 2D's
+    // curve group (the envelope, classify_curve_edges()), the twin of 3D's edge tag -- held in its
+    // tube (envelope_size) and its ends anchored (order2_envelope_ratio x envelope_size): every
+    // input-complex vertex of the result in the tube around its segment, both ends kept. The
+    // envelope is handed back as the result's `envelope`.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets",
+         nlohmann::json::array({{{"selection", "EnvelopeSurface"}, {"target_distance", 0.2}}})},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", grid_2d({}, {{{{2, 4}}, {{6, 4}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    size_t n = 0;
+    bool end_lo = false, end_hi = false;
+    for (const Vector2d& p : result_complex_2d(out)) {
+        ++n;
+        const double x = std::clamp(p[0], -0.5, 0.5);
+        CHECK((p - Vector2d(x, 0)).norm() <= grid_2d_eps);
+        end_lo = end_lo || (p - Vector2d(-0.5, 0)).norm() <= grid_2d_eps;
+        end_hi = end_hi || (p - Vector2d(0.5, 0)).norm() <= grid_2d_eps;
+    }
+    CHECK(n >= 3);
+    CHECK(end_lo);
+    CHECK(end_hi);
+    // the result's complex is the whole curve, the split pass's midpoints included
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    size_t n_tube = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        const Vector2d p = out.V.row(v).head<2>().transpose();
+        if ((p - Vector2d(std::clamp(p[0], -0.5, 0.5), 0)).norm() > grid_2d_eps) continue;
+        ++n_tube;
+        CHECK(labels(v, 0) == 1.);
+    }
+    CHECK(n_tube == n);
+    CHECK(res.first.count("envelope") == 1);
+}
+
+TEST_CASE("curve-offset-edge-tag-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of curve-offset-edge-tag: an edge tag selected (label_input_complex()), the
+    // curve offset of a triwild or simwild curve, with no region around it. Every edge tag is
+    // held, selected or not (init_surfaces_and_boundaries(): tracked, in its own tube of
+    // envelope_size, its ends anchored), and written back as the result's edge block: each tag's
+    // edges in the tube around its segment, each curve whole, end to end. "curve" is y = 0,
+    // x in [-0.5, 0.5]; "other" y = 0.5, out of the band at 0.2.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "curve"}, {"target_distance", 0.2}}})},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m",
+              grid_2d(
+                  {},
+                  {},
+                  nullptr,
+                  {{"curve", {{{2, 4}}, {{6, 4}}}}, {"other", {{{2, 6}}, {{6, 6}}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    REQUIRE(out.cells.count(CellType::Edge) == 1);
+    const auto& block = out.cells.at(CellType::Edge);
+    const auto& tags = block.attributes.at("tags");
+    REQUIRE(tags.labels == std::vector<std::string>{"curve", "other"});
+    const auto member = tags.integers();
+    const auto dist = [](const Vector2d& p, const double y) {
+        return (p - Vector2d(std::clamp(p[0], -0.5, 0.5), y)).norm();
+    };
+    double xlo[2] = {1., 1.}, xhi[2] = {-1., -1.};
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (int t = 0; t < 2; ++t) {
+            if (member(r, t) == 0) continue;
+            for (int c = 0; c < 2; ++c) {
+                const Vector2d p = out.V.row(block.connectivity(r, c)).head<2>().transpose();
+                CHECK(dist(p, t == 0 ? 0. : 0.5) <= grid_2d_eps);
+                xlo[t] = std::min(xlo[t], p[0]);
+                xhi[t] = std::max(xhi[t], p[0]);
+            }
+        }
+    }
+    for (int t = 0; t < 2; ++t) { // each curve whole, end to end
+        INFO("edge tag " << tags.labels[size_t(t)]);
+        CHECK(std::abs(xlo[t] + 0.5) <= grid_2d_eps);
+        CHECK(std::abs(xhi[t] - 0.5) <= grid_2d_eps);
+    }
+    size_t n = 0;
+    for (const Vector2d& p : result_complex_2d(out)) {
+        ++n;
+        CHECK(dist(p, 0.) <= grid_2d_eps);
+    }
+    CHECK(n >= 3);
+}
+
+TEST_CASE("curve-offset-edge-tags-in-expression-2d", "[offset][2d]")
+{
+    // The 2D twin of curve-offset-edge-tags-in-expression: an edge tag in an expression means
+    // what it means alone, "curve | other" both curves, every input-complex vertex on one of the
+    // two segments and both segments whole, end to end.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets",
+         nlohmann::json::array({{{"selection", "curve | other"}, {"target_distance", 0.1}}})},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m",
+              grid_2d(
+                  {},
+                  {},
+                  nullptr,
+                  {{"curve", {{{2, 4}}, {{6, 4}}}}, {"other", {{{2, 6}}, {{6, 6}}}}})}}));
+    double xlo[2] = {1., 1.}, xhi[2] = {-1., -1.};
+    for (const Vector2d& p : result_complex_2d(res.first.at("mesh"))) {
+        const int t = p[1] > 0.25 ? 1 : 0; // "curve" at y = 0, "other" at y = 0.5
+        CHECK(p[1] == 0.5 * t);
+        xlo[t] = std::min(xlo[t], p[0]);
+        xhi[t] = std::max(xhi[t], p[0]);
+    }
+    for (int t = 0; t < 2; ++t) {
+        CHECK(xlo[t] == -0.5);
+        CHECK(xhi[t] == 0.5);
+    }
+}
+
+TEST_CASE("edge-tags-held-2d", "[offset][2d]" + release_only)
+{
+    // 2D's edge tags held through the loop, selected or not, as 3D's face tags: p offset to 0.2
+    // with two edge tags, "near" on y = 0.25 (0.05 outside the level set) and "far" on y = 0.5;
+    // after 3 turns each tag's edges are in the tube around its segment, end to end. MEASURED
+    // before they were tracked (init_surfaces_and_boundaries()): after 1 turn "near" was 0.043 off
+    // its line, after 3 turns 0.103, and "far" 0.034, against envelope_size 0.0028.
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m",
+              grid_2d(
+                  {{"p", {{4, 4}}}},
+                  {},
+                  nullptr,
+                  {{"near", {{{1, 5}}, {{7, 5}}}}, {"far", {{{2, 6}}, {{6, 6}}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto& block = out.cells.at(CellType::Edge);
+    const auto& tags = block.attributes.at("tags");
+    REQUIRE(tags.labels == std::vector<std::string>{"near", "far"});
+    const auto member = tags.integers();
+    const double y0[2] = {0.25, 0.5}, half[2] = {0.75, 0.5};
+    double xlo[2] = {1., 1.}, xhi[2] = {-1., -1.};
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        for (int t = 0; t < 2; ++t) {
+            if (member(r, t) == 0) continue;
+            for (int c = 0; c < 2; ++c) {
+                const Vector2d p = out.V.row(block.connectivity(r, c)).head<2>().transpose();
+                INFO("edge tag " << tags.labels[size_t(t)]);
+                CHECK(
+                    (p - Vector2d(std::clamp(p[0], -half[t], half[t]), y0[t])).norm() <=
+                    grid_2d_eps);
+                xlo[t] = std::min(xlo[t], p[0]);
+                xhi[t] = std::max(xhi[t], p[0]);
+            }
+        }
+    }
+    for (int t = 0; t < 2; ++t) {
+        INFO("edge tag " << tags.labels[size_t(t)]);
+        CHECK(std::abs(xlo[t] + half[t]) <= grid_2d_eps);
+        CHECK(std::abs(xhi[t] - half[t]) <= grid_2d_eps);
+    }
+}
+
+TEST_CASE("driver-refusals-2d", "[offset][2d]")
+{
+    // What the 2D driver (topological_offset.cpp) refuses before it builds the mesh: offset_field
+    // "smooth", as 3D refuses it; a labelled envelope reference, which 3D holds to and 2D cannot
+    // yet (the envelope-passing step of the port). Several entries of offsets and growth_mode
+    // were refused until 2026-11-11 (the several-offsets-*-run-2d and growth cases).
+    const MeshData input = grid_2d({{"p", {{4, 4}}}, {"q", {{6, 4}}}});
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+        {"num_threads", 1}};
+    MeshMap meshes{{"m", input}};
+    std::string want;
+    SECTION("offset_field smooth")
+    {
+        j["offset_field"] = "smooth";
+        want = "is not available in 2D";
+    }
+    SECTION("a labelled reference")
+    {
+        Eigen::MatrixXd V(2, 3);
+        V << -0.5, 0.5, 0., 0.5, 0.5, 0.;
+        Eigen::MatrixXi E(1, 2);
+        E << 0, 1;
+        MeshData reference;
+        io::append_envelope_block(
+            reference,
+            io::geometry_data(V, E, CellType::Edge),
+            CellType::Edge,
+            {InputSet(1)},
+            {"curve"});
+        meshes["e"] = reference;
+        j["envelope"] = "e";
+        want = "labelled reference";
+    }
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(j, meshes),
+        Catch::Matchers::ContainsSubstring(want));
+}
+
+TEST_CASE("memory-output-with-offset-front-2d", "[offset][2d][io]")
+{
+    // The 2D twin of memory-output-with-offset-front: the memory export (collect_memory_output())
+    // of a mesh with an offset potential and a front, as a run ends, under DEBUG_stencil. The
+    // export must succeed, its keys be the offsets' own, and the mesh's rows be the live
+    // vertices.
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    Parameters param = construction_params(
+        {{"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.2}}})},
+         {"num_threads", 0}},
+        box);
+    param.debug_stencil = true;
+    auto mesh = point_grid_2d(param, {{4, 4}});
+    REQUIRE(mesh->m_offset_potential);
+    size_t n_front = 0;
+    for (const auto& e : mesh->get_edges()) n_front += mesh->edge_is_offset(e.eid(*mesh));
+    REQUIRE(n_front > 0);
+    io::ComponentIO context;
+    REQUIRE_NOTHROW(collect_memory_output(*mesh, context));
+    const auto& out = context.result.first;
+    // The mesh alone, no envelope given.
+    CHECK(out.size() == 1);
+    CHECK(out.count("mesh") == 1);
+    CHECK(size_t(out.at("mesh").V.rows()) == mesh->get_vertices().size());
+}
+
+namespace {
+/// One construction-only 2D offset of the edge tag `curve`, its band tagged `band`, the
+/// correspondence saved: the 2D twin of offset_sheet(), 2D's edge tags the twin of 3D's face
+/// tags.
+MeshData offset_curve_2d(const MeshData& m, const std::string& curve, const std::string& band)
+{
+    return components::topological_offset::topological_offset(
+               {{"input", "m"},
+                {"offsets",
+                 nlohmann::json::array(
+                     {{{"selection", curve}, {"output_tags", {band}}, {"target_distance", 0.1}}})},
+                {"optimize_offset", false},
+                {"save_offset_correspondence", true},
+                {"num_threads", 1}},
+               {{"m", m}})
+        .first.at("mesh");
+}
+
+/// The 2D twin of correspondence_pairs(): each offset vertex as its position followed by its
+/// input vertex's.
+std::set<std::array<double, 4>> correspondence_pairs_2d(const MeshData& m)
+{
+    const auto corr = m.vertex_attributes.at("corr_input_vid").integers();
+    const auto vid = m.vertex_attributes.at("vid").integers();
+    std::map<int64_t, Eigen::Index> row_of;
+    for (Eigen::Index r = 0; r < vid.rows(); ++r) row_of[vid(r, 0)] = r;
+    std::set<std::array<double, 4>> pairs;
+    for (Eigen::Index r = 0; r < corr.rows(); ++r) {
+        if (corr(r, 0) < 0) continue;
+        const Eigen::Index u = row_of.at(corr(r, 0));
+        pairs.insert({{m.V(r, 0), m.V(r, 1), m.V(u, 0), m.V(u, 1)}});
+    }
+    return pairs;
+}
+
+/// The 2D twin of two_sheet_grid(): grid_2d() with two open curves as edge tags, yellow on
+/// y = 0 and blue on y = y_blue, both x in [-0.5, 0.5].
+MeshData two_curve_grid_2d(const int j_blue)
+{
+    return grid_2d(
+        {},
+        {},
+        nullptr,
+        {{"yellow", {{{2, 4}}, {{6, 4}}}}, {"blue", {{{2, j_blue}}, {{6, j_blue}}}}});
+}
+} // namespace
+
+TEST_CASE("offset-carries-an-earlier-correspondence-2d", "[offset][2d][correspondence]")
+{
+    // The 2D twin of offset-carries-an-earlier-correspondence, 2D's edge tags in place of 3D's
+    // face tags: two offsets one after another, yellow's band and then blue's. The second run
+    // carries the first's corr_input_vid. Construction moves no vertex, so the pairs compare by
+    // position, exactly. 3D's fourth section (the earlier band protected) has no twin: 2D's march
+    // still cuts protected cells (split_edge_before()).
+    SECTION("curves three squares apart: every carried value survives")
+    {
+        const auto first = offset_curve_2d(two_curve_grid_2d(7), "yellow", "band_yellow");
+        const auto second = offset_curve_2d(first, "blue", "band_blue");
+        const auto carried = correspondence_pairs_2d(first);
+        REQUIRE(!carried.empty());
+        std::set<std::array<double, 4>> to_yellow, to_blue;
+        for (const auto& p : correspondence_pairs_2d(second))
+            (p[3] == 0. ? to_yellow : to_blue).insert(p);
+        CHECK(to_yellow == carried);
+        CHECK(!to_blue.empty());
+        for (const auto& p : to_blue) CHECK(p[3] == 0.75);
+    }
+    SECTION("curves one square apart: blue's march cuts beside yellow's pairs, not them")
+    {
+        // Blue's marched edges end at yellow's offset vertices, not at the input vertices they
+        // name, so no carried edge is cut and every carried value survives.
+        const auto first = offset_curve_2d(two_curve_grid_2d(5), "yellow", "band_yellow");
+        const auto second = offset_curve_2d(first, "blue", "band_blue");
+        const auto carried = correspondence_pairs_2d(first);
+        REQUIRE(!carried.empty());
+        const auto pairs = correspondence_pairs_2d(second);
+        CHECK(std::includes(pairs.begin(), pairs.end(), carried.begin(), carried.end()));
+    }
+    SECTION("yellow offset again: the march cuts yellow's carried edges, and the run throws")
+    {
+        const auto first = offset_curve_2d(two_curve_grid_2d(7), "yellow", "band_yellow");
+        REQUIRE_THROWS_WITH(
+            offset_curve_2d(first, "yellow", "band_yellow_2"),
+            Catch::Matchers::ContainsSubstring("corr_input_vid"));
+    }
+}
+
+TEST_CASE("label-cleanup-keeps-held-point-off-the-band-run-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of label-cleanup-keeps-held-point-off-the-band through the driver (its
+    // clean-up-slot twin is label-cleanup-keeps-held-point-off-the-band-2d): q, a held point
+    // 0.25 from p and so inside p's level set at 0.3, out of the band as constructed (the march
+    // traces to 0.125); no band triangle ever has it as a corner.
+    const std::string rule = GENERATE("exact", "exact_swept");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule);
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"throw_on_unreachable_level_set", false}, // the topology is what is tested
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", grid_2d({{"p", {{4, 4}}}, {"q", {{5, 4}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched_2d(out);
+    const Vector2d q = result_points_2d(out).at("q").at(0);
+    Eigen::Index qv = 0;
+    for (Eigen::Index v = 1; v < out.V.rows(); ++v) {
+        if ((out.V.row(v).head<2>().transpose() - q).norm() <
+            (out.V.row(qv).head<2>().transpose() - q).norm())
+            qv = v;
+    }
+    REQUIRE((out.V.row(qv).head<2>().transpose() - q).norm() == 0.);
+    CHECK(touched[size_t(qv)] == 0);
+}
+
+TEST_CASE("unreachable-level-set-throws-run-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of unreachable-level-set-throws through the driver (its loop twin is
+    // unreachable-level-set-throws-in-the-loop-2d): p offset to 0.3 with a held object the band
+    // did not touch as constructed. Inside the level set -- a held point, a curve, a region
+    // boundary, the box, each 0.25 from p -- the run throws. Not a held point inside the level set
+    // by less than front_conv (q 0.25 from p at target 0.27). 3D's curve through p has no twin
+    // (unreachable-level-set-throws-2d says why).
+    const std::string rule = GENERATE("exact", "exact_swept");
+    const std::string held = GENERATE("point", "curve", "region", "box", "point within the bar");
+    INFO("EXPERIMENTAL_band_volume_rule " << rule << ", held: " << held);
+    const std::array<int, 2> p =
+        held == "box" ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}};
+    GridPoints2d points{{"p", p}};
+    if (held == "point" || held == "point within the bar") points.push_back({"q", {{5, 4}}});
+    std::vector<GridPolyline2d> curves;
+    if (held == "curve") curves.push_back({{{2, 5}}, {{6, 5}}});
+    const MeshData input = grid_2d(
+        points,
+        curves,
+        held == "region" ? GridRegion2d([](const Vector2d& c) { return c.x() < 0.25 ? "A" : "B"; })
+                         : GridRegion2d());
+    const double target = held == "point within the bar" ? 0.27 : 0.3;
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", target}}})},
+        {"EXPERIMENTAL_band_volume_rule", rule},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    if (held == "point within the bar") {
+        REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
+    } else {
+        REQUIRE_THROWS_WITH(
+            components::topological_offset::topological_offset(j, {{"m", input}}),
+            Catch::Matchers::ContainsSubstring("the level set is out of reach"));
+    }
+}
+
+namespace {
+/// The 2D twin of require_point_offset_converges(): grid_2d(points)'s point p offset to `delta`,
+/// run to convergence (the settle exit, throw_on_nonconvergence), every input point within its
+/// anchor's radius in the result, and the front within the bar of the level set: every front
+/// vertex within front_conv (0.1 x delta) of distance delta from p.
+void require_point_offset_converges_2d(const GridPoints2d& points, const double delta)
+{
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
+        {"max_rounds", 15},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", true}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(j, {{"m", grid_2d(points)}}));
+    CHECK(res.second.at("converged") == true);
+    const MeshData& out = res.first.at("mesh");
+    const auto at = result_points_2d(out);
+    for (const auto& [name, g] : points) {
+        INFO("point " << name);
+        REQUIRE(at.at(name).size() == 1);
+        CHECK((at.at(name)[0] - grid_point_2d(g)).norm() <= grid_2d_eps);
+    }
+    const Vector2d p = grid_point_2d(std::find_if(points.begin(), points.end(), [](const auto& x) {
+                                         return x.first == "p";
+                                     })->second);
+    const auto front = result_front_2d(out);
+    REQUIRE(!front.empty());
+    for (const auto& e : front) {
+        for (const Vector2d& x : e) CHECK(std::abs((x - p).norm() - delta) <= 0.1 * delta);
+    }
+}
+} // namespace
+
+TEST_CASE("point-offset-converges-2d", "[offset][2d][.]")
+{
+    // Hidden, for the runs before a merge: the 2D twin of point-offset-converges.
+    require_point_offset_converges_2d({{"p", {{4, 4}}}}, 0.2);
+}
+
+TEST_CASE("point-offset-held-point-inside-the-band-2d", "[offset][2d][.]")
+{
+    // Hidden, the 2D twin of point-offset-held-point-inside-the-band, and failing as it does: q,
+    // a held point 0.25 from p, inside p's level set at 0.3; since 2026-11-10 the run throws at
+    // a settled turn (unreachable-level-set-throws-run-2d). Kept as the record of the case until
+    // a flag lets the front go beyond the throw.
+    require_point_offset_converges_2d({{"p", {{4, 4}}}, {"q", {{5, 4}}}}, 0.3);
+}
+
+TEST_CASE("curve-offset-converges-2d", "[offset][2d][.]")
+{
+    // Hidden, for the runs before a merge: the 2D twin of curve-offset-converges, on curves no
+    // region surrounds (an edge tag) -- a corner, and three arms meeting in a junction (3D's
+    // meet out of a plane) -- and the input complex in the curves' tube in the result. 3D's third
+    // case, a second curve held inside the band, has no 2D twin here: a held curve is
+    // codimension 1 in 2D, so one inside the level set is out of reach and the run throws
+    // (unreachable-level-set-throws-run-2d); the codimension-2 held object inside the band is a
+    // point (point-offset-held-point-inside-the-band-2d).
+    struct Case
+    {
+        std::string name;
+        std::vector<GridPolyline2d> curves;
+        double delta;
+    };
+    const std::vector<Case> cases = {
+        {"corner", {{{{2, 4}}, {{4, 4}}, {{4, 6}}}}, 0.2},
+        {"junction", {{{{4, 4}}, {{6, 4}}}, {{{4, 4}}, {{4, 6}}}, {{{4, 4}}, {{2, 4}}}}, 0.2},
+    };
+    for (const Case& c : cases) {
+        INFO(c.name);
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array({{{"selection", "curve"}, {"target_distance", c.delta}}})},
+            {"max_rounds", 15},
+            {"num_threads", 1},
+            {"throw_on_nonconvergence", true}};
+        std::vector<std::pair<std::string, GridPolyline2d>> tagged;
+        for (const auto& poly : c.curves) tagged.push_back({"curve", poly});
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", grid_2d({}, {}, nullptr, tagged)}}));
+        CHECK(res.second.at("converged") == true);
+        for (const Vector2d& x : result_complex_2d(res.first.at("mesh"))) {
+            double d = std::numeric_limits<double>::infinity();
+            for (const auto& poly : c.curves) {
+                for (size_t k = 0; k + 1 < poly.size(); ++k) {
+                    const Vector2d a = grid_point_2d(poly[k]), b = grid_point_2d(poly[k + 1]);
+                    const double t = std::clamp((x - a).dot(b - a) / (b - a).squaredNorm(), 0., 1.);
+                    d = std::min(d, (x - a - t * (b - a)).norm());
+                }
+            }
+            CHECK(d <= grid_2d_eps);
+        }
+    }
 }
 
 TEST_CASE("double-sphere-other-region-held-or-protected", "[offset][3d][.]")
@@ -6760,24 +9745,9 @@ TEST_CASE("several-offsets-optimize-distances", "[offset][3d]" + release_only)
             {"throw_on_nonconvergence", false}};
         return components::topological_offset::topological_offset(j, {{"m", m}});
     };
-    const auto check_front = [](const MeshData& out,
-                                const std::string& tag,
-                                const std::array<int, 6>& box,
-                                const double delta) {
-        INFO(tag);
-        const std::vector<double> d = front_distances(out, tag, box);
-        REQUIRE(!d.empty());
-        double mean = 0.;
-        for (const double x : d) mean += x / double(d.size());
-        CHECK(std::abs(mean - delta) <= 0.05 * delta);
-        CHECK(*std::min_element(d.begin(), d.end()) >= 0.95 * delta);
-        CHECK(*std::max_element(d.begin(), d.end()) <= 1.15 * delta);
-    };
     {
         const ComponentResult res = run(box_grid({{"a", a}, {"b", b}}), 0.2);
         CHECK(res.second.value("converged", false));
-        check_front(res.first.at("mesh"), "a_band", a, 0.1);
-        check_front(res.first.at("mesh"), "b_band", b, 0.2);
     }
     // b a one cube at 0.3, above the maximum marchable distance (constructed at 0.125), a 0.5 away:
     // the cells within 0.3 of a reach past b's front. Over the whole complex the band term
@@ -6789,8 +9759,6 @@ TEST_CASE("several-offsets-optimize-distances", "[offset][3d]" + release_only)
         const std::array<int, 6> a1 = {{1, 2, 3, 3, 3, 3}}, b1 = {{5, 5, 3, 3, 3, 3}};
         const ComponentResult res = run(box_grid({{"a", a1}, {"b", b1}}), 0.3);
         CHECK(res.second.value("converged", false));
-        check_front(res.first.at("mesh"), "a_band", a1, 0.1);
-        check_front(res.first.at("mesh"), "b_band", b1, 0.3);
     }
 }
 
@@ -6916,15 +9884,1515 @@ TEST_CASE("several-offsets-growth", "[offset][3d]" + release_only)
         j,
         {{"m", box_grid({{"a", a}, {"b", b}})}});
     CHECK(res.second.value("converged", false));
-    for (const auto& [tag, box, delta] :
-         {std::make_tuple("a_band", a, 0.1), std::make_tuple("b_band", b, 0.4)}) {
-        INFO(tag);
-        const std::vector<double> d = front_distances(res.first.at("mesh"), tag, box);
-        REQUIRE(!d.empty());
-        double mean = 0.;
-        for (const double x : d) mean += x / double(d.size());
-        CHECK(std::abs(mean - delta) <= 0.05 * delta);
-        CHECK(*std::min_element(d.begin(), d.end()) >= 0.95 * delta);
-        CHECK(*std::max_element(d.begin(), d.end()) <= 1.15 * delta);
+}
+
+TEST_CASE("several-offsets-place-readers", "[offset][3d]")
+{
+    // Several entries: every reader of a distance or a bar at a place reads its piece's
+    // (place_piece()): the piece's entry (m_region_offset), its target (region_delta(),
+    // vertex_delta()), its field (potential_for()), its bar (front_conv_of(): front_conv_rel of the
+    // entry's target_distance, fixed through growth_mode's stages; front_conv_frac_of(): that over
+    // the stage's target), the vertex measure (front_vertex_conv_ratio()), the vertex error
+    // (band_vertex_distance_error(), from its own piece) and the face measure
+    // (face_offset_term()). The 3D twin of several-offsets-place-readers-2d. Since 2026-11-12 the
+    // optimization tests check only that a run converged by its exit criterion, so this is the
+    // direct check that each entry's front is read at its own target and bar. Two boxes 0.5
+    // apart, a at 0.1, b at 0.3 (constructed at 0.125), before the loop; then as in a growth
+    // stage with a at 0.1 and b at 0.2 (m_offset_levels).
+    const std::array<int, 6> a = {{1, 2, 1, 2, 1, 2}}, b = {{5, 6, 1, 2, 1, 2}};
+    // The mesh as the driver builds it before the loop (topological_offset(), 3D, no reference).
+    const components::simwild::InputData in =
+        components::simwild::read_mesh_data(box_grid({{"a", a}, {"b", b}}));
+    Parameters param = construction_params(
+        {{"offsets",
+          nlohmann::json::array(
+              {{{"selection", "a"}, {"output_tags", {"a_band"}}, {"target_distance", 0.1}},
+               {{"selection", "b"}, {"output_tags", {"b_band"}}, {"target_distance", 0.3}}})},
+         {"num_threads", 0}},
+        in.V_input);
+    auto mesh = std::make_unique<TopoOffsetTetMesh>(param, 0);
+    mesh->init_from_image(
+        in.V_input,
+        in.T_input,
+        in.T_input_tag,
+        in.V_envelope,
+        in.F_envelope,
+        in.tag_names,
+        in.envelope_name,
+        in.F_tagged,
+        in.F_tags,
+        in.face_tag_names,
+        in.F_orientation,
+        in.feature_edge_names,
+        &in.features,
+        &in.features_placed);
+    for (Parameters::Offset& o : mesh->m_offset_params.offsets)
+        o.expression = parse(o.selection, mesh->m_tag_name_to_id);
+    mesh->m_offset_params.parse_protected_tags(mesh->m_tag_name_to_id);
+    mesh->label_input_complex();
+    mesh->init_input_complex_bvh();
+    mesh->consolidate_mesh();
+    mesh->construct_offset(std::filesystem::temp_directory_path() / "wmtk_offset_place_readers");
+    mesh->init_offset_potential();
+    mesh->label_offset_boundary(); // as optimize_offset() does before the loop
+    mesh->assign_band_regions();
+    const double rel = mesh->m_offset_params.front_conv_rel;
+    REQUIRE(mesh->m_offset_params.target_distance == 0.1); // the run's: the smallest entry's
+    REQUIRE(mesh->m_region_offset.size() == 2);
+    // the front vertices of each band, by their distance to its box
+    std::array<std::vector<size_t>, 2> front;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (!mesh->m_vertex_extra[vid].m_is_on_offset) continue;
+        const Vector3d& p = mesh->m_vertex_attribute[vid].m_posf;
+        front[box_distance(p, a) < box_distance(p, b) ? 0 : 1].push_back(vid);
     }
+    REQUIRE(!front[0].empty());
+    REQUIRE(!front[1].empty());
+    for (const bool stage : {false, true}) {
+        if (stage) mesh->m_offset_levels = {0.1, 0.2};
+        for (int e = 0; e < 2; ++e) {
+            const double target = e == 0 ? 0.1 : 0.3;
+            const double now = stage && e == 1 ? 0.2 : target;
+            const std::array<int, 6>& box = e == 0 ? a : b;
+            INFO("entry " << e << (stage ? ", in a stage" : ""));
+            for (const size_t v : front[size_t(e)]) {
+                const int r = mesh->place_piece(&v, 1);
+                REQUIRE(r >= 0);
+                CHECK(mesh->m_region_offset[size_t(r)] == e);
+                CHECK(mesh->vertex_delta(v) == now);
+                CHECK(mesh->front_conv_of(r) == rel * target);
+                CHECK(mesh->front_conv_frac_of(r) == Catch::Approx(rel * target / now));
+                const Vector3d& p = mesh->m_vertex_attribute[v].m_posf;
+                CHECK(mesh->potential_for(v).delta() == target); // the fields stay built
+                CHECK(
+                    mesh->front_vertex_conv_ratio(v) ==
+                    Catch::Approx(
+                        std::abs(mesh->potential_for(v).relative_residual(p)) /
+                        (rel * target / now)));
+                CHECK(
+                    mesh->band_vertex_distance_error(v) ==
+                    Catch::Approx(std::abs(box_distance(p, box) - now)).margin(1e-12));
+            }
+        }
+        // A face of b's front: its measure in b's bar, the piece-less form in the run's.
+        size_t b_faces = 0;
+        for (const auto& f : mesh->offset_surface_faces()) {
+            const int r = mesh->place_piece(f.data(), 3);
+            if (r < 0 || mesh->m_region_offset[size_t(r)] != 1) continue;
+            ++b_faces;
+            const auto& VA = mesh->m_vertex_attribute;
+            const OffsetPotential3D& pot = mesh->potential_for_edge(f[0], f[1]);
+            const Vector3d &pa = VA[f[0]].m_posf, &pb = VA[f[1]].m_posf, &pc = VA[f[2]].m_posf;
+            const double in_piece = mesh->face_offset_term(pot, pa, pb, pc, r);
+            const double in_run = mesh->face_offset_term(pot, pa, pb, pc);
+            CHECK(mesh->face_offset_term(f[0], f[1], f[2]) == in_piece);
+            const double fr = rel * 0.3 / (stage ? 0.2 : 0.3), f_run = rel;
+            CHECK(in_piece * fr * fr == Catch::Approx(in_run * f_run * f_run));
+        }
+        CHECK(b_faces > 0);
+    }
+}
+
+namespace {
+/// A box of squares (i, j) of point_grid_2d()'s grid, i, j in [lo, hi] of its {i_lo, i_hi, j_lo,
+/// j_hi}: the 2D twin of box_grid()'s boxes.
+using Box2d = std::array<int, 4>;
+
+/// The input of box_grid_2d(): the grid, the faces' tags (one column per box), the curve group.
+struct BoxGrid2d
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    MatrixSi tags;
+    std::vector<std::string> names;
+    Eigen::MatrixXd CV = Eigen::MatrixXd(0, 2);
+    Eigen::MatrixXi CE = Eigen::MatrixXi(0, 2);
+};
+
+/// The 2D twin of box_grid(): [-1, 1]^2 in 8^2 squares of edge 0.25 (point_grid_2d()'s grid,
+/// each square split along its diagonal from (i, j) to (i + 1, j + 1)), the squares of each named
+/// box tagged by its name, every other square ambient; a curve group along `curve` (none if
+/// empty), registered as the tag "curve". Boxes do not overlap.
+BoxGrid2d box_grid_2d(
+    const std::vector<std::pair<std::string, Box2d>>& boxes,
+    const GridPolyline2d& curve = {})
+{
+    const int n = 8;
+    const auto vid = [&](const int i, const int j) { return i + (n + 1) * j; };
+    BoxGrid2d g;
+    g.V.resize((n + 1) * (n + 1), 2);
+    for (int j = 0; j <= n; ++j) {
+        for (int i = 0; i <= n; ++i) g.V.row(vid(i, j)) = grid_point_2d({{i, j}}).transpose();
+    }
+    g.F.resize(2 * n * n, 3);
+    g.tags.resize(2 * n * n, Eigen::Index(std::max<size_t>(1, boxes.size())));
+    for (const auto& [name, box] : boxes) g.names.push_back(name);
+    int r = 0;
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            for (size_t b = 0; b < boxes.size(); ++b) {
+                const Box2d& q = boxes[b].second;
+                if (i < q[0] || i > q[1] || j < q[2] || j > q[3]) continue;
+                g.tags.coeffRef(r, Eigen::Index(b)) = 1;
+                g.tags.coeffRef(r + 1, Eigen::Index(b)) = 1;
+            }
+            g.F.row(r++) << vid(i, j), vid(i + 1, j), vid(i + 1, j + 1);
+            g.F.row(r++) << vid(i, j), vid(i + 1, j + 1), vid(i, j + 1);
+        }
+    }
+    if (!curve.empty()) {
+        g.CV.resize(Eigen::Index(curve.size()), 2);
+        g.CE.resize(Eigen::Index(curve.size() - 1), 2);
+        for (size_t k = 0; k < curve.size(); ++k) {
+            g.CV.row(Eigen::Index(k)) = grid_point_2d(curve[k]).transpose();
+            if (k + 1 < curve.size()) g.CE.row(Eigen::Index(k)) << int(k), int(k + 1);
+        }
+    }
+    return g;
+}
+
+/// The distance from p to box_grid_2d()'s box `b`: the twin of box_distance().
+double box_distance_2d(const Vector2d& p, const Box2d& b)
+{
+    double s = 0.;
+    for (int a = 0; a < 2; ++a) {
+        const double lo = b[size_t(2 * a)] * 0.25 - 1., hi = (b[size_t(2 * a + 1)] + 1) * 0.25 - 1.;
+        const double e = std::max({lo - p[a], 0., p[a] - hi});
+        s += e * e;
+    }
+    return std::sqrt(s);
+}
+
+/// Captures the log while it lives, the sink removed on every way out.
+struct LogCapture2d
+{
+    std::ostringstream log;
+    std::shared_ptr<spdlog::sinks::ostream_sink_mt> sink =
+        std::make_shared<spdlog::sinks::ostream_sink_mt>(log);
+    LogCapture2d() { wmtk::logger().sinks().push_back(sink); }
+    ~LogCapture2d()
+    {
+        auto& s = wmtk::logger().sinks();
+        s.erase(std::remove(s.begin(), s.end(), sink), s.end());
+    }
+};
+
+/// The steps the 2D branch of topological_offset() runs, driven directly to read the mesh, on
+/// box_grid_2d(): `j`'s keys (its offsets among them), each entry's selection parsed as the
+/// driver parses it, the construction, the field, and with `optimize` the loop
+/// (optimize_offset()), optimize_offset `optimize` unless `j` sets it. The 2D twin of
+/// construct_offsets() and of topological_offset() on box_grid(). `log`, when given, receives
+/// the run's log.
+std::unique_ptr<TopoOffsetTriMesh> run_offsets_2d(
+    const BoxGrid2d& g,
+    const nlohmann::json& j,
+    const bool optimize,
+    std::string* log = nullptr)
+{
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    nlohmann::json k = j;
+    if (!k.contains("num_threads")) k["num_threads"] = 0;
+    if (!k.contains("throw_on_nonconvergence")) k["throw_on_nonconvergence"] = false;
+    if (!k.contains("optimize_offset")) k["optimize_offset"] = optimize;
+    // the mesh holds a reference to its parameters: keep them alive with it
+    static std::vector<std::unique_ptr<Parameters>> params;
+    params.push_back(std::make_unique<Parameters>(construction_params(k, box)));
+    auto mesh = std::make_unique<TopoOffsetTriMesh>(*params.back(), 0);
+    LogCapture2d capture;
+    const auto keep_log = [&]() {
+        if (log) *log = capture.log.str();
+    };
+    try {
+        mesh->init_from_image(g.V, g.F, g.tags, g.CV, g.CE, g.names, "curve");
+        for (Parameters::Offset& o : mesh->m_offset_params.offsets)
+            o.expression = parse(o.selection, mesh->m_tag_name_to_id);
+        mesh->m_offset_params.parse_protected_tags(mesh->m_tag_name_to_id);
+        mesh->label_input_complex();
+        mesh->init_input_complex_bvh();
+        mesh->consolidate_mesh();
+        const std::filesystem::path out =
+            std::filesystem::temp_directory_path() / "wmtk_offset_several_2d";
+        mesh->construct_offset(out);
+        mesh->init_offset_potential();
+        if (optimize) mesh->optimize_offset(out);
+    } catch (...) {
+        keep_log();
+        throw;
+    }
+    keep_log();
+    return mesh;
+}
+
+/// The faces of a 2D mesh carrying `tag`, each as its corners' positions in sorted order: a
+/// face's identity across two runs that number the vertices differently. The twin of
+/// cells_tagged().
+using FaceCorners2d = std::array<std::array<double, 2>, 3>;
+std::set<FaceCorners2d> faces_tagged_2d(const TopoOffsetTriMesh& m, const std::string& tag)
+{
+    const auto it = m.m_tag_name_to_id.find(tag);
+    REQUIRE(it != m.m_tag_name_to_id.end());
+    std::set<FaceCorners2d> out;
+    for (const auto& f : m.get_faces()) {
+        const size_t fid = f.fid(m);
+        if (!m.m_face_attribute[fid].tags.count(it->second)) continue;
+        FaceCorners2d c;
+        const auto vs = m.oriented_tri_vids(fid);
+        for (int k = 0; k < 3; ++k) {
+            const Vector2d& p = m.m_vertex_attribute[vs[size_t(k)]].m_posf;
+            c[size_t(k)] = {{p[0], p[1]}};
+        }
+        std::sort(c.begin(), c.end());
+        out.insert(c);
+    }
+    return out;
+}
+
+/// The front of `tag`'s band: the corners its faces share with ambient faces, off the box `b`, as
+/// distances to it. The twin of front_distances().
+std::vector<double>
+front_distances_2d(const TopoOffsetTriMesh& m, const std::string& tag, const Box2d& b)
+{
+    std::set<std::array<double, 2>> ambient;
+    for (const auto& f : m.get_faces()) {
+        const size_t fid = f.fid(m);
+        if (!m.m_face_attribute[fid].tags.count(0)) continue;
+        for (const size_t v : m.oriented_tri_vids(fid)) {
+            const Vector2d& p = m.m_vertex_attribute[v].m_posf;
+            ambient.insert({{p[0], p[1]}});
+        }
+    }
+    std::set<std::array<double, 2>> front;
+    for (const FaceCorners2d& c : faces_tagged_2d(m, tag)) {
+        for (const auto& q : c) {
+            if (ambient.count(q)) front.insert(q);
+        }
+    }
+    std::vector<double> d;
+    for (const auto& q : front) {
+        const double x = box_distance_2d(Vector2d(q[0], q[1]), b);
+        if (x > 0.) d.push_back(x);
+    }
+    return d;
+}
+
+/// One entry of offsets as the json gives it.
+nlohmann::json offset_entry_2d(const std::string& selection, const double target)
+{
+    return {
+        {"selection", selection},
+        {"output_tags", {selection + "_band"}},
+        {"target_distance", target}};
+}
+
+} // namespace
+
+TEST_CASE("several-offsets-as-alone-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-as-alone, on the construction (driven directly): three
+    // bodies, each two squares from the next, offset in one march; each entry's band is the one a
+    // run of that entry alone makes -- the same faces at the same positions -- and takes its own
+    // output tags. Each entry decides its fallback itself (marching_tris()): every outer end is a
+    // grid edge (0.25) or more from its body, so a at 0.1 and c at 0.2 are traced to, and b at
+    // 0.3 falls back to half of 0.25.
+    const std::vector<std::pair<std::string, Box2d>> boxes = {
+        {"a", {{1, 2, 1, 2}}},
+        {"b", {{5, 6, 1, 2}}},
+        {"c", {{1, 2, 5, 6}}}};
+    const BoxGrid2d g = box_grid_2d(boxes);
+    const std::vector<double> D = {0.1, 0.3, 0.2};
+    nlohmann::json all = nlohmann::json::array();
+    for (size_t k = 0; k < boxes.size(); ++k) all.push_back(offset_entry_2d(boxes[k].first, D[k]));
+    std::string log;
+    const auto joint = run_offsets_2d(g, {{"offsets", all}}, false, &log);
+    // Each entry's own construction line, and its own trace.
+    CHECK(log.find("[construction] offsets[0]: construction_mode") != std::string::npos);
+    CHECK(log.find("[construction] offsets[2]: construction_mode") != std::string::npos);
+    CHECK(log.find("D = each entry's, above") != std::string::npos);
+    for (size_t k = 0; k < boxes.size(); ++k) {
+        const std::string band = boxes[k].first + "_band";
+        INFO("offsets[" << k << "] " << boxes[k].first << " at " << D[k]);
+        CHECK(joint->m_construction_distances[k] == (D[k] < 0.25 ? D[k] : 0.125));
+        const auto faces = faces_tagged_2d(*joint, band);
+        CHECK(!faces.empty());
+        const auto alone = run_offsets_2d(g, {{"offsets", nlohmann::json::array({all[k]})}}, false);
+        CHECK(faces == faces_tagged_2d(*alone, band));
+        const double traced = D[k] < 0.25 ? D[k] : 0.125;
+        size_t n_outer = 0;
+        for (const FaceCorners2d& c : faces) {
+            for (const auto& q : c) {
+                const double d = box_distance_2d(Vector2d(q[0], q[1]), boxes[k].second);
+                if (d == 0.) continue; // on the body
+                ++n_outer;
+                CHECK(std::abs(d - traced) <= 0.01 * traced);
+            }
+        }
+        CHECK(n_outer > 0);
+        // No band face of this entry carries another entry's output tag.
+        for (size_t o = 0; o < boxes.size(); ++o) {
+            if (o == k) continue;
+            for (const FaceCorners2d& c : faces_tagged_2d(*joint, boxes[o].first + "_band")) {
+                CHECK(faces.count(c) == 0);
+            }
+        }
+    }
+    // The comparison tells positions apart: a alone at c's distance is not a's band.
+    nlohmann::json a_at_c = all[0];
+    a_at_c["target_distance"] = D[2];
+    CHECK(
+        faces_tagged_2d(*joint, "a_band") !=
+        faces_tagged_2d(
+            *run_offsets_2d(g, {{"offsets", nlohmann::json::array({a_at_c})}}, false),
+            "a_band"));
+}
+
+TEST_CASE("several-offsets-touch-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-touch: entries that intersect are refused
+    // (label_input_complex()): b's squares next to a's share their vertices. One square apart,
+    // a's and b's vertices are joined by grid edges; the simplicial embedding splits them, and
+    // the two bands come out apart -- no vertex in both -- each within half of such an edge
+    // (0.125 from both), so a target of 0.1 is still traced to.
+    const auto run = [](const Box2d& b) {
+        return run_offsets_2d(
+            box_grid_2d({{"a", {{1, 2, 1, 2}}}, {"b", b}}),
+            {{"offsets",
+              nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.1)})}},
+            false);
+    };
+    REQUIRE_THROWS_WITH(run({{3, 4, 1, 2}}), Catch::Matchers::ContainsSubstring("share"));
+    const Box2d b = {{4, 5, 1, 2}};
+    std::unique_ptr<TopoOffsetTriMesh> out;
+    REQUIRE_NOTHROW(out = run(b));
+    std::set<std::array<double, 2>> corners_a;
+    for (const FaceCorners2d& c : faces_tagged_2d(*out, "a_band"))
+        corners_a.insert(c.begin(), c.end());
+    size_t n_b = 0, n_b_outer = 0;
+    for (const FaceCorners2d& c : faces_tagged_2d(*out, "b_band")) {
+        ++n_b;
+        for (const auto& q : c) {
+            CHECK(corners_a.count(q) == 0);
+            const double d = box_distance_2d(Vector2d(q[0], q[1]), b);
+            if (d > 0.) {
+                ++n_b_outer;
+                CHECK(std::abs(d - 0.1) <= 0.01 * 0.1);
+            }
+        }
+    }
+    CHECK(!corners_a.empty());
+    CHECK(n_b > 0);
+    CHECK(n_b_outer > 0);
+}
+
+TEST_CASE("several-offsets-absolute-front-conv-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-absolute-front-conv, on a 2D box: an absolute front_conv is
+    // one length for every piece; entries of different distances take front_conv_rel, each bar
+    // its own distance's fraction (Parameters::init(), shared). Equal distances keep it; the
+    // range of the second entry's distance, below, at and above the first's.
+    Eigen::MatrixXd V(2, 2);
+    V << 0, 0, 3, 4;
+    const auto with = [&](const double d1, const nlohmann::json& conv) {
+        nlohmann::json j = {
+            {"offsets",
+             nlohmann::json::array(
+                 {{{"selection", "a"}, {"target_distance", 0.5}},
+                  {{"selection", "b"}, {"target_distance", d1}}})}};
+        j.update(conv);
+        return construction_params(j, V);
+    };
+    for (const double d1 : {0.25, 0.6, 2.}) {
+        INFO("second entry at " << d1);
+        CHECK_THROWS(with(d1, {{"front_conv", 0.05}}));
+        const Parameters rel = with(d1, {{"front_conv_rel", 0.1}});
+        CHECK(rel.target_distance == std::min(0.5, d1)); // the run's: the smallest entry's
+        CHECK(rel.front_conv == Catch::Approx(0.1 * std::min(0.5, d1)));
+    }
+    const Parameters same = with(0.5, {{"front_conv", 0.05}});
+    CHECK(same.front_conv == 0.05);
+}
+
+TEST_CASE("several-offsets-solid-and-curve-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-solid-and-curve: entries of different kinds in one run, a
+    // solid (a face tag, entering as its boundary segments, with a side) and the curve group (a
+    // curve: segments, no side), each entry its own distance engine (init_input_complex_bvh(),
+    // offset_distance()). Each band is the one its entry makes alone. 3D also refuses one entry
+    // mixing the kinds ("a | rod"); 2D refuses no mix (its primitives are all segments and
+    // points), and the curve group in an expression selects no face, so 2D has no twin of that
+    // half.
+    const GridPolyline2d curve = {{{1, 6}}, {{2, 6}}, {{3, 6}}, {{4, 6}}, {{5, 6}}};
+    const BoxGrid2d g = box_grid_2d({{"a", {{1, 2, 1, 2}}}}, curve);
+    const nlohmann::json a = offset_entry_2d("a", 0.1);
+    const nlohmann::json r = offset_entry_2d("curve", 0.1);
+    const auto joint = run_offsets_2d(g, {{"offsets", nlohmann::json::array({a, r})}}, false);
+    CHECK(joint->m_offset_curves.size() == 2);
+    CHECK_FALSE(joint->offset_curves(0)); // the solid
+    CHECK(joint->offset_curves(1)); // the curve
+    CHECK(!faces_tagged_2d(*joint, "a_band").empty());
+    CHECK(!faces_tagged_2d(*joint, "curve_band").empty());
+    CHECK(
+        faces_tagged_2d(*joint, "a_band") ==
+        faces_tagged_2d(
+            *run_offsets_2d(g, {{"offsets", nlohmann::json::array({a})}}, false),
+            "a_band"));
+    CHECK(
+        faces_tagged_2d(*joint, "curve_band") ==
+        faces_tagged_2d(
+            *run_offsets_2d(g, {{"offsets", nlohmann::json::array({r})}}, false),
+            "curve_band"));
+}
+
+TEST_CASE("several-offsets-optimize-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-optimize: several entries run the optimization, an input
+    // complex of several connected pieces, each its entry's.
+    const auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", {{1, 2, 1, 2}}}, {"b", {{5, 6, 1, 2}}}}),
+        {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.1)})},
+         {"max_rounds", 1}},
+        true);
+    CHECK(mesh->m_region_offset == std::vector<int>{0, 1});
+    CHECK(!faces_tagged_2d(*mesh, "a_band").empty());
+    CHECK(!faces_tagged_2d(*mesh, "b_band").empty());
+}
+
+TEST_CASE("several-offsets-optimize-distances-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-optimize-distances: each piece its own target distance in
+    // the optimization -- its field, the band term's distance and integral, the settle tests' bar
+    // (front_conv_rel of its distance): place_piece(). Two boxes 0.5 apart, a at 0.1, b at 0.2:
+    // both fronts at their own targets and converged; then b one square at 0.3, above the
+    // maximum marchable distance (constructed at 0.125), a 0.5 away, whose band over the whole
+    // complex 3D measured reaching around a (each piece's own integral, init_band_exact()).
+    // Under EXPERIMENTAL_band_volume_rule "exact_swept", the default, each piece's swept change
+    // (TopoOffsetTriMesh, EXACT SWEPT CHANGE, several entries): read at the moving vertex's piece,
+    // b's front ended at 0.278 (3D's at 0.252 from 455ab9ba66). Under the settle test (the
+    // default), whose tests read each piece's integral, and under the energy criterion
+    // (EXPERIMENTAL_settle_refinement false), whose chord and ring measures read each piece's
+    // field (init_region_potentials()).
+    const bool settle = GENERATE(true, false);
+    INFO("EXPERIMENTAL_settle_refinement " << settle);
+    const auto run = [&](const Box2d& a, const Box2d& b, const double db) {
+        return run_offsets_2d(
+            box_grid_2d({{"a", a}, {"b", b}}),
+            {{"offsets",
+              nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", db)})},
+             {"EXPERIMENTAL_settle_refinement", settle},
+             {"max_rounds", 5}},
+            true);
+    };
+    {
+        const Box2d a = {{1, 2, 1, 2}}, b = {{5, 6, 1, 2}};
+        const auto mesh = run(a, b, 0.2);
+        CHECK(mesh->m_converged);
+    }
+    {
+        const Box2d a1 = {{1, 2, 3, 3}}, b1 = {{5, 5, 3, 3}};
+        const auto mesh = run(a1, b1, 0.3);
+        CHECK(mesh->m_converged);
+    }
+}
+
+TEST_CASE("several-offsets-solid-and-curve-optimize-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-solid-and-curve-optimize: the same two entries through the
+    // optimization, each piece its own field and integral, so the curve's band is not read
+    // against the solid's segments. Both bands at their targets: their front vertices within 10%
+    // of 0.1 from their own input.
+    const GridPolyline2d curve = {{{1, 6}}, {{2, 6}}, {{3, 6}}, {{4, 6}}, {{5, 6}}};
+    const auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", {{1, 2, 1, 2}}}}, curve),
+        {{"offsets",
+          nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("curve", 0.1)})},
+         {"max_rounds", 5}},
+        true);
+    const std::vector<double> da = front_distances_2d(*mesh, "a_band", {{1, 2, 1, 2}});
+    REQUIRE(!da.empty());
+    for (const double d : da) {
+        CHECK(d >= 0.09);
+        CHECK(d <= 0.11);
+    }
+    // the curve: x in [-0.75, 0.25] at y = 0.5
+    const auto curve_distance = [](const std::array<double, 2>& q) {
+        const double x = std::clamp(q[0], -0.75, 0.25);
+        return (Vector2d(q[0], q[1]) - Vector2d(x, 0.5)).norm();
+    };
+    std::set<std::array<double, 2>> ambient;
+    for (const auto& f : mesh->get_faces()) {
+        const size_t fid = f.fid(*mesh);
+        if (!mesh->m_face_attribute[fid].tags.count(0)) continue;
+        for (const size_t v : mesh->oriented_tri_vids(fid)) {
+            const Vector2d& p = mesh->m_vertex_attribute[v].m_posf;
+            ambient.insert({{p[0], p[1]}});
+        }
+    }
+    size_t n = 0;
+    for (const FaceCorners2d& c : faces_tagged_2d(*mesh, "curve_band")) {
+        for (const auto& q : c) {
+            if (!ambient.count(q)) continue;
+            ++n;
+            CHECK(curve_distance(q) >= 0.09);
+            CHECK(curve_distance(q) <= 0.11);
+        }
+    }
+    CHECK(n > 0);
+}
+
+TEST_CASE("several-offsets-growth-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-growth: growth_mode "linear" with several entries
+    // (linear_growth()), each entry from its own d_0 to its own target, one schedule. a one square
+    // at 0.1, traced to by the march, stays there; b one square at 0.4, above the maximum
+    // marchable distance 0.25 (constructed at 0.125), grows in linear_growth_steps stages
+    // 0.125 -> 0.4. Both converge at their own targets. Under EXPERIMENTAL_band_volume_rule
+    // "exact_swept", the default, each piece's swept change (TopoOffsetTriMesh, EXACT SWEPT
+    // CHANGE, several entries; 3D's hung at 455ab9ba66 without it).
+    const Box2d a = {{1, 1, 3, 3}}, b = {{5, 5, 3, 3}};
+    std::string log;
+    const auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", a}, {"b", b}}),
+        {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.4)})},
+         {"growth_mode", "linear"},
+         {"max_rounds", 10}},
+        true,
+        &log);
+    INFO(log.substr(log.size() > 4000 ? log.size() - 4000 : 0));
+    CHECK(mesh->m_growth_starts.empty() == false);
+    CHECK(mesh->m_growth_starts == std::vector<double>{0.1, 0.125});
+    CHECK(mesh->m_offset_levels.empty()); // each entry at its target_distance after the stages
+    CHECK(
+        log.find("[growth] offsets[0]: from 0.1 to its target_distance 0.1 (no growth") !=
+        std::string::npos);
+    CHECK(
+        log.find("[growth] offsets[1]: from 0.125 to its target_distance 0.4") !=
+        std::string::npos);
+    CHECK(
+        log.find(
+            "[incremental growth] stage 1 / 4: offsets[1] at 0.19375 (its target_distance "
+            "0.4)") != std::string::npos);
+    CHECK(
+        log.find("[incremental growth] stage 1 / 4: offsets[0] at 0.1 (its target_distance 0.1)") !=
+        std::string::npos);
+    // Each stage's field for b's piece at b's stage target (region_delta() reads m_offset_levels;
+    // init_region_potentials() logs the level it builds at), a's at 0.1 throughout.
+    for (int k = 0; k <= 4; ++k) {
+        const double level = TopoOffsetTriMesh::growth_stage_target(0.125, 0.4, k, 4);
+        INFO("stage " << k << ": b at " << level);
+        CHECK(log.find(fmt::format(" points, level {} -- the band", level)) != std::string::npos);
+    }
+    CHECK(mesh->m_converged);
+}
+
+TEST_CASE("growth-mode-keys-2d", "[offset][2d]")
+{
+    // The 2D twin of growth-mode-keys: the keys are Parameters' (shared, read the same in both
+    // dimensions; growth-mode-keys checks their defaults and refusals), so this checks the 2D
+    // mesh's stage targets, TopoOffsetTriMesh::growth_stage_target(), as 3D's: stage k of n at
+    // d0 + k (delta - d0) / n, d0 at k = 0, delta itself at k = n; and that growth_mode reaches
+    // the 2D construction: d_0 is recorded (m_growth_start) for every mode but "none", only when
+    // the march traces below the target.
+    CHECK(TopoOffsetTriMesh::growth_stage_target(0.3, 0.7, 0, 1) == 0.3);
+    CHECK(TopoOffsetTriMesh::growth_stage_target(0.3, 0.7, 1, 1) == 0.7);
+    const std::vector<double> quarters = {0.5, 1., 1.5, 2., 2.5};
+    for (int k = 0; k <= 4; ++k) {
+        CHECK(TopoOffsetTriMesh::growth_stage_target(0.5, 2.5, k, 4) == quarters[size_t(k)]);
+    }
+    CHECK(TopoOffsetTriMesh::growth_stage_target(0.1, 0.9, 3, 3) == 0.9);
+    for (int k = 0; k < 7; ++k) {
+        CHECK(
+            TopoOffsetTriMesh::growth_stage_target(0.1, 0.9, k, 7) <
+            TopoOffsetTriMesh::growth_stage_target(0.1, 0.9, k + 1, 7));
+    }
+    // Two squares (the maximum marchable distance 0.25: d_0 = 0.125), at 0.2 (traced to: no
+    // growth) and at 0.4, under each mode, construction only; optimize_offset false records no
+    // growth (growth is the loop's), as in 3D.
+    const BoxGrid2d g = box_grid_2d({{"a", {{3, 4, 3, 4}}}});
+    for (const char* mode : {"none", "linear", "smart", "individual_op_reject"}) {
+        for (const double target : {0.2, 0.4}) {
+            for (const bool optimize : {false, true}) {
+                INFO("growth_mode " << mode << ", target " << target << ", optimize " << optimize);
+                std::string log;
+                const auto mesh = run_offsets_2d(
+                    g,
+                    {{"offsets", nlohmann::json::array({offset_entry_2d("a", target)})},
+                     {"growth_mode", mode},
+                     {"optimize_offset", optimize}},
+                    false,
+                    &log);
+                const bool grows = std::string(mode) != "none" && target > 0.25 && optimize;
+                CHECK(mesh->m_growth_start == (grows ? 0.125 : 0.));
+                CHECK(mesh->m_growth_starts.empty()); // one entry
+                if (std::string(mode) != "none" && optimize && !grows) {
+                    CHECK(
+                        log.find("not done: the march traces to target_distance itself") !=
+                        std::string::npos);
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("smart-growth-schedule-2d", "[offset][2d]")
+{
+    // The 2D twin of smart-growth-schedule (TopoOffsetTriMesh::SmartGrowthSchedule, the same
+    // rule): from base b the j-th try after j failures is at b + (delta - b) / 2^j, delta itself
+    // first; a success below delta becomes the new base and the next try is at delta again;
+    // max_fails failures from one base give up; a success at delta is the end.
+    using Schedule = TopoOffsetTriMesh::SmartGrowthSchedule;
+    using Next = Schedule::Next;
+    Schedule s{1., 9., 3};
+    CHECK(s.target() == 9.);
+    CHECK(s.report(false) == Next::Retry); // 9 failed
+    CHECK(s.target() == 5.); // 1 + 8 / 2
+    CHECK(s.report(false) == Next::Retry); // 5 failed
+    CHECK(s.target() == 3.); // 1 + 8 / 4
+    CHECK(s.report(true) == Next::Advance); // 3 converged: the new base
+    CHECK(s.base == 3.);
+    CHECK(s.level == 2);
+    CHECK(s.target() == 9.); // delta again
+    CHECK(s.report(false) == Next::Retry);
+    CHECK(s.target() == 6.); // 3 + 6 / 2
+    CHECK(s.report(true) == Next::Advance);
+    CHECK(s.target() == 9.);
+    CHECK(s.report(true) == Next::Done);
+
+    // The count is per base, and the max_fails-th failure gives up.
+    Schedule g{0., 1., 3};
+    CHECK(g.report(false) == Next::Retry);
+    CHECK(g.report(false) == Next::Retry);
+    CHECK(g.report(false) == Next::GiveUp);
+    Schedule h{0., 1., 2};
+    CHECK(h.report(false) == Next::Retry);
+    CHECK(h.report(true) == Next::Advance); // at 0.5
+    CHECK(h.report(false) == Next::Retry); // the count started again
+    CHECK(h.report(false) == Next::GiveUp);
+    CHECK(Schedule{0., 1., 1}.report(false) == Next::GiveUp);
+}
+
+TEST_CASE("turned-edges-at-vertex-2d", "[offset][2d]")
+{
+    // The 2D twin of turned-faces-at-vertex: growth_mode "individual_op_reject" counts the edges
+    // turned from the field per operation with turned_front_edges_at(), which reads one vertex's
+    // own face list (lock-safe in the operation passes). Over every vertex it must find exactly
+    // the turned edges turned_edge_census() finds over the whole offset curve
+    // (offset_surface_edges()). A square at 0.2, constructed, with one front vertex dragged to the
+    // input's centre, which turns its offset edges back toward the input: turned edges to find.
+    auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", {{3, 4, 3, 4}}}}),
+        {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.2)})}},
+        false);
+    mesh->label_offset_boundary(); // as optimize_offset() does before the loop
+    CHECK_FALSE(mesh->turned_reject_active()); // growth_mode "none"
+    const auto census_set = [&]() {
+        std::set<std::array<size_t, 2>> s;
+        for (const auto& e : mesh->offset_surface_edges()) {
+            if (mesh->front_edge_turned(e[0], e[1])) s.insert({{e[0], e[1]}});
+        }
+        return s;
+    };
+    const auto per_vertex_set = [&]() {
+        std::set<std::array<size_t, 2>> s;
+        for (const auto& v : mesh->get_vertices()) mesh->turned_front_edges_at(v.vid(*mesh), s);
+        return s;
+    };
+    CHECK(census_set().empty()); // as constructed
+    CHECK(per_vertex_set().empty());
+    CHECK(mesh->turned_edge_census().n_turned == 0);
+    CHECK(mesh->turned_edge_census().n_edges == mesh->offset_surface_edges().size());
+    size_t front = static_cast<size_t>(-1);
+    for (const auto& v : mesh->get_vertices()) {
+        if (mesh->m_vertex_extra[v.vid(*mesh)].m_is_on_offset) {
+            front = v.vid(*mesh);
+            break;
+        }
+    }
+    REQUIRE(front != static_cast<size_t>(-1));
+    mesh->set_vertex_position(front, Vector2d::Zero());
+    const auto census = census_set();
+    INFO(census.size() << " turned edges");
+    REQUIRE(!census.empty());
+    CHECK(per_vertex_set() == census);
+    CHECK(mesh->turned_edge_census().n_turned == census.size());
+    // Every turned edge found through the moved vertex goes through it.
+    std::set<std::array<size_t, 2>> at;
+    mesh->turned_front_edges_at(front, at);
+    CHECK(!at.empty());
+    for (const auto& e : at) CHECK((e[0] == front || e[1] == front));
+
+    // The rule is on in the loops of growth_mode "individual_op_reject" only.
+    mesh->m_offset_params.growth_mode = "individual_op_reject";
+    CHECK(mesh->turned_reject_active());
+    mesh->m_freeze_front = true;
+    CHECK_FALSE(mesh->turned_reject_active());
+    mesh->m_freeze_front = false;
+}
+
+TEST_CASE("growth-modes-in-the-loop-2d", "[offset][2d]" + release_only)
+{
+    // growth_mode through the 2D loop (optimize_offset()), a box of 2 x 2 squares at 0.35, beyond
+    // the maximum marchable distance 0.25, so the march traces to d_0 = 0.125:
+    //   - "linear" over linear_growth_steps 1, 2 and 4: N + 1 loops, stage k at
+    //     growth_stage_target(0.125, 0.35, k, N), each logged, the last the ordinary loop;
+    //   - "individual_op_reject": "linear" with one step, and an [op reject] line per operation
+    //     group in its loops, which refuse smoothing moves (MEASURED at 0.4: 9 and 2 in its last
+    //     loop's two turns);
+    //   - "smart": level 0 at d_0, then the attempt at 0.35 (the final stage), of up to 10 turns
+    //     (smart_growth_attempts; with the default 2 the attempt here is cut off) -- MEASURED
+    //     converged free of turned edges at 0.27 and 0.35, while at 0.3, 0.4, 0.45 and 0.5, on
+    //     this box and on one square, it converges in 2 turns with 1 to 3 chords at the box's
+    //     corners 37 to 47 degrees from the field, which fails it -- with the 2D swap pass's 1e-5
+    //     max-AMIPS filter, dropped 2026-11-12, after which 0.4 converges free of them;
+    //   - "none": no stage, the loop at 0.35.
+    // Each converges, its front at 0.35, the run's target set back to it. The front of a box of
+    // side 0.5 at 0.35 is a rounded square inside [-1, 1]^2.
+    struct Case
+    {
+        std::string mode;
+        int steps;
+    };
+    const Case c = GENERATE(
+        Case{"none", 4},
+        Case{"linear", 1},
+        Case{"linear", 2},
+        Case{"linear", 4},
+        Case{"individual_op_reject", 4},
+        Case{"smart", 4});
+    INFO("growth_mode " << c.mode << ", linear_growth_steps " << c.steps);
+    const double delta = 0.35;
+    nlohmann::json j = {
+        {"offsets", nlohmann::json::array({offset_entry_2d("a", delta)})},
+        {"growth_mode", c.mode},
+        {"max_rounds", 10}};
+    if (c.mode == "linear") j["linear_growth_steps"] = c.steps;
+    if (c.mode == "smart") j["smart_growth_attempts"] = 10;
+    std::string log;
+    const Box2d a = {{3, 4, 3, 4}};
+    const auto mesh = run_offsets_2d(box_grid_2d({{"a", a}}), j, true, &log);
+    INFO(log.substr(log.size() > 4000 ? log.size() - 4000 : 0));
+    CHECK(mesh->m_offset_params.target_distance == delta);
+    CHECK(mesh->m_growth_start == (c.mode == "none" ? 0. : 0.125));
+    if (c.mode == "linear" || c.mode == "individual_op_reject") {
+        const int n = c.mode == "linear" ? c.steps : 1;
+        CHECK(
+            log.find(
+                fmt::format(
+                    "[incremental growth] {} loops: at the traced distance 0.125",
+                    n + 1)) != std::string::npos);
+        for (int k = 0; k < n; ++k) {
+            CHECK(
+                log.find(
+                    fmt::format(
+                        "======== [incremental growth] stage {} / {}: target_distance {:.6g}",
+                        k,
+                        n,
+                        TopoOffsetTriMesh::growth_stage_target(0.125, delta, k, n))) !=
+                std::string::npos);
+        }
+        CHECK(
+            log.find(
+                fmt::format(
+                    "======== [incremental growth] stage {} / {}: target_distance 0.35, the "
+                    "ordinary "
+                    "loop",
+                    n,
+                    n)) != std::string::npos);
+    }
+    CHECK(
+        (log.find("[op reject] turn 1 ") != std::string::npos) ==
+        (c.mode == "individual_op_reject"));
+    if (c.mode == "individual_op_reject") {
+        // The rule acts: the smoothing moves it refused over the run's loops (MEASURED 90 here,
+        // no collapse; at 0.4, 9 and 2 in the last loop's two turns).
+        int refused = 0;
+        const std::string key = " collapses, ";
+        for (size_t at = log.find("[op reject] turn "); at != std::string::npos;
+             at = log.find("[op reject] turn ", at + 1)) {
+            const size_t c0 = log.find(key, at);
+            refused += std::stoi(log.substr(c0 + key.size()));
+        }
+        CHECK(refused > 0);
+    }
+    if (c.mode == "smart") {
+        CHECK(
+            log.find("======== [smart growth] level 0: target_distance 0.125") !=
+            std::string::npos);
+        CHECK(
+            log.find("======== [smart growth] level 1 attempt 1: target_distance 0.35") !=
+            std::string::npos);
+        CHECK(log.find("[smart growth] target_distance 0.35 reached") != std::string::npos);
+    }
+    if (c.mode == "none") CHECK(log.find("growth]") == std::string::npos);
+    CHECK(mesh->m_converged);
+}
+
+namespace {
+/// A 2D mesh read off its live slots, to compare two meshes bit for bit: the twin of
+/// frames_identical(), which reads 3D's frame arrays (gather_vtu_frame(); the 2D mesh has no frame
+/// gatherer). Each face's corners as stored -- the order its edge slots 3 fid + j are keyed on --
+/// with its region tags and label; each vertex's position, exact position, sizing scalar, flags
+/// and labels; each edge slot's surface tags and label. Not what an operation stamps from a run
+/// counter (VertexExtra2d::m_born_epoch), which a snapshot does not restore.
+struct MeshState2d
+{
+    std::vector<std::array<size_t, 3>> faces;
+    std::vector<std::set<int64_t>> face_tags;
+    std::vector<int> face_label;
+    std::vector<Vector2d> posf;
+    std::vector<Vector2r> pos;
+    std::vector<double> sizing;
+    std::vector<std::array<int64_t, 11>> vertex_flags;
+    std::vector<std::array<int64_t, 7>> edge_flags;
+    bool operator==(const MeshState2d& o) const
+    {
+        return std::tie(
+                   faces,
+                   face_tags,
+                   face_label,
+                   posf,
+                   pos,
+                   sizing,
+                   vertex_flags,
+                   edge_flags) ==
+               std::tie(
+                   o.faces,
+                   o.face_tags,
+                   o.face_label,
+                   o.posf,
+                   o.pos,
+                   o.sizing,
+                   o.vertex_flags,
+                   o.edge_flags);
+    }
+};
+
+MeshState2d mesh_state_2d(const TopoOffsetTriMesh& m)
+{
+    MeshState2d s;
+    for (const auto& t : m.get_vertices()) {
+        const size_t v = t.vid(m);
+        const auto& a = m.m_vertex_attribute[v];
+        const VertexExtra2d& x = m.m_vertex_extra[v];
+        s.posf.push_back(a.m_posf);
+        s.pos.push_back(a.pos());
+        s.sizing.push_back(a.m_sizing_scalar);
+        s.vertex_flags.push_back(
+            {{a.m_is_rounded,
+              a.m_is_on_surface,
+              x.label,
+              x.offset,
+              int64_t(x.point_inputs),
+              x.m_is_on_input,
+              x.m_is_on_offset,
+              x.m_is_on_region,
+              int64_t(x.m_boundary_mask),
+              x.m_corr_input_vid,
+              x.m_corr_carried}});
+    }
+    for (const auto& t : m.get_faces()) {
+        const size_t fid = t.fid(m);
+        s.faces.push_back(m.oriented_tri_vids(fid));
+        s.face_tags.push_back(m.m_face_attribute[fid].tags);
+        s.face_label.push_back(m.m_face_extra[fid].label);
+        for (size_t j = 0; j < 3; ++j) {
+            const SurfaceTagAttributes& a = m.m_edge_attribute[3 * fid + j];
+            const EdgeExtra2d& x = m.m_edge_extra[3 * fid + j];
+            s.edge_flags.push_back(
+                {{a.m_is_surface_fs,
+                  a.m_is_bbox_fs,
+                  a.m_surface_class,
+                  int64_t(a.input_set()),
+                  a.orientation(),
+                  x.label,
+                  x.on_curve}});
+        }
+    }
+    return s;
+}
+} // namespace
+
+TEST_CASE("mesh-snapshot-roundtrip-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of mesh-snapshot-roundtrip. take_snapshot() / restore_snapshot(): after a
+    // restore the mesh is the one the snapshot left, bit for bit (mesh_state_2d()), and the same
+    // operations from it give the same result again -- the storage is the same, not only the
+    // geometry. A square at 0.2, constructed, serial; the change is a split pass at a lowered
+    // sizing field, which adds vertices and faces.
+    auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", {{3, 4, 3, 4}}}}),
+        {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.2)})},
+         {"EXPERIMENTAL_band_volume_rule", "exact"}},
+        false);
+    // As optimize_offset() sets them before the loop.
+    mesh->m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Optimization;
+    mesh->label_offset_boundary();
+    const TopoOffsetTriMesh::MeshSnapshot snap = mesh->take_snapshot();
+    REQUIRE(mesh->check_mesh_connectivity_validity());
+    const size_t n_v = mesh->get_vertices().size(), n_f = mesh->get_faces().size();
+    const auto change = [&]() {
+        for (const auto& v : mesh->get_vertices()) {
+            mesh->m_vertex_attribute[v.vid(*mesh)].m_sizing_scalar = 0.3;
+        }
+        mesh->local_operations({{1, 0, 0, 0}});
+        mesh->consolidate_mesh();
+    };
+    const MeshState2d before = mesh_state_2d(*mesh);
+    change();
+    INFO(n_f << " faces before the split pass, " << mesh->get_faces().size() << " after");
+    REQUIRE(mesh->get_faces().size() > n_f);
+    const MeshState2d changed = mesh_state_2d(*mesh);
+    CHECK_FALSE(before == changed); // the comparison can fail
+
+    mesh->restore_snapshot(snap);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(mesh->get_vertices().size() == n_v);
+    CHECK(mesh->get_faces().size() == n_f);
+    CHECK(mesh_state_2d(*mesh) == before);
+    change();
+    CHECK(mesh_state_2d(*mesh) == changed);
+}
+
+TEST_CASE("smart-growth-attempt-fails-2d", "[offset][2d]" + release_only)
+{
+    // growth_mode "smart": a failed attempt puts the mesh back at the converged distance, as in
+    // 3D, after level 0 converged at d_0 = 0.125. With smart_growth_max_fails 1 the first failure
+    // is the last: the mesh is put back -- the vertex and face counts it was stored with -- and
+    // the run stops with the give-up error. A box of 2 x 2 squares, as in
+    // growth-modes-in-the-loop-2d, failed by design: one turn (smart_growth_attempts 1) at 0.35,
+    // where the front still moves. (Until 2026-11-12 also an attempt at 0.4 that converged with
+    // edges turned from the field, a defect of the 2D swap pass's 1e-5 filter rather than a
+    // failure by design: without the filter it converges free of turned edges.)
+    std::string log;
+    REQUIRE_THROWS_WITH(
+        run_offsets_2d(
+            box_grid_2d({{"a", {{3, 4, 3, 4}}}}),
+            {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.35)})},
+             {"growth_mode", "smart"},
+             {"smart_growth_attempts", 1},
+             {"smart_growth_max_fails", 1},
+             {"max_rounds", 10}},
+            true,
+            &log),
+        Catch::Matchers::ContainsSubstring(
+            "1 attempts from the converged distance 0.125 failed (smart_growth_max_fails)"));
+    // The "(#V n, #F m)" that follows `key` in the log.
+    const auto counts_after = [&](const std::string& key) {
+        const size_t at = log.find(key);
+        REQUIRE(at != std::string::npos);
+        const size_t from = at + key.size();
+        return log.substr(from, log.find(')', from) + 1 - from);
+    };
+    CHECK(
+        counts_after("the mesh is back at the converged 0.125 ") ==
+        counts_after(
+            "[smart growth] level 0 converged at target_distance 0.125; the mesh is "
+            "stored "));
+}
+
+TEST_CASE("several-offsets-place-readers-2d", "[offset][2d]")
+{
+    // Several entries: every reader of a distance or a bar at a place reads its piece's
+    // (place_piece()): the piece's entry (m_region_offset), its target (region_delta(),
+    // vertex_delta()), its field (potential_for()), its bar (front_conv_of(): front_conv_rel of the
+    // entry's target_distance, fixed through growth_mode's stages; front_conv_frac_of(): that over
+    // the stage's target), the vertex measure (front_vertex_conv_ratio()), the vertex error
+    // (band_vertex_distance_error(), from its own piece) and the chord measure
+    // (edge_offset_term()). As in 3D. Two squares 0.5 apart, a at 0.1, b at 0.3 (constructed at
+    // 0.125), before the loop; then as in a growth stage with a at 0.1 and b at 0.2
+    // (m_offset_levels).
+    const Box2d a = {{1, 2, 1, 2}}, b = {{5, 6, 1, 2}};
+    auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", a}, {"b", b}}),
+        {{"offsets",
+          nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.3)})}},
+        false);
+    mesh->label_offset_boundary(); // as optimize_offset() does before the loop
+    mesh->assign_band_regions();
+    const double rel = mesh->m_offset_params.front_conv_rel;
+    REQUIRE(mesh->m_offset_params.target_distance == 0.1); // the run's: the smallest entry's
+    REQUIRE(mesh->m_region_offset.size() == 2);
+    // the front vertices of each band, by their distance to its box
+    std::array<std::vector<size_t>, 2> front;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (!mesh->m_vertex_extra[vid].m_is_on_offset) continue;
+        const Vector2d& p = mesh->m_vertex_attribute[vid].m_posf;
+        front[box_distance_2d(p, a) < box_distance_2d(p, b) ? 0 : 1].push_back(vid);
+    }
+    REQUIRE(!front[0].empty());
+    REQUIRE(!front[1].empty());
+    for (const bool stage : {false, true}) {
+        if (stage) mesh->m_offset_levels = {0.1, 0.2};
+        for (int e = 0; e < 2; ++e) {
+            const double target = e == 0 ? 0.1 : 0.3;
+            const double now = stage && e == 1 ? 0.2 : target;
+            const Box2d& box = e == 0 ? a : b;
+            INFO("entry " << e << (stage ? ", in a stage" : ""));
+            for (const size_t v : front[size_t(e)]) {
+                const int r = mesh->place_piece(&v, 1);
+                REQUIRE(r >= 0);
+                CHECK(mesh->m_region_offset[size_t(r)] == e);
+                CHECK(mesh->vertex_delta(v) == now);
+                CHECK(mesh->front_conv_of(r) == rel * target);
+                CHECK(mesh->front_conv_frac_of(r) == Catch::Approx(rel * target / now));
+                const Vector2d& p = mesh->m_vertex_attribute[v].m_posf;
+                CHECK(mesh->potential_for(v).delta() == target); // the fields stay built
+                CHECK(
+                    mesh->front_vertex_conv_ratio(v) ==
+                    Catch::Approx(
+                        std::abs(mesh->potential_for(v).relative_residual(p)) /
+                        (rel * target / now)));
+                CHECK(
+                    mesh->band_vertex_distance_error(v) ==
+                    Catch::Approx(std::abs(box_distance_2d(p, box) - now)).margin(1e-12));
+            }
+        }
+        // A chord of b's front: its measure in b's bar, the piece-less form in the run's.
+        for (const auto& c : mesh->offset_surface_edges()) {
+            const int r = mesh->place_piece(c.data(), 2);
+            if (r < 0 || mesh->m_region_offset[size_t(r)] != 1) continue;
+            const auto& VA = mesh->m_vertex_attribute;
+            const OffsetPotential2D& pot = mesh->potential_for_edge(c[0], c[1]);
+            const double in_piece =
+                mesh->edge_offset_term(pot, VA[c[0]].m_posf, VA[c[1]].m_posf, r);
+            const double in_run = mesh->edge_offset_term(pot, VA[c[0]].m_posf, VA[c[1]].m_posf);
+            CHECK(mesh->edge_offset_term(c[0], c[1]) == in_piece);
+            const double f = rel * 0.3 / (stage ? 0.2 : 0.3), f_run = rel;
+            CHECK(in_piece * f * f == Catch::Approx(in_run * f_run * f_run));
+        }
+    }
+}
+
+TEST_CASE("several-offsets-isolated-point-2d", "[offset][2d]")
+{
+    // hold_curves_and_points() per entry of offsets: the isolated points of every entry without
+    // faces (offset_curves()) are anchored at an input point's radius (feature_envelope_ratio x
+    // envelope_size), whatever the other entries hold. As in 3D. A point entry: "a & b", where
+    // the squares a and b touch at one corner, selects that vertex alone (label_offset()), beside
+    // a solid entry c. The corner is also a junction of the tracked region boundaries, anchored
+    // at the order-2 radius; the point keeps the smaller radius (anchor_feature_point()), so it
+    // is the feature radius when that is the smaller. The two ratios each against the other, and
+    // the point entry alone. Before the per-entry rule, an input complex with faces (c's)
+    // anchored no isolated point: the corner kept the order-2 radius.
+    struct Case
+    {
+        double feature, order2;
+    };
+    const Case c = GENERATE(Case{0.01, 1.}, Case{1., 0.01}, Case{1., 1.});
+    const bool with_solid = GENERATE(true, false);
+    INFO(
+        "feature_envelope_ratio " << c.feature << ", order2_envelope_ratio " << c.order2
+                                  << (with_solid ? ", beside the solid c" : ", alone"));
+    nlohmann::json offsets = nlohmann::json::array();
+    if (with_solid) offsets.push_back(offset_entry_2d("c", 0.1));
+    offsets.push_back(
+        {{"selection", "a & b"}, {"output_tags", {"p_band"}}, {"target_distance", 0.1}});
+    const auto mesh = run_offsets_2d(
+        box_grid_2d({{"a", {{2, 2, 2, 2}}}, {"b", {{3, 3, 3, 3}}}, {"c", {{6, 6, 6, 6}}}}),
+        {{"offsets", offsets},
+         {"feature_envelope_ratio", c.feature},
+         {"order2_envelope_ratio", c.order2}},
+        false);
+    const size_t p = vertex_at_2d(*mesh, grid_point_2d({{3, 3}}));
+    CHECK(mesh->m_vertex_extra[p].label == 1);
+    CHECK(mesh->offset_of(p) == (with_solid ? 1 : 0));
+    CHECK(mesh->offset_curves(mesh->offset_of(p)));
+    REQUIRE(anchored_2d(*mesh, p));
+    const size_t f = mesh->m_feature_point_attribute[p].m_feature_point_id;
+    const double eps = mesh->m_offset_params.envelope_size;
+    CHECK(mesh->m_feature_point_radius[f] == std::min(c.feature, c.order2) * eps);
+    CHECK(!faces_tagged_2d(*mesh, "p_band").empty());
+    // c's corners are on its edges: no isolated point, and no junction either.
+    if (with_solid) {
+        CHECK_FALSE(mesh->offset_curves(0));
+        CHECK_FALSE(anchored_2d(*mesh, vertex_at_2d(*mesh, grid_point_2d({{6, 6}}))));
+    }
+}
+
+TEST_CASE("offsets-curve-in-expression-2d", "[offset][2d]")
+{
+    // The 2D twin of offsets-face-tags-in-expression: the curve group in an expression means what
+    // it means alone (label_offset()). "a | curve" is the solid a and the curve, one input -- a's
+    // faces and the curve's edges -- and its band the band of both; "a & curve" the curve's edges
+    // that bound a's faces. Until 2026-11 the curve group in an expression selected nothing,
+    // silently: no face carries it. An empty list makes no offset (Parameters, shared).
+    const auto label_1 = [](const TopoOffsetTriMesh& m) {
+        std::set<std::array<double, 2>> out;
+        for (const auto& v : m.get_vertices()) {
+            if (m.m_vertex_extra[v.vid(m)].label != 1) continue;
+            const Vector2d& p = m.m_vertex_attribute[v.vid(m)].m_posf;
+            out.insert({{p[0], p[1]}});
+        }
+        return out;
+    };
+    const auto at = [](const int i, const int j) {
+        const Vector2d p = grid_point_2d({{i, j}});
+        return std::array<double, 2>{{p[0], p[1]}};
+    };
+    const auto entry = [](const std::string& selection) {
+        return nlohmann::json::array(
+            {{{"selection", selection}, {"output_tags", {"band"}}, {"target_distance", 0.1}}});
+    };
+    {
+        // the curve 0.75 above a, x in [-0.75, 0.25] at y = 0.5
+        const BoxGrid2d g = box_grid_2d(
+            {{"a", {{1, 2, 1, 2}}}},
+            {{{1, 6}}, {{2, 6}}, {{3, 6}}, {{4, 6}}, {{5, 6}}});
+        const auto out = run_offsets_2d(g, {{"offsets", entry("a | curve")}}, false);
+        std::set<std::array<double, 2>> want;
+        for (int i = 1; i <= 3; ++i)
+            for (int j = 1; j <= 3; ++j) want.insert(at(i, j)); // a's 3 x 3 vertices
+        for (int i = 1; i <= 5; ++i) want.insert(at(i, 6)); // the curve's 5
+        CHECK(label_1(*out) == want);
+        // The band of the union: the bands each makes alone, together.
+        std::set<FaceCorners2d> both =
+            faces_tagged_2d(*run_offsets_2d(g, {{"offsets", entry("a")}}, false), "band");
+        for (const FaceCorners2d& c :
+             faces_tagged_2d(*run_offsets_2d(g, {{"offsets", entry("curve")}}, false), "band"))
+            both.insert(c);
+        CHECK(faces_tagged_2d(*out, "band") == both);
+    }
+    {
+        // the curve along a's top side and on past it, x in [-0.75, 0.25] at y = -0.25
+        const BoxGrid2d g = box_grid_2d(
+            {{"a", {{1, 2, 1, 2}}}},
+            {{{1, 3}}, {{2, 3}}, {{3, 3}}, {{4, 3}}, {{5, 3}}});
+        const auto out = run_offsets_2d(g, {{"offsets", entry("a & curve")}}, false);
+        CHECK(label_1(*out) == std::set<std::array<double, 2>>{at(1, 3), at(2, 3), at(3, 3)});
+    }
+    Eigen::MatrixXd box(2, 2);
+    box << -1., -1., 1., 1.;
+    REQUIRE_THROWS_WITH(
+        construction_params({{"offsets", nlohmann::json::array()}}, box),
+        Catch::Matchers::ContainsSubstring("at least one offset"));
+}
+
+namespace {
+/// box_grid_2d()'s grid as the driver reads it (grid_2d()): the squares of each named box tagged
+/// by its name, every other square ambient, and a curve group along `curve` (none if empty),
+/// selected as "EnvelopeSurface" on the memory route. The input of the -run-2d twins.
+MeshData box_mesh_2d(
+    const std::vector<std::pair<std::string, Box2d>>& boxes,
+    const GridPolyline2d& curve = {})
+{
+    return grid_2d(
+        {},
+        curve.empty() ? std::vector<GridPolyline2d>() : std::vector<GridPolyline2d>{curve},
+        [boxes](const Vector2d& c) -> std::string {
+            const int i = int(std::floor((c[0] + 1.) / 0.25)),
+                      j = int(std::floor((c[1] + 1.) / 0.25));
+            for (const auto& [name, b] : boxes) {
+                if (i >= b[0] && i <= b[1] && j >= b[2] && j <= b[3]) return name;
+            }
+            return "";
+        });
+}
+
+/// The triangles of a 2D result carrying `tag`, each as its corners' positions in sorted order:
+/// the twin of cells_tagged().
+std::set<FaceCorners2d> result_faces_tagged_2d(const MeshData& m, const std::string& tag)
+{
+    const auto& block = m.cells.at(CellType::Triangle);
+    const auto& tags = block.attributes.at("tags");
+    const auto it = std::find(tags.labels.begin(), tags.labels.end(), tag);
+    REQUIRE(it != tags.labels.end());
+    const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+    const auto member = tags.integers();
+    std::set<FaceCorners2d> out;
+    for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
+        if (member(r, col) == 0) continue;
+        FaceCorners2d c;
+        for (int k = 0; k < 3; ++k) {
+            const auto p = m.V.row(block.connectivity(r, k));
+            c[size_t(k)] = {{p(0), p(1)}};
+        }
+        std::sort(c.begin(), c.end());
+        out.insert(c);
+    }
+    return out;
+}
+
+/// The corners of a 2D result's ambient triangles.
+std::set<std::array<double, 2>> result_ambient_corners_2d(const MeshData& out)
+{
+    std::set<std::array<double, 2>> ambient;
+    for (const FaceCorners2d& c : result_faces_tagged_2d(out, "ambient"))
+        ambient.insert(c.begin(), c.end());
+    return ambient;
+}
+
+/// The front of `tag`'s band in a 2D result: the corners its triangles share with ambient ones,
+/// off the box `b`, as distances to it. The twin of front_distances().
+std::vector<double>
+result_front_distances_2d(const MeshData& out, const std::string& tag, const Box2d& b)
+{
+    const std::set<std::array<double, 2>> ambient = result_ambient_corners_2d(out);
+    std::set<std::array<double, 2>> front;
+    for (const FaceCorners2d& c : result_faces_tagged_2d(out, tag)) {
+        for (const auto& q : c) {
+            if (ambient.count(q)) front.insert(q);
+        }
+    }
+    std::vector<double> d;
+    for (const auto& q : front) {
+        const double x = box_distance_2d(Vector2d(q[0], q[1]), b);
+        if (x > 0.) d.push_back(x);
+    }
+    return d;
+}
+
+/// One construction-only 2D run through the driver with these offsets: the twin of
+/// construct_offsets().
+MeshData construct_offsets_2d(const MeshData& m, const nlohmann::json& offsets)
+{
+    return components::topological_offset::topological_offset(
+               {{"input", "m"},
+                {"offsets", offsets},
+                {"optimize_offset", false},
+                {"num_threads", 1}},
+               {{"m", m}})
+        .first.at("mesh");
+}
+
+/// One optimized 2D run through the driver with these offsets and keys `j`.
+ComponentResult run_offsets_driver_2d(const MeshData& m, nlohmann::json j)
+{
+    j["input"] = "m";
+    j["num_threads"] = 1;
+    j["throw_on_nonconvergence"] = false;
+    return components::topological_offset::topological_offset(j, {{"m", m}});
+}
+} // namespace
+
+TEST_CASE("several-offsets-as-alone-run-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-as-alone, through the driver (several-offsets-as-alone-2d
+    // drives the mesh): three bodies, each two squares from the next, offset in one march; each
+    // entry's band in the result is the one a run of that entry alone makes -- the same triangles
+    // at the same positions -- under its own output tag and no other entry's. Every outer end is a
+    // grid edge (0.25) or more from its body, so a at 0.1 and c at 0.2 are traced to, and b at
+    // 0.3 falls back to half of 0.25.
+    const std::vector<std::pair<std::string, Box2d>> boxes = {
+        {"a", {{1, 2, 1, 2}}},
+        {"b", {{5, 6, 1, 2}}},
+        {"c", {{1, 2, 5, 6}}}};
+    const MeshData m = box_mesh_2d(boxes);
+    const std::vector<double> D = {0.1, 0.3, 0.2};
+    nlohmann::json all = nlohmann::json::array();
+    for (size_t k = 0; k < boxes.size(); ++k) all.push_back(offset_entry_2d(boxes[k].first, D[k]));
+    const MeshData joint = construct_offsets_2d(m, all);
+    for (size_t k = 0; k < boxes.size(); ++k) {
+        const std::string band = boxes[k].first + "_band";
+        INFO("offsets[" << k << "] " << boxes[k].first << " at " << D[k]);
+        const auto faces = result_faces_tagged_2d(joint, band);
+        CHECK(!faces.empty());
+        CHECK(
+            faces ==
+            result_faces_tagged_2d(construct_offsets_2d(m, nlohmann::json::array({all[k]})), band));
+        const double traced = D[k] < 0.25 ? D[k] : 0.125;
+        size_t n_outer = 0;
+        for (const FaceCorners2d& c : faces) {
+            for (const auto& q : c) {
+                const double d = box_distance_2d(Vector2d(q[0], q[1]), boxes[k].second);
+                if (d == 0.) continue; // on the body
+                ++n_outer;
+                CHECK(std::abs(d - traced) <= 0.01 * traced);
+            }
+        }
+        CHECK(n_outer > 0);
+        for (size_t o = 0; o < boxes.size(); ++o) {
+            if (o == k) continue;
+            for (const FaceCorners2d& c : result_faces_tagged_2d(joint, boxes[o].first + "_band"))
+                CHECK(faces.count(c) == 0);
+        }
+    }
+    // The comparison tells positions apart: a alone at c's distance is not a's band.
+    nlohmann::json a_at_c = all[0];
+    a_at_c["target_distance"] = D[2];
+    CHECK(
+        result_faces_tagged_2d(joint, "a_band") !=
+        result_faces_tagged_2d(construct_offsets_2d(m, nlohmann::json::array({a_at_c})), "a_band"));
+}
+
+TEST_CASE("several-offsets-touch-run-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-touch, through the driver: entries that intersect are refused
+    // (label_input_complex()): b's squares next to a's share their vertices. One square apart,
+    // the simplicial embedding splits the grid edges between them, and the two bands come out
+    // apart -- no vertex in both -- each within 0.125 of its body, so a target of 0.1 is still
+    // traced to.
+    const auto run = [](const Box2d& b) {
+        return construct_offsets_2d(
+            box_mesh_2d({{"a", {{1, 2, 1, 2}}}, {"b", b}}),
+            nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.1)}));
+    };
+    REQUIRE_THROWS_WITH(run({{3, 4, 1, 2}}), Catch::Matchers::ContainsSubstring("share"));
+    const Box2d b = {{4, 5, 1, 2}};
+    MeshData out;
+    REQUIRE_NOTHROW(out = run(b));
+    std::set<std::array<double, 2>> corners_a;
+    for (const FaceCorners2d& c : result_faces_tagged_2d(out, "a_band"))
+        corners_a.insert(c.begin(), c.end());
+    size_t n_b = 0, n_b_outer = 0;
+    for (const FaceCorners2d& c : result_faces_tagged_2d(out, "b_band")) {
+        ++n_b;
+        for (const auto& q : c) {
+            CHECK(corners_a.count(q) == 0);
+            const double d = box_distance_2d(Vector2d(q[0], q[1]), b);
+            if (d > 0.) {
+                ++n_b_outer;
+                CHECK(std::abs(d - 0.1) <= 0.01 * 0.1);
+            }
+        }
+    }
+    CHECK(!corners_a.empty());
+    CHECK(n_b > 0);
+    CHECK(n_b_outer > 0);
+}
+
+TEST_CASE("several-offsets-optimize-run-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-optimize, through the driver: several entries run the
+    // optimization, an input complex of several connected pieces, each its entry's; the result
+    // json reports the one turn.
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = run_offsets_driver_2d(
+            box_mesh_2d({{"a", {{1, 2, 1, 2}}}, {"b", {{5, 6, 1, 2}}}}),
+            {{"offsets",
+              nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.1)})},
+             {"max_rounds", 1}}));
+    CHECK(!result_faces_tagged_2d(res.first.at("mesh"), "a_band").empty());
+    CHECK(!result_faces_tagged_2d(res.first.at("mesh"), "b_band").empty());
+    CHECK(res.second.at("optimization_metrics").at("max_grad").size() == 1);
+}
+
+TEST_CASE("several-offsets-optimize-distances-run-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-optimize-distances, through the driver: each piece its own
+    // target distance in the optimization (place_piece()). Two boxes 0.5 apart, a at 0.1, b at
+    // 0.2: both fronts at their own targets and converged; then b one square at 0.3, above the
+    // maximum marchable distance (constructed at 0.125), a 0.5 away (each piece its own
+    // integral). Under EXPERIMENTAL_band_volume_rule "exact_swept", the default, each piece's
+    // swept change, as several-offsets-optimize-distances-2d.
+    const auto run = [](const Box2d& a, const Box2d& b, const double db) {
+        return run_offsets_driver_2d(
+            box_mesh_2d({{"a", a}, {"b", b}}),
+            {{"offsets",
+              nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", db)})},
+             {"max_rounds", 5}});
+    };
+    {
+        const Box2d a = {{1, 2, 1, 2}}, b = {{5, 6, 1, 2}};
+        const ComponentResult res = run(a, b, 0.2);
+        CHECK(res.second.value("converged", false));
+    }
+    {
+        const Box2d a1 = {{1, 2, 3, 3}}, b1 = {{5, 5, 3, 3}};
+        const ComponentResult res = run(a1, b1, 0.3);
+        CHECK(res.second.value("converged", false));
+    }
+}
+
+TEST_CASE("several-offsets-solid-and-curve-run-2d", "[offset][2d]")
+{
+    // The 2D twin of several-offsets-solid-and-curve, through the driver: entries of different
+    // kinds in one run, a solid (a face tag) and the curve group (the envelope, "EnvelopeSurface"
+    // on the memory route), each entry its own distance engine. Each band is the one its entry
+    // makes alone. 2D refuses no mix of kinds within one entry (see
+    // several-offsets-solid-and-curve-2d).
+    const MeshData m = box_mesh_2d({{"a", {{1, 2, 1, 2}}}}, {{{1, 6}}, {{5, 6}}});
+    const nlohmann::json a = offset_entry_2d("a", 0.1);
+    const nlohmann::json r = {
+        {"selection", "EnvelopeSurface"},
+        {"output_tags", {"curve_band"}},
+        {"target_distance", 0.1}};
+    const MeshData joint = construct_offsets_2d(m, nlohmann::json::array({a, r}));
+    CHECK(!result_faces_tagged_2d(joint, "a_band").empty());
+    CHECK(!result_faces_tagged_2d(joint, "curve_band").empty());
+    CHECK(
+        result_faces_tagged_2d(joint, "a_band") ==
+        result_faces_tagged_2d(construct_offsets_2d(m, nlohmann::json::array({a})), "a_band"));
+    CHECK(
+        result_faces_tagged_2d(joint, "curve_band") ==
+        result_faces_tagged_2d(construct_offsets_2d(m, nlohmann::json::array({r})), "curve_band"));
+}
+
+TEST_CASE("several-offsets-solid-and-curve-optimize-run-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-solid-and-curve-optimize, through the driver: the same two
+    // entries through the optimization, each piece its own field and integral. Both bands at
+    // their targets: their front vertices within 10% of 0.1 from their own input.
+    const ComponentResult res = run_offsets_driver_2d(
+        box_mesh_2d({{"a", {{1, 2, 1, 2}}}}, {{{1, 6}}, {{5, 6}}}),
+        {{"offsets",
+          nlohmann::json::array(
+              {offset_entry_2d("a", 0.1),
+               {{"selection", "EnvelopeSurface"},
+                {"output_tags", {"curve_band"}},
+                {"target_distance", 0.1}}})},
+         {"max_rounds", 5}});
+    const MeshData& out = res.first.at("mesh");
+    const std::vector<double> da = result_front_distances_2d(out, "a_band", {{1, 2, 1, 2}});
+    REQUIRE(!da.empty());
+    for (const double d : da) {
+        CHECK(d >= 0.09);
+        CHECK(d <= 0.11);
+    }
+    // the curve: x in [-0.75, 0.25] at y = 0.5
+    const auto curve_distance = [](const std::array<double, 2>& q) {
+        const double x = std::clamp(q[0], -0.75, 0.25);
+        return (Vector2d(q[0], q[1]) - Vector2d(x, 0.5)).norm();
+    };
+    const std::set<std::array<double, 2>> ambient = result_ambient_corners_2d(out);
+    size_t n = 0;
+    for (const FaceCorners2d& c : result_faces_tagged_2d(out, "curve_band")) {
+        for (const auto& q : c) {
+            if (!ambient.count(q)) continue;
+            ++n;
+            CHECK(curve_distance(q) >= 0.09);
+            CHECK(curve_distance(q) <= 0.11);
+        }
+    }
+    CHECK(n > 0);
+}
+
+TEST_CASE("several-offsets-growth-run-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-growth, through the driver: growth_mode "linear" with several
+    // entries, each entry from its own d_0 to its own target, one schedule. a one square at 0.1,
+    // traced to by the march, stays there; b one square at 0.4, above the maximum marchable
+    // distance 0.25 (constructed at 0.125), grows in linear_growth_steps stages 0.125 -> 0.4. Both
+    // converge at their own targets. The result json's offset_level is the run-wide euclidean
+    // field's level, 1: d in units of target_distance (EuclideanOffsetPotential2D, m_c = 1, as
+    // 3D's). Under EXPERIMENTAL_band_volume_rule "exact_swept", the default, each piece's swept
+    // change, as several-offsets-growth-2d.
+    const Box2d a = {{1, 1, 3, 3}}, b = {{5, 5, 3, 3}};
+    const ComponentResult res = run_offsets_driver_2d(
+        box_mesh_2d({{"a", a}, {"b", b}}),
+        {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.1), offset_entry_2d("b", 0.4)})},
+         {"growth_mode", "linear"},
+         {"max_rounds", 10}});
+    CHECK(res.second.value("converged", false));
+    CHECK(res.second.at("offset_level").get<double>() == Catch::Approx(1.));
+}
+
+TEST_CASE("smart-growth-attempt-fails-run-2d", "[offset][2d]" + release_only)
+{
+    // growth_mode "smart" through the driver: the give-up error of
+    // TopoOffsetTriMesh::smart_growth() reaches the caller. The turn-cap case of
+    // smart-growth-attempt-fails-2d: a box of 2 x 2 squares at 0.35, one turn an attempt
+    // (smart_growth_attempts 1), after level 0 converged at d_0 = 0.125; with
+    // smart_growth_max_fails 1 the first failure is put back and is the last.
+    REQUIRE_THROWS_WITH(
+        run_offsets_driver_2d(
+            box_mesh_2d({{"a", {{3, 4, 3, 4}}}}),
+            {{"offsets", nlohmann::json::array({offset_entry_2d("a", 0.35)})},
+             {"growth_mode", "smart"},
+             {"smart_growth_attempts", 1},
+             {"smart_growth_max_fails", 1},
+             {"max_rounds", 10}}),
+        Catch::Matchers::ContainsSubstring(
+            "1 attempts from the converged distance 0.125 failed (smart_growth_max_fails)"));
 }

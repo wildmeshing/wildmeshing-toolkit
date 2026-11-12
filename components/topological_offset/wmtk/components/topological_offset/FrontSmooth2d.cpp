@@ -17,49 +17,17 @@ namespace wmtk::components::topological_offset {
  * is FrontSmooth3d.cpp.
  */
 
-namespace {
-/// One live front chord at x, as the offset term wants it: the chord's other end, and the
-/// barycentric weights of the chord's stencil_order stencil. Only the weights are frozen -- the
-/// sample points themselves slide with x and the field is read live -- see StencilEnergy2D. The
-/// 3D twin is stencil_face_at().
-template <typename Mesh>
-bool stencil_edge_at(
-    const Mesh& m,
-    const typename Mesh::Tuple& e,
-    const size_t vid,
-    StencilEnergy2D::Edge& out)
-{
-    const auto vs = m.get_edge_vids(e);
-    size_t q = 0;
-    int k = 0;
-    for (const size_t v : vs) {
-        if (v == vid) continue;
-        q = v;
-        ++k;
-    }
-    if (k != 1) return false;
-    const Vector2d x = m.m_vertex_attribute[vid].m_posf;
-    out.q1 = m.m_vertex_attribute[q].m_posf;
-    out.samples.clear();
-    m.for_each_edge_sample(x, out.q1, [&](const Vector2d&, const double wa, const double wb) {
-        StencilEnergy2D::Sample sm;
-        sm.a = wa;
-        sm.b = wb;
-        out.samples.push_back(sm);
-    });
-    return !out.samples.empty();
-}
-} // namespace
-
 bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
 {
     // See the header: the shared smoother with the offset's options. The whole objective arrives
-    // through smoothing_extra_energy() -- w AMIPS over the ring and the offset terms at
-    // offset_term_weight(), tri_energy()'s two parts -- and w_amips 0 keeps the smoother from
-    // adding an AMIPS term of its own; a front vertex an input envelope pins carries no offset
-    // term. The smoother holds a front vertex to no envelope (see
-    // smoothing_containment_envelope()), so neither the projected path nor the containment check
-    // applies -- solve, exact inversion test, then the veto on tri_energy() below. As in 3D.
+    // through smoothing_extra_energy() -- the vertex's part of the energy, the AMIPS term over the
+    // ring and the band term of its band faces -- and w_amips 0 keeps the smoother from adding an
+    // AMIPS term of its own; a front vertex held on the input carries no band term. A front vertex
+    // on no region boundary is held to no envelope (see smoothing_energy_envelope()), so neither
+    // the projected path nor the containment check applies -- solve, exact inversion test, then
+    // the veto on tri_energy() below. A front vertex held on a region boundary takes the engine's
+    // projected step, which compares the ring's sum itself (smoothing_ring_energy()), and then
+    // this veto. As in 3D.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
     opts.w_amips = 0.;
@@ -71,16 +39,22 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
     // ring's shape on the way to the level set: off. The veto below is on the energy instead.
     opts.quality_veto = false;
     polysolve::nonlinear::Solver& solver = smoothing_solver();
-    // THE FRONT SMOOTHER'S VETO (see tri_energy()): the max of tri_energy() over the vertex's
-    // one-ring may not rise, under offset_front_smooth_veto. A tie passes. Read before the solve
-    // and after it, on the mesh: a smoothing move changes no label and moves one vertex, so the
-    // one-ring holds every face whose energy it can change. Refused, TriMesh::smooth_vertex()
-    // rolls back the position and the ring's stored qualities. The smoother has counted the move
-    // accepted by then; it is recounted as a quality refusal, so the counters still partition the
-    // attempts.
+    // THE FRONT SMOOTHER'S VETO (see tri_energy()), on every solve: the sum of tri_energy() over
+    // the vertex's one-ring may not rise. A tie passes, as in the engine's AMIPS veto. Read
+    // before the solve and after it, on the mesh: a smoothing move changes no label and moves one
+    // vertex, so the one-ring holds every face whose energy it can change. Refused,
+    // TriMesh::smooth_vertex() rolls back the position and the ring's stored qualities. The
+    // smoother has counted the move accepted by then; it is recounted as a quality refusal, so
+    // the counters still partition the attempts. "exact_swept": the AMIPS part alone before, and
+    // the move accepted by swept_accept(), the band term's exact change with halvings. As in 3D.
     const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
-    const bool veto = m_offset_params.offset_front_smooth_veto;
-    const double before = veto ? max_tri_energy(ring) : 0.;
+    const Vector2d x0 = m_vertex_attribute[vid].m_posf;
+    const bool swept = swept_rule();
+    // "exact_swept": the vertex smoothed, for smoothing_ring_energy(), as smooth_nonfront_vertex()
+    // records it: a front vertex held on a region boundary takes the engine's projected step,
+    // which reads it. As 3D's.
+    if (swept) m_swept_stored.local().vid = vid;
+    const double before = tri_energy_sum(ring, !swept);
     // DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of every
     // vertex that shares a front chord with it -- before the solve.
     std::vector<size_t> nb;
@@ -117,8 +91,9 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
         ++m_front_grad_abs[size_t(bin(cr.gradNorm, -14))];
         ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
     }
-    if (veto) ++m_front_veto_asked;
-    if (veto && !(max_tri_energy(ring) <= before)) { // a NaN refuses
+    ++m_front_veto_asked;
+    if (swept ? !swept_accept(vid, ring, x0, before, m_swept_front)
+              : !(tri_energy_sum(ring) <= before)) { // a NaN refuses
         ++m_front_veto_fired;
         --m_smooth_rejects.accepted;
         ++m_smooth_rejects.quality;
@@ -141,11 +116,12 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
 
 bool TopoOffsetTriMesh::smooth_repulsion_vertex(const Tuple& t)
 {
-    // The front's path with the repulsion term in place of the chord terms: the whole objective
-    // arrives through smoothing_extra_energy() -- w AMIPS over the ring and repulsion_energy(vid)
-    // -- and w_amips 0 keeps the smoother from adding an AMIPS term of its own; no engine veto. A
-    // repulsion vertex is never envelope-held (repulsion_smoothing() leaves those to TriWild's
-    // rule), so the solve has no envelope term and no containment check. As in 3D.
+    // The front's path with the repulsion term in place of the band term: the whole objective
+    // arrives through smoothing_extra_energy() -- the AMIPS term over the ring and
+    // repulsion_energy(vid) -- and w_amips 0 keeps the smoother from adding an AMIPS term of its
+    // own; no engine veto. A repulsion vertex is never envelope-held (repulsion_smoothing() leaves
+    // those to TriWild's rule), so the solve has no envelope term and no containment check. As in
+    // 3D.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
     opts.w_amips = 0.;
@@ -155,17 +131,16 @@ bool TopoOffsetTriMesh::smooth_repulsion_vertex(const Tuple& t)
     opts.two_stage = false;
     opts.quality_veto = false;
     smoothing_solver();
-    // The front veto's rule (see tri_energy()): the max of the per-tri energy over the ring --
+    // The front veto's rule (see tri_energy()): the sum of the per-tri energy over the ring --
     // which includes the repulsion terms of the faces that carry them, O(v) among them -- may
     // not rise (a tie passes). Read before the solve and after it; refused,
-    // TriMesh::smooth_vertex() rolls the move back.
+    // TriMesh::smooth_vertex() rolls the move back. As in 3D.
     const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
-    const bool veto = m_offset_params.offset_front_smooth_veto;
-    const double before = veto ? max_tri_energy(ring) : 0.;
+    const double before = tri_energy_sum(ring);
     const bool ok = smooth_vertex_2d_counted(t, opts, m_newton_repulsion);
     if (!ok) return false;
-    if (veto) ++m_repulsion_veto_asked;
-    if (veto && !(max_tri_energy(ring) <= before)) { // a NaN refuses
+    ++m_repulsion_veto_asked;
+    if (!(tri_energy_sum(ring) <= before)) { // a NaN refuses
         ++m_repulsion_veto_fired;
         --m_smooth_rejects.accepted;
         ++m_smooth_rejects.quality;
@@ -236,40 +211,97 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::front_objectiv
     const size_t vid) const
 {
     // smoothing_extra_energy() at a front vertex that carries the offset term, with the offset
-    // term included unconditionally: w AMIPS over the one-ring, the plastic faces' rest-shape
-    // AMIPS, and the offset terms on the vertex's own region's field. As in 3D, where the AMIPS
-    // part is cubed.
+    // term included unconditionally: the AMIPS term over the one-ring, the plastic faces'
+    // rest-shape AMIPS, and the band term (front_energy()). As in 3D, whose plastic cells are in
+    // its AMIPS term.
     auto sum = std::make_shared<optimization::EnergySum>();
-    sum->add_energy(amips_energy(vid));
+    sum->add_energy(amips3_energy(vid));
     if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
-    sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
+    sum->add_energy(front_energy(vid));
     return sum;
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::front_energy(
-    const size_t vid,
-    const std::shared_ptr<const OffsetPotential2D>& pot) const
+    const size_t vid) const
 {
-    // 1 / front_conv_frac()^2: the squared relative error (Phi - c)/c becomes the squared error
-    // in units of the tolerance, so the term below is sum_e O(e) -- for the euclidean field the
-    // very terms the per-cell energy tri_energy() carries on these chords' band faces, and the
-    // ring measure's n_v r_v^2. As in 3D.
-    const double w_off = offset_term_weight();
+    // The vertex's part of the energy's band term; see band_volume_energy_at(). 3D's
+    // EXPERIMENTAL_band_volume_rule "surface" puts the face term of the offset faces through vid
+    // here (SurfaceOffsetError3D); 2D refuses that rule (band_rule_exact()).
     auto sum = std::make_shared<optimization::EnergySum>();
-    // THE offset term, and the only one: the mean squared relative error over each incident
-    // chord's stencil, summed over the chords. The stencil contains the chord's ends, so the
-    // moving vertex's own residual is in it once per incident chord. See StencilEnergy2D. Every
-    // chord weighs 1.
-    std::vector<StencilEnergy2D::Edge> stencil_edges;
-    for (const Tuple& e : offset_surface_edges_live_at(vid)) {
-        StencilEnergy2D::Edge se;
-        if (!stencil_edge_at(*this, e, vid, se)) continue;
-        stencil_edges.push_back(std::move(se));
-    }
-    if (!stencil_edges.empty()) {
-        sum->add_energy(std::make_shared<StencilEnergy2D>(pot, std::move(stencil_edges), w_off));
-    }
+    if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
     return sum;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::band_volume_energy_at(
+    const size_t vid) const
+{
+    // band_cell_term() of each band face of the ring, x moving (BandVolumeEnergy2D): the face's
+    // other two corners in its winding after vid, and under "exact_swept" its piece.
+    const bool swept = swept_rule();
+    std::vector<BandVolumeEnergy2D::Cell> cells;
+    std::vector<int> cell_piece;
+    for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
+        if (!face_is_offset_band(fid)) continue;
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        int k = 0;
+        while (k < 3 && vs[size_t(k)] != vid) ++k;
+        if (k == 3) continue;
+        BandVolumeEnergy2D::Cell c;
+        c.q1 = m_vertex_attribute[vs[size_t((k + 1) % 3)]].m_posf;
+        c.q2 = m_vertex_attribute[vs[size_t((k + 2) % 3)]].m_posf;
+        cells.push_back(c);
+        if (swept) cell_piece.push_back(place_piece(vs.data(), 3));
+    }
+    if (cells.empty()) return nullptr;
+    const bool exact = band_rule_exact(); // refuses a rule with no 2D port, as band_cell_term()
+    // EXPERIMENTAL_band_volume_rule "exact_swept": the search model is the function the move is
+    // judged on (BandVolumeEnergy2D::set_swept()): one per piece r, over the boundary edges of
+    // B_r through vid in the lists and order swept_accept() reads (band_swept_edges()), with the
+    // ring's band faces of piece r and r's distance and integral, summed where there are several
+    // (EXACT SWEPT CHANGE, several entries). None: no band term, the move's band change being 0.
+    // As in 3D.
+    if (swept) {
+        std::vector<SweptEdgesOfPiece> pieces;
+        band_swept_edges(vid, m_vertex_attribute[vid].m_posf, pieces);
+        auto& models = m_swept_model.local();
+        models.clear();
+        if (pieces.empty()) return nullptr;
+        auto sum = pieces.size() > 1 ? std::make_shared<optimization::EnergySum>() : nullptr;
+        std::shared_ptr<BandVolumeEnergy2D> e;
+        for (SweptEdgesOfPiece& q : pieces) {
+            std::vector<BandVolumeEnergy2D::Cell> cq;
+            for (size_t i = 0; i < cells.size(); ++i) {
+                if (cell_piece[i] == q.piece) cq.push_back(cells[i]);
+            }
+            const double delta = region_delta(q.piece);
+            const auto& band_exact = band_exact_for(q.piece);
+            e = std::make_shared<BandVolumeEnergy2D>(
+                band_exact,
+                std::move(cq),
+                m_vertex_attribute[vid].m_posf,
+                delta);
+            e->set_swept(band_exact, delta, std::move(q.edges), &m_swept_derivs);
+            models.push_back(e);
+            if (sum) sum->add_energy(e);
+        }
+        if (sum) return sum;
+        return e;
+    }
+    // The ring's piece's distance and integral (place_piece(); the run's and the whole complex's
+    // with one entry): the faces of a band vertex's ring are its piece's band. As in 3D.
+    const int piece = place_piece(&vid, 1);
+    const double delta = region_delta(piece);
+    const auto& band_exact = band_exact_for(piece);
+    auto e = std::make_shared<BandVolumeEnergy2D>(
+        band_exact,
+        std::move(cells),
+        m_vertex_attribute[vid].m_posf,
+        delta);
+    // EXPERIMENTAL_band_volume_rule "exact": each face's closed-form integral, as
+    // band_cell_term(); "front_flux" takes it too, as band_cell_term() does. 3D gives
+    // "front_flux" its front form (BandVolumeEnergy3D::set_front_flux()), not ported.
+    if (exact) e->set_exact_integral(band_exact, delta);
+    return e;
 }
 
 } // namespace wmtk::components::topological_offset

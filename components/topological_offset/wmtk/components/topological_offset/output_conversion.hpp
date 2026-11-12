@@ -12,8 +12,9 @@ namespace wmtk::components::topological_offset {
 /// and io::collect_point_tags() write them from the engine's: rows of the vertices in
 /// get_vertices() order, an edge's vertices ascending, one row per vertex under all its labels.
 /// Until 2026-11 that exit wrote neither block, and the input's curves and points were dropped.
-/// In 2D the point block alone, from VertexExtra2d::point_inputs, which nothing hands over to an
-/// anchor: the curves are the tagged edges' input sets, which io::collect_input_set_tags() writes.
+/// In 2D the point block alone, from VertexExtra2d::point_inputs, as loaded until
+/// TopoOffsetTriMesh::hold_curves_and_points() hands it to the anchors: the curves are the tagged
+/// edges' input sets, which io::collect_input_set_tags() writes.
 template <typename Mesh>
 void collect_loaded_curves_and_points(const Mesh& mesh, MeshMap& outputs)
 {
@@ -107,12 +108,18 @@ void collect_memory_output(Mesh& mesh, io::ComponentIO& context)
             mesh.get_faces(),
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
         // the tagged edges, on the input sets the construction carries (init_from_image()), the
-        // edge block triwild and simwild write; and the input points, as loaded
+        // edge block triwild and simwild write; and the input points, as their anchors carry
+        // them (hold_curves_and_points()), the point block triwild and simwild write, or as
+        // loaded before then, as in 3D
         io::collect_input_set_tags<CellType::Edge>(
             mesh,
             context.result.first,
             mesh.m_edge_tag_names);
-        collect_loaded_curves_and_points(mesh, context.result.first);
+        if (mesh.m_points_held) {
+            io::collect_point_tags(mesh, context.result.first, mesh.m_point_names);
+        } else {
+            collect_loaded_curves_and_points(mesh, context.result.first);
+        }
     }
     if (mesh.m_offset_params.save_offset_correspondence) {
         const auto ids = data.vertex_attributes.at("vid").integers();

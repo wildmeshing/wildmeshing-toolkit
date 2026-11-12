@@ -47,7 +47,7 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     // records it. A front vertex held on a region boundary (every one is held since 2026-11-04)
     // takes the engine's projected step, which reads it; before, it read the last non-front
     // vertex's and threw (double_sphere, one round).
-    if (swept_rule()) m_swept_stored.local().first = vid;
+    if (swept_rule()) m_swept_stored.local().vid = vid;
     const Vector3d x0 = std::as_const(m_vertex_attribute)[vid].m_posf;
     auto& solver =
         m_solver.local(); // the thread's shared solver, criteria set by smoothing_solver()
@@ -357,31 +357,60 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_energy_at(
     const size_t vid) const
 {
-    // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D).
-    // EXPERIMENTAL_band_volume_rule "surface": no cell carries a band term.
+    // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D), and under
+    // "exact_swept" its piece. EXPERIMENTAL_band_volume_rule "surface": no cell carries a band
+    // term.
     if (surface_energy()) return nullptr;
+    const bool swept = swept_rule();
     std::vector<BandVolumeEnergy3D::Cell> cells;
+    std::vector<int> cell_piece;
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         if (!cell_is_offset_band(tid)) continue;
         BandVolumeEnergy3D::Cell c;
         int k = 0;
-        for (const size_t u : oriented_tet_vids(tid)) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        for (const size_t u : vs) {
             if (u == vid) continue;
             (k == 0 ? c.q1 : k == 1 ? c.q2 : c.q3) = m_vertex_attribute[u].m_posf;
             ++k;
         }
         if (k != 3) continue;
         cells.push_back(c);
+        if (swept) cell_piece.push_back(place_piece(vs.data(), 4));
     }
     if (cells.empty()) return nullptr;
     // EXPERIMENTAL_band_volume_rule "exact_swept": the search model is the function the move is
-    // judged on (BandVolumeEnergy3D::set_swept()), over the boundary faces of B through vid in the
-    // list and order swept_accept() reads (band_swept_faces()). None: no band term, the move's
-    // band change being 0.
-    std::vector<std::array<Vector3d, 2>> swept_faces;
-    if (swept_rule()) {
-        band_swept_faces(vid, m_vertex_attribute[vid].m_posf, swept_faces);
-        if (swept_faces.empty()) return nullptr;
+    // judged on (BandVolumeEnergy3D::set_swept()): one per piece r, over the boundary faces of
+    // B_r through vid in the lists and order swept_accept() reads (band_swept_faces()), with the
+    // ring's band cells of piece r and r's distance, engine and integral, summed where there are
+    // several (EXACT SWEPT CHANGE, several entries). None: no band term, the move's band change
+    // being 0.
+    if (swept) {
+        std::vector<SweptFacesOfPiece> pieces;
+        band_swept_faces(vid, m_vertex_attribute[vid].m_posf, pieces);
+        auto& models = m_swept_model.local();
+        models.clear();
+        if (pieces.empty()) return nullptr;
+        auto sum = pieces.size() > 1 ? std::make_shared<optimization::EnergySum>() : nullptr;
+        std::shared_ptr<BandVolumeEnergy3D> e;
+        for (SweptFacesOfPiece& q : pieces) {
+            std::vector<BandVolumeEnergy3D::Cell> cq;
+            for (size_t i = 0; i < cells.size(); ++i) {
+                if (cell_piece[i] == q.piece) cq.push_back(cells[i]);
+            }
+            const double delta = region_delta(q.piece);
+            e = std::make_shared<BandVolumeEnergy3D>(
+                envelope_for(q.piece),
+                m_input_complex_pad,
+                std::move(cq),
+                m_vertex_attribute[vid].m_posf,
+                delta);
+            e->set_swept(band_exact_for(q.piece), delta, std::move(q.faces), &m_swept_derivs);
+            models.push_back(e);
+            if (sum) sum->add_energy(e);
+        }
+        if (sum) return sum;
+        return e;
     }
     // The ring's piece's distance, engine and integral (place_piece(); the run's and the whole
     // complex's with one entry): the cells of a band vertex's ring are its piece's band.
@@ -394,11 +423,6 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
         std::move(cells),
         m_vertex_attribute[vid].m_posf,
         delta);
-    if (swept_rule()) {
-        e->set_swept(band_exact, delta, std::move(swept_faces), &m_swept_derivs);
-        m_swept_model.local() = e;
-        return e;
-    }
 
     // EXPERIMENTAL_band_volume_rule "exact": each cell's closed-form integral, as band_cell_term().
     if (m_offset_params.band_volume_rule == "exact") {

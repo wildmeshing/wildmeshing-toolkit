@@ -7,6 +7,7 @@
 
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "ExactBandIntegral.hpp"
+#include "ExactBandIntegral2D.hpp"
 #include "SimplicialComplexBVH.hpp"
 
 #include <polysolve/nonlinear/Problem.hpp>
@@ -480,111 +481,6 @@ using OffsetEnergy2D = OffsetEnergy<2>;
 using OffsetEnergy3D = OffsetEnergy<3>;
 
 /**
- * @brief THE offset term of a 2D front vertex's smoothing objective: the mean squared relative
- * error of the field over the stencil of each incident front chord.
- *
- *     E(x) = w * sum over the vertex's incident front chords e of
- *                (1/N_s) * sum over e's N_s stencil points i of  r(q_i(x))^2
- *
- *     r(p) = (Phi(p) - c) / c,      q_i(x) = a_i x + b_i q1
- *
- * with (a_i, b_i) the barycentric weights of stencil point i on the chord, a_i the MOVING vertex's
- * own weight, and q1 the chord's other end, fixed for the visit. The stencil is
- * TopoOffsetTriMesh::for_each_edge_sample, sized by stencil_order.
- *
- * UNITS: the front smoother passes w = 1 / front_conv_frac()^2
- * (TopoOffsetTriMesh::offset_term_weight()), which puts r in units of the tolerance: each chord's
- * term is then TopoOffsetTriMesh::edge_offset_term(), 1 at the bar, the term the per-cell energy
- * tri_energy() adds to the chord's band face, and E is the sum of those terms over the vertex's
- * chords. Exactly so for the euclidean field, where r IS relative_residual().
- *
- * THIS ONE TERM REPLACES BOTH the placement term (OffsetEnergy2D on the vertex alone) and the sag
- * term over the chord interiors that preceded it, because the stencil contains the ends: at
- * order 0 the stencil IS the two ends, so E is exactly the placement residual of the vertex and
- * its neighbours, and every higher order adds interior points that ask the same question between
- * them.
- *
- * r IS THE PLAIN RELATIVE ERROR (Phi - c)/c, which for the euclidean field is exactly
- * (d - target_distance)/target_distance -- the same residual OffsetEnergy2D uses there. For the
- * SMOOTH field OffsetEnergy2D instead divides by g_ref * delta to get a monotone length; this
- * class does not, so under `offset_field: "smooth"` the two are scaled differently (about 3.44x
- * the criterion's number at the default offset_dhat_factor).
- *
- * NOTE THE PER-CHORD MEAN, SUMMED OVER CHORDS, with no length weight: a vertex with V incident
- * chords contributes its own r(x)^2 with coefficient V/N_s, since it is a stencil point of every
- * one of them.
- *
- * The derivatives are exact, and so is the Hessian by default: per stencil point
- * 2 a_i^2 (dr dr^T + r hess Phi / c), whose second term is indefinite where r < 0 (inside the
- * level set). `gauss_newton` drops that term, leaving the sum of a_i^2 dr dr^T outer products,
- * PSD by construction -- the form used until 2026-09-28; hessian() says why the default changed.
- */
-class StencilEnergy2D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-
-    /// One stencil point's barycentric weights. `a` is the moving vertex's, so dq_i/dx = a_i I.
-    struct Sample
-    {
-        double a, b;
-    };
-    /// One incident front chord, the moving vertex implicit.
-    struct Edge
-    {
-        Eigen::Vector2d q1;
-        std::vector<Sample> samples;
-    };
-
-    StencilEnergy2D(
-        const std::shared_ptr<const OffsetPotential2D>& potential,
-        std::vector<Edge> edges,
-        double weight,
-        bool gauss_newton = false);
-
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-
-private:
-    /// One stencil point's r = (Phi - c)/c and dr = grad Phi / c. A sample whose Phi is not
-    /// finite is dropped everywhere, and one whose gradient is not finite from the gradient and
-    /// the Hessian, exactly as the criterion drops it.
-    struct Reading
-    {
-        double r = 0.;
-        Eigen::Vector2d dr = Eigen::Vector2d::Zero();
-        bool r_ok = false;
-        bool dr_ok = false;
-    };
-
-    /// Every stencil point's reading at x, chords in order and each chord's samples in order,
-    /// computed once per x: polysolve asks value, gradient and Hessian at the same x in one
-    /// Newton iteration (and value once more in its gradient check), and the line search's
-    /// accepted point is the next iteration's x. The field is read without its gradient until
-    /// a gradient or Hessian is asked for, then with it in one value_gradient() call.
-    const std::vector<Reading>& readings_at(const Eigen::Vector2d& x, bool need_dr) const;
-
-    std::shared_ptr<const OffsetPotential2D> m_potential;
-    std::vector<Edge> m_edges;
-    double m_weight;
-    bool m_gauss_newton;
-    double m_c = 1.; ///< the potential's target level, cached
-
-    mutable std::vector<Reading> m_readings;
-    mutable Eigen::Vector2d m_readings_x;
-    mutable bool m_readings_valid = false;
-    mutable bool m_readings_have_dr = false;
-};
-
-/**
  * @brief AMIPS against a rest shape, for deform_others: the smoothing term of a deformable
  * region's faces.
  *
@@ -671,6 +567,50 @@ private:
     bool m_x_set = false;
     Eigen::Vector3d m_x = Eigen::Vector3d::Zero();
     std::vector<double> m_a; ///< per cell: AMIPS at m_x
+    bool m_value_set = false;
+    double m_value = 0.;
+    bool m_grad_set = false;
+    TVector m_grad;
+};
+
+/**
+ * @brief The 2D twin of CubedAMIPSEnergy3D: w * sum over faces of area AMIPS^3
+ * (TopoOffsetTriMesh::tri_energy(), whose caller passes w = offset_amips_weight /
+ * stop_energy^3), AMIPS the 2D engine's first-power AMIPS2D.
+ *
+ * Each face's area AMIPS^3 is (sqrt3/4) T AMIPS^2 with T = (2/3) sum |e|^2 over its three edges
+ * (TopoOffsetTriMesh::area_amips3()) -- the area never from a determinant, as in 3D. Faces in
+ * the shared smoother's convention: 6 doubles with the moving vertex first, its two entries
+ * replaced by x. Derivatives by the chain rule from the engine's AMIPS2D ones. A step that
+ * inverts a face is invalid, as for the engine's AMIPSEnergy2D.
+ */
+class CubedAMIPSEnergy2D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    CubedAMIPSEnergy2D(std::vector<std::array<double, 6>> cells, double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    /// Makes x (bitwise) the cached point, as CubedAMIPSEnergy3D::at_point().
+    void at_point(const TVector& x);
+
+    std::vector<std::array<double, 6>> m_cells;
+    double m_weight;
+    bool m_x_set = false;
+    Eigen::Vector2d m_x = Eigen::Vector2d::Zero();
+    std::vector<double> m_a; ///< per face: AMIPS at m_x
     bool m_value_set = false;
     double m_value = 0.;
     bool m_grad_set = false;
@@ -1130,6 +1070,185 @@ private:
         const;
     /// The moving vertex's position at construction.
     Eigen::Vector3d m_x0 = Eigen::Vector3d::Zero();
+
+    std::vector<Cell> m_cells;
+};
+
+/**
+ * @brief The 2D twin of BandVolumeEnergy3D: a vertex's part of the energy's band term
+ * (TopoOffsetTriMesh::band_cell_term()), the vertex moving:
+ *
+ *     E(x) = sum over the vertex's band faces t of  A_t(x) * m_t(x),
+ *     m_t(x) = min over ALL input primitives P of (1/3) sum over t's 3 corners q of
+ *              (d_P(q) - delta) / delta,
+ *
+ * the three corners being x and the face's two fixed ones, A_t the face's signed area, positive
+ * on a valid face, the primitives ExactBandIntegral2D's (the input's segments and points) and the
+ * min its min_mean_distance(). Each face's term is band_cell_term() at x, so the solve descends
+ * exactly the face terms E sums.
+ *
+ * A_t(x) = (q1 - x) . N / 2, N = (q2 - q1) turned clockwise, is affine in x: its gradient is
+ * -N / 2 and its Hessian zero. The gradient and Hessian of m_t are the minimising primitive P's,
+ * grad d_P(x) / (3 delta) and hess d_P(x) / (3 delta) (ExactBandIntegral2D::primitive_distance()),
+ * and the products are 3D's: grad E_t = m_t grad A + A grad m_t, hess E_t = grad A grad m_t^T +
+ * grad m_t grad A^T + A hess m_t.
+ *
+ * set_exact_integral() (EXPERIMENTAL_band_volume_rule "exact"): A_t m_t becomes J_t / delta,
+ * J_t = ExactBandIntegral2D::value() of t with x a corner, its gradient and Hessian grad_hess() in
+ * that corner: exact, except on rule-(a) pieces (the bound's derivative) and at a kink of d on an
+ * edge of t through x (the one-sided limit for x moving into t). As 3D's.
+ *
+ * Both rules keep the last point's minima, or its value and its derivatives, as 3D's: polysolve
+ * asks for each separately at one x, and again in its line search.
+ *
+ * Where 2D differs: the corner bound searches every evaluation's minima afresh, through
+ * min_mean_distance(), which scans every primitive (2D has no input envelope to search a box
+ * in): no starting primitive and no certified ball (3D's ball_candidates()). The ball is one of
+ * 3D's two speed devices, proved bit-equal to a min_mean_distance() call per cell and evaluation
+ * (the two together MEASURED there: smoothing 68 s -> 15 s on the cube, the output
+ * bit-identical); 2D keeps the other, the last point's minima, and makes that call otherwise.
+ * No 2D measurement asks for the ball yet. "front_flux" has no 2D model and is refused
+ * (band_rule_exact()). "exact_swept" has 3D's search model (set_swept()).
+ */
+class BandVolumeEnergy2D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    /// One band face of the ring: its two other corners, at their current positions.
+    struct Cell
+    {
+        Eigen::Vector2d q1, q2;
+    };
+    /// prims: the input's primitives, the band term's searches (3D: the input envelope and its
+    /// pad; 2D: the integral, whose min_mean_distance() and primitive_distance() they are). x0:
+    /// the moving vertex's current position. Each face's corners are ordered here so that its
+    /// area at x0 is positive (the ring the smoother starts from is valid). delta =
+    /// target_distance.
+    BandVolumeEnergy2D(
+        std::shared_ptr<const ExactBandIntegral2D> prims,
+        std::vector<Cell> cells,
+        const Eigen::Vector2d& x0,
+        double delta);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    /// EXPERIMENTAL_band_volume_rule "exact": each face's term is J_t / delta (see the class doc).
+    void set_exact_integral(std::shared_ptr<const ExactBandIntegral2D> eb, double delta);
+    /// A boundary edge of the band B through the moving vertex x, the 2D twin of a 3D boundary
+    /// face's (a_f, b_f): its other end a, and the pair it makes with x ordered so that the pair's
+    /// normal rot_cw(second - first) points out of B: (x, a) when x_first, (a, x) otherwise
+    /// (TopoOffsetTriMesh::band_swept_edges()). 3D orders a face by its two other corners; an
+    /// edge has one, so the order is this flag.
+    struct SweptEdge
+    {
+        Eigen::Vector2d a;
+        bool x_first = true;
+    };
+    /// "exact_swept": the band term's change for the vertex moving from x0 to x1, 3D's
+    ///     dE* / delta = ( sum over f of sign_f value(conv(x0, x1, a_f), delta) ) / delta,
+    /// f the boundary edges of the band B through the vertex (`edges`), sign_f +1 where B grows:
+    /// -1 where x1 lies on the left of f's pair at x0 (exact orient2d), +1 on its right, a flat
+    /// swept triangle skipped (TopoOffsetTriMesh, EXACT SWEPT CHANGE). value() with `st` when given.
+    /// The one function both the decisions (TopoOffsetTriMesh::band_swept_sum()) and the smoother's
+    /// search model (set_swept()) evaluate. Where 2D differs: no value table and no partitions
+    /// kept (`keep`), the 2D integral having neither (ExactBandIntegral2D's class doc); 3D's are
+    /// speed devices (the table MEASURED there: 58% of the collapses' swept tets repeated within a
+    /// pass).
+    static double swept_change(
+        const ExactBandIntegral2D& eb,
+        double delta,
+        const Eigen::Vector2d& x0,
+        const Eigen::Vector2d& x1,
+        const std::vector<SweptEdge>& edges,
+        ExactBandIntegral2D::Stats* st = nullptr);
+    /// set_swept()'s counts, 3D's SweptDerivCounts: the search model's derivative evaluations, of
+    /// them those with an edge part labelled by rule (a), those taken from the swept triangles
+    /// (grad_hess(), at x != x0) and those whose Hessian is the edges' hess_swept (at x0), and
+    /// those taken from the ring's band faces (front_edge_derivs() threw).
+    struct SweptDerivCounts
+    {
+        std::atomic<size_t> evals{0}, rule_a{0}, swept_tris{0}, swept_x0{0}, ring_cells{0};
+    };
+    /**
+     * @brief EXPERIMENTAL_band_volume_rule "exact_swept": the smoother's search model is the
+     * function the move is judged on (TopoOffsetTriMesh::swept_accept()), 3D's
+     * BandVolumeEnergy3D::set_swept() one dimension down. Its value at x is swept_change(x0, x)
+     * over `edges`, x0 the position at construction: (E(B(x)) - E(B(x0))) / delta, E(B) =
+     * int_B chi (d - delta) dA, exactly where value() integrates every piece exactly. Its gradient
+     * and Hessian are E(B)'s at x: the sum over the edges of ExactBandIntegral2D::
+     * front_edge_derivs() / delta. Each edge's normal stays out of B at every x the solver
+     * evaluates, where no ring face is inverted. Defined at x = x0 too.
+     *
+     * Where an edge holds a part labelled by rule (a), or a swept triangle a rule-(a) piece, the
+     * derivatives are those of the judged change itself, as 3D's: at x0 the edges' gradient and
+     * their hess_swept, elsewhere the sum over the swept triangles of sign_f
+     * ExactBandIntegral2D::grad_hess(conv(x0, x, a_f), 1) / delta. Where front_edge_derivs()
+     * throws (its parts do not tile the edge), the "exact" rule's: the sum over the ring's band
+     * faces of grad_hess(t, 0) / delta. Every derivative evaluation is counted into `counts`. The
+     * last point's value, and its gradient and Hessian, are kept. See 3D's set_swept() for the
+     * measurements behind each branch (the edges' derivatives at x with rule (a) are no gradient:
+     * 3D's summed Hessian 1e-2 or more asymmetric in 449 of 3416 solves).
+     *
+     * Where 2D differs: the swept triangles' derivatives partition them again (3D reads the
+     * partitions its value made, a speed device; the 2D integral keeps none).
+     */
+    void set_swept(
+        std::shared_ptr<const ExactBandIntegral2D> eb,
+        double delta,
+        std::vector<SweptEdge> edges,
+        SweptDerivCounts* counts);
+    /// "exact_swept": the search model's last value, when it was taken for the move x0 -> x1 over
+    /// `edges` -- the model's integral, delta, x0 and edges, and its last value's x, equal to them
+    /// bit for bit -- so swept_change() of those inputs (TopoOffsetTriMesh::swept_accept()); false
+    /// otherwise. As 3D's.
+    bool swept_value_at(
+        const ExactBandIntegral2D& eb,
+        double delta,
+        const Eigen::Vector2d& x0,
+        const Eigen::Vector2d& x1,
+        const std::vector<SweptEdge>& edges,
+        double& E) const;
+
+private:
+    /// need: 0 value, 1 + gradient, 2 + Hessian.
+    double eval(const Eigen::Vector2d& x, int need, Eigen::Vector2d& g, Eigen::Matrix2d& H) const;
+    /// The "exact_swept" model's value / derivatives at x (eval()).
+    double sw_eval(const Eigen::Vector2d& x, int need, Eigen::Vector2d& g, Eigen::Matrix2d& H)
+        const;
+    /// m_min_md and m_min_tri at x (see the class doc).
+    void exact_minima(const Eigen::Vector2d& x) const;
+    std::shared_ptr<const ExactBandIntegral2D> m_prims;
+    double m_delta = 1.;
+    /// exact_minima(): per face min_mean_distance() and its minimiser at m_min_x (bitwise), the
+    /// last point evaluated; valid once m_min_set.
+    mutable bool m_min_set = false;
+    mutable Eigen::Vector2d m_min_x = Eigen::Vector2d::Zero();
+    mutable std::vector<double> m_min_md;
+    mutable std::vector<int64_t> m_min_tri;
+    /// set_exact_integral(): the integral, and the last point's value / gradient and Hessian.
+    std::shared_ptr<const ExactBandIntegral2D> m_eb;
+    mutable bool m_eb_val_set = false, m_eb_der_set = false;
+    mutable Eigen::Vector2d m_eb_val_x = Eigen::Vector2d::Zero();
+    mutable Eigen::Vector2d m_eb_der_x = Eigen::Vector2d::Zero();
+    mutable double m_eb_E = 0.;
+    mutable Eigen::Vector2d m_eb_g = Eigen::Vector2d::Zero();
+    mutable Eigen::Matrix2d m_eb_H = Eigen::Matrix2d::Zero();
+    /// "exact_swept": a swept triangle from x0 to m_eb_val_x had a piece labelled by rule (a)
+    mutable bool m_eb_val_rule_a = false;
+    /// set_swept(): on, the boundary edges of B through x, and the counts.
+    bool m_sw = false;
+    std::vector<SweptEdge> m_sw_edges;
+    SweptDerivCounts* m_sw_counts = nullptr;
+    /// The moving vertex's position at construction.
+    Eigen::Vector2d m_x0 = Eigen::Vector2d::Zero();
 
     std::vector<Cell> m_cells;
 };

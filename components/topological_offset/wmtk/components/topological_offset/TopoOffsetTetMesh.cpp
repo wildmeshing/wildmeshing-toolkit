@@ -415,6 +415,7 @@ void TopoOffsetTetMesh::untrack_covered_boundaries()
     // optimize_offset()).
     size_t n = 0;
     std::vector<size_t> corners;
+    std::vector<std::array<size_t, 2>> edges;
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
         FaceAttributes& attr = m_face_attribute[fid];
@@ -423,9 +424,33 @@ void TopoOffsetTetMesh::untrack_covered_boundaries()
         }
         attr.reset();
         ++n;
-        for (const size_t v : get_face_vids(f)) corners.push_back(v);
+        const auto fv = get_face_vids(f);
+        for (const size_t v : fv) corners.push_back(v);
+        for (int i = 0; i < 3; ++i) {
+            std::array<size_t, 2> e{{fv[size_t(i)], fv[size_t((i + 1) % 3)]}};
+            std::sort(e.begin(), e.end());
+            edges.push_back(e);
+        }
     }
     wmtk::vector_unique(corners);
+    wmtk::vector_unique(edges);
+    // An order-2 tag on an edge of a face untracked here is stale once the edge no longer has an
+    // order-2 count of tracked faces: drop it now, as the construction's own change, rather than
+    // at the first collapse next to it (drop_stale_order2_tags()), which made the held curves'
+    // topology change in the loop. MEASURED (the rod where three blocks meet, DEBUG_held_topology,
+    // 2026-11-10): 8 stale tags after the construction, dropped by the collapses of the
+    // construction pass and of turn 1.
+    size_t n_order2 = 0;
+    if (m_track_feature_edges) {
+        for (const std::array<size_t, 2>& e : edges) {
+            FeatureEdgeAttributes& tags = m_feature_edge_attribute[tuple_from_edge(e).eid(*this)];
+            if (tags.has(FeatureEdgeAttributes::order2) &&
+                !holds_order2_edge(get_num_surface_faces_for_edge(e))) {
+                tags.remove(FeatureEdgeAttributes::order2);
+                ++n_order2;
+            }
+        }
+    }
     size_t n_off = 0;
     for (const size_t v : corners) {
         bool on = false;
@@ -443,9 +468,11 @@ void TopoOffsetTetMesh::untrack_covered_boundaries()
     }
     logger().info(
         "\t[tracked faces] {} faces the band covered no longer bound regions (one tag set on both "
-        "sides after its retagging): untracked; {} of their corners on no region boundary now",
+        "sides after its retagging): untracked; {} of their corners on no region boundary now; {} "
+        "order-2 tags of their edges dropped",
         n,
-        n_off);
+        n_off,
+        n_order2);
 }
 
 bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const

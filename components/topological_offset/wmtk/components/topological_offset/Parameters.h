@@ -91,6 +91,10 @@ struct Parameters : public wmtk::OptimizerParameters
     // misses the target is still a usable offset, and the warnings name the criterion that failed.
     // Integration tests set it true so a convergence regression fails rather than warns.
     bool throw_on_nonconvergence;
+    /// 3D (2026-11-10), 2D (2026-11-11): throw when the level set is out of reach without the band
+    /// touching a held object (TopoOffsetTetMesh / TopoOffsetTriMesh::check_level_set_reachable());
+    /// false warns. See the spec.
+    bool throw_on_unreachable_level_set = true;
     /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
     /// called and the constructed band is written as the result.
     bool optimize_offset;
@@ -105,11 +109,14 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Half-width of the tube that holds the order-2 edges of the held surfaces -- their rims and
     /// non-manifold edges -- as a fraction of envelope_size, and the radius of the anchors where
     /// those curves end or three or more meet. 1, as tetwild's and simwild's key of the same name.
+    /// 2D: the radius of the anchors where the held curves end or three or more meet
+    /// (TopoOffsetTriMesh::hold_curves_and_points()).
     double order2_envelope_ratio = 1.0;
     /// Half-width of the tube that holds the input complex's own curves -- a curve offset's
     /// segments (TopoOffsetTetMesh::hold_curves_and_points()) -- as a fraction of envelope_size,
     /// and the radius of the anchors where they end or three or more meet, and of its points. 1,
-    /// as tetwild's and simwild's key of the same name.
+    /// as tetwild's and simwild's key of the same name. 2D: the radius of the input points'
+    /// anchors and of a complex's isolated points (TopoOffsetTriMesh::hold_curves_and_points()).
     double feature_envelope_ratio = 1.0;
 
     // ---- the smooth offset potential ----
@@ -143,26 +150,21 @@ struct Parameters : public wmtk::OptimizerParameters
     /// sides -- so which form the code uses is a matter of where the division sits, not of what
     /// is being asked.
     double front_conv_frac() const { return front_conv / std::max(target_distance, 1e-16); }
-    // 2D only: read by the 2D pipeline, which the app refuses until it is brought into lock-step
-    // with 3D. No JSON key; each keeps the default its key had. The 2D energy rule of collapses
-    // and swaps, the 2D front vertices' smoothing veto, and the 2D collapse rule over the changed
-    // cells (TopoOffsetTriMesh). The 2D non-front veto reads the engine's smooth_quality_veto,
-    // which keeps the engine's default, true, the default of the key offset_smooth_veto that set
-    // it. 3D's rules are always on and read none of these (TopoOffsetTetMesh::tet_energy()).
-    bool offset_collapse_veto = true, offset_swap_veto = true;
-    bool offset_front_smooth_veto = false;
-    bool offset_collapse_changed_cells = true;
-    /// The weight w of AMIPS in the per-cell energy: in 3D the energy's AMIPS term,
-    /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
-    /// tri_energy = w AMIPS + the offset terms. See the spec.
+    /// The weight w of AMIPS in the per-cell energy: the energy's AMIPS term, in 3D
+    /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()), in 2D
+    /// (w / stop_energy^3) area AMIPS^3 (TopoOffsetTriMesh::cell_energy()). See the spec.
     double offset_amips_weight = 1.;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
+    /// Log-only: after every operation pass, the held objects' contact topology against the pass
+    /// before (TopoOffsetTetMesh / TopoOffsetTriMesh::held_topology_check(); see the spec).
+    bool debug_held_topology = false;
     /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
-    /// split every pinned cell until none is left (TopoOffsetTetMesh::front_pocket_split()).
+    /// split every pinned cell until none is left (TopoOffsetTetMesh /
+    /// TopoOffsetTriMesh::front_pocket_split()).
     bool front_pocket_split = true;
     /// EXPERIMENTAL_front_spanned_split (see the spec): front_pocket_split() splits spanned edges
-    /// and faces too, not only pinned cells.
+    /// and faces (2D: edges) too, not only pinned cells.
     bool front_spanned_split = true;
     /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a fold
     /// (TopoOffsetTetMesh::fold_test()) remains.
@@ -179,7 +181,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
     /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off", "one_sided",
     /// "one_sided_tips", "one_sided_at_target" (the default) or "energy_decrease" (it needs
-    /// band_volume_rule "surface").
+    /// band_volume_rule "surface"). 2D (TopoOffsetTriMesh::label_cleanup()): every mode but
+    /// "energy_decrease", whose "surface" face term 2D has not.
     std::string label_cleanup = "one_sided_at_target";
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
@@ -205,8 +208,8 @@ struct Parameters : public wmtk::OptimizerParameters
     // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
     // the quantity measured is a distance to the level set rather than an interpolation error and
     // so is not identically zero there. Raising it costs a Phi value per sample in
-    // energy_criterion() and the frames, and in 2D also in the operations' energy rules
-    // (TopoOffsetTriMesh::tri_energy()) and every front solve; the 3D energy has no face term.
+    // energy_criterion() and the frames, and in 2D also in every front solve (its stencil energy,
+    // until the 2D smoother is ported); neither energy has a face or chord term.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::for_each_edge_sample.
     // That is EXPERIMENTAL_stencil_type "subdivision", the default; the other types (3D) have
     // their own lattices, below.
@@ -242,9 +245,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// as construction_mode says): the loop first converges under stencil_order without
     /// refinement, then under stencil_order with refinement. See the spec doc.
     bool init_optimize = false;
-    // 2D only: read by the 2D pipeline, which the app refuses until it is brought into lock-step
-    // with 3D. No JSON key; the default its key had. The stencil_order of the 2D init_optimize
-    // loop alone; -1 uses stencil_order there too.
+    // 2D only: read by the 2D pipeline. No JSON key; the default its key had. The stencil_order
+    // of the 2D init_optimize loop alone; -1 uses stencil_order there too.
     int init_optimize_stencil_order = -1;
     /// Smoothing passes before the march that push the outer ends of the marched edges out to
     /// 2 x target_distance; they stop early once every outer end is beyond target_distance +
@@ -258,15 +260,17 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
-    /// EXPERIMENTAL (2026-10-12), 3D. The band term b(t) of a band cell in the energy
+    /// EXPERIMENTAL (2026-10-12), 3D; 2D (2026-11-11, TopoOffsetTriMesh::band_cell_term(), area
+    /// for vol): "corner_bound", "exact", and "exact_swept" and "front_flux" as "exact"'s energy
+    /// with "exact"'s decisions. The band term b(t) of a band cell in the energy
     /// (TopoOffsetTetMesh::band_cell_term()). "corner_bound": vol times the min over all input
     /// triangles P of the corner mean of (d_P - delta) / delta, an upper bound on the cell's part
-    /// of int_B (d - delta) / delta dV that no split raises. "exact" (the default): J_t / delta,
+    /// of int_B (d - delta) / delta dV that no split raises. "exact": J_t / delta,
     /// J_t = int_t (d - delta) dV in closed form (ExactBandIntegral); an upper bound only on its
     /// rule-(a) pieces. "front_flux": the operations as "exact", the front smoother's band term in
     /// the front form (flux of a field G with div G = d - delta through the band's boundary faces
     /// at the vertex, plus the bisector jumps D_t of its flagged cells). "exact_swept"
-    /// (2026-10-22): "exact"'s energy, but each operation's rule reads the band integral's exact
+    /// (2026-10-22; the default since 2026-11-10): "exact"'s energy, but each operation's rule reads the band integral's exact
     /// change where the band changes -- value() on the tets a moving vertex's boundary faces of
     /// the band sweep, or on the cone over a flip's changed faces -- instead of integrating whole
     /// cells before and after; the smoother searches on that same exact change (its derivatives
@@ -277,7 +281,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// front, L / front_conv^2 (L the bounding box diagonal) sum over the offset faces of
     /// (A_f / |S|) sum over the stencil of (d - target_distance)^2
     /// (TopoOffsetTetMesh::surface_face_term()). See the spec doc.
-    std::string band_volume_rule = "exact";
+    std::string band_volume_rule = "exact_swept";
     /// EXPERIMENTAL_band_volume_rule "surface" only: the settle test's stall threshold. O* = the
     /// max over the front's stencil points of (d - target_distance)^2; a turn is settled when O*
     /// < front_conv^2 or O*_prev - O* <= settle_stall_eps (O* - front_conv^2) -- TetWild's stall
@@ -444,6 +448,7 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_in = json_params["offset_in"];
         offset_out = json_params["offset_out"];
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
+        throw_on_unreachable_level_set = json_params["throw_on_unreachable_level_set"];
         optimize_offset = json_params["optimize_offset"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
@@ -662,6 +667,7 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         offset_amips_weight = json_params["offset_amips_weight"];
         debug_crossings = json_params["DEBUG_crossings"];
+        debug_held_topology = json_params["DEBUG_held_topology"];
         front_pocket_split = json_params["EXPERIMENTAL_front_pocket_split"];
         front_spanned_split = json_params["EXPERIMENTAL_front_spanned_split"];
         exit_no_folds = json_params["EXPERIMENTAL_exit_no_folds"];

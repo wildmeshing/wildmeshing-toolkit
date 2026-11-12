@@ -594,8 +594,10 @@ bool smooth_vertex_3d(
  * `Mesh` must provide, on top of what wmtk::TriMesh already gives:
  *   - m_vertex_attribute[vid].m_is_on_surface, m_face_attribute[fid].m_quality
  *   - is_inverted_f(size_t fid), is_inverted(size_t fid), get_quality(size_t fid)
- *   - smoothing_cell_energy(fid, quality): what the projected step and the quality veto
- *     compare per face (TriOptimizerMesh: the quality itself unless an application overrides)
+ *   - smoothing_cell_energy(fid, quality): what the quality veto compares per face
+ *     (TriOptimizerMesh: the quality itself unless an application overrides)
+ *   - smoothing_ring_energy(ring, stored): what the projected step compares for the whole
+ *     one-ring (TriOptimizerMesh: the max of smoothing_cell_energy() unless overridden)
  *   - Vector2d smoothing_position(size_t vid) const
  *   - void set_smoothing_position(size_t vid, const Vector2d& p)
  *       writes the working position and its exact/rational copy together
@@ -714,13 +716,17 @@ bool smooth_vertex_2d(
     const std::shared_ptr<Envelope> envelope = m.smoothing_energy_envelope(vid);
 
     if (envelope && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
+        // As the 3D path: the ring's value before the move is read here, before the solve moves
+        // the vertex (see smoothing_ring_energy()); by default it is max_quality.
         const Vector2d x_orig = m.smoothing_position(vid);
+        const double ring_before = m.smoothing_ring_energy(locs, true);
         total_energy = base_energy;
         solve();
         const Vector2d x_new = m.smoothing_position(vid);
 
-        // set_smoothing_position keeps the rational position in step, which the exact
-        // is_inverted below depends on.
+        // Place a candidate and report the ring's value there (smoothing_ring_energy()), or
+        // infinity if it inverts. set_smoothing_position keeps the rational position in step,
+        // which the exact is_inverted below depends on.
         const auto worst_at = [&](const Vector2d& p) {
             m.set_smoothing_position(vid, p);
             for (const size_t fid : locs) {
@@ -728,11 +734,7 @@ bool smooth_vertex_2d(
                     return std::numeric_limits<double>::infinity();
                 }
             }
-            double mq = 0.;
-            for (const size_t fid : locs) {
-                mq = std::max(mq, m.smoothing_cell_energy(fid, m.get_quality(fid)));
-            }
-            return mq;
+            return m.smoothing_ring_energy(locs, false);
         };
 
         bool accepted = false;
@@ -745,7 +747,7 @@ bool smooth_vertex_2d(
             envelope->nearest_point(p, q);
             interp.push_back(p);
             proj.push_back(q);
-            if (worst_at(q) < max_quality) {
+            if (worst_at(q) < ring_before) {
                 accepted = true;
                 break;
             }
@@ -766,7 +768,7 @@ bool smooth_vertex_2d(
                 for (int j = 0; j < opts.project_line_search_nested_steps; ++j) {
                     const double mid = 0.5 * (lo + hi);
                     const Vector2d cand = interp[k] + mid * (proj[k] - interp[k]);
-                    if (worst_at(cand) < max_quality) {
+                    if (worst_at(cand) < ring_before) {
                         lo = mid;
                         best = cand;
                         found = true;

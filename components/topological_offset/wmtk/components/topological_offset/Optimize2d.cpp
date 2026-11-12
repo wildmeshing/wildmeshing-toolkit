@@ -3,15 +3,18 @@
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/SizingField.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <queue>
 #include <set>
 #include <vector>
@@ -154,11 +157,25 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
         return false;
     }
 
-    // The energy rule's before-half (see swap_edge_after()): the max of tri_energy() over the
-    // two faces the flip replaces. Every edge of the quad keeps the face across it, so -- unlike
-    // a 3D 3-2 flip, whose SwapEnergyBefore also takes the band cells beyond -- nothing outside
-    // the two faces changes energy. Last, so only a flip every other test admitted pays for it.
-    m_swap_energy_before.local() = max_tri_energy({t.fid(*this), opp->fid(*this)});
+    // The energy rule's before-half (see swap_edge_after()): the sum of tri_energy() over the two
+    // faces the flip replaces. A face's energy is its own corners' and label's, so no face
+    // outside the two changes energy. Without the band term when it cancels (tri_energy(), BAND
+    // TERM THAT CANCELS): both faces share one label, which the new faces keep. Last, so only a
+    // flip every other test admitted pays for it. As in 3D (swap_before_interior()).
+    const std::vector<size_t> fids = {t.fid(*this), opp->fid(*this)};
+    const bool band_cancels = band_term_cancels(fids);
+    m_swap_band_cancels.local() = band_cancels;
+    m_swap_energy_before.local() = tri_energy_sum(fids, !band_cancels);
+    // "exact_swept": the band faces the flip replaces, with their pieces (swap_swept_change())
+    if (swept_rule()) {
+        auto& old = m_swap_old_band.local();
+        old.clear();
+        for (const size_t fid : fids) {
+            if (!face_is_offset_band(fid)) continue;
+            const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+            old.push_back({vs, place_piece(vs.data(), 3)});
+        }
+    }
     return true;
 }
 
@@ -453,13 +470,16 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
     if (!TriOptimizerMesh::swap_edge_after(t)) {
         return false;
     }
-    // THE ENERGY RULE for a swap (see tri_energy()): the max of tri_energy() over the two faces
-    // the flip made must be STRICTLY below the max over the two it replaced, as
-    // swap_edge_before() cached it. TriWild's swap rule, strictness included, on the energy
-    // instead of AMIPS; strict because a swap pass has to terminate. A swap moves no vertex, so
-    // both maxima are read at the same positions. swap_quality_allowed() applied the same rule
-    // early, on the engine's AMIPS lower bound; this is THE rule, on the real faces. A refusal
-    // is rolled back by the engine. The 3D twin is swap_after_cells().
+    // THE ENERGY RULE for a swap (see tri_energy()): the sum of tri_energy() over the two faces
+    // the flip made must be STRICTLY below the sum over the two it replaced, as
+    // swap_edge_before() took it (a NaN refuses). The faces beyond the two keep their corners and
+    // labels and so their energy: this is the swap's whole change of E. A swap moves no vertex,
+    // so both sums are read at the same positions. TriWild's swap rule, strictness included, on
+    // the energy instead of AMIPS; strict because a swap pass has to terminate: every accepted
+    // swap strictly lowers E. The engine's AMIPS form of it, swap_quality_allowed(), admits
+    // everything. A refusal is rolled back by the engine. The 3D twin is swap_after_cells();
+    // see there for the measurements behind strictness and the sum. Labels need no writing here:
+    // the two new faces take the two old faces' slots, which hold the one label both had.
     const std::optional<Tuple> opp = t.switch_face(*this);
     std::vector<size_t> made{t.fid(*this)};
     if (opp) made.push_back(opp->fid(*this));
@@ -468,8 +488,11 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
         ++m_repulsion_embed_refused;
         return false;
     }
-    const double after = max_tri_energy(made);
-    if (m_offset_params.offset_swap_veto && !(after < m_swap_energy_before.local())) {
+    // "exact_swept": the two sums, without the band term (band_term_cancels()), plus the band
+    // term's change (swap_swept_change()).
+    double after = tri_energy_sum(made, !m_swap_band_cancels.local());
+    if (swept_rule()) after += swap_swept_change(made);
+    if (!(after < m_swap_energy_before.local())) {
         ++iter_cnt_swap_energy_reject; // a NaN refuses
         return false;
     }
@@ -482,13 +505,23 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
 bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
 {
     const size_t v2_id = collapse_cache.local().v2_id;
-    // THE ENERGY RULE for a collapse (see tri_energy()): the max of tri_energy() over the
-    // survivor's one-ring afterwards may not exceed the max over the one-rings of v1 and v2
-    // before (collapse_before_vertex()). A tie passes, as in TriWild's collapse rule, which
-    // collapse_quality_allowed() replaces. The before-set holds v2's ring too because every face
-    // whose energy a collapse can change holds v2 afterwards -- the reshaped faces (v1 became
-    // v2), and a face that shared an edge with a removed face, whose front chords can change with
-    // the labels across them -- so the two maxima are over the same region.
+    // growth_mode "individual_op_reject": the edges through the survivor are every offset edge
+    // the collapse changed (it moves no vertex); refused, the engine rolls the collapse back, as
+    // for the energy rule below and in the same place, before the base's hook. As in 3D
+    // (collapse_after_connectivity()).
+    if (const int before = m_collapse_turned_before.local(); before >= 0) {
+        std::set<std::array<size_t, 2>> f;
+        turned_front_edges_at(v2_id, f);
+        if (int(f.size()) > before) {
+            ++m_turned_reject_collapse;
+            return false;
+        }
+    }
+    // THE ENERGY RULE for a collapse (see tri_energy()): the sum of tri_energy() over the faces
+    // the collapse changed -- the survivor's ring less v2's old faces outside v1's ring, which
+    // keep their slots, corners and labels -- may not exceed the sum over v1's old ring
+    // (collapse_before_vertex()). A tie passes, as in TriWild's collapse rule, which
+    // collapse_quality_allowed() switches off; a NaN refuses.
     //
     // HERE, first, before the base's after-hook: TriMesh::collapse_edge() has committed the
     // connectivity (v1 retired, v2 kept), the faces the collapse keeps keep their slots and
@@ -500,32 +533,20 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     //
     // Not in coarsening, where the engine skips its own collapse rule as well and judges the
     // region after re-smoothing.
-    if (!m_coarsen_mode && m_offset_params.offset_collapse_veto) {
+    if (!m_coarsen_mode) {
+        const CollapseVolume& cv = m_collapse_volume.local();
         double after = 0.;
-        double before = m_collapse_energy_before.local();
-        const std::vector<size_t>& ring = get_one_ring_fids_for_vertex(v2_id);
-        if (m_offset_params.offset_collapse_changed_cells) {
-            // Only the faces whose energy changed: every face of the survivor's ring except the
-            // faces of v2's old ring (outside v1's) whose energy reads the same as before. A
-            // changed one of those counts on both sides, with its old energy before.
-            const CollapseCells& cc = m_collapse_cells.local();
-            before = cc.ring1_max;
-            for (const size_t fid : ring) {
-                const double e = tri_energy(fid);
-                const auto it = std::lower_bound(
-                    cc.v2_only.begin(),
-                    cc.v2_only.end(),
-                    std::make_pair(fid, -std::numeric_limits<double>::infinity()));
-                if (it != cc.v2_only.end() && it->first == fid) {
-                    if (e == it->second) continue; // unchanged: in neither max
-                    before = std::max(before, it->second);
-                }
-                after = std::max(after, e);
-            }
-        } else {
-            after = max_tri_energy(ring);
+        for (const size_t fid : get_one_ring_fids_for_vertex(v2_id)) {
+            if (std::binary_search(cv.v2_only.begin(), cv.v2_only.end(), fid)) continue;
+            after += tri_energy(fid, !cv.band_cancels);
         }
-        if (!(after <= before)) { // a NaN refuses
+        if (swept_rule()) { // "exact_swept": the band term's change
+            // v1's faces that v2 joins keep their slots: the change of their pieces
+            // (band_relabel_change()) reads them in v2's ring, where v2's other faces have none
+            after += band_swept_sum(cv.swept_x1, cv.swept_x2, cv.swept_edges) +
+                     band_relabel_change(get_one_ring_fids_for_vertex(v2_id), cv.swept_pieces);
+        }
+        if (!(after <= cv.before)) { // a NaN refuses
             ++iter_cnt_collapse_energy_reject;
             return false;
         }
@@ -582,6 +603,20 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
+    // growth_mode "individual_op_reject": the turned edges through the two ends, for
+    // collapse_edge_after(); -1 (no rule) when neither end is on the front. As in 3D.
+    {
+        const auto& cc = collapse_cache.local();
+        int& turned = m_collapse_turned_before.local();
+        turned = -1;
+        if (turned_reject_active() &&
+            (m_vertex_extra[cc.v1_id].m_is_on_offset || m_vertex_extra[cc.v2_id].m_is_on_offset)) {
+            std::set<std::array<size_t, 2>> f;
+            turned_front_edges_at(cc.v1_id, f);
+            turned_front_edges_at(cc.v2_id, f);
+            turned = int(f.size());
+        }
+    }
     // The energy rule's before-half is taken in collapse_before_vertex(), which the engine calls
     // before its scoring loop, so that collapse_quality_allowed() can refuse on it early.
     return true;
@@ -601,38 +636,35 @@ std::vector<TopoOffsetTriMesh::Tuple> TopoOffsetTriMesh::offset_surface_edges_li
 
 bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t v2_id)
 {
-    // The energy rule's before-half: the largest tri_energy() over both endpoints' rings, the
-    // number collapse_edge_after() compares the survivor's ring against. Taken HERE, in the hook
-    // the engine calls before its scoring loop, so that collapse_quality_allowed() can apply the
-    // same rule early on the AMIPS lower bound (see its declaration). Not in coarsening, where
-    // the engine skips its own collapse rule as well. As in 3D.
-    if (!m_coarsen_mode && m_offset_params.offset_collapse_veto) {
-        if (m_offset_params.offset_collapse_changed_cells) {
-            // The per-face energies the changed-cells rule needs (see CollapseCells), and the
-            // whole-ring max the early half reads: it bounds the changed-cells before-max, so an
-            // early refusal is one the full rule makes too.
-            std::vector<size_t> ring1 = get_one_ring_fids_for_vertex(v1_id);
-            const std::vector<size_t>& ring2 = get_one_ring_fids_for_vertex(v2_id);
-            std::sort(ring1.begin(), ring1.end());
-            CollapseCells& cc = m_collapse_cells.local();
-            cc.ring1_max = max_tri_energy(ring1);
-            cc.v2_only.clear();
-            double whole = cc.ring1_max;
-            for (const size_t fid : ring2) {
-                if (std::binary_search(ring1.begin(), ring1.end(), fid)) continue;
-                const double e = tri_energy(fid);
-                cc.v2_only.emplace_back(fid, e);
-                whole = std::max(whole, e);
-            }
-            std::sort(cc.v2_only.begin(), cc.v2_only.end());
-            m_collapse_energy_before.local() = whole;
-        } else {
-            std::vector<size_t> cells = get_one_ring_fids_for_vertex(v1_id);
-            const std::vector<size_t>& ring2 = get_one_ring_fids_for_vertex(v2_id);
-            cells.insert(cells.end(), ring2.begin(), ring2.end());
-            wmtk::vector_unique(cells);
-            m_collapse_energy_before.local() = max_tri_energy(cells);
+    // The energy rule's before-half (see CollapseVolume): the sum of tri_energy() over v1's ring,
+    // the faces the collapse changes, and v2's other faces, which it does not. Not in
+    // coarsening, where the engine skips its own collapse rule as well. As in 3D.
+    if (!m_coarsen_mode) {
+        std::vector<size_t> ring1 = get_one_ring_fids_for_vertex(v1_id);
+        CollapseVolume& cv = m_collapse_volume.local();
+        // Without the band term when it cancels (tri_energy(), BAND TERM THAT CANCELS): the new
+        // faces are ring1's faces without v2, in their own slots with their own labels.
+        cv.band_cancels = band_term_cancels(ring1);
+        cv.before = tri_energy_sum(ring1, !cv.band_cancels);
+        // "exact_swept": v1's boundary edges of each B_r, for the band term's change, v1 moving
+        // onto v2 in all its faces (EXACT SWEPT CHANGE; the faces through v2 go flat), and the
+        // pieces of v1's band faces. The collapse changes no face's label: v1's other faces keep
+        // theirs in their own slots; their pieces can change, v2 replacing v1 among their
+        // corners (band_relabel_change()). As 3D.
+        cv.swept_edges.clear();
+        cv.swept_pieces.clear();
+        if (swept_rule()) {
+            cv.swept_x1 = m_vertex_attribute[v1_id].m_posf;
+            cv.swept_x2 = m_vertex_attribute[v2_id].m_posf;
+            band_swept_edges(v1_id, cv.swept_x1, cv.swept_edges);
+            cv.swept_pieces = band_face_pieces(ring1);
         }
+        std::sort(ring1.begin(), ring1.end());
+        cv.v2_only.clear();
+        for (const size_t fid : get_one_ring_fids_for_vertex(v2_id)) {
+            if (!std::binary_search(ring1.begin(), ring1.end(), fid)) cv.v2_only.push_back(fid);
+        }
+        std::sort(cv.v2_only.begin(), cv.v2_only.end());
     }
     // Diagnostic: the flattest face this collapse is about to reshape, read back by
     // record_flatness() in collapse_after_vertex().
@@ -734,6 +766,13 @@ void TopoOffsetTriMesh::collapse_after_vertex(const size_t v1_id, const size_t v
     // The survivor now carries both vertices' geometry, so it lies on the union of their
     // boundaries. See VertexExtra2d::m_boundary_mask.
     m_vertex_extra[v2_id].m_boundary_mask |= m_vertex_extra.at(v1_id).m_boundary_mask;
+    // The construction labels of the survivor and the link, the vertices whose triangles changed
+    // (carried_vertex_label()).
+    m_vertex_extra[v2_id].label = carried_vertex_label(v2_id);
+    for (const size_t w : m_collapse_edge_link.local()) {
+        if (w == v1_id || w == v2_id) continue;
+        m_vertex_extra[w].label = carried_vertex_label(w);
+    }
 
     // The base calls this only once a collapse has actually gone through.
     ++iter_cnt_collapse;
@@ -833,6 +872,8 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
             m_face_extra[fid].label = it->second;
         }
     }
+    // The construction label, from the flags and face labels just set (carried_vertex_label()).
+    m_vertex_extra[v_id].label = carried_vertex_label(v_id);
     return true; // the position itself is the base's business, and it is happy with it
 }
 
@@ -907,11 +948,13 @@ bool TopoOffsetTriMesh::smooth_vertex_2d_counted(
     return ok;
 }
 
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::amips_energy(
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::amips3_energy(
     const size_t vid) const
 {
     // See the declaration. The faces exactly as the shared smoother assembles them for its own
-    // AMIPS term (smooth_vertex_2d()): the moving vertex first, winding preserved.
+    // AMIPS term (smooth_vertex_2d()): the moving vertex first, winding preserved. 3D's plastic
+    // cells (use_rest_pose, VolAMIPSEnergy3D against a stamped rest) have no twin: no 2D face's
+    // energy reads a rest (tri_energy()).
     std::vector<std::array<double, 6>> cells;
     for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
         const std::array<size_t, 3> vs = oriented_tri_vids(fid);
@@ -926,17 +969,16 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::amips_energy(
         }
         cells.push_back(c);
     }
-    return std::make_shared<optimization::AMIPSEnergy2D>(
-        std::move(cells),
-        m_offset_params.offset_amips_weight);
+    // (w / s^3) sum area AMIPS^3, the energy's AMIPS term -- an area, as the band term is.
+    return std::make_shared<CubedAMIPSEnergy2D>(std::move(cells), band_amips_weight());
 }
 
 bool TopoOffsetTriMesh::smooth_nonfront_vertex(const Tuple& t)
 {
-    // See the declaration. TriOptimizerMesh::smooth_after()'s options, two changes: the AMIPS
-    // part comes from smoothing_extra_energy() (w_amips 0: the smoother adds none of its own), and
-    // the engine's AMIPS veto is replaced by the same veto on tri_energy() -- same key, and the
-    // engine's scope, which includes vertices on a surface (quality_veto_on_surface is true).
+    // See the declaration. TriOptimizerMesh::smooth_after()'s options, two changes: the objective
+    // comes from smoothing_extra_energy() (w_amips 0: the smoother adds no AMIPS term of its own),
+    // and the engine's AMIPS veto is replaced by the energy's, on the engine's scope, which
+    // includes vertices on a surface.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
     opts.w_amips = 0.;
@@ -950,13 +992,45 @@ bool TopoOffsetTriMesh::smooth_nonfront_vertex(const Tuple& t)
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
     opts.quality_veto = false;
-    const bool veto = m_params.smooth_quality_veto;
+    // The rule is E itself: the sum of tri_energy() over the ring may not rise (a tie passes, a
+    // NaN refuses). A vertex held on a region boundary takes the engine's projected step, whose
+    // acceptance is that rule already (smoothing_ring_energy(): strictly below), so it needs no
+    // veto here; the engine's own condition (smooth_vertex_2d(): a pull envelope under the
+    // projected mode; 3D also asks m_is_on_surface, which its engine asks). Every other vertex is
+    // vetoed after its solve. A smoothing move changes no label and moves one vertex, so the ring
+    // holds every face whose energy it can change. As 3D's.
     const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
-    const double before = veto ? max_tri_energy(ring) : 0.;
+    const Vector2d x0 = m_vertex_attribute[vid].m_posf;
+    const bool projected =
+        opts.smoothing_mode == optimization::SmoothVertexOptions::SmoothingMode::Projected &&
+        smoothing_energy_envelope(vid) != nullptr;
+    // "exact_swept": the projected step compares smoothing_ring_energy(), which takes the band
+    // term's change from the position at its first call on this vertex; every other move is
+    // accepted by swept_accept() (EXACT SWEPT CHANGE), from the ring's AMIPS part before
+    const bool swept = swept_rule();
+    if (swept) m_swept_stored.local().vid = vid;
+    const double amips_before = swept && !projected ? tri_energy_sum(ring, false) : 0.;
+    const double before = projected || swept ? 0. : tri_energy_sum(ring);
+    // BAND TERM THAT CANCELS (tri_energy()) for the move, tested at the old position and the new
+    // one, as 3D's smooth_nonfront_vertex(); false in 2D (band_term_cancels()) but under
+    // "exact_swept", which compares its own sums above.
+    const bool cancels_before = !projected && !swept && band_term_cancels(ring);
+    const double before_no_band = cancels_before ? tri_energy_sum(ring, false) : 0.;
     if (!smooth_vertex_2d_counted(t, opts, m_newton)) {
         return false;
     }
-    if (veto && !(max_tri_energy(ring) <= before)) { // a NaN refuses; a tie passes
+    if (projected) return true;
+    if (swept) {
+        if (!swept_accept(vid, ring, x0, amips_before, m_swept_nonfront)) {
+            --m_smooth_rejects.accepted;
+            ++m_smooth_rejects.quality;
+            return false;
+        }
+        return true;
+    }
+    const bool cancels = cancels_before && band_term_cancels(ring);
+    const double after = tri_energy_sum(ring, !cancels);
+    if (!(after <= (cancels ? before_no_band : before))) { // a NaN refuses; a tie passes
         --m_smooth_rejects.accepted;
         ++m_smooth_rejects.quality;
         return false;
@@ -1037,9 +1111,31 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     // front vertex must be able to worsen its ring's shape on the way to the level set but not
     // the energy, which charges both (see smooth_front_vertex()). A front vertex reaches here
     // only outside the final pass: smooth_before() refuses it while m_freeze_front is set. Every
-    // other vertex minimises the same energy, with O 0 (smooth_nonfront_vertex()). As in 3D.
+    // other vertex goes through smooth_nonfront_vertex(), vetoed on the same sum. As in 3D.
     if (ve.m_is_on_offset) {
-        const bool ok = smooth_front_vertex(t);
+        // growth_mode "individual_op_reject": the turned offset edges through vid before the
+        // move, which may not raise them (every edge it changes goes through vid). As in 3D, but
+        // around smooth_front_vertex() rather than after its veto inside it, so that the 2D
+        // smoother's own edits (the exact_swept step) merge with this one: the same test at the
+        // same point of the move, after the veto passed. A move refused here was counted by
+        // DEBUG_crossings (log-only) and marked the released tube dirty (a needless refresh).
+        int turned_before = -1;
+        if (turned_reject_active()) {
+            std::set<std::array<size_t, 2>> f;
+            turned_front_edges_at(vid, f);
+            turned_before = int(f.size());
+        }
+        bool ok = smooth_front_vertex(t);
+        if (ok && turned_before >= 0) {
+            std::set<std::array<size_t, 2>> f;
+            turned_front_edges_at(vid, f);
+            if (int(f.size()) > turned_before) {
+                ++m_turned_reject_smooth;
+                --m_smooth_rejects.accepted;
+                ++m_smooth_rejects.quality;
+                ok = false;
+            }
+        }
         if (ok) ++m_smooth_trace.offset_accepted;
         return ok;
     }
@@ -1170,6 +1266,9 @@ void TopoOffsetTriMesh::crossing_snapshot(
 void TopoOffsetTriMesh::update_attributes()
 {
     TriOptimizerMesh::update_attributes();
+    // DEBUG_held_topology: after every pass of the base (split, collapse, swap, smoothing), once
+    // the baseline is taken. As in 3D.
+    if (m_held_topology) held_topology_check(m_debug_pass_name);
     if (!m_offset_params.debug_crossings || m_round <= 0) return;
     const std::string& p = m_debug_pass_name;
     if (p == "split" || p == "collapse" || p == "swap") {
@@ -1187,9 +1286,34 @@ void TopoOffsetTriMesh::log_smoothing_pass_accounting()
     logger().info("\tnewton, smooth_after: {}", m_newton.to_string());
     logger().info("\tnewton, front: {}", m_newton_front.to_string());
     logger().info(
-        "\tfront veto: fired {} of {} front moves that reached it (ring max tri_energy rose)",
+        "\tfront veto: fired {} of {} front moves that reached it (ring sum of tri_energy rose)",
         m_front_veto_fired.exchange(0),
         m_front_veto_asked.exchange(0));
+    if (swept_rule()) {
+        // "exact_swept": swept_accept()'s outcomes, front and other moves apart, as 3D's
+        for (auto* c : {&m_swept_front, &m_swept_nonfront}) {
+            logger().info(
+                "\t[exact_swept] {} moves: {} solves, accepted at full step {}, after 1 / 2 / 3 / "
+                "4 halvings {} / {} / {} / {}, refused {}",
+                c == &m_swept_front ? "front" : "other",
+                c->solves.exchange(0),
+                c->accepted[0].exchange(0),
+                c->accepted[1].exchange(0),
+                c->accepted[2].exchange(0),
+                c->accepted[3].exchange(0),
+                c->accepted[4].exchange(0),
+                c->refused.exchange(0));
+        }
+        logger().info(
+            "\t[exact_swept] search model derivatives: {} evaluations, {} with an edge part "
+            "labelled by rule (a) (a curved bisector), {} from the swept triangles, {} at x0 with "
+            "their Hessian, {} from the ring's band faces (front_edge_derivs() threw)",
+            m_swept_derivs.evals.exchange(0),
+            m_swept_derivs.rule_a.exchange(0),
+            m_swept_derivs.swept_tris.exchange(0),
+            m_swept_derivs.swept_x0.exchange(0),
+            m_swept_derivs.ring_cells.exchange(0));
+    }
     {
         // Diagnostic: where the front solves stop (see m_front_grad_abs). Bins are log10 of the
         // value; the first bin is "<= 0 or below the range".
@@ -1635,7 +1759,11 @@ void TopoOffsetTriMesh::log_refine_block_census(const std::string& when, const d
             cand.dist = (cand.c - Vector2d(foot.x(), foot.y())).norm();
         }
         if (m_offset_potential && c_level > 0.) {
-            cand.phi_over_c = potential_for_face(fid).value(cand.c) / c_level;
+            // Several entries of offsets: the face's piece's field over its own level, each piece
+            // at its own distance. As in 3D.
+            const OffsetPotential2D& pot = potential_for_face(fid);
+            cand.phi_over_c = pot.value(cand.c) /
+                              (m_offset_params.offsets.size() > 1 ? pot.target_level() : c_level);
         }
 
         int best = kShort; // the LEAST blocked of the three edges; `free` is best of all
@@ -2168,13 +2296,10 @@ void TopoOffsetTriMesh::needle_forensics() const
             if (got) {
                 const Tuple& et = std::get<0>(*got);
                 const bool surf = is_edge_on_surface(et);
-                const double sw = swap_weight(et);
                 swap_info = fmt::format(
-                    "on_surface {} (swap {}) | swap_weight {:.6g} (pass needs > 1e-5 -> {})",
+                    "on_surface {} (swap {})",
                     surf,
-                    surf ? "REFUSED outright" : "allowed",
-                    sw,
-                    sw > 1e-5 ? "would swap" : "REFUSED");
+                    surf ? "REFUSED outright" : "allowed");
             }
             logger().warn(
                 "[forensics]   edge {}-{} len {:.6g} | collapse gate {:.6g} -> {} | split gate "
@@ -2291,9 +2416,14 @@ double TopoOffsetTriMesh::band_vertex_distance_error(const size_t vid) const
 {
     // dist() pads a 2D point to 3D itself, and in 2D the complex's triangles lie in the
     // z = 0 plane, so a point inside the input complex reports 0 -- the same convention the
-    // 3D version gets from its inside-any-tet check.
+    // 3D version gets from its inside-any-tet check. Several entries of offsets: at the vertex's
+    // piece's target distance, from its own piece -- its integral's distance (band_exact_for(),
+    // 3D's envelope_for(): 2D builds no per-piece envelope). As in 3D.
     const Vector2d p = m_vertex_attribute[vid].m_posf;
-    return std::abs(m_input_complex_bvh->dist(VectorXd(p)) - m_offset_params.target_distance);
+    if (m_offset_params.offsets.size() <= 1 || !m_band_exact)
+        return std::abs(m_input_complex_bvh->dist(VectorXd(p)) - m_offset_params.target_distance);
+    const int r = place_piece(&vid, 1);
+    return std::abs(band_exact_for(r)->distance(p) - region_delta(r));
 }
 
 double TopoOffsetTriMesh::band_vertex_residual(const size_t vid) const
@@ -2726,7 +2856,8 @@ double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
     if (!(level > 0.)) return std::numeric_limits<double>::infinity();
     const double r = pot.relative_residual(m_vertex_attribute[vid].m_posf);
     if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
-    const double bar = m_offset_params.front_conv_frac();
+    const double bar = m_offset_params.offsets.size() > 1 ? front_conv_frac_of(place_piece(&vid, 1))
+                                                          : m_offset_params.front_conv_frac();
     if (!(bar > 0.)) return std::numeric_limits<double>::infinity();
     return std::abs(r) / bar;
 }
@@ -2734,7 +2865,8 @@ double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
 double TopoOffsetTriMesh::edge_offset_term(
     const OffsetPotential2D& pot,
     const Vector2d& pa,
-    const Vector2d& pb) const
+    const Vector2d& pb,
+    const int piece) const
 {
     // THE chord measure: the MEAN over the chord's stencil of the squared relative error, in
     // units of the tolerance. At every stencil point q of for_each_edge_sample():
@@ -2743,9 +2875,9 @@ double TopoOffsetTriMesh::edge_offset_term(
     //          = (signed distance from q to the level set, along the field) / front_conv
     //
     // and the chord's term is mean of r^2, so 1 exactly at the bar; its root is the "Nx the bar"
-    // figure the logs print. One arithmetic for every reader: the per-cell energy (tri_energy()),
-    // the front smoother (StencilEnergy2D, which sums the same r^2 over the same stencil with
-    // the same 1/bar^2), the exit and refinement (energy_criterion()) and the debug frames. The
+    // figure the logs print. One arithmetic for every reader: the exit and refinement
+    // (energy_criterion()) and the debug frames; not the energy (tri_energy()) nor the smoother's
+    // objective, as in 3D. The
     // stencil contains the chord's ENDS, where a distance to the level set is that vertex's own
     // placement error, so this one number covers both the vertex and the chord. The 3D twin is
     // face_offset_term(); see there for why the field is asked rather than (Phi(q) - c)/c formed
@@ -2768,57 +2900,309 @@ double TopoOffsetTriMesh::edge_offset_term(
     // n == 0 only when stencil_order < 0, which the spec's min refuses; an unmeasurable sample
     // reads the whole chord unmeasurable.
     if (unmeasurable || n == 0) return -1.;
-    if (!(m_offset_params.front_conv_frac() > 0.)) return std::numeric_limits<double>::infinity();
-    return offset_term_weight() * (sum / double(n));
+    if (!(front_conv_frac_of(piece) > 0.)) return std::numeric_limits<double>::infinity();
+    return offset_term_weight(piece) * (sum / double(n));
 }
 
 double TopoOffsetTriMesh::edge_offset_term(const size_t a, const size_t b) const
 {
+    // Several entries of offsets: the chord's piece's bar (one entry: the run's). As in 3D.
+    const std::array<size_t, 2> e{{a, b}};
+    const int piece = m_offset_params.offsets.size() > 1 ? place_piece(e.data(), 2) : -1;
     return edge_offset_term(
         potential_for_edge(a, b),
         m_vertex_attribute[a].m_posf,
-        m_vertex_attribute[b].m_posf);
+        m_vertex_attribute[b].m_posf,
+        piece);
 }
 
-double TopoOffsetTriMesh::tri_energy(const size_t fid) const
+double TopoOffsetTriMesh::tri_energy(const size_t fid, const bool band_term) const
 {
-    return tri_energy(fid, get_quality(fid)); // the base's: AMIPS2D or MAX_ENERGY
+    // See the declaration. get_quality() is the base's: AMIPS2D or MAX_ENERGY.
+    return cell_energy(
+        oriented_tri_vids(fid),
+        get_quality(fid),
+        band_term && face_is_offset_band(fid));
 }
 
-double TopoOffsetTriMesh::tri_energy(const size_t fid, const double amips) const
+double TopoOffsetTriMesh::tri_energy_sum(const std::vector<size_t>& fids, const bool band_term)
+    const
 {
-    // See the declaration for the definition and why it is read here, on the mesh.
-    const double a = weighted_amips(amips);
-    // Before the march, while the repulsion runs: the face's repulsion terms
-    // (repulsion_cell_term()). There is no front then, so nothing else is added. As in 3D.
-    if (m_repulsion_potential && amips < MAX_ENERGY) {
-        return std::min(a + repulsion_cell_term(oriented_tri_vids(fid)), MAX_ENERGY);
+    double s = 0.;
+    for (const size_t fid : fids) s += tri_energy(fid, band_term);
+    return s;
+}
+
+double TopoOffsetTriMesh::band_swept_change(
+    const size_t vid,
+    const Vector2d& x0,
+    const Vector2d& x1,
+    ExactBandIntegral2D::Stats* st) const
+{
+    // See EXACT SWEPT CHANGE.
+    if (x0 == x1) return 0.;
+    std::vector<SweptEdgesOfPiece> pieces;
+    band_swept_edges(vid, x0, pieces);
+    return band_swept_sum(x0, x1, pieces, st);
+}
+
+void TopoOffsetTriMesh::band_swept_edges(
+    const size_t vid,
+    const Vector2d& x0,
+    std::vector<SweptEdgesOfPiece>& pieces) const
+{
+    // Each boundary edge of B_r through vid belongs to one face of B_r, the face across it not
+    // one (EXACT SWEPT CHANGE, several entries). As 3D's band_swept_faces().
+    using wmtk::utils::predicates::orient2d;
+    using wmtk::utils::predicates::Orientation;
+    pieces.clear();
+    for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
+        if (!face_is_offset_band(fid)) continue;
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        int k = 0;
+        while (k < 3 && vs[size_t(k)] != vid) ++k;
+        if (k == 3) continue;
+        const int r = place_piece(vs.data(), 3);
+        for (int j = 1; j <= 2; ++j) { // the edge (vid, a), p the face's third corner
+            const size_t a = vs[size_t((k + j) % 3)], p = vs[size_t((k + 3 - j) % 3)];
+            bool inside = false;
+            for (const size_t o : get_incident_fids_for_edge(vid, a)) {
+                if (o == fid || !face_is_offset_band(o)) continue;
+                if (place_piece(oriented_tri_vids(o).data(), 3) == r) inside = true; // inside B_r
+            }
+            if (inside) continue;
+            // the pair ordered with its normal rot_cw(second - first) out of B_r, away from the
+            // face's third corner p: p on the pair's left, orient2d positive
+            const Orientation side =
+                orient2d(x0, m_vertex_attribute[a].m_posf, m_vertex_attribute[p].m_posf);
+            if (side == Orientation::COLLINEAR) continue; // a flat face at x0 bounds nothing
+            auto it = std::find_if(pieces.begin(), pieces.end(), [&](const SweptEdgesOfPiece& q) {
+                return q.piece == r;
+            });
+            if (it == pieces.end()) it = pieces.insert(pieces.end(), SweptEdgesOfPiece{r, {}});
+            it->edges.push_back({m_vertex_attribute[a].m_posf, side == Orientation::POSITIVE});
+        }
     }
-    if (amips >= MAX_ENERGY || !m_offset_potential || !face_is_offset_band(fid)) return a;
-    double e = a;
-    for (int j = 0; j < 3; ++j) {
-        const Tuple et = tuple_from_edge(fid, j);
-        // Live with this face band: this face is the chord's band side, the one that carries it.
-        if (!edge_is_offset_surface_live(et)) continue;
-        std::array<size_t, 2> v = get_edge_vids(et);
-        if (v[0] > v[1]) std::swap(v[0], v[1]);
-        const double o = edge_offset_term(
-            potential_for_face(fid),
-            m_vertex_attribute[v[0]].m_posf,
-            m_vertex_attribute[v[1]].m_posf);
-        if (!(o >= 0.)) return MAX_ENERGY; // unmeasurable: unscoreable, see the declaration
-        e += o;
-    }
-    // A bar that is not positive makes o = +inf; the sentinel keeps the energy finite, as
-    // MAX_ENERGY requires wherever it is summed.
-    return std::min(e, MAX_ENERGY);
 }
 
-double TopoOffsetTriMesh::max_tri_energy(const std::vector<size_t>& fids) const
+double TopoOffsetTriMesh::band_swept_sum(
+    const Vector2d& x0,
+    const Vector2d& x1,
+    const std::vector<SweptEdgesOfPiece>& pieces,
+    ExactBandIntegral2D::Stats* st) const
 {
-    double m = 0.;
-    for (const size_t fid : fids) m = std::max(m, tri_energy(fid));
-    return m;
+    // the function the smoother's search model evaluates too (BandVolumeEnergy2D::set_swept()),
+    // per piece
+    double s = 0.;
+    for (const SweptEdgesOfPiece& q : pieces) {
+        s += BandVolumeEnergy2D::swept_change(
+            *band_exact_for(q.piece),
+            region_delta(q.piece),
+            x0,
+            x1,
+            q.edges,
+            st);
+    }
+    return s;
+}
+
+std::vector<std::pair<size_t, int>> TopoOffsetTriMesh::band_face_pieces(
+    const std::vector<size_t>& fids) const
+{
+    std::vector<std::pair<size_t, int>> out;
+    for (const size_t fid : fids) {
+        if (face_is_offset_band(fid))
+            out.push_back({fid, place_piece(oriented_tri_vids(fid).data(), 3)});
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+double TopoOffsetTriMesh::band_relabel_change(
+    const std::vector<size_t>& fids,
+    const std::vector<std::pair<size_t, int>>& before) const
+{
+    // See the declaration and EXACT SWEPT CHANGE, several entries.
+    if (m_offset_params.offsets.size() <= 1) return 0.;
+    double s = 0.;
+    for (const size_t fid : fids) {
+        if (!face_is_offset_band(fid)) continue;
+        const auto it = std::lower_bound(
+            before.begin(),
+            before.end(),
+            std::pair<size_t, int>{fid, std::numeric_limits<int>::min()});
+        if (it == before.end() || it->first != fid) continue;
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int r = place_piece(vs.data(), 3);
+        if (r != it->second) s += band_cell_term(vs, r) - band_cell_term(vs, it->second);
+    }
+    return s;
+}
+
+double TopoOffsetTriMesh::swap_swept_change(const std::vector<size_t>& made) const
+{
+    // See the declaration.
+    const auto& old = m_swap_old_band.local();
+    std::vector<std::pair<std::array<size_t, 3>, int>> nb;
+    for (const size_t fid : made) {
+        if (!face_is_offset_band(fid)) continue;
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        nb.push_back({vs, place_piece(vs.data(), 3)});
+    }
+    const int r = !old.empty() ? old.front().second : nb.empty() ? -1 : nb.front().second;
+    bool one = true;
+    for (const auto& t : old) one = one && t.second == r;
+    for (const auto& t : nb) one = one && t.second == r;
+    if (one) return 0.;
+    double s = 0.;
+    for (const auto& t : nb) s += band_cell_term(t.first, t.second);
+    for (const auto& t : old) s -= band_cell_term(t.first, t.second);
+    return s;
+}
+
+bool TopoOffsetTriMesh::swept_accept(
+    const size_t vid,
+    const std::vector<size_t>& ring,
+    const Vector2d& x0,
+    const double amips_before,
+    SweptCounters& c)
+{
+    // See the declaration.
+    ++c.solves;
+    const Vector2d x1 = m_vertex_attribute[vid].m_posf;
+    // band_swept_change()'s edges, the same at every halving (band_swept_edges() reads vid's
+    // position only for the pieces), and the ring's pieces, read with vid at x0, where the move
+    // starts (place_piece() reads a face's first corner's position where no corner has a piece)
+    std::vector<SweptEdgesOfPiece> pieces;
+    m_vertex_attribute[vid].m_posf = x0;
+    band_swept_edges(vid, x0, pieces);
+    const std::vector<std::pair<size_t, int>> ring_pieces = band_face_pieces(ring);
+    m_vertex_attribute[vid].m_posf = x1;
+    const std::vector<std::shared_ptr<const BandVolumeEnergy2D>>& models = m_swept_model.local();
+    for (int k = 0; k <= kSweptHalvings; ++k) {
+        if (k > 0) {
+            m_vertex_attribute[vid].m_posf = x0 + std::ldexp(1., -k) * (x1 - x0);
+            m_vertex_attribute[vid].set_pos_to_posf();
+            bool inverted = false;
+            for (const size_t f : ring) inverted = inverted || is_inverted(f);
+            if (inverted) continue;
+            for (const size_t f : ring) m_face_attribute[f].m_quality = get_quality(f);
+        }
+        const double dA = tri_energy_sum(ring, false) - amips_before;
+        const Vector2d& x = m_vertex_attribute[vid].m_posf;
+        double dB = band_relabel_change(ring, ring_pieces);
+        for (size_t i = 0; i < pieces.size(); ++i) {
+            const SweptEdgesOfPiece& q = pieces[i];
+            const ExactBandIntegral2D& eb = *band_exact_for(q.piece);
+            const double delta = region_delta(q.piece);
+            double d;
+            if (!(i < models.size() && models[i] &&
+                  models[i]->swept_value_at(eb, delta, x0, x, q.edges, d))) {
+                d = BandVolumeEnergy2D::swept_change(eb, delta, x0, x, q.edges);
+            }
+            dB += d;
+        }
+        if (dA + dB <= 0.) { // a NaN refuses; a tie passes
+            ++c.accepted[size_t(k)];
+            return true;
+        }
+    }
+    ++c.refused;
+    return false;
+}
+
+double TopoOffsetTriMesh::global_energy() const
+{
+    // E = int_B (d - delta) / delta dA (exact, or as the corner bound) + (w / s^3) sum area
+    // AMIPS^3: every live face's tri_energy() once. As in 3D.
+    double s = 0.;
+    for (const Tuple& f : get_faces()) s += tri_energy(f.fid(*this));
+    return s;
+}
+
+double TopoOffsetTriMesh::offset_energy() const
+{
+    // See the declaration: band_cell_term() over the band faces only. As in 3D.
+    double s = 0.;
+    for (const Tuple& f : get_faces()) {
+        const size_t fid = f.fid(*this);
+        if (face_is_offset_band(fid)) s += band_cell_term(oriented_tri_vids(fid));
+    }
+    return s;
+}
+
+std::pair<double, double> TopoOffsetTriMesh::energy_parts() const
+{
+    // See the declaration. A face's tri_energy() is cell_energy(vids, A, band): its AMIPS part
+    // (plus the repulsion term, 0 in the loop) and, on a band face, band_cell_term().
+    double amips = 0., band = 0.;
+    for (const Tuple& f : get_faces()) {
+        const size_t fid = f.fid(*this);
+        if (!face_is_offset_band(fid)) {
+            amips += tri_energy(fid);
+            continue;
+        }
+        const std::array<size_t, 3> vids = oriented_tri_vids(fid);
+        const double a = get_quality(fid);
+        if (a >= MAX_ENERGY) {
+            amips += MAX_ENERGY;
+            continue;
+        }
+        amips += cell_energy(vids, a, false);
+        band += band_cell_term(vids);
+    }
+    return {amips, band};
+}
+
+void TopoOffsetTriMesh::log_energy_step(const int turn, const char* step) const
+{
+    const auto [amips, band] = energy_parts();
+    logger().info(
+        "\t[energy step] turn {} {}: E {:.12g} | AMIPS term {:.12g} | band term {:.12g}",
+        turn,
+        step,
+        amips + band,
+        amips,
+        band);
+}
+
+int TopoOffsetTriMesh::nearest_piece(const Vector2d& p) const
+{
+    // See the declaration.
+    if (!m_input_complex_bvh) return -1;
+    Vector2d foot, seg_normal;
+    bool on_corner = false;
+    int feature = -1;
+    m_input_complex_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature);
+    if (feature < 0) return -1;
+    const std::vector<int64_t>& src = on_corner ? m_phi_vert_region : m_phi_seg_region;
+    return size_t(feature) < src.size() ? int(src[size_t(feature)]) : -1;
+}
+
+int TopoOffsetTriMesh::place_piece(const size_t* vids, const size_t n) const
+{
+    // See the declaration. As in 3D, m_face_region in place of m_cell_region.
+    if (m_offset_params.offsets.size() <= 1 || m_region_potentials.empty()) return -1;
+    if (m_region_potentials.size() == 1) return 0;
+    int best = -1;
+    double best_delta = std::numeric_limits<double>::infinity();
+    const auto consider = [&](const int r) {
+        if (r >= 0 && region_delta(r) < best_delta) {
+            best_delta = region_delta(r);
+            best = r;
+        }
+    };
+    for (size_t i = 0; i < n; ++i) {
+        const int r = vertex_region(vids[i]);
+        if (r == -2) {
+            for (const size_t f : get_one_ring_fids_for_vertex(vids[i]))
+                consider(f < m_face_region.size() ? m_face_region[f] : -1);
+        } else {
+            consider(r);
+        }
+    }
+    if (best >= 0) return best;
+    return nearest_piece(m_vertex_attribute[vids[0]].m_posf);
 }
 
 void TopoOffsetTriMesh::assign_band_regions(const bool log)
@@ -2835,15 +3219,7 @@ void TopoOffsetTriMesh::assign_band_regions(const bool log)
     // the pieces' separation from any other. Re-derived rather than carried, because nothing
     // propagates a region index through split and collapse -- the same reason
     // classify_curve_edges() re-derives on_curve.
-    const auto region_at = [&](const Vector2d& p) -> int {
-        Vector2d foot, seg_normal;
-        bool on_corner = false;
-        int feature = -1;
-        m_input_complex_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature);
-        if (feature < 0) return -1;
-        const std::vector<int64_t>& src = on_corner ? m_phi_vert_region : m_phi_seg_region;
-        return size_t(feature) < src.size() ? int(src[size_t(feature)]) : -1;
-    };
+    const auto region_at = [&](const Vector2d& p) { return nearest_piece(p); };
     std::vector<size_t> queue;
     // The seed is a complex VERTEX (label 1) on a band face, not a band face across an edge from
     // a complex FACE: the face rule seeds nothing on a curve or point complex, which has no
@@ -2930,9 +3306,8 @@ void TopoOffsetTriMesh::assign_band_regions(const bool log)
 
 void TopoOffsetTriMesh::log_front_profile(const size_t vid)
 {
-    // Diagnostic: the stencil offset term of one vertex along its normal, against its own-point
-    // term alone, at 21 points across +-delta/2. Logged once, on non-convergence, for the worst
-    // vertex. As in 3D.
+    // Diagnostic: the band term of one vertex's band faces along its normal, at 21 points across
+    // +-delta/2. Logged once, on non-convergence, for the worst vertex. As in 3D.
     if (vid == static_cast<size_t>(-1) || vid >= m_vertex_attribute.size() || !m_offset_potential)
         return;
     const int region = vertex_region(vid);
@@ -2941,14 +3316,12 @@ void TopoOffsetTriMesh::log_front_profile(const size_t vid)
     Vector2d g = pot->gradient(x0);
     if (!(g.norm() > 0.) || !g.allFinite()) return;
     const Vector2d n = g / g.norm(); // toward the input for the smooth field, away for Euclidean
-    auto stencil = front_energy(vid, pot);
-    OffsetEnergy2D own_point(pot, offset_term_weight(), true, true);
-    const double delta = m_offset_params.target_distance;
+    auto band = front_energy(vid);
+    const double delta = vertex_delta(vid); // the vertex's piece's (one entry: the run's)
     logger().info(
         "[front profile] worst vertex {} at ({:.5}, {:.5}), region {}, along the field direction "
-        "n = ({:.4}, {:.4}); columns: s/delta | own-point term (the vertex's squared residual at "
-        "its own position, in units of the bar) | stencil minus own point | stencil offset term "
-        "(front_energy(): the incident front chords' stencil terms, no AMIPS)",
+        "n = ({:.4}, {:.4}); columns: s/delta | band term of the vertex's band faces "
+        "(front_energy(), no AMIPS)",
         vid,
         x0.x(),
         x0.y(),
@@ -2960,9 +3333,7 @@ void TopoOffsetTriMesh::log_front_profile(const size_t vid)
         const Vector2d x = x0 + sd * delta * n;
         Eigen::VectorXd xv(2);
         xv << x.x(), x.y();
-        const double F = stencil->value(xv);
-        const double Fo = own_point.value(xv);
-        logger().info("[front profile] {:+.2f} | {:.6g} | {:.6g} | {:.6g}", sd, Fo, F - Fo, F);
+        logger().info("[front profile] {:+.2f} | {:.6g}", sd, band->value(xv));
     }
 }
 
@@ -3042,6 +3413,314 @@ size_t TopoOffsetTriMesh::refine_front_by_halving(const std::vector<size_t>& ver
     }
     grade_sizing(m_offset_params.sizing_gradation, changed);
     return changed.size();
+}
+
+double TopoOffsetTriMesh::edge_stencil_max_sq(const std::array<size_t, 2>& e) const
+{
+    // See the declaration. (d - delta)^2 = (delta r)^2, r the potential's relative_residual() =
+    // (d - delta) / delta. Several entries of offsets: r on the chord's piece's field, in the
+    // run's units (run_units_scale()). As in 3D.
+    if (!m_offset_potential) return 0.;
+    const double delta = run_units_scale(e, m_offset_params.target_distance);
+    const OffsetPotential2D& pot = potential_for_edge(e[0], e[1]);
+    double m = 0.;
+    bool unmeasurable = false;
+    for_each_edge_sample(
+        m_vertex_attribute[e[0]].m_posf,
+        m_vertex_attribute[e[1]].m_posf,
+        [&](const Vector2d& q, double, double) {
+            if (unmeasurable) return;
+            const double r = pot.relative_residual(q);
+            if (!std::isfinite(r)) {
+                unmeasurable = true;
+                return;
+            }
+            m = std::max(m, (delta * r) * (delta * r));
+        });
+    return unmeasurable ? std::numeric_limits<double>::infinity() : m;
+}
+
+bool TopoOffsetTriMesh::settle_refinement_turn(
+    const int turn,
+    double& e_prev,
+    const bool refine_now)
+{
+    // See the declaration; TopoOffsetTetMesh::settle_refinement_turn() one dimension down, whose
+    // measurements motivate each test.
+    if (!m_band_exact) {
+        log_and_throw_error(
+            "EXPERIMENTAL_settle_refinement in 2D reads the distance to the input through the "
+            "exact band integral, which this run did not build (init_band_exact())");
+    }
+    const double delta = m_offset_params.target_distance;
+    const double eps = m_offset_params.front_conv;
+    const double e_now = settle_metric(); // no AMIPS: see offset_energy()
+    const double de = e_prev - e_now;
+    e_prev = e_now;
+    const std::vector<std::array<size_t, 2>> edges = offset_surface_edges();
+    double length = 0.;
+    for (const auto& e : edges) {
+        length += (m_vertex_attribute[e[1]].m_posf - m_vertex_attribute[e[0]].m_posf).norm();
+    }
+    // The bar energy: the offset term's excess for a front of length L lying eps beyond the level
+    // set, per unit length int_0^eps s / delta ds = eps^2 / (2 delta). A turn whose E fell by less
+    // has settled: the front no longer moves by a bar. As in 3D, its area A for L.
+    const double bar_energy = eps * eps * length / (2. * delta);
+    const bool settled = de < bar_energy;
+    m_turn_settled = settled; // check_level_set_reachable()
+    // The floor of refine_front_by_halving().
+    const double l = std::max(m_params.l, 1e-300);
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+    size_t n_marked = 0, n_floor = 0, n_halved = 0, n_over_max = 0, n_over_rms = 0;
+    size_t n_over_vertex = 0, n_front_vertices = 0, n_gap_cells = 0, n_gap_over = 0;
+    double max_inside = -std::numeric_limits<double>::infinity(), max_outside = max_inside;
+    double max_rms = 0., max_vertex = 0., max_gap = 0.;
+    const bool rms_mode = m_offset_params.settle_mark == "rms";
+    const bool edge_mode = m_offset_params.settle_mark == "vertex_edge";
+    const bool split_mode = m_offset_params.settle_mark == "vertex_split";
+    const bool vertex_mode = m_offset_params.settle_mark == "vertex" || edge_mode || split_mode;
+    const bool stencil_mode = m_offset_params.settle_mark == "stencil";
+    size_t n_over_stencil = 0;
+    double max_stencil = 0.;
+    size_t n_edge_over = 0, n_edge_floor = 0, n_off_chords = 0;
+    double max_edge = 0., max_chord = 0.;
+    std::vector<std::array<size_t, 2>> to_split;
+    if (settled) {
+        // Per front chord f, how far a point of f lies from the level set: inside_f = delta - min
+        // over f of d, exact (ExactBandIntegral2D::min_distance()); outside_f = max over f of d,
+        // minus delta, exact up to rounding (ExactBandIntegral2D::max_distance(): f cut by the
+        // input's nearest-feature regions, the max at a piece's end; an upper bound only on
+        // rule-(a) pieces). A chord with either over eps has its ends halved. settle_mark "rms",
+        // "vertex" and "stencil" only log outside_f and keep the former bound (distance_bound()).
+        // Each test at its place's own target distance and bar (region_delta(), front_conv_of()):
+        // with one entry, the run's.
+        std::vector<size_t> corners;
+        for (const auto& f : edges) {
+            const int piece_f = place_piece(f.data(), 2);
+            const double delta_f = region_delta(piece_f);
+            const double eps_f = front_conv_of(piece_f);
+            const ExactBandIntegral2D& eb_f = *band_exact_for(piece_f);
+            const std::array<Vector2d, 2> p = {
+                {m_vertex_attribute[f[0]].m_posf, m_vertex_attribute[f[1]].m_posf}};
+            const double inside = delta_f - eb_f.min_distance(p);
+            const double outside =
+                (!rms_mode && !vertex_mode && !stencil_mode ? eb_f.max_distance(p)
+                                                            : eb_f.distance_bound(p)) -
+                delta_f;
+            max_inside = std::max(max_inside, inside / eps_f);
+            max_outside = std::max(max_outside, outside / eps_f);
+            const bool over_max = std::max(inside, outside) > eps_f;
+            // EXPERIMENTAL_settle_mark "rms": the mean over f of (d - delta)^2 cos(theta) by the
+            // 2-point Gauss rule, theta between f's normal out of the band and grad d (signed),
+            // against front_conv^2. The normal is oriented by the band face carrying f
+            // (front_edge_out_normal()).
+            Vector2d n;
+            const bool has_band = front_edge_out_normal(f[0], f[1], n);
+            double q = 0.;
+            if (has_band) {
+                const double h = 0.5 / std::sqrt(3.);
+                for (const double w : {0.5 - h, 0.5 + h}) {
+                    Vector2d g;
+                    const double dx = eb_f.distance(Vector2d((1. - w) * p[0] + w * p[1]), g);
+                    q += 0.5 * (dx - delta_f) * (dx - delta_f) * n.dot(g);
+                }
+            }
+            const bool over_rms = has_band && q > eps_f * eps_f;
+            max_rms = std::max(max_rms, std::sqrt(std::max(q, 0.)) / eps_f);
+            n_over_max += over_max;
+            n_over_rms += over_rms;
+            // EXPERIMENTAL_settle_mark "stencil": a point of f's stencil at or beyond front_conv,
+            // (d - delta)^2 >= front_conv^2, or unmeasurable.
+            bool over_stencil = false;
+            if (stencil_mode) {
+                const double m = edge_stencil_max_sq(f);
+                max_stencil = std::max(max_stencil, std::sqrt(m) / eps);
+                over_stencil = !(m < eps * eps);
+                n_over_stencil += over_stencil;
+            }
+            if (vertex_mode || !(stencil_mode ? over_stencil : rms_mode ? over_rms : over_max)) {
+                continue;
+            }
+            ++n_marked;
+            bool at_floor = true;
+            for (const size_t v : f) {
+                corners.push_back(v);
+                at_floor = at_floor && m_vertex_attribute[v].m_sizing_scalar <= s_floor;
+            }
+            if (at_floor) ++n_floor;
+        }
+        // EXPERIMENTAL_settle_mark "vertex": a front vertex whose own distance from the level set,
+        // |d(v) - delta|, exceeds front_conv (d exact at the vertex). It says nothing about the
+        // points of a chord between its ends.
+        std::vector<size_t> front_vids;
+        for (const auto& f : edges) front_vids.insert(front_vids.end(), f.begin(), f.end());
+        wmtk::vector_unique(front_vids);
+        n_front_vertices = front_vids.size();
+        const auto level_set_error = [&](const Vector2d& x, const int piece) {
+            return std::abs(band_exact_for(piece)->distance(x) - region_delta(piece));
+        };
+        std::vector<char> vertex_over(edge_mode || split_mode ? vert_capacity() : 0, 0);
+        for (const size_t v : front_vids) {
+            const int piece_v = place_piece(&v, 1);
+            const double eps_v = front_conv_of(piece_v);
+            const double err = level_set_error(m_vertex_attribute[v].m_posf, piece_v);
+            max_vertex = std::max(max_vertex, err / eps_v);
+            if (!(err > eps_v)) continue;
+            ++n_over_vertex;
+            if (!vertex_mode) continue;
+            ++n_marked;
+            corners.push_back(v);
+            if (edge_mode || split_mode) vertex_over[v] = 1;
+            if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
+        }
+        // The chords with both ends within front_conv of the level set and the midpoint not:
+        // such a chord spans a stretch of the level set its ends do not see, which the vertex test
+        // passes for good. EXPERIMENTAL_settle_mark "vertex_edge" halves their ends,
+        // "vertex_split" lists them to be split; neither holds the exit, which stays the vertex
+        // test. See the 3D twin for the measurements (t100033 inward at 0.5 delta_1, 10%).
+        const auto off_midpoint = [&](const std::array<size_t, 2>& e, double& ratio) {
+            if (vertex_over[e[0]] || vertex_over[e[1]]) return false;
+            const int piece_e = place_piece(e.data(), 2);
+            const double eps_e = front_conv_of(piece_e);
+            const double err = level_set_error(
+                0.5 * (m_vertex_attribute[e[0]].m_posf + m_vertex_attribute[e[1]].m_posf),
+                piece_e);
+            ratio = std::max(ratio, err / eps_e);
+            return err > eps_e;
+        };
+        if (edge_mode) {
+            for (const auto& e : edges) {
+                if (!off_midpoint(e, max_edge)) continue;
+                ++n_edge_over;
+                bool at_floor = true;
+                for (const size_t v : e) {
+                    corners.push_back(v);
+                    at_floor = at_floor && m_vertex_attribute[v].m_sizing_scalar <= s_floor;
+                }
+                if (at_floor) ++n_edge_floor;
+            }
+        }
+        // "vertex_split": the chord itself is split (3D: the edge of the face with the midpoint
+        // farthest from the level set; a chord's one edge is itself, its centroid its midpoint).
+        if (split_mode) {
+            for (const auto& e : edges) {
+                if (!off_midpoint(e, max_chord)) continue;
+                ++n_off_chords;
+                to_split.push_back(e);
+            }
+        }
+        // EXPERIMENTAL_gap_refinement: a band face with a front corner whose corner bound may lie
+        // more than a bar above its true integral: md - d(centroid) > front_conv, md the corner
+        // mean of the bounding primitive's distance. Where d is convex on the face the true mean
+        // of d is at least d(centroid) (Jensen), so area (md - d(c)) / delta bounds the gap. As in
+        // 3D (the cylinder outward, 2026-10-09).
+        if (m_offset_params.gap_refinement) {
+            std::vector<size_t> cells;
+            for (const size_t v : front_vids) {
+                for (const size_t t : get_one_ring_fids_for_vertex(v)) {
+                    if (face_is_offset_band(t)) cells.push_back(t);
+                }
+            }
+            wmtk::vector_unique(cells);
+            n_gap_cells = cells.size();
+            for (const size_t t : cells) {
+                const auto vs = oriented_tri_vids(t);
+                std::array<Vector2d, 3> p;
+                for (int j = 0; j < 3; ++j) p[size_t(j)] = m_vertex_attribute[vs[size_t(j)]].m_posf;
+                int64_t best = -1;
+                const int piece_t = place_piece(vs.data(), 3);
+                const ExactBandIntegral2D& eb = *band_exact_for(piece_t);
+                const double md = eb.min_mean_distance(p.data(), 3, best);
+                const double dc = eb.distance(Vector2d((p[0] + p[1] + p[2]) / 3.));
+                const double eps_t = front_conv_of(piece_t);
+                max_gap = std::max(max_gap, (md - dc) / eps_t);
+                if (!(md - dc > eps_t)) continue;
+                ++n_gap_over;
+                bool at_floor = true;
+                for (const size_t v : vs) {
+                    corners.push_back(v);
+                    at_floor = at_floor && m_vertex_attribute[v].m_sizing_scalar <= s_floor;
+                }
+                if (at_floor) ++n_floor;
+            }
+        }
+        if (refine_now && !corners.empty()) n_halved = refine_front_by_halving(corners);
+        if (refine_now) m_settle_split_edges = to_split;
+    }
+    // A marked chord with both ends at the floor is one nothing will refine: it blocks the exit
+    // for good, hence the warning, every turn such chords exist.
+    logger().log(
+        n_floor > 0 ? spdlog::level::warn : spdlog::level::info,
+        "\t[settle] turn {}: offset energy {:.10g}, its fall {:.4g}, bar energy b {:.4g} (front "
+        "length {:.6g}), settled {}{}",
+        turn,
+        e_now,
+        de,
+        bar_energy,
+        length,
+        settled ? "yes" : "no",
+        settled ? fmt::format(
+                      " | marked {} {} of {} by the {} test (max test: {} chords over, max "
+                      "inside {:.4} bars, max outside {:.4} bars; rms test: {} chords over, max "
+                      "{:.4} bars; vertex test: {} vertices over, max {:.4} bars{}{}), {}, {} "
+                      "marked {} at the sizing floor {:.4g}{}",
+                      n_marked,
+                      vertex_mode ? "vertices" : "chords",
+                      vertex_mode ? fmt::format("{} front vertices", n_front_vertices)
+                                  : fmt::format("{}", edges.size()),
+                      m_offset_params.settle_mark,
+                      n_over_max,
+                      max_inside,
+                      max_outside,
+                      n_over_rms,
+                      max_rms,
+                      n_over_vertex,
+                      max_vertex,
+                      m_offset_params.gap_refinement
+                          ? fmt::format(
+                                "; gap test: {} of {} band faces at the front over, max {:.4} "
+                                "bars (refined)",
+                                n_gap_over,
+                                n_gap_cells,
+                                max_gap)
+                          : std::string(),
+                      stencil_mode ? fmt::format(
+                                         "; stencil test: {} chords over, max {:.4} bars",
+                                         n_over_stencil,
+                                         max_stencil)
+                                   : std::string(),
+                      refine_now ? fmt::format("halved {} vertices", n_halved)
+                                 : std::string("no halving (this loop does not refine)"),
+                      n_floor,
+                      vertex_mode ? "vertices" : "chords with both ends",
+                      s_floor,
+                      n_floor > 0 ? " (they cannot be refined and block the exit)" : "")
+                : std::string(" -- no chord test, no refinement, no exit: the front still moves"));
+    if (edge_mode && settled) {
+        logger().info(
+            "\t[settle edge] turn {}: {} of {} front chords with both ends within front_conv and "
+            "the midpoint over (max {:.4} bars), their ends refined, {} with both ends at the "
+            "sizing floor; they do not hold the exit",
+            turn,
+            n_edge_over,
+            edges.size(),
+            max_edge,
+            n_edge_floor);
+    }
+    // The listed chords do not hold the exit, which stays the vertex test: they are split only if
+    // the run goes on (the next turn), and a run that exits leaves them unsplit.
+    if (split_mode && settled) {
+        logger().info(
+            "\t[settle split] turn {}: {} front chords with both ends within front_conv and the "
+            "midpoint over (max {:.4} bars) | {} chords to split before the next turn's first "
+            "smoothing pass; they do not hold the exit",
+            turn,
+            n_off_chords,
+            max_chord,
+            to_split.size());
+    }
+    return settled && n_marked == 0 && n_gap_over == 0;
 }
 
 TopoOffsetTriMesh::SmoothingProgress TopoOffsetTriMesh::smoothing_progress(
@@ -3320,7 +3999,7 @@ double TopoOffsetTriMesh::face_criterion_rel(const size_t fid) const
 {
     // The max of the face's AMIPS over stop_energy and, on each live chord it carries, the root of
     // the chord's edge_offset_term() -- the loop's own chord measure, in units of the bar. Sorted
-    // ends, as tri_energy() reads the term. An unmeasurable chord fails. As in 3D.
+    // ends, so a chord reads the same from either face. An unmeasurable chord fails. As in 3D.
     double score = quality_rel(fid);
     for (int j = 0; j < 3; ++j) {
         const Tuple e = tuple_from_edge(fid, j);
@@ -3459,8 +4138,8 @@ void TopoOffsetTriMesh::log_worst_dist_vertex() const
         p[0],
         p[1],
         d,
-        m_offset_params.target_distance,
-        std::abs(d - m_offset_params.target_distance));
+        vertex_delta(vid),
+        std::abs(d - vertex_delta(vid)));
     logger().info(
         "\t  flags: on_offset {} on_input {} on_region {} on_bbox {} rounded {} | boundary mask "
         "{:#x} | incident edges: {} offset, {} region, {} bbox | phi {:.6} (level {:.6}), "
@@ -3643,58 +4322,177 @@ void TopoOffsetTriMesh::check_offset_membership(const char* when) const
     }
 }
 
-/// The outer-angle threshold, in degrees, above which the offset curve counts as folded over at
-/// a vertex: the angle between its two incident offset edges measured through ONE of the two
-/// sides. 180 is straight and 360 is the two edges exactly on top of each other. Because the two
-/// sides sum to 360, "over 330 on one side" is the same statement as "under 30 unsigned", which
-/// is what the code tests -- see offset_surface_foldover_labels() for why the side is not
-/// determined. Optimize3d.cpp carries the same constant; the two values must stay equal.
-static constexpr double FOLDOVER_OUTER_ANGLE_DEG = 330.;
+int64_t TopoOffsetTriMesh::front_edge_band_face(const size_t a, const size_t b) const
+{
+    for (const size_t fid : get_incident_fids_for_edge(a, b)) {
+        if (face_is_offset_band(fid)) return int64_t(fid);
+    }
+    return -1;
+}
+
+bool TopoOffsetTriMesh::front_edge_out_normal(const size_t a, const size_t b, Vector2d& n) const
+{
+    // See the declaration. As 3D's front_face_out_normal().
+    const int64_t bf = front_edge_band_face(a, b);
+    if (bf < 0) return false;
+    return front_edge_out_normal_in(a, b, size_t(bf), n);
+}
+
+bool TopoOffsetTriMesh::front_edge_out_normal_in(
+    const size_t a,
+    const size_t b,
+    const size_t band_fid,
+    Vector2d& n) const
+{
+    // See the declaration. As 3D's front_face_out_normal_in().
+    const Vector2d& pa = m_vertex_attribute[a].m_posf;
+    const Vector2d d = m_vertex_attribute[b].m_posf - pa;
+    n = Vector2d(-d.y(), d.x());
+    if (!(n.norm() > 0.)) return false;
+    n.normalize();
+    for (const size_t v : oriented_tri_vids(band_fid)) {
+        if (v == a || v == b) continue;
+        if (n.dot(pa - m_vertex_attribute[v].m_posf) < 0.) n = -n;
+    }
+    return true;
+}
+
+double TopoOffsetTriMesh::front_edge_field_angle(const size_t a, const size_t b) const
+{
+    // See the declaration. As 3D's front_face_field_angle().
+    const int64_t bf = front_edge_band_face(a, b);
+    if (bf < 0) return std::numeric_limits<double>::quiet_NaN();
+    return front_edge_field_angle_in(a, b, size_t(bf));
+}
+
+double TopoOffsetTriMesh::front_edge_field_angle_in(
+    const size_t a,
+    const size_t b,
+    const size_t band_fid) const
+{
+    // See the declaration. As 3D's front_face_field_angle_in() and front_face_angle_to_field().
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if (!m_band_exact) return nan;
+    Vector2d n;
+    if (!front_edge_out_normal_in(a, b, band_fid, n)) return nan;
+    const Vector2d x = 0.5 * (m_vertex_attribute[a].m_posf + m_vertex_attribute[b].m_posf);
+    // The edge's piece's integral (place_piece(); the whole complex's with one entry).
+    const std::array<size_t, 2> e{{a, b}};
+    Vector2d g;
+    band_exact_for(place_piece(e.data(), 2))->distance(x, g);
+    if (!(g.norm() > 0.)) return nan;
+    // atan2 of the cross and dot products: accurate at every angle, unlike acos near 0 and 180.
+    return std::atan2(std::abs(n.x() * g.y() - n.y() * g.x()), n.dot(g)) * 180. / M_PI;
+}
+
+TopoOffsetTriMesh::FoldCount TopoOffsetTriMesh::count_folds(
+    std::vector<size_t>* fold_vertices) const
+{
+    // Each live offset edge once, its normal out of the band; then the vertices with exactly two,
+    // sorted by fold_test(). As 3D's count_folds(), one dimension down.
+    std::map<size_t, std::vector<std::pair<std::array<size_t, 2>, Vector2d>>> by_vertex;
+    for (const Tuple& e : get_edges()) {
+        if (!edge_is_offset_surface_live(e) || !e.switch_face(*this)) continue;
+        const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+        Vector2d n;
+        if (!front_edge_out_normal(a, b, n)) continue;
+        const std::array<size_t, 2> ev{{a, b}};
+        by_vertex[a].push_back({ev, n});
+        by_vertex[b].push_back({ev, n});
+    }
+    FoldCount c;
+    for (const auto& [v, es] : by_vertex) {
+        if (es.size() != 2) continue;
+        double ang[2] = {0., 0.};
+        const auto field_angle = [&](const int k) {
+            const auto& ev = es[size_t(k)].first;
+            return ang[k] = front_edge_field_angle(ev[0], ev[1]);
+        };
+        const FoldTest t =
+            fold_test(es[0].second, es[1].second, field_angle, m_offset_params.foldover_angle);
+        if (t == FoldTest::none) continue;
+        if (t == FoldTest::ridge_vertex) {
+            ++c.ridge_vertices;
+            c.ridge_max_angle = std::max({c.ridge_max_angle, ang[0], ang[1]});
+            continue;
+        }
+        ++c.folds;
+        if (fold_vertices) fold_vertices->push_back(v);
+    }
+    return c;
+}
+
+TopoOffsetTriMesh::TurnedEdgeCensus TopoOffsetTriMesh::turned_edge_census() const
+{
+    // See the declaration. As 3D's turned_face_census().
+    TurnedEdgeCensus c;
+    for (const auto& e : offset_surface_edges()) {
+        ++c.n_edges;
+        const double ang = front_edge_field_angle(e[0], e[1]);
+        if (!std::isfinite(ang)) {
+            ++c.n_unmeasured;
+            continue;
+        }
+        if (!(ang > m_offset_params.foldover_angle)) continue;
+        ++c.n_turned;
+        if (ang > c.worst) {
+            c.worst = ang;
+            c.worst_at = 0.5 * (m_vertex_attribute[e[0]].m_posf + m_vertex_attribute[e[1]].m_posf);
+        }
+    }
+    return c;
+}
+
+void TopoOffsetTriMesh::turned_front_edges_at(
+    const size_t vid,
+    std::set<std::array<size_t, 2>>& out) const
+{
+    // See the declaration. The live offset edges through vid found as vertex_has_live_offset_edge()
+    // finds them, pairing the edges within vid's face list: an edge with one face in the list is
+    // on the domain boundary, the band's when that face is a band face.
+    const std::vector<size_t>& ring = get_one_ring_fids_for_vertex(vid);
+    struct Side
+    {
+        size_t other; ///< the edge's other end
+        size_t fid;
+    };
+    std::vector<Side> sides;
+    sides.reserve(2 * ring.size());
+    for (const size_t fid : ring) {
+        for (const size_t w : oriented_tri_vids(fid)) {
+            if (w != vid) sides.push_back({w, fid});
+        }
+    }
+    std::sort(sides.begin(), sides.end(), [](const Side& a, const Side& b) {
+        return a.other != b.other ? a.other < b.other : a.fid < b.fid;
+    });
+    for (size_t i = 0; i < sides.size();) {
+        size_t j = i + 1;
+        while (j < sides.size() && sides[j].other == sides[i].other) ++j;
+        const size_t fa = sides[i].fid;
+        int64_t band = -1;
+        if (j - i == 1) {
+            if (face_is_offset_band(fa)) band = int64_t(fa);
+        } else {
+            const size_t fb = sides[i + 1].fid;
+            const bool a = face_is_offset_band(fa), b = face_is_offset_band(fb);
+            if (a != b && !face_is_input_complex(a ? fb : fa)) band = int64_t(a ? fa : fb);
+        }
+        if (band >= 0 && front_edge_field_angle_in(vid, sides[i].other, size_t(band)) >
+                             m_offset_params.foldover_angle) {
+            out.insert({{std::min(vid, sides[i].other), std::max(vid, sides[i].other)}});
+        }
+        i = j;
+    }
+}
 
 std::vector<char> TopoOffsetTriMesh::offset_surface_foldover_labels() const
 {
+    // See the declaration.
     std::vector<char> fold(vert_capacity(), 0);
-
-    // Per curve vertex, its neighbours across live offset edges.
-    struct VertexEdges
-    {
-        int n = 0;
-        std::array<size_t, 2> nbr{{0, 0}};
-    };
-    std::vector<VertexEdges> at(vert_capacity());
-    for (const Tuple& e : get_edges()) {
-        if (!edge_is_offset_surface_live(e)) continue;
-        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
-        const auto record = [&](const size_t v, const size_t other) {
-            VertexEdges& ve = at[v];
-            if (ve.n < 2) ve.nbr[size_t(ve.n)] = other;
-            ++ve.n; // counted past 2 on purpose, so a non-manifold vertex can be recognised
-        };
-        record(va, vb);
-        record(vb, va);
-    }
-
-    // A fold is the two edges lying on top of each other, and WHICH side is pinched is not part
-    // of it -- the band's side or the background's. See the 3D twin, where the measured folds
-    // turned out to pinch the BACKGROUND, so a test written around a pinched band missed every
-    // one of them. The two sides sum to 360, so "over the threshold through one side" is exactly
-    // "under 360 minus it unsigned", and the unsigned angle catches the fold either way without
-    // having to decide which side is which.
-    const double coincidence_deg = 360. - FOLDOVER_OUTER_ANGLE_DEG;
-    for (size_t vid = 0; vid < at.size(); ++vid) {
-        const VertexEdges& ve = at[vid];
-        // Not two edges means the angle is not defined -- a curve end, or a non-manifold vertex.
-        // Not measurable is not a fold.
-        if (ve.n != 2) continue;
-        const Vector2d p = m_vertex_attribute[vid].m_posf;
-        const Vector2d w0 = m_vertex_attribute[ve.nbr[0]].m_posf - p;
-        const Vector2d w1 = m_vertex_attribute[ve.nbr[1]].m_posf - p;
-        const double l0 = w0.norm(), l1 = w1.norm();
-        if (!(l0 > 0.) || !(l1 > 0.) || !std::isfinite(l0) || !std::isfinite(l1)) continue;
-        const double ang =
-            std::acos(std::clamp((w0 / l0).dot(w1 / l1), -1., 1.)) * 180. / M_PI; // [0, 180]
-        if (ang < coincidence_deg) fold[vid] = 1;
-    }
+    std::vector<size_t> vs;
+    count_folds(&vs);
+    for (const size_t v : vs) fold[v] = 1;
     return fold;
 }
 
@@ -4013,10 +4811,1218 @@ void TopoOffsetTriMesh::write_debug_pvd() const
     }
 }
 
-void TopoOffsetTriMesh::optimize_offset_loop(
+bool TopoOffsetTriMesh::held_object_edge(const Tuple& e) const
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::held_object_face(). An edge of a
+    // face of the input complex, where 3D asks the face's own label: 2D's operations carry the
+    // face labels, not the edge labels. An isolated edge of the complex is a tracked boundary (a
+    // tag boundary or the curve group, init_surfaces_and_boundaries()) or on the mesh boundary.
+    const std::optional<Tuple> o = e.switch_face(*this);
+    if (!o) return true; // the mesh boundary
+    if (m_face_extra[e.fid(*this)].label == 1 || m_face_extra[o->fid(*this)].label == 1)
+        return true;
+    return edge_is_region(e.eid(*this));
+}
+
+bool TopoOffsetTriMesh::held_object_vertex(const size_t v) const
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::held_object_vertex() and
+    // held_object_edge(), whose held edges are 2D's held vertices. On the input complex by
+    // m_is_on_input, which 2D's operations carry (3D: the vertex's label).
+    if (m_vertex_extra[v].m_is_on_input) return true;
+    if (m_track_feature_points &&
+        m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT) {
+        return true;
+    }
+    for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
+        if (held_object_edge(e)) return true;
+    }
+    return false;
+}
+
+std::array<int64_t, 4> TopoOffsetTriMesh::held_topology_signature(
+    std::map<std::array<double, 2>, std::array<bool, 2>>* vertex_touch,
+    std::array<std::array<int64_t, 4>, 4>* by_kind) const
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::held_topology_signature(). The held
+    // simplices by sorted corners: the held edges with their corners, the input-complex and
+    // anchored vertices.
+    std::map<std::vector<size_t>, size_t> index;
+    std::vector<std::vector<size_t>> simplices;
+    // the kinds a simplex belongs to: 1 the input complex, 2 the held points (3D: the held curves
+    // and points; 2D's held curves, the curve group, are codimension 1 and kind 4), 4 the region
+    // boundaries, 8 the box -- a corner of a held edge takes its kind
+    std::vector<uint8_t> kinds;
+    const auto add = [&](std::vector<size_t> sigma, const uint8_t kind) {
+        std::sort(sigma.begin(), sigma.end());
+        const auto [it, fresh] = index.emplace(sigma, simplices.size());
+        if (fresh) {
+            simplices.push_back(sigma);
+            kinds.push_back(0);
+        }
+        kinds[it->second] |= kind;
+    };
+    for (const Tuple& f : get_faces()) {
+        const size_t fid = f.fid(*this);
+        for (int k = 0; k < 3; ++k) {
+            const Tuple e = tuple_from_edge(fid, size_t(k));
+            if (!held_object_edge(e)) continue;
+            const std::array<size_t, 2> ev = get_edge_vids(e);
+            const std::optional<Tuple> o = e.switch_face(*this);
+            const uint8_t kind =
+                !o                                                                         ? 8
+                : (m_face_extra[fid].label == 1 || m_face_extra[o->fid(*this)].label == 1) ? 1
+                                                                                           : 4;
+            add({ev[0], ev[1]}, kind);
+            add({ev[0]}, kind);
+            add({ev[1]}, kind);
+        }
+        for (const size_t v : oriented_tri_vids(fid)) {
+            const uint8_t kind =
+                (m_vertex_extra[v].m_is_on_input ? 1 : 0) |
+                (m_track_feature_points &&
+                         m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT
+                     ? 2
+                     : 0);
+            if (kind) add({v}, kind);
+        }
+    }
+    // Each simplex's chambers: its triangles, joined across the edges through it that are not
+    // held. A held edge is its own chamber wall, so each of its triangles is a chamber.
+    std::vector<std::map<size_t, int>> chamber_of(simplices.size());
+    std::vector<std::vector<std::array<bool, 2>>> touched(simplices.size()); // band, non-band
+    std::vector<size_t> first(simplices.size() + 1, 0); // element ids: first[i] + chamber
+    for (size_t i = 0; i < simplices.size(); ++i) {
+        const std::vector<size_t>& sigma = simplices[i];
+        const std::vector<size_t> star = sigma.size() == 1
+                                             ? get_one_ring_fids_for_vertex(sigma[0])
+                                             : get_incident_fids_for_edge(sigma[0], sigma[1]);
+        for (const size_t c0 : star) {
+            if (chamber_of[i].count(c0)) continue;
+            const int k = int(touched[i].size());
+            touched[i].push_back({{false, false}});
+            std::vector<size_t> stack{c0};
+            chamber_of[i][c0] = k;
+            while (!stack.empty()) {
+                const size_t c = stack.back();
+                stack.pop_back();
+                const int l = m_face_extra[c].label;
+                touched[i][size_t(k)][0] = touched[i][size_t(k)][0] || l == 2;
+                touched[i][size_t(k)][1] = touched[i][size_t(k)][1] || l == 0;
+                for (int j = 0; j < 3; ++j) {
+                    const Tuple e = tuple_from_edge(c, size_t(j));
+                    const std::array<size_t, 2> ev = get_edge_vids(e);
+                    const bool through = std::all_of(sigma.begin(), sigma.end(), [&](size_t x) {
+                        return ev[0] == x || ev[1] == x;
+                    });
+                    if (!through || held_object_edge(e)) continue;
+                    const size_t n = e.switch_face(*this)->fid(*this);
+                    if (chamber_of[i].emplace(n, k).second) stack.push_back(n);
+                }
+            }
+        }
+        first[i + 1] = first[i] + touched[i].size();
+        if (vertex_touch && sigma.size() == 1) {
+            const Vector2d& x = m_vertex_attribute[sigma[0]].m_posf;
+            std::array<bool, 2>& t = (*vertex_touch)[{{x[0], x[1]}}];
+            for (const auto& k : touched[i]) {
+                t[0] = t[0] || k[0];
+                t[1] = t[1] || k[1];
+            }
+        }
+    }
+    // Per label: union-find over the touched elements, each edge joined to its corners' elements
+    // (the corner's chamber holding the edge's triangle); components and the Euler
+    // characteristic.
+    const auto compute = [&](const uint8_t mask) {
+        std::array<int64_t, 4> out{};
+        for (int label = 0; label < 2; ++label) {
+            std::vector<size_t> root(first.back());
+            std::iota(root.begin(), root.end(), size_t(0));
+            const auto find = [&root](size_t x) {
+                while (root[x] != x) x = root[x] = root[root[x]];
+                return x;
+            };
+            int64_t chi = 0;
+            for (size_t i = 0; i < simplices.size(); ++i) {
+                const std::vector<size_t>& sigma = simplices[i];
+                if (!(kinds[i] & mask)) continue;
+                for (size_t k = 0; k < touched[i].size(); ++k) {
+                    if (!touched[i][k][size_t(label)]) continue;
+                    chi += sigma.size() == 2 ? -1 : 1;
+                    if (sigma.size() == 1) continue;
+                    size_t cell = chamber_of[i].begin()->first; // the chamber's triangle
+                    for (const auto& [fid, kk] : chamber_of[i]) {
+                        if (size_t(kk) == k) {
+                            cell = fid;
+                            break;
+                        }
+                    }
+                    for (const size_t x : sigma) {
+                        const auto it = index.find(std::vector<size_t>{x});
+                        if (it == index.end()) continue;
+                        const size_t r = it->second;
+                        if (!(kinds[r] & mask)) continue;
+                        const int kr = chamber_of[r].at(cell);
+                        if (!touched[r][size_t(kr)][size_t(label)]) continue;
+                        root[find(first[i] + k)] = find(first[r] + size_t(kr));
+                    }
+                }
+            }
+            int64_t b0 = 0;
+            for (size_t i = 0; i < simplices.size(); ++i) {
+                if (!(kinds[i] & mask)) continue;
+                for (size_t k = 0; k < touched[i].size(); ++k) {
+                    if (touched[i][k][size_t(label)] && find(first[i] + k) == first[i] + k) ++b0;
+                }
+            }
+            out[size_t(2 * label)] = b0;
+            out[size_t(2 * label + 1)] = chi;
+            // DEBUG_held_topology, held points, the band: each component's vertex count and
+            // centroid, logged where the topology changed.
+            if (mask == 2 && label == 0 && m_offset_params.debug_held_topology) {
+                std::map<size_t, std::pair<size_t, Vector2d>> comp;
+                for (size_t i = 0; i < simplices.size(); ++i) {
+                    if (!(kinds[i] & mask) || simplices[i].size() != 1) continue;
+                    for (size_t k = 0; k < touched[i].size(); ++k) {
+                        if (!touched[i][k][0]) continue;
+                        auto& [n, c] =
+                            comp.try_emplace(find(first[i] + k), 0, Vector2d::Zero()).first->second;
+                        ++n;
+                        c += m_vertex_attribute[simplices[i][0]].m_posf;
+                    }
+                }
+                m_held_curve_counts = {{0, 0}};
+                for (size_t i = 0; i < simplices.size(); ++i) {
+                    if (kinds[i] & 2) ++m_held_curve_counts[simplices[i].size() == 1 ? 0 : 1];
+                }
+                m_held_curve_band_components.clear();
+                for (const auto& [r, nc] : comp) {
+                    m_held_curve_band_components.emplace_back(
+                        nc.first,
+                        nc.second / double(nc.first));
+                }
+            }
+        }
+        return out;
+    };
+    if (by_kind) {
+        for (int k = 0; k < 4; ++k) (*by_kind)[size_t(k)] = compute(uint8_t(1 << k));
+    }
+    return compute(0xFF);
+}
+
+void TopoOffsetTriMesh::held_topology_check(const std::string& pass)
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::held_topology_check(), without its
+    // stale order-2 tags: 2D has no order-2 edge tags (an order-2 simplex of a curve is a vertex,
+    // anchored by hold_curves_and_points()) and its construction untracks nothing (3D's
+    // untrack_covered_boundaries()), so no anchor can go stale.
+    if (!m_offset_params.debug_held_topology) return;
+    std::map<std::array<double, 2>, std::array<bool, 2>> touch;
+    std::array<std::array<int64_t, 4>, 4> by_kind{};
+    const std::array<int64_t, 4> s = held_topology_signature(&touch, &by_kind);
+    if (!m_held_topology) {
+        logger().info(
+            "\t[held topology] {}: baseline -- the band touches the held objects in {} "
+            "component(s), Euler characteristic {}; the non-band in {}, {}",
+            pass,
+            s[0],
+            s[1],
+            s[2],
+            s[3]);
+    } else if (s != *m_held_topology) {
+        ++m_held_topology_changes;
+        const std::array<int64_t, 4>& o = *m_held_topology;
+        logger().warn(
+            "\t[held topology] {} (turn {}): the held objects' contact topology changed -- band "
+            "{} -> {} component(s), Euler characteristic {} -> {}; non-band {} -> {}, {} -> {} "
+            "({} change(s) so far)",
+            pass,
+            m_round,
+            o[0],
+            s[0],
+            o[1],
+            s[1],
+            o[2],
+            s[2],
+            o[3],
+            s[3],
+            m_held_topology_changes);
+        // Where: the held vertices whose touch changed, matched by position (a collapse moves
+        // one vertex onto another, so the survivor keeps a position the map had), and those
+        // gone or new.
+        size_t n_changed = 0, n_gone = 0, n_new = 0;
+        std::string at;
+        for (const auto& [x, t] : touch) {
+            const auto it = m_held_vertex_touch.find(x);
+            if (it == m_held_vertex_touch.end()) {
+                ++n_new;
+                continue;
+            }
+            if (it->second == t) continue;
+            if (++n_changed <= 6) {
+                at += fmt::format(
+                    " ({:.4g}, {:.4g}) band {}->{} non-band {}->{};",
+                    x[0],
+                    x[1],
+                    int(it->second[0]),
+                    int(t[0]),
+                    int(it->second[1]),
+                    int(t[1]));
+            }
+        }
+        for (const auto& [x, t] : m_held_vertex_touch) n_gone += touch.count(x) ? 0 : 1;
+        logger().warn(
+            "\t[held topology] {}: {} held vertices changed touch,{} {} gone, {} new",
+            pass,
+            n_changed,
+            at,
+            n_gone,
+            n_new);
+        const char* kind_names[4] = {
+            "input complex",
+            "held points",
+            "region boundaries and the curve group",
+            "box"};
+        for (int k = 0; k < 4; ++k) {
+            const auto& a = m_held_topology_by_kind[size_t(k)];
+            const auto& b = by_kind[size_t(k)];
+            if (a == b) continue;
+            if (k == 1) {
+                std::string where;
+                for (const auto& [n, c] : m_held_curve_band_components) {
+                    where += fmt::format(" {} at ({:.3g}, {:.3g});", n, c[0], c[1]);
+                }
+                logger().warn(
+                    "\t[held topology] {}: the band's components on held points, vertices and "
+                    "centroid:{} | held point vertices {} -> {}",
+                    pass,
+                    where,
+                    m_held_curve_counts_before[0],
+                    m_held_curve_counts[0]);
+            }
+            logger().warn(
+                "\t[held topology] {}: {} -- band {} -> {} component(s), Euler characteristic {} "
+                "-> {}; non-band {} -> {}, {} -> {}",
+                pass,
+                kind_names[k],
+                a[0],
+                b[0],
+                a[1],
+                b[1],
+                a[2],
+                b[2],
+                a[3],
+                b[3]);
+        }
+    }
+    m_held_topology = s;
+    m_held_topology_by_kind = by_kind;
+    m_held_curve_counts_before = m_held_curve_counts;
+    m_held_vertex_touch = std::move(touch);
+}
+
+void TopoOffsetTriMesh::check_level_set_reachable(const std::string& when)
+{
+    // See the declaration. As in 3D, word for word.
+    if (m_unreachable_cells == 0) return;
+    const std::string msg = fmt::format(
+        "[held objects] {}: the level set is out of reach without the band touching a held object "
+        "it did not touch as constructed -- the label clean-up keeps {} non-band cell(s) wholly "
+        "inside the level set out of the band, the first at {} (throw_on_unreachable_level_set "
+        "false warns and goes on)",
+        when,
+        m_unreachable_cells,
+        m_unreachable_where);
+    if (m_offset_params.throw_on_unreachable_level_set) log_and_throw_error("{}", msg);
+    logger().warn("\t{}", msg);
+}
+
+void TopoOffsetTriMesh::label_cleanup(const std::string& where)
+{
+    // EXPERIMENTAL_label_cleanup (see the spec and the declaration): the 2D twin of
+    // TopoOffsetTetMesh::label_cleanup(), whose measurements motivate it (cube_in, target 0.45,
+    // 5% tolerance: thin non-band cells left beyond the level set, E 1.2e-7 above its optimum
+    // against a settle bar of 3.5e-5, so nothing removed them). Not in the final pass
+    // (m_freeze_front; 3D: a TetWild pass), which loop_group() does not run anyway.
+    const std::string& mode = m_offset_params.label_cleanup;
+    if (mode == "off" || m_freeze_front) return;
+    const bool tips = mode == "one_sided_tips";
+    const bool at_target = mode == "one_sided_at_target";
+    // "energy_decrease" reads the "surface" rule's face term (3D: label_flip_surface_change()),
+    // which 2D has not: refused. "one_sided_tips" and "one_sided_at_target" flip by the sign of a
+    // triangle's band term b(t) (band_cell_term()), which tri_energy() carries since the energy
+    // step of the 2D lock-step port (see wants_flip()).
+    if (mode == "energy_decrease") {
+        log_and_throw_error(
+            "EXPERIMENTAL_label_cleanup \"energy_decrease\" in 2D: it flips by the \"surface\" "
+            "rule's face term, which has no 2D port; 2D runs \"one_sided\", \"one_sided_tips\", "
+            "\"one_sided_at_target\" or \"off\"");
+    }
+    // one_sided reads d through the exact integral's searches (init_offset_potential() builds it).
+    if (!m_band_exact) {
+        log_and_throw_error(
+            "EXPERIMENTAL_label_cleanup \"one_sided\" reads the distance to the input through the "
+            "exact band integral, which this run did not build: it needs "
+            "EXPERIMENTAL_band_volume_rule \"corner_bound\", \"exact\", \"exact_swept\" or "
+            "\"surface\", EXPERIMENTAL_settle_mark \"max\", or DEBUG_output");
+    }
+    const auto label_of = [this](const size_t fid) { return m_face_extra[fid].label; };
+
+    // A triangle with a front edge: one shared with a triangle of the other of the two labels,
+    // band (2) and non-band (0), neither of them the input complex (1).
+    const auto has_front_face = [&](const size_t fid) {
+        const int l = label_of(fid);
+        if (l == 1) return false;
+        for (int j = 0; j < 3; ++j) {
+            const std::optional<Tuple> o = tuple_from_edge(fid, size_t(j)).switch_face(*this);
+            if (o && label_of(o->fid(*this)) != 1 && label_of(o->fid(*this)) != l) return true;
+        }
+        return false;
+    };
+
+    // THE SIDE TEST: whether t's own corners put it on the other label's side. It reads nothing
+    // the clean-up changes (no vertex moves), so a triangle's answer is the same in every pass
+    // and a flipped triangle is never asked to flip back: it flips at most once, and the passes
+    // end. As in 3D:
+    //   one_sided: non-band -> band iff U(t) < delta, U = ExactBandIntegral2D::distance_bound(),
+    //     the min over the input's segments and points P of the max of d_P over t's corners, an
+    //     upper bound of d on t (d <= d_P, d_P convex), so d < delta on all of t. band -> non-band
+    //     iff L(t) > delta, L = d(c) - max_k |v_k - c|, c the centroid: a lower bound of d on t (d
+    //     is 1-Lipschitz, and the point of t farthest from c is a corner). L <= d <= U: the two
+    //     exclude each other.
+    //   one_sided_tips: one_sided, and also a TIP -- a triangle with two edges on the other label
+    //     (3D: three faces) whose three corners are all within front_conv of the level set --
+    //     flips iff that strictly lowers E. An eligible triangle is not plastic, so tri_energy()
+    //     is cell_energy(): the AMIPS term (w / s^3) area A^3, from its corners and quality alone,
+    //     plus band_cell_term() when it is band (the repulsion term is 0 in the loop). Every other
+    //     triangle's energy reads its own corners and label. So the flip changes E by exactly
+    //     +b(t) (to band) or -b(t) (to non-band): non-band -> band iff b(t) < 0, band -> non-band
+    //     iff b(t) > 0. A triangle at MAX_ENERGY is MAX_ENERGY under either label, and no flip
+    //     lowers E there. See 3D for the measurements; the passes still end, every flip of either
+    //     kind agreeing with the sign of b(t).
+    //   one_sided_at_target: one_sided, and also any triangle with a front edge (1 or 2 edges on
+    //     the other label; 3D: 1 to 3 faces) whose three corners are all within front_conv of the
+    //     level set, by the tip rule's sign of b(t). As in 3D.
+    const auto wants_flip = [&](const size_t fid) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const bool band = face_is_offset_band(fid);
+        // The triangle's piece's target distance, its front_conv (front_conv_rel of it) and its
+        // integral (one entry: the run's and the whole complex's).
+        const int piece = place_piece(vs.data(), 3);
+        const double delta = region_delta(piece);
+        const double front_conv = front_conv_of(piece);
+        const ExactBandIntegral2D& band_exact = *band_exact_for(piece);
+        std::array<Vector2d, 3> p;
+        for (int k = 0; k < 3; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+        if (!band && band_exact.distance_bound(p) < delta) return true;
+        if (band) {
+            const Vector2d c = (p[0] + p[1] + p[2]) / 3.;
+            double r = 0.;
+            for (const Vector2d& q : p) r = std::max(r, (q - c).norm());
+            if (band_exact.distance(c) - r > delta) return true;
+        }
+        if (!tips && !at_target) return false;
+        const int other = band ? 0 : 2;
+        int edges = 0;
+        for (int j = 0; j < 3; ++j) {
+            const std::optional<Tuple> o = tuple_from_edge(fid, size_t(j)).switch_face(*this);
+            if (o && label_of(o->fid(*this)) == other) ++edges;
+        }
+        if (tips ? edges != 2 : (edges < 1 || edges > 2)) return false;
+        for (const Vector2d& q : p) {
+            if (!(std::abs(band_exact.distance(q) - delta) <= front_conv)) return false;
+        }
+        if (get_quality(fid) >= MAX_ENERGY) return false;
+        const double b = band_cell_term(vs);
+        return band ? b > 0. : b < 0.;
+    };
+
+    // ELIGIBILITY: two labels only, so that the topology test sees everything t touches. Every
+    // triangle sharing a vertex with t is band or non-band (no input-complex triangle) and not
+    // plastic (its AMIPS term would read the label). And no corner of t is where a held boundary
+    // -- a tag boundary, the curve group or the box (vertex_is_on_region()) -- and the front
+    // already meet (m_is_on_offset): only the construction makes such contact, where its edges
+    // between band and non-band are both held and front and carry the offset class, which the
+    // held objects' test cannot see. Every other corner, on the input complex, a held point, a
+    // held boundary or the box, the held objects' test decides. As in 3D (2026-11-10).
+    const auto eligible = [&](const size_t fid) {
+        for (const size_t v : oriented_tri_vids(fid)) {
+            if (vertex_is_on_region(v) && m_vertex_extra[v].m_is_on_offset) return false;
+            for (const size_t s : get_one_ring_fids_for_vertex(v)) {
+                const int l = label_of(s);
+                if ((l != 0 && l != 2) || face_is_plastic(s)) return false;
+            }
+        }
+        return true;
+    };
+
+    // THE TOPOLOGY TEST, 3D's one dimension down. f = the edges of t shared with a triangle of
+    // the other label, the one t would take:
+    //   f = 0: refused (t would start a new piece, or the front would pinch at a vertex);
+    //   f = 1: refused if the corner opposite that edge is in a triangle of the other label;
+    //   f = 2: allowed (the third edge becomes front);
+    //   f = 3: refused (t is a whole piece by itself; the flip deletes it).
+    // An allowed flip has the other label meet t in exactly its f edges, an arc, so taking t in
+    // keeps that label's topology. 3D tests, for f = 1 and 2, the simplex of t off the other
+    // label's faces (the opposite corner, the edge joining the two opposite corners); in 2D only
+    // f = 1 has one, and f = 2 is 3D's f = 3. t's own label, which loses t, meets t in its 3 - f
+    // edges and also, for f = 2, in the common corner of the two other-label edges when that is
+    // in another triangle of t's label. Not tested: on a manifold front it cannot happen (a front
+    // vertex where t's label meets twice); such a flip throws (`odd`), and the component check
+    // below catches a split. Returns f.
+    const auto topology = [&](const size_t fid, bool& allow, bool& odd) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int self = label_of(fid), other = self == 2 ? 0 : 2;
+        std::vector<size_t> opp_other, opp_self; // the corner opposite each edge, by its far side
+        for (int j = 0; j < 3; ++j) {
+            const Tuple e = tuple_from_edge(fid, size_t(j));
+            const std::array<size_t, 2> ev = get_edge_vids(e);
+            size_t opp = vs[0];
+            for (const size_t v : vs) {
+                if (v != ev[0] && v != ev[1]) opp = v;
+            }
+            const std::optional<Tuple> o = e.switch_face(*this);
+            (o && label_of(o->fid(*this)) == other ? opp_other : opp_self).push_back(opp);
+        }
+        const auto at_vertex = [&](const size_t v, const int l) {
+            for (const size_t s : get_one_ring_fids_for_vertex(v)) {
+                if (s != fid && label_of(s) == l) return true;
+            }
+            return false;
+        };
+        const int f = int(opp_other.size());
+        allow = false;
+        odd = false;
+        if (f == 1) allow = !at_vertex(opp_other[0], other);
+        if (f == 2) {
+            allow = true;
+            odd = at_vertex(opp_self[0], self);
+        }
+        return f;
+    };
+
+    // THE HELD OBJECTS' TEST, 3D's (2026-11-10) one dimension down. The invariant: the
+    // optimization keeps the topology the construction gave the band, the non-band AND every
+    // held object -- the input complex, the held points (anchors), the region boundaries and the
+    // curve group, the box -- as if the front moved by a deformation of the domain that maps each
+    // held object onto itself. The topology test above keeps the first two; this keeps the rest.
+    // A held simplex sigma of t's closure has CHAMBERS: the triangles around it, joined across
+    // the edges through sigma that are not held (a held edge's two sides are two chambers). Per
+    // chamber, sigma is touched by a label when the chamber has a triangle of it. Switching t from
+    // label s to o changes only the chamber holding t, for the held simplices of t's closure X:
+    // o touches each of them after, and s leaves those whose chamber had no other triangle of s.
+    // Allowed iff both changes are simple:
+    //   the set o touches grows by X attached along A, the part of X o touched before: allowed
+    //     iff A -> X is a homotopy equivalence (per component of X, A meets it, connected, with
+    //     the same Euler characteristic) -- a held point o did not touch, alone in X, fails;
+    //   the set s touches loses Y, the part of X only t gave it: allowed iff cl(Y) \ Y -> cl(Y)
+    //     is one -- a held point whose last triangle of s is t fails.
+    // X lies on t's boundary, a circle (3D: a sphere), so its parts are graphs, and for graphs
+    // components and Euler characteristic decide the homotopy type exactly. So a held point's
+    // chamber status never changes, a crossing of the front with a held curve or boundary moves
+    // along it but is never born or lost, and the front never newly touches a held object: it
+    // stops a layer of triangles short of one it did not touch as constructed. MEASURED in 3D
+    // before it (held point q 0.25 from p, target 0.3): turn 1's clean-up took 6 of q's 30 cells
+    // into the band, so q joined the front; under exact_swept turn 11 took q's last non-band cell
+    // and the band enclosed q.
+    const auto held_face = [&](const Tuple& e) { return held_object_edge(e); };
+    // The tag the flipped triangle takes, of the label it joins. The band: the one tag set of the
+    // band triangles at t's corners (two pieces' bands, of two tag sets, refuse). The non-band:
+    // that of t's non-band edge neighbours across edges that are not held (a held edge's far side
+    // is another region); they must agree, and there must be one. As in 3D.
+    const auto joined_tag = [&](const size_t fid, CellTag& tag) {
+        const int o = label_of(fid) == 2 ? 0 : 2;
+        const CellTag* found = nullptr;
+        if (o == 2) {
+            for (const size_t v : oriented_tri_vids(fid)) {
+                for (const size_t s : get_one_ring_fids_for_vertex(v)) {
+                    if (label_of(s) != 2) continue;
+                    const CellTag& tg = m_face_attribute[s].tags;
+                    if (found && *found != tg) return false;
+                    found = &tg;
+                }
+            }
+        } else {
+            for (int k = 0; k < 3; ++k) {
+                const Tuple e = tuple_from_edge(fid, size_t(k));
+                if (held_face(e)) continue;
+                const size_t n = e.switch_face(*this)->fid(*this);
+                if (label_of(n) != o) continue;
+                const CellTag& tg = m_face_attribute[n].tags;
+                if (found && *found != tg) return false;
+                found = &tg;
+            }
+        }
+        if (!found) return false;
+        tag = *found;
+        return true;
+    };
+    const auto edge_has = [](const std::array<size_t, 2>& ev, const size_t x) {
+        return ev[0] == x || ev[1] == x;
+    };
+    // The chamber of sigma holding t: whether it has a triangle of label o, and one of label s
+    // other than t.
+    const auto chamber = [&](const size_t fid,
+                             const std::vector<size_t>& sigma,
+                             const int s,
+                             const int o,
+                             bool& o_in,
+                             bool& s_other) {
+        o_in = s_other = false;
+        std::vector<size_t> seen{fid}, stack{fid};
+        while (!stack.empty()) {
+            const size_t c = stack.back();
+            stack.pop_back();
+            if (c != fid) {
+                o_in = o_in || label_of(c) == o;
+                s_other = s_other || label_of(c) == s;
+            }
+            for (int k = 0; k < 3; ++k) {
+                const Tuple e = tuple_from_edge(c, size_t(k));
+                const std::array<size_t, 2> ev = get_edge_vids(e);
+                if (!std::all_of(sigma.begin(), sigma.end(), [&](size_t x) {
+                        return edge_has(ev, x);
+                    })) {
+                    continue;
+                }
+                if (held_face(e)) continue;
+                const size_t n = e.switch_face(*this)->fid(*this);
+                if (std::find(seen.begin(), seen.end(), n) != seen.end()) continue;
+                seen.push_back(n);
+                stack.push_back(n);
+            }
+        }
+    };
+    const auto held_allows = [&](const size_t fid) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int s = label_of(fid), o = s == 2 ? 0 : 2;
+        // X: the held simplices of t's closure, each as the local indices (0..2) of its corners
+        // -- closed, as a held edge's corners are held.
+        std::vector<std::vector<int>> X;
+        for (int i = 0; i < 3; ++i) {
+            if (held_object_vertex(vs[size_t(i)])) X.push_back({i});
+        }
+        for (int k = 0; k < 3; ++k) {
+            const Tuple e = tuple_from_edge(fid, size_t(k));
+            if (!held_face(e)) continue;
+            const std::array<size_t, 2> ev = get_edge_vids(e);
+            std::vector<int> c;
+            for (int i = 0; i < 3; ++i) {
+                if (edge_has(ev, vs[size_t(i)])) c.push_back(i);
+            }
+            X.push_back(c);
+        }
+        if (X.empty()) return true;
+        std::vector<char> touched(X.size()), loses(X.size());
+        for (size_t x = 0; x < X.size(); ++x) {
+            std::vector<size_t> sigma;
+            for (const int i : X[x]) sigma.push_back(vs[size_t(i)]);
+            bool o_in = false, s_other = false;
+            chamber(fid, sigma, s, o, o_in, s_other);
+            touched[x] = o_in;
+            loses[x] = !s_other;
+        }
+        // Whether the closed part P of the closed set Q (flags over X) includes into Q as a
+        // homotopy equivalence: per component of Q, P meets it, is connected there, and has the
+        // same Euler characteristic.
+        const auto equivalent = [&](const std::vector<char>& inQ, const std::vector<char>& inP) {
+            const auto components = [&](const std::vector<char>& in) {
+                std::array<int, 3> r{{0, 1, 2}};
+                const auto root = [&r](int a) {
+                    while (r[size_t(a)] != a) a = r[size_t(a)];
+                    return a;
+                };
+                for (size_t x = 0; x < X.size(); ++x) {
+                    if (in[x] && X[x].size() == 2) r[size_t(root(X[x][0]))] = root(X[x][1]);
+                }
+                for (int a = 0; a < 3; ++a) r[size_t(a)] = root(a);
+                return r;
+            };
+            const std::array<int, 3> rq = components(inQ), rp = components(inP);
+            for (int c = 0; c < 3; ++c) {
+                bool is_root = false;
+                for (size_t x = 0; x < X.size(); ++x) {
+                    is_root = is_root || (inQ[x] && X[x].size() == 1 && rq[size_t(X[x][0])] == c);
+                }
+                if (!is_root) continue;
+                int chi_q = 0, chi_p = 0, p_root = -1;
+                bool p_connected = true;
+                for (size_t x = 0; x < X.size(); ++x) {
+                    if (!inQ[x] || rq[size_t(X[x][0])] != c) continue;
+                    const int sign = X[x].size() == 2 ? -1 : 1;
+                    chi_q += sign;
+                    if (!inP[x]) continue;
+                    chi_p += sign;
+                    if (X[x].size() == 1) {
+                        const int pr = rp[size_t(X[x][0])];
+                        if (p_root < 0) p_root = pr;
+                        p_connected = p_connected && pr == p_root;
+                    }
+                }
+                if (p_root < 0 || !p_connected || chi_p != chi_q) return false;
+            }
+            return true;
+        };
+        const std::vector<char> all(X.size(), 1);
+        if (std::find(touched.begin(), touched.end(), 0) != touched.end() &&
+            !equivalent(all, touched)) {
+            return false;
+        }
+        if (std::find(loses.begin(), loses.end(), 1) != loses.end()) {
+            std::vector<char> closure(X.size(), 0), rest(X.size(), 0);
+            for (size_t y = 0; y < X.size(); ++y) {
+                if (!loses[y]) continue;
+                for (size_t x = 0; x < X.size(); ++x) {
+                    const bool face_of_y = std::all_of(X[x].begin(), X[x].end(), [&](int i) {
+                        return std::find(X[y].begin(), X[y].end(), i) != X[y].end();
+                    });
+                    if (face_of_y) closure[x] = 1;
+                }
+            }
+            for (size_t x = 0; x < X.size(); ++x) rest[x] = closure[x] && !loses[x];
+            if (!equivalent(closure, rest)) return false;
+        }
+        return true;
+    };
+
+    // The one-sided side test's non-band half (wants_flip()): d < the piece's target on all of
+    // t, so the band reaches the level set only through t. A triangle held objects keep out, so,
+    // makes the level set out of reach (check_level_set_reachable()). As in 3D.
+    const auto inside_level_set = [&](const size_t fid) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int piece = place_piece(vs.data(), 3);
+        const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
+        if (!be) return false;
+        std::array<Vector2d, 3> p;
+        for (int k = 0; k < 3; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+        return be->distance_bound(p) < region_delta(piece);
+    };
+    // A held vertex's kind and position, for the message. 2D tracks the curve group as it
+    // tracks a region boundary (init_surfaces_and_boundaries()), and nothing carries which of
+    // the two an edge is through the operations, so they are one kind here.
+    const auto describe_held = [&](const size_t v) -> std::string {
+        const bool anchored = m_track_feature_points &&
+                              m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT;
+        const char* kind = m_vertex_extra[v].m_is_on_input                ? "the input complex"
+                           : anchored                                     ? "an anchored point"
+                           : !m_vertex_attribute[v].on_bbox_faces.empty() ? "the box"
+                           : m_vertex_extra[v].m_is_on_region ? "a region boundary or a held curve"
+                                                              : "the mesh boundary";
+        const Vector2d& x = m_vertex_attribute[v].m_posf;
+        return fmt::format("{} at ({:.4g}, {:.4g})", kind, x[0], x[1]);
+    };
+    // How deep inside the level set t's held corners lie: the max over them of the piece's target
+    // minus d, and the deepest one's kind and position. Within front_conv of the level set a front
+    // passing outside the held object is already within the bar, so only a held object deeper
+    // than that makes the level set out of reach. As in 3D (MEASURED there: double_sphere with
+    // tag_1 held, a refused cell's held corner 0.001 inside against front_conv 0.005 threw at
+    // turn 5 before the depth rule; the held point, 0.05 inside against 0.03, throws).
+    const auto held_depth = [&](const size_t fid) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int piece = place_piece(vs.data(), 3);
+        const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
+        double depth = -std::numeric_limits<double>::infinity();
+        size_t deepest = vs[0];
+        for (const size_t v : vs) {
+            if (!be || !held_object_vertex(v)) continue;
+            const double dv = region_delta(piece) - be->distance(m_vertex_attribute[v].m_posf);
+            if (dv > depth) {
+                depth = dv;
+                deepest = v;
+            }
+        }
+        return std::pair<double, std::string>(
+            depth,
+            fmt::format("{}, {:.4g} inside the level set", describe_held(deepest), depth));
+    };
+
+    // A flip, and everything derived from t's label, which lives on t's closure: the closed labels
+    // of its edges and corners (2 where some triangle holding it is band, else 0; a simplex of
+    // the input complex keeps its 1), the front class of its three edges -- the only edges whose
+    // two sides change -- and the front flags of its three corners, the only vertices on those
+    // edges. The base's union flag m_is_on_surface is raised for a corner that joins the front, as
+    // label_offset_boundary() raises it; it is never cleared. As in 3D; 2D's vertex order is read
+    // live (TriMesh::get_order_of_vertex()), so there is no stored order to re-derive.
+    const auto any_band = [this](const std::vector<size_t>& fids) {
+        return std::any_of(fids.begin(), fids.end(), [this](const size_t s) {
+            return face_is_offset_band(s);
+        });
+    };
+    const auto flip = [&](const size_t fid, const CellTag& tag) {
+        // A held edge of t becoming front would be contact with a held object the held objects'
+        // test forbids, and its class rewritten below: a bug, so it throws.
+        std::array<bool, 3> front_before{};
+        for (int j = 0; j < 3; ++j) {
+            front_before[size_t(j)] = edge_is_offset_surface_live(tuple_from_edge(fid, size_t(j)));
+        }
+        m_face_extra[fid].label = label_of(fid) == 2 ? 0 : 2;
+        m_face_attribute[fid].tags = tag;
+        for (int j = 0; j < 3; ++j) {
+            const Tuple e = tuple_from_edge(fid, size_t(j));
+            const size_t eid = e.eid(*this);
+            if (!front_before[size_t(j)] && held_face(e) && edge_is_offset_surface_live(e)) {
+                log_and_throw_error(
+                    "[label cleanup] {}: triangle {} makes held edge {} front, which the held "
+                    "objects' test forbids",
+                    where,
+                    fid,
+                    eid);
+            }
+            int& le = m_edge_extra[eid].label;
+            if (le != 1) {
+                const std::array<size_t, 2> ev = get_edge_vids(e);
+                le = any_band(get_incident_fids_for_edge(ev[0], ev[1])) ? 2 : 0;
+            }
+            if (edge_is_offset_surface_live(e)) {
+                m_edge_attribute[eid].m_is_surface_fs = true;
+                m_edge_attribute[eid].m_surface_class = OFFSET_SURFACE_CLASS;
+            } else if (m_edge_attribute[eid].m_surface_class == OFFSET_SURFACE_CLASS) {
+                m_edge_attribute[eid].m_is_surface_fs = false;
+                m_edge_attribute[eid].m_surface_class = 0; // left at 0 off the surface
+            }
+        }
+        for (const size_t v : oriented_tri_vids(fid)) {
+            int& lv = m_vertex_extra[v].label;
+            if (lv != 1) lv = any_band(get_one_ring_fids_for_vertex(v)) ? 2 : 0;
+            refresh_offset_membership(v);
+            if (m_vertex_extra[v].m_is_on_offset) m_vertex_attribute[v].m_is_on_surface = true;
+        }
+    };
+
+    // THE INVARIANT'S MEASURES: connected components of one label's triangles under edge
+    // adjacency, and front vertices on more than two front edges (where the label changes more
+    // than twice around the vertex; 3D: front edges on more than two front faces).
+    const auto label_components = [this](const int l) {
+        std::vector<size_t> parent(tri_capacity());
+        std::iota(parent.begin(), parent.end(), size_t(0));
+        const auto root = [&parent](size_t x) {
+            while (parent[x] != x) {
+                parent[x] = parent[parent[x]];
+                x = parent[x];
+            }
+            return x;
+        };
+        size_t n = 0;
+        for (const Tuple& t : get_faces()) {
+            const size_t fid = t.fid(*this);
+            if (m_face_extra[fid].label != l) continue;
+            ++n;
+            for (int j = 0; j < 3; ++j) {
+                const std::optional<Tuple> o = tuple_from_edge(fid, size_t(j)).switch_face(*this);
+                if (!o || m_face_extra[o->fid(*this)].label != l) continue;
+                const size_t a = root(fid), b = root(o->fid(*this));
+                if (a != b) {
+                    parent[a] = b;
+                    --n;
+                }
+            }
+        }
+        return n;
+    };
+    const auto nonmanifold_front_vertices = [this]() {
+        std::map<size_t, int> n;
+        for (const std::array<size_t, 2>& e : offset_surface_edges()) { // sorted pairs
+            ++n[e[0]];
+            ++n[e[1]];
+        }
+        size_t c = 0;
+        for (const auto& vk : n) c += vk.second > 2 ? 1 : 0;
+        return c;
+    };
+    const double e0 = global_energy();
+    const size_t band0 = label_components(2), non0 = label_components(0);
+    const size_t nm0 = nonmanifold_front_vertices();
+    std::vector<char> flipped(tri_capacity(), 0);
+    size_t to_band = 0, to_non = 0, n_odd = 0;
+    int passes = 0;
+    // The last pass's verdicts: that pass flips nothing, so they are what the clean-up leaves.
+    size_t n_cand = 0, n_want = 0, n_skip = 0, n_refused_held = 0, n_refused_tag = 0;
+    size_t n_unreachable = 0; // of n_refused_held: non-band and wholly inside the level set
+    std::string unreachable_where;
+    std::array<size_t, 4> n_refused{}; // by f
+    for (;;) {
+        ++passes;
+        std::vector<size_t> cands;
+        for (const Tuple& t : get_faces()) {
+            if (has_front_face(t.fid(*this))) cands.push_back(t.fid(*this));
+        }
+        std::sort(cands.begin(), cands.end());
+        n_cand = cands.size();
+        n_want = 0;
+        n_skip = 0;
+        n_refused_held = 0;
+        n_refused_tag = 0;
+        n_unreachable = 0;
+        unreachable_where.clear();
+        n_refused.fill(0);
+        size_t n_now = 0;
+        // The tests are pure reads, so the order they are asked in decides only what is counted:
+        // the side test first, so that the counts are of triangles on the other side.
+        for (const size_t fid : cands) {
+            if (!wants_flip(fid)) continue;
+            ++n_want;
+            if (!eligible(fid)) {
+                ++n_skip;
+                continue;
+            }
+            bool allow = false, odd = false;
+            const int f = topology(fid, allow, odd);
+            if (!allow) {
+                ++n_refused[size_t(f)];
+                continue;
+            }
+            if (!held_allows(fid)) {
+                ++n_refused_held;
+                if (!face_is_offset_band(fid) && inside_level_set(fid)) {
+                    const auto [depth, at] = held_depth(fid);
+                    const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+                    if (depth > front_conv_of(place_piece(vs.data(), 3)) && n_unreachable++ == 0) {
+                        unreachable_where = at;
+                    }
+                }
+                continue;
+            }
+            CellTag tag;
+            if (!joined_tag(fid, tag)) {
+                ++n_refused_tag;
+                continue;
+            }
+            if (flipped[fid]) {
+                log_and_throw_error(
+                    "[label cleanup] {}: triangle {} flips a second time; its side test reads its "
+                    "own corners alone, which the clean-up does not move",
+                    where,
+                    fid);
+            }
+            // The topology test reads the label the triangle joins only; on a manifold front the
+            // old label cannot meet the triangle again (as in 3D: throw rather than count it).
+            if (odd) {
+                log_and_throw_error(
+                    "[label cleanup] {}: triangle {} (f = {}) passes the topology test, but its "
+                    "old "
+                    "label meets it again at a front vertex, which the test does not read",
+                    where,
+                    fid,
+                    f);
+            }
+            flipped[fid] = 1;
+            ++(face_is_offset_band(fid) ? to_non : to_band);
+            n_odd += odd ? 1 : 0;
+            flip(fid, tag);
+            ++n_now;
+        }
+        if (n_now == 0) break;
+    }
+    m_unreachable_cells = n_unreachable;
+    m_unreachable_where = unreachable_where;
+    double e1 = e0;
+    size_t band1 = band0, non1 = non0, nm1 = nm0;
+    if (to_band + to_non > 0) {
+        // What reads the front beyond the flipped triangles' closure: the band-region map,
+        // rebuilt as each turn rebuilds it; DEBUG_crossings' snapshot, taken here so that the
+        // smoothing pass is compared with the front it starts from.
+        assign_band_regions(/*log=*/false);
+        if (m_offset_params.debug_crossings && m_round > 0) {
+            crossing_snapshot("label cleanup", true, true);
+        }
+        check_offset_membership("label cleanup"); // perform_sanity_checks only
+        e1 = global_energy();
+        band1 = label_components(2);
+        non1 = label_components(0);
+        nm1 = nonmanifold_front_vertices();
+    }
+    logger().info(
+        "\t[label cleanup] {}: {} | {} pass(es), flipped non-band -> band {}, band -> non-band {} "
+        "({} of them with f = 2 where the old label meets the triangle again, at a front vertex, "
+        "not tested) | left after the last pass: {} triangles with a front edge, {} on the other "
+        "side by the side test, of which {} skipped for eligibility, refused by topology f=0 {}, "
+        "f=1 {}, f=3 {}, by the held objects {} ({} wholly inside the level set), for no single "
+        "tag {} | E {:.9g} -> {:.9g} | components (edge adjacency) band {} -> {}, non-band {} -> "
+        "{} | non-manifold front vertices (on more than two front edges) {} -> {}",
+        where,
+        mode,
+        passes,
+        to_band,
+        to_non,
+        n_odd,
+        n_cand,
+        n_want,
+        n_skip,
+        n_refused[0],
+        n_refused[1],
+        n_refused[3],
+        n_refused_held,
+        n_unreachable,
+        n_refused_tag,
+        e0,
+        e1,
+        band0,
+        band1,
+        non0,
+        non1,
+        nm0,
+        nm1);
+    if (band1 != band0 || non1 != non0) {
+        log_and_throw_error(
+            "[label cleanup] {}: the flips changed the topology -- band components {} -> {}, "
+            "non-band components {} -> {} -- which the topology test forbids, a bug ({} flips had "
+            "the old label meeting the triangle again, which the test does not read)",
+            where,
+            band0,
+            band1,
+            non0,
+            non1,
+            n_odd);
+    }
+}
+
+void TopoOffsetTriMesh::loop_group(const std::array<int, 4>& ops, const std::string& where)
+{
+    // See the declaration; TopoOffsetTetMesh::loop_group(), the same passes in the same order.
+    if (!m_offset_params.front_pocket_split) {
+        local_operations(ops);
+        return;
+    }
+    // EXPERIMENTAL_front_pocket_split: the same passes, one call for the operation passes and one
+    // per smoothing pass. Besides the splits this moves the rounding sweep from after the k-th
+    // smoothing pass to after each, and adds each call's lines. As in 3D.
+    if (ops[0] > 0 || ops[1] > 0 || ops[2] > 0) local_operations({{ops[0], ops[1], ops[2], 0}});
+    // EXPERIMENTAL_label_cleanup: after the operation passes (none in pre_smooth), before the
+    // pocket splits of the first smoothing pass. A flip with f = 1 edge on the other label (3D: 1
+    // or 2 faces) leaves the triangle with all three corners on the front -- a pinned cell, which
+    // those splits handle -- and a triangle flipped with f = 2 (3D's f = 3) was a pinned cell
+    // before its flip; the smoothing pass then moves the new front in the same turn. Under
+    // interleaved_smoothing this is once per group, else once per turn. As in 3D.
+    if (m_offset_params.label_cleanup != "off" && (ops[0] > 0 || ops[1] > 0 || ops[2] > 0)) {
+        label_cleanup(where);
+        held_topology_check("label_cleanup");
+        // DEBUG_output: the clean-up's own frame, so its flips are seen apart from the pocket
+        // splits and the smoothing pass that follow it. As in 3D.
+        if (m_offset_params.debug_output) {
+            const std::string name = m_debug_pass_name;
+            m_debug_pass_name = "label_cleanup";
+            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+            m_debug_pass_name = name;
+        }
+    }
+    for (int p = 0; p < ops[3]; ++p) {
+        front_pocket_split(fmt::format("{}, before smoothing pass {}", where, p + 1));
+        held_topology_check("pocket_split");
+        local_operations({{0, 0, 0, 1}});
+    }
+}
+
+void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
+{
+    // See the declaration; TopoOffsetTetMesh::front_pocket_split() one dimension down, whose
+    // measurements motivate it (cube_in at target 0.3: 174 folds, 152 on a pinned cell, without
+    // it; resolved at turn 3 with it). loop_group() calls this only with the key on; the key is
+    // tested here too so that the slot alone is a no-op with it off (the unit test drives the
+    // slot directly). Not in the final pass (m_freeze_front; 3D: a TetWild pass), which
+    // loop_group() does not run anyway.
+    if (!m_offset_params.front_pocket_split || m_freeze_front) return;
+    const auto len2 = [this](const std::array<size_t, 2>& e) {
+        return (m_vertex_attribute[e[0]].m_posf - m_vertex_attribute[e[1]].m_posf).squaredNorm();
+    };
+    const auto on_front = [this](const size_t v) { return m_vertex_extra[v].m_is_on_offset; };
+    const auto longest_first = [&](const std::array<size_t, 2>& a, const std::array<size_t, 2>& b) {
+        const double la = len2(a), lb = len2(b);
+        return la != lb ? la > lb : a < b;
+    };
+    // A pinned cell: its corners sorted (it names the triangle across the round's splits), and
+    // the edges to split it on, longest first (ties by vertex ids).
+    struct Pinned
+    {
+        std::array<size_t, 3> vids;
+        std::vector<std::array<size_t, 2>> edges;
+    };
+    // One scan of the live triangles. `no_edge`: pinned cells with all three edges on the front,
+    // which have no edge to split; `band`, when given: band triangles with all three corners on
+    // the front. 3D's count of cells with all six edges on the offset surface has no twin (see
+    // the declaration).
+    const auto scan = [&](size_t& no_edge, size_t* band) {
+        std::vector<Pinned> out;
+        no_edge = 0;
+        for (const Tuple& t : get_faces()) {
+            const size_t fid = t.fid(*this);
+            const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+            if (!std::all_of(vs.begin(), vs.end(), on_front)) continue;
+            if (face_is_input_complex(fid)) continue;
+            // A band triangle with all three corners on the front is the mirror case: at the
+            // offset term's optimum its corners lie on the level set too. Split the same way (an
+            // edge that is not a front edge is inside the band, so its midpoint is off the
+            // front); counted apart in the log. As in 3D.
+            if (face_is_offset_band(fid) && band) ++*band;
+            Pinned p;
+            p.vids = vs;
+            std::sort(p.vids.begin(), p.vids.end());
+            for (size_t j = 0; j < 3; ++j) {
+                const Tuple e = tuple_from_edge(fid, j);
+                if (edge_is_offset_surface_live(e)) continue;
+                std::array<size_t, 2> ev = get_edge_vids(e);
+                if (ev[0] > ev[1]) std::swap(ev[0], ev[1]);
+                p.edges.push_back(ev);
+            }
+            if (p.edges.empty()) {
+                // All three edges on the front: a one-triangle component of its label. A split
+                // would leave its boundary, every corner of it on the front, as it is, so it is
+                // counted only, as 3D counts its cell with all four faces on the offset surface.
+                ++no_edge;
+                continue;
+            }
+            std::sort(p.edges.begin(), p.edges.end(), longest_first);
+            out.push_back(std::move(p));
+        }
+        return out;
+    };
+    // Whether the triangle on these sorted corners is still live: an earlier split of the round
+    // may have split one of its edges, and so the triangle, already.
+    const auto alive = [this](const std::array<size_t, 3>& s) {
+        for (const size_t fid : get_incident_fids_for_edge(s[0], s[1])) {
+            std::array<size_t, 3> vs = oriented_tri_vids(fid);
+            std::sort(vs.begin(), vs.end());
+            if (vs == s) return true;
+        }
+        return false;
+    };
+    // EXPERIMENTAL_front_spanned_split: the spanned edges (see the declaration), split each round
+    // before the pinned cells, lowest dimension first. 3D's spanned faces, listed when their
+    // three edges are on the offset surface, are 2D's spanned edges themselves.
+    const auto off_input = [this](const std::vector<size_t>& fids) {
+        return !fids.empty() && std::none_of(fids.begin(), fids.end(), [this](const size_t f) {
+            return face_is_input_complex(f);
+        });
+    };
+    const auto scan_spanned = [&](std::vector<std::array<size_t, 2>>& edges) {
+        edges.clear();
+        if (!m_offset_params.front_spanned_split) return;
+        for (const Tuple& e : get_edges()) {
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            if (!on_front(a) || !on_front(b) || edge_is_offset_surface_live(e)) continue;
+            if (!off_input(get_incident_fids_for_edge(a, b))) continue;
+            edges.push_back({{std::min(a, b), std::max(a, b)}});
+        }
+    };
+    // The loop's own split (split_edge(): labels, tags, sizing and rests as in the split pass).
+    // 3D skips its longest-edge order here (m_pocket_splitting); 2D's split has no such order.
+    const auto split_one = [this](const std::array<size_t, 2>& e) {
+        const Tuple t = std::get<0>(tuple_from_edge(e));
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+        std::vector<Tuple> new_tris;
+        return split_edge(t, new_tris);
+    };
+    // EXPERIMENTAL_settle_mark "vertex_split": the chords the last settled turn listed
+    // (settle_refinement_turn()), split here, before the pinned cells, so that the smoothing pass
+    // that follows moves the new front vertices in the same turn. Split at the end of the settled
+    // turn instead, the next turn's collapse pass undid them before any smoothing had moved them:
+    // MEASURED in 3D (t100033 inward at 0.5 delta_1, 10%, 1 thread). A chord this turn's
+    // operation passes removed (split, or collapsed with an end, whose face list the collapse
+    // clears) is skipped; the next settled turn tests it again. The ids hold, as in 3D: the mesh
+    // is consolidated before the settle test, and a vertex made since takes a new slot (SlotPool
+    // hands out slots past the live ones; only consolidation renumbers).
+    if (!m_settle_split_edges.empty()) {
+        size_t n_listed = m_settle_split_edges.size(), n_done = 0, n_gone = 0, n_no = 0;
+        for (const std::array<size_t, 2>& e : m_settle_split_edges) {
+            if (get_incident_fids_for_edge(e[0], e[1]).empty()) {
+                ++n_gone;
+                continue;
+            }
+            split_one(e) ? ++n_done : ++n_no;
+        }
+        m_settle_split_edges.clear();
+        logger().info(
+            "\t[settle split] {}: of the {} chords the last settled turn listed, split {}, gone "
+            "(removed by this turn's operation passes) {}, refused {}",
+            where,
+            n_listed,
+            n_done,
+            n_gone,
+            n_no);
+    }
+    size_t n_band = 0, no_edge = 0;
+    std::vector<Pinned> pinned = scan(no_edge, &n_band);
+    std::vector<std::array<size_t, 2>> sp_edges;
+    scan_spanned(sp_edges);
+    const size_t found = pinned.size() + no_edge, found_no_edge = no_edge;
+    const size_t found_edges = sp_edges.size();
+    size_t n_split = 0, n_refused = 0, n_split_edges = 0;
+    int rounds = 0;
+    bool cap = false;
+    while (!pinned.empty() || !sp_edges.empty()) {
+        if (rounds == kPocketMaxRounds) {
+            cap = true;
+            break;
+        }
+        ++rounds;
+        size_t split_now = 0;
+        for (const std::array<size_t, 2>& e : sp_edges) {
+            if (get_incident_fids_for_edge(e[0], e[1]).empty()) continue; // split already
+            if (split_one(e)) {
+                ++split_now;
+                ++n_split_edges;
+            } else {
+                ++n_refused;
+            }
+        }
+        for (const Pinned& p : pinned) {
+            if (!alive(p.vids)) continue;
+            for (const std::array<size_t, 2>& e : p.edges) {
+                if (split_one(e)) {
+                    ++split_now;
+                    break;
+                }
+                ++n_refused;
+            }
+        }
+        n_split += split_now;
+        // Every triangle a split of an edge off the front makes has the off-front midpoint as a
+        // corner, so a rescan finds the cells and edges whose splits were all refused; with none
+        // committed it finds the same ones.
+        if (split_now == 0) break;
+        pinned = scan(no_edge, nullptr);
+        scan_spanned(sp_edges);
+    }
+    if (cap) {
+        logger().warn(
+            "\t[pocket split] {}: the cap of {} rounds stopped the rescans with {} pinned cells "
+            "left that have an edge to split",
+            where,
+            kPocketMaxRounds,
+            pinned.size());
+    }
+    logger().info(
+        "\t[pocket split] {}: pinned cells (outside the input complex, all three corners on the "
+        "front) {}, of which {} with all three edges on the front | edges split {} in {} "
+        "round(s), split attempts refused {} | left: {} with all three edges on the front (not "
+        "split), {} with an edge off it (every split refused, or the cap) | of the pinned cells "
+        "found, band cells {}{}",
+        where,
+        found,
+        found_no_edge,
+        n_split,
+        rounds,
+        n_refused,
+        no_edge,
+        pinned.size(),
+        n_band,
+        m_offset_params.front_spanned_split
+            ? fmt::format(
+                  " | spanned edges (both ends on the front, not a front edge) found {}, split "
+                  "{}; left {}",
+                  found_edges,
+                  n_split_edges,
+                  sp_edges.size())
+            : std::string());
+}
+
+bool TopoOffsetTriMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
-    const std::string& label)
+    const std::string& label,
+    const int max_turns,
+    const bool turned_free)
 {
     // One loop: TriWild's operation groups (split / collapse / swap, each followed by smoothing)
     // with the front placed by the offset objective inside the smoothing passes. No offset tube
@@ -4026,6 +6032,8 @@ void TopoOffsetTriMesh::optimize_offset_loop(
     check_no_vertex_on_both_surfaces("construction");
     log_region_edge_mask_health("construction");
     audit_surface_containment("construction");
+    // Each loop judges its own target (the init_optimize loop, growth_mode's stages). As in 3D.
+    m_unreachable_cells = 0;
     needle_scan("after construction, before the loop");
     assign_band_regions();
     m_front_gradient_reference = front_gradient_linf();
@@ -4043,7 +6051,10 @@ void TopoOffsetTriMesh::optimize_offset_loop(
         "\t[offset envelope] the loop's operations and smoothing do not hold the offset boundary "
         "to an envelope; the final pass does (eps {:.6g})",
         m_offset_params.offset_envelope);
-    const int budget = std::max(1, m_offset_params.max_rounds);
+    // max_turns > 0: growth_mode "smart"'s attempt (smart_growth_attempts) in place of max_rounds.
+    // As in 3D.
+    const int budget = max_turns > 0 ? max_turns : std::max(1, m_offset_params.max_rounds);
+    const char* budget_name = max_turns > 0 ? "smart_growth_attempts" : "max_rounds";
     // One turn is TriWild's operation groups, run here rather than through mesh_improvement() so
     // the released-boundary tube can be refreshed after every group. What mesh_improvement()
     // adds and is left out here on purpose is its stall response, which refines around the
@@ -4092,33 +6103,79 @@ void TopoOffsetTriMesh::optimize_offset_loop(
         if (/* adaptive_smoothing */ false) {
             smooth_group_to_convergence("pre_smooth");
         } else {
-            local_operations({{0, 0, 0, k}});
+            // Through loop_group(), as in 3D: the pocket splits precede each of its smoothing
+            // passes too.
+            loop_group({{0, 0, 0, k}}, "pre_smooth");
         }
         refresh_released_envelope();
     }
+    // EXPERIMENTAL_settle_refinement: the settle test refines and exits (settle_refinement_turn());
+    // the energy criterion's refinable sets, its sizing-floor warnings and its exit do not act.
+    // settle_e_prev is the offset energy at the end of the previous turn, for turn 1 before its
+    // first group. As in 3D.
+    const bool settle = m_offset_params.settle_refinement;
+    double settle_e_prev = 0.;
     for (int it = 0; it < budget; ++it) {
         m_round = it + 1;
         m_iterations_used = it + 1;
         refresh_released_envelope();
-        const int energy_c0 = iter_cnt_collapse_energy_reject.load();
-        const int energy_s0 = iter_cnt_swap_energy_reject.load();
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
+            // E before and after each group, the descent check (a collapse or swap group may not
+            // raise it; a split group may). As in 3D.
+            const double energy_before_group = global_energy();
+            if (settle && it == 0 && gi == 0) settle_e_prev = settle_metric();
+            const int energy_c0 = iter_cnt_collapse_energy_reject.load();
+            const int energy_s0 = iter_cnt_swap_energy_reject.load();
+            const int energy_p0 = iter_cnt_split_energy_reject.load();
+            const int fold_c0 = m_turned_reject_collapse.load(),
+                      fold_m0 = m_turned_reject_smooth.load();
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
+            log_energy_step(it + 1, "start");
             if (/* adaptive_smoothing */ false) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
                 local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
                 smooth_group_to_convergence(group_names[gi]);
             } else {
-                local_operations(groups[gi]);
+                // The operation passes, EXPERIMENTAL_label_cleanup, and the pocket splits before
+                // each smoothing pass. As in 3D.
+                loop_group(groups[gi], fmt::format("turn {} {} group", it + 1, group_names[gi]));
             }
             refresh_released_envelope(); // the smoothing in this group moved the boundaries
             // Per group, so a containment violation is attributed to the pass that made it
             // rather than found at the end of the run. Same gate as the shared sanity check.
             if (m_params.perform_sanity_checks) {
                 audit_surface_containment(fmt::format("turn {} after {}", it + 1, group_names[gi]));
+            }
+            const double energy_after_group = global_energy();
+            logger().info(
+                "\t[band volume energy] turn {} {} group: E {:.10g} -> {:.10g} ({:+.4g}) | refused "
+                "by the energy rule over the faces they change: {} collapse(s) for raising E, {} "
+                "swap(s) and {} split(s) (EXPERIMENTAL_split_energy_gate) for not strictly "
+                "lowering it ({} / {} / {} in the run so far)",
+                it + 1,
+                group_names[gi],
+                energy_before_group,
+                energy_after_group,
+                energy_after_group - energy_before_group,
+                iter_cnt_collapse_energy_reject.load() - energy_c0,
+                iter_cnt_swap_energy_reject.load() - energy_s0,
+                iter_cnt_split_energy_reject.load() - energy_p0,
+                iter_cnt_collapse_energy_reject.load(),
+                iter_cnt_swap_energy_reject.load(),
+                iter_cnt_split_energy_reject.load());
+            if (turned_reject_active()) {
+                // As in 3D, without its flips (turned_reject_active()).
+                logger().info(
+                    "\t[op reject] turn {} {} group: refused for raising the offset edges turned "
+                    "from the field (growth_mode individual_op_reject): {} collapses, {} "
+                    "smoothing moves",
+                    it + 1,
+                    group_names[gi],
+                    m_turned_reject_collapse.load() - fold_c0,
+                    m_turned_reject_smooth.load() - fold_m0);
             }
         }
         consolidate_mesh();
@@ -4206,14 +6263,14 @@ void TopoOffsetTriMesh::optimize_offset_loop(
         // Under the ring measure the same line names the VERTICES over the bar at the floor,
         // always a warning: the vertex form of the halving has no chord rule, so every vertex it
         // cannot take is one nothing will ever take. As in 3D.
-        if (ec.n_at_floor > 0) {
+        if (!settle && ec.n_at_floor > 0) {
             logger().log(
                 ec.n_corners_at_floor > 0 ? spdlog::level::warn : spdlog::level::info,
                 "\t[sizing floor] turn {}: {}",
                 it + 1,
                 ec.sizing_floor_fact());
         }
-        if (ec.ring_exit && ec.n_rings_at_floor > 0) {
+        if (!settle && ec.ring_exit && ec.n_rings_at_floor > 0) {
             logger().warn("\t[sizing floor] turn {}: {}", it + 1, ec.sizing_floor_fact());
         }
         // The 3D loop logs four more lines here -- [swap reject], [ops accounting], [split order]
@@ -4224,16 +6281,8 @@ void TopoOffsetTriMesh::optimize_offset_loop(
         // perform_sanity_checks only: m_is_on_offset against the labels, whole mesh. Free when
         // the key is off, which is the default.
         check_offset_membership(fmt::format("turn {}", it + 1).c_str());
-        logger().info(
-            "\t[energy rule] turn {}: {} collapse(s) refused for raising the max energy over the "
-            "survivor's ring and {} swap(s) for not strictly lowering it over the faces they "
-            "make ({} / {} in the run so far)",
-            it + 1,
-            iter_cnt_collapse_energy_reject.load() - energy_c0,
-            iter_cnt_swap_energy_reject.load() - energy_s0,
-            iter_cnt_collapse_energy_reject.load(),
-            iter_cnt_swap_energy_reject.load());
-        if (!refine && (!ec.refinable.empty() || (ec.ring_exit && ec.n_rings_over > 0))) {
+        if (!settle && !refine &&
+            (!ec.refinable.empty() || (ec.ring_exit && ec.n_rings_over > 0))) {
             logger().info(
                 "\t[resolution] turn {}: {} -- no refinement ({} front vertex(es) / {} chord(s) "
                 "over the bar left as they are)",
@@ -4242,7 +6291,7 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 ec.n_rings_over,
                 ec.refinable.size());
         }
-        if (refine && !ec.refinable.empty()) {
+        if (!settle && refine && !ec.refinable.empty()) {
             // Refinement is the halving, and only the halving: every refinable chord has the
             // sizing scalar at its ends halved.
             const size_t n = refine_front_by_halving(ec.refinable);
@@ -4259,7 +6308,7 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 ec.worst_placed_mid.y(),
                 n);
         }
-        if (refine && ec.ring_exit && ec.n_rings_over > 0) {
+        if (!settle && refine && ec.ring_exit && ec.n_rings_over > 0) {
             // front_measure "vertex_ring": the halving takes each vertex over the bar, that
             // vertex alone. refinable is empty in this mode, so the chord line above is silent.
             const size_t n = refine_front_by_halving(ec.refinable_vertices);
@@ -4275,6 +6324,11 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 ec.max_ring,
                 n);
         }
+        // EXPERIMENTAL_settle_refinement: the settle test, the chord test and the halving; true
+        // when the loop may exit, which then replaces EnergyCriterion::converged() below.
+        const bool settle_exit = settle && settle_refinement_turn(it + 1, settle_e_prev, refine);
+        // At a settled turn the last clean-up's refusals are no longer the front on its way.
+        if (settle && m_turn_settled) check_level_set_reachable(fmt::format("turn {}", it + 1));
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
         // turn's final state, so what it carries is the sizing field the halving just lowered.
         if (m_offset_params.debug_output) {
@@ -4285,30 +6339,107 @@ void TopoOffsetTriMesh::optimize_offset_loop(
         // front_measure "vertex_ring" the tested measure is every front vertex's ring measure
         // instead. The loop exits on the FIRST turn that meets the criterion, as TriWild's loop
         // breaks the moment its max energy is under stop_energy. As in 3D.
-        if (ec.converged() && !final_stage) {
+        //
+        // EXPERIMENTAL_settle_refinement: the settle exit (settled, nothing marked) in place of
+        // converged(); the criterion's measures are then diagnostics. As in 3D.
+        bool resolved = settle ? settle_exit : ec.converged();
+        // EXPERIMENTAL_exit_no_folds: no exit while a fold remains (fold_test(), through
+        // count_folds()): a vertex with two offset edges whose normals out of the band are within
+        // foldover_angle of opposite, one of the two more than foldover_angle from the field's
+        // normal at its midpoint (front_edge_field_angle()); an edge that cannot be measured
+        // counts as turned, so the exit is never released on what was not measured. Two opposite
+        // edges that both follow the field are a ridge vertex, the front following a corner of
+        // the level set sharper than foldover_angle, and do not hold the exit. As in 3D, whose
+        // measurements motivate both rules (cube_in at 0.45: a run exited with a flat sheet of
+        // inner cells and 5 real folds; the 10-26 batch: holding for every opposite pair held 4
+        // runs to the turn cap on ridges of the level set). The counts are logged every turn, the
+        // key on or off.
+        {
+            const FoldCount fc = count_folds();
+            logger().info(
+                "\t[exit folds] turn {}: folds {}{}",
+                it + 1,
+                fc.folds,
+                resolved && fc.folds > 0
+                    ? (m_offset_params.exit_no_folds
+                           ? " -- the exit test passes; held for the folds"
+                           : " -- the exit test passes; EXPERIMENTAL_exit_no_folds is off")
+                    : "");
+            if (fc.ridge_vertices > 0) {
+                logger().info(
+                    "\t[exit ridge vertices] turn {}: {} vertices with two opposite offset edges "
+                    "both within foldover_angle {} degrees of the field (not folds); their edges "
+                    "reach {:.4} degrees",
+                    it + 1,
+                    fc.ridge_vertices,
+                    m_offset_params.foldover_angle,
+                    fc.ridge_max_angle);
+            }
+            if (m_offset_params.exit_no_folds && fc.folds > 0) resolved = false;
+        }
+        // turned_free (growth_mode "smart"): a converged loop with an offset edge turned from the
+        // field has failed, judged here, before the verdict and the final pass, which it does not
+        // get. As in 3D.
+        if (resolved && turned_free) {
+            const TurnedEdgeCensus fc = turned_edge_census();
+            if (fc.n_turned > 0) {
+                logger().warn(
+                    "[{}] converged at target_distance {:.6g} after {} turn(s), but {} of {} "
+                    "offset edges are turned from the field (more than foldover_angle {} degrees "
+                    "from grad d; the worst {:.4g} degrees, at ({:.4}, {:.4}))",
+                    label,
+                    m_offset_params.target_distance,
+                    it + 1,
+                    fc.n_turned,
+                    fc.n_edges,
+                    m_offset_params.foldover_angle,
+                    fc.worst,
+                    fc.worst_at[0],
+                    fc.worst_at[1]);
+                refresh_released_envelope();
+                return false;
+            }
+        }
+        if (resolved && !final_stage) {
             // The init_optimize loop ends here; the final pass and the verdict belong to the
             // ordinary loop that follows it.
             logger().info(
-                "[{}] converged at target_distance {:.6g} after {} turn(s): {} max {:.4}x the bar "
-                "over {} front vertices, max AMIPS {:.4}",
+                "[{}] converged at target_distance {:.6g} after {} turn(s): {}{} max {:.4}x the "
+                "bar over {} front vertices, max AMIPS {:.4}",
                 label,
                 m_offset_params.target_distance,
                 it + 1,
+                settle ? "settled, no front chord over the bar (EXPERIMENTAL_settle_refinement); "
+                         "diagnostic: "
+                       : "",
                 ec.ring_exit ? std::string(ec.ring_name()) : std::string("chords"),
                 (ec.ring_exit ? ec.max_ring : ec.max_edge) / ec.bar,
                 ec.n_vertices,
                 amips);
             refresh_released_envelope();
-            return;
+            return true;
         }
-        if (ec.converged()) {
+        if (resolved) {
             m_energy_verdict = ec;
             m_converged = true;
             // Provisional: the final pass below overwrites both when it runs. The verdict at the
             // end of optimize_offset() requires this AND the front's.
             m_quality_max_amips = amips;
             m_quality_converged = amips < bar;
-            if (ec.ring_exit) {
+            if (settle) {
+                logger().info(
+                    "The front is resolved after {} iteration(s): the turn settled and no front "
+                    "chord is more than front_conv from the level set "
+                    "(EXPERIMENTAL_settle_refinement); front chords max {:.4}x with {} over the "
+                    "bar (diagnostic); front vertices max {:.4}x (diagnostic); max AMIPS {:.4} "
+                    "against stop {:.4}",
+                    it + 1,
+                    ec.max_edge / ec.bar,
+                    ec.n_edges_over,
+                    ec.max_vertex / ec.bar,
+                    amips,
+                    bar);
+            } else if (ec.ring_exit) {
                 logger().info(
                     "The front is resolved after {} iteration(s): every front "
                     "vertex's {} within the bar (rings max {:.4}x), nothing unmeasurable; front "
@@ -4340,12 +6471,18 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                     amips,
                     m_params.stop_energy);
                 m_round = it + 2;
-                // The whole envelope setup rebuilt fresh from the mesh as placement left it --
-                // the front's tube, and the region-class tubes per envelope_setup() -- and held
-                // for the entire pass; equilateral AMIPS alone: the plastic vertex path and the
-                // rest-shape term are both off.
+                // The front's tube, built from the front as placement left it and held for the
+                // entire pass; the region boundaries stay held in the tubes and masks the load
+                // built (m_tag_envelopes, never rebuilt), as 3D's final pass adds the front's
+                // envelope alone (build_final_envelopes(), 2b8de047ba). Equilateral AMIPS alone:
+                // the plastic vertex path and the rest-shape term are both off. Until 2026-11-11
+                // the region tubes and the vertex masks were rebuilt here from the tags and
+                // on_curve, which no operation carries: MEASURED on the mesh the loop leaves (p
+                // offset to 0.3, a held curve-group curve 0.5 from it, 3 to 8 turns, 5 runs), the
+                // rebuild put 1 to 4 of the curve's 7 to 9 tracked edges in its tube and took the
+                // curve bit off 1 to 8 of its 8 to 10 vertices; after 3 turns 4 of its 8 edges
+                // were held by nothing.
                 rebuild_offset_envelope();
-                build_boundary_envelopes("final pass", envelope_setup());
                 m_freeze_front = true;
                 const bool plastic_was = m_plastic_active;
                 m_plastic_active = false;
@@ -4367,18 +6504,374 @@ void TopoOffsetTriMesh::optimize_offset_loop(
                 }
             }
             refresh_released_envelope();
+            return true;
+        }
+    }
+    check_level_set_reachable("the loop's end");
+    logger().warn(
+        "The loop did not converge in {} turns ({}){}",
+        budget,
+        budget_name,
+        label.empty() ? std::string()
+                      : fmt::format(
+                            " -- {} at target_distance {:.6g}",
+                            label,
+                            m_offset_params.target_distance));
+    log_front_profile(energy_criterion().worst_vid);
+    return false;
+}
+
+TopoOffsetTriMesh::MeshSnapshot TopoOffsetTriMesh::take_snapshot()
+{
+    // See the declaration.
+    if (m_track_feature_points) {
+        log_and_throw_error(
+            "take_snapshot: feature-point tracking is on, and the image does not hold its "
+            "collection");
+    }
+    consolidate_mesh();
+    MeshSnapshot s;
+    s.n_vertices = vert_capacity();
+    const size_t n_faces = tri_capacity();
+    s.faces.resize(n_faces);
+    for (size_t f = 0; f < n_faces; ++f) s.faces[f] = oriented_tri_vids(f);
+    // The live slots of a collection, [0, n): consolidate_mesh() packed them there.
+    const auto head = [](const auto& c, const size_t n) {
+        return std::vector(c.m_attributes.begin(), c.m_attributes.begin() + std::ptrdiff_t(n));
+    };
+    s.vertex = head(m_vertex_attribute, s.n_vertices);
+    s.vertex_extra = head(m_vertex_extra, s.n_vertices);
+    s.edge = head(m_edge_attribute, 3 * n_faces);
+    s.edge_extra = head(m_edge_extra, 3 * n_faces);
+    s.face = head(m_face_attribute, n_faces);
+    s.face_extra = head(m_face_extra, n_faces);
+    restore_snapshot(s);
+    return s;
+}
+
+void TopoOffsetTriMesh::restore_snapshot(const MeshSnapshot& s)
+{
+    // See the declaration. init_with_isolated_vertices() leaves every collection cleared and
+    // sized to the new capacity, at least the live count, so the copies fit.
+    init_with_isolated_vertices(s.n_vertices, s.faces);
+    const auto put = [](auto& c, const auto& v) {
+        std::copy(v.begin(), v.end(), c.m_attributes.begin());
+    };
+    put(m_vertex_attribute, s.vertex);
+    put(m_vertex_extra, s.vertex_extra);
+    put(m_edge_attribute, s.edge);
+    put(m_edge_extra, s.edge_extra);
+    put(m_face_attribute, s.face);
+    put(m_face_extra, s.face_extra);
+    assign_band_regions(/*log=*/false);
+}
+
+double TopoOffsetTriMesh::growth_stage_target(
+    const double d0,
+    const double delta,
+    const int k,
+    const int n)
+{
+    return k >= n ? delta : d0 + double(k) * (delta - d0) / double(n);
+}
+
+void TopoOffsetTriMesh::linear_growth()
+{
+    // See the declaration and the spec doc (growth_mode "linear"). Between stages only
+    // target_distance changes, and what init_offset_potential() builds on it: the field, the
+    // per-piece fields, the exact integral. Every other reader of target_distance (the band term,
+    // the settle test, the measures, the front smoother) asks for it when it runs, and no pass is
+    // running here. As in 3D.
+    const double delta = m_offset_params.target_distance;
+    const double d0 = m_growth_start;
+    // growth_mode "individual_op_reject": d_0, then target_distance, nothing between.
+    const int n = m_offset_params.growth_mode == "linear" ? m_offset_params.linear_growth_steps : 1;
+    const auto set_target = [&](const double d) {
+        m_offset_params.target_distance = d;
+        init_offset_potential();
+    };
+    // Several entries of offsets (m_growth_starts): stage k at each entry's own stage target, from
+    // its d_0 to its target_distance (region_delta() reads them, m_offset_levels); the run's
+    // target the smallest. One entry: target_distance itself.
+    const bool several = !m_growth_starts.empty();
+    const auto set_stage = [&](const int k) {
+        if (!several) {
+            set_target(growth_stage_target(d0, delta, k, n));
+            return;
+        }
+        m_offset_levels.resize(m_growth_starts.size());
+        for (size_t e = 0; e < m_growth_starts.size(); ++e) {
+            m_offset_levels[e] = growth_stage_target(
+                m_growth_starts[e],
+                m_offset_params.offsets[e].target_distance,
+                k,
+                n);
+            logger().info(
+                "\t[incremental growth] stage {} / {}: offsets[{}] at {:.6g} (its target_distance "
+                "{:.6g})",
+                k,
+                n,
+                e,
+                m_offset_levels[e],
+                m_offset_params.offsets[e].target_distance);
+        }
+        set_target(*std::min_element(m_offset_levels.begin(), m_offset_levels.end()));
+    };
+    const auto set_final = [&]() {
+        m_offset_levels.clear();
+        set_target(delta);
+    };
+    std::string done; // the stages before the last, for the last one's header
+    for (int k = 0; k < n; ++k) {
+        set_stage(k);
+        m_frame_prefix = fmt::format("g{}", k);
+        logger().info(
+            "======== [incremental growth] stage {} / {}: target_distance {:.6g} ({:.4g}x "
+            "target_distance {:.6g}){} ========",
+            k,
+            n,
+            m_offset_params.target_distance,
+            m_offset_params.target_distance / delta,
+            delta,
+            k == 0 ? ", the distance the march traced to" : "");
+        // Parameters::init() refuses front_conv above target_distance itself; a stage's target
+        // below it is not refused, only said.
+        if (m_offset_params.front_conv > m_offset_params.target_distance) {
+            logger().warn(
+                "[incremental growth] stage {} / {}: front_conv {:.6g} exceeds the stage's "
+                "target_distance {:.6g}, so its tests read nearly every front vertex as within "
+                "the bar",
+                k,
+                n,
+                m_offset_params.front_conv,
+                m_offset_params.target_distance);
+        }
+        const bool converged = optimize_offset_loop(
+            /*final_stage=*/false,
+            /*refine=*/true,
+            fmt::format("incremental growth stage {} / {}", k, n));
+        // The loop sets m_iterations_used every turn, and a stage before the last has no final
+        // pass to reset it: its turns.
+        done += fmt::format(
+            "{}stage {} at {:.6g} in {} turn(s)",
+            k == 0 ? "" : ", ",
+            k,
+            m_offset_params.target_distance,
+            m_iterations_used);
+        m_converged = false;
+        m_energy_verdict.reset();
+        if (!converged) {
+            m_frame_prefix.clear();
+            // The verdict and the report measure this mesh against target_distance itself.
+            set_final();
+            logger().warn(
+                "[incremental growth] stage {} / {} at target_distance {:.6g} did not converge in "
+                "max_rounds {} turns: the run stops here, stages {}..{} not run; the verdict "
+                "measures this mesh against target_distance {:.6g}",
+                k,
+                n,
+                growth_stage_target(d0, delta, k, n),
+                m_offset_params.max_rounds,
+                k + 1,
+                n,
+                delta);
             return;
         }
     }
-    logger().warn(
-        "The loop did not converge in {} turns (max_rounds){}",
-        budget,
-        final_stage ? std::string()
-                    : fmt::format(
-                          " -- {} at target_distance {:.6g}; the run moves on",
-                          label,
-                          m_offset_params.target_distance));
-    log_front_profile(energy_criterion().worst_vid);
+    m_frame_prefix.clear();
+    set_final();
+    logger().info(
+        "======== [incremental growth] stage {} / {}: target_distance {:.6g}, the ordinary loop "
+        "(converged before it: {}) ========",
+        n,
+        n,
+        delta,
+        done);
+    optimize_offset_loop();
+}
+
+void TopoOffsetTriMesh::smart_growth()
+{
+    // See the declaration and the spec doc (growth_mode "smart"). As in linear_growth(), only
+    // target_distance changes between loops, and what init_offset_potential() builds on it. As in
+    // 3D.
+    const auto t0 = std::chrono::steady_clock::now();
+    const double delta = m_offset_params.target_distance;
+    const double d0 = m_growth_start;
+    const int attempts = m_offset_params.smart_growth_attempts;
+    const auto set_target = [&](const double d) {
+        m_offset_params.target_distance = d;
+        init_offset_potential();
+    };
+    // Several entries of offsets (m_growth_starts): one schedule per entry, from its d_0 to its
+    // target_distance, advanced in lockstep with sched below (the same successes and failures,
+    // so the same j and level): each loop at each entry's own target (m_offset_levels), the run's
+    // the smallest. One entry: sched alone.
+    const bool several = !m_growth_starts.empty();
+    std::vector<SmartGrowthSchedule> entry_sched;
+    for (size_t e = 0; e < m_growth_starts.size(); ++e) {
+        entry_sched.push_back(
+            {m_growth_starts[e],
+             m_offset_params.offsets[e].target_distance,
+             m_offset_params.smart_growth_max_fails});
+    }
+    const auto set_targets = [&](const double d, const bool level0) {
+        if (!several) {
+            set_target(d);
+            return;
+        }
+        m_offset_levels.resize(entry_sched.size());
+        for (size_t e = 0; e < entry_sched.size(); ++e) {
+            const SmartGrowthSchedule& es = entry_sched[e];
+            m_offset_levels[e] = level0 ? m_growth_starts[e] : es.j == 0 ? es.delta : es.target();
+            logger().info(
+                "\t[smart growth] offsets[{}] at {:.6g} (its target_distance {:.6g})",
+                e,
+                m_offset_levels[e],
+                es.delta);
+        }
+        set_target(*std::min_element(m_offset_levels.begin(), m_offset_levels.end()));
+    };
+    const auto report_entries = [&](const bool ok) {
+        for (SmartGrowthSchedule& es : entry_sched) es.report(ok);
+    };
+    // Parameters::init() refuses front_conv above target_distance itself; a smaller loop's target
+    // below it is not refused, only said.
+    const auto warn_front_conv = [&](const std::string& what) {
+        if (m_offset_params.front_conv > m_offset_params.target_distance) {
+            logger().warn(
+                "[smart growth] {}: front_conv {:.6g} exceeds its target_distance {:.6g}, so its "
+                "tests read nearly every front vertex as within the bar",
+                what,
+                m_offset_params.front_conv,
+                m_offset_params.target_distance);
+        }
+    };
+
+    // Level 0: the loop at d_0, from the front as the march left it.
+    set_targets(d0, /*level0=*/true);
+    m_frame_prefix = "s0";
+    logger().info(
+        "======== [smart growth] level 0: target_distance {:.6g} ({:.4g}x target_distance {:.6g}), "
+        "the distance the march traced to; up to max_rounds {} turns ========",
+        d0,
+        d0 / delta,
+        delta,
+        m_offset_params.max_rounds);
+    warn_front_conv("level 0");
+    if (!optimize_offset_loop(/*final_stage=*/false, /*refine=*/true, "smart growth level 0")) {
+        m_frame_prefix.clear();
+        log_and_throw_error(
+            "[smart growth] level 0 at the traced distance {:.6g} did not converge in max_rounds "
+            "{} turns",
+            d0,
+            m_offset_params.max_rounds);
+    }
+    m_converged = false;
+    m_energy_verdict.reset();
+    std::string history = fmt::format("level 0 at {:.6g} in {} turn(s)", d0, m_iterations_used);
+    MeshSnapshot snap = take_snapshot();
+    logger().info(
+        "[smart growth] level 0 converged at target_distance {:.6g}; the mesh is stored (#V {}, "
+        "#F {})",
+        d0,
+        get_vertices().size(),
+        get_faces().size());
+    SmartGrowthSchedule sched{d0, delta, m_offset_params.smart_growth_max_fails};
+    int n_reverted = 0;
+    for (;;) {
+        // j == 0 is target_distance itself, set exactly (not by the formula).
+        const bool at_delta = sched.j == 0;
+        const double t = at_delta ? delta : sched.target();
+        const int level = sched.level, attempt = sched.j + 1;
+        const std::string label = fmt::format("smart growth level {} attempt {}", level, attempt);
+        set_targets(t, /*level0=*/false);
+        m_frame_prefix = fmt::format("s{}a{}", level, attempt);
+        logger().info(
+            "======== [smart growth] level {} attempt {}: target_distance {:.6g} ({:.4g}x "
+            "target_distance {:.6g}), from the converged {:.6g}{}; up to smart_growth_attempts {} "
+            "turns, converged and free of turned edges to succeed ========",
+            level,
+            attempt,
+            t,
+            t / delta,
+            delta,
+            sched.base,
+            at_delta ? ", the final stage" : "",
+            attempts);
+        warn_front_conv(label);
+        const bool ok = optimize_offset_loop(
+            /*final_stage=*/at_delta,
+            /*refine=*/true,
+            label,
+            attempts,
+            /*turned_free=*/true);
+        const int turns = m_iterations_used;
+        const double base = sched.base;
+        report_entries(ok);
+        switch (sched.report(ok)) {
+        case SmartGrowthSchedule::Next::Done:
+            m_frame_prefix.clear();
+            m_offset_levels.clear(); // each entry at its target_distance
+            logger().info(
+                "[smart growth] target_distance {:.6g} reached: {}, level {} at it in {} turn(s); "
+                "{} failed attempt(s) reverted; {:.3g} s",
+                delta,
+                history,
+                level,
+                turns,
+                n_reverted,
+                std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+            return;
+        case SmartGrowthSchedule::Next::Advance:
+            m_converged = false;
+            m_energy_verdict.reset();
+            history += fmt::format(", level {} at {:.6g} in {} turn(s)", level, t, turns);
+            snap = take_snapshot();
+            logger().info(
+                "[smart growth] level {} converged at target_distance {:.6g} (attempt {}); the "
+                "mesh is stored (#V {}, #F {}), the next attempt is at target_distance {:.6g}",
+                level,
+                t,
+                attempt,
+                get_vertices().size(),
+                get_faces().size(),
+                delta);
+            break;
+        case SmartGrowthSchedule::Next::Retry:
+        case SmartGrowthSchedule::Next::GiveUp:
+            ++n_reverted;
+            m_converged = false;
+            m_energy_verdict.reset();
+            restore_snapshot(snap);
+            logger().warn(
+                "[smart growth] level {} attempt {} at target_distance {:.6g} failed (not "
+                "converged in {} turn(s), or with turned edges; see above): the mesh is back at "
+                "the converged {:.6g} (#V {}, #F {}){}",
+                level,
+                attempt,
+                t,
+                turns,
+                base,
+                get_vertices().size(),
+                get_faces().size(),
+                sched.j < m_offset_params.smart_growth_max_fails
+                    ? fmt::format("; next attempt at {:.6g}", sched.target())
+                    : std::string());
+            if (sched.j >= m_offset_params.smart_growth_max_fails) {
+                m_frame_prefix.clear();
+                log_and_throw_error(
+                    "[smart growth] {} attempts from the converged distance {:.6g} failed "
+                    "(smart_growth_max_fails), the last at target_distance {:.6g}; converged "
+                    "before: {}",
+                    m_offset_params.smart_growth_max_fails,
+                    base,
+                    t,
+                    history);
+            }
+            break;
+        }
+    }
 }
 
 void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file)
@@ -4396,6 +6889,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // The baseline the propagation has to hold from here on: label_offset_boundary() marks the
     // flag from the construction labels; this asks the live label test the same question.
     check_offset_membership("construction");
+    held_topology_check("construction"); // DEBUG_held_topology's baseline
 
     // deform_others: from here on, other input regions deform instead of being envelope-held.
     // deform_others was removed on the 3D-only branch spenbert/offsets-cleanup (2026-10-13); its
@@ -4452,6 +6946,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     iter_cnt_swap = 0;
     iter_cnt_collapse_energy_reject = 0;
     iter_cnt_swap_energy_reject = 0;
+    iter_cnt_split_energy_reject = 0;
     m_smooth_trace.reset();
     optimization_metrics.clear();
 
@@ -4490,7 +6985,16 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             m_offset_params.target_distance,
             m_offset_params.stencil_order);
     }
-    optimize_offset_loop();
+    // growth_mode (see marching_tris()): "linear" in stages, the last of them the ordinary loop at
+    // target_distance; "smart" in attempts, the one that reaches target_distance its final stage.
+    // As in 3D.
+    if (m_growth_start > 0. && m_offset_params.growth_mode == "smart") {
+        smart_growth();
+    } else if (m_growth_start > 0.) {
+        linear_growth();
+    } else {
+        optimize_offset_loop();
+    }
 
     log_smooth_trace();
     logger().info(
@@ -4506,10 +7010,11 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
     logger().info(
-        "energy rule: {} collapses refused for raising the max energy over the survivor's ring, "
-        "{} swaps for not strictly lowering it over the faces they make",
+        "energy rule: {} collapses refused for raising E over the faces they change, {} swaps "
+        "and {} splits (EXPERIMENTAL_split_energy_gate) for not strictly lowering it",
         iter_cnt_collapse_energy_reject.load(),
-        iter_cnt_swap_energy_reject.load());
+        iter_cnt_swap_energy_reject.load(),
+        iter_cnt_split_energy_reject.load());
 
     // Final metrics and the convergence verdict, one entry for the whole run.
     assign_band_regions();
@@ -4578,10 +7083,22 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         // EnergyCriterion::converged() -- and the final quality under stop_energy (the finishing
         // pass's verdict; see m_quality_converged). The vertex numbers are printed as a
         // diagnostic and decide nothing.
-        front_ok = ec.converged();
+        //
+        // EXPERIMENTAL_settle_refinement: the front half is the loop's settle exit, the one place
+        // that sets m_energy_verdict under the key; the criterion's measures and its sizing-floor
+        // fact (about refinable sets that do not act) are diagnostics. As in 3D.
+        const bool settle = m_offset_params.settle_refinement;
+        front_ok = settle ? m_energy_verdict.has_value() : ec.converged();
         m_converged = front_ok && m_quality_converged;
-        floor_fact = ec.sizing_floor_fact();
+        floor_fact = settle ? std::string() : ec.sizing_floor_fact();
         quality = quality_fact(front_ok);
+        if (settle) {
+            logger().info(
+                "[settle] verdict: front {} -- tested: the loop's settle exit (a settled turn with "
+                "no front chord more than front_conv from the level set); the measures on the next "
+                "line are diagnostics",
+                front_ok ? "resolved" : "NOT resolved");
+        }
         if (ec.ring_exit) {
             // front_measure "vertex_ring": the ring measure is what was tested; the chord and
             // vertex measures are the diagnostics.
@@ -4647,38 +7164,30 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         }
     }
 
-    // Collapsed foldovers on the offset boundary, checked UNCONDITIONALLY -- a fold is a defect
-    // in the delivered mesh, not a debug curiosity, so it is reported whether or not debug_output
-    // wrote the per-vertex field. Run here, at the end of optimize_offset, so it describes the
-    // mesh the driver is about to write: after the finishing pass, not at the loop's verdict.
-    // See offset_surface_foldover_labels() for what the angle is and why its side is not
-    // determined.
+    // Offset edges turned from the field, checked UNCONDITIONALLY -- a defect in the delivered
+    // mesh, not a debug curiosity, so it is reported whether or not debug_output is on. Run here,
+    // at the end of optimize_offset, so it describes the mesh the driver is about to write: after
+    // the finishing pass, not at the loop's verdict. Reported for a run that did not converge too.
+    // An edge is turned when its normal, out of the band, is more than foldover_angle from the
+    // field's normal (front_edge_turned()). As 3D's [turned faces], but for its pointer to the
+    // debug frames' per-face field_angle_turned, which 2D's frames do not write per edge. Until the
+    // growth step of the 2D lock-step port this block counted the folds (fold_test()) as
+    // [foldover], the [exit folds] line's count.
     {
-        const std::vector<char> fold = offset_surface_foldover_labels();
-        size_t n_fold = 0;
-        size_t first = std::numeric_limits<size_t>::max();
-        for (size_t vid = 0; vid < fold.size(); ++vid) {
-            if (!fold[vid]) continue;
-            ++n_fold;
-            if (first == std::numeric_limits<size_t>::max()) first = vid;
-        }
-        if (n_fold > 0) {
-            const auto& p = m_vertex_attribute[first].m_posf;
+        const TurnedEdgeCensus fc = turned_edge_census();
+        if (fc.n_turned > 0) {
             logger().warn(
-                "[foldover] the offset surface is folded back on itself at {} vertex(es): {} "
-                "meet within {} degrees of coincident (over {} degrees through one side). "
-                "First at v{} ({:.4}, {:.4}{}). {}",
-                n_fold,
-                "two offset edges at a curve vertex",
-                360. - FOLDOVER_OUTER_ANGLE_DEG,
-                FOLDOVER_OUTER_ANGLE_DEG,
-                first,
-                p[0],
-                p[1],
-                "",
-                m_offset_params.debug_output
-                    ? "The per-vertex flag offset_foldover is on the debug frames."
-                    : "Set DEBUG_output to get the per-vertex offset_foldover field.");
+                "[turned edges] {} of {} offset edges are turned from the field: their normal, "
+                "out of the band, is more than foldover_angle {} degrees from the field's normal "
+                "(grad d at the midpoint); the worst {:.4g} degrees, at ({:.4}, {:.4}). {} edge(s) "
+                "not measurable.",
+                fc.n_turned,
+                fc.n_edges,
+                m_offset_params.foldover_angle,
+                fc.worst,
+                fc.worst_at[0],
+                fc.worst_at[1],
+                fc.n_unmeasured);
         }
     }
 
