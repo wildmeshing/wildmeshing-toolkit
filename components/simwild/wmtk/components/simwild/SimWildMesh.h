@@ -669,14 +669,14 @@ public:
      * in J at any distance, every vertex of R counting as inside. Then J is found in three steps.
      *  1. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
-     *  2. A vertex is inside if it is in R + B and d(v, S) > distance/2, counted from
-     *     (1 - trace_rel_tol) x distance/2 up, so a vertex on the level set is never split off
-     *     by rounding; every vertex of R is inside (R lies in the closing; S, linear in each
-     *     tet, can pass closer to R than the level set). Every tet outside R with a vertex
-     *     inside is processed: each of its edges from an inside vertex to an outside one is
-     *     split where it leaves J, at d(x, S) = distance/2, sphere traced from the inside end
-     *     (to within trace_rel_tol x distance/2; not split if the inside end is already that
-     *     close or closer), and J is the processed tets whose vertices are all inside.
+     *  2. The vertices' labels (tight seal v2 note, section 2), with tol = trace_rel_tol x
+     *     distance/2. A vertex of R is ON if d(v, S) <= distance/2 + tol, else IN (R lies in the
+     *     closing; S, linear in each tet, can pass closer to R than the level set). Any other
+     *     vertex is IN if it is in R + B and d(v, S) >= distance/2 + tol, else OUT. Every tet
+     *     outside R with an IN or ON vertex is processed: each of its edges from an IN vertex to
+     *     an OUT one is split where it leaves J, at d(x, S) = distance/2, sphere traced from the
+     *     IN end (to within tol), the new vertex ON; and J is the processed tets whose vertices
+     *     are all IN or ON.
      *  3. The connected components of J, through faces.
      * The colors: fill selection k (two or more) is color k; a tet outside J satisfying it has that
      * color (a tet of J is no color, whatever its tags). A component borders a color if one of its

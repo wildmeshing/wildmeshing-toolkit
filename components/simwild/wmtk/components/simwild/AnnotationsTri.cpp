@@ -779,23 +779,19 @@ void SimWildMeshTri::tight_seal_geom(
                          : std::numeric_limits<double>::infinity();
         };
 
-        // 2. A vertex is inside if it lies in R + B (d(v, R) < d/2) at least d/2 from S: in
-        // the closing. It counts as inside down to (1 - tol) x d/2, so one on the level set
-        // whatever the rounding is never split off, and every vertex of R is inside: R lies
-        // in the closing (each point of S is d/2 from R, so at least d/2 from any vertex of
-        // R), and S, joined linearly in each face, can pass closer to R than the level set by
-        // more than the tolerance (in a coarse face beside a gap's mouth, where the level set
-        // bulges into the gap). Every face outside R with a vertex inside is processed: each
-        // of its edges from an inside vertex to an outside one is split where d(x, S) falls
-        // to d/2, sphere traced from the inside end: d(x, S) is 1-Lipschitz, so a step of
-        // d(x, S) - d/2 cannot cross the level set, and the trace stops within the tolerance
-        // of it. An edge whose inside end is within the tolerance of the level set, or below
-        // it (a vertex of R), is not split: the trace stops at once. So no edge on R's
-        // boundary is split (both ends are inside). J is then the processed faces whose
-        // vertices are all inside.
+        // 2. The vertices' labels (tight seal v2 note, section 2). A vertex of R is ON if
+        // d(v, S) <= (1 + tol) x d/2, else IN: R lies in the closing (each point of S is d/2 from
+        // R), but S, joined linearly in each face, may pass closer to R than the level set, so a
+        // vertex of R where the closing's boundary runs along R is ON whatever the rounding. Any
+        // other vertex is IN if it lies in R + B (d(v, R) < d/2) at least (1 + tol) x d/2 from S,
+        // and OUT otherwise. Every face outside R with an IN or ON vertex is processed: each of
+        // its edges from an IN vertex to an OUT one is split where d(x, S) falls to d/2, sphere
+        // traced from the IN end (d(x, S) is 1-Lipschitz, so a step of d(x, S) - d/2 cannot cross
+        // the level set, and the trace stops within the tolerance of it), and the new vertex is
+        // ON. An edge from an ON vertex is not split: the trace from it stops at once. J is then
+        // the processed faces whose vertices are all IN or ON; `inside` holds both.
         std::vector<char> inside(vert_capacity(), 0);
-        size_t n_inside = 0; // inside, not a vertex of R
-        size_t n_band = 0; // of them, within the tolerance of d/2 from S
+        size_t n_in = 0; // IN, not a vertex of R
         for (const Tuple& t : get_vertices()) {
             const size_t vid = t.vid(*this);
             if (on_R[vid]) {
@@ -803,15 +799,13 @@ void SimWildMeshTri::tight_seal_geom(
                 continue;
             }
             const double ds = dR[vid] < radius ? dist_S(pos(vid)) : 0.;
-            inside[vid] = ds >= radius - tol;
-            n_inside += inside[vid];
-            n_band += inside[vid] && ds <= radius + tol;
+            inside[vid] = ds >= radius + tol;
+            n_in += inside[vid];
         }
         logger().info(
-            "tight_seal_geom: {} vertices inside J off R ({} of them within the tolerance of "
-            "d/2 from S), and every vertex of R",
-            n_inside,
-            n_band);
+            "tight_seal_geom: {} vertices off R are IN, at least (1 + tol) x d/2 from S; every "
+            "vertex of R is IN or ON",
+            n_in);
         std::vector<size_t> to_process;
         for (const size_t fid : fids) {
             const auto vs = oriented_tri_vids(fid);
@@ -864,7 +858,7 @@ void SimWildMeshTri::tight_seal_geom(
             if (v_new >= inside.size()) {
                 inside.resize(v_new + 1, 0);
             }
-            inside[v_new] = 1; // on the level set, J's boundary
+            inside[v_new] = 1; // ON: on the level set, J's boundary
         }
         m_voronoi_split_fn = nullptr;
 
