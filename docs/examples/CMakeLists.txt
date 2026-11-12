@@ -25,11 +25,16 @@ foreach(source IN LISTS WMTK_DOC_CPP_EXAMPLES)
     wmtk_copy_dll(wmtk_doc_example_${name})
 
     if(BUILD_TESTING AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        # A directory per example: ctest runs them in parallel, and two examples writing the
+        # same output (first_run and isotropic_remeshing both write bunny_remeshed.msh) in one
+        # directory would race.
+        file(MAKE_DIRECTORY "${WMTK_DOC_EXAMPLES_RUN_DIR}/cpp_${name}")
         add_test(NAME doc_example_cpp_${name} COMMAND wmtk_doc_example_${name}
-            WORKING_DIRECTORY "${WMTK_DOC_EXAMPLES_RUN_DIR}")
+            WORKING_DIRECTORY "${WMTK_DOC_EXAMPLES_RUN_DIR}/cpp_${name}")
         set_tests_properties(doc_example_cpp_${name} PROPERTIES
             ENVIRONMENT "WMTK_DATA=${WMTK_DATA_ROOT}/models"
-            TIMEOUT 1800)
+            TIMEOUT 1800
+            COST 20)
     endif()
 endforeach()
 
@@ -49,5 +54,7 @@ if(WMTK_DOC_EXAMPLES_NUMPY_RESULT EQUAL 0)
                 "WMTK_DOC_EXAMPLES_RUN_DIR=${WMTK_DOC_EXAMPLES_RUN_DIR}"
                 "${Python_EXECUTABLE}" -m unittest discover
                 -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_docs_examples.py")
-    set_tests_properties(doc_examples_python_json PROPERTIES TIMEOUT 3600)
+    # COST: the longest test of a Release run (about 11 minutes), so a parallel ctest starts it
+    # first rather than last.
+    set_tests_properties(doc_examples_python_json PROPERTIES TIMEOUT 3600 COST 600)
 endif()
