@@ -3664,7 +3664,7 @@ model say, gets a hidden tag of its own (<code>[.slow]</code>), and the reason i
 <p>The first build clones the data repository into <code>data/</code>.</p>
 <h2 id="in-ci">In CI<a class="headerlink" href="#in-ci" title="Permanent link">&para;</a></h2>
 <p><a href="https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/.github/workflows/continuous.yml"><code>.github/workflows/continuous.yml</code></a>
-runs on every pull request and every push to <code>main</code>, in eight jobs:</p>
+runs on every pull request and every push to <code>main</code>, in nine jobs:</p>
 <table>
 <thead>
 <tr>
@@ -3685,6 +3685,11 @@ runs on every pull request and every push to <code>main</code>, in eight jobs:</
 <td>Debug, Release</td>
 </tr>
 <tr>
+<td><code>Linux per-input orientation</code></td>
+<td><code>ubuntu-latest</code></td>
+<td>Release</td>
+</tr>
+<tr>
 <td><code>macos-latest</code></td>
 <td><code>macos-latest</code></td>
 <td>Debug, Release</td>
@@ -3696,18 +3701,29 @@ runs on every pull request and every push to <code>main</code>, in eight jobs:</
 </tr>
 </tbody>
 </table>
-<p>A check is named after its job and config, as in <code>Linux (Release)</code>.</p>
-<p>Each job configures with <code>CMAKE_BUILD_TYPE</code> set to its config, builds with two jobs (<code>make -j2</code>;
-Ninja on Windows) behind a compiler cache (ccache; sccache on Windows), and runs
-<code>ctest --verbose --output-on-failure</code>, one test at a time (<code>CTEST_PARALLEL_LEVEL: 1</code>). So:</p>
+<p>A check is named after its job and config, as in <code>Linux (Release)</code>. A new push to a pull request
+cancels the run of the previous one.</p>
+<p>Each job configures with <code>CMAKE_BUILD_TYPE</code> set to its config, builds with as many jobs as the
+runner has cores (<code>make</code>; Ninja on Windows) behind a compiler cache (ccache; sccache on
+Windows), and runs <code>ctest --verbose --output-on-failure</code>, one test per core
+(<code>CTEST_PARALLEL_LEVEL</code>: 4, 3 on macOS). So a test that writes files must write them in a
+directory of its own, or under names no other test uses; the long ones carry a <code>COST</code>, so they
+start first. The
+Debug builds use <code>-g1</code> (<code>-g</code> makes the cache several times larger), and the Windows builds no
+debug information at all.</p>
+<p>The compiler cache is restored from the newest one of the same runner and config, and saved
+right after the build, whether the build or the tests pass or not; ccache is first trimmed to
+the entries the build used, and sccache is capped at 1 GB. The Windows jobs fail when the compile
+commands do not go through sccache. So:</p>
 <ul>
 <li>every job runs the library, component and memory-route tests, with the <code>release_only</code> cases
   in the Release jobs only;</li>
 <li>the Release jobs add <code>-DWMTK_BUILD_INTEGRATION_TESTS=ON</code> and <code>-DWMTK_BUILD_DOC_EXAMPLES=ON</code>,
   and run every listed integration config and the documentation's C++ examples;</li>
-<li>the Linux jobs install <code>python3-numpy</code>, so they run the registered Python tests, and in
-  Release the Python and JSON examples; the other jobs run them if the interpreter CMake finds
-  has NumPy.</li>
+<li>the Linux jobs install <code>python3-numpy</code>, so they run the registered Python tests; the
+  <code>Linux arm64 (Release)</code> job also runs the Python and JSON examples (<code>Linux (Release)</code> leaves
+  them out with <code>ctest -E</code>: they were its longest test). The macOS and Windows jobs run the
+  Python tests and examples if the interpreter CMake finds has NumPy.</li>
 </ul>
 <p>When the tests fail on Linux or macOS, a last step re-runs the component test executables under
 gdb or lldb and prints the backtrace of every thread, for a crash that leaves only a signal in
