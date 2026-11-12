@@ -3,6 +3,7 @@
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/history/TrackedRecorder.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
+#include <wmtk/threading/dynamic_parallel_for.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -11,6 +12,47 @@
 #include <vector>
 
 namespace wmtk {
+
+namespace {
+/**
+ * The items (faces, edges) the tets own, in tet order and, within a tet, by local index:
+ * `owned(i)` is the bit mask of the local items of tet slot i that i is the canonical owner of,
+ * `make(i, j)` builds the entry for its local item j.
+ *
+ * On `num_threads` threads, in two passes over chunks of tets: the first computes the masks --
+ * the ownership tests are what costs -- and counts each chunk's items, the second writes each
+ * chunk's at its offset. The result is the same whatever the thread count, it is allocated once
+ * at its exact size, and nothing beside it but the masks (a byte per tet) is ever held.
+ */
+template <class T, class Owned, class Make>
+std::vector<T>
+collect_owned(size_t n_tets, int num_threads, int n_local, Owned&& owned, Make&& make)
+{
+    constexpr size_t chunk = 4096;
+    const size_t n_chunks = (n_tets + chunk - 1) / chunk;
+    std::vector<uint8_t> mask(n_tets);
+    std::vector<size_t> offset(n_chunks + 1, 0);
+    threading::dynamic_parallel_for(n_tets, num_threads, chunk, [&](size_t b, size_t e) {
+        size_t count = 0;
+        for (size_t i = b; i < e; ++i) {
+            mask[i] = owned(i);
+            for (int j = 0; j < n_local; ++j) count += (mask[i] >> j) & 1;
+        }
+        offset[b / chunk + 1] = count;
+    });
+    for (size_t k = 0; k < n_chunks; ++k) offset[k + 1] += offset[k];
+    std::vector<T> out(offset[n_chunks]);
+    threading::dynamic_parallel_for(n_tets, num_threads, chunk, [&](size_t b, size_t e) {
+        size_t w = offset[b / chunk];
+        for (size_t i = b; i < e; ++i) {
+            for (int j = 0; j < n_local; ++j) {
+                if ((mask[i] >> j) & 1) out[w++] = make(i, j);
+            }
+        }
+    });
+    return out;
+}
+} // namespace
 
 struct TetMesh::VolumeRecording
 {
@@ -204,20 +246,31 @@ std::vector<TetMesh::Tuple> TetMesh::get_edges() const
     // The output is still ordered by (min vid, max vid), and the representative is now
     // well defined rather than whatever an unstable std::sort happened to leave first
     // among the six copies of each edge.
-    std::vector<std::pair<std::pair<size_t, size_t>, TetMesh::Tuple>> edges;
-    for (int i = 0; i < tet_capacity(); i++) {
-        if (m_tet_connectivity[i].m_is_removed) continue;
-        for (int j = 0; j < 6; j++) {
-            const auto tup = tuple_from_edge(i, j);
-            if (tup.eid(*this) != size_t(6 * i + j)) {
-                continue; // some lower-numbered tet owns this edge
+    //
+    // The ownership test (eid() walks both vertices' tet lists) is most of the cost and reads
+    // the mesh only, so it runs on NUM_THREADS threads (see collect_owned); each edge is found
+    // exactly once, so the list is the same whatever the thread count.
+    using Entry = std::pair<std::pair<size_t, size_t>, TetMesh::Tuple>;
+    std::vector<Entry> edges = collect_owned<Entry>(
+        size_t(tet_capacity()),
+        NUM_THREADS,
+        6,
+        [this](size_t i) {
+            uint8_t mask = 0;
+            if (m_tet_connectivity[i].m_is_removed) return mask;
+            for (int j = 0; j < 6; j++) {
+                // Owned unless some lower-numbered tet carries this edge.
+                if (tuple_from_edge(i, j).eid(*this) == 6 * i + j) mask |= uint8_t(1u << j);
             }
+            return mask;
+        },
+        [this](size_t i, int j) {
+            const auto tup = tuple_from_edge(i, j);
             size_t v0 = tup.vid(*this);
             size_t v1 = tup.switch_vertex(*this).vid(*this);
             if (v0 > v1) std::swap(v0, v1);
-            edges.emplace_back(std::make_pair(v0, v1), tup);
-        }
-    }
+            return Entry(std::make_pair(v0, v1), tup);
+        });
     std::sort(edges.begin(), edges.end(), [](const auto& a, const auto& b) {
         return a.first < b.first;
     });
@@ -244,22 +297,22 @@ void TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&)>& fu
 
 std::vector<TetMesh::Tuple> TetMesh::get_faces() const
 {
-    auto faces = std::vector<TetMesh::Tuple>();
-    // Each tet contributes at most 4 faces and exactly one is the canonical
-    // representative, so 2 * tet_capacity() is a close upper bound on a closed mesh and
-    // an over-estimate on an open one. Without this the vector doubles its way up and
-    // holds both buffers at the last reallocation -- 187M faces x 40 bytes is 7.5 GB of
-    // payload on Thingi10K 338910, and the transient peak is far worse.
-    faces.reserve(2 * tet_capacity());
-    for (int i = 0; i < tet_capacity(); i++) {
-        if (m_tet_connectivity[i].m_is_removed) continue;
-        for (int j = 0; j < 4; j++) {
-            auto face_t = tuple_from_face(i, j);
-            if (face_t.fid(*this) == 4 * i + j) faces.emplace_back(face_t);
-        }
-    }
-
-    return faces;
+    // Allocated once at its exact size (see collect_owned). Grown by doubling, the vector held
+    // both buffers at its last reallocation -- 187M faces x 40 bytes is 7.5 GB of payload on
+    // Thingi10K 338910, and the transient peak was far worse.
+    return collect_owned<TetMesh::Tuple>(
+        size_t(tet_capacity()),
+        NUM_THREADS,
+        4,
+        [this](size_t i) {
+            uint8_t mask = 0;
+            if (m_tet_connectivity[i].m_is_removed) return mask;
+            for (int j = 0; j < 4; j++) {
+                if (tuple_from_face(i, j).fid(*this) == 4 * i + j) mask |= uint8_t(1u << j);
+            }
+            return mask;
+        },
+        [this](size_t i, int j) { return tuple_from_face(i, j); });
 }
 
 
