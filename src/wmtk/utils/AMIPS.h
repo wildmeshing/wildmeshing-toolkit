@@ -72,7 +72,7 @@ double AMIPS_energy_stable_p3(const std::array<double, 12>& T)
     auto res = AMIPS_energy(T);
 
     if (res < 1e8 && res > 2) {
-        return std::pow(res, 3);
+        return res * res * res;
     } else {
         // The double value cancelled (a nearly flat tet) or overflowed: the exact value, from
         // double-double arithmetic when it can be certified. `rational` is the mpq-backed

@@ -1441,8 +1441,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // The finalization's per-tet annotations, each computed only when something uses it:
     //
     //   input winding numbers  the whole input's, which filter "input" uses, and each input's
-    //                          (the wn_<i> output fields). Always, unless skip_winding_number
-    //                          opts out where no filter needs them.
+    //                          (the wn_<i> output fields). When a filter needs them, or with
+    //                          skip_winding_number false (it defaults to true).
     //   tracked winding number filter "tracked", or compute_tracked_winding_number.
     //   flood-fill parts       filter "flood", or compute_flood_fill. A serial BFS over every
     //                          tet: ~1-2 min on 765k tets / 6600 parts.
@@ -1455,12 +1455,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // that the others do not bound what it keeps; the others are of every input.
     const bool skip_winding =
         tagged || (json_params["skip_winding_number"] && filter_option == "none");
-    if (!tagged && json_params["skip_winding_number"] && filter_option != "none") {
-        logger().warn(
-            "skip_winding_number is set but filter='{}' requires the winding number; "
-            "computing it anyway.",
-            filter_option);
-    }
+    // skip_winding_number is the default; a filter that needs the winding numbers computes them
+    // regardless, so there is nothing to warn about.
     const bool need_tracked =
         filter_option == "tracked" || json_params["compute_tracked_winding_number"];
     const bool need_parts = filter_option == "flood" || json_params["compute_flood_fill"];
