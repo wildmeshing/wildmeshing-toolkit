@@ -2640,6 +2640,39 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#rod_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rod_mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rod_radius" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rod_radius
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ignore_background_mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ignore_background_mesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#export_input_and_shell" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2677,6 +2710,39 @@
     <span class="md-ellipsis">
       
         jacobian_smoothing_iterations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relative_tet_volume_floor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relative_tet_volume_floor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transition_smoothing_iterations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        transition_smoothing_iterations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thickness_smoothing_iterations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        thickness_smoothing_iterations
       
     </span>
   </a>
@@ -3698,6 +3764,39 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#rod_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rod_mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rod_radius" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rod_radius
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ignore_background_mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ignore_background_mesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#export_input_and_shell" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3735,6 +3834,39 @@
     <span class="md-ellipsis">
       
         jacobian_smoothing_iterations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relative_tet_volume_floor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relative_tet_volume_floor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transition_smoothing_iterations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        transition_smoothing_iterations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thickness_smoothing_iterations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        thickness_smoothing_iterations
       
     </span>
   </a>
@@ -3921,6 +4053,15 @@
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Keep exterior background tetrahedra during optimization/output. Background must remain strictly positive. Without background_remeshing only offset vertices move. Targets are computed from the band alone.</p>
 <h2 id="other-options">Other options<a class="headerlink" href="#other-options" title="Permanent link">&para;</a></h2>
+<h3 id="rod_mode"><code>rod_mode</code><a class="headerlink" href="#rod_mode" title="Permanent link">&para;</a></h3>
+<p><strong>bool</strong> · default <code>false</code></p>
+<p>Build rods from original-correspondence offset regions collapsed to vertex rings. Equalize degrees along each path and map matching transported material slots. Construct adjacent-ring prism layers atomically, swap exterior interfaces when needed, and connect retained background through pyramids. Preserve input volume, shell reconstruction and protected attachment stars; invalid layers retain tets. Requires explicit input labels and correspondence.</p>
+<h3 id="rod_radius"><code>rod_radius</code><a class="headerlink" href="#rod_radius" title="Permanent link">&para;</a></h3>
+<p><strong>float</strong> · default <code>0.0</code></p>
+<p>Rod mode only. Absolute target section radius; positive, or zero to use thicknessratio times the mean centerline edge length. Infeasible circular targets retain valid geometry and are reported.</p>
+<h3 id="ignore_background_mesh"><code>ignore_background_mesh</code><a class="headerlink" href="#ignore_background_mesh" title="Permanent link">&para;</a></h3>
+<p><strong>bool</strong> · default <code>false</code></p>
+<p>Explicitly discard background tetrahedra before rod preprocessing and joint optimization. Keep input volume and offset band, remove background constraints and background-pyramid reconstruction, and do not reattach the discarded mesh. Overrides keep_background_mesh. Intended for a band-only result or a background-constraint comparison.</p>
 <h3 id="export_input_and_shell"><code>export_input_and_shell</code><a class="headerlink" href="#export_input_and_shell" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Additionally export the union of input volume and offset band as &lt;output_stem&gt;_input_shell.msh and .vtu, using the same final coordinates, hybrid cells and attributes while omitting background cells.</p>
@@ -3933,6 +4074,15 @@
 <h3 id="jacobian_smoothing_iterations"><code>jacobian_smoothing_iterations</code><a class="headerlink" href="#jacobian_smoothing_iterations" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>0</code></p>
 <p>Optional prism Jacobian smoothing rounds after tet optimization. Zero disables this stage. Only offset vertices move; input, correspondence and connectivity remain fixed.</p>
+<h3 id="relative_tet_volume_floor"><code>relative_tet_volume_floor</code><a class="headerlink" href="#relative_tet_volume_floor" title="Permanent link">&para;</a></h3>
+<p><strong>float</strong> · default <code>0.0</code></p>
+<p>Optional fraction in [0,1). Each collapse or smoothing move must retain more than this fraction of every modified surviving tet's volume, including background. Zero keeps the original strict-positive rule. Deleted collapse cells are excluded. The absolute band min_tet_volume floor still applies.</p>
+<h3 id="transition_smoothing_iterations"><code>transition_smoothing_iterations</code><a class="headerlink" href="#transition_smoothing_iterations" title="Permanent link">&para;</a></h3>
+<p><strong>int</strong> · default <code>0</code></p>
+<p>Optional local convex-envelope initialization and concave-hinge smoothing after hybrid construction, in [0,100]. Only outer offset vertices in protected/marked transition neighborhoods move. Input, correspondence, connectivity and completed rod-prism frames stay fixed; every step checks reference tets, native prism/pyramid Jacobians and native shape quality. Zero disables this stage.</p>
+<h3 id="thickness_smoothing_iterations"><code>thickness_smoothing_iterations</code><a class="headerlink" href="#thickness_smoothing_iterations" title="Permanent link">&para;</a></h3>
+<p><strong>int</strong> · default <code>0</code></p>
+<p>Optional final coupled offset smoothing rounds, in [0,200]. Fits shell normal offset distance and rod section radius/plane while improving native prism AMIPS. Neighboring free rod offsets may move together. Input and protected offset vertices, correspondence and connectivity stay fixed. Tets and pyramids supply positivity constraints only; their shape quality is not optimized. Zero disables this stage.</p>
 <h3 id="jacobian_target"><code>jacobian_target</code><a class="headerlink" href="#jacobian_target" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>0.01</code></p>
 <p>Positive target det(J), normalized by twice input triangle area times initial mean column length.</p>

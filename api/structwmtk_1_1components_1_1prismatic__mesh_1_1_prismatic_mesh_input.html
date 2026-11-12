@@ -109,6 +109,18 @@ std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="memitem:ae3c9364645835849c6683077b84f3f2b" id="r_ae3c9364645835849c6683077b84f3f2b"><td class="memItemLeft" align="right" valign="top"><a id="ae3c9364645835849c6683077b84f3f2b" name="ae3c9364645835849c6683077b84f3f2b"></a>
 std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_vertices</b></td></tr>
 <tr class="separator:ae3c9364645835849c6683077b84f3f2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a686ed8893189b83177d4245d90d93ae5" id="r_a686ed8893189b83177d4245d90d93ae5"><td class="memItemLeft" align="right" valign="top"><a id="a686ed8893189b83177d4245d90d93ae5" name="a686ed8893189b83177d4245d90d93ae5"></a>
+std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>source_edges</b></td></tr>
+<tr class="separator:a686ed8893189b83177d4245d90d93ae5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf82ed68e3c917e268e8132d057f0d86" id="r_acf82ed68e3c917e268e8132d057f0d86"><td class="memItemLeft" align="right" valign="top"><a id="acf82ed68e3c917e268e8132d057f0d86" name="acf82ed68e3c917e268e8132d057f0d86"></a>
+std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>source_faces</b></td></tr>
+<tr class="separator:acf82ed68e3c917e268e8132d057f0d86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dddc09869bc7b4f696336c3c9346b51" id="r_a5dddc09869bc7b4f696336c3c9346b51"><td class="memItemLeft" align="right" valign="top"><a id="a5dddc09869bc7b4f696336c3c9346b51" name="a5dddc09869bc7b4f696336c3c9346b51"></a>
+std::set&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>layered_junction_vertices</b></td></tr>
+<tr class="separator:a5dddc09869bc7b4f696336c3c9346b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f5a92922b355b45e6e7c51e9585dd01" id="r_a6f5a92922b355b45e6e7c51e9585dd01"><td class="memItemLeft" align="right" valign="top"><a id="a6f5a92922b355b45e6e7c51e9585dd01" name="a6f5a92922b355b45e6e7c51e9585dd01"></a>
+nlohmann::json&#160;</td><td class="memItemRight" valign="bottom"><b>layered_correspondence_report</b></td></tr>
+<tr class="separator:a6f5a92922b355b45e6e7c51e9585dd01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1015f0bdafe751c0d259888978b23a6e" id="r_a1015f0bdafe751c0d259888978b23a6e"><td class="memItemLeft" align="right" valign="top"><a id="a1015f0bdafe751c0d259888978b23a6e" name="a1015f0bdafe751c0d259888978b23a6e"></a>
 std::vector&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>input_to_offset_vertices</b></td></tr>
 <tr class="separator:a1015f0bdafe751c0d259888978b23a6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -148,6 +160,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>input_average_edge_
 <tr class="memitem:a9ca60e6085f6ad29d05192d8c9a6ef5a" id="r_a9ca60e6085f6ad29d05192d8c9a6ef5a"><td class="memItemLeft" align="right" valign="top"><a id="a9ca60e6085f6ad29d05192d8c9a6ef5a" name="a9ca60e6085f6ad29d05192d8c9a6ef5a"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>target_thickness</b> = 0</td></tr>
 <tr class="separator:a9ca60e6085f6ad29d05192d8c9a6ef5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a60ca8b0ac572e77f134334cf70c7b3b3" id="r_a60ca8b0ac572e77f134334cf70c7b3b3"><td class="memItemLeft" align="right" valign="top"><a id="a60ca8b0ac572e77f134334cf70c7b3b3" name="a60ca8b0ac572e77f134334cf70c7b3b3"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>relative_tet_volume_floor</b> = 0</td></tr>
+<tr class="separator:a60ca8b0ac572e77f134334cf70c7b3b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5181346e212e22108d0a2d93a12aac00" id="r_a5181346e212e22108d0a2d93a12aac00"><td class="memItemLeft" align="right" valign="top"><a id="a5181346e212e22108d0a2d93a12aac00" name="a5181346e212e22108d0a2d93a12aac00"></a>
 std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_optimization_iteration.html">OptimizationIteration</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>optimization_iterations</b></td></tr>
 <tr class="separator:a5181346e212e22108d0a2d93a12aac00"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -157,6 +172,12 @@ nlohmann::json&#160;</td><td class="memItemRight" valign="bottom"><b>jacobian_sm
 <tr class="memitem:ae3298005c3766a31d6dde5ea8f96f3f8" id="r_ae3298005c3766a31d6dde5ea8f96f3f8"><td class="memItemLeft" align="right" valign="top"><a id="ae3298005c3766a31d6dde5ea8f96f3f8" name="ae3298005c3766a31d6dde5ea8f96f3f8"></a>
 nlohmann::json&#160;</td><td class="memItemRight" valign="bottom"><b>background_remeshing_report</b></td></tr>
 <tr class="separator:ae3298005c3766a31d6dde5ea8f96f3f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a688a7094625f082289675d97fb506d21" id="r_a688a7094625f082289675d97fb506d21"><td class="memItemLeft" align="right" valign="top"><a id="a688a7094625f082289675d97fb506d21" name="a688a7094625f082289675d97fb506d21"></a>
+std::shared_ptr&lt; <a class="el" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_mesh_state.html">RodMeshState</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>rod_state</b></td></tr>
+<tr class="separator:a688a7094625f082289675d97fb506d21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab81cc97439b9d500aa9283465adf2ff9" id="r_ab81cc97439b9d500aa9283465adf2ff9"><td class="memItemLeft" align="right" valign="top"><a id="ab81cc97439b9d500aa9283465adf2ff9" name="ab81cc97439b9d500aa9283465adf2ff9"></a>
+std::shared_ptr&lt; <a class="el" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_junction_protection.html">JunctionProtection</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>junction_protection</b></td></tr>
+<tr class="separator:ab81cc97439b9d500aa9283465adf2ff9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this struct was generated from the following file:<ul>
 <li>components/prismatic_mesh/wmtk/components/prismatic_mesh/<a class="el" href="prismatic__mesh_8hpp_source.html">prismatic_mesh.hpp</a></li>
