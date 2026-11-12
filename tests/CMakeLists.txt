@@ -7,6 +7,7 @@ include(Catch)
 # Sources
 set(TEST_SOURCES
     2d_tests.cpp
+    test_amips.cpp
     test_delaunay.cpp
     test_embed_triangles.cpp
     test_envelope.cpp
