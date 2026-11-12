@@ -1005,10 +1005,23 @@ private:
             {}
 
             // A member, not a hidden friend: a local class cannot define friend functions.
+            //
+            // Lexicographic on (weight, op, tup, retry, key), spelled out: the same answers as
+            // std::tie(...) < std::tie(...) in C++20, which compares through <=> -- including an
+            // unordered (NaN) weight, which makes it false both ways without looking further --
+            // at a fraction of the cost of the tuple's three-way compare. The queue runs it tens of
+            // millions of times on a large pass. Every field takes part, so the order is total and
+            // equal elements are identical, which is what lets any heap pop the same sequence.
             bool operator<(const Elem& b) const
             {
-                return std::tie(weight, op, tup, retry, key) <
-                       std::tie(b.weight, b.op, b.tup, b.retry, b.key);
+                if (weight < b.weight) return true;
+                if (b.weight < weight) return false;
+                if (!(weight == b.weight)) return false;
+                if (op != b.op) return op < b.op;
+                if (tup < b.tup) return true;
+                if (b.tup < tup) return false;
+                if (retry != b.retry) return retry < b.retry;
+                return key < b.key;
             }
 
             // Every field equal, the weight bit for bit. (Tuple orders every one of its integer
@@ -1023,7 +1036,7 @@ private:
         // task both pops from it and pushes its renewed operations back into it -- so those need
         // no lock. `final_queue` is the one that genuinely crosses threads: tasks push retry
         // overflow into it while running, and it is drained after the barrier. Both are
-        // std::priority_queue with the same comparator underneath, so pop order is unchanged.
+        // sorted_run_queue with the same comparator underneath, so pop order is unchanged.
         using LocalQueue = wmtk::threading::serial_priority_queue<Elem>;
         using SharedQueue = wmtk::threading::concurrent_priority_queue<Elem>;
 
