@@ -88,10 +88,6 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aed34ba20086d0254dc5c265b1d2df4be" id="r_aed34ba20086d0254dc5c265b1d2df4be"><td class="memItemLeft" align="right" valign="top"><a id="aed34ba20086d0254dc5c265b1d2df4be" name="aed34ba20086d0254dc5c265b1d2df4be"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_ambient</b> (const std::map&lt; int64_t, std::string &gt; &amp;tag_id_to_name, int64_t tag)</td></tr>
-<tr class="memdesc:aed34ba20086d0254dc5c265b1d2df4be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether <code>tag</code> is the tag named "ambient". <br /></td></tr>
-<tr class="separator:aed34ba20086d0254dc5c265b1d2df4be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae732359a772cd1a310bf29efa75d239d" id="r_ae732359a772cd1a310bf29efa75d239d"><td class="memItemLeft" align="right" valign="top"><a id="ae732359a772cd1a310bf29efa75d239d" name="ae732359a772cd1a310bf29efa75d239d"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>segments_bvh</b> (const std::vector&lt; Vector2d &gt; &amp;vertices, SimpleBVH::BVH &amp;bvh)</td></tr>
 <tr class="memdesc:ae732359a772cd1a310bf29efa75d239d"><td class="mdescLeft">&#160;</td><td class="mdescRight">BVH of segments, given as consecutive pairs of points. Returns false if there are none. <br /></td></tr>
@@ -107,109 +103,56 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>bvh_distance</b> (c
 <tr class="memitem:a109ee313cc83f2c7228a5375e88fa648" id="r_a109ee313cc83f2c7228a5375e88fa648"><td class="memItemLeft" align="right" valign="top"><a id="a109ee313cc83f2c7228a5375e88fa648" name="a109ee313cc83f2c7228a5375e88fa648"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>bvh_distance</b> (const SimpleBVH::BVH &amp;bvh, const Vector3d &amp;p)</td></tr>
 <tr class="separator:a109ee313cc83f2c7228a5375e88fa648"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5fdadffcf4a436b3eb089b2484b8a17" id="r_ac5fdadffcf4a436b3eb089b2484b8a17"><td class="memItemLeft" align="right" valign="top">std::optional&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#ac5fdadffcf4a436b3eb089b2484b8a17">sphere_trace</a> (const std::function&lt; double(const Vector2d &amp;)&gt; &amp;f, const Vector2d &amp;a, const Vector2d &amp;dir, double L, double level, double tol, bool from_below)</td></tr>
-<tr class="memdesc:ac5fdadffcf4a436b3eb089b2484b8a17"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sphere tracing of a 1-Lipschitz function f along a + t dir, t in [0, L), towards the level set f = level.  <br /></td></tr>
-<tr class="separator:ac5fdadffcf4a436b3eb089b2484b8a17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7a0c6ffb9f15ce4f33e5f218e6416bbb" id="r_a7a0c6ffb9f15ce4f33e5f218e6416bbb"><td class="memItemLeft" align="right" valign="top"><a id="a7a0c6ffb9f15ce4f33e5f218e6416bbb" name="a7a0c6ffb9f15ce4f33e5f218e6416bbb"></a>
-std::optional&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>sphere_trace</b> (const std::function&lt; double(const Vector3d &amp;)&gt; &amp;f, const Vector3d &amp;a, const Vector3d &amp;dir, const double L, const double level, const double tol, const bool from_below)</td></tr>
-<tr class="separator:a7a0c6ffb9f15ce4f33e5f218e6416bbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5478ec97cc5044bafd398d8667bf7d86" id="r_a5478ec97cc5044bafd398d8667bf7d86"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a5478ec97cc5044bafd398d8667bf7d86">nearest_region</a> (const std::vector&lt; SimpleBVH::BVH &gt; &amp;bvhs, const Vector2d &amp;p, const std::vector&lt; size_t &gt; &amp;regions)</td></tr>
-<tr class="separator:a5478ec97cc5044bafd398d8667bf7d86"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72a0f26823b445f55795c299e4fb8483" id="r_a72a0f26823b445f55795c299e4fb8483"><td class="memItemLeft" align="right" valign="top"><a id="a72a0f26823b445f55795c299e4fb8483" name="a72a0f26823b445f55795c299e4fb8483"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>nearest_region</b> (const std::vector&lt; SimpleBVH::BVH &gt; &amp;bvhs, const Vector3d &amp;p, const std::vector&lt; size_t &gt; &amp;regions)</td></tr>
-<tr class="separator:a72a0f26823b445f55795c299e4fb8483"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7fd7dca8bb401b953ab503e5b6e8c884" id="r_a7fd7dca8bb401b953ab503e5b6e8c884"><td class="memItemLeft" align="right" valign="top">std::pair&lt; size_t, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a7fd7dca8bb401b953ab503e5b6e8c884">split_fill_label</a> (const CornerLabels &amp;corners, const std::function&lt; const std::vector&lt; size_t &gt; &amp;(size_t)&gt; &amp;ties)</td></tr>
+<tr class="memdesc:a7fd7dca8bb401b953ab503e5b6e8c884"><td class="mdescLeft">&#160;</td><td class="mdescRight">The region "split_fill" gives a cell, from its corners' own labels.  <br /></td></tr>
+<tr class="separator:a7fd7dca8bb401b953ab503e5b6e8c884"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2fb00ce1881b736a9f28510c2fe1ad40" id="r_a2fb00ce1881b736a9f28510c2fe1ad40"><td class="memItemLeft" align="right" valign="top">std::optional&lt; Eigen::VectorXd &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a2fb00ce1881b736a9f28510c2fe1ad40">equal_distances_point</a> (const Eigen::MatrixXd &amp;D)</td></tr>
+<tr class="memdesc:a2fb00ce1881b736a9f28510c2fe1ad40"><td class="mdescLeft">&#160;</td><td class="mdescRight">The point of a simplex where k distance functions, each interpolated linearly from its values at the simplex's k corners, are all equal: for a triangle (k = 3) the triple point of three regions, for a tet (k = 4) the quadruple point of four (tight seal v2 note, section 4a-i).  <br /></td></tr>
+<tr class="separator:a2fb00ce1881b736a9f28510c2fe1ad40"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45266e99562d7eac463b60b8b4eec5c8" id="r_a45266e99562d7eac463b60b8b4eec5c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a45266e99562d7eac463b60b8b4eec5c8">fan_triangles</a> (const std::vector&lt; Vector3d &gt; &amp;poly, std::vector&lt; Vector3d &gt; &amp;triangles)</td></tr>
 <tr class="separator:a45266e99562d7eac463b60b8b4eec5c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29280dab26f460f73be6840ecfdc1af2" id="r_a29280dab26f460f73be6840ecfdc1af2"><td class="memItemLeft" align="right" valign="top"><a id="a29280dab26f460f73be6840ecfdc1af2" name="a29280dab26f460f73be6840ecfdc1af2"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>point_cell_distance</b> (const Vector2d &amp;p, const std::array&lt; Vector2d, 3 &gt; &amp;cell)</td></tr>
-<tr class="memdesc:a29280dab26f460f73be6840ecfdc1af2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance from p to a closed cell: a triangle in 2D, a tet in 3D; 0 inside it. <br /></td></tr>
-<tr class="separator:a29280dab26f460f73be6840ecfdc1af2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f2d530b5a70a8482db04c4b9a93d5eb" id="r_a1f2d530b5a70a8482db04c4b9a93d5eb"><td class="memItemLeft" align="right" valign="top"><a id="a1f2d530b5a70a8482db04c4b9a93d5eb" name="a1f2d530b5a70a8482db04c4b9a93d5eb"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>point_triangle_distance</b> (const Vector3d &amp;p, const Vector3d &amp;a, const Vector3d &amp;b, const Vector3d &amp;c)</td></tr>
-<tr class="memdesc:a1f2d530b5a70a8482db04c4b9a93d5eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance from p to the closed triangle (a, b, c) in 3D. <br /></td></tr>
-<tr class="separator:a1f2d530b5a70a8482db04c4b9a93d5eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7edd2f67565821e99a5937734d9dadd" id="r_ae7edd2f67565821e99a5937734d9dadd"><td class="memItemLeft" align="right" valign="top"><a id="ae7edd2f67565821e99a5937734d9dadd" name="ae7edd2f67565821e99a5937734d9dadd"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>point_cell_distance</b> (const Vector3d &amp;p, const std::array&lt; Vector3d, 4 &gt; &amp;cell)</td></tr>
-<tr class="separator:ae7edd2f67565821e99a5937734d9dadd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4f5cea38c24a02100534b4923a61fcdc" id="r_a4f5cea38c24a02100534b4923a61fcdc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a4f5cea38c24a02100534b4923a61fcdc">certify_on_cell</a> (const std::array&lt; Vector2d, 3 &gt; &amp;cell, const std::array&lt; double, 3 &gt; &amp;corner_values, const std::function&lt; double(const Vector2d &amp;)&gt; &amp;f, double level, bool at_most, int max_depth)</td></tr>
-<tr class="memdesc:a4f5cea38c24a02100534b4923a61fcdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Certifies that a 1-Lipschitz function f stays on one side of <code>level</code> over a whole cell (a triangle in 2D, a tet in 3D), conservatively: true only if proven.  <br /></td></tr>
-<tr class="separator:a4f5cea38c24a02100534b4923a61fcdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42595807e73f9261a67820f14a9be9de" id="r_a42595807e73f9261a67820f14a9be9de"><td class="memItemLeft" align="right" valign="top"><a id="a42595807e73f9261a67820f14a9be9de" name="a42595807e73f9261a67820f14a9be9de"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>certify_on_cell</b> (const std::array&lt; Vector3d, 4 &gt; &amp;cell, const std::array&lt; double, 4 &gt; &amp;corner_values, const std::function&lt; double(const Vector3d &amp;)&gt; &amp;f, const double level, const bool at_most, const int max_depth)</td></tr>
-<tr class="separator:a42595807e73f9261a67820f14a9be9de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92a55f192c9d72ad40fff9462e40f4ef" id="r_a92a55f192c9d72ad40fff9462e40f4ef"><td class="memTemplParams" colspan="2">template&lt;typename V &gt; </td></tr>
+<tr class="memitem:a92a55f192c9d72ad40fff9462e40f4ef"><td class="memTemplItemLeft" align="right" valign="top">std::optional&lt; V &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a92a55f192c9d72ad40fff9462e40f4ef">level_crossing</a> (const std::function&lt; double(const V &amp;)&gt; &amp;f, const V &amp;a, const V &amp;b, const double level, const double step_floor, const bool from_below)</td></tr>
+<tr class="memdesc:a92a55f192c9d72ad40fff9462e40f4ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Where a 1-Lipschitz f reaches <code>level</code> along the segment [a, b], coming from a, which is below the level if <code>from_below</code> (f(a) &lt; level), else above it (f(a) &gt; level).  <br /></td></tr>
+<tr class="separator:a92a55f192c9d72ad40fff9462e40f4ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc4a3e1a40cef9d24954674d52c946f4" id="r_afc4a3e1a40cef9d24954674d52c946f4"><td class="memTemplParams" colspan="2"><a id="afc4a3e1a40cef9d24954674d52c946f4" name="afc4a3e1a40cef9d24954674d52c946f4"></a>
+template&lt;typename V &gt; </td></tr>
+<tr class="memitem:afc4a3e1a40cef9d24954674d52c946f4"><td class="memTemplItemLeft" align="right" valign="top">V&#160;</td><td class="memTemplItemRight" valign="bottom"><b>bisect_sign_change</b> (const std::function&lt; double(const V &amp;)&gt; &amp;f, V a, V b)</td></tr>
+<tr class="memdesc:afc4a3e1a40cef9d24954674d52c946f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">The point of the segment [a, b] where f changes sign, by bisection, given f(a) &lt; 0 &lt;= f(b). <br /></td></tr>
+<tr class="separator:afc4a3e1a40cef9d24954674d52c946f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac5325264df240ef4dad57b7d1dfa3ce" id="r_aac5325264df240ef4dad57b7d1dfa3ce"><td class="memTemplParams" colspan="2"><a id="aac5325264df240ef4dad57b7d1dfa3ce" name="aac5325264df240ef4dad57b7d1dfa3ce"></a>
+template&lt;typename Corners &gt; </td></tr>
+<tr class="memitem:aac5325264df240ef4dad57b7d1dfa3ce"><td class="memTemplItemLeft" align="right" valign="top">CornerLabels&#160;</td><td class="memTemplItemRight" valign="bottom"><b>kept_corner_labels</b> (const CornerLabels &amp;parent, const Corners &amp;corners)</td></tr>
+<tr class="memdesc:aac5325264df240ef4dad57b7d1dfa3ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">The pairs of <code>parent</code> whose vertex is one of <code>corners</code>: a child's labels after a split. <br /></td></tr>
+<tr class="separator:aac5325264df240ef4dad57b7d1dfa3ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:ad8b7f6af2832d60acee8a9da1db35436" id="r_ad8b7f6af2832d60acee8a9da1db35436"><td class="memItemLeft" align="right" valign="top">constexpr std::array&lt; std::array&lt; int, 2 &gt;, 6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#ad8b7f6af2832d60acee8a9da1db35436">tet_edges</a></td></tr>
 <tr class="memdesc:ad8b7f6af2832d60acee8a9da1db35436"><td class="mdescLeft">&#160;</td><td class="mdescRight">The six edges of a tet, as pairs of its local vertex indices.  <br /></td></tr>
 <tr class="separator:ad8b7f6af2832d60acee8a9da1db35436"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac60152ba735c614f6aeccc21fbdf85a" id="r_aac60152ba735c614f6aeccc21fbdf85a"><td class="memItemLeft" align="right" valign="top"><a id="aac60152ba735c614f6aeccc21fbdf85a" name="aac60152ba735c614f6aeccc21fbdf85a"></a>
-constexpr double&#160;</td><td class="memItemRight" valign="bottom"><b>certify_margin</b> = 1e-12</td></tr>
-<tr class="memdesc:aac60152ba735c614f6aeccc21fbdf85a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relative margin of certify_on_cell's tests, so that rounding can only refute a cell. <br /></td></tr>
-<tr class="separator:aac60152ba735c614f6aeccc21fbdf85a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f7fb38b10f730653eea90caf4022afa" id="r_a0f7fb38b10f730653eea90caf4022afa"><td class="memItemLeft" align="right" valign="top"><a id="a0f7fb38b10f730653eea90caf4022afa" name="a0f7fb38b10f730653eea90caf4022afa"></a>
-constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>certify_depth_2d</b> = 8</td></tr>
-<tr class="memdesc:a0f7fb38b10f730653eea90caf4022afa"><td class="mdescLeft">&#160;</td><td class="mdescRight">certify_on_cell's subdivision levels in 2D and 3D, past which an undecided cell is refuted. <br /></td></tr>
-<tr class="separator:a0f7fb38b10f730653eea90caf4022afa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a401b5f843714d489cde06dfb823e2e69" id="r_a401b5f843714d489cde06dfb823e2e69"><td class="memItemLeft" align="right" valign="top"><a id="a401b5f843714d489cde06dfb823e2e69" name="a401b5f843714d489cde06dfb823e2e69"></a>
-constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>certify_depth_3d</b> = 5</td></tr>
-<tr class="separator:a401b5f843714d489cde06dfb823e2e69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Helpers of the geometric tight seal, SimWildMeshTri::tight_seal_geom (AnnotationsTri.cpp) and <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aee0856a13143a0a5e3de5a206e78a34a" title="Geometric tight seal between the regions R_i, the tets tagged with tags[i] and nothing else....">SimWildMesh::tight_seal_geom</a> (AnnotationsTet.cpp), which keep the operation itself. The helpers below need no mesh; those that do are private members of the two mesh classes, defined in TightSealGeom.cpp. </p>
+<div class="textblock"><p>Helpers of the geometric tight seal, SimWildMeshTri::tight_seal_geom (AnnotationsTri.cpp) and <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#adbce4b89ce9c29c70b30940ede9d3f4f" title="Geometric tight seal: closes the region R, the tets input_selection holds for, and fills the gaps fou...">SimWildMesh::tight_seal_geom</a> (AnnotationsTet.cpp), which keep the operation itself. The helpers below need no mesh; those that do are private members of the two mesh classes, defined in TightSealGeom.cpp. </p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a4f5cea38c24a02100534b4923a61fcdc" name="a4f5cea38c24a02100534b4923a61fcdc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f5cea38c24a02100534b4923a61fcdc">&#9670;&#160;</a></span>certify_on_cell()</h2>
+<a id="a2fb00ce1881b736a9f28510c2fe1ad40" name="a2fb00ce1881b736a9f28510c2fe1ad40"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2fb00ce1881b736a9f28510c2fe1ad40">&#9670;&#160;</a></span>equal_distances_point()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::components::simwild::tight_seal::certify_on_cell </td>
+          <td class="memname">std::optional&lt; Eigen::VectorXd &gt; wmtk::components::simwild::tight_seal::equal_distances_point </td>
           <td>(</td>
-          <td class="paramtype">const std::array&lt; Vector2d, 3 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>cell</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramtype">const Eigen::MatrixXd &amp;&#160;</td>
+          <td class="paramname"><em>D</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">const std::array&lt; double, 3 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>corner_values</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::function&lt; double(const Vector2d &amp;)&gt; &amp;&#160;</td>
-          <td class="paramname"><em>f</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>level</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>at_most</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>max_depth</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Certifies that a 1-Lipschitz function f stays on one side of <code>level</code> over a whole cell (a triangle in 2D, a tet in 3D), conservatively: true only if proven. </p>
-<p>at_most: max over the cell of f &lt;= level; otherwise: min over the cell of f &gt; level. The conservative circle (sphere) subdivision of topological_offset's <a class="el" href="_circle_8hpp_source.html">Circle.hpp</a> and <a class="el" href="_sphere_8hpp_source.html">Sphere.hpp</a>: a circle of radius rho around c holds only values within rho of f(c). Starting from the circle around the cell's bounding square (cube), a circle whose values are all on the right side (by the relative margin certify_margin) is certified; the cell is refuted if a corner is not (corner_values, with the margin), or if a circle's centre lies in the cell with f on the wrong side; any other circle is refined into the circles around its square's 2^dim sub-squares that overlap the cell, and refutes the cell once <code>max_depth</code> levels down. </p>
+<p>The point of a simplex where k distance functions, each interpolated linearly from its values at the simplex's k corners, are all equal: for a triangle (k = 3) the triple point of three regions, for a tet (k = 4) the quadruple point of four (tight seal v2 note, section 4a-i). </p>
+<p>D(r, c) is function r at corner c. Returns the point's barycentric coordinates (they sum to 1), or nothing if the system is singular. The point lies inside the simplex if all are &gt; 0. </p>
 
 </div>
 </div>
@@ -242,87 +185,48 @@ constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>certify_dept
 
 </div>
 </div>
-<a id="a5478ec97cc5044bafd398d8667bf7d86" name="a5478ec97cc5044bafd398d8667bf7d86"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5478ec97cc5044bafd398d8667bf7d86">&#9670;&#160;</a></span>nearest_region()</h2>
+<a id="a92a55f192c9d72ad40fff9462e40f4ef" name="a92a55f192c9d72ad40fff9462e40f4ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92a55f192c9d72ad40fff9462e40f4ef">&#9670;&#160;</a></span>level_crossing()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename V &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">size_t wmtk::components::simwild::tight_seal::nearest_region </td>
+          <td class="memname">std::optional&lt; V &gt; wmtk::components::simwild::tight_seal::level_crossing </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; SimpleBVH::BVH &gt; &amp;&#160;</td>
-          <td class="paramname"><em>bvhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const Vector2d &amp;&#160;</td>
-          <td class="paramname"><em>p</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
-          <td class="paramname"><em>regions</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>The region i among <code>regions</code> whose BVH (bvhs[i]) is nearest p; the first in <code>regions</code> on a tie. </p>
-
-</div>
-</div>
-<a id="ac5fdadffcf4a436b3eb089b2484b8a17" name="ac5fdadffcf4a436b3eb089b2484b8a17"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5fdadffcf4a436b3eb089b2484b8a17">&#9670;&#160;</a></span>sphere_trace()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::optional&lt; double &gt; wmtk::components::simwild::tight_seal::sphere_trace </td>
-          <td>(</td>
-          <td class="paramtype">const std::function&lt; double(const Vector2d &amp;)&gt; &amp;&#160;</td>
+          <td class="paramtype">const std::function&lt; double(const V &amp;)&gt; &amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const Vector2d &amp;&#160;</td>
+          <td class="paramtype">const V &amp;&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const Vector2d &amp;&#160;</td>
-          <td class="paramname"><em>dir</em>, </td>
+          <td class="paramtype">const V &amp;&#160;</td>
+          <td class="paramname"><em>b</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>L</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
+          <td class="paramtype">const double&#160;</td>
           <td class="paramname"><em>level</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>tol</em>, </td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>step_floor</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
+          <td class="paramtype">const bool&#160;</td>
           <td class="paramname"><em>from_below</em>&#160;</td>
         </tr>
         <tr>
@@ -333,8 +237,40 @@ constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>certify_dept
       </table>
 </div><div class="memdoc">
 
-<p>Sphere tracing of a 1-Lipschitz function f along a + t dir, t in [0, L), towards the level set f = level. </p>
-<p>From a point at f, the level set is at least |f - level| away in every direction, so a step that long along the segment cannot cross it. <code>from_below</code>: f(a) &lt; level and each step is level - f; otherwise f(a) &gt; level and each step is f - level. Returns the first t (of a + t dir) where |f - level| &lt;= tol, or nothing if the trace leaves [0, L) first: past the far end, the level set is not on the segment; behind a, f(a) is already beyond the level. </p>
+<p>Where a 1-Lipschitz f reaches <code>level</code> along the segment [a, b], coming from a, which is below the level if <code>from_below</code> (f(a) &lt; level), else above it (f(a) &gt; level). </p>
+<p>Sphere traced from a, each step |f - level| + step_floor (at least step_floor, so the trace ends; no step goes more than step_floor past the level), until f is at the level or past it; the last step is then bisected to the level. Nothing if f(a) is not on the side <code>from_below</code> gives, or if f stays on that side up to b. </p>
+
+</div>
+</div>
+<a id="a7fd7dca8bb401b953ab503e5b6e8c884" name="a7fd7dca8bb401b953ab503e5b6e8c884"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fd7dca8bb401b953ab503e5b6e8c884">&#9670;&#160;</a></span>split_fill_label()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::pair&lt; size_t, int &gt; wmtk::components::simwild::tight_seal::split_fill_label </td>
+          <td>(</td>
+          <td class="paramtype">const CornerLabels &amp;&#160;</td>
+          <td class="paramname"><em>corners</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::function&lt; const std::vector&lt; size_t &gt; &amp;(size_t)&gt; &amp;&#160;</td>
+          <td class="paramname"><em>ties</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The region "split_fill" gives a cell, from its corners' own labels. </p>
+<p>The corners' region if they agree. Otherwise an edge between two of them was not split, because the distances to their regions are equal at one of its ends; the cell then takes the one region that every corner's tie set holds. If they share several (an exact tie between regions) or none, the choice is arbitrary: the first region they share, or else the first corner's.</p>
+<p>ties(v): the regions within the tie tolerance of the nearest one at v, ascending. Returns the region and how it was chosen: 0 the corners agree, 1 their tie sets, 2 arbitrarily. </p>
 
 </div>
 </div>

@@ -2937,10 +2937,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#tight_seal_geom_tags" class="md-nav__link">
+  <a href="#tight_seal_geom_input_selection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        tight_seal_geom_tags
+        tight_seal_geom_input_selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tight_seal_geom_fill_selections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tight_seal_geom_fill_selections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tight_seal_geom_fill_tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tight_seal_geom_fill_tags
       
     </span>
   </a>
@@ -2970,17 +2992,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#tight_seal_geom_selection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        tight_seal_geom_selection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#tight_seal_geom_min_regions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2996,6 +3007,17 @@
     <span class="md-ellipsis">
       
         tight_seal_geom_sanity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tight_seal_geom_max_preprocessing_rounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tight_seal_geom_max_preprocessing_rounds
       
     </span>
   </a>
@@ -5029,10 +5051,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#tight_seal_geom_tags" class="md-nav__link">
+  <a href="#tight_seal_geom_input_selection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        tight_seal_geom_tags
+        tight_seal_geom_input_selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tight_seal_geom_fill_selections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tight_seal_geom_fill_selections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tight_seal_geom_fill_tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tight_seal_geom_fill_tags
       
     </span>
   </a>
@@ -5062,17 +5106,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#tight_seal_geom_selection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        tight_seal_geom_selection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#tight_seal_geom_min_regions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5088,6 +5121,17 @@
     <span class="md-ellipsis">
       
         tight_seal_geom_sanity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tight_seal_geom_max_preprocessing_rounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tight_seal_geom_max_preprocessing_rounds
       
     </span>
   </a>
@@ -5553,25 +5597,32 @@
 <h3 id="tight_seal_threshold"><code>tight_seal_threshold</code><a class="headerlink" href="#tight_seal_threshold" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>-1</code></p>
 <p>For tight_seal_topo: only fill a hole cluster if its total size (area in 2D, volume in 3D, in model units) is less than this threshold. Negative value means no threshold.</p>
-<h3 id="tight_seal_geom_tags"><code>tight_seal_geom_tags</code><a class="headerlink" href="#tight_seal_geom_tags" title="Permanent link">&para;</a></h3>
+<h3 id="tight_seal_geom_input_selection"><code>tight_seal_geom_input_selection</code><a class="headerlink" href="#tight_seal_geom_input_selection" title="Permanent link">&para;</a></h3>
+<p><strong>string</strong> · default <code>""</code></p>
+<p>For tight_seal_geom, required: a Boolean expression on tags, as in resolve_overlaps_tags (<code>_</code> is a cell with no tag, ambient), picking the cells (faces in 2D, tets in 3D) of the region R that is closed to find the parts to fill. The operation throws if it is empty.</p>
+<h3 id="tight_seal_geom_fill_selections"><code>tight_seal_geom_fill_selections</code><a class="headerlink" href="#tight_seal_geom_fill_selections" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>[]</code></p>
-<p>For tight_seal_geom (2D and 3D): the tags to seal, at least two. Each entry is a single tag other than ambient; its region is the cells (faces in 2D, tets in 3D) tagged with it and nothing else. Ignored, with a warning, if tight_seal_geom_selection is "detected".</p>
-<p>Each entry: One tag name.</p>
+<p>For tight_seal_geom: the colors of the fill, two or more Boolean expressions on tags, as in resolve_overlaps_tags; a cell outside the parts to fill that satisfies expression k has color k, whether it is in the closed region or not (a cell of a part has no color, whatever its tags). A part borders a color if one of its cells shares a facet (an edge in 2D, a face in 3D) with a cell of that color, and is filled if it borders tight_seal_geom_min_regions colors or more, with those it borders. The operation throws if a cell sharing a facet with any part, filled or not, satisfies more than one expression. A part is filled thus. First it is preprocessed, in at most tight_seal_geom_max_preprocessing_rounds rounds, with each vertex labelled by the nearest of the part's colors (the first of them on an exact tie): a round marks each edge whose ends' labels differ if, where the distances to those two are equal, another of the part's colors is nearest, and each face with three labels and no marked edge if, at its triple point (where the three distances, interpolated linearly over the face, are equal) inside it, another color is nearest; it splits the marked faces at those points, then the marked edges at theirs, so each new vertex shows the color found nearest there; each later round looks only at the edges and faces touching a vertex the last one made. Then each cell of the part labels its corners, a corner taking its nearest color, except that the corners of a facet the cell shares with a cell of one of the part's colors take that color. From these labels, all taken before any split, the part's tets with four distinct labels are split at their quadruple point (where the four distances, interpolated linearly over the tet, are equal; a tet with three is not split itself, only its faces and edges), then its faces with three distinct labels in a cell holding them (in 2D, its triangles) at their triple point, a tet or face whose point lies outside it at its centroid, then its edges whose ends have different labels in a cell holding them, where the distances to the two labels are equal (found by bisection; not if that falls on an end). A cell made by a split keeps its parent's labels of the corners it keeps; a new vertex has none. Each cell of the part then takes its corners' label if they agree; else the one color within a tie (1e-10 of the bounding box diagonal) of the nearest at every labelled corner; else, on an exact tie between colors, the first of them. It gets that color's tags (tight_seal_geom_fill_tags) added to its own. No topology is checked.</p>
+<p>Each entry: One color: a Boolean expression on tags.</p>
+<h3 id="tight_seal_geom_fill_tags"><code>tight_seal_geom_fill_tags</code><a class="headerlink" href="#tight_seal_geom_fill_tags" title="Permanent link">&para;</a></h3>
+<p><strong>list of list of string</strong> · default <code>[]</code></p>
+<p>For tight_seal_geom: the tags each color adds to the cells of the fill it labels, one list of tag names per entry of tight_seal_geom_fill_selections, in the same order, e.g. [["tag_0"], ["tag_1", "tag_2"]]. They are added to a cell's own tags, never replacing them; an empty list adds nothing. A name the mesh lacks becomes a new tag, with a warning; ambient (no tag) cannot be one. The operation throws unless there are as many lists as fill selections.</p>
+<p>Each entry: The tags one color adds.</p>
 <h3 id="tight_seal_geom_distance"><code>tight_seal_geom_distance</code><a class="headerlink" href="#tight_seal_geom_distance" title="Permanent link">&para;</a></h3>
 <p><strong>float</strong> · default <code>-1</code></p>
-<p>For tight_seal_geom: the distance d, which must be positive. A disk (a ball in 3D) of diameter d moves through the cells outside the regions without entering them; each connected part it cannot reach that borders the regions (see tight_seal_geom_selection) is filled with their Voronoi diagram. The parts are found as cells surely unreachable (certified, whole cells), grown by sphere tracing to where the disk's reach begins, and then selected.</p>
+<p>For tight_seal_geom: the distance d, which must be positive. A disk (a ball in 3D) of diameter d moves through the cells outside the region R (tight_seal_geom_input_selection) without entering it or leaving the mesh; the parts it cannot reach are found (the closing of R, minus R), and each is filled if it borders enough colors (see tight_seal_geom_fill_selections). R is first made simplicially embedded: each cell outside it whose facets all lie on it is split at its centroid, and so on down to the edges outside it joining two of its vertices (split at their midpoint), so that no cell outside R has all its vertices on it. With tol = tight_seal_geom_trace_rel_tol x the mesh's bounding box diagonal, a vertex within d/2 of R, R's own included, is IN if it is at least d/2 + tol from the dilation surface (where the distance to R is d/2), else OUT; the others are OUT. The cells whose vertices are all IN are marked, R's included; each edge from an IN vertex to an OUT one is split where the distance to the dilation surface falls to d/2 + tol, the labels' level, and of the cells it makes, those touching its IN end are marked and the others not (the new vertex takes no label), so R's cells may be split. The marked cells outside R form the parts. The operation throws if any part, filled or not, touches the mesh boundary, even at a vertex: keep R more than d/2 from it.</p>
 <h3 id="tight_seal_geom_trace_rel_tol"><code>tight_seal_geom_trace_rel_tol</code><a class="headerlink" href="#tight_seal_geom_trace_rel_tol" title="Permanent link">&para;</a></h3>
-<p><strong>float</strong> · default <code>0.01</code></p>
-<p>For tight_seal_geom, in (0, 1): both sphere traces stop within this x d/2 of their level: the dilation surface's, where the distance to the regions reaches d/2, and the growth's, where the distance to the dilation surface falls to d/2. As topological_offset's sphere_trace_target_rel_tol.</p>
-<h3 id="tight_seal_geom_selection"><code>tight_seal_geom_selection</code><a class="headerlink" href="#tight_seal_geom_selection" title="Permanent link">&para;</a></h3>
-<p><strong>string</strong> · default <code>"explicit"</code> · one of <code>explicit</code>, <code>detected</code></p>
-<p>For tight_seal_geom: which regions are sealed. "explicit": those of tight_seal_geom_tags; a part is filled if it borders all of them. "detected": every tag but ambient that some cell has alone is a region, tight_seal_geom_tags is ignored, and each part that borders tight_seal_geom_min_regions regions or more (shares an edge with them in 2D, a face in 3D) is filled with the Voronoi diagram of those it borders, so parts may be filled with different tags.</p>
+<p><strong>float</strong> · default <code>0.001</code></p>
+<p>For tight_seal_geom, in (0, 1): the tolerance, this x the mesh's bounding box diagonal (independent of tight_seal_geom_distance). The dilation surface is placed where the distance to the region R is d/2, and the parts' boundary where the distance to the dilation surface is d/2 + this tolerance, each by sphere tracing (steps of at least the tolerance) then bisection. A vertex within d/2 of R, R's own included, is IN at least d/2 + tolerance from the dilation surface, else OUT; hence the level d/2 + tolerance of the parts' boundary.</p>
 <h3 id="tight_seal_geom_min_regions"><code>tight_seal_geom_min_regions</code><a class="headerlink" href="#tight_seal_geom_min_regions" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>2</code> · min <code>2</code></p>
-<p>For tight_seal_geom with tight_seal_geom_selection "detected": a part is filled only if it borders at least this many regions; parts bordering fewer are left alone. At least 2. Ignored, with a warning if not 2, with "explicit", which fills the parts that border every listed region.</p>
+<p>For tight_seal_geom: a part is filled only if it borders at least this many colors (see tight_seal_geom_fill_selections), 2 or more; parts bordering fewer are left alone.</p>
 <h3 id="tight_seal_geom_sanity"><code>tight_seal_geom_sanity</code><a class="headerlink" href="#tight_seal_geom_sanity" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
-<p>For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell carries other than one region's tag, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two regions, which would be a concave feature of one body, filled. For tests; the integration tests set it.</p>
+<p>For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell holds none of the tight_seal_geom_fill_tags sets, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two colors, which would be a concave feature of one body, filled. For tests; the integration tests set it.</p>
+<h3 id="tight_seal_geom_max_preprocessing_rounds"><code>tight_seal_geom_max_preprocessing_rounds</code><a class="headerlink" href="#tight_seal_geom_max_preprocessing_rounds" title="Permanent link">&para;</a></h3>
+<p><strong>int</strong> · default <code>10</code> · min <code>0</code></p>
+<p>For tight_seal_geom: the most rounds of the fill's preprocessing (see tight_seal_geom_fill_selections), which splits an edge or face of a part at the point where its own labels' colors are equally near if another color is nearer there, so that a tet with three labels is crossed by their triple line and one with four holds their quadruple point. It stops earlier once nothing is marked, and warns if this many rounds leave something marked. 0 turns it off.</p>
 <h3 id="keep_lcc_tags"><code>keep_lcc_tags</code><a class="headerlink" href="#keep_lcc_tags" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>[]</code></p>
 <p>For keep_lcc: list of tag values for which only the largest connected component is kept.</p>
@@ -5636,7 +5687,7 @@
 <details class="note">
 <summary>Diagnostics: slow checks and extra output files. (2)</summary>
 <p><a id="DEBUG_output"></a><strong><code>DEBUG_output</code></strong> · <strong>bool</strong> · default <code>false</code></p>
-<p>Write the mesh as debug_{}.vtu after every operation.</p>
+<p>Write the mesh as debug_{}.vtu after every operation. tight_seal_geom also writes debug_{}_join_regions.vtu once it has found its join region J, before filling: cell fields join_region (1 on J's cells), join_component (the number of the J component, connected through faces in 3D and edges in 2D; -1 outside J) and join_filled (1 on the components that are filled); vertex field join_label, each vertex's label in finding J: 0 OUT, 1 IN, and -1 for a vertex made by a split, which takes no label.</p>
 <p><a id="DEBUG_sanity_checks"></a><strong><code>DEBUG_sanity_checks</code></strong> · <strong>bool</strong> · default <code>false</code></p>
 <p>Perform sanity checks after every operation. This can be very slow and should only be used for debugging.</p>
 </details>

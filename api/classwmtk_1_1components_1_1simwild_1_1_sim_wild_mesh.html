@@ -99,9 +99,13 @@ Inheritance diagram for wmtk::components::simwild::SimWildMesh:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_face_split_cache.html">FaceSplitCache</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_split_tag_cache.html">SplitTagCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_tag_cache.html">SwapTagCache</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_tet_split_cache.html">TetSplitCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
@@ -284,9 +288,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init_from_image</b> (
 <tr class="memitem:aeb36b129963c2d2208a385aa0ea70e1a" id="r_aeb36b129963c2d2208a385aa0ea70e1a"><td class="memItemLeft" align="right" valign="top"><a id="aeb36b129963c2d2208a385aa0ea70e1a" name="aeb36b129963c2d2208a385aa0ea70e1a"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_order_2_edge</b> (const std::array&lt; size_t, 2 &gt; &amp;e) const</td></tr>
 <tr class="separator:aeb36b129963c2d2208a385aa0ea70e1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53805a556c14578160a47bcaaed0ba3e" id="r_a53805a556c14578160a47bcaaed0ba3e"><td class="memItemLeft" align="right" valign="top"><a id="a53805a556c14578160a47bcaaed0ba3e" name="a53805a556c14578160a47bcaaed0ba3e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>write_vtu</b> (const std::string &amp;path, MeshMap *output=nullptr)</td></tr>
-<tr class="separator:a53805a556c14578160a47bcaaed0ba3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdee6b30bd24452c2a00fd747100e922" id="r_afdee6b30bd24452c2a00fd747100e922"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#afdee6b30bd24452c2a00fd747100e922">write_vtu</a> (const std::string &amp;path, MeshMap *output=nullptr, const std::vector&lt; std::pair&lt; std::string, std::vector&lt; double &gt; &gt; &gt; &amp;cell_fields={}, const std::vector&lt; std::pair&lt; std::string, std::vector&lt; double &gt; &gt; &gt; &amp;vertex_fields={})</td></tr>
+<tr class="separator:afdee6b30bd24452c2a00fd747100e922"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42d54caa9e3213f7d9a319907264fb43" id="r_a42d54caa9e3213f7d9a319907264fb43"><td class="memItemLeft" align="right" valign="top"><a id="a42d54caa9e3213f7d9a319907264fb43" name="a42d54caa9e3213f7d9a319907264fb43"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_surface</b> (const std::string &amp;path) const</td></tr>
 <tr class="separator:a42d54caa9e3213f7d9a319907264fb43"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -322,9 +325,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>seal_connected_compon
 <tr class="memitem:ab3b930af14d5f173ac14b73873dccb3b" id="r_ab3b930af14d5f173ac14b73873dccb3b"><td class="memItemLeft" align="right" valign="top"><a id="ab3b930af14d5f173ac14b73873dccb3b" name="ab3b930af14d5f173ac14b73873dccb3b"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>tight_seal_topo</b> (const std::vector&lt; std::vector&lt; CellTag &gt; &gt; &amp;tight_seal_tag_sets, double threshold=std::numeric_limits&lt; double &gt;::infinity())</td></tr>
 <tr class="separator:ab3b930af14d5f173ac14b73873dccb3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee0856a13143a0a5e3de5a206e78a34a" id="r_aee0856a13143a0a5e3de5a206e78a34a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aee0856a13143a0a5e3de5a206e78a34a">tight_seal_geom</a> (const std::vector&lt; int64_t &gt; &amp;tags, double distance, double trace_rel_tol=0.01, const std::string &amp;selection=&quot;explicit&quot;, int64_t min_regions=2, bool sanity=false)</td></tr>
-<tr class="memdesc:aee0856a13143a0a5e3de5a206e78a34a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Geometric tight seal between the regions R_i, the tets tagged with <code>tags[i]</code> and nothing else. The 3D counterpart of SimWildMeshTri::tight_seal_geom.  <br /></td></tr>
-<tr class="separator:aee0856a13143a0a5e3de5a206e78a34a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbce4b89ce9c29c70b30940ede9d3f4f" id="r_adbce4b89ce9c29c70b30940ede9d3f4f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#adbce4b89ce9c29c70b30940ede9d3f4f">tight_seal_geom</a> (const ExprPtr &amp;input_selection, const std::vector&lt; ExprPtr &gt; &amp;fill_selections, const std::vector&lt; CellTag &gt; &amp;fill_tags, double distance, double trace_rel_tol=0.001, int64_t min_regions=2, bool sanity=false, int64_t max_preprocessing_rounds=10)</td></tr>
+<tr class="memdesc:adbce4b89ce9c29c70b30940ede9d3f4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Geometric tight seal: closes the region R, the tets <code>input_selection</code> holds for, and fills the gaps found with the colors <code>fill_selections</code> define. The 3D counterpart of SimWildMeshTri::tight_seal_geom.  <br /></td></tr>
+<tr class="separator:adbce4b89ce9c29c70b30940ede9d3f4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d999a728da16ddd67e504d8bd55ce41" id="r_a4d999a728da16ddd67e504d8bd55ce41"><td class="memItemLeft" align="right" valign="top"><a id="a4d999a728da16ddd67e504d8bd55ce41" name="a4d999a728da16ddd67e504d8bd55ce41"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resolve_overlaps</b> (const std::vector&lt; std::array&lt; ExprPtr, 2 &gt; &gt; &amp;intersecting_tags)</td></tr>
 <tr class="separator:a4d999a728da16ddd67e504d8bd55ce41"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1431,6 +1434,16 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a5f23bc1b21f7194e124e45ac48c35868"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adee03e1436c7d54ce962f1505e3de9b2" id="r_adee03e1436c7d54ce962f1505e3de9b2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#adee03e1436c7d54ce962f1505e3de9b2">split_adjust_position</a> (size_t v_new, const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;children) override</td></tr>
 <tr class="separator:adee03e1436c7d54ce962f1505e3de9b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fa30a0a8dccd6044dec72887df9d153" id="r_a5fa30a0a8dccd6044dec72887df9d153"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a5fa30a0a8dccd6044dec72887df9d153">split_face_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="separator:a5fa30a0a8dccd6044dec72887df9d153"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab45e7f3655fbdc064a26f9b9b333ab61" id="r_ab45e7f3655fbdc064a26f9b9b333ab61"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab45e7f3655fbdc064a26f9b9b333ab61">split_face_after</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="memdesc:ab45e7f3655fbdc064a26f9b9b333ab61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the attributes for the added simplices.  <br /></td></tr>
+<tr class="separator:ab45e7f3655fbdc064a26f9b9b333ab61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae34251178424f3830db2dc0beac1c38" id="r_aae34251178424f3830db2dc0beac1c38"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aae34251178424f3830db2dc0beac1c38">split_tet_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="separator:aae34251178424f3830db2dc0beac1c38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeafdc7b3ff6af290b008c1b29ef2d53e" id="r_aeafdc7b3ff6af290b008c1b29ef2d53e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aeafdc7b3ff6af290b008c1b29ef2d53e">split_tet_after</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="memdesc:aeafdc7b3ff6af290b008c1b29ef2d53e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the attributes for the added simplices.  <br /></td></tr>
+<tr class="separator:aeafdc7b3ff6af290b008c1b29ef2d53e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af555c30daf8b4abd4c06b15e96830241" id="r_af555c30daf8b4abd4c06b15e96830241"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#af555c30daf8b4abd4c06b15e96830241">swap_before_interior</a> (const std::vector&lt; size_t &gt; &amp;tids) override</td></tr>
 <tr class="memdesc:af555c30daf8b4abd4c06b15e96830241"><td class="mdescLeft">&#160;</td><td class="mdescRight">Application data attached to the old cells. TetWild has none; SimWild caches tags.  <br /></td></tr>
 <tr class="separator:af555c30daf8b4abd4c06b15e96830241"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1550,18 +1563,6 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_inse
 <tr class="memitem:adedd059784843bcc33e4ff3ecf1041c7 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_adedd059784843bcc33e4ff3ecf1041c7"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_after</b> (const std::vector&lt; std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &gt; &amp;)</td></tr>
 <tr class="separator:adedd059784843bcc33e4ff3ecf1041c7 inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64999818509b8b91617ac943d5660090 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_a64999818509b8b91617ac943d5660090"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a64999818509b8b91617ac943d5660090">split_face_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a64999818509b8b91617ac943d5660090 inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for a face split before changing the connectivity.  <br /></td></tr>
-<tr class="separator:a64999818509b8b91617ac943d5660090 inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a576afbd06ac054b8b6248a2ddd6bf20f inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_a576afbd06ac054b8b6248a2ddd6bf20f"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a576afbd06ac054b8b6248a2ddd6bf20f">split_face_after</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a576afbd06ac054b8b6248a2ddd6bf20f inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the attributes for the added simplices.  <br /></td></tr>
-<tr class="separator:a576afbd06ac054b8b6248a2ddd6bf20f inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a07fe6dba85d24b09113f482496a4d243 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_a07fe6dba85d24b09113f482496a4d243"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a07fe6dba85d24b09113f482496a4d243">split_tet_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:a07fe6dba85d24b09113f482496a4d243 inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for a tet split before changing the connectivity.  <br /></td></tr>
-<tr class="separator:a07fe6dba85d24b09113f482496a4d243 inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab000e7b7d4a61cf9d0885adeb43d8f70 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_ab000e7b7d4a61cf9d0885adeb43d8f70"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ab000e7b7d4a61cf9d0885adeb43d8f70">split_tet_after</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="memdesc:ab000e7b7d4a61cf9d0885adeb43d8f70 inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the attributes for the added simplices.  <br /></td></tr>
-<tr class="separator:ab000e7b7d4a61cf9d0885adeb43d8f70 inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad9d6052a670ae32551b614f1e291429c inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_ad9d6052a670ae32551b614f1e291429c"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</b> (size_t v)</td></tr>
 <tr class="separator:ad9d6052a670ae32551b614f1e291429c inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1570,15 +1571,42 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 Private Member Functions</h2></td></tr>
 <tr class="memitem:a7e767b0afc38b66fe469235fd4b0c6ed" id="r_a7e767b0afc38b66fe469235fd4b0c6ed"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a7e767b0afc38b66fe469235fd4b0c6ed">tight_seal_boundary_bvh</a> (const std::vector&lt; size_t &gt; &amp;tids, const std::function&lt; bool(size_t)&gt; &amp;in_set, SimpleBVH::BVH &amp;bvh) const</td></tr>
 <tr class="separator:a7e767b0afc38b66fe469235fd4b0c6ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb297249ba0fc06e3a49accacd78703a" id="r_afb297249ba0fc06e3a49accacd78703a"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#afb297249ba0fc06e3a49accacd78703a">tight_seal_split_tracked</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> &amp;e, std::unordered_set&lt; size_t &gt; &amp;cells, std::vector&lt; char &gt; &amp;filled, const std::function&lt; void(size_t, size_t)&gt; &amp;on_child)</td></tr>
-<tr class="separator:afb297249ba0fc06e3a49accacd78703a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3ff62d8577498e62039df5143120f7a" id="r_ae3ff62d8577498e62039df5143120f7a"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ae3ff62d8577498e62039df5143120f7a">tight_seal_split_tracked</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> &amp;e, std::unordered_set&lt; size_t &gt; &amp;cells, std::vector&lt; char &gt; &amp;filled, std::vector&lt; int &gt; *cell_group=nullptr, std::vector&lt; CornerLabels &gt; *corner_labels=nullptr)</td></tr>
+<tr class="separator:ae3ff62d8577498e62039df5143120f7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67639cb90e871c53dd9c42e20284970c" id="r_a67639cb90e871c53dd9c42e20284970c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a67639cb90e871c53dd9c42e20284970c">tight_seal_split_face_tracked</a> (const std::array&lt; size_t, 3 &gt; &amp;f, const Vector3d &amp;p, std::unordered_set&lt; size_t &gt; &amp;cells, std::vector&lt; char &gt; &amp;filled, std::vector&lt; int &gt; *cell_group=nullptr, std::vector&lt; CornerLabels &gt; *corner_labels=nullptr)</td></tr>
+<tr class="separator:a67639cb90e871c53dd9c42e20284970c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab533abdb405a3d0394509c2091447df0" id="r_ab533abdb405a3d0394509c2091447df0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab533abdb405a3d0394509c2091447df0">tight_seal_dilation_surface_bvh</a> (const std::vector&lt; size_t &gt; &amp;tids, const std::vector&lt; int &gt; &amp;region, const std::vector&lt; double &gt; &amp;dist_R_at, const std::function&lt; double(const Vector3d &amp;)&gt; &amp;dist_R, double radius, double tol, SimpleBVH::BVH &amp;bvh, size_t &amp;n_traced, size_t &amp;n_failed) const</td></tr>
 <tr class="separator:ab533abdb405a3d0394509c2091447df0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a554a2693d47353361a2fd2ea55e01329" id="r_a554a2693d47353361a2fd2ea55e01329"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a554a2693d47353361a2fd2ea55e01329">tight_seal_geom_sanity</a> (const std::vector&lt; int64_t &gt; &amp;tags, const std::vector&lt; char &gt; &amp;filled) const</td></tr>
-<tr class="separator:a554a2693d47353361a2fd2ea55e01329"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6df251539b918ac31c74e9556a1f035d" id="r_a6df251539b918ac31c74e9556a1f035d"><td class="memItemLeft" align="right" valign="top"><a id="a6df251539b918ac31c74e9556a1f035d" name="a6df251539b918ac31c74e9556a1f035d"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>tight_seal_cells_on_boundary</b> (const std::vector&lt; size_t &gt; &amp;tids) const</td></tr>
+<tr class="memdesc:a6df251539b918ac31c74e9556a1f035d"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of <code>tids</code> have a vertex on the mesh's boundary, a face with no tet beyond it. <br /></td></tr>
+<tr class="separator:a6df251539b918ac31c74e9556a1f035d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2beca8fb12b3db86ac1defeebecea65f" id="r_a2beca8fb12b3db86ac1defeebecea65f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a2beca8fb12b3db86ac1defeebecea65f">tight_seal_split_tet_tracked</a> (size_t tid, const Vector3d &amp;p, std::unordered_set&lt; size_t &gt; &amp;cells, std::vector&lt; char &gt; &amp;filled, std::vector&lt; int &gt; *cell_group=nullptr, std::vector&lt; CornerLabels &gt; *corner_labels=nullptr)</td></tr>
+<tr class="separator:a2beca8fb12b3db86ac1defeebecea65f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77cc23447b54a4bc4f6eef8f1c1a7d39" id="r_a77cc23447b54a4bc4f6eef8f1c1a7d39"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a77cc23447b54a4bc4f6eef8f1c1a7d39">tight_seal_split_fill</a> (const std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_connected_component.html">ConnectedComponent</a> &gt; &amp;components, const std::vector&lt; std::vector&lt; size_t &gt; &gt; &amp;components_regions, const std::vector&lt; CellTag &gt; &amp;fill_tags, const std::vector&lt; SimpleBVH::BVH &gt; &amp;region_bvhs, const std::function&lt; int(size_t)&gt; &amp;color_of, const std::vector&lt; char &gt; &amp;in_J, int64_t max_rounds, std::vector&lt; char &gt; &amp;filled, std::vector&lt; CellTag &gt; &amp;tags_before)</td></tr>
+<tr class="separator:a77cc23447b54a4bc4f6eef8f1c1a7d39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a282b2d9f562efc40126aa2abe1df2741" id="r_a282b2d9f562efc40126aa2abe1df2741"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a282b2d9f562efc40126aa2abe1df2741">tight_seal_topology_check</a> (const std::vector&lt; char &gt; &amp;filled, const std::vector&lt; CellTag &gt; &amp;tags_before) const</td></tr>
+<tr class="separator:a282b2d9f562efc40126aa2abe1df2741"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a41796d658b403beb6f3c31662915d7" id="r_a7a41796d658b403beb6f3c31662915d7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a7a41796d658b403beb6f3c31662915d7">tight_seal_geom_sanity</a> (const std::vector&lt; CellTag &gt; &amp;fill_tags, const std::function&lt; int(size_t)&gt; &amp;color_of, const std::vector&lt; char &gt; &amp;filled) const</td></tr>
+<tr class="separator:a7a41796d658b403beb6f3c31662915d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
+<tr class="memitem:a4831791ae4c768b8097202f0d246be71" id="r_a4831791ae4c768b8097202f0d246be71"><td class="memItemLeft" align="right" valign="top"><a id="a4831791ae4c768b8097202f0d246be71" name="a4831791ae4c768b8097202f0d246be71"></a>
+std::optional&lt; Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_split_position</b></td></tr>
+<tr class="separator:a4831791ae4c768b8097202f0d246be71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07799673a404e3e6f304a0db33903f02" id="r_a07799673a404e3e6f304a0db33903f02"><td class="memItemLeft" align="right" valign="top"><a id="a07799673a404e3e6f304a0db33903f02" name="a07799673a404e3e6f304a0db33903f02"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_last_face_split_vertex</b> = 0</td></tr>
+<tr class="separator:a07799673a404e3e6f304a0db33903f02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92fc1d3526640bc559d73078a45cc00c" id="r_a92fc1d3526640bc559d73078a45cc00c"><td class="memItemLeft" align="right" valign="top"><a id="a92fc1d3526640bc559d73078a45cc00c" name="a92fc1d3526640bc559d73078a45cc00c"></a>
+std::optional&lt; Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tet_split_position</b></td></tr>
+<tr class="separator:a92fc1d3526640bc559d73078a45cc00c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9df7e8ab28dce1cd18a8d14673ba7a75" id="r_a9df7e8ab28dce1cd18a8d14673ba7a75"><td class="memItemLeft" align="right" valign="top"><a id="a9df7e8ab28dce1cd18a8d14673ba7a75" name="a9df7e8ab28dce1cd18a8d14673ba7a75"></a>
+<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_face_split_cache.html">FaceSplitCache</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_split_cache</b></td></tr>
+<tr class="separator:a9df7e8ab28dce1cd18a8d14673ba7a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a171fecde46b96ec6b17cdc53a744ce41" id="r_a171fecde46b96ec6b17cdc53a744ce41"><td class="memItemLeft" align="right" valign="top"><a id="a171fecde46b96ec6b17cdc53a744ce41" name="a171fecde46b96ec6b17cdc53a744ce41"></a>
+<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_tet_split_cache.html">TetSplitCache</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_tet_split_cache</b></td></tr>
+<tr class="separator:a171fecde46b96ec6b17cdc53a744ce41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad322a0fc6693a82cf7e4eb6498ff3743" id="r_ad322a0fc6693a82cf7e4eb6498ff3743"><td class="memItemLeft" align="right" valign="top"><a id="ad322a0fc6693a82cf7e4eb6498ff3743" name="ad322a0fc6693a82cf7e4eb6498ff3743"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_split_tag_cache.html">SplitTagCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_tag_cache</b></td></tr>
 <tr class="separator:ad322a0fc6693a82cf7e4eb6498ff3743"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2779,6 +2807,138 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="ab45e7f3655fbdc064a26f9b9b333ab61" name="ab45e7f3655fbdc064a26f9b9b333ab61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab45e7f3655fbdc064a26f9b9b333ab61">&#9670;&#160;</a></span>split_face_after()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::SimWildMesh::split_face_after </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Compute the attributes for the added simplices. </p>
+<p>User specified modifications and desideratas for after a face split </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">t</td><td>The face tuple to be split. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the modification succeed </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a576afbd06ac054b8b6248a2ddd6bf20f">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a5fa30a0a8dccd6044dec72887df9d153" name="a5fa30a0a8dccd6044dec72887df9d153"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5fa30a0a8dccd6044dec72887df9d153">&#9670;&#160;</a></span>split_face_before()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::SimWildMesh::split_face_before </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>A face split puts the new vertex at m_face_split_position (the face's centroid if unset), in doubles, so every corner must be rounded. The children of each tet on the face take its attributes; the face's three pieces take the face's, and the tets' other faces keep theirs, and every old edge keeps its feature tags. Refused if a child is inverted. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a64999818509b8b91617ac943d5660090">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="aeafdc7b3ff6af290b008c1b29ef2d53e" name="aeafdc7b3ff6af290b008c1b29ef2d53e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeafdc7b3ff6af290b008c1b29ef2d53e">&#9670;&#160;</a></span>split_tet_after()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::SimWildMesh::split_tet_after </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Compute the attributes for the added simplices. </p>
+<p>User specified modifications and desideratas for after a tet split </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">t</td><td>The tet tuple to be split. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the modification succeed </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#ab000e7b7d4a61cf9d0885adeb43d8f70">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="aae34251178424f3830db2dc0beac1c38" name="aae34251178424f3830db2dc0beac1c38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae34251178424f3830db2dc0beac1c38">&#9670;&#160;</a></span>split_tet_before()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::SimWildMesh::split_tet_before </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>A tet split puts the new vertex at m_tet_split_position (the tet's centroid if unset), in doubles, so every corner must be rounded. The four children take the tet's attributes and its four faces and six edges keep theirs; the six faces inside it are new. Refused if a child is inverted. Only tight_seal_geom splits tets (its simplicial embedding of the regions, and split_fill). </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a07fe6dba85d24b09113f482496a4d243">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
 <a id="a0dba8059ec0bf3b3c0ac4fb18aa79262" name="a0dba8059ec0bf3b3c0ac4fb18aa79262"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0dba8059ec0bf3b3c0ac4fb18aa79262">&#9670;&#160;</a></span>swap_after_cells()</h2>
 
@@ -3080,12 +3240,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </tr>
 </table>
 </div><div class="memdoc">
-<p>The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary, as a BVH of triangles. On each edge of a tet outside R (region &lt; 0) between a vertex with dist_R_at &lt; radius and one with dist_R_at &gt;= radius, the crossing is sphere traced on dist_R from the near end (to within tol, on R's side); the crossings of each tet are joined into its cut polygon (a triangle or a quad, in two triangles). Returns false if S is empty; n_traced: edges traced, n_failed: traces that left their edge (the far end is taken). </p>
+<p>The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary, as a BVH of triangles. On each edge of a tet outside R (region &lt; 0) between a vertex with dist_R_at &lt; radius and one with dist_R_at &gt;= radius, the crossing is where dist_R = radius: sphere traced from the near end, each step at least tol, then bisected (<a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a92a55f192c9d72ad40fff9462e40f4ef" title="Where a 1-Lipschitz f reaches level along the segment [a, b], coming from a, which is below the level...">tight_seal::level_crossing</a>). The crossings of each tet are joined into its cut polygon (a triangle or a quad, in two triangles). Returns false if S is empty; n_traced: edges traced, n_failed: those with no crossing found (the far end is taken). </p>
 
 </div>
 </div>
-<a id="aee0856a13143a0a5e3de5a206e78a34a" name="aee0856a13143a0a5e3de5a206e78a34a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee0856a13143a0a5e3de5a206e78a34a">&#9670;&#160;</a></span>tight_seal_geom()</h2>
+<a id="adbce4b89ce9c29c70b30940ede9d3f4f" name="adbce4b89ce9c29c70b30940ede9d3f4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbce4b89ce9c29c70b30940ede9d3f4f">&#9670;&#160;</a></span>tight_seal_geom()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3093,8 +3253,20 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         <tr>
           <td class="memname">void wmtk::components::simwild::SimWildMesh::tight_seal_geom </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
-          <td class="paramname"><em>tags</em>, </td>
+          <td class="paramtype">const ExprPtr &amp;&#160;</td>
+          <td class="paramname"><em>input_selection</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; ExprPtr &gt; &amp;&#160;</td>
+          <td class="paramname"><em>fill_selections</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; CellTag &gt; &amp;&#160;</td>
+          <td class="paramname"><em>fill_tags</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3106,13 +3278,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>trace_rel_tol</em> = <code>0.01</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>selection</em> = <code>&quot;explicit&quot;</code>, </td>
+          <td class="paramname"><em>trace_rel_tol</em> = <code>0.001</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3124,7 +3290,13 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>sanity</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>sanity</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>max_preprocessing_rounds</em> = <code>10</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -3134,20 +3306,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
       </table>
 </div><div class="memdoc">
 
-<p>Geometric tight seal between the regions R_i, the tets tagged with <code>tags[i]</code> and nothing else. The 3D counterpart of SimWildMeshTri::tight_seal_geom. </p>
-<p>J is the closing of the union R of the R_i by the ball B of diameter <code>distance</code>, minus R: the part of E that B cannot reach. It is found in four steps.</p><ol type="1">
-<li>The tets surely in J (the spec's v2): U^ = R and the tets whose points are all within distance/2 of R (inside R + B); V^ = the tets of U^ whose points are all farther than distance/2 from U^'s boundary (inside the closing); J^ = V^ minus R. Both tests are certified by conservative subdivision (<a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a4f5cea38c24a02100534b4923a61fcdc" title="Certifies that a 1-Lipschitz function f stays on one side of level over a whole cell (a triangle in 2...">tight_seal::certify_on_cell</a>).</li>
-<li>The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.</li>
-<li>Conservative growth of all of J^ to the level set d(x, S) = distance/2: the tets outside R are flooded from J^ through faces with a vertex inside (in R + B and d(v, S) &gt; distance/2), each flooded edge from an inside vertex to an outside one is split where it leaves J, sphere traced from the inside end (to within trace_rel_tol x distance/2), edges on R's boundary included, and J is the flooded tets with all vertices inside.</li>
-<li>The connected components of J (through faces) are kept by the rule of <code>selection</code>. Each component is then filled with the Voronoi diagram of its regions: edges whose endpoints have different nearest regions are split on the bisector, and each tet gets the tag of its region.</li>
+<p>Geometric tight seal: closes the region R, the tets <code>input_selection</code> holds for, and fills the gaps found with the colors <code>fill_selections</code> define. The 3D counterpart of SimWildMeshTri::tight_seal_geom. </p>
+<p>J is the closing of R by the ball B of diameter <code>distance</code>, minus R: the part of the rest that B cannot reach. First R is made simplicially embedded (no tet outside R has all its vertices on R; <a class="el" href="_simplicial_embedding_8hpp.html">wmtk/utils/SimplicialEmbedding.hpp</a>): each tet outside R whose four faces lie on R is split at its centroid, then each face outside R whose three edges do, then each edge outside R joining two vertices of R at its midpoint. Then J is found in three steps.</p><ol type="1">
+<li>The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere traced, then bisected to the level). The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.</li>
+<li>The vertices' labels and the marching (tight seal v2 note, section 2), with tol = trace_rel_tol x the mesh's bounding box diagonal (also the tolerance of both sphere traces). A vertex within distance/2 of R, R's own included, is IN if d(v, S) &gt;= distance/2 + tol, else OUT; the others are OUT. The tets whose vertices are all IN are marked, R's included. Each edge from an IN vertex to an OUT one is split at d(x, S) = distance/2 + tol, the labels' level (sphere traced from the IN end, then bisected), and of the tets it makes, those touching its IN end are marked and the others not; the new vertex takes no label. R's tets may thus be split. J is the marked tets outside R.</li>
+<li>The connected components of J, through faces. The colors: fill selection k (two or more) is color k; a tet outside J satisfying it has that color (a tet of J is no color, whatever its tags). A component borders a color if one of its tets shares a face with a tet of that color, and is filled if it borders <code>min_regions</code> colors or more (2 or more), with those it borders. The operation throws if a tet sharing a face with J satisfies several fill selections, in any component, or if a tet of J has a vertex on the mesh's boundary, in any component, filled or not (R more than distance/2 from the boundary keeps J off it). Each component to fill (connected through faces, so two touching at an edge or a vertex are filled separately) is then preprocessed, in at most <code>max_preprocessing_rounds</code> rounds (0: none), split as its tets' own labels of their corners require, and each resulting tet takes the color its corners' labels give and gets that color's tags, <code>fill_tags[k]</code> (as many as there are fill selections), added to its own (tight_seal_split_fill). No topology is checked.</li>
 </ol>
-<p><code>selection</code> "explicit": the regions are <code>tags</code>, which may not hold ambient (the tag named "ambient"). "detected": <code>tags</code> is ignored (with a warning if it is not empty), the regions are every tag but ambient that some tet has alone, and each part that borders <code>min_regions</code> of them or more (at least 2; ignored, with a warning if not 2, for "explicit") is filled with those it borders.</p>
-<p><code>sanity</code>: afterwards, throw if a tet is inverted, a filled tet carries other than one region's tag, or a part of the filled tets borders fewer than two regions (a concave feature of one body, filled). </p>
+<p><code>sanity</code>: afterwards, throw if a tet is inverted, a filled tet holds none of the fill tag sets, or a part of the filled tets borders fewer than two colors (a concave feature of one body, filled). </p>
 
 </div>
 </div>
-<a id="a554a2693d47353361a2fd2ea55e01329" name="a554a2693d47353361a2fd2ea55e01329"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a554a2693d47353361a2fd2ea55e01329">&#9670;&#160;</a></span>tight_seal_geom_sanity()</h2>
+<a id="a7a41796d658b403beb6f3c31662915d7" name="a7a41796d658b403beb6f3c31662915d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a41796d658b403beb6f3c31662915d7">&#9670;&#160;</a></span>tight_seal_geom_sanity()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3158,8 +3328,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         <tr>
           <td class="memname">void wmtk::components::simwild::SimWildMesh::tight_seal_geom_sanity </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
-          <td class="paramname"><em>tags</em>, </td>
+          <td class="paramtype">const std::vector&lt; CellTag &gt; &amp;&#160;</td>
+          <td class="paramname"><em>fill_tags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::function&lt; int(size_t)&gt; &amp;&#160;</td>
+          <td class="paramname"><em>color_of</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3179,12 +3355,215 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </tr>
 </table>
 </div><div class="memdoc">
-<p>tight_seal_geom's <code>sanity</code> checks, on the output: throws if a tet is inverted, a filled tet (filled[id] set) carries other than exactly one of <code>tags</code>, or a part of the filled tets, connected through faces, borders fewer than two of them. </p>
+<p>tight_seal_geom's <code>sanity</code> checks, on the output: throws if a tet is inverted, a filled tet (filled[id] set) holds none of the <code>fill_tags</code> sets, or a part of the filled tets, connected through faces, borders fewer than two colors (by color_of, as in split_fill). </p>
 
 </div>
 </div>
-<a id="afb297249ba0fc06e3a49accacd78703a" name="afb297249ba0fc06e3a49accacd78703a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb297249ba0fc06e3a49accacd78703a">&#9670;&#160;</a></span>tight_seal_split_tracked()</h2>
+<a id="a67639cb90e871c53dd9c42e20284970c" name="a67639cb90e871c53dd9c42e20284970c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67639cb90e871c53dd9c42e20284970c">&#9670;&#160;</a></span>tight_seal_split_face_tracked()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::simwild::SimWildMesh::tight_seal_split_face_tracked </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::unordered_set&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>cells</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>filled</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; int &gt; *&#160;</td>
+          <td class="paramname"><em>cell_group</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; CornerLabels &gt; *&#160;</td>
+          <td class="paramname"><em>corner_labels</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Split face f at p, keeping <code>cells</code>, <code>filled</code>, <code>cell_group</code> and <code>corner_labels</code> up to date as tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused. </p>
+
+</div>
+</div>
+<a id="a77cc23447b54a4bc4f6eef8f1c1a7d39" name="a77cc23447b54a4bc4f6eef8f1c1a7d39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77cc23447b54a4bc4f6eef8f1c1a7d39">&#9670;&#160;</a></span>tight_seal_split_fill()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::SimWildMesh::tight_seal_split_fill </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_connected_component.html">ConnectedComponent</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>components</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::vector&lt; size_t &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>components_regions</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; CellTag &gt; &amp;&#160;</td>
+          <td class="paramname"><em>fill_tags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; SimpleBVH::BVH &gt; &amp;&#160;</td>
+          <td class="paramname"><em>region_bvhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::function&lt; int(size_t)&gt; &amp;&#160;</td>
+          <td class="paramname"><em>color_of</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>in_J</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>max_rounds</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>filled</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; CellTag &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tags_before</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>tight_seal_geom's fill of <code>components</code>. <code>components_regions</code> gives the colors each borders (indices into <code>fill_tags</code> and <code>region_bvhs</code>, the boundaries of the colors' tets); color_of gives a tet's color by its tags (-1 none, -2 several); in_J[id] marks every tet of J (by id before any split), whose tets are no color.</p>
+<p>First, up to <code>max_rounds</code> rounds of preprocessing (tight seal v2 note, section 4a), with each vertex labelled by the nearest of its component's colors (the first on an exact tie). A round marks each edge whose ends' labels differ if, at the point where the distances to those two are equal (not on an end), another color of the component is nearest; then each face with three labels whose edges are all unmarked if, at its triple point (where the three distances, interpolated linearly over the face, are equal; <a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a2fb00ce1881b736a9f28510c2fe1ad40" title="The point of a simplex where k distance functions, each interpolated linearly from its values at the ...">tight_seal::equal_distances_point</a>) inside it, another color is nearest. Every marked face is split at its point, then every marked edge at its: each new vertex shows the color found nearest there. The first round looks at every edge and face of the components, each later one only at those touching a vertex the last made. It stops when nothing is marked, or warns after <code>max_rounds</code>.</p>
+<p>Then each tet labels its corners: a corner takes its nearest color, except that the corners of a face the tet shares with a tet of one of the component's colors (outside J) take that color. From these labels, all taken before any split: the tets with four labels are split (at their quadruple point if it lies inside the tet, else the centroid), then the faces with three in a tet holding them (at their triple point if it lies inside the face, else the centroid), then the edges whose ends differ in a tet holding them where the distances to the two labels are equal (not if that falls on an end). A tet with three labels is not split itself, only its two faces with three and its five edges whose ends differ. Each child keeps its parent's labels of the corners it keeps, a new vertex has none, and each tet of the components then takes a color by <a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a7fd7dca8bb401b953ab503e5b6e8c884" title="The region &quot;split_fill&quot; gives a cell, from its corners&#39; own labels.">tight_seal::split_fill_label</a> and gets that color's fill tags added to its own. tags_before[id] gets the tags of each tet it labels (filled[id] set) as they were before. No topology is checked. </p>
+
+</div>
+</div>
+<a id="a2beca8fb12b3db86ac1defeebecea65f" name="a2beca8fb12b3db86ac1defeebecea65f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2beca8fb12b3db86ac1defeebecea65f">&#9670;&#160;</a></span>tight_seal_split_tet_tracked()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::simwild::SimWildMesh::tight_seal_split_tet_tracked </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>tid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::unordered_set&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>cells</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>filled</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; int &gt; *&#160;</td>
+          <td class="paramname"><em>cell_group</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; CornerLabels &gt; *&#160;</td>
+          <td class="paramname"><em>corner_labels</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Split tet tid at p, keeping <code>cells</code>, <code>filled</code>, <code>cell_group</code> and <code>corner_labels</code> up to date as tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused. </p>
+
+</div>
+</div>
+<a id="ae3ff62d8577498e62039df5143120f7a" name="ae3ff62d8577498e62039df5143120f7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3ff62d8577498e62039df5143120f7a">&#9670;&#160;</a></span>tight_seal_split_tracked()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3213,8 +3592,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::function&lt; void(size_t, size_t)&gt; &amp;&#160;</td>
-          <td class="paramname"><em>on_child</em>&#160;</td>
+          <td class="paramtype">std::vector&lt; int &gt; *&#160;</td>
+          <td class="paramname"><em>cell_group</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; CornerLabels &gt; *&#160;</td>
+          <td class="paramname"><em>corner_labels</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -3228,7 +3613,44 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Split edge e, keeping <code>cells</code> up to date: the children of a tet in it replace it, and each child takes its parent's flag in <code>filled</code> (resized to the new capacity). Calls on_child(id, end_vid) for each child in <code>cells</code>, end_vid being the endpoint of e the child keeps. Returns the new vertex, or -1 if the split was refused. </p>
+<p>Split edge e, keeping <code>cells</code> up to date: the children of a tet in it replace it, and each child takes its parent's flag in <code>filled</code> (resized to the new capacity), if given its entry in <code>cell_group</code> (resized with -1), and if given its parent's <code>corner_labels</code> for the corners it keeps (resized). Returns the new vertex, or -1 if the split was refused. </p>
+
+</div>
+</div>
+<a id="a282b2d9f562efc40126aa2abe1df2741" name="a282b2d9f562efc40126aa2abe1df2741"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a282b2d9f562efc40126aa2abe1df2741">&#9670;&#160;</a></span>tight_seal_topology_check()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::SimWildMesh::tight_seal_topology_check </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>filled</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; CellTag &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tags_before</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>tight_seal_geom's topology check: for each tag the fill added to or took from a tet, warns if (change in non-manifold vertices, islands, merges) is not (0, 0, 0). The tag before the fill and after it are compared on the output mesh, so splits that only refine a tag change nothing. Non-manifold vertices by wmtk::utils::nonmanifold_vertices, both ends of a non-manifold edge included; an island is a component of the tag after the fill (through faces) with none of its tets from before; a merge joins two components from before into one. Also warns if a component from before is split or lost (the fill took the tag from a tet carrying it with another tag). filled and tags_before as split_fill leaves them. </p>
 
 </div>
 </div>
@@ -3288,6 +3710,47 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="afdee6b30bd24452c2a00fd747100e922" name="afdee6b30bd24452c2a00fd747100e922"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afdee6b30bd24452c2a00fd747100e922">&#9670;&#160;</a></span>write_vtu()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::SimWildMesh::write_vtu </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>path</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">MeshMap *&#160;</td>
+          <td class="paramname"><em>output</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::pair&lt; std::string, std::vector&lt; double &gt; &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>cell_fields</em> = <code>{}</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::pair&lt; std::string, std::vector&lt; double &gt; &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vertex_fields</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><code>cell_fields</code>: extra cell fields, each a name and a value per tet id (missing ids write 0); <code>vertex_fields</code> likewise per vertex id. </p>
 
 </div>
 </div>

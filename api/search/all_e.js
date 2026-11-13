@@ -100,6 +100,5 @@ var searchData=
   ['outside_97',['Outside',['../structwmtk_1_1components_1_1tracking_1_1volume_1_1_outside.html',1,'wmtk::components::tracking::volume']]],
   ['overflowed_98',['overflowed',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c',1,'wmtk::ExecutePass::PassStats']]],
   ['overlapping_99',['overlapping',['../structwmtk_1_1components_1_1tracking_1_1_curve_map_warnings.html#a210f79ac87df83e23c7ad65d9dbcf1a5',1,'wmtk::components::tracking::CurveMapWarnings']]],
-  ['overlaps_5ftet_100',['overlaps_tet',['../classwmtk_1_1components_1_1topological__offset_1_1_sphere.html#a2a694e6ed8ca258a1ff91f7e57da381d',1,'wmtk::components::topological_offset::Sphere']]],
-  ['overlaps_5ftri_101',['overlaps_tri',['../classwmtk_1_1components_1_1topological__offset_1_1_circle.html#ade6d25996c7d81b8df6584b185c4a819',1,'wmtk::components::topological_offset::Circle']]]
+  ['overlaps_100',['overlaps',['../structwmtk_1_1utils_1_1_refinement_ball.html#a1810fce59a98771896e8f332e9d57de6',1,'wmtk::utils::RefinementBall']]]
 ];
