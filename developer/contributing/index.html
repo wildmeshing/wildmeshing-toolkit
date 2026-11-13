@@ -3480,10 +3480,11 @@ out the commit pinned in <a href="https://github.com/wildmeshing/wildmeshing-too
 <p><code>data/</code> is a clone checked out at that commit, a detached <code>HEAD</code>. To change the data:</p>
 <ol>
 <li>Make a branch in data2, from <code>data/</code> or a clone of your own, and add the models and configs.
-   A config is listed in <code>integration_tests/integration_tests.json</code> to run in CI; one in a
-   group of its own (<code>challenging_low_stop_energy_models.json</code>,
-   <code>topological_offset_models.json</code>, <code>manifold_extraction_models.json</code>) runs only when its
-   hidden test case is asked for (<a href="../testing/#integration-tests">testing</a>).</li>
+   A config is listed in <code>integration_tests/integration_tests.json</code> to run in CI, as are the
+   configs of <code>manifold_extraction_models.json</code>, whose test case is a ctest entry of its own;
+   one in a hidden group of its own (<code>challenging_low_stop_energy_models.json</code>,
+   <code>topological_offset_models.json</code>) runs only when its test case is asked for
+   (<a href="../testing/#integration-tests">testing</a>).</li>
 <li>Open a pull request on data2 and merge it.</li>
 <li>In the toolkit's pull request that needs the data, set <code>GIT_TAG</code> to the data2 commit, and add
    a line to the log in the comment above it: the commit, the date, the data2 pull request or

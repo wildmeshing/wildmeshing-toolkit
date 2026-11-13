@@ -3570,12 +3570,16 @@ stop energy), <code>max_expected_iterations</code> in tetwild
 and triwild (more optimization iterations than expected), <code>throw_on_nonconvergence</code> in
 topological_offset. All the configs run in one ctest entry, <code>Integration_Tests</code>, with a timeout of
 7200 s.</p>
+<p>The manifold_extraction configs have a case of their own, <code>manifold-extraction-models</code>, which
+reads <code>data/integration_tests/manifold_extraction_models.json</code>. It is not hidden, so it is a
+ctest entry of its own and runs in CI; to run it alone:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>build/tests/wmtk_integration_tests<span class="w"> </span><span class="s2">"[manifold]"</span><span class="w">      </span><span class="c1"># manifold_extraction_models.json</span>
+</code></pre></div>
 <p>The other cases in the file are hidden (<code>[.]</code>): Catch2 does not run them unless asked, and
 <code>catch_discover_tests</code> does not register them. Each reads its own list from
 <code>data/integration_tests</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>build/tests/wmtk_integration_tests<span class="w"> </span><span class="s2">"[challenging]"</span><span class="w">   </span><span class="c1"># challenging_low_stop_energy_models.json: minutes to hours each</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>build/tests/wmtk_integration_tests<span class="w"> </span><span class="s2">"[offset]"</span><span class="w">        </span><span class="c1"># topological_offset_models.json</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>build/tests/wmtk_integration_tests<span class="w"> </span><span class="s2">"[manifold]"</span><span class="w">      </span><span class="c1"># manifold_extraction_models.json</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>build/tests/wmtk_integration_tests<span class="w"> </span><span class="s2">"[challenging]"</span><span class="w">   </span><span class="c1"># challenging_low_stop_energy_models.json: minutes to hours each</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>build/tests/wmtk_integration_tests<span class="w"> </span><span class="s2">"[offset]"</span><span class="w">        </span><span class="c1"># topological_offset_models.json</span>
 </code></pre></div>
 <p>A new config goes into the data repository and its list, and the data pin moves to the data2
 commit that has it (<a href="../writing-a-component/#6-an-integration-config">writing a component</a>).</p>
@@ -3639,15 +3643,15 @@ without an error. <a href="../documentation/#examples">Writing documentation</a>
 <p>Debug builds run 10 to over 100 times slower than Release. A case that takes more than a fraction
 of a second in Debug is tagged <code>release_only</code>: hidden in Debug builds, run as usual in Release.
 The pattern, at the top of the test file:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1">// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="cp">#ifdef NDEBUG</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">release_only</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">""</span><span class="p">;</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="cp">#else</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">release_only</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"[.]"</span><span class="p">;</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="cp">#endif</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="cp">#ifdef NDEBUG</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">release_only</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">""</span><span class="p">;</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="cp">#else</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">release_only</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"[.]"</span><span class="p">;</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="cp">#endif</span>
 </code></pre></div>
 <p>and on each slow case:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">TEST_CASE</span><span class="p">(</span><span class="s">"sec-open-surface-boundary-is-preserved"</span><span class="p">,</span><span class="w"> </span><span class="s">"[test_sec][boundary]"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">release_only</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">TEST_CASE</span><span class="p">(</span><span class="s">"sec-open-surface-boundary-is-preserved"</span><span class="p">,</span><span class="w"> </span><span class="s">"[test_sec][boundary]"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">release_only</span><span class="p">)</span>
 </code></pre></div>
 <p>Commit <a href="https://github.com/wildmeshing/wildmeshing-toolkit/commit/e8494ffb4f"><code>e8494ffb4f</code></a>
 introduced it for the 95 cases over 0.3 s in a macOS Debug build or 5 s on
@@ -3655,11 +3659,11 @@ Windows Debug, taking a macOS Debug ctest to 27.5 s; tetwild's and simwild's who
 already hidden in Debug. A case that should not run anywhere by default, a benchmark on a large
 model say, gets a hidden tag of its own (<code>[.slow]</code>), and the reason in a comment.</p>
 <h2 id="running-the-tests-locally">Running the tests locally<a class="headerlink" href="#running-the-tests-locally" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>cmake<span class="w"> </span>-B<span class="w"> </span>build<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DWMTK_BUILD_INTEGRATION_TESTS<span class="o">=</span>ON
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build<span class="w"> </span>-j
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>ctest<span class="w"> </span>--test-dir<span class="w"> </span>build<span class="w"> </span>-N<span class="w">                                   </span><span class="c1"># what is registered</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>ctest<span class="w"> </span>--test-dir<span class="w"> </span>build<span class="w"> </span>-E<span class="w"> </span>Integration_Tests<span class="w"> </span>--output-on-failure
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>ctest<span class="w"> </span>--test-dir<span class="w"> </span>build<span class="w"> </span>-R<span class="w"> </span>Integration_Tests<span class="w"> </span>--output-on-failure
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>cmake<span class="w"> </span>-B<span class="w"> </span>build<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DWMTK_BUILD_INTEGRATION_TESTS<span class="o">=</span>ON
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build<span class="w"> </span>-j
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>ctest<span class="w"> </span>--test-dir<span class="w"> </span>build<span class="w"> </span>-N<span class="w">                                   </span><span class="c1"># what is registered</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>ctest<span class="w"> </span>--test-dir<span class="w"> </span>build<span class="w"> </span>-E<span class="w"> </span>Integration_Tests<span class="w"> </span>--output-on-failure
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>ctest<span class="w"> </span>--test-dir<span class="w"> </span>build<span class="w"> </span>-R<span class="w"> </span>Integration_Tests<span class="w"> </span>--output-on-failure
 </code></pre></div>
 <p>The first build clones the data repository into <code>data/</code>.</p>
 <h2 id="in-ci">In CI<a class="headerlink" href="#in-ci" title="Permanent link">&para;</a></h2>
