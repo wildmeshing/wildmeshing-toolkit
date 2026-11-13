@@ -84,6 +84,11 @@ struct Parameters
         ret_params.offsets[0].target_distance_rel = radius_rel;
         ret_params.debug_output = debug_output;
         ret_params.save_vtu = save_vtu;
+        // Construction only: the extraction calls construct_offset(), never optimize_offset().
+        ret_params.optimize_offset = false;
+        // The offset's debug frames (<output>_NNNNN.vtu) are named after this run's output, not
+        // the offset spec's default ("out").
+        ret_params.output_path = output_path;
         return ret_params;
     }
 };
