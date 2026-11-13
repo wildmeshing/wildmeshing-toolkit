@@ -129,8 +129,11 @@ ExternalProject_Add(
     # of {selection, output_tags, target_distance, target_distance_rel}: the toolkit no longer
     # reads offset_selection and target_distance_rel.
     # 86e0f2a (2026-11-10, data2 main) merges #16 and holds both.
+    # At 571a0a3 (2026-11-13, data2 main, on 249bca7: the tight_seal_geom configs' input
+    # selection, fill selections and fill tags) manifold_extraction_models.json's comment no
+    # longer calls the [manifold] group hidden; no config changes.
     #
-    GIT_TAG 249bca74d572f9cb9d819603d386d34a10dcfc87
+    GIT_TAG 571a0a3563043dd87b6ebaf530453bfeba45e1ec
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
