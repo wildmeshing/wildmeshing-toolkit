@@ -87,10 +87,11 @@ GIT_TAG 89911f53375f21eb6e8463caaca5bf07ce9c22c7
 `data/` is a clone checked out at that commit, a detached `HEAD`. To change the data:
 
 1. Make a branch in data2, from `data/` or a clone of your own, and add the models and configs.
-   A config is listed in `integration_tests/integration_tests.json` to run in CI; one in a
-   group of its own (`challenging_low_stop_energy_models.json`,
-   `topological_offset_models.json`, `manifold_extraction_models.json`) runs only when its
-   hidden test case is asked for ([testing](testing.md#integration-tests)).
+   A config is listed in `integration_tests/integration_tests.json` to run in CI, as are the
+   configs of `manifold_extraction_models.json`, whose test case is a ctest entry of its own;
+   one in a hidden group of its own (`challenging_low_stop_energy_models.json`,
+   `topological_offset_models.json`) runs only when its test case is asked for
+   ([testing](testing.md#integration-tests)).
 2. Open a pull request on data2 and merge it.
 3. In the toolkit's pull request that needs the data, set `GIT_TAG` to the data2 commit, and add
    a line to the log in the comment above it: the commit, the date, the data2 pull request or
