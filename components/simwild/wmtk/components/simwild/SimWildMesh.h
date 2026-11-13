@@ -668,20 +668,19 @@ public:
      * that B cannot reach. First R is made simplicially embedded (no tet outside R has all its
      * vertices on R; wmtk/utils/SimplicialEmbedding.hpp): each tet outside R whose four faces lie
      * on R is split at its centroid, then each face outside R whose three edges do, then each edge
-     * outside R joining two vertices of R at its midpoint. Without it, a gap one tet wide would be
-     * in J at any distance, every vertex of R counting as inside. Then J is found in three steps.
+     * outside R joining two vertices of R at its midpoint. Then J is found in three steps.
      *  1. The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere
      *     traced, then bisected to the level).
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
-     *  2. The vertices' labels (tight seal v2 note, section 2), with tol = trace_rel_tol x the
-     *     mesh's bounding box diagonal (also the tolerance of both sphere traces). A vertex of R
-     *     is ON if d(v, S) <= distance/2 + tol, else IN (R lies in the closing; S, linear in each
-     *     tet, can pass closer to R than the level set). Any other vertex is IN if it is in
-     *     R + B and d(v, S) >= distance/2 + tol, else OUT. The tets outside R whose vertices are
-     *     all IN or ON are marked. Each edge from an IN vertex to an OUT one is split where it
-     *     leaves J, at d(x, S) = distance/2 + tol, the labels' level (sphere traced from the IN
-     *     end, then bisected), and of the tets it makes, those touching its IN end are marked and
-     *     the others not; the new vertex takes no label. J is the marked tets.
+     *  2. The vertices' labels and the marching (tight seal v2 note, section 2), with tol =
+     *     trace_rel_tol x the mesh's bounding box diagonal (also the tolerance of both sphere
+     *     traces). A vertex within distance/2 of R, R's own included, is IN if
+     *     d(v, S) >= distance/2 + tol, else OUT; the others are OUT. The tets whose vertices are
+     *     all IN are marked, R's included. Each edge from an IN vertex to an OUT one is split at
+     *     d(x, S) = distance/2 + tol, the labels' level (sphere traced from the IN end, then
+     *     bisected), and of the tets it makes, those touching its IN end are marked and the
+     *     others not; the new vertex takes no label. R's tets may thus be split. J is the marked
+     *     tets outside R.
      *  3. The connected components of J, through faces.
      * The colors: fill selection k (two or more) is color k; a tet outside J satisfying it has that
      * color (a tet of J is no color, whatever its tags). A component borders a color if one of its

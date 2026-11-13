@@ -786,7 +786,7 @@ void SimWildMeshTri::tight_seal_geom(
             n_S_traced,
             n_S_failed);
         logger().info(
-            "tight_seal_geom: dilation surface found on {} edges where d(x, R) = d/2 ({} with no "
+            "tight_seal_geom: dilation surface found on {} edges where d(x, I) = d/2 ({} with no "
             "crossing found, their far end taken)",
             n_S_traced,
             n_S_failed);
@@ -795,54 +795,37 @@ void SimWildMeshTri::tight_seal_geom(
                          : std::numeric_limits<double>::infinity();
         };
 
-        // 2. The vertices' labels (tight seal v2 note, section 2). A vertex of R is ON if
-        // d(v, S) <= d/2 + tol, else IN: R lies in the closing (each point of S is d/2 from
-        // R), but S, joined linearly in each face, may pass closer to R than the level set, so a
-        // vertex of R where the closing's boundary runs along R is ON whatever the rounding. Any
-        // other vertex is IN if it lies in R + B (d(v, R) < d/2) at least d/2 + tol from S,
-        // and OUT otherwise; `inside` holds IN and ON. Edges from an IN vertex to an OUT one are
-        // then split where d(x, S) falls to d/2 + tol, the same level (sphere traced from the IN
-        // end, then bisected; tight_seal::level_crossing), as below.
+        // 2. The vertices' labels and the marching of J (tight seal v2 note, section 2; R and S
+        // here are the note's input region I and dilated surface D). Every vertex within d/2 of
+        // R, R's own included, is IN if d(v, S) >= d/2 + tol, else OUT; the vertices beyond S are
+        // OUT. The faces whose vertices are all IN are marked, R's included. Each edge from an IN
+        // vertex to an OUT one is split where d(x, S) falls to d/2 + tol, the labels' level
+        // (sphere traced from the IN end, then bisected; tight_seal::level_crossing), and of the
+        // faces it makes, those touching its IN end are marked and the others not; the new vertex
+        // takes no label. R's faces may thus be split. J is then the marked faces outside R.
         std::vector<char> inside(vert_capacity(), 0);
-        size_t n_in = 0; // IN, not a vertex of R
-        // DEBUG_output: each vertex's label, 0 OUT, 1 ON, 2 IN (-1 for a vertex a split makes,
-        // which takes none), for the join-region frame. The op itself needs no more than
-        // `inside`: the trace from an ON vertex of R stops at once.
+        size_t n_in = 0;
+        // DEBUG_output: each vertex's label, 0 OUT, 1 IN (-1 for a vertex a split makes, which
+        // takes none), for the join-region frame
         std::vector<int> label;
         if (m_params.debug_output) {
             label.assign(vert_capacity(), 0);
         }
         for (const Tuple& t : get_vertices()) {
             const size_t vid = t.vid(*this);
-            if (on_R[vid]) {
-                inside[vid] = 1;
-                if (m_params.debug_output) {
-                    label[vid] = dist_S(pos(vid)) <= radius + tol ? 1 : 2;
-                }
-                continue;
-            }
-            const double ds = dR[vid] < radius ? dist_S(pos(vid)) : 0.;
-            inside[vid] = ds >= radius + tol;
+            inside[vid] = dR[vid] < radius && dist_S(pos(vid)) >= radius + tol;
             n_in += inside[vid];
             if (m_params.debug_output) {
-                label[vid] = inside[vid] ? 2 : 0;
+                label[vid] = inside[vid];
             }
         }
         logger().info(
-            "tight_seal_geom: {} vertices off R are IN, at least d/2 + tol from S; every "
-            "vertex of R is IN or ON",
+            "tight_seal_geom: {} vertices within d/2 of I (I's own included) are IN, at least "
+            "d/2 + tol from D; the others are OUT",
             n_in);
-        // Marked: the faces outside R whose vertices are all IN or ON. Then each edge from an
-        // inside vertex to an OUT one is split where d(x, S) falls to d/2 + tol, and of the faces it
-        // makes, those touching its inside end are marked and the others not; the new vertex
-        // takes no label. An edge from an ON vertex is not split: the trace from it stops at once.
-        // J is then the marked faces.
         std::unordered_set<size_t> marked;
         std::vector<simplex::Edge> split_edges;
         for (const size_t fid : fids) {
-            if (region[fid] >= 0) {
-                continue;
-            }
             const auto vs = oriented_tri_vids(fid);
             if (inside[vs[0]] && inside[vs[1]] && inside[vs[2]]) {
                 marked.insert(fid);
@@ -872,7 +855,7 @@ void SimWildMeshTri::tight_seal_geom(
             const Vector2d b = pos(in_end == e0 ? e1 : e0);
             trace_dir = (b - a) / (b - a).norm();
             // Split where d(x, S) falls to d/2 + tol, the labels' level: an IN end is at least
-            // there, an OUT one below it. No split from an ON end (a vertex of R at most there).
+            // there, an OUT one below it or beyond S.
             const std::optional<Vector2d> crossing =
                 tight_seal::level_crossing(dist_S, a, b, radius + tol, tol, false);
             if (!crossing || !((*crossing - a).dot(trace_dir) > 0.)) {
@@ -907,6 +890,16 @@ void SimWildMeshTri::tight_seal_geom(
         }
         m_voronoi_split_fn = nullptr;
 
+        // J leaves out R's faces, by tag (a split's children keep it)
+        size_t n_left_out = 0;
+        for (auto it = marked.begin(); it != marked.end();) {
+            if (in_R(*it)) {
+                it = marked.erase(it);
+                ++n_left_out;
+            } else {
+                ++it;
+            }
+        }
         std::vector<size_t> J_faces(marked.begin(), marked.end());
         std::sort(J_faces.begin(), J_faces.end());
         in_J.assign(tri_capacity(), 0);
@@ -914,13 +907,14 @@ void SimWildMeshTri::tight_seal_geom(
             in_J[id] = 1;
         }
         logger().info(
-            "tight_seal_geom: marked {} faces with every vertex IN or ON, split {} edges where "
-            "d(x, S) falls to d/2 + tol and marked their faces at the inside end ({} not split: "
-            "the "
-            "inside end was ON, or the split was refused); J holds {} faces",
+            "tight_seal_geom: marked {} faces with every vertex IN (I's included), split {} edges "
+            "where d(x, D) falls to d/2 + tol and marked their faces at the IN end ({} not split: "
+            "no crossing found, or the split was refused), then left out {} faces of I; J holds "
+            "{} faces",
             n_marked,
             n_split,
             n_not_split,
+            n_left_out,
             J_faces.size());
 
 
@@ -991,7 +985,7 @@ void SimWildMeshTri::tight_seal_geom(
             needed);
 
         // DEBUG_output: the mesh after J is found, before anything is filled. Vertex field
-        // join_label: 0 OUT, 1 ON, 2 IN (step 2). Cell fields: join_region marks
+        // join_label: 0 OUT, 1 IN, -1 made by a split (step 2). Cell fields: join_region marks
         // J's faces, join_component numbers J's components (as above; -1 outside J), and
         // join_filled marks the components that are filled. Written before the boundary check
         // below, which may throw.
