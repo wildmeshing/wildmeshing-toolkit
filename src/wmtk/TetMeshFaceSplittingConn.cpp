@@ -52,11 +52,19 @@ bool TetMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tets)
     vid[1] = tt.switch_vertex().vid();
     vid[2] = tt.switch_edge().switch_vertex().vid();
 
-    // record the vids that will be modified for roll backs on failure
-    std::array<std::pair<size_t, VertexConnectivity>, 3> old_vertices;
-    old_vertices[0] = {vid[0], m_vertex_connectivity[vid[0]]};
-    old_vertices[1] = {vid[1], m_vertex_connectivity[vid[1]]};
-    old_vertices[2] = {vid[2], m_vertex_connectivity[vid[2]]};
+    // record the vids that will be modified for roll backs on failure: the face's three, and the
+    // corner off the face of each tet on it, which gains that tet's new children
+    std::vector<std::pair<size_t, VertexConnectivity>> old_vertices;
+    old_vertices.reserve(5);
+    for (const size_t v : vid) {
+        old_vertices.emplace_back(v, m_vertex_connectivity[v]);
+    }
+    old_vertices.emplace_back(vid_link, m_vertex_connectivity[vid_link]);
+    if (t_opp) {
+        old_vertices.emplace_back(
+            vid_link_opp.value(),
+            m_vertex_connectivity[vid_link_opp.value()]);
+    }
     std::pair<size_t, TetrahedronConnectivity> old_tet;
     old_tet = std::make_pair(tid, m_tet_connectivity[tid]);
     std::optional<std::pair<size_t, TetrahedronConnectivity>> old_tet_opp;

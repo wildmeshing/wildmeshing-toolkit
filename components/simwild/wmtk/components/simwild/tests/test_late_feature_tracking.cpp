@@ -190,6 +190,36 @@ size_t vertex_at(const Mesh& m, const size_t f)
 
 } // namespace
 
+TEST_CASE("face and tet splits keep the feature-edge tags (3D)", "[simwild][feature_tracking]")
+{
+    wmtk::components::simwild::Parameters params;
+    params.init(Vector3d(-2, -2, -2), Vector3d(2, 2, 2));
+    wmtk::components::simwild::SimWildMesh mesh(params, params.eps, 0);
+    init_tet_ring(mesh);
+    mesh.enable_feature_edge_tracking();
+    const auto feature = wmtk::TetOptimizerMesh::FeatureEdgeAttributes::feature;
+    mesh.m_feature_edge_attribute[mesh.tuple_from_edge({{0, 1}}).eid(mesh)].add(
+        feature); // the axis
+    mesh.m_feature_edge_attribute[mesh.tuple_from_edge({{2, 3}}).eid(mesh)].add(
+        feature); // the ring
+    const std::set<std::array<size_t, 2>> tagged = {{{0, 1}}, {{2, 3}}};
+    REQUIRE(tagged_edges(mesh) == tagged);
+
+    // Neither split removes an edge, so these two keep their tags and the new edges have none.
+    std::vector<wmtk::TetMesh::Tuple> new_tets;
+    const auto face = std::get<0>(mesh.tuple_from_face({{0, 1, 2}}));
+    mesh.reserve_free_slots(mesh.cell_slot_bound(face), 1);
+    REQUIRE(mesh.split_face(face, new_tets));
+    CHECK(mesh.get_tets().size() == 8); // two tets to six
+    CHECK(tagged_edges(mesh) == tagged);
+
+    const auto tet = mesh.get_incident_tets_for_edge(2, 3).front();
+    mesh.reserve_free_slots(mesh.cell_slot_bound(tet), 1);
+    REQUIRE(mesh.split_tet(tet, new_tets));
+    CHECK(mesh.get_tets().size() == 11); // one tet to four
+    CHECK(tagged_edges(mesh) == tagged);
+}
+
 TEST_CASE(
     "feature-edge tracking enabled after init (3D)",
     "[simwild][feature_tracking]" + release_only)

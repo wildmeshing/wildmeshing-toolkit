@@ -122,12 +122,18 @@ ExternalProject_Add(
     # At b03a392 (2026-11-06, data2 #15) tetwild_features and triwild_free_points list their
     # curve and point files in `input`: the toolkit reads every input from one list, and refuses
     # input_edges and input_points as unknown keys.
+    # At 7df4924 (2026-11-06, data2 main, on b03a392) the tight_seal_geom configs keep the join
+    # region off the mesh boundary, which the operation now refuses: explicit_2d moves to the new
+    # model tight_seal_geom_bars_2d.msh, explicit_3d to d 0.35, detected_3d to d 0.6.
     # At 546e1f0 (2026-11-10, data2 #16, on b03a392) the 16 offset configs pass `offsets`, a list
     # of {selection, output_tags, target_distance, target_distance_rel}: the toolkit no longer
-    # reads offset_selection and target_distance_rel. data2 main's 7df4924 (the tight_seal_geom
-    # configs) is not in it; it belongs with its own toolkit change.
+    # reads offset_selection and target_distance_rel.
+    # 86e0f2a (2026-11-10, data2 main) merges #16 and holds both.
+    # At 571a0a3 (2026-11-13, data2 main, on 249bca7: the tight_seal_geom configs' input
+    # selection, fill selections and fill tags) manifold_extraction_models.json's comment no
+    # longer calls the [manifold] group hidden; no config changes.
     #
-    GIT_TAG 546e1f07d3ca77f9c277126aa10ef2d9e40b0c95
+    GIT_TAG 571a0a3563043dd87b6ebaf530453bfeba45e1ec
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

@@ -6,6 +6,8 @@
 #include <wmtk/utils/DriverPrologue.hpp>
 
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
 #include <optional>
 #include <set>
@@ -100,41 +102,55 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
             raw_threshold < 0 ? std::numeric_limits<double>::infinity() : raw_threshold;
         mesh.tight_seal_topo(tag_sets, threshold);
     } else if (operation == "tight_seal_geom") {
-        const std::string selection = json_params["tight_seal_geom_selection"];
-        const std::vector<std::string> tag_names = json_params["tight_seal_geom_tags"];
-        std::vector<int64_t> tags;
-        if (selection == "detected") {
-            if (!tag_names.empty()) {
-                logger().warn(
-                    "tight_seal_geom_selection is \"detected\", so tight_seal_geom_tags {} is "
-                    "ignored",
-                    tag_names);
+        // the region to close, the fill's colors, and the tags each color adds
+        const std::string input = json_params["tight_seal_geom_input_selection"];
+        if (input.empty()) {
+            log_and_throw_error(
+                "tight_seal_geom needs tight_seal_geom_input_selection, a tag expression for the "
+                "region to close");
+        }
+        const ExprPtr input_selection = expression_parser::parse(input, mesh.m_tag_name_to_id);
+        const std::vector<std::string> fill_names = json_params["tight_seal_geom_fill_selections"];
+        const std::vector<std::vector<std::string>> fill_tag_names =
+            json_params["tight_seal_geom_fill_tags"];
+        if (fill_names.size() < 2) {
+            log_and_throw_error(
+                "tight_seal_geom needs two or more tight_seal_geom_fill_selections. Got {}",
+                fill_names);
+        }
+        if (fill_tag_names.size() != fill_names.size()) {
+            log_and_throw_error(
+                "tight_seal_geom_fill_tags needs one tag set per entry of "
+                "tight_seal_geom_fill_selections: {} selections, {} tag sets",
+                fill_names.size(),
+                fill_tag_names.size());
+        }
+        std::vector<ExprPtr> fill_selections;
+        for (const std::string& name : fill_names) {
+            fill_selections.push_back(expression_parser::parse(name, mesh.m_tag_name_to_id));
+        }
+        // a name the mesh lacks becomes a new tag; ambient is the cells with no tag, so it is no
+        // tag to add
+        std::vector<CellTag> fill_tags;
+        for (const std::vector<std::string>& names : fill_tag_names) {
+            if (std::find(names.begin(), names.end(), "ambient") != names.end()) {
+                log_and_throw_error(
+                    "tight_seal_geom_fill_tags cannot hold ambient (the cells with no tag); an "
+                    "empty tag set adds nothing. Got {}",
+                    fill_tag_names);
             }
-        } else {
-            for (const auto& tag_name : tag_names) {
-                const auto expr = expression_parser::parse(tag_name, mesh.m_tag_name_to_id);
-                // the reader drops ambient (the untagged cells), so it is no tag to parse into
-                if (expr->tag_names_involved().count("ambient") > 0) {
-                    log_and_throw_error(
-                        "tight_seal_geom_tags cannot hold ambient. Got {}",
-                        tag_names);
-                }
-                const CellTag tag = expr->tags_involved();
-                if (!expr->contains_only_and() || tag.size() != 1) {
-                    log_and_throw_error(
-                        "Each tight_seal_geom_tags entry must be a single tag. Got {}",
-                        tag_name);
-                }
-                tags.push_back(*tag.begin());
-            }
+            fill_tags.push_back(
+                mesh.string_set_to_cell_tag(std::set<std::string>(names.begin(), names.end())));
         }
         mesh.tight_seal_geom(
-            tags,
+            input_selection,
+            fill_selections,
+            fill_tags,
             json_params["tight_seal_geom_distance"],
             json_params["tight_seal_geom_trace_rel_tol"],
-            selection,
             json_params["tight_seal_geom_min_regions"],
-            json_params["tight_seal_geom_sanity"]);
+            json_params["tight_seal_geom_sanity"],
+            json_params["tight_seal_geom_max_preprocessing_rounds"]);
     } else if (operation == "keep_lcc") {
         const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
         std::vector<CellTag> lcc_tags;

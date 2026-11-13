@@ -1,5 +1,6 @@
 #include "ManExtractTriMesh.h"
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/ManifoldCheck.hpp>
 
 // clang-format off
 #include <igl/adjacency_list.h>
@@ -10,7 +11,6 @@
 
 #include <fstream>
 #include <iomanip>
-#include <set>
 
 
 namespace wmtk::components::manifold_extraction {
@@ -69,55 +69,9 @@ size_t ManExtractTriMesh::label_non_manifold()
 
 bool ManExtractTriMesh::vertex_is_manifold(const Tuple& v) const
 {
-    if (!is_curve_vertex(v)) { // only call this function for vertices on input mesh
-        return true;
-    }
-
-    const size_t v0_id = v.vid(*this);
-    auto nb_faces = get_one_ring_tris_for_vertex(v);
-
-    // collect nb faces inside curve
-    std::set<Tuple> nb_in_faces;
-    for (const Tuple& nb_face : nb_faces) {
-        if (is_interior_face(nb_face)) {
-            // make tuple point to vertex
-            auto vs = oriented_tri_vids(nb_face);
-            std::vector<size_t> ordered_vids(1, v0_id);
-            for (const size_t& v_id : vs) {
-                if (v_id != v0_id) {
-                    ordered_vids.push_back(v_id);
-                }
-            }
-            Tuple newtup = tuple_from_vids(ordered_vids[0], ordered_vids[1], ordered_vids[2]);
-            nb_in_faces.insert(newtup);
-        }
-    }
-
-    // run dfs
-    std::set<size_t> visited_fids;
-    vertex_dfs_helper(visited_fids, *nb_in_faces.begin());
-    return (visited_fids.size() == nb_in_faces.size());
-}
-
-
-void ManExtractTriMesh::vertex_dfs_helper(std::set<size_t>& visited_fids, const Tuple& f) const
-{
-    const size_t curr_fid = f.fid(*this);
-
-    // face is not interior or is already visited
-    if ((!is_interior_face(curr_fid)) || visited_fids.count(curr_fid)) {
-        return;
-    }
-
-    visited_fids.insert(curr_fid);
-    auto f1 = f.switch_face(*this);
-    if (f1) {
-        vertex_dfs_helper(visited_fids, f1.value());
-    }
-    auto f2 = f.switch_edge(*this).switch_face(*this);
-    if (f2) {
-        vertex_dfs_helper(visited_fids, f2.value());
-    }
+    return wmtk::utils::vertex_is_manifold(*this, v, [this](const size_t fid) {
+        return is_interior_face(fid);
+    });
 }
 
 

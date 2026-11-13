@@ -1,9 +1,13 @@
 #pragma once
 
+#include "ConnectedComponent.hpp"
+
 #include <SimpleBVH/BVH.hpp>
 #include <wmtk/Types.hpp>
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -19,9 +23,6 @@
  */
 namespace wmtk::components::simwild::tight_seal {
 
-/// Whether `tag` is the tag named "ambient".
-bool is_ambient(const std::map<int64_t, std::string>& tag_id_to_name, int64_t tag);
-
 /// BVH of segments, given as consecutive pairs of points. Returns false if there are none.
 bool segments_bvh(const std::vector<Vector2d>& vertices, SimpleBVH::BVH& bvh);
 /// BVH of triangles, given as consecutive triples of points. Returns false if there are none.
@@ -32,42 +33,83 @@ double bvh_distance(const SimpleBVH::BVH& bvh, const Vector2d& p);
 double bvh_distance(const SimpleBVH::BVH& bvh, const Vector3d& p);
 
 /**
- * @brief Sphere tracing of a 1-Lipschitz function f along a + t dir, t in [0, L), towards the
- * level set f = level.
+ * @brief The point of a simplex where k distance functions, each interpolated linearly from its
+ * values at the simplex's k corners, are all equal: for a triangle (k = 3) the triple point of
+ * three regions, for a tet (k = 4) the quadruple point of four (tight seal v2 note, section 4a-i).
  *
- * From a point at f, the level set is at least |f - level| away in every direction, so a step
- * that long along the segment cannot cross it. `from_below`: f(a) < level and each step is
- * level - f; otherwise f(a) > level and each step is f - level. Returns the first t (of a + t dir)
- * where |f - level| <= tol, or nothing if the trace leaves [0, L) first: past the far end, the
- * level set is not on the segment; behind a, f(a) is already beyond the level.
+ * D(r, c) is function r at corner c. Returns the point's barycentric coordinates (they sum to 1),
+ * or nothing if the system is singular. The point lies inside the simplex if all are > 0.
  */
-std::optional<double> sphere_trace(
-    const std::function<double(const Vector2d&)>& f,
-    const Vector2d& a,
-    const Vector2d& dir,
-    double L,
-    double level,
-    double tol,
-    bool from_below);
-std::optional<double> sphere_trace(
-    const std::function<double(const Vector3d&)>& f,
-    const Vector3d& a,
-    const Vector3d& dir,
-    double L,
-    double level,
-    double tol,
-    bool from_below);
+std::optional<Eigen::VectorXd> equal_distances_point(const Eigen::MatrixXd& D);
 
-/// The region i among `regions` whose BVH (bvhs[i]) is nearest p; the first in `regions` on a
-/// tie.
-size_t nearest_region(
-    const std::vector<SimpleBVH::BVH>& bvhs,
-    const Vector2d& p,
-    const std::vector<size_t>& regions);
-size_t nearest_region(
-    const std::vector<SimpleBVH::BVH>& bvhs,
-    const Vector3d& p,
-    const std::vector<size_t>& regions);
+/**
+ * @brief Where a 1-Lipschitz f reaches `level` along the segment [a, b], coming from a, which is
+ * below the level if `from_below` (f(a) < level), else above it (f(a) > level).
+ *
+ * Sphere traced from a, each step |f - level| + step_floor (at least step_floor, so the trace ends;
+ * no step goes more than step_floor past the level), until f is at the level or past it; the last
+ * step is then bisected to the level. Nothing if f(a) is not on the side `from_below` gives, or if
+ * f stays on that side up to b.
+ */
+template <typename V>
+std::optional<V> level_crossing(
+    const std::function<double(const V&)>& f,
+    const V& a,
+    const V& b,
+    const double level,
+    const double step_floor,
+    const bool from_below)
+{
+    const auto before = [&](const double v) { return from_below ? v < level : v > level; };
+    double v = f(a);
+    if (!before(v)) {
+        return std::nullopt;
+    }
+    const double L = (b - a).norm();
+    const V dir = (b - a) / L;
+    double t_prev = 0.;
+    double t = 0.;
+    while (before(v)) {
+        t_prev = t;
+        t += std::abs(v - level) + step_floor;
+        if (t >= L) {
+            t = L;
+            v = f(b);
+            if (before(v)) {
+                return std::nullopt;
+            }
+            break;
+        }
+        v = f(a + t * dir);
+    }
+    // f(t_prev) before the level, f(t) at it or past it
+    double lo = t_prev;
+    double hi = t;
+    for (int i = 0; i < 50; ++i) {
+        const double m = (lo + hi) / 2;
+        if (before(f(a + m * dir))) {
+            lo = m;
+        } else {
+            hi = m;
+        }
+    }
+    return V(a + ((lo + hi) / 2) * dir);
+}
+
+/// The point of the segment [a, b] where f changes sign, by bisection, given f(a) < 0 <= f(b).
+template <typename V>
+V bisect_sign_change(const std::function<double(const V&)>& f, V a, V b)
+{
+    for (int i = 0; i < 50; ++i) {
+        const V m = (a + b) / 2;
+        if (f(m) < 0) {
+            a = m;
+        } else {
+            b = m;
+        }
+    }
+    return (a + b) / 2;
+}
 
 /// The six edges of a tet, as pairs of its local vertex indices.
 inline constexpr std::array<std::array<int, 2>, 6> tet_edges = {
@@ -77,46 +119,33 @@ inline constexpr std::array<std::array<int, 2>, 6> tet_edges = {
 /// triples of points).
 void fan_triangles(const std::vector<Vector3d>& poly, std::vector<Vector3d>& triangles);
 
-/// The distance from p to a closed cell: a triangle in 2D, a tet in 3D; 0 inside it.
-double point_cell_distance(const Vector2d& p, const std::array<Vector2d, 3>& cell);
-double point_cell_distance(const Vector3d& p, const std::array<Vector3d, 4>& cell);
-/// The distance from p to the closed triangle (a, b, c) in 3D.
-double
-point_triangle_distance(const Vector3d& p, const Vector3d& a, const Vector3d& b, const Vector3d& c);
-
-/// Relative margin of certify_on_cell's tests, so that rounding can only refute a cell.
-inline constexpr double certify_margin = 1e-12;
-/// certify_on_cell's subdivision levels in 2D and 3D, past which an undecided cell is refuted.
-inline constexpr int certify_depth_2d = 8;
-inline constexpr int certify_depth_3d = 5;
-
 /**
- * @brief Certifies that a 1-Lipschitz function f stays on one side of `level` over a whole cell
- * (a triangle in 2D, a tet in 3D), conservatively: true only if proven.
+ * @brief The region "split_fill" gives a cell, from its corners' own labels.
  *
- * at_most: max over the cell of f <= level; otherwise: min over the cell of f > level. The
- * conservative circle (sphere) subdivision of topological_offset's Circle.hpp and Sphere.hpp: a
- * circle of radius rho around c holds only values within rho of f(c). Starting from the circle
- * around the cell's bounding square (cube), a circle whose values are all on the right side
- * (by the relative margin certify_margin) is certified; the cell is refuted if a corner is not
- * (corner_values, with the margin), or if a circle's centre lies in the cell with f on the wrong
- * side; any other circle is refined into the circles around its square's 2^dim sub-squares that
- * overlap the cell, and refutes the cell once `max_depth` levels down.
+ * The corners' region if they agree. Otherwise an edge between two of them was not split, because
+ * the distances to their regions are equal at one of its ends; the cell then takes the one region
+ * that every corner's tie set holds. If they share several (an exact tie between regions) or none,
+ * the choice is arbitrary: the first region they share, or else the first corner's.
+ *
+ * ties(v): the regions within the tie tolerance of the nearest one at v, ascending. Returns the
+ * region and how it was chosen: 0 the corners agree, 1 their tie sets, 2 arbitrarily.
  */
-bool certify_on_cell(
-    const std::array<Vector2d, 3>& cell,
-    const std::array<double, 3>& corner_values,
-    const std::function<double(const Vector2d&)>& f,
-    double level,
-    bool at_most,
-    int max_depth);
-bool certify_on_cell(
-    const std::array<Vector3d, 4>& cell,
-    const std::array<double, 4>& corner_values,
-    const std::function<double(const Vector3d&)>& f,
-    double level,
-    bool at_most,
-    int max_depth);
+std::pair<size_t, int> split_fill_label(
+    const CornerLabels& corners,
+    const std::function<const std::vector<size_t>&(size_t)>& ties);
+
+/// The pairs of `parent` whose vertex is one of `corners`: a child's labels after a split.
+template <typename Corners>
+CornerLabels kept_corner_labels(const CornerLabels& parent, const Corners& corners)
+{
+    CornerLabels kept;
+    for (const auto& [v, region] : parent) {
+        if (std::find(corners.begin(), corners.end(), v) != corners.end()) {
+            kept.emplace_back(v, region);
+        }
+    }
+    return kept;
+}
 
 /// Sets `fn` to nullptr when it goes out of scope: m_voronoi_split_fn must not outlive the
 /// operation that set it.

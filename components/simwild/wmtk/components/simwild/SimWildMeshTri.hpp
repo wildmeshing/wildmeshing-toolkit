@@ -6,6 +6,7 @@
 
 #include <wmtk/SurfaceTagAttributes.h>
 #include <limits>
+#include <optional>
 #include <unordered_set>
 
 #include <wmtk/utils/PartitionMesh.h>
@@ -250,7 +251,13 @@ public:
     size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
 
-    void write_vtu(const std::string& path, MeshMap* output = nullptr) const;
+    /// `cell_fields`: extra cell fields, each a name and a value per face id (missing ids write 0);
+    /// `vertex_fields` likewise per vertex id.
+    void write_vtu(
+        const std::string& path,
+        MeshMap* output = nullptr,
+        const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields = {},
+        const std::vector<std::pair<std::string, std::vector<double>>>& vertex_fields = {}) const;
     void write_vtu_with_energies(const std::string& path) const;
 
 public:
@@ -331,44 +338,53 @@ public:
         double threshold = std::numeric_limits<double>::infinity());
 
     /**
-     * @brief Geometric tight seal between the regions R_i, the faces tagged with `tags[i]` and
-     * nothing else.
+     * @brief Geometric tight seal: closes the region R, the faces `input_selection` holds for,
+     * and fills the gaps found with the colors `fill_selections` define.
      *
-     * J is the closing of the union R of the R_i by the disk B of diameter `distance`, minus R:
-     * the part of E that B cannot reach. It is found in four steps.
-     *  1. The faces surely in J (the spec's v2): U^ = R and the faces whose points are all
-     *     within distance/2 of R (inside R + B); V^ = the faces of U^ whose points are all
-     *     farther than distance/2 from U^'s boundary (inside the closing); J^ = V^ minus R. Both
-     *     tests are certified by conservative subdivision (tight_seal::certify_on_cell).
-     *  2. The dilation surface S, d(x, R) = distance/2, sphere traced on the edges that cross it.
-     *  3. Conservative growth of all of J^ to the level set d(x, S) = distance/2: the faces
-     *     outside R are flooded from J^ through edges with a vertex inside (in R + B and
-     *     d(v, S) > distance/2), each flooded edge from an inside vertex to an outside one is
-     *     split where it leaves J, sphere traced from the inside end (to within trace_rel_tol x
-     *     distance/2), edges on R's boundary included, and J is the flooded faces with all
-     *     vertices inside.
-     *  4. The connected components of J (through edges) are kept by the rule of `selection`.
-     * Each component is then filled with the Voronoi diagram of its regions: edges whose
-     * endpoints have different nearest regions are split on the bisector, and each face gets
-     * the tag of its region.
+     * J is the closing of R by the disk B of diameter `distance`, minus R: the part of the rest
+     * that B cannot reach. First R is made simplicially embedded (no face outside R has all its
+     * vertices on R; wmtk/utils/SimplicialEmbedding.hpp): each face outside R whose three edges
+     * lie on R is split at its centroid, then each edge outside R joining two vertices of R at its
+     * midpoint. Then J is found in three steps.
+     *  1. The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere
+     *     traced, then bisected to the level).
+     *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
+     *  2. The vertices' labels and the marching (tight seal v2 note, section 2), with tol =
+     *     trace_rel_tol x the mesh's bounding box diagonal (also the tolerance of both sphere
+     *     traces). A vertex within distance/2 of R, R's own included, is IN if
+     *     d(v, S) >= distance/2 + tol, else OUT; the others are OUT. The faces whose vertices are
+     *     all IN are marked, R's included. Each edge from an IN vertex to an OUT one is split at
+     *     d(x, S) = distance/2 + tol, the labels' level (sphere traced from the IN end, then
+     *     bisected), and of the faces it makes, those touching its IN end are marked and the
+     *     others not; the new vertex takes no label. R's faces may thus be split. J is the marked
+     *     faces outside R.
+     *  3. The connected components of J, through edges.
+     * The colors: fill selection k (two or more) is color k; a face outside J satisfying it has
+     * that color (a face of J is no color, whatever its tags). A component borders a color if one
+     * of its faces shares an edge with a face of that color, and is filled if it borders
+     * `min_regions` colors or more (2 or more), with those it borders. The operation throws if a
+     * face sharing an edge with J satisfies several fill selections, in any component, or if a
+     * face of J has a vertex on the mesh's boundary, in any component, filled or not (R more than
+     * distance/2 from the boundary keeps J off it). Each component to fill (connected through
+     * edges, so two touching at a vertex are filled separately) is then preprocessed, in at most
+     * `max_preprocessing_rounds` rounds (0: none), split as its faces' own labels of their corners
+     * require, and each resulting face takes the color its corners' labels give and gets that
+     * color's tags, `fill_tags[k]` (as many as there are fill selections), added to its own
+     * (tight_seal_split_fill). No topology is checked.
      *
-     * `selection` "explicit": the regions are `tags`, which may not hold ambient (the tag named
-     * "ambient"). "detected": `tags` is ignored (with a warning if it is not empty), the regions
-     * are every tag but ambient that some face has alone, and each part that borders
-     * `min_regions` of them or more (at least 2; ignored, with a warning if not 2, for "explicit")
-     * is filled with those it borders.
-     *
-     * `sanity`: afterwards, throw if a face is inverted, a filled face carries other than one
-     * region's tag, or a part of the filled faces borders fewer than two regions (a concave
-     * feature of one body, filled).
+     * `sanity`: afterwards, throw if a face is inverted, a filled face holds none of the fill tag
+     * sets, or a part of the filled faces borders fewer than two colors (a concave feature of one
+     * body, filled).
      */
     void tight_seal_geom(
-        const std::vector<int64_t>& tags,
+        const ExprPtr& input_selection,
+        const std::vector<ExprPtr>& fill_selections,
+        const std::vector<CellTag>& fill_tags,
         double distance,
-        double trace_rel_tol = 0.01,
-        const std::string& selection = "explicit",
+        double trace_rel_tol = 0.001,
         int64_t min_regions = 2,
-        bool sanity = false);
+        bool sanity = false,
+        int64_t max_preprocessing_rounds = 10);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 
@@ -388,6 +404,22 @@ private:
     // 8 threads (2026-11-05).
     wmtk::threading::enumerable_thread_specific<size_t> m_last_split_vertex;
 
+    // Where split_face() puts the new vertex; the face's centroid if unset. Set before
+    // split_face(), cleared after.
+    std::optional<Vector2d> m_face_split_position;
+    // split_face_before() to split_face_after(): the face's corners, attributes and edges. Face
+    // splits are serial (only tight_seal_geom makes them).
+    struct FaceSplitCache
+    {
+        std::array<size_t, 3> v;
+        FaceAttributes face;
+        std::array<std::pair<simplex::Edge, EdgeAttributes>, 3> edges;
+        Vector2d position;
+        double sizing_scalar = 1;
+        size_t partition_id = 0;
+    };
+    FaceSplitCache m_face_split_cache;
+
     // tight_seal_geom's helpers that need the mesh, defined in TightSealGeom.cpp
     /// BVH of the boundary of the faces of `fids` for which in_set holds: their interfaces with
     /// the other faces and their edges on the mesh boundary. From a point outside the set, the
@@ -397,20 +429,29 @@ private:
         const std::function<bool(size_t)>& in_set,
         SimpleBVH::BVH& bvh) const;
     /// Split edge e, keeping `faces` up to date: the children of a face in it replace it, and
-    /// each child takes its parent's flag in `filled` (resized to the new capacity). Calls
-    /// on_child(id, end_vid) for each child in `faces`, end_vid being the endpoint of e the child
-    /// keeps. Returns the new vertex, or -1 if the split was refused.
+    /// each child takes its parent's flag in `filled` (resized to the new capacity) and, if given,
+    /// its parent's `corner_labels` for the corners it keeps (resized). Returns the new vertex, or
+    /// -1 if the split was refused.
     size_t tight_seal_split_tracked(
         const simplex::Edge& e,
         std::unordered_set<size_t>& faces,
         std::vector<char>& filled,
-        const std::function<void(size_t, size_t)>& on_child);
+        std::vector<CornerLabels>* corner_labels = nullptr);
+    /// Split face fid at p, keeping `faces`, `filled` and `corner_labels` up to date as
+    /// tight_seal_split_tracked does. Returns the new vertex, or -1 if the split was refused.
+    size_t tight_seal_split_face_tracked(
+        size_t fid,
+        const Vector2d& p,
+        std::unordered_set<size_t>& faces,
+        std::vector<char>& filled,
+        std::vector<CornerLabels>* corner_labels = nullptr);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
     /// as a BVH of segments. On each edge of a face outside R (region < 0) between a vertex with
-    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is sphere traced on dist_R
-    /// from the near end (to within tol, on R's side); the crossings of each face are joined into
-    /// its cut segment. Returns false if S is empty; n_traced: edges traced, n_failed: traces that left
-    /// their edge (the far end is taken).
+    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is where dist_R = radius:
+    /// sphere traced from the near end, each step at least tol, then bisected
+    /// (tight_seal::level_crossing). The crossings of each face are joined into its cut segment.
+    /// Returns false if S is empty; n_traced: edges traced, n_failed: those with no crossing found
+    /// (the far end is taken).
     bool tight_seal_dilation_surface_bvh(
         const std::vector<size_t>& fids,
         const std::vector<int>& region,
@@ -421,11 +462,51 @@ private:
         SimpleBVH::BVH& bvh,
         size_t& n_traced,
         size_t& n_failed) const;
+    /// How many of `fids` have a vertex on the mesh's boundary, a edge with no face beyond it.
+    size_t tight_seal_cells_on_boundary(const std::vector<size_t>& fids) const;
+    /// tight_seal_geom's fill of `components`, in 2D; as SimWildMesh::tight_seal_split_fill, with
+    /// faces for tets and no faces of tets. `components_regions` gives the colors each borders
+    /// (indices into `fill_tags` and `region_bvhs`); color_of gives a face's color by its tags;
+    /// in_J[id] marks every face of J, whose faces are no color. First up to `max_rounds` rounds of
+    /// preprocessing, each vertex labelled by the nearest of its component's colors (the first on
+    /// an exact tie): a round marks each edge whose ends' labels differ if, where the distances to
+    /// those two are equal (not on an end), another color of the component is nearest; then each
+    /// face with three labels whose edges are all unmarked if, at its triple point inside it (where
+    /// the three distances, interpolated linearly over the face, are equal), another color is
+    /// nearest. Every marked face is split at its point, then every marked edge at its; the first
+    /// round looks at every edge and face, each later one only at those touching a vertex the last
+    /// made, until nothing is marked (or a warning after `max_rounds`). Then each face labels its
+    /// corners: a corner takes its nearest color, except that the ends of an edge the face shares
+    /// with a face of one of the component's colors (outside J) take that color. From these
+    /// labels, all taken before any split: the faces with three labels are split at their triple
+    /// point if it lies inside them (else the centroid), then the edges whose ends differ in a face
+    /// holding them where the distances to the two labels are equal (not if that falls on an end).
+    /// Each child keeps its parent's labels of the corners it keeps, a new vertex has none, and
+    /// each face of the components then takes a color by tight_seal::split_fill_label and gets that
+    /// color's fill tags added to its own. tags_before[id] gets the tags of each face it labels
+    /// (filled[id] set) as they were before. No topology is checked.
+    void tight_seal_split_fill(
+        const std::vector<ConnectedComponent>& components,
+        const std::vector<std::vector<size_t>>& components_regions,
+        const std::vector<CellTag>& fill_tags,
+        const std::vector<SimpleBVH::BVH>& region_bvhs,
+        const std::function<int(size_t)>& color_of,
+        const std::vector<char>& in_J,
+        int64_t max_rounds,
+        std::vector<char>& filled,
+        std::vector<CellTag>& tags_before);
+    /// tight_seal_geom's topology check, as SimWildMesh::tight_seal_topology_check, with faces
+    /// for tets and edges for faces (components through edges).
+    void tight_seal_topology_check(
+        const std::vector<char>& filled,
+        const std::vector<CellTag>& tags_before) const;
     /// tight_seal_geom's `sanity` checks, on the output: throws if a face is inverted, a filled
-    /// face (filled[id] set) carries other than exactly one of `tags`, or a part of the filled
-    /// faces, connected through edges, borders fewer than two of them.
-    void tight_seal_geom_sanity(const std::vector<int64_t>& tags, const std::vector<char>& filled)
-        const;
+    /// face (filled[id] set) holds none of the `fill_tags` sets, or a part of the filled faces,
+    /// connected through edges, borders fewer than two colors (by color_of, as in split_fill).
+    void tight_seal_geom_sanity(
+        const std::vector<CellTag>& fill_tags,
+        const std::function<int(size_t)>& color_of,
+        const std::vector<char>& filled) const;
 
 protected:
     std::tuple<double, double> optimization_quality_stats() override;
@@ -437,6 +518,11 @@ protected:
     bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max) const override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
     void split_after_vertex(size_t v_new) override { m_last_split_vertex.local() = v_new; }
+    /// A face split puts the new vertex at m_face_split_position (the centroid if unset), in
+    /// doubles, so every corner must be rounded. The three children take the face's attributes,
+    /// the face's edges keep theirs, and the split is refused if a child is inverted.
+    bool split_face_before(const Tuple& t) override;
+    bool split_face_after(const Tuple& t) override;
 };
 
 } // namespace wmtk::components::simwild::tri
