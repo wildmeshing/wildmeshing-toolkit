@@ -1,8 +1,10 @@
 #include "TightSealGeom.hpp"
 
+#include "MaterialInterface.hpp"
 #include "SimWildMesh.h"
 #include "SimWildMeshTri.hpp"
 
+#include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ManifoldCheck.hpp>
 
@@ -1912,6 +1914,524 @@ void SimWildMesh::tight_seal_split_fill(
         n_agree,
         n_ties,
         n_arbitrary);
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+}
+
+size_t SimWildMesh::tight_seal_new_vertex(
+    const Vector3r& position,
+    const std::vector<size_t>& carrier)
+{
+    const size_t v = add_vertex_slot();
+    VertexAttributes va(position);
+    va.m_is_rounded = false;
+    va.m_is_on_surface = false;
+    va.m_order = 0;
+    va.on_bbox_faces = m_vertex_attribute[carrier.front()].on_bbox_faces;
+    va.m_sizing_scalar = 0;
+    for (const size_t u : carrier) {
+        va.on_bbox_faces =
+            wmtk::set_intersection(va.on_bbox_faces, m_vertex_attribute[u].on_bbox_faces);
+        va.m_sizing_scalar += m_vertex_attribute[u].m_sizing_scalar / double(carrier.size());
+    }
+    va.partition_id = m_vertex_attribute[carrier.front()].partition_id;
+    m_vertex_attribute[v] = va;
+    if (m_track_feature_points) {
+        m_feature_point_attribute[v].m_feature_point_id = NO_FEATURE_POINT;
+    }
+    return v;
+}
+
+std::vector<size_t> SimWildMesh::tight_seal_replace_tets(
+    const std::vector<size_t>& old_tets,
+    const std::vector<std::array<size_t, 4>>& new_tets,
+    const std::vector<TetAttributes>& new_attributes,
+    const std::function<std::vector<size_t>(const std::vector<size_t>&)>& span)
+{
+    const auto sorted_face = [](const std::array<size_t, 4>& vs, const int k) {
+        std::array<size_t, 3> f{{vs[(k + 1) % 4], vs[(k + 2) % 4], vs[(k + 3) % 4]}};
+        std::sort(f.begin(), f.end());
+        return f;
+    };
+
+    // the old tets' faces with their attributes, read while their ids are still the old ones
+    std::map<std::array<size_t, 3>, FaceAttributes> old_faces;
+    for (const size_t tid : old_tets) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        for (int k = 0; k < 4; ++k) {
+            const std::array<size_t, 3> f = sorted_face(vs, k);
+            if (old_faces.count(f) == 0) {
+                old_faces.emplace(f, m_face_attribute[std::get<1>(tuple_from_face(f))]);
+            }
+        }
+    }
+    std::map<std::array<size_t, 2>, FeatureEdgeAttributes> old_edges;
+    if (m_track_feature_edges) {
+        feature_edges_cache(old_tets, old_edges);
+    }
+    std::vector<size_t> ids;
+    if (!replace_tets(old_tets, new_tets, ids)) {
+        log_and_throw_error(
+            "tight_seal_geom: the new tets do not replace the old ones exactly "
+            "(TetMesh::replace_tets refused them; its warning says why)");
+    }
+
+    for (size_t i = 0; i < new_tets.size(); ++i) {
+        m_tet_attribute[ids[i]] = new_attributes[i];
+        m_tet_attribute[ids[i]].m_quality = get_quality(tuple_from_tet(ids[i]));
+    }
+    // each face at its owner's slot, now that the tets have their new ids
+    for (size_t i = 0; i < new_tets.size(); ++i) {
+        for (int k = 0; k < 4; ++k) {
+            const std::array<size_t, 3> f = sorted_face(new_tets[i], k);
+            FaceAttributes& attributes = m_face_attribute[std::get<1>(tuple_from_face(f))];
+            auto it = old_faces.find(f);
+            if (it == old_faces.end()) {
+                const std::vector<size_t> parent = span({f[0], f[1], f[2]});
+                if (parent.size() == 3) {
+                    it = old_faces.find({{parent[0], parent[1], parent[2]}});
+                }
+            }
+            if (it != old_faces.end()) {
+                attributes = it->second;
+            } else {
+                attributes.reset();
+            }
+        }
+    }
+    if (m_track_feature_edges) {
+        // the pieces of an old edge take its feature attributes; other new edges none
+        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> edges = old_edges;
+        for (const std::array<size_t, 4>& t : new_tets) {
+            for (int i = 0; i < 4; ++i) {
+                for (int j = i + 1; j < 4; ++j) {
+                    const std::array<size_t, 2> e{{std::min(t[i], t[j]), std::max(t[i], t[j])}};
+                    if (edges.count(e) != 0) {
+                        continue;
+                    }
+                    const std::vector<size_t> parent = span({e[0], e[1]});
+                    if (parent.size() == 2) {
+                        const auto it = old_edges.find({{parent[0], parent[1]}});
+                        if (it != old_edges.end()) {
+                            edges.emplace(e, it->second);
+                        }
+                    }
+                }
+            }
+        }
+        feature_edges_restore_region(ids, edges);
+    }
+    return ids;
+}
+
+void SimWildMesh::tight_seal_mi_fill(
+    const std::vector<ConnectedComponent>& components,
+    const std::vector<std::vector<size_t>>& components_colors,
+    const std::vector<CellTag>& fill_tags,
+    const std::vector<SimpleBVH::BVH>& color_bvhs,
+    std::vector<char>& filled,
+    std::vector<CellTag>& tags_before)
+{
+    namespace mi = material_interface;
+    using Face3 = std::array<size_t, 3>;
+    const auto sorted3 = [](const size_t a, const size_t b, const size_t c) {
+        Face3 f{{a, b, c}};
+        std::sort(f.begin(), f.end());
+        return f;
+    };
+    const auto pos = [&](const size_t v) { return m_vertex_attribute[v].pos(); };
+    // det[b - a, c - a, d - a] of the tet's corners, exactly: > 0 for a valid tet
+    const auto orientation = [&](const std::array<size_t, 4>& t) {
+        const Vector3r a = pos(t[0]);
+        const Vector3r b = pos(t[1]);
+        const Vector3r c = pos(t[2]);
+        const Vector3r d = pos(t[3]);
+        std::array<std::array<Rational, 3>, 3> m;
+        for (int k = 0; k < 3; ++k) {
+            m[0][k] = b[k] - a[k];
+            m[1][k] = c[k] - a[k];
+            m[2][k] = d[k] - a[k];
+        }
+        const Rational det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+                             m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+                             m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+        return det.get_sign();
+    };
+    const auto centroid = [&](const std::vector<size_t>& vs) {
+        std::array<Rational, 3> x;
+        for (const size_t v : vs) {
+            const Vector3r p = pos(v);
+            for (int k = 0; k < 3; ++k) {
+                x[k] = x[k] + p[k];
+            }
+        }
+        const Rational n(double(vs.size()));
+        return Vector3r(x[0] / n, x[1] / n, x[2] / n);
+    };
+
+    // the component of each tet waiting to be filled (-1: none); a tet that replaces one waiting
+    // takes its component, so that a fill reaching into another part leaves it whole
+    std::vector<int64_t> comp_of(tet_capacity(), -1);
+    for (size_t c = 0; c < components.size(); ++c) {
+        for (const size_t tid : components[c].cells) {
+            comp_of[tid] = int64_t(c);
+        }
+    }
+    size_t n_cells = 0, n_diagram_vertices = 0, n_centroids = 0, n_beside = 0, n_filled = 0,
+           n_rounded = 0, n_new_vertices = 0;
+    for (size_t c = 0; c < components.size(); ++c) {
+        const std::vector<size_t>& colors = components_colors[c];
+        std::vector<size_t> comp_tids;
+        for (const Tuple& t : get_tets()) {
+            const size_t tid = t.tid(*this);
+            if (tid < comp_of.size() && comp_of[tid] == int64_t(c)) {
+                comp_tids.push_back(tid);
+            }
+        }
+        if (comp_tids.empty()) {
+            continue;
+        }
+        std::vector<std::array<size_t, 4>> tets;
+        for (const size_t tid : comp_tids) {
+            tets.push_back(oriented_tet_vids(tid));
+        }
+
+        // the distances to the component's colors at its vertices: the diagram's functions
+        std::map<size_t, std::vector<double>> distances;
+        const std::function<double(size_t, size_t)> value = [&](const size_t v, const size_t f) {
+            auto it = distances.find(v);
+            if (it == distances.end()) {
+                std::vector<double> d(colors.size());
+                for (size_t k = 0; k < colors.size(); ++k) {
+                    d[k] = tight_seal::bvh_distance(
+                        color_bvhs[colors[k]],
+                        m_vertex_attribute[v].m_posf);
+                }
+                it = distances.emplace(v, std::move(d)).first;
+            }
+            return it->second[f];
+        };
+        const mi::MeshPartition mp = mi::partition_mesh(tets, colors.size(), value);
+        n_cells += mp.cells.size();
+
+        // each diagram vertex's mesh vertex: a mesh vertex, or a new one at its exact position
+        std::vector<size_t> vertex_of(mp.vertices.size());
+        std::map<size_t, std::vector<size_t>> carrier; // new vertex -> the simplex holding it
+        std::vector<size_t> new_vertices;
+        std::vector<Rational> along(mp.vertices.size()); // on an edge (a, b), a < b: b's coordinate
+        for (size_t i = 0; i < mp.vertices.size(); ++i) {
+            const mi::MeshPartition::Vertex& v = mp.vertices[i];
+            if (v.simplex.size() == 1) {
+                vertex_of[i] = v.simplex[0];
+                continue;
+            }
+            const std::array<Rational, 4> t = mi::exact_barycentric(v, tets, value);
+            std::array<Rational, 3> x;
+            for (int corner = 0; corner < 4; ++corner) {
+                if (t[corner].get_sign() == 0) {
+                    continue;
+                }
+                const Vector3r q = pos(tets[v.tet][corner]);
+                for (int k = 0; k < 3; ++k) {
+                    x[k] = x[k] + t[corner] * q[k];
+                }
+            }
+            vertex_of[i] = tight_seal_new_vertex(Vector3r(x[0], x[1], x[2]), v.simplex);
+            carrier[vertex_of[i]] = v.simplex;
+            new_vertices.push_back(vertex_of[i]);
+            if (v.simplex.size() == 2) {
+                const auto& corners = tets[v.tet];
+                along[i] =
+                    t[std::find(corners.begin(), corners.end(), v.simplex[1]) - corners.begin()];
+            }
+        }
+        const size_t n_diagram_here = new_vertices.size();
+        n_diagram_vertices += n_diagram_here;
+
+        // the faces of the component's tets (local tet, local face: the corner opposite), the
+        // cells of each tet, the diagram's vertices on mesh edges in order from the lower id, and
+        // the mesh faces with diagram vertices inside
+        std::map<Face3, std::vector<std::pair<size_t, int>>> comp_faces;
+        for (size_t i = 0; i < tets.size(); ++i) {
+            for (int k = 0; k < 4; ++k) {
+                comp_faces
+                    [sorted3(tets[i][(k + 1) % 4], tets[i][(k + 2) % 4], tets[i][(k + 3) % 4])]
+                        .emplace_back(i, k);
+            }
+        }
+        std::vector<std::vector<size_t>> cells_of(tets.size());
+        for (size_t ci = 0; ci < mp.cells.size(); ++ci) {
+            cells_of[mp.cells[ci].tet].push_back(ci);
+        }
+        std::map<std::pair<size_t, size_t>, std::vector<size_t>> on_edge;
+        std::set<Face3> inner_points;
+        for (size_t i = 0; i < mp.vertices.size(); ++i) {
+            const auto& s = mp.vertices[i].simplex;
+            if (s.size() == 2) {
+                on_edge[{s[0], s[1]}].push_back(i);
+            } else if (s.size() == 3) {
+                inner_points.insert(sorted3(s[0], s[1], s[2]));
+            }
+        }
+        for (auto& [e, points] : on_edge) {
+            std::sort(points.begin(), points.end(), [&](const size_t a, const size_t b) {
+                return along[a] < along[b];
+            });
+        }
+
+        // the tets outside the component holding a subdivided edge, or a face with diagram
+        // vertices inside
+        const std::set<size_t> in_comp(comp_tids.begin(), comp_tids.end());
+        const auto tets_on = [&](const std::vector<size_t>& vs) {
+            const auto ring = [&](const size_t v) {
+                std::vector<size_t> tids = get_one_ring_tids_for_vertex(v);
+                std::sort(tids.begin(), tids.end());
+                return tids;
+            };
+            std::vector<size_t> common = ring(vs[0]);
+            for (size_t i = 1; i < vs.size(); ++i) {
+                common = wmtk::set_intersection(common, ring(vs[i]));
+            }
+            return common;
+        };
+        std::set<size_t> beside;
+        for (const auto& [e, points] : on_edge) {
+            for (const size_t tid : tets_on({e.first, e.second})) {
+                if (in_comp.count(tid) == 0) {
+                    beside.insert(tid);
+                }
+            }
+        }
+        for (const Face3& f : inner_points) {
+            for (const size_t tid : tets_on({f[0], f[1], f[2]})) {
+                if (in_comp.count(tid) == 0) {
+                    beside.insert(tid);
+                }
+            }
+        }
+        n_beside += beside.size();
+
+        // A face's triangles, the same seen from either side: the diagram's polygons on a face of
+        // the component, each fanned from its smallest diagram vertex id as tetrahedralize does;
+        // any other face, fanned from its corner opposite its one subdivided edge, or from a new
+        // vertex at its centroid if more of its edges are
+        std::map<Face3, size_t> face_centroid;
+        const auto face_triangles = [&](const size_t a, const size_t b, const size_t cc) {
+            std::vector<std::array<size_t, 3>> out;
+            const Face3 f = sorted3(a, b, cc);
+            const auto in_comp_face = comp_faces.find(f);
+            if (in_comp_face != comp_faces.end()) {
+                const auto [i, k] = in_comp_face->second.front();
+                for (const size_t ci : cells_of[i]) {
+                    for (const auto& face : mp.cells[ci].faces) {
+                        if (face.tet_face != k) {
+                            continue;
+                        }
+                        const auto& poly = face.vertices;
+                        const size_t n = poly.size();
+                        const size_t s = std::min_element(poly.begin(), poly.end()) - poly.begin();
+                        for (size_t j = 1; j + 1 < n; ++j) {
+                            out.push_back(
+                                {{vertex_of[poly[s]],
+                                  vertex_of[poly[(s + j) % n]],
+                                  vertex_of[poly[(s + j + 1) % n]]}});
+                        }
+                    }
+                }
+                return out;
+            }
+            const std::array<size_t, 3> corner{{a, b, cc}};
+            std::vector<size_t> poly;
+            int n_cut = 0;
+            int cut = -1;
+            for (int e = 0; e < 3; ++e) {
+                const size_t u = corner[e];
+                const size_t w = corner[(e + 1) % 3];
+                poly.push_back(u);
+                const auto it = on_edge.find({std::min(u, w), std::max(u, w)});
+                if (it == on_edge.end()) {
+                    continue;
+                }
+                ++n_cut;
+                cut = e;
+                std::vector<size_t> points;
+                for (const size_t q : it->second) {
+                    points.push_back(vertex_of[q]);
+                }
+                if (u > w) {
+                    std::reverse(points.begin(), points.end());
+                }
+                poly.insert(poly.end(), points.begin(), points.end());
+            }
+            if (n_cut == 0) {
+                out.push_back(corner);
+            } else if (n_cut == 1) {
+                const size_t apex = corner[(cut + 2) % 3];
+                std::rotate(poly.begin(), std::find(poly.begin(), poly.end(), apex), poly.end());
+                for (size_t j = 1; j + 1 < poly.size(); ++j) {
+                    out.push_back({{poly[0], poly[j], poly[j + 1]}});
+                }
+            } else {
+                auto it = face_centroid.find(f);
+                if (it == face_centroid.end()) {
+                    const std::vector<size_t> on{f[0], f[1], f[2]};
+                    const size_t g = tight_seal_new_vertex(centroid(on), on);
+                    carrier[g] = on;
+                    new_vertices.push_back(g);
+                    ++n_centroids;
+                    it = face_centroid.emplace(f, g).first;
+                }
+                for (size_t j = 0; j < poly.size(); ++j) {
+                    out.push_back({{it->second, poly[j], poly[(j + 1) % poly.size()]}});
+                }
+            }
+            return out;
+        };
+
+        // the new tets: positively oriented, never flat
+        std::vector<std::array<size_t, 4>> new_tets;
+        std::vector<TetAttributes> new_attributes;
+        std::vector<char> new_filled;
+        std::vector<CellTag> new_before;
+        std::vector<int64_t> new_comp;
+        const auto add_tet = [&](std::array<size_t, 4> t,
+                                 const TetAttributes& attributes,
+                                 const bool is_filled,
+                                 const CellTag& before,
+                                 const int64_t comp) {
+            const int o = orientation(t);
+            if (o == 0) {
+                log_and_throw_error("tight_seal_geom: the material interface fill made a flat tet");
+            }
+            if (o < 0) {
+                std::swap(t[2], t[3]);
+            }
+            new_tets.push_back(t);
+            new_attributes.push_back(attributes);
+            new_filled.push_back(is_filled ? 1 : 0);
+            new_before.push_back(before);
+            new_comp.push_back(comp);
+        };
+        // the component: its cells' tets, each with its color's fill tags added to its tet's
+        for (const mi::LabelledTet& lt : mi::tetrahedralize(mp)) {
+            const size_t parent = comp_tids[lt.tet];
+            TetAttributes attributes = m_tet_attribute[parent];
+            const CellTag before = attributes.tags;
+            const CellTag& add = fill_tags[colors[lt.function]];
+            attributes.tags.insert(add.begin(), add.end());
+            add_tet(
+                {{vertex_of[lt.vertices[0]],
+                  vertex_of[lt.vertices[1]],
+                  vertex_of[lt.vertices[2]],
+                  vertex_of[lt.vertices[3]]}},
+                attributes,
+                true,
+                before,
+                -1);
+        }
+        std::vector<size_t> old_tets = comp_tids;
+        // the tets beside it: coned from a corner whose three faces are fans from it, else from a
+        // new vertex at the centroid
+        for (const size_t tid : beside) {
+            const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            std::array<std::vector<std::array<size_t, 3>>, 4> triangles;
+            for (int k = 0; k < 4; ++k) {
+                triangles[k] = face_triangles(vs[(k + 1) % 4], vs[(k + 2) % 4], vs[(k + 3) % 4]);
+            }
+            int apex = -1;
+            for (int k = 0; k < 4 && apex < 0; ++k) {
+                bool fans = true;
+                for (int j = 0; j < 4 && fans; ++j) {
+                    if (j == k) {
+                        continue;
+                    }
+                    for (const auto& tri : triangles[j]) {
+                        fans = fans && std::find(tri.begin(), tri.end(), vs[k]) != tri.end();
+                    }
+                }
+                if (fans) {
+                    apex = k;
+                }
+            }
+            const TetAttributes attributes = m_tet_attribute[tid];
+            const int64_t comp = tid < comp_of.size() ? comp_of[tid] : -1;
+            if (apex >= 0) {
+                for (const auto& tri : triangles[apex]) {
+                    add_tet({{vs[apex], tri[0], tri[1], tri[2]}}, attributes, false, {}, comp);
+                }
+            } else {
+                const std::vector<size_t> corners(vs.begin(), vs.end());
+                const size_t g = tight_seal_new_vertex(centroid(corners), corners);
+                carrier[g] = corners;
+                new_vertices.push_back(g);
+                ++n_centroids;
+                for (int k = 0; k < 4; ++k) {
+                    for (const auto& tri : triangles[k]) {
+                        add_tet({{g, tri[0], tri[1], tri[2]}}, attributes, false, {}, comp);
+                    }
+                }
+            }
+            old_tets.push_back(tid);
+        }
+
+        // the vertices of the smallest old simplex holding new vertices: their simplices' union
+        const auto span = [&](const std::vector<size_t>& vs) {
+            std::vector<size_t> spanned;
+            for (const size_t v : vs) {
+                const auto it = carrier.find(v);
+                if (it == carrier.end()) {
+                    spanned.push_back(v);
+                } else {
+                    spanned.insert(spanned.end(), it->second.begin(), it->second.end());
+                }
+            }
+            vector_unique(spanned);
+            return spanned;
+        };
+        const std::vector<size_t> ids =
+            tight_seal_replace_tets(old_tets, new_tets, new_attributes, span);
+
+        filled.resize(tet_capacity(), 0);
+        tags_before.resize(tet_capacity());
+        comp_of.resize(tet_capacity(), -1);
+        for (size_t i = ids.size(); i < old_tets.size(); ++i) {
+            comp_of[old_tets[i]] = -1;
+        }
+        for (size_t i = 0; i < ids.size(); ++i) {
+            filled[ids[i]] = new_filled[i];
+            comp_of[ids[i]] = new_comp[i];
+            if (new_filled[i]) {
+                tags_before[ids[i]] = new_before[i];
+                ++n_filled;
+            }
+        }
+        for (const size_t v : new_vertices) {
+            n_rounded += round(tuple_from_vertex(v)) ? 1 : 0;
+        }
+        n_new_vertices += new_vertices.size();
+        logger().info(
+            "tight_seal_geom: material interface fill of component {}: {} tets, {} colors, {} "
+            "cells; {} new vertices on the diagram; {} tets beside it cut to match",
+            c,
+            comp_tids.size(),
+            colors.size(),
+            mp.cells.size(),
+            n_diagram_here,
+            beside.size());
+    }
+    logger().info(
+        "tight_seal_geom: material interface fill: {} cells in {} components, {} tets filled; {} "
+        "new vertices ({} on the diagram, {} at the centroid of a face or a tet beside a part, for "
+        "the {} tets cut to match), {} of them rounded",
+        n_cells,
+        components.size(),
+        n_filled,
+        n_new_vertices,
+        n_diagram_vertices,
+        n_centroids,
+        n_beside,
+        n_rounded);
     if (m_params.debug_output) {
         write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     }

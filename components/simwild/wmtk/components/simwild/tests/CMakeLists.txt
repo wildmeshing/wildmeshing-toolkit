@@ -18,6 +18,7 @@ set(SRC_FILES
     test_order2_tube.cpp
     test_feature_inputs.cpp
     test_level_crossing.cpp
+    test_material_interface.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

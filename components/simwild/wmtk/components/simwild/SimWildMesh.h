@@ -432,6 +432,41 @@ private:
         int64_t max_rounds,
         std::vector<char>& filled,
         std::vector<CellTag>& tags_before);
+    /// tight_seal_geom's fill of `components` under tight_seal_geom_EXPERIMENTAL_material_interface_fill,
+    /// in place of tight_seal_split_fill. In each component, the distances to its colors
+    /// (`components_colors`, the boundaries of their tets in `color_bvhs`), taken at its vertices
+    /// and interpolated linearly in each tet, give a minimization diagram, computed exactly
+    /// (MaterialInterface.hpp). Each tet of the component is replaced by its cells' tets
+    /// (material_interface::tetrahedralize), the new vertices at their exact positions, then
+    /// rounded where that inverts no tet; each new tet gets its cell's color's fill tags added to
+    /// its tet's. A tet outside the component that shares a face or an edge the diagram
+    /// subdivides is cut to match: coned from its corner opposite that face if no other of its
+    /// faces is subdivided, else from its centroid, a new vertex. filled and tags_before as
+    /// tight_seal_split_fill leaves them.
+    void tight_seal_mi_fill(
+        const std::vector<ConnectedComponent>& components,
+        const std::vector<std::vector<size_t>>& components_colors,
+        const std::vector<CellTag>& fill_tags,
+        const std::vector<SimpleBVH::BVH>& color_bvhs,
+        std::vector<char>& filled,
+        std::vector<CellTag>& tags_before);
+    /// A new vertex at an exact position, not rounded, on no surface, in no tet yet; its sizing,
+    /// partition and bounding box faces from the mesh vertices `carrier`, those of the smallest
+    /// simplex holding it.
+    size_t tight_seal_new_vertex(const Vector3r& position, const std::vector<size_t>& carrier);
+    /// Replaces the tets `old_tets` by `new_tets`, positively oriented, with
+    /// TetMesh::replace_tets, which checks that the new tets' boundary is the old ones' and that
+    /// they meet face to face, and throws if it refuses. A face or edge of the old tets that remains keeps its attributes (an edge's: its
+    /// feature attributes, if they are tracked); a new face or edge lying in one of them takes
+    /// that one's; the others are reset. `span` gives, for a new face's or edge's vertices, the
+    /// vertices of the smallest old simplex holding it, ascending. The new tets take
+    /// `new_attributes`, their quality computed. Returns their ids: the old tets' slots first, in
+    /// order, then new ones.
+    std::vector<size_t> tight_seal_replace_tets(
+        const std::vector<size_t>& old_tets,
+        const std::vector<std::array<size_t, 4>>& new_tets,
+        const std::vector<TetAttributes>& new_attributes,
+        const std::function<std::vector<size_t>(const std::vector<size_t>&)>& span);
     /// tight_seal_geom's topology check: for each tag the fill added to or took from a tet, warns
     /// if (change in non-manifold vertices, islands, merges) is not (0, 0, 0). The tag before the
     /// fill and after it are compared on the output mesh, so splits that only refine a tag change
@@ -695,6 +730,10 @@ public:
      * color's tags, `fill_tags[k]` (as many as there are fill selections), added to its own
      * (tight_seal_split_fill). No topology is checked.
      *
+     * `material_interface_fill` (EXPERIMENTAL): fill each component by the exact minimization
+     * diagram of the distances to its colors, interpolated linearly in each tet, instead of the
+     * preprocessing and split_fill (tight_seal_mi_fill); `max_preprocessing_rounds` is then unused.
+     *
      * `sanity`: afterwards, throw if a tet is inverted, a filled tet holds none of the fill tag
      * sets, or a part of the filled tets borders fewer than two colors (a concave feature of one
      * body, filled).
@@ -707,7 +746,8 @@ public:
         double trace_rel_tol = 0.001,
         int64_t min_regions = 2,
         bool sanity = false,
-        int64_t max_preprocessing_rounds = 10);
+        int64_t max_preprocessing_rounds = 10,
+        bool material_interface_fill = false);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 

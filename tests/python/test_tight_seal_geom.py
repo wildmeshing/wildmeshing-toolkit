@@ -344,3 +344,58 @@ def test_a_cell_on_a_color_takes_that_color(case):
                     assert facets[frozenset(facet)] == tag
                     seen += 1
     assert seen > 0
+
+
+# tight_seal_geom_EXPERIMENTAL_material_interface_fill: each part is cut by the exact minimization
+# diagram of the distances to its colors, interpolated linearly in each tet, and each piece goes to
+# its nearest color.
+
+def _four_bars_3d():
+    """_four_bodies' bars, between z = 2 and z = 4: a above the hole (5 < y < 6), b right of it
+    (5 < x < 6), c below (2 < y < 3), d left (2 < x < 3), around the hole 3 < x, y < 5."""
+    def tag_of(x, y, z):
+        if not 2 < z < 4:
+            return None
+        if 3 < x < 5 and 3 < y < 5 or not (2 < x < 6 and 2 < y < 6):
+            return None
+        if y > 5 and x < 5:
+            return "a"
+        if x > 5 and y > 3:
+            return "b"
+        return "c" if y < 3 else "d"
+    return _grid_mesh_3d(8, 8, 6, tag_of)
+
+
+def test_material_interface_fill_follows_the_bisector():
+    mesh = _two_bodies_3_apart(3)
+    out = _seal(mesh, **_colors(["a", "b"]), distance=3.5,
+                EXPERIMENTAL_material_interface_fill=True)
+    a = _tagged(out, "a")[:, :, 0]
+    b = _tagged(out, "b")[:, :, 0]
+    filled_a = a[a.max(axis=1) > 4 + 1e-9]
+    filled_b = b[b.min(axis=1) < 7 - 1e-9]
+    assert len(filled_a) > 0 and len(filled_b) > 0
+    # the distances are linear in x across the gap: the diagram is the bisector, exactly
+    assert filled_a.max() <= 5.5 + 1e-9
+    assert filled_b.min() >= 5.5 - 1e-9
+
+
+def test_material_interface_fill_takes_each_cell_to_its_nearest_color():
+    mesh = _four_bars_3d()
+    out = _seal(mesh, **_colors(TAGS), EXPERIMENTAL_material_interface_fill=True)
+    # in the hole, the distances to the bars are 5 - y, 5 - x, y - 3 and x - 3: the diagram is
+    # its two diagonals, and the inside of each piece is strictly nearest its bar
+    for tag in TAGS:
+        centroids = _tagged(out, tag).mean(axis=1)
+        x, y, z = centroids.T
+        inside = (3 < x) & (x < 5) & (3 < y) & (y < 5) & (2 < z) & (z < 4)
+        assert inside.sum() > 0
+        d = {"a": 5 - y, "b": 5 - x, "c": y - 3, "d": x - 3}
+        for other in TAGS:
+            if other != tag:
+                assert np.all(d[tag][inside] < d[other][inside] - 1e-9)
+
+
+def test_material_interface_fill_is_3d_only():
+    with pytest.raises(Exception, match="3D only"):
+        _seal(_four_bodies(), **_colors(TAGS), EXPERIMENTAL_material_interface_fill=True)

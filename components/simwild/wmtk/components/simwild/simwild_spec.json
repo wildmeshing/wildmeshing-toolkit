@@ -85,6 +85,7 @@
       "tight_seal_geom_min_regions",
       "tight_seal_geom_sanity",
       "tight_seal_geom_max_preprocessing_rounds",
+      "tight_seal_geom_EXPERIMENTAL_material_interface_fill",
       "keep_lcc_tags",
       "keep_lcc_num",
       "resolve_overlaps_tags",
@@ -673,6 +674,12 @@
     "type": "bool",
     "default": false,
     "doc": "For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell holds none of the tight_seal_geom_fill_tags sets, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two colors, which would be a concave feature of one body, filled. For tests; the integration tests set it."
+  },
+  {
+    "pointer": "/tight_seal_geom_EXPERIMENTAL_material_interface_fill",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL, 3D only. For tight_seal_geom: fill each part with the exact minimization diagram of the distances to the colors it borders, instead of the preprocessing and the split cascade (tight_seal_geom_max_preprocessing_rounds is then unused). The distances are taken at the part's vertices and interpolated linearly in each tet; each point of the part goes to the color nearest by those, ties to the lower color (Du et al., Robust Computation of Implicit Surface Networks for Piecewise Linear Functions, 2022, with min for max). Each tet of the part is replaced by tets of the diagram's cells, the new vertices at their exact positions; a tet beside the part sharing a face or an edge the diagram subdivides is cut to match."
   },
   {
     "pointer": "/tight_seal_geom_max_preprocessing_rounds",
