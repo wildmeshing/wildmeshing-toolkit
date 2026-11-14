@@ -37,6 +37,7 @@ set(TEST_SOURCES
     test_ball_refinement.cpp
     test_simplicial_embedding.cpp
     test_manifold_check.cpp
+    test_replace_tets.cpp
 )
 
 add_executable(wmtk_tests ${TEST_SOURCES})

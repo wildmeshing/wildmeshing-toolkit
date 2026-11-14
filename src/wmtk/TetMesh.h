@@ -589,6 +589,46 @@ public:
      */
     bool split_tet(const Tuple& t, std::vector<Tuple>& new_tets);
 
+protected:
+    /**
+     * @brief A new vertex slot, in no tet yet: for replace_tets(), which must put it in some.
+     *
+     * Serial; grows the storage if it must. Sets no attribute. If the next replace_tets()
+     * refuses, it releases the slot. It has no history hooks, and throws while a surface or curve
+     * history is recording.
+     */
+    size_t add_vertex_slot();
+
+    /**
+     * @brief Replaces the tets `old_tids` by `new_tets` in one go: a local remeshing of their
+     * union, the region. Their vertices are the mesh's, or the slots add_vertex_slot() handed out
+     * since the last replace_tets(), each of which some new tet must use. The new tets reuse the
+     * old tets' slots first, in order, then new ones; `new_tids` gets their ids.
+     *
+     * It refuses, changing nothing but releasing those slots and returning false, unless the new
+     * tets keep the mesh a valid one, combinatorially:
+     *  - the old tets are distinct and in the mesh, and each new tet has four distinct vertices
+     *    of the mesh or slots;
+     *  - the new tets' boundary, as a chain of oriented faces, is the old tets' (orientation by
+     *    each tet's vertex order, as the mesh's tets are): the region's boundary is unchanged, so
+     *    the tets outside still meet it face to face;
+     *  - each face of the new tets is in at most two of them, with opposite orientations, and a
+     *    face inside the region is in no tet outside it.
+     * So every face of the mesh is still in at most two tets. These checks see no positions:
+     * with every new tet positively oriented, which the caller checks, the new tets cover the
+     * region exactly once (their chain has its boundary, and each point of it is covered by a
+     * sum of positive tets that is 1).
+     *
+     * Old vertices left in no tet are removed. Only the connectivity changes: the caller sets
+     * the attributes. Serial, no before or after hooks. It has no history hooks, and throws while
+     * a surface or curve history is recording.
+     */
+    bool replace_tets(
+        const std::vector<size_t>& old_tids,
+        const std::vector<std::array<size_t, 4>>& new_tets,
+        std::vector<size_t>& new_tids);
+
+public:
     /**
      * @brief Split a face in 3 faces.
      *
@@ -979,6 +1019,8 @@ private:
     // Stores the connectivity of the mesh
     SlotPool<VertexConnectivity> m_vertex_connectivity;
     SlotPool<TetrahedronConnectivity> m_tet_connectivity;
+    // The vertex slots add_vertex_slot() handed out that no replace_tets() has placed yet
+    std::vector<size_t> m_unplaced_vertex_slots;
 
     double m_preallocation_factor = 6.0;
 
