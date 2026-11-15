@@ -1,11 +1,12 @@
 """tight_seal_geom: what a fill does.
 
 The region given by tight_seal_geom_input_selection is closed; each part of the join region that
-borders enough colors (tight_seal_geom_fill_selections) is split along the colors nearest its
-cells' corners, a cell sharing a facet with a colored cell labelling that facet's corners with
-it, and each resulting cell gets its color's tags (tight_seal_geom_fill_tags) added to its own,
-with no topology test. The operation throws if the join region touches the mesh boundary, even at
-a vertex, or if a cell beside it satisfies several fill selections.
+borders enough colors (tight_seal_geom_fill_selections) is cut, by edge splits, along the level sets
+where the distances to two of its colors (linear in each of its cells) are equal, until the corners
+of each cell share a nearest color (tight seal v2 note, section 4.2). Each cell gets that color's
+tags (tight_seal_geom_fill_tags) added to its own, with no topology test. The operation throws if
+the join region touches the mesh boundary, even at a vertex, or if a cell beside it satisfies
+several fill selections.
 
 Needs the wildmeshing bindings; no external data."""
 import itertools
@@ -224,18 +225,10 @@ def test_fills_a_part_of_any_number_of_colors(min_regions):
         assert _components_and_euler(_cells(out, tag)) == (1, 1)
 
 
-def test_max_preprocessing_rounds_below_zero_refused():
+def test_max_preprocessing_rounds_is_gone():
+    # the fill has no preprocessing: a config that still sets the option is refused
     with pytest.raises(Exception):
-        _seal(_four_bodies(), **_colors(TAGS), max_preprocessing_rounds=-1)
-
-
-@pytest.mark.parametrize("rounds", [0, 1, 10])
-def test_max_preprocessing_rounds_taken(rounds):
-    # the hole's sides are each nearest one bar, so the preprocessing has nothing to split here
-    mesh = _four_bodies()
-    out = _seal(mesh, **_colors(TAGS), max_preprocessing_rounds=rounds)
-    for tag in TAGS:
-        assert _area(out, tag) == pytest.approx(_area(mesh, tag) + 1)
+        _seal(_four_bodies(), **_colors(TAGS), max_preprocessing_rounds=3)
 
 
 def test_min_regions_above_what_a_part_borders_fills_nothing():
@@ -301,9 +294,10 @@ def test_fill_follows_the_bisector(dim):
     filled_a = a[a.max(axis=1) > 4 + 1e-9]  # the cells of a beyond its body
     filled_b = b[b.min(axis=1) < 7 - 1e-9]
     assert len(filled_a) > 0 and len(filled_b) > 0
-    # the fill of each body stops at the bisector, to the precision of the split's bisection
-    assert filled_a.max() <= 5.5 + 1e-5
-    assert filled_b.min() >= 5.5 - 1e-5
+    # the fill of each body stops at the bisector: in the gap the distances are linear in x, and
+    # each split is placed exactly
+    assert filled_a.max() <= 5.5 + 1e-9
+    assert filled_b.min() >= 5.5 - 1e-9
 
 
 def _region_facets(mesh, tags):
@@ -364,6 +358,24 @@ def _four_bars_3d():
             return "b"
         return "c" if y < 3 else "d"
     return _grid_mesh_3d(8, 8, 6, tag_of)
+
+
+@pytest.mark.parametrize("mi_fill", [False, True])
+def test_fill_takes_each_cell_to_its_nearest_color(mi_fill):
+    mesh = _four_bars_3d()
+    out = _seal(mesh, **_colors(TAGS), EXPERIMENTAL_material_interface_fill=mi_fill)
+    # in the hole, the distances to the bars are 5 - y, 5 - x, y - 3 and x - 3, linear: every
+    # filled tet there is nearest its bar on the whole tet, so at its corners
+    lo, hi = np.array([3, 3, 2]) - 1e-12, np.array([5, 5, 4]) + 1e-12
+    for tag in TAGS:
+        corners = _tagged(out, tag)
+        inside = np.all((corners >= lo) & (corners <= hi), axis=(1, 2))
+        assert inside.sum() > 0
+        cx, cy = corners[inside][:, :, 0], corners[inside][:, :, 1]
+        d = {"a": 5 - cy, "b": 5 - cx, "c": cy - 3, "d": cx - 3}
+        for other in TAGS:
+            if other != tag:
+                assert np.all(d[tag] <= d[other] + 1e-9)
 
 
 def test_material_interface_fill_follows_the_bisector():

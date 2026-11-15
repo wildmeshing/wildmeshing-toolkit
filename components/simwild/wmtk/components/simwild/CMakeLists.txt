@@ -39,6 +39,7 @@ set(SRC_FILES
 	TightSealGeom.hpp
 	TightSealGeom.cpp
 	MaterialInterface.hpp
+	TightSealPairFill.hpp
 
 	expression_parser/Expression.hpp
 	expression_parser/Parser.hpp
