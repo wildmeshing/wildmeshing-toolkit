@@ -450,9 +450,10 @@ private:
         const std::vector<SimpleBVH::BVH>& color_bvhs,
         std::vector<char>& filled,
         std::vector<CellTag>& tags_before);
-    /// A new vertex at an exact position, not rounded, on no surface, in no tet yet; its sizing,
-    /// partition and bounding box faces from the mesh vertices `carrier`, those of the smallest
-    /// simplex holding it.
+    /// A new vertex at an exact position, not rounded, in no tet yet. It inherits from the
+    /// smallest simplex holding it, whose vertices are `carrier`, as a split there would: its
+    /// surface status and order from that edge or face (none inside a tet), its sizing (their
+    /// mean), partition and bounding box faces (their common ones).
     size_t tight_seal_new_vertex(const Vector3r& position, const std::vector<size_t>& carrier);
     /// Replaces the tets `old_tets` by `new_tets`, positively oriented, with
     /// TetMesh::replace_tets, which checks that the new tets' boundary is the old ones' and that

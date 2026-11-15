@@ -1923,11 +1923,25 @@ size_t SimWildMesh::tight_seal_new_vertex(
     const Vector3r& position,
     const std::vector<size_t>& carrier)
 {
+    // Its surface status and order from the simplex it lies in, as a split there sets them
+    // (split_edge, split_face, split_tet): read now, while that simplex is still in the mesh.
+    bool on_surface = false;
+    size_t order = 0;
+    if (carrier.size() == 2) {
+        on_surface = is_edge_on_surface(tuple_from_edge({{carrier[0], carrier[1]}}));
+        order = on_surface ? get_order_of_edge({{carrier[0], carrier[1]}}) : 0;
+    } else if (carrier.size() == 3) {
+        std::array<size_t, 3> f{{carrier[0], carrier[1], carrier[2]}};
+        std::sort(f.begin(), f.end());
+        on_surface = m_face_attribute[std::get<1>(tuple_from_face(f))].m_is_surface_fs;
+        order = on_surface ? 1 : 0;
+    }
+
     const size_t v = add_vertex_slot();
     VertexAttributes va(position);
     va.m_is_rounded = false;
-    va.m_is_on_surface = false;
-    va.m_order = 0;
+    va.m_is_on_surface = on_surface;
+    va.m_order = order;
     va.on_bbox_faces = m_vertex_attribute[carrier.front()].on_bbox_faces;
     va.m_sizing_scalar = 0;
     for (const size_t u : carrier) {
