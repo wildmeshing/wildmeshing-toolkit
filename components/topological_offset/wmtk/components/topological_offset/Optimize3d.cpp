@@ -6371,35 +6371,20 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     // ELIGIBILITY: two labels only, so that the topology test sees everything t touches. Every
     // cell sharing a vertex with t is band or non-band (no input-complex cell) and not plastic (its
     // AMIPS term would read the label). And no corner of t is where a held surface -- a tag
-    // boundary or the box (vertex_is_on_region()) -- and the front meet along a front face whose
-    // other two corners are on a held surface too: the construction makes faces between band and
-    // non-band that are both held and front where the input complex meets another region or the
-    // box, gives them the offset surface's class, and the held objects' test cannot see the held
-    // surface they lie on -- until such a face has a class of its own (double_sphere's
-    // junction). A face on a held surface has its three corners on it, so this refuses every such
-    // face (and also any front face spanning three held vertices). A corner where the front only
-    // crosses a held surface -- its front faces leave it -- the held objects' test decides, as
-    // every other corner on the input complex, a held curve or point, a held surface or the box
-    // (2026-11-10; the crossing corners since 2026-11-12, as 2D, where refusing them froze the
-    // labels around each crossing, MEASURED there). Until 2026-11-10 every corner on the input
-    // complex, a tracked surface, the box or the mesh boundary was refused, because the topology
-    // test reads cells only and a flip it allows can still join the front to the wall at one
-    // vertex -- which the held objects' test reads.
-    std::vector<std::array<size_t, 3>> front_at;
-    const auto front_face_on_region = [&](const size_t v) {
-        live_offset_faces_at(v, front_at);
-        return std::any_of(front_at.begin(), front_at.end(), [&](const std::array<size_t, 3>& f) {
-            return std::all_of(f.begin(), f.end(), [&](const size_t u) {
-                return vertex_is_on_region(u);
-            });
-        });
-    };
+    // boundary or the box (vertex_is_on_region()) -- and the front already meet (m_is_on_offset).
+    // Only the construction makes such contact (the held objects' test below never lets the loop
+    // make it): where the input complex meets another region or the box. There its faces between
+    // band and non-band are both held and front, the construction gives them the offset surface's
+    // class, and the held objects' test cannot see the held surface they lie on -- until such a
+    // face has a class of its own (double_sphere's junction). Every other corner, on the input
+    // complex, a held curve or point, a held surface or the box, the held objects' test decides
+    // (2026-11-10). Until then every corner on the input complex, a tracked surface, the box or
+    // the mesh boundary was refused, because the topology test reads cells only and a flip it
+    // allows can still join the front to the wall at one vertex -- which the held objects' test
+    // reads.
     const auto eligible = [&](const size_t tid) {
         for (const size_t v : oriented_tet_vids(tid)) {
-            if (vertex_is_on_region(v) && m_vertex_extra[v].m_is_on_offset &&
-                front_face_on_region(v)) {
-                return false;
-            }
+            if (vertex_is_on_region(v) && m_vertex_extra[v].m_is_on_offset) return false;
             for (const size_t s : get_one_ring_tids_for_vertex(v)) {
                 const int l = label_of(s);
                 if ((l != 0 && l != 2) || cell_is_plastic(s)) return false;
@@ -6722,94 +6707,54 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             return cell_is_offset_band(s);
         });
     };
-    // A flip of one cell, or of the two across a held face (THE CROSSING SLIDE below): every
-    // label is set first and the closures derived after, so the held face between the two is
-    // never front, not even between the two labels.
-    const auto flip = [&](const std::vector<std::pair<size_t, CellTag>>& ts) {
-        // A held face becoming front would be contact with a held surface that the held objects'
-        // test and the crossing slide's test refuse, and its class rewritten below: a bug, so it
-        // throws.
-        std::vector<std::array<bool, 4>> front_before(ts.size());
-        for (size_t k = 0; k < ts.size(); ++k) {
-            for (int j = 0; j < 4; ++j) {
-                front_before[k][size_t(j)] =
-                    face_is_offset_surface_live(tuple_from_face(ts[k].first, j));
-            }
+    const auto flip = [&](const size_t tid, const CellTag& tag) {
+        // A held face of t becoming front would be contact with a held surface the held objects'
+        // test forbids, and its class rewritten below: a bug, so it throws.
+        std::array<bool, 4> front_before{};
+        for (int j = 0; j < 4; ++j) {
+            front_before[size_t(j)] = face_is_offset_surface_live(tuple_from_face(tid, j));
         }
-        for (const auto& [tid, tag] : ts) {
-            m_tet_attribute[tid].label = label_of(tid) == 2 ? 0 : 2;
-            m_tet_attribute[tid].tag = tag;
-        }
-        for (size_t k = 0; k < ts.size(); ++k) {
-            const size_t tid = ts[k].first;
-            for (int j = 0; j < 4; ++j) {
-                const Tuple f = tuple_from_face(tid, j);
-                const size_t fid = f.fid(*this);
-                if (!front_before[k][size_t(j)] && held_face(f) && face_is_offset_surface_live(f)) {
-                    log_and_throw_error(
-                        "[label cleanup] {}: cell {} makes held face {} front, which the held "
-                        "objects' test and the crossing slide's test refuse",
-                        where,
-                        tid,
-                        fid);
-                }
-                std::vector<size_t> sides{tid};
-                if (const std::optional<Tuple> o = f.switch_tetrahedron(*this)) {
-                    sides.push_back(o->tid(*this));
-                }
-                int& lf = m_face_extra[fid].label;
-                if (lf != 1) lf = any_band(sides) ? 2 : 0;
-                if (face_is_offset_surface_live(f)) {
-                    m_face_attribute[fid].m_is_surface_fs = true;
-                    m_face_attribute[fid].m_surface_class = OFFSET_SURFACE_CLASS;
-                } else if (m_face_attribute[fid].m_surface_class == OFFSET_SURFACE_CLASS) {
-                    m_face_attribute[fid].m_is_surface_fs = false;
-                    m_face_attribute[fid].m_surface_class = 0; // left at 0 off the surface
-                }
-            }
-            for (int j = 0; j < 6; ++j) {
-                const Tuple e = tuple_from_edge(tid, j);
-                int& le = m_edge_attribute[e.eid(*this)].label;
-                if (le != 1) {
-                    const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
-                    le = any_band(get_incident_tids_for_edge(a, b)) ? 2 : 0;
-                }
-            }
-        }
-        for (const auto& [tid, tag] : ts) {
-            for (const size_t v : oriented_tet_vids(tid)) {
-                int& lv = m_vertex_extra[v].label;
-                if (lv != 1) lv = any_band(get_one_ring_tids_for_vertex(v)) ? 2 : 0;
-                refresh_offset_membership(v);
-                if (m_vertex_extra[v].m_is_on_offset) m_vertex_attribute[v].m_is_on_surface = true;
-            }
-        }
-    };
-
-    // THE CROSSING SLIDE, 2D's one dimension up. The held objects' test keeps what each label
-    // touches on every held simplex up to homotopy, which allows one more change where the front
-    // crosses a held surface (along a curve, a corner of t on both): t taking the other label
-    // across a held face F whose far cell n keeps t's label puts F between the two labels, so
-    // the front, which crossed the held surface along a curve, would lie on F. Refused: the
-    // front's contact with the held surface changes from a curve to a face. Instead t and n take
-    // the other label together, as one flip, when n passes every test t passed, read with t
-    // already flipped; then F is between two cells of one label, never front, and the crossing
-    // curve moves across F. Refused when t has two such held faces, or when n has one other than F
-    // (the pair would put that one between the two labels). MEASURED in 2D (2026-11-12, two
-    // overlapping disks, tag_0 offset to 0.2, tag_1 held): with every crossing corner eligible
-    // and one-cell flips only, turn 1's clean-up flipped such a cell and the flip's guard threw;
-    // with the slide both runs converged, without it neither did in 60 turns.
-    // Returns the far cells of t's held faces that the flip would put between the two labels.
-    const auto held_faces_made_front = [&](const size_t tid) {
-        std::vector<size_t> far;
+        m_tet_attribute[tid].label = label_of(tid) == 2 ? 0 : 2;
+        m_tet_attribute[tid].tag = tag;
         for (int j = 0; j < 4; ++j) {
             const Tuple f = tuple_from_face(tid, j);
-            if (!held_face(f)) continue;
-            const std::optional<Tuple> o = f.switch_tetrahedron(*this);
-            if (!o) continue; // the mesh boundary: no cell beyond, no front
-            if (label_of(o->tid(*this)) == label_of(tid)) far.push_back(o->tid(*this));
+            const size_t fid = f.fid(*this);
+            if (!front_before[size_t(j)] && held_face(f) && face_is_offset_surface_live(f)) {
+                log_and_throw_error(
+                    "[label cleanup] {}: cell {} makes held face {} front, which the held objects' "
+                    "test forbids",
+                    where,
+                    tid,
+                    fid);
+            }
+            std::vector<size_t> sides{tid};
+            if (const std::optional<Tuple> o = f.switch_tetrahedron(*this)) {
+                sides.push_back(o->tid(*this));
+            }
+            int& lf = m_face_extra[fid].label;
+            if (lf != 1) lf = any_band(sides) ? 2 : 0;
+            if (face_is_offset_surface_live(f)) {
+                m_face_attribute[fid].m_is_surface_fs = true;
+                m_face_attribute[fid].m_surface_class = OFFSET_SURFACE_CLASS;
+            } else if (m_face_attribute[fid].m_surface_class == OFFSET_SURFACE_CLASS) {
+                m_face_attribute[fid].m_is_surface_fs = false;
+                m_face_attribute[fid].m_surface_class = 0; // left at 0 off the surface
+            }
         }
-        return far;
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(tid, j);
+            int& le = m_edge_attribute[e.eid(*this)].label;
+            if (le != 1) {
+                const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+                le = any_band(get_incident_tids_for_edge(a, b)) ? 2 : 0;
+            }
+        }
+        for (const size_t v : oriented_tet_vids(tid)) {
+            int& lv = m_vertex_extra[v].label;
+            if (lv != 1) lv = any_band(get_one_ring_tids_for_vertex(v)) ? 2 : 0;
+            refresh_offset_membership(v);
+            if (m_vertex_extra[v].m_is_on_offset) m_vertex_attribute[v].m_is_on_surface = true;
+        }
     };
 
     // THE INVARIANT'S MEASURES: connected components of one label's cells under face adjacency,
@@ -6859,11 +6804,10 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     const size_t nm0 = nonmanifold_front_edges();
     std::vector<char> flipped(tet_capacity(), 0);
     std::vector<size_t> corners; // of the flipped cells
-    size_t to_band = 0, to_non = 0, n_odd = 0, n_slides = 0;
+    size_t to_band = 0, to_non = 0, n_odd = 0;
     int passes = 0;
     // The last pass's verdicts: that pass flips nothing, so they are what the clean-up leaves.
     size_t n_cand = 0, n_want = 0, n_skip = 0, n_refused_held = 0, n_refused_tag = 0;
-    size_t n_refused_slide = 0; // of n_refused_held: a crossing slide whose far cell failed
     size_t n_unreachable = 0; // of n_refused_held: non-band and wholly inside the level set
     std::string unreachable_where;
     std::array<size_t, 5> n_refused{}; // by f
@@ -6878,22 +6822,11 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         n_want = 0;
         n_skip = 0;
         n_refused_held = 0;
-        n_refused_slide = 0;
         n_refused_tag = 0;
         n_unreachable = 0;
         unreachable_where.clear();
         n_refused.fill(0);
         size_t n_now = 0;
-        const auto refuse_held = [&](const size_t tid) {
-            ++n_refused_held;
-            if (!cell_is_offset_band(tid) && inside_level_set(tid)) {
-                const auto [depth, at] = held_depth(tid);
-                if (depth > front_conv_of(place_piece(oriented_tet_vids(tid).data(), 4)) &&
-                    n_unreachable++ == 0) {
-                    unreachable_where = at;
-                }
-            }
-        };
         // The three tests are pure reads, so the order they are asked in decides only what is
         // counted: the side test first, so that the counts are of cells on the other side.
         for (const size_t tid : cands) {
@@ -6915,42 +6848,20 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
                 continue;
             }
             if (!held_allows(tid)) {
-                refuse_held(tid);
+                ++n_refused_held;
+                if (!cell_is_offset_band(tid) && inside_level_set(tid)) {
+                    const auto [depth, where] = held_depth(tid);
+                    if (depth > front_conv_of(place_piece(oriented_tet_vids(tid).data(), 4)) &&
+                        n_unreachable++ == 0) {
+                        unreachable_where = where;
+                    }
+                }
                 continue;
             }
             CellTag tag;
             if (!joined_tag(tid, tag)) {
                 ++n_refused_tag;
                 continue;
-            }
-            // THE CROSSING SLIDE: the far cell n of the one held face t would put between the two
-            // labels passes every test t passed, read with t's label and tag set (eligibility
-            // before, as for t: its corners' front flags are not re-derived for the read).
-            std::vector<std::pair<size_t, CellTag>> ts{{tid, tag}};
-            const std::vector<size_t> far = held_faces_made_front(tid);
-            if (!far.empty()) {
-                const size_t n = far[0];
-                bool ok = far.size() == 1 && !(flipped[n] && !energy_decrease) && eligible(n);
-                CellTag ntag;
-                if (ok) {
-                    const int l0 = m_tet_attribute[tid].label;
-                    const CellTag tag0 = m_tet_attribute[tid].tag;
-                    m_tet_attribute[tid].label = l0 == 2 ? 0 : 2;
-                    m_tet_attribute[tid].tag = tag;
-                    bool allow_n = false, odd_n = false;
-                    ok = wants_flip(n);
-                    if (ok) topology(n, allow_n, odd_n);
-                    ok = ok && allow_n && !odd_n && held_allows(n) && joined_tag(n, ntag) &&
-                         held_faces_made_front(n).empty();
-                    m_tet_attribute[tid].label = l0;
-                    m_tet_attribute[tid].tag = tag0;
-                }
-                if (!ok) {
-                    ++n_refused_slide;
-                    refuse_held(tid);
-                    continue;
-                }
-                ts.emplace_back(n, ntag);
             }
             if (flipped[tid] && !energy_decrease) {
                 log_and_throw_error(
@@ -6971,17 +6882,12 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
                     tid,
                     f);
             }
-            for (const auto& [s, tg] : ts) {
-                flipped[s] = 1;
-                ++(cell_is_offset_band(s) ? to_non : to_band);
-            }
+            flipped[tid] = 1;
+            ++(cell_is_offset_band(tid) ? to_non : to_band);
             n_odd += odd ? 1 : 0;
-            n_slides += ts.size() == 2 ? 1 : 0;
-            flip(ts);
-            for (const auto& [s, tg] : ts) {
-                for (const size_t v : oriented_tet_vids(s)) corners.push_back(v);
-            }
-            n_now += ts.size();
+            flip(tid, tag);
+            for (const size_t v : oriented_tet_vids(tid)) corners.push_back(v);
+            ++n_now;
         }
         if (n_now == 0) break;
         // energy_decrease lets a cell flip again; each flip strictly lowers E, so the passes end,
@@ -7025,8 +6931,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         "more than two front faces or a front vertex, not tested) | left after the last pass: {} "
         "cells with a front face, {} on the other side by the side test, of which {} skipped for "
         "eligibility, refused by topology f=0 {}, f=1 {}, f=2 {}, f=4 {}, by the held objects {} "
-        "({} wholly inside the level set, {} crossing slides whose far cell failed), for no single "
-        "tag {} | crossing slides (two cells across a held face) {} | "
+        "({} wholly inside the level set), for no single tag {} | "
         "E {:.9g} -> {:.9g} | "
         "components (face adjacency) band {} -> {}, non-band {} -> {} | non-manifold front edges "
         "(on more than two front faces) {} -> {}",
@@ -7045,9 +6950,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         n_refused[4],
         n_refused_held,
         n_unreachable,
-        n_refused_slide,
         n_refused_tag,
-        n_slides,
         e0,
         e1,
         band0,
