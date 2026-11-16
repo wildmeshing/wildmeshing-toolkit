@@ -582,8 +582,7 @@ void SimWildMesh::tight_seal_geom(
     const double distance,
     const double trace_rel_tol,
     const int64_t min_regions,
-    const bool sanity,
-    const bool material_interface_fill)
+    const bool sanity)
 {
     if (!input_selection) {
         log_and_throw_error("tight_seal_geom needs an input selection");
@@ -1078,26 +1077,14 @@ void SimWildMesh::tight_seal_geom(
     // Each component is cut along the level sets where the distances to two of its colors are
     // equal, until the corners of each tet share a nearest color, whose fill tags the tet then
     // gets added to its own (tight_seal_fill; tight seal v2 note, section 4.2).
-    // With material_interface_fill (EXPERIMENTAL), each component is instead cut by the exact
-    // minimization diagram of the distances to its colors (tight_seal_mi_fill).
     std::vector<CellTag> tags_before_fill;
-    if (material_interface_fill) {
-        tight_seal_mi_fill(
-            components_seal,
-            components_colors,
-            fill_tags,
-            color_bvhs,
-            filled,
-            tags_before_fill);
-    } else {
-        tight_seal_fill(
-            components_seal,
-            components_colors,
-            fill_tags,
-            color_bvhs,
-            filled,
-            tags_before_fill);
-    }
+    tight_seal_fill(
+        components_seal,
+        components_colors,
+        fill_tags,
+        color_bvhs,
+        filled,
+        tags_before_fill);
 
     // Topology check of every tag the fill changed, before the fill and after it: warns if a tag
     // gained or lost non-manifold vertices, or the fill made an island of it or merged two of

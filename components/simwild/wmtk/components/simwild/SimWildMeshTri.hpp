@@ -372,8 +372,6 @@ public:
      * `fill_tags[k]` (as many as there are fill selections), added to its own (tight_seal_fill;
      * tight seal v2 note, section 4.2). No topology is checked.
      *
-     * `material_interface_fill` (EXPERIMENTAL): 3D only for now; this throws if it is set.
-     *
      * `sanity`: afterwards, throw if a face is inverted, a filled face holds none of the fill tag
      * sets, or a part of the filled faces borders fewer than two colors (a concave feature of one
      * body, filled).
@@ -385,8 +383,7 @@ public:
         double distance,
         double trace_rel_tol = 0.001,
         int64_t min_regions = 2,
-        bool sanity = false,
-        bool material_interface_fill = false);
+        bool sanity = false);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 

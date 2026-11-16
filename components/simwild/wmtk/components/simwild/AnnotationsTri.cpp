@@ -585,14 +585,8 @@ void SimWildMeshTri::tight_seal_geom(
     const double distance,
     const double trace_rel_tol,
     const int64_t min_regions,
-    const bool sanity,
-    const bool material_interface_fill)
+    const bool sanity)
 {
-    if (material_interface_fill) {
-        log_and_throw_error(
-            "tight_seal_geom: tight_seal_geom_EXPERIMENTAL_material_interface_fill is 3D only "
-            "for now");
-    }
     if (!input_selection) {
         log_and_throw_error("tight_seal_geom needs an input selection");
     }
