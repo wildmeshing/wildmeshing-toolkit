@@ -66,7 +66,7 @@ bool SimWildMesh::split_face_before(const Tuple& t)
         centroid += m_vertex_attribute[v].m_posf / 3;
         c.sizing_scalar += m_vertex_attribute[v].m_sizing_scalar / 3;
     }
-    c.position = m_face_split_position.value_or(centroid);
+    c.position = centroid;
     c.partition_id = m_vertex_attribute[c.v[0]].partition_id;
     c.on_bbox_faces = wmtk::set_intersection(
         wmtk::set_intersection(
@@ -185,7 +185,6 @@ bool SimWildMesh::split_face_after(const Tuple& t)
     if (m_track_feature_edges) {
         feature_edges_restore_region(get_one_ring_tids_for_vertex(v_new), c.changed_edges);
     }
-    m_last_face_split_vertex = v_new;
     return true;
 }
 
@@ -202,7 +201,7 @@ bool SimWildMesh::split_tet_before(const Tuple& t)
         centroid += m_vertex_attribute[v].m_posf / 4;
         c.sizing_scalar += m_vertex_attribute[v].m_sizing_scalar / 4;
     }
-    c.position = m_tet_split_position.value_or(centroid);
+    c.position = centroid;
     c.partition_id = m_vertex_attribute[c.v[0]].partition_id;
     c.on_bbox_faces = m_vertex_attribute[c.v[0]].on_bbox_faces;
     for (int k = 1; k < 4; ++k) {
@@ -280,6 +279,46 @@ bool SimWildMesh::split_tet_after(const Tuple& t)
 
 bool SimWildMesh::split_adjust_position(const size_t v_new, const std::vector<Tuple>& children)
 {
+    if (m_edge_split_at) {
+        // exactly at the fraction asked for: rounded if that inverts no child, else exact
+        const auto& cache = split_cache.local();
+        const size_t from = m_edge_split_at->from;
+        if (from != cache.v1_id && from != cache.v2_id) {
+            log_and_throw_error(
+                "split_adjust_position: vertex {} is no end of the edge ({}, {})",
+                from,
+                cache.v1_id,
+                cache.v2_id);
+        }
+        const size_t to = from == cache.v1_id ? cache.v2_id : cache.v1_id;
+        const Vector3r a = m_vertex_attribute[from].pos();
+        const Vector3r b = m_vertex_attribute[to].pos();
+        Vector3r exact;
+        for (int k = 0; k < 3; ++k) {
+            exact[k] = a[k] + (b[k] - a[k]) * m_edge_split_at->fraction;
+        }
+        VertexAttributes& va = m_vertex_attribute[v_new];
+        const auto inverts = [&] {
+            return std::any_of(children.begin(), children.end(), [&](const Tuple& t) {
+                return is_inverted(t);
+            });
+        };
+        va.m_posf = to_double(exact);
+        va.m_is_rounded = true;
+        va.set_pos_to_posf();
+        if (inverts()) {
+            va.set_pos(exact);
+            va.m_is_rounded = false;
+            m_all_rounded.store(false, std::memory_order_relaxed);
+            if (inverts()) {
+                log_and_throw_error(
+                    "split_adjust_position: the exact split point of ({}, {}) inverts a tet",
+                    cache.v1_id,
+                    cache.v2_id);
+            }
+        }
+        return true;
+    }
     if (!m_voronoi_split_fn || !m_vertex_attribute[v_new].m_is_rounded) return true;
 
     const auto& shared_cache = split_cache.local();

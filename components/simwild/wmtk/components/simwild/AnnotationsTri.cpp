@@ -585,8 +585,7 @@ void SimWildMeshTri::tight_seal_geom(
     const double distance,
     const double trace_rel_tol,
     const int64_t min_regions,
-    const bool sanity,
-    const int64_t max_preprocessing_rounds)
+    const bool sanity)
 {
     if (!input_selection) {
         log_and_throw_error("tight_seal_geom needs an input selection");
@@ -607,11 +606,6 @@ void SimWildMeshTri::tight_seal_geom(
         log_and_throw_error(
             "tight_seal_geom: min_regions must be at least 2. Input was {}",
             min_regions);
-    }
-    if (max_preprocessing_rounds < 0) {
-        log_and_throw_error(
-            "tight_seal_geom: max_preprocessing_rounds must be at least 0. Input was {}",
-            max_preprocessing_rounds);
     }
     // the colors of the fill, one per fill selection, and how many a component must border to be
     // filled
@@ -1071,18 +1065,15 @@ void SimWildMeshTri::tight_seal_geom(
         }
     }
 
-    // Each component is preprocessed, then split as its faces' own labels of their corners
-    // require, and each face then takes a color from its corners' labels and gets that color's
-    // fill tags added to its own (tight_seal_split_fill).
+    // Each component is cut along the level sets where the distances to two of its colors are
+    // equal, until the corners of each face share a nearest color, whose fill tags the face then
+    // gets added to its own (tight_seal_fill; tight seal v2 note, section 4.2).
     std::vector<CellTag> tags_before_fill;
-    tight_seal_split_fill(
+    tight_seal_fill(
         components_seal,
         components_colors,
         fill_tags,
         color_bvhs,
-        color_of,
-        in_J,
-        max_preprocessing_rounds,
         filled,
         tags_before_fill);
 

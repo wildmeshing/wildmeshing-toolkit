@@ -132,8 +132,11 @@ ExternalProject_Add(
     # At 571a0a3 (2026-11-13, data2 main, on 249bca7: the tight_seal_geom configs' input
     # selection, fill selections and fill tags) manifold_extraction_models.json's comment no
     # longer calls the [manifold] group hidden; no config changes.
+    # At 4474c89 (2026-11-15, data2 main, on 571a0a3) tight_seal_geom's explicit_3d seals the
+    # overlapping spheres, double_sphere.msh, with each sphere's part outside the other as a
+    # color (tag_0 & !tag_1, tag_1 & !tag_0) and the new tags newtag1 and newtag2 as fill tags.
     #
-    GIT_TAG 571a0a3563043dd87b6ebaf530453bfeba45e1ec
+    GIT_TAG 4474c895766cd5437f0d89b5cd2ca2b0d4d6019e
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
