@@ -90,7 +90,7 @@ Fn &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>fn</b></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename Fn&gt;<br />
-struct wmtk::components::simwild::tight_seal::ClearOnExit&lt; Fn &gt;</div><p>Sets <code>fn</code> to nullptr when it goes out of scope: m_voronoi_split_fn must not outlive the operation that set it. </p>
+struct wmtk::components::simwild::tight_seal::ClearOnExit&lt; Fn &gt;</div><p>Empties <code>fn</code> (a std::function or a std::optional) when it goes out of scope: m_voronoi_split_fn and m_edge_split_at must not outlive the operation that set them. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>components/simwild/wmtk/components/simwild/<a class="el" href="_tight_seal_geom_8hpp_source.html">TightSealGeom.hpp</a></li>
 </ul>

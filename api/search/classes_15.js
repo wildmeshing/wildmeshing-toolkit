@@ -1,7 +1,7 @@
 var searchData=
 [
   ['valueslot_0',['ValueSlot',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_value_slot.html',1,'wmtk::components::topological_offset::ExactBandIntegral']]],
-  ['vertex_1',['Vertex',['../classwmtk_1_1simplex_1_1_vertex.html',1,'wmtk::simplex']]],
+  ['vertex_1',['vertex',['../structwmtk_1_1components_1_1simwild_1_1tight__seal_1_1_pair_fill_1_1_vertex.html',1,'wmtk::components::simwild::tight_seal::PairFill&lt; N &gt;::Vertex'],['../classwmtk_1_1simplex_1_1_vertex.html',1,'wmtk::simplex::Vertex']]],
   ['vertexattributes_2',['vertexattributes',['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_vertex_attributes.html',1,'wmtk::components::isotropic_remeshing::VertexAttributes'],['../structwmtk_1_1components_1_1qslim_1_1_vertex_attributes.html',1,'wmtk::components::qslim::VertexAttributes'],['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_vertex_attributes.html',1,'wmtk::components::shortest_edge_collapse::VertexAttributes'],['../structwmtk_1_1_tet_optimizer_mesh_1_1_vertex_attributes.html',1,'wmtk::TetOptimizerMesh::VertexAttributes'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_vertex_attributes.html',1,'wmtk::TriOptimizerMesh::VertexAttributes']]],
   ['vertexconnectivity_3',['vertexconnectivity',['../classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html',1,'wmtk::TetMesh::VertexConnectivity'],['../classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html',1,'wmtk::TriMesh::VertexConnectivity']]],
   ['vertexextra_4',['VertexExtra',['../classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html',1,'wmtk::components::topological_offset']]],

@@ -85,6 +85,8 @@ $(function() {
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1tight__seal_1_1_clear_on_exit.html">ClearOnExit</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tight__seal_1_1_pair_fill.html">PairFill</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -103,28 +105,12 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>bvh_distance</b> (c
 <tr class="memitem:a109ee313cc83f2c7228a5375e88fa648" id="r_a109ee313cc83f2c7228a5375e88fa648"><td class="memItemLeft" align="right" valign="top"><a id="a109ee313cc83f2c7228a5375e88fa648" name="a109ee313cc83f2c7228a5375e88fa648"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>bvh_distance</b> (const SimpleBVH::BVH &amp;bvh, const Vector3d &amp;p)</td></tr>
 <tr class="separator:a109ee313cc83f2c7228a5375e88fa648"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7fd7dca8bb401b953ab503e5b6e8c884" id="r_a7fd7dca8bb401b953ab503e5b6e8c884"><td class="memItemLeft" align="right" valign="top">std::pair&lt; size_t, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a7fd7dca8bb401b953ab503e5b6e8c884">split_fill_label</a> (const CornerLabels &amp;corners, const std::function&lt; const std::vector&lt; size_t &gt; &amp;(size_t)&gt; &amp;ties)</td></tr>
-<tr class="memdesc:a7fd7dca8bb401b953ab503e5b6e8c884"><td class="mdescLeft">&#160;</td><td class="mdescRight">The region "split_fill" gives a cell, from its corners' own labels.  <br /></td></tr>
-<tr class="separator:a7fd7dca8bb401b953ab503e5b6e8c884"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fb00ce1881b736a9f28510c2fe1ad40" id="r_a2fb00ce1881b736a9f28510c2fe1ad40"><td class="memItemLeft" align="right" valign="top">std::optional&lt; Eigen::VectorXd &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a2fb00ce1881b736a9f28510c2fe1ad40">equal_distances_point</a> (const Eigen::MatrixXd &amp;D)</td></tr>
-<tr class="memdesc:a2fb00ce1881b736a9f28510c2fe1ad40"><td class="mdescLeft">&#160;</td><td class="mdescRight">The point of a simplex where k distance functions, each interpolated linearly from its values at the simplex's k corners, are all equal: for a triangle (k = 3) the triple point of three regions, for a tet (k = 4) the quadruple point of four (tight seal v2 note, section 4a-i).  <br /></td></tr>
-<tr class="separator:a2fb00ce1881b736a9f28510c2fe1ad40"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45266e99562d7eac463b60b8b4eec5c8" id="r_a45266e99562d7eac463b60b8b4eec5c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a45266e99562d7eac463b60b8b4eec5c8">fan_triangles</a> (const std::vector&lt; Vector3d &gt; &amp;poly, std::vector&lt; Vector3d &gt; &amp;triangles)</td></tr>
 <tr class="separator:a45266e99562d7eac463b60b8b4eec5c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92a55f192c9d72ad40fff9462e40f4ef" id="r_a92a55f192c9d72ad40fff9462e40f4ef"><td class="memTemplParams" colspan="2">template&lt;typename V &gt; </td></tr>
 <tr class="memitem:a92a55f192c9d72ad40fff9462e40f4ef"><td class="memTemplItemLeft" align="right" valign="top">std::optional&lt; V &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1simwild_1_1tight__seal.html#a92a55f192c9d72ad40fff9462e40f4ef">level_crossing</a> (const std::function&lt; double(const V &amp;)&gt; &amp;f, const V &amp;a, const V &amp;b, const double level, const double step_floor, const bool from_below)</td></tr>
 <tr class="memdesc:a92a55f192c9d72ad40fff9462e40f4ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Where a 1-Lipschitz f reaches <code>level</code> along the segment [a, b], coming from a, which is below the level if <code>from_below</code> (f(a) &lt; level), else above it (f(a) &gt; level).  <br /></td></tr>
 <tr class="separator:a92a55f192c9d72ad40fff9462e40f4ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc4a3e1a40cef9d24954674d52c946f4" id="r_afc4a3e1a40cef9d24954674d52c946f4"><td class="memTemplParams" colspan="2"><a id="afc4a3e1a40cef9d24954674d52c946f4" name="afc4a3e1a40cef9d24954674d52c946f4"></a>
-template&lt;typename V &gt; </td></tr>
-<tr class="memitem:afc4a3e1a40cef9d24954674d52c946f4"><td class="memTemplItemLeft" align="right" valign="top">V&#160;</td><td class="memTemplItemRight" valign="bottom"><b>bisect_sign_change</b> (const std::function&lt; double(const V &amp;)&gt; &amp;f, V a, V b)</td></tr>
-<tr class="memdesc:afc4a3e1a40cef9d24954674d52c946f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">The point of the segment [a, b] where f changes sign, by bisection, given f(a) &lt; 0 &lt;= f(b). <br /></td></tr>
-<tr class="separator:afc4a3e1a40cef9d24954674d52c946f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac5325264df240ef4dad57b7d1dfa3ce" id="r_aac5325264df240ef4dad57b7d1dfa3ce"><td class="memTemplParams" colspan="2"><a id="aac5325264df240ef4dad57b7d1dfa3ce" name="aac5325264df240ef4dad57b7d1dfa3ce"></a>
-template&lt;typename Corners &gt; </td></tr>
-<tr class="memitem:aac5325264df240ef4dad57b7d1dfa3ce"><td class="memTemplItemLeft" align="right" valign="top">CornerLabels&#160;</td><td class="memTemplItemRight" valign="bottom"><b>kept_corner_labels</b> (const CornerLabels &amp;parent, const Corners &amp;corners)</td></tr>
-<tr class="memdesc:aac5325264df240ef4dad57b7d1dfa3ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">The pairs of <code>parent</code> whose vertex is one of <code>corners</code>: a child's labels after a split. <br /></td></tr>
-<tr class="separator:aac5325264df240ef4dad57b7d1dfa3ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -133,29 +119,19 @@ Variables</h2></td></tr>
 <tr class="separator:ad8b7f6af2832d60acee8a9da1db35436"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Helpers of the geometric tight seal, SimWildMeshTri::tight_seal_geom (AnnotationsTri.cpp) and <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#adbce4b89ce9c29c70b30940ede9d3f4f" title="Geometric tight seal: closes the region R, the tets input_selection holds for, and fills the gaps fou...">SimWildMesh::tight_seal_geom</a> (AnnotationsTet.cpp), which keep the operation itself. The helpers below need no mesh; those that do are private members of the two mesh classes, defined in TightSealGeom.cpp. </p>
+<div class="textblock"><p>Helpers of the geometric tight seal, SimWildMeshTri::tight_seal_geom (AnnotationsTri.cpp) and <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9cd5b314e902a69f35ad0b044f371ca1" title="Geometric tight seal: closes the region R, the tets input_selection holds for, and fills the gaps fou...">SimWildMesh::tight_seal_geom</a> (AnnotationsTet.cpp), which keep the operation itself. The helpers below need no mesh; those that do are private members of the two mesh classes, defined in TightSealGeom.cpp.</p>
+<p>The fill of the geometric tight seal (tight seal v2 note, section 4.2, <a href="https://hackmd.io/@Spenbert02/HkX3vAvaGg">https://hackmd.io/@Spenbert02/HkX3vAvaGg</a>). It reaches the mesh only through the hooks of <a class="el" href="structwmtk_1_1components_1_1simwild_1_1tight__seal_1_1_pair_fill_1_1_mesh.html" title="What the fill needs from the mesh.">PairFill::Mesh</a>, so the same code fills triangles (N = 3) and tets (N = 4).</p>
+<p>Each component to fill (C_i in the note) has K functions, one per color it borders: the distances to those colors, taken at the vertices the mesh had before the fill and linear in each of the component's cells then (its original cells). The fill splits edges, nothing else, until the corners of every cell share a function smallest there; by linearity that function is smallest on the whole cell, and labels it.</p>
+<p>Vertices. Each vertex v holds the values d_k(v). The note keeps a list E(v) of pairs (k, l) counted as exactly equal at v, whatever their stored values; here a pair is in E(v) exactly when its stored values are equal, so every comparison is between plain values and is transitive. A vertex the mesh had keeps its values (E(v): the pairs with equal input values). A vertex x the fill makes on the edge (a, b), at fraction s from a, takes d_k(x) = (1 - s) d_k(a) + s d_k(b) for every k, and then ties, in classes whose members all take the class's least value:</p><ul>
+<li>the pair (i, j) it was made for (in its component only);</li>
+<li>every pair tied at both a and b (with equal inputs the interpolation gives equal values, so such a pair is only tied explicitly once another tie moved one of its values);</li>
+<li>every pair whose values at x lie strictly on one side while a and b both lie on the other side or on the level (closed side): x must stay on its edge's side of every level set, as the note's remark asks of each split;</li>
+<li>and, by the classes, every pair tied through others: d_k = d_l and d_l = d_m give d_k = d_m. Each tie can move values, so the last two are checked again until nothing changes. The note does not close E(x) this way. Without it, a vertex x at a triple point, made for (i, j) on an edge whose ends tie (i, m), gets (i, j) and (i, m) but not (j, m); rounding then puts d_j - d_m a few ulps off 0, the edges from x cross that level set, and their splits pile up at x without ending the cells there. In exact arithmetic neither the closure nor the side check ever ties a pair the note does not; they are counted (Stats::n_closed). A vertex's label set: the functions with the least value there.</li>
+</ul>
+<p>Cells. A cell is finalized if its corners' label sets share a function, which labels it (the smallest if several). An original cell is finalized when all its children are.</p>
+<p>The fill, for each original cell t in turn, unless it is finalized. A function is dominated in t if another is strictly smaller at all of t's corners; it is then smallest nowhere in t, and is left out. For each pair (i, j) of the others in turn, each vertex of t's children has a sign, that of d_i - d_j (0 for a tie). A queue starts with t's unfinalized children. A cell popped is skipped if it is gone (split since it was queued), finalized, or has no edge from a + vertex to a - one; otherwise its first such edge (a, b), corners sorted by id, is split where d_i - d_j vanishes, s = δ(a) / (δ(a) - δ(b)) with δ = d_i - d_j. Each cell the split makes, in t or not: takes its parent's label if its parent was finalized; else its own, if it is finalized; else is queued if it lies in t; else waits for its own original cell.</p>
+<p>Each split removes one edge across the pair's level set and makes none (every new edge ends at the new vertex, a tie for the pair), so each pair ends. Every vertex of t lies on the closed side its edge's ends share of each level set, so a pair done stays done, and a function dominated at t's corners stays at least its dominator everywhere in t. Once t's last pair is done, no child of t has an edge across a level set of t's other functions: "d_k &lt;= d_l at every corner" is then a total order on them in each child (comparisons at a vertex are transitive), and its least function is smallest at every corner, dominated functions included. So each child is finalized. A cell left unfinalized (only by a refused split) is labelled by the function smallest at its centroid, and counted (Stats::n_fallback). </p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a2fb00ce1881b736a9f28510c2fe1ad40" name="a2fb00ce1881b736a9f28510c2fe1ad40"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2fb00ce1881b736a9f28510c2fe1ad40">&#9670;&#160;</a></span>equal_distances_point()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::optional&lt; Eigen::VectorXd &gt; wmtk::components::simwild::tight_seal::equal_distances_point </td>
-          <td>(</td>
-          <td class="paramtype">const Eigen::MatrixXd &amp;&#160;</td>
-          <td class="paramname"><em>D</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>The point of a simplex where k distance functions, each interpolated linearly from its values at the simplex's k corners, are all equal: for a triangle (k = 3) the triple point of three regions, for a tet (k = 4) the quadruple point of four (tight seal v2 note, section 4a-i). </p>
-<p>D(r, c) is function r at corner c. Returns the point's barycentric coordinates (they sum to 1), or nothing if the system is singular. The point lies inside the simplex if all are &gt; 0. </p>
-
-</div>
-</div>
 <a id="a45266e99562d7eac463b60b8b4eec5c8" name="a45266e99562d7eac463b60b8b4eec5c8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a45266e99562d7eac463b60b8b4eec5c8">&#9670;&#160;</a></span>fan_triangles()</h2>
 
@@ -239,38 +215,6 @@ template&lt;typename V &gt; </div>
 
 <p>Where a 1-Lipschitz f reaches <code>level</code> along the segment [a, b], coming from a, which is below the level if <code>from_below</code> (f(a) &lt; level), else above it (f(a) &gt; level). </p>
 <p>Sphere traced from a, each step |f - level| + step_floor (at least step_floor, so the trace ends; no step goes more than step_floor past the level), until f is at the level or past it; the last step is then bisected to the level. Nothing if f(a) is not on the side <code>from_below</code> gives, or if f stays on that side up to b. </p>
-
-</div>
-</div>
-<a id="a7fd7dca8bb401b953ab503e5b6e8c884" name="a7fd7dca8bb401b953ab503e5b6e8c884"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7fd7dca8bb401b953ab503e5b6e8c884">&#9670;&#160;</a></span>split_fill_label()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::pair&lt; size_t, int &gt; wmtk::components::simwild::tight_seal::split_fill_label </td>
-          <td>(</td>
-          <td class="paramtype">const CornerLabels &amp;&#160;</td>
-          <td class="paramname"><em>corners</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::function&lt; const std::vector&lt; size_t &gt; &amp;(size_t)&gt; &amp;&#160;</td>
-          <td class="paramname"><em>ties</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>The region "split_fill" gives a cell, from its corners' own labels. </p>
-<p>The corners' region if they agree. Otherwise an edge between two of them was not split, because the distances to their regions are equal at one of its ends; the cell then takes the one region that every corner's tie set holds. If they share several (an exact tie between regions) or none, the choice is arbitrary: the first region they share, or else the first corner's.</p>
-<p>ties(v): the regions within the tie tolerance of the nearest one at v, ascending. Returns the region and how it was chosen: 0 the corners agree, 1 their tie sets, 2 arbitrarily. </p>
 
 </div>
 </div>
