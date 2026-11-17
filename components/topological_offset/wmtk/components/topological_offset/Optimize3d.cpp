@@ -981,8 +981,8 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = false;
-    opts.smoothing_mode = m_params.smoothing_mode == "exact"
-                              ? optimization::SmoothVertexOptions::SmoothingMode::Exact
+    opts.smoothing_mode = m_params.smoothing_mode == "penalty"
+                              ? optimization::SmoothVertexOptions::SmoothingMode::Penalty
                               : optimization::SmoothVertexOptions::SmoothingMode::Projected;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;

@@ -217,13 +217,15 @@ struct SmoothVertexOptions
      * projected candidate that does not invert and strictly lowers the worst incident
      * element, else do not move. The vertex lands exactly on the input; no weights exist.
      *
-     * Exact: minimize w_amips * AMIPS + w_envelope * (d/eps)^2 with the TRUE Hessian of the
-     * distance to the piecewise-linear input (ExactDistanceEnergy2D/3D): sliding is free
-     * exactly where the input is flat, blocked isotropically at corners and vertices,
-     * constrained to the direction of a 3D edge or curve segment. The vertex rests a
-     * w_amips-proportional distance off the input; the accept checks below apply either way.
+     * Penalty: no projection; minimize w_amips * AMIPS + w_envelope * (d/eps)^2, a quadratic
+     * penalty on the distance d, with the TRUE Hessian of the distance to the piecewise-linear
+     * input (ExactDistanceEnergy2D/3D): sliding is free exactly where the input is flat,
+     * blocked isotropically at corners and vertices, constrained to the direction of a 3D edge
+     * or curve segment. The vertex rests a w_amips-proportional distance off the input; the
+     * accept checks below apply either way. Named "exact" until 2026-11, after the Hessian;
+     * but what sets the two modes apart is the penalty term against the projection.
      */
-    enum class SmoothingMode { Projected, Exact };
+    enum class SmoothingMode { Projected, Penalty };
     SmoothingMode smoothing_mode = SmoothingMode::Projected;
 
     /// Backtracking steps tried before the move is abandoned: t = 1, 1/2, ..., 2^-(n-1).
@@ -536,7 +538,7 @@ bool smooth_vertex_3d(
     // Each check only refuses, and a refused move rolls back the qualities stored below, so the
     // order decides what a refused move costs, never which moves are accepted. Containment used
     // to run first, and the veto then refused moves it had already paid for. Measured on the 14
-    // TetWild [challenging] models, serial, smoothing_mode "exact": 2.34M of 3.66M passed
+    // TetWild [challenging] models, serial, smoothing_mode "penalty": 2.34M of 3.66M passed
     // containment tests were then vetoed; with the veto first, containment tests 5.78M -> 2.74M
     // and smoothing time 969 s -> 654 s, every output mesh byte-identical. A projected candidate
     // has already passed both checks -- its line search refuses an inverted candidate and, with
@@ -844,7 +846,7 @@ bool smooth_vertex_2d(
     // The one-ring checks (inversion, the quality veto) before containment, as in
     // smooth_vertex_3d() and for its reason: the order decides what a refused move costs, never
     // which moves are accepted. Measured on the 16 TriWild [challenging] models, serial,
-    // smoothing_mode "exact": smoothing time 272 s -> 162 s, every output mesh byte-identical.
+    // smoothing_mode "penalty": smoothing time 272 s -> 162 s, every output mesh byte-identical.
     for (const size_t fid : locs) {
         if (m.is_inverted(fid)) {
             if (counters) ++counters->inverted;
