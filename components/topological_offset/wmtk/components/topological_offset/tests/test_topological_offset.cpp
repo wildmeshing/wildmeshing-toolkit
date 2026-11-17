@@ -7281,6 +7281,48 @@ curve_side(const MeshData& out, const std::vector<char>& touched, const int side
 }
 } // namespace
 
+namespace {
+/// The cells (2D: triangles) the label clean-up flipped, either way, summed over a run's log.
+size_t cleanup_flips(const std::string& log)
+{
+    size_t n = 0;
+    for (const std::string head : {"flipped non-band -> band ", "band -> non-band "}) {
+        for (size_t at = log.find(head); at != std::string::npos; at = log.find(head, at + 1)) {
+            n += std::stoul(log.substr(at + head.size()));
+        }
+    }
+    return n;
+}
+} // namespace
+
+TEST_CASE("label-cleanup-keeps-the-surface-flag-exact", "[offset][3d]" + release_only)
+{
+    // The base's m_is_on_surface is exactly vertex_has_tracked_face() through the loop: the label
+    // clean-up re-derives it for the corners of every cell it flips, so a vertex the band grows
+    // past, whose front faces stop being front, loses it. The engine decides from the flag (its
+    // collapse keeps a flagged vertex on the surface). perform_sanity_checks compares the two
+    // after every clean-up and every turn and throws on a difference. MEASURED (2026-11-17), when
+    // the flag was never cleared: the held-point input of 2026-11-06 (q 0.25 from p, p offset to
+    // 0.3, exact_swept, 15 turns) flipped 61 cells at turn 1 and left 4 vertices flagged with no
+    // tracked face to the end. Here the same geometry on point_grid() (q held as in
+    // label-cleanup-keeps-held-point-off-the-band), one turn, the check on: MEASURED
+    // (2026-11-17), turn 1's clean-up flips 61 cells, and with the flag never cleared the check
+    // after it throws. (A run on meshes in memory logs to its own console logger, so the count
+    // is not read back here.)
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"max_rounds", 1},
+        {"throw_on_unreachable_level_set", false},
+        {"perform_sanity_checks", true},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    REQUIRE_NOTHROW(
+        components::topological_offset::topological_offset(
+            j,
+            {{"m", point_grid({{"p", {{4, 4, 4}}}, {"q", {{5, 4, 4}}}})}}));
+}
+
 TEST_CASE("label-cleanup-keeps-held-point-off-the-band", "[offset][3d]" + release_only)
 {
     // The construction's topology kept (the clean-up's held objects' test, 2026-11-10): q, a held
@@ -8557,6 +8599,40 @@ TEST_CASE("settle-exit-2d", "[offset][2d]")
         CHECK(
             line_of("[settle] turn " + std::to_string(turns) + ": ")
                 .find("settled yes | marked 0 ") != std::string::npos);
+    }
+}
+
+TEST_CASE("label-cleanup-keeps-the-surface-flag-exact-2d", "[offset][2d]")
+{
+    // The base's m_is_on_surface is exactly vertex_has_tracked_edge() through the loop: the label
+    // clean-up re-derives it for the corners of every triangle it flips, so a vertex the band
+    // grows past, whose front edges stop being front, loses it. The engine decides from the flag
+    // (its collapse keeps a flagged vertex on the surface; its smoother asserts a flagged vertex
+    // has a tracked edge). perform_sanity_checks compares the two after every clean-up and every
+    // turn and throws on a difference; the mesh at the end is compared here too. MEASURED
+    // (2026-11-17), when the flag was never cleared: this run (settle-exit-2d's, p offset to 0.3
+    // from the march's 0.125) left the vertex at (0.088, 0.088), 0.125 from p, flagged with no
+    // tracked edge, and the engine's 2D smoother asserted on it in a Debug build.
+    std::string log;
+    std::unique_ptr<TopoOffsetTriMesh> mesh;
+    const std::string what = run_loop_2d(
+        0.3,
+        {{"max_rounds", 2}, {"front_conv_rel", 0.2}, {"perform_sanity_checks", true}},
+        log,
+        {{4, 4}},
+        {},
+        false,
+        {},
+        &mesh);
+    INFO(log.substr(log.size() > 6000 ? log.size() - 6000 : 0));
+    REQUIRE(what.empty());
+    // The clean-up flipped triangles, so the check after it had flags to re-derive.
+    CHECK(cleanup_flips(log) > 0);
+    CHECK(log.find("[sanity] m_is_on_surface @ label cleanup") != std::string::npos);
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        INFO("vertex " << vid);
+        CHECK(mesh->m_vertex_attribute[vid].m_is_on_surface == mesh->vertex_has_tracked_edge(vid));
     }
 }
 

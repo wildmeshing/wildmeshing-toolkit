@@ -400,9 +400,11 @@ bool TopoOffsetTetMesh::face_is_tag_boundary(const Tuple& f) const
 
 void TopoOffsetTetMesh::untrack_covered_boundaries()
 {
-    // See the declaration. m_is_on_surface is a superset by design (vertex_is_held() walks the
-    // faces) and is not recomputed. m_is_on_region is, for the corners of the faces untracked: a
-    // vertex is on a region boundary iff a face of it is still tracked. Every corner of a band
+    // See the declaration. m_is_on_region and the base's m_is_on_surface are recomputed for the
+    // corners of the faces untracked: a vertex is on a region boundary iff a face of it is still
+    // tracked, and the front is not tracked yet (label_offset_boundary() runs later), so the two
+    // agree here. m_is_on_surface must be exact: the engine's collapse keeps a flagged vertex on
+    // the surface. Until 2026-11-17 it was left a superset. Every corner of a band
     // cell is a complex vertex or a split point of the march; a split point on a face this
     // untracks also lies on the part of that surface the band did not cover (the piece through
     // the marched edge's outer half, whose cells are not band), and so does a vertex of a
@@ -465,6 +467,7 @@ void TopoOffsetTetMesh::untrack_covered_boundaries()
         }
         if (!on && m_vertex_extra[v].m_is_on_region) ++n_off;
         m_vertex_extra[v].m_is_on_region = on;
+        m_vertex_attribute[v].m_is_on_surface = on;
     }
     logger().info(
         "\t[tracked faces] {} faces the band covered no longer bound regions (one tag set on both "
@@ -485,8 +488,8 @@ bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
 
 bool TopoOffsetTetMesh::vertex_is_held(const size_t vid) const
 {
-    // Most vertices are on no tracked face at all; the flag is a superset (it is never cleared),
-    // so it only short-cuts the walk.
+    // Most vertices are on no tracked face at all; the flag says whether one is (exactly:
+    // vertex_has_tracked_face()), so it short-cuts the walk.
     if (!m_vertex_attribute[vid].m_is_on_surface) return false;
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         for (int j = 0; j < 4; ++j) {

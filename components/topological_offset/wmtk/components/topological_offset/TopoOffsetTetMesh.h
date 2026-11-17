@@ -1781,6 +1781,11 @@ public:
     /// offset_surface_faces_live_at() answers, without building the list: this one runs in the
     /// operation hooks, where the list would be allocated and thrown away.
     bool vertex_has_live_offset_face(size_t vid) const;
+    /// Whether ANY tracked face (m_is_surface_fs: a region boundary or the offset surface) is
+    /// incident to vid: what the base's m_is_on_surface says, exactly. The label clean-up and
+    /// untrack_covered_boundaries() re-derive the flag from it for the corners whose faces they
+    /// untrack, and check_offset_membership() compares the two.
+    bool vertex_has_tracked_face(size_t vid) const;
     /// Every live offset face through vid, from vid's own tet list alone (see
     /// vertex_has_live_offset_face()): fn(sorted vertex triple, its band cell) for each, until fn
     /// returns true; returns whether one did. A band face on the domain boundary counts.

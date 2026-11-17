@@ -4298,6 +4298,14 @@ void TopoOffsetTriMesh::refresh_offset_membership(const size_t vid)
     m_vertex_extra[vid].m_is_on_offset = vertex_has_live_offset_edge(vid);
 }
 
+bool TopoOffsetTriMesh::vertex_has_tracked_edge(const size_t vid) const
+{
+    for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+        if (m_edge_attribute[e.eid(*this)].m_is_surface_fs) return true;
+    }
+    return false;
+}
+
 std::pair<size_t, size_t> TopoOffsetTriMesh::offset_membership_mismatches() const
 {
     size_t flagged_not_live = 0, live_not_flagged = 0;
@@ -4321,6 +4329,32 @@ void TopoOffsetTriMesh::check_offset_membership(const char* when) const
         when,
         flagged_not_live,
         live_not_flagged);
+    // The base's m_is_on_surface, exactly vertex_has_tracked_edge(): the engine decides from it
+    // (its collapse keeps a flagged vertex on the surface; its smoother asserts a flagged vertex
+    // has a tracked edge).
+    size_t flag_no_tracked = 0, tracked_no_flag = 0;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const bool tracked = vertex_has_tracked_edge(vid);
+        const bool flag = m_vertex_attribute[vid].m_is_on_surface;
+        if (flag && !tracked) ++flag_no_tracked;
+        if (tracked && !flag) ++tracked_no_flag;
+    }
+    logger().info(
+        "\t[sanity] m_is_on_surface @ {}: flagged without a tracked edge {}, a tracked edge "
+        "without the flag {}",
+        when,
+        flag_no_tracked,
+        tracked_no_flag);
+    if (flag_no_tracked != 0 || tracked_no_flag != 0) {
+        log_and_throw_error(
+            "m_is_on_surface is out of step @ {}: {} vertices carry it with no tracked edge, {} "
+            "have a tracked edge without it. An operation changed a tracked edge without "
+            "re-deriving its corners' flag.",
+            when,
+            flag_no_tracked,
+            tracked_no_flag);
+    }
     if (flagged_not_live != 0 || live_not_flagged != 0) {
         log_and_throw_error(
             "offset membership is out of step @ {}: {} vertices carry m_is_on_offset with no live "
@@ -5570,9 +5604,16 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
     // of its edges and corners (2 where some triangle holding it is band, else 0; a simplex of
     // the input complex keeps its 1), the front class of its three edges -- the only edges whose
     // two sides change -- and the front flags of its three corners, the only vertices on those
-    // edges. The base's union flag m_is_on_surface is raised for a corner that joins the front, as
-    // label_offset_boundary() raises it; it is never cleared. As in 3D; 2D's vertex order is read
-    // live (TriMesh::get_order_of_vertex()), so there is no stored order to re-derive.
+    // edges. The base's m_is_on_surface is re-derived for the same corners from their edges
+    // (vertex_has_tracked_edge()): raised for a corner that joins the front, as
+    // label_offset_boundary() raises it, and cleared for one whose last tracked edge the flip
+    // untracks. The engine decides from the flag, so it must be exact: its collapse keeps a
+    // flagged vertex on the surface, and its smoother asserts that a flagged vertex has a tracked
+    // edge. MEASURED (2026-11-17), when it was never cleared: the double-disk case (tag_0 offset
+    // to 0.2 across the held tag_1) left 75 vertices flagged with no tracked edge after turn 1's
+    // 113 flips, 30 of them to the end; settle-exit-2d aborted on one in a Debug build. As in 3D;
+    // 2D's vertex order is read live (TriMesh::get_order_of_vertex()), so there is no stored
+    // order to re-derive.
     const auto any_band = [this](const std::vector<size_t>& fids) {
         return std::any_of(fids.begin(), fids.end(), [this](const size_t s) {
             return face_is_offset_band(s);
@@ -5628,7 +5669,7 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
                 int& lv = m_vertex_extra[v].label;
                 if (lv != 1) lv = any_band(get_one_ring_fids_for_vertex(v)) ? 2 : 0;
                 refresh_offset_membership(v);
-                if (m_vertex_extra[v].m_is_on_offset) m_vertex_attribute[v].m_is_on_surface = true;
+                m_vertex_attribute[v].m_is_on_surface = vertex_has_tracked_edge(v);
             }
         }
     };

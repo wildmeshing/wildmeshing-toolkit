@@ -5061,6 +5061,19 @@ void TopoOffsetTetMesh::refresh_offset_membership(const size_t vid)
     m_vertex_extra[vid].m_is_on_offset = vertex_has_live_offset_face(vid);
 }
 
+bool TopoOffsetTetMesh::vertex_has_tracked_face(const size_t vid) const
+{
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+            const auto vs = get_face_vids(f);
+            if (vs[0] == vid || vs[1] == vid || vs[2] == vid) return true;
+        }
+    }
+    return false;
+}
+
 std::pair<size_t, size_t> TopoOffsetTetMesh::offset_membership_mismatches() const
 {
     size_t flagged_not_live = 0, live_not_flagged = 0;
@@ -5084,6 +5097,31 @@ void TopoOffsetTetMesh::check_offset_membership(const char* when) const
         when,
         flagged_not_live,
         live_not_flagged);
+    // The base's m_is_on_surface, exactly vertex_has_tracked_face(): the engine decides from it
+    // (its collapse keeps a flagged vertex on the surface).
+    size_t flag_no_tracked = 0, tracked_no_flag = 0;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const bool tracked = vertex_has_tracked_face(vid);
+        const bool flag = m_vertex_attribute[vid].m_is_on_surface;
+        if (flag && !tracked) ++flag_no_tracked;
+        if (tracked && !flag) ++tracked_no_flag;
+    }
+    logger().info(
+        "\t[sanity] m_is_on_surface @ {}: flagged without a tracked face {}, a tracked face "
+        "without the flag {}",
+        when,
+        flag_no_tracked,
+        tracked_no_flag);
+    if (flag_no_tracked != 0 || tracked_no_flag != 0) {
+        log_and_throw_error(
+            "m_is_on_surface is out of step @ {}: {} vertices carry it with no tracked face, {} "
+            "have a tracked face without it. An operation changed a tracked face without "
+            "re-deriving its corners' flag.",
+            when,
+            flag_no_tracked,
+            tracked_no_flag);
+    }
     if (flagged_not_live != 0 || live_not_flagged != 0) {
         log_and_throw_error(
             "offset membership is out of step @ {}: {} vertices carry m_is_on_offset with no live "
@@ -6700,8 +6738,12 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     // of its faces, edges and corners (2 where some cell holding it is band, else 0; a simplex of
     // the input complex keeps its 1), the cached class of its four faces -- the only faces whose
     // two sides change -- and the front flags of its four corners, the only vertices on those
-    // faces. The base's union flag m_is_on_surface is raised for a corner that joins the front, as
-    // the split and the collapse raise it; it is never cleared (vertex_is_held()).
+    // faces. The base's m_is_on_surface is re-derived for the same corners from their faces
+    // (vertex_has_tracked_face()): raised for a corner that joins the front, as the split and the
+    // collapse raise it, and cleared for one whose last tracked face the flip untracks. The
+    // engine decides from the flag, so it must be exact: its collapse keeps a flagged vertex on
+    // the surface. Until 2026-11-17 it was never cleared; 2D's twin measured what that left (see
+    // TopoOffsetTriMesh::label_cleanup()).
     const auto any_band = [this](const std::vector<size_t>& tids) {
         return std::any_of(tids.begin(), tids.end(), [this](const size_t s) {
             return cell_is_offset_band(s);
@@ -6753,7 +6795,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             int& lv = m_vertex_extra[v].label;
             if (lv != 1) lv = any_band(get_one_ring_tids_for_vertex(v)) ? 2 : 0;
             refresh_offset_membership(v);
-            if (m_vertex_extra[v].m_is_on_offset) m_vertex_attribute[v].m_is_on_surface = true;
+            m_vertex_attribute[v].m_is_on_surface = vertex_has_tracked_face(v);
         }
     };
 

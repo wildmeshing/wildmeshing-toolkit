@@ -1951,6 +1951,11 @@ public:
     std::vector<std::array<size_t, 2>> offset_surface_edges() const;
     /// Whether ANY live offset-boundary edge is incident to vid; reads only vid's own faces.
     bool vertex_has_live_offset_edge(size_t vid) const;
+    /// Whether ANY tracked edge (m_is_surface_fs: a region boundary, the wall or the offset
+    /// boundary) is incident to vid: what the base's m_is_on_surface says, exactly. The label
+    /// clean-up re-derives the flag from it for the corners of a triangle it flips, and
+    /// check_offset_membership() compares the two.
+    bool vertex_has_tracked_edge(size_t vid) const;
     /**
      * @brief Re-derive m_is_on_offset for one vertex from the face labels, exactly: a vertex is
      * on the offset boundary iff some incident edge has the band on one side and a non-complex
