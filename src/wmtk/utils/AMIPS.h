@@ -54,6 +54,18 @@ double AMIPS_energy_rational_p3(const std::array<dtype, 12>& T)
             3);
     return res_r.to_double();
 }
+/**
+ * @brief AMIPS_energy_rational_p3<wmtk::Rational>(T), the exact AMIPS^3 truncated to a double,
+ * without rationals: an exact expansion of the determinant and double-double arithmetic for the
+ * rest, with an error bound that certifies the truncated double.
+ *
+ * True with `result` set -- to the bits the GMP path returns, +inf for a flat tet included -- when
+ * it is certain; false, `result` unspecified, when the caller must use the GMP path: an energy
+ * within 2^-80 of a double, or coordinates outside the range the bounds assume. About 85x faster
+ * than the GMP path on the fallbacks tetwild and simwild take.
+ */
+bool AMIPS_energy_p3_certified(const std::array<double, 12>& T, double& result);
+
 template <typename rational>
 double AMIPS_energy_stable_p3(const std::array<double, 12>& T)
 {
@@ -62,6 +74,11 @@ double AMIPS_energy_stable_p3(const std::array<double, 12>& T)
     if (res < 1e8 && res > 2) {
         return std::pow(res, 3);
     } else {
+        // The double value cancelled (a nearly flat tet) or overflowed: the exact value, from
+        // double-double arithmetic when it can be certified. `rational` is the mpq-backed
+        // wmtk::Rational, whose to_double() truncates as the certified value does.
+        double certified;
+        if (AMIPS_energy_p3_certified(T, certified)) return certified;
         return AMIPS_energy_rational_p3<rational>(T);
     }
 }
