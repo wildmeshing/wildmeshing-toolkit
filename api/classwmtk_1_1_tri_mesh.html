@@ -571,6 +571,8 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a05e0c21a100de1c0a10eae2b7f4a063a" id="r_a05e0c21a100de1c0a10eae2b7f4a063a"><td class="memItemLeft" align="right" valign="top"><a id="a05e0c21a100de1c0a10eae2b7f4a063a" name="a05e0c21a100de1c0a10eae2b7f4a063a"></a>
 <a class="el" href="classwmtk_1_1_slot_pool.html">SlotPool</a>&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_connectivity</b></td></tr>
 <tr class="separator:a05e0c21a100de1c0a10eae2b7f4a063a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ff4230147b76bb1d9fdb3bd37238fc4" id="r_a3ff4230147b76bb1d9fdb3bd37238fc4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a3ff4230147b76bb1d9fdb3bd37238fc4">m_attr_tail_clean</a> = false</td></tr>
+<tr class="separator:a3ff4230147b76bb1d9fdb3bd37238fc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44448decb1181e805bb773ca9a34dad7" id="r_a44448decb1181e805bb773ca9a34dad7"><td class="memItemLeft" align="right" valign="top"><a id="a44448decb1181e805bb773ca9a34dad7" name="a44448decb1181e805bb773ca9a34dad7"></a>
 <a class="el" href="classwmtk_1_1_slot_pool.html">SlotPool</a>&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html">TriangleConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tri_connectivity</b></td></tr>
 <tr class="separator:a44448decb1181e805bb773ca9a34dad7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2932,6 +2934,29 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a3ff4230147b76bb1d9fdb3bd37238fc4" name="a3ff4230147b76bb1d9fdb3bd37238fc4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ff4230147b76bb1d9fdb3bd37238fc4">&#9670;&#160;</a></span>m_attr_tail_clean</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TriMesh::m_attr_tail_clean = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether every attribute entry past the live slots is default &ndash; true from the end of a consolidation until the mesh is (re)initialized, which may leave the records of a larger earlier mesh up there. <a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392" title="removing the elements that are removed">consolidate_mesh()</a> then resets only the slots handed out since, and otherwise the whole tail. </p>
+
+</div>
+</div>
 <a id="a6b67c16a2171222aaa2e9d4b6b41045c" name="a6b67c16a2171222aaa2e9d4b6b41045c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6b67c16a2171222aaa2e9d4b6b41045c">&#9670;&#160;</a></span>m_check_smoothing_stays_in_star</h2>
 

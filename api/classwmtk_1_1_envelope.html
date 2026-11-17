@@ -76,6 +76,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
@@ -102,6 +103,10 @@ Public Types</h2></td></tr>
 , <b>Edges2d</b>
  }</td></tr>
 <tr class="separator:acf5af81c1642d6ab84f557d193ec3769"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d979e24c5424a63a387e964769889f6" id="r_a9d979e24c5424a63a387e964769889f6"><td class="memItemLeft" align="right" valign="top"><a id="a9d979e24c5424a63a387e964769889f6" name="a9d979e24c5424a63a387e964769889f6"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>TriangleQuery</b> = std::pair&lt; const <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> *, std::array&lt; Eigen::Vector3d, 3 &gt; &gt;</td></tr>
+<tr class="memdesc:a9d979e24c5424a63a387e964769889f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">One containment question of an operation: is this triangle outside this envelope? <br /></td></tr>
+<tr class="separator:a9d979e24c5424a63a387e964769889f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -183,6 +188,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>primitives_in_box</b>
 <tr class="memdesc:a0a44713e51f85c25571c12bc5649d993"><td class="mdescLeft">&#160;</td><td class="mdescRight">The 2D counterpart, for Edges2d: the distance between the segment <code>seg</code> and primitive <code>id</code> alone &ndash; a 2D front edge where the 3D query takes a front face.  <br /></td></tr>
 <tr class="separator:a0a44713e51f85c25571c12bc5649d993"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a6b85d0ad58b41462a26eda16571649d6" id="r_a6b85d0ad58b41462a26eda16571649d6"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a6b85d0ad58b41462a26eda16571649d6">any_outside</a> (std::vector&lt; <a class="el" href="classwmtk_1_1_envelope.html#a9d979e24c5424a63a387e964769889f6">TriangleQuery</a> &gt; &amp;queries)</td></tr>
+<tr class="separator:a6b85d0ad58b41462a26eda16571649d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a6c242e84f2c28ecaae122147c31b4e47" id="r_a6c242e84f2c28ecaae122147c31b4e47"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a6c242e84f2c28ecaae122147c31b4e47">eps2</a> = 1e-6</td></tr>
@@ -218,6 +228,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>require_exact_built</
 <tr class="memitem:a3f9e885a8db76cfc177568bc417890e6" id="r_a3f9e885a8db76cfc177568bc417890e6"><td class="memTemplParams" colspan="2">template&lt;typename VertexList &gt; </td></tr>
 <tr class="memitem:a3f9e885a8db76cfc177568bc417890e6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a3f9e885a8db76cfc177568bc417890e6">init_exact_edges</a> (const VertexList &amp;V, const std::vector&lt; Eigen::Vector2i &gt; &amp;F, const double _eps)</td></tr>
 <tr class="separator:a3f9e885a8db76cfc177568bc417890e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2db9a7cc70b49d6675b830fd9b42c6f7" id="r_a2db9a7cc70b49d6675b830fd9b42c6f7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a2db9a7cc70b49d6675b830fd9b42c6f7">first_sample_outside</a> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;tri) const</td></tr>
+<tr class="separator:a2db9a7cc70b49d6675b830fd9b42c6f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c956990e29695ef7ed2a60161e3b93e" id="r_a7c956990e29695ef7ed2a60161e3b93e"><td class="memItemLeft" align="right" valign="top"><a id="a7c956990e29695ef7ed2a60161e3b93e" name="a7c956990e29695ef7ed2a60161e3b93e"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>samples_outside_parallel</b> (const std::vector&lt; Eigen::Vector3d &gt; &amp;ps) const</td></tr>
 <tr class="memdesc:a7c956990e29695ef7ed2a60161e3b93e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The sampled triangle query's loop over <code>ps</code>, split among idle workers. <br /></td></tr>
@@ -320,6 +332,36 @@ fastEnvelope::FastEnvelope2D&#160;</td><td class="memItemRight" valign="bottom">
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a6b85d0ad58b41462a26eda16571649d6" name="a6b85d0ad58b41462a26eda16571649d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b85d0ad58b41462a26eda16571649d6">&#9670;&#160;</a></span>any_outside()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Envelope::any_outside </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classwmtk_1_1_envelope.html#a9d979e24c5424a63a387e964769889f6">TriangleQuery</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>queries</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the triangle of any of <code>queries</code> is outside its envelope: the answer of asking is_outside of each in turn, found with less work when it is "yes". A refused operation pays for every inside triangle it asks before the outside one, so</p><ul>
+<li>on a sampled envelope, each triangle's first sample &ndash; the one is_outside starts from &ndash; is checked before any full query;</li>
+<li>on an exact one, the triangles are asked in decreasing distance of their centroid from the input (one nearest-facet query each): a triangle far out is the likely one to leave. Only the order of pure queries changes, so the answer, and with it the operation, does not. Reorders <code>queries</code>. </li>
+</ul>
+
+</div>
+</div>
 <a id="a095dab355c3bf152bc6a3d73553f3561" name="a095dab355c3bf152bc6a3d73553f3561"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a095dab355c3bf152bc6a3d73553f3561">&#9670;&#160;</a></span>eps()</h2>
 
@@ -343,6 +385,33 @@ fastEnvelope::FastEnvelope2D&#160;</td><td class="memItemRight" valign="bottom">
 </table>
 </div><div class="memdoc">
 <p>The eps the envelope was built with: what every query guarantees, sampled or exact &ndash; everything it accepts is within it. eps2 and eps2_edge are the sampled path's shrunk acceptance radii, 0.42 and 0.5 of it, not the envelope's radius. </p>
+
+</div>
+</div>
+<a id="a2db9a7cc70b49d6675b830fd9b42c6f7" name="a2db9a7cc70b49d6675b830fd9b42c6f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2db9a7cc70b49d6675b830fd9b42c6f7">&#9670;&#160;</a></span>first_sample_outside()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Envelope::first_sample_outside </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tri</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether, on a sampled envelope, the first sample is_outside(tri) checks is outside (and so is the triangle). False on an exact envelope. </p>
 
 </div>
 </div>

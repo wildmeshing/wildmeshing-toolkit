@@ -20,7 +20,7 @@
   "max_iterations": 80,
   "filter": "none",
   "filter_inputs": [],
-  "skip_winding_number": false,
+  "skip_winding_number": true,
   "compute_tracked_winding_number": false,
   "compute_flood_fill": false,
   "eps_rel": 0.001,

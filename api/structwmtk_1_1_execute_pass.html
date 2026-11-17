@@ -116,6 +116,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_queued</b> (uint64
 <tr class="memitem:a28dff3e1eded22279650cf83afa31d18" id="r_a28dff3e1eded22279650cf83afa31d18"><td class="memItemLeft" align="right" valign="top"><a id="a28dff3e1eded22279650cf83afa31d18" name="a28dff3e1eded22279650cf83afa31d18"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>wait_defects</b> () const</td></tr>
 <tr class="separator:a28dff3e1eded22279650cf83afa31d18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31bb47fbbde9fab9cece1619f7d87134" id="r_a31bb47fbbde9fab9cece1619f7d87134"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a31bb47fbbde9fab9cece1619f7d87134">repeated_failures</a> () const</td></tr>
+<tr class="separator:a31bb47fbbde9fab9cece1619f7d87134"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a922fdd528b06468eafe56f70d0b8d2aa" id="r_a922fdd528b06468eafe56f70d0b8d2aa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a922fdd528b06468eafe56f70d0b8d2aa">ExecutePass</a> (const ExecutionPolicy &amp;policy_=ExecutionPolicy::kSeq)</td></tr>
 <tr class="memdesc:a922fdd528b06468eafe56f70d0b8d2aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new Execute Pass object. It contains the name-to-operation map and the functions that define the rules for operations.  <br /></td></tr>
 <tr class="separator:a922fdd528b06468eafe56f70d0b8d2aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -246,6 +248,9 @@ std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="memitem:adb8e9e7ecf087bc180716a78c69f72c2" id="r_adb8e9e7ecf087bc180716a78c69f72c2"><td class="memItemLeft" align="right" valign="top"><a id="adb8e9e7ecf087bc180716a78c69f72c2" name="adb8e9e7ecf087bc180716a78c69f72c2"></a>
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_wait_defects</b> = 0</td></tr>
 <tr class="separator:adb8e9e7ecf087bc180716a78c69f72c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a3d0b83cb3400c3c60b18d58c623584" id="r_a5a3d0b83cb3400c3c60b18d58c623584"><td class="memItemLeft" align="right" valign="top"><a id="a5a3d0b83cb3400c3c60b18d58c623584" name="a5a3d0b83cb3400c3c60b18d58c623584"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_repeated_failures</b> = 0</td></tr>
+<tr class="separator:a5a3d0b83cb3400c3c60b18d58c623584"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69d788f9468b4b5e8e3189c868ef339b" id="r_a69d788f9468b4b5e8e3189c868ef339b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a69d788f9468b4b5e8e3189c868ef339b">m_untracked_done</a> = 0</td></tr>
 <tr class="separator:a69d788f9468b4b5e8e3189c868ef339b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -498,6 +503,34 @@ template&lt;class AppMesh &gt; </div>
 
 <p>As above, but takes the operation list over and frees it as soon as the queues are seeded. </p>
 <p>The queues hold their own copy of every operation, so the list is dead weight from then on &ndash; and it is at its longest on the first pass after construction, which is also when the mesh is at its largest. Releasing it there is what keeps a pass from holding every candidate twice at the run's peak. </p>
+
+</div>
+</div>
+<a id="a31bb47fbbde9fab9cece1619f7d87134" name="a31bb47fbbde9fab9cece1619f7d87134"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31bb47fbbde9fab9cece1619f7d87134">&#9670;&#160;</a></span>repeated_failures()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::repeated_failures </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Over every call on this executor: failures reported without running the operation, because it was an exact copy of the operation run just before it, which failed (see run_single_queue). They are included in the fail count. </p>
 
 </div>
 </div>

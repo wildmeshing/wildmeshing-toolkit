@@ -96,8 +96,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7490c04b52e7412f0d5031bb1c8c49d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a885c38d5d3806768e037cea069952d34" id="r_a885c38d5d3806768e037cea069952d34"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#a885c38d5d3806768e037cea069952d34">resize</a> (size_t s) override</td></tr>
 <tr class="separator:a885c38d5d3806768e037cea069952d34"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0dce964ddddfae67d24533c0d1bd21f9" id="r_a0dce964ddddfae67d24533c0d1bd21f9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#a0dce964ddddfae67d24533c0d1bd21f9">reset_from</a> (size_t first) override</td></tr>
-<tr class="separator:a0dce964ddddfae67d24533c0d1bd21f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e6518f47220a59c9240add881f97871" id="r_a6e6518f47220a59c9240add881f97871"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#a6e6518f47220a59c9240add881f97871">reset_range</a> (size_t first, size_t last) override</td></tr>
+<tr class="separator:a6e6518f47220a59c9240add881f97871"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b73c3d9a799cffe20a2e9029e963b27" id="r_a8b73c3d9a799cffe20a2e9029e963b27"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#a8b73c3d9a799cffe20a2e9029e963b27">clear</a> () override</td></tr>
 <tr class="separator:a8b73c3d9a799cffe20a2e9029e963b27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15d5ca94f6995d3e1363804f79d7c287" id="r_a15d5ca94f6995d3e1363804f79d7c287"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287">rollback</a> () override</td></tr>
@@ -123,6 +123,11 @@ T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator[]</b> (si
 <tr class="memitem:aeec84e9a59c6d4f6446310c9b6f93e78" id="r_aeec84e9a59c6d4f6446310c9b6f93e78"><td class="memItemLeft" align="right" valign="top"><a id="aeec84e9a59c6d4f6446310c9b6f93e78" name="aeec84e9a59c6d4f6446310c9b6f93e78"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>size</b> () const</td></tr>
 <tr class="separator:aeec84e9a59c6d4f6446310c9b6f93e78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classwmtk_1_1_abstract_attribute_container"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_abstract_attribute_container')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">wmtk::AbstractAttributeContainer</a></td></tr>
+<tr class="memitem:ae6828c0f764ff80ca97cad55698b1006 inherit pub_methods_classwmtk_1_1_abstract_attribute_container" id="r_ae6828c0f764ff80ca97cad55698b1006"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>reset_from</b> (size_t first)</td></tr>
+<tr class="memdesc:ae6828c0f764ff80ca97cad55698b1006 inherit pub_methods_classwmtk_1_1_abstract_attribute_container"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets every entry from <code>first</code> to the end of the storage. <br /></td></tr>
+<tr class="separator:ae6828c0f764ff80ca97cad55698b1006 inherit pub_methods_classwmtk_1_1_abstract_attribute_container"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -299,8 +304,8 @@ template&lt;typename T &gt; </div>
 
 </div>
 </div>
-<a id="a0dce964ddddfae67d24533c0d1bd21f9" name="a0dce964ddddfae67d24533c0d1bd21f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0dce964ddddfae67d24533c0d1bd21f9">&#9670;&#160;</a></span>reset_from()</h2>
+<a id="a6e6518f47220a59c9240add881f97871" name="a6e6518f47220a59c9240add881f97871"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e6518f47220a59c9240add881f97871">&#9670;&#160;</a></span>reset_range()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -311,11 +316,21 @@ template&lt;typename T &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; T &gt;::reset_from </td>
+          <td class="memname">void <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; T &gt;::reset_range </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>first</em></td><td>)</td>
+          <td class="paramname"><em>first</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>last</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -324,9 +339,9 @@ template&lt;typename T &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Resets every entry from <code>first</code> to the end of the storage to a default-constructed value. consolidate_mesh() calls it on the spare region past the compacted live range: move() leaves its source intact, so without this those slots would still hold the records compacted out of them, and the next operation handed one would inherit a dead simplex's attributes. </p>
+<p>Resets the entries in [first, last) &ndash; clamped to the storage &ndash; to a default-constructed value. consolidate_mesh() calls it on the spare region past the compacted live range: move() leaves its source intact, so without this those slots would still hold the records compacted out of them, and the next operation handed one would inherit a dead simplex's attributes. Only the slots handed out since the last consolidation can hold anything (slots are handed out from the bottom, and the storage never shrinks), so that is all it resets: the whole tail was the size of the largest mesh ever held, every iteration. </p>
 
-<p>Implements <a class="el" href="classwmtk_1_1_abstract_attribute_container.html#af8c5f6bed1f5348808b9cfc8bdfeace0">wmtk::AbstractAttributeContainer</a>.</p>
+<p>Implements <a class="el" href="classwmtk_1_1_abstract_attribute_container.html#a72847b17f6e043a60d3fb463fb71f065">wmtk::AbstractAttributeContainer</a>.</p>
 
 </div>
 </div>

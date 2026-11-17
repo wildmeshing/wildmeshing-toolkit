@@ -120,11 +120,11 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="keywordtype">void</span> save_history(<span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1history_1_1_history.html">history::History&lt;N&gt;</a>&amp; h, <span class="keyword">const</span> std::string&amp; path)</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    {</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        <span class="keywordflow">if</span> (!memory()) {</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>            h.<a class="code hl_function" href="structwmtk_1_1history_1_1_history.html#ae480fd5c883a75f24802d596ed72c550">save</a>(path);</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>            h.save(path);</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>            logger().info(<span class="stringliteral">&quot;history: {} edits saved to {}&quot;</span>, h.edits.size(), path);</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>            <span class="keywordflow">return</span>;</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        }</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        recorded_history = h.<a class="code hl_function" href="structwmtk_1_1history_1_1_history.html#af1a728c9f6309a8067416013fb659484">to_bytes</a>();</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        recorded_history = h.to_bytes();</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        logger().info(</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            <span class="stringliteral">&quot;history: {} edits, {} bytes, returned in the report&quot;</span>,</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            h.edits.size(),</div>
@@ -156,11 +156,11 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordtype">void</span> save_curve_history(<span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1history_1_1_history.html">history::CurveHistory</a>&amp; h, <span class="keyword">const</span> std::string&amp; path)</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    {</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>        <span class="keywordflow">if</span> (!memory()) {</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            h.<a class="code hl_function" href="structwmtk_1_1history_1_1_history.html#ae480fd5c883a75f24802d596ed72c550">save</a>(path);</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            h.save(path);</div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            logger().info(<span class="stringliteral">&quot;curve history: {} edits saved to {}&quot;</span>, h.edits.size(), path);</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>            <span class="keywordflow">return</span>;</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>        }</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        recorded_curve_history = h.<a class="code hl_function" href="structwmtk_1_1history_1_1_history.html#af1a728c9f6309a8067416013fb659484">to_bytes</a>();</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        recorded_curve_history = h.to_bytes();</div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        logger().info(</div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>            <span class="stringliteral">&quot;curve history: {} edits, {} bytes, returned in the report&quot;</span>,</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>            h.edits.size(),</div>
@@ -451,8 +451,6 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="anamespacewmtk_1_1history_html_a7631b850fc462ed9ff9f58b3ab671616"><div class="ttname"><a href="namespacewmtk_1_1history.html#a7631b850fc462ed9ff9f58b3ab671616">wmtk::history::write_history</a></div><div class="ttdeci">void write_history(const std::filesystem::path &amp;path, const std::vector&lt; uint8_t &gt; &amp;bytes)</div><div class="ttdef"><b>Definition</b> History.cpp:439</div></div>
 <div class="ttc" id="astructwmtk_1_1_mesh_data_html"><div class="ttname"><a href="structwmtk_1_1_mesh_data.html">wmtk::MeshData</a></div><div class="ttdef"><b>Definition</b> MeshData.hpp:48</div></div>
 <div class="ttc" id="astructwmtk_1_1history_1_1_history_html"><div class="ttname"><a href="structwmtk_1_1history_1_1_history.html">wmtk::history::History</a></div><div class="ttdoc">A complex and the edits it went through, in commit order.</div><div class="ttdef"><b>Definition</b> History.hpp:101</div></div>
-<div class="ttc" id="astructwmtk_1_1history_1_1_history_html_ae480fd5c883a75f24802d596ed72c550"><div class="ttname"><a href="structwmtk_1_1history_1_1_history.html#ae480fd5c883a75f24802d596ed72c550">wmtk::history::History::save</a></div><div class="ttdeci">void save(const std::string &amp;path) const</div><div class="ttdef"><b>Definition</b> History.cpp:323</div></div>
-<div class="ttc" id="astructwmtk_1_1history_1_1_history_html_af1a728c9f6309a8067416013fb659484"><div class="ttname"><a href="structwmtk_1_1history_1_1_history.html#af1a728c9f6309a8067416013fb659484">wmtk::history::History::to_bytes</a></div><div class="ttdeci">std::vector&lt; uint8_t &gt; to_bytes() const</div><div class="ttdoc">The bytes of a history file, in memory: what a component's memory route returns.</div><div class="ttdef"><b>Definition</b> History.cpp:341</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

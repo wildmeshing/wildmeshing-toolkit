@@ -431,6 +431,10 @@ const std::vector&lt; size_t &gt; &amp;&#160;</td><td class="memItemRight" valig
 <tr class="memitem:a7af1bc5b0045ec31cdfea9a2204f1d6a" id="r_a7af1bc5b0045ec31cdfea9a2204f1d6a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a7af1bc5b0045ec31cdfea9a2204f1d6a">get_one_ring_vids_for_vertex</a> (size_t vid) const</td></tr>
 <tr class="memdesc:a7af1bc5b0045ec31cdfea9a2204f1d6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the one ring vids for vertex.  <br /></td></tr>
 <tr class="separator:a7af1bc5b0045ec31cdfea9a2204f1d6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c18f5398541ab2559439ca432b07514" id="r_a3c18f5398541ab2559439ca432b07514"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
+<tr class="memitem:a3c18f5398541ab2559439ca432b07514"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a3c18f5398541ab2559439ca432b07514">for_each_incident_edge_eid</a> (size_t vid, F &amp;&amp;f) const</td></tr>
+<tr class="memdesc:a3c18f5398541ab2559439ca432b07514"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calls f(eid) once for each edge incident to vid, eid being the id <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#a64010c58c9f5b170f4ca17b89de1b653">Tuple::eid()</a> gives that edge, until f returns true; returns whether it did.  <br /></td></tr>
+<tr class="separator:a3c18f5398541ab2559439ca432b07514"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8bdd0460f834bf2be58997f11f9d285e" id="r_a8bdd0460f834bf2be58997f11f9d285e"><td class="memItemLeft" align="right" valign="top"><a id="a8bdd0460f834bf2be58997f11f9d285e" name="a8bdd0460f834bf2be58997f11f9d285e"></a>
 std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_one_ring_vids_for_vertex_adj</b> (size_t vid) const</td></tr>
 <tr class="memdesc:a8bdd0460f834bf2be58997f11f9d285e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Duplicate of the function <a class="el" href="classwmtk_1_1_tet_mesh.html#a71f69b2cf285973833a06ae2096ad2b8" title="Get the one ring vids for vertex.">TetMesh::get_one_ring_vids_for_vertex</a>. <br /></td></tr>
@@ -835,6 +839,8 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a8e955685234858d83331f785d6e217a1" id="r_a8e955685234858d83331f785d6e217a1"><td class="memItemLeft" align="right" valign="top"><a id="a8e955685234858d83331f785d6e217a1" name="a8e955685234858d83331f785d6e217a1"></a>
 <a class="el" href="classwmtk_1_1_slot_pool.html">SlotPool</a>&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_connectivity</b></td></tr>
 <tr class="separator:a8e955685234858d83331f785d6e217a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c52c725bf0bce219792a3c1b29543a2" id="r_a2c52c725bf0bce219792a3c1b29543a2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a2c52c725bf0bce219792a3c1b29543a2">m_attr_tail_clean</a> = false</td></tr>
+<tr class="separator:a2c52c725bf0bce219792a3c1b29543a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ee06a6beae8dd9a1deda4df6e2e323d" id="r_a6ee06a6beae8dd9a1deda4df6e2e323d"><td class="memItemLeft" align="right" valign="top"><a id="a6ee06a6beae8dd9a1deda4df6e2e323d" name="a6ee06a6beae8dd9a1deda4df6e2e323d"></a>
 <a class="el" href="classwmtk_1_1_slot_pool.html">SlotPool</a>&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tet_connectivity</b></td></tr>
 <tr class="separator:a6ee06a6beae8dd9a1deda4df6e2e323d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1475,6 +1481,47 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 <p>looping through all the unique edges and perform the given function </p>
 <p>looping through all the unique faces and perform the given function </p>
+
+</div>
+</div>
+<a id="a3c18f5398541ab2559439ca432b07514" name="a3c18f5398541ab2559439ca432b07514"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c18f5398541ab2559439ca432b07514">&#9670;&#160;</a></span>for_each_incident_edge_eid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename F &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetMesh::for_each_incident_edge_eid </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">F &amp;&amp;&#160;</td>
+          <td class="paramname"><em>f</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Calls f(eid) once for each edge incident to vid, eid being the id <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#a64010c58c9f5b170f4ca17b89de1b653">Tuple::eid()</a> gives that edge, until f returns true; returns whether it did. </p>
+<p><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#a64010c58c9f5b170f4ca17b89de1b653">Tuple::eid()</a> names an edge by the lowest tet holding both its vertices. m_conn_tets is sorted, so walking vid's tets in order, the first one that holds a neighbour u is that tet: one pass over the fan, with no one-ring sort and no set intersection per neighbour. Edges come in fan order, not neighbour order. </p>
 
 </div>
 </div>
@@ -4505,6 +4552,29 @@ false </dd></dl>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a2c52c725bf0bce219792a3c1b29543a2" name="a2c52c725bf0bce219792a3c1b29543a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c52c725bf0bce219792a3c1b29543a2">&#9670;&#160;</a></span>m_attr_tail_clean</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetMesh::m_attr_tail_clean = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether every attribute entry past the live slots is default &ndash; true from the end of a consolidation until the mesh is (re)initialized, which may leave the records of a larger earlier mesh up there. <a class="el" href="classwmtk_1_1_tet_mesh.html#a1f972b55f0a7c6eb66bbc1e9c8927204" title="cleans up the deleted vertices or tetrahedra, fixes the corresponding indices, and reset the version ...">consolidate_mesh()</a> then resets only the slots handed out since, and otherwise the whole tail. </p>
+
+</div>
+</div>
 <a id="adb3b465edb0af8802cebba3e39c4cdbb" name="adb3b465edb0af8802cebba3e39c4cdbb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adb3b465edb0af8802cebba3e39c4cdbb">&#9670;&#160;</a></span>m_check_smoothing_stays_in_star</h2>
 
