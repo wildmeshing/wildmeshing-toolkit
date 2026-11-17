@@ -7,6 +7,7 @@
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
+#include <wmtk/utils/SimplicialEmbedding.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 
@@ -1348,13 +1349,22 @@ bool TopoOffsetTriMesh::repulsion_embedding_kept(const std::vector<size_t>& fids
 }
 
 
+namespace {
+
+/// The input complex as the shared simplicial embedding sees it: the simplices labelled nonzero.
+wmtk::utils::TriComplex labelled_complex(const TopoOffsetTriMesh& m)
+{
+    return {
+        [&m](const size_t v) { return m.m_vertex_extra[v].label != 0; },
+        [&m](const TriMesh::Tuple& e) { return m.m_edge_extra[e.eid(m)].label != 0; },
+        [&m](const TriMesh::Tuple& f) { return m.m_face_extra[f.fid(m)].label != 0; }};
+}
+
+} // namespace
+
 bool TopoOffsetTriMesh::is_simplicially_embedded() const
 {
-    int bad_tris = 0;
-    auto tris = get_faces();
-    for (const Tuple& f : tris) {
-        bad_tris += (!tri_is_simp_emb(f));
-    }
+    const size_t bad_tris = wmtk::utils::count_embedding_violations(*this, labelled_complex(*this));
     if (bad_tris == 0) {
         logger().info("\tInput complex/offset simplicially embedded: TRUE");
         return true;
@@ -1369,92 +1379,22 @@ bool TopoOffsetTriMesh::is_simplicially_embedded() const
 
 bool TopoOffsetTriMesh::tri_is_simp_emb(const Tuple& t) const
 {
-    size_t f_id = t.fid(*this);
-    if (m_face_extra[f_id].label != 0) { // entire tri in input
-        return true;
-    }
-
-    auto vs = oriented_tri_vids(f_id);
-    std::vector<size_t> vs_in;
-    for (int i = 0; i < 3; i++) {
-        if (m_vertex_extra[vs[i]].label != 0) {
-            vs_in.push_back(vs[i]);
-        }
-    }
-
-    if (vs_in.size() <= 1) { // nothing or just one vert
-        return true;
-    } else if (vs_in.size() == 2) { // potentially one edge in input
-        size_t e_id = edge_id_from_simplex(simplex::Edge(vs_in[0], vs_in[1]));
-        return (m_edge_extra[e_id].label != 0);
-    } else { // all 3 verts in input but tri isnt, cant be simplicially embedded
-        return false;
-    }
+    return wmtk::utils::cell_keeps_embedding(*this, labelled_complex(*this), t);
 }
 
 
 void TopoOffsetTriMesh::simplicial_embedding()
 {
-    // identify tris to split
-    std::vector<simplex::Face> tris_to_split;
-    auto tris = get_faces();
-    for (const Tuple& f : tris) {
-        size_t f_id = f.fid(*this);
-        auto vs = oriented_tri_vids(f_id);
-        if (m_face_extra[f_id].label == 0) {
-            bool to_split = true;
-            for (int i = 0; i < 3; i++) {
-                size_t v1 = vs[i];
-                size_t v2 = vs[(i + 1) % 3];
-                size_t e_id = edge_id_from_simplex(simplex::Edge(v1, v2));
-                if (m_edge_extra[e_id].label == 0) {
-                    to_split = false;
-                    break;
-                }
-            }
-
-            if (to_split) { // tri not in input but all edges are
-                tris_to_split.push_back(simplex::Face(vs[0], vs[1], vs[2]));
-            }
-        }
+    // the shared embedding (wmtk/utils/SimplicialEmbedding.hpp): faces outside the complex whose
+    // edges are all in it, then edges outside it whose vertices are; the split hooks give the new
+    // simplices the label of the simplex split, 0
+    const wmtk::utils::SimplicialEmbeddingStats stats =
+        wmtk::utils::simplicial_embedding(*this, labelled_complex(*this));
+    if (stats.refused > 0) {
+        log_and_throw_error("{} splits failed! (simplicial_embedding)", stats.refused);
     }
-
-    // actually split tris
-    for (const simplex::Face& f : tris_to_split) {
-        const auto& vs = f.vertices();
-        Tuple t = tuple_from_vids(vs[0], vs[1], vs[2]);
-        std::vector<Tuple> garbage;
-        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
-        if (!split_face(t, garbage)) {
-            log_and_throw_error("face split failed! (simplicial_embedding)");
-        }
-    }
-    logger().info("\tTris split: {}", tris_to_split.size());
-
-    // identify edges to split
-    std::vector<simplex::Edge> edges_to_split;
-    auto edges = get_edges();
-    for (const Tuple& e : edges) {
-        size_t e_id = e.eid(*this);
-        if (m_edge_extra[e_id].label == 0) {
-            size_t v1_id = e.vid(*this);
-            size_t v2_id = e.switch_vertex(*this).vid(*this);
-            if ((m_vertex_extra[v1_id].label != 0) && (m_vertex_extra[v2_id].label != 0)) {
-                edges_to_split.push_back(simplex::Edge(v1_id, v2_id));
-            }
-        }
-    }
-
-    // actually split edges
-    for (const simplex::Edge& e : edges_to_split) {
-        Tuple t = get_tuple_from_edge(e);
-        std::vector<Tuple> garbage;
-        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
-        if (!split_edge(t, garbage)) {
-            log_and_throw_error("edge split failed! (simplicial_embedding)");
-        }
-    }
-    logger().info("\tEdges split: {}", edges_to_split.size());
+    logger().info("\tTris split: {}", stats.faces_split);
+    logger().info("\tEdges split: {}", stats.edges_split);
 }
 
 

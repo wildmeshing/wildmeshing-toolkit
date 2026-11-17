@@ -36,17 +36,10 @@ public:
     size_t label_non_manifold(); // return # of non manifold edges, verts
 
     /**
-     * @brief check if a vertex is manifold. A vertex is manifold if all 'inside' and all 'outside'
-     * tets adjacent to the vertex form single face-reachable connected components, respectively.
-     * For vertices on the boundary of the mesh, external space is considered an 'outside' polyhedra
-     * that is face connected to all tets on the mesh boundary.
+     * @brief check if a vertex is manifold, ie if all 'inside' faces adjacent to the vertex form a
+     * single edge-reachable connected component (wmtk::utils::vertex_is_manifold)
      */
     bool vertex_is_manifold(const Tuple& v) const;
-
-    /**
-     * @brief dfs helper for vertex manifold check
-     */
-    void vertex_dfs_helper(std::set<size_t>& visited_fids, const Tuple& f) const;
 
     /**
      * @brief extract edge mesh separating 'inside' faces from 'outside' faces. Resulting curve is

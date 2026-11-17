@@ -80,6 +80,14 @@ and triwild (more optimization iterations than expected), `throw_on_nonconvergen
 topological_offset. All the configs run in one ctest entry, `Integration_Tests`, with a timeout of
 7200 s.
 
+The manifold_extraction configs have a case of their own, `manifold-extraction-models`, which
+reads `data/integration_tests/manifold_extraction_models.json`. It is not hidden, so it is a
+ctest entry of its own and runs in CI; to run it alone:
+
+```bash
+build/tests/wmtk_integration_tests "[manifold]"      # manifold_extraction_models.json
+```
+
 The other cases in the file are hidden (`[.]`): Catch2 does not run them unless asked, and
 `catch_discover_tests` does not register them. Each reads its own list from
 `data/integration_tests`:
@@ -87,7 +95,6 @@ The other cases in the file are hidden (`[.]`): Catch2 does not run them unless 
 ```bash
 build/tests/wmtk_integration_tests "[challenging]"   # challenging_low_stop_energy_models.json: minutes to hours each
 build/tests/wmtk_integration_tests "[offset]"        # topological_offset_models.json
-build/tests/wmtk_integration_tests "[manifold]"      # manifold_extraction_models.json
 ```
 
 A new config goes into the data repository and its list, and the data pin moves to the data2

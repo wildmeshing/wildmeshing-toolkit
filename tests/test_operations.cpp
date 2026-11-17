@@ -484,6 +484,31 @@ TEST_CASE("tet_face_split", "[TetMesh][tuple_operation]")
         CHECK(m.oriented_tet_vids(4) == std::array<size_t, 4>{0, 5, 3, 4});
         CHECK(m.oriented_tet_vids(5) == std::array<size_t, 4>{0, 2, 5, 4});
     }
+    SECTION("two_tets_interior_refused")
+    {
+        // split_face_after refuses, so the split rolls back: every vertex keeps its tets, also
+        // the corners off the face (1 and 4), which the split had given its new tets
+        class RefusingMesh : public TetMesh
+        {
+            bool split_face_after(const Tuple&) override { return false; }
+        };
+        TetMeshVT VT = two_tets();
+        RefusingMesh m;
+        m.init(VT.T);
+        std::vector<std::vector<size_t>> before;
+        for (size_t v = 0; v < 5; ++v) {
+            before.push_back(m.get_one_ring_tids_for_vertex(v));
+        }
+
+        const Tuple t = m.tuple_from_vids(0, 2, 3, 1);
+
+        std::vector<Tuple> new_tets;
+        CHECK_FALSE(m.split_face(t, new_tets));
+        REQUIRE(m.get_tets().size() == 2);
+        for (size_t v = 0; v < 5; ++v) {
+            CHECK(m.get_one_ring_tids_for_vertex(v) == before[v]);
+        }
+    }
 }
 
 TEST_CASE("tet_tet_split", "[TetMesh][tuple_operation]")

@@ -189,14 +189,16 @@ TEST_CASE("topological-offset-models", tags_integration + "[offset][.]")
 /**
  * The manifold_extraction cases, one 2D and one 3D, listed in manifold_extraction_models.json.
  *
- * Hidden ([.]) so it is never registered with ctest and cannot run in CI. Run it explicitly:
+ * Not hidden: catch_discover_tests registers the group as a ctest entry of its own, which CI runs.
+ * The extraction only constructs the offset (no optimization), so the group is cheap. Run it alone:
  *
  *     ./wmtk_integration_tests "[manifold]"
  *
  * manifold_extraction_3d was in Integration_Tests until data2 dropped it from
- * integration_tests.json; the group asserts that the cases run.
+ * integration_tests.json (3734b13); from then until 2026-11-13 this group was hidden ([.]). The
+ * group asserts that the cases run.
  */
-TEST_CASE("manifold-extraction-models", tags_integration + "[manifold][.]")
+TEST_CASE("manifold-extraction-models", tags_integration + "[manifold]")
 {
     namespace fs = std::filesystem;
 
