@@ -11,17 +11,17 @@ message(STATUS "Third-party: creating target 'polysolve::polysolve'")
 # set(POLYSOLVE_WITH_ACCELERATE OFF CACHE BOOL "Enable Apple Accelerate" FORCE)
 
 include(CPM)
-# polysolve main f6008a2 (which has polysolve#126: with /advanced/track_info off, see
-# wmtk/optimization/solver.hpp, a solve skips its info json and timings) plus polysolve#131: a
-# solver created again with the same parameters skips their JSON validation (one solver per mesh is
-# created for the vertex smoothing, 40 ms each before), and minimize() allocates and times less,
-# with the same iterates. Move to the merge commit once #131 is in.
+# polysolve main with polysolve#126 (with /advanced/track_info off, see
+# wmtk/optimization/solver.hpp, a solve skips its info json and timings) and polysolve#131 (a
+# solver created again with the same parameters skips their JSON validation -- one solver per mesh
+# is created for the vertex smoothing, 40 ms each before -- and minimize() allocates and times
+# less, with the same iterates).
 # Since 1b01e6c (the Eigen 5 fix) main also gained an MPI option that defaults to ON off Windows,
 # hence POLYSOLVE_WITH_MPI OFF below.
 CPMAddPackage(
     NAME polysolve
     GITHUB_REPOSITORY polyfem/polysolve
-    GIT_TAG 37973660173e45c4cb0066e31371599fc1a6ea7f
+    GIT_TAG f0cc343edf19c427655e0462567f518181df165f
     OPTIONS
     "POLYSOLVE_WITH_MPI OFF"
     "POLYSOLVE_WITH_ACCELERATE OFF"
