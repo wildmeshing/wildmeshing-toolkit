@@ -288,6 +288,14 @@ struct OptimizerParameters
      */
     bool limit_collapse_length = false;
     /**
+     * With a sizing mesh, mesh_improvement() does not stop on reaching the energy target while
+     * more than this share of the edges is longer than 4/3 of its target (an edge the split pass
+     * would cut), as long as the share keeps dropping by a tenth from one iteration to the next:
+     * a weak enforcement of the field, which the energy target alone reaches after one iteration.
+     * Without a sizing mesh, nothing changes.
+     */
+    double sizing_mesh_long_edge_tolerance = 0.01;
+    /**
      * Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
      *
      * 0 by default, which means the pass judges the collapse on its raw post-collapse geometry

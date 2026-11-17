@@ -892,6 +892,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // `sizing_mesh` names a mesh of the call on the memory route too (read below), as triwild's.
     const std::string sizing_selector = json_params.value("sizing_mesh", std::string());
     if (component_io.memory()) json_params.erase("sizing_mesh");
+    // With a sizing mesh, limit_collapse_length is on unless set: the field is a bound, and
+    // without the limit a collapse leaves edges past it that nothing splits again
+    // (docs/tutorials/workflows/sizing-mesh.md).
+    if (!sizing_selector.empty() && !json_params.contains("limit_collapse_length")) {
+        json_params["limit_collapse_length"] = true;
+    }
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(

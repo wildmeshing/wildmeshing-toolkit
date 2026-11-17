@@ -1091,6 +1091,17 @@ public:
      * is coarsen_target_length().
      */
     bool collapse_leaves_long_edge(size_t v1_id, size_t v2_id) const;
+    /// The share of the edges longer than 4/3 of their target: the split pass's test, l times
+    /// the mean sizing of the ends. 0 without edges.
+    double long_edge_fraction() const;
+    /**
+     * @brief Whether the sizing mesh lets mesh_improvement() stop: without one, always; with one,
+     * when the share of long edges (long_edge_fraction()) is within
+     * OptimizerParameters::sizing_mesh_long_edge_tolerance, or no longer drops by a tenth from
+     * the previous call. Called once per iteration that reached the energy target.
+     */
+    bool sizing_mesh_allows_stop();
+    double m_prev_long_edge_fraction = 1;
 
     /// Start recording the tracked surface (TetMesh::start_surface_history), at m_posf, with
     /// `metadata` (the application's parameters, say) saved along. Takes m_insertion_sources.

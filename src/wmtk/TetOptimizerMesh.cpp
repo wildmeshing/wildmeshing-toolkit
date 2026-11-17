@@ -30,6 +30,7 @@
 #include <mutex>
 #include <queue>
 #include <tuple>
+#include <utility>
 
 namespace wmtk {
 
@@ -96,7 +97,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
         }
 
         if (max_metric < optimization_stop_metric()) {
-            if (cnt_round == cnt_verts) break;
+            if (cnt_round == cnt_verts && sizing_mesh_allows_stop()) break;
             logger().info(
                 "energy target reached, but {} of {} vertices are still un-rounded; continuing",
                 cnt_verts - cnt_round,
@@ -2847,6 +2848,36 @@ void TetOptimizerMesh::op_accounting_reset()
     for (auto& row : m_swap_reject_by_kind)
         for (auto& c : row) c.store(0, std::memory_order_relaxed);
     for (auto& c : m_collapse_reject) c.store(0, std::memory_order_relaxed);
+}
+
+double TetOptimizerMesh::long_edge_fraction() const
+{
+    const auto& VA = m_vertex_attribute;
+    size_t total = 0, long_edges = 0;
+    for (const Tuple& e : get_edges()) {
+        const size_t v1 = e.vid(*this), v2 = e.switch_vertex(*this).vid(*this);
+        const double s = 0.5 * (VA[v1].m_sizing_scalar + VA[v2].m_sizing_scalar);
+        ++total;
+        if ((VA[v1].m_posf - VA[v2].m_posf).squaredNorm() > m_params.splitting_l2 * s * s) {
+            ++long_edges;
+        }
+    }
+    return total > 0 ? double(long_edges) / total : 0;
+}
+
+bool TetOptimizerMesh::sizing_mesh_allows_stop()
+{
+    if (!m_sizing_mesh) return true;
+    const double fraction = long_edge_fraction();
+    const double prev = std::exchange(m_prev_long_edge_fraction, fraction);
+    if (fraction <= m_params.sizing_mesh_long_edge_tolerance || fraction > 0.9 * prev) {
+        return true;
+    }
+    logger().info(
+        "energy target reached, but {:.1f}% of the edges are longer than 4/3 of their target "
+        "(sizing mesh); continuing",
+        100 * fraction);
+    return false;
 }
 
 void TetOptimizerMesh::set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing)

@@ -113,7 +113,7 @@
     "pointer": "/sizing_mesh",
     "type": "string",
     "default": "",
-    "doc": "A target edge length that varies over the surface: a triangle mesh in 3D whose vertices carry the absolute target length as the field 'target_length' (one positive value per vertex), interpolated linearly inside its triangles and read at the point of it closest to the vertex -- the input itself, with such a field, say. On the memory route the name of a mesh of the call, on the file route the path of a mesh file with a node field 'target_length', relative to input_dir. Each vertex takes the length where it is, again wherever a split, collapse or smoothing puts it, and an edge's target is the mean of its ends': the split cuts an edge longer than 4/3 of it, the collapse removes one shorter than 4/5 of it, and limit_collapse_length and the collapses of cleanup_triangles hold the edges a collapse leaves under 4/3 of theirs. It replaces the global target (length, else length_rel, else the input's average edge length) everywhere, which the report still gives as target_length. Feature curves, fixed vertices and the envelopes are kept as without it. Empty: none, and the run is the same as without the option."
+    "doc": "A target edge length that varies over the surface: a triangle mesh in 3D whose vertices carry the absolute target length as the field 'target_length' (one positive value per vertex), interpolated linearly inside its triangles and read at the point of it closest to the vertex -- the input itself, with such a field, say. On the memory route the name of a mesh of the call, on the file route the path of a mesh file with a node field 'target_length', relative to input_dir. Each vertex takes the length where it is, again wherever a split, collapse or smoothing puts it, and an edge's target is the mean of its ends': the split cuts an edge longer than 4/3 of it, the collapse removes one shorter than 4/5 of it, and limit_collapse_length and the collapses of cleanup_triangles hold the edges a collapse leaves under 4/3 of theirs. It replaces the global target (length, else length_rel, else the input's average edge length) everywhere, which the report still gives as target_length. Feature curves, fixed vertices and the envelopes are kept as without it. Empty: none, and the run is the same as without the option. With it, limit_collapse_length is on unless set to false."
   },
   {
     "pointer": "/freeze_boundary",
@@ -178,7 +178,7 @@
     "pointer": "/limit_collapse_length",
     "type": "bool",
     "default": false,
-    "doc": "Refuse a collapse that leaves an edge longer than 4/3 of the target length (of the edge's own, with a sizing_mesh), the length above which an edge is split, as Botsch and Kobbelt's isotropic remeshing does. Without it a collapse is judged by the edge it removes alone, and those of the last iteration leave long edges that no split comes after to cut."
+    "doc": "Refuse a collapse that leaves an edge longer than 4/3 of the target length (of the edge's own, with a sizing_mesh), the length above which an edge is split, as Botsch and Kobbelt's isotropic remeshing does. Without it a collapse is judged by the edge it removes alone, and those of the last iteration leave long edges that no split comes after to cut. With a sizing_mesh it is on unless set to false: the field is then a bound the collapses keep."
   },
   {
     "pointer": "/cleanup_angle",
