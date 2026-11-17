@@ -222,6 +222,13 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     if(WMTK_BUILD_DOC_EXAMPLES)
         add_subdirectory(docs/examples)
     endif()
+else()
+    # A parent project that calls the components (wmtk::triwild, ...) turns this on: they are then
+    # built for it alone, without the app, the bindings, their tests or the test data.
+    option(WMTK_BUILD_COMPONENTS "Build the components when the toolkit is a subproject" OFF)
+    if(WMTK_BUILD_COMPONENTS)
+        add_subdirectory(components)
+    endif()
 endif()
 
 if(WMTK_BUILD_DOCS)
