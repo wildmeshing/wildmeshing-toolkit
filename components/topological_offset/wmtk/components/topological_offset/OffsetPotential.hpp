@@ -898,7 +898,7 @@ public:
         double delta,
         std::vector<Face> faces);
     /// The message of the last exception the front-flux band term threw on this thread, until
-    /// the caller clears it (smooth_front_vertex() rethrows it after the solve).
+    /// the caller clears it (smooth_vertex_under_energy() rethrows it after a front vertex's solve).
     static std::string& front_flux_error();
     /// "exact_swept": the band term's change for the vertex moving from x0 to x1,
     ///     dE* / delta = ( sum over f of sign_f value(conv(x0, x1, a_f, b_f), delta) ) / delta,

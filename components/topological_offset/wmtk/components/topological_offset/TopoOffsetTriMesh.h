@@ -896,7 +896,7 @@ public:
      *     before = the sum over the two faces (swap_edge_before()); refused unless the sum over
      *     the two new faces is STRICTLY below it (swap_edge_after()). Strict, so a swap pass
      *     terminates.
-     *   - Smoothing (smooth_front_vertex(), smooth_nonfront_vertex(), smooth_repulsion_vertex()):
+     *   - Smoothing (smooth_vertex_under_energy(), smooth_repulsion_vertex()):
      *     the sum over the vertex's ring after the move may not exceed the sum before.
      *   - Split: no rule, unless EXPERIMENTAL_split_energy_gate (the children's sum strictly below
      *     the parents').
@@ -909,7 +909,7 @@ public:
      * Every move is then judged by the ring's sum of this energy: a vertex held on a region
      * boundary through the engine's projected step, which takes the first projected position
      * where that sum drops (smoothing_ring_energy()); every other vertex through the veto after
-     * its solve (smooth_front_vertex(), smooth_nonfront_vertex()). As in 3D.
+     * its solve (smooth_vertex_under_energy()). As in 3D.
      *
      * WHERE 2D DIFFERS FROM 3D'S RULES, and why:
      *   - No TetWild rules (3D's m_op_rules) and no TetWild pass (3D's m_tetwild_pass): 2D has no
@@ -1090,7 +1090,7 @@ public:
             for (const size_t fid : ring) s += tri_energy(fid);
             return s;
         }
-        // the vertex is the one smooth_nonfront_vertex() or smooth_front_vertex() is smoothing,
+        // the vertex is the one smooth_vertex_under_energy() is smoothing,
         // the same in both calls
         for (const size_t fid : ring) s += tri_energy(fid, false);
         auto& st = m_swept_stored.local();
@@ -1685,7 +1685,7 @@ public:
     SmoothTrace m_smooth_trace;
 
     /// How the solves this class makes itself ended, per smoothing pass. Background: every
-    /// smooth_nonfront_vertex() solve -- the 3D engine counts these itself (its m_newton), the
+    /// off-front smooth_vertex_under_energy() solve -- the 3D engine counts these itself (its m_newton), the
     /// 2D engine does not, so the component keeps the counter. Front: every front placement.
     /// Plastic: the rest-shape solve of smooth_plastic_vertex(). Logged and reset by
     /// log_smoothing_pass_accounting().
@@ -1699,8 +1699,8 @@ public:
     /**
      * @brief DEBUG_output only: every front solve since the last debug frame, so the frames
      * show per vertex what m_newton_front counts per pass (frame fields front_newton_iters and
-     * front_newton_status, see write_vtu()). Appended by smooth_front_vertex(), emptied by
-     * write_debug_frame() once the frame is written. As in 3D.
+     * front_newton_status, see write_vtu()). Appended by smooth_vertex_under_energy() at a front
+     * vertex, emptied by write_debug_frame() once the frame is written. As in 3D.
      */
     struct FrontSolveRecord
     {
@@ -1728,7 +1728,7 @@ public:
         const optimization::SmoothVertexOptions& opts,
         optimization::NewtonCounters& newton,
         bool* solved = nullptr);
-    /// The front veto (smooth_front_vertex()): moves whose Newton solve succeeded and reached
+    /// The front veto (smooth_vertex_under_energy() at a front vertex): moves whose Newton solve succeeded and reached
     /// the veto, and how many it refused for raising the ring's sum of tri_energy(). Reported and
     /// reset per pass beside the Newton counters.
     std::atomic<size_t> m_front_veto_asked{0}, m_front_veto_fired{0};
@@ -2357,11 +2357,6 @@ public:
     }
 
     /**
-     * @brief Placement of a front vertex: the shared smoother with the offset's options. See
-     * FrontSmooth2d.cpp.
-     */
-    bool smooth_front_vertex(const Tuple& t);
-    /**
      * @brief A repulsion vertex in the passes and rounds before the march (repulsion_smoothing()):
      * the shared smoother at the front's options, against the AMIPS and O(v) once for every ring
      * face that carries it (repulsion_energy(), repulsion_cell_term()); the sum of tri_energy()
@@ -2369,20 +2364,21 @@ public:
      */
     bool smooth_repulsion_vertex(const Tuple& t);
     /**
-     * @brief Every vertex off the front (and off the plastic medium): the shared smoother with
-     * TriWild's options (TriOptimizerMesh::smooth_after()), except that it minimises
+     * @brief Every vertex the loop smooths off the plastic medium, front or not (front): the shared
+     * smoother with TriWild's options (TriOptimizerMesh::smooth_after()), except that it minimises
      * smoothing_extra_energy() -- the smoother adding no AMIPS term of its own -- and the engine's
      * AMIPS veto is replaced by the energy's: the sum of tri_energy() over the ring may not rise.
      * A vertex held on a region boundary is judged by it inside the engine's projected step
-     * (smoothing_ring_energy()). See Optimize2d.cpp. As in 3D.
+     * (smoothing_ring_energy()); a front vertex is vetoed after that step too. See Optimize2d.cpp.
+     * As in 3D.
      */
-    bool smooth_nonfront_vertex(const Tuple& t);
+    bool smooth_vertex_under_energy(const Tuple& t, bool front);
     /// The energy's AMIPS term over vid's one-ring, (w / s^3) sum area AMIPS^3
     /// (band_amips_weight(), area_amips3()), in the smoother's form (CubedAMIPSEnergy2D). As in
     /// 3D.
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;
     /// ||grad F|| at front vertex vid along its move direction, F the objective
-    /// smooth_front_vertex() minimises. +inf if unmeasurable.
+    /// smooth_vertex_under_energy() minimises at a front vertex. +inf if unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
     /// The line a front vertex is placed along: the field normal, or the boundary tangent where
     /// an input envelope holds it. See the definition.
@@ -2490,7 +2486,7 @@ public:
             // alone and lands far off, and the projected step discards the normal motion anyway.
             // 3D MEASURED (2026-10-09, cube, serial, 3 turns): with the term those solves took
             // 24.6 Newton iterations and ~20 line-search trials per iteration, without it 3.9 and
-            // 1. E still guards the move: smooth_nonfront_vertex() vetoes on the ring's sum. 3D
+            // 1. E still guards the move: smooth_vertex_under_energy() vetoes on the ring's sum. 3D
             // leaves the term out under "exact" where it cancels over the ring
             // (band_term_cancels()), which 2D never finds under "exact" (see there); under
             // "exact_swept" the term is the search model, null where no boundary edge of B

@@ -1066,7 +1066,7 @@ public:
      *     sum over the replaced cells (swap_before_interior() / swap_before_surface()); refused
      *     unless the sum over the new cells, labels written, is STRICTLY below it
      *     (swap_after_cells()). Strict, so a swap pass terminates.
-     *   - Smoothing (smooth_front_vertex(), smooth_nonfront_vertex(), smooth_repulsion_vertex()):
+     *   - Smoothing (smooth_vertex_under_energy(), smooth_repulsion_vertex()):
      *     the sum over the vertex's ring after the move may not exceed the sum before.
      *   - Split: no rule, unless EXPERIMENTAL_split_energy_gate (the children's sum strictly below
      *     the parents').
@@ -1114,7 +1114,7 @@ public:
      * then judged by the ring's sum of this energy: a vertex held on a surface through the engine's
      * projected step, which takes the first projected position where that sum drops
      * (smoothing_ring_energy()); every other vertex through the veto after its solve
-     * (smooth_front_vertex(), smooth_nonfront_vertex()).
+     * (smooth_vertex_under_energy()).
      *
      * The front's face measure (face_offset_term()) is not part of E: the exit, the refinement and
      * the frames read it.
@@ -1298,7 +1298,7 @@ public:
     /// "exact_swept": the smoother's search model's derivative evaluations, and of them those
     /// taken from the ring's band cells (BandVolumeEnergy3D::set_swept()), per pass.
     mutable BandVolumeEnergy3D::SweptDerivCounts m_swept_derivs;
-    /// "exact_swept", the projected step: the vertex smooth_nonfront_vertex() smooths, and at the
+    /// "exact_swept", the projected step: the vertex smooth_vertex_under_energy() smooths, and at the
     /// `stored` call of smoothing_ring_energy() its position, its boundary faces of each B_r
     /// (band_swept_faces()) and its band cells' pieces (band_cell_pieces()), which every
     /// candidate's band change is taken from.
@@ -1332,7 +1332,7 @@ public:
         if (swept_rule()) {
             // "exact_swept": the ring's AMIPS terms plus the band term's change from the position
             // at the `stored` call (EXACT SWEPT CHANGE); the vertex is the one
-            // smooth_nonfront_vertex() is smoothing, the same in both calls
+            // smooth_vertex_under_energy() is smoothing, the same in both calls
             for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this), false);
             auto& st = m_swept_stored.local();
             const size_t vid = st.vid;
@@ -1356,7 +1356,7 @@ public:
         }
         for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this));
         // EXPERIMENTAL_band_volume_rule "surface": the offset faces through the vertex move with
-        // it (smooth_nonfront_vertex() names it).
+        // it (smooth_vertex_under_energy() names it off the front).
         if (surface_energy()) {
             const size_t vid = m_smoothing_vid.local();
             if (vid != size_t(-1) && m_vertex_extra[vid].m_is_on_offset) s += surface_term_at(vid);
@@ -1577,7 +1577,7 @@ public:
     /// The live offset faces through vid, as sorted vertex triples (for_each_live_offset_face_at()).
     void live_offset_faces_at(size_t vid, std::vector<std::array<size_t, 3>>& out) const;
     /// The vertex the shared smoother is placing on this thread, for smoothing_ring_energy()
-    /// (which is handed the ring alone); size_t(-1) outside smooth_nonfront_vertex().
+    /// (which is handed the ring alone); size_t(-1) outside smooth_vertex_under_energy() and at a front vertex.
     mutable wmtk::threading::enumerable_thread_specific<size_t> m_smoothing_vid{size_t(-1)};
     /** @} */
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
@@ -2258,13 +2258,13 @@ public:
      * show per vertex what m_newton_front counts per pass (frame fields front_newton_iters and
      * front_newton_status, see write_vtu()).
      *
-     * Appended by smooth_front_vertex(), emptied by write_debug_frame() once the frame is
-     * written. The engine writes a frame after every pass and smooths a vertex at most once per
-     * pass, so a smoothing pass's frame shows each front vertex's solve of that pass and an
-     * operation pass's frame shows none. Not in m_vertex_extra: a refused move rolls the vertex
-     * attributes back (TetMesh::smooth_vertex()), and the refused solves are the ones to see.
-     * Added 2026-10-01 for Thingi10K 100026 at target_distance_rel 5e-3, where front solves end
-     * at the 10-iteration cap ever more often inside the model's two slots and the per-pass
+     * Appended by smooth_vertex_under_energy() at a front vertex, emptied by write_debug_frame()
+     * once the frame is written. The engine writes a frame after every pass and smooths a vertex at
+     * most once per pass, so a smoothing pass's frame shows each front vertex's solve of that pass
+     * and an operation pass's frame shows none. Not in m_vertex_extra: a refused move rolls the
+     * vertex attributes back (TetMesh::smooth_vertex()), and the refused solves are the ones to
+     * see. Added 2026-10-01 for Thingi10K 100026 at target_distance_rel 5e-3, where front solves
+     * end at the 10-iteration cap ever more often inside the model's two slots and the per-pass
      * counts cannot say where.
      */
     struct FrontSolveRecord
@@ -2293,7 +2293,7 @@ public:
     /// The thread's shared solver, created with the engine's parameters if needed, with
     /// kSmoothRelGradNormTol applied. Every smoothing path of this component takes it from here.
     polysolve::nonlinear::Solver& smoothing_solver();
-    /// The front veto (smooth_front_vertex(), solve_3d): moves whose Newton solve
+    /// The front veto (smooth_vertex_under_energy() at a front vertex): moves whose Newton solve
     /// succeeded and reached the veto, and how many it refused for raising the ring's sum of
     /// tet_energy(). Reported and reset per pass beside the Newton counters. Kept apart from
     /// m_smooth_rejects.quality, which the non-front veto also counts.
@@ -2709,11 +2709,6 @@ public:
     }
 
     /**
-     * @brief Placement of a front vertex: the shared smoother with the offset's options. See
-     * FrontSmooth3d.cpp.
-     */
-    bool smooth_front_vertex(const Tuple& t);
-    /**
      * @brief A repulsion vertex in the passes and rounds before the march (repulsion_smoothing()):
      * the shared smoother at the front's options, against the sum of the per-tet energy over its
      * ring -- the AMIPS term, and O(v) once for every ring cell that carries it
@@ -2722,13 +2717,13 @@ public:
      */
     bool smooth_repulsion_vertex(const Tuple& t);
     /**
-     * @brief Every vertex off the front: the shared smoother with
-     * TetWild's options (TetOptimizerMesh::smooth_after()), except that it minimises the vertex's
-     * part of the energy (smoothing_extra_energy(); the smoother adds no AMIPS term of its own) and
-     * the engine's AMIPS^3 veto is replaced by the energy's: the sum of tet_energy() over the ring
-     * may not rise. See Optimize3d.cpp.
+     * @brief Every vertex the loop smooths outside TetWild's rules, front or not (front): the
+     * shared smoother with TetWild's options (TetOptimizerMesh::smooth_after()), except that it
+     * minimises the vertex's part of the energy (smoothing_extra_energy(); the smoother adds no
+     * AMIPS term of its own) and the engine's AMIPS^3 veto is replaced by the energy's: the sum of
+     * tet_energy() over the ring may not rise. See Optimize3d.cpp.
      */
-    bool smooth_nonfront_vertex(const Tuple& t);
+    bool smooth_vertex_under_energy(const Tuple& t, bool front);
     /// EXPERIMENTAL_damping: the longest move one smoothing solve may make at vid,
     /// EXPERIMENTAL_damping_factor (default 0.5) times the shortest edge from vid to a vertex of its
     /// one-ring, at the positions before the solve; the three smoothers above pass it as
@@ -2749,7 +2744,7 @@ public:
     /// vol_amips3()), in the smoother's form (CubedAMIPSEnergy3D).
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;
     /// ||grad F|| at front vertex vid along its move direction, F the objective
-    /// smooth_front_vertex() minimises. +inf if unmeasurable.
+    /// smooth_vertex_under_energy() minimises at a front vertex. +inf if unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
     /// The line a front vertex is placed along: the field normal, or that normal projected into
     /// the boundary surface (onto its crease) where an input envelope holds it.
@@ -2857,18 +2852,19 @@ public:
             // 2026-10-09, cube, serial, 3 turns: with the term these solves took 24.6 Newton
             // iterations and ~20 line-search trials per iteration (72% of the smoother's value
             // calls), without it 3.9 and 1; 19.3 s -> 11.3 s. E still guards the move:
-            // smooth_nonfront_vertex() vetoes on the ring's sum of tet_energy().
+            // smooth_vertex_under_energy() vetoes on the ring's sum of tet_energy().
             // Under "exact", not where it cancels (BAND TERM THAT CANCELS, tet_energy()): a ring
             // of band cells clear of the input's bisectors tiles the star of vid, so the term is a
             // constant, and its cells' exact integrals would add only work and their rounding to
-            // every Newton step. The veto's own test (cancels_before in smooth_nonfront_vertex()).
-            // Constant wherever the move can end, not only here: vid is smoothed, so not on the
-            // domain wall (smooth_before()), and its ring closes around it; the engine keeps no
-            // position that inverts a ring cell, so vid stays inside the convex hull of its link;
-            // and the test reads the points only through their box, their least side of each
-            // bisector polytope's planes, and min_P max d_P (d_P convex), none of which a point
-            // inside that hull changes. So the test here certifies every position the smoother
-            // can keep. "front_flux" and "exact_swept" leave the constant out by their own forms
+            // every Newton step. The veto's own test (cancels_before in
+            // smooth_vertex_under_energy()). Constant wherever the move can end, not only here: vid
+            // is smoothed, so not on the domain wall (smooth_before()), and its ring closes around
+            // it; the engine keeps no position that inverts a ring cell, so vid stays inside the
+            // convex hull of its link; and the test reads the points only through their box, their
+            // least side of each bisector polytope's planes, and min_P max d_P (d_P convex), none
+            // of which a point inside that hull changes. So the test here certifies every position
+            // the smoother can keep. "front_flux" and "exact_swept" leave the constant out by their
+            // own forms
             // (band_volume_energy_at()). MEASURED (cube 1e-2 / 1e-4, 15 rounds, serial, two runs
             // each): 659 of 46,594 non-front solves had such a ring; at every one's end the
             // veto's test found it clear again, and every one was accepted; smoothing 7.7-7.9 s ->

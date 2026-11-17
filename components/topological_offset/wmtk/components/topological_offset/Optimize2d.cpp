@@ -983,12 +983,15 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::amips3_energy(
     return std::make_shared<CubedAMIPSEnergy2D>(std::move(cells), band_amips_weight());
 }
 
-bool TopoOffsetTriMesh::smooth_nonfront_vertex(const Tuple& t)
+bool TopoOffsetTriMesh::smooth_vertex_under_energy(const Tuple& t, const bool front)
 {
     // See the declaration. TriOptimizerMesh::smooth_after()'s options, two changes: the objective
     // comes from smoothing_extra_energy() (w_amips 0: the smoother adds no AMIPS term of its own),
     // and the engine's AMIPS veto is replaced by the energy's, on the engine's scope, which
-    // includes vertices on a surface.
+    // includes vertices on a surface. A front vertex (front) takes the same options, solve and
+    // rule; where it differs, the line says FRONT. Until 2026-11-17 the front had its own copy of
+    // this function (smooth_front_vertex()), which had stopped reading smoothing_mode,
+    // project_line_search_steps and project_line_search_nested_steps. As 3D's.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
     opts.w_amips = 0.;
@@ -1001,49 +1004,106 @@ bool TopoOffsetTriMesh::smooth_nonfront_vertex(const Tuple& t)
                               : optimization::SmoothVertexOptions::SmoothingMode::Projected;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
+    // The engine's veto compares AMIPS alone, and a front vertex must be free to worsen its ring's
+    // shape on the way to the level set: off; the energy's veto below.
     opts.quality_veto = false;
+    polysolve::nonlinear::Solver& solver = smoothing_solver();
     // The rule is E itself: the sum of tri_energy() over the ring may not rise (a tie passes, a
-    // NaN refuses). A vertex held on a region boundary takes the engine's projected step, whose
-    // acceptance is that rule already (smoothing_ring_energy(): strictly below), so it needs no
-    // veto here; the engine's own condition (smooth_vertex_2d(): a pull envelope under the
-    // projected mode; 3D also asks m_is_on_surface, which its engine asks). Every other vertex is
-    // vetoed after its solve. A smoothing move changes no label and moves one vertex, so the ring
-    // holds every face whose energy it can change. As 3D's.
+    // NaN refuses). Read before the solve and after it, on the mesh: a smoothing move changes no
+    // label and moves one vertex, so the ring holds every face whose energy it can change.
+    // Refused, TriMesh::smooth_vertex() rolls back the position and the ring's stored qualities;
+    // the smoother has counted the move accepted by then, so it is recounted as a quality refusal
+    // and the counters still partition the attempts. A vertex held on a region boundary takes the
+    // engine's projected step, whose acceptance is that rule already (smoothing_ring_energy():
+    // strictly below), so it needs no veto here -- FRONT: the veto runs after the projected step
+    // too; the engine's own condition (smooth_vertex_2d(): a pull envelope under the projected
+    // mode; 3D also asks m_is_on_surface, which its engine asks). Every other vertex is vetoed
+    // after its solve. As 3D's.
     const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
     const Vector2d x0 = m_vertex_attribute[vid].m_posf;
     const bool projected =
+        !front &&
         opts.smoothing_mode == optimization::SmoothVertexOptions::SmoothingMode::Projected &&
         smoothing_energy_envelope(vid) != nullptr;
     // "exact_swept": the projected step compares smoothing_ring_energy(), which takes the band
     // term's change from the position at its first call on this vertex; every other move is
-    // accepted by swept_accept() (EXACT SWEPT CHANGE), from the ring's AMIPS part before
+    // accepted by swept_accept() (EXACT SWEPT CHANGE), from the ring's AMIPS part before. The
+    // vertex is recorded for smoothing_ring_energy() either way: a front vertex held on a region
+    // boundary takes the projected step, which reads it. As 3D's.
     const bool swept = swept_rule();
     if (swept) m_swept_stored.local().vid = vid;
     const double amips_before = swept && !projected ? tri_energy_sum(ring, false) : 0.;
     const double before = projected || swept ? 0. : tri_energy_sum(ring);
     // BAND TERM THAT CANCELS (tri_energy()) for the move, tested at the old position and the new
-    // one, as 3D's smooth_nonfront_vertex(); false in 2D (band_term_cancels()) but under
-    // "exact_swept", which compares its own sums above.
-    const bool cancels_before = !projected && !swept && band_term_cancels(ring);
+    // one, as 3D's; false in 2D (band_term_cancels()) but under "exact_swept", which compares its
+    // own sums above. The front does not ask, as 3D's.
+    const bool cancels_before = !front && !projected && !swept && band_term_cancels(ring);
     const double before_no_band = cancels_before ? tri_energy_sum(ring, false) : 0.;
-    if (!smooth_vertex_2d_counted(t, opts, m_newton)) {
+    // FRONT, DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of
+    // every vertex that shares a front chord with it -- before the solve.
+    std::vector<size_t> nb;
+    std::vector<double> nb_before;
+    if (front && m_offset_params.debug_crossings) {
+        nb.push_back(vid);
+        for (const Tuple& et : offset_surface_edges_live_at(vid)) {
+            for (const size_t u : get_edge_vids(et)) nb.push_back(u);
+        }
+        wmtk::vector_unique(nb);
+        for (const size_t u : nb) nb_before.push_back(ring_measure_at(u));
+    }
+    // The solve is folded into the pass's m_newton (FRONT: m_newton_front; under DEBUG_output its
+    // outcome is also pinned to vid, m_front_solve_log). At most one solve (two_stage is off),
+    // none when the ring is already inverted; nothing after the solve touches the solver, so it
+    // still holds that solve's state here.
+    bool solved = false;
+    const bool ok = smooth_vertex_2d_counted(t, opts, front ? m_newton_front : m_newton, &solved);
+    if (front && solved && m_offset_params.debug_output) {
+        std::lock_guard<std::mutex> lock(m_front_solve_log_mutex);
+        m_front_solve_log.push_back(
+            {vid, int(solver.current_criteria().iterations), int(solver.status()) + 1});
+    }
+    if (!ok) {
         return false;
     }
-    if (projected) return true;
-    if (swept) {
-        if (!swept_accept(vid, ring, x0, amips_before, m_swept_nonfront)) {
-            --m_smooth_rejects.accepted;
-            ++m_smooth_rejects.quality;
-            return false;
-        }
-        return true;
+    if (front) {
+        // Diagnostic: the solve's final gradient norm and its ratio to the first one.
+        const auto& cr = solver.current_criteria();
+        const auto bin = [](double v, int lo) {
+            if (!(v > 0.)) return 0;
+            return std::clamp(int(std::floor(std::log10(v))) - lo + 1, 0, kGradBins - 1);
+        };
+        ++m_front_grad_abs[size_t(bin(cr.gradNorm, -14))];
+        ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
+        ++m_front_veto_asked;
     }
-    const bool cancels = cancels_before && band_term_cancels(ring);
-    const double after = tri_energy_sum(ring, !cancels);
-    if (!(after <= (cancels ? before_no_band : before))) { // a NaN refuses; a tie passes
+    bool kept = true;
+    if (swept && !projected) {
+        // the exact change, with halvings
+        kept = swept_accept(vid, ring, x0, amips_before, front ? m_swept_front : m_swept_nonfront);
+    } else if (!projected) {
+        const bool cancels = cancels_before && band_term_cancels(ring);
+        const double after = tri_energy_sum(ring, !cancels);
+        kept = after <= (cancels ? before_no_band : before); // a NaN refuses; a tie passes
+    }
+    if (!kept) {
+        if (front) ++m_front_veto_fired;
         --m_smooth_rejects.accepted;
         ++m_smooth_rejects.quality;
         return false;
+    }
+    if (front) {
+        m_released_tube_dirty.store(true, std::memory_order_release);
+        if (m_offset_params.debug_crossings) {
+            for (size_t k = 0; k < nb.size(); ++k) {
+                const double after = ring_measure_at(nb[k]);
+                if (!(nb_before[k] <= 1.) || !(after > 1.)) continue;
+                if (nb[k] == vid) {
+                    ++m_cross_own;
+                } else {
+                    ++m_cross_neighbour;
+                }
+            }
+        }
     }
     return true;
 }
@@ -1115,17 +1175,17 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
         }
     }
 
-    // A front vertex goes through the shared smoother -- same solver, line search and accept
-    // tests as every other vertex -- with the offset's options: its objective carries the offset
-    // terms (smoothing_extra_energy), and the veto is on tri_energy() instead of AMIPS, since a
-    // front vertex must be able to worsen its ring's shape on the way to the level set but not
-    // the energy, which charges both (see smooth_front_vertex()). A front vertex reaches here
-    // only outside the final pass: smooth_before() refuses it while m_freeze_front is set. Every
-    // other vertex goes through smooth_nonfront_vertex(), vetoed on the same sum. As in 3D.
+    // Every vertex, front or not, goes through the shared smoother -- same solver, line search and
+    // accept tests -- with the offset's options: its objective is its part of the energy
+    // (smoothing_extra_energy), and the veto is on tri_energy() instead of AMIPS, since a front
+    // vertex must be able to worsen its ring's shape on the way to the level set but not the
+    // energy, which charges both (see smooth_vertex_under_energy()). A front vertex reaches here
+    // only outside the final pass: smooth_before() refuses it while m_freeze_front is set. As in
+    // 3D.
     if (ve.m_is_on_offset) {
         // growth_mode "individual_op_reject": the turned offset edges through vid before the
         // move, which may not raise them (every edge it changes goes through vid). As in 3D, but
-        // around smooth_front_vertex() rather than after its veto inside it, so that the 2D
+        // around smooth_vertex_under_energy() rather than after its veto inside it, so that the 2D
         // smoother's own edits (the exact_swept step) merge with this one: the same test at the
         // same point of the move, after the veto passed. A move refused here was counted by
         // DEBUG_crossings (log-only) and marked the released tube dirty (a needless refresh).
@@ -1135,7 +1195,7 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
             turned_front_edges_at(vid, f);
             turned_before = int(f.size());
         }
-        bool ok = smooth_front_vertex(t);
+        bool ok = smooth_vertex_under_energy(t, true);
         if (ok && turned_before >= 0) {
             std::set<std::array<size_t, 2>> f;
             turned_front_edges_at(vid, f);
@@ -1149,12 +1209,12 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
         if (ok) ++m_smooth_trace.offset_accepted;
         return ok;
     }
-    return smooth_nonfront_vertex(t);
+    return smooth_vertex_under_energy(t, false);
 }
 
 double TopoOffsetTriMesh::front_vertex_normal_gradient(const size_t vid) const
 {
-    // ||grad F|| at the vertex's current position, F the objective smooth_front_vertex()
+    // ||grad F|| at the vertex's current position, F the objective smooth_vertex_under_energy()
     // minimises, taken along the move direction n: |grad F . n| (see below).
     const Vector2d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(2);
@@ -4174,7 +4234,8 @@ void TopoOffsetTriMesh::log_worst_dist_vertex() const
     } else if (m_freeze_front && ve.m_is_on_offset) {
         fate = "REFUSED by smooth_before: front frozen in the final pass";
     } else if (ve.m_is_on_offset) {
-        fate = "the front smoother: AMIPS plus the offset terms (smooth_front_vertex)";
+        fate =
+            "the front smoother: AMIPS plus the offset terms (smooth_vertex_under_energy, front)";
     }
     logger().info("\t  smoothing fate: {}", fate);
 
