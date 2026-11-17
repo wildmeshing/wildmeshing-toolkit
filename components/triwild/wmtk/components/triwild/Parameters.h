@@ -39,6 +39,17 @@ struct Parameters : public wmtk::OptimizerParameters
     bool check_envelope_at_init = false;
 
     /**
+     * Refuse a collapse that leaves an edge the split pass would cut: one longer than 4/3 of the
+     * target length, scaled by the sizing at its ends -- as Botsch and Kobbelt's isotropic
+     * remeshing, and isotropic_remeshing's option of the same name. Without it a collapse is
+     * judged by the edge it removes alone, so two collinear edges of a curve merge into one up to
+     * 0.8 + 4/3 of the target; and since the optimization ends on collapses (the last iteration's,
+     * then the bare pass after the loop), nothing cuts them again.
+     * TriWildMesh::collapse_before_vertex.
+     */
+    bool limit_collapse_length = false;
+
+    /**
      * Use the sampled envelope rather than the exact one for the mesh optimization.
      *
      * The two answer a different question. The sampled test places points along the query
@@ -65,6 +76,11 @@ struct Parameters : public wmtk::OptimizerParameters
     {
         epsr = json_params["eps_rel"];
         lr = json_params["length_rel"];
+        // Absolute values win when positive (OptimizerParameters::init_lengths_from_diagonal),
+        // as simwild's eps and length.
+        eps = json_params["eps"];
+        l = json_params["length"];
+        limit_collapse_length = json_params["limit_collapse_length"];
         stop_energy = json_params["stop_energy"];
         preserve_topology = json_params["preserve_topology"];
         envelope_around_simplified = json_params["envelope_reference"] == "simplified";

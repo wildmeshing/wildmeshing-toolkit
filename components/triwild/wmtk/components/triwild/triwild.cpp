@@ -4,6 +4,7 @@
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 
+#include <igl/AABB.h>
 #include <igl/Timer.h>
 #include <igl/write_triangle_mesh.h>
 #include <jse/jse.h>
@@ -25,6 +26,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <functional>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -270,12 +272,73 @@ static std::optional<TaggedTriMesh> read_tagged_input(
     return tagged;
 }
 
+/**
+ * @brief The sizing_mesh option: the vertex field `length` of a triangle mesh, interpolated
+ * linearly inside its triangles; a value that is not positive outside them.
+ */
+static std::function<double(const Vector2d&)> make_sizing_field(const MeshData& m)
+{
+    const auto field = m.vertex_attributes.find("length");
+    if (field == m.vertex_attributes.end()) {
+        log_and_throw_error("`sizing_mesh`: the mesh has no vertex field 'length'");
+    }
+    const DataMatrix<double> length = field->second.doubles();
+    if (length.cols() != 1 || length.rows() != m.V.rows()) {
+        log_and_throw_error("`sizing_mesh`: 'length' must have one value per vertex");
+    }
+    if (!length.allFinite() || !(length.array() > 0).all()) {
+        log_and_throw_error("`sizing_mesh`: every 'length' must be positive");
+    }
+    const auto tris = m.cells.find(CellType::Triangle);
+    if (tris == m.cells.end() || tris->second.connectivity.rows() == 0) {
+        log_and_throw_error("`sizing_mesh`: the mesh has no triangles");
+    }
+    struct Data
+    {
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi F;
+        Eigen::VectorXd length;
+        igl::AABB<Eigen::MatrixXd, 2> tree;
+    };
+    auto data = std::make_shared<Data>();
+    data->V = m.V.leftCols(2);
+    data->F = tris->second.connectivity.cast<int>();
+    data->length = length.col(0);
+    if (data->F.minCoeff() < 0 || data->F.maxCoeff() >= data->V.rows()) {
+        log_and_throw_error("`sizing_mesh`: a triangle refers to a missing vertex");
+    }
+    data->tree.init(data->V, data->F);
+    logger().info(
+        "sizing_mesh: {} triangles, length from {} to {}",
+        data->F.rows(),
+        data->length.minCoeff(),
+        data->length.maxCoeff());
+    return [data](const Vector2d& p) -> double {
+        // Dynamic size: libigl's AABB::find compiles its 3D branch for DIM 2 too, which a fixed
+        // 2-vector does not fit.
+        const Eigen::RowVectorXd q = p.transpose();
+        const std::vector<int> hits = data->tree.find(data->V, data->F, q, true);
+        if (hits.empty()) return -1;
+        const auto f = data->F.row(hits[0]);
+        const Eigen::Vector2d a = data->V.row(f(0)), b = data->V.row(f(1)), c = data->V.row(f(2));
+        const double area = (b - a).x() * (c - a).y() - (b - a).y() * (c - a).x();
+        if (area == 0) return data->length(f(0));
+        const double wb = ((p - a).x() * (c - a).y() - (p - a).y() * (c - a).x()) / area;
+        const double wc = ((b - a).x() * (p - a).y() - (b - a).y() * (p - a).x()) / area;
+        return (1 - wb - wc) * data->length(f(0)) + wb * data->length(f(1)) +
+               wc * data->length(f(2));
+    };
+}
+
 static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
     component_io.prepare(json_params, "triwild");
     // The `envelope` input names a mesh of the call on the memory route, as simwild's does.
     const auto envelope_selector = json_params.value("envelope", nlohmann::json());
     if (component_io.memory()) json_params.erase("envelope");
+    // So does `sizing_mesh`.
+    const std::string sizing_selector = json_params.value("sizing_mesh", std::string());
+    if (component_io.memory()) json_params.erase("sizing_mesh");
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
@@ -381,6 +444,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 "`envelope`: a reference is held to and checked against exactly, not with "
                 "use_sample_envelope");
         }
+    }
+    // The `sizing_mesh` input: a mesh of the call on the memory route, a mesh file on the file
+    // route (relative to input_dir), read here so that a bad one fails before any work.
+    std::function<double(const Vector2d&)> sizing_field;
+    if (!sizing_selector.empty()) {
+        sizing_field = make_sizing_field(
+            component_io.memory() ? component_io.mesh(sizing_selector)
+                                  : io::read_mesh(resolve_path(root, sizing_selector)));
     }
     // The labels of the output's edge tags, the same on both routes: an input curve's (above), or
     // a tagged mesh's own.
@@ -1012,6 +1083,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         mesh.write_vtu(output_path + "_initial");
     }
 
+    // The sizing field sets the vertices' sizing before the improvement (simwild's
+    // set_sizing_field), and caps it after every pass (TriWildMesh::update_attributes).
+    if (sizing_field) {
+        mesh.m_sizing_field = sizing_field;
+        mesh.apply_sizing_field(true);
+    }
+
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     mesh.consolidate_mesh();
@@ -1240,6 +1318,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         report["max_energy"] = max_energy;
         report["avg_energy"] = avg_energy;
         report["eps"] = params.eps;
+        report["length"] = params.l;
+        report["sizing_mesh"] = !sizing_selector.empty();
         report["threads"] = NUM_THREADS;
         report["#iterations"] = mesh.m_iterations_used;
         // What the final coarsening pass bought. All zero when coarsen_pass is off, which is
