@@ -1225,12 +1225,15 @@ PrismDominantMesh build_whole_rod_layers(PrismaticMeshInput& input, double floor
 }
 } // namespace
 
-static PrismDominantMesh build_shell_hybrid(PrismaticMeshInput& input, double min_tet_volume)
+static PrismDominantMesh build_shell_hybrid(
+    PrismaticMeshInput& input,
+    double min_tet_volume,
+    const std::set<size_t>& extra_transition_marks)
 {
     require(std::isfinite(min_tet_volume) && min_tet_volume >= 0, "invalid volume floor");
     initialize_junction_protection(input);
     const auto faces = source_faces(input);
-    std::set<size_t> special;
+    std::set<size_t> special = extra_transition_marks;
     std::vector<Tri> bijective;
     size_t repeated = 0;
     auto candidates = discover_candidates(input, faces, special, bijective, repeated);
@@ -1688,9 +1691,15 @@ static PrismDominantMesh build_shell_hybrid(PrismaticMeshInput& input, double mi
         result.report["background_remeshing"] = input.background_remeshing_report;
     return result;
 }
-PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double floor)
+PrismDominantMesh build_prism_dominant_mesh(
+    PrismaticMeshInput& input,
+    double floor,
+    const std::set<size_t>& extra_transition_marks)
 {
-    if (!input.rod_state) return build_shell_hybrid(input, floor);
+    for (size_t v : extra_transition_marks)
+        if (v >= static_cast<size_t>(input.vertices.rows()) || input.vertex_tags[v] != 2)
+            throw std::invalid_argument("Transition marks must name offset vertex rows");
+    if (!input.rod_state) return build_shell_hybrid(input, floor, extra_transition_marks);
     auto rods = build_whole_rod_layers(input, floor);
     bool has_shell = false;
     for (size_t i = 0; i < size_t(input.tetrahedra.rows()) && !has_shell; ++i) {
@@ -1700,7 +1709,7 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double fl
         has_shell = input_corners >= 3;
     }
     if (!has_shell) return rods;
-    auto shells = build_shell_hybrid(input, floor);
+    auto shells = build_shell_hybrid(input, floor, extra_transition_marks);
     std::set<size_t> reserved;
     std::vector<HybridCell> retained;
     int64_t next_candidate = 0;

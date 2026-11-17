@@ -126,6 +126,44 @@ PrismaticMeshInput grid_fixture()
 }
 } // namespace
 
+TEST_CASE("explicit transition marks convert a prism through the existing shape rules")
+{
+    SECTION("one marked offset produces an input-apex pyramid and tet")
+    {
+        auto data = fixture();
+        const auto p = data.vertices;
+        const auto labels = data.vertex_tags;
+        const auto corr = data.corr_input_vid;
+        const auto hybrid = build_prism_dominant_mesh(data, 0, {3});
+        CHECK(count(hybrid, HybridCellType::Prism) == 0);
+        CHECK(count(hybrid, HybridCellType::Pyramid) == 1);
+        CHECK(count(hybrid, HybridCellType::Tetrahedron) == 1);
+        CHECK(data.vertices == p);
+        CHECK(data.vertex_tags == labels);
+        CHECK(data.corr_input_vid == corr);
+        CHECK(hybrid.report["marked_offset_source_vids"] == std::vector<int64_t>{103});
+        check_partition(data, hybrid);
+    }
+    SECTION("all three face vertices marked produces reconstructed tets")
+    {
+        auto data = fixture();
+        const auto p = data.vertices;
+        const auto hybrid = build_prism_dominant_mesh(data, 0, {3, 4, 5});
+        CHECK(count(hybrid, HybridCellType::Prism) == 0);
+        CHECK(count(hybrid, HybridCellType::Pyramid) == 0);
+        CHECK(count(hybrid, HybridCellType::Tetrahedron) == 3);
+        CHECK(data.vertices == p);
+        CHECK(hybrid.report["marked_offset_source_vids"] == std::vector<int64_t>{103, 104, 105});
+        check_partition(data, hybrid);
+    }
+    SECTION("input and invalid rows cannot be relabeled as transition offsets")
+    {
+        auto data = fixture();
+        CHECK_THROWS(build_prism_dominant_mesh(data, 0, {0}));
+        CHECK_THROWS(build_prism_dominant_mesh(data, 0, {1000}));
+    }
+}
+
 TEST_CASE("input-apex pyramids drive compatible retriangulation of neighboring prism regions")
 {
     auto data = grid_fixture();
