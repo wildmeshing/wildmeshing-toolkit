@@ -532,6 +532,41 @@ bool smooth_vertex_3d(
         return false;
     }
 
+    // The one-ring checks (inversion, the quality veto) run before containment, the costly test.
+    // Each check only refuses, and a refused move rolls back the qualities stored below, so the
+    // order decides what a refused move costs, never which moves are accepted. Containment used
+    // to run first, and the veto then refused moves it had already paid for. Measured on the 14
+    // TetWild [challenging] models, serial, smoothing_mode "exact": 2.34M of 3.66M passed
+    // containment tests were then vetoed; with the veto first, containment tests 5.78M -> 2.74M
+    // and smoothing time 969 s -> 654 s, every output mesh byte-identical. A projected candidate
+    // has already passed both checks -- its line search refuses an inverted candidate and, with
+    // the default smoothing_ring_energy(), asks the ring's worst element to strictly improve --
+    // so the projected step's counts do not change.
+
+    // The rational position must be current before the exact inversion test.
+    VA[vid].set_pos_to_posf();
+
+    for (const Tuple& loc : locs) {
+        if (m.is_inverted(loc)) {
+            if (counters) ++counters->inverted;
+            return false;
+        }
+    }
+    double max_after_quality = 0.;
+    for (const Tuple& loc : locs) {
+        const size_t tid = loc.tid(m);
+        const double quality = m.get_quality(loc);
+        m.set_cell_quality(tid, quality);
+        max_after_quality = std::max(max_after_quality, m.smoothing_cell_energy(tid, quality));
+    }
+
+    if (opts.quality_veto && (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
+        if (max_after_quality > max_quality) {
+            if (counters) ++counters->quality;
+            return false;
+        }
+    }
+
     // Containment: every surface triangle at this vertex must still be inside -- each in the
     // envelope smoothing_containment_envelope() gives that face, by default its own input set's,
     // which is not necessarily the one the vertex was pulled to.
@@ -560,30 +595,6 @@ bool smooth_vertex_3d(
         envelopes.clear();
         if (outside) {
             if (counters) ++counters->envelope;
-            return false;
-        }
-    }
-
-    // The rational position must be current before the exact inversion test.
-    VA[vid].set_pos_to_posf();
-
-    for (const Tuple& loc : locs) {
-        if (m.is_inverted(loc)) {
-            if (counters) ++counters->inverted;
-            return false;
-        }
-    }
-    double max_after_quality = 0.;
-    for (const Tuple& loc : locs) {
-        const size_t tid = loc.tid(m);
-        const double quality = m.get_quality(loc);
-        m.set_cell_quality(tid, quality);
-        max_after_quality = std::max(max_after_quality, m.smoothing_cell_energy(tid, quality));
-    }
-
-    if (opts.quality_veto && (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
-        if (max_after_quality > max_quality) {
-            if (counters) ++counters->quality;
             return false;
         }
     }
@@ -830,24 +841,10 @@ bool smooth_vertex_2d(
         return false;
     }
 
-    // Containment, edge by edge rather than face by face as in 3D -- each segment against its
-    // own CONTAINMENT envelope, which is not necessarily the one the vertex was pulled to.
-    {
-        const auto& EA_read = std::as_const(m.m_edge_attribute);
-        const Vector2d p = m.smoothing_position(vid);
-        for (size_t i = 0; i < surf_neighbors.size(); ++i) {
-            const size_t eid = std::get<1>(m.tuple_from_edge(surf_edges[i]));
-            const std::shared_ptr<Envelope> hold_env =
-                m.smoothing_containment_envelope(vid, surf_edges[i], EA_read[eid]);
-            if (!hold_env) continue;
-            const std::array<Eigen::Vector2d, 2> edge = {{p, surf_neighbors[i]}};
-            if (hold_env->is_outside(edge)) {
-                if (counters) ++counters->envelope;
-                return false;
-            }
-        }
-    }
-
+    // The one-ring checks (inversion, the quality veto) before containment, as in
+    // smooth_vertex_3d() and for its reason: the order decides what a refused move costs, never
+    // which moves are accepted. Measured on the 16 TriWild [challenging] models, serial,
+    // smoothing_mode "exact": smoothing time 272 s -> 162 s, every output mesh byte-identical.
     for (const size_t fid : locs) {
         if (m.is_inverted(fid)) {
             if (counters) ++counters->inverted;
@@ -865,6 +862,24 @@ bool smooth_vertex_2d(
         if (max_after_quality > max_quality) {
             if (counters) ++counters->quality;
             return false;
+        }
+    }
+
+    // Containment, edge by edge rather than face by face as in 3D -- each segment against its
+    // own CONTAINMENT envelope, which is not necessarily the one the vertex was pulled to.
+    {
+        const auto& EA_read = std::as_const(m.m_edge_attribute);
+        const Vector2d p = m.smoothing_position(vid);
+        for (size_t i = 0; i < surf_neighbors.size(); ++i) {
+            const size_t eid = std::get<1>(m.tuple_from_edge(surf_edges[i]));
+            const std::shared_ptr<Envelope> hold_env =
+                m.smoothing_containment_envelope(vid, surf_edges[i], EA_read[eid]);
+            if (!hold_env) continue;
+            const std::array<Eigen::Vector2d, 2> edge = {{p, surf_neighbors[i]}};
+            if (hold_env->is_outside(edge)) {
+                if (counters) ++counters->envelope;
+                return false;
+            }
         }
     }
 
