@@ -31,6 +31,10 @@ else()
     set(CMAKE_CXX_VISIBILITY_PRESET default)
     set(CMAKE_C_VISIBILITY_PRESET default)
     set(CMAKE_VISIBILITY_INLINES_HIDDEN OFF)
+    # C++17 unless a target asks for more, as when the toolkit is built on its own, whatever the
+    # parent's default: a parent's C++20 reached the dependencies, where fmt then checks format
+    # strings at compile time and polysolve's runtime ones fail it.
+    set(CMAKE_CXX_STANDARD 17)
 endif()
 
 # Python builds (scikit-build-core): object files outside CMakeFiles/. scikit-build-core deletes the
