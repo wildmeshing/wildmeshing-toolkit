@@ -721,9 +721,8 @@ the one it ends at.
     to `<output>_history_output.msh`, the whole mesh before the filter; on the memory route the
     output meshes `history_input` and `history_output`. `<output>_final.msh` (`mesh`) is the
     part the filter keeps: a point of the part dropped has no tet there.
-  - Refused: without `history_output`; with tetwild's `use_legacy_code`, which rebuilds the
-    mesh; with `coarsen_pass` and `coarsen_local_smoothing_passes` above 0, whose collapses
-    smooth a ball of vertices the history does not see; simwild in 2D.
+  - Refused: without `history_output`; with `coarsen_pass` and `coarsen_local_smoothing_passes`
+    above 0, whose collapses smooth a ball of vertices the history does not see; simwild in 2D.
 - **The history** (`history::VolumeHistory`, `src/wmtk/history/VolumeHistory.{hpp,cpp}`). One
   edit per operation that changed the tracked surface -- collapse, the four swaps, smoothing --
   with the tets around it before and after, their regions (sets of tags), their vertices'
