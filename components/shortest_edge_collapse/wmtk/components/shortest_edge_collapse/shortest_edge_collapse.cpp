@@ -67,6 +67,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const std::string path = component_io.path(root, json_params["input"]);
     const std::string output = json_params["output"];
     const double env_rel = json_params["eps_rel"];
+    const double env_abs = json_params["eps"];
     const double boundary_env_rel = json_params["boundary_eps_rel"];
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     const double target_pec = json_params["target_rel"];
@@ -106,7 +107,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const MatrixXd box_max = V.colwise().maxCoeff();
     const double diag = (box_max - box_min).norm();
 
-    const double envelope_size = env_rel * diag;
+    // A positive eps wins over eps_rel, as in OptimizerParameters::init_lengths_from_diagonal.
+    const double envelope_size = env_abs > 0 ? env_abs : env_rel * diag;
     const double boundary_envelope_size = boundary_env_rel > 0 ? boundary_env_rel * diag : 0;
     if (boundary_envelope_size > 0) {
         logger().info("boundary envelope eps {:.6}", boundary_envelope_size);
@@ -186,7 +188,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             io::triangle_data(m, [&](size_t v) { return m.vertex_attrs[v].pos; });
     component_io.result.second = {
         {"vertices", m.get_vertices().size()},
-        {"triangles", m.get_faces().size()}};
+        {"triangles", m.get_faces().size()},
+        {"eps", envelope_size}};
 }
 
 void shortest_edge_collapse(nlohmann::json json_params)

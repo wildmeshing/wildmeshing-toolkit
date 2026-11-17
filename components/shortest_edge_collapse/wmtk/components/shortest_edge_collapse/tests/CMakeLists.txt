@@ -11,6 +11,7 @@ set(SRC_FILES
     test_sec.cpp
     test_sec_boundary.cpp
     test_sec_embedding.cpp
+    test_sec_eps.cpp
 )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

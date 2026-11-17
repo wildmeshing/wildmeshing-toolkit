@@ -10,6 +10,7 @@ add_component_test(${COMPONENT_NAME})
 set(SRC_FILES
     test_qslim.cpp
     test_qslim_boundary.cpp
+    test_qslim_eps.cpp
 )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

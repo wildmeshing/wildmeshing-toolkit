@@ -88,6 +88,10 @@ target. On the Octocat, with `target_rel` 0.01 (189 vertices):
 So the envelope is what decides how far a simplification can go while the result still
 approximates the input; the target is an upper bound.
 
+To give the thickness in the input's units, set [`eps`](../reference/qslim.md#eps): when positive
+it replaces `eps_rel`, and `eps_rel` times the diagonal of the mesh as read (after the weld) is the
+same run.
+
 ### The open boundary: `boundary_eps_rel`
 
 On a mesh with an open boundary, the surface envelope alone holds the boundary loosely: the
@@ -115,7 +119,8 @@ the collapses depends on the schedule, and the result changes slightly from run 
 
 - The simplified mesh: `output` on the command line (default `out.obj`), `outputs["mesh"]` in
   memory.
-- With `report`, a JSON file with the target, the vertex and triangle counts and the run time.
+- With `report`, a JSON file with the target, the vertex and triangle counts, the envelope's
+  absolute thickness `eps` (negative without an envelope) and the run time.
 - With `throw_on_fail`, the run fails when the target is not reached instead of writing the mesh
   it got to.
 - With `history_output`, the history of the collapses, from which [tracking](tracking.md) maps
