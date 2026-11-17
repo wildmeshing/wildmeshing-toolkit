@@ -70,10 +70,14 @@ CPMAddPackage(
     # And PR #13, the cost of one query: per-query facet records for the double filters, one TPI
     # prefilter per point, a one-corner AABB triangle-box test, direct orient predicates, no heap
     # allocation per candidate prism. Every answer unchanged (5.62M recorded queries replayed).
+    #
+    # And PR #14, which keeps NFG's implicit_point.h out of the public headers: through
+    # FastEnvelope.h it turned on `#pragma STDC FENV_ACCESS ON` in every file here that includes
+    # the envelope, which made the compiler use constrained floating-point operations there and
+    # lose some vectorization. Every answer unchanged.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
-    # PR #13's head until it is merged; then main. A commit rather than a branch name, so the
-    # build stays reproducible.
-    GIT_TAG fa3256dfc8d8632cc46bea18dbfbfa992d4d2432
+    # main. A commit rather than a branch name, so the build stays reproducible.
+    GIT_TAG e57463a033d282f98a9503105b66beb842d5d986
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
 )
