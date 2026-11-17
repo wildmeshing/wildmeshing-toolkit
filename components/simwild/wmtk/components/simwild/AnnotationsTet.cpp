@@ -626,9 +626,10 @@ void SimWildMesh::tight_seal_geom(
         return m_vertex_attribute[vid].m_posf;
     };
 
-    // R, the region closed to find the join region: the tets the input selection holds for.
-    // A tet's color for the fill: the one fill selection it satisfies, -1 if none, -2 if
-    // several. Both by tag, so they hold for the tets the splits below make.
+    // R, the region closed to find the join region J (the note's input region I, as the log
+    // calls it): the tets the input selection holds for. A tet's color for the fill: the one fill
+    // selection it satisfies, -1 if none, -2 if several. Both by tag, so they hold for the tets
+    // the splits below make.
     const auto in_R = [&](const size_t tid) {
         return input_selection->eval(m_tet_attribute[tid].tags);
     };
@@ -653,13 +654,12 @@ void SimWildMesh::tight_seal_geom(
         }
     }
 
-    // 0. R, the union of the regions, is made simplicially embedded
-    // (wmtk/utils/SimplicialEmbedding.hpp): each tet outside R whose four faces lie on R is split
-    // at its centroid, then each face outside R whose three edges do, then each edge outside R
-    // joining two vertices of R at its midpoint. Then no tet outside R has all its corners on R:
-    // a gap one tet wide gets a vertex off R, whose distances decide whether the gap is in J.
-    // (Every vertex of R counts as inside J, so without the embedding such a tet would be in J at
-    // any distance.)
+    // 0. R is made simplicially embedded (wmtk/utils/SimplicialEmbedding.hpp): each tet outside R
+    // whose four faces lie on R is split at its centroid, then each face outside R whose three
+    // edges do, then each edge outside R joining two vertices of R at its midpoint. Then no tet,
+    // face or edge outside R has all its vertices on R: a gap one cell wide between R's vertices
+    // gets a vertex inside it, whose label (step 2) decides whether the gap is in J. Without it,
+    // the labels of R's own vertices alone would decide.
     if (can_seal) {
         const wmtk::utils::TetComplex R_complex{
             [&](const size_t vid) {
@@ -715,9 +715,9 @@ void SimWildMesh::tight_seal_geom(
     tight_seal::ClearOnExit<std::function<double(const Vector3d&)>> clear_voronoi_split{
         m_voronoi_split_fn};
 
-    // filled[tid]: the fill set the tet's region. A split's children inherit it from
-    // their parent, so it stays right whichever component's split cuts the tet. For the sanity
-    // check.
+    // filled[tid]: the fill labelled the tet (added a color's fill tags to it). A split's children
+    // inherit it from their parent, so it stays right whichever component's split cuts the tet.
+    // For the topology and sanity checks.
     std::vector<char> filled(tet_capacity(), 0);
 
     std::vector<SimpleBVH::BVH> color_bvhs(n);
@@ -733,8 +733,8 @@ void SimWildMesh::tight_seal_geom(
             "tight_seal_geom: no tet satisfies the input selection {}, nothing to seal",
             input_selection->to_string());
     } else {
-        // The distance to R, the union of the R_i: from outside R, the distance to its boundary.
-        // dR at every vertex, 0 on R's own tets.
+        // The distance to R: from outside R, the distance to its boundary. dR at every vertex, 0
+        // at R's own.
         SimpleBVH::BVH bvh_R;
         tight_seal_boundary_bvh(tids, [&](const size_t tid) { return region[tid] >= 0; }, bvh_R);
         const std::function<double(const Vector3d&)> dist_R = [&](const Vector3d& p) {
@@ -754,9 +754,9 @@ void SimWildMesh::tight_seal_geom(
             dR[vid] = on_R[vid] ? 0. : dist_R(pos(vid));
         }
 
-        // The tolerance of both sphere traces and of the vertices' labels below: trace_rel_tol x
-        // the mesh's bounding box diagonal, independent of the distance (tight seal v2 note,
-        // section 2).
+        // The tolerance of both sphere traces and of the vertices' labels below (whose level the
+        // march's splits also take): trace_rel_tol x the mesh's bounding box diagonal,
+        // independent of the distance (tight seal v2 note, section 2).
         Vector3d box_lo = Vector3d::Constant(std::numeric_limits<double>::infinity());
         Vector3d box_hi = -box_lo;
         for (const Tuple& t : get_vertices()) {
@@ -771,10 +771,10 @@ void SimWildMesh::tight_seal_geom(
             trace_rel_tol,
             diagonal);
 
-        // 1. The dilation surface S, the level set d(x, R) = d/2 (the boundary of R + B),
-        // traced on the edges that cross it and joined in each tet. The closing is the part
-        // of R + B at least d/2 from S, so J ends where d(x, S) falls to d/2 (to d/2 + tol, with
-        // the tolerance of step 2).
+        // 1. The dilation surface S (the note's D), the level set d(x, R) = d/2 (the boundary of
+        // R + B), traced on the edges of the tets outside R that cross it and joined in each of
+        // those tets. The closing is the part of R + B at least d/2 from S, so J ends where
+        // d(x, S) falls to d/2 (to d/2 + tol, with the tolerance of step 2).
         SimpleBVH::BVH bvh_S;
         size_t n_S_traced = 0;
         size_t n_S_failed = 0;
@@ -798,14 +798,14 @@ void SimWildMesh::tight_seal_geom(
                          : std::numeric_limits<double>::infinity();
         };
 
-        // 2. The vertices' labels and the marching of J (tight seal v2 note, section 2; R and S
-        // here are the note's input region I and dilated surface D). Every vertex within d/2 of
-        // R, R's own included, is IN if d(v, S) >= d/2 + tol, else OUT; the vertices beyond S are
-        // OUT. The tets whose vertices are all IN are marked, R's included. Each edge from an IN
-        // vertex to an OUT one is split where d(x, S) falls to d/2 + tol, the labels' level
-        // (sphere traced from the IN end, then bisected; tight_seal::level_crossing), and of the
-        // tets it makes, those touching its IN end are marked and the others not; the new vertex
-        // takes no label. R's tets may thus be split. J is then the marked tets outside R.
+        // 2. The vertices' labels and the marching of J (tight seal v2 note, section 2). Every
+        // vertex within d/2 of R, R's own included, is IN if d(v, S) >= d/2 + tol, else OUT; the
+        // vertices beyond S are OUT. The tets whose vertices are all IN are marked, R's included.
+        // Each edge from an IN vertex to an OUT one is split where d(x, S) falls to d/2 + tol, the
+        // labels' level (sphere traced from the IN end, then bisected; tight_seal::level_crossing),
+        // and of the tets it makes, those touching its IN end are marked and the others not; the
+        // new vertex takes no label. R's tets may thus be split. J is then the marked tets outside
+        // R.
         std::vector<char> inside(vert_capacity(), 0);
         size_t n_in = 0;
         // DEBUG_output: each vertex's label, 0 OUT, 1 IN (-1 for a vertex a split makes, which
@@ -844,7 +844,9 @@ void SimWildMesh::tight_seal_geom(
 
         Vector3d trace_point;
         Vector3d trace_dir;
-        // linear along the edge, zero at the traced point, so the split lands on it
+        // linear along the edge, zero at the traced point, so the split lands there, to within
+        // 2^-20 of the edge's length (split_adjust_position bisects to the zero; it takes the
+        // edge's midpoint instead if that point inverts a tet)
         m_voronoi_split_fn = [&](const Vector3d& p) -> double {
             return (p - trace_point).dot(trace_dir);
         };
@@ -922,10 +924,10 @@ void SimWildMesh::tight_seal_geom(
 
 
         // 3. Connected components of J (through faces). A component borders a color if one of
-        // its tets shares a face with a tet outside J of that color (a tet of J
-        // is no color, whatever its tags); it is filled, with the colors it borders, if it borders
-        // min_regions of them or more. A tet beside J satisfying several fill selections is an
-        // error, reported below.
+        // its tets shares a face with a tet outside J of that color (a tet of J is no color,
+        // whatever its tags); it is filled, with the colors it borders, if it borders min_regions
+        // of them or more. A tet beside J satisfying several fill selections is an error,
+        // reported below.
         std::vector<int> comp_id(tet_capacity(), -1);
         size_t n_components = 0;
         for (const size_t tid : J_tets) {
@@ -1088,7 +1090,7 @@ void SimWildMesh::tight_seal_geom(
 
     // Topology check of every tag the fill changed, before the fill and after it: warns if a tag
     // gained or lost non-manifold vertices, or the fill made an island of it or merged two of
-    // its components.
+    // its components, and separately if it split or removed one.
     tight_seal_topology_check(filled, tags_before_fill);
 
     // Sanity checks, on the output alone rather than on the components above: no tet is
