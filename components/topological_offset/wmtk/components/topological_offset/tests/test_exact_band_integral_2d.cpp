@@ -15,6 +15,13 @@
 #include <cstring>
 #include <random>
 
+// Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 using namespace wmtk::components::topological_offset;
 using Eigen::Vector2d;
 using Tri = std::array<Vector2d, 3>;
@@ -437,8 +444,9 @@ TEST_CASE("exact-band-integral-2d-polyline", "[exact_band_integral_2d]")
     check("polyline", open_polyline(), 0, 0.3, 30);
 }
 
-TEST_CASE("exact-band-integral-2d-closed-sides", "[exact_band_integral_2d]")
+TEST_CASE("exact-band-integral-2d-closed-sides", "[exact_band_integral_2d]" + release_only)
 {
+    // Release only: past ctest's 1500 s timeout alone in the Windows Debug CI job (2026-11-17).
     check("L, band outside", L_shape(), 1, 0.25, 30);
     check("L, band inside", L_shape(), -1, 0.25, 30);
     check("L, no side", L_shape(), 0, 0.25, 30);
