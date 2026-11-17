@@ -645,7 +645,11 @@ void union_uf(int u, int v, std::vector<int>& parent)
     }
 }
 
-void SimWildMesh::write_vtu(const std::string& path, MeshMap* output)
+void SimWildMesh::write_vtu(
+    const std::string& path,
+    MeshMap* output,
+    const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields,
+    const std::vector<std::pair<std::string, std::vector<double>>>& vertex_fields)
 {
     if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
@@ -690,10 +694,15 @@ void SimWildMesh::write_vtu(const std::string& path, MeshMap* output)
     VectorXd amips(tet_capacity());
     VectorXd amips_target(tet_capacity());
     VectorXd amips_rel(tet_capacity());
+    std::vector<VectorXd> extra(cell_fields.size(), VectorXd::Zero(tet_capacity()));
 
     int index = 0;
     for (const Tuple& t : tets) {
         size_t tid = t.tid(*this);
+        for (size_t k = 0; k < cell_fields.size(); ++k) {
+            const std::vector<double>& values = cell_fields[k].second;
+            extra[k][index] = tid < values.size() ? values[tid] : 0.;
+        }
         for (size_t j = 0; j < m_tags_count; ++j) {
             tags[j](index, 0) = m_tet_attribute[tid].tags.count(j) ? 1 : 0;
         }
@@ -755,10 +764,20 @@ void SimWildMesh::write_vtu(const std::string& path, MeshMap* output)
     writer.add_cell_field("quality", amips);
     writer.add_cell_field("quality_target", amips_target);
     writer.add_cell_field("quality_rel", amips_rel);
+    for (size_t k = 0; k < cell_fields.size(); ++k) {
+        writer.add_cell_field(cell_fields[k].first, extra[k]);
+    }
     writer.add_field("sizing_field", v_sizing_field);
     writer.add_field("vid", v_id);
     writer.add_field("is_rounded", v_is_rounded);
     writer.add_field("is_false_surface", v_is_false_surface);
+    for (const auto& [name, values] : vertex_fields) {
+        VectorXd field = VectorXd::Zero(vert_capacity());
+        for (size_t v = 0; v < values.size() && v < size_t(field.size()); ++v) {
+            field[v] = values[v];
+        }
+        writer.add_field(name, field);
+    }
     writer.write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface

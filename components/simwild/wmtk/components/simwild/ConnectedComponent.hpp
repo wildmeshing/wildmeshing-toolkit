@@ -1,6 +1,8 @@
 #pragma once
 
 #include <set>
+#include <utility>
+#include <vector>
 #include <wmtk/Types.hpp>
 
 namespace wmtk::components::simwild {

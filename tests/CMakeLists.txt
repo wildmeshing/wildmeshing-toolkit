@@ -7,6 +7,7 @@ include(Catch)
 # Sources
 set(TEST_SOURCES
     2d_tests.cpp
+    test_amips.cpp
     test_delaunay.cpp
     test_embed_triangles.cpp
     test_envelope.cpp
@@ -34,6 +35,9 @@ set(TEST_SOURCES
     test_screening.cpp
     test_history.cpp
     test_tracked_curves.cpp
+    test_ball_refinement.cpp
+    test_simplicial_embedding.cpp
+    test_manifold_check.cpp
 )
 
 add_executable(wmtk_tests ${TEST_SOURCES})

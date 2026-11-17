@@ -23,8 +23,6 @@ set(SRC_FILES
 	EdgeSplittingTet.cpp
 	EdgeSplittingTri.cpp
 	SimplicialComplexBVH.hpp
-	Circle.hpp
-	Sphere.hpp
 
 	OffsetPotential.hpp
 	OffsetPotential.cpp

@@ -6,6 +6,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
+#include <wmtk/threading/dynamic_parallel_for.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EmbedTriangles.hpp>
 #include <wmtk/utils/FeatureInputs.hpp>
@@ -537,22 +538,42 @@ std::tuple<double, double> TetOptimizerMesh::get_max_avg_energy()
     // });
     // std::ofstream large_tet("large_energy_tet.obj");
 
-    for (int i = 0; i < tet_capacity(); i++) {
-        auto tup = tuple_from_tet(i);
-        if (!tup.is_valid(*this)) continue;
-        // auto vs = oriented_tet_vertices(tup);
-
-        auto q = cell_quality(tup.tid(*this));
-        max_energy = std::max(max_energy, q);
-        // if (q > 1e6) {
-        //     for (auto v : vs) {
-        //         large_tet << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
-        //                   << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
-        //                   << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
-        //     }
-        // }
-        avg_energy += std::cbrt(q);
-        cnt++;
+    if (NUM_THREADS <= 1) {
+        for (int i = 0; i < tet_capacity(); i++) {
+            auto tup = tuple_from_tet(i);
+            if (!tup.is_valid(*this)) continue;
+            auto q = cell_quality(tup.tid(*this));
+            max_energy = std::max(max_energy, q);
+            avg_energy += std::cbrt(q);
+            cnt++;
+        }
+    } else {
+        // Threaded runs: once per iteration over every tet, it was a serial step of the loop.
+        // Per-chunk maxima and sums, combined in chunk order, so the result does not depend on
+        // the thread count -- though the sum is grouped differently from the serial loop's.
+        constexpr size_t chunk = 16384;
+        const size_t n = size_t(tet_capacity());
+        struct Part
+        {
+            double max = -1., sum = 0.;
+            int cnt = 0;
+        };
+        std::vector<Part> parts((n + chunk - 1) / chunk);
+        threading::dynamic_parallel_for(n, NUM_THREADS, chunk, [&](size_t b, size_t e) {
+            Part& p = parts[b / chunk];
+            for (size_t i = b; i < e; ++i) {
+                if (!tuple_from_tet(i).is_valid(*this)) continue;
+                const double q = cell_quality(i);
+                p.max = std::max(p.max, q);
+                p.sum += std::cbrt(q);
+                p.cnt++;
+            }
+        });
+        for (const Part& p : parts) {
+            max_energy = std::max(max_energy, p.max);
+            avg_energy += p.sum;
+            cnt += p.cnt;
+        }
     }
 
     avg_energy /= cnt;
@@ -1263,13 +1284,8 @@ bool TetOptimizerMesh::vertex_has_feature_edge(const size_t vid) const
 
 bool TetOptimizerMesh::vertex_has_tagged_edge(const size_t vid) const
 {
-    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-        const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].is_tagged()) {
-            return true;
-        }
-    }
-    return false;
+    const auto& FE = m_feature_edge_attribute;
+    return for_each_incident_edge_eid(vid, [&](size_t eid) { return FE[eid].is_tagged(); });
 }
 
 bool TetOptimizerMesh::vertex_has_edge_of_kind(
@@ -1277,13 +1293,8 @@ bool TetOptimizerMesh::vertex_has_edge_of_kind(
     const FeatureEdgeAttributes::Kind k) const
 {
     if (!m_track_feature_edges) return false;
-    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-        const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].has(k)) {
-            return true;
-        }
-    }
-    return false;
+    const auto& FE = m_feature_edge_attribute;
+    return for_each_incident_edge_eid(vid, [&](size_t eid) { return FE[eid].has(k); });
 }
 
 std::shared_ptr<Envelope> TetOptimizerMesh::smoothing_energy_envelope(const size_t vid) const
@@ -1311,10 +1322,11 @@ std::shared_ptr<Envelope> TetOptimizerMesh::tagged_edge_pull_envelope(const size
     if (!m_track_feature_edges) return nullptr;
     // One walk of the one-ring for both kinds: this runs for every vertex every smoothing pass.
     FeatureEdgeAttributes around; // the kinds and input sets of the vertex's edges, merged
-    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-        const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this)) around.merge(m_feature_edge_attribute[e.eid(*this)]);
-    }
+    const auto& FE = m_feature_edge_attribute;
+    for_each_incident_edge_eid(vid, [&](size_t eid) {
+        around.merge(FE[eid]);
+        return false;
+    });
     // Toward the inputs of the vertex's own edges of the kind, one real tube at a time -- the
     // member of their union the vertex is farthest from, as a surface vertex is pulled toward
     // its faces' inputs; the union tube without per-input tubes or without a set.
@@ -2581,11 +2593,10 @@ void TetOptimizerMesh::feature_edges_cache(
             if (pair[0] > pair[1]) {
                 std::swap(pair[0], pair[1]);
             }
-            if (cache.count(pair) != 0) {
-                continue;
+            const auto [it, inserted] = cache.try_emplace(pair);
+            if (inserted) {
+                it->second = m_feature_edge_attribute[tuple_from_edge(tid, local_eid).eid(*this)];
             }
-            const size_t eid = tuple_from_edge(tid, local_eid).eid(*this);
-            cache.emplace(pair, m_feature_edge_attribute[eid]);
         }
     }
 }

@@ -792,7 +792,11 @@ size_t SimWildMeshTri::refine_sizing_around_worst(double)
 }
 
 
-void SimWildMeshTri::write_vtu(const std::string& path, MeshMap* output) const
+void SimWildMeshTri::write_vtu(
+    const std::string& path,
+    MeshMap* output,
+    const std::vector<std::pair<std::string, std::vector<double>>>& cell_fields,
+    const std::vector<std::pair<std::string, std::vector<double>>>& vertex_fields) const
 {
     if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
@@ -819,10 +823,15 @@ void SimWildMeshTri::write_vtu(const std::string& path, MeshMap* output) const
     VectorXd amips(tri_capacity());
     VectorXd amips_target(tri_capacity());
     VectorXd amips_rel(tri_capacity());
+    std::vector<VectorXd> extra(cell_fields.size(), VectorXd::Zero(tri_capacity()));
 
     int index = 0;
     for (const Tuple& t : faces) {
         size_t tid = t.fid(*this);
+        for (size_t k = 0; k < cell_fields.size(); ++k) {
+            const std::vector<double>& values = cell_fields[k].second;
+            extra[k][index] = tid < values.size() ? values[tid] : 0.;
+        }
         for (size_t j = 0; j < m_tags_count; ++j) {
             tags[j](index, 0) = m_face_attribute[tid].tags.count(j) ? 1 : 0;
         }
@@ -859,8 +868,18 @@ void SimWildMeshTri::write_vtu(const std::string& path, MeshMap* output) const
     writer->add_cell_field("quality", amips);
     writer->add_cell_field("quality_target", amips_target);
     writer->add_cell_field("quality_rel", amips_rel);
+    for (size_t k = 0; k < cell_fields.size(); ++k) {
+        writer->add_cell_field(cell_fields[k].first, extra[k]);
+    }
     writer->add_field("sizing_field", v_sizing_field);
     writer->add_field("is_rounded", v_rounded);
+    for (const auto& [name, values] : vertex_fields) {
+        VectorXd field = VectorXd::Zero(vert_capacity());
+        for (size_t v = 0; v < values.size() && v < size_t(field.size()); ++v) {
+            field[v] = values[v];
+        }
+        writer->add_field(name, field);
+    }
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // surface
@@ -980,6 +999,46 @@ void SimWildMeshTri::write_vtu_with_energies(const std::string& path) const
 
 bool SimWildMeshTri::split_adjust_position(const size_t v_new, const std::vector<Tuple>& children)
 {
+    if (m_edge_split_at) {
+        // exactly at the fraction asked for: rounded if that inverts no child, else exact
+        const auto& cache = split_cache.local();
+        const size_t from = m_edge_split_at->from;
+        if (from != cache.v1_id && from != cache.v2_id) {
+            log_and_throw_error(
+                "split_adjust_position: vertex {} is no end of the edge ({}, {})",
+                from,
+                cache.v1_id,
+                cache.v2_id);
+        }
+        const size_t to = from == cache.v1_id ? cache.v2_id : cache.v1_id;
+        const Vector2r a = m_vertex_attribute[from].pos();
+        const Vector2r b = m_vertex_attribute[to].pos();
+        Vector2r exact;
+        for (int k = 0; k < 2; ++k) {
+            exact[k] = a[k] + (b[k] - a[k]) * m_edge_split_at->fraction;
+        }
+        VertexAttributes& va = m_vertex_attribute[v_new];
+        const auto inverts = [&] {
+            return std::any_of(children.begin(), children.end(), [&](const Tuple& t) {
+                return is_inverted(t);
+            });
+        };
+        va.m_posf = to_double(exact);
+        va.m_is_rounded = true;
+        va.set_pos_to_posf();
+        if (inverts()) {
+            va.set_pos(exact);
+            va.m_is_rounded = false;
+            m_all_rounded.store(false, std::memory_order_relaxed);
+            if (inverts()) {
+                log_and_throw_error(
+                    "split_adjust_position: the exact split point of ({}, {}) inverts a face",
+                    cache.v1_id,
+                    cache.v2_id);
+            }
+        }
+        return true;
+    }
     if (!m_voronoi_split_fn || !m_vertex_attribute[v_new].m_is_rounded) return true;
 
     const auto& cache = split_cache.local();
@@ -1016,6 +1075,74 @@ bool SimWildMeshTri::split_adjust_position(const size_t v_new, const std::vector
         m_vertex_attribute[v_new].set_pos_to_posf(); // p aliases m_posf
         break;
     }
+    return true;
+}
+
+bool SimWildMeshTri::split_face_before(const Tuple& t)
+{
+    const size_t fid = t.fid(*this);
+    auto& c = m_face_split_cache;
+    c.v = oriented_tri_vids(fid);
+    Vector2d centroid = Vector2d::Zero();
+    c.sizing_scalar = 0;
+    for (const size_t v : c.v) {
+        if (!m_vertex_attribute[v].m_is_rounded) {
+            return false; // the new vertex is placed in doubles
+        }
+        centroid += m_vertex_attribute[v].m_posf / 3;
+        c.sizing_scalar += m_vertex_attribute[v].m_sizing_scalar / 3;
+    }
+    c.position = centroid;
+    c.partition_id = m_vertex_attribute[c.v[0]].partition_id;
+    c.face = m_face_attribute[fid];
+    for (int k = 0; k < 3; ++k) {
+        const simplex::Edge e(c.v[k], c.v[(k + 1) % 3]);
+        const auto [_, eid] = tuple_from_edge(e.vertices());
+        c.edges[k] = {e, m_edge_attribute[eid]};
+    }
+    return true;
+}
+
+bool SimWildMeshTri::split_face_after(const Tuple& t)
+{
+    const auto& c = m_face_split_cache;
+    // the new vertex: the corner of t's face that is not one of the old face's
+    size_t v_new = size_t(-1);
+    for (const size_t v : oriented_tri_vids(t.fid(*this))) {
+        if (v != c.v[0] && v != c.v[1] && v != c.v[2]) {
+            v_new = v;
+        }
+    }
+    if (v_new == size_t(-1)) {
+        return false;
+    }
+
+    VertexAttributes va(c.position); // rounded, on no surface and no bbox face
+    va.m_sizing_scalar = c.sizing_scalar;
+    va.partition_id = c.partition_id;
+    m_vertex_attribute[v_new] = va;
+    if (m_track_feature_points) {
+        m_feature_point_attribute[v_new].m_feature_point_id = NO_FEATURE_POINT;
+    }
+
+    // The old face's edges keep their attributes (their ids follow the faces); the three spokes
+    // are new.
+    for (const auto& [e, attrs] : c.edges) {
+        const auto [_, eid] = tuple_from_edge(e.vertices());
+        m_edge_attribute[eid] = attrs;
+    }
+    for (const size_t v : c.v) {
+        const auto [_, eid] = tuple_from_edge({{v, v_new}});
+        m_edge_attribute[eid].reset();
+    }
+    for (const size_t f : get_one_ring_fids_for_vertex(v_new)) {
+        if (is_inverted(f)) {
+            return false; // split_face rolls back
+        }
+        m_face_attribute[f] = c.face;
+        m_face_attribute[f].m_quality = get_quality(f);
+    }
+    split_after_vertex(v_new);
     return true;
 }
 bool SimWildMeshTri::collapse_quality_allowed(

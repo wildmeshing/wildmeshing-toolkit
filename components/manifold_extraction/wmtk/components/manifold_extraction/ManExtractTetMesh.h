@@ -38,41 +38,23 @@ public:
 
     /**
      * @brief check if an edge is manifold, ie if all 'inside' tets adjacent to the edge form
-     * single face-reachable connected component
+     * single face-reachable connected component (wmtk::utils::edge_is_manifold)
      */
     bool edge_is_manifold(const Tuple& t) const;
-
-    /**
-     * @brief dfs helper for edge manifold check
-     */
-    void edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const;
 
     /**
      * @brief check if a vertex is manifold. A vertex is manifold if all 'inside' and all 'outside'
      * tets adjacent to the vertex form single face-reachable connected components, respectively.
      * For vertices on the boundary of the mesh, external space is considered an 'outside' polyhedra
-     * that is face connected to all tets on the mesh boundary.
+     * that is face connected to the tets with a face at the vertex on the mesh boundary
+     * (wmtk::utils::vertex_is_manifold).
      */
     bool vertex_is_manifold(const Tuple& t) const;
-
-    /**
-     * @brief dfs helper for vertex manifold check
-     */
-    void vertex_dfs_helper(
-        std::set<size_t>& visited_tids,
-        const Tuple& t,
-        const bool include,
-        const std::vector<simplex::Face>& b_out_faces) const;
 
     /**
      * @brief determine if a vertex is on the boundary of the mesh
      */
     bool is_boundary_vertex(const Tuple& v) const;
-
-    /**
-     * @brief collect faces on the boundary of the mesh that belong to an 'outside' tet.
-     */
-    std::vector<simplex::Face> get_boundary_faces_for_out_tets(size_t vid) const;
 
     /**
      * @brief extract tri mesh separating 'inside' tets from 'outside' tets. Resulting mesh is

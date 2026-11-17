@@ -1,5 +1,6 @@
 #include "ManExtractTetMesh.h"
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/ManifoldCheck.hpp>
 
 // clang-format off
 #include <igl/is_edge_manifold.h>
@@ -10,7 +11,6 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <limits>
 #include <set>
 
 
@@ -128,172 +128,21 @@ std::pair<size_t, size_t> ManExtractTetMesh::label_non_manifold()
 
 bool ManExtractTetMesh::edge_is_manifold(const Tuple& t) const
 {
-    if (!is_surface_edge(t)) { // only call for edges on input mesh
-        return true;
-    }
-
-    // collect nb tets in input mesh
-    auto nb_tets = get_incident_tets_for_edge(t);
-
-    std::set<Tuple> nb_in_tets;
-    for (const Tuple& nb_tet : nb_tets) {
-        if (is_interior_tet(nb_tet)) {
-            // make nb_tet refer to edge of interest
-            auto v_ids = oriented_tet_vids(nb_tet);
-            std::vector<size_t> ordered_v_ids;
-            ordered_v_ids.push_back(t.vid(*this));
-            ordered_v_ids.push_back(t.switch_vertex(*this).vid(*this));
-            for (size_t v_id : v_ids) {
-                if (std::find(ordered_v_ids.begin(), ordered_v_ids.end(), v_id) ==
-                    ordered_v_ids.end()) { // v_id not in ordered_v_ids
-                    ordered_v_ids.push_back(v_id);
-                }
-            }
-            Tuple new_tet = tuple_from_vids(
-                ordered_v_ids[0],
-                ordered_v_ids[1],
-                ordered_v_ids[2],
-                ordered_v_ids[3]);
-            nb_in_tets.insert(new_tet);
-        }
-    }
-
-    // run dfs
-    std::set<size_t> visited_tids;
-    edge_dfs_helper(visited_tids, *nb_in_tets.begin());
-
-    // edge manifold iff all 'in' nb tets can be reached from every other
-    return (visited_tids.size() == nb_in_tets.size());
-}
-
-
-void ManExtractTetMesh::edge_dfs_helper(std::set<size_t>& visited_tids, const Tuple& t) const
-{
-    // if tet isn't in input or already visited
-    size_t curr_tid = t.tid(*this);
-    if (!is_interior_tet(curr_tid) || visited_tids.count(curr_tid)) {
-        return;
-    }
-
-    visited_tids.insert(curr_tid); // tet is in input mesh, and haven't visited before.
-
-    auto t1 = t.switch_tetrahedron(*this);
-    if (t1) {
-        edge_dfs_helper(visited_tids, t1.value());
-    }
-
-    auto t2 = t.switch_face(*this).switch_tetrahedron(*this);
-    if (t2) {
-        edge_dfs_helper(visited_tids, t2.value());
-    }
+    return wmtk::utils::edge_is_manifold(*this, t, [this](const size_t tid) {
+        return is_interior_tet(tid);
+    });
 }
 
 
 bool ManExtractTetMesh::vertex_is_manifold(const Tuple& t) const
 {
-    if (!is_surface_vertex(t)) { // only call this function for vertices on input mesh
-        return true;
-    }
-
-    auto nb_tets = get_one_ring_tets_for_vertex(t); // vector<Tuple>
-
-    // find one ring tets in input mesh, make sure they refer to vertex of interest
-    std::vector<Tuple> in_nb_tets;
-    std::vector<Tuple> out_nb_tets;
-
-    for (const Tuple& nb_tet : nb_tets) { // get vector of 'in' one ring tets of vertex
-        auto v_ids = oriented_tet_vids(nb_tet);
-        std::vector<size_t> ordered_vids;
-        ordered_vids.push_back(t.vid(*this));
-        for (size_t v_id : v_ids) {
-            if (std::find(ordered_vids.begin(), ordered_vids.end(), v_id) ==
-                ordered_vids.end()) { // v_id not in ordered_vids
-                ordered_vids.push_back(v_id);
-            }
-        }
-        Tuple new_tet =
-            tuple_from_vids(ordered_vids[0], ordered_vids[1], ordered_vids[2], ordered_vids[3]);
-        if (is_interior_tet(nb_tet)) {
-            in_nb_tets.push_back(new_tet);
-        } else {
-            out_nb_tets.push_back(new_tet);
-        }
-    }
-
-    // if no 'out' tets, is manifold
-    if (out_nb_tets.size() == 0) {
-        return true;
-    }
-
-    std::vector<simplex::Face> out_b_faces; // won't be touched by 'in' call
-
-    // run 'in' dfs from arbitrary in nb tet
-    std::set<size_t> visited_tids_in;
-    vertex_dfs_helper(visited_tids_in, in_nb_tets[0], true, out_b_faces);
-
-    // run 'out' dfs from arbitrary out nb tet
-    std::set<size_t> visited_tids_out;
-    bool is_bound_v = is_boundary_vertex(t);
-    if (is_bound_v) {
-        out_b_faces.clear(); // should already be empty, just to be safe
-        out_b_faces = get_boundary_faces_for_out_tets(t.vid(*this));
-    } // otherwise leave empty
-    vertex_dfs_helper(visited_tids_out, out_nb_tets[0], false, out_b_faces);
-
-    bool res = (visited_tids_in.size() + visited_tids_out.size() == is_bound_v + nb_tets.size());
-    if (!res && is_bound_v) {
+    const bool res = wmtk::utils::vertex_is_manifold(*this, t, [this](const size_t tid) {
+        return is_interior_tet(tid);
+    });
+    if (!res && is_boundary_vertex(t)) {
         logger().warn("Vertex of offset input complex lies on mesh boundary: vid={}", t.vid(*this));
     }
     return res;
-}
-
-
-// external space is treated as a single 'out' polyhedra
-void ManExtractTetMesh::vertex_dfs_helper(
-    std::set<size_t>& visited_tids,
-    const Tuple& t,
-    const bool include,
-    const std::vector<simplex::Face>& b_out_faces) const
-{
-    size_t curr_tid = t.tid(*this);
-    if ((is_interior_tet(curr_tid) != include) ||
-        visited_tids.count(curr_tid)) { // tet not in input, or has already been visited
-        return;
-    }
-
-    visited_tids.insert(curr_tid); // first time visiting and is in input mesh, add to visited
-
-    bool search_through_external_space =
-        false; // whether to propagate search 'through' external 'out' space
-
-    auto t1 = t.switch_tetrahedron(*this);
-    if (t1) {
-        vertex_dfs_helper(visited_tids, t1.value(), include, b_out_faces);
-    } else if (!include) { // boundary face and we're searching through out tets
-        search_through_external_space = true;
-    }
-
-    auto t2 = t.switch_face(*this).switch_tetrahedron(*this);
-    if (t2) {
-        vertex_dfs_helper(visited_tids, t2.value(), include, b_out_faces);
-    } else if (!include) {
-        search_through_external_space = true;
-    }
-
-    auto t3 = t.switch_edge(*this).switch_face(*this).switch_tetrahedron(*this);
-    if (t3) {
-        vertex_dfs_helper(visited_tids, t3.value(), include, b_out_faces);
-    } else if (!include) {
-        search_through_external_space = true;
-    }
-
-    if (search_through_external_space) { // search through all 'out' tets with boundary face
-        visited_tids.insert(std::numeric_limits<size_t>::max()); // represents external space
-        for (const simplex::Face& f : b_out_faces) {
-            auto [ftup, _] = tuple_from_face(f.vertices()); // one possible tet
-            vertex_dfs_helper(visited_tids, ftup, include, b_out_faces);
-        }
-    }
 }
 
 
@@ -317,29 +166,6 @@ bool ManExtractTetMesh::is_boundary_vertex(const Tuple& v) const
         }
     }
     return false;
-}
-
-
-std::vector<simplex::Face> ManExtractTetMesh::get_boundary_faces_for_out_tets(size_t vid) const
-{
-    std::vector<simplex::Face> b_out_faces;
-    auto inc_tids = get_one_ring_tids_for_vertex(vid);
-    for (const size_t& t_id : inc_tids) {
-        if (is_interior_tet(t_id)) { // tet is 'in'
-            continue;
-        }
-        auto vs = oriented_tet_vids(t_id);
-        for (int i = 0; i < 4; i++) {
-            size_t v1 = vs[i];
-            size_t v2 = vs[(i + 1) % 4];
-            size_t v3 = vs[(i + 2) % 4];
-            auto [ftup, _] = tuple_from_face({{v1, v2, v3}});
-            if (!ftup.switch_tetrahedron(*this)) { // boundary face
-                b_out_faces.push_back(simplex::Face(v1, v2, v3));
-            }
-        }
-    }
-    return b_out_faces;
 }
 
 
