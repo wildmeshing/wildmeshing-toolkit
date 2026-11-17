@@ -6626,8 +6626,7 @@ TEST_CASE("offset-direction-several-in", "[offset][3d]")
 
 TEST_CASE("offset-direction-permissible-pairs", "[offset][3d]")
 {
-    // Two selections may share no cell, and may share a vertex only if both are in -- which is
-    // refused too for now (two bands from one shared boundary).
+    // Two selections may share no cell, and may share a vertex only if both are in.
     const MeshData m = box_grid({{"a", {{1, 2, 1, 2, 1, 2}}}, {"b", {{3, 4, 1, 2, 1, 2}}}});
     const auto run = [&](const std::string& sa,
                          const std::string& da,
@@ -6649,12 +6648,139 @@ TEST_CASE("offset-direction-permissible-pairs", "[offset][3d]")
     REQUIRE_THROWS_WITH(run("a", "out", "a | b", "out"), ContainsSubstring("share no cell"));
     REQUIRE_THROWS_WITH(run("a", "in", "b", "out"), ContainsSubstring("touch only if both"));
     REQUIRE_THROWS_WITH(run("a", "both", "b", "in"), ContainsSubstring("touch only if both"));
-    REQUIRE_THROWS_WITH(run("a", "in", "b", "in"), ContainsSubstring("not supported yet"));
+    REQUIRE_NOTHROW(run("a", "in", "b", "in"));
     // An inward offset with no cells -- the faces between a and b -- is dropped before the check,
     // so it does not touch a.
     MeshData out;
     REQUIRE_NOTHROW(out = run("a & b", "in", "a", "out"));
     CHECK(!cells_tagged(out, "b_band").empty());
+}
+
+TEST_CASE("offset-direction-in-optimized", "[offset][3d]")
+{
+    // One box inward through the optimization: every band cell stays in the box and every input
+    // vertex on its surface. An In entry's complex is its selection's boundary, with no cell
+    // beyond it to restore its labels from; close_labels() restores them. MEASURED before
+    // (optimize_construction on, one turn): 7 input vertices on the box's edges and corner
+    // flagged on the front and pulled off it by up to 0.042 (the envelope 0.0035), and 24 band
+    // cells outside the box.
+    const std::array<int, 6> a = {{1, 3, 1, 3, 1, 3}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets",
+         nlohmann::json::array(
+             {{{"selection", "a"},
+               {"direction", "in"},
+               {"output_tags", {"a_band"}},
+               {"target_distance", 0.1}}})},
+        {"front_conv_rel", 0.2},
+        {"max_rounds", 1},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(j, {{"m", box_grid({{"a", a}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto cells = cells_tagged(out, "a_band");
+    CHECK(!cells.empty());
+    for (const CellCorners& c : cells) {
+        Vector3d x = Vector3d::Zero();
+        for (const auto& q : c) x += Vector3d(q[0], q[1], q[2]) / 4.;
+        CHECK(box_signed_distance(x, a) > 0.);
+    }
+    const auto labels = out.vertex_attributes.at("labels").doubles();
+    size_t n_input = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (labels(v, 0) != 1.) continue;
+        ++n_input;
+        CHECK(std::abs(box_signed_distance(out.V.row(v).transpose(), a)) <= 1e-2);
+    }
+    CHECK(n_input > 0);
+}
+
+TEST_CASE("offset-direction-touching-in", "[offset][3d]")
+{
+    // Two bodies that share a face of cubes, both inward, at different distances: each band grows
+    // into its own body from all its boundary, the shared one included, and is the band a run of
+    // that entry alone makes. The shared faces are in both complexes, each entry's own copy
+    // (init_input_complex_bvh()), so each is traced on its own distance and to its own target.
+    const std::array<int, 6> a = {{1, 3, 1, 3, 1, 3}}, b = {{4, 6, 1, 3, 1, 3}};
+    const MeshData m = box_grid({{"a", a}, {"b", b}});
+    const nlohmann::json ea = {
+        {"selection", "a"},
+        {"direction", "in"},
+        {"output_tags", {"a_band"}},
+        {"target_distance", 0.1}};
+    const nlohmann::json eb = {
+        {"selection", "b"},
+        {"direction", "in"},
+        {"output_tags", {"b_band"}},
+        {"target_distance", 0.05}};
+    MeshData joint;
+    REQUIRE_NOTHROW(joint = construct_offsets(m, nlohmann::json::array({ea, eb})));
+    const auto cells_a = cells_tagged(joint, "a_band"), cells_b = cells_tagged(joint, "b_band");
+    CHECK(cells_a == cells_tagged(construct_offsets(m, nlohmann::json::array({ea})), "a_band"));
+    CHECK(cells_b == cells_tagged(construct_offsets(m, nlohmann::json::array({eb})), "b_band"));
+    const BandSides sa = band_sides(joint, "a_band", a, 0.1);
+    const BandSides sb = band_sides(joint, "b_band", b, 0.05);
+    CHECK(sa.inside > 0);
+    CHECK(sa.outside == 0);
+    CHECK(sa.corners_traced);
+    CHECK(sb.inside > 0);
+    CHECK(sb.outside == 0);
+    CHECK(sb.corners_traced);
+    for (const CellCorners& c : cells_a) CHECK(cells_b.count(c) == 0);
+    // Both bands reach the shared face x = 0 (cube index 4 starts there).
+    const auto touches_shared_face = [](const std::set<CellCorners>& cells) {
+        for (const CellCorners& c : cells) {
+            for (const auto& q : c) {
+                if (q[0] == 0.) return true;
+            }
+        }
+        return false;
+    };
+    CHECK(touches_shared_face(cells_a));
+    CHECK(touches_shared_face(cells_b));
+}
+
+TEST_CASE("offset-direction-touching-in-optimized", "[offset][3d]")
+{
+    // The same two touching bodies through the optimization: each band stays in its own body,
+    // its places reading its own piece (assign_band_regions() seeds a band cell with its entry's
+    // piece and does not cross the shared face; place_piece()).
+    const std::array<int, 6> a = {{1, 3, 1, 3, 1, 3}}, b = {{4, 6, 1, 3, 1, 3}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets",
+         nlohmann::json::array(
+             {{{"selection", "a"},
+               {"direction", "in"},
+               {"output_tags", {"a_band"}},
+               {"target_distance", 0.1}},
+              {{"selection", "b"},
+               {"direction", "in"},
+               {"output_tags", {"b_band"}},
+               {"target_distance", 0.05}}})},
+        {"front_conv_rel", 0.2},
+        {"max_rounds", 3},
+        {"num_threads", 1},
+        {"throw_on_nonconvergence", false}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", box_grid({{"a", a}, {"b", b}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto centroid = [](const CellCorners& c) {
+        Vector3d x = Vector3d::Zero();
+        for (const auto& q : c) x += Vector3d(q[0], q[1], q[2]) / 4.;
+        return x;
+    };
+    const auto cells_a = cells_tagged(out, "a_band"), cells_b = cells_tagged(out, "b_band");
+    CHECK(!cells_a.empty());
+    CHECK(!cells_b.empty());
+    for (const CellCorners& c : cells_a) CHECK(box_signed_distance(centroid(c), a) > 0.);
+    for (const CellCorners& c : cells_b) CHECK(box_signed_distance(centroid(c), b) > 0.);
 }
 
 TEST_CASE("offset-direction-in-thin-slab", "[offset][3d]")

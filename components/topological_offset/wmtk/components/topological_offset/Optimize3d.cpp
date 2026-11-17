@@ -3587,14 +3587,15 @@ int TopoOffsetTetMesh::place_piece(const size_t* vids, const size_t n) const
             best = r;
         }
     };
+    // The place's vertices of one piece decide; only if it has none, a vertex on cells of two
+    // pieces offers theirs: at a vertex two In entries share, a place of one entry's band is
+    // that entry's, not the other's of smaller distance.
+    for (size_t i = 0; i < n; ++i) consider(vertex_region(vids[i]));
+    if (best >= 0) return best;
     for (size_t i = 0; i < n; ++i) {
-        const int r = vertex_region(vids[i]);
-        if (r == -2) {
-            for (const size_t t : get_one_ring_tids_for_vertex(vids[i]))
-                consider(t < m_cell_region.size() ? m_cell_region[t] : -1);
-        } else {
-            consider(r);
-        }
+        if (vertex_region(vids[i]) != -2) continue;
+        for (const size_t t : get_one_ring_tids_for_vertex(vids[i]))
+            consider(t < m_cell_region.size() ? m_cell_region[t] : -1);
     }
     if (best >= 0) return best;
     return nearest_piece(m_vertex_attribute[vids[0]].m_posf);
@@ -3604,23 +3605,41 @@ void TopoOffsetTetMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band cells, seeded from every band cell
     // with an input-complex vertex, whose piece is read off the per-piece envelopes (the nearest
-    // piece to a vertex ON the complex is its own, at distance 0). As in 2D, a cell reached from
-    // two regions and a vertex on cells of two regions read -2 and fall back to the union field.
+    // piece to a vertex ON the complex is its own, at distance 0) -- among the pieces of the
+    // cell's entry (band_cell_entry()): at a vertex two In entries share, both entries' pieces
+    // are at distance 0. The fill does not cross a face on the complex (three complex vertices):
+    // the bands of two In entries that touch meet there, and a band on both sides of one
+    // complex is seeded on both. As in 2D, a cell reached from two regions and a vertex on cells
+    // of two regions read -2 and fall back to the union field.
     m_cell_region.assign(tet_capacity(), -1);
     m_vertex_region.assign(vert_capacity(), -1);
     if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_envelopes.empty()) return;
-    const auto region_at = [&](const Vector3d& p) { return nearest_piece(p); };
+    // The piece of entry k nearest to p; any piece's with one entry or no entry per piece.
+    const auto region_at = [&](const Vector3d& p, const size_t k) {
+        if (m_region_offset.size() != m_region_envelopes.size()) return nearest_piece(p);
+        int best = -1;
+        double best_d = std::numeric_limits<double>::infinity();
+        for (size_t r = 0; r < m_region_envelopes.size(); ++r) {
+            if (size_t(m_region_offset[r]) != k) continue;
+            const double d = m_region_envelopes[r]->squared_distance(p);
+            if (d < best_d) {
+                best_d = d;
+                best = int(r);
+            }
+        }
+        return best >= 0 ? best : nearest_piece(p);
+    };
     std::vector<size_t> queue;
-    std::vector<int> piece_of_vertex(vert_capacity(), -3); // -3: not looked up yet
+    std::map<std::pair<size_t, size_t>, int> piece_of_vertex; // (vertex, entry) -> piece
     for (const Tuple& t : get_tets()) {
         const size_t tid = t.tid(*this);
         if (!cell_is_offset_band(tid)) continue;
+        const size_t k = band_cell_entry(tid);
         for (const size_t v : oriented_tet_vids(tid)) {
             if (m_vertex_extra[v].label != 1) continue;
-            if (piece_of_vertex[v] == -3) {
-                piece_of_vertex[v] = region_at(m_vertex_attribute[v].m_posf);
-            }
-            const int r = piece_of_vertex[v];
+            const auto [it, added] = piece_of_vertex.try_emplace({v, k}, -1);
+            if (added) it->second = region_at(m_vertex_attribute[v].m_posf, k);
+            const int r = it->second;
             if (r < 0) continue;
             if (m_cell_region[tid] == -1) {
                 m_cell_region[tid] = r;
@@ -3636,10 +3655,14 @@ void TopoOffsetTetMesh::assign_band_regions(const bool log)
         const int r = m_cell_region[t];
         if (r < 0) continue;
         for (int j = 0; j < 4; ++j) {
-            const std::optional<Tuple> opp = tuple_from_face(t, j).switch_tetrahedron(*this);
+            const Tuple f = tuple_from_face(t, j);
+            const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
             if (!opp) continue;
             const size_t g = opp->tid(*this);
             if (!cell_is_offset_band(g)) continue;
+            bool on_complex = true;
+            for (const size_t v : get_face_vids(f)) on_complex &= m_vertex_extra[v].label == 1;
+            if (on_complex) continue;
             if (m_cell_region[g] == -1) {
                 m_cell_region[g] = r;
                 queue.push_back(g);
@@ -4621,8 +4644,10 @@ bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
     const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
     if (a == b) return false; // both in the band, or neither: not the band's surface
     // The band's inner interface, against the input complex it wraps, sits at distance 0 by
-    // construction and would drag the reported error to target_distance everywhere.
-    return !cell_is_input_complex(a ? tb : ta);
+    // construction and would drag the reported error to target_distance everywhere: a face of a
+    // complex cell (Out), or a face of the complex itself, all three corners on it -- an In
+    // entry's complex is its selection's boundary, with no cell beyond it.
+    return !cell_is_input_complex(a ? tb : ta) && !face_on_input_complex(get_face_vids(f));
 }
 
 bool TopoOffsetTetMesh::offset_face_normal_out_of_band(const Tuple& f, Vector3d& n) const
@@ -4787,7 +4812,8 @@ bool TopoOffsetTetMesh::for_each_live_offset_face_at(const size_t vid, F&& fn) c
         } else {
             const size_t tb = sides[i + 1].tid;
             const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
-            if (a != b && !cell_is_input_complex(a ? tb : ta) && fn(sides[i].face, a ? ta : tb)) {
+            if (a != b && !cell_is_input_complex(a ? tb : ta) &&
+                !face_on_input_complex(sides[i].face) && fn(sides[i].face, a ? ta : tb)) {
                 return true;
             }
         }

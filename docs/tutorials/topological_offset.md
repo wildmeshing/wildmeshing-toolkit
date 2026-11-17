@@ -106,8 +106,8 @@ The input on the left, the result on the right: drag to rotate, scroll to zoom; 
 `{"selection": ..., "output_tags": [...], "target_distance": ...}`; only `selection` is
 required. The runs on this page have one entry. Several entries are independent offsets, each
 with its own band, output tags and distance, built in one march; two selections may share no
-cell, and touch only if both grow inward (refused too, for now). The other options are set once
-for the run.
+cell, and touch only if both grow inward, each band into its own selection. The other options
+are set once for the run.
 
 ### Which side: `selection`, `direction`
 
