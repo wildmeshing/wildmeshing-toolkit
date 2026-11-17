@@ -4,6 +4,7 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/threading/concurrent_priority_queue.hpp>
 #include <wmtk/threading/dynamic_parallel_for.hpp>
+#include <wmtk/threading/parallel_sorted_visit.hpp>
 #include <wmtk/threading/serial_priority_queue.hpp>
 #include <wmtk/threading/spin_mutex.hpp>
 #include <wmtk/threading/task_group.hpp>
@@ -62,6 +63,13 @@ class OpList
 {
 public:
     void emplace_back(const Op& op, const Tuple& t) { m_items.emplace_back(intern(op), t); }
+    /// For adding many entries under one name: its id here, for emplace_back_id.
+    uint32_t name_id(const Op& op) { return intern(op); }
+    void emplace_back_id(uint32_t name_id, const Tuple& t)
+    {
+        assert(name_id < m_names.size());
+        m_items.emplace_back(name_id, t);
+    }
     size_t size() const { return m_items.size(); }
     bool empty() const { return m_items.empty(); }
     void clear() { m_items.clear(); }
@@ -549,16 +557,16 @@ private:
         // An operation with no entry here was previously default-constructed into the map by
         // operator[] and then called, which throws bad_function_call -- so it cannot occur in
         // any working configuration. Say so plainly rather than ordering it arbitrarily.
+        //
+        // A scan for the equal name rather than a binary search: a pass registers a handful of
+        // operations, string equality rejects most of them on their length alone, and this
+        // runs once for every operation queued -- millions per pass, some of them serially.
         uint32_t rank(const Op& op) const
         {
-            const auto it =
-                std::lower_bound(name.begin(), name.end(), op, [](const Op* a, const Op& b) {
-                    return *a < b;
-                });
-            if (it == name.end() || **it != op) {
-                log_and_throw_error("No operation registered under the name '{}'.", op);
+            for (size_t i = 0; i < name.size(); ++i) {
+                if (*name[i] == op) return uint32_t(i);
             }
-            return uint32_t(it - name.begin());
+            log_and_throw_error("No operation registered under the name '{}'.", op);
         }
     };
 
@@ -590,8 +598,16 @@ private:
         // hold every candidate.
         using Cand = std::pair<uint32_t, Tuple>;
         std::deque<Cand> candidates;
+        // Serial, and a pass seeds millions of operations under one or two names: compare with
+        // the last name before looking it up.
+        uint32_t seed_rank = 0;
+        const Op* seed_name = nullptr;
         seed([&](const Op& op, const Tuple& t, uint64_t) {
-            candidates.emplace_back(ops.rank(op), t);
+            if (seed_name == nullptr || op != *seed_name) {
+                seed_rank = ops.rank(op);
+                seed_name = ops.name[seed_rank];
+            }
+            candidates.emplace_back(seed_rank, t);
         });
 
         // queue_key bookkeeping (see must_wait) for the whole call, across its rounds: an
@@ -688,6 +704,21 @@ private:
             // 2. The refused are failures, reported as the queues would report them; they and
             // the stale ones are no longer queued. The survivors are compacted to the front, in
             // place: a second list beside this one would double the round's footprint.
+            //
+            // The reports go out in parallel. A first round refuses millions, and on_fail one
+            // by one was a serial step of seconds at 32 threads; on_fail is thread-safe in any
+            // parallel pass, since the commits call it from the workers.
+            threading::dynamic_parallel_for(
+                candidates.size(),
+                std::max(1, num_threads),
+                4096,
+                [&](size_t b, size_t e) {
+                    for (size_t i = b; i < e; ++i) {
+                        if (verdict[i] == kRefused) {
+                            on_fail(m, *ops.name[candidates[i].first], candidates[i].second);
+                        }
+                    }
+                });
             size_t n = 0;
             for (size_t i = 0; i < candidates.size(); ++i) {
                 if (verdict[i] == kSurvives) {
@@ -700,7 +731,6 @@ private:
                 }
                 done(key_at(i));
                 if (verdict[i] == kRefused) {
-                    on_fail(m, *ops.name[candidates[i].first], candidates[i].second);
                     ++failures;
                     ++attempts;
                 }
@@ -921,14 +951,26 @@ private:
                 keyed_entries[i] = {k, uint32_t(i)};
             }
         });
-        std::sort(keyed_entries.begin(), keyed_entries.end());
-        // The first entry of each key -- the earliest renewed -- stays.
+        // The first entry of each key -- the earliest renewed -- stays. The entries are visited
+        // in (key, index) order, in parallel over ranges of keys: a serial sort of them was the
+        // largest serial step of a screened round. Every entry has its own index, so what is
+        // kept does not depend on the thread count.
+        using Entry = std::pair<Key, uint32_t>;
         std::vector<uint8_t> kept(n, 0);
-        for (size_t j = 0; j < n && keyed_entries[j].first[0] != kDropped; ++j) {
-            if (j > 0 && keyed_entries[j].first == keyed_entries[j - 1].first) continue;
-            kept[keyed_entries[j].second] = 1;
-        }
-        std::vector<std::pair<Key, uint32_t>>().swap(keyed_entries);
+        threading::parallel_sorted_visit(
+            keyed_entries,
+            std::max(1, num_threads),
+            std::less<Entry>(),
+            [](const Entry& a, const Entry& b) { return a.first < b.first; },
+            [&kept]() {
+                return [&kept, prev = Key{}, any = false](const Entry& x) mutable {
+                    if (x.first[0] == kDropped || (any && x.first == prev)) return;
+                    kept[x.second] = 1;
+                    prev = x.first;
+                    any = true;
+                };
+            });
+        std::vector<Entry>().swap(keyed_entries);
         size_t w = 0;
         for (size_t i = 0; i < n; ++i) {
             if (!kept[i]) {
