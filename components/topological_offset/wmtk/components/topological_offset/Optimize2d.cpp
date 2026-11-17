@@ -80,7 +80,7 @@ void TopoOffsetTriMesh::label_offset_boundary()
         m_face_attribute[fid].m_quality = get_quality(fid);
     }
 
-    size_t n_off = 0, n_wall_band = 0;
+    size_t n_off = 0, n_wall_band = 0, n_both = 0;
     for (const Tuple& e : get_edges()) {
         const size_t eid = e.eid(*this);
         if (m_edge_extra[eid].label != 2) {
@@ -98,8 +98,16 @@ void TopoOffsetTriMesh::label_offset_boundary()
             continue; // edge not between different labels, skip
         }
 
-        m_edge_attribute[eid].m_is_surface_fs = true;
-        m_edge_attribute[eid].m_surface_class = OFFSET_SURFACE_CLASS;
+        // BOTH HELD AND FRONT: a region edge the front lies along keeps its region class, and so
+        // its tube; it is front by the labels (edge_is_offset_surface_live()). Until 2026-11-17
+        // it took the offset class here, and with it lost its hold: the held objects' test could
+        // not see it and the containment held it to nothing.
+        if (edge_is_region(eid)) {
+            ++n_both;
+        } else {
+            m_edge_attribute[eid].m_is_surface_fs = true;
+            m_edge_attribute[eid].m_surface_class = OFFSET_SURFACE_CLASS;
+        }
         ++n_off;
 
         for (const size_t vid : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
@@ -116,9 +124,10 @@ void TopoOffsetTriMesh::label_offset_boundary()
         n_box += (m_edge_attribute[eid].m_is_bbox_fs >= 0);
     }
     logger().info(
-        "\ttracked edges: {} offset boundary, {} region boundary (input complex included), {} "
-        "bbox | {} band edges lying ON the wall",
+        "\ttracked edges: {} offset boundary ({} of them region edges, both held and front), {} "
+        "region boundary (input complex included), {} bbox | {} band edges lying ON the wall",
         n_off,
+        n_both,
         n_reg,
         n_box,
         n_wall_band);
@@ -845,8 +854,22 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
     // Same rollback safety as the face labels below: m_vertex_extra is registered with
     // m_vertex_attr_group (see the constructor), so a refused split undoes these too.
     const auto& e = split_cache.local().old_e_attrs;
+    // On the front iff the split edge was: by its class, or, for a region edge the front lies
+    // along (both held and front, which keeps its region class), by its parents' labels, read as
+    // edge_is_offset_surface_live() reads them: one band triangle and one that is neither band
+    // nor input complex. (A band edge on the wall keeps the class rule, as label_offset_boundary()
+    // leaves it.)
+    bool parents_front = false;
+    if (c.face_label.size() == 2) {
+        int n_band = 0, n_other = 0;
+        for (const auto& kv : c.face_label) {
+            if (kv.second == 2) ++n_band;
+            if (kv.second == 0) ++n_other;
+        }
+        parents_front = n_band == 1 && n_other == 1;
+    }
     m_vertex_extra[v_id].m_is_on_offset =
-        e.m_is_surface_fs && e.m_surface_class == OFFSET_SURFACE_CLASS;
+        e.m_is_surface_fs && (e.m_surface_class == OFFSET_SURFACE_CLASS || parents_front);
     // A midpoint is on the input complex only if the whole edge was: both ends on it AND the edge
     // itself in it -- an edge of an input-complex face (a filled complex), or a tracked edge that
     // is not the front (a curve of the complex; class 0 covers the input complex and every other
@@ -5359,9 +5382,14 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
     // 3D does (2026-11-10), froze the labels around each crossing; smoothing alone slid the
     // crossing along tag_1 at 0.0005 of d per turn, its two folds still there at turn 200, with
     // 0 front edges on tag_1 at the construction.
+    // Since 2026-11-17 a held edge the front lies along keeps its region class (BOTH HELD AND
+    // FRONT, label_offset_boundary(), flip()), so the held objects' test sees it, and the corner
+    // it ends at is that test's to decide: only a front chord between two held vertices, which no
+    // held object carries, is still refused here.
     const auto front_edge_to_region = [&](const size_t v) {
         for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
             if (!edge_is_offset_surface_live(e)) continue;
+            if (held_object_edge(e)) continue;
             const std::array<size_t, 2> ev = get_edge_vids(e);
             if (vertex_is_on_region(ev[0] == v ? ev[1] : ev[0])) return true;
         }
@@ -5682,18 +5710,11 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
     };
     // A flip of one triangle, or of the two across a held edge (THE CROSSING SLIDE below): every
     // label is set first and the closures derived after, so the held edge between the two is
-    // never front, not even between the two labels.
+    // never front, not even between the two labels. A held edge a one-triangle flip puts between
+    // the two labels becomes BOTH HELD AND FRONT: it keeps its region class, and so its tube, and
+    // is front by the labels. Until 2026-11-17 that threw, the edge's one class having no way to
+    // say both.
     const auto flip = [&](const std::vector<std::pair<size_t, CellTag>>& ts) {
-        // A held edge becoming front would be contact with a held object that the held objects'
-        // test and the crossing slide's test refuse, and its class rewritten below: a bug, so it
-        // throws.
-        std::vector<std::array<bool, 3>> front_before(ts.size());
-        for (size_t k = 0; k < ts.size(); ++k) {
-            for (int j = 0; j < 3; ++j) {
-                front_before[k][size_t(j)] =
-                    edge_is_offset_surface_live(tuple_from_edge(ts[k].first, size_t(j)));
-            }
-        }
         for (const auto& [fid, tag] : ts) {
             m_face_extra[fid].label = label_of(fid) == 2 ? 0 : 2;
             m_face_attribute[fid].tags = tag;
@@ -5703,20 +5724,14 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
             for (int j = 0; j < 3; ++j) {
                 const Tuple e = tuple_from_edge(fid, size_t(j));
                 const size_t eid = e.eid(*this);
-                if (!front_before[k][size_t(j)] && held_face(e) && edge_is_offset_surface_live(e)) {
-                    log_and_throw_error(
-                        "[label cleanup] {}: triangle {} makes held edge {} front, which the held "
-                        "objects' test and the crossing slide's test refuse",
-                        where,
-                        fid,
-                        eid);
-                }
                 int& le = m_edge_extra[eid].label;
                 if (le != 1) {
                     const std::array<size_t, 2> ev = get_edge_vids(e);
                     le = any_band(get_incident_fids_for_edge(ev[0], ev[1])) ? 2 : 0;
                 }
-                if (edge_is_offset_surface_live(e)) {
+                if (edge_is_region(eid)) {
+                    // held: keeps its class whether or not it is front now
+                } else if (edge_is_offset_surface_live(e)) {
                     m_edge_attribute[eid].m_is_surface_fs = true;
                     m_edge_attribute[eid].m_surface_class = OFFSET_SURFACE_CLASS;
                 } else if (m_edge_attribute[eid].m_surface_class == OFFSET_SURFACE_CLASS) {
@@ -5811,10 +5826,10 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
     const size_t nm0 = nonmanifold_front_vertices();
     std::vector<char> flipped(tri_capacity(), 0);
     size_t to_band = 0, to_non = 0, n_odd = 0, n_slides = 0;
+    size_t n_single_held = 0; // one-triangle flips that make a held edge front (both), all passes
     int passes = 0;
     // The last pass's verdicts: that pass flips nothing, so they are what the clean-up leaves.
     size_t n_cand = 0, n_want = 0, n_skip = 0, n_refused_held = 0, n_refused_tag = 0;
-    size_t n_refused_slide = 0; // of n_refused_held: a crossing slide whose far triangle failed
     size_t n_unreachable = 0; // of n_refused_held: non-band and wholly inside the level set
     std::string unreachable_where;
     std::array<size_t, 4> n_refused{}; // by f
@@ -5829,7 +5844,6 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
         n_want = 0;
         n_skip = 0;
         n_refused_held = 0;
-        n_refused_slide = 0;
         n_refused_tag = 0;
         n_unreachable = 0;
         unreachable_where.clear();
@@ -5891,12 +5905,13 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
                     m_face_extra[fid].label = l0;
                     m_face_attribute[fid].tags = tag0;
                 }
-                if (!ok) {
-                    ++n_refused_slide;
-                    refuse_held(fid);
-                    continue;
+                if (ok) {
+                    ts.emplace_back(n, ntag);
+                } else {
+                    // t alone: its held edge(s) become both held and front (see flip()). The held
+                    // objects' test allowed it; the pair is only preferred where it passes.
+                    ++n_single_held;
                 }
-                ts.emplace_back(n, ntag);
             }
             if (flipped[fid]) {
                 log_and_throw_error(
@@ -5950,9 +5965,9 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
         "({} of them with f = 2 where the old label meets the triangle again, at a front vertex, "
         "not tested) | left after the last pass: {} triangles with a front edge, {} on the other "
         "side by the side test, of which {} skipped for eligibility, refused by topology f=0 {}, "
-        "f=1 {}, f=3 {}, by the held objects {} ({} wholly inside the level set, {} crossing "
-        "slides whose far triangle failed), for no single tag {} | crossing slides (two "
-        "triangles across a held edge) {} | E {:.9g} -> {:.9g} | components (edge adjacency) "
+        "f=1 {}, f=3 {}, by the held objects {} ({} wholly inside the level set), for no single "
+        "tag {} | crossing slides (two triangles across a held edge) {}, one-triangle flips "
+        "making a held edge front {} | E {:.9g} -> {:.9g} | components (edge adjacency) "
         "band {} -> {}, non-band {} -> {} | non-manifold front vertices (on more than two front "
         "edges) {} -> {}",
         where,
@@ -5969,9 +5984,9 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
         n_refused[3],
         n_refused_held,
         n_unreachable,
-        n_refused_slide,
         n_refused_tag,
         n_slides,
+        n_single_held,
         e0,
         e1,
         band0,
