@@ -12,8 +12,6 @@
       "output",
       "input_dir",
       "protected_tags",
-      "offset_in",
-      "offset_out",
       "throw_on_nonconvergence",
       "optimize_offset",
       "envelope_size",
@@ -135,7 +133,7 @@
   {
     "pointer": "/offsets",
     "type": "list",
-    "doc": "The offsets to make, each from its own input complex: a list of {selection, output_tags, target_distance, target_distance_rel}, constructed in one march. Each entry is offset as if it were the only one -- its own marched edges, its distance to its own complex alone, its own maximum marchable distance and fallback (construction_mode), its own target -- and the cells of its band take its own output_tags; one run of several entries gives the band cells, positions and tags of one run per entry. Entries must not intersect: a vertex two entries' complexes share is refused (offsets that meet need a rule for which band takes the cells between them). Two complexes joined by a mesh edge are kept apart by the simplicial embedding, which splits that edge; its midpoint is then an outer end of both, so each entry's maximum marchable distance is no more than half that edge -- each band has the room between them, not the room it would have alone. After the march two bands share no vertex. The optimization reads each entry's distance where it is: every place -- a band vertex, a band cell, a front face -- reads the piece of the input complex it belongs to (its band's; where two pieces meet, the one of smaller distance; off every band, the nearest): that piece's target_distance, its own field, distance engine and exact band integral, and the bar front_conv_rel of its distance. Every convergence, settle and refinement test is then each piece's own. An absolute front_conv is refused for entries of different distances (give front_conv_rel). Run-wide and from the smallest entry's distance: min_edge_length, the construction pass's offset envelope, the report's offset_level. Entries may differ in primitive kind (a solid and a curve); each entry is one kind (triangles, or segments and points). MEASURED (2026-11-09, two boxes 0.5 apart at 0.1 and 0.2, 5 turns): each front at its own target, as each alone (means 0.1025 and 0.2031 against 0.1023 and 0.2037), converged in 20 s against 15 + 14 s alone. repulsion_smoothing_passes, repulsion_rounds and growth_mode take one entry only for now; the 2D offset (refused for now) takes one entry. Until 2026-11 one offset per run, in the flat keys offset_selection, offset_output_tags, target_distance and target_distance_rel. Example: [{\"selection\": \"tag_0\", \"target_distance\": 0.1}, {\"selection\": \"rod\", \"output_tags\": [\"rod_band\"], \"target_distance_rel\": 0.02}]"
+    "doc": "The offsets to make, each from its own input complex: a list of {selection, output_tags, target_distance, target_distance_rel}, constructed in one march. Each entry is offset as if it were the only one -- its own marched edges, its distance to its own complex alone, its own maximum marchable distance and fallback (construction_mode), its own target -- and the cells of its band take its own output_tags; one run of several entries gives the band cells, positions and tags of one run per entry. Entries must not intersect: two selections may share no cell, and may share a vertex, an edge or a face only if both are 'in' (for now refused too: two bands from one shared boundary need each cell and vertex to say which entry it is in). An 'in' entry whose selection has no cells is dropped, with a warning, before this check. Two boundaries joined by a mesh edge are kept apart by the simplicial embedding, which splits that edge; its midpoint is then an outer end of both, so each entry's maximum marchable distance is no more than half that edge -- each band has the room between them, not the room it would have alone. After the march two bands share no vertex. The optimization reads each entry's distance where it is: every place -- a band vertex, a band cell, a front face -- reads the piece of the input complex it belongs to (its band's; where two pieces meet, the one of smaller distance; off every band, the nearest): that piece's target_distance, its own field, distance engine and exact band integral, and the bar front_conv_rel of its distance. Every convergence, settle and refinement test is then each piece's own. An absolute front_conv is refused for entries of different distances (give front_conv_rel). Run-wide and from the smallest entry's distance: min_edge_length, the construction pass's offset envelope, the report's offset_level. Entries may differ in primitive kind (a solid and a curve); each entry is one kind (triangles, or segments and points). MEASURED (2026-11-09, two boxes 0.5 apart at 0.1 and 0.2, 5 turns): each front at its own target, as each alone (means 0.1025 and 0.2031 against 0.1023 and 0.2037), converged in 20 s against 15 + 14 s alone. repulsion_smoothing_passes, repulsion_rounds and growth_mode take one entry only for now; the 2D offset (refused for now) takes one entry. Until 2026-11 one offset per run, in the flat keys offset_selection, offset_output_tags, target_distance and target_distance_rel. Example: [{\"selection\": \"tag_0\", \"target_distance\": 0.1}, {\"selection\": \"rod\", \"output_tags\": [\"rod_band\"], \"target_distance_rel\": 0.02}]"
   },
   {
     "pointer": "/offsets/*",
@@ -144,17 +142,29 @@
       "selection"
     ],
     "optional": [
+      "direction",
       "output_tags",
       "target_distance",
       "target_distance_rel"
     ],
-    "doc": "One offset: its input complex, its band's tags, its distance."
+    "doc": "One offset: its input complex, the side its band grows on, its band's tags, its distance."
   },
   {
     "pointer": "/offsets/*/selection",
     "type": "string",
     "labels": "expression",
-    "doc": "Boolean expression over the input's tags for this offset's input complex. A single tet tag (ie 'tag_0') is single body mode, offset_in and offset_out saying on which side of it. A face tag, the surface group, an edge tag or a point label alone is that sheet, that curve or those points, the band growing on every side of it (around a point, a ball). In an expression a simplex carries the tags of the cells around it and those on it or on a face or edge it bounds -- a face's face tags and the surface group, an edge's edge tags, a vertex's point labels -- so each tag means what it means alone: 'yellow | red' is the sheet yellow and the solid red, 'curve | other' both curves, 'yellow & red' the faces of yellow that bound red cells (until 2026-11 an edge tag or a point label in an expression was refused, and a face tag or the surface group selected nothing). One input complex takes one primitive kind: triangles (solids, sheets), or segments and points."
+    "doc": "Boolean expression over the input's tags for this offset's selection S. Every simplex carries its own tags and those of every simplex containing it: a face its face tags, the surface group and its cells' tags; an edge its edge tags and its faces'; a vertex its point labels and its edges'. S is the closure of the simplices the expression holds for: every face of such a simplex is in S too (so '!tag_0' takes the faces of the cells outside tag_0 that lie on tag_0, which carry tag_0 themselves). S may mix cells, faces, edges and points and need not be a manifold: 'tag_0' is the solid tag_0, a face tag or the surface group that sheet, an edge tag or a point label that curve or those points, 'yellow | red' the sheet yellow and the solid red, 'yellow & red' the faces of yellow that bound red cells, 'tag_0 & tag_1 & tag_2' the edges where the three meet. The band grows from S's boundary, on the side direction says. For now an offset takes one primitive kind: its boundary is triangles (solids, sheets) or segments and points, and a mix is refused. Until 2026-11 a single tet tag was single body mode, with the global offset_in and offset_out saying on which side of it, and every other selection grew outward; until earlier in 2026-11 an edge tag or a point label in an expression was refused, and a face tag or the surface group selected nothing."
+  },
+  {
+    "pointer": "/offsets/*/direction",
+    "type": "string",
+    "default": "out",
+    "options": [
+      "out",
+      "in",
+      "both"
+    ],
+    "doc": "Which side of the boundary of this offset's selection S the band grows on. That boundary is S's faces between a cell of S and a cell outside it or the outside of the mesh, the faces, edges and points of S in no larger simplex of S, and their faces and edges. 'out' (the default): away from S's cells, the distance 0 inside them -- the march splits each edge from a boundary vertex to a vertex outside S. 'in': into S's cells, from all their boundary (on the mesh boundary too), the distance 0 outside them -- each edge from a boundary vertex to a vertex inside S. An 'in' offset whose S has no cells has nothing to grow into: it is dropped with a warning. 'both': both sides, the distance unsigned. For an S with no cells (a sheet, a curve, points) 'out' and 'both' are the same. The mesh is first made simplicially embedded with respect to the union of the offsets' boundaries, so every cell of S gets a vertex off the boundary. Until 2026-11 the global offset_in and offset_out, read for a single tet tag only."
   },
   {
     "pointer": "/offsets/*/output_tags",
@@ -188,18 +198,6 @@
     "default": "",
     "labels": "expression",
     "doc": "Boolean expression over the input's tags of what the offset does not overwrite; empty: nothing ('tag_1 | tag_2' protects the cells and faces carrying either; 'ambient' is refused). A simplex is protected when its own tags satisfy it -- a cell its tet tags, a face its face tags and the sheet group (the .msh's envelope surface group, by its name). The march leaves a protected cell as it is -- it splits none of its edges and the band takes none of it, so the offset is not made in a direction such a cell blocks; an earlier offset's band, protected, keeps its cells (since 2026-11-05; before, the band took such cells and they kept the protected tags beside offset_output_tags). 3D: a protected face the band covers (both of its tets band cells; never a face of the input complex itself) keeps the face tags and the sheet group the expression names, and every other face tag and the sheet group give way there, as the cells' other tags do (since 2026-11-04). A face that then still separates two tag sets or still carries a face tag or the sheet group stays tracked, and held; any other face inside the band is no longer tracked. Until 2026-11 a list of tag names, which is the expression of the names joined by '|'."
-  },
-  {
-    "pointer": "/offset_in",
-    "type": "bool",
-    "default": false,
-    "doc": "Only relevant for single body mode. Whether to create offset inside body"
-  },
-  {
-    "pointer": "/offset_out",
-    "type": "bool",
-    "default": true,
-    "doc": "Only relevant for single body mode. Whether to create offset outside body"
   },
   {
     "pointer": "/throw_on_nonconvergence",
@@ -345,7 +343,7 @@
     "type": "int",
     "default": 0,
     "min": 0,
-    "doc": "2D and 3D. After the repulsion_smoothing_passes (if any) and before the march, at most this many rounds of the loop's operations: split, collapse and swap, each followed by its smoothing passes, shaped as interleaved_smoothing says. No refinement: the sizing field is never lowered, so every operation aims at the base edge length. No split of a marched edge (one end in the input complex): its midpoint would be a new outer end nearer the input. The collapses and swaps compare the per-tet energy of repulsion_smoothing_passes, repulsion terms included, as the loop's rules compare its energy. The input complex stays simplicially embedded, as the march needs it: a collapse or swap that would leave a cell off the complex whose complex vertices span an edge or face off the complex is refused. After every operation pass the construction labels are recomputed from the region tags, and the repulsion vertices follow the operations. Single-body offset_in or offset_out only (the embedding test reads the complex off the cells' labels); other selections, and in 2D a curve group, are refused with an error. The rounds stop as soon as every outer end is farther than target_distance + front_conv. Each round logs its operations' outcomes ([ops accounting], [swap reject], 3D only: the 2D engine has neither; the embedding refusals, which those counters have no name for, are counted on the round's own line), the maximum marchable distance and the max AMIPS; with debug_output a frame repulsion_round_<k> follows each round. The embedding test reads cells beyond an operation's lock, so run the rounds with num_threads 0. 0 (the default) = off."
+    "doc": "2D and 3D. After the repulsion_smoothing_passes (if any) and before the march, at most this many rounds of the loop's operations: split, collapse and swap, each followed by its smoothing passes, shaped as interleaved_smoothing says. No refinement: the sizing field is never lowered, so every operation aims at the base edge length. No split of a marched edge (one end in the input complex): its midpoint would be a new outer end nearer the input. The collapses and swaps compare the per-tet energy of repulsion_smoothing_passes, repulsion terms included, as the loop's rules compare its energy. The input complex stays simplicially embedded, as the march needs it: a collapse or swap that would leave a cell off the complex whose complex vertices span an edge or face off the complex is refused. After every operation pass the construction labels are recomputed from the region tags, and the repulsion vertices follow the operations. One offset whose selection has cells, with direction 'in' or 'out', only (the embedding test reads the boundary off the cells' tags); 'both', a selection with no cells, and in 2D a curve group, are refused with an error. The rounds stop as soon as every outer end is farther than target_distance + front_conv. Each round logs its operations' outcomes ([ops accounting], [swap reject], 3D only: the 2D engine has neither; the embedding refusals, which those counters have no name for, are counted on the round's own line), the maximum marchable distance and the max AMIPS; with debug_output a frame repulsion_round_<k> follows each round. The embedding test reads cells beyond an operation's lock, so run the rounds with num_threads 0. 0 (the default) = off."
   },
   {
     "pointer": "/EXPERIMENTAL_split_energy_gate",

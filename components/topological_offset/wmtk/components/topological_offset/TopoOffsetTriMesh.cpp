@@ -471,14 +471,28 @@ void TopoOffsetTriMesh::label_input_complex()
     // only true if exactly one tag exists, ie "tag_0" (no &, |, !)
     bool single_body = (tags_involved.size() == 1) && expr->contains_only_or() &&
                        expr->contains_only_and() && expr->contains_only_not();
+    // The entry's direction (since 2026-11; before, the run-wide offset_in and offset_out). 2D
+    // takes one entry, so In keeps its construction from before: every face outside the body is
+    // the complex, with the body's domain-boundary edges -- the same marched edges, band and
+    // one-sided distance as 3D's boundary with its side, and no other entry to collide with.
+    using Direction = Parameters::Offset::Direction;
+    const Direction direction = m_offset_params.direction(0);
 
     if (single_body) { // single body mode
         m_singlebody = true;
         m_single_tag = *tags_involved.begin();
         if (m_single_tag == m_curve_tag) {
             // The curve is the complex: its edges and their vertices, no faces. The band then
-            // grows on both sides of it, which is the offset of a curve, open or closed.
-            // offset_in / offset_out have no meaning for it and are not consulted.
+            // grows on both sides of it, which is the offset of a curve, open or closed: Out and
+            // Both are the same, and In, which has no face to grow into, drops the offset.
+            if (direction == Direction::In) {
+                logger().warn(
+                    "offsets[0] ('{}'): direction 'in', but the selection has no faces (a curve); "
+                    "the offset is dropped",
+                    m_offset_params.offsets[0].selection);
+                mark_input_complex_vertices();
+                return;
+            }
             size_t n = 0;
             for (const Tuple& e : get_edges()) {
                 const size_t e_id = e.eid(*this);
@@ -498,14 +512,9 @@ void TopoOffsetTriMesh::label_input_complex()
             mark_input_complex_vertices();
             return;
         }
-        if (!(m_offset_params.offset_in || m_offset_params.offset_out)) {
-            log_and_throw_error(
-                "At least one of offset_in and offset_out must be true for singlebody mode.");
-        }
         logger().info("Using single body mode for '{}'", m_tag_id_to_name[m_single_tag]);
 
-        if (m_offset_params.offset_in &&
-            m_offset_params.offset_out) { // input complex is boundary simplices
+        if (direction == Direction::Both) { // input complex is boundary simplices
             auto faces = get_faces();
             for (const Tuple& f : faces) {
                 size_t f_id = f.fid(*this);
@@ -525,8 +534,8 @@ void TopoOffsetTriMesh::label_input_complex()
                     }
                 }
             }
-        } else if (m_offset_params.offset_in) { // input complex is everything outside body plus
-                                                // boundary
+        } else if (direction == Direction::In) { // input complex is everything outside body plus
+                                                 // boundary
             // faces (hacky but works)
             auto faces = get_faces();
             for (const Tuple& f : faces) {
@@ -570,6 +579,12 @@ void TopoOffsetTriMesh::label_input_complex()
             }
         }
     } else { // not single body mode. must evaluate expression
+        if (direction != Direction::Out) {
+            log_and_throw_error(
+                "2D: offsets[0] ('{}') is an expression; direction 'in' and 'both' take a single "
+                "face tag in 2D for now",
+                m_offset_params.offsets[0].selection);
+        }
 
         // label faces
         auto faces = get_faces();
@@ -1238,13 +1253,13 @@ void TopoOffsetTriMesh::repulsion_smoothing()
     int r = 0;
     if (!done && n_rounds > 0) {
         // simplex_in_input_complex() reads the complex off the faces' labels, which is exact
-        // when the complex is a body's faces (offset_out) or the faces outside a body (offset_in).
+        // when the complex is a body's faces (Out) or the faces outside a body (In, in 2D).
         // The curve group is 2D's surface group: the complex is edges, not faces.
         if (!m_singlebody || m_single_tag == m_curve_tag ||
-            m_offset_params.offset_in == m_offset_params.offset_out) {
+            m_offset_params.direction(0) == Parameters::Offset::Direction::Both) {
             log_and_throw_error(
                 "repulsion_rounds: supported for a single body offset inward or outward only "
-                "(not a curve group, an expression, or both directions)");
+                "(not a curve group, an expression, or direction 'both')");
         }
         m_edge_split_mode = EdgeSplitMode::Optimization;
         partition_mesh_morton(); // optimize_offset() recomputes it
@@ -1320,14 +1335,15 @@ void TopoOffsetTriMesh::repulsion_smoothing()
 
 bool TopoOffsetTriMesh::simplex_in_input_complex(const size_t a, const size_t b) const
 {
-    // An edge of a face of the complex (label 1: a body face for offset_out, a face outside the
-    // body for offset_in), as label_input_complex() labels them; for offset_in also a
-    // domain-boundary edge of a body face, which label_input_complex() adds to the complex.
+    // An edge of a face of the complex (label 1: a body face for Out, a face outside the body
+    // for In), as label_input_complex() labels them; for In also a domain-boundary edge of a
+    // body face, which label_input_complex() adds to the complex.
     const std::vector<size_t> faces = get_incident_fids_for_edge(a, b);
     for (const size_t fid : faces) {
         if (m_face_extra[fid].label != 0) return true;
     }
-    if (!m_offset_params.offset_in || faces.size() != 1) return false;
+    if (m_offset_params.direction(0) != Parameters::Offset::Direction::In || faces.size() != 1)
+        return false;
     return m_face_attribute[faces[0]].tags.count(m_single_tag) != 0;
 }
 

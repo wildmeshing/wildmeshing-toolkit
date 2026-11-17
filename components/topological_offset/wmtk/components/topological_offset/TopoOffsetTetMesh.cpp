@@ -936,11 +936,15 @@ void TopoOffsetTetMesh::label_input_complex()
     if (offsets.empty()) log_and_throw_error("offsets: no offset to make");
 
     // Each entry is labelled alone, on cleared labels, and the input complex is the union of the
-    // entries': so a vertex two entries select is seen, and refused. The entries are independent
-    // offsets; two that share a vertex would have to say which band takes the cells between them.
-    // Every entry sees on_sheet as classify_sheet_faces() left it, the surface group; a face-tag
-    // entry replaces it by its tag's faces (label_offset()), and so does the union, below. One
-    // entry: its labels and on_sheet exactly as label_offset() leaves them.
+    // entries'. An entry's selection S is what label_offset() labels; its complex is S for Out
+    // and S's boundary for In and Both (boundary_of_labels()), so an In entry's complex is the
+    // boundary it grows from, not every cell outside it. The entries are independent offsets:
+    // two whose selections share a cell, or a vertex unless both are In, are refused (two In
+    // entries that touch are allowed by the spec, but two bands from one shared boundary need
+    // each place to say which entry it is in: not supported yet). Every entry sees on_sheet as
+    // classify_sheet_faces() left it, the surface group; a face-tag entry replaces it by its
+    // tag's faces (label_offset()), and so does the union, below.
+    using Direction = Parameters::Offset::Direction;
     const std::vector<Tuple> tets = get_tets(), faces = get_faces(), edges = get_edges(),
                              verts = get_vertices();
     std::vector<std::pair<size_t, bool>> classified; // (fid, on_sheet) of the surface group
@@ -949,8 +953,13 @@ void TopoOffsetTetMesh::label_input_complex()
     }
     std::vector<size_t> union_t, union_f, union_e, tag_sheet;
     std::vector<int> owner(vert_capacity(), -1);
+    // Per cell and per vertex: the first entry whose whole selection holds it, for the check.
+    std::vector<int> cell_sel(tet_capacity(), -1), vertex_sel(vert_capacity(), -1);
+    std::map<std::pair<size_t, size_t>, std::array<size_t, 2>> shared; // (j, k) -> cells, verts
     bool face_tag_entry = false, group_entry = false;
     m_offset_edge_tag.assign(offsets.size(), false);
+    m_offset_has_cells.assign(offsets.size(), false);
+    m_offset_dropped.assign(offsets.size(), false);
     for (size_t k = 0; k < offsets.size(); ++k) {
         for (const auto& [fid, on] : classified) m_face_extra[fid].on_sheet = on;
         for (const Tuple& t : tets) m_tet_attribute[t.tid(*this)].label = 0;
@@ -958,6 +967,52 @@ void TopoOffsetTetMesh::label_input_complex()
         for (const Tuple& e : edges) m_edge_attribute[e.eid(*this)].label = 0;
         for (const Tuple& v : verts) m_vertex_extra[v.vid(*this)].label = 0;
         label_offset(k);
+        for (const Tuple& t : tets) {
+            if (m_tet_attribute[t.tid(*this)].label != 0) m_offset_has_cells[k] = true;
+        }
+        const Direction direction = m_offset_params.direction(k);
+        if (direction == Direction::In && !m_offset_has_cells[k]) {
+            // Nothing to grow into. Dropped before the check below, so it touches nothing.
+            logger().warn(
+                "offsets[{}] ('{}'): direction 'in', but the selection has no cells (a sheet, a "
+                "curve or points); the offset is dropped",
+                k,
+                offsets[k].selection);
+            m_offset_dropped[k] = true;
+            continue;
+        }
+        // The whole selection, for the check below.
+        for (const Tuple& t : tets) {
+            const size_t tid = t.tid(*this);
+            if (m_tet_attribute[tid].label == 0) continue;
+            if (cell_sel[tid] >= 0) {
+                ++shared[{size_t(cell_sel[tid]), k}][0];
+            } else {
+                cell_sel[tid] = int(k);
+            }
+        }
+        for (const Tuple& v : verts) {
+            const size_t vid = v.vid(*this);
+            if (m_vertex_extra[vid].label == 0) continue;
+            if (vertex_sel[vid] >= 0) {
+                ++shared[{size_t(vertex_sel[vid]), k}][1];
+            } else {
+                vertex_sel[vid] = int(k);
+            }
+        }
+        // In and Both grow from S's boundary; S itself is read off the cells' tags from here on
+        // (cell_in_selection()). A selection without cells is all boundary.
+        if (direction != Direction::Out && m_offset_has_cells[k]) {
+            const BoundaryFlags b = boundary_of_labels();
+            for (const Tuple& t : tets) m_tet_attribute[t.tid(*this)].label = 0;
+            for (const Tuple& f : faces) m_face_extra[f.fid(*this)].label = b.face[f.fid(*this)];
+            for (const Tuple& e : edges) {
+                m_edge_attribute[e.eid(*this)].label = b.edge[e.eid(*this)];
+            }
+            for (const Tuple& v : verts) {
+                m_vertex_extra[v.vid(*this)].label = b.vertex[v.vid(*this)];
+            }
+        }
         m_offset_edge_tag[k] = m_singlebody && m_edge_tag_bit.count(m_single_tag) > 0;
         if (m_singlebody && m_face_tag_bit.count(m_single_tag)) {
             face_tag_entry = true;
@@ -976,27 +1031,11 @@ void TopoOffsetTetMesh::label_input_complex()
             if (m_edge_attribute[e.eid(*this)].label == 1) union_e.push_back(e.eid(*this));
         }
         size_t n = 0;
-        std::map<int, size_t> shared; // the earlier entry -> vertices it shares with this one
         for (const Tuple& v : verts) {
             const size_t vid = v.vid(*this);
             if (m_vertex_extra[vid].label != 1) continue;
             ++n;
-            if (owner[vid] >= 0) {
-                ++shared[owner[vid]];
-            } else {
-                owner[vid] = int(k);
-            }
-        }
-        if (!shared.empty()) {
-            const auto& [j, count] = *shared.begin();
-            log_and_throw_error(
-                "offsets[{}] ('{}') and offsets[{}] ('{}') share {} vertices of their input "
-                "complexes: offsets that touch are not supported yet",
-                j,
-                offsets[size_t(j)].selection,
-                k,
-                offsets[k].selection,
-                count);
+            if (owner[vid] < 0) owner[vid] = int(k);
         }
         if (offsets.size() > 1) {
             if (n == 0) {
@@ -1009,6 +1048,41 @@ void TopoOffsetTetMesh::label_input_complex()
                     n);
             }
         }
+    }
+    // Two selections are permissible together if they share no cell, and share no vertex unless
+    // both are In (the spec); the pair checked first is the first that fails.
+    for (const auto& [jk, counts] : shared) {
+        const auto [j, k] = jk;
+        if (counts[0] > 0) {
+            log_and_throw_error(
+                "offsets[{}] ('{}') and offsets[{}] ('{}') share {} cells: two selections may "
+                "share no cell",
+                j,
+                offsets[j].selection,
+                k,
+                offsets[k].selection,
+                counts[0]);
+        }
+        const bool both_in = m_offset_params.direction(j) == Direction::In &&
+                             m_offset_params.direction(k) == Direction::In;
+        if (!both_in) {
+            log_and_throw_error(
+                "offsets[{}] ('{}') and offsets[{}] ('{}') share {} vertices: two selections may "
+                "touch only if both have direction 'in'",
+                j,
+                offsets[j].selection,
+                k,
+                offsets[k].selection,
+                counts[1]);
+        }
+        log_and_throw_error(
+            "offsets[{}] ('{}') and offsets[{}] ('{}') share {} vertices: two 'in' offsets that "
+            "touch are allowed, but not supported yet",
+            j,
+            offsets[j].selection,
+            k,
+            offsets[k].selection,
+            counts[1]);
     }
     for (const size_t t : union_t) m_tet_attribute[t].label = 1;
     for (const size_t f : union_f) m_face_extra[f].label = 1;
@@ -1120,102 +1194,21 @@ void TopoOffsetTetMesh::label_offset(const size_t k)
                     k);
             return;
         }
-        if (!(m_offset_params.offset_in || m_offset_params.offset_out)) {
-            log_and_throw_error(
-                "At least one of offset_in and offset_out must be true for singlebody mode.");
-        }
+        // A tet tag: its cells and their faces, edges and vertices, whatever the direction --
+        // label_input_complex() takes the boundary for In and Both. (Until 2026-11 the run-wide
+        // offset_in and offset_out chose here between the cells, their boundary, and every cell
+        // outside them, which two inward entries always shared.)
         logger().info("Using single body mode for '{}'", m_tag_id_to_name[m_single_tag]);
-
-        if (m_offset_params.offset_in &&
-            m_offset_params.offset_out) { // input complex is body boundary
-            auto tets = get_tets();
-            for (const Tuple& t : tets) {
-                size_t t_id = t.tid(*this);
-                if (m_tet_attribute[t_id].tag.count(m_single_tag) == 0) {
-                    continue;
-                }
-
-                auto check_and_set = [this](const Tuple& tup) {
-                    auto other = tup.switch_tetrahedron(*this);
-                    if (!other ||
-                        (m_tet_attribute[other.value().tid(*this)].tag.count(m_single_tag) == 0)) {
-                        m_face_extra[tup.fid(*this)].label = 1;
-                        // propagate to children simplices
-                        m_edge_attribute[tup.eid(*this)].label = 1;
-                        m_edge_attribute[tup.switch_edge(*this).eid(*this)].label = 1;
-                        m_edge_attribute[tup.switch_vertex(*this).switch_edge(*this).eid(*this)]
-                            .label = 1;
-                        m_vertex_extra[tup.vid(*this)].label = 1;
-                        m_vertex_extra[tup.switch_vertex(*this).vid(*this)].label = 1;
-                        m_vertex_extra[tup.switch_edge(*this).switch_vertex(*this).vid(*this)]
-                            .label = 1;
-                    }
-                };
-
-                // for each face, check if boundary and if so, set as input
-                check_and_set(t);
-                check_and_set(t.switch_face(*this));
-                check_and_set(t.switch_edge(*this).switch_face(*this));
-                check_and_set(t.switch_vertex(*this).switch_edge(*this).switch_face(*this));
+        for (const Tuple& t : get_tets()) {
+            const size_t t_id = t.tid(*this);
+            if (m_tet_attribute[t_id].tag.count(m_single_tag) == 0) continue;
+            m_tet_attribute[t_id].label = 1;
+            for (const size_t v_id : oriented_tet_vids(t_id)) m_vertex_extra[v_id].label = 1;
+            for (int i = 0; i < 6; i++) {
+                m_edge_attribute[tuple_from_edge(t_id, i).eid(*this)].label = 1;
             }
-        } else if (m_offset_params.offset_in) { // input complex is everything outside body
-            auto tets = get_tets();
-            for (const Tuple& t : tets) {
-                size_t t_id = t.tid(*this);
-                if (m_tet_attribute[t_id].tag.count(m_single_tag) == 0) {
-                    m_tet_attribute[t_id].label = 1;
-                    // propagate to faces, edges, verts
-                    auto v_ids = oriented_tet_vids(t_id);
-                    for (const size_t& v_id : v_ids) {
-                        m_vertex_extra[v_id].label = 1;
-                    }
-                    for (int i = 0; i < 6; i++) {
-                        m_edge_attribute[tuple_from_edge(t_id, i).eid(*this)].label = 1;
-                    }
-                    for (int i = 0; i < 4; i++) {
-                        m_face_extra[tuple_from_face(t_id, i).fid(*this)].label = 1;
-                    }
-                } else {
-                    auto check_and_set = [this](const Tuple& tup) {
-                        auto other = tup.switch_tetrahedron(*this);
-                        if (!other) {
-                            m_face_extra[tup.fid(*this)].label = 1;
-                            // propagate to children simplices
-                            m_edge_attribute[tup.eid(*this)].label = 1;
-                            m_edge_attribute[tup.switch_edge(*this).eid(*this)].label = 1;
-                            m_edge_attribute[tup.switch_vertex(*this).switch_edge(*this).eid(*this)]
-                                .label = 1;
-                            m_vertex_extra[tup.vid(*this)].label = 1;
-                            m_vertex_extra[tup.switch_vertex(*this).vid(*this)].label = 1;
-                            m_vertex_extra[tup.switch_edge(*this).switch_vertex(*this).vid(*this)]
-                                .label = 1;
-                        }
-                    };
-
-                    check_and_set(t);
-                    check_and_set(t.switch_face(*this));
-                    check_and_set(t.switch_edge(*this).switch_face(*this));
-                    check_and_set(t.switch_vertex(*this).switch_edge(*this).switch_face(*this));
-                }
-            }
-        } else if (m_offset_params.offset_out) {
-            auto tets = get_tets();
-            for (const Tuple& t : tets) {
-                size_t t_id = t.tid(*this);
-                if (m_tet_attribute[t_id].tag.count(m_single_tag) != 0) {
-                    m_tet_attribute[t_id].label = 1;
-                    // propagate to faces, edges, verts
-                    auto v_ids = oriented_tet_vids(t_id);
-                    for (const size_t& v_id : v_ids) {
-                        m_vertex_extra[v_id].label = 1;
-                    }
-                    for (int i = 0; i < 6; i++) {
-                        m_edge_attribute[tuple_from_edge(t_id, i).eid(*this)].label = 1;
-                    }
-                    for (int i = 0; i < 4; i++) {
-                        m_face_extra[tuple_from_face(t_id, i).fid(*this)].label = 1;
-                    }
-                }
+            for (int i = 0; i < 4; i++) {
+                m_face_extra[tuple_from_face(t_id, i).fid(*this)].label = 1;
             }
         }
     } else { // not single body mode. must evaluate expression
@@ -1367,6 +1360,60 @@ void TopoOffsetTetMesh::label_offset(const size_t k)
             }
         }
     }
+}
+
+TopoOffsetTetMesh::BoundaryFlags TopoOffsetTetMesh::boundary_of_labels() const
+{
+    // See the declaration. Faces first, then edges, then vertices, each reading the ones above.
+    BoundaryFlags b;
+    const std::vector<Tuple> faces = get_faces(), edges = get_edges();
+    size_t n_faces = 0, n_edges = 0;
+    for (const Tuple& f : faces) n_faces = std::max(n_faces, f.fid(*this) + 1);
+    for (const Tuple& e : edges) n_edges = std::max(n_edges, e.eid(*this) + 1);
+    b.face.assign(n_faces, 0);
+    b.edge.assign(n_edges, 0);
+    b.vertex.assign(vert_capacity(), 0);
+    const auto cell_in = [&](const Tuple& t) { return m_tet_attribute[t.tid(*this)].label != 0; };
+
+    // A face of K: on the boundary unless both its cells are K's (the outside of the mesh is
+    // outside K). Neither: a face in no cell of K.
+    for (const Tuple& f : faces) {
+        const size_t fid = f.fid(*this);
+        if (m_face_extra[fid].label == 0) continue;
+        const std::optional<Tuple> o = f.switch_tetrahedron(*this);
+        b.face[fid] = !(cell_in(f) && o && cell_in(*o));
+    }
+    // An edge of K: on a boundary face, or in no face of K (a cell's edges are its faces').
+    for (const Tuple& e : edges) {
+        const size_t eid = e.eid(*this);
+        if (m_edge_attribute[eid].label == 0) continue;
+        const size_t v0 = e.vid(*this), v1 = e.switch_vertex(*this).vid(*this);
+        bool in_face = false, on_boundary = false;
+        for (const size_t t : get_incident_tids_for_edge(e)) {
+            for (const size_t c : oriented_tet_vids(t)) {
+                if (c == v0 || c == v1) continue;
+                const size_t fid = std::get<1>(tuple_from_face({{v0, v1, c}}));
+                in_face = in_face || m_face_extra[fid].label != 0;
+                on_boundary = on_boundary || b.face[fid];
+            }
+        }
+        b.edge[eid] = on_boundary || !in_face;
+    }
+    // A vertex of K: on a boundary edge, or in no edge of K (a point).
+    std::vector<char> in_edge(vert_capacity(), 0);
+    for (const Tuple& e : edges) {
+        const size_t eid = e.eid(*this);
+        if (m_edge_attribute[eid].label == 0) continue;
+        for (const size_t v : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
+            in_edge[v] = 1;
+            if (b.edge[eid]) b.vertex[v] = 1;
+        }
+    }
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (m_vertex_extra[vid].label != 0 && !in_edge[vid]) b.vertex[vid] = 1;
+    }
+    return b;
 }
 
 bool TopoOffsetTetMesh::empty_input_complex()
@@ -1613,7 +1660,31 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     for (int i = 0; i < F.rows(); ++i) { // isolated triangles of the complex
         phi_tris.emplace_back(F(i, 0), F(i, 1), F(i, 2));
         phi_face_region.push_back(comp_of[size_t(F(i, 0))]);
-        m_phi_F_inner.push_back(0); // bounds no solid
+        // An In entry's complex is its selection's boundary: a face of it on a cell of the
+        // selection bounds that solid, oriented as a label-1 cell's face above. Any other
+        // isolated triangle (a sheet, a Both entry's boundary) bounds no solid.
+        int8_t inner = 0;
+        const auto vs = complex_faces[size_t(i)].vertices();
+        const size_t k = offset_of(vs[0]);
+        if (m_offset_params.direction(k) == Parameters::Offset::Direction::In) {
+            const auto [ft, fid] = tuple_from_face({{vs[0], vs[1], vs[2]}});
+            std::vector<Tuple> cells{ft};
+            if (const auto o = ft.switch_tetrahedron(*this)) cells.push_back(*o);
+            for (const Tuple& t : cells) {
+                if (!cell_in_selection(k, t.tid(*this))) continue;
+                for (const size_t o : oriented_tet_vids(t.tid(*this))) {
+                    if (o == vs[0] || o == vs[1] || o == vs[2]) continue;
+                    inner = int8_t(
+                        wmtk::utils::predicates::orient3d(
+                            Vector3d(V.row(F(i, 0)).head<3>().transpose()),
+                            Vector3d(V.row(F(i, 1)).head<3>().transpose()),
+                            Vector3d(V.row(F(i, 2)).head<3>().transpose()),
+                            m_vertex_attribute[o].m_posf));
+                }
+                break;
+            }
+        }
+        m_phi_F_inner.push_back(inner);
     }
 
     // The edge list must be complete: ipc derives faces_to_edges from it and throws if a
@@ -1701,16 +1772,8 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
                 m_phi_P.size());
         }
     }
-    // A complex of segments and points (a curve offset's input) bounds no volume: there is no
-    // inside to offset into, and offset_in's label-1 cells, everything outside the selection
-    // (label_input_complex()), would be every cell. Refused, before construction.
-    if (m_phi_F.rows() == 0 && m_offset_params.offset_in) {
-        log_and_throw_error(
-            "offset_in: the input complex is {} segments and {} points, which enclose no volume; "
-            "a curve or a point is offset outward only (offset_out)",
-            m_phi_E.rows(),
-            m_phi_P.size());
-    }
+    // A complex of segments and points (a curve offset's input) bounds no volume: an In entry
+    // whose selection has no cells was dropped by label_input_complex(), with a warning.
 
     // The input complex's query engine (m_input_complex_envelope), built here, once, from the
     // final extraction -- a fresh object rather than clear+reinit, so anything still holding the
@@ -1732,11 +1795,12 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     m_input_complex_pad = input_pad(m_phi_V);
 
     // input_complex_distance()'s inside test: the winding number with respect to the solid's
-    // boundary, the rows of m_phi_F that bound a label-1 cell (m_phi_F_inner != 0), each turned
-    // so that its normal (b - a) x (c - a) points out of the cell (m_phi_F_inner > 0 already
-    // does). The boundary of a union of cells is closed, so the winding number is 1 inside the
-    // solid and 0 outside, the domain's walls included where the solid reaches them. Answers
-    // against the solid as captured here, as the tet tree of SimplicialComplexBVH did.
+    // boundary, the rows of m_phi_F that bound a solid (m_phi_F_inner != 0: an Out entry's
+    // label-1 cells, an In entry's selection), each turned so that its normal (b - a) x (c - a)
+    // points out of the solid (m_phi_F_inner > 0 already does). The boundary of a union of cells
+    // is closed, so the winding number is 1 inside the solid and 0 outside, the domain's walls
+    // included where the solid reaches them. Answers against the solid as captured here, as the
+    // tet tree of SimplicialComplexBVH did.
     m_input_solid_winding = nullptr;
     {
         std::vector<int> rows;
@@ -1827,8 +1891,14 @@ double TopoOffsetTetMesh::offset_distance(const size_t k, const Vector3d& p) con
     // See the declaration.
     if (m_offset_queries.empty()) return input_complex_distance(p);
     const OffsetQuery& q = m_offset_queries[k];
-    if (q.winding && wmtk::utils::winding_number_inside(q.winding->winding_number(p.transpose())))
-        return 0.;
+    // One-sided: 0 on the side away from the band, inside the solid for Out and outside it for
+    // In. A Both entry's rows bound no solid, so it has no winding.
+    if (q.winding) {
+        const bool inside =
+            wmtk::utils::winding_number_inside(q.winding->winding_number(p.transpose()));
+        if (inside != (m_offset_params.direction(k) == Parameters::Offset::Direction::In))
+            return 0.;
+    }
     if (!q.envelope) return std::numeric_limits<double>::infinity();
     return std::sqrt(q.envelope->squared_distance(p));
 }
@@ -1842,9 +1912,12 @@ double TopoOffsetTetMesh::input_complex_distance(const Vector3d& p) const
         for (size_t k = 0; k < m_offset_queries.size(); ++k) d = std::min(d, offset_distance(k, p));
         return d;
     }
-    if (m_input_solid_winding &&
-        wmtk::utils::winding_number_inside(m_input_solid_winding->winding_number(p.transpose()))) {
-        return 0.;
+    // One-sided, as offset_distance(): 0 inside the solid for Out, outside it for In.
+    if (m_input_solid_winding) {
+        const bool inside = wmtk::utils::winding_number_inside(
+            m_input_solid_winding->winding_number(p.transpose()));
+        if (inside != (m_offset_params.direction(0) == Parameters::Offset::Direction::In))
+            return 0.;
     }
     return std::sqrt(m_input_complex_envelope->squared_distance(p));
 }
@@ -1867,22 +1940,25 @@ void TopoOffsetTetMesh::init_band_exact()
         (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
         m_offset_params.debug_output) {
         // The band is on the offset side of the input only (ExactBandIntegral's class
-        // doc), and that side is outside the label-1 cells whichever way the offset goes:
-        // they are the selection for offset_out and everything outside the selection for
-        // offset_in (label_input_complex()), and the band grows away from them. A face's
-        // side is its orient3d against the label-1 cell it bounds (m_phi_F_inner,
-        // positive: the row's normal points away from the cell), so sigma is +1 for both
-        // directions; both or neither: no side. The oriented volume of the boundary must
-        // come out positive; it is logged, and a warning if not.
-        // MEASURED (Geneva base, offset_in, 2026-10-13): sigma was -1 for offset_in, the
-        // inside of cells that are the outside of the selection, so the clip kept the far
-        // side: the band term at construction was 0 against -7.5046 unclipped (41988 band
-        // cells, volume 8.55). The volume logged, 6470.85, is the domain's 6814.66 minus
-        // tag_0's 343.81: the label-1 cells, not the selection.
-        // A complex of segments and points bounds no solid (init_input_complex_bvh() refuses
-        // offset_in for it): no side, the band all around it.
+        // doc). A face's side is its orient3d against the solid it bounds (m_phi_F_inner,
+        // positive: the row's normal points out of the solid): an Out entry's label-1 cells,
+        // with the band outside them (sigma +1), or an In entry's selection, whose boundary is
+        // its complex, with the band inside it (sigma -1); Both: no side. The oriented volume
+        // of the boundary must come out positive; it is logged, and a warning if not.
+        // MEASURED (Geneva base, offset_in, 2026-10-13): when offset_in's complex was every
+        // cell outside the selection, sigma -1 was read against those cells, so the clip kept
+        // the far side: the band term at construction was 0 against -7.5046 unclipped (41988
+        // band cells, volume 8.55). Since 2026-11 the faces of an In entry are oriented against
+        // the selection itself, and sigma -1 keeps its inside.
+        // A complex of segments and points bounds no solid (an In entry without cells is
+        // dropped): no side, the band all around it.
+        const auto sigma_of = [&](const size_t k) {
+            const Parameters::Offset::Direction d = m_offset_params.direction(k);
+            if (d == Parameters::Offset::Direction::Out) return 1;
+            return d == Parameters::Offset::Direction::In ? -1 : 0;
+        };
         const bool curves = m_phi_F.rows() == 0;
-        const int sigma = curves || m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
+        const int sigma = curves ? 0 : sigma_of(0);
         if (curves) {
             logger().info(
                 "\tExact band integral: {} segments and {} points, no offset side",
@@ -1898,9 +1974,9 @@ void TopoOffsetTetMesh::init_band_exact()
             }
             logger().log(
                 vol6 > 0. ? spdlog::level::info : spdlog::level::warn,
-                "\tExact band integral: offset side {} (sigma {}), the label-1 cells' boundary "
-                "oriented by them encloses volume {}",
-                sigma > 0 ? "outside the label-1 cells" : "none",
+                "\tExact band integral: offset side {} (sigma {}), the solid's boundary "
+                "oriented by it encloses volume {}",
+                sigma > 0 ? "outside the solid" : (sigma < 0 ? "inside the solid" : "none"),
                 sigma,
                 vol6 / 6.);
         }
@@ -1969,8 +2045,9 @@ void TopoOffsetTetMesh::init_band_exact()
                         E_r.row(int(i)) = m_phi_E.row(erows[i]);
                     for (const int i : prows) P_r.push_back(m_phi_P[size_t(i)]);
                 }
-                const int sigma_r =
-                    piece_curves || m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
+                const int sigma_r = piece_curves || r >= m_region_offset.size()
+                                        ? 0
+                                        : sigma_of(size_t(m_region_offset[r]));
                 auto er = std::make_shared<ExactBandIntegral>(
                     m_phi_V,
                     F_r,
@@ -2293,11 +2370,64 @@ wmtk::utils::TetComplex labelled_complex(const TopoOffsetTetMesh& m)
         [&m](const TetMesh::Tuple& t) { return m.m_tet_attribute[t.tid(m)].label != 0; }};
 }
 
+/// The boundary of the labelled complex (TopoOffsetTetMesh::boundary_of_labels()) by vertex ids:
+/// the union of the offsets' boundaries, which the mesh is made simplicially embedded with
+/// respect to (the spec), so that every cell of a selection gets a vertex off its boundary --
+/// with respect to the selection itself, a cell of it with its four corners on the boundary (a
+/// part one cell thick) would give an inward band nothing to march. The embedding splits no
+/// simplex of the boundary and adds none to it, so it holds as captured, by vertex ids, while
+/// the splits renumber faces and edges.
+struct BoundaryKeys
+{
+    std::vector<char> vertex;
+    std::set<std::array<size_t, 2>> edges;
+    std::set<std::array<size_t, 3>> faces;
+};
+
+BoundaryKeys boundary_keys(const TopoOffsetTetMesh& m)
+{
+    const TopoOffsetTetMesh::BoundaryFlags b = m.boundary_of_labels();
+    BoundaryKeys k;
+    k.vertex = b.vertex;
+    for (const TetMesh::Tuple& e : m.get_edges()) {
+        if (!b.edge[e.eid(m)]) continue;
+        std::array<size_t, 2> v{{e.vid(m), e.switch_vertex(m).vid(m)}};
+        std::sort(v.begin(), v.end());
+        k.edges.insert(v);
+    }
+    for (const TetMesh::Tuple& f : m.get_faces()) {
+        if (!b.face[f.fid(m)]) continue;
+        std::array<size_t, 3> v = m.get_face_vids(f);
+        std::sort(v.begin(), v.end());
+        k.faces.insert(v);
+    }
+    return k;
+}
+
+wmtk::utils::TetComplex boundary_complex(const TopoOffsetTetMesh& m, const BoundaryKeys& k)
+{
+    return {
+        [&k](const size_t v) { return v < k.vertex.size() && k.vertex[v]; },
+        [&m, &k](const TetMesh::Tuple& e) {
+            std::array<size_t, 2> v{{e.vid(m), e.switch_vertex(m).vid(m)}};
+            std::sort(v.begin(), v.end());
+            return k.edges.count(v) > 0;
+        },
+        [&m, &k](const TetMesh::Tuple& f) {
+            std::array<size_t, 3> v = m.get_face_vids(f);
+            std::sort(v.begin(), v.end());
+            return k.faces.count(v) > 0;
+        },
+        [](const TetMesh::Tuple&) { return false; }};
+}
+
 } // namespace
 
 bool TopoOffsetTetMesh::is_simplicially_embedded() const
 {
-    const size_t bad_tets = wmtk::utils::count_embedding_violations(*this, labelled_complex(*this));
+    const BoundaryKeys keys = boundary_keys(*this);
+    const size_t bad_tets =
+        wmtk::utils::count_embedding_violations(*this, boundary_complex(*this, keys));
     if (bad_tets == 0) {
         logger().info("\tInput complex/offset simplicially embedded: TRUE");
         return true;
@@ -2316,13 +2446,30 @@ bool TopoOffsetTetMesh::tet_is_simp_emb(const Tuple& t) const
 
 void TopoOffsetTetMesh::simplicial_embedding()
 {
-    // the shared embedding (wmtk/utils/SimplicialEmbedding.hpp): tets outside the complex whose
-    // faces are all in it, then faces whose edges are, then edges whose vertices are; the split
-    // hooks give the new simplices the label of the simplex split, 0
+    // the shared embedding (wmtk/utils/SimplicialEmbedding.hpp) with respect to the boundary of
+    // the complex (boundary_keys()): tets whose faces are all on it, then faces whose edges are,
+    // then edges whose vertices are; the split hooks give the new simplices the label of the
+    // simplex split -- 0 off the complex, 1 inside an Out entry's cells
+    const BoundaryKeys keys = boundary_keys(*this);
     const wmtk::utils::SimplicialEmbeddingStats stats =
-        wmtk::utils::simplicial_embedding(*this, labelled_complex(*this));
+        wmtk::utils::simplicial_embedding(*this, boundary_complex(*this, keys));
     if (stats.refused > 0) {
         log_and_throw_error("{} splits failed! (simplicial_embedding)", stats.refused);
+    }
+    // A vertex made inside an Out entry's cells carries their label but neither the input-complex
+    // mark (mark_input_complex_vertices() ran before) nor an entry: the mark from its label, as
+    // there, and the entry of a labelled neighbour, all of whose labelled neighbours are its own.
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        VertexExtra& x = m_vertex_extra[vid];
+        x.m_is_on_input = x.label == 1;
+        if (x.label == 0 || x.offset >= 0 || m_offset_params.offsets.size() <= 1) continue;
+        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+            if (m_vertex_extra[u].label != 0 && m_vertex_extra[u].offset >= 0) {
+                x.offset = m_vertex_extra[u].offset;
+                break;
+            }
+        }
     }
     logger().info("\tTets split: {}", stats.tets_split);
     logger().info("\tFaces split: {}", stats.faces_split);
@@ -2498,13 +2645,14 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.
     int r = 0;
     if (!done && n_rounds > 0) {
-        // simplex_in_input_complex() reads the complex off the cells' labels, which is exact
-        // when the complex is a body's cells (offset_out) or the cells outside a body (offset_in).
-        if (!m_singlebody || is_sheet_tag(m_single_tag) ||
-            m_offset_params.offset_in == m_offset_params.offset_out) {
+        // simplex_in_input_complex() reads the complex off the cells: exact when it is a body's
+        // cells (Out) or that body's boundary (In), read off the cells' tags.
+        if (!m_singlebody || is_sheet_tag(m_single_tag) || m_offset_has_cells.size() != 1 ||
+            !m_offset_has_cells[0] ||
+            m_offset_params.direction(0) == Parameters::Offset::Direction::Both) {
             log_and_throw_error(
-                "repulsion_rounds: supported for a single body offset inward or outward only "
-                "(not a surface group, an expression, or both directions)");
+                "repulsion_rounds: supported for a single tet tag offset inward or outward only "
+                "(not a surface group, a curve, an expression, or direction 'both')");
         }
         m_edge_split_mode = EdgeSplitMode::Optimization;
         init_vertex_order(); // the collapse rules read it; optimize_offset() recomputes it
@@ -2604,9 +2752,9 @@ void TopoOffsetTetMesh::repulsion_smoothing()
 
 bool TopoOffsetTetMesh::simplex_in_input_complex(const std::vector<size_t>& c) const
 {
-    // In a cell of the complex (label 1: a body cell for offset_out, a cell outside the body for
-    // offset_in), as label_input_complex() labels them; for offset_in also on a domain-boundary
-    // face of a body cell, which label_input_complex() adds to the complex.
+    // Out: in a cell of the complex (label 1, a body cell), as label_input_complex() labels them.
+    // In: on the body's boundary, the complex -- between a body cell and a cell outside it, or
+    // on a domain-boundary face of a body cell (the body read off the cells' tags).
     std::vector<Tuple> cells;
     if (c.size() == 2) {
         cells = get_incident_tets_for_edge(c[0], c[1]);
@@ -2620,10 +2768,15 @@ bool TopoOffsetTetMesh::simplex_in_input_complex(const std::vector<size_t>& c) c
     for (const Tuple& t : cells) {
         if (m_tet_attribute[t.tid(*this)].label != 0) return true;
     }
-    if (!m_offset_params.offset_in) return false;
+    if (m_offset_params.direction(0) != Parameters::Offset::Direction::In) return false;
+    bool body = false, outside = false;
+    for (const Tuple& t : cells) {
+        (cell_in_selection(0, t.tid(*this)) ? body : outside) = true;
+    }
+    if (body && outside) return true;
     for (const Tuple& t : cells) {
         const size_t tid = t.tid(*this);
-        if (m_tet_attribute[tid].tag.count(m_single_tag) == 0) continue;
+        if (!cell_in_selection(0, tid)) continue;
         for (int j = 0; j < 4; ++j) {
             const Tuple f = tuple_from_face(tid, j);
             if (f.switch_tetrahedron(*this)) continue; // not on the domain boundary
@@ -2675,7 +2828,13 @@ void TopoOffsetTetMesh::marching_tets()
     const auto key = [](size_t a, size_t b) {
         return std::array<size_t, 2>{{std::min(a, b), std::max(a, b)}};
     };
+    // An edge out of an In entry's complex, its boundary, that leads away from its selection
+    // (on_offset_side()) is on the side no band grows on: it is not marched either, and no cell
+    // around it joins the band, as for a protected cell. So an In band takes only the
+    // selection's cells: after the simplicial embedding every cell outside the selection at a
+    // boundary vertex has a vertex off the boundary, and so such an edge.
     std::set<std::array<size_t, 2>> blocked;
+    size_t n_far_side = 0;
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
     auto edges = get_edges();
@@ -2689,6 +2848,9 @@ void TopoOffsetTetMesh::marching_tets()
             for (const size_t t : get_incident_tids_for_edge(e)) in_protected |= is_protected(t);
             if (in_protected) {
                 blocked.insert(key(v1, v2));
+            } else if (!is_marched_edge(v1, v2)) {
+                blocked.insert(key(v1, v2));
+                ++n_far_side;
             } else {
                 e_to_split.emplace_back(v1, v2);
             }
@@ -2702,10 +2864,16 @@ void TopoOffsetTetMesh::marching_tets()
                 if (blocked.count(key(vs[i], vs[j]))) return false;
         return true;
     };
-    if (!blocked.empty()) {
+    if (blocked.size() > n_far_side) {
         logger().info(
             "\t[construction] {} edges out of the complex lie in protected cells: not marched",
-            blocked.size());
+            blocked.size() - n_far_side);
+    }
+    if (n_far_side > 0) {
+        logger().info(
+            "\t[construction] {} edges out of an inward offset's boundary lead out of its "
+            "selection: not marched",
+            n_far_side);
     }
 
     // sort edges (split longest first), should give better output mesh quality
@@ -2981,11 +3149,11 @@ void TopoOffsetTetMesh::marching_tets()
     m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     // mark all offset tets and children. Several entries: a band cell is one entry's. Every edge
-    // from a frontier vertex to the background was split above (or lies in a protected cell, whose
-    // cells no band takes), so a band cell's vertices are its entry's complex vertices and the new
-    // split points; no cell has complex vertices of two entries (label_input_complex() refuses a
-    // shared vertex, and the simplicial embedding split every edge between two complexes). So two
-    // bands share no vertex.
+    // from a frontier vertex to the background was split above (or lies in a protected cell, or
+    // leads out of an In entry's selection, and the cells around it no band takes), so a band
+    // cell's vertices are its entry's complex vertices and the new split points; no cell has
+    // complex vertices of two entries (label_input_complex() refuses a shared vertex, and the
+    // simplicial embedding split every edge between two complexes). So two bands share no vertex.
     for (const size_t& v_id : frontier_verts) {
         auto t_ids = get_one_ring_tids_for_vertex(v_id);
         for (const size_t& t_id : t_ids) {

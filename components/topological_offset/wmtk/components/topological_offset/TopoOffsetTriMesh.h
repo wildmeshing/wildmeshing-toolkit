@@ -1037,9 +1037,9 @@ public:
     /// that breaks it is refused. Defined in TopoOffsetTriMesh.cpp. As in 3D.
     bool repulsion_embedding_kept(const std::vector<size_t>& fids) const;
     /// Whether the edge (a, b) is in the input complex, from the faces' labels: an edge of a face
-    /// of the complex, or, for offset_in, a domain-boundary edge of a body face. Single-body
-    /// offset_in or offset_out only, which repulsion_smoothing() checks. The 3D twin also takes a
-    /// face.
+    /// of the complex, or, for direction In, a domain-boundary edge of a body face. A single body
+    /// offset inward or outward only, which repulsion_smoothing() checks. The 3D twin also takes
+    /// a face.
     bool simplex_in_input_complex(size_t a, size_t b) const;
     std::atomic<size_t> m_repulsion_embed_refused{0};
     /// Diagnostic: where the front solves stop. Per pass, histograms of the final gradient norm

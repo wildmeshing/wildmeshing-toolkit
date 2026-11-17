@@ -2516,13 +2516,14 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
 TEST_CASE("exact-band-offset-side-inward-and-outward", "[offset][3d][exact_band]")
 {
     // The exact rule's band integral counts the offset side of the input only (ExactBandIntegral's
-    // class doc), and the band is outside the label-1 region for both directions: that region is
-    // the selection for offset_out and everything outside it for offset_in. On a 3 x 3 x 3 grid of
-    // unit cubes with the center cube as tag_0, a cell just inside tag_0 and its mirror just
+    // class doc): outside the selection for direction out (sigma +1 against its cells), inside it
+    // for in (sigma -1 against the selection, whose boundary is the complex). On a 3 x 3 x 3 grid
+    // of unit cubes with the center cube as tag_0, a cell just inside tag_0 and its mirror just
     // outside, both within delta of the face x = 0.5: the band side gives the unclipped integral,
     // the other side 0. MEASURED before this test (Geneva base, offset_in, 2026-10-13): the side
     // was read against the selection while the faces were oriented against the region outside
-    // it, the clip kept the far side, and the band term at construction was 0 against -7.5046.
+    // it (offset_in's complex until 2026-11), the clip kept the far side, and the band term at
+    // construction was 0 against -7.5046.
     Eigen::MatrixXd V(64, 3);
     const auto vid = [](int i, int j, int k) { return i + 4 * j + 16 * k; };
     for (int k = 0; k < 4; ++k) {
@@ -2566,8 +2567,8 @@ TEST_CASE("exact-band-offset-side-inward-and-outward", "[offset][3d][exact_band]
 
     for (const bool inward : {true, false}) {
         Parameters param;
-        param.offset_in = inward;
-        param.offset_out = !inward;
+        param.offsets.emplace_back().direction =
+            inward ? Parameters::Offset::Direction::In : Parameters::Offset::Direction::Out;
         param.offset_field = "euclidean";
         param.band_volume_rule = "exact";
         param.target_distance = delta;
@@ -2583,7 +2584,7 @@ TEST_CASE("exact-band-offset-side-inward-and-outward", "[offset][3d][exact_band]
         const ExactBandIntegral plain(mesh.m_phi_V, mesh.m_phi_F);
         const auto& band = inward ? inside : outside;
         const auto& far_side = inward ? outside : inside;
-        INFO((inward ? "offset_in" : "offset_out"));
+        INFO((inward ? "direction in" : "direction out"));
         const double J_band = mesh.m_band_exact->value(band, delta);
         CHECK(J_band < 0.);
         CHECK(J_band == plain.value(band, delta));
@@ -3537,7 +3538,8 @@ TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
     // C's boundary faces meet, their outer edges the loop (q, r, s); f = (q, r, s) is a face of
     // another surface -- the boundary of tag_1, the tet beyond f, and a face-tagged input S --
     // spanning the loop outside C. The tet (p, q, r, s) between them is not C's but its four
-    // corners are, so simplicial_embedding() splits f (its three edges are C's, it is not). The
+    // corners are, so simplicial_embedding() splits f (its three edges are on C's boundary, it is
+    // not). The
     // three pieces lie on f's surfaces: tracked, with f's input set and its orientation; the new
     // vertex is on the surface; the faces new inside the two cells are on none.
     Eigen::MatrixXd V(8, 3);
@@ -3587,14 +3589,21 @@ TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
     REQUIRE(mesh.is_simplicially_embedded());
     REQUIRE(!mesh.try_tuple_from_face({{1, 2, 3}})); // f was split
 
-    size_t v = size_t(-1); // the new vertex
+    // The new vertex at f's centroid. The embedding is with respect to C's boundary (since
+    // 2026-11), so each of C's three cells, whose four faces are all on it, is split at its
+    // centroid too: four new vertices.
+    size_t v = size_t(-1);
+    size_t n_new = 0;
     for (const auto& t : mesh.get_vertices()) {
         if (t.vid(mesh) < 8) continue;
+        ++n_new;
+        const Vector3d& x = mesh.m_vertex_attribute[t.vid(mesh)].m_posf;
+        if ((x - Vector3d(1., 1., 1.) / 3.).norm() >= 1e-12) continue;
         REQUIRE(v == size_t(-1));
         v = t.vid(mesh);
     }
     REQUIRE(v != size_t(-1));
-    CHECK((mesh.m_vertex_attribute[v].m_posf - Vector3d(1., 1., 1.) / 3.).norm() < 1e-12);
+    CHECK(n_new == 4);
     CHECK(mesh.m_vertex_extra[v].m_is_on_region);
     CHECK(mesh.m_vertex_attribute[v].m_is_on_surface);
     for (const auto& [a, b] : std::vector<std::pair<size_t, size_t>>{{1, 2}, {2, 3}, {3, 1}}) {
@@ -5768,20 +5777,27 @@ TEST_CASE("curve-offset-rod-held", "[offset][3d]" + release_only)
     }
 }
 
-TEST_CASE("curve-offset-refuses-offset-in", "[offset][3d]")
+TEST_CASE("curve-offset-inward-is-dropped", "[offset][3d]")
 {
-    // A curve encloses no volume (init_input_complex_bvh()).
+    // A curve has no cell to grow into: an offset with direction in whose selection has no cells
+    // is dropped with a warning (label_input_complex()), and with no other entry the input comes
+    // back unchanged. Until 2026-11 the run-wide offset_in on a curve threw.
+    const MeshData input = rod_grid();
     const nlohmann::json j = {
         {"input", "m"},
         {"offsets",
          nlohmann::json::array(
-             {{{"selection", "tag_0 & tag_1 & tag_2"}, {"target_distance", 0.2}}})},
-        {"offset_in", true},
-        {"offset_out", false},
+             {{{"selection", "tag_0 & tag_1 & tag_2"},
+               {"direction", "in"},
+               {"target_distance", 0.2}}})},
         {"num_threads", 1}};
-    REQUIRE_THROWS_WITH(
-        components::topological_offset::topological_offset(j, {{"m", rod_grid()}}),
-        Catch::Matchers::ContainsSubstring("enclose no volume"));
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    CHECK(out.V.rows() == input.V.rows());
+    CHECK(
+        out.cells.at(CellType::Tetrahedron).connectivity.rows() ==
+        input.cells.at(CellType::Tetrahedron).connectivity.rows());
 }
 
 namespace {
@@ -6485,6 +6501,200 @@ TEST_CASE("several-offsets-touch", "[offset][3d]")
     }
     CHECK(!corners_a.empty());
     CHECK(n_b > 0);
+}
+
+namespace {
+/// The signed distance from p to the boundary of box_grid()'s box r: positive inside the box (its
+/// distance to the nearest face), minus the distance to the box outside it.
+double box_signed_distance(const Vector3d& p, const std::array<int, 6>& r)
+{
+    const double out = box_distance(p, r);
+    if (out > 0.) return -out;
+    double in = std::numeric_limits<double>::infinity();
+    for (int a = 0; a < 3; ++a) {
+        const double lo = r[size_t(2 * a)] * 0.25 - 1., hi = (r[size_t(2 * a + 1)] + 1) * 0.25 - 1.;
+        in = std::min({in, p[a] - lo, hi - p[a]});
+    }
+    return in;
+}
+
+/// The band cells of `tag` in a result, sorted by side of box r: entirely inside (every corner in
+/// the box), entirely outside (no corner strictly inside), and every corner off the boundary
+/// within 1% of `traced` from it.
+struct BandSides
+{
+    size_t inside = 0, outside = 0, corners_off = 0;
+    bool corners_traced = true;
+};
+BandSides band_sides(
+    const MeshData& out,
+    const std::string& tag,
+    const std::array<int, 6>& r,
+    const double traced)
+{
+    BandSides s;
+    for (const CellCorners& c : cells_tagged(out, tag)) {
+        bool all_in = true, any_strictly_in = false;
+        for (const auto& q : c) {
+            const double d = box_signed_distance(Vector3d(q[0], q[1], q[2]), r);
+            all_in = all_in && d >= 0.;
+            any_strictly_in = any_strictly_in || d > 0.;
+            if (d == 0.) continue; // on the boundary
+            ++s.corners_off;
+            s.corners_traced = s.corners_traced && std::abs(std::abs(d) - traced) <= 0.01 * traced;
+        }
+        if (all_in) ++s.inside;
+        if (!any_strictly_in) ++s.outside;
+    }
+    return s;
+}
+} // namespace
+
+TEST_CASE("offset-direction-in-out-both", "[offset][3d]")
+{
+    // One box, each direction (the spec's direction, since 2026-11; before, the run-wide offset_in
+    // and offset_out). out: every band cell outside the box, in: inside it, from its boundary,
+    // both: on either side; every new corner at the traced distance, 0.1 here (below the grid
+    // edge 0.25, so traced to).
+    const std::array<int, 6> a = {{2, 5, 2, 5, 2, 5}};
+    const MeshData m = box_grid({{"a", a}});
+    const auto run = [&](const std::string& direction) {
+        return construct_offsets(
+            m,
+            nlohmann::json::array(
+                {{{"selection", "a"},
+                  {"direction", direction},
+                  {"output_tags", {"band"}},
+                  {"target_distance", 0.1}}}));
+    };
+    const BandSides out = band_sides(run("out"), "band", a, 0.1);
+    const BandSides in = band_sides(run("in"), "band", a, 0.1);
+    const BandSides both = band_sides(run("both"), "band", a, 0.1);
+    CHECK(out.outside > 0);
+    CHECK(out.inside == 0);
+    CHECK(in.inside > 0);
+    CHECK(in.outside == 0);
+    CHECK(both.inside > 0);
+    CHECK(both.outside > 0);
+    for (const BandSides& s : {out, in, both}) {
+        CHECK(s.corners_off > 0);
+        CHECK(s.corners_traced);
+    }
+    // The default is out.
+    const MeshData dflt = construct_offsets(
+        m,
+        nlohmann::json::array(
+            {{{"selection", "a"}, {"output_tags", {"band"}}, {"target_distance", 0.1}}}));
+    CHECK(cells_tagged(dflt, "band") == cells_tagged(run("out"), "band"));
+}
+
+TEST_CASE("offset-direction-several-in", "[offset][3d]")
+{
+    // Two inward offsets of separate bodies, and an inward one beside an outward one, each as
+    // alone. Until 2026-11 an inward offset's complex was every cell outside its body, so two of
+    // them always shared vertices and were refused.
+    const std::array<int, 6> a = {{1, 2, 1, 2, 1, 2}}, b = {{5, 6, 1, 2, 1, 2}};
+    const MeshData m = box_grid({{"a", a}, {"b", b}});
+    for (const std::string b_direction : {"in", "out"}) {
+        INFO("b " << b_direction);
+        const nlohmann::json ea = {
+            {"selection", "a"},
+            {"direction", "in"},
+            {"output_tags", {"a_band"}},
+            {"target_distance", 0.1}};
+        const nlohmann::json eb = {
+            {"selection", "b"},
+            {"direction", b_direction},
+            {"output_tags", {"b_band"}},
+            {"target_distance", 0.1}};
+        MeshData joint;
+        REQUIRE_NOTHROW(joint = construct_offsets(m, nlohmann::json::array({ea, eb})));
+        CHECK(
+            cells_tagged(joint, "a_band") ==
+            cells_tagged(construct_offsets(m, nlohmann::json::array({ea})), "a_band"));
+        CHECK(
+            cells_tagged(joint, "b_band") ==
+            cells_tagged(construct_offsets(m, nlohmann::json::array({eb})), "b_band"));
+        const BandSides sa = band_sides(joint, "a_band", a, 0.1);
+        CHECK(sa.inside > 0);
+        CHECK(sa.outside == 0);
+        const BandSides sb = band_sides(joint, "b_band", b, 0.1);
+        CHECK((b_direction == "in" ? sb.inside : sb.outside) > 0);
+        CHECK((b_direction == "in" ? sb.outside : sb.inside) == 0);
+    }
+}
+
+TEST_CASE("offset-direction-permissible-pairs", "[offset][3d]")
+{
+    // Two selections may share no cell, and may share a vertex only if both are in -- which is
+    // refused too for now (two bands from one shared boundary).
+    const MeshData m = box_grid({{"a", {{1, 2, 1, 2, 1, 2}}}, {"b", {{3, 4, 1, 2, 1, 2}}}});
+    const auto run = [&](const std::string& sa,
+                         const std::string& da,
+                         const std::string& sb,
+                         const std::string& db) {
+        return construct_offsets(
+            m,
+            nlohmann::json::array(
+                {{{"selection", sa},
+                  {"direction", da},
+                  {"output_tags", {"a_band"}},
+                  {"target_distance", 0.1}},
+                 {{"selection", sb},
+                  {"direction", db},
+                  {"output_tags", {"b_band"}},
+                  {"target_distance", 0.1}}}));
+    };
+    using Catch::Matchers::ContainsSubstring;
+    REQUIRE_THROWS_WITH(run("a", "out", "a | b", "out"), ContainsSubstring("share no cell"));
+    REQUIRE_THROWS_WITH(run("a", "in", "b", "out"), ContainsSubstring("touch only if both"));
+    REQUIRE_THROWS_WITH(run("a", "both", "b", "in"), ContainsSubstring("touch only if both"));
+    REQUIRE_THROWS_WITH(run("a", "in", "b", "in"), ContainsSubstring("not supported yet"));
+    // An inward offset with no cells -- the faces between a and b -- is dropped before the check,
+    // so it does not touch a.
+    MeshData out;
+    REQUIRE_NOTHROW(out = run("a & b", "in", "a", "out"));
+    CHECK(!cells_tagged(out, "b_band").empty());
+}
+
+TEST_CASE("offset-direction-in-thin-slab", "[offset][3d]")
+{
+    // A slab one cube thick: every vertex of its cells is on its boundary, so the march has no edge
+    // into it unless the embedding, with respect to the boundary (the spec), gives its cells a
+    // vertex off it. Inward at 0.05, under half its thickness.
+    const std::array<int, 6> s = {{1, 6, 1, 6, 3, 3}};
+    const MeshData out = construct_offsets(
+        box_grid({{"s", s}}),
+        nlohmann::json::array(
+            {{{"selection", "s"},
+              {"direction", "in"},
+              {"output_tags", {"band"}},
+              {"target_distance", 0.05}}}));
+    const BandSides b = band_sides(out, "band", s, 0.05);
+    CHECK(b.inside > 0);
+    CHECK(b.outside == 0);
+}
+
+TEST_CASE("offset-direction-complement-out-is-in", "[offset][3d]")
+{
+    // '!a' is every cell but a's, closed: its faces on a carry a and do not satisfy '!a', but they
+    // are faces of cells that do. Its boundary is a's plus the mesh's, and out of it, into a, is
+    // a's inward offset: the same band.
+    const MeshData m = box_grid({{"a", {{2, 5, 2, 5, 2, 5}}}});
+    const auto run = [&](const std::string& selection, const std::string& direction) {
+        return cells_tagged(
+            construct_offsets(
+                m,
+                nlohmann::json::array(
+                    {{{"selection", selection},
+                      {"direction", direction},
+                      {"output_tags", {"band"}},
+                      {"target_distance", 0.1}}})),
+            "band");
+    };
+    const auto in = run("a", "in");
+    CHECK(!in.empty());
+    CHECK(run("!a", "out") == in);
 }
 
 TEST_CASE("several-offsets-sheets", "[offset][3d]")
