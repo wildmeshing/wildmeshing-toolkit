@@ -113,7 +113,7 @@
     },
     "skip_winding_number": {
       "type": "boolean",
-      "description": "Skip the finalize-phase winding numbers of the inputs, each input's (wn_<i>). Filter 'input' keeps the faces by them and computes them regardless of this flag; otherwise they are written only as output annotation fields: fields of the triangles, not tags, so no regions (until 2026-11 they tagged the faces per input). Default true since 2026-11: set false to have the fields written with filter 'none'.",
+      "description": "Skip the finalize-phase winding numbers of the inputs, each input's (wn_<i>). Filter 'input' keeps the faces by them and computes them regardless of this flag; otherwise they are written only as output annotation fields: fields of the triangles, not tags, so no regions (until 2026-11 they tagged the faces per input). Default true since 2026-11: set false to have the fields written with filter 'none', 'tracked' or 'flood' (before 2026-11-17 they were written with 'tracked' and 'flood' regardless).",
       "default": true
     },
     "compute_flood_fill": {
