@@ -152,7 +152,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         report["vertices"] = m.vert_capacity();
         report["triangles"] = m.tri_capacity();
         report["time_sec"] = runtime;
-        report["eps"] = envelope_size;
+        report["eps"] = std::max(envelope_size, 0.); // 0: no envelope
         component_io.result.second = report;
         if (!component_io.memory()) {
             std::ofstream fout(report_file);

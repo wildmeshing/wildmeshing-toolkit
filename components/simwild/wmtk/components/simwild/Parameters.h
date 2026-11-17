@@ -100,8 +100,7 @@ struct Parameters : public wmtk::OptimizerParameters
         colored_smoothing = json_params["colored_smoothing"];
         check_surface_folds = json_params["check_surface_folds"];
 
-        // Coarsening pass. Implemented on the shared 2D optimizer, so it applies to simwild's
-        // 2D mesh and is inert on its 3D one.
+        // Coarsening pass, on the shared optimizers: simwild's 2D and 3D meshes.
         coarsen_pass = json_params["coarsen_pass"];
         coarsen_unbounded = json_params["coarsen_unbounded"];
         coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];

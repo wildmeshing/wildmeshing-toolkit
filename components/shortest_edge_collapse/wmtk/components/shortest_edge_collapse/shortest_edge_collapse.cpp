@@ -189,7 +189,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     component_io.result.second = {
         {"vertices", m.get_vertices().size()},
         {"triangles", m.get_faces().size()},
-        {"eps", envelope_size}};
+        {"eps", std::max(envelope_size, 0.)}}; // 0: no envelope
 }
 
 void shortest_edge_collapse(nlohmann::json json_params)

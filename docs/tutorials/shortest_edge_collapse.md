@@ -162,7 +162,7 @@ runs sequentially and gives identical results.
 - The simplified mesh: `output` on the command line (default `out.obj`), `outputs["mesh"]` in
   memory.
 - In memory, the report holds the number of `vertices` and `triangles` of the result, and the
-  envelope's absolute thickness `eps` (negative without an envelope). There is no report file.
+  envelope's absolute thickness `eps` (0 without an envelope). There is no report file.
 - With [`throw_on_fail`](../reference/shortest_edge_collapse.md#throw_on_fail), the run fails when
   the target is not reached, instead of writing the mesh it got to.
 - With [`history_output`](../reference/shortest_edge_collapse.md#history_output), the history of

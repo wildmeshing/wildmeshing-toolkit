@@ -120,7 +120,7 @@ the collapses depends on the schedule, and the result changes slightly from run 
 - The simplified mesh: `output` on the command line (default `out.obj`), `outputs["mesh"]` in
   memory.
 - With `report`, a JSON file with the target, the vertex and triangle counts, the envelope's
-  absolute thickness `eps` (negative without an envelope) and the run time.
+  absolute thickness `eps` (0 without an envelope) and the run time.
 - With `throw_on_fail`, the run fails when the target is not reached instead of writing the mesh
   it got to.
 - With `history_output`, the history of the collapses, from which [tracking](tracking.md) maps
