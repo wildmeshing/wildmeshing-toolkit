@@ -5,7 +5,7 @@ if(NOT ${WMTK_ENABLE_COMPONENT_TEST_${COMPONENT_NAME}})
     return()
 endif()
 
-add_component_test(${COMPONENT_NAME})
+add_component_test(${COMPONENT_NAME} PER_CASE)
 
 set(SRC_FILES
     test_topological_offset.cpp
