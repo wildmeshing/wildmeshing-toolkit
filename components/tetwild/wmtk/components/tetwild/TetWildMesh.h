@@ -220,12 +220,6 @@ public:
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 
 public:
-    //
-    /**
-     * @brief Call the original TetWild code.
-     */
-    void mesh_improvement_legacy(int max_its = 80);
-
     /**
      * @brief Barycenter (row per tet) of each tet in `tets`. Computed once and
      * passed to the winding-number passes so they do not each rebuild it.

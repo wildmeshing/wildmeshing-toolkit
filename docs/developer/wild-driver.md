@@ -14,7 +14,7 @@ code runs it; the measurements behind the defaults are in the comments of
 
 | Component | Mesh class | Base | What runs the loop |
 |---|---|---|---|
-| tetwild | `TetWildMesh` | `TetOptimizerMesh` | `mesh_improvement(max_iterations)`, after the input is simplified and embedded; `use_legacy_code` runs the older `mesh_improvement_legacy` instead |
+| tetwild | `TetWildMesh` | `TetOptimizerMesh` | `mesh_improvement(max_iterations)`, after the input is simplified and embedded |
 | triwild | `TriWildMesh` | `TriOptimizerMesh` | `mesh_improvement(max_iterations)` |
 | simwild | `SimWildMesh` (3D), `SimWildMeshTri` (2D) | `TetOptimizerMesh`, `TriOptimizerMesh` | `mesh_improvement(max_iterations)`, for the operation `remeshing` |
 | topological_offset | `TopoOffsetTetMesh`, `TopoOffsetTriMesh` | `TetOptimizerMesh`, `TriOptimizerMesh` | its own turns of `local_operations()` while it places the offset front, then `mesh_improvement()` for the final quality pass |

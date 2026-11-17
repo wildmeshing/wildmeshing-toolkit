@@ -263,29 +263,22 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // Recording the tracked surface: from the input files as read, through the weld, the
     // simplification and the insertion, to the output.
     const std::string history_output = json_params["history_output"];
-    const bool record_history = !history_output.empty() && !json_params["use_legacy_code"];
-    if (!history_output.empty() && !record_history) {
-        logger().warn("history_output: not recorded, use_legacy_code rebuilds the mesh");
-    }
+    const bool record_history = !history_output.empty();
     // Recording the feature curves (the curve inputs, with their ends, junctions and the point
     // inputs), the edges tagged `feature`: their own history and file, as the volume's, with or
-    // without the surface's. From the inputs as read, through the insertion, to the output. The
-    // legacy optimizer carries no curves.
+    // without the surface's. From the inputs as read, through the insertion, to the output.
     const std::string curve_history_output = json_params["curve_history_output"];
-    const bool record_curves = !curve_history_output.empty() && !json_params["use_legacy_code"];
-    if (!curve_history_output.empty() && !record_curves) {
-        logger().warn("curve_history_output: not recorded, use_legacy_code rebuilds the mesh");
-    }
+    const bool record_curves = !curve_history_output.empty();
     // The volume around it too, its own choice, recorded alongside from the insertion on (see
     // below). It follows the surface history. And the coarsening pass's local smoothing moves a
     // whole ball of vertices inside one collapse, of which the volume history, which records
-    // the stars of the edge's ends, sees none: refused, as use_legacy_code is.
+    // the stars of the edge's ends, sees none: refused.
     const std::string volume_history_output = json_params["volume_history_output"];
     if (!volume_history_output.empty()) {
         if (!record_history) {
             log_and_throw_error(
-                "volume_history_output needs history_output (and not "
-                "use_legacy_code): the volume history follows the surface's");
+                "volume_history_output needs history_output: the volume history follows the "
+                "surface's");
         }
         if (params.coarsen_pass && params.coarsen_local_smoothing_passes > 0) {
             log_and_throw_error(
@@ -344,13 +337,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 point_inputs.size());
         }
     }
-    // The legacy optimizer carries no curve tags: the feature curves and points would leave the
-    // output without a word (mesh_improvement_legacy() re-tags the open boundaries only).
-    if (json_params["use_legacy_code"] && (!curve_inputs.empty() || !point_inputs.empty())) {
-        log_and_throw_error(
-            "curve and point inputs: not with use_legacy_code, which carries no feature curves or "
-            "points");
-    }
     if (tagged) {
         // What the route has no use for, refused rather than ignored.
         if (!json_params["input_names"].empty()) {
@@ -360,11 +346,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             log_and_throw_error(
                 "filter \"input\": a tagged mesh input has no input surface to take the winding "
                 "number of; \"tracked\" and \"flood\" use its tagged faces");
-        }
-        if (json_params["use_legacy_code"]) {
-            log_and_throw_error(
-                "use_legacy_code: not with a tagged mesh input, whose labels the legacy "
-                "optimizer does not keep");
         }
         if (tagged_mesh->F.empty()) {
             log_and_throw_error(
@@ -411,12 +392,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     if (!filter_inputs.empty()) {
         if (filter_option == "none") {
             log_and_throw_error("filter_inputs: with filter \"none\" nothing is filtered");
-        }
-        if (json_params["use_legacy_code"] && filter_option != "input") {
-            log_and_throw_error(
-                "filter_inputs: filter \"{}\" not with use_legacy_code, which keeps no face's "
-                "inputs",
-                filter_option);
         }
         bounding = 0;
         for (const std::string& name : filter_inputs) {
@@ -1378,22 +1353,14 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // /////////mesh improvement
     phase_timer.start(); // optimization begins
-    if (json_params["use_legacy_code"]) {
-        logger().warn("Using legacy code for mesh improvement!");
-        mesh_new.mesh_improvement_legacy(max_its);
+    mesh_new.mesh_improvement(max_its);
+    // The open-boundary guarantee, audited: every edge still carrying the order2 tag lies in its
+    // tube (tag_order2_edges()). Edges the operations made open carry no tag and are not counted.
+    const size_t n_out = mesh_new.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::order2);
+    if (n_out > 0) {
+        logger().warn("{} order-2 edges outside their tube", n_out);
     } else {
-        mesh_new.mesh_improvement(max_its);
-        // The open-boundary guarantee, audited: every edge still carrying the order2 tag lies in
-        // its tube (tag_order2_edges()). Edges the operations made open carry no tag and are not
-        // counted. Not after the legacy optimizer: it rebuilds the mesh, whose open boundaries are
-        // tagged again from its output, so there is no input tube to audit against.
-        const size_t n_out =
-            mesh_new.tagged_edges_outside(TetWildMesh::FeatureEdgeAttributes::order2);
-        if (n_out > 0) {
-            logger().warn("{} order-2 edges outside their tube", n_out);
-        } else {
-            logger().info("order-2 edges outside their tube: 0");
-        }
+        logger().info("order-2 edges outside their tube: 0");
     }
     log_orientation_check("after optimization");
     t_optimize = phase_timer.getElapsedTime(); // optimization done
