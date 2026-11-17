@@ -1033,9 +1033,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     //
     //   per-input winding numbers      each input's (the wn_<i> output fields), and the inputs
     //                                  each face is inside, as its tags, which filter "input"
-    //                                  reads. When a filter needs them, or with
-    //                                  skip_winding_number false (the default is true), as in
-    //                                  tetwild.
+    //                                  reads. For filter "input", or with skip_winding_number
+    //                                  false (the default is true), as in tetwild. Filters
+    //                                  "tracked" and "flood" do not read them: an atan2 per face
+    //                                  and input segment for fields nobody asked for.
     //   tracked winding number         filter "tracked" (below).
     //   flood-fill parts               filter "flood", or compute_flood_fill (the VTU field).
     //
@@ -1044,9 +1045,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // With filter_inputs, what the filter reads -- the region tags under "input", the tracked
     // winding number under "tracked", the parts under "flood" -- is of those inputs only.
     const bool skip_winding =
-        tagged || (json_params["skip_winding_number"] && filter_option == "none");
-    // skip_winding_number is the default; a filter that needs the winding numbers computes them
-    // regardless, so there is nothing to warn about.
+        tagged || (json_params["skip_winding_number"] && filter_option != "input");
+    // skip_winding_number is the default; filter "input", which needs the winding numbers,
+    // computes them regardless, so there is nothing to warn about.
     {
         igl::Timer step_timer;
         if (!skip_winding) {
