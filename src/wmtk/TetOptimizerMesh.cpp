@@ -1263,13 +1263,8 @@ bool TetOptimizerMesh::vertex_has_feature_edge(const size_t vid) const
 
 bool TetOptimizerMesh::vertex_has_tagged_edge(const size_t vid) const
 {
-    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-        const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].is_tagged()) {
-            return true;
-        }
-    }
-    return false;
+    const auto& FE = m_feature_edge_attribute;
+    return for_each_incident_edge_eid(vid, [&](size_t eid) { return FE[eid].is_tagged(); });
 }
 
 bool TetOptimizerMesh::vertex_has_edge_of_kind(
@@ -1277,13 +1272,8 @@ bool TetOptimizerMesh::vertex_has_edge_of_kind(
     const FeatureEdgeAttributes::Kind k) const
 {
     if (!m_track_feature_edges) return false;
-    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-        const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].has(k)) {
-            return true;
-        }
-    }
-    return false;
+    const auto& FE = m_feature_edge_attribute;
+    return for_each_incident_edge_eid(vid, [&](size_t eid) { return FE[eid].has(k); });
 }
 
 std::shared_ptr<Envelope> TetOptimizerMesh::smoothing_energy_envelope(const size_t vid) const
@@ -1311,10 +1301,11 @@ std::shared_ptr<Envelope> TetOptimizerMesh::tagged_edge_pull_envelope(const size
     if (!m_track_feature_edges) return nullptr;
     // One walk of the one-ring for both kinds: this runs for every vertex every smoothing pass.
     FeatureEdgeAttributes around; // the kinds and input sets of the vertex's edges, merged
-    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-        const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this)) around.merge(m_feature_edge_attribute[e.eid(*this)]);
-    }
+    const auto& FE = m_feature_edge_attribute;
+    for_each_incident_edge_eid(vid, [&](size_t eid) {
+        around.merge(FE[eid]);
+        return false;
+    });
     // Toward the inputs of the vertex's own edges of the kind, one real tube at a time -- the
     // member of their union the vertex is farthest from, as a surface vertex is pulled toward
     // its faces' inputs; the union tube without per-input tubes or without a set.
@@ -2581,11 +2572,10 @@ void TetOptimizerMesh::feature_edges_cache(
             if (pair[0] > pair[1]) {
                 std::swap(pair[0], pair[1]);
             }
-            if (cache.count(pair) != 0) {
-                continue;
+            const auto [it, inserted] = cache.try_emplace(pair);
+            if (inserted) {
+                it->second = m_feature_edge_attribute[tuple_from_edge(tid, local_eid).eid(*this)];
             }
-            const size_t eid = tuple_from_edge(tid, local_eid).eid(*this);
-            cache.emplace(pair, m_feature_edge_attribute[eid]);
         }
     }
 }
