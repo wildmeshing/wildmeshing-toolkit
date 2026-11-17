@@ -148,6 +148,48 @@ Halving the length multiplies the count by about five; doubling it removes only 
 of the tets, because most of the snowman's tets are near its surface. A finer mesh takes proportionally longer:
 the run at 0.025 took about five times as long as one at the default.
 
+[`length`](../reference/tetwild.md#length) and [`eps`](../reference/tetwild.md#eps) give the edge
+length and \(\varepsilon\) in the input's units instead, as simwild's and triwild's do; a positive
+value wins over the relative one.
+
+### Edge length that varies: `sizing_mesh`
+
+Every vertex carries a sizing, the factor of the target length that the
+[stuck refinement](../reference/tetwild.md#stuck_refine_factor) lowers where the quality is stuck.
+[`sizing_mesh`](../reference/tetwild.md#sizing_mesh) sets it from a target length that varies over
+space: a tet mesh whose vertices carry the length in a field named `target_length`, interpolated
+linearly inside its tets. On the memory route it names a mesh of the call; on the file route it is a
+mesh file. It sets the sizing when the optimization starts and caps it after every pass, so the
+vertices a pass makes follow it and the refinement is kept; outside its tets the global length
+applies. The tets fill the input's bounding box grown by 1/15 of its diagonal on each side, so a
+sizing mesh meant to cover them all must reach that far.
+On a unit cube with `length` 0.2 and a field of 0.06 up to its side x = 0, growing to 0.2 at
+x = 0.3, run sequentially with `stop_energy` 10 and `max_iterations` 1, the tracked edges on that
+side are 0.055 long on average. Those on the side x = 1 keep the 0.092 of the background mesh: the
+field asks for 0.2 there, but the collapses that would get there are refused on quality.
+
+### A bound on the edge length: `limit_collapse_length`
+
+A collapse is judged by the edge it removes, shorter than 4/5 of the target, and not by those it
+leaves: the edges of the vertex it removes move to the one it keeps, up to 0.8 + 4/3 of the target,
+and the optimization ends on collapses, so no split cuts them again.
+[`limit_collapse_length`](../reference/tetwild.md#limit_collapse_length) refuses a collapse that
+leaves an edge longer than 4/3 of the target, the length above which the split cuts one. On a unit
+cube with `length` 0.12, run sequentially with `stop_energy` 10 and `max_iterations` 1:
+
+| `limit_collapse_length` | tets (the whole box) | longest tracked edge | max energy |
+|---|---|---|---|
+| off (default) | 18,692 | 1.55 \(l\) | 6.44 |
+| on | 21,791 | 1.31 \(l\) | 6.50 |
+
+Smoothing can still stretch an edge a little past 4/3, so to keep the edges under a bound, ask for
+about 3/4 of it, for a denser mesh. With a `sizing_mesh`, the bounded
+[coarsening pass](../reference/tetwild.md#coarsen_pass)
+([`coarsen_unbounded`](../reference/tetwild.md#coarsen_unbounded) off) stops at 0.8 of the field's
+length rather than of the global one. Neither option works with
+[`use_legacy_code`](../reference/tetwild.md#use_legacy_code), whose operations would ignore it: the
+run is refused.
+
 ### The quality target: `stop_energy`
 
 The shape of a tet is measured by its AMIPS energy: 3 for a regular tetrahedron, growing without
@@ -340,7 +382,7 @@ file, and the history's bytes under `history` when `history_output` is set.
 - **Everything is relative to the bounding box.** `eps_rel` and `length_rel` multiply the
   diagonal of the box around all the inputs, feature curves and points included. A stray triangle
   or point far from the rest grows the box, and with it \(\varepsilon\) and the edge length.
-  Remove it, or compensate with smaller values.
+  Remove it, compensate with smaller values, or give `eps` and `length` in the input's units.
 - **`preserve_topology` on a dirty input** keeps every tiny handle, gap and sliver of the input,
   and the optimization may not converge around them. Repair the input first (see
   [manifold extraction](manifold_extraction.md)).
