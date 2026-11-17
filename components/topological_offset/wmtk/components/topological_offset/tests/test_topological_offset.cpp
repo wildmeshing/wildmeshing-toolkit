@@ -7695,7 +7695,8 @@ TEST_CASE("hold-curves-and-points-2d", "[offset][2d]")
     for (Eigen::Index r = 0; r < block.connectivity.rows(); ++r) {
         for (size_t t = 0; t < tags.labels.size(); ++t) {
             if (member(r, Eigen::Index(t)) != 0)
-                at[tags.labels[t]].push_back(out.V.row(block.connectivity(r, 0)).transpose());
+                at[tags.labels[t]].push_back(
+                    out.V.row(block.connectivity(r, 0)).head<2>().transpose());
         }
     }
     CHECK(at.size() == points.size());
