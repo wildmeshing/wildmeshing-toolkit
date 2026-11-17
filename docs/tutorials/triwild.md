@@ -162,7 +162,12 @@ file route it is a mesh file. It sets the sizing at the start and caps it after 
 vertices a pass makes follow it and the refinement is kept; outside its triangles the global length
 applies.
 A unit square whose field grows from 0.02 on its left side to 0.12 on its right, with `length`
-0.12, ends with tracked edges of 0.030 on average on the left side and 0.114 on the right.
+0.12, ends with tracked edges of 0.026 on average on the left side and 0.100 on the right.
+
+The field is a largest edge length: with it, `limit_collapse_length` is on unless set to
+false, and the optimization goes on past `stop_energy` while more than 1% of the edges are
+longer than 4/3 of their target. The [sizing mesh workflow](workflows/sizing-mesh.md) builds
+one in Python and on files, and shows it in TriWild, TetWild and isotropic remeshing.
 
 ### A bound on the edge length: `limit_collapse_length`
 

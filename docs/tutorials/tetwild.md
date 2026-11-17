@@ -165,8 +165,13 @@ applies. The tets fill the input's bounding box grown by 1/15 of its diagonal on
 sizing mesh meant to cover them all must reach that far.
 On a unit cube with `length` 0.2 and a field of 0.06 up to its side x = 0, growing to 0.2 at
 x = 0.3, run sequentially with `stop_energy` 10 and `max_iterations` 1, the tracked edges on that
-side are 0.055 long on average. Those on the side x = 1 keep the 0.092 of the background mesh: the
+side are 0.046 long on average. Those on the side x = 1 keep the 0.093 of the background mesh: the
 field asks for 0.2 there, but the collapses that would get there are refused on quality.
+
+The field is a largest edge length: with it, `limit_collapse_length` is on unless set to
+false, and the optimization goes on past `stop_energy` while more than 1% of the edges are
+longer than 4/3 of their target. The [sizing mesh workflow](workflows/sizing-mesh.md) builds
+one in Python and on files, and shows it in TriWild, TetWild and isotropic remeshing.
 
 ### A bound on the edge length: `limit_collapse_length`
 

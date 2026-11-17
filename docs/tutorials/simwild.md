@@ -253,17 +253,22 @@ space: a tet mesh in 3D, a triangle mesh in 2D, whose vertices carry the length 
 call; on the file route it is a mesh file. It sets the sizing at the start and caps it after every
 pass, so the vertices a pass makes follow it and the refinement is kept; outside its cells the
 global length applies. A tagged tet mesh of the unit cube, in a box whose length grows from 0.05 to
-0.25 along x, with `length` 0.25, ends with tets whose mean edge is 0.070 in the cube's left
+0.25 along x, with `length` 0.25, ends with tets whose mean edge is 0.069 in the cube's left
 quarter and 0.204 in its right one; without it, 0.205 in both.
 
 With `sizing_field`, a vertex both cover takes the smaller length. Where the sizing mesh covers a
 vertex of no region, its length replaces the global one, also when it is longer; a vertex it does
 not cover keeps what the regions give it. On a square curve whose region asks for 0.08, against a
-global 0.16, a sizing mesh over the right half alone makes the curve's edges there 0.023 at 0.02,
-and 0.083 at 0.4, where the region's length wins; those on the left side stay at 0.091.
+global 0.16, a sizing mesh over the right half alone makes the curve's edges there 0.021 at 0.02,
+and 0.083 at 0.4, where the region's length wins; those on the left side stay at 0.077.
 
 Only `remeshing` reads it: the region edits do not optimize, and ignore it, as they ignore the
 other options of the optimization.
+
+The field is a largest edge length: with it, `limit_collapse_length` is on unless set to
+false, and the optimization goes on past `stop_energy` while more than 1% of the edges are
+longer than 4/3 of their target. The [sizing mesh workflow](workflows/sizing-mesh.md) builds
+one in Python and on files, and shows it in TriWild, TetWild and isotropic remeshing.
 
 ### A bound on the edge length: `limit_collapse_length`
 

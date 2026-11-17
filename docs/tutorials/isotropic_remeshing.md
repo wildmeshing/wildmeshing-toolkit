@@ -93,9 +93,13 @@ wherever an operation puts it, and an edge's target is the mean of its ends': th
 collapse, [`limit_collapse_length`](../reference/isotropic_remeshing.md#limit_collapse_length) and
 the repairs of [`cleanup_angle`](../reference/isotropic_remeshing.md#cleanup_angle) compare each
 edge with its own; a feature curve's edges too. A flat unit square of 10 x 10 squares, with a
-field that grows from 0.02 on its left side to 0.12 on its right, ends with edges of 0.035 on
-average left of x = 0.25 and 0.111 right of x = 0.75, in 692 triangles; with `length` 0.12 alone,
-0.119 and 0.114, in 188.
+field that grows from 0.02 on its left side to 0.12 on its right, ends with edges of 0.029 on
+average left of x = 0.25 and 0.105 right of x = 0.75, in 1014 triangles; with `length` 0.12
+alone, 0.119 and 0.114, in 188.
+
+With a sizing mesh, `limit_collapse_length` is on unless set to false. The
+[sizing mesh workflow](workflows/sizing-mesh.md) builds one in Python and on files, and shows
+it in TriWild, TetWild and isotropic remeshing.
 
 ### The iterations: `max_iterations`
 
