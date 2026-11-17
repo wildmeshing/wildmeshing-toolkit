@@ -15,6 +15,7 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/utils/FeatureInputs.hpp>
+#include <wmtk/utils/SizingMesh.hpp>
 #include <wmtk/utils/SurfaceTopology.hpp>
 
 #include <igl/Timer.h>
@@ -1055,6 +1056,42 @@ public:
     /// update_attributes(), then the change it made to the tracked surface, if recording one.
     void update_attributes_and_history();
 
+    /**
+     * @brief A target edge length that varies over space (a component's sizing_mesh), or none.
+     * Set it with set_sizing_mesh(). Without one, nothing below runs.
+     */
+    std::shared_ptr<const SizingMesh> m_sizing_mesh;
+    /// The sizing mesh's length at `p`: positive where it covers `p`, -1 where it does not or
+    /// without one.
+    double sizing_mesh_length(const Vector3d& p) const
+    {
+        return m_sizing_mesh ? (*m_sizing_mesh)(p) : -1;
+    }
+    /**
+     * @brief Takes `sizing` (a Volume SizingMesh) and sets the sizing scalar of the vertices it
+     * covers from it: apply_sizing_mesh(true). Before mesh_improvement().
+     */
+    void set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing);
+    /**
+     * @brief The sizing scalar of each vertex the sizing mesh covers, length / l: `overwrite`
+     * replaces it (set_sizing_mesh()); otherwise it may only lower it, which local_operations()
+     * does after every pass, so the vertices a pass made (a split's midpoint takes the mean of its
+     * ends') follow the field and a stuck refinement is kept. Vertices it does not cover keep
+     * theirs. Virtual, so an application can combine the field with sizing of its own (simwild's
+     * regions).
+     */
+    virtual void apply_sizing_mesh(bool overwrite);
+    /// The length the coarsening pass holds at vertex `v` when bounded (coarsen_unbounded off):
+    /// the sizing mesh's there, else `l`. Not the sizing scalar, the refinement the pass undoes.
+    double coarsen_target_length(size_t v) const;
+    /**
+     * @brief OptimizerParameters::limit_collapse_length: whether collapsing v1 into v2 leaves an
+     * edge longer than 4/3 of its target, the mean of its ends' (the sizing at v2 being the
+     * smaller of the two, as collapse_edge_after() sets it). In the coarsening pass the target
+     * is coarsen_target_length().
+     */
+    bool collapse_leaves_long_edge(size_t v1_id, size_t v2_id) const;
+
     /// Start recording the tracked surface (TetMesh::start_surface_history), at m_posf, with
     /// `metadata` (the application's parameters, say) saved along. Takes m_insertion_sources.
     void record_surface_history(const std::string& metadata);
@@ -1755,6 +1792,7 @@ protected:
         feature_leaves_tube, // an edge tagged `feature` the collapse moves would leave its tube
         order2_leaves_tube, // an edge tagged `order2` the collapse moves would leave its tube
         feature_point, // v1 stands for a feature point and v2 is outside its ball
+        limit_length, // limit_collapse_length: an edge left longer than 4/3 of its target
         app_both_surfaces, // application: an end on the input complex and an end on the offset
         app_front_unlimited, // application: an unlimited-length pass may not remove a front vertex
         app_leaves_input, // application: v1 on the input complex, v2 not

@@ -136,7 +136,7 @@ public:
         "labels", // vertex: the offset's vertex labels: prismatic_mesh
         "is_cone", // vertex: c1_simplification
         "vertex_id", // vertex and point: isotropic_remeshing's features
-        "length", // vertex: the target edge lengths of triwild's sizing_mesh
+        "target_length", // vertex: a sizing_mesh: tetwild, triwild, simwild, isotropic_remeshing
         "offset_tag", // tet: the offset's band: prismatic_mesh
         "tag_0", // tet: the input region as a field: prismatic_mesh
         "edge_id", // edge: isotropic_remeshing's features

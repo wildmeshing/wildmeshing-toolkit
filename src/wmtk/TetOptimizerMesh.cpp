@@ -1136,6 +1136,7 @@ std::optional<history::CurveHistory> TetOptimizerMesh::finish_curve_history(
 void TetOptimizerMesh::update_attributes_and_history()
 {
     update_attributes();
+    apply_sizing_mesh(false);
     if (const size_t changed = resync_surface_history()) {
         logger().warn(
             "surface history: update_attributes changed {} tracked faces outside the operations",
@@ -2846,6 +2847,60 @@ void TetOptimizerMesh::op_accounting_reset()
     for (auto& row : m_swap_reject_by_kind)
         for (auto& c : row) c.store(0, std::memory_order_relaxed);
     for (auto& c : m_collapse_reject) c.store(0, std::memory_order_relaxed);
+}
+
+void TetOptimizerMesh::set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing)
+{
+    m_sizing_mesh = std::move(sizing);
+    apply_sizing_mesh(true);
+}
+
+void TetOptimizerMesh::apply_sizing_mesh(bool overwrite)
+{
+    if (!m_sizing_mesh) return;
+    const auto apply = [&](size_t v) {
+        if (!tuple_from_vertex(v).is_valid(*this)) return;
+        auto& va = m_vertex_attribute[v];
+        const double length = (*m_sizing_mesh)(va.m_posf);
+        if (!(length > 0)) return; // not covered: the global length
+        const double s = length / m_params.l;
+        va.m_sizing_scalar = overwrite ? s : std::min(va.m_sizing_scalar, s);
+    };
+    if (NUM_THREADS == 0) {
+        for (size_t v = 0; v < vert_capacity(); ++v) apply(v);
+    } else {
+        threading::parallel_for(
+            threading::range(0, vert_capacity()),
+            [&](const threading::range& r) {
+                for (size_t v = r.begin(); v < r.end(); ++v) apply(v);
+            },
+            NUM_THREADS);
+    }
+}
+
+double TetOptimizerMesh::coarsen_target_length(size_t v) const
+{
+    const double t = sizing_mesh_length(m_vertex_attribute[v].m_posf);
+    return t > 0 ? t : m_params.l;
+}
+
+bool TetOptimizerMesh::collapse_leaves_long_edge(size_t v1_id, size_t v2_id) const
+{
+    const auto& VA = m_vertex_attribute;
+    // The target length at a vertex: in the coarsening pass the one asked for, elsewhere the
+    // sizing the split pass works to.
+    const auto target = [&](size_t v) {
+        return m_coarsen_mode ? coarsen_target_length(v) : m_params.l * VA[v].m_sizing_scalar;
+    };
+    // v1 goes; v2 stays where it is, with the smaller sizing of the two (collapse_edge_after).
+    const double t2 = m_coarsen_mode ? target(v2_id) : std::min(target(v1_id), target(v2_id));
+    const Vector3d& p2 = VA[v2_id].m_posf;
+    for (const size_t u : get_one_ring_vids_for_vertex(v1_id)) {
+        if (u == v1_id || u == v2_id) continue;
+        const double t = 4. / 3. * 0.5 * (t2 + target(u));
+        if ((VA[u].m_posf - p2).squaredNorm() > t * t) return true;
+    }
+    return false;
 }
 
 } // namespace wmtk

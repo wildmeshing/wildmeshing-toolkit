@@ -895,49 +895,5 @@ void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
     }
 }
 
-bool TriWildMesh::collapse_before_vertex(size_t v1_id, size_t v2_id)
-{
-    const bool limit = m_tri_params.limit_collapse_length;
-    const bool bounded_coarsen = m_coarsen_mode && !m_params.coarsen_unbounded && m_sizing_field;
-    if (!limit && !bounded_coarsen) return true;
-
-    const auto& VA = m_vertex_attribute;
-    // The target length at a vertex: in the coarsening pass the one asked for (the field, else
-    // the global length), elsewhere the sizing the split pass works to.
-    const auto target = [&](size_t v) {
-        if (m_coarsen_mode) {
-            const double t = m_sizing_field ? m_sizing_field(VA[v].m_posf) : -1;
-            return t > 0 ? t : m_params.l;
-        }
-        return m_params.l * VA[v].m_sizing_scalar;
-    };
-    const Vector2d& p2 = VA[v2_id].m_posf;
-    if (bounded_coarsen) {
-        const double t = 0.8 * 0.5 * (target(v1_id) + target(v2_id));
-        if ((VA[v1_id].m_posf - p2).squaredNorm() > t * t) return false;
-    }
-    if (limit) {
-        // v1 goes, v2 stays where it is, with the smaller sizing of the two (collapse_edge_after).
-        const double t2 = m_coarsen_mode ? target(v2_id) : std::min(target(v1_id), target(v2_id));
-        for (const size_t u : get_one_ring_vids_for_vertex_duplicate(v1_id)) {
-            if (u == v1_id || u == v2_id) continue;
-            const double t = 4. / 3. * 0.5 * (t2 + target(u));
-            if ((VA[u].m_posf - p2).squaredNorm() > t * t) return false;
-        }
-    }
-    return true;
-}
-
-void TriWildMesh::apply_sizing_field(bool overwrite)
-{
-    if (!m_sizing_field) return;
-    for (const Tuple& t : get_vertices()) {
-        auto& va = m_vertex_attribute[t.vid(*this)];
-        const double length = m_sizing_field(va.m_posf);
-        if (!(length > 0)) continue; // not covered: the global length
-        const double s = length / m_params.l;
-        va.m_sizing_scalar = overwrite ? s : std::min(va.m_sizing_scalar, s);
-    }
-}
 
 } // namespace wmtk::components::triwild

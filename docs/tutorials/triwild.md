@@ -156,10 +156,11 @@ the relative one.
 Every vertex carries a sizing, the factor of the target length that the
 [stuck refinement](../reference/triwild.md#stuck_refine_factor) lowers where the quality is stuck.
 [`sizing_mesh`](../reference/triwild.md#sizing_mesh) sets it from a target length that varies over
-the plane: a triangle mesh whose vertices carry the length in a field named `length`, interpolated
-linearly inside its triangles. On the memory route it names a mesh of the call; on the file route
-it is a mesh file. It sets the sizing at the start and caps it after every pass, so the vertices a
-pass makes follow it and the refinement is kept; outside its triangles the global length applies.
+the plane: a triangle mesh whose vertices carry the length in a field named `target_length`,
+interpolated linearly inside its triangles. On the memory route it names a mesh of the call; on the
+file route it is a mesh file. It sets the sizing at the start and caps it after every pass, so the
+vertices a pass makes follow it and the refinement is kept; outside its triangles the global length
+applies.
 A unit square whose field grows from 0.02 on its left side to 0.12 on its right, with `length`
 0.12, ends with tracked edges of 0.030 on average on the left side and 0.114 on the right.
 

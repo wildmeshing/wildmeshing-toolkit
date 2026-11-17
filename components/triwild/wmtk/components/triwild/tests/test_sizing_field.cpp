@@ -1,9 +1,12 @@
 // The absolute eps and length, the collapse length limit and the sizing mesh.
 #include <wmtk/components/triwild/triwild.hpp>
+#include <wmtk/io/mesh_io.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -40,6 +43,21 @@ std::vector<double> tracked_lengths(const MeshData& mesh)
         out.push_back((mesh.V.row(E(i, 0)) - mesh.V.row(E(i, 1))).norm());
     }
     return out;
+}
+
+/// The square [-0.1, 1.1]^2 as two triangles, its field `target_length` `left` on its left
+/// side and `right` on its right.
+MeshData sizing_square(double left, double right)
+{
+    MeshData sizing;
+    sizing.V.resize(4, 3);
+    sizing.V << -0.1, -0.1, 0, 1.1, -0.1, 0, 1.1, 1.1, 0, -0.1, 1.1, 0;
+    sizing.cells[CellType::Triangle].connectivity.resize(2, 3);
+    sizing.cells[CellType::Triangle].connectivity << 0, 1, 2, 0, 2, 3;
+    DataMatrix<double> length(4, 1);
+    length << left, right, right, left;
+    sizing.vertex_attributes["target_length"].values = length;
+    return sizing;
 }
 
 double max_of(const std::vector<double>& v)
@@ -111,7 +129,7 @@ TEST_CASE("triwild-sizing-mesh", "[triwild][sizing]")
     sizing.cells[CellType::Triangle].connectivity << 0, 1, 2, 0, 2, 3;
     DataMatrix<double> length(4, 1);
     length << 0.02, 0.12, 0.12, 0.02;
-    sizing.vertex_attributes["length"].values = length;
+    sizing.vertex_attributes["target_length"].values = length;
     MeshMap meshes{{"curve", square_curve(10)}, {"sizing", sizing}};
 
     const auto r = components::triwild::triwild(
@@ -155,7 +173,51 @@ TEST_CASE("triwild-sizing-mesh-errors", "[triwild][sizing]")
         components::triwild::triwild({{"input", {"curve"}}, {"sizing_mesh", "missing"}}, meshes));
     DataMatrix<double> bad(3, 1);
     bad << 0.1, -1, 0.1;
-    meshes["sizing"].vertex_attributes["length"].values = bad;
+    meshes["sizing"].vertex_attributes["target_length"].values = bad;
     CHECK_THROWS(
         components::triwild::triwild({{"input", {"curve"}}, {"sizing_mesh", "sizing"}}, meshes));
+}
+
+TEST_CASE("triwild-sizing-mesh-file-route", "[triwild][sizing]")
+{
+    // The sizing mesh as a file, relative to input_dir: the same mesh as on the memory route.
+    namespace fs = std::filesystem;
+    const fs::path dir = fs::current_path() / "triwild_sizing_mesh_file_route";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+    const MeshData curve = square_curve(10);
+    {
+        std::ofstream o(dir / "curve.obj");
+        o.precision(17);
+        for (Eigen::Index v = 0; v < curve.V.rows(); ++v)
+            o << "v " << curve.V(v, 0) << " " << curve.V(v, 1) << " 0\n";
+        const auto& E = curve.cell(CellType::Edge).connectivity;
+        for (Eigen::Index e = 0; e < E.rows(); ++e)
+            o << "l " << E(e, 0) + 1 << " " << E(e, 1) + 1 << "\n";
+    }
+    io::write_mesh(dir / "sizing.msh", sizing_square(0.02, 0.12));
+
+    const nlohmann::json options = {
+        {"length", 0.12},
+        {"stop_energy", 3.6},
+        {"filter", "input"},
+        {"preserve_topology", true},
+        {"num_threads", 1}};
+    nlohmann::json file = options;
+    file.update({
+        {"application", "triwild"},
+        {"input", {"curve.obj"}},
+        {"input_dir", dir.string()},
+        {"sizing_mesh", "sizing.msh"},
+        {"output", (dir / "out").string()},
+        {"write_vtu", false},
+    });
+    components::triwild::triwild(file);
+    nlohmann::json memory = options;
+    memory.update({{"input", {"curve"}}, {"sizing_mesh", "sizing"}});
+    const auto r = components::triwild::triwild(
+        memory,
+        MeshMap{{"curve", curve}, {"sizing", sizing_square(0.02, 0.12)}});
+    CHECK(io::read_mesh(dir / "out.msh").V == r.first.at("mesh").V);
+    fs::remove_all(dir);
 }

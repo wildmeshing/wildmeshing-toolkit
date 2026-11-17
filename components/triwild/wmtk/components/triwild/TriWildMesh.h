@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 #include <wmtk/MeshData.hpp>
 
 #include <wmtk/TriOptimizerMesh.h>
@@ -229,40 +227,6 @@ public:
      * @return the number of vertices refined.
      */
     size_t refine_sizing_around_worst(double max_energy) override;
-
-    /**
-     * @brief A target edge length that varies over the plane (the sizing_mesh option): the
-     * absolute length at a point, or a value that is not positive where the field does not
-     * cover it. Empty: none.
-     */
-    std::function<double(const Vector2d&)> m_sizing_field;
-
-    /**
-     * @brief Sets each vertex's sizing scalar from m_sizing_field, as simwild's
-     * set_sizing_field() does from its regions: `overwrite` replaces it (at the start);
-     * otherwise it may only lower it (after every pass, update_attributes(): a stuck refinement
-     * must not be undone, nor a vertex left above the field). Vertices the field does not cover
-     * keep theirs. Does nothing without a field.
-     */
-    void apply_sizing_field(bool overwrite);
-
-    /// The sizing field after every pass (TriOptimizerMesh::local_operations): it may only lower
-    /// the sizing, so the vertices the pass made (a split's midpoint takes the mean of its ends')
-    /// follow the field, and stuck refinement is kept.
-    void update_attributes() override { apply_sizing_field(false); }
-
-    /**
-     * @brief The collapse's length limits, both off unless asked for.
-     *
-     * - Parameters::limit_collapse_length: no edge left longer than the split length, 4/3 of the
-     *   target scaled by the sizing at its ends.
-     * - The coarsening pass, bounded (coarsen_unbounded off) and with a sizing field: no edge
-     *   collapsed that is at or past 0.8 of the field's length at its ends. The base class
-     *   stops it at 0.8 of the global length; the field is the length the user asked for there,
-     *   not the optimizer's refinement of it, which the pass exists to undo where it can. In the
-     *   pass the limit above uses the field too, for the same reason.
-     */
-    bool collapse_before_vertex(size_t v1_id, size_t v2_id) override;
 
 
     void write_vtu(const std::string& path, MeshMap* output = nullptr) const;

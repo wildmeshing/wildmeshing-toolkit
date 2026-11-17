@@ -12,6 +12,7 @@
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/utils/SizingMesh.hpp>
 
 #include <spdlog/fmt/bundled/format.h>
 #include <polysolve/nonlinear/Problem.hpp>
@@ -540,6 +541,42 @@ public:
      * TriWild, this is a no-op.
      */
     virtual void update_attributes() {}
+
+    /**
+     * @brief A target edge length that varies over the plane (a component's sizing_mesh), or
+     * none. Set it with set_sizing_mesh(). Without one, nothing below runs.
+     */
+    std::shared_ptr<const SizingMesh> m_sizing_mesh;
+    /// The sizing mesh's length at `p`: positive where it covers `p`, -1 where it does not or
+    /// without one.
+    double sizing_mesh_length(const Vector2d& p) const
+    {
+        return m_sizing_mesh ? (*m_sizing_mesh)(p) : -1;
+    }
+    /**
+     * @brief Takes `sizing` (a Planar SizingMesh) and sets the sizing scalar of the vertices it
+     * covers from it: apply_sizing_mesh(true). Before mesh_improvement().
+     */
+    void set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing);
+    /**
+     * @brief The sizing scalar of each vertex the sizing mesh covers, length / l: `overwrite`
+     * replaces it (set_sizing_mesh()); otherwise it may only lower it, which local_operations()
+     * does after every pass, so the vertices a pass made (a split's midpoint takes the mean of its
+     * ends') follow the field and a stuck refinement is kept. Vertices it does not cover keep
+     * theirs. Virtual, so an application can combine the field with sizing of its own (simwild's
+     * regions).
+     */
+    virtual void apply_sizing_mesh(bool overwrite);
+    /// The length the coarsening pass holds at vertex `v` when bounded (coarsen_unbounded off):
+    /// the sizing mesh's there, else `l`. Not the sizing scalar, the refinement the pass undoes.
+    double coarsen_target_length(size_t v) const;
+    /**
+     * @brief OptimizerParameters::limit_collapse_length: whether collapsing v1 into v2 leaves an
+     * edge longer than 4/3 of its target, the mean of its ends' (the sizing at v2 being the
+     * smaller of the two, as collapse_edge_after() sets it). In the coarsening pass the target
+     * is coarsen_target_length().
+     */
+    bool collapse_leaves_long_edge(size_t v1_id, size_t v2_id) const;
 
     /// Shared TriWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
