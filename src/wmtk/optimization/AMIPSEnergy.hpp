@@ -3,7 +3,38 @@
 #include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/Types.hpp>
 
+#include <cstring>
+
 namespace wmtk::optimization {
+
+namespace detail {
+/**
+ * The last point a pure function of x was evaluated at, and what it returned there, compared
+ * bit for bit. A Newton solve asks for value() about 32 times at about 5.5 distinct points --
+ * the line search and the stopping checks re-ask at the point just accepted -- so returning the
+ * stored result for a repeat is the same answer for a fraction of the cost.
+ */
+template <int N, typename Result>
+struct LastEvaluation
+{
+    bool valid = false;
+    double at[N] = {};
+    Result result{};
+
+    template <typename Vec>
+    bool matches(const Vec& x) const
+    {
+        return valid && std::memcmp(at, x.data(), sizeof(at)) == 0;
+    }
+    template <typename Vec>
+    void store(const Vec& x, const Result& r)
+    {
+        std::memcpy(at, x.data(), sizeof(at));
+        result = r;
+        valid = true;
+    }
+};
+} // namespace detail
 
 class AMIPSEnergy2D : public polysolve::nonlinear::Problem
 {
@@ -38,6 +69,8 @@ public:
 private:
     std::vector<std::array<double, 6>> m_cells;
     double m_weight;
+    detail::LastEvaluation<2, double> m_last_value;
+    detail::LastEvaluation<2, TVector> m_last_gradient;
 };
 
 
@@ -74,6 +107,8 @@ public:
 private:
     std::vector<std::array<double, 12>> m_cells;
     double m_weight;
+    detail::LastEvaluation<3, double> m_last_value;
+    detail::LastEvaluation<3, TVector> m_last_gradient;
 };
 
 } // namespace wmtk::optimization
