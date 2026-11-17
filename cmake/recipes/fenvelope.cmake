@@ -66,9 +66,18 @@ CPMAddPackage(
     # And PR #12, which follows VolumeRemesher #35 back onto upstream: MarcoAttene/NFG aeec975,
     # where the fork's changes are merged. Identical NFG and Indirect_Predicates pins again,
     # neither of them a fork.
+    #
+    # And PR #13, the cost of one query: per-query facet records for the double filters, one TPI
+    # prefilter per point, a one-corner AABB triangle-box test, direct orient predicates, no heap
+    # allocation per candidate prism. Every answer unchanged (5.62M recorded queries replayed).
+    #
+    # And PR #14, which keeps NFG's implicit_point.h out of the public headers: through
+    # FastEnvelope.h it turned on `#pragma STDC FENV_ACCESS ON` in every file here that includes
+    # the envelope, which made the compiler use constrained floating-point operations there and
+    # lose some vectorization. Every answer unchanged.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
-    # main. A commit rather than the branch name, so the build stays reproducible.
-    GIT_TAG 7206033e17ba9c5b9a305cc8dd51b98282dfe70d
+    # main. A commit rather than a branch name, so the build stays reproducible.
+    GIT_TAG e57463a033d282f98a9503105b66beb842d5d986
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
 )

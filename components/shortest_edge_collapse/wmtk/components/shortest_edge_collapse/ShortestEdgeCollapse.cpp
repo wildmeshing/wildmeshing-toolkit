@@ -149,6 +149,9 @@ bool ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
         return false;
     }
     if (m_has_envelope) {
+        // Every new triangle inside its envelope, asked in Envelope::any_outside's order.
+        thread_local std::vector<wmtk::Envelope::TriangleQuery> queries;
+        queries.clear();
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
             auto vs = oriented_tri_vertices(t);
@@ -156,9 +159,9 @@ bool ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
             const wmtk::Envelope& envelope =
                 m_input_envelopes.empty() ? m_envelope
                                           : *m_input_envelopes[face_attrs[t.fid(*this)].input];
-            bool outside = envelope.is_outside(tris);
-            if (outside) return false;
+            queries.emplace_back(&envelope, tris);
         }
+        if (wmtk::Envelope::any_outside(queries)) return false;
     }
     return true;
 }

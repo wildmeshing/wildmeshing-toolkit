@@ -459,12 +459,25 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // surface
     // and open boundary
     if (cache.edge_length > 0) {
+        // surface envelope: every new surface face inside its containment envelope
+        // (surface_triangle_is_outside, asked in Envelope::any_outside's order)
+        thread_local std::vector<Envelope::TriangleQuery> queries;
+        thread_local std::vector<std::shared_ptr<Envelope>> envelopes; // keeps them alive
+        queries.clear();
+        envelopes.clear();
+        const auto& VA = m_vertex_attribute;
         for (const auto& [vids, attr] : cache.surface_faces) {
-            // surface envelope
-            if (surface_triangle_is_outside(vids[0], vids[1], vids[2], attr)) {
-                return collapse_reject(CollapseReject::after_envelope);
-            }
+            std::shared_ptr<Envelope> env = surface_envelope_for_face(vids, attr);
+            if (!env) continue;
+            queries.emplace_back(
+                env.get(),
+                std::array<Eigen::Vector3d, 3>{
+                    {VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[2]].m_posf}});
+            envelopes.push_back(std::move(env));
         }
+        const bool outside = Envelope::any_outside(queries);
+        envelopes.clear();
+        if (outside) return collapse_reject(CollapseReject::after_envelope);
         // The order-2 chord gate: every cached order-2 edge (v1,x), remapped to (v2,x) at
         // caching time, must still BE order-2 substructure -- flags and containment in the
         // order-2 envelope included. Without it a sheet erodes IN-PLANE from its open

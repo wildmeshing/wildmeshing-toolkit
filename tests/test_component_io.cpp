@@ -3045,8 +3045,8 @@ TEST_CASE(
     // number at its centroid, 1 inside that square and 0 outside -- fields, not tags, so no
     // regions: wn_<name> on the memory route, wn_<i> in the .msh, as tetwild's on its tets. The
     // winding number of a closed polygon off its boundary is exactly 0 or 1, so the tolerance only
-    // absorbs rounding. skip_winding_number leaves them out under filter none and is ignored
-    // under any other; the tagged route computes none.
+    // absorbs rounding. skip_winding_number -- the default -- leaves them out under filter none
+    // and is ignored under any other; the tagged route computes none.
     WorkingDirectory cwd;
     const auto check_fields = [](const MeshData& mesh, const std::array<std::string, 2>& names) {
         const auto& triangles = mesh.cell(CellType::Triangle);
@@ -3090,7 +3090,8 @@ TEST_CASE(
         {"simplify", false},
         {"max_iterations", 0},
         {"num_threads", 1},
-        {"write_vtu", false}};
+        {"write_vtu", false},
+        {"skip_winding_number", false}};
     auto named = file_options;
     named["input_names"] = {"a", "b"};
     named["output"] = "named";
@@ -3104,6 +3105,7 @@ TEST_CASE(
     check_fields(io::read_mesh("unnamed.msh"), {{"wn_0", "wn_1"}});
 
     CHECK(!has_wn(two_squares_meshed({{"skip_winding_number", true}}).first.at("mesh")));
+    CHECK(!has_wn(two_squares_meshed().first.at("mesh"))); // the default
     check_fields(
         two_squares_meshed({{"skip_winding_number", true}, {"filter", "input"}}).first.at("mesh"),
         {{"wn_a", "wn_b"}});

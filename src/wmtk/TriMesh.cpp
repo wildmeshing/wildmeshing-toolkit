@@ -1888,6 +1888,11 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
 
 void TriMesh::consolidate_mesh()
 {
+    // The slots handed out since the last consolidation: past them the attributes are already
+    // default (see reset_range), unless the mesh was initialized since (m_attr_tail_clean).
+    constexpr size_t kAll = std::numeric_limits<size_t>::max();
+    const size_t v_used = m_attr_tail_clean ? vert_capacity() : kAll;
+    const size_t t_used = m_attr_tail_clean ? tri_capacity() : kAll / 3;
     auto v_cnt = 0;
     std::vector<size_t> map_v_ids(vert_capacity(), -1);
     for (auto i = 0; i < vert_capacity(); i++) {
@@ -1950,16 +1955,17 @@ void TriMesh::consolidate_mesh()
     // them, and the next operations are handed those slots as fresh.
     if (p_vertex_attrs) {
         p_vertex_attrs->resize(vcap);
-        p_vertex_attrs->reset_from(v_cnt);
+        p_vertex_attrs->reset_range(v_cnt, v_used);
     }
     if (p_edge_attrs) {
         p_edge_attrs->resize(tcap * 3);
-        p_edge_attrs->reset_from(t_cnt * 3);
+        p_edge_attrs->reset_range(t_cnt * 3, t_used * 3);
     }
     if (p_face_attrs) {
         p_face_attrs->resize(tcap);
-        p_face_attrs->reset_from(t_cnt);
+        p_face_attrs->reset_range(t_cnt, t_used);
     }
+    m_attr_tail_clean = true;
 
     // assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());
@@ -2382,6 +2388,7 @@ void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& 
     }
     m_vertex_connectivity.set_live(n_vertices);
     m_tri_connectivity.set_live(tris.size());
+    m_attr_tail_clean = false;
 
     resize_mutex(vcap);
 

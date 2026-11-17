@@ -3,12 +3,14 @@
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cfenv>
 #include <chrono>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <random>
 #include <stdexcept>
 #include <thread>
 #include <wmtk/Types.hpp>
@@ -16,6 +18,7 @@
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/indexed_collector.hpp>
 #include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/parallel_sorted_visit.hpp>
 #include <wmtk/threading/spin_mutex.hpp>
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -193,6 +196,57 @@ TEST_CASE("parallel_for_performance", "[threading][.]")
         parallel_execute(4);
         parallel_execute(8);
         parallel_execute(16);
+    }
+}
+
+TEST_CASE("parallel_sorted_visit", "[threading]")
+{
+    // The "first entry of each key" scan that ExecutePass::take_unique_renewed runs: every
+    // thread count must keep exactly the entries a serial sort keeps, and every visitor must
+    // see its elements in ascending order.
+    using Entry = std::pair<std::array<uint32_t, 2>, uint32_t>; // (key, index)
+    const auto key_less = [](const Entry& a, const Entry& b) { return a.first < b.first; };
+    std::mt19937 rng(7);
+    for (const size_t n : {size_t(0), size_t(1), size_t(1000), size_t(100000), size_t(700000)}) {
+        for (const uint32_t n_keys : {1u, 50u, 100000u}) {
+            std::vector<Entry> base(n);
+            for (size_t i = 0; i < n; ++i) {
+                // Skewed: half of the entries share a handful of keys.
+                const uint32_t k = (rng() % 2) ? rng() % 4 : rng() % n_keys;
+                base[i] = {{{k % 7, k}}, uint32_t(i)};
+            }
+            std::vector<uint8_t> expected(n, 0);
+            {
+                auto v = base;
+                std::sort(v.begin(), v.end());
+                for (size_t j = 0; j < n; ++j) {
+                    if (j == 0 || v[j].first != v[j - 1].first) expected[v[j].second] = 1;
+                }
+            }
+            for (const int threads : {1, 2, 3, 8, 32}) {
+                auto v = base;
+                std::vector<uint8_t> kept(n, 0);
+                std::atomic<size_t> visited{0};
+                std::atomic<bool> ordered{true};
+                wmtk::threading::parallel_sorted_visit(
+                    v,
+                    threads,
+                    std::less<Entry>(),
+                    key_less,
+                    [&]() {
+                        return [&, prev = Entry{}, any = false](const Entry& x) mutable {
+                            if (any && !(prev < x)) ordered = false;
+                            if (!any || x.first != prev.first) kept[x.second] = 1;
+                            prev = x;
+                            any = true;
+                            ++visited;
+                        };
+                    });
+                CHECK(visited == n);
+                CHECK(ordered);
+                CHECK(kept == expected);
+            }
+        }
     }
 }
 
