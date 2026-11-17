@@ -12,6 +12,7 @@ set(SRC_FILES
     test_remeshing_boundary.cpp
     test_remeshing_history.cpp
     test_remeshing_features.cpp
+    test_remeshing_sizing.cpp
 )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

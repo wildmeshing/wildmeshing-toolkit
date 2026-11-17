@@ -11,6 +11,7 @@
 #include <wmtk/io/DataWriter.hpp>
 #include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
+#include <wmtk/utils/SizingMesh.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
@@ -504,6 +505,9 @@ double run_remeshing(
 static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
     component_io.prepare(json_params, "isotropic_remeshing");
+    // The `sizing_mesh` input names a mesh of the call on the memory route, as triwild's does.
+    const std::string sizing_selector = json_params.value("sizing_mesh", std::string());
+    if (component_io.memory()) json_params.erase("sizing_mesh");
     using wmtk::utils::resolve_path;
     using Tuple = IsotropicRemeshing::Tuple;
 
@@ -534,6 +538,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const std::string input_path = component_io.path(root, json_params["input"]);
     const std::string output = json_params["output"];
     const double env_rel = json_params["eps_rel"];
+    const double env_abs = json_params["eps"];
     const double boundary_env_rel = json_params["boundary_eps_rel"];
     const double length_rel = json_params["length_rel"];
     const int num_threads = json_params["num_threads"];
@@ -552,6 +557,19 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // A file on the file route, a mesh of the memory input on the memory route.
     const std::string features_input = json_params["features"];
     double length_abs = json_params["length_abs"];
+    // `length` is length_abs under the name the other components give it; length_abs is the older
+    // one. A positive value wins, as length_abs's does.
+    {
+        const double length = json_params["length"];
+        if (length > 0 && length_abs > 0 && length != length_abs) {
+            log_and_throw_error(
+                "length {} and length_abs {} disagree: they are one option, length_abs its older "
+                "name; give one",
+                length,
+                length_abs);
+        }
+        if (length > 0) length_abs = length;
+    }
     // With feature curves, a .vtu output holds them, the fields and the fixed vertices.
     const bool vtu_output = (!feature_fields.empty() || !features_input.empty()) &&
                             std::filesystem::path(output).extension() == ".vtu";
@@ -560,6 +578,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             "{} holds the triangles only: the feature edges, their ids, the fixed vertices' ids "
             "and the per-face fields go to a .vtu output alone",
             output);
+    }
+
+    // The `sizing_mesh` input: a mesh of the call on the memory route, a mesh file on the file
+    // route (relative to input_dir), read here so that a bad one fails before any work.
+    std::shared_ptr<const SizingMesh> sizing_mesh;
+    if (!sizing_selector.empty()) {
+        sizing_mesh = std::make_shared<SizingMesh>(
+            component_io.memory() ? component_io.mesh(sizing_selector)
+                                  : io::read_mesh(resolve_path(root, sizing_selector)),
+            SizingMesh::Kind::Surface);
     }
 
     wmtk::logger().info("remeshing on {}", input_path);
@@ -631,7 +659,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     double diag = (box_minmax.first - box_minmax.second).norm();
-    const double envelope_size = env_rel * diag;
+    // The absolute eps wins when positive, as triwild's and simwild's.
+    const double envelope_size = env_abs > 0 ? env_abs : env_rel * diag;
     const double boundary_envelope_size = boundary_env_rel > 0 ? boundary_env_rel * diag : 0;
     if (boundary_envelope_size > 0) {
         wmtk::logger().info("boundary envelope eps {:.6}", boundary_envelope_size);
@@ -654,6 +683,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         freeze_boundary,
         envelope_size,
         boundary_envelope_size);
+    // Each vertex takes the sizing mesh's length where it is (IsotropicRemeshing::set_sizing_mesh).
+    if (sizing_mesh) m.set_sizing_mesh(sizing_mesh);
 
     {
         size_t nm_e = 0;
@@ -780,6 +811,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         report["max_valence"] = properties[4];
         report["min_valence"] = properties[5];
         report["target_length"] = length_abs;
+        report["eps"] = std::max(envelope_size, 0.);
+        report["sizing_mesh"] = !sizing_selector.empty();
         report["time_sec"] = runtime;
         report["#v"] = m.get_vertices().size();
         report["#f"] = m.get_faces().size();

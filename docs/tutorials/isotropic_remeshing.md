@@ -60,13 +60,15 @@ The input on the left, the result on the right: drag to rotate, scroll to zoom. 
 
 ## Key settings
 
-### The target length: `length_rel`, `length_abs`
+### The target length: `length_rel`, `length`
 
-[`length_abs`](../reference/isotropic_remeshing.md#length_abs) is the target edge length;
-when it is negative (the default), [`length_rel`](../reference/isotropic_remeshing.md#length_rel)
-gives it relative to the bounding box diagonal; when both are negative, the target is the input's
-average edge length. Since edges between 4/5 and 4/3 of the target are left alone, the average
-edge of the result is somewhat longer than the target. On the bunny:
+[`length`](../reference/isotropic_remeshing.md#length) is the target edge length
+([`length_abs`](../reference/isotropic_remeshing.md#length_abs) is its older name, and still works;
+given both, they have to agree); when it is negative (the default),
+[`length_rel`](../reference/isotropic_remeshing.md#length_rel) gives it relative to the bounding
+box diagonal; when both are negative, the target is the input's average edge length. Since edges
+between 4/5 and 4/3 of the target are left alone, the average edge of the result is somewhat
+longer than the target. On the bunny:
 
 ```python
 --8<-- "docs/examples/python/isotropic_remeshing.py:length"
@@ -79,6 +81,21 @@ edge of the result is somewhat longer than the target. On the bunny:
 | 0.02 | 2,034 | 1.12 |
 
 Halving the length multiplies the vertex count by about four, as it should on a surface.
+
+### Edge length that varies: `sizing_mesh`
+
+[`sizing_mesh`](../reference/isotropic_remeshing.md#sizing_mesh) replaces the uniform target with
+one that varies over the surface: a triangle mesh whose vertices carry the length in a field named
+`target_length`, interpolated linearly inside its triangles and read at the point of it closest to
+each vertex. On the memory route it names a mesh of the call -- the input itself, given such a
+field; on the file route it is a mesh file. Each vertex takes the length where it is, again
+wherever an operation puts it, and an edge's target is the mean of its ends': the split, the
+collapse, [`limit_collapse_length`](../reference/isotropic_remeshing.md#limit_collapse_length) and
+the repairs of [`cleanup_angle`](../reference/isotropic_remeshing.md#cleanup_angle) compare each
+edge with its own; a feature curve's edges too. A flat unit square of 10 x 10 squares, with a
+field that grows from 0.02 on its left side to 0.12 on its right, ends with edges of 0.035 on
+average left of x = 0.25 and 0.111 right of x = 0.75, in 692 triangles; with `length` 0.12 alone,
+0.119 and 0.114, in 188.
 
 ### The iterations: `max_iterations`
 
@@ -103,11 +120,12 @@ more iterations do not reach them (see [the boundary](#the-open-boundary-freeze_
 ### The envelope: `eps_rel`
 
 [`eps_rel`](../reference/isotropic_remeshing.md#eps_rel) is the envelope's thickness, relative to
-the input's bounding box diagonal. The default, -1, is no envelope: smoothing moves every vertex
-within its tangent plane, which on a curved surface or at a sharp edge is off the surface, and
-the iterations add up. A box (`piece_0.obj`, 8 vertices), remeshed with `length_rel` 0.05, keeps
-none of its corners: they round off. With an envelope, an operation that would leave part of the
-surface outside it is refused:
+the input's bounding box diagonal ([`eps`](../reference/isotropic_remeshing.md#eps) gives it as a
+distance instead, and wins when positive). The default, -1, is no envelope: smoothing moves every
+vertex within its tangent plane, which on a curved surface or at a sharp edge is off the surface,
+and the iterations add up. A box (`piece_0.obj`, 8 vertices), remeshed with `length_rel` 0.05,
+keeps none of its corners: they round off. With an envelope, an operation that would leave part of
+the surface outside it is refused:
 
 ```python
 --8<-- "docs/examples/python/isotropic_remeshing.py:envelope"
@@ -262,10 +280,11 @@ edges either way.
   features. One made with `feature_fields` goes back in with its per-face fields named in
   `feature_fields` again (`mesh` holds no `uv` or `normal`): an input may carry no triangle field
   that `feature_fields` does not name.
-- With `report`, a JSON file with the target length, the average, smallest and largest edge
-  length, the valences, the vertex and triangle counts, the non-manifold edges and vertices, the
-  number of operations refused because they would fold the surface, and the run time. In memory,
-  the report is returned.
+- With `report`, a JSON file with the target length, whether a `sizing_mesh` was given, the
+  envelope's thickness (`eps`, 0 for none), the average, smallest and largest edge length, the
+  valences, the vertex and triangle counts, the non-manifold edges and vertices, the number of
+  operations refused because they would fold the surface, and the run time. In memory, the report
+  is returned.
 - With [`history_output`](../reference/isotropic_remeshing.md#history_output), the history of the
   operations, from which [tracking](tracking.md) maps points between the input and the output.
 
