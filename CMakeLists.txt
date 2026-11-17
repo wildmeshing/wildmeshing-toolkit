@@ -133,7 +133,9 @@ include(simple_bvh)
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-option(WMTK_PYBIND "Generate python bindings" ON)
+# Off by default as a subproject: a parent that builds the components (WMTK_BUILD_COMPONENTS) gets
+# no Python module, and needs no Python development files to configure.
+option(WMTK_PYBIND "Generate python bindings" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
 if(WMTK_PYBIND)
     include(pybind11)
     include(pybind11_json)

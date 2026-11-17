@@ -890,13 +890,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const auto envelope_selector = json_params.value("envelope", nlohmann::json());
     if (component_io.memory()) json_params.erase("envelope");
     // `sizing_mesh` names a mesh of the call on the memory route too (read below), as triwild's.
+    if (json_params.contains("sizing_mesh") && json_params["sizing_mesh"].is_null()) {
+        json_params.erase("sizing_mesh"); // null, as Python's None: none
+    }
     const std::string sizing_selector = json_params.value("sizing_mesh", std::string());
     if (component_io.memory()) json_params.erase("sizing_mesh");
-    // With a sizing mesh, limit_collapse_length is on unless set: the field is a bound, and
-    // without the limit a collapse leaves edges past it that nothing splits again
-    // (docs/tutorials/workflows/sizing-mesh.md).
-    if (!sizing_selector.empty() && !json_params.contains("limit_collapse_length")) {
-        json_params["limit_collapse_length"] = true;
+    // limit_collapse_length has no fixed default (spec: "skip"): unless set, it is on with a sizing
+    // mesh, whose field is then a bound -- without the limit a collapse leaves edges past it that
+    // nothing splits again (docs/tutorials/workflows/sizing-mesh.md) -- and off without.
+    if (!json_params.contains("limit_collapse_length")) {
+        json_params["limit_collapse_length"] = !sizing_selector.empty();
     }
     using wmtk::utils::resolve_path;
 

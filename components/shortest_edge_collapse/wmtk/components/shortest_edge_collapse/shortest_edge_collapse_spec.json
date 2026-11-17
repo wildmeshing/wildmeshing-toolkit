@@ -65,7 +65,7 @@
     "pointer": "/eps",
     "type": "float",
     "default": -1,
-    "doc": "Absolute envelope thickness. When positive it is used instead of eps_rel, and there is an envelope whatever eps_rel is; otherwise (the default, -1) eps_rel sets it. The diagonal eps_rel is relative to is the input's bounding box diagonal after reading, without scaling: the box of the vertices its triangles use, after the remove_duplicate_eps weld. So eps_rel times that diagonal, given as eps, is the same run. In memory, the report's eps is the thickness used (negative: no envelope)."
+    "doc": "Absolute envelope thickness. When positive it is used instead of eps_rel, and there is an envelope whatever eps_rel is; otherwise (the default, -1) eps_rel sets it. The diagonal eps_rel is relative to is the input's bounding box diagonal after reading, without scaling: the box of the vertices its triangles use, after the remove_duplicate_eps weld. So eps_rel times that diagonal, given as eps, is the same run. In memory, the report's eps is the thickness used (0: no envelope)."
   },
   {
     "pointer": "/boundary_eps_rel",

@@ -177,8 +177,8 @@
   {
     "pointer": "/limit_collapse_length",
     "type": "bool",
-    "default": false,
-    "doc": "Refuse a collapse that leaves an edge longer than 4/3 of the target length (of the edge's own, with a sizing_mesh), the length above which an edge is split, as Botsch and Kobbelt's isotropic remeshing does. Without it a collapse is judged by the edge it removes alone, and those of the last iteration leave long edges that no split comes after to cut. With a sizing_mesh it is on unless set to false: the field is then a bound the collapses keep."
+    "default": "skip",
+    "doc": "Default: on with a sizing_mesh (the field is then a bound the collapses keep), off without. Refuse a collapse that leaves an edge longer than 4/3 of the target length (of the edge's own, with a sizing_mesh), the length above which an edge is split, as Botsch and Kobbelt's isotropic remeshing does. Without it a collapse is judged by the edge it removes alone, and those of the last iteration leave long edges that no split comes after to cut."
   },
   {
     "pointer": "/cleanup_angle",

@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <limits>
 #include <mutex>
 #include <queue>
 #include <tuple>
@@ -58,6 +59,8 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
     int refine_cooldown = m_params.stuck_refine_cooldown;
 
+    // The first check of the sizing mesh's stop rule never stops on its progress test.
+    m_prev_long_edge_fraction = std::numeric_limits<double>::infinity();
     for (int it = 0; it < max_its; ++it) {
         m_iterations_used = it + 1;
         logger().info("\n========it {}========", it);
@@ -97,11 +100,14 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
         }
 
         if (max_metric < optimization_stop_metric()) {
-            if (cnt_round == cnt_verts && sizing_mesh_allows_stop()) break;
-            logger().info(
-                "energy target reached, but {} of {} vertices are still un-rounded; continuing",
-                cnt_verts - cnt_round,
-                cnt_verts);
+            if (cnt_round < cnt_verts) {
+                logger().info(
+                    "energy target reached, but {} of {} vertices are still un-rounded; continuing",
+                    cnt_verts - cnt_round,
+                    cnt_verts);
+            } else if (sizing_mesh_allows_stop()) {
+                break;
+            }
         }
 
         consolidate_mesh();

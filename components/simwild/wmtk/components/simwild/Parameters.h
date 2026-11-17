@@ -78,7 +78,8 @@ struct Parameters : public wmtk::OptimizerParameters
         eps = json_params["eps"];
         lr = json_params["length_rel"];
         l = json_params["length"];
-        limit_collapse_length = json_params["limit_collapse_length"]; // OptimizerParameters
+        // Set by the component (spec default "skip": on with a sizing mesh); off when absent.
+        limit_collapse_length = json_params.value("limit_collapse_length", false);
         stop_energy = json_params["stop_energy"];
         stop_at_float = json_params["stop_at_float"];
         preserve_topology = json_params["preserve_topology"];

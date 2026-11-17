@@ -74,7 +74,7 @@ On the command line, the same is `"sizing_mesh": "sizing.msh"` in the JSON.
 
 ## A largest length, not a target
 
-Every vertex carries a **sizing**, the factor of the target length its edges are split and
+In TriWild, TetWild and SimWild every vertex carries a **sizing**, the factor of the target length its edges are split and
 collapsed to (an edge longer than 4/3 of its target is split, one shorter than 4/5 collapsed;
 [the optimization loop](../../concepts/quality.md#the-optimization-loop)). The sizing mesh sets
 the sizing of every vertex it covers when the optimization starts, to the field's length over the
@@ -95,15 +95,15 @@ global one, and caps it after every pass:
 Two things hold the edges under the field, both only with a sizing mesh:
 
 - **[`limit_collapse_length`](../../reference/triwild.md#limit_collapse_length)** is on unless set
-  to false. A collapse is judged by the edge it removes; without the limit, it may leave edges
+  to false, in all four components. A collapse is judged by the edge it removes; without the limit, it may leave edges
   longer than their target, and since the optimization ends on collapses, nothing splits them
   again. With it, no collapse leaves an edge longer than 4/3 of its target, the length above which
   a split would cut it, as Botsch and Kobbelt's isotropic remeshing does.
-- **The optimization does not stop on quality alone.** It goes on past
-  [`stop_energy`](../../reference/triwild.md#stop_energy) while more than 1% of the edges are
-  longer than 4/3 of their target and that share still drops by a tenth from one iteration to the
-  next, up to [`max_iterations`](../../reference/triwild.md#max_iterations). Edges shorter than
-  the field never keep it going.
+- **The optimization does not stop on quality alone** (TriWild, TetWild, SimWild). It goes on past
+  [`stop_energy`](../../reference/triwild.md#stop_energy) while more than 1% of the edges are longer
+  than 4/3 of their target and that share still drops by a tenth from one iteration to the next, up
+  to [`max_iterations`](../../reference/triwild.md#max_iterations). Edges shorter than the field
+  never keep it going.
 
 Turned off, the limit costs fewer elements and more edges past the field; the second rule then
 runs one more iteration:
@@ -119,6 +119,12 @@ limit_collapse_length False: 577 triangles after 2 iteration(s), 13.0% of the ed
 
 Smoothing can still stretch an edge a little past 4/3 of its target: to keep every edge under a
 bound, give about 3/4 of it as the field.
+
+The field is read at the vertices: an edge's target is the mean of its ends'. A field smooth at the
+scale of the edges, as above, is kept closely; one that varies a lot within an edge's length is
+followed less well, since the field between the ends does not count: give the sizing mesh cells
+no smaller than the edges you expect. The stuck refinement grades its own refinement into the
+neighbourhood, but not past a vertex whose sizing the field set above the global length.
 
 ## TetWild
 
@@ -137,10 +143,11 @@ tetwild, sizing mesh: 34011 tets, 0.6% of the edges past 4/3 of the field, media
 ## Isotropic remeshing
 
 The sizing mesh is a surface, and isotropic remeshing reads it at the point closest to each
-vertex, again wherever an operation moves one; an edge's target is the mean of its ends'. Unlike
-the other three, isotropic remeshing aims at the length both ways, as it does at `length`: it
-collapses the edges shorter than 4/5 of it as well. The input itself can be the sizing mesh: here
-the bunny, with a field that goes from 4% of its diagonal at its feet to 1% at its ears:
+vertex, again wherever an operation moves one; an edge's target is the mean of its ends'. For
+isotropic remeshing the field is a target rather than a largest length, as `length` is: it splits
+and collapses every edge toward it, for a fixed number of iterations, with no stuck refinement and
+no energy target to stop at. The input itself can be the sizing mesh: here the bunny, with a field
+that goes from 4% of its diagonal at its feet to 1% at its ears:
 
 ```python
 --8<-- "docs/examples/python/workflow_sizing_mesh.py:isotropic"
@@ -169,6 +176,9 @@ length, the field's too. Bounded, it leaves the edges at or past 4/5 of the targ
 mesh, the field's length at the edge's ends, also where that is longer than `length`.
 
 ## Summary
+
+For TriWild, TetWild and SimWild; isotropic remeshing shares the first and the
+`limit_collapse_length` rows.
 
 | | Without a sizing mesh | With one |
 |---|---|---|

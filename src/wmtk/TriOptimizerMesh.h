@@ -587,7 +587,7 @@ public:
      * the previous call. Called once per iteration that reached the energy target.
      */
     bool sizing_mesh_allows_stop();
-    double m_prev_long_edge_fraction = 1;
+    double m_prev_long_edge_fraction = std::numeric_limits<double>::infinity();
 
     /// Shared TriWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;

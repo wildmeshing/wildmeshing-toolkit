@@ -1101,7 +1101,7 @@ public:
      * the previous call. Called once per iteration that reached the energy target.
      */
     bool sizing_mesh_allows_stop();
-    double m_prev_long_edge_fraction = 1;
+    double m_prev_long_edge_fraction = std::numeric_limits<double>::infinity();
 
     /// Start recording the tracked surface (TetMesh::start_surface_history), at m_posf, with
     /// `metadata` (the application's parameters, say) saved along. Takes m_insertion_sources.

@@ -172,9 +172,9 @@ TEST_CASE("sizing-length-and-length-abs", "[test_remeshing][sizing]")
 TEST_CASE("sizing-mesh-gradient", "[test_remeshing][sizing]")
 {
     // A sizing mesh under the unit square whose length grows from 0.02 on the left to 0.12 on
-    // the right: the edges on the left are much shorter than those on the right (0.035 and 0.111
-    // on average, measured, in 692 triangles). Without it, at the right side's length, they are
-    // alike (0.119 and 0.114, in 188).
+    // the right: the edges on the left are much shorter than those on the right (0.029 and 0.105
+    // on average, measured, in 1014 triangles, limit_collapse_length on with the sizing mesh).
+    // Without it, at the right side's length, they are alike (0.119 and 0.114, in 188).
     const MeshMap meshes{{"grid", bumpy_grid(10, 0)}, {"sizing", sizing_square(0.02, 0.12)}};
     const nlohmann::json base = {{"input", "grid"}, {"length", 0.12}};
     nlohmann::json with = base;

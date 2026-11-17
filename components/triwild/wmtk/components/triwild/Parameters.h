@@ -69,7 +69,8 @@ struct Parameters : public wmtk::OptimizerParameters
         // as simwild's eps and length.
         eps = json_params["eps"];
         l = json_params["length"];
-        limit_collapse_length = json_params["limit_collapse_length"]; // OptimizerParameters
+        // Set by the component (spec default "skip": on with a sizing mesh); off when absent.
+        limit_collapse_length = json_params.value("limit_collapse_length", false);
         stop_energy = json_params["stop_energy"];
         preserve_topology = json_params["preserve_topology"];
         envelope_around_simplified = json_params["envelope_reference"] == "simplified";
