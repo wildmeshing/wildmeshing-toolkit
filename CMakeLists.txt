@@ -20,6 +20,17 @@ else()
     if(${CMAKE_VERSION} VERSION_LESS ${REQUIRED_CMAKE_VERSION})
         message(FATAL_ERROR "CMake required version to build WildMeshingToolkit is ${REQUIRED_CMAKE_VERSION}")
     endif()
+    # The dependencies' old cmake_minimum_required (libigl's predicates, ...) need it with CMake 4,
+    # as above. In this directory's scope only, and only if the parent has not chosen one.
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0" AND NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
+        set(CMAKE_POLICY_VERSION_MINIMUM ${REQUIRED_CMAKE_VERSION})
+    endif()
+    # Default symbol visibility for the toolkit and its dependencies, whatever the parent's. Under
+    # -fvisibility=hidden, Apple clang emits the initializer of NFG's `inline static thread_local`
+    # memory pools as a strong hidden symbol in every object, and the link fails on duplicates.
+    set(CMAKE_CXX_VISIBILITY_PRESET default)
+    set(CMAKE_C_VISIBILITY_PRESET default)
+    set(CMAKE_VISIBILITY_INLINES_HIDDEN OFF)
 endif()
 
 # Python builds (scikit-build-core): object files outside CMakeFiles/. scikit-build-core deletes the
@@ -87,8 +98,10 @@ option(WMTK_DEBUG_BRUTE_FORCE_OPS "Validate each TriMesh operation against a bru
 option(WMTK_PER_INPUT_ORIENTATION "One orientation count per input on each tracked face (32 bytes more per face record)" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
+# Prepended, so that as a subproject the toolkit's recipes win over a parent's of the same names
+# (eigen, libigl, ...): they pin the versions and options the toolkit is built and tested with.
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Generate position independent code by default
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
