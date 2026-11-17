@@ -5,16 +5,16 @@
       "bytes": 85918
     },
     "output": {
-      "cells": 9078,
-      "bytes": 164851
+      "cells": 8921,
+      "bytes": 161835
     }
   },
   "report": {
     "#iterations": 1,
-    "#t": 9078,
-    "#v": 3127,
+    "#t": 8921,
+    "#v": 3088,
     "all_rounded": true,
-    "avg_energy": 6.3305466722033605,
+    "avg_energy": 6.350925940262708,
     "coarsen_accepted": 0,
     "coarsen_max_energy_after": 0.0,
     "coarsen_max_energy_before": 0.0,
@@ -25,9 +25,9 @@
     "hausdorff": -1.0,
     "inserted_crossing_pairs": -1,
     "inserted_degenerate_triangles": -1,
-    "insertion_and_preprocessing": 2.091905,
-    "max_energy": 44.433475252767465,
+    "insertion_and_preprocessing": 1.31558,
+    "max_energy": 92.40932425326572,
     "threads": 8,
-    "time": 10.719693
+    "time": 6.421243
   }
 }
