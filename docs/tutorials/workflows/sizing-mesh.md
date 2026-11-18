@@ -55,8 +55,18 @@ its midpoint:
 
 ```
 triwild, length_rel 0.05: 289 triangles after 1 iteration(s), 52.9% of the edges past 4/3 of the field, median 1.38 of it
-triwild, sizing mesh: 840 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.84 of it
+triwild, sizing mesh: 841 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.85 of it
 ```
+
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_triwild"></wmtk-viewer>
+</div>
+
+`length_rel` 0.05 on the left, the sizing mesh on the right. Each triangle is colored by its
+longest edge over the field at the edge's midpoint: white as long as the field, pale up to 4/3 of
+it, red past that, blue shorter. The field grows from left to right; one length for the whole
+circle suits its right side only. Scroll to zoom, switch the coloring below the meshes. Every
+example is in the [gallery](../../gallery/index.md).
 
 On the file route, `sizing_mesh` is the path of a mesh file, relative to
 [`input_dir`](../../reference/triwild.md#input_dir) like the inputs. A `.msh` file written by
@@ -67,10 +77,11 @@ On the file route, `sizing_mesh` is the path of a mesh file, relative to
 ```
 
 ```
-triwild on files: 0.3% of the edges past 4/3 of the field, median 0.84 of it
+triwild on files: 0.3% of the edges past 4/3 of the field, median 0.85 of it
 ```
 
-On the command line, the same is `"sizing_mesh": "sizing.msh"` in the JSON.
+The same mesh as on the memory route. On the command line, the same is
+`"sizing_mesh": "sizing.msh"` in the JSON.
 
 ## A largest length, not a target
 
@@ -86,7 +97,7 @@ global one, and caps it after every pass:
   [stuck refinement](../../reference/tetwild.md#stuck_refine_factor) lowers the sizing further,
   and the cap only ever lowers it. A collapse that would make an element worse is still refused.
   Either way the mesh ends finer than the field there, and that is a valid result: the median
-  edge above is 0.84 of the field.
+  edge above is 0.85 of the field.
 - **Longer than `length` is allowed.** The field may ask for more than the global length;
   `length` and `length_rel` then only apply where it does not reach.
 
@@ -113,9 +124,16 @@ runs one more iteration:
 ```
 
 ```
-limit_collapse_length True: 840 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.84 of it
+limit_collapse_length True: 841 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.85 of it
 limit_collapse_length False: 577 triangles after 2 iteration(s), 13.0% of the edges past 4/3 of the field, median 1.02 of it
 ```
+
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_limit"></wmtk-viewer>
+</div>
+
+The limit on the left, off on the right: there, the collapses leave the red triangles, whose
+longest edge is past the field.
 
 Smoothing can still stretch an edge a little past 4/3 of its target: to keep every edge under a
 bound, give about 3/4 of it as the field.
@@ -140,6 +158,13 @@ tetwild, length_rel 0.05: 12687 tets, 29.6% of the edges past 4/3 of the field, 
 tetwild, sizing mesh: 34011 tets, 0.6% of the edges past 4/3 of the field, median 0.85 of it
 ```
 
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_tetwild"></wmtk-viewer>
+</div>
+
+The tets the cut exposes are colored as above, the faces of the boundary gray. Here z points to
+the left: the field grows from right to left. Drag to rotate, move the cut with the slider.
+
 ## Isotropic remeshing
 
 The sizing mesh is a surface, and isotropic remeshing reads it at the point closest to each
@@ -158,6 +183,13 @@ isotropic_remeshing, length_rel 0.025: 2559 triangles, 21.0% of the edges past 4
 isotropic_remeshing, sizing mesh: 3633 triangles, 0.5% of the edges past 4/3 of the field, median 1.02 of it
 ```
 
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_isotropic"></wmtk-viewer>
+</div>
+
+At one length, the triangles are too long for the ears (red); with the sizing mesh, they follow
+the field from the feet to the ears.
+
 ## SimWild: with regions
 
 SimWild also sizes by region:
@@ -170,10 +202,35 @@ operations ignore both options, so one set of options can be passed to every ste
 ## The coarsening pass
 
 The optional [coarsening pass](../../reference/tetwild.md#coarsen_pass) of TriWild, TetWild and
-SimWild removes the elements the quality target does not need. Left
-[unbounded](../../reference/tetwild.md#coarsen_unbounded) (the default), it ignores every target
-length, the field's too. Bounded, it leaves the edges at or past 4/5 of the target: with a sizing
-mesh, the field's length at the edge's ends, also where that is longer than `length`.
+SimWild runs after the optimization and removes the elements the quality target does not need: it
+takes collapses the optimization refused, and keeps one when, after smoothing around it, no
+element there is worse than before ([the coarsening pass](../../concepts/quality.md#the-coarsening-pass)).
+With a sizing mesh, `limit_collapse_length` holds it under the field too: none of its collapses
+leaves an edge longer than 4/3 of the field's length. It coarsens where it can without breaking
+the field:
+
+```python
+--8<-- "docs/examples/python/workflow_sizing_mesh.py:coarsen"
+```
+
+```
+tetwild, coarsen_pass: 32667 tets, 0.6% of the edges past 4/3 of the field, median 0.87 of it
+tetwild, coarsen_pass, limit off: 15009 tets, 24.0% of the edges past 4/3 of the field, median 1.10 of it
+```
+
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_coarsen"></wmtk-viewer>
+</div>
+
+With the limit (on the left), the pass removes 4% of the 34011 tets, and the field still holds:
+the optimization had already brought the edges to the field, so most collapses would make them
+longer than it. Without the limit, it removes 56% of them, and makes the edges longer than the
+field (red). Where the mesh is finer than the field, after a stuck refinement or near the input's
+details, the pass has more to remove.
+
+[Unbounded](../../reference/tetwild.md#coarsen_unbounded) (the default), the pass knows no target
+length but the limit's. Bounded, it also leaves alone the edges at or past 4/5 of the target: with
+a sizing mesh, of the field's length at the edge's ends, also where that is longer than `length`.
 
 ## Summary
 
@@ -186,5 +243,5 @@ For TriWild, TetWild and SimWild; isotropic remeshing shares the first and the
 | Finer than that | stuck refinement, and collapses refused on quality | the same |
 | `limit_collapse_length` | off unless set | on unless set to false |
 | Stops when | the energy is under `stop_energy` | the same, and at most 1% of the edges past 4/3 of their target, or no more progress |
-| Bounded coarsening | stops at 4/5 of `length` | stops at 4/5 of the field's length |
+| Coarsening pass | as far as the energy allows; bounded, stops at 4/5 of `length` | under 4/3 of the field (the limit); bounded, also stops at 4/5 of it |
 | SimWild's `sizing_field` | the region's length | the smaller of the region's and the field's |

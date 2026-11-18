@@ -16,7 +16,8 @@
 #               theirs), and keep: regions, to hide the background cells. The viewer always
 #               puts the input on the left and the output on the right.
 #   labels      the views' titles (default "Input|Output")
-#   color       quality, region or plain: how the viewer colors cells at first
+#   color       quality, region, sizing or plain: how the viewer colors cells at first (sizing:
+#               against a sizing field, the cell field sizing_ratio a scene gives)
 #   cut         x, y, z or off: the tet meshes' cut at first
 #   camera      the direction the camera looks from, [x, y, z] (default [1, 0.6, 1.6])
 #   zoom        how much closer than the default the camera starts (default 1)
@@ -153,6 +154,50 @@ examples:
     labels: Input|Manifold and remeshed
     color: region
     cut: y
+
+  - id: workflow_sizing_mesh_triwild
+    title: TriWild with a sizing mesh
+    group: workflows
+    tutorial: tutorials/workflows/sizing-mesh.md
+    scene: sizing_mesh_triwild
+    labels: length_rel 0.05|Sizing mesh
+    color: sizing
+
+  - id: workflow_sizing_mesh_limit
+    title: TriWild with a sizing mesh, limit_collapse_length on and off
+    group: workflows
+    tutorial: tutorials/workflows/sizing-mesh.md
+    scene: sizing_mesh_limit
+    labels: limit_collapse_length on|limit_collapse_length off
+    color: sizing
+
+  - id: workflow_sizing_mesh_tetwild
+    title: TetWild with a sizing mesh
+    group: workflows
+    tutorial: tutorials/workflows/sizing-mesh.md
+    scene: sizing_mesh_tetwild
+    labels: length_rel 0.05|Sizing mesh
+    color: sizing
+    cut: x
+    camera: [1.6, 0.4, 0.5]
+
+  - id: workflow_sizing_mesh_coarsen
+    title: TetWild's coarsening pass under a sizing mesh, limit_collapse_length on and off
+    group: workflows
+    tutorial: tutorials/workflows/sizing-mesh.md
+    scene: sizing_mesh_coarsen
+    labels: coarsen_pass|coarsen_pass, limit_collapse_length off
+    color: sizing
+    cut: x
+    camera: [1.6, 0.4, 0.5]
+
+  - id: workflow_sizing_mesh_isotropic
+    title: Isotropic remeshing with a sizing mesh
+    group: workflows
+    tutorial: tutorials/workflows/sizing-mesh.md
+    scene: sizing_mesh_isotropic
+    labels: length_rel 0.025|Sizing mesh
+    color: sizing
 
   # More inputs.
   - id: tetwild_octocat
