@@ -136,7 +136,7 @@ ExternalProject_Add(
     # overlapping spheres, double_sphere.msh, with each sphere's part outside the other as a
     # color (tag_0 & !tag_1, tag_1 & !tag_0) and the new tags newtag1 and newtag2 as fill tags.
     #
-    GIT_TAG 4474c895766cd5437f0d89b5cd2ca2b0d4d6019e
+    GIT_TAG c1d5b6b708575497fc0be2bbfb30897e247de4d1
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

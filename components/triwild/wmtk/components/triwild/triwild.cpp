@@ -387,13 +387,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const std::vector<std::string> edge_tags = tagged ? tagged_mesh->edge_names : curve_labels;
     // filter_inputs: the inputs that bound the domain a filter keeps, by their labels (bit i:
     // edge_tags[i]). Every input by default, as before the key.
-    InputSet bounding = ~InputSet(0);
+    std::optional<LabelIds> bounding; // none: every input
     const auto filter_inputs = json_params["filter_inputs"].get<std::vector<std::string>>();
     if (!filter_inputs.empty()) {
         if (filter_option == "none") {
             log_and_throw_error("filter_inputs: with filter \"none\" nothing is filtered");
         }
-        bounding = 0;
+        bounding.emplace();
         for (const std::string& name : filter_inputs) {
             const auto it = std::find(edge_tags.begin(), edge_tags.end(), name);
             if (it == edge_tags.end()) {
@@ -402,7 +402,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     name,
                     edge_tags);
             }
-            bounding |= InputSet(1) << (it - edge_tags.begin());
+            bounding->insert(LabelId(it - edge_tags.begin()));
         }
         logger().info("filter \"{}\": the domain bounded by {} only", filter_option, filter_inputs);
     }
@@ -443,13 +443,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             record_history ? &read : nullptr);
         // Which input each segment of the union came from (read_input_curves concatenates them in
         // order), carried through the simplification and the arrangement so each tracked segment
-        // is held to its own inputs' envelopes. max_inputs inputs at most: see
-        // SurfaceTagAttributes::input_set().
-        if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+        // is held to its own inputs' envelopes. max_labels inputs at most: see
+        // SurfaceTagAttributes::labels().
+        if (input_paths.size() > max_labels) {
             log_and_throw_error(
                 "{} input curve files; at most {} are supported",
                 input_paths.size(),
-                SurfaceTagAttributes::max_inputs);
+                max_labels);
         }
         const bool per_input = input_paths.size() > 1;
         std::vector<int> E_in_input;
@@ -698,16 +698,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // Each constraint edge's input set: the inputs of the segments it tiles. Several only where
         // segments of different inputs overlap -- the 2D counterpart of a coplanar group spanning
         // several inputs in 3D -- and then the edge is held to all of them. Counted.
-        std::vector<InputSet> E_input_set;
+        std::vector<LabelIds> E_input_set;
         if (per_input) {
-            E_input_set.assign(E.rows(), 0);
+            E_input_set.assign(E.rows(), LabelIds{});
             size_t n_several = 0;
             for (int i = 0; i < E.rows(); ++i) {
                 for (const int src : E_sources[i]) {
-                    E_input_set[i] |= InputSet(1) << E_simp_input[src];
+                    E_input_set[i].insert(LabelId(E_simp_input[src]));
                 }
-                const InputSet set = E_input_set[i];
-                if ((set & (set - 1)) != 0) ++n_several;
+                const LabelIds& set = E_input_set[i];
+                if (set.count() > 1) ++n_several;
             }
             logger().info(
                 "input sets: {} constraint edges, {} with several inputs",
@@ -865,17 +865,17 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         std::vector<Vector2r>().swap(V_rational);
         std::vector<int>().swap(E_orientation);
         std::vector<InputOrientations>().swap(E_input_orientation);
-        std::vector<InputSet>().swap(E_input_set);
+        std::vector<LabelIds>().swap(E_input_set);
         std::vector<std::vector<int>>().swap(E_sources);
 
         // The reference the curves were held to, handed on (io::append_envelope_block()): the
         // curves the envelope was built around, each segment with its input's edge tag, and the
         // free points. On the file route in a file of its own, as the mesh file holds the mesh.
         {
-            std::vector<InputSet> E_sets(E_env.rows(), 0);
+            std::vector<LabelIds> E_sets(E_env.rows());
             for (Eigen::Index i = 0; i < E_env.rows(); ++i) {
                 const int in = E_env_input[i];
-                if (in >= 0 && in < SurfaceTagAttributes::max_inputs) E_sets[i] = InputSet(1) << in;
+                if (in >= 0 && in < max_labels) E_sets[i] = LabelIds{LabelId(in)};
             }
             io::append_envelope_block(
                 envelope_out,
@@ -893,16 +893,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // matched by name.
         std::optional<io::HeldRows> held;
         MatrixXd reference_points;
-        std::vector<InputSet> reference_point_labels;
+        std::vector<LabelIds> reference_point_labels;
         if (envelope_given) {
-            const auto bits_named = [&](const std::string& name) {
-                InputSet bits = 0;
+            const auto labels_named = [&](const std::string& name) {
+                LabelIds bits;
                 for (size_t i = 0; i < edge_tags.size(); ++i)
-                    if (edge_tags[i] == name) bits |= InputSet(1) << i;
+                    if (edge_tags[i] == name) bits.insert(LabelId(i));
                 return bits;
             };
             io::LabelledReference reference =
-                io::read_labelled_envelope(*envelope_given, 2, bits_named, {}, in.point_names);
+                io::read_labelled_envelope(*envelope_given, 2, labels_named, {}, in.point_names);
             held = io::held_rows(reference.V, reference.F, reference.F_labels);
             reference_points = std::move(reference.P);
             reference_point_labels = std::move(reference.P_labels);
@@ -912,12 +912,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // (init_mesh() takes one input per row), and what the output is measured against.
         V_in = held ? held->V : in.V;
         E_in = held ? held->F : in.E;
-        const std::vector<InputSet>& E_in_sets = held ? held->labels : in.E_sets;
+        const std::vector<LabelIds>& E_in_sets = held ? held->labels : in.E_sets;
         MatrixXi E_env(0, 2);
         std::vector<int> E_env_input;
         for (Eigen::Index r = 0; r < E_in.rows(); ++r) {
-            for (int b = 0; b < SurfaceTagAttributes::max_inputs; ++b) {
-                if (((E_in_sets[r] >> b) & 1) == 0) continue;
+            for (const LabelId b : E_in_sets[r]) {
                 E_env.conservativeResize(E_env.rows() + 1, 2);
                 E_env.row(E_env.rows() - 1) = E_in.row(r);
                 E_env_input.push_back(b);
@@ -1065,7 +1064,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (filter_option == "flood" || json_params["compute_flood_fill"]) {
             step_timer.start();
             const int num_parts =
-                mesh.flood_fill(filter_option == "flood" ? bounding : ~InputSet(0));
+                mesh.flood_fill(filter_option == "flood" ? bounding : std::nullopt);
             logger().info(
                 "finalize: flood fill, {} parts {:.4}s",
                 num_parts,

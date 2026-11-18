@@ -2390,7 +2390,7 @@ TEST_CASE("swap-face-keeps-edge-tags", "[offset][3d]")
         return A->m_feature_edge_attribute[A->tuple_from_edge({{p, q}}).eid(*A)];
     };
     tags(a, d).add(EdgeTags::order2);
-    tags(a, d).inputs(EdgeTags::order2) = 1;
+    tags(a, d).labels(EdgeTags::order2) = LabelIds{0};
 
     std::vector<TopoOffsetTetMesh::Tuple> new_tets;
     const auto [face, fid] = A->tuple_from_face(std::array<size_t, 3>{{a, b, c}});
@@ -2398,7 +2398,7 @@ TEST_CASE("swap-face-keeps-edge-tags", "[offset][3d]")
     REQUIRE(A->swap_face(face, new_tets));
     REQUIRE(new_tets.size() == 3);
     CHECK(tags(a, d).has(EdgeTags::order2));
-    CHECK(tags(a, d).inputs(EdgeTags::order2) == 1);
+    CHECK(tags(a, d).labels(EdgeTags::order2) == LabelIds{0});
     size_t n_tagged = 0;
     for (const auto& edge : A->get_edges()) {
         n_tagged += A->m_feature_edge_attribute[edge.eid(*A)].is_tagged();
@@ -3413,7 +3413,7 @@ TEST_CASE("band-covered-face-tags", "[offset][3d][envelope]")
             param,
             std::filesystem::temp_directory_path() / "wmtk_offset_covered_face_tags");
         const auto tagged = [&](const TetMesh::Tuple& f) {
-            return (mesh->m_face_attribute[f.fid(*mesh)].input_set() & 1) != 0; // S is bit 0
+            return mesh->m_face_attribute[f.fid(*mesh)].labels().contains(0); // S is label 0
         };
         const auto tracked = [&](const TetMesh::Tuple& f) {
             return mesh->m_face_attribute[f.fid(*mesh)].m_is_surface_fs;
@@ -3516,7 +3516,7 @@ TEST_CASE("band-crossed-sheet-keeps-its-orientation", "[offset][3d][split_op]")
     size_t n_tagged = 0;
     for (const auto& f : mesh->get_faces()) {
         const auto& attr = mesh->m_face_attribute[f.fid(*mesh)];
-        if (!attr.m_is_surface_fs || (attr.input_set() & 1) == 0) continue; // S is bit 0
+        if (!attr.m_is_surface_fs || !attr.labels().contains(0)) continue; // S is label 0
         std::array<size_t, 3> vs = mesh->get_face_vids(f);
         std::sort(vs.begin(), vs.end());
         const int o = attr.orientation_along(vs);
@@ -3581,7 +3581,7 @@ TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
     };
     const auto f_attr = mesh.m_face_attribute[fid_of(1, 2, 3)]; // a copy: f goes
     REQUIRE(f_attr.m_is_surface_fs);
-    REQUIRE(f_attr.input_set() == 1);
+    REQUIRE(f_attr.labels() == LabelIds{0});
     REQUIRE(f_attr.orientation_along(std::array<size_t, 3>{{1, 2, 3}}) == 1);
     REQUIRE(!mesh.is_simplicially_embedded());
     mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Midpoint;
@@ -3611,7 +3611,7 @@ TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
         const size_t fid = fid_of(a, b, v);
         const auto& piece = mesh.m_face_attribute[fid];
         CHECK(piece.m_is_surface_fs);
-        CHECK(piece.input_set() == f_attr.input_set());
+        CHECK(piece.labels() == f_attr.labels());
         CHECK(piece.orientation_along(std::array<size_t, 3>{{a, b, v}}) == 1);
         CHECK(mesh.m_face_extra[fid].label == 0); // f's: not the complex's
         CHECK(mesh.m_face_attribute[fid_of(0, a, b)].m_is_surface_fs); // C's boundary, as it was
@@ -3621,7 +3621,7 @@ TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
             INFO("interior face (v, " << w << ", " << u << ")");
             const auto& inner = mesh.m_face_attribute[fid_of(v, w, u)];
             CHECK(!inner.m_is_surface_fs);
-            CHECK(inner.input_set() == 0);
+            CHECK(inner.labels().none());
         }
     }
 }

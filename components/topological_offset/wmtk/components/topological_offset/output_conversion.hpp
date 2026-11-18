@@ -23,7 +23,7 @@ void collect_loaded_curves_and_points(const Mesh& mesh, MeshMap& outputs)
     // Each (row's vertices, set) as a block of `type`, one tags column per name.
     const auto write = [&](const CellType type,
                            const std::vector<std::vector<int64_t>>& rows,
-                           const std::vector<InputSet>& sets,
+                           const std::vector<LabelIds>& sets,
                            const std::vector<std::string>& names) {
         auto& block = outputs.at("mesh").cells[type];
         block.connectivity.resize(Eigen::Index(rows.size()), cell_size(type));
@@ -32,17 +32,17 @@ void collect_loaded_curves_and_points(const Mesh& mesh, MeshMap& outputs)
             for (size_t k = 0; k < rows[i].size(); ++k)
                 block.connectivity(Eigen::Index(i), Eigen::Index(k)) = rows[i][k];
             for (size_t j = 0; j < names.size(); ++j)
-                member(Eigen::Index(i), Eigen::Index(j)) = (sets[i] >> j) & 1;
+                member(Eigen::Index(i), Eigen::Index(j)) = sets[i].contains(LabelId(j));
         }
         block.attributes["tags"] = {std::move(member), names};
     };
     std::vector<std::vector<int64_t>> rows;
-    std::vector<InputSet> sets;
+    std::vector<LabelIds> sets;
     if constexpr (std::is_base_of_v<TetMesh, Mesh>) {
         if (!mesh.m_feature_edge_names.empty()) {
             for (const auto& e : mesh.get_edges()) {
-                const InputSet set = mesh.m_edge_attribute[e.eid(mesh)].feature_inputs;
-                if (set == 0) continue;
+                const LabelIds& set = mesh.m_edge_attribute[e.eid(mesh)].feature_inputs;
+                if (set.none()) continue;
                 const size_t a = e.vid(mesh), b = e.switch_vertex(mesh).vid(mesh);
                 rows.push_back({row[std::min(a, b)], row[std::max(a, b)]});
                 sets.push_back(set);
@@ -54,8 +54,8 @@ void collect_loaded_curves_and_points(const Mesh& mesh, MeshMap& outputs)
     }
     if (!mesh.m_point_names.empty()) {
         for (const auto& v : mesh.get_vertices()) {
-            const InputSet set = mesh.m_vertex_extra[v.vid(mesh)].point_inputs;
-            if (set == 0) continue;
+            const LabelIds& set = mesh.m_vertex_extra[v.vid(mesh)].point_inputs;
+            if (set.none()) continue;
             rows.push_back({row[v.vid(mesh)]});
             sets.push_back(set);
         }
@@ -201,7 +201,7 @@ inline MeshData with_offset_surface(const MeshData& reference, const OffsetRows&
     {
         MatrixXd V = MatrixXd(0, 3);
         MatrixXi C;
-        std::vector<InputSet> sets;
+        std::vector<LabelIds> sets;
         std::vector<std::string> names;
     };
     // The `type` rows of the reference on vertices of their own, in first use, with their labels.
@@ -230,24 +230,23 @@ inline MeshData with_offset_surface(const MeshData& reference, const OffsetRows&
         if (tags == it->second.attributes.end()) return b;
         b.names = tags->second.labels;
         const auto member = tags->second.integers();
-        b.sets.assign(size_t(C.rows()), 0);
+        b.sets.assign(size_t(C.rows()), LabelIds{});
         for (Eigen::Index r = 0; r < C.rows(); ++r) {
-            for (size_t j = 0; j < b.names.size() && j < size_t(SurfaceTagAttributes::max_inputs);
-                 ++j) {
-                if (member(r, Eigen::Index(j))) b.sets[size_t(r)] |= InputSet(1) << j;
+            for (size_t j = 0; j < b.names.size() && j < max_labels; ++j) {
+                if (member(r, Eigen::Index(j))) b.sets[size_t(r)].insert(LabelId(j));
             }
         }
         return b;
     };
     Block tri = block(CellType::Triangle);
-    tri.sets.resize(size_t(tri.C.rows()), 0);
+    tri.sets.resize(size_t(tri.C.rows()), LabelIds{});
     for (const auto& names : offset.names) {
-        InputSet set = 0;
+        LabelIds set;
         for (const std::string& name : names) {
             auto k = std::find(tri.names.begin(), tri.names.end(), name);
             if (k == tri.names.end()) k = tri.names.insert(tri.names.end(), name);
             const size_t j = size_t(k - tri.names.begin());
-            if (j < size_t(SurfaceTagAttributes::max_inputs)) set |= InputSet(1) << j;
+            if (j < max_labels) set.insert(LabelId(j));
         }
         tri.sets.push_back(set);
     }

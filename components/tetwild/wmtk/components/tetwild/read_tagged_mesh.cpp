@@ -129,13 +129,13 @@ TaggedMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
                 what,
                 kind);
         }
-        if (l.names.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+        if (l.names.size() > max_labels) {
             log_and_throw_error(
                 "{}: {} {} labels; at most {} are supported",
                 what,
                 l.names.size(),
                 kind,
-                SurfaceTagAttributes::max_inputs);
+                max_labels);
         }
         return l;
     };
@@ -151,9 +151,9 @@ TaggedMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
             std::array<size_t, 3> f;
             for (int k = 0; k < 3; ++k) f[k] = vertex(C(r, k), "face");
             out.F.push_back(f);
-            InputSet set = 0;
+            LabelIds set;
             for (Eigen::Index j = 0; j < faces.member.cols(); ++j)
-                if (faces.member(r, j)) set |= InputSet(1) << j;
+                if (faces.member(r, j)) set.insert(LabelId(j));
             out.F_sets.push_back(set);
         }
         out.F_orientation = io::read_orientation(*faces.cells, what);

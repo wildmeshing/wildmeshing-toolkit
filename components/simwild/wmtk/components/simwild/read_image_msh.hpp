@@ -38,7 +38,7 @@ struct InputData
     /// Per row of F_envelope: the label bits of the input it came from, as the mesh's faces
     /// (2D: edges) carry them (SimWildMesh::init_label_envelopes(); 2D, SimWildMeshTri's).
     /// Empty when F_envelope is not the inputs'.
-    std::vector<uint64_t> F_envelope_labels;
+    std::vector<LabelIds> F_envelope_labels;
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;
     /// An `envelope` input that is a labelled reference (io::is_labelled_envelope()), as tetwild,
@@ -55,7 +55,7 @@ struct InputData
     /// Its points (x y z; 2D x y), each with the bits of point_names it carries: the received
     /// input points' anchors are centred on them (TetOptimizerMesh::ReferencePoints).
     MatrixXd reference_points;
-    std::vector<InputSet> reference_point_labels;
+    std::vector<LabelIds> reference_point_labels;
     /// Whether the input was simplified before the insertion (preserve_topology off). Around the
     /// input (envelope_reference "input") V_envelope is then the input as read, not what was
     /// inserted, and the mesh holds the input's own curves and curve points around the input

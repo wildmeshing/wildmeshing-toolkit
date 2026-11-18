@@ -240,7 +240,7 @@ void SimWildMesh::update_attributes()
                 m_tet_attribute[tid].tags != m_tet_attribute[opposite->tid(*this)].tags;
 
             // A tagged face stays surface wherever it lies.
-            if (is_interface || (m_face_attribute[fid].input_set() & face_tag_mask()) != 0) {
+            if (is_interface || has_face_tag(m_face_attribute[fid].labels())) {
                 for (const size_t vid : get_face_vids(face)) {
                     m_vertex_attribute[vid].m_is_on_surface = true;
                 }
@@ -317,7 +317,7 @@ bool SimWildMesh::check_interface_faces_tagged(const bool verbose) const
         const size_t fid = face.fid(*this);
         const bool marked = m_face_attribute[fid].m_is_surface_fs;
         // A tagged face is surface by its tag, not by the tets around it.
-        if (marked && (m_face_attribute[fid].input_set() & face_tag_mask()) != 0) {
+        if (marked && has_face_tag(m_face_attribute[fid].labels())) {
             num_surface++;
             continue;
         }
@@ -536,7 +536,7 @@ MeshData SimWildMesh::envelope_data(
     const utils::FeatureInputs& curves,
     const std::vector<std::string>& curve_names) const
 {
-    const std::vector<InputSet>& sets = m_F_envelope_labels.size() == m_F_envelope.size()
+    const std::vector<LabelIds>& sets = m_F_envelope_labels.size() == m_F_envelope.size()
                                             ? m_F_envelope_labels
                                             : m_F_envelope_face_sets;
     MeshData out;
@@ -548,11 +548,11 @@ MeshData SimWildMesh::envelope_data(
     std::vector<std::string> names = m_face_tag_names;
     const std::vector<std::string> tet_labels = io::tag_labels(m_tag_id_to_name, m_tags_count);
     names.insert(names.end(), tet_labels.begin(), tet_labels.end());
-    names.resize(std::min(names.size(), size_t(SurfaceTagAttributes::max_inputs)));
+    names.resize(std::min(names.size(), max_labels));
     io::append_envelope_block(out, faces, CellType::Triangle, sets, names);
-    std::vector<InputSet> curve_sets;
+    std::vector<LabelIds> curve_sets;
     for (const int k : curves.edge_input) {
-        curve_sets.push_back(k >= 0 && k < SurfaceTagAttributes::max_inputs ? InputSet(1) << k : 0);
+        curve_sets.push_back(k >= 0 && k < max_labels ? LabelIds{LabelId(k)} : LabelIds{});
     }
     io::append_envelope_block(
         out,
@@ -572,19 +572,18 @@ void SimWildMesh::set_envelope_around_tags()
     m_F_envelope_face_sets.clear();
     std::vector<int> row(vert_capacity(), -1);
     for (const Tuple& f : get_faces()) {
-        InputSet set = m_face_attribute[f.fid(*this)].input_set() & face_tag_mask();
+        LabelIds set = face_tags_of(m_face_attribute[f.fid(*this)].labels());
         if (const auto opp = f.switch_tetrahedron(*this)) {
             const auto& a = m_tet_attribute[f.tid(*this)].tags;
             const auto& b = m_tet_attribute[opp->tid(*this)].tags;
             for (const auto& [x, y] : {std::pair(&a, &b), std::pair(&b, &a)}) {
                 for (const int64_t t : *x) {
                     const size_t bit = m_face_tag_names.size() + size_t(t);
-                    if (!y->count(t) && bit < size_t(SurfaceTagAttributes::max_inputs))
-                        set |= InputSet(1) << bit;
+                    if (!y->count(t) && bit < max_labels) set.insert(LabelId(bit));
                 }
             }
         }
-        if (set == 0) continue;
+        if (set.none()) continue;
         Vector3i r;
         const auto vids = get_face_vids(f);
         for (int k = 0; k < 3; ++k) {

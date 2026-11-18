@@ -180,7 +180,7 @@ public:
 
     /**
      * @brief One envelope per input, and each tracked segment held to those of its input set
-     * (EdgeAttributes::input_set()); m_envelope stays their union. The 2D twin of the per-input
+     * (EdgeAttributes::labels()); m_envelope stays their union. The 2D twin of the per-input
      * envelopes of tetwild and simwild 3D.
      *
      * What an input is, is the application's: triwild's are its input curve files, simwild's its
@@ -205,7 +205,7 @@ public:
     void init_input_envelopes(
         const std::vector<Vector2d>& V,
         const std::vector<Vector2i>& E,
-        const std::vector<InputSet>& E_sets,
+        const std::vector<LabelIds>& E_sets,
         double eps,
         bool exact);
 
@@ -242,17 +242,17 @@ public:
     struct ReferencePoints
     {
         std::vector<Vector2d> V;
-        std::vector<InputSet> labels;
+        std::vector<LabelIds> labels;
     };
     std::optional<ReferencePoints> m_reference_points;
     /// Set m_reference_points from the reference's points `P` (rows, x y) and their labels.
-    void set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels);
+    void set_reference_points(const MatrixXd& P, const std::vector<LabelIds>& labels);
     /// The label of bit `bit` of an edge's input set, as the output names it; the application's,
     /// for the reference checks to name a label by.
     virtual std::string label_name(size_t bit) const;
     /// Throws for the labels the held edges carry that none of `reference_labels` (one per
     /// segment of the reference held to) has, naming them.
-    void require_reference_edge_labels(const std::vector<InputSet>& reference_labels) const;
+    void require_reference_edge_labels(const std::vector<LabelIds>& reference_labels) const;
     /// Before an optimization: throws unless every held edge lies in the envelopes of its labels,
     /// naming each label with edges outside, their number, and the eps (m_envelope_eps).
     void check_reference_containment() const;
@@ -345,7 +345,7 @@ public:
     /// m_input_point_labels and m_feature_point_inputs.
     std::vector<std::string> m_point_names;
     std::vector<int> m_input_point_labels;
-    std::vector<InputSet> m_feature_point_inputs;
+    std::vector<LabelIds> m_feature_point_inputs;
     /// Whether the shared operations maintain and enforce the anchors
     /// (enable_feature_point_tracking()).
     bool m_track_feature_points = false;
@@ -963,7 +963,7 @@ public:
      * The 2D counterpart of wmtk::TetOptimizerMesh::surface_envelope_for_face. Null means this
      * segment carries no containment requirement, and every containment check on it is skipped.
      * The default answers with the one envelope, or with m_input_envelopes built, a tracked
-     * segment with the envelopes of its input set (SurfaceTagAttributes::input_set()); an
+     * segment with the envelopes of its labels (SurfaceTagAttributes::labels()); an
      * application tracking more than one surface (see SurfaceTagAttributes::m_surface_class)
      * answers per class.
      *
@@ -981,7 +981,7 @@ public:
         const EdgeAttributes& attr) const
     {
         if (m_input_envelopes.empty() || !attr.m_is_surface_fs) return m_envelope;
-        return m_input_envelopes.containment(attr.input_set());
+        return m_input_envelopes.containment(attr.labels());
     }
 
     /// Whether the tracked-surface segment (a,b) with attributes `attr` (see

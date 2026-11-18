@@ -32,7 +32,7 @@ struct TaggedTriMesh
     /// The tracked edges, one row per edge: E_sets[i] has bit j for label edge_names[j], and
     /// E_orientation[i] is the orientation along the row.
     MatrixXi E;
-    std::vector<InputSet> E_sets;
+    std::vector<LabelIds> E_sets;
     std::vector<int> E_orientation;
     /// With WMTK_PER_INPUT_ORIENTATION: per row, each label's own orientation along it -- the
     /// label's rows' `orientation` entries (io::read_orientation()) summed where the mesh has
@@ -54,7 +54,7 @@ bool is_triangle_mesh(const MeshData& mesh);
  * hold: triangles tagged other than ambient (a region, simwild's to remesh), cells other than
  * triangles, edges and points, vertices off the plane z = 0, triangles not positively oriented, an
  * edge block without tags, a row without a tag, rows labelled EnvelopeSurface, more labels than
- * SurfaceTagAttributes::max_inputs, a row on a vertex no triangle has. `what` names the input.
+ * max_labels, a row on a vertex no triangle has. `what` names the input.
  * Fields as tetwild's tagged route takes them: `tags` read, every other dropped.
  */
 TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what);

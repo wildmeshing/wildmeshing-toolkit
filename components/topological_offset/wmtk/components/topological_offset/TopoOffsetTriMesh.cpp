@@ -151,11 +151,11 @@ void TopoOffsetTriMesh::init_from_image(
         const std::array<size_t, 2> vids = {{size_t(E_tagged(r, 0)), size_t(E_tagged(r, 1))}};
         const auto edge = try_tuple_from_edge(vids);
         if (!edge) log_and_throw_error("Tagged edge {} is not an edge of the triangle mesh", r);
-        InputSet set = 0;
+        LabelIds set;
         for (Eigen::Index j = 0; j < E_tags.cols(); ++j)
-            if (E_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
+            if (E_tags.coeff(r, j) != 0) set.insert(LabelId(j));
         auto& attr = m_edge_attribute[std::get<1>(*edge)];
-        attr.set_input_set(attr.input_set() | set);
+        attr.labels_mut().merge(set);
         io::orient_tagged_row(attr, vids, set, E_orientation, r);
     }
     // Point labels, the input points' (a tagged mesh's point block): each input point's vertex
@@ -169,16 +169,15 @@ void TopoOffsetTriMesh::init_from_image(
     }
     for (size_t k = 0; k < point_vids.size(); ++k) {
         const int bit = m_input_point_labels[k];
-        if (bit < 0 || bit >= int(SurfaceTagAttributes::max_inputs) ||
-            size_t(bit) >= m_point_names.size()) {
+        if (bit < 0 || bit >= int(max_labels) || size_t(bit) >= m_point_names.size()) {
             log_and_throw_error(
                 "Input point {}: label {} of {} names, in {} bits",
                 k,
                 bit,
                 m_point_names.size(),
-                SurfaceTagAttributes::max_inputs);
+                max_labels);
         }
-        m_vertex_extra[point_vids[k]].point_inputs |= InputSet(1) << bit;
+        m_vertex_extra[point_vids[k]].point_inputs.insert(LabelId(bit));
     }
 
     // Once at load too, before the masks are seeded: init_surfaces_and_boundaries() reads on_curve

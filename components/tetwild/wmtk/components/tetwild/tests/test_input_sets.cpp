@@ -1,4 +1,4 @@
-// Each tracked face carries its INPUT SET (SurfaceTagAttributes::input_set()) and stays within eps
+// Each tracked face carries its INPUT SET (SurfaceTagAttributes::labels()) and stays within eps
 // of every input in it. The operations carry the set -- a split's halves copy it, the faces a
 // collapse makes one unite theirs, a surface flip gives both new faces the union of the two it
 // replaces -- and the containment check holds each face to its own set's envelopes. Below: the
@@ -101,11 +101,11 @@ FaceAttributes& face(TetWildMesh& mesh, size_t x, size_t y, size_t z)
     return mesh.m_face_attribute[fid];
 }
 
-void set_tracked(TetWildMesh& mesh, size_t x, size_t y, size_t z, InputSet set)
+void set_tracked(TetWildMesh& mesh, size_t x, size_t y, size_t z, const LabelIds& set)
 {
     FaceAttributes& a = face(mesh, x, y, z);
     a.m_is_surface_fs = true;
-    a.set_input_set(set);
+    a.labels_mut() = set;
 }
 
 // The fan: three tets around the edge (l1, l2) on the x axis, their third and fourth vertices on
@@ -209,19 +209,18 @@ TEST_CASE("input-set-merge", "[tetwild][input_sets]")
 {
     FaceAttributes a, b;
     a.m_is_surface_fs = true;
-    a.set_input_set(0b0101);
+    a.labels_mut() = LabelIds{0, 2};
     b.m_is_surface_fs = true;
-    b.set_input_set(InputSet(1) << (SurfaceTagAttributes::max_inputs - 1));
+    b.labels_mut() = LabelIds{63};
     a.merge(b);
-    CHECK(a.input_set() == ((InputSet(1) << (SurfaceTagAttributes::max_inputs - 1)) | 0b0101));
+    CHECK(a.labels() == LabelIds{0, 2, 63});
     a.reset();
-    CHECK(a.input_set() == 0);
-    // With WMTK_PER_INPUT_ORIENTATION a nibble per input more (SurfaceTagAttributes).
+    CHECK(a.labels().none());
+    // With WMTK_PER_INPUT_ORIENTATION the per-label counts more (SurfaceTagAttributes).
     CHECK(
-        sizeof(FaceAttributes) == 3 + sizeof(InputSet) +
-                                      (SurfaceTagAttributes::per_input_orientation
-                                           ? SurfaceTagAttributes::max_inputs / 2
-                                           : 0));
+        sizeof(FaceAttributes) <=
+        3 + sizeof(LabelIds) + 1 +
+            (SurfaceTagAttributes::per_input_orientation ? sizeof(LabelCounts) : 0));
 }
 
 TEST_CASE("input-set-split-copies", "[tetwild][input_sets]")
@@ -230,8 +229,8 @@ TEST_CASE("input-set-split-copies", "[tetwild][input_sets]")
     params.init(Vector3d(-1, -1, -1), Vector3d(2, 2, 2));
     Mesh mesh(params, loose_fan_envelope(), 0);
     build_fan(mesh);
-    set_tracked(mesh, V1, L1, L2, 0b01);
-    set_tracked(mesh, V2, L1, L2, 0b10);
+    set_tracked(mesh, V1, L1, L2, LabelIds{0});
+    set_tracked(mesh, V2, L1, L2, LabelIds{1});
     // Each face is held to a tight envelope around itself; the halves lie in the parent's plane.
     mesh.m_input_envelopes.set(
         {around_fan_face(V1, L1, L2, 1e-2), around_fan_face(V2, L1, L2, 1e-2)});
@@ -243,9 +242,9 @@ TEST_CASE("input-set-split-copies", "[tetwild][input_sets]")
     const size_t m = mesh.vert_capacity() - 1;
     for (const size_t l : {L1, L2}) {
         CHECK(face(mesh, V1, l, m).m_is_surface_fs);
-        CHECK(face(mesh, V1, l, m).input_set() == 0b01);
+        CHECK(face(mesh, V1, l, m).labels() == LabelIds{0});
         CHECK(face(mesh, V2, l, m).m_is_surface_fs);
-        CHECK(face(mesh, V2, l, m).input_set() == 0b10);
+        CHECK(face(mesh, V2, l, m).labels() == LabelIds{1});
     }
 }
 
@@ -258,12 +257,12 @@ TEST_CASE("input-set-collapse-unites", "[tetwild][input_sets]")
     {
         Mesh mesh(params, loose_fan_envelope(), 0);
         build_fan(mesh);
-        set_tracked(mesh, V1, L1, L2, 0b01);
-        set_tracked(mesh, V2, L1, L2, 0b10);
+        set_tracked(mesh, V1, L1, L2, LabelIds{0});
+        set_tracked(mesh, V2, L1, L2, LabelIds{1});
         mesh.m_input_envelopes.set({loose_fan_envelope(), loose_fan_envelope()});
         REQUIRE(collapse_v1_into_v2(mesh));
         CHECK(face(mesh, V2, L1, L2).m_is_surface_fs);
-        CHECK(face(mesh, V2, L1, L2).input_set() == 0b11);
+        CHECK(face(mesh, V2, L1, L2).labels() == LabelIds{0, 1});
     }
     SECTION("refused when the merged face leaves the envelope of one of its inputs")
     {
@@ -271,22 +270,22 @@ TEST_CASE("input-set-collapse-unites", "[tetwild][input_sets]")
         // 60 degrees away. Union semantics would accept it: input 1 holds it.
         Mesh mesh(params, loose_fan_envelope(), 0);
         build_fan(mesh);
-        set_tracked(mesh, V1, L1, L2, 0b01);
-        set_tracked(mesh, V2, L1, L2, 0b10);
+        set_tracked(mesh, V1, L1, L2, LabelIds{0});
+        set_tracked(mesh, V2, L1, L2, LabelIds{1});
         mesh.m_input_envelopes.set({around_fan_face(V1, L1, L2, 1e-2), loose_fan_envelope()});
         CHECK_FALSE(collapse_v1_into_v2(mesh));
         CHECK(mesh.collapse_refusals(Mesh::CollapseReject::after_envelope) == 1);
-        CHECK(face(mesh, V1, L1, L2).input_set() == 0b01);
+        CHECK(face(mesh, V1, L1, L2).labels() == LabelIds{0});
     }
     SECTION("the same move, accepted when both faces are input 1's")
     {
         Mesh mesh(params, loose_fan_envelope(), 0);
         build_fan(mesh);
-        set_tracked(mesh, V1, L1, L2, 0b10);
-        set_tracked(mesh, V2, L1, L2, 0b10);
+        set_tracked(mesh, V1, L1, L2, LabelIds{1});
+        set_tracked(mesh, V2, L1, L2, LabelIds{1});
         mesh.m_input_envelopes.set({around_fan_face(V1, L1, L2, 1e-2), loose_fan_envelope()});
         REQUIRE(collapse_v1_into_v2(mesh));
-        CHECK(face(mesh, V2, L1, L2).input_set() == 0b10);
+        CHECK(face(mesh, V2, L1, L2).labels() == LabelIds{1});
     }
 }
 
@@ -300,27 +299,27 @@ TEST_CASE("input-set-surface-flip-unites", "[tetwild][input_sets]")
     {
         Mesh mesh(params, loose_ring_envelope(), 1);
         build_ring(mesh);
-        set_tracked(mesh, RA, RB, RC, 0b01);
-        set_tracked(mesh, RA, RB, RD, 0b10);
+        set_tracked(mesh, RA, RB, RC, LabelIds{0});
+        set_tracked(mesh, RA, RB, RD, LabelIds{1});
         mesh.m_input_envelopes.set({loose_ring_envelope(), loose_ring_envelope()});
         REQUIRE(flip_ab(mesh));
-        CHECK(face(mesh, RA, RC, RD).input_set() == 0b11);
-        CHECK(face(mesh, RB, RC, RD).input_set() == 0b11);
+        CHECK(face(mesh, RA, RC, RD).labels() == LabelIds{0, 1});
+        CHECK(face(mesh, RB, RC, RD).labels() == LabelIds{0, 1});
     }
     SECTION("refused when the new faces leave one input's envelope")
     {
         // Input 1 is the face (a, b, d) itself: c is 0.87 off its plane.
         Mesh mesh(params, loose_ring_envelope(), 1);
         build_ring(mesh);
-        set_tracked(mesh, RA, RB, RC, 0b01);
-        set_tracked(mesh, RA, RB, RD, 0b10);
+        set_tracked(mesh, RA, RB, RC, LabelIds{0});
+        set_tracked(mesh, RA, RB, RD, LabelIds{1});
         mesh.m_input_envelopes.set(
             {loose_ring_envelope(),
              envelope_around({p[RA], p[RB], p[RD]}, {Eigen::Vector3i(0, 1, 2)}, 1e-2)});
         CHECK_FALSE(flip_ab(mesh));
         CHECK(mesh.swap_refusals(Mesh::SwapReject::after_envelope) == 1);
-        CHECK(face(mesh, RA, RB, RC).input_set() == 0b01);
-        CHECK(face(mesh, RA, RB, RD).input_set() == 0b10);
+        CHECK(face(mesh, RA, RB, RC).labels() == LabelIds{0});
+        CHECK(face(mesh, RA, RB, RD).labels() == LabelIds{1});
     }
 }
 
@@ -386,7 +385,7 @@ TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]" + releas
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
     std::vector<int8_t> tet_face_orientation;
-    std::vector<InputSet> facet_input_set;
+    std::vector<LabelIds> facet_input_set;
     {
         TetWildMesh mesh_insertion(params, union_env, 0);
         mesh_insertion.insertion_by_volumeremesher(
@@ -424,19 +423,19 @@ TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]" + releas
             const FaceAttributes& a = mesh.m_face_attribute[t.fid(mesh)];
             if (!a.m_is_surface_fs) continue;
             ++n_tracked;
-            const InputSet s = a.input_set();
-            if (s == 0 || s > 3) {
+            const LabelIds& s = a.labels();
+            if (s.none() || !s.subset_of(LabelIds{0, 1})) {
                 ++n_empty;
                 continue;
             }
-            ++by_set[s];
+            ++by_set[size_t(s.contains(0)) + 2 * size_t(s.contains(1))];
             const auto vs = mesh.get_face_vids(t);
             const std::array<Vector3d, 3> tri{
                 {mesh.m_vertex_attribute[vs[0]].m_posf,
                  mesh.m_vertex_attribute[vs[1]].m_posf,
                  mesh.m_vertex_attribute[vs[2]].m_posf}};
             for (int k = 0; k < 2; ++k) {
-                if ((s & (InputSet(1) << k)) && mesh.m_input_envelopes.member(k)->is_outside(tri)) {
+                if (s.contains(LabelId(k)) && mesh.m_input_envelopes.member(k)->is_outside(tri)) {
                     ++n_outside;
                 }
             }
@@ -510,7 +509,7 @@ TEST_CASE("input-sets-touching-boxes", "[tetwild][input_sets]" + release_only)
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
     std::vector<int8_t> tet_face_orientation;
-    std::vector<InputSet> facet_input_set;
+    std::vector<LabelIds> facet_input_set;
     {
         TetWildMesh mesh_insertion(params, union_env, 0);
         mesh_insertion.insertion_by_volumeremesher(
@@ -546,18 +545,18 @@ TEST_CASE("input-sets-touching-boxes", "[tetwild][input_sets]" + release_only)
         for (const auto& t : mesh.get_faces()) {
             const FaceAttributes& a = mesh.m_face_attribute[t.fid(mesh)];
             if (!a.m_is_surface_fs) continue;
-            const InputSet s = a.input_set();
+            const LabelIds& s = a.labels();
             const auto vs = mesh.get_face_vids(t);
             const std::array<Vector3d, 3> tri{
                 {mesh.m_vertex_attribute[vs[0]].m_posf,
                  mesh.m_vertex_attribute[vs[1]].m_posf,
                  mesh.m_vertex_attribute[vs[2]].m_posf}};
             for (int k = 0; k < 2; ++k) {
-                if ((s & (InputSet(1) << k)) && mesh.m_input_envelopes.member(k)->is_outside(tri)) {
+                if (s.contains(LabelId(k)) && mesh.m_input_envelopes.member(k)->is_outside(tri)) {
                     ++n_outside;
                 }
             }
-            if (s != 0b11) continue;
+            if (s != LabelIds{0, 1}) continue;
             ++n_both;
             for (const auto& p : tri) {
                 if (std::abs(p[0] - 1) > params.eps) {

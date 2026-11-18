@@ -52,7 +52,7 @@ void TriWildMesh::init_mesh(
     const std::vector<int>* E_orientation,
     const std::vector<size_t>& free_point_vids,
     const std::vector<int>* E_env_input,
-    const std::vector<InputSet>* E_input_set,
+    const std::vector<LabelIds>* E_input_set,
     const std::vector<InputOrientations>* E_input_orientation)
 {
     assert(V.cols() == 2);
@@ -188,9 +188,9 @@ void TriWildMesh::init_mesh(
         }
         m_edge_attribute[eid].m_is_surface_fs = true;
         auto& attr = m_edge_attribute[eid];
-        attr.set_input_set(E_input_set != nullptr ? (*E_input_set)[i] : 1);
+        attr.labels_mut() = E_input_set != nullptr ? (*E_input_set)[i] : LabelIds{0};
         if (E_orientation != nullptr)
-            attr.set_orientation_along(attr.input_set(), vids, (*E_orientation)[i]);
+            attr.set_orientation_along(attr.labels(), vids, (*E_orientation)[i]);
 #ifdef WMTK_PER_INPUT_ORIENTATION
         if (E_input_orientation != nullptr)
             attr.set_input_orientations_along(vids, (*E_input_orientation)[i]);
@@ -252,9 +252,9 @@ void TriWildMesh::init_mesh(
         // Input k is bit k. Every input with a tracked segment has rows here -- the tracked
         // segments' inputs come from the same curves -- so the base's fallback to the tracked
         // segments never builds one.
-        std::vector<InputSet> E_env_sets(E_env_input->size());
+        std::vector<LabelIds> E_env_sets(E_env_input->size());
         for (size_t i = 0; i < E_env_sets.size(); ++i) {
-            E_env_sets[i] = InputSet(1) << (*E_env_input)[i];
+            E_env_sets[i] = LabelIds{LabelId((*E_env_input)[i])};
         }
         init_input_envelopes(
             m_V_envelope,
@@ -477,7 +477,7 @@ void TriWildMesh::compute_winding_numbers(
     }
 }
 
-void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
+void TriWildMesh::compute_tracked_winding_number(const std::optional<LabelIds>& bounding)
 {
     if (!m_tracks_orientation) {
         log_and_throw_error(
@@ -495,15 +495,16 @@ void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
     // a kept input coincides with another the kept inputs' own is not known, and it is refused
     // there rather than guessed, as in 3D; with the option each input has its own.
     std::vector<std::array<size_t, 2>> oriented;
-    if (bounding == ~InputSet(0)) {
+    if (!bounding) {
         oriented = oriented_tracked_edges();
     } else {
 #ifndef WMTK_PER_INPUT_ORIENTATION
         size_t n_shared = 0;
         for (const Tuple& e : get_edges()) {
             const auto& attr = m_edge_attribute[e.eid(*this)];
-            const InputSet set = attr.input_set();
-            if (attr.m_is_surface_fs && (set & bounding) != 0 && (set & (set - 1)) != 0) {
+            const LabelIds& set = attr.labels();
+            if (attr.m_is_surface_fs && (!bounding || set.intersects(*bounding)) &&
+                set.count() > 1) {
                 ++n_shared;
             }
         }
@@ -518,9 +519,9 @@ void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
 #endif
         for (const Tuple& e : get_edges()) {
             const auto& attr = m_edge_attribute[e.eid(*this)];
-            const int o = attr.orientation_of(bounding);
+            const int o = attr.orientation_of(bounding ? *bounding : attr.labels());
             if (!attr.m_is_surface_fs || o == 0) continue;
-            if ((attr.input_set() & bounding) == 0) continue;
+            if (bounding && !attr.labels().intersects(*bounding)) continue;
             size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
             if (a > b) std::swap(a, b);
             if (o < 0) std::swap(a, b);
@@ -628,15 +629,14 @@ void TriWildMesh::filter_with_tracked_winding_number()
     remove_tris_by_ids(rm_fids);
 }
 
-void TriWildMesh::filter_with_input_winding_number(const InputSet bounding)
+void TriWildMesh::filter_with_input_winding_number(const std::optional<LabelIds>& bounding)
 {
     // A face is inside when it is inside at least one input, i.e. when it carries a tag; with
     // filter_inputs, a tag of one of those inputs.
     const auto inside = [&](const size_t fid) {
-        if (bounding == ~InputSet(0)) return !m_face_attribute[fid].tags.empty();
+        if (!bounding) return !m_face_attribute[fid].tags.empty();
         for (const auto tag : m_face_attribute[fid].tags) {
-            if (tag >= 0 && tag < SurfaceTagAttributes::max_inputs && ((bounding >> tag) & 1))
-                return true;
+            if (tag >= 0 && tag < max_labels && bounding->contains(LabelId(tag))) return true;
         }
         return false;
     };
@@ -695,14 +695,14 @@ void TriWildMesh::filter_with_flood_fill()
     remove_tris_by_ids(rm_fids);
 }
 
-int TriWildMesh::flood_fill(const InputSet bounding)
+int TriWildMesh::flood_fill(const std::optional<LabelIds>& bounding)
 {
     // An edge the fill crosses: not tracked, or, with filter_inputs, tracked for other inputs
     // only.
-    const bool all_inputs = bounding == ~InputSet(0);
+    const bool all_inputs = !bounding;
     const auto crossed = [&](const Tuple& e) {
         const auto& attr = m_edge_attribute[e.eid(*this)];
-        return !attr.m_is_surface_fs || (!all_inputs && (attr.input_set() & bounding) == 0);
+        return !attr.m_is_surface_fs || (!all_inputs && !attr.labels().intersects(*bounding));
     };
     int current_id = 0;
     const auto faces = get_faces();

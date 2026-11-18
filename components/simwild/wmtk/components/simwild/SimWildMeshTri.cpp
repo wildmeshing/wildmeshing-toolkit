@@ -221,7 +221,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
     // tag surface edges and vertices
     std::vector<Vector2i> tempE;
-    std::vector<InputSet> tempE_sets; // their input sets, for the envelope handed on
+    std::vector<LabelIds> tempE_sets; // their input sets, for the envelope handed on
     for (const Tuple& e : edges) {
         SmartTuple ee(*this, e);
 
@@ -229,7 +229,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         const auto t_opp = ee.switch_face();
         const bool border =
             t_opp && m_face_attribute[ee.fid()].tags != m_face_attribute[t_opp.value().fid()].tags;
-        if ((m_edge_attribute[ee.eid()].input_set() & edge_tag_mask()) == 0 && !border) {
+        if (!has_edge_tag(m_edge_attribute[ee.eid()].labels()) && !border) {
             continue;
         }
 
@@ -238,25 +238,25 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
             // The tags on one side and not the other: the regions this edge bounds.
             const auto& tag0 = m_face_attribute[ee.fid()].tags;
             const auto& tag1 = m_face_attribute[t_opp.value().fid()].tags;
-            InputSet set = m_edge_attribute[ee.eid()].input_set();
+            LabelIds set = m_edge_attribute[ee.eid()].labels();
             for (const auto* tags : {&tag0, &tag1}) {
                 const auto* other = tags == &tag0 ? &tag1 : &tag0;
                 for (const int64_t t : *tags) {
                     if (other->count(t)) continue;
                     const size_t bit = m_edge_tag_names.size() + size_t(t);
-                    if (bit >= size_t(SurfaceTagAttributes::max_inputs)) {
+                    if (bit >= max_labels) {
                         log_and_throw_error(
                             "{} edge tags and triangle tag {}: each label is one bit of an "
                             "edge's input set, so edge tags and triangle tags together are at "
                             "most {}",
                             m_edge_tag_names.size(),
                             t,
-                            SurfaceTagAttributes::max_inputs);
+                            max_labels);
                     }
-                    set |= InputSet(1) << bit;
+                    set.insert(LabelId(bit));
                 }
             }
-            m_edge_attribute[ee.eid()].set_input_set(set);
+            m_edge_attribute[ee.eid()].labels_mut() = set;
         }
 
         const size_t v1 = ee.vid();
@@ -265,7 +265,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         m_vertex_attribute[v2].m_is_on_surface = true;
 
         tempE.emplace_back(v1, v2);
-        tempE_sets.push_back(m_edge_attribute[ee.eid()].input_set());
+        tempE_sets.push_back(m_edge_attribute[ee.eid()].labels());
     }
 
     auto env_from_face_tags = [&]() {
@@ -375,11 +375,11 @@ void SimWildMeshTri::init_edge_tags(
     const std::vector<std::string>& edge_tag_names,
     const MatrixSi& E_orientation)
 {
-    if (edge_tag_names.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+    if (edge_tag_names.size() > max_labels) {
         log_and_throw_error(
             "{} edge tags: each is one bit of an edge's input set, so at most {}",
             edge_tag_names.size(),
-            SurfaceTagAttributes::max_inputs);
+            max_labels);
     }
     // One column per name: a column past the names would set a bit of the region labels that
     // follow them (see m_edge_tag_names), or shift past the set's width.
@@ -394,11 +394,11 @@ void SimWildMeshTri::init_edge_tags(
         const std::array<size_t, 2> vids = {{size_t(E_tagged(r, 0)), size_t(E_tagged(r, 1))}};
         const auto [e, eid] = tuple_from_edge(vids);
         if (!e.is_valid(*this)) log_and_throw_error("Tagged edge {} is not an edge of the mesh", r);
-        InputSet set = 0;
+        LabelIds set;
         for (Eigen::Index j = 0; j < E_tags.cols(); ++j)
-            if (E_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
+            if (E_tags.coeff(r, j) != 0) set.insert(LabelId(j));
         auto& attr = m_edge_attribute[eid];
-        attr.set_input_set(attr.input_set() | set);
+        attr.labels_mut().merge(set);
         io::orient_tagged_row(attr, vids, set, E_orientation, r);
     }
 }
@@ -407,12 +407,12 @@ void SimWildMeshTri::init_label_envelopes(const double eps, const bool exact)
 {
     // With one label the member would be m_envelope, so none is built, as triwild builds none
     // for one input: the containment then answers with the union, as before the labels.
-    InputSet labels = 0;
+    LabelIds labels;
     for (const Tuple& e : get_edges()) {
         const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
-        if (attr.m_is_surface_fs) labels |= attr.input_set();
+        if (attr.m_is_surface_fs) labels.merge(attr.labels());
     }
-    if ((labels & (labels - 1)) == 0) {
+    if (labels.count() <= 1) {
         m_input_envelopes.set({});
         return;
     }
@@ -463,7 +463,7 @@ std::string SimWildMeshTri::label_name(const size_t bit) const
 
 MeshData SimWildMeshTri::envelope_data(const std::vector<Vector2d>& points) const
 {
-    const std::vector<InputSet>& sets = m_E_envelope_labels.size() == m_E_envelope.size()
+    const std::vector<LabelIds>& sets = m_E_envelope_labels.size() == m_E_envelope.size()
                                             ? m_E_envelope_labels
                                             : m_E_envelope_edge_sets;
     MeshData out;
@@ -475,7 +475,7 @@ MeshData SimWildMeshTri::envelope_data(const std::vector<Vector2d>& points) cons
     std::vector<std::string> names = m_edge_tag_names;
     const std::vector<std::string> face_labels = io::tag_labels(m_tag_id_to_name, m_tags_count);
     names.insert(names.end(), face_labels.begin(), face_labels.end());
-    names.resize(std::min(names.size(), size_t(SurfaceTagAttributes::max_inputs)));
+    names.resize(std::min(names.size(), max_labels));
     io::append_envelope_block(out, edges, CellType::Edge, sets, names);
     io::append_envelope_points(out, points, m_input_point_labels, m_point_names);
     return out;
@@ -489,19 +489,18 @@ void SimWildMeshTri::set_envelope_around_tags()
     m_E_envelope_edge_sets.clear();
     std::vector<int> row(vert_capacity(), -1);
     for (const Tuple& e : get_edges()) {
-        InputSet set = m_edge_attribute[e.eid(*this)].input_set() & edge_tag_mask();
+        LabelIds set = edge_tags_of(m_edge_attribute[e.eid(*this)].labels());
         if (const auto opp = e.switch_face(*this)) {
             const auto& a = m_face_attribute[e.fid(*this)].tags;
             const auto& b = m_face_attribute[opp->fid(*this)].tags;
             for (const auto& [x, y] : {std::pair(&a, &b), std::pair(&b, &a)}) {
                 for (const int64_t t : *x) {
                     const size_t bit = m_edge_tag_names.size() + size_t(t);
-                    if (!y->count(t) && bit < size_t(SurfaceTagAttributes::max_inputs))
-                        set |= InputSet(1) << bit;
+                    if (!y->count(t) && bit < max_labels) set.insert(LabelId(bit));
                 }
             }
         }
-        if (set == 0) continue;
+        if (set.none()) continue;
         Vector2i r;
         const std::array<size_t, 2> vids = {{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
         for (int k = 0; k < 2; ++k) {
@@ -1229,7 +1228,7 @@ void SimWildMeshTri::simplify()
     m_E_envelope_edge_sets.clear();
     for (const Tuple& e : get_edges()) {
         const auto& attr = m_edge_attribute[e.eid(*this)];
-        if (attr.m_is_surface_fs) m_E_envelope_edge_sets.push_back(attr.input_set());
+        if (attr.m_is_surface_fs) m_E_envelope_edge_sets.push_back(attr.labels());
     }
     if (V.size() > 0 && E.size() > 0) {
         init_envelope(V, E);
@@ -1255,7 +1254,7 @@ bool SimWildMeshTri::check_interface_edges_tagged(const bool verbose) const
         const size_t eid = edge.eid(*this);
         const bool marked = m_edge_attribute[eid].m_is_surface_fs;
         // A tagged edge is surface by its tag, not by the triangles around it.
-        if (marked && (m_edge_attribute[eid].input_set() & edge_tag_mask()) != 0) {
+        if (marked && has_edge_tag(m_edge_attribute[eid].labels())) {
             num_surface++;
             continue;
         }
@@ -1374,7 +1373,7 @@ void SimWildMeshTri::update_attributes()
             m_face_attribute[edge.fid(*this)].tags != m_face_attribute[opposite->fid(*this)].tags;
 
         // A tagged edge stays surface wherever it lies.
-        if (is_interface || (m_edge_attribute[eid].input_set() & edge_tag_mask()) != 0) {
+        if (is_interface || has_edge_tag(m_edge_attribute[eid].labels())) {
             for (const size_t vid : get_edge_vids(edge)) {
                 m_vertex_attribute[vid].m_is_on_surface = true;
             }

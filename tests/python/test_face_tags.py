@@ -25,7 +25,7 @@ BOX_F = [(0, 3, 2), (0, 2, 1), (4, 5, 6), (4, 6, 7), (0, 1, 5), (0, 5, 4),
 SQUARE = (1.5, 2.3, 0.1, 0.9, 0.5)  # x0, x1, y0, y1, z
 GREEN = ((3, 0, 0), (4, 1, 1))
 EPS_REL = 1e-2
-MAX_INPUTS = 64  # SurfaceTagAttributes::max_inputs, the bits of wmtk::InputSet
+MAX_INPUTS = 65536  # wmtk::max_labels: one LabelId (uint16_t) per label
 EPS = EPS_REL * np.linalg.norm([4, 1, 1])  # inputs' bbox [0,4]x[0,1]x[0,1]
 
 
@@ -478,8 +478,8 @@ def test_offset_grows_a_shell_around_a_tagged_sheet():
     assert len(rows(r, "tetrahedron", "red")) == len(rows(m, "tetrahedron", "red"))
 
 
-def test_reader_refuses_more_face_tags_than_input_set_bits():
-    """A face tag is one bit of a face's input set, MAX_INPUTS bits."""
+def test_reader_refuses_more_face_tags_than_label_ids():
+    """A face tag is one label id of a face's labels (LabelIds), MAX_INPUTS ids."""
     m = tagged_grid()
     tri = m["cells"]["triangle"]
     n = len(tri["connectivity"])

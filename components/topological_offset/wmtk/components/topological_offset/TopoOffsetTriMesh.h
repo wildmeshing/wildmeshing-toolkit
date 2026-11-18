@@ -46,7 +46,7 @@ public:
     /// is VertexExtra::point_inputs, whose anchors take over from it; in 2D no anchor holds a
     /// point, nothing moving one, and the output's point block is written from this
     /// (collect_loaded_curves_and_points()).
-    InputSet point_inputs = 0;
+    LabelIds point_inputs;
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset boundary itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
