@@ -3673,8 +3673,17 @@ its midpoint:</p>
 </div>
 </div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>triwild, length_rel 0.05: 289 triangles after 1 iteration(s), 52.9% of the edges past 4/3 of the field, median 1.38 of it
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>triwild, sizing mesh: 840 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.84 of it
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>triwild, sizing mesh: 841 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.85 of it
 </code></pre></div>
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_triwild"></wmtk-viewer>
+</div>
+
+<p><code>length_rel</code> 0.05 on the left, the sizing mesh on the right. Each triangle is colored by its
+longest edge over the field at the edge's midpoint: white as long as the field, pale up to 4/3 of
+it, red past that, blue shorter. The field grows from left to right; one length for the whole
+circle suits its right side only. Scroll to zoom, switch the coloring below the meshes. Every
+example is in the <a href="../../../gallery/">gallery</a>.</p>
 <p>On the file route, <code>sizing_mesh</code> is the path of a mesh file, relative to
 <a href="../../../reference/triwild/#input_dir"><code>input_dir</code></a> like the inputs. A <code>.msh</code> file written by
 <code>wm.write_mesh</code> keeps the field, as a node field <code>target_length</code>:</p>
@@ -3685,9 +3694,10 @@ its midpoint:</p>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>            <span class="s2">"output"</span><span class="p">:</span> <span class="s2">"circle"</span><span class="p">})</span>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"triwild on files: </span><span class="si">{</span><span class="n">against</span><span class="p">(</span><span class="n">wm</span><span class="o">.</span><span class="n">read_mesh</span><span class="p">(</span><span class="s1">'circle.msh'</span><span class="p">),</span><span class="w"> </span><span class="s1">'triangle'</span><span class="p">,</span><span class="w"> </span><span class="n">field</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>triwild on files: 0.3% of the edges past 4/3 of the field, median 0.84 of it
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>triwild on files: 0.3% of the edges past 4/3 of the field, median 0.85 of it
 </code></pre></div>
-<p>On the command line, the same is <code>"sizing_mesh": "sizing.msh"</code> in the JSON.</p>
+<p>The same mesh as on the memory route. On the command line, the same is
+<code>"sizing_mesh": "sizing.msh"</code> in the JSON.</p>
 <h2 id="a-largest-length-not-a-target">A largest length, not a target<a class="headerlink" href="#a-largest-length-not-a-target" title="Permanent link">&para;</a></h2>
 <p>In TriWild, TetWild and SimWild every vertex carries a <strong>sizing</strong>, the factor of the target length its edges are split and
 collapsed to (an edge longer than 4/3 of its target is split, one shorter than 4/5 collapsed;
@@ -3701,7 +3711,7 @@ global one, and caps it after every pass:</p>
   <a href="../../../reference/tetwild/#stuck_refine_factor">stuck refinement</a> lowers the sizing further,
   and the cap only ever lowers it. A collapse that would make an element worse is still refused.
   Either way the mesh ends finer than the field there, and that is a valid result: the median
-  edge above is 0.84 of the field.</li>
+  edge above is 0.85 of the field.</li>
 <li><strong>Longer than <code>length</code> is allowed.</strong> The field may ask for more than the global length;
   <code>length</code> and <code>length_rel</code> then only apply where it does not reach.</li>
 </ul>
@@ -3731,9 +3741,15 @@ runs one more iteration:</p>
 <a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"limit_collapse_length </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">triangles</span><span class="si">}</span><span class="s2"> triangles after </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">'#iterations'</span><span class="p">]</span><span class="si">}</span><span class="s2"> "</span>
 <a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>          <span class="sa">f</span><span class="s2">"iteration(s), </span><span class="si">{</span><span class="n">against</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s1">'mesh'</span><span class="p">],</span><span class="w"> </span><span class="s1">'triangle'</span><span class="p">,</span><span class="w"> </span><span class="n">field</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>limit_collapse_length True: 840 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.84 of it
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>limit_collapse_length True: 841 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.85 of it
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>limit_collapse_length False: 577 triangles after 2 iteration(s), 13.0% of the edges past 4/3 of the field, median 1.02 of it
 </code></pre></div>
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_limit"></wmtk-viewer>
+</div>
+
+<p>The limit on the left, off on the right: there, the collapses leave the red triangles, whose
+longest edge is past the field.</p>
 <p>Smoothing can still stretch an edge a little past 4/3 of its target: to keep every edge under a
 bound, give about 3/4 of it as the field.</p>
 <p>The field is read at the vertices: an edge's target is the mean of its ends'. A field smooth at the
@@ -3764,13 +3780,17 @@ grows from 0.03 at its bottom to 0.15 at its top:</p>
 <a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>        <span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"sphere"</span><span class="p">],</span> <span class="s2">"filter"</span><span class="p">:</span> <span class="s2">"tracked"</span><span class="p">,</span> <span class="s2">"num_threads"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">},</span>
 <a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>        <span class="p">{</span><span class="s2">"sphere"</span><span class="p">:</span> <span class="n">sphere</span><span class="p">,</span> <span class="s2">"box"</span><span class="p">:</span> <span class="n">box</span><span class="p">})</span>
 <a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>    <span class="n">tets</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">][</span><span class="s2">"cells"</span><span class="p">][</span><span class="s2">"tetrahedron"</span><span class="p">][</span><span class="s2">"connectivity"</span><span class="p">])</span>
-<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"tetwild, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">tets</span><span class="si">}</span><span class="s2"> tets, "</span> <span class="o">+</span> <span class="n">against</span><span class="p">(</span>
-<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">],</span> <span class="s2">"tetrahedron"</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">p</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="n">box_lo</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">box_hi</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
-<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>                                                            <span class="p">[</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">])))</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"tetwild, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">tets</span><span class="si">}</span><span class="s2"> tets, </span><span class="si">{</span><span class="n">against</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s1">'mesh'</span><span class="p">],</span><span class="w"> </span><span class="s1">'tetrahedron'</span><span class="p">,</span><span class="w"> </span><span class="n">box_field</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>tetwild, length_rel 0.05: 12687 tets, 29.6% of the edges past 4/3 of the field, median 1.16 of it
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>tetwild, sizing mesh: 34011 tets, 0.6% of the edges past 4/3 of the field, median 0.85 of it
 </code></pre></div>
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_tetwild"></wmtk-viewer>
+</div>
+
+<p>The tets the cut exposes are colored as above, the faces of the boundary gray. Here z points to
+the left: the field grows from right to left. Drag to rotate, move the cut with the slider.</p>
 <h2 id="isotropic-remeshing">Isotropic remeshing<a class="headerlink" href="#isotropic-remeshing" title="Permanent link">&para;</a></h2>
 <p>The sizing mesh is a surface, and isotropic remeshing reads it at the point closest to each
 vertex, again wherever an operation moves one; an edge's target is the mean of its ends'. For
@@ -3791,12 +3811,18 @@ that goes from 4% of its diagonal at its feet to 1% at its ears:</p>
 <a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">outputs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">isotropic_remeshing</span><span class="p">({</span><span class="s2">"input"</span><span class="p">:</span> <span class="s2">"bunny"</span><span class="p">,</span> <span class="s2">"max_iterations"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">},</span>
 <a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>                                        <span class="p">{</span><span class="s2">"bunny"</span><span class="p">:</span> <span class="n">bunny</span><span class="p">,</span> <span class="s2">"field"</span><span class="p">:</span> <span class="n">bunny_sizing</span><span class="p">})</span>
 <a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="n">triangles</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">][</span><span class="s2">"cells"</span><span class="p">][</span><span class="s2">"triangle"</span><span class="p">][</span><span class="s2">"connectivity"</span><span class="p">])</span>
-<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"isotropic_remeshing, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">triangles</span><span class="si">}</span><span class="s2"> triangles, "</span> <span class="o">+</span> <span class="n">against</span><span class="p">(</span>
-<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">],</span> <span class="s2">"triangle"</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">diag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">p</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.04</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">])))</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"isotropic_remeshing, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">triangles</span><span class="si">}</span><span class="s2"> triangles, "</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>          <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">against</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s1">'mesh'</span><span class="p">],</span><span class="w"> </span><span class="s1">'triangle'</span><span class="p">,</span><span class="w"> </span><span class="n">bunny_field</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>isotropic_remeshing, length_rel 0.025: 2559 triangles, 21.0% of the edges past 4/3 of the field, median 0.96 of it
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>isotropic_remeshing, sizing mesh: 3633 triangles, 0.5% of the edges past 4/3 of the field, median 1.02 of it
 </code></pre></div>
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_isotropic"></wmtk-viewer>
+</div>
+
+<p>At one length, the triangles are too long for the ears (red); with the sizing mesh, they follow
+the field from the feet to the ears.</p>
 <h2 id="simwild-with-regions">SimWild: with regions<a class="headerlink" href="#simwild-with-regions" title="Permanent link">&para;</a></h2>
 <p>SimWild also sizes by region:
 <a href="../../../reference/simwild/#sizing_field"><code>sizing_field</code></a> gives a length per region expression.
@@ -3806,10 +3832,37 @@ Only the <a href="../../../reference/simwild/#operation"><code>remeshing</code><
 operations ignore both options, so one set of options can be passed to every step of a pipeline.</p>
 <h2 id="the-coarsening-pass">The coarsening pass<a class="headerlink" href="#the-coarsening-pass" title="Permanent link">&para;</a></h2>
 <p>The optional <a href="../../../reference/tetwild/#coarsen_pass">coarsening pass</a> of TriWild, TetWild and
-SimWild removes the elements the quality target does not need. Left
-<a href="../../../reference/tetwild/#coarsen_unbounded">unbounded</a> (the default), it ignores every target
-length, the field's too. Bounded, it leaves the edges at or past 4/5 of the target: with a sizing
-mesh, the field's length at the edge's ends, also where that is longer than <code>length</code>.</p>
+SimWild runs after the optimization and removes the elements the quality target does not need: it
+takes collapses the optimization refused, and keeps one when, after smoothing around it, no
+element there is worse than before (<a href="../../../concepts/quality/#the-coarsening-pass">the coarsening pass</a>).
+With a sizing mesh, <code>limit_collapse_length</code> holds it under the field too: none of its collapses
+leaves an edge longer than 4/3 of the field's length. It coarsens where it can without breaking
+the field:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># The coarsening pass takes collapses the optimization refused on quality. With the sizing mesh,</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="c1"># limit_collapse_length holds it under the field too; turned off, it coarsens past the field.</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">extra</span> <span class="ow">in</span> <span class="p">[(</span><span class="s2">"coarsen_pass"</span><span class="p">,</span> <span class="p">{}),</span> <span class="p">(</span><span class="s2">"coarsen_pass, limit off"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"limit_collapse_length"</span><span class="p">:</span> <span class="kc">False</span><span class="p">})]:</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">outputs</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">tetwild</span><span class="p">(</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>        <span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"sphere"</span><span class="p">],</span> <span class="s2">"filter"</span><span class="p">:</span> <span class="s2">"tracked"</span><span class="p">,</span> <span class="s2">"num_threads"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"sizing_mesh"</span><span class="p">:</span> <span class="s2">"box"</span><span class="p">,</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>         <span class="s2">"coarsen_pass"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">},</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>        <span class="p">{</span><span class="s2">"sphere"</span><span class="p">:</span> <span class="n">sphere</span><span class="p">,</span> <span class="s2">"box"</span><span class="p">:</span> <span class="n">box</span><span class="p">})</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">tets</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">][</span><span class="s2">"cells"</span><span class="p">][</span><span class="s2">"tetrahedron"</span><span class="p">][</span><span class="s2">"connectivity"</span><span class="p">])</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"tetwild, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">tets</span><span class="si">}</span><span class="s2"> tets, </span><span class="si">{</span><span class="n">against</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="s1">'mesh'</span><span class="p">],</span><span class="w"> </span><span class="s1">'tetrahedron'</span><span class="p">,</span><span class="w"> </span><span class="n">box_field</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>tetwild, coarsen_pass: 32667 tets, 0.6% of the edges past 4/3 of the field, median 0.87 of it
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>tetwild, coarsen_pass, limit off: 15009 tets, 24.0% of the edges past 4/3 of the field, median 1.10 of it
+</code></pre></div>
+<div>
+<wmtk-viewer example="workflow_sizing_mesh_coarsen"></wmtk-viewer>
+</div>
+
+<p>With the limit (on the left), the pass removes 4% of the 34011 tets, and the field still holds:
+the optimization had already brought the edges to the field, so most collapses would make them
+longer than it. Without the limit, it removes 56% of them, and makes the edges longer than the
+field (red). Where the mesh is finer than the field, after a stuck refinement or near the input's
+details, the pass has more to remove.</p>
+<p><a href="../../../reference/tetwild/#coarsen_unbounded">Unbounded</a> (the default), the pass knows no target
+length but the limit's. Bounded, it also leaves alone the edges at or past 4/5 of the target: with
+a sizing mesh, of the field's length at the edge's ends, also where that is longer than <code>length</code>.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>For TriWild, TetWild and SimWild; isotropic remeshing shares the first and the
 <code>limit_collapse_length</code> rows.</p>
@@ -3843,9 +3896,9 @@ mesh, the field's length at the edge's ends, also where that is longer than <cod
 <td>the same, and at most 1% of the edges past 4/3 of their target, or no more progress</td>
 </tr>
 <tr>
-<td>Bounded coarsening</td>
-<td>stops at 4/5 of <code>length</code></td>
-<td>stops at 4/5 of the field's length</td>
+<td>Coarsening pass</td>
+<td>as far as the energy allows; bounded, stops at 4/5 of <code>length</code></td>
+<td>under 4/3 of the field (the limit); bounded, also stops at 4/5 of it</td>
 </tr>
 <tr>
 <td>SimWild's <code>sizing_field</code></td>

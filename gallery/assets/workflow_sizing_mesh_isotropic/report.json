@@ -1,0 +1,34 @@
+{
+  "views": {
+    "input": {
+      "cells": 2553,
+      "bytes": 30927
+    },
+    "output": {
+      "cells": 3633,
+      "bytes": 42962
+    }
+  },
+  "report": {
+    "#f": 3633,
+    "#v": 1925,
+    "avg_length": 0.005467257731271151,
+    "avg_valence": 5.7776623376623375,
+    "check_inversions": true,
+    "cleanup_angle": 0.0,
+    "eps": 0.0,
+    "limit_collapse_length": true,
+    "max_length": 0.016813097900149156,
+    "max_valence": 20.0,
+    "min_length": 0.00027228294107416786,
+    "min_valence": 2.0,
+    "nonmanifold_edges": 0,
+    "nonmanifold_vertices": 0,
+    "refused_inversions": 251,
+    "sizing_mesh": true,
+    "swap_quality": false,
+    "target_length": 0.0014706212311352965,
+    "time_sec": 1.4747679999999999,
+    "use_link_condition": true
+  }
+}

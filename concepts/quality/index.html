@@ -3625,6 +3625,10 @@ without letting the max energy rise:</p>
 <li><a href="../../reference/tetwild/#coarsen_unbounded"><code>coarsen_unbounded</code></a> (on) lets it coarsen past the
   target edge length, as far as the energy allows. Off, it leaves edges of <span class="arithmatex">\(\tfrac45\,l\)</span> and
   longer alone.</li>
+<li>Either way, <a href="../../reference/tetwild/#limit_collapse_length"><code>limit_collapse_length</code></a>, when on,
+  keeps it from leaving an edge longer than <span class="arithmatex">\(\tfrac43\,l\)</span>, or 4/3 of a
+  <a href="../../tutorials/workflows/sizing-mesh/#the-coarsening-pass">sizing mesh</a>'s length, with which
+  the limit is on by default.</li>
 </ul>
 <p>The pass trades run time for elements: it is off by default. With
 <a href="../../reference/tetwild/#volume_history_output"><code>volume_history_output</code></a> it is refused when
