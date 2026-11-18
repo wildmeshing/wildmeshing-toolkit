@@ -89,7 +89,7 @@ $(function() {
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:afdcc39b878c914a0f47eb33a0ade9930" id="r_afdcc39b878c914a0f47eb33a0ade9930"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#afdcc39b878c914a0f47eb33a0ade9930">SmoothingMode</a> { <b>Projected</b>
-, <b>Exact</b>
+, <b>Penalty</b>
  }</td></tr>
 <tr class="separator:afdcc39b878c914a0f47eb33a0ade9930"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -148,7 +148,7 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>s_envelope</b> = 1.
 </div><div class="memdoc">
 <p>How a surface vertex is placed.</p>
 <p>Projected: smooth as if interior (AMIPS alone), then walk back toward the start along t = 1, 1/2, 1/4, ..., projecting each candidate onto the input; take the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. The vertex lands exactly on the input; no weights exist.</p>
-<p>Exact: minimize w_amips * AMIPS + w_envelope * (d/eps)^2 with the TRUE Hessian of the distance to the piecewise-linear input (ExactDistanceEnergy2D/3D): sliding is free exactly where the input is flat, blocked isotropically at corners and vertices, constrained to the direction of a 3D edge or curve segment. The vertex rests a w_amips-proportional distance off the input; the accept checks below apply either way. </p>
+<p>Penalty: no projection; minimize w_amips * AMIPS + w_envelope * (d/eps)^2, a quadratic penalty on the distance d, with the TRUE Hessian of the distance to the piecewise-linear input (ExactDistanceEnergy2D/3D): sliding is free exactly where the input is flat, blocked isotropically at corners and vertices, constrained to the direction of a 3D edge or curve segment. The vertex rests a w_amips-proportional distance off the input; the accept checks below apply either way. Named "exact" until 2026-11, after the Hessian; but what sets the two modes apart is the penalty term against the projection. </p>
 
 </div>
 </div>

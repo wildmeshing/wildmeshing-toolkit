@@ -87,9 +87,10 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a8dfa0f63b7fafc6ec9ea68f460b9d83a" id="r_a8dfa0f63b7fafc6ec9ea68f460b9d83a"><td class="memItemLeft" align="right" valign="top"><a id="a8dfa0f63b7fafc6ec9ea68f460b9d83a" name="a8dfa0f63b7fafc6ec9ea68f460b9d83a"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>label</b> = 0</td></tr>
+<tr class="memitem:a8dfa0f63b7fafc6ec9ea68f460b9d83a" id="r_a8dfa0f63b7fafc6ec9ea68f460b9d83a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a8dfa0f63b7fafc6ec9ea68f460b9d83a">label</a> = 0</td></tr>
 <tr class="separator:a8dfa0f63b7fafc6ec9ea68f460b9d83a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a710b43806e14b0bf10ed0b6a5db69682" id="r_a710b43806e14b0bf10ed0b6a5db69682"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a710b43806e14b0bf10ed0b6a5db69682">offset</a> = -1</td></tr>
+<tr class="separator:a710b43806e14b0bf10ed0b6a5db69682"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a64562b467031b605895ae354edcd3cb5" id="r_a64562b467031b605895ae354edcd3cb5"><td class="memItemLeft" align="right" valign="top">InputSet&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a64562b467031b605895ae354edcd3cb5">point_inputs</a> = 0</td></tr>
 <tr class="separator:a64562b467031b605895ae354edcd3cb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c240333447786a16d788405f93ddf03" id="r_a7c240333447786a16d788405f93ddf03"><td class="memItemLeft" align="right" valign="top"><a id="a7c240333447786a16d788405f93ddf03" name="a7c240333447786a16d788405f93ddf03"></a>
@@ -106,6 +107,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
 <tr class="separator:a7782cf5be960945eb7046ef6cdc571e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69261ae99a382b04d9f8f76934cf9276" id="r_a69261ae99a382b04d9f8f76934cf9276"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a69261ae99a382b04d9f8f76934cf9276">m_corr_input_vid</a> = -1</td></tr>
 <tr class="separator:a69261ae99a382b04d9f8f76934cf9276"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a764f7be80c160a2e04bd511e835a165e" id="r_a764f7be80c160a2e04bd511e835a165e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a764f7be80c160a2e04bd511e835a165e">m_corr_carried</a> = false</td></tr>
+<tr class="separator:a764f7be80c160a2e04bd511e835a165e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdaefaa15d22a786870d69afc35022d2" id="r_abdaefaa15d22a786870d69afc35022d2"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#abdaefaa15d22a786870d69afc35022d2">m_born_epoch</a> = 0</td></tr>
 <tr class="separator:abdaefaa15d22a786870d69afc35022d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -113,6 +116,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
 <div class="textblock"><p>Per-vertex data the shared 2D optimizer knows nothing about. </p>
 <p>Position, rounding, bbox membership, sizing and partition all live on <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_vertex_attributes.html">wmtk::TriOptimizerMesh::VertexAttributes</a>. The three flags here say which tracked surface a vertex belongs to; the base's m_is_on_surface is their union, and they are not exclusive &ndash; a vertex where the offset boundary meets another region's boundary carries both. </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a8dfa0f63b7fafc6ec9ea68f460b9d83a" name="a8dfa0f63b7fafc6ec9ea68f460b9d83a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8dfa0f63b7fafc6ec9ea68f460b9d83a">&#9670;&#160;</a></span>label</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::topological_offset::VertexExtra2d::label = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The construction label: 1 on the input complex, 2 on a band triangle off it, 0 elsewhere. The construction writes it; the optimization keeps it at every split's new vertex and every collapse's survivor and link (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad13cff6c6bd4780614727ccc23a447a9">TopoOffsetTriMesh::carried_vertex_label()</a>), from what 2D's operations carry. 3D keeps its labels by its carried edge labels (close_labels()); 2D's edge label (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_edge_extra2d.html#a5e9d07ba00c0e16defbef4f15e941a5e">EdgeExtra2d::label</a>) is not carried, and is read only before the optimization. </p>
+
+</div>
+</div>
 <a id="abdaefaa15d22a786870d69afc35022d2" name="abdaefaa15d22a786870d69afc35022d2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abdaefaa15d22a786870d69afc35022d2">&#9670;&#160;</a></span>m_born_epoch</h2>
 
@@ -145,6 +163,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
 
 </div>
 </div>
+<a id="a764f7be80c160a2e04bd511e835a165e" name="a764f7be80c160a2e04bd511e835a165e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a764f7be80c160a2e04bd511e835a165e">&#9670;&#160;</a></span>m_corr_carried</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::VertexExtra2d::m_corr_carried = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>m_corr_input_vid came with the input, from an earlier offset (topological_offset.cpp), not from this run's march. split_edge_before() throws rather than cut this vertex's edge to the vertex it names. As <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#a3f9ecca2703424e40ed700803dd61398">VertexExtra::m_corr_carried</a> in 3D. </p>
+
+</div>
+</div>
 <a id="a69261ae99a382b04d9f8f76934cf9276" name="a69261ae99a382b04d9f8f76934cf9276"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a69261ae99a382b04d9f8f76934cf9276">&#9670;&#160;</a></span>m_corr_input_vid</h2>
 
@@ -160,6 +193,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
 
 </div>
 </div>
+<a id="a710b43806e14b0bf10ed0b6a5db69682" name="a710b43806e14b0bf10ed0b6a5db69682"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a710b43806e14b0bf10ed0b6a5db69682">&#9670;&#160;</a></span>offset</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::topological_offset::VertexExtra2d::offset = -1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The entry of Parameters::offsets whose input complex this vertex is on (label 1), set by label_input_complex(); -1 on every other vertex, a split's new vertex included. As <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#ab37230f34910f554db301fe1a9561bae">VertexExtra::offset</a> in 3D. </p>
+
+</div>
+</div>
 <a id="a64562b467031b605895ae354edcd3cb5" name="a64562b467031b605895ae354edcd3cb5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a64562b467031b605895ae354edcd3cb5">&#9670;&#160;</a></span>point_inputs</h2>
 
@@ -171,7 +219,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set at load (init_from_image()) and carried by the construction, which only splits, a new vertex starting from none (marching_split_edge_before(), split_face_before()). The 3D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#aaf891296fe91c0df8346a71ab961f686">VertexExtra::point_inputs</a>, whose anchors take over from it; in 2D no anchor holds a point, nothing moving one, and the output's point block is written from this (collect_loaded_curves_and_points()). </p>
+<p>The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set at load (init_from_image()) and carried by the construction, which only splits, a new vertex starting from none (marching_split_edge_before(), split_face_before()), until hold_curves_and_points() anchors the points and clears it: from there on the anchors carry them, through the operations, which do not carry this. As <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#aaf891296fe91c0df8346a71ab961f686">VertexExtra::point_inputs</a> in 3D. A mesh not held (an empty input complex) writes its point block from this (collect_loaded_curves_and_points()). </p>
 
 </div>
 </div>

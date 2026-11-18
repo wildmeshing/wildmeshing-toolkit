@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::components::topological_offset::StencilEnergy2D::Sample Struct Reference</title>
+<title>Wildmeshing Toolkit: wmtk::components::topological_offset::BandVolumeEnergy2D::SweptEdge Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,33 +69,30 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d.html">StencilEnergy2D</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d_1_1_sample.html">Sample</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy2_d.html">BandVolumeEnergy2D</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy2_d_1_1_swept_edge.html">SweptEdge</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d_1_1_sample-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::components::topological_offset::StencilEnergy2D::Sample Struct Reference</div></div>
+<a href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy2_d_1_1_swept_edge-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::components::topological_offset::BandVolumeEnergy2D::SweptEdge Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>One stencil point's barycentric weights. <code>a</code> is the moving vertex's, so dq_i/dx = a_i I.  
- <a href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d_1_1_sample.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ac009ff484c2fcbebe5f6dc3ba38fb007" id="r_ac009ff484c2fcbebe5f6dc3ba38fb007"><td class="memItemLeft" align="right" valign="top"><a id="ac009ff484c2fcbebe5f6dc3ba38fb007" name="ac009ff484c2fcbebe5f6dc3ba38fb007"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>a</b></td></tr>
-<tr class="separator:ac009ff484c2fcbebe5f6dc3ba38fb007"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9629d7715c98cca1cf4c2b24ec3140d9" id="r_a9629d7715c98cca1cf4c2b24ec3140d9"><td class="memItemLeft" align="right" valign="top"><a id="a9629d7715c98cca1cf4c2b24ec3140d9" name="a9629d7715c98cca1cf4c2b24ec3140d9"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>b</b></td></tr>
-<tr class="separator:a9629d7715c98cca1cf4c2b24ec3140d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29afd8bdfafb76852cb2f280fa0dbb58" id="r_a29afd8bdfafb76852cb2f280fa0dbb58"><td class="memItemLeft" align="right" valign="top"><a id="a29afd8bdfafb76852cb2f280fa0dbb58" name="a29afd8bdfafb76852cb2f280fa0dbb58"></a>
+Eigen::Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>a</b></td></tr>
+<tr class="separator:a29afd8bdfafb76852cb2f280fa0dbb58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a308b5ccd1ad7c7cc4d0096bd589de72d" id="r_a308b5ccd1ad7c7cc4d0096bd589de72d"><td class="memItemLeft" align="right" valign="top"><a id="a308b5ccd1ad7c7cc4d0096bd589de72d" name="a308b5ccd1ad7c7cc4d0096bd589de72d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>x_first</b> = true</td></tr>
+<tr class="separator:a308b5ccd1ad7c7cc4d0096bd589de72d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>One stencil point's barycentric weights. <code>a</code> is the moving vertex's, so dq_i/dx = a_i I. </p>
+<div class="textblock"><p>A boundary edge of the band B through the moving vertex x, the 2D twin of a 3D boundary face's (a_f, b_f): its other end a, and the pair it makes with x ordered so that the pair's normal rot_cw(second - first) points out of B: (x, a) when x_first, (a, x) otherwise (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1be70008f743888cc7331fc00c1a5e56">TopoOffsetTriMesh::band_swept_edges()</a>). 3D orders a face by its two other corners; an edge has one, so the order is this flag. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a></li>
 </ul>

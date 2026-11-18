@@ -4,12 +4,13 @@ var searchData=
   ['damping_5ffactor_1',['damping_factor',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ac2fc25fc974d65292cd77a7124eca05e',1,'wmtk::components::topological_offset::Parameters']]],
   ['dead_2',['dead',['../structwmtk_1_1components_1_1tracking_1_1_surface_map_1_1_step.html#a492cb4134410b17dc5f6e7b871bb4498',1,'wmtk::components::tracking::SurfaceMap::Step']]],
   ['debug_5fcrossings_3',['debug_crossings',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a96f3f0c18c99c5a6463d1880ae2747d7',1,'wmtk::components::topological_offset::Parameters']]],
-  ['debug_5fremote_5foutput_4',['debug_remote_output',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ad227d2292ee4aba06c3a6c912c7fea44',1,'wmtk::components::topological_offset::Parameters']]],
-  ['debug_5fstencil_5',['debug_stencil',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a981b7c3fc68637a87e3e5a92ee003365',1,'wmtk::components::topological_offset::Parameters']]],
-  ['decompositions_6',['decompositions',['../structwmtk_1_1components_1_1tracking_1_1_volume_map_stats.html#af40dd2662d491042fa30466d5d62c981',1,'wmtk::components::tracking::VolumeMapStats']]],
-  ['deferral_5fwindow_7',['deferral_window',['../structwmtk_1_1_execute_pass.html#ad528fecedb797a7ebe3b1bb7ac882bf4',1,'wmtk::ExecutePass']]],
-  ['degenerate_8',['degenerate',['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_crossings.html#a82d3a0ba70f69e20e3c6ed720278e0b6',1,'wmtk::components::shortest_edge_collapse::Crossings']]],
-  ['delta_9',['delta',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smart_growth_schedule.html#a0868f5e7e80cbb5555df468c1e2c550e',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SmartGrowthSchedule']]],
-  ['diag_10',['diag',['../structwmtk_1_1components_1_1simwild_1_1_input_data.html#a5afd233dbfb3b82f0fa2ce7b3d163ff9',1,'wmtk::components::simwild::InputData']]],
-  ['disabled_11',['disabled',['../classwmtk_1_1_envelope.html#aa44c3ad1ae6d6b18179c765beb558cdb',1,'wmtk::Envelope']]]
+  ['debug_5fheld_5ftopology_4',['debug_held_topology',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#aad37accfdd3420a44659caa26a5f399b',1,'wmtk::components::topological_offset::Parameters']]],
+  ['debug_5fremote_5foutput_5',['debug_remote_output',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ad227d2292ee4aba06c3a6c912c7fea44',1,'wmtk::components::topological_offset::Parameters']]],
+  ['debug_5fstencil_6',['debug_stencil',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a981b7c3fc68637a87e3e5a92ee003365',1,'wmtk::components::topological_offset::Parameters']]],
+  ['decompositions_7',['decompositions',['../structwmtk_1_1components_1_1tracking_1_1_volume_map_stats.html#af40dd2662d491042fa30466d5d62c981',1,'wmtk::components::tracking::VolumeMapStats']]],
+  ['deferral_5fwindow_8',['deferral_window',['../structwmtk_1_1_execute_pass.html#ad528fecedb797a7ebe3b1bb7ac882bf4',1,'wmtk::ExecutePass']]],
+  ['degenerate_9',['degenerate',['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_crossings.html#a82d3a0ba70f69e20e3c6ed720278e0b6',1,'wmtk::components::shortest_edge_collapse::Crossings']]],
+  ['delta_10',['delta',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smart_growth_schedule.html#a0868f5e7e80cbb5555df468c1e2c550e',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SmartGrowthSchedule::delta'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smart_growth_schedule.html#a0a25b6b9fa4e64fe57eb7c05a84cf79e',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmartGrowthSchedule::delta']]],
+  ['diag_11',['diag',['../structwmtk_1_1components_1_1simwild_1_1_input_data.html#a5afd233dbfb3b82f0fa2ce7b3d163ff9',1,'wmtk::components::simwild::InputData']]],
+  ['disabled_12',['disabled',['../classwmtk_1_1_envelope.html#aa44c3ad1ae6d6b18179c765beb558cdb',1,'wmtk::Envelope']]]
 ];

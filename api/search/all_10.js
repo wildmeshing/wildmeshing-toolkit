@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['q0_0',['Q0',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_work.html#a76630e286c1b5e38466ccc8c258d5be0',1,'wmtk::components::topological_offset::ExactBandIntegral::Work']]],
+  ['q0_0',['q0',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral2_d_1_1_work.html#a85ab78e69628363eb1099dde7aa5dc3a',1,'wmtk::components::topological_offset::ExactBandIntegral2D::Work::Q0'],['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_work.html#a76630e286c1b5e38466ccc8c258d5be0',1,'wmtk::components::topological_offset::ExactBandIntegral::Work::Q0']]],
   ['q2_1',['q2',['../structwmtk_1_1components_1_1topological__offset_1_1_rest_a_m_i_p_s_energy2_d_1_1_cell.html#aaed9a607895cec9ba159da4d73afa461',1,'wmtk::components::topological_offset::RestAMIPSEnergy2D::Cell']]],
   ['qslimmesh_2',['QSlimMesh',['../classwmtk_1_1components_1_1qslim_1_1_q_slim_mesh.html',1,'wmtk::components::qslim']]],
   ['quadrics_3',['Quadrics',['../structwmtk_1_1components_1_1qslim_1_1_quadrics.html',1,'wmtk::components::qslim']]],

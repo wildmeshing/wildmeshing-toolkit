@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::components::topological_offset::StencilEnergy2D::Edge Struct Reference</title>
+<title>Wildmeshing Toolkit: wmtk::components::topological_offset::TopoOffsetTriMesh::SweptCounters Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,35 +69,31 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d.html">StencilEnergy2D</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d_1_1_edge.html">Edge</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html">TopoOffsetTriMesh</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_swept_counters.html">SweptCounters</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d_1_1_edge-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::components::topological_offset::StencilEnergy2D::Edge Struct Reference</div></div>
+<a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_swept_counters-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::components::topological_offset::TopoOffsetTriMesh::SweptCounters Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>One incident front chord, the moving vertex implicit.  
- <a href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d_1_1_edge.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:acbe78979b51d175cef1686b6aaabede0" id="r_acbe78979b51d175cef1686b6aaabede0"><td class="memItemLeft" align="right" valign="top"><a id="acbe78979b51d175cef1686b6aaabede0" name="acbe78979b51d175cef1686b6aaabede0"></a>
-Eigen::Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>q1</b></td></tr>
-<tr class="separator:acbe78979b51d175cef1686b6aaabede0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9988543402d5ef3a1f1309f6c9b2f920" id="r_a9988543402d5ef3a1f1309f6c9b2f920"><td class="memItemLeft" align="right" valign="top"><a id="a9988543402d5ef3a1f1309f6c9b2f920" name="a9988543402d5ef3a1f1309f6c9b2f920"></a>
-std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d_1_1_sample.html">Sample</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>samples</b></td></tr>
-<tr class="separator:a9988543402d5ef3a1f1309f6c9b2f920"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae59bceb263175540a0d1f7272d120e07" id="r_ae59bceb263175540a0d1f7272d120e07"><td class="memItemLeft" align="right" valign="top"><a id="ae59bceb263175540a0d1f7272d120e07" name="ae59bceb263175540a0d1f7272d120e07"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>solves</b> {0}</td></tr>
+<tr class="separator:ae59bceb263175540a0d1f7272d120e07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdac705c3f32027deb2868aaa795bce5" id="r_abdac705c3f32027deb2868aaa795bce5"><td class="memItemLeft" align="right" valign="top"><a id="abdac705c3f32027deb2868aaa795bce5" name="abdac705c3f32027deb2868aaa795bce5"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>refused</b> {0}</td></tr>
+<tr class="separator:abdac705c3f32027deb2868aaa795bce5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa69a56f800c730383311d7de6178ebe3" id="r_aa69a56f800c730383311d7de6178ebe3"><td class="memItemLeft" align="right" valign="top"><a id="aa69a56f800c730383311d7de6178ebe3" name="aa69a56f800c730383311d7de6178ebe3"></a>
+std::array&lt; std::atomic&lt; size_t &gt;, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8d29f0c19ddc283a46cb6426333e3ef6">kSweptHalvings</a>+1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>accepted</b> {}</td></tr>
+<tr class="separator:aa69a56f800c730383311d7de6178ebe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>One incident front chord, the moving vertex implicit. </p>
-</div><hr/>The documentation for this struct was generated from the following file:<ul>
-<li>components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a></li>
+<hr/>The documentation for this struct was generated from the following file:<ul>
+<li>components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

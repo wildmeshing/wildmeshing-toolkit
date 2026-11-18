@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::components::topological_offset::TopoOffsetTriMesh::CollapseCells Struct Reference</title>
+<title>Wildmeshing Toolkit: wmtk::components::topological_offset::TopoOffsetTriMesh::SweptEdgesOfPiece Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,14 +69,14 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html">TopoOffsetTriMesh</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_collapse_cells.html">CollapseCells</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html">TopoOffsetTriMesh</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_swept_edges_of_piece.html">SweptEdgesOfPiece</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_collapse_cells-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::components::topological_offset::TopoOffsetTriMesh::CollapseCells Struct Reference</div></div>
+<a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_swept_edges_of_piece-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::components::topological_offset::TopoOffsetTriMesh::SweptEdgesOfPiece Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
@@ -84,15 +84,15 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a6319479581d0436b8e963fce922c0a4d" id="r_a6319479581d0436b8e963fce922c0a4d"><td class="memItemLeft" align="right" valign="top"><a id="a6319479581d0436b8e963fce922c0a4d" name="a6319479581d0436b8e963fce922c0a4d"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>ring1_max</b> = 0.</td></tr>
-<tr class="separator:a6319479581d0436b8e963fce922c0a4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed09b887d94e2fdeba2f36796eb86c1a" id="r_aed09b887d94e2fdeba2f36796eb86c1a"><td class="memItemLeft" align="right" valign="top"><a id="aed09b887d94e2fdeba2f36796eb86c1a" name="aed09b887d94e2fdeba2f36796eb86c1a"></a>
-std::vector&lt; std::pair&lt; size_t, double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>v2_only</b></td></tr>
-<tr class="separator:aed09b887d94e2fdeba2f36796eb86c1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab470c553680e7315d6f19174d697597d" id="r_ab470c553680e7315d6f19174d697597d"><td class="memItemLeft" align="right" valign="top"><a id="ab470c553680e7315d6f19174d697597d" name="ab470c553680e7315d6f19174d697597d"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>piece</b> = -1</td></tr>
+<tr class="separator:ab470c553680e7315d6f19174d697597d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78154d4264fad440fb04fa269077b33c" id="r_a78154d4264fad440fb04fa269077b33c"><td class="memItemLeft" align="right" valign="top"><a id="a78154d4264fad440fb04fa269077b33c" name="a78154d4264fad440fb04fa269077b33c"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy2_d_1_1_swept_edge.html">BandVolumeEnergy2D::SweptEdge</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edges</b></td></tr>
+<tr class="separator:a78154d4264fad440fb04fa269077b33c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>offset_collapse_changed_cells: the collapse in flight's before-energies, for the rule over the changed faces only (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad14f55277b15130248b370fc7bfeab09" title="THE ENERGY RULE for a collapse (see tri_energy()), on the real mesh once the connectivity is committe...">collapse_edge_after()</a>). ring1_max is the max of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4a55def76a53e8ce1bb82891514e2848" title="THE per-cell energy, read from the mesh as it is – labels, neighbours and positions,...">tri_energy()</a> over v1's ring, every face of which the collapse reshapes or removes; v2_only holds (fid, tri_energy) of the faces of v2's ring outside v1's ring, sorted by fid: the collapse leaves their slots and vertices alone, so one of them changes energy only through a front chord relabelled across it, and an unchanged one is in neither max. As in 3D. </p>
+<div class="textblock"><p>EXACT SWEPT CHANGE, several entries: the boundary edges of B_r through a vertex, B_r the band faces of piece r (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#abec77dc5b449b7b021ec6e6f9782a30e" title="Several entries of Parameters::offsets, each piece its entry&#39;s target distance: the piece of the inpu...">place_piece()</a> of the face; -1, the only one, with one entry). </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a></li>
 </ul>

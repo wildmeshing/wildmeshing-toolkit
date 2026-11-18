@@ -134,6 +134,8 @@ template&lt;typename T &gt; </td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a8b73b58387664feb724e992e2395d3cc" id="r_a8b73b58387664feb724e992e2395d3cc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris)</td></tr>
 <tr class="separator:a8b73b58387664feb724e992e2395d3cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a457999dc8c2d8969cba2c5699b6ffcf1" id="r_a457999dc8c2d8969cba2c5699b6ffcf1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a457999dc8c2d8969cba2c5699b6ffcf1">init_with_isolated_vertices</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris)</td></tr>
+<tr class="separator:a457999dc8c2d8969cba2c5699b6ffcf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b2971358fc0e1ffca3406d5958a8e74" id="r_a8b2971358fc0e1ffca3406d5958a8e74"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a8b2971358fc0e1ffca3406d5958a8e74">init</a> (const MatrixXi &amp;F)</td></tr>
 <tr class="memdesc:a8b2971358fc0e1ffca3406d5958a8e74"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate the connectivity of the mesh from an IGL-style F matrix.  <br /></td></tr>
 <tr class="separator:a8b2971358fc0e1ffca3406d5958a8e74"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1469,6 +1471,35 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a457999dc8c2d8969cba2c5699b6ffcf1" name="a457999dc8c2d8969cba2c5699b6ffcf1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a457999dc8c2d8969cba2c5699b6ffcf1">&#9670;&#160;</a></span>init_with_isolated_vertices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void TriMesh::init_with_isolated_vertices </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>n_vertices</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tris</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Generate the connectivity anew: the connectivity, its slot pools and every attribute collection are cleared first, then built as <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> builds them, and a vertex in no triangle is marked removed. The 2D counterpart of TetMesh::init_with_isolated_vertices(), and what rebuilds a live mesh from an image of it: <a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init()</a> keeps the old slots, so on a live mesh it appends to the old fans and leaves stale removal flags. </p>
 
 </div>
 </div>

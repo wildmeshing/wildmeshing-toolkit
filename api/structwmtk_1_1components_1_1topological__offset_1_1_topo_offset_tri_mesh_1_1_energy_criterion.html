@@ -441,7 +441,7 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
 
 <p>front_measure "vertex_ring" </p>
 <p>THE RING MEASURE, filled only under front_measure "vertex_ring": the 3D twin's, with the front chords in place of the offset faces. At a front vertex v, over the front chords incident to v that the chord loop measured (both ends front vertices) &ndash; two at a vertex inside the front, one at the end of an open one: </p><pre class="fragment">r_v = sqrt( (1/n_v) sum_e O(e) ),   O(e) = edge_offset_term()
-</pre><p> every chord weighted equally: the front smoother's own offset term at v (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d.html" title="THE offset term of a 2D front vertex&#39;s smoothing objective: the mean squared relative error of the fi...">StencilEnergy2D</a> at <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3df3732d9b2ae4305f647745e6200f64">offset_term_weight()</a> is sum_e O(e) = n_v r_v^2), the same chords' terms the per-cell energy <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4a55def76a53e8ce1bb82891514e2848" title="THE per-cell energy, read from the mesh as it is – labels, neighbours and positions,...">tri_energy()</a> carries. A vertex with any unmeasurable incident chord has no ring measure (n_rings_unmeasurable; the chord itself is already in n_unmeasurable). </p>
+</pre><p> every chord weighted equally. A vertex with any unmeasurable incident chord has no ring measure (n_rings_unmeasurable; the chord itself is already in n_unmeasurable). </p>
 
 </div>
 </div>

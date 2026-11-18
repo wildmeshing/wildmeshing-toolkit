@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['w_0',['w',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_work.html#a345ac60d5bdd544b719ced19ce8f385c',1,'wmtk::components::topological_offset::ExactBandIntegral::FaceWork']]],
+  ['w_0',['w',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_work.html#a345ac60d5bdd544b719ced19ce8f385c',1,'wmtk::components::topological_offset::ExactBandIntegral::FaceWork::w'],['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral2_d_1_1_edge_work.html#a32d2650e51f320621b68d9f6c0e0f949',1,'wmtk::components::topological_offset::ExactBandIntegral2D::EdgeWork::w']]],
   ['w_5famips_1',['w_amips',['../structwmtk_1_1_optimizer_parameters.html#a0d5ae5fc83380e897e37a7b7b0673f5b',1,'wmtk::OptimizerParameters']]],
   ['want_5fface_5ftriangles_2',['want_face_triangles',['../structwmtk_1_1utils_1_1_embed_triangles_provenance.html#a9a6142d9c1f56242615adbf5c7c19b2b',1,'wmtk::utils::EmbedTrianglesProvenance']]],
   ['want_5finput_5forientation_3',['want_input_orientation',['../structwmtk_1_1utils_1_1_embed_triangles_provenance.html#aa17b67394d030871e3fabb3167c3c84c',1,'wmtk::utils::EmbedTrianglesProvenance']]],

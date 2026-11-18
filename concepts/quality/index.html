@@ -3562,11 +3562,11 @@ that refuses a step that would invert an element
   incident element is taken; if none is, after
   <a href="../../reference/tetwild/#project_line_search_steps"><code>project_line_search_steps</code></a> (12) halvings,
   the vertex does not move. The vertex lands exactly on the input.</li>
-<li><strong><code>exact</code></strong>. Minimize, with the same Newton solver, the energy below, in which the distance to
-  the input pulls the vertex back. The vertex rests at a small distance from the input,
-  proportional to <span class="arithmatex">\(w\)</span>.</li>
+<li><strong><code>penalty</code></strong>. No projection. Minimize, with the same Newton solver, the energy below, in which a
+  quadratic penalty on the distance to the input pulls the vertex back. The vertex rests at a
+  small distance from the input, proportional to <span class="arithmatex">\(w\)</span>.</li>
 </ul>
-<p>The energy of the <code>exact</code> mode, for a vertex at <span class="arithmatex">\(x\)</span>, is</p>
+<p>The energy of the <code>penalty</code> mode, for a vertex at <span class="arithmatex">\(x\)</span>, is</p>
 <div class="arithmatex">\[
 w \sum_{c \ni x} E(c) \;+\; (1 - w)\left(\frac{d(x)}{\varepsilon}\right)^2 ,
 \]</div>
