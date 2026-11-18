@@ -114,8 +114,9 @@ neither is wider than the other. They differ in how they answer.
   decided with exact predicates. It has three versions: for triangles in 3D, for segments in 3D,
   and for segments in 2D.
 - **Sampled** ([`use_sample_envelope`](../reference/tetwild.md#use_sample_envelope)). Points are
-  laid on the query: a lattice of spacing \(\varepsilon\) on a triangle, evenly spaced points less
-  than \(\varepsilon\) apart on a segment. Each point is tested against the input through a
+  laid on the query: on a triangle, its vertices and an equilateral lattice of spacing
+  \(\varepsilon\) projected onto it; on a segment, evenly spaced points less than
+  \(\varepsilon\) apart. Each point is tested against the input through a
   bounding-volume hierarchy. Since the test cannot see between two points, it accepts a point
   only within a radius smaller than \(\varepsilon\), reduced by the distance from any point of the
   query to the nearest sample: \(\varepsilon - \varepsilon/\sqrt{3}\) for the lattice on a
