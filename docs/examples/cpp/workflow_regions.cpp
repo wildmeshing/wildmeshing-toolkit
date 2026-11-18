@@ -78,6 +78,7 @@ int main()
         json::parse(R"({
             "input": "m",
             "offsets": [{"selection": "a", "output_tags": ["gap"], "target_distance": 0.01}],
+            "envelope_size_rel": 3e-4,
             "optimize_offset": false,
             "num_threads": 4
         })"),

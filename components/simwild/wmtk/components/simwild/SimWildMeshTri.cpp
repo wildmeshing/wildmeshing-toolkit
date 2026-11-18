@@ -830,7 +830,6 @@ void SimWildMeshTri::write_vtu(
     if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
     const std::string out_path = path + ".vtu";
-    logger().info("Write {}", out_path);
     const auto& vs = get_vertices();
     const auto& faces = get_faces();
     const auto edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
@@ -909,7 +908,7 @@ void SimWildMeshTri::write_vtu(
         }
         writer->add_field(name, field);
     }
-    writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
+    writer->write_mesh_and_log(out_path, V, F, paraviewo::CellType::Triangle);
 
     // surface
     {
@@ -919,8 +918,7 @@ void SimWildMeshTri::write_vtu(
         surf_writer->add_field("sizing_field", v_sizing_field);
         surf_writer->add_field("is_rounded", v_rounded);
 
-        logger().info("Write {}", surf_out_path);
-        surf_writer->write_mesh(surf_out_path, V, E, paraviewo::CellType::Line);
+        surf_writer->write_mesh_and_log(surf_out_path, V, E, paraviewo::CellType::Line);
     }
 }
 

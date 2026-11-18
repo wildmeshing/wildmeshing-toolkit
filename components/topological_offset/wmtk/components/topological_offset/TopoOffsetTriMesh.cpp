@@ -8,6 +8,7 @@
 #include <wmtk/io/DataWriter.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/SimplicialEmbedding.hpp>
+#include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 
@@ -94,6 +95,23 @@ void TopoOffsetTriMesh::init_from_image(
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
     }
 
+    // Edge tags (a triangle mesh's edge block): each a tag id past every other, with a mask bit
+    // and a tube of its own (build_boundary_envelopes()), as the curve group's -- the 2D twin of
+    // 3D's face tags (TopoOffsetTetMesh::init_from_image()), held as every tracked boundary is --
+    // and selectable by its name (m_edge_tag_bit) unless a triangle tag, an output tag or the
+    // curve group already has it, as triwild names an input's region and its curve alike: the
+    // name then selects the region. No triangle tag (m_tags_count stays).
+    m_edge_tag_bit.clear();
+    m_edge_tag_id.clear();
+    for (size_t j = 0; j < edge_tag_names.size(); ++j) {
+        const int64_t id = int64_t(m_tag_id_to_name.size());
+        m_tag_id_to_name[id] = edge_tag_names[j];
+        m_edge_tag_id.push_back(id);
+        if (m_tag_name_to_id.count(edge_tag_names[j])) continue;
+        m_tag_name_to_id[edge_tag_names[j]] = id;
+        m_edge_tag_bit[id] = int(j);
+    }
+
     // One mask bit per input tag, ambient included, in id order. Assigned here, once the maps are
     // complete and before init_surfaces_and_boundaries() seeds the vertex masks. Tags introduced
     // later (the band's output tag) get no bit: boundary membership is a property of the input
@@ -141,11 +159,13 @@ void TopoOffsetTriMesh::init_from_image(
     }
 
     // Edge tags, the tagged curves of a triangle mesh's edge block, on the edges' input sets, as
-    // the 3D face tags (TopoOffsetTetMesh::init_from_image()): the construction's splits carry
-    // them (marching_split_edge_after(), split_face_after()), and the output writes them back as
-    // its edge block. Not tracked: the tracked flags and their tubes are the optimization's, which
-    // no 2D route runs -- the offset refuses 2D, and manifold_extraction does not optimize. Until
-    // 2026-11 manifold_extraction refused them, and the 2D mesh took none.
+    // the 3D face tags (TopoOffsetTetMesh::init_from_image()): the construction's splits and the
+    // optimization's operations carry them, and the output writes them back as its edge block.
+    // Tracked and held in their tubes (init_surfaces_and_boundaries()), as 3D's face tags since
+    // 2026-11-05. Until 2026-11-11 they were not tracked, no 2D offset running the optimization:
+    // MEASURED (p offset to 0.2, edge tags on y = 0.25 and y = 0.5), after 1 turn the curve at
+    // 0.25 was 0.043 off its line (15 envelope_size), after 3 turns 0.103 and the other 0.034.
+    // Until 2026-11 manifold_extraction refused them, and the 2D mesh took none.
     m_edge_tag_names = edge_tag_names;
     for (Eigen::Index r = 0; r < E_tagged.rows(); ++r) {
         const std::array<size_t, 2> vids = {{size_t(E_tagged(r, 0)), size_t(E_tagged(r, 1))}};
@@ -158,9 +178,35 @@ void TopoOffsetTriMesh::init_from_image(
         attr.labels_mut().merge(set);
         io::orient_tagged_row(attr, vids, set, E_orientation, r);
     }
-    // Point labels, the input points' (a tagged mesh's point block): each input point's vertex
-    // carries its label (VertexExtra2d::point_inputs), as in 3D until the anchors take over,
-    // which in 2D none does.
+    // Point labels, the input points' (a tagged mesh's point block), as in 3D: bit j is
+    // m_point_names[j], set by the caller before this, each name a tag id a selection (offsets)
+    // can name (m_point_tag_bit), past every other tag. After m_tag_bit, above: a point label
+    // bounds no region, and takes no mask bit. A name a triangle tag or the curve group has keeps
+    // apart (see m_point_tag_bit; 3D refuses it). Until 2026-11 the 2D offset selected no point.
+    // One name is one input, as in 3D: a curve input's vertices on no segment are its points, so
+    // a label an edge tag also has shares its id, and selecting it selects both.
+    for (size_t j = 0; j < m_point_names.size(); ++j) {
+        const std::string& name = m_point_names[j];
+        int64_t id;
+        if (const auto it = m_tag_name_to_id.find(name); it != m_tag_name_to_id.end()) {
+            if (!m_edge_tag_bit.count(it->second)) {
+                logger().info(
+                    "Point label {} is also a triangle tag or the curve group: its points are "
+                    "held, and the name selects the region",
+                    name);
+                continue;
+            }
+            id = it->second;
+        } else {
+            id = int64_t(m_tag_id_to_name.size());
+            m_tag_id_to_name[id] = name;
+            m_tag_name_to_id[name] = id;
+        }
+        m_point_tag_bit[id] = int(j);
+    }
+    // Each input point's vertex carries its label (VertexExtra2d::point_inputs) until
+    // hold_curves_and_points() anchors it, as in 3D: the vertex ids change before then
+    // (consolidate_mesh()).
     if (m_input_point_labels.size() != point_vids.size()) {
         log_and_throw_error(
             "{} input points, {} labels",
@@ -194,13 +240,13 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
     logger().info("E = {}", edges.size());
 
     // Which edges are tracked region boundaries: an interior edge whose two faces carry different
-    // tag sets, an edge on the curve group, or a wall edge (no opposite face: the ambient region
-    // against the unmeshed outside). These flags are topology the operations maintain. Which
-    // tube holds an edge, and the vertex masks, are build_boundary_envelopes()'s.
+    // tag sets, an edge on the curve group or of an edge tag, or a wall edge (no opposite face: the
+    // ambient region against the unmeshed outside). These flags are topology the operations
+    // maintain. Which tube holds an edge, and the vertex masks, are build_boundary_envelopes()'s.
     size_t n_edges_tracked = 0;
     for (const Tuple& e : edges) {
         const size_t eid = e.eid(*this);
-        const bool on_curve = m_edge_extra[eid].on_curve;
+        const bool on_curve = m_edge_extra[eid].on_curve || edge_tag_set(eid) != 0;
         const std::optional<Tuple> f_opp = e.switch_face(*this);
         if (f_opp) {
             const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
@@ -317,8 +363,12 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
             // Whose boundary this edge is. Interior edge: every tag on exactly one side (the
             // symmetric difference; a tag present on both sides has no boundary here). Wall
             // edge: every tag of its one face, which is how ambient's tube comes to hold the
-            // box. The curve group's edges are in its tube too.
+            // box. The curve group's edges are in its tube too, and an edge tag's in its own.
             if (m_edge_extra[eid].on_curve) keys.insert(m_curve_tag);
+            const InputSet edge_tags = edge_tag_set(eid);
+            for (size_t j = 0; j < m_edge_tag_id.size(); ++j) {
+                if ((edge_tags >> j) & 1) keys.insert(m_edge_tag_id[j]);
+            }
             if (f_opp) {
                 const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
                 const auto& tag1 = m_face_attribute[f_opp->fid(*this)].tags;
@@ -450,32 +500,201 @@ void TopoOffsetTriMesh::classify_curve_edges()
         eps);
 }
 
+bool TopoOffsetTriMesh::vertex_has_point(const size_t vid, const int bit) const
+{
+    // See the declaration.
+    if (!m_points_held) return (m_vertex_extra[vid].point_inputs >> bit) & 1;
+    if (!m_track_feature_points) return false;
+    const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
+    return f < m_feature_point_inputs.size() && ((m_feature_point_inputs[f] >> bit) & 1);
+}
+
 void TopoOffsetTriMesh::label_input_complex()
 {
     classify_curve_edges(); // the mesh may have been refined since the last call
-    // One entry of offsets: the 2D offset, refused until it is brought into lock-step with 3D,
-    // has no several-entry march.
-    if (m_offset_params.offsets.size() != 1)
-        log_and_throw_error("2D: one entry of offsets, not {}", m_offset_params.offsets.size());
+    const std::vector<Parameters::Offset>& offsets = m_offset_params.offsets;
+    if (offsets.empty()) log_and_throw_error("offsets: no offset to make");
+
+    // Each entry is labelled alone, on cleared labels, and the input complex is the union of the
+    // entries'. An entry's selection S is what label_offset() labels; its complex is S for Out
+    // and S's boundary for In and Both (boundary_of_labels()), so an In entry's complex is the
+    // boundary it grows from, not every face outside it. The entries are independent offsets:
+    // two whose selections share a face, or a vertex unless both are In, are refused; two In
+    // entries that touch each grow into their own selection from their shared boundary. As in
+    // 3D, whose face-tag entries also replace on_sheet by their tag's faces; 2D's curve group is
+    // classified once (classify_curve_edges()) and no entry changes it.
+    using Direction = Parameters::Offset::Direction;
+    const std::vector<Tuple> faces = get_faces(), edges = get_edges(), verts = get_vertices();
+    std::vector<size_t> union_f, union_e;
+    std::vector<int> owner(vert_capacity(), -1);
+    // Per face and per vertex: the first entry whose whole selection holds it, for the check.
+    std::vector<int> face_sel(tri_capacity(), -1), vertex_sel(vert_capacity(), -1);
+    std::map<std::pair<size_t, size_t>, std::array<size_t, 2>> shared; // (j, k) -> faces, verts
+    m_offset_has_faces.assign(offsets.size(), false);
+    m_offset_dropped.assign(offsets.size(), false);
+    m_shared_vertex_entries.clear();
+    m_entry_complex.assign(offsets.size(), EntryComplex());
+    for (size_t k = 0; k < offsets.size(); ++k) {
+        for (const Tuple& f : faces) m_face_extra[f.fid(*this)].label = 0;
+        for (const Tuple& e : edges) m_edge_extra[e.eid(*this)].label = 0;
+        for (const Tuple& v : verts) m_vertex_extra[v.vid(*this)].label = 0;
+        label_offset(k);
+        for (const Tuple& f : faces) {
+            if (m_face_extra[f.fid(*this)].label != 0) m_offset_has_faces[k] = true;
+        }
+        const Direction direction = m_offset_params.direction(k);
+        if (direction == Direction::In && !m_offset_has_faces[k]) {
+            // Nothing to grow into. Dropped before the check below, so it touches nothing.
+            logger().warn(
+                "offsets[{}] ('{}'): direction 'in', but the selection has no faces (a curve or "
+                "points); the offset is dropped",
+                k,
+                offsets[k].selection);
+            m_offset_dropped[k] = true;
+            continue;
+        }
+        // The whole selection, for the check below.
+        for (const Tuple& f : faces) {
+            const size_t fid = f.fid(*this);
+            if (m_face_extra[fid].label == 0) continue;
+            if (face_sel[fid] >= 0) {
+                ++shared[{size_t(face_sel[fid]), k}][0];
+            } else {
+                face_sel[fid] = int(k);
+            }
+        }
+        for (const Tuple& v : verts) {
+            const size_t vid = v.vid(*this);
+            if (m_vertex_extra[vid].label == 0) continue;
+            if (vertex_sel[vid] >= 0) {
+                ++shared[{size_t(vertex_sel[vid]), k}][1];
+            } else {
+                vertex_sel[vid] = int(k);
+            }
+        }
+        // In and Both grow from S's boundary; S itself is read off the faces' tags from here on
+        // (face_in_selection()). A selection without faces is all boundary.
+        if (direction != Direction::Out && m_offset_has_faces[k]) {
+            const BoundaryFlags b = boundary_of_labels();
+            for (const Tuple& f : faces) m_face_extra[f.fid(*this)].label = 0;
+            for (const Tuple& e : edges) m_edge_extra[e.eid(*this)].label = b.edge[e.eid(*this)];
+            for (const Tuple& v : verts) {
+                m_vertex_extra[v.vid(*this)].label = b.vertex[v.vid(*this)];
+            }
+        }
+        for (const Tuple& f : faces) {
+            if (m_face_extra[f.fid(*this)].label == 1) union_f.push_back(f.fid(*this));
+        }
+        for (const Tuple& e : edges) {
+            if (m_edge_extra[e.eid(*this)].label == 1) union_e.push_back(e.eid(*this));
+        }
+        size_t n = 0;
+        for (const Tuple& v : verts) {
+            const size_t vid = v.vid(*this);
+            if (m_vertex_extra[vid].label != 1) continue;
+            ++n;
+            if (owner[vid] < 0) {
+                owner[vid] = int(k);
+            } else {
+                // two In entries that touch (the check below refuses any other pair)
+                std::vector<size_t>& es = m_shared_vertex_entries[vid];
+                if (es.empty()) es.push_back(size_t(owner[vid]));
+                es.push_back(k);
+            }
+        }
+        // An In entry's own complex, which init_input_complex_bvh() extracts for it alone where
+        // entries touch.
+        if (direction == Direction::In) {
+            EntryComplex& c = m_entry_complex[k];
+            for (const Tuple& e : edges) {
+                if (m_edge_extra[e.eid(*this)].label != 1) continue;
+                std::array<size_t, 2> key{{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
+                std::sort(key.begin(), key.end());
+                c.edges.insert(key);
+            }
+            for (const Tuple& v : verts) {
+                if (m_vertex_extra[v.vid(*this)].label == 1) c.vertices.insert(v.vid(*this));
+            }
+        }
+        if (offsets.size() > 1) {
+            if (n == 0) {
+                logger().warn("offsets[{}] ('{}') selects nothing", k, offsets[k].selection);
+            } else {
+                logger().info(
+                    "offsets[{}] ('{}'): {} input-complex vertices",
+                    k,
+                    offsets[k].selection,
+                    n);
+            }
+        }
+    }
+    // Two selections are permissible together if they share no face, and share no vertex unless
+    // both are In (the spec); the pair checked first is the first that fails. As in 3D.
+    for (const auto& [jk, counts] : shared) {
+        const auto [j, k] = jk;
+        if (counts[0] > 0) {
+            log_and_throw_error(
+                "offsets[{}] ('{}') and offsets[{}] ('{}') share {} faces: two selections may "
+                "share no cell",
+                j,
+                offsets[j].selection,
+                k,
+                offsets[k].selection,
+                counts[0]);
+        }
+        const bool both_in = m_offset_params.direction(j) == Direction::In &&
+                             m_offset_params.direction(k) == Direction::In;
+        if (!both_in) {
+            log_and_throw_error(
+                "offsets[{}] ('{}') and offsets[{}] ('{}') share {} vertices: two selections may "
+                "touch only if both have direction 'in'",
+                j,
+                offsets[j].selection,
+                k,
+                offsets[k].selection,
+                counts[1]);
+        }
+        // Two In entries that touch: each grows into its own selection from their shared
+        // boundary (edge_entry(), band_face_entry()), each on its own pieces of the extraction.
+        logger().info(
+            "offsets[{}] ('{}') and offsets[{}] ('{}') touch at {} vertices; both are 'in', each "
+            "grows into its own selection",
+            j,
+            offsets[j].selection,
+            k,
+            offsets[k].selection,
+            counts[1]);
+    }
+    for (const size_t f : union_f) m_face_extra[f].label = 1;
+    for (const size_t e : union_e) m_edge_extra[e].label = 1;
+    for (const Tuple& v : verts) {
+        const size_t vid = v.vid(*this);
+        m_vertex_extra[vid].label = owner[vid] >= 0 ? 1 : 0;
+        m_vertex_extra[vid].offset = owner[vid];
+    }
+    // A single body's state (m_singlebody, m_single_tag) is one entry's: several are no single
+    // body, which the passes that need one refuse. As in 3D.
+    if (offsets.size() > 1) m_singlebody = false;
+    mark_input_complex_vertices();
+}
+
+void TopoOffsetTriMesh::label_offset(const size_t k)
+{
     // ensure all tags exist in map
-    const ExpressionPtr& expr = m_offset_params.offsets[0].expression;
+    const ExpressionPtr& expr = m_offset_params.offsets[k].expression;
+    if (!expr) log_and_throw_error("offsets[{}]: the selection is not parsed", k);
     const CellTag tags_involved = expr->tags_involved();
     for (const int64_t& tag : tags_involved) {
         auto it = m_tag_id_to_name.find(tag);
         if (it == m_tag_id_to_name.end()) {
-            log_and_throw_error("Unknown tag given in offsets[0].selection (id {})", tag);
+            log_and_throw_error("Unknown tag given in offsets[{}].selection (id {})", k, tag);
         }
     }
 
     // only true if exactly one tag exists, ie "tag_0" (no &, |, !)
     bool single_body = (tags_involved.size() == 1) && expr->contains_only_or() &&
                        expr->contains_only_and() && expr->contains_only_not();
-    // The entry's direction (since 2026-11; before, the run-wide offset_in and offset_out). 2D
-    // takes one entry, so In keeps its construction from before: every face outside the body is
-    // the complex, with the body's domain-boundary edges -- the same marched edges, band and
-    // one-sided distance as 3D's boundary with its side, and no other entry to collide with.
-    using Direction = Parameters::Offset::Direction;
-    const Direction direction = m_offset_params.direction(0);
+    m_singlebody = false;
 
     if (single_body) { // single body mode
         m_singlebody = true;
@@ -483,15 +702,8 @@ void TopoOffsetTriMesh::label_input_complex()
         if (m_single_tag == m_curve_tag) {
             // The curve is the complex: its edges and their vertices, no faces. The band then
             // grows on both sides of it, which is the offset of a curve, open or closed: Out and
-            // Both are the same, and In, which has no face to grow into, drops the offset.
-            if (direction == Direction::In) {
-                logger().warn(
-                    "offsets[0] ('{}'): direction 'in', but the selection has no faces (a curve); "
-                    "the offset is dropped",
-                    m_offset_params.offsets[0].selection);
-                mark_input_complex_vertices();
-                return;
-            }
+            // Both are the same, and In, which has no face to grow into, drops the offset
+            // (label_input_complex()).
             size_t n = 0;
             for (const Tuple& e : get_edges()) {
                 const size_t e_id = e.eid(*this);
@@ -507,82 +719,94 @@ void TopoOffsetTriMesh::label_input_complex()
                 n);
             if (n == 0)
                 log_and_throw_error(
-                    "offsets[0].selection names the curve group but no mesh edge lies on it");
+                    "offsets[{}].selection names the curve group but no mesh edge lies on it",
+                    k);
+            return;
+        }
+        const auto edge_bit = m_edge_tag_bit.find(m_single_tag);
+        const auto point_bit = m_point_tag_bit.find(m_single_tag);
+        if (edge_bit != m_edge_tag_bit.end() || point_bit != m_point_tag_bit.end()) {
+            // An edge tag, a point label, or both under one name: its edges and its points
+            // exactly, and their vertices -- a curve or point offset's input. The band grows all
+            // around it. As in 3D (TopoOffsetTetMesh::label_offset()), whose face tags are 2D's
+            // edge tags, selected as the curve group is.
+            size_t n = 0, n_points = 0;
+            if (edge_bit != m_edge_tag_bit.end()) {
+                for (const Tuple& e : get_edges()) {
+                    const size_t e_id = e.eid(*this);
+                    if (((edge_tag_set(e_id) >> edge_bit->second) & 1) == 0) continue;
+                    m_edge_extra[e_id].label = 1;
+                    m_vertex_extra[e.vid(*this)].label = 1;
+                    m_vertex_extra[e.switch_vertex(*this).vid(*this)].label = 1;
+                    ++n;
+                }
+            }
+            if (point_bit != m_point_tag_bit.end()) {
+                for (const Tuple& v : get_vertices()) {
+                    if (!vertex_has_point(v.vid(*this), point_bit->second)) continue;
+                    m_vertex_extra[v.vid(*this)].label = 1;
+                    ++n_points;
+                }
+            }
+            logger().info(
+                "Using '{}' as the complex: {} edges, {} points",
+                m_tag_id_to_name[m_single_tag],
+                n,
+                n_points);
+            if (n + n_points == 0)
+                log_and_throw_error(
+                    "offsets[0].selection names {} but no mesh edge or vertex carries it",
+                    m_tag_id_to_name[m_single_tag]);
             mark_input_complex_vertices();
             return;
         }
 
-        if (direction == Direction::Both) { // input complex is boundary simplices
-            auto faces = get_faces();
-            for (const Tuple& f : faces) {
-                size_t f_id = f.fid(*this);
-                if (m_face_attribute[f_id].tags.count(m_single_tag) != 0) {
-                    Tuple ftup = tuple_from_tri(f_id);
-                    auto vs = oriented_tri_vids(f_id);
-                    for (int i = 0; i < 3; i++) {
-                        Tuple etup = tuple_from_edge(vs[i], vs[(i + 1) % 3], f_id);
-                        auto other = etup.switch_face(*this);
-                        if (!other || (m_face_attribute[other.value().fid(*this)].tags.count(
-                                           m_single_tag) == 0)) {
-                            size_t e_id = etup.eid(*this);
-                            m_edge_extra[e_id].label = 1;
-                            m_vertex_extra[vs[i]].label = 1;
-                            m_vertex_extra[vs[(i + 1) % 3]].label = 1;
-                        }
-                    }
-                }
-            }
-        } else if (direction == Direction::In) { // input complex is everything outside body plus
-                                                 // boundary
-            // faces (hacky but works)
-            auto faces = get_faces();
-            for (const Tuple& f : faces) {
-                size_t f_id = f.fid(*this);
-                if (m_face_attribute[f_id].tags.count(m_single_tag) == 0) {
-                    m_face_extra[f_id].label = 1;
-                    // propagate to edges and verts in tri
-                    m_edge_extra[f.eid(*this)].label = 1;
-                    m_edge_extra[f.switch_edge(*this).eid(*this)].label = 1;
-                    m_edge_extra[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
-                    m_vertex_extra[f.vid(*this)].label = 1;
-                    m_vertex_extra[f.switch_vertex(*this).vid(*this)].label = 1;
-                    m_vertex_extra[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
-                } else { // face is in body, check for boundary edges
-                    auto vs = oriented_tri_vids(f_id);
-                    for (int i = 0; i < 3; i++) {
-                        Tuple etup = tuple_from_edge(vs[i], vs[(i + 1) % 3], f_id);
-                        auto other = etup.switch_face(*this);
-                        if (!other) {
-                            m_edge_extra[etup.eid(*this)].label = 1;
-                            m_vertex_extra[etup.vid(*this)].label = 1;
-                            m_vertex_extra[etup.switch_vertex(*this).vid(*this)].label = 1;
-                        }
-                    }
-                }
-            }
-        } else { // input complex is body itself
-            auto faces = get_faces();
-            for (const Tuple& f : faces) {
-                size_t f_id = f.fid(*this);
-                if (m_face_attribute[f_id].tags.count(m_single_tag) != 0) {
-                    m_face_extra[f_id].label = 1;
-                    // propagate to edges and verts in tri
-                    m_edge_extra[f.eid(*this)].label = 1;
-                    m_edge_extra[f.switch_edge(*this).eid(*this)].label = 1;
-                    m_edge_extra[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
-                    m_vertex_extra[f.vid(*this)].label = 1;
-                    m_vertex_extra[f.switch_vertex(*this).vid(*this)].label = 1;
-                    m_vertex_extra[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
-                }
-            }
+        // A face tag: its faces and their edges and vertices, whatever the direction --
+        // label_input_complex() takes the boundary for In and Both. (Until 2026-11 the run-wide
+        // offset_in and offset_out chose here between the faces, their boundary, and every face
+        // outside them, which two inward entries always shared.) As in 3D.
+        for (const Tuple& f : get_faces()) {
+            const size_t f_id = f.fid(*this);
+            if (m_face_attribute[f_id].tags.count(m_single_tag) == 0) continue;
+            m_face_extra[f_id].label = 1;
+            m_edge_extra[f.eid(*this)].label = 1;
+            m_edge_extra[f.switch_edge(*this).eid(*this)].label = 1;
+            m_edge_extra[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
+            m_vertex_extra[f.vid(*this)].label = 1;
+            m_vertex_extra[f.switch_vertex(*this).vid(*this)].label = 1;
+            m_vertex_extra[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
         }
     } else { // not single body mode. must evaluate expression
-        if (direction != Direction::Out) {
-            log_and_throw_error(
-                "2D: offsets[0] ('{}') is an expression; direction 'in' and 'both' take a single "
-                "face tag in 2D for now",
-                m_offset_params.offsets[0].selection);
+        // A simplex's tags: its triangles' tags, and the tags that sit on lower simplices -- an
+        // edge's edge tags and curve group (on_curve), a vertex's point labels -- on it or on an
+        // edge it bounds. So an edge tag, the curve group or a point label means in an expression
+        // what it means alone: "p | q" is both points, "curve | a" the curve and the region. As
+        // in 3D (TopoOffsetTetMesh::label_offset()), one dimension down: 3D's face tags and
+        // surface group are 2D's edge tags and curve group, 3D's edge tags and point labels 2D's
+        // point labels. Until 2026-11 none of them in an expression selected anything, silently.
+        std::map<size_t, CellTag> own_e, own_v; // the non-cell tags on each simplex
+        for (const Tuple& e : get_edges()) {
+            const size_t e_id = e.eid(*this);
+            CellTag ids;
+            if (m_curve_tag >= 0 && m_edge_extra[e_id].on_curve) ids.insert(m_curve_tag);
+            for (const auto& [id, bit] : m_edge_tag_bit) {
+                if ((edge_tag_set(e_id) >> bit) & 1) ids.insert(id);
+            }
+            if (ids.empty()) continue;
+            own_e[e_id].insert(ids.begin(), ids.end());
+            own_v[e.vid(*this)].insert(ids.begin(), ids.end());
+            own_v[e.switch_vertex(*this).vid(*this)].insert(ids.begin(), ids.end());
         }
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            for (const auto& [id, bit] : m_point_tag_bit) {
+                if (vertex_has_point(vid, bit)) own_v[vid].insert(id);
+            }
+        }
+        const auto add_own = [](CellTag& tags, const std::map<size_t, CellTag>& own, size_t id) {
+            const auto it = own.find(id);
+            if (it != own.end()) tags.insert(it->second.begin(), it->second.end());
+        };
 
         // label faces
         auto faces = get_faces();
@@ -609,6 +833,7 @@ void TopoOffsetTriMesh::label_input_complex()
             }
 
             CellTag adj_tags = m_face_attribute[e.fid(*this)].tags;
+            add_own(adj_tags, own_e, e_id);
             auto other = e.switch_face(*this);
             if (other) {
                 for (const int64_t& tag : m_face_attribute[other.value().fid(*this)].tags) {
@@ -633,6 +858,7 @@ void TopoOffsetTriMesh::label_input_complex()
             }
 
             CellTag adj_tags;
+            add_own(adj_tags, own_v, v_id);
             auto one_ring_fids = get_one_ring_fids_for_vertex(v_id);
             for (const size_t& f_id : one_ring_fids) {
                 for (const int64_t& tag : m_face_attribute[f_id].tags) {
@@ -645,8 +871,43 @@ void TopoOffsetTriMesh::label_input_complex()
             }
         }
     }
+}
 
-    mark_input_complex_vertices();
+TopoOffsetTriMesh::BoundaryFlags TopoOffsetTriMesh::boundary_of_labels() const
+{
+    // See the declaration. Edges first, then vertices, each reading the ones above. As in 3D,
+    // one dimension down.
+    BoundaryFlags b;
+    const std::vector<Tuple> edges = get_edges();
+    size_t n_edges = 0;
+    for (const Tuple& e : edges) n_edges = std::max(n_edges, e.eid(*this) + 1);
+    b.edge.assign(n_edges, 0);
+    b.vertex.assign(vert_capacity(), 0);
+    const auto face_in = [&](const Tuple& f) { return m_face_extra[f.fid(*this)].label != 0; };
+
+    // An edge of K: on the boundary unless both its faces are K's (the outside of the mesh is
+    // outside K). Neither: an edge in no face of K.
+    for (const Tuple& e : edges) {
+        const size_t eid = e.eid(*this);
+        if (m_edge_extra[eid].label == 0) continue;
+        const std::optional<Tuple> o = e.switch_face(*this);
+        b.edge[eid] = !(face_in(e) && o && face_in(*o));
+    }
+    // A vertex of K: on a boundary edge, or in no edge of K (a point).
+    std::vector<char> in_edge(vert_capacity(), 0);
+    for (const Tuple& e : edges) {
+        const size_t eid = e.eid(*this);
+        if (m_edge_extra[eid].label == 0) continue;
+        for (const size_t v : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
+            in_edge[v] = 1;
+            if (b.edge[eid]) b.vertex[v] = 1;
+        }
+    }
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (m_vertex_extra[vid].label != 0 && !in_edge[vid]) b.vertex[vid] = 1;
+    }
+    return b;
 }
 
 
@@ -737,6 +998,40 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
             V_vec.push_back(m_vertex_attribute[v_id].m_posf);
         }
     }
+    // Per row of V: the entry it is for. Where In entries touch (m_shared_vertex_entries), a
+    // shared vertex has one row for each of its entries, and each entry's edges and points use
+    // its own rows -- an edge two entries share once for each (m_entry_complex) -- so the
+    // entries' pieces stay apart below: each its own field, distance and band integral, and each
+    // copy of a shared edge oriented out of its own selection. As in 3D.
+    std::vector<int> row_entry(V_vec.size(), 0);
+    for (const auto& [vid, row] : v_index_map) row_entry[row] = int(offset_of(vid));
+    std::map<std::pair<size_t, size_t>, size_t> entry_row; // (vid, entry) beyond its first
+    for (const auto& [vid, entries] : m_shared_vertex_entries) {
+        if (v_index_map.count(vid) == 0) continue;
+        for (size_t i = 1; i < entries.size(); ++i) {
+            entry_row[{vid, entries[i]}] = V_vec.size();
+            V_vec.push_back(m_vertex_attribute[vid].m_posf);
+            row_entry.push_back(int(entries[i]));
+        }
+    }
+    const auto row_of = [&](const size_t vid, const size_t k) {
+        const auto it = entry_row.find({vid, k});
+        return int(it != entry_row.end() ? it->second : v_index_map.at(vid));
+    };
+    // The entries of an edge or a point of the complex: its first vertex's, or, where a vertex is
+    // shared, the In entries whose own complex holds it.
+    const auto entries_of = [&](const std::vector<size_t>& vs, const auto& in_entry) {
+        bool shared = false;
+        for (const size_t v : vs) shared = shared || m_shared_vertex_entries.count(v) > 0;
+        std::vector<size_t> ks;
+        if (shared) {
+            for (size_t k = 0; k < m_entry_complex.size(); ++k) {
+                if (in_entry(m_entry_complex[k])) ks.push_back(k);
+            }
+        }
+        if (ks.empty()) ks.push_back(offset_of(vs[0]));
+        return ks;
+    };
     MatrixXd V(V_vec.size(), 2);
     for (int i = 0; i < V_vec.size(); i++) {
         V.row(i) = V_vec[i];
@@ -744,7 +1039,7 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
 
     MatrixXi T(0, 4); // no tets
 
-    MatrixXi F(complex_faces.size(), 3); // faces
+    MatrixXi F(complex_faces.size(), 3); // faces (an Out entry's: no entry shares them)
     int index = 0;
     for (const simplex::Face& f_simp : complex_faces) {
         auto vs = f_simp.vertices();
@@ -753,20 +1048,34 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
         index++;
     }
 
-    MatrixXi E(complex_edges.size(), 2); // isolated edges
-    index = 0;
+    std::vector<std::array<int, 2>> E_rows; // isolated edges, once per entry
+    std::vector<size_t> E_entry;
+    std::vector<std::array<size_t, 2>> E_vids;
     for (const simplex::Edge& e_simp : complex_edges) {
-        auto vs = e_simp.vertices();
-        E.row(index) << v_index_map[vs[0]], v_index_map[vs[1]];
-        index++;
+        const auto vs = e_simp.vertices();
+        std::array<size_t, 2> key{{size_t(vs[0]), size_t(vs[1])}};
+        std::sort(key.begin(), key.end());
+        for (const size_t k : entries_of({key[0], key[1]}, [&](const EntryComplex& c) {
+                 return c.edges.count(key) > 0;
+             })) {
+            E_rows.push_back({{row_of(vs[0], k), row_of(vs[1], k)}});
+            E_entry.push_back(k);
+            E_vids.push_back({{size_t(vs[0]), size_t(vs[1])}});
+        }
     }
+    MatrixXi E(E_rows.size(), 2);
+    for (size_t i = 0; i < E_rows.size(); ++i) E.row(int(i)) << E_rows[i][0], E_rows[i][1];
 
-    MatrixXi P(complex_verts.size(), 1); // isolated vertices
-    index = 0;
+    std::vector<int> P_rows; // isolated vertices, once per entry
     for (const size_t& v_id : complex_verts) {
-        P(index, 0) = v_index_map[v_id];
-        index++;
+        for (const size_t k : entries_of({v_id}, [&](const EntryComplex& c) {
+                 return c.vertices.count(v_id) > 0;
+             })) {
+            P_rows.push_back(row_of(v_id, k));
+        }
     }
+    MatrixXi P(P_rows.size(), 1);
+    for (size_t i = 0; i < P_rows.size(); ++i) P(int(i), 0) = P_rows[i];
 
     // One region per connected piece of the input complex -- see m_n_regions and
     // m_region_potentials. A region must not be one tag: one tag covering two pieces that never
@@ -820,33 +1129,112 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     // complex triangles' edges with exactly one incident complex triangle. Outside the region, the
     // only place an offset exists, distance to the region and to its boundary are the same number.
     std::map<simplex::Edge, int> boundary_count;
+    std::map<simplex::Edge, size_t> boundary_opposite; // a boundary edge's face's third vertex
     for (size_t fi = 0; fi < complex_faces.size(); ++fi) {
         const auto vs = complex_faces[fi].vertices();
-        for (const simplex::Edge e :
-             {simplex::Edge(vs[0], vs[1]),
-              simplex::Edge(vs[1], vs[2]),
-              simplex::Edge(vs[0], vs[2])}) {
+        for (int k = 0; k < 3; ++k) {
+            const simplex::Edge e(vs[size_t((k + 1) % 3)], vs[size_t((k + 2) % 3)]);
             ++boundary_count[e];
+            boundary_opposite[e] = vs[size_t(k)];
         }
     }
 
     // Every primitive's region is its own vertices' region: a primitive cannot span two pieces.
     std::vector<Eigen::Vector2i> phi_segs;
     std::vector<int64_t> phi_seg_region;
+    m_phi_E_inner.clear();
     for (const auto& [e_simp, count] : boundary_count) {
         if (count != 1) continue; // interior to the complex: carries no boundary geometry
         const auto vs = e_simp.vertices();
         phi_segs.emplace_back(v_index_map[vs[0]], v_index_map[vs[1]]);
         phi_seg_region.push_back(comp_of[size_t(phi_segs.back()[0])]);
+        // The row's orientation against the region it bounds (its face's third vertex), exact,
+        // as 3D's orient3d against the bounding tet's fourth vertex: the row's vertex order is the
+        // edge's sorted ids, not the region's.
+        m_phi_E_inner.push_back(int8_t(
+            wmtk::utils::predicates::orient2d(
+                Vector2d(V.row(int(v_index_map[vs[0]])).transpose()),
+                Vector2d(V.row(int(v_index_map[vs[1]])).transpose()),
+                Vector2d(V.row(int(v_index_map[boundary_opposite.at(e_simp)])).transpose()))));
     }
+    m_selection_winding_E.assign(m_offset_params.offsets.size(), MatrixXi(0, 2));
+    std::vector<std::vector<std::array<int, 2>>> winding_rows(m_offset_params.offsets.size());
     for (int i = 0; i < E.rows(); ++i) { // isolated edges of the complex
         phi_segs.emplace_back(E(i, 0), E(i, 1));
         phi_seg_region.push_back(comp_of[size_t(E(i, 0))]);
+        // An In entry's complex is its selection's boundary: an edge of it on a face of the
+        // selection bounds that region, oriented as a label-1 face's edge above. Any other
+        // isolated edge (a curve, a Both entry's boundary) bounds no region. As in 3D.
+        int8_t inner = 0;
+        const std::array<size_t, 2>& vs = E_vids[size_t(i)];
+        const size_t k = E_entry[size_t(i)];
+        if (m_offset_params.direction(k) == Parameters::Offset::Direction::In) {
+            for (const size_t fid : get_incident_fids_for_edge(vs[0], vs[1])) {
+                if (!face_in_selection(k, fid)) continue;
+                for (const size_t o : oriented_tri_vids(fid)) {
+                    if (o == vs[0] || o == vs[1]) continue;
+                    inner = int8_t(
+                        wmtk::utils::predicates::orient2d(
+                            Vector2d(V.row(E(i, 0)).transpose()),
+                            Vector2d(V.row(E(i, 1)).transpose()),
+                            m_vertex_attribute[o].m_posf));
+                }
+                break;
+            }
+            // The selection on the segment's left (inner > 0): its boundary counter-clockwise.
+            if (inner > 0) winding_rows[k].push_back({{E(i, 0), E(i, 1)}});
+            if (inner < 0) winding_rows[k].push_back({{E(i, 1), E(i, 0)}});
+        }
+        m_phi_E_inner.push_back(inner);
     }
-
+    for (size_t k = 0; k < winding_rows.size(); ++k) {
+        MatrixXi& W = m_selection_winding_E[k];
+        W.resize(int(winding_rows[k].size()), 2);
+        for (size_t i = 0; i < winding_rows[k].size(); ++i)
+            W.row(int(i)) << winding_rows[k][i][0], winding_rows[k][i][1];
+    }
     MatrixXi E_phi(phi_segs.size(), 2);
     for (size_t i = 0; i < phi_segs.size(); ++i) {
         E_phi.row(i) = phi_segs[i];
+    }
+
+    // Each entry of offsets owns the pieces its vertices are in (a vertex two In entries share has
+    // a row for each, above, so a piece has one), and the march traces each entry's edges on
+    // the distance to its own complex alone (offset_distance()): every entry is offset as if it
+    // were the only one. One entry: the whole complex's BVH below, nothing built. As in 3D.
+    // Where 2D differs: no entry is refused for mixing primitive kinds, as 3D refuses one (its
+    // euclidean field's envelope takes one kind); 2D's primitives are all segments and points, a
+    // face entering as its boundary, and the BVH and the exact integral take a mix (one entry
+    // does not refuse one either).
+    m_region_offset.assign(size_t(m_n_regions), 0);
+    m_offset_queries.clear();
+    m_offset_curves.assign(1, F.rows() == 0);
+    if (m_offset_params.offsets.size() > 1) {
+        m_offset_curves.assign(m_offset_params.offsets.size(), false);
+        std::vector<int> row_offset(size_t(V.rows()), -1);
+        for (size_t row = 0; row < row_entry.size(); ++row) row_offset[row] = row_entry[row];
+        for (size_t row = 0; row < row_offset.size(); ++row)
+            m_region_offset[size_t(comp_of[row])] = row_offset[row];
+        for (size_t k = 0; k < m_offset_params.offsets.size(); ++k) {
+            std::vector<int> erows, frows, P_k;
+            for (int i = 0; i < E_phi.rows(); ++i)
+                if (row_offset[size_t(E_phi(i, 0))] == int(k)) erows.push_back(i);
+            for (int i = 0; i < F.rows(); ++i)
+                if (row_offset[size_t(F(i, 0))] == int(k)) frows.push_back(i);
+            for (int i = 0; i < P.rows(); ++i)
+                if (row_offset[size_t(P(i, 0))] == int(k)) P_k.push_back(P(i, 0));
+            MatrixXi E_k(erows.size(), 2), F_k(frows.size(), 3), P_m(P_k.size(), 1);
+            for (size_t i = 0; i < erows.size(); ++i) E_k.row(int(i)) = E_phi.row(erows[i]);
+            for (size_t i = 0; i < frows.size(); ++i) F_k.row(int(i)) = F.row(frows[i]);
+            for (size_t i = 0; i < P_k.size(); ++i) P_m(int(i), 0) = P_k[i];
+            m_offset_curves[k] = F_k.rows() == 0;
+            std::shared_ptr<SimplicialComplexBVH> q;
+            if (E_k.rows() + F_k.rows() + P_m.rows() > 0) {
+                q = std::make_shared<SimplicialComplexBVH>();
+                q->init(V, T, F_k, E_k, P_m);
+            }
+            m_offset_queries.push_back(std::move(q));
+        }
     }
 
     // Isolated points: those of the complex, plus any vertex the boundary extraction left with
@@ -879,6 +1267,63 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     for (int i = 0; i < F.rows(); ++i) m_phi_face_region.push_back(comp_of[size_t(F(i, 0))]);
     m_phi_point_region.clear();
     for (const int p : P_phi) m_phi_point_region.push_back(comp_of[size_t(p)]);
+
+    // A complex of segments and points (a curve or point offset's input) bounds no area: an In
+    // entry whose selection has no faces was dropped by label_input_complex(), with a warning.
+    // 3D's refusal of a complex mixing primitive kinds has no twin: 2D's field and integral read
+    // every kind of the extraction (the BVH and ExactBandIntegral2D take its segments and points
+    // beside the faces' boundary), where 3D's input envelope holds one kind.
+}
+
+bool TopoOffsetTriMesh::inside_selection(const size_t k, const Vector2d& p) const
+{
+    // See the declaration.
+    if (k >= m_selection_winding_E.size() || m_selection_winding_E[k].rows() == 0) return false;
+    return wmtk::utils::winding_number_inside(
+        wmtk::utils::winding_number_2d_point(m_phi_V, m_selection_winding_E[k], p.x(), p.y()));
+}
+
+double TopoOffsetTriMesh::offset_distance(const size_t k, const Vector2d& p) const
+{
+    // See the declaration.
+    if (m_offset_queries.empty()) return input_complex_distance(p);
+    const double d = side_distance(k, p);
+    return d == std::numeric_limits<double>::infinity() &&
+                   m_offset_params.direction(k) == Parameters::Offset::Direction::In
+               ? 0.
+               : d;
+}
+
+double TopoOffsetTriMesh::side_distance(const size_t k, const Vector2d& p) const
+{
+    // See the declaration. One-sided: an Out entry's BVH holds its faces, 0 inside them; outside
+    // its selection +infinity for In (offset_distance() makes it 0). A Both entry's rows bound no
+    // region. An entry that selects nothing: +infinity.
+    if (m_offset_params.direction(k) == Parameters::Offset::Direction::In &&
+        !inside_selection(k, p))
+        return std::numeric_limits<double>::infinity();
+    const std::shared_ptr<SimplicialComplexBVH>& q = m_offset_queries[k];
+    if (!q) return std::numeric_limits<double>::infinity();
+    return q->dist(VectorXd(p));
+}
+
+double TopoOffsetTriMesh::input_complex_distance(const Vector2d& p) const
+{
+    // See the declaration. Several entries: the nearest entry's own distance on its side
+    // (side_distance()); an In entry has no distance outside its selection (+infinity there,
+    // not its 0, which would be every entry's 0 there); off every entry's side: 0.
+    if (!m_offset_queries.empty()) {
+        double d = std::numeric_limits<double>::infinity();
+        for (size_t k = 0; k < m_offset_queries.size(); ++k) d = std::min(d, side_distance(k, p));
+        return d == std::numeric_limits<double>::infinity() ? 0. : d;
+    }
+    // One-sided, as offset_distance(): 0 inside the faces for Out (the BVH's), outside the
+    // selection for In.
+    if (m_offset_params.direction(0) == Parameters::Offset::Direction::In &&
+        !m_selection_winding_E.empty() && m_selection_winding_E[0].rows() > 0 &&
+        !inside_selection(0, p))
+        return 0.;
+    return m_input_complex_bvh->dist(VectorXd(p));
 }
 
 
@@ -904,6 +1349,7 @@ void TopoOffsetTriMesh::init_offset_potential()
             n_input_segments,
             m_phi_P.size());
         init_region_potentials(m_offset_params.target_distance, 0.);
+        init_band_exact();
         return;
     }
 
@@ -939,17 +1385,115 @@ void TopoOffsetTriMesh::init_offset_potential()
     init_region_potentials(delta, effective_factor);
 }
 
+void TopoOffsetTriMesh::init_band_exact()
+{
+    // See the declaration; the 2D twin of TopoOffsetTetMesh::init_band_exact(), built under the
+    // same conditions. The band rules' term reads its value() (the energy step of the 2D
+    // lock-step port), the label clean-up its distance() and distance_bound().
+    const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
+                            m_offset_params.band_volume_rule == "exact_swept";
+    const bool surface_cleanup =
+        m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";
+    // "corner_bound": its min over the input's primitives (band_cell_corner_bound()), which 3D
+    // takes from its input envelope, built for every rule; 2D has no such envelope. For the same
+    // reason EXPERIMENTAL_settle_refinement under every settle_mark: its tests read d through it
+    // (settle_refinement_turn(); 3D: through its input envelope, the integral for "max" only).
+    const bool corner_bound = m_offset_params.band_volume_rule == "corner_bound";
+    if (!(exact_rule || surface_cleanup || corner_bound || m_offset_params.settle_refinement ||
+          m_offset_params.debug_output)) {
+        return;
+    }
+    // The band is on the offset side of the input only (ExactBandIntegral2D's class doc). A
+    // segment's side is its orient2d against the region it bounds (m_phi_E_inner, positive: the
+    // row's normal points out of the region): an Out entry's label-1 faces, with the band outside
+    // them (sigma +1), or an In entry's selection, whose boundary is its complex, with the band
+    // inside it (sigma -1); Both: no side. A complex with no segment that bounds a region (a
+    // curve, a point, a Both entry) has no side: the band all around it. As in 3D, whose oriented
+    // volume the area below twins: the region's boundary oriented by it must enclose a positive
+    // area. MEASURED in 3D (Geneva base, offset_in, 2026-10-13): when offset_in's complex was
+    // every cell outside the selection, sigma -1 was read against those cells, so the clip kept
+    // the far side. Since 2026-11 an In entry's segments are oriented against the selection
+    // itself, and sigma -1 keeps its inside.
+    const auto sigma_of = [&](const size_t k) {
+        const Parameters::Offset::Direction d = m_offset_params.direction(k);
+        if (d == Parameters::Offset::Direction::Out) return 1;
+        return d == Parameters::Offset::Direction::In ? -1 : 0;
+    };
+    const auto bounds_region = [](const std::vector<int8_t>& inner) {
+        return std::any_of(inner.begin(), inner.end(), [](const int8_t s) { return s != 0; });
+    };
+    const bool curves = !bounds_region(m_phi_E_inner);
+    const int sigma = curves ? 0 : sigma_of(0);
+    if (curves) {
+        logger().info(
+            "\tExact band integral: {} segments and {} points, no offset side",
+            m_phi_E.rows(),
+            m_phi_P.size());
+    } else {
+        double area2 = 0.;
+        for (int i = 0; i < m_phi_E.rows(); ++i) {
+            const Vector2d a = m_phi_V.row(m_phi_E(i, 0)).head<2>().transpose();
+            const Vector2d b = m_phi_V.row(m_phi_E(i, 1)).head<2>().transpose();
+            area2 += double(m_phi_E_inner[size_t(i)]) * (a.x() * b.y() - a.y() * b.x());
+        }
+        logger().log(
+            area2 > 0. ? spdlog::level::info : spdlog::level::warn,
+            "\tExact band integral: offset side {} (sigma {}), the region's boundary oriented by "
+            "it encloses area {}",
+            sigma > 0 ? "outside the region" : (sigma < 0 ? "inside the region" : "none"),
+            sigma,
+            area2 / 2.);
+    }
+    m_band_exact =
+        std::make_shared<ExactBandIntegral2D>(m_phi_V, m_phi_E, m_phi_P, m_phi_E_inner, sigma);
+    // Several entries of offsets: one integral per piece, over the piece's own primitives, which
+    // a band cell reads (band_exact_for()). MEASURED in 3D (2026-11-09, two boxes a and b 0.5
+    // apart, a at 0.1, b at 0.3, 5 turns): over the whole complex b's band reached around a, its
+    // front vertices up to 1.05 from b and 0.12 from a.
+    m_region_band_exact.clear();
+    if (m_offset_params.offsets.size() > 1) {
+        for (size_t r = 0; r < size_t(m_n_regions); ++r) {
+            // The rows of the piece, as init_region_potentials() takes them: a row of unknown
+            // piece goes to every piece.
+            const auto mine = [&](const int64_t region) {
+                return region < 0 || region == int64_t(r);
+            };
+            std::vector<int> erows, prows;
+            for (int i = 0; i < m_phi_E.rows(); ++i)
+                if (mine(m_phi_seg_region[size_t(i)])) erows.push_back(i);
+            for (size_t i = 0; i < m_phi_P.size(); ++i)
+                if (mine(m_phi_point_region[i])) prows.push_back(int(i));
+            MatrixXi E_r(erows.size(), 2);
+            std::vector<int8_t> inner_r;
+            for (size_t i = 0; i < erows.size(); ++i) {
+                E_r.row(int(i)) = m_phi_E.row(erows[i]);
+                inner_r.push_back(m_phi_E_inner[size_t(erows[i])]);
+            }
+            std::vector<int> P_r;
+            for (const int i : prows) P_r.push_back(m_phi_P[size_t(i)]);
+            const int sigma_r = !bounds_region(inner_r) || r >= m_region_offset.size()
+                                    ? 0
+                                    : sigma_of(size_t(m_region_offset[r]));
+            m_region_band_exact.push_back(
+                std::make_shared<ExactBandIntegral2D>(m_phi_V, E_r, P_r, inner_r, sigma_r));
+        }
+    }
+}
+
 void TopoOffsetTriMesh::init_region_potentials(const double delta, const double effective_factor)
 {
     // See m_region_potentials. A connected input complex is one region, and that region's field
     // is the union field itself -- nothing to build, and every lookup falls through to it.
     m_region_potentials.clear();
-    if (m_n_regions <= 1) {
+    // Several entries of offsets: one field per piece at its entry's target distance, one piece
+    // included (region_delta(); delta, the run's, is the smallest entry's). As in 3D.
+    if (m_n_regions <= 1 && m_offset_params.offsets.size() <= 1) {
         assign_band_regions();
         return;
     }
     const bool euclidean = m_offset_params.offset_field == "euclidean";
     for (size_t r = 0; r < size_t(m_n_regions); ++r) {
+        const double delta_r = m_offset_params.offsets.size() > 1 ? region_delta(int(r)) : delta;
         // A primitive whose region is unknown (-1) is given to every field, conservatively.
         std::vector<int> erows, frows, pidx;
         for (int i = 0; i < m_phi_E.rows(); ++i) {
@@ -975,7 +1519,8 @@ void TopoOffsetTriMesh::init_region_potentials(const double delta, const double 
             for (size_t i = 0; i < P_r.size(); ++i) P_m(i, 0) = P_r[i];
             auto bvh = std::make_shared<SimplicialComplexBVH>();
             bvh->init(m_phi_V, MatrixXi(0, 4), F_r, E_r, P_m);
-            m_region_potentials.push_back(std::make_shared<EuclideanOffsetPotential2D>(bvh, delta));
+            m_region_potentials.push_back(
+                std::make_shared<EuclideanOffsetPotential2D>(bvh, delta_r));
         } else {
             m_region_potentials.push_back(
                 std::make_shared<SmoothOffsetPotential2D>(
@@ -983,17 +1528,18 @@ void TopoOffsetTriMesh::init_region_potentials(const double delta, const double 
                     E_r,
                     MatrixXi(0, 3),
                     P_r,
-                    delta,
+                    delta_r,
                     effective_factor));
         }
         logger().info(
             "\tOffset field for region {} (one connected piece of the input complex): {} "
-            "segments, {} faces, {} points -- the band grown from this piece is placed on this "
-            "field alone",
+            "segments, {} faces, {} points, level {} -- the band grown from this piece is placed "
+            "on this field alone",
             r,
             E_r.rows(),
             F_r.rows(),
-            P_r.size());
+            P_r.size(),
+            delta_r);
     }
     assign_band_regions();
 }
@@ -1037,6 +1583,11 @@ void TopoOffsetTriMesh::construct_offset(const std::filesystem::path& output_fil
         write_debug_frame("simplicial_embedding");
     }
 
+    // The points, once: the complex is labelled and embedded, and nothing has moved yet. As in
+    // 3D, after the envelopes (2D's built at load, init_surfaces_and_boundaries()) and before
+    // the repulsion and the march.
+    hold_curves_and_points();
+
     // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
     repulsion_smoothing();
 
@@ -1061,6 +1612,113 @@ void TopoOffsetTriMesh::construct_offset(const std::filesystem::path& output_fil
     }
 
     assert(ambient_assert());
+}
+
+void TopoOffsetTriMesh::hold_curves_and_points()
+{
+    // See the declaration; TopoOffsetTetMesh::hold_curves_and_points() one dimension down. 3D's
+    // order-2 edges and feature curves are 2D's points, so there are no tubes to build here and
+    // no edge to tag: the base's anchor_feature_points() anchors the order-2 vertices of the
+    // tracked curves, which init_surfaces_and_boundaries() tracked at load (holds_order2_vertex():
+    // one tracked segment or three and more), and the input points. 3D's tubes around a
+    // reference's curves (init_reference_feature_tubes()) have no 2D twin: a held point's
+    // reference is the base's m_reference_points, which anchor_feature_points() centres the
+    // point's ball on, and the 2D offset has no reference route yet.
+    const double order2_eps = m_envelope_eps * m_offset_params.order2_envelope_ratio;
+    const double feature_eps = m_envelope_eps * m_offset_params.feature_envelope_ratio;
+
+    // The input points: one per vertex and label of VertexExtra2d::point_inputs, selected or not,
+    // with their labels (m_input_point_labels), which their anchors keep and the output's point
+    // block writes. From here on their anchors carry them. As in 3D.
+    std::vector<size_t> point_vids;
+    std::vector<int> point_labels;
+    std::vector<char> is_input_point(vert_capacity(), 0);
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        InputSet& bits = m_vertex_extra[vid].point_inputs;
+        for (int j = 0; j < int(SurfaceTagAttributes::max_inputs); ++j) {
+            if (((bits >> j) & 1) == 0) continue;
+            point_vids.push_back(vid);
+            point_labels.push_back(j);
+            is_input_point[vid] = 1;
+        }
+        bits = 0;
+    }
+    m_input_point_labels = point_labels;
+    size_t n_anchors = anchor_feature_points(point_vids, order2_eps, feature_eps);
+    if (m_phi_F.rows() == 0 || m_offset_params.offsets.size() > 1) {
+        // A complex's isolated points, its vertices on none of its edges, that are no input
+        // point: anchored where they are, at an input point's radius, as in 3D (an order-2 vertex
+        // among them keeps the smaller radius, anchor_feature_point()). Per entry of offsets: the
+        // isolated points of every entry without faces (offset_curves()). As in 3D.
+        std::vector<char> on_edge(vert_capacity(), 0);
+        for (const Tuple& e : get_edges()) {
+            if (m_edge_extra[e.eid(*this)].label != 1) continue;
+            on_edge[e.vid(*this)] = on_edge[e.switch_vertex(*this).vid(*this)] = 1;
+        }
+        for (const Tuple& t : get_vertices()) {
+            const size_t vid = t.vid(*this);
+            if (m_vertex_extra[vid].label != 1 || on_edge[vid] || is_input_point[vid]) continue;
+            if (!offset_curves(offset_of(vid))) continue;
+            enable_feature_point_tracking();
+            n_anchors += anchor_feature_point(vid, feature_eps);
+        }
+    }
+    m_points_held = true;
+    logger().info(
+        "\t[curves] the tracked curves' ends and junctions (radius {:.6g}), {} input points and "
+        "the complex's isolated points (radius {:.6g}): {} anchored",
+        order2_eps,
+        point_vids.size(),
+        feature_eps,
+        n_anchors);
+}
+
+void TopoOffsetTriMesh::audit_input_curves() const
+{
+    // See the declaration. The held curves are the tracked region-class edges, held in their
+    // tags' tubes from the load on (3D: the feature-tagged edges in their tubes). A complex
+    // without faces is a curve's or a point's: each of its vertices (label 1, kept by the
+    // operations, carried_vertex_label()) is on a held curve or anchored, or nothing holds it.
+    // 3D counts the complex's edges without the feature tag; 2D's edge label is not carried, so
+    // the vertices are counted.
+    size_t tracked = 0, outside = 0, complex = 0, complex_free = 0;
+    std::vector<char> on_held(vert_capacity(), 0);
+    for (const Tuple& e : get_edges()) {
+        const size_t eid = e.eid(*this);
+        const EdgeAttributes& attr = m_edge_attribute[eid];
+        if (!attr.m_is_surface_fs || edge_is_offset(eid)) continue;
+        ++tracked;
+        const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+        on_held[a] = on_held[b] = 1;
+        outside += surface_segment_is_outside(a, b, attr);
+    }
+    if (m_phi_F.rows() == 0) {
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            if (m_vertex_extra[vid].label != 1) continue;
+            ++complex;
+            const bool anchored =
+                m_track_feature_points &&
+                m_feature_point_attribute[vid].m_feature_point_id != NO_FEATURE_POINT;
+            complex_free += !on_held[vid] && !anchored;
+        }
+    }
+    double worst = 0.;
+    const auto [kept, total] = feature_retention(&worst);
+    const bool defect = outside > 0 || complex_free > 0 || kept < total;
+    logger().log(
+        defect ? spdlog::level::warn : spdlog::level::info,
+        "\t[curves] after the loop: {} held curve edges, {} outside their tube; {} of the input "
+        "complex's {} vertices (a complex without faces) on no held curve and no anchor; {} of {} "
+        "anchors with a vertex in their ball (worst {:.3g} radii)",
+        tracked,
+        outside,
+        complex_free,
+        complex,
+        kept,
+        total,
+        worst);
 }
 
 size_t TopoOffsetTriMesh::flood_fill()
@@ -1106,12 +1764,12 @@ void TopoOffsetTriMesh::repulsion_smoothing()
     // The march traces every marched edge to target_distance only if every outer end is farther
     // than it (the maximum marchable distance, see marching_tris()); otherwise it falls back to
     // half that distance and the loop has to carry the front out. These passes push the outer
-    // ends out first, under one per-tri energy: w AMIPS plus, for each corner v of the face that
-    // is an outer end within it (repulsion_cell_term()), O(v) = (max(0, 2 delta - d(v)) /
+    // ends out first, under one per-tri energy: its AMIPS term plus, for each corner v of the face
+    // that is an outer end within it (repulsion_cell_term()), O(v) = (max(0, 2 delta - d(v)) /
     // front_conv)^2 -- one-sided, so an outer end already beyond 2 delta is left to AMIPS, and
     // 2 delta so that the march at delta splits each edge with room to spare (the fallback's "half
     // the maximum marchable distance" run backwards). The smoother minimises its sum over a
-    // vertex's ring, the vetoes and the rounds' collapses and swaps compare its max, as in the
+    // vertex's ring, the vetoes and the rounds' collapses and swaps compare its sum, as in the
     // loop. An outer end that an envelope holds carries no term. First up to
     // repulsion_smoothing_passes smoothing passes, then up to repulsion_rounds rounds of the
     // loop's operations (see below); both stop once every outer end is beyond delta + front_conv,
@@ -1119,6 +1777,13 @@ void TopoOffsetTriMesh::repulsion_smoothing()
     const int n_passes = m_offset_params.repulsion_smoothing_passes;
     const int n_rounds = m_offset_params.repulsion_rounds;
     if (n_passes <= 0 && n_rounds <= 0) return;
+    if (m_offset_params.offsets.size() > 1) {
+        log_and_throw_error(
+            "repulsion_smoothing_passes / repulsion_rounds: one offset only for now -- the passes "
+            "push the outer ends to 2 x one target_distance from one complex, and {} offsets have "
+            "one each",
+            m_offset_params.offsets.size());
+    }
     const double delta = m_offset_params.target_distance;
     const double stop = delta + m_offset_params.front_conv;
 
@@ -1166,7 +1831,7 @@ void TopoOffsetTriMesh::repulsion_smoothing()
         size_t n_stop = 0, n_delta = 0, n_2delta = 0;
         double ring_max = 0.;
         for (const size_t v : outer) {
-            const double d = m_input_complex_bvh->dist(m_vertex_attribute[v].m_posf);
+            const double d = input_complex_distance(m_vertex_attribute[v].m_posf);
             d_min = std::min(d_min, d);
             if (d <= stop) ++n_stop;
             if (d <= delta) ++n_delta;
@@ -1250,14 +1915,15 @@ void TopoOffsetTriMesh::repulsion_smoothing()
     // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.
     int r = 0;
     if (!done && n_rounds > 0) {
-        // simplex_in_input_complex() reads the complex off the faces' labels, which is exact
-        // when the complex is a body's faces (Out) or the faces outside a body (In, in 2D).
-        // The curve group is 2D's surface group: the complex is edges, not faces.
-        if (!m_singlebody || m_single_tag == m_curve_tag ||
+        // simplex_in_input_complex() reads the complex off the faces: exact when it is a body's
+        // faces (Out) or that body's boundary (In), read off the faces' tags. The curve group is
+        // 2D's surface group: the complex is edges, not faces. As in 3D.
+        if (!m_singlebody || m_single_tag == m_curve_tag || m_offset_has_faces.size() != 1 ||
+            !m_offset_has_faces[0] ||
             m_offset_params.direction(0) == Parameters::Offset::Direction::Both) {
             log_and_throw_error(
-                "repulsion_rounds: supported for a single body offset inward or outward only "
-                "(not a curve group, an expression, or direction 'both')");
+                "repulsion_rounds: supported for a single face tag offset inward or outward only "
+                "(not a curve group, a curve, an expression, or direction 'both')");
         }
         m_edge_split_mode = EdgeSplitMode::Optimization;
         partition_mesh_morton(); // optimize_offset() recomputes it
@@ -1333,16 +1999,18 @@ void TopoOffsetTriMesh::repulsion_smoothing()
 
 bool TopoOffsetTriMesh::simplex_in_input_complex(const size_t a, const size_t b) const
 {
-    // An edge of a face of the complex (label 1: a body face for Out, a face outside the body
-    // for In), as label_input_complex() labels them; for In also a domain-boundary edge of a
-    // body face, which label_input_complex() adds to the complex.
+    // Out: an edge of a face of the complex (label 1, a body face), as label_input_complex()
+    // labels them. In: on the body's boundary, the complex -- between a body face and a face
+    // outside it, or a domain-boundary edge of a body face (the body read off the faces' tags).
+    // As in 3D.
     const std::vector<size_t> faces = get_incident_fids_for_edge(a, b);
     for (const size_t fid : faces) {
         if (m_face_extra[fid].label != 0) return true;
     }
-    if (m_offset_params.direction(0) != Parameters::Offset::Direction::In || faces.size() != 1)
-        return false;
-    return m_face_attribute[faces[0]].tags.count(m_single_tag) != 0;
+    if (m_offset_params.direction(0) != Parameters::Offset::Direction::In) return false;
+    bool body = false, outside = false;
+    for (const size_t fid : faces) (face_in_selection(0, fid) ? body : outside) = true;
+    return body && (outside || faces.size() == 1);
 }
 
 bool TopoOffsetTriMesh::repulsion_embedding_kept(const std::vector<size_t>& fids) const
@@ -1365,7 +2033,12 @@ bool TopoOffsetTriMesh::repulsion_embedding_kept(const std::vector<size_t>& fids
 
 namespace {
 
-/// The input complex as the shared simplicial embedding sees it: the simplices labelled nonzero.
+/// The input complex as the shared simplicial embedding sees it: the simplices labelled nonzero --
+/// the union of the entries' complexes (label_input_complex()), so the mesh is embedded with
+/// respect to an Out entry's whole selection and an In or Both entry's boundary. A face of an In
+/// selection whose three corners are on its boundary (a part one face thick) gets a vertex off
+/// it, so the march has an edge into it; an Out region is split nowhere inside, so an Out
+/// offset's output is the one from before 2026-11. As in 3D (Spencer's rule, 2026-11-18).
 wmtk::utils::TriComplex labelled_complex(const TopoOffsetTriMesh& m)
 {
     return {
@@ -1418,6 +2091,15 @@ void TopoOffsetTriMesh::marching_tris()
     m_marching_midpoint_splits = 0;
     m_marching_trace_steps = 0;
     m_marching_trace_steps_max = 0;
+    const auto key = [](size_t a, size_t b) {
+        return std::array<size_t, 2>{{std::min(a, b), std::max(a, b)}};
+    };
+    // An edge out of an In entry's complex, its boundary, that leads away from its selection
+    // (on_offset_side()) is on the side no band grows on: it is not marched, and no face around
+    // it joins the band. So an In band takes only the selection's faces: after the simplicial
+    // embedding every face outside the selection at a boundary vertex has a vertex off the
+    // boundary, and so such an edge. As in 3D, where a protected cell's edges are blocked too.
+    std::set<std::array<size_t, 2>> blocked;
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
     auto edges = get_edges();
@@ -1427,8 +2109,25 @@ void TopoOffsetTriMesh::marching_tris()
 
         // if one background and the other input/offset
         if ((m_vertex_extra[v1].label == 0) != (m_vertex_extra[v2].label == 0)) {
-            e_to_split.emplace_back(v1, v2);
+            if (is_marched_edge(v1, v2)) {
+                e_to_split.emplace_back(v1, v2);
+            } else {
+                blocked.insert(key(v1, v2));
+            }
         }
+    }
+    const auto takes = [&](const size_t fid) {
+        const auto vs = oriented_tri_vids(fid);
+        for (int i = 0; i < 3; ++i) {
+            if (blocked.count(key(vs[i], vs[(i + 1) % 3]))) return false;
+        }
+        return true;
+    };
+    if (!blocked.empty()) {
+        logger().info(
+            "\t[construction] {} edges out of an inward offset's boundary lead out of its "
+            "selection: not marched",
+            blocked.size());
     }
 
     // sort edges by length
@@ -1444,79 +2143,203 @@ void TopoOffsetTriMesh::marching_tris()
     // Otherwise "max_marchable_fallback" traces to half of it, where every edge holds the level
     // set with room to spare, and "midpoint_fallback" splits every marched edge at its midpoint.
     // target_distance itself is untouched: the optimization carries the surface out to it.
-    // Identical to TopoOffsetTetMesh::marching_tets().
-    const double target = m_offset_params.target_distance;
-    double d_max = std::numeric_limits<double>::infinity();
-    for (const simplex::Edge& e : e_to_split) {
-        const size_t va = e.vertices()[0];
-        const size_t vb = e.vertices()[1];
+    // Per entry of offsets, each on its own marched edges (those out of its complex), its own
+    // distance (offset_distance()) and its own target, as if it were the only one: a union of
+    // entries under one maximum marchable distance would let the finest-meshed entry decide every
+    // entry's fallback. With several entries each line below names its entry. Identical to
+    // TopoOffsetTetMesh::marching_tets().
+    const size_t n_off = std::max<size_t>(1, m_offset_params.offsets.size());
+    const auto inner_end = [&](const simplex::Edge& e) {
         // Exactly one end carries a zero label: that is how e_to_split was built.
-        const size_t v_out = m_vertex_extra[va].label != 0 ? vb : va;
-        d_max = std::min(d_max, m_input_complex_bvh->dist(m_vertex_attribute[v_out].m_posf));
+        const size_t va = e.vertices()[0];
+        return m_vertex_extra[va].label != 0 ? va : e.vertices()[1];
+    };
+    std::vector<size_t> n_marched(n_off, 0);
+    std::vector<double> d_max(n_off, std::numeric_limits<double>::infinity());
+    for (const simplex::Edge& e : e_to_split) {
+        const size_t v_in = inner_end(e);
+        const size_t v_out = v_in == e.vertices()[0] ? e.vertices()[1] : e.vertices()[0];
+        const size_t k = edge_entry(v_in, v_out);
+        ++n_marched[k];
+        d_max[k] = std::min(d_max[k], offset_distance(k, m_vertex_attribute[v_out].m_posf));
     }
-    const bool reachable = target < d_max;
     const std::string& mode = m_offset_params.construction_mode;
-    m_construction_distance = target;
-    m_edge_split_mode = EdgeSplitMode::SphereTrace;
-    if (e_to_split.empty()) {
-        logger().info("\t[construction] construction_mode {}: no edge to march", mode);
-    } else if (reachable) {
-        logger().info(
-            "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over {} "
-            "marched edges; target_distance {:.6g} is below it, so the march traces to the target",
-            mode,
-            d_max,
-            e_to_split.size(),
-            target);
-    } else if (mode == "max_marchable_fallback" && d_max > 0.) {
-        m_construction_distance = 0.5 * d_max;
-        logger().info(
-            "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over {} "
-            "marched edges; target_distance {:.6g} is not below it, so the march traces to half "
-            "of it, {:.6g} ({:.4g}x target_distance)",
-            mode,
-            d_max,
-            e_to_split.size(),
-            target,
-            m_construction_distance,
-            m_construction_distance / target);
-    } else {
-        m_edge_split_mode = EdgeSplitMode::Midpoint;
-        if (mode == "max_marchable_fallback") {
-            logger().warn(
-                "\t[construction] construction_mode {}: maximum marchable distance {} -- a "
-                "marched edge ends on the complex -- so there is nothing to trace to and every "
-                "marched edge is split at its midpoint",
-                mode,
-                d_max);
-        } else {
+    m_construction_distances.assign(n_off, 0.);
+    m_construction_traced.assign(n_off, true);
+    std::vector<bool> reachable(n_off, false);
+    for (size_t k = 0; k < n_off; ++k) {
+        const std::string at = n_off > 1 ? fmt::format("offsets[{}]: ", k) : "";
+        const double target = offset_target(k);
+        reachable[k] = target < d_max[k];
+        m_construction_distances[k] = target;
+        if (n_marched[k] == 0) {
+            logger().info("\t[construction] {}construction_mode {}: no edge to march", at, mode);
+        } else if (reachable[k]) {
             logger().info(
-                "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over "
-                "{} marched edges; target_distance {:.6g} is not below it, so every marched edge "
-                "is split at its midpoint",
+                "\t[construction] {}construction_mode {}: maximum marchable distance {:.6g} over "
+                "{} marched edges; target_distance {:.6g} is below it, so the march traces to the "
+                "target",
+                at,
                 mode,
-                d_max,
-                e_to_split.size(),
+                d_max[k],
+                n_marched[k],
                 target);
+        } else if (mode == "max_marchable_fallback" && d_max[k] > 0.) {
+            m_construction_distances[k] = 0.5 * d_max[k];
+            logger().info(
+                "\t[construction] {}construction_mode {}: maximum marchable distance {:.6g} over "
+                "{} marched edges; target_distance {:.6g} is not below it, so the march traces to "
+                "half of it, {:.6g} ({:.4g}x target_distance)",
+                at,
+                mode,
+                d_max[k],
+                n_marched[k],
+                target,
+                m_construction_distances[k],
+                m_construction_distances[k] / target);
+        } else {
+            m_construction_traced[k] = false;
+            if (mode == "max_marchable_fallback") {
+                logger().warn(
+                    "\t[construction] {}construction_mode {}: maximum marchable distance {} -- a "
+                    "marched edge ends on the complex -- so there is nothing to trace to and every "
+                    "marched edge is split at its midpoint",
+                    at,
+                    mode,
+                    d_max[k]);
+            } else {
+                logger().info(
+                    "\t[construction] {}construction_mode {}: maximum marchable distance {:.6g} "
+                    "over {} marched edges; target_distance {:.6g} is not below it, so every "
+                    "marched edge is split at its midpoint",
+                    at,
+                    mode,
+                    d_max[k],
+                    n_marched[k],
+                    target);
+            }
         }
     }
+    // One mode for the splits: the sphere trace if any entry traces; an entry that does not is
+    // split at its midpoints all the same (marching_split_edge_before(), m_construction_traced).
+    // The run-level distance is the smallest entry's. As in 3D.
+    bool any_traced = false, any_marched = false, any_unreachable = false;
+    for (size_t k = 0; k < n_off; ++k) {
+        any_traced = any_traced || m_construction_traced[k];
+        any_marched = any_marched || n_marched[k] > 0;
+        any_unreachable = any_unreachable || (n_marched[k] > 0 && !reachable[k]);
+    }
+    m_construction_distance =
+        *std::min_element(m_construction_distances.begin(), m_construction_distances.end());
+    m_edge_split_mode = any_traced ? EdgeSplitMode::SphereTrace : EdgeSplitMode::Midpoint;
+    const double target = offset_target(0);
 
     // init_optimize, only when the target is not below the maximum marchable distance:
     // optimize_offset() opens with a loop without refinement. A target below it is marched to and
-    // the run is the ordinary one. As in 3D.
-    if (m_offset_params.init_optimize && !e_to_split.empty()) {
-        if (!reachable) {
+    // the run is the ordinary one. Several entries: when one of them is not. As in 3D.
+    if (m_offset_params.init_optimize && any_marched) {
+        const std::string which = n_off > 1 ? "an entry's " : "";
+        if (any_unreachable) {
             m_init_optimize = true;
             logger().info(
-                "\t[init_optimize] target_distance is not below the maximum marchable distance, so "
-                "the loop opens with a stencil_order {} loop without refinement, then the same "
+                "\t[init_optimize] {}target_distance is not below the maximum marchable distance, "
+                "so the loop opens with a stencil_order {} loop without refinement, then the same "
                 "stencil with refinement",
+                which,
                 m_offset_params.stencil_order);
         } else {
             logger().info(
                 "\t[init_optimize] not done: target_distance is below the maximum marchable "
                 "distance; the offset is marched to the target and the loop runs with refinement "
                 "as usual");
+        }
+    }
+
+    // growth_mode: the loop grows the offset from the distance traced here, when that is below
+    // the target (optimize_offset(): linear_growth(), smart_growth()). As in 3D.
+    m_growth_start = 0.;
+    const std::string& growth = m_offset_params.growth_mode;
+    m_growth_starts.clear();
+    if (growth != "none" && m_offset_params.optimize_offset && n_off > 1) {
+        // Several entries: each entry grows from its own d_0 to its own target, all in one
+        // schedule (linear_growth(), smart_growth()): an entry the march traced to its target
+        // stays at it, and so does one it could not trace (split at its midpoints: at no single
+        // distance to grow from).
+        m_growth_starts.assign(n_off, 0.);
+        bool grows = false;
+        for (size_t k = 0; k < n_off; ++k) {
+            const double target_k = offset_target(k);
+            const bool from_below = n_marched[k] > 0 && !reachable[k] && m_construction_traced[k];
+            m_growth_starts[k] = from_below ? m_construction_distances[k] : target_k;
+            grows = grows || from_below;
+            if (n_marched[k] > 0 && !reachable[k] && !m_construction_traced[k]) {
+                logger().warn(
+                    "\t[growth] offsets[{}]: every marched edge is split at its midpoint, so its "
+                    "front is at no single distance to grow from; it is held at its "
+                    "target_distance {:.6g}",
+                    k,
+                    target_k);
+            }
+            logger().info(
+                "\t[growth] offsets[{}]: from {:.6g} to its target_distance {:.6g}{}",
+                k,
+                m_growth_starts[k],
+                target_k,
+                from_below ? "" : " (no growth: it starts at its target)");
+        }
+        if (grows) {
+            m_growth_start = *std::min_element(m_growth_starts.begin(), m_growth_starts.end());
+        } else {
+            m_growth_starts.clear();
+            logger().info(
+                "\t[growth] not done: every entry starts at its target; the loop runs as usual");
+        }
+    } else if (growth != "none" && m_offset_params.optimize_offset) {
+        // "linear" (and "individual_op_reject", one step of it) keeps the log tag of its
+        // EXPERIMENTAL_incremental_growth days.
+        const bool stepped = growth == "linear" || growth == "individual_op_reject";
+        const std::string tag = stepped ? "incremental growth" : "smart growth";
+        if (e_to_split.empty()) {
+            logger().info(
+                "\t[{}] not done: no edge to march; the loop runs at target_distance as usual",
+                tag);
+        } else if (reachable[0]) {
+            logger().info(
+                "\t[{}] not done: the march traces to target_distance itself; the loop runs at it "
+                "as usual",
+                tag);
+        } else if (m_edge_split_mode != EdgeSplitMode::SphereTrace) {
+            logger().warn(
+                "\t[{}] not done: every marched edge is split at its midpoint, so the front is at "
+                "no single distance to grow from; the loop runs at target_distance as usual",
+                tag);
+        } else if (stepped) {
+            m_growth_start = m_construction_distance;
+            const int n = growth == "linear" ? m_offset_params.linear_growth_steps : 1;
+            logger().info(
+                "\t[incremental growth] {} loops: at the traced distance {:.6g} first, then in {} "
+                "step(s) of {:.6g} to target_distance {:.6g}, each to convergence{}",
+                n + 1,
+                m_growth_start,
+                n,
+                (target - m_growth_start) / double(n),
+                target,
+                growth == "individual_op_reject"
+                    ? " (growth_mode individual_op_reject: collapses and smoothing moves that "
+                      "raise the offset edges turned from the field are refused)"
+                    : "");
+        } else {
+            m_growth_start = m_construction_distance;
+            logger().info(
+                "\t[smart growth] the loop at the traced distance {:.6g} first (up to max_rounds "
+                "{} turns), then attempts toward target_distance {:.6g} of up to "
+                "smart_growth_attempts {} turns each, halving the step after each failure (up to "
+                "smart_growth_max_fails {} per converged distance)",
+                m_growth_start,
+                m_offset_params.max_rounds,
+                target,
+                m_offset_params.smart_growth_attempts,
+                m_offset_params.smart_growth_max_fails);
         }
     }
 
@@ -1543,12 +2366,13 @@ void TopoOffsetTriMesh::marching_tris()
     if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
         logger().info(
             "\t[construction] sphere trace: {} of {} marched edges placed where |d(x) - D| <= {} "
-            "x D (D = {:.6g}), {} at the midpoint (the trace left the edge) | trace steps: {} "
+            "x D (D = {}), {} at the midpoint (the trace left the edge) | trace steps: {} "
             "total, {} max, {:.1f} per edge",
             m_marching_root_splits,
             e_to_split.size(),
             m_offset_params.sphere_trace_target_rel_tol,
-            m_construction_distance,
+            n_off > 1 ? std::string("each entry's, above")
+                      : fmt::format("{:.6g}", m_construction_distance),
             m_marching_midpoint_splits,
             m_marching_trace_steps,
             m_marching_trace_steps_max,
@@ -1560,12 +2384,20 @@ void TopoOffsetTriMesh::marching_tris()
     // optimization sets its own mode.
     m_edge_split_mode = EdgeSplitMode::Midpoint;
 
-    // mark all offset tris (incident to any vert with label 1 or 2)
+    // mark all offset tris (incident to any vert with label 1 or 2). Several entries: a band face
+    // is one entry's. Every edge from a frontier vertex to the background was split above (or
+    // leads out of an In entry's selection, and the faces around it no band takes), so a band
+    // face's vertices are its entry's complex vertices and the new split points; no face has
+    // complex vertices of two entries (the simplicial embedding split every edge between two
+    // complexes) but where two In entries touch, and there each band face is inside its own
+    // entry's selection (band_face_entry()). So two bands share no vertex off the complex. As in
+    // 3D.
     for (const size_t v_id : frontier_verts) {
         auto tris = get_one_ring_tris_for_vertex(tuple_from_vertex(v_id));
         for (const Tuple& t : tris) {
             size_t f_id = t.fid(*this);
-            if (m_face_extra[f_id].label == 0) { // dont want to overwrite if in input
+            // dont want to overwrite if in input
+            if (m_face_extra[f_id].label == 0 && takes(f_id)) {
                 m_face_extra[f_id].label = 2;
                 // propagate to children
                 auto vs = oriented_tri_vids(f_id);
@@ -1584,8 +2416,64 @@ void TopoOffsetTriMesh::marching_tris()
 }
 
 
+size_t TopoOffsetTriMesh::band_face_entry(const size_t fid) const
+{
+    // See the declaration. The candidates are the entries of the face's complex corners; an In
+    // entry among them is taken only if its selection holds the face -- by the face's tags while
+    // it still carries them (until set_offset_tri_tags()), then by the winding number of the
+    // selection as captured at the centroid -- since a corner on the boundary two In entries
+    // share, or one an operation has just made, does not say which side the face is on. An Out
+    // or Both candidate is taken as it is (no entry shares its boundary). None: any In entry
+    // whose selection holds the face. As TopoOffsetTetMesh::band_cell_entry().
+    if (m_offset_params.offsets.size() <= 1) return 0;
+    if (const auto it = m_band_tags_entry.find(m_face_attribute[fid].tags);
+        it != m_band_tags_entry.end())
+        return it->second;
+    using Direction = Parameters::Offset::Direction;
+    const auto vs = oriented_tri_vids(fid);
+    std::set<size_t> candidates;
+    for (const size_t v : vs) {
+        if (m_vertex_extra[v].label != 1) continue;
+        const auto it = m_shared_vertex_entries.find(v);
+        if (it != m_shared_vertex_entries.end()) {
+            candidates.insert(it->second.begin(), it->second.end());
+        } else if (m_vertex_extra[v].offset >= 0) {
+            candidates.insert(size_t(m_vertex_extra[v].offset));
+        }
+    }
+    Vector2d c = Vector2d::Zero();
+    for (const size_t u : vs) c += m_vertex_attribute[u].m_posf / 3.;
+    const auto holds = [&](const size_t k) {
+        return face_in_selection(k, fid) || inside_selection(k, c);
+    };
+    size_t other = size_t(-1);
+    for (const size_t k : candidates) {
+        if (m_offset_params.direction(k) == Direction::In) {
+            if (holds(k)) return k;
+        } else if (other == size_t(-1)) {
+            other = k;
+        }
+    }
+    if (other != size_t(-1)) return other;
+    for (size_t k = 0; k < m_offset_params.offsets.size(); ++k) {
+        if (m_offset_params.direction(k) == Direction::In && holds(k)) return k;
+    }
+    return candidates.empty() ? 0 : *candidates.begin();
+}
+
 void TopoOffsetTriMesh::set_offset_tri_tags()
 {
+    // Each entry's output tags, by id: init_from_image() added the new ones to the mesh. As in 3D.
+    const std::vector<Parameters::Offset>& offsets = m_offset_params.offsets;
+    std::vector<CellTag> output_ids(offsets.size());
+    for (size_t k = 0; k < offsets.size(); ++k) {
+        for (const std::string& name : offsets[k].output_tags) {
+            const auto it = m_tag_name_to_id.find(name);
+            if (it == m_tag_name_to_id.end())
+                log_and_throw_error("offsets[{}]: output tag {} is not a tag of the mesh", k, name);
+            output_ids[k].insert(it->second);
+        }
+    }
     auto faces = get_faces();
     for (const Tuple& f : faces) {
         size_t f_id = f.fid(*this);
@@ -1596,19 +2484,36 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
             // satisfy it (Parameters::protected_kept(); until 2026-11 a list's names)
             new_tag = m_offset_params.protected_kept(m_face_attribute[f_id].tags);
 
-            // add actual offset tags
-            if (m_offset_output_tag_ids.size() == 0) {
+            // add actual offset tags: those of the band face's entry of offsets
+            // (band_face_entry(): the entry of its vertices on the complex -- every band face has
+            // one, the frontier vertex it was taken around -- or, at a vertex two In entries
+            // share, the one whose selection holds it). No entry (a Parameters built by hand, the
+            // unit tests): ambient. As in 3D.
+            const size_t k = band_face_entry(f_id);
+            const CellTag ids = k < output_ids.size() ? output_ids[k] : CellTag();
+            if (ids.size() == 0) {
                 if (new_tag.size() == 0) { // no protected tags, should be ambient
                     new_tag.insert(0);
                 }
             } else {
-                for (const int64_t& tag : m_offset_output_tag_ids) {
+                for (const int64_t& tag : ids) {
                     new_tag.insert(tag);
                 }
             }
 
             m_face_attribute[f_id].tags = new_tag;
         }
+    }
+    // band_face_entry() reads the entry off these tags from now on (m_band_tags_entry); a tag set
+    // two entries write (shared output tags, or none: ambient) says nothing. As in 3D.
+    m_band_tags_entry.clear();
+    std::map<CellTag, size_t> writers;
+    for (size_t k = 0; k < offsets.size(); ++k) {
+        const CellTag written = output_ids[k].empty() ? CellTag{0} : output_ids[k];
+        if (++writers[written] == 1) m_band_tags_entry[written] = k;
+    }
+    for (const auto& [written, n] : writers) {
+        if (n > 1) m_band_tags_entry.erase(written);
     }
 }
 
@@ -1747,7 +2652,6 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
 void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, const bool result)
 {
     if (!m_params.output_enabled && !output) return;
-    logger().info("Write {}.vtu (tag for offset is included)", path);
     // A result -- the final mesh, on either route -- carries the tags (here a field per tag, and
     // offset_tag; on the memory route collect_tags() makes them `tags`), the data fields
     // components read (io::ComponentIO::data_fields: vid, labels, offset_tag) and the
@@ -1839,7 +2743,9 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
     //                         target_distance is what it should equal. For the smooth field it is
     //                         the only Euclidean number on the frame -- residual_length() there is
     //                         the length to the smooth level set, not to the complex. -2 before the
-    //                         BVH exists (the construction frames written ahead of it).
+    //                         BVH exists (the construction frames written ahead of it). Several
+    //                         entries of offsets: the distance to the vertex's own piece
+    //                         (place_piece()), whose target_distance it should equal.
     //
     // Together they separate "placed" from "stationary but wrong": where the field gives the
     // objective no gradient to move along (front_grad_norm near zero, as on the medial axis of
@@ -1881,13 +2787,19 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
             const Vector2d p = m_vertex_attribute[vid].m_posf;
             const auto& pot = potential_for(vid);
             CR(k, 0) = finite_or(front_vertex_conv_ratio(vid));
-            // RELATIVE to the one bar, so < 1 reads as placed at a glance. As in 3D.
-            RL(k, 0) =
-                finite_or(pot.residual_length(p) / std::max(m_offset_params.front_conv, 1e-300));
+            // RELATIVE to the one bar, so < 1 reads as placed at a glance: the vertex's piece's
+            // (one entry: the run's). As in 3D.
+            RL(k, 0) = finite_or(
+                pot.residual_length(p) / std::max(front_conv_of(place_piece(&vid, 1)), 1e-300));
             GN(k, 0) = finite_or(pot.gradient(p).norm());
             MA(k, 0) = finite_or(front_move_alignment(vid));
-            CD(k, 0) =
-                m_input_complex_bvh ? finite_or(m_input_complex_bvh->dist(VectorXd(p))) : -2.;
+            // Several entries of offsets: from the vertex's own piece (its integral's distance,
+            // band_exact_for(); 3D's envelope_for()), which its piece's target_distance is what it
+            // should equal. As in 3D.
+            CD(k, 0) = m_offset_params.offsets.size() > 1 && m_band_exact
+                           ? finite_or(band_exact_for(place_piece(&vid, 1))->distance(p))
+                       : m_input_complex_bvh ? finite_or(input_complex_distance(p))
+                                             : -2.;
         }
     }
 
@@ -1907,11 +2819,10 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
         NST(packed[r.vid], 0) = r.status;
     }
 
-    // Collapsed-foldover flag, as point data: 1 where the offset curve has folded back on
-    // itself at this vertex (outer angle over the threshold), 0 elsewhere. DEBUG ONLY --
-    // computed only under debug_output, so a plain save_vtu run writes it as all 0 rather than
-    // paying for the curve walk. Packed like every other point field here, through `packed`.
-    // See offset_surface_foldover_labels() for what the angle is and how its side is decided.
+    // Fold flag, as point data: 1 at every fold's vertex (offset_surface_foldover_labels(), the
+    // fold predicate fold_test()), 0 elsewhere. DEBUG ONLY -- computed only under debug_output,
+    // so a plain save_vtu run writes it as all 0 rather than paying for the curve walk and its
+    // field angles. Packed like every other point field here, through `packed`.
     Eigen::MatrixXd FOLD(vs.size(), 1);
     FOLD.setZero();
     if (m_offset_params.debug_output) {
@@ -1941,7 +2852,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
     writer->add_field("offset_foldover", FOLD);
     writer->add_field("front_newton_iters", NIT);
     writer->add_field("front_newton_status", NST);
-    writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
+    writer->write_mesh_and_log(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // The front's per-CHORD convergence measure, as a companion line mesh `<path>_front.vtu`: a
     // triangle .vtu has nowhere to put an edge quantity. Same packed vertex indexing as the
@@ -2024,7 +2935,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
             front_writer->add_field("offset_foldover", FOLD);
             front_writer->add_field("front_newton_iters", NIT);
             front_writer->add_field("front_newton_status", NST);
-            front_writer->write_mesh(front_path, V, FE, paraviewo::CellType::Line);
+            front_writer->write_mesh_and_log(front_path, V, FE, paraviewo::CellType::Line);
         }
     }
 
@@ -2039,9 +2950,11 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
         const auto out_surf_path = path + "_surf.vtu";
         std::shared_ptr<io::DataWriter> surf_writer;
         surf_writer = std::make_shared<io::DataWriter>(output);
-        logger().info("Write {}", out_surf_path);
-        surf_writer
-            ->write_mesh(out_surf_path, m_V_envelope, m_F_envelope, paraviewo::CellType::Line);
+        surf_writer->write_mesh_and_log(
+            out_surf_path,
+            m_V_envelope,
+            m_F_envelope,
+            paraviewo::CellType::Line);
     }
 }
 
@@ -2075,7 +2988,7 @@ void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) con
             residual(k, 0) = std::min(
                 m_offset_potential->residual_length(p),
                 8. * m_offset_params.target_distance);
-            euclid(k, 0) = m_input_complex_bvh->dist(VectorXd(p));
+            euclid(k, 0) = input_complex_distance(p);
         }
     }
     int f = 0;
