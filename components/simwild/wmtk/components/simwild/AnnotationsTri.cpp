@@ -680,6 +680,12 @@ void SimWildMeshTri::tight_seal_geom(
                 return opp.has_value() && in_R(opp->fid(*this));
             },
             [&](const Tuple& f) { return in_R(f.fid(*this)); }};
+        // Edges are split at a third, from their lower-id end (m_edge_split_fraction), not at
+        // the midpoint: the midpoint of an edge joining two bodies lies exactly on their
+        // bisector wherever its ends are their nearest points.
+        m_edge_split_fraction = Rational(1.) / Rational(3.);
+        tight_seal::ClearOnExit<std::optional<Rational>> clear_split_fraction{
+            m_edge_split_fraction};
         const wmtk::utils::SimplicialEmbeddingStats emb =
             wmtk::utils::simplicial_embedding(*this, R_complex);
         logger().info(
@@ -1090,6 +1096,32 @@ void SimWildMeshTri::tight_seal_geom(
     // single color would be a concave feature of that body, filled.
     if (sanity) {
         tight_seal_geom_sanity(fill_tags, color_of, filled);
+    }
+
+    // Every vertex rounded, or the op fails: the output is written in doubles (write_msh, the
+    // memory route), and a vertex left exact because its double position inverts a triangle
+    // would make the next operation refuse the mesh ("Tets with different orientations in the
+    // input!", scan_2 frame 0, 2026-11-17). Each is tried once more first.
+    size_t n_unrounded = 0;
+    Vector2d first_unrounded = Vector2d::Zero();
+    for (const Tuple& t : get_vertices()) {
+        const size_t v = t.vid(*this);
+        if (m_vertex_attribute[v].m_is_rounded) continue;
+        if (round(t)) {
+            for (const size_t id : get_one_ring_fids_for_vertex(v)) {
+                m_face_attribute[id].m_quality = get_quality(tuple_from_tri(id));
+            }
+            continue;
+        }
+        if (n_unrounded++ == 0) first_unrounded = m_vertex_attribute[v].m_posf;
+    }
+    if (n_unrounded > 0) {
+        log_and_throw_error(
+            "tight_seal_geom: {} vertices cannot be rounded to doubles without inverting a "
+            "triangle "
+            "(the first near ({})); the output would not read back",
+            n_unrounded,
+            first_unrounded.transpose());
     }
 
     m_E_envelope.clear();

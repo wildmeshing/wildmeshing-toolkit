@@ -426,6 +426,13 @@ private:
         Rational fraction;
     };
     std::optional<EdgeSplitAt> m_edge_split_at;
+    // When set and m_edge_split_at is not, split_adjust_position places every split's new vertex
+    // at this fraction of the edge from its lower-id end, as m_edge_split_at would. Set to 1/3
+    // around tight_seal_geom's simplicial embedding: the midpoint of an edge joining two bodies
+    // is equidistant from both wherever its ends are their nearest points, so it lies exactly on
+    // their bisector; the fill then split the edges around it within rounding of it, and those
+    // vertices could not be rounded (scan_2 frame 0, 2026-11-17).
+    std::optional<Rational> m_edge_split_fraction;
     // split_face_before() to split_face_after(): the face's corners, attributes and edges. Face
     // splits are serial (only tight_seal_geom's simplicial embedding makes them).
     struct FaceSplitCache

@@ -279,10 +279,15 @@ bool SimWildMesh::split_tet_after(const Tuple& t)
 
 bool SimWildMesh::split_adjust_position(const size_t v_new, const std::vector<Tuple>& children)
 {
-    if (m_edge_split_at) {
+    std::optional<EdgeSplitAt> split_at = m_edge_split_at;
+    if (!split_at && m_edge_split_fraction) {
+        const auto& c = split_cache.local();
+        split_at = EdgeSplitAt{std::min(c.v1_id, c.v2_id), *m_edge_split_fraction};
+    }
+    if (split_at) {
         // exactly at the fraction asked for: rounded if that inverts no child, else exact
         const auto& cache = split_cache.local();
-        const size_t from = m_edge_split_at->from;
+        const size_t from = split_at->from;
         if (from != cache.v1_id && from != cache.v2_id) {
             log_and_throw_error(
                 "split_adjust_position: vertex {} is no end of the edge ({}, {})",
@@ -295,7 +300,7 @@ bool SimWildMesh::split_adjust_position(const size_t v_new, const std::vector<Tu
         const Vector3r b = m_vertex_attribute[to].pos();
         Vector3r exact;
         for (int k = 0; k < 3; ++k) {
-            exact[k] = a[k] + (b[k] - a[k]) * m_edge_split_at->fraction;
+            exact[k] = a[k] + (b[k] - a[k]) * split_at->fraction;
         }
         VertexAttributes& va = m_vertex_attribute[v_new];
         const auto inverts = [&] {
