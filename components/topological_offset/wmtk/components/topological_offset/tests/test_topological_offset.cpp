@@ -8507,6 +8507,40 @@ TEST_CASE("label-cleanup-keeps-the-surface-flag-exact-2d", "[offset][2d]")
     }
 }
 
+TEST_CASE("held-segment-split-2d", "[offset][2d]")
+{
+    // THE HELD-SEGMENT SPLIT (smooth_vertex_under_energy(), front_pocket_split()): a front vertex
+    // on a held curve reaches the level set by sliding along the curve, and where the curve bends
+    // the straight held segment behind it leaves its tube, so the containment test refuses the
+    // move; the refused segment is split before the next smoothing pass. p offset to 0.3, and a
+    // held curve from p along x to (0.25, 0), then up to (0.25, 0.5): the level set crosses it on
+    // the second leg, past the bend. MEASURED (2026-11-17, 8 turns): with the split, a segment
+    // split at turns 2 and 4 and the front resolved at turn 5; with it off (the list cleared
+    // before the split), the front not resolved in 8 turns. throw_on_unreachable_level_set false:
+    // the reach check throws at turn 2 here (a non-band cell next to the bend, wholly inside the
+    // level set, kept out of the band), though the run goes on to resolve the front.
+    std::string log;
+    std::unique_ptr<TopoOffsetTriMesh> mesh;
+    const std::string what = run_loop_2d(
+        0.3,
+        {{"max_rounds", 8}, {"throw_on_unreachable_level_set", false}},
+        log,
+        {{4, 4}},
+        {{{4, 4}}, {{5, 4}}, {{5, 6}}},
+        false,
+        {},
+        &mesh);
+    INFO(log.substr(log.size() > 6000 ? log.size() - 6000 : 0));
+    REQUIRE(what.empty());
+    size_t split = 0;
+    for (size_t at = log.find("[held-segment split]"); at != std::string::npos;
+         at = log.find("[held-segment split]", at + 1)) {
+        split += std::stoul(log.substr(log.find("move, ", at) + 6));
+    }
+    CHECK(split > 0);
+    CHECK(mesh->m_converged);
+}
+
 TEST_CASE("unreachable-level-set-throws-in-the-loop-2d", "[offset][2d]")
 {
     // The 2D twin of unreachable-level-set-throws, through the loop: p offset to 0.3 with a held
