@@ -1668,6 +1668,8 @@
       
         
       
+        
+      
     
     
     
@@ -1737,6 +1739,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -3573,10 +3603,18 @@ CMake already downloaded for another build of the toolkit, add
 <p>The module is built for the Python CMake finds; use the same interpreter to import it.</p>
 <h2 id="using-the-library-from-your-own-cmake-project">Using the library from your own CMake project<a class="headerlink" href="#using-the-library-from-your-own-cmake-project" title="Permanent link">&para;</a></h2>
 <p>Added to another project (<code>add_subdirectory</code>, <code>FetchContent</code> or CPM), the toolkit builds its core
-library, <code>wmtk::toolkit</code>, and not the components: those are built only when the toolkit is the
-top-level project. To call a component from your own C++ code today, build your program in the
-toolkit's tree, as the <a href="../../developer/documentation/#examples">documentation's examples</a> are
-(<code>docs/examples/CMakeLists.txt</code>), linking <code>wmtk::&lt;component&gt;</code>.</p>
+library, <code>wmtk::toolkit</code>. With <code>WMTK_BUILD_COMPONENTS</code> on, it also builds the components, and your
+targets link <code>wmtk::&lt;component&gt;</code> and call it as the
+<a href="../../developer/documentation/#examples">documentation's C++ examples</a> do:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">set</span><span class="p">(</span><span class="s">WMTK_BUILD_COMPONENTS</span><span class="w"> </span><span class="s">ON</span><span class="w"> </span><span class="s">CACHE</span><span class="w"> </span><span class="s">BOOL</span><span class="w"> </span><span class="s2">""</span><span class="w"> </span><span class="s">FORCE</span><span class="p">)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nb">add_subdirectory</span><span class="p">(</span><span class="s">wildmeshing-toolkit</span><span class="p">)</span><span class="w">   </span><span class="c"># or FetchContent / CPMAddPackage</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_program</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">wmtk::triwild</span><span class="w"> </span><span class="s">wmtk::tracking</span><span class="p">)</span>
+</code></pre></div>
+<p>As a subproject the toolkit builds no command line, no Python module (<code>WMTK_PYBIND</code> is off unless
+set), and none of its tests or test data, whatever your project's <code>BUILD_TESTING</code>. Inside its own
+scope it uses its own CMake recipes (<code>cmake/recipes</code>) before any of yours with the same names,
+default symbol visibility and C++17 unless a target asks for more, so a project built with
+<code>-fvisibility=hidden</code> or C++20 links it as is.</p>
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
 <p><a href="../first-run/">A first run</a>: the same remeshing from the command line, Python and C++.</p>
 

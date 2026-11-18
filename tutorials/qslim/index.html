@@ -1715,6 +1715,8 @@
       
         
       
+        
+      
     
     
     
@@ -1787,6 +1789,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -3652,6 +3682,9 @@ target. On the Octocat, with <code>target_rel</code> 0.01 (189 vertices):</p>
 </table>
 <p>So the envelope is what decides how far a simplification can go while the result still
 approximates the input; the target is an upper bound.</p>
+<p>To give the thickness in the input's units, set <a href="../../reference/qslim/#eps"><code>eps</code></a>: when positive
+it replaces <code>eps_rel</code>, and <code>eps_rel</code> times the diagonal of the mesh as read (after the weld) is the
+same run.</p>
 <h3 id="the-open-boundary-boundary_eps_rel">The open boundary: <code>boundary_eps_rel</code><a class="headerlink" href="#the-open-boundary-boundary_eps_rel" title="Permanent link">&para;</a></h3>
 <p>On a mesh with an open boundary, the surface envelope alone holds the boundary loosely: the
 outline can retract along the surface. A positive
@@ -3673,7 +3706,8 @@ the collapses depends on the schedule, and the result changes slightly from run 
 <ul>
 <li>The simplified mesh: <code>output</code> on the command line (default <code>out.obj</code>), <code>outputs["mesh"]</code> in
   memory.</li>
-<li>With <code>report</code>, a JSON file with the target, the vertex and triangle counts and the run time.</li>
+<li>With <code>report</code>, a JSON file with the target, the vertex and triangle counts, the envelope's
+  absolute thickness <code>eps</code> (0 without an envelope) and the run time.</li>
 <li>With <code>throw_on_fail</code>, the run fails when the target is not reached instead of writing the mesh
   it got to.</li>
 <li>With <code>history_output</code>, the history of the collapses, from which <a href="../tracking/">tracking</a> maps

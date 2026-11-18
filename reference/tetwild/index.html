@@ -1535,6 +1535,8 @@
       
         
       
+        
+      
     
     
     
@@ -1604,6 +1606,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -2447,6 +2477,50 @@
     <span class="md-ellipsis">
       
         compute_flood_fill
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        eps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#length" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        length
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#limit_collapse_length" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        limit_collapse_length
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sizing_mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sizing_mesh
       
     </span>
   </a>
@@ -4446,6 +4520,50 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#eps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        eps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#length" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        length
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#limit_collapse_length" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        limit_collapse_length
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sizing_mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sizing_mesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#split_high_valence_threshold" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4985,7 +5103,7 @@
 <p>Use sample envelope instead of exact one.</p>
 <h3 id="use_legacy_code"><code>use_legacy_code</code><a class="headerlink" href="#use_legacy_code" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
-<p>Use the original TetWild code for the mesh improvement. This only works with 'use_sample_envelope'!</p>
+<p>Use the original TetWild code for the mesh improvement. This only works with 'use_sample_envelope'! Not with sizing_mesh or limit_collapse_length, which its operations would ignore.</p>
 <h3 id="filter_inputs"><code>filter_inputs</code><a class="headerlink" href="#filter_inputs" title="Permanent link">&para;</a></h3>
 <p><strong>list of string</strong> · default <code>[]</code></p>
 <p>The inputs that bound the domain a filter keeps, by their labels: the names of the surface inputs (input_names, tag_&lt;i&gt; without one), or a tagged mesh's face-tag labels. Empty, the default: every input, as before the key. With 'input' the winding number of those inputs only; with 'tracked' that of the tracked faces carrying one of them only; with 'flood' the fill crosses every tracked face of the other inputs. So an input that is not named -- an open sheet through a solid, a second solid outside it -- does not cut or add to the domain kept, and stays in the output as tracked faces, its face tag, inside the domain or on its boundary. The field the filter reads (winding_number_input, winding_number_tracked or part) is then of those inputs; the others stay of every input. Under 'tracked' a tracked face carrying a named input and another input (two solids touching face to face) is refused before the filter: a face's orientation is one count for all its inputs, not one per input, so the named inputs' winding number cannot be computed there; 'flood' needs no orientation, and is exact for inputs that do not overlap themselves. Built with the CMake option WMTK_PER_INPUT_ORIENTATION, a face keeps one count per input, and 'tracked' takes the named inputs' own there instead. A name that is not an input throws, and so does the key with filter 'none'.</p>
@@ -4999,6 +5117,18 @@
 <h3 id="compute_flood_fill"><code>compute_flood_fill</code><a class="headerlink" href="#compute_flood_fill" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Compute the flood-fill parts -- the regions the tracked surface separates -- and write them (part) even when filter is not 'flood', which computes them anyway. A serial pass over every tet; left out of the output otherwise.</p>
+<h3 id="eps"><code>eps</code><a class="headerlink" href="#eps" title="Permanent link">&para;</a></h3>
+<p><strong>float</strong> · default <code>-1</code></p>
+<p>Absolute envelope thickness. If this value is negative, the relative envelope thickness (eps_rel) is used to compute the absolute one. As simwild's eps. Under envelope_reference "input" it must be above the simplification's eps (eps_simplify, else eps_simplify_rel of the diagonal), as eps_rel must.</p>
+<h3 id="length"><code>length</code><a class="headerlink" href="#length" title="Permanent link">&para;</a></h3>
+<p><strong>float</strong> · default <code>-1</code></p>
+<p>Absolute target edge length. If this value is negative, the relative length (length_rel) is used to compute the absolute one. As simwild's length.</p>
+<h3 id="limit_collapse_length"><code>limit_collapse_length</code><a class="headerlink" href="#limit_collapse_length" title="Permanent link">&para;</a></h3>
+<p><strong>bool</strong> · default set by the component (see below)</p>
+<p>Default: on with a sizing_mesh (the field is then a bound the collapses keep), off without. Refuse a collapse that leaves an edge longer than the split length: 4/3 of the target edge length, scaled by the sizing at its ends, the length above which an edge is split. As isotropic_remeshing's limit_collapse_length (Botsch and Kobbelt). Without it a collapse is judged by the edge it removes alone, so the edges of the vertex it removes, moved to the one it keeps, can reach 0.8 + 4/3 of the target; and since the optimization ends on collapses (the last iteration's, then the bare pass after the loop), nothing cuts them again. With it the edges stay about 4/3 of the target at most (smoothing can still stretch them a little), so a target of 3/4 of a bound keeps them near or under that bound, for a denser mesh. In the coarsening pass the target is the one asked for (sizing_mesh, else the global length), not the optimizer's refinement of it. Not with use_legacy_code, whose operations would ignore it.</p>
+<h3 id="sizing_mesh"><code>sizing_mesh</code><a class="headerlink" href="#sizing_mesh" title="Permanent link">&para;</a></h3>
+<p><strong>string</strong> · default <code>""</code></p>
+<p>A target edge length that varies over space: a tet mesh whose vertices carry the absolute target length as the field 'target_length' (one value per vertex), interpolated linearly inside its tets. On the memory route the name of a mesh of the call, on the file route the path of a mesh file with a node field 'target_length', relative to input_dir. It sets the sizing of the vertices it covers, the scalar that scales the target length and that stuck-element refinement lowers, as triwild's sizing_mesh does: at the start of the optimization, and after every pass as a ceiling, so the vertices a pass makes follow it and refinement is kept. Outside its tets the global length (length, else length_rel) applies; the background mesh fills the input's bounding box grown by 1/15 of its diagonal on each side, so a sizing mesh meant to cover all of it must reach that far. The bounded coarsening pass (coarsen_pass with coarsen_unbounded off) stops at 0.8 of the field's length instead of the global one. Not with use_legacy_code, whose operations would ignore it. Empty: none, and the run is the same as without the option. The field is a largest edge length: with it, limit_collapse_length is on unless set to false, and the optimization goes on past stop_energy while more than 1% of the edges are longer than 4/3 of their target and that share still drops.</p>
 <h3 id="split_high_valence_threshold"><code>split_high_valence_threshold</code><a class="headerlink" href="#split_high_valence_threshold" title="Permanent link">&para;</a></h3>
 <p><strong>int</strong> · default <code>0</code></p>
 <p>Incident-tet count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped tet mesh has valence around 20-30; a split cascade can drive one vertex into the thousands, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex in the edge's link, so the gate applies to the link.</p>
@@ -5094,7 +5224,7 @@
 <p>Cap on the collapse pass's own dirty-epoch retry loop within one coarsening round; 0 is uncapped. Distinct from coarsen_max_rounds, which counts collapse+global-smoothing alternations. This counts the passes the retry loop makes inside a single collapse pass, re-offering failures whose neighbourhood a successful collapse disturbed. That filter asks only whether the neighbourhood MOVED, not whether it moved helpfully, so a productive first pass re-offers most of the mesh. 1 by default, i.e. one pass per round and no retry within it: on octocat the first pass found 5110 collapses in 135.8s and the three that followed found 27 in 38.4s. Rounds still repeat the pass, and those do pay off, because the global smoothing between them moves the fixed point in a way this filter cannot see.</p>
 <h3 id="coarsen_unbounded"><code>coarsen_unbounded</code><a class="headerlink" href="#coarsen_unbounded" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
-<p>Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary.</p>
+<p>Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary. With a sizing_mesh, the bound follows the field: 0.8 of its length, the one asked for, not the refinement.</p>
 <h2 id="run-control">Run control<a class="headerlink" href="#run-control" title="Permanent link">&para;</a></h2>
 <h3 id="input_dir"><code>input_dir</code><a class="headerlink" href="#input_dir" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>

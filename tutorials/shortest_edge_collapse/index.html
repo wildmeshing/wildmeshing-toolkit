@@ -1726,6 +1726,8 @@
       
         
       
+        
+      
     
     
     
@@ -1798,6 +1800,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -3676,6 +3706,9 @@ the target. On the Octocat, with <code>target_rel</code> 0.01 (189 vertices):</p
 <p>With an envelope of 0.2%, it barely gets past the first run's tenth. Inside the same envelopes,
 QSlim stops at roughly two thirds of these counts (see <a href="../qslim/#the-envelope-eps_rel">its table</a>):
 its collapses follow the shape, so fewer of them leave the envelope.</p>
+<p>To give the thickness in the input's units, set <a href="../../reference/shortest_edge_collapse/#eps"><code>eps</code></a>:
+when positive it replaces <code>eps_rel</code>, and <code>eps_rel</code> times the diagonal of the mesh as read (after the
+weld) is the same run.</p>
 <h3 id="the-envelope-test-use_sample_envelope">The envelope test: <code>use_sample_envelope</code><a class="headerlink" href="#the-envelope-test-use_sample_envelope" title="Permanent link">&para;</a></h3>
 <p>The envelope test is exact by default, and it is most of the run time: in the sweep above, a run
 with an envelope takes close to a hundred times longer than the run without.
@@ -3764,8 +3797,8 @@ runs sequentially and gives identical results.</p>
 <ul>
 <li>The simplified mesh: <code>output</code> on the command line (default <code>out.obj</code>), <code>outputs["mesh"]</code> in
   memory.</li>
-<li>In memory, the report holds the number of <code>vertices</code> and <code>triangles</code> of the result. There is no
-  report file.</li>
+<li>In memory, the report holds the number of <code>vertices</code> and <code>triangles</code> of the result, and the
+  envelope's absolute thickness <code>eps</code> (0 without an envelope). There is no report file.</li>
 <li>With <a href="../../reference/shortest_edge_collapse/#throw_on_fail"><code>throw_on_fail</code></a>, the run fails when
   the target is not reached, instead of writing the mesh it got to.</li>
 <li>With <a href="../../reference/shortest_edge_collapse/#history_output"><code>history_output</code></a>, the history of

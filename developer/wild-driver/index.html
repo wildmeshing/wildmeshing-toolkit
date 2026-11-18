@@ -1533,6 +1533,8 @@
       
         
       
+        
+      
     
     
     
@@ -1602,6 +1604,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -3570,11 +3600,25 @@ next split pass (<code>stuck_refine_force_split</code>), multiplies the sizing s
 (grown by <code>stuck_refine_rings</code> rings) by <code>stuck_refine_factor</code>, down to <code>stuck_refine_min_scalar</code>,
 and grades the result into its surroundings (<code>stuck_refine_gradation</code>). After a refinement, the
 next <code>stuck_refine_cooldown</code> iterations do not refine.</p>
+<p><strong>A sizing mesh.</strong> With a <a href="../../tutorials/workflows/sizing-mesh/">sizing mesh</a> (the components'
+<code>sizing_mesh</code>, a <code>SizingMesh</code> in
+<a href="https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/src/wmtk/utils/SizingMesh.hpp"><code>SizingMesh.hpp</code></a>),
+<code>set_sizing_mesh()</code> sets the sizing scalar of every vertex it covers to the field's length over
+<span class="arithmatex">\(l\)</span>, before the loop. <code>local_operations()</code> then calls <code>apply_sizing_mesh(false)</code> after every
+pass, right after <code>update_attributes()</code>: it may only lower a sizing, so the vertices a pass made
+(a split's midpoint takes the mean of its ends') follow the field, and stuck refinement is kept.
+Without a sizing mesh <code>apply_sizing_mesh()</code> returns at once. With one, the loop does not stop on
+the energy target alone: <code>sizing_mesh_allows_stop()</code> keeps it going while more than
+<code>sizing_mesh_long_edge_tolerance</code> (1%) of the edges are longer than 4/3 of their target and that
+share still drops by a tenth from one iteration to the next.</p>
 <p><strong>Coarsening.</strong> <code>coarsen_mesh()</code> returns at once unless
 <a href="../../reference/tetwild/#coarsen_pass"><code>coarsen_pass</code></a> is set; it is not gated by the bare passes.
 Then, for at most <code>coarsen_max_rounds</code> rounds, it runs a collapse pass in coarsening mode, where a
 collapse is kept only if the worst cell in the region it touched is no worse than before, then
-<code>coarsen_global_smoothing_passes</code> smoothing passes; it stops after a round that collapses nothing.</p>
+<code>coarsen_global_smoothing_passes</code> smoothing passes; it stops after a round that collapses nothing.
+With <a href="../../reference/tetwild/#coarsen_unbounded"><code>coarsen_unbounded</code></a> off, the pass leaves an edge
+at or past 4/5 of the target: <span class="arithmatex">\(l\)</span>, or with a sizing mesh the field's length at the edge's ends
+(<code>coarsen_target_length()</code>), never the sizing scalar, which is the refinement the pass undoes.</p>
 <h2 id="a-group-local_operations">A group: <code>local_operations()</code><a class="headerlink" href="#a-group-local_operations" title="Permanent link">&para;</a></h2>
 <p><code>local_operations(ops)</code> takes four counts, <code>{split, collapse, swap, smooth}</code>, and runs, in this
 order:</p>
@@ -3668,8 +3712,14 @@ if one of its vertices was in the region a successful operation renewed during t
 </tbody>
 </table>
 <p>The target length is <a href="../../reference/tetwild/#length_rel"><code>length_rel</code></a> times the bounding box
-diagonal (<code>OptimizerParameters::init_lengths_from_diagonal</code>); the sizing is the mean of the two
-endpoints' sizing scalars, which stuck refinement lowers.</p>
+diagonal, or <a href="../../reference/tetwild/#length"><code>length</code></a> when given
+(<code>OptimizerParameters::init_lengths_from_diagonal</code>); the sizing is the mean of the two endpoints'
+sizing scalars, which stuck refinement lowers and a sizing mesh sets.</p>
+<p>A collapse is judged by the edge it removes. With
+<a href="../../reference/tetwild/#limit_collapse_length"><code>limit_collapse_length</code></a>
+(<code>OptimizerParameters::limit_collapse_length</code>), <code>collapse_edge_before()</code> also refuses one that
+leaves an edge longer than 4/3 of its target, the length above which the split pass would cut it
+again (<code>collapse_leaves_long_edge()</code>, after the application's <code>collapse_before_vertex</code>).</p>
 <p>Three details matter when changing a pass:</p>
 <ul>
 <li><strong>Longest-edge order.</strong> In a parallel split pass an edge that loses a lock race is set aside,

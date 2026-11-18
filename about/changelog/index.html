@@ -1533,6 +1533,8 @@
       
         
       
+        
+      
     
     
     
@@ -1602,6 +1604,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -3342,6 +3372,11 @@ input simplification for curves (<a href="https://github.com/wildmeshing/wildmes
 a coarsening pass, off by default (<a href="https://github.com/wildmeshing/wildmeshing-toolkit/pull/1047">#1047</a>);
 parallel smoothing by color class (<a href="https://github.com/wildmeshing/wildmeshing-toolkit/pull/1079">#1079</a>);
 less memory (<a href="https://github.com/wildmeshing/wildmeshing-toolkit/pull/1077">#1077</a>).</p>
+<p><strong>Edge length.</strong> A target edge length that varies over space, a
+<a href="../../tutorials/workflows/sizing-mesh/">sizing mesh</a>, in TriWild, TetWild, SimWild and isotropic
+remeshing; a bound on the edges a collapse leaves (<code>limit_collapse_length</code>); absolute <code>eps</code> and
+<code>length</code> in every component that has their relative versions
+(<a href="https://github.com/wildmeshing/wildmeshing-toolkit/pull/1188">#1188</a>).</p>
 <p><strong>Tracking.</strong> Applications record a history of their operations, and the tracking component
 rebuilds bijective maps between input and output, for surfaces, curves and volumes
 (<a href="https://github.com/wildmeshing/wildmeshing-toolkit/pull/1126">#1126</a>).</p>

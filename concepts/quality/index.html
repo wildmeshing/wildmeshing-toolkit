@@ -1662,6 +1662,8 @@
       
         
       
+        
+      
     
     
     
@@ -1731,6 +1733,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -3500,7 +3530,8 @@ element's energy with its own region's target.</p>
 <ol>
 <li><strong>Split</strong> every edge longer than <span class="arithmatex">\(\tfrac43\,l\,s\)</span>, where <span class="arithmatex">\(l\)</span> is the target edge length
    (<a href="../../reference/tetwild/#length_rel"><code>length_rel</code></a> times the bounding box diagonal) and <span class="arithmatex">\(s\)</span>
-   the sizing scalar of the edge (the mean of its endpoints', 1 unless refined).</li>
+   the sizing scalar of the edge (the mean of its endpoints', 1 unless refined, or set by a
+   <a href="../../tutorials/workflows/sizing-mesh/">sizing mesh</a>).</li>
 <li><strong>Collapse</strong> edges shorter than <span class="arithmatex">\(\tfrac45\,l\,s\)</span>. A collapse is refused if it inverts an
    element or raises the worst energy around the edge.</li>
 <li><strong>Swap</strong> edges and faces: 3-2, 4-4, 5-6 and 2-3 in 3D, edge swaps in 2D. A swap is taken when

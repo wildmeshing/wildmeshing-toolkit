@@ -198,7 +198,7 @@
     },
     "sizing_field": {
       "type": "array",
-      "description": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescribed length will be used for each vertex. Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]",
+      "description": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescribed length will be used for each vertex. With sizing_mesh, the smaller of the two lengths where both apply (see there). Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]",
       "default": [],
       "items": {
         "type": "object",
@@ -223,6 +223,15 @@
           "tags"
         ]
       }
+    },
+    "sizing_mesh": {
+      "type": "string",
+      "description": "A target edge length that varies over space: a tet mesh in 3D, a triangle mesh in 2D (read in the xy plane), whose vertices carry the absolute target length as the field 'target_length' (one value per vertex), interpolated linearly inside its cells. On the memory route the name of a mesh of the call, on the file route the path of a mesh file with a node field 'target_length', relative to input_dir. It sets the sizing of the vertices it covers, the scalar that scales the target length and that stuck-element refinement lowers, as sizing_field does for its regions: at the start, and after every pass as a ceiling, so the vertices a pass makes follow it and refinement is kept. Outside its cells the global length (length, else length_rel) applies. With sizing_field, a vertex of a region it covers takes the smaller of the region's length and its own; a vertex of no region it covers takes its length, also where it is longer than the global one, which it replaces there; a vertex it does not cover keeps the regions' sizing. The bounded coarsening pass (coarsen_pass with coarsen_unbounded off) stops at 0.8 of its length instead of the global one. Remeshing only: a tag operation does not read it. Empty: none, and the run is the same as without the option. The field is a largest edge length: with it, limit_collapse_length is on unless set to false, and the optimization goes on past stop_energy while more than 1% of the edges are longer than 4/3 of their target and that share still drops.",
+      "default": ""
+    },
+    "limit_collapse_length": {
+      "type": "boolean",
+      "description": "Default: on with a sizing_mesh (the field is then a bound the collapses keep), off without. Refuse a collapse that leaves an edge longer than the split length: 4/3 of the target edge length, scaled by the sizing at its ends, the length above which an edge is split. As isotropic_remeshing's limit_collapse_length (Botsch and Kobbelt). Without it a collapse is judged by the edge it removes alone, so two collinear edges of an interface merge into one up to 0.8 + 4/3 of the target; and since the optimization ends on collapses (the last iteration's, then the bare pass after the loop), nothing cuts them again. With it the edges stay about 4/3 of the target at most (smoothing can still stretch them a little), so a target of 3/4 of a bound keeps them near or under that bound, for a denser mesh. It holds every collapse of a remeshing, the simplification after the insertion (preserve_topology) included. In the coarsening pass the target is the one asked for (sizing_mesh, else the global length), not the optimizer's refinement of it. The tag operations make no collapse."
     },
     "quality_field": {
       "type": "array",
@@ -593,7 +602,7 @@
     },
     "coarsen_unbounded": {
       "type": "boolean",
-      "description": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary.",
+      "description": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary. With a sizing_mesh, the bound follows the field: 0.8 of its length, the one asked for, not the refinement.",
       "default": true
     },
     "envelope": {

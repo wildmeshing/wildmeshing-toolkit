@@ -1246,10 +1246,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-target-length-length_rel-length_abs" class="md-nav__link">
+  <a href="#the-target-length-length_rel-length" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The target length: length_rel, length_abs
+        The target length: length_rel, length
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-length-that-varies-sizing_mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge length that varies: sizing_mesh
       
     </span>
   </a>
@@ -1765,6 +1776,8 @@
       
         
       
+        
+      
     
     
     
@@ -1837,6 +1850,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -3473,10 +3514,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-target-length-length_rel-length_abs" class="md-nav__link">
+  <a href="#the-target-length-length_rel-length" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The target length: length_rel, length_abs
+        The target length: length_rel, length
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-length-that-varies-sizing_mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge length that varies: sizing_mesh
       
     </span>
   </a>
@@ -3705,12 +3757,14 @@ report, <code>bunny_report.json</code>, are written to the working directory.</p
 
 <p>The input on the left, the result on the right: drag to rotate, scroll to zoom. Every example is in the <a href="../../gallery/">gallery</a>.</p>
 <h2 id="key-settings">Key settings<a class="headerlink" href="#key-settings" title="Permanent link">&para;</a></h2>
-<h3 id="the-target-length-length_rel-length_abs">The target length: <code>length_rel</code>, <code>length_abs</code><a class="headerlink" href="#the-target-length-length_rel-length_abs" title="Permanent link">&para;</a></h3>
-<p><a href="../../reference/isotropic_remeshing/#length_abs"><code>length_abs</code></a> is the target edge length;
-when it is negative (the default), <a href="../../reference/isotropic_remeshing/#length_rel"><code>length_rel</code></a>
-gives it relative to the bounding box diagonal; when both are negative, the target is the input's
-average edge length. Since edges between 4/5 and 4/3 of the target are left alone, the average
-edge of the result is somewhat longer than the target. On the bunny:</p>
+<h3 id="the-target-length-length_rel-length">The target length: <code>length_rel</code>, <code>length</code><a class="headerlink" href="#the-target-length-length_rel-length" title="Permanent link">&para;</a></h3>
+<p><a href="../../reference/isotropic_remeshing/#length"><code>length</code></a> is the target edge length
+(<a href="../../reference/isotropic_remeshing/#length_abs"><code>length_abs</code></a> is its older name, and still works;
+given both, they have to agree); when it is negative (the default),
+<a href="../../reference/isotropic_remeshing/#length_rel"><code>length_rel</code></a> gives it relative to the bounding
+box diagonal; when both are negative, the target is the input's average edge length. Since edges
+between 4/5 and 4/3 of the target are left alone, the average edge of the result is somewhat
+longer than the target. On the bunny:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">for</span> <span class="n">length_rel</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.005</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">]:</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">outputs</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">isotropic_remeshing</span><span class="p">(</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="s2">"bunny"</span><span class="p">,</span> <span class="s2">"length_rel"</span><span class="p">:</span> <span class="n">length_rel</span><span class="p">},</span> <span class="p">{</span><span class="s2">"bunny"</span><span class="p">:</span> <span class="n">bunny</span><span class="p">})</span>
@@ -3744,6 +3798,22 @@ edge of the result is somewhat longer than the target. On the bunny:</p>
 </tbody>
 </table>
 <p>Halving the length multiplies the vertex count by about four, as it should on a surface.</p>
+<h3 id="edge-length-that-varies-sizing_mesh">Edge length that varies: <code>sizing_mesh</code><a class="headerlink" href="#edge-length-that-varies-sizing_mesh" title="Permanent link">&para;</a></h3>
+<p><a href="../../reference/isotropic_remeshing/#sizing_mesh"><code>sizing_mesh</code></a> replaces the uniform target with
+one that varies over the surface: a triangle mesh whose vertices carry the length in a field named
+<code>target_length</code>, interpolated linearly inside its triangles and read at the point of it closest to
+each vertex. On the memory route it names a mesh of the call -- the input itself, given such a
+field; on the file route it is a mesh file. Each vertex takes the length where it is, again
+wherever an operation puts it, and an edge's target is the mean of its ends': the split, the
+collapse, <a href="../../reference/isotropic_remeshing/#limit_collapse_length"><code>limit_collapse_length</code></a> and
+the repairs of <a href="../../reference/isotropic_remeshing/#cleanup_angle"><code>cleanup_angle</code></a> compare each
+edge with its own; a feature curve's edges too. A flat unit square of 10 x 10 squares, with a
+field that grows from 0.02 on its left side to 0.12 on its right, ends with edges of 0.029 on
+average left of x = 0.25 and 0.105 right of x = 0.75, in 1014 triangles; with <code>length</code> 0.12
+alone, 0.119 and 0.114, in 188.</p>
+<p>With a sizing mesh, <code>limit_collapse_length</code> is on unless set to false. The
+<a href="../workflows/sizing-mesh/">sizing mesh workflow</a> builds one in Python and on files, and shows
+it in TriWild, TetWild and isotropic remeshing.</p>
 <h3 id="the-iterations-max_iterations">The iterations: <code>max_iterations</code><a class="headerlink" href="#the-iterations-max_iterations" title="Permanent link">&para;</a></h3>
 <p><a href="../../reference/isotropic_remeshing/#max_iterations"><code>max_iterations</code></a> (default 3) is the number
 of iterations of splits, collapses, swaps and smoothing; all of them run. The first does most of
@@ -3786,11 +3856,12 @@ the work. On the bunny, the share of triangles with an angle under 30 degrees:</
 more iterations do not reach them (see <a href="#the-open-boundary-freeze_boundary">the boundary</a>).</p>
 <h3 id="the-envelope-eps_rel">The envelope: <code>eps_rel</code><a class="headerlink" href="#the-envelope-eps_rel" title="Permanent link">&para;</a></h3>
 <p><a href="../../reference/isotropic_remeshing/#eps_rel"><code>eps_rel</code></a> is the envelope's thickness, relative to
-the input's bounding box diagonal. The default, -1, is no envelope: smoothing moves every vertex
-within its tangent plane, which on a curved surface or at a sharp edge is off the surface, and
-the iterations add up. A box (<code>piece_0.obj</code>, 8 vertices), remeshed with <code>length_rel</code> 0.05, keeps
-none of its corners: they round off. With an envelope, an operation that would leave part of the
-surface outside it is refused:</p>
+the input's bounding box diagonal (<a href="../../reference/isotropic_remeshing/#eps"><code>eps</code></a> gives it as a
+distance instead, and wins when positive). The default, -1, is no envelope: smoothing moves every
+vertex within its tangent plane, which on a curved surface or at a sharp edge is off the surface,
+and the iterations add up. A box (<code>piece_0.obj</code>, 8 vertices), remeshed with <code>length_rel</code> 0.05,
+keeps none of its corners: they round off. With an envelope, an operation that would leave part of
+the surface outside it is refused:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">for</span> <span class="n">eps_rel</span> <span class="ow">in</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">]:</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">outputs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">isotropic_remeshing</span><span class="p">(</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>        <span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="s2">"box"</span><span class="p">,</span> <span class="s2">"length_rel"</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s2">"eps_rel"</span><span class="p">:</span> <span class="n">eps_rel</span><span class="p">},</span> <span class="p">{</span><span class="s2">"box"</span><span class="p">:</span> <span class="n">box</span><span class="p">})</span>
@@ -4087,10 +4158,11 @@ edges either way.</p>
   features. One made with <code>feature_fields</code> goes back in with its per-face fields named in
   <code>feature_fields</code> again (<code>mesh</code> holds no <code>uv</code> or <code>normal</code>): an input may carry no triangle field
   that <code>feature_fields</code> does not name.</li>
-<li>With <code>report</code>, a JSON file with the target length, the average, smallest and largest edge
-  length, the valences, the vertex and triangle counts, the non-manifold edges and vertices, the
-  number of operations refused because they would fold the surface, and the run time. In memory,
-  the report is returned.</li>
+<li>With <code>report</code>, a JSON file with the target length, whether a <code>sizing_mesh</code> was given, the
+  envelope's thickness (<code>eps</code>, 0 for none), the average, smallest and largest edge length, the
+  valences, the vertex and triangle counts, the non-manifold edges and vertices, the number of
+  operations refused because they would fold the surface, and the run time. In memory, the report
+  is returned.</li>
 <li>With <a href="../../reference/isotropic_remeshing/#history_output"><code>history_output</code></a>, the history of the
   operations, from which <a href="../tracking/">tracking</a> maps points between the input and the output.</li>
 </ul>

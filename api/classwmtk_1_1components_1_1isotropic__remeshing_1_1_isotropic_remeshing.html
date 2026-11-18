@@ -178,6 +178,13 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_feature_ear_tip</b
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_limit_collapse_length</b> (bool limit)</td></tr>
 <tr class="memdesc:afac55e5188879b32fdfc96531af0cd84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Refuse a collapse that leaves an edge longer than 4/3 of the target length &ndash; the split threshold &ndash; as Botsch and Kobbelt's remeshing does. Off by default: a collapse is then judged by the edge it removes alone, and those of the last iteration leave edges that no split comes after to cut. <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ac77c3f01eccbef22ec3de1d78a2f10ae" title="Repairs the triangles whose smallest angle is under degrees, worst first.">cleanup_triangles()</a> holds its collapses to the same bound, on or off (see there). <br /></td></tr>
 <tr class="separator:afac55e5188879b32fdfc96531af0cd84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4f9b27608ebd237d593feb121b91c90" id="r_aa4f9b27608ebd237d593feb121b91c90"><td class="memItemLeft" align="right" valign="top"><a id="aa4f9b27608ebd237d593feb121b91c90" name="aa4f9b27608ebd237d593feb121b91c90"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_mesh</b> (std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_sizing_mesh.html">SizingMesh</a> &gt; sizing)</td></tr>
+<tr class="memdesc:aa4f9b27608ebd237d593feb121b91c90"><td class="mdescLeft">&#160;</td><td class="mdescRight">A target edge length that varies over the surface: <code>sizing</code>, a Surface <a class="el" href="classwmtk_1_1_sizing_mesh.html" title="A target edge length that varies over space: the sizing_mesh option of tetwild, triwild,...">SizingMesh</a> (a Volume one too, outside whose tets the length the passes get applies). Each vertex takes its length where it is, again wherever a split, collapse or smoothing puts it; an edge's target is the mean of its ends'. It replaces the length the passes get wherever an edge is compared with the target: the split above 4/3 of it, the collapse under 4/5, and the bound on the edges a collapse leaves (set_limit_collapse_length, cleanup_triangles), which still needs a collapse_remeshing() first. Call after <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>. Without one, nothing of this runs and the target is the length the passes get. <br /></td></tr>
+<tr class="separator:aa4f9b27608ebd237d593feb121b91c90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a521059096b0895cd6e95b93e7905eb89" id="r_a521059096b0895cd6e95b93e7905eb89"><td class="memItemLeft" align="right" valign="top"><a id="a521059096b0895cd6e95b93e7905eb89" name="a521059096b0895cd6e95b93e7905eb89"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>has_sizing_mesh</b> () const</td></tr>
+<tr class="separator:a521059096b0895cd6e95b93e7905eb89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11ccee3efc6cc7d6b32d79ce807a0d43" id="r_a11ccee3efc6cc7d6b32d79ce807a0d43"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a11ccee3efc6cc7d6b32d79ce807a0d43">set_cleanup_angle</a> (double degrees)</td></tr>
 <tr class="memdesc:a11ccee3efc6cc7d6b32d79ce807a0d43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Repair, at the end of every iteration, the triangles whose smallest angle is under <code>degrees</code>; 0, the default, repairs none. Call before <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>, which then keeps the input's area vectors for the fold test below.  <br /></td></tr>
 <tr class="separator:a11ccee3efc6cc7d6b32d79ce807a0d43"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -641,6 +648,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_envelope</b> = 
 <tr class="separator:afb122cc6c91f9c0f7352a2f27418dbe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1dd8638f1eea7e28ba30069f4df5af61" id="r_a1dd8638f1eea7e28ba30069f4df5af61"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_face_field_attributes.html">FaceFieldAttributes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a1dd8638f1eea7e28ba30069f4df5af61">face_field_attrs</a></td></tr>
 <tr class="separator:a1dd8638f1eea7e28ba30069f4df5af61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61cc5411191beb5cc157e6b022ae1fbe" id="r_a61cc5411191beb5cc157e6b022ae1fbe"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a61cc5411191beb5cc157e6b022ae1fbe">target_attrs</a></td></tr>
+<tr class="separator:a61cc5411191beb5cc157e6b022ae1fbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a106d559136ac49fa21ecc754b549a089" id="r_a106d559136ac49fa21ecc754b549a089"><td class="memItemLeft" align="right" valign="top"><a id="a106d559136ac49fa21ecc754b549a089" name="a106d559136ac49fa21ecc754b549a089"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>retry_limit</b> = 10</td></tr>
 <tr class="separator:a106d559136ac49fa21ecc754b549a089"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -669,6 +678,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
+<tr class="memitem:a849b4f5ff0896a4d6b4e90249bd0cb7a" id="r_a849b4f5ff0896a4d6b4e90249bd0cb7a"><td class="memItemLeft" align="right" valign="top"><a id="a849b4f5ff0896a4d6b4e90249bd0cb7a" name="a849b4f5ff0896a4d6b4e90249bd0cb7a"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>sizing_at</b> (const Eigen::Vector3d &amp;p) const</td></tr>
+<tr class="memdesc:a849b4f5ff0896a4d6b4e90249bd0cb7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The sizing mesh's length at <code>p</code>: -1 where it gives none. <br /></td></tr>
+<tr class="separator:a849b4f5ff0896a4d6b4e90249bd0cb7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9a8b48eb04b360805fddf605750ee2d" id="r_aa9a8b48eb04b360805fddf605750ee2d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#aa9a8b48eb04b360805fddf605750ee2d">edge_target</a> (size_t a, size_t b, double L) const</td></tr>
+<tr class="separator:aa9a8b48eb04b360805fddf605750ee2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a3c7b07518430df4c96a2c8c3fd83e4" id="r_a3a3c7b07518430df4c96a2c8c3fd83e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a3c7b07518430df4c96a2c8c3fd83e4">set_regions</a> ()</td></tr>
 <tr class="separator:a3a3c7b07518430df4c96a2c8c3fd83e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9a5cd099b565fe81f65e8ba7dc91dfd" id="r_ae9a5cd099b565fe81f65e8ba7dc91dfd"><td class="memItemLeft" align="right" valign="top"><a id="ae9a5cd099b565fe81f65e8ba7dc91dfd" name="ae9a5cd099b565fe81f65e8ba7dc91dfd"></a>
@@ -788,6 +803,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_target</
 <tr class="memitem:ab50d4296586b0c8cb7c43e2b9596a2ef" id="r_ab50d4296586b0c8cb7c43e2b9596a2ef"><td class="memItemLeft" align="right" valign="top"><a id="ab50d4296586b0c8cb7c43e2b9596a2ef" name="ab50d4296586b0c8cb7c43e2b9596a2ef"></a>
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_refused_inversions</b> = 0</td></tr>
 <tr class="separator:ab50d4296586b0c8cb7c43e2b9596a2ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae449cacff062d66997667242aad28662" id="r_ae449cacff062d66997667242aad28662"><td class="memItemLeft" align="right" valign="top"><a id="ae449cacff062d66997667242aad28662" name="ae449cacff062d66997667242aad28662"></a>
+std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_sizing_mesh.html">SizingMesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_mesh</b></td></tr>
+<tr class="memdesc:ae449cacff062d66997667242aad28662"><td class="mdescLeft">&#160;</td><td class="mdescRight">See set_sizing_mesh; none by default. <br /></td></tr>
+<tr class="separator:ae449cacff062d66997667242aad28662"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab02bb73693913d9529af6f1c21ac43fb" id="r_ab02bb73693913d9529af6f1c21ac43fb"><td class="memItemLeft" align="right" valign="top"><a id="ab02bb73693913d9529af6f1c21ac43fb" name="ab02bb73693913d9529af6f1c21ac43fb"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_regions</b> = false</td></tr>
 <tr class="memdesc:ab02bb73693913d9529af6f1c21ac43fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">The faces have their regions (see set_feature_edges). <br /></td></tr>
@@ -903,7 +922,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 </div><div class="memdoc">
 
 <p>Repairs the triangles whose smallest angle is under <code>degrees</code>, worst first. </p>
-<p>Each gets the first of these that is allowed: a collapse of its shortest edge, either way; a swap of one of its edges, longest first; a move of one of its vertices, or else of one of the triangles around it &ndash; one off the curves within its tangent plane, one inside a curve along it &ndash; to where the smallest angle of its star is largest. Allowed means the curve rules, the envelopes and the fixed vertices hold, as everywhere; the operation folds nothing by the rule of the fold check (see set_check_inversions; on or off, the repairs keep it); a collapse leaves no edge longer than 4/3 of the target of the last collapse_remeshing(), with <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#afac55e5188879b32fdfc96531af0cd84" title="Refuse a collapse that leaves an edge longer than 4/3 of the target length – the split threshold – as...">set_limit_collapse_length()</a> or without &ndash; the repairs mend angles and are not to coarsen the mesh, and those after the last iteration have no split after them; and it raises the smallest angle of the triangles it leaves over that of the triangles around the one repaired (of its star, for a move). Where what it replaces folds already, the fold check, which judges against those triangles, can count a repair of the fold as one more: there an operation that leaves fewer triangles facing against the input next to them &ndash; the input triangles within half their size plus the envelope, of the same face fields where <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a8bd0df60c59f4a86dae4f3956d0527bf" title="Per-face values the remeshing carries: per-face labels, say, whose boundaries are feature edges....">set_face_fields()</a> gave some &ndash; than there were is allowed too, even if no angle improves. Only there: where two sheets of the input are closer than that, a thin wall, the far one cancels the near one, and the input's orientation is noise. Rounds until one repairs nothing, 10 at most. Serial; returns the number of repairs. Throws unless <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a11ccee3efc6cc7d6b32d79ce807a0d43" title="Repair, at the end of every iteration, the triangles whose smallest angle is under degrees; 0,...">set_cleanup_angle()</a> came before <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>. </p>
+<p>Each gets the first of these that is allowed: a collapse of its shortest edge, either way; a swap of one of its edges, longest first; a move of one of its vertices, or else of one of the triangles around it &ndash; one off the curves within its tangent plane, one inside a curve along it &ndash; to where the smallest angle of its star is largest. Allowed means the curve rules, the envelopes and the fixed vertices hold, as everywhere; the operation folds nothing by the rule of the fold check (see set_check_inversions; on or off, the repairs keep it); a collapse leaves no edge longer than 4/3 of the target of the last collapse_remeshing() (the edge's own with a sizing mesh, see set_sizing_mesh), with <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#afac55e5188879b32fdfc96531af0cd84" title="Refuse a collapse that leaves an edge longer than 4/3 of the target length – the split threshold – as...">set_limit_collapse_length()</a> or without &ndash; the repairs mend angles and are not to coarsen the mesh, and those after the last iteration have no split after them; and it raises the smallest angle of the triangles it leaves over that of the triangles around the one repaired (of its star, for a move). Where what it replaces folds already, the fold check, which judges against those triangles, can count a repair of the fold as one more: there an operation that leaves fewer triangles facing against the input next to them &ndash; the input triangles within half their size plus the envelope, of the same face fields where <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a8bd0df60c59f4a86dae4f3956d0527bf" title="Per-face values the remeshing carries: per-face labels, say, whose boundaries are feature edges....">set_face_fields()</a> gave some &ndash; than there were is allowed too, even if no angle improves. Only there: where two sheets of the input are closer than that, a thin wall, the far one cancels the near one, and the input's orientation is noise. Rounds until one repairs nothing, 10 at most. Serial; returns the number of repairs. Throws unless <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a11ccee3efc6cc7d6b32d79ce807a0d43" title="Repair, at the end of every iteration, the triangles whose smallest angle is under degrees; 0,...">set_cleanup_angle()</a> came before <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a3a21b7cd885a6830feaa1e6e0ef2073c">create_mesh()</a>. </p>
 
 </div>
 </div>
@@ -1097,6 +1116,49 @@ Feature edges set before it give the faces their regions here (see set_feature_e
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="aa9a8b48eb04b360805fddf605750ee2d" name="aa9a8b48eb04b360805fddf605750ee2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9a8b48eb04b360805fddf605750ee2d">&#9670;&#160;</a></span>edge_target()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::isotropic_remeshing::IsotropicRemeshing::edge_target </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>L</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>With a sizing mesh, the target of the edge (a, b): the mean of its ends' targets, <code>L</code> for an end the sizing mesh gives none. </p>
 
 </div>
 </div>
@@ -1782,6 +1844,21 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 <p>While <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ac77c3f01eccbef22ec3de1d78a2f10ae" title="Repairs the triangles whose smallest angle is under degrees, worst first.">cleanup_triangles()</a> runs: the smallest angle around the triangle it repairs, which a collapse or swap has to beat. 0 otherwise. </p>
+
+</div>
+</div>
+<a id="a61cc5411191beb5cc157e6b022ae1fbe" name="a61cc5411191beb5cc157e6b022ae1fbe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61cc5411191beb5cc157e6b022ae1fbe">&#9670;&#160;</a></span>target_attrs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt;double&gt; wmtk::components::isotropic_remeshing::IsotropicRemeshing::target_attrs</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The target edge length at each vertex, the sizing mesh's where the vertex is (-1 where it gives none); read and written only with one (see set_sizing_mesh). </p>
 
 </div>
 </div>

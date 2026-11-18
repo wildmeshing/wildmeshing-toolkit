@@ -38,6 +38,11 @@
       "description": "Envelope thickness relative to the bounding box diagonal. Negative (the default): no envelope.",
       "default": -1
     },
+    "eps": {
+      "type": "number",
+      "description": "Absolute envelope thickness. When positive it is used instead of eps_rel, and there is an envelope whatever eps_rel is; otherwise (the default, -1) eps_rel sets it. The diagonal eps_rel is relative to is the input's bounding box diagonal after reading, without scaling: the box of the vertices its triangles use, after the remove_duplicate_eps weld. So eps_rel times that diagonal, given as eps, is the same run. In memory, the report's eps is the thickness used (0: no envelope).",
+      "default": -1
+    },
     "boundary_eps_rel": {
       "type": "number",
       "description": "Thickness of a tube around the open boundary of the input, relative to the bounding box diagonal. When positive, the boundary is not frozen: collapses may move it, as long as every boundary edge that descends from the input's boundary stays within this distance of the input's boundary edges, and a collapse between a boundary vertex and an interior one keeps the boundary vertex where it is. Holes and slits narrower than the tube can close when use_link_condition is false. Boundary that a collapse opens away from the input's is not judged. Negative (the default): every vertex of the open boundary is frozen.",

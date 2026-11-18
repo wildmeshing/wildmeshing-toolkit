@@ -213,6 +213,10 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>interleaved_smoothing_
 <tr class="separator:a298726705134eb1bfe682c936a8f471d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e0ac5d288fadfbf1e435f785e201df7" id="r_a8e0ac5d288fadfbf1e435f785e201df7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a8e0ac5d288fadfbf1e435f785e201df7">coarsen_unbounded</a> = true</td></tr>
 <tr class="separator:a8e0ac5d288fadfbf1e435f785e201df7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fed017957cbcd0130c63e77fd1d7465" id="r_a6fed017957cbcd0130c63e77fd1d7465"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a6fed017957cbcd0130c63e77fd1d7465">limit_collapse_length</a> = false</td></tr>
+<tr class="separator:a6fed017957cbcd0130c63e77fd1d7465"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8904f63ff809ca92d039e05dcd3dfd7c" id="r_a8904f63ff809ca92d039e05dcd3dfd7c"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a8904f63ff809ca92d039e05dcd3dfd7c">sizing_mesh_long_edge_tolerance</a> = 0.01</td></tr>
+<tr class="separator:a8904f63ff809ca92d039e05dcd3dfd7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bcdf5415c191e4379b7621b5b25124c" id="r_a9bcdf5415c191e4379b7621b5b25124c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a9bcdf5415c191e4379b7621b5b25124c">coarsen_local_smoothing_passes</a> = 0</td></tr>
 <tr class="separator:a9bcdf5415c191e4379b7621b5b25124c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:addf76dc095dfe988a13ed2f8a36d8dde" id="r_addf76dc095dfe988a13ed2f8a36d8dde"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#addf76dc095dfe988a13ed2f8a36d8dde">coarsen_smooth_ring</a> = 1</td></tr>
@@ -482,6 +486,22 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
+<a id="a6fed017957cbcd0130c63e77fd1d7465" name="a6fed017957cbcd0130c63e77fd1d7465"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fed017957cbcd0130c63e77fd1d7465">&#9670;&#160;</a></span>limit_collapse_length</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::OptimizerParameters::limit_collapse_length = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Refuse a collapse that leaves an edge the split pass would cut: one longer than 4/3 of the target length, scaled by the sizing at its ends &ndash; Botsch and Kobbelt's isotropic remeshing, and isotropic_remeshing's option of the same name. Not to be confused with collapse_all_edges()' <code>is_limit_length</code>, which decides which edges are offered for collapse (those under 0.8 of the target); this one judges the edges a collapse leaves.</p>
+<p>Without it a collapse is judged by the edge it removes alone, so two collinear edges of a curve merge into one up to 0.8 + 4/3 of the target; and since the optimization ends on collapses (the last iteration's, then the bare pass after the loop), nothing cuts them again. In coarsen_mesh() the target is the one asked for (the sizing mesh, else <code>l</code>), not the sizing scalar, which that pass exists to undo. Off by default. </p>
+
+</div>
+</div>
 <a id="abe56a64eb3016c5b6eab6d3d9f5c2f99" name="abe56a64eb3016c5b6eab6d3d9f5c2f99"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abe56a64eb3016c5b6eab6d3d9f5c2f99">&#9670;&#160;</a></span>per_input_envelopes</h2>
 
@@ -494,6 +514,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>per_input_envelopes (default true): with two or more inputs, each is held to its own &ndash; one surface (2D: curve) envelope per input, one order-2 and one feature tube per input, and the input simplification's envelope per input likewise &ndash; rather than one shared envelope of each kind for all inputs. false shares them: an input may then end up on another within eps, for speed where inputs come within eps of each other (the simplification measured 3% to 20% faster shared, 2026-11). Anchors are per point either way. An input is an input file in tetwild and triwild, a label in simwild. </p>
+
+</div>
+</div>
+<a id="a8904f63ff809ca92d039e05dcd3dfd7c" name="a8904f63ff809ca92d039e05dcd3dfd7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8904f63ff809ca92d039e05dcd3dfd7c">&#9670;&#160;</a></span>sizing_mesh_long_edge_tolerance</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::OptimizerParameters::sizing_mesh_long_edge_tolerance = 0.01</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>With a sizing mesh, mesh_improvement() does not stop on reaching the energy target while more than this share of the edges is longer than 4/3 of its target (an edge the split pass would cut), as long as the share keeps dropping by a tenth from one iteration to the next: a weak enforcement of the field, which the energy target alone reaches after one iteration. Without a sizing mesh, nothing changes. </p>
 
 </div>
 </div>

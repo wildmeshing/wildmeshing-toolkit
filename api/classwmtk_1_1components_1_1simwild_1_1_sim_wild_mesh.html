@@ -235,6 +235,9 @@ CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>string_set_to_cell
 <tr class="memitem:a6b3f6bd2fd3ef88cdbbaa7dce00e4674" id="r_a6b3f6bd2fd3ef88cdbbaa7dce00e4674"><td class="memItemLeft" align="right" valign="top"><a id="a6b3f6bd2fd3ef88cdbbaa7dce00e4674" name="a6b3f6bd2fd3ef88cdbbaa7dce00e4674"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_field</b> (const nlohmann::json &amp;sizing_field_json)</td></tr>
 <tr class="separator:a6b3f6bd2fd3ef88cdbbaa7dce00e4674"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe463f2506c9da496d3ddb96260d2edd" id="r_abe463f2506c9da496d3ddb96260d2edd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#abe463f2506c9da496d3ddb96260d2edd">apply_sizing_mesh</a> (bool overwrite) override</td></tr>
+<tr class="memdesc:abe463f2506c9da496d3ddb96260d2edd"><td class="mdescLeft">&#160;</td><td class="mdescRight">The sizing mesh with the regions of set_sizing_field(), which must run first. At the start (<code>overwrite</code>) a vertex the sizing mesh covers takes the smaller of its length and the regions' of its tets: set_sizing_field() capped a vertex of a tet in no region at the global length, and there the field's length takes that place, also when longer. A vertex it does not cover keeps what set_sizing_field() gave it. After every pass the base's cap.  <br /></td></tr>
+<tr class="separator:abe463f2506c9da496d3ddb96260d2edd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a890844c718763eeeeb1948bf7367f1f2" id="r_a890844c718763eeeeb1948bf7367f1f2"><td class="memItemLeft" align="right" valign="top"><a id="a890844c718763eeeeb1948bf7367f1f2" name="a890844c718763eeeeb1948bf7367f1f2"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_quality_field</b> (const nlohmann::json &amp;quality_field_json)</td></tr>
 <tr class="separator:a890844c718763eeeeb1948bf7367f1f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -466,6 +469,24 @@ std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bo
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update_attributes_and_history</b> ()</td></tr>
 <tr class="memdesc:a9fad0b614131d02f5f23ff3c0f666349 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a37d8e2f8dc1fa0e283ed3a0378ca660f" title="Update the attributes of the mesh after an iteration of operations.">update_attributes()</a>, then the change it made to the tracked surface, if recording one. <br /></td></tr>
 <tr class="separator:a9fad0b614131d02f5f23ff3c0f666349 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24e4353fcb1c78082117e29b0b2847cd inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a24e4353fcb1c78082117e29b0b2847cd"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a24e4353fcb1c78082117e29b0b2847cd">sizing_mesh_length</a> (const Vector3d &amp;p) const</td></tr>
+<tr class="separator:a24e4353fcb1c78082117e29b0b2847cd inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad89d6edd64eeb54059d5b04e3c5b6772 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ad89d6edd64eeb54059d5b04e3c5b6772"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_mesh</b> (std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_sizing_mesh.html">SizingMesh</a> &gt; sizing)</td></tr>
+<tr class="memdesc:ad89d6edd64eeb54059d5b04e3c5b6772 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Takes <code>sizing</code> (a Volume <a class="el" href="classwmtk_1_1_sizing_mesh.html" title="A target edge length that varies over space: the sizing_mesh option of tetwild, triwild,...">SizingMesh</a>) and sets the sizing scalar of the vertices it covers from it: apply_sizing_mesh(true). Before mesh_improvement(). <br /></td></tr>
+<tr class="separator:ad89d6edd64eeb54059d5b04e3c5b6772 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dd602d5abd6b8117cffc6e4d33d8870 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a5dd602d5abd6b8117cffc6e4d33d8870"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5dd602d5abd6b8117cffc6e4d33d8870">coarsen_target_length</a> (size_t v) const</td></tr>
+<tr class="separator:a5dd602d5abd6b8117cffc6e4d33d8870 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea96919793a6ff69d3ac70b84fc9c85f inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aea96919793a6ff69d3ac70b84fc9c85f"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_leaves_long_edge</b> (size_t v1_id, size_t v2_id) const</td></tr>
+<tr class="memdesc:aea96919793a6ff69d3ac70b84fc9c85f inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a6fed017957cbcd0130c63e77fd1d7465">OptimizerParameters::limit_collapse_length</a>: whether collapsing v1 into v2 leaves an edge longer than 4/3 of its target, the mean of its ends' (the sizing at v2 being the smaller of the two, as <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1cc29220497521cb96acffbc4acc0b71" title="User specified modifications and desideratas for after an edge collapse.">collapse_edge_after()</a> sets it). In the coarsening pass the target is <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5dd602d5abd6b8117cffc6e4d33d8870">coarsen_target_length()</a>. <br /></td></tr>
+<tr class="separator:aea96919793a6ff69d3ac70b84fc9c85f inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bda4ced771fc73a11b87df89d3d3ed0 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a9bda4ced771fc73a11b87df89d3d3ed0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9bda4ced771fc73a11b87df89d3d3ed0">long_edge_fraction</a> () const</td></tr>
+<tr class="separator:a9bda4ced771fc73a11b87df89d3d3ed0 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a85a5c95d082084d1a6cc2ea9639a83 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a8a85a5c95d082084d1a6cc2ea9639a83"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>sizing_mesh_allows_stop</b> ()</td></tr>
+<tr class="memdesc:a8a85a5c95d082084d1a6cc2ea9639a83 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the sizing mesh lets mesh_improvement() stop: without one, always; with one, when the share of long edges (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9bda4ced771fc73a11b87df89d3d3ed0">long_edge_fraction()</a>) is within <a class="el" href="structwmtk_1_1_optimizer_parameters.html#a8904f63ff809ca92d039e05dcd3dfd7c">OptimizerParameters::sizing_mesh_long_edge_tolerance</a>, or no longer drops by a tenth from the previous call. Called once per iteration that reached the energy target. <br /></td></tr>
+<tr class="separator:a8a85a5c95d082084d1a6cc2ea9639a83 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3732626059104d7d0fcf4a28579e667e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a3732626059104d7d0fcf4a28579e667e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3732626059104d7d0fcf4a28579e667e">record_surface_history</a> (const std::string &amp;metadata)</td></tr>
 <tr class="separator:a3732626059104d7d0fcf4a28579e667e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a744a05776628775a577b24c200ecc3ff inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a744a05776628775a577b24c200ecc3ff"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744d9f1660ae">history::SurfaceHistory</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a744a05776628775a577b24c200ecc3ff">finish_surface_history</a> (const <a class="el" href="namespacewmtk_1_1history.html#a8071f7c0f7ae262d957a744d9f1660ae">history::SurfaceHistory</a> *input=nullptr)</td></tr>
@@ -1294,6 +1315,13 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_order_waits
 <tr class="memitem:a5f8953645ed37ab2aaebeefa854872f1 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a5f8953645ed37ab2aaebeefa854872f1"><td class="memItemLeft" align="right" valign="top">
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_order_wait_defects</b> = 0</td></tr>
 <tr class="separator:a5f8953645ed37ab2aaebeefa854872f1 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1d1b76d15675706970ffdf5a2129d63 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_ae1d1b76d15675706970ffdf5a2129d63"><td class="memItemLeft" align="right" valign="top">
+std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_sizing_mesh.html">SizingMesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_mesh</b></td></tr>
+<tr class="memdesc:ae1d1b76d15675706970ffdf5a2129d63 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">A target edge length that varies over space (a component's sizing_mesh), or none. Set it with <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad89d6edd64eeb54059d5b04e3c5b6772" title="Takes sizing (a Volume SizingMesh) and sets the sizing scalar of the vertices it covers from it: appl...">set_sizing_mesh()</a>. Without one, nothing below runs. <br /></td></tr>
+<tr class="separator:ae1d1b76d15675706970ffdf5a2129d63 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa05f23aa95f55640f3e12a364759c351 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_aa05f23aa95f55640f3e12a364759c351"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_prev_long_edge_fraction</b> = std::numeric_limits&lt;double&gt;::infinity()</td></tr>
+<tr class="separator:aa05f23aa95f55640f3e12a364759c351 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a783e31d704fd488f468bfc6a84aee480 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a783e31d704fd488f468bfc6a84aee480"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#abf2b7b5ea7f365c5be01f4e5b762f47d">PositionKey</a>, std::vector&lt; uint32_t &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a783e31d704fd488f468bfc6a84aee480">m_insertion_sources</a></td></tr>
 <tr class="separator:a783e31d704fd488f468bfc6a84aee480 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17d50bff09217ebbd9eca8bd8f76cf73 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a17d50bff09217ebbd9eca8bd8f76cf73"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_volume_recorder.html">history::VolumeRecorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a17d50bff09217ebbd9eca8bd8f76cf73">m_recorded_volume</a></td></tr>
@@ -1711,25 +1739,26 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES
 , <br />
 &#160;&#160;<b>order2_leaves_tube</b>
 , <b>feature_point</b>
+, <b>limit_length</b>
 , <b>app_both_surfaces</b>
-, <b>app_front_unlimited</b>
 , <br />
-&#160;&#160;<b>app_leaves_input</b>
+&#160;&#160;<b>app_front_unlimited</b>
+, <b>app_leaves_input</b>
 , <b>app_leaves_offset</b>
 , <b>app_leaves_region</b>
-, <b>app_order2</b>
 , <br />
-&#160;&#160;<b>app_substructure_link</b>
+&#160;&#160;<b>app_order2</b>
+, <b>app_substructure_link</b>
 , <b>app_ops_guard</b>
 , <b>after_base</b>
-, <b>after_connectivity</b>
 , <br />
-&#160;&#160;<b>after_envelope</b>
+&#160;&#160;<b>after_connectivity</b>
+, <b>after_envelope</b>
 , <b>after_face_attribute</b>
 , <b>after_order2_chord</b>
-, <b>after_feature_edge</b>
 , <br />
-&#160;&#160;<b>after_coarsen_region</b>
+&#160;&#160;<b>after_feature_edge</b>
+, <b>after_coarsen_region</b>
 , <b>COUNT</b>
 <br />
  }</td></tr>
@@ -1856,6 +1885,36 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="abe463f2506c9da496d3ddb96260d2edd" name="abe463f2506c9da496d3ddb96260d2edd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe463f2506c9da496d3ddb96260d2edd">&#9670;&#160;</a></span>apply_sizing_mesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::SimWildMesh::apply_sizing_mesh </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>overwrite</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The sizing mesh with the regions of set_sizing_field(), which must run first. At the start (<code>overwrite</code>) a vertex the sizing mesh covers takes the smaller of its length and the regions' of its tets: set_sizing_field() capped a vertex of a tet in no region at the global length, and there the field's length takes that place, also when longer. A vertex it does not cover keeps what set_sizing_field() gave it. After every pass the base's cap. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aec6230c7c61815981a427cc74b91c967">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>

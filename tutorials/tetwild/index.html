@@ -1376,6 +1376,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#edge-length-that-varies-sizing_mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge length that varies: sizing_mesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-bound-on-the-edge-length-limit_collapse_length" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A bound on the edge length: limit_collapse_length
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-quality-target-stop_energy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1770,6 +1792,8 @@
       
         
       
+        
+      
     
     
     
@@ -1842,6 +1866,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -3511,6 +3563,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#edge-length-that-varies-sizing_mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge length that varies: sizing_mesh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-bound-on-the-edge-length-limit_collapse_length" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A bound on the edge length: limit_collapse_length
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-quality-target-stop_energy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3861,6 +3935,65 @@ away from the surface; near the surface, the surface's own detail and the envelo
 <p>Halving the length multiplies the count by about five; doubling it removes only a third to a half
 of the tets, because most of the snowman's tets are near its surface. A finer mesh takes proportionally longer:
 the run at 0.025 took about five times as long as one at the default.</p>
+<p><a href="../../reference/tetwild/#length"><code>length</code></a> and <a href="../../reference/tetwild/#eps"><code>eps</code></a> give the edge
+length and <span class="arithmatex">\(\varepsilon\)</span> in the input's units instead, as simwild's and triwild's do; a positive
+value wins over the relative one.</p>
+<h3 id="edge-length-that-varies-sizing_mesh">Edge length that varies: <code>sizing_mesh</code><a class="headerlink" href="#edge-length-that-varies-sizing_mesh" title="Permanent link">&para;</a></h3>
+<p>Every vertex carries a sizing, the factor of the target length that the
+<a href="../../reference/tetwild/#stuck_refine_factor">stuck refinement</a> lowers where the quality is stuck.
+<a href="../../reference/tetwild/#sizing_mesh"><code>sizing_mesh</code></a> sets it from a target length that varies over
+space: a tet mesh whose vertices carry the length in a field named <code>target_length</code>, interpolated
+linearly inside its tets. On the memory route it names a mesh of the call; on the file route it is a
+mesh file. It sets the sizing when the optimization starts and caps it after every pass, so the
+vertices a pass makes follow it and the refinement is kept; outside its tets the global length
+applies. The tets fill the input's bounding box grown by 1/15 of its diagonal on each side, so a
+sizing mesh meant to cover them all must reach that far.
+On a unit cube with <code>length</code> 0.2 and a field of 0.06 up to its side x = 0, growing to 0.2 at
+x = 0.3, run sequentially with <code>stop_energy</code> 10 and <code>max_iterations</code> 1, the tracked edges on that
+side are 0.046 long on average. Those on the side x = 1 keep the 0.093 of the background mesh: the
+field asks for 0.2 there, but the collapses that would get there are refused on quality.</p>
+<p>The field is a largest edge length: with it, <code>limit_collapse_length</code> is on unless set to
+false, and the optimization goes on past <code>stop_energy</code> while more than 1% of the edges are
+longer than 4/3 of their target. The <a href="../workflows/sizing-mesh/">sizing mesh workflow</a> builds
+one in Python and on files, and shows it in TriWild, TetWild and isotropic remeshing.</p>
+<h3 id="a-bound-on-the-edge-length-limit_collapse_length">A bound on the edge length: <code>limit_collapse_length</code><a class="headerlink" href="#a-bound-on-the-edge-length-limit_collapse_length" title="Permanent link">&para;</a></h3>
+<p>A collapse is judged by the edge it removes, shorter than 4/5 of the target, and not by those it
+leaves: the edges of the vertex it removes move to the one it keeps, up to 0.8 + 4/3 of the target,
+and the optimization ends on collapses, so no split cuts them again.
+<a href="../../reference/tetwild/#limit_collapse_length"><code>limit_collapse_length</code></a> refuses a collapse that
+leaves an edge longer than 4/3 of the target, the length above which the split cuts one. On a unit
+cube with <code>length</code> 0.12, run sequentially with <code>stop_energy</code> 10 and <code>max_iterations</code> 1:</p>
+<table>
+<thead>
+<tr>
+<th><code>limit_collapse_length</code></th>
+<th>tets (the whole box)</th>
+<th>longest tracked edge</th>
+<th>max energy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>off (default)</td>
+<td>18,692</td>
+<td>1.55 <span class="arithmatex">\(l\)</span></td>
+<td>6.44</td>
+</tr>
+<tr>
+<td>on</td>
+<td>21,791</td>
+<td>1.31 <span class="arithmatex">\(l\)</span></td>
+<td>6.50</td>
+</tr>
+</tbody>
+</table>
+<p>Smoothing can still stretch an edge a little past 4/3, so to keep the edges under a bound, ask for
+about 3/4 of it, for a denser mesh. With a <code>sizing_mesh</code>, the bounded
+<a href="../../reference/tetwild/#coarsen_pass">coarsening pass</a>
+(<a href="../../reference/tetwild/#coarsen_unbounded"><code>coarsen_unbounded</code></a> off) stops at 0.8 of the field's
+length rather than of the global one. Neither option works with
+<a href="../../reference/tetwild/#use_legacy_code"><code>use_legacy_code</code></a>, whose operations would ignore it: the
+run is refused.</p>
 <h3 id="the-quality-target-stop_energy">The quality target: <code>stop_energy</code><a class="headerlink" href="#the-quality-target-stop_energy" title="Permanent link">&para;</a></h3>
 <p>The shape of a tet is measured by its AMIPS energy: 3 for a regular tetrahedron, growing without
 bound as the tet flattens (see <a href="../../concepts/quality/">Quality</a>). The optimization stops when the
@@ -4109,7 +4242,7 @@ file, and the history's bytes under <code>history</code> when <code>history_outp
 <li><strong>Everything is relative to the bounding box.</strong> <code>eps_rel</code> and <code>length_rel</code> multiply the
   diagonal of the box around all the inputs, feature curves and points included. A stray triangle
   or point far from the rest grows the box, and with it <span class="arithmatex">\(\varepsilon\)</span> and the edge length.
-  Remove it, or compensate with smaller values.</li>
+  Remove it, compensate with smaller values, or give <code>eps</code> and <code>length</code> in the input's units.</li>
 <li><strong><code>preserve_topology</code> on a dirty input</strong> keeps every tiny handle, gap and sliver of the input,
   and the optimization may not converge around them. Repair the input first (see
   <a href="../manifold_extraction/">manifold extraction</a>).</li>

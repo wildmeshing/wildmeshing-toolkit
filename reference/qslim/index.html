@@ -1535,6 +1535,8 @@
       
         
       
+        
+      
     
     
     
@@ -1604,6 +1606,34 @@
     
   
     TetWild with features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/workflows/sizing-mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Edge length that varies: a sizing mesh
   
 
     
@@ -2099,6 +2129,17 @@
   
     <nav class="md-nav" aria-label="Other options">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        eps
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#history_output" class="md-nav__link">
@@ -3643,6 +3684,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#eps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        eps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#history_output" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3789,6 +3841,9 @@
 <p><strong>bool</strong> · default <code>false</code></p>
 <p>Use sample envelope instead of exact one. The sampled envelope is the opt-in for pathological inputs, where one triangle covers millions of tiny ones (Thingi10K has such inputs): there it is much faster for surface simplification.</p>
 <h2 id="other-options">Other options<a class="headerlink" href="#other-options" title="Permanent link">&para;</a></h2>
+<h3 id="eps"><code>eps</code><a class="headerlink" href="#eps" title="Permanent link">&para;</a></h3>
+<p><strong>float</strong> · default <code>-1</code></p>
+<p>Absolute envelope thickness. When positive it is used instead of eps_rel, and there is an envelope whatever eps_rel is; otherwise (the default, -1) eps_rel sets it. The diagonal eps_rel is relative to is the input's bounding box diagonal after reading, without scaling: the box of the vertices its triangles use, after merging the vertices closer than 1e-5 of the diagonal. So eps_rel times that diagonal, given as eps, is the same run. The report's eps is the thickness used (0: no envelope).</p>
 <h3 id="history_output"><code>history_output</code><a class="headerlink" href="#history_output" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>
 <p>Record every committed operation and save the history here (see wmtk/history): the input surface and its edits, from which the map between input and output is rebuilt (the tracking application). On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording.</p>

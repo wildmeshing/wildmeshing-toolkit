@@ -177,6 +177,8 @@ CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>string_set_to_cell
 <tr class="memitem:a07f906eddb22a866866c3169954a9ec3" id="r_a07f906eddb22a866866c3169954a9ec3"><td class="memItemLeft" align="right" valign="top"><a id="a07f906eddb22a866866c3169954a9ec3" name="a07f906eddb22a866866c3169954a9ec3"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_field</b> (const nlohmann::json &amp;sizing_field_json)</td></tr>
 <tr class="separator:a07f906eddb22a866866c3169954a9ec3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84cb617f69143e6c6aed8eba9efeabe7" id="r_a84cb617f69143e6c6aed8eba9efeabe7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a84cb617f69143e6c6aed8eba9efeabe7">apply_sizing_mesh</a> (bool overwrite) override</td></tr>
+<tr class="separator:a84cb617f69143e6c6aed8eba9efeabe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba0668aab8bea22c3160bc72a8eaca91" id="r_aba0668aab8bea22c3160bc72a8eaca91"><td class="memItemLeft" align="right" valign="top"><a id="aba0668aab8bea22c3160bc72a8eaca91" name="aba0668aab8bea22c3160bc72a8eaca91"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_quality_field</b> (const nlohmann::json &amp;quality_field_json)</td></tr>
 <tr class="separator:aba0668aab8bea22c3160bc72a8eaca91"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -319,6 +321,24 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (co
 <tr class="memitem:a92a23b15da568030e09af5018526273c inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a92a23b15da568030e09af5018526273c"><td class="memItemLeft" align="right" valign="top">
 std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_max_avg_energy</b> ()</td></tr>
 <tr class="separator:a92a23b15da568030e09af5018526273c inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae43ff38b008e39a71bf2a7825e8eeea9 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ae43ff38b008e39a71bf2a7825e8eeea9"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ae43ff38b008e39a71bf2a7825e8eeea9">sizing_mesh_length</a> (const Vector2d &amp;p) const</td></tr>
+<tr class="separator:ae43ff38b008e39a71bf2a7825e8eeea9 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a112bd4a6cdb8b971374675e3bf971006 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a112bd4a6cdb8b971374675e3bf971006"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_mesh</b> (std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_sizing_mesh.html">SizingMesh</a> &gt; sizing)</td></tr>
+<tr class="memdesc:a112bd4a6cdb8b971374675e3bf971006 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Takes <code>sizing</code> (a Planar <a class="el" href="classwmtk_1_1_sizing_mesh.html" title="A target edge length that varies over space: the sizing_mesh option of tetwild, triwild,...">SizingMesh</a>) and sets the sizing scalar of the vertices it covers from it: apply_sizing_mesh(true). Before mesh_improvement(). <br /></td></tr>
+<tr class="separator:a112bd4a6cdb8b971374675e3bf971006 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e911c3cfea3e7e51785e6b6cbe8dc8a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a7e911c3cfea3e7e51785e6b6cbe8dc8a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7e911c3cfea3e7e51785e6b6cbe8dc8a">coarsen_target_length</a> (size_t v) const</td></tr>
+<tr class="separator:a7e911c3cfea3e7e51785e6b6cbe8dc8a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a060ea33008f929d31d229ea739ebb9df inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a060ea33008f929d31d229ea739ebb9df"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_leaves_long_edge</b> (size_t v1_id, size_t v2_id) const</td></tr>
+<tr class="memdesc:a060ea33008f929d31d229ea739ebb9df inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a6fed017957cbcd0130c63e77fd1d7465">OptimizerParameters::limit_collapse_length</a>: whether collapsing v1 into v2 leaves an edge longer than 4/3 of its target, the mean of its ends' (the sizing at v2 being the smaller of the two, as <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ab4262b83aa86c7b43a7206f5b5684b07" title="User specified modifications and desideratas after an edge collapse.">collapse_edge_after()</a> sets it). In the coarsening pass the target is <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7e911c3cfea3e7e51785e6b6cbe8dc8a">coarsen_target_length()</a>. <br /></td></tr>
+<tr class="separator:a060ea33008f929d31d229ea739ebb9df inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee5b3bd9acf376ccac2442d200e9eef0 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_aee5b3bd9acf376ccac2442d200e9eef0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aee5b3bd9acf376ccac2442d200e9eef0">long_edge_fraction</a> () const</td></tr>
+<tr class="separator:aee5b3bd9acf376ccac2442d200e9eef0 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4240df0cba318d0d51e2f20abff5c5c7 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a4240df0cba318d0d51e2f20abff5c5c7"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>sizing_mesh_allows_stop</b> ()</td></tr>
+<tr class="memdesc:a4240df0cba318d0d51e2f20abff5c5c7 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the sizing mesh lets mesh_improvement() stop: without one, always; with one, when the share of long edges (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aee5b3bd9acf376ccac2442d200e9eef0">long_edge_fraction()</a>) is within <a class="el" href="structwmtk_1_1_optimizer_parameters.html#a8904f63ff809ca92d039e05dcd3dfd7c">OptimizerParameters::sizing_mesh_long_edge_tolerance</a>, or no longer drops by a tenth from the previous call. Called once per iteration that reached the energy target. <br /></td></tr>
+<tr class="separator:a4240df0cba318d0d51e2f20abff5c5c7 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe0116ad86674bc9b8c3e24f2ee416fc inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_abe0116ad86674bc9b8c3e24f2ee416fc"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_improvement</b> (int max_its=80)</td></tr>
 <tr class="separator:abe0116ad86674bc9b8c3e24f2ee416fc inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -912,6 +932,13 @@ std::map&lt; int64_t, std::string &gt;&#160;</td><td class="memItemRight" valign
 <tr class="memitem:aa7476624369fc5dc1c21ec0e657362a1 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aa7476624369fc5dc1c21ec0e657362a1"><td class="memItemLeft" align="right" valign="top">
 std::map&lt; std::string, int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tag_name_to_id</b></td></tr>
 <tr class="separator:aa7476624369fc5dc1c21ec0e657362a1 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a0058550dabe1c3b523068dd5918b73 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a1a0058550dabe1c3b523068dd5918b73"><td class="memItemLeft" align="right" valign="top">
+std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_sizing_mesh.html">SizingMesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_mesh</b></td></tr>
+<tr class="memdesc:a1a0058550dabe1c3b523068dd5918b73 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">A target edge length that varies over the plane (a component's sizing_mesh), or none. Set it with <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a112bd4a6cdb8b971374675e3bf971006" title="Takes sizing (a Planar SizingMesh) and sets the sizing scalar of the vertices it covers from it: appl...">set_sizing_mesh()</a>. Without one, nothing below runs. <br /></td></tr>
+<tr class="separator:a1a0058550dabe1c3b523068dd5918b73 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7a5b2ba0ca17b3f4bf08a83b3af7291 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_ac7a5b2ba0ca17b3f4bf08a83b3af7291"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_prev_long_edge_fraction</b> = std::numeric_limits&lt;double&gt;::infinity()</td></tr>
+<tr class="separator:ac7a5b2ba0ca17b3f4bf08a83b3af7291 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd8584b901f6cbf3af6339c9b1887539 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_abd8584b901f6cbf3af6339c9b1887539"><td class="memItemLeft" align="right" valign="top">
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_iterations_used</b> = 0</td></tr>
 <tr class="memdesc:abd8584b901f6cbf3af6339c9b1887539 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared TriWild/SimWild outer optimization schedule. <br /></td></tr>
@@ -1154,6 +1181,35 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a84cb617f69143e6c6aed8eba9efeabe7" name="a84cb617f69143e6c6aed8eba9efeabe7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84cb617f69143e6c6aed8eba9efeabe7">&#9670;&#160;</a></span>apply_sizing_mesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::tri::SimWildMeshTri::apply_sizing_mesh </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>overwrite</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The sizing mesh with the regions of set_sizing_field(), which must run first: as <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#abe463f2506c9da496d3ddb96260d2edd" title="The sizing mesh with the regions of set_sizing_field(), which must run first. At the start (overwrite...">SimWildMesh::apply_sizing_mesh()</a>, with triangles. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#add5bdac69dc8b9eb842affae0fa80211">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>
