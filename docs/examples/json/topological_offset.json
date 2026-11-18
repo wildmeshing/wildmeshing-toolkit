@@ -3,6 +3,7 @@
   "input": "127891.msh",
   "output": "127891_offset",
   "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
+  "envelope_size_rel": 4e-4,
   "optimize_offset": false,
   "report": "127891_offset.json"
 }

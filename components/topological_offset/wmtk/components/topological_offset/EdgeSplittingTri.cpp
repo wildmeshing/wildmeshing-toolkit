@@ -8,6 +8,27 @@ namespace wmtk::components::topological_offset {
 
 bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
 {
+    // A correspondence carried from an earlier offset is the edge from its offset vertex to the
+    // input vertex it names; cutting that edge loses it, whichever step cuts (the simplicial
+    // embedding, the march). As in 3D (TopoOffsetTetMesh::split_edge_before()), whose message
+    // also says to protect the earlier band: 3D's march cuts no edge of a protected cell, 2D's
+    // still does (marching_tris(); 3D's rule dates from 2026-11-05), so here protecting does not
+    // help.
+    {
+        const size_t a = t.vid(*this);
+        const size_t b = t.switch_vertex(*this).vid(*this);
+        const auto names = [&](const size_t o, const size_t i) {
+            return m_vertex_extra[o].m_corr_carried &&
+                   m_vertex_extra[o].m_corr_input_vid == int64_t(i);
+        };
+        if (names(a, b) || names(b, a)) {
+            log_and_throw_error(
+                "the offset cuts the edge from an earlier offset's vertex to its input vertex "
+                "(corr_input_vid), vertices {} and {}",
+                a,
+                b);
+        }
+    }
     if (m_edge_split_mode == EdgeSplitMode::Optimization && edge_is_offset_surface_live(t) &&
         !dry_run()) {
         ++iter_cnt_split_offset_before;
@@ -50,11 +71,18 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         // came from a parent that was already unscoreable, or from a healthy one.
         c.parent_q_max = -1.;
         c.parent_flatness = 1.;
-        for (const size_t fid : get_incident_fids_for_edge(t)) {
+        const std::vector<size_t> parents = get_incident_fids_for_edge(t);
+        for (const size_t fid : parents) {
             const size_t apex = simplex_from_face(fid).opposite_vertex(edge).id();
             c.face_label[apex] = m_face_extra[fid].label;
             c.parent_q_max = std::max(c.parent_q_max, get_quality(fid));
             c.parent_flatness = std::min(c.parent_flatness, face_flatness(fid));
+        }
+        // EXPERIMENTAL_split_energy_gate: the parents' sum of tri_energy(), which
+        // split_edge_after() compares the children's against. "exact_swept": the AMIPS terms
+        // alone, a split leaving B and its band term unchanged (EXACT SWEPT CHANGE). As in 3D.
+        if (m_offset_params.split_energy_gate) {
+            m_split_energy_before.local() = tri_energy_sum(parents, !swept_rule());
         }
         return TriOptimizerMesh::split_edge_before(t);
     }
@@ -86,9 +114,11 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
         const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
         bool on_level = false;
         size_t steps = 0;
-        if (in1 != in2) {
-            on_level = in1 ? edge_split_sphere_trace(p1, p2, p_new, steps)
-                           : edge_split_sphere_trace(p2, p1, p_new, steps);
+        // The entry of offsets the inner end is on: its distance, its target, its mode. As in 3D.
+        const size_t k = offset_of(in1 ? cache.v1_id : cache.v2_id);
+        if (in1 != in2 && k < m_construction_traced.size() && m_construction_traced[k]) {
+            on_level = in1 ? edge_split_sphere_trace(k, p1, p2, p_new, steps)
+                           : edge_split_sphere_trace(k, p2, p1, p_new, steps);
         }
         m_marching_trace_steps += steps;
         m_marching_trace_steps_max = std::max(m_marching_trace_steps_max, steps);
@@ -152,18 +182,20 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
 }
 
 bool TopoOffsetTriMesh::edge_split_sphere_trace(
+    const size_t k,
     const Vector2d& p_in,
     const Vector2d& p_out,
     Vector2d& p_new,
     size_t& steps) const
 {
-    // Sphere tracing to D = m_construction_distance (target_distance, or the construction_mode
-    // fallback; see the marching): d is 1-Lipschitz, so from a point at distance d the level set
+    // Sphere tracing to D = m_construction_distances[k] (entry k's target_distance, or the
+    // construction_mode fallback; see the marching), on d the distance to entry k's complex
+    // (offset_distance()): d is 1-Lipschitz, so from a point at distance d the level set
     // d = D is at least D - d away in every direction, and stepping exactly that far along the
     // edge can never cross it. The step is positive while the trace has not converged
     // (D - d > tol), so t grows by more than tol each time and the loop ends within L / tol
     // steps, one way or the other. Same as 3D.
-    const double D = m_construction_distance;
+    const double D = m_construction_distances[k];
     const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
     const Vector2d dir = p_out - p_in;
     const double L = dir.norm();
@@ -173,7 +205,7 @@ bool TopoOffsetTriMesh::edge_split_sphere_trace(
     double t = 0.;
     while (true) {
         const Vector2d p = p_in + t * u;
-        const double d = m_input_complex_bvh->dist(p);
+        const double d = offset_distance(k, p);
         ++steps;
         if (std::abs(d - D) <= tol) {
             p_new = p;
@@ -195,6 +227,17 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
         // The labels of the faces this split created were carried from their parents by
         // split_after_vertex(), which the base calls above. Never re-derive them from the tags:
         // a band filled with a tag used elsewhere would relabel that other region as offset.
+        // EXPERIMENTAL_split_energy_gate: the children's tri_energy() -- every face at the new
+        // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
+        // engine rolls a refused split back. "exact_swept": the AMIPS terms alone, as before the
+        // split. As in 3D.
+        if (m_offset_params.split_energy_gate &&
+            !(tri_energy_sum(
+                  get_one_ring_fids_for_vertex(t.switch_vertex(*this).vid(*this)),
+                  !swept_rule()) < m_split_energy_before.local())) {
+            ++iter_cnt_split_energy_reject;
+            return false;
+        }
         ++iter_cnt_split;
         if (m_vertex_extra[t.switch_vertex(*this).vid(*this)].m_is_on_offset) {
             ++iter_cnt_split_offset;
