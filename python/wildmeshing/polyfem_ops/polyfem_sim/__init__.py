@@ -177,6 +177,12 @@ def parse_id_map(path: str) -> dict:
                     selections[(m.group(2), m.group(3))] = int(m.group(1))
     return {"bodies": bodies, "selections": selections}
 
+def _selection_desc(region: str, filt) -> str:
+    """A selection as the id_map writes it: region='...' [filter='...']. `filt` is None for
+    a selection without a filter (the region's whole boundary)."""
+    return f"region='{region}'" + (f" filter='{filt}'" if filt is not None else "")
+
+
 def _resolve_bc_list(bc_list: list, selection_map: dict) -> list:
     """Resolve named surface selections to polyfem ids in a list of BC items.
     Items may carry `"selection": {"region": expr, "filter": expr?}` instead
@@ -197,7 +203,7 @@ def _resolve_bc_list(bc_list: list, selection_map: dict) -> list:
                     f"'a & b' strings are no longer supported)")
             key = (sel["region"], sel.get("filter"))
             if key not in selection_map:
-                avail = [f"region='{r}'" + (f" filter='{f}'" if f else "")
+                avail = [_selection_desc(r, f)
                          for r, f in sorted(selection_map,
                                             key=lambda k: (k[0], k[1] or ""))]
                 raise ValueError(
@@ -350,8 +356,9 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
     if name_to_tag:
         print(f"  bodies: {name_to_tag}")
     if id_map["selections"]:
-        print(f"  surface selections: "
-              f"{ {' ∩ '.join(sorted(k)): v for k, v in id_map['selections'].items()} }")
+        print("  surface selections: " + ", ".join(
+            f"{sid} ← {_selection_desc(region, filt)}"
+            for (region, filt), sid in id_map["selections"].items()))
 
     sim_json = build_polyfem_sim_json(
         cfg, msh_path, out_dir, name_to_tag, id_map, mesh_dim)
