@@ -55,7 +55,7 @@ its midpoint:
 
 ```
 triwild, length_rel 0.05: 289 triangles after 1 iteration(s), 52.9% of the edges past 4/3 of the field, median 1.38 of it
-triwild, sizing mesh: 840 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.84 of it
+triwild, sizing mesh: 841 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.85 of it
 ```
 
 <div>
@@ -77,7 +77,7 @@ On the file route, `sizing_mesh` is the path of a mesh file, relative to
 ```
 
 ```
-triwild on files: 0.3% of the edges past 4/3 of the field, median 0.84 of it
+triwild on files: 0.3% of the edges past 4/3 of the field, median 0.85 of it
 ```
 
 The same mesh as on the memory route. On the command line, the same is
@@ -97,7 +97,7 @@ global one, and caps it after every pass:
   [stuck refinement](../../reference/tetwild.md#stuck_refine_factor) lowers the sizing further,
   and the cap only ever lowers it. A collapse that would make an element worse is still refused.
   Either way the mesh ends finer than the field there, and that is a valid result: the median
-  edge above is 0.84 of the field.
+  edge above is 0.85 of the field.
 - **Longer than `length` is allowed.** The field may ask for more than the global length;
   `length` and `length_rel` then only apply where it does not reach.
 
@@ -124,7 +124,7 @@ runs one more iteration:
 ```
 
 ```
-limit_collapse_length True: 840 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.84 of it
+limit_collapse_length True: 841 triangles after 1 iteration(s), 0.3% of the edges past 4/3 of the field, median 0.85 of it
 limit_collapse_length False: 577 triangles after 2 iteration(s), 13.0% of the edges past 4/3 of the field, median 1.02 of it
 ```
 
