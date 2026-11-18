@@ -352,11 +352,8 @@ public:
      *
      * J is the closing of R by the disk B of diameter `distance`, minus R: the part of the rest
      * that B cannot reach. R, S and J are the tight seal v2 note's I, D and J
-     * (https://hackmd.io/@Spenbert02/HkX3vAvaGg); the log says I and D. First R is made
-     * simplicially embedded (no face or edge outside R has all its vertices on R;
-     * wmtk/utils/SimplicialEmbedding.hpp): each face outside R whose three edges lie on R is split
-     * at its centroid, then each edge outside R joining two vertices of R at its midpoint. Then J
-     * is found in three steps.
+     * (https://hackmd.io/@Spenbert02/HkX3vAvaGg); the log says I and D. J is found in three
+     * steps.
      *  1. The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere
      *     traced, then bisected to the level).
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
@@ -394,8 +391,7 @@ public:
         double distance,
         double trace_rel_tol = 0.001,
         int64_t min_regions = 2,
-        bool sanity = false,
-        bool simplicial_embedding = true);
+        bool sanity = false);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 
@@ -427,25 +423,6 @@ private:
         Rational fraction;
     };
     std::optional<EdgeSplitAt> m_edge_split_at;
-    // When set and m_edge_split_at is not, split_adjust_position places every split's new vertex
-    // at this fraction of the edge from its lower-id end, as m_edge_split_at would. Set to 1/3
-    // around tight_seal_geom's simplicial embedding: the midpoint of an edge joining two bodies
-    // is equidistant from both wherever its ends are their nearest points, so it lies exactly on
-    // their bisector; the fill then split the edges around it within rounding of it, and those
-    // vertices could not be rounded (scan_2 frame 0, 2026-11-17).
-    std::optional<Rational> m_edge_split_fraction;
-    // split_face_before() to split_face_after(): the face's corners, attributes and edges. Face
-    // splits are serial (only tight_seal_geom's simplicial embedding makes them).
-    struct FaceSplitCache
-    {
-        std::array<size_t, 3> v;
-        FaceAttributes face;
-        std::array<std::pair<simplex::Edge, EdgeAttributes>, 3> edges;
-        Vector2d position;
-        double sizing_scalar = 1;
-        size_t partition_id = 0;
-    };
-    FaceSplitCache m_face_split_cache;
 
     // tight_seal_geom's helpers that need the mesh, defined in TightSealGeom.cpp
     /// BVH of the boundary of the faces of `fids` for which in_set holds: their interfaces with
@@ -515,12 +492,6 @@ protected:
     bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max) const override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
     void split_after_vertex(size_t v_new) override { m_last_split_vertex.local() = v_new; }
-    /// A face split puts the new vertex at the face's centroid, in doubles, so every corner must
-    /// be rounded. The three children take the face's attributes, the face's edges keep theirs,
-    /// and the split is refused if a child is inverted. Only tight_seal_geom splits faces (its
-    /// simplicial embedding of R).
-    bool split_face_before(const Tuple& t) override;
-    bool split_face_after(const Tuple& t) override;
 };
 
 } // namespace wmtk::components::simwild::tri

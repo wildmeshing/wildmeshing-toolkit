@@ -1,7 +1,7 @@
+#include <set>
 #include "SimWildMesh.h"
 #include "TightSealGeom.hpp"
 
-#include <wmtk/utils/SimplicialEmbedding.hpp>
 
 #include <unordered_set>
 
@@ -582,8 +582,7 @@ void SimWildMesh::tight_seal_geom(
     const double distance,
     const double trace_rel_tol,
     const int64_t min_regions,
-    const bool sanity,
-    const bool simplicial_embedding)
+    const bool sanity)
 {
     if (!input_selection) {
         log_and_throw_error("tight_seal_geom needs an input selection");
@@ -652,62 +651,6 @@ void SimWildMesh::tight_seal_geom(
         if (in_R(t.tid(*this))) {
             can_seal = true;
             break;
-        }
-    }
-
-    // 0. R is made simplicially embedded (wmtk/utils/SimplicialEmbedding.hpp): each tet outside R
-    // whose four faces lie on R is split at its centroid, then each face outside R whose three
-    // edges do, then each edge outside R joining two vertices of R at a third of it. Then no tet,
-    // face or edge outside R has all its vertices on R: a gap one cell wide between R's vertices
-    // gets a vertex inside it, whose label (step 2) decides whether the gap is in J. Without it,
-    // the labels of R's own vertices alone would decide.
-    // EXPERIMENTAL: skipped when tight_seal_geom_EXPERIMENTAL_simplicial_embedding is false.
-    if (can_seal && simplicial_embedding) {
-        const wmtk::utils::TetComplex R_complex{
-            [&](const size_t vid) {
-                for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-                    if (in_R(tid)) {
-                        return true;
-                    }
-                }
-                return false;
-            },
-            [&](const Tuple& e) {
-                for (const Tuple& t :
-                     get_incident_tets_for_edge(e.vid(*this), switch_vertex(e).vid(*this))) {
-                    if (in_R(t.tid(*this))) {
-                        return true;
-                    }
-                }
-                return false;
-            },
-            [&](const Tuple& f) {
-                if (in_R(f.tid(*this))) {
-                    return true;
-                }
-                const auto opp = f.switch_tetrahedron(*this);
-                return opp.has_value() && in_R(opp->tid(*this));
-            },
-            [&](const Tuple& t) { return in_R(t.tid(*this)); }};
-        // Edges are split at a third, from their lower-id end (m_edge_split_fraction), not at
-        // the midpoint: the midpoint of an edge joining two bodies lies exactly on their
-        // bisector wherever its ends are their nearest points.
-        m_edge_split_fraction = Rational(1.) / Rational(3.);
-        tight_seal::ClearOnExit<std::optional<Rational>> clear_split_fraction{
-            m_edge_split_fraction};
-        const wmtk::utils::SimplicialEmbeddingStats emb =
-            wmtk::utils::simplicial_embedding(*this, R_complex);
-        logger().info(
-            "tight_seal_geom: simplicial embedding of the regions: split {} tets, {} faces and {} "
-            "edges",
-            emb.tets_split,
-            emb.faces_split,
-            emb.edges_split);
-        if (emb.refused > 0) {
-            logger().warn(
-                "tight_seal_geom: {} splits of the simplicial embedding were refused; a tet "
-                "outside the regions may still have all its corners on them",
-                emb.refused);
         }
     }
 
@@ -1109,12 +1052,14 @@ void SimWildMesh::tight_seal_geom(
         tight_seal_geom_sanity(fill_tags, color_of, filled);
     }
 
-    // Every vertex rounded, or the op fails: the output is written in doubles (write_msh, the
-    // memory route), and a vertex left exact because its double position inverts a tet
-    // would make the next operation refuse the mesh ("Tets with different orientations in the
-    // input!", scan_2 frame 0, 2026-11-17). Each is tried once more first.
+    // The output is written in doubles (write_msh, the memory route): a vertex left exact is
+    // written at its double position, and a tet that is inverted or flat there makes the next
+    // operation refuse the mesh ("Tets with different orientations in the input!", scan_2 frame
+    // 0, 2026-11-17). Every vertex left exact is tried once more; then the op fails only if one
+    // of them degenerates a tet in doubles, and otherwise leaves it exact, with a warning.
     size_t n_unrounded = 0;
-    Vector3d first_unrounded = Vector3d::Zero();
+    std::set<size_t> degenerate;
+    Vector3d first_degenerate = Vector3d::Zero();
     for (const Tuple& t : get_vertices()) {
         const size_t v = t.vid(*this);
         if (m_vertex_attribute[v].m_is_rounded) continue;
@@ -1124,14 +1069,28 @@ void SimWildMesh::tight_seal_geom(
             }
             continue;
         }
-        if (n_unrounded++ == 0) first_unrounded = m_vertex_attribute[v].m_posf;
+        ++n_unrounded;
+        for (const size_t id : get_one_ring_tids_for_vertex(v)) {
+            if (is_inverted_f(tuple_from_tet(id)) && degenerate.insert(id).second &&
+                degenerate.size() == 1) {
+                first_degenerate = m_vertex_attribute[v].m_posf;
+            }
+        }
+    }
+    if (!degenerate.empty()) {
+        log_and_throw_error(
+            "tight_seal_geom: {} vertices cannot be rounded, and in doubles {} tets at them "
+            "are inverted or flat (the first at a vertex near ({})); the output would not read "
+            "back",
+            n_unrounded,
+            degenerate.size(),
+            first_degenerate.transpose());
     }
     if (n_unrounded > 0) {
-        log_and_throw_error(
-            "tight_seal_geom: {} vertices cannot be rounded to doubles without inverting a tet "
-            "(the first near ({})); the output would not read back",
-            n_unrounded,
-            first_unrounded.transpose());
+        logger().warn(
+            "tight_seal_geom: {} vertices left exact; no tet is inverted or flat at their "
+            "double positions",
+            n_unrounded);
     }
 
     m_F_envelope.clear();
