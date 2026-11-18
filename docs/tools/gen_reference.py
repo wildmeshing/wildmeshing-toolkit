@@ -114,12 +114,20 @@ def type_label(spec, pointer, rule):
     return "list of " + ("objects" if inner == "object" else inner)
 
 
+def has_default(rule):
+    """Whether a rule has a default value: jse's "skip" means none is injected, the component
+    sets the option itself (its doc says how)."""
+    return "default" in rule and rule["default"] != "skip"
+
+
 def meta_line(spec, pointer, rule, required):
     bits = [f"**{type_label(spec, pointer, rule)}**"]
     if required:
         bits.append("required")
-    if "default" in rule:
+    if has_default(rule):
         bits.append(f"default `{json.dumps(rule['default'])}`")
+    elif rule.get("default") == "skip":
+        bits.append("default set by the component (see below)")
     if "options" in rule:
         bits.append("one of " + ", ".join(f"`{o}`" for o in rule["options"]))
     if "min" in rule:
@@ -176,7 +184,7 @@ def defaults(spec):
     out = {}
     for name in spec.top_level():
         for rule in spec.by_pointer["/" + name]:
-            if "default" in rule:
+            if has_default(rule):
                 out[name] = rule["default"]
                 break
     return out
@@ -284,7 +292,7 @@ def schema_of_rule(spec, pointer, rule):
     s = {"type": SCHEMA_TYPES[rule["type"]]}
     if rule.get("doc", "").strip():
         s["description"] = rule["doc"].strip()
-    if "default" in rule:
+    if has_default(rule):
         s["default"] = rule["default"]
     if "options" in rule:
         s["enum"] = rule["options"]
