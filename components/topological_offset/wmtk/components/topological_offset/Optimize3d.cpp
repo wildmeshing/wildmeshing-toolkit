@@ -4638,16 +4638,32 @@ bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
         // Domain boundary. A band cell here means the band was clipped by the bounding box, and
         // that face is offset surface -- its vertices can never reach the target distance, which
         // is precisely the thing that must be measured rather than hidden.
-        return cell_is_offset_band(ta);
+        // An In entry's selection may end on the domain boundary, which is then its complex.
+        return cell_is_offset_band(ta) &&
+               !band_face_on_in_complex(ta, size_t(-1), get_face_vids(f));
     }
     const size_t tb = opp->tid(*this);
     const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
     if (a == b) return false; // both in the band, or neither: not the band's surface
     // The band's inner interface, against the input complex it wraps, sits at distance 0 by
     // construction and would drag the reported error to target_distance everywhere: a face of a
-    // complex cell (Out), or a face of the complex itself, all three corners on it -- an In
-    // entry's complex is its selection's boundary, with no cell beyond it.
-    return !cell_is_input_complex(a ? tb : ta) && !face_on_input_complex(get_face_vids(f));
+    // complex cell (Out), or a face of an In entry's complex, its selection's boundary, with no
+    // cell beyond it (band_face_on_in_complex()).
+    return !cell_is_input_complex(a ? tb : ta) &&
+           !band_face_on_in_complex(a ? ta : tb, a ? tb : ta, get_face_vids(f));
+}
+
+bool TopoOffsetTetMesh::band_face_on_in_complex(
+    const size_t band,
+    const size_t other,
+    const std::array<size_t, 3>& vids) const
+{
+    // See the declaration. The corners first: they decide almost every face, without the
+    // winding number band_cell_entry() may read.
+    if (!face_on_input_complex(vids)) return false;
+    const size_t k = band_cell_entry(band);
+    if (m_offset_params.direction(k) != Parameters::Offset::Direction::In) return false;
+    return other == size_t(-1) || !cell_in_selection(k, other);
 }
 
 bool TopoOffsetTetMesh::offset_face_normal_out_of_band(const Tuple& f, Vector3d& n) const
@@ -4808,12 +4824,15 @@ bool TopoOffsetTetMesh::for_each_live_offset_face_at(const size_t vid, F&& fn) c
         const size_t ta = sides[i].tid;
         if (j - i == 1) {
             // a band face on the domain boundary
-            if (cell_is_offset_band(ta) && fn(sides[i].face, ta)) return true;
+            if (cell_is_offset_band(ta) &&
+                !band_face_on_in_complex(ta, size_t(-1), sides[i].face) && fn(sides[i].face, ta))
+                return true;
         } else {
             const size_t tb = sides[i + 1].tid;
             const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
             if (a != b && !cell_is_input_complex(a ? tb : ta) &&
-                !face_on_input_complex(sides[i].face) && fn(sides[i].face, a ? ta : tb)) {
+                !band_face_on_in_complex(a ? ta : tb, a ? tb : ta, sides[i].face) &&
+                fn(sides[i].face, a ? ta : tb)) {
                 return true;
             }
         }

@@ -512,7 +512,6 @@ void TopoOffsetTriMesh::label_input_complex()
             mark_input_complex_vertices();
             return;
         }
-        logger().info("Using single body mode for '{}'", m_tag_id_to_name[m_single_tag]);
 
         if (direction == Direction::Both) { // input complex is boundary simplices
             auto faces = get_faces();

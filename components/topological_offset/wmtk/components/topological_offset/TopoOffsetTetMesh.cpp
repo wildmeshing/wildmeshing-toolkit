@@ -1229,7 +1229,6 @@ void TopoOffsetTetMesh::label_offset(const size_t k)
         // label_input_complex() takes the boundary for In and Both. (Until 2026-11 the run-wide
         // offset_in and offset_out chose here between the cells, their boundary, and every cell
         // outside them, which two inward entries always shared.)
-        logger().info("Using single body mode for '{}'", m_tag_id_to_name[m_single_tag]);
         for (const Tuple& t : get_tets()) {
             const size_t t_id = t.tid(*this);
             if (m_tet_attribute[t_id].tag.count(m_single_tag) == 0) continue;
@@ -3297,6 +3296,9 @@ size_t TopoOffsetTetMesh::band_cell_entry(const size_t tid) const
     // or Both candidate is taken as it is (no entry shares its boundary). None: any In entry
     // whose selection holds the cell.
     if (m_offset_params.offsets.size() <= 1) return 0;
+    if (const auto it = m_band_tags_entry.find(m_tet_attribute[tid].tag);
+        it != m_band_tags_entry.end())
+        return it->second;
     using Direction = Parameters::Offset::Direction;
     const auto vs = oriented_tet_vids(tid);
     std::set<size_t> candidates;
@@ -3368,6 +3370,17 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
 
             m_tet_attribute[t_id].tag = new_tag;
         }
+    }
+    // band_cell_entry() reads the entry off these tags from now on (m_band_tags_entry); a tag set
+    // two entries write (shared output tags, or none: ambient) says nothing.
+    m_band_tags_entry.clear();
+    std::map<CellTag, size_t> writers;
+    for (size_t k = 0; k < offsets.size(); ++k) {
+        const CellTag written = output_ids[k].empty() ? CellTag{0} : output_ids[k];
+        if (++writers[written] == 1) m_band_tags_entry[written] = k;
+    }
+    for (const auto& [written, n] : writers) {
+        if (n > 1) m_band_tags_entry.erase(written);
     }
 
     // The faces the band covers -- both tets band cells, the cells rewritten above -- by the same

@@ -313,9 +313,19 @@ public:
     std::vector<EntryComplex> m_entry_complex;
     /// The entry of a band cell (label 2): its complex vertex's (VertexExtra::offset), or, at a
     /// vertex several In entries share, the one whose selection holds the cell -- by its tags
-    /// before set_offset_tet_tags() overwrites them, then by the winding number of the selection
-    /// as captured (m_offset_queries). 0 with one entry.
+    /// before set_offset_tet_tags() overwrites them; after it, by the output tags it wrote
+    /// (m_band_tags_entry), else by the winding number of the selection as captured
+    /// (m_offset_queries). 0 with one entry.
     size_t band_cell_entry(size_t tid) const;
+    /// After set_offset_tet_tags(): each band cell's tag set as it wrote it (its entry's output
+    /// tags), to that entry, for the tag sets exactly one entry writes. The operations carry the
+    /// tags, so band_cell_entry() reads the entry exactly. MEASURED before (the winding number of
+    /// the selection as captured; scan_1 frame 0, 48 touching In entries at 0.1 in an envelope of
+    /// 0.124, 2026-11-17): after one collapse pass of the TetWild pass, band cells of cell_38
+    /// whose centroids no winding put inside any selection took a neighbour's entry,
+    /// close_labels() then labelled front faces as the complex, and the first swap pass threw
+    /// "a tracked simplex has an empty input set".
+    std::map<CellTag, size_t> m_band_tags_entry;
     /// offset_distance() off its one side: +infinity where an In entry is 0 (outside its
     /// selection), so that the union of entries (input_complex_distance()) is not 0 there.
     double side_distance(size_t k, const Vector3d& p) const;
@@ -1613,6 +1623,19 @@ public:
         return m_vertex_extra[vids[0]].m_is_on_input && m_vertex_extra[vids[1]].m_is_on_input &&
                m_vertex_extra[vids[2]].m_is_on_input;
     }
+    /// Whether the face `vids` between band cell `band` and non-band cell `other` (size_t(-1):
+    /// the outside of the mesh) is on an In entry's complex, the boundary of its selection: the
+    /// band cell's entry (band_cell_entry()) is In and `other` is outside its selection. Three
+    /// corners on the complex are necessary (labels are closed downward), not sufficient: where
+    /// In entries touch, or after an operation, a front face can have all three corners on the
+    /// complex. Out: the complex is cells, read off their label; Both: the band covers both
+    /// sides of the complex. MEASURED before (corners alone, scan_1 frame 0, 48 touching In
+    /// entries, 2026-11-17): front faces read as held, and the first swap pass threw "a tracked
+    /// simplex has an empty input set" (a front face has no labels).
+    bool band_face_on_in_complex(
+        const size_t band,
+        const size_t other,
+        const std::array<size_t, 3>& vids) const;
     /// Whether tet `tid` is part of the offset BAND (as opposed to the input complex).
     bool cell_is_offset_band(const size_t tid) const { return m_tet_attribute[tid].label == 2; }
 
