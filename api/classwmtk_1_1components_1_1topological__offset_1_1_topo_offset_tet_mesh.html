@@ -5422,7 +5422,7 @@ template&lt;typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The mesh's part of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2492c1263e043ada31cc5c5444b44ee6">write_vtu()</a>: every array of the four files. Logs each file's "Write" line once its arrays are gathered &ndash; for a debug frame, before the writer thread writes it. Does not change the mesh (the band-region map it re-derives is put back). </p>
+<p>The mesh's part of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2492c1263e043ada31cc5c5444b44ee6">write_vtu()</a>: every array of the four files. Does not change the mesh (the band-region map it re-derives is put back). </p>
 
 </div>
 </div>
@@ -9348,7 +9348,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
   </tr>
 </table>
 </div><div class="memdoc">
-<p>The files' part: paraviewo encodes and writes <code>frame</code>, nothing else is read. A debug frame carries every field; a <code>result</code> only the tags, the data fields and two annotations. </p>
+<p>The files' part: paraviewo encodes and writes <code>frame</code>, nothing else is read. A debug frame carries every field; a <code>result</code> only the tags, the data fields and two annotations. Logs each file once written (for a debug frame, on the writer thread); none into <code>output</code>. </p>
 
 </div>
 </div>
