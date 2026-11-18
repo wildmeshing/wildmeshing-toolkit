@@ -7574,7 +7574,7 @@ TEST_CASE("hold-curves-and-points-2d", "[offset][2d]")
     size_t n_anchored = 0;
     for (const auto& v : mesh->get_vertices()) {
         const size_t vid = v.vid(*mesh);
-        CHECK(mesh->m_vertex_extra[vid].point_inputs == 0); // the anchors carry them now
+        CHECK(mesh->m_vertex_extra[vid].point_inputs.none()); // the anchors carry them now
         if (!anchored_2d(*mesh, vid)) continue;
         ++n_anchored;
         const Vector2d x = mesh->m_vertex_attribute[vid].m_posf;
@@ -7590,16 +7590,16 @@ TEST_CASE("hold-curves-and-points-2d", "[offset][2d]")
         CHECK(mesh->smoothing_position_is_allowed(vid, it->at + Vector2d(it->radius / 2., 0.)));
         CHECK_FALSE(
             mesh->smoothing_position_is_allowed(vid, it->at + Vector2d(2. * it->radius, 0.)));
-        const InputSet labels =
-            f < mesh->m_feature_point_inputs.size() ? mesh->m_feature_point_inputs[f] : 0;
+        const LabelIds labels =
+            f < mesh->m_feature_point_inputs.size() ? mesh->m_feature_point_inputs[f] : LabelIds{};
         if (it->label.empty()) {
-            CHECK(labels == 0);
+            CHECK(labels.none());
         } else {
             const auto& names = mesh->m_point_names;
             const size_t bit =
                 size_t(std::find(names.begin(), names.end(), it->label) - names.begin());
             REQUIRE(bit < names.size());
-            CHECK(labels == (InputSet(1) << bit));
+            CHECK(labels == LabelIds{LabelId(bit)});
         }
     }
     CHECK(n_anchored == want.size());
@@ -9300,7 +9300,7 @@ TEST_CASE("driver-refusals-2d", "[offset][2d]")
             reference,
             io::geometry_data(V, E, CellType::Edge),
             CellType::Edge,
-            {InputSet(1)},
+            {LabelIds{0}},
             {"curve"});
         meshes["e"] = reference;
         j["envelope"] = "e";
@@ -11261,8 +11261,10 @@ struct MeshState2d
     std::vector<Vector2d> posf;
     std::vector<Vector2r> pos;
     std::vector<double> sizing;
-    std::vector<std::array<int64_t, 11>> vertex_flags;
-    std::vector<std::array<int64_t, 7>> edge_flags;
+    std::vector<std::array<int64_t, 10>> vertex_flags;
+    std::vector<std::array<int64_t, 6>> edge_flags;
+    std::vector<LabelIds> point_inputs; ///< per vertex
+    std::vector<LabelIds> edge_labels; ///< per edge slot, as edge_flags
     bool operator==(const MeshState2d& o) const
     {
         return std::tie(
@@ -11273,7 +11275,9 @@ struct MeshState2d
                    pos,
                    sizing,
                    vertex_flags,
-                   edge_flags) ==
+                   edge_flags,
+                   point_inputs,
+                   edge_labels) ==
                std::tie(
                    o.faces,
                    o.face_tags,
@@ -11282,7 +11286,9 @@ struct MeshState2d
                    o.pos,
                    o.sizing,
                    o.vertex_flags,
-                   o.edge_flags);
+                   o.edge_flags,
+                   o.point_inputs,
+                   o.edge_labels);
     }
 };
 
@@ -11296,12 +11302,12 @@ MeshState2d mesh_state_2d(const TopoOffsetTriMesh& m)
         s.posf.push_back(a.m_posf);
         s.pos.push_back(a.pos());
         s.sizing.push_back(a.m_sizing_scalar);
+        s.point_inputs.push_back(x.point_inputs);
         s.vertex_flags.push_back(
             {{a.m_is_rounded,
               a.m_is_on_surface,
               x.label,
               x.offset,
-              int64_t(x.point_inputs),
               x.m_is_on_input,
               x.m_is_on_offset,
               x.m_is_on_region,
@@ -11317,11 +11323,11 @@ MeshState2d mesh_state_2d(const TopoOffsetTriMesh& m)
         for (size_t j = 0; j < 3; ++j) {
             const SurfaceTagAttributes& a = m.m_edge_attribute[3 * fid + j];
             const EdgeExtra2d& x = m.m_edge_extra[3 * fid + j];
+            s.edge_labels.push_back(a.labels());
             s.edge_flags.push_back(
                 {{a.m_is_surface_fs,
                   a.m_is_bbox_fs,
                   a.m_surface_class,
-                  int64_t(a.input_set()),
                   a.orientation(),
                   x.label,
                   x.on_curve}});

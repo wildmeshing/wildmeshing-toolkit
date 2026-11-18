@@ -915,12 +915,18 @@ public:
     std::vector<std::string> m_edge_tag_names;
     std::vector<int64_t> m_edge_tag_id;
     std::map<int64_t, int> m_edge_tag_bit;
-    /// The edge tags of edge `eid`: the bits of its input set below m_edge_tag_names.size().
-    InputSet edge_tag_set(const size_t eid) const
+    /// Whether edge `eid` carries edge tag j (m_edge_tag_names[j]): label j of its labels, the
+    /// labels below m_edge_tag_names.size() being the edge tags.
+    bool edge_has_tag(const size_t eid, const int j) const
     {
-        const size_t n = m_edge_tag_names.size();
-        const InputSet all = n >= 64 ? ~InputSet(0) : (InputSet(1) << n) - 1;
-        return m_edge_attribute[eid].input_set() & all;
+        return j >= 0 && size_t(j) < m_edge_tag_names.size() &&
+               m_edge_attribute[eid].labels().contains(LabelId(j));
+    }
+    /// Whether edge `eid` carries any edge tag: its smallest label is one (the labels are sorted).
+    bool edge_has_any_tag(const size_t eid) const
+    {
+        const LabelIds& l = m_edge_attribute[eid].labels();
+        return !l.none() && size_t(*l.begin()) < m_edge_tag_names.size();
     }
     /// Point labels, the input points' (a tagged mesh's point block): bit j is the base's
     /// m_point_names[j], each name a tag id a selection (offsets) can name (m_point_tag_bit: id ->

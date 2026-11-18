@@ -246,7 +246,7 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
     size_t n_edges_tracked = 0;
     for (const Tuple& e : edges) {
         const size_t eid = e.eid(*this);
-        const bool on_curve = m_edge_extra[eid].on_curve || edge_tag_set(eid) != 0;
+        const bool on_curve = m_edge_extra[eid].on_curve || edge_has_any_tag(eid);
         const std::optional<Tuple> f_opp = e.switch_face(*this);
         if (f_opp) {
             const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
@@ -365,9 +365,8 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
             // edge: every tag of its one face, which is how ambient's tube comes to hold the
             // box. The curve group's edges are in its tube too, and an edge tag's in its own.
             if (m_edge_extra[eid].on_curve) keys.insert(m_curve_tag);
-            const InputSet edge_tags = edge_tag_set(eid);
             for (size_t j = 0; j < m_edge_tag_id.size(); ++j) {
-                if ((edge_tags >> j) & 1) keys.insert(m_edge_tag_id[j]);
+                if (edge_has_tag(eid, int(j))) keys.insert(m_edge_tag_id[j]);
             }
             if (f_opp) {
                 const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
@@ -503,10 +502,10 @@ void TopoOffsetTriMesh::classify_curve_edges()
 bool TopoOffsetTriMesh::vertex_has_point(const size_t vid, const int bit) const
 {
     // See the declaration.
-    if (!m_points_held) return (m_vertex_extra[vid].point_inputs >> bit) & 1;
+    if (!m_points_held) return m_vertex_extra[vid].point_inputs.contains(LabelId(bit));
     if (!m_track_feature_points) return false;
     const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
-    return f < m_feature_point_inputs.size() && ((m_feature_point_inputs[f] >> bit) & 1);
+    return f < m_feature_point_inputs.size() && m_feature_point_inputs[f].contains(LabelId(bit));
 }
 
 void TopoOffsetTriMesh::label_input_complex()
@@ -734,7 +733,7 @@ void TopoOffsetTriMesh::label_offset(const size_t k)
             if (edge_bit != m_edge_tag_bit.end()) {
                 for (const Tuple& e : get_edges()) {
                     const size_t e_id = e.eid(*this);
-                    if (((edge_tag_set(e_id) >> edge_bit->second) & 1) == 0) continue;
+                    if (!edge_has_tag(e_id, edge_bit->second)) continue;
                     m_edge_extra[e_id].label = 1;
                     m_vertex_extra[e.vid(*this)].label = 1;
                     m_vertex_extra[e.switch_vertex(*this).vid(*this)].label = 1;
@@ -790,7 +789,7 @@ void TopoOffsetTriMesh::label_offset(const size_t k)
             CellTag ids;
             if (m_curve_tag >= 0 && m_edge_extra[e_id].on_curve) ids.insert(m_curve_tag);
             for (const auto& [id, bit] : m_edge_tag_bit) {
-                if ((edge_tag_set(e_id) >> bit) & 1) ids.insert(id);
+                if (edge_has_tag(e_id, bit)) ids.insert(id);
             }
             if (ids.empty()) continue;
             own_e[e_id].insert(ids.begin(), ids.end());
@@ -1635,14 +1634,13 @@ void TopoOffsetTriMesh::hold_curves_and_points()
     std::vector<char> is_input_point(vert_capacity(), 0);
     for (const Tuple& t : get_vertices()) {
         const size_t vid = t.vid(*this);
-        InputSet& bits = m_vertex_extra[vid].point_inputs;
-        for (int j = 0; j < int(SurfaceTagAttributes::max_inputs); ++j) {
-            if (((bits >> j) & 1) == 0) continue;
+        LabelIds& bits = m_vertex_extra[vid].point_inputs;
+        for (const LabelId j : bits) {
             point_vids.push_back(vid);
-            point_labels.push_back(j);
+            point_labels.push_back(int(j));
             is_input_point[vid] = 1;
         }
-        bits = 0;
+        bits.clear();
     }
     m_input_point_labels = point_labels;
     size_t n_anchors = anchor_feature_points(point_vids, order2_eps, feature_eps);
