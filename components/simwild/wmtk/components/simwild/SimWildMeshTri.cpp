@@ -594,6 +594,36 @@ void SimWildMeshTri::set_sizing_field(const nlohmann::json& sizing_field_json)
     }
 }
 
+void SimWildMeshTri::apply_sizing_mesh(bool overwrite)
+{
+    if (!m_sizing_mesh || !overwrite) {
+        TriOptimizerMesh::apply_sizing_mesh(overwrite);
+        return;
+    }
+    // As in 3D: the regions' sizing at each vertex, without the cap at the global length.
+    std::vector<double> region(vert_capacity(), std::numeric_limits<double>::infinity());
+    for (const Tuple& t : get_faces()) {
+        const auto tid = t.fid(*this);
+        double sizing = -1;
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_face_attribute[tid].tags)) {
+                sizing = length / m_params.l;
+            }
+        }
+        if (sizing < 0) continue;
+        for (const size_t vid : oriented_tri_vids(tid)) {
+            region[vid] = std::min(region[vid], sizing);
+        }
+    }
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        auto& va = m_vertex_attribute[vid];
+        const double length = sizing_mesh_length(va.m_posf);
+        if (!(length > 0)) continue; // not covered: set_sizing_field()'s
+        va.m_sizing_scalar = std::min(region[vid], length / m_params.l);
+    }
+}
+
 void SimWildMeshTri::set_quality_field(const nlohmann::json& quality_field_json)
 {
     if (!quality_field_json.is_array()) {

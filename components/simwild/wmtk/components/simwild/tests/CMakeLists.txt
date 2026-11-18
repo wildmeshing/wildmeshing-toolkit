@@ -19,6 +19,7 @@ set(SRC_FILES
     test_feature_inputs.cpp
     test_level_crossing.cpp
     test_tight_seal_pair_fill.cpp
+    test_sizing_mesh.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

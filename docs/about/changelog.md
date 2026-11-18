@@ -35,6 +35,12 @@ a coarsening pass, off by default ([#1047](https://github.com/wildmeshing/wildme
 parallel smoothing by color class ([#1079](https://github.com/wildmeshing/wildmeshing-toolkit/pull/1079));
 less memory ([#1077](https://github.com/wildmeshing/wildmeshing-toolkit/pull/1077)).
 
+**Edge length.** A target edge length that varies over space, a
+[sizing mesh](../tutorials/workflows/sizing-mesh.md), in TriWild, TetWild, SimWild and isotropic
+remeshing; a bound on the edges a collapse leaves (`limit_collapse_length`); absolute `eps` and
+`length` in every component that has their relative versions
+([#1188](https://github.com/wildmeshing/wildmeshing-toolkit/pull/1188)).
+
 **Tracking.** Applications record a history of their operations, and the tracking component
 rebuilds bijective maps between input and output, for surfaces, curves and volumes
 ([#1126](https://github.com/wildmeshing/wildmeshing-toolkit/pull/1126)).

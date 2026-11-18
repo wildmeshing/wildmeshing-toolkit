@@ -85,9 +85,9 @@ inline std::string format_options(const nlohmann::json& spec, const std::string&
             out += indent + name + " (" + rule.value("type", "");
             if (required.count(name)) {
                 out += ", required";
-            } else if (rule.contains("default")) {
+            } else if (rule.contains("default") && rule["default"] != "skip") {
                 out += ", default " + rule["default"].dump();
-            }
+            } // "skip": no fixed default, the component sets it (the doc says how)
             out += ")";
             const std::string doc = first_sentence(rule.value("doc", ""));
             if (!doc.empty()) out += ": " + doc;

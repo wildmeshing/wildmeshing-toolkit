@@ -4,6 +4,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/envelope/BoundaryEnvelope.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/utils/SizingMesh.hpp>
 #include "wmtk/AttributeCollection.hpp"
 
 // clang-format off
@@ -124,6 +125,9 @@ public:
     /// The mesh's face attributes once set_face_fields() or set_feature_edges() is called;
     /// untouched before.
     wmtk::AttributeCollection<FaceFieldAttributes> face_field_attrs;
+    /// The target edge length at each vertex, the sizing mesh's where the vertex is (-1 where it
+    /// gives none); read and written only with one (see set_sizing_mesh).
+    wmtk::AttributeCollection<double> target_attrs;
 
     /**
      * @brief Curves the remeshing keeps: label boundaries, say.
@@ -296,6 +300,18 @@ public:
      */
     void set_limit_collapse_length(bool limit) { m_limit_collapse_length = limit; }
     /**
+     * @brief A target edge length that varies over the surface: `sizing`, a Surface SizingMesh
+     * (a Volume one too, outside whose tets the length the passes get applies). Each vertex
+     * takes its length where it is, again wherever a split, collapse or smoothing puts it; an
+     * edge's target is the mean of its ends'. It replaces the length the passes get wherever an
+     * edge is compared with the target: the split above 4/3 of it, the collapse under 4/5, and
+     * the bound on the edges a collapse leaves (set_limit_collapse_length, cleanup_triangles),
+     * which still needs a collapse_remeshing() first. Call after create_mesh(). Without one,
+     * nothing of this runs and the target is the length the passes get.
+     */
+    void set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing);
+    bool has_sizing_mesh() const { return m_sizing_mesh != nullptr; }
+    /**
      * @brief Repair, at the end of every iteration, the triangles whose smallest angle is under
      * `degrees`; 0, the default, repairs none. Call before create_mesh(), which then keeps the
      * input's area vectors for the fold test below.
@@ -316,19 +332,19 @@ public:
      * along it -- to where the smallest angle of its star is largest. Allowed means the curve
      * rules, the envelopes and the fixed vertices hold, as everywhere; the operation folds nothing
      * by the rule of the fold check (see set_check_inversions; on or off, the repairs keep it);
-     * a collapse leaves no edge longer than 4/3 of the target of the last collapse_remeshing(),
-     * with set_limit_collapse_length() or without -- the repairs mend angles and are not to
-     * coarsen the mesh, and those after the last iteration have no split after them; and it
-     * raises the smallest angle of the triangles it leaves over that of the triangles around
-     * the one repaired (of its star, for a move). Where what it replaces folds already, the
-     * fold check, which judges against those triangles, can count a repair of the fold as one
-     * more: there an operation that leaves fewer triangles facing against the input next to them
-     * -- the input triangles within half their size plus the envelope, of the same face fields
-     * where set_face_fields() gave some -- than there were is allowed too, even if no angle
-     * improves. Only there: where two sheets of the input are closer than that, a thin wall, the
-     * far one cancels the near one, and the input's orientation is noise. Rounds until one repairs
-     * nothing, 10 at most. Serial; returns the number of repairs. Throws unless set_cleanup_angle()
-     * came before create_mesh().
+     * a collapse leaves no edge longer than 4/3 of the target of the last collapse_remeshing()
+     * (the edge's own with a sizing mesh, see set_sizing_mesh), with set_limit_collapse_length()
+     * or without -- the repairs mend angles and are not to coarsen the mesh, and those after the
+     * last iteration have no split after them; and it raises the smallest angle of the triangles
+     * it leaves over that of the triangles around the one repaired (of its star, for a move).
+     * Where what it replaces folds already, the fold check, which judges against those triangles,
+     * can count a repair of the fold as one more: there an operation that leaves fewer triangles
+     * facing against the input next to them -- the input triangles within half their size plus
+     * the envelope, of the same face fields where set_face_fields() gave some -- than there were
+     * is allowed too, even if no angle improves. Only there: where two sheets of the input are
+     * closer than that, a thin wall, the far one cancels the near one, and the input's
+     * orientation is noise. Rounds until one repairs nothing, 10 at most. Serial; returns the
+     * number of repairs. Throws unless set_cleanup_angle() came before create_mesh().
      */
     size_t cleanup_triangles(double degrees);
     /// The operations set_check_inversions() refused, since the mesh was made.
@@ -501,6 +517,13 @@ private:
     /// The target length of the last collapse_remeshing(), for the limit above.
     double m_collapse_target = 0;
     std::atomic<size_t> m_refused_inversions = 0;
+    /// See set_sizing_mesh; none by default.
+    std::shared_ptr<const SizingMesh> m_sizing_mesh;
+    /// The sizing mesh's length at `p`: -1 where it gives none.
+    double sizing_at(const Eigen::Vector3d& p) const { return (*m_sizing_mesh)(p); }
+    /// With a sizing mesh, the target of the edge (a, b): the mean of its ends' targets, `L` for
+    /// an end the sizing mesh gives none.
+    double edge_target(size_t a, size_t b, double L) const;
 
     /// The faces have their regions (see set_feature_edges).
     bool m_has_regions = false;

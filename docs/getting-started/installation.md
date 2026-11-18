@@ -123,10 +123,21 @@ The module is built for the Python CMake finds; use the same interpreter to impo
 ## Using the library from your own CMake project
 
 Added to another project (`add_subdirectory`, `FetchContent` or CPM), the toolkit builds its core
-library, `wmtk::toolkit`, and not the components: those are built only when the toolkit is the
-top-level project. To call a component from your own C++ code today, build your program in the
-toolkit's tree, as the [documentation's examples](../developer/documentation.md#examples) are
-(`docs/examples/CMakeLists.txt`), linking `wmtk::<component>`.
+library, `wmtk::toolkit`. With `WMTK_BUILD_COMPONENTS` on, it also builds the components, and your
+targets link `wmtk::<component>` and call it as the
+[documentation's C++ examples](../developer/documentation.md#examples) do:
+
+```cmake
+set(WMTK_BUILD_COMPONENTS ON CACHE BOOL "" FORCE)
+add_subdirectory(wildmeshing-toolkit)   # or FetchContent / CPMAddPackage
+target_link_libraries(my_program PRIVATE wmtk::triwild wmtk::tracking)
+```
+
+As a subproject the toolkit builds no command line, no Python module (`WMTK_PYBIND` is off unless
+set), and none of its tests or test data, whatever your project's `BUILD_TESTING`. Inside its own
+scope it uses its own CMake recipes (`cmake/recipes`) before any of yours with the same names,
+default symbol visibility and C++17 unless a target asks for more, so a project built with
+`-fvisibility=hidden` or C++20 links it as is.
 
 ## Next
 

@@ -249,6 +249,14 @@ public:
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
     void set_sizing_field(const nlohmann::json& sizing_field_json);
+    /**
+     * @brief The sizing mesh with the regions of set_sizing_field(), which must run first. At the
+     * start (`overwrite`) a vertex the sizing mesh covers takes the smaller of its length and the
+     * regions' of its tets: set_sizing_field() capped a vertex of a tet in no region at the
+     * global length, and there the field's length takes that place, also when longer. A vertex
+     * it does not cover keeps what set_sizing_field() gave it. After every pass the base's cap.
+     */
+    void apply_sizing_mesh(bool overwrite) override;
 
     void set_quality_field(const nlohmann::json& quality_field_json);
 

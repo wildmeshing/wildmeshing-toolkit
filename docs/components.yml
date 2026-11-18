@@ -38,7 +38,7 @@ components:
     title: Isotropic remeshing
     group: surface
     tutorial: tutorials/isotropic_remeshing.md
-    key_options: [input, output, length_rel, length_abs, max_iterations, eps_rel, boundary_eps_rel, freeze_boundary, features, feature_fields, swap_quality, use_link_condition, use_sample_envelope]
+    key_options: [input, output, length_rel, length, max_iterations, eps_rel, boundary_eps_rel, freeze_boundary, features, feature_fields, swap_quality, use_link_condition, use_sample_envelope]
     papers:
       - "[Botsch and Kobbelt 2004, A Remeshing Approach to Multiresolution Modeling](https://ls7-gv.cs.tu-dortmund.de/downloads/publications/2004/sgp04.pdf)"
 

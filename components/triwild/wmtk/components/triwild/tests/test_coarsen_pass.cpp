@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cmath>
+#include <memory>
 #include <vector>
 
 // Cases too slow for the Debug CI jobs, Windows Debug above all: Release builds only.
@@ -363,4 +364,34 @@ TEST_CASE("triwild-coarsen-judges-on-the-per-face-target", "[triwild_operation][
         std::vector<TriMesh::Tuple> new_tris;
         REQUIRE(mesh.coarsen_collapse_edge(edge, new_tris));
     }
+}
+
+TEST_CASE("triwild-coarsen-bounded-follows-the-sizing-mesh", "[triwild_operation][coarsen]")
+{
+    // Bounded (coarsen_unbounded off), the pass leaves an edge at or past 0.8 of the target. On
+    // a unit grid with l = 1 that is every edge; with a sizing mesh of 3 it is none, since the
+    // target is the field's length there, even past l.
+    const auto accepted = [](bool field) {
+        Parameters params = make_params();
+        params.coarsen_unbounded = false;
+        params.l = 1;
+        params.collapsing_l2 = 0.8 * 0.8;
+        params.splitting_l2 = 16. / 9.;
+        TriWildMesh mesh(params, params.eps, 0);
+        build_grid(mesh, 8, 8);
+        if (field) {
+            MeshData sizing;
+            sizing.V.resize(4, 3);
+            sizing.V << -5, -5, 0, 15, -5, 0, 15, 15, 0, -5, 15, 0;
+            sizing.cells[CellType::Triangle].connectivity.resize(2, 3);
+            sizing.cells[CellType::Triangle].connectivity << 0, 1, 2, 0, 2, 3;
+            sizing.vertex_attributes[SizingMesh::field_name].values =
+                DataMatrix<double>(DataMatrix<double>::Constant(4, 1, 3.0));
+            mesh.set_sizing_mesh(std::make_shared<SizingMesh>(sizing, SizingMesh::Kind::Planar));
+        }
+        mesh.coarsen_mesh();
+        return mesh.m_coarsen_stats.accepted;
+    };
+    CHECK(accepted(false) == 0);
+    CHECK(accepted(true) > 0);
 }

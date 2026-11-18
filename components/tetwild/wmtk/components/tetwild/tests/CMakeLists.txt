@@ -16,6 +16,7 @@ set(SRC_FILES
     test_operations.cpp
     test_surface_swap.cpp
     test_sizing_refine.cpp
+    test_sizing_mesh.cpp
     test_coarsen_pass.cpp
     test_colored_smoothing.cpp
     test_input_sets.cpp
