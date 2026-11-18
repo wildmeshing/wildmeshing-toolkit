@@ -2364,7 +2364,6 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
 void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, const bool result)
 {
     if (!m_params.output_enabled && !output) return;
-    logger().info("Write {}.vtu (tag for offset is included)", path);
     // A result -- the final mesh, on either route -- carries the tags (here a field per tag, and
     // offset_tag; on the memory route collect_tags() makes them `tags`), the data fields
     // components read (io::ComponentIO::data_fields: vid, labels, offset_tag) and the
@@ -2565,7 +2564,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
     writer->add_field("offset_foldover", FOLD);
     writer->add_field("front_newton_iters", NIT);
     writer->add_field("front_newton_status", NST);
-    writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
+    writer->write_mesh_and_log(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // The front's per-CHORD convergence measure, as a companion line mesh `<path>_front.vtu`: a
     // triangle .vtu has nowhere to put an edge quantity. Same packed vertex indexing as the
@@ -2648,7 +2647,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
             front_writer->add_field("offset_foldover", FOLD);
             front_writer->add_field("front_newton_iters", NIT);
             front_writer->add_field("front_newton_status", NST);
-            front_writer->write_mesh(front_path, V, FE, paraviewo::CellType::Line);
+            front_writer->write_mesh_and_log(front_path, V, FE, paraviewo::CellType::Line);
         }
     }
 
@@ -2663,9 +2662,11 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output, cons
         const auto out_surf_path = path + "_surf.vtu";
         std::shared_ptr<io::DataWriter> surf_writer;
         surf_writer = std::make_shared<io::DataWriter>(output);
-        logger().info("Write {}", out_surf_path);
-        surf_writer
-            ->write_mesh(out_surf_path, m_V_envelope, m_F_envelope, paraviewo::CellType::Line);
+        surf_writer->write_mesh_and_log(
+            out_surf_path,
+            m_V_envelope,
+            m_F_envelope,
+            paraviewo::CellType::Line);
     }
 }
 
