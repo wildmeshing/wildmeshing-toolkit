@@ -16,10 +16,10 @@
 #include <vector>
 
 /**
- * Helpers of the geometric tight seal, SimWildMeshTri::tight_seal_geom (AnnotationsTri.cpp) and
- * SimWildMesh::tight_seal_geom (AnnotationsTet.cpp), which keep the operation itself. The helpers
- * below need no mesh; those that do are private members of the two mesh classes, defined in
- * TightSealGeom.cpp.
+ * Helpers of the geometric tight seal, whose operation is SimWildMeshTri::tight_seal_geom
+ * (AnnotationsTri.cpp) and SimWildMesh::tight_seal_geom (AnnotationsTet.cpp). The helpers below
+ * need no mesh; those that do are private members of the two mesh classes, defined in
+ * TightSealGeom.cpp. The fill is tight_seal::PairFill (TightSealPairFill.hpp).
  */
 namespace wmtk::components::simwild::tight_seal {
 
